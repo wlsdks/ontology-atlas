@@ -17,6 +17,11 @@ canonical repository-relative entrypoint in `path:`.
 Kind and relation contract:
 https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
+## Uncertainty
+
+- Nothing here has been checked against your code yet: this file is a starter,
+  not an observation.
+
 ## How to fill it in
 
 - Describe what role this element plays, which capability it realizes or proves,

@@ -394,3 +394,223 @@ export function capabilityWithoutEvidenceMessage({ slug }) {
 export function bulkProvenanceMessage({ parent, count, slugs, sampleLimit }) {
   return `${count} nodes were created under "${parent}" in this session: ${sampleRefs(slugs, sampleLimit)}. That is a provenance signal, not a size limit — there is no maximum number of children here. Call get_concept("${parent}") and answer one question: can you write a non-circular sentence saying why each of these is NOT interchangeable with its siblings? If yes, this is a legitimately wide parent — leave it exactly as it is. If no, name the shared behavior once with add_concept and patch_concept the siblings that share it to point at that node instead.`;
 }
+
+/*
+ * ────────────────────────────────────────────────────────────────────────────
+ * Meaning gaps in the body — the second half of the same door (2026-09-21)
+ *
+ * Everything above judges frontmatter. The measured problem is that frontmatter
+ * is only half of a node: the app's ACP session cannot run the bulk
+ * qualification lifecycle, so every real build lands through `add_concept` /
+ * `add_concepts` / `patch_concept`, and that door never opened the body at all.
+ * What came through it, measured on this repository's own vault and the
+ * field-trial baseline:
+ *
+ *   - nodes whose body is still the starter template, so the graph holds a
+ *     label and no definition;
+ *   - `Excludes` bullets that are evidence limits ("not mentioned in this
+ *     scan"), which a source-hidden reader later repeats as a product fact;
+ *   - evidence `path:` naming a folder — 51 of 107 in this vault — so drift on
+ *     that node can never be checked.
+ *
+ * That is the 2026-08-31 decision's recorded **dissent** («A refusal names the
+ * path that stays open»): a person routed to incremental writing may build a
+ * shallow vault while believing they completed construction. Its falsifier —
+ * junk vaults, validation red, wrong kinds — did not fire and the ledger says
+ * so; these vaults validated clean. These sentences exist so the door that is
+ * actually used says what is thin while the author still has the file in hand.
+ *
+ * Same contract as everything above: advisory, never blocking (2026-07-31
+ * council, construction rule 5). The logic lives in `meaning-findings.mjs`;
+ * only the text lives here, so the reader of a warning and the reader of the
+ * rules read one file.
+ * ────────────────────────────────────────────────────────────────────────────
+ */
+
+/**
+ * Heading names a body section may use for each side of a concept's boundary.
+ *
+ * Two sides, because a boundary that only says what is in is not a boundary —
+ * §2.1 of the public specification asks for includes *and* excludes before a
+ * label becomes a concept. The synonyms are the shapes already found in this
+ * vault and in the MCP server instructions ("Constraints: …", "… Boundary",
+ * "Inclusions / Exclusions"), so a node written before this check existed is
+ * read on its own terms instead of being told to rename a section it already
+ * filled.
+ *
+ * ⚠️ Order matters to the reader of this list: "out of scope" contains "scope",
+ * so a caller tests the negative side first and only then the positive one.
+ */
+export const BODY_BOUNDARY_SECTIONS = Object.freeze({
+  includes: Object.freeze(['includes', 'inclusions', 'in scope', 'scope', 'boundary', 'constraints']),
+  excludes: Object.freeze(['excludes', 'exclusions', 'out of scope', 'not this']),
+});
+
+/**
+ * Does this exclusion state an **evidence limit** rather than a product boundary?
+ *
+ * "Remote vaults are not mentioned in this scan" says what the writer did not
+ * see. "Atlas does not sync folders between machines" says what the product does
+ * not do. A reader handed the vault without the source cannot tell those apart,
+ * and measured in the 2026-08-28 field trial, repeats the first as the second:
+ * four observed examples were upgraded to the only operations a capability
+ * covers, while the source documented more.
+ *
+ * It lives in the text layer beside {@link looksLikePath} for two reasons. It is
+ * the same kind of narrow wording test, and this module imports nothing but the
+ * schema — so the qualification lane (`meaning-evaluation.mjs`) and the write
+ * gate (`meaning-findings.mjs`) can both apply one implementation without the
+ * import cycle that holding it in either of them would create.
+ *
+ * Unchanged from the copy that lived in `meaning-evaluation.mjs` until
+ * 2026-09-21; the qualification lane now imports it from here.
+ */
+export function isEpistemicExclusionBoundary(value) {
+  const normalized = String(value).replace(/\s+/g, ' ').trim().toLowerCase();
+  return EPISTEMIC_EXCLUSION_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+/**
+ * What an evidence limit actually sounds like, measured rather than guessed.
+ *
+ * The first three clauses are the original rule. The rest were added
+ * 2026-09-21 after a builder writing a real project node produced three
+ * exclusions the original rule read as product boundaries:
+ *
+ *   - "the test suite and the examples folder, which this survey did not inspect"
+ *   - "`typings/index.d.ts`, the TypeScript surface, which was not read"
+ *   - "`index.js`, the package front door, which was read but is not carried as
+ *     a node in this first pass"
+ *
+ * Every one says what the writer did not get to, and a reader handed the vault
+ * without the source reads all three as things the product does not do. The
+ * clauses stay tied to a reading verb ("inspect", "read", "trace", "carried as
+ * a node") so an ordinary product boundary — "flags, which are options rather
+ * than positional arguments" — does not match.
+ */
+const EPISTEMIC_EXCLUSION_PATTERNS = Object.freeze([
+  /\bnot\s+(?:established|asserted|proven|verified|measured|observed|known|confirmed)\b/,
+  /\bremain(?:s|ed)?\s+outside\s+(?:this|the)\s+(?:bounded\s+)?(?:scan|evidence)\b/,
+  /\bnot\s+(?:named|listed|mentioned|included|covered|present)\s+in\s+(?:this|the)\s+(?:bounded\s+)?(?:semantic\s+)?(?:excerpt|evidence|scan|packet)\b/,
+  // "this survey did not inspect" / "the pass did not reach"
+  /\b(?:this|the|our)\s+(?:survey|scan|pass|packet|excerpt|read|analysis|review|session)\s+did\s+not\s+(?:inspect|read|trace|scan|cover|open|look\s+at|examine|visit)\b/,
+  // "which was not read" / "were not inspected"
+  /\b(?:was|were)\s+not\s+(?:read|inspected|traced|scanned|covered|opened|examined|visited|analysed|analyzed|reviewed)\b/,
+  // "is not carried as a node" — the graph has not caught up, which is not a
+  // statement about the product at all.
+  /\bnot\s+(?:yet\s+)?(?:carried|represented|modelled|modeled|captured)\s+(?:as|in)\b/,
+  /\b(?:unread|uninspected|untraced|unscanned)\b/,
+  /\bnot\s+(?:yet\s+)?(?:inspected|read|traced)\s+in\s+this\s+(?:first\s+)?(?:pass|survey|scan|round)\b/,
+  /\b(?:did\s+not|didn't|could\s+not|couldn't)\s+(?:get\s+to|reach|cover|read)\b/,
+  /\boutside\s+(?:what|the\s+files)\s+(?:this|the)\s+(?:survey|scan|pass)\s+(?:read|covered|inspected)\b/,
+]);
+
+/**
+ * Heading names a body section may use to carry the node's definition.
+ *
+ * Measured 2026-09-21, after the first version of this check assumed a
+ * definition is the prose above the first `##`: the shape the qualification
+ * lane actually writes puts it under `## Definition` with nothing above it.
+ * Reading only the lead would have accused 15 of 16 nodes in a freshly built
+ * vault and 72 of 109 in this repository's own — every one of them defined.
+ * A check that is wrong on its debut is a check the reader stops reading.
+ */
+export const BODY_DEFINITION_SECTIONS = Object.freeze([
+  'definition',
+  'summary',
+  'what it is',
+  'what this is',
+  'overview',
+]);
+
+/** Warning literal for a node whose body never says what the node is. */
+export function definitionMissingMessage({ slug, kind }) {
+  return `"${slug}" is a ${kind} whose body carries no definition — it is still the starter scaffold, it opens straight into headings, or it only restates the title. The write succeeded and nothing here blocks it; what is missing is the one sentence that makes this a concept instead of a label. Write what this ${kind} is and what it is not, in prose before the first \`##\` or under \`## Definition\`: patch_concept({slug:"${slug}", body:"# <title>\\n\\n<one non-circular sentence: what it is, and what it is not>\\n\\n…"}). An agent handed only this vault can read the title and learn nothing it did not already know from the title.`;
+}
+
+/** Warning literal for a boundary side the body never states. */
+export function boundaryMissingMessage({ slug, kind, side }) {
+  const heading = side === 'excludes' ? 'Excludes' : 'Includes';
+  const other = side === 'excludes' ? 'what this is often confused with and is not' : 'what this covers';
+  return `"${slug}" (${kind}) has no \`## ${heading}\` section with anything in it, so the body never states ${other}. The write succeeded; this is the half of the boundary the next reader cannot reconstruct from code, because there is no code for a thing deliberately left out. Add it with patch_concept({slug:"${slug}", body:"…\\n\\n## ${heading}\\n\\n- <one concrete item>\\n"}) — one real bullet is worth more than the placeholder, and a placeholder bullet still counts as empty here.`;
+}
+
+/**
+ * Warning literal for an exclusion that states an evidence limit.
+ *
+ * The judgement is `isEpistemicExclusionBoundary` from `meaning-evaluation.mjs`
+ * — the same rule the qualification lane already applies to a proposal, reused
+ * rather than re-implemented, so the two lanes cannot drift into disagreeing
+ * about one sentence.
+ */
+export function epistemicExclusionMessage({ slug, refs, count, sampleLimit }) {
+  return `${count} exclusion bullet(s) on "${slug}" state an evidence limit rather than a product boundary: ${sampleRefs(refs, sampleLimit)}. "Not mentioned in this scan" says what the writer did not see; an \`Excludes\` bullet says what the product deliberately does not do. A reader handed the vault without the source cannot tell those apart, and repeats the first as the second — measured in the 2026-08-28 field trial. The write succeeded; move each one to an \`## Uncertainty\` (or \`## Open questions\`) section with patch_concept({slug:"${slug}", body:"…"}), and leave in \`Excludes\` only what a source actually supports.`;
+}
+
+/** Warning literal for evidence that names a folder instead of a file. */
+export function folderOnlyEvidenceMessage({ slug, path, suggestion }) {
+  const opener = suggestion
+    ? `Name the one file an unfamiliar agent should open first — \`${suggestion}\` is what this folder offers as an entry point`
+    : 'Name the one file an unfamiliar agent should open first';
+  return `"${slug}" cites \`path: ${path}\`, and that is a directory. The write succeeded, but drift on a folder can never be checked: a folder's timestamp moves on almost any commit underneath it, so this node's evidence is permanently "unknown" rather than current or stale. ${opener}: patch_concept({slug:"${slug}", frontmatter:{path:"${suggestion || `${path.replace(/\/$/, '')}/<file>`}"}}). Keep the folder in the body as context if it matters; the frontmatter slot is for the one entry point.`;
+}
+
+/**
+ * Warning literal for a node written outside its kind's folder.
+ *
+ * ## Why this needed its own sentence (measured 2026-09-21)
+ *
+ * A post-change trial built an entire vault flat at the root —
+ * `slug: option-declaration` carrying `kind: capability`, `slug:
+ * help-documentation` carrying `kind: domain` — and `validate_vault` answered
+ * **0 issues**. Nothing in the product told the builder the convention exists,
+ * so it could not have known to follow it. A convention no channel states is
+ * not a convention, it is folklore.
+ *
+ * ⚠️ It never rejects, and it is deliberately **not** the sibling hard error.
+ * `flatSlugIssue` throws on a path-style slug *nested under* a kind folder
+ * (`elements/src/views/home`) because that shape silently merges distinct nodes
+ * the moment two files share a basename — that is validity. A flat slug at the
+ * root merges nothing; it is a vault that reads worse. Reporting is the right
+ * response to the second, and blocking would break every vault already written
+ * this way.
+ *
+ * @param {object} args
+ * @param {string} args.slug the slug as written
+ * @param {string} args.kind
+ * @param {string} args.canonicalSlug what the same node is called inside its folder
+ */
+export function slugOutsideKindFolderMessage({ slug, kind, canonicalSlug }) {
+  return `"${slug}" is a ${kind} written at the vault root instead of inside its kind folder, so it reads as "${slug}" where every other ${kind} reads as "${canonicalSlug}". The write succeeded and nothing here blocks it — a flat slug is valid, it just groups with nothing. The map, the README generator, and every other reader that shows a vault by kind group on that folder, so a root-level ${kind} sits beside the project node rather than with its own kind. Move it when you are ready: rename_concept({oldSlug:"${slug}", newSlug:"${canonicalSlug}"}) without \`confirm\` returns a dry-run listing every backlink that would be rewritten; repeat the same call with \`confirm: true\` to move the file and rewrite them in one pass. The UID does not change, so nothing loses its identity.`;
+}
+
+/**
+ * Heading names a body section may use to record what the writer did not check.
+ *
+ * ## Why a node needs one at all
+ *
+ * A node that states no unknown is claiming completeness, and nothing in a
+ * vault is complete — the builder read some files and not others, and which
+ * ones is the fact a later reader most needs and can least recover. Measured
+ * 2026-08-28: exclusions that were really evidence limits were repeated as
+ * product facts by a source-hidden reader, because the vault gave those limits
+ * nowhere else to live. `epistemic-exclusion` tells a writer to move such a
+ * line out of `Excludes`; this says where it goes, and asks for it even when
+ * `Excludes` happens to be clean.
+ *
+ * `confidence` is in the list because a vault already in the wild uses it for
+ * exactly this, and a check that renames someone's honest section is a check
+ * they switch off.
+ */
+export const BODY_UNCERTAINTY_SECTIONS = Object.freeze([
+  'uncertainty',
+  'open questions',
+  'unknowns',
+  'not checked',
+  'confidence',
+]);
+
+/** Warning literal for a node that records no unknown at all. */
+export function uncertaintyMissingMessage({ slug, kind }) {
+  return `"${slug}" (${kind}) records no uncertainty, so the body reads as complete — and nothing in a vault is. The write succeeded and nothing here blocks it; what is missing is the fact a later reader most needs and can least recover: which files you did not open, which claim you inferred rather than read, what you could not check. Without it an agent handed only this vault treats every silence as a settled negative. Say it plainly: patch_concept({slug:"${slug}", body:"…\\n\\n## Uncertainty\\n\\n- <what you did not read or could not check>\\n"}). \`## Open questions\`, \`## Unknowns\`, \`## Not checked\` and \`## Confidence\` are read as the same section, and this is also where an \`Excludes\` bullet belongs once you notice it was an evidence limit rather than a product boundary.`;
+}

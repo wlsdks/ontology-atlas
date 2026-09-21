@@ -92,12 +92,67 @@ function withFixtureUid(content) {
   return content.replace('---\n', `---\nuid: 00000000-0000-4000-8000-${tail}\n`);
 }
 
+/**
+ * A finished body, per kind.
+ *
+ * Since 2026-09-22 `validate` reads the prose as well as the frontmatter, so a
+ * node with an empty body carries `definition-missing`, both `boundary-missing`
+ * sides, and `uncertainty-missing`. Nearly every fixture below is about
+ * something else — a command's output shape, a graph write, an exit code — and
+ * was written when a bodyless document was silent. `withVault` fills the body in
+ * wherever a fixture left it blank, exactly as it already fills in a `uid:`. A
+ * fixture that writes its own body keeps it, so a case that wants a thin one
+ * still gets the findings.
+ */
+const FINISHED_BODY_BY_KIND = {
+  domain:
+    '\nOwns a stable responsibility this codebase keeps in one place, whatever moves inside it.\n\n' +
+    '## Includes\n\n- The work this area is answerable for\n\n' +
+    '## Excludes\n\n- The neighbouring area it is most often confused with\n\n' +
+    '## Uncertainty\n\n- Which callers outside the repository depend on it was never established\n',
+  capability:
+    '\nTurns a reviewed folder of Markdown into a graph a reader can walk without opening code.\n\n' +
+    '## Includes\n\n- Reading frontmatter relations from every document\n\n' +
+    '## Excludes\n\n- Drawing the result on screen, which a separate surface owns\n\n' +
+    '## Uncertainty\n\n- The symlinked-subtree case was never measured\n',
+  element:
+    '\nHolds the one address every caller resolves through, so a moved surface renames in one place.\n\n' +
+    '## Uncertainty\n\n- The fallback for an older build was not read\n',
+};
+
+/** The body a fixture left blank, filled in for the kinds that have body duties. */
+function withFinishedBody(content) {
+  if (!/^---\r?\n/.test(content)) return content;
+  const match = /(?:^|\r?\n)kind\s*:\s*([A-Za-z-]+)/m.exec(content);
+  const body = FINISHED_BODY_BY_KIND[match?.[1]?.trim() ?? ''];
+  if (!body) return content;
+  const close = content.search(/\r?\n---\r?\n/);
+  if (close === -1) return content;
+  /*
+   * "Blank" includes a body that is only the `# Title` line. The heading repeats
+   * the frontmatter `title`, so a node whose whole body is its own name says
+   * exactly as much as one with no body at all — and dozens of fixtures below
+   * write that shape to look like a real document.
+   */
+  const afterClose = content
+    .slice(close)
+    .replace(/^\r?\n---\r?\n/, '')
+    .split('\n')
+    .filter((line) => line.trim() !== '' && !/^#\s+/.test(line.trim()))
+    .join('\n');
+  if (afterClose.trim() !== '') return content;
+  // The `# Title` line is kept: a fixture that asserts on the rendered body
+  // excerpt still finds it, and the finished prose lands underneath.
+  const kept = content.slice(close).replace(/^\r?\n---\r?\n/, '').replace(/\s+$/, '');
+  return `${content.slice(0, close)}\n---\n${kept}\n${body}`;
+}
+
 function withVault(seed = []) {
   const root = mkdtempSync(join(tmpdir(), 'cli-int-'));
   for (const { slug, content } of seed) {
     const full = join(root, `${slug}.md`);
     mkdirSync(dirname(full), { recursive: true });
-    writeFileSync(full, withFixtureUid(content), 'utf-8');
+    writeFileSync(full, withFinishedBody(withFixtureUid(content)), 'utf-8');
   }
   return root;
 }
@@ -2111,9 +2166,17 @@ await test('mcp-verify — verifies maintenance cursor resume when actions exist
     const r = await run(['mcp-verify', root, '--timeout-ms', MCP_VERIFY_TIMEOUT_MS]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /maintenance cursor: ready page stable \(2 remaining actions/);
-    assert.match(clean, /kind add_missing_relation:1,capability_without_evidence:1/);
-    assert.match(clean, /maintenance cursor: resume afterActionId advanced \(maint_[a-f0-9]{8}; 1 remaining action/);
+    /*
+     * Four, not two, since `slug_outside_kind_folder` joined `maintenance_plan`
+     * (2026-09-21): this fixture writes `slug: core` and `slug: capabilities/x`
+     * -style nodes at the vault root, which is valid and now reported. The
+     * number is the queue's length, so it moves whenever the queue learns a new
+     * kind of finding; what the case is testing is that the cursor pages
+     * through it stably.
+     */
+    assert.match(clean, /maintenance cursor: ready page stable \(4 remaining actions/);
+    assert.match(clean, /kind slug_outside_kind_folder:2,add_missing_relation:1,capability_without_evidence:1/);
+    assert.match(clean, /maintenance cursor: resume afterActionId advanced \(maint_[a-f0-9]{8}; 3 remaining action/);
     assert.match(clean, /query_concepts limited: 1 query result \/ 2 total query results \(limited true\)/);
     assert.match(clean, /destructive dry-runs: rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
     assert.match(clean, /all_paths: core → project/);
@@ -3078,8 +3141,11 @@ await test('validate — clean vault: exit 0', async () => {
   // A capability or element needs `domain` set to be clean of the
   // missing-expected-field warning. This fixture tests canonical kind recognition
   // itself, hence the added domain.
+  // `capabilities/a` rather than a flat `a`: a node outside its kind folder is
+  // valid but now reported (`slug-outside-kind-folder`), and this fixture is the
+  // one that has to come back clean.
   const root = withVault([
-    { slug: 'a', content: '---\nkind: capability\ndomain: domains/auth\n---\n' },
+    { slug: 'capabilities/a', content: '---\nkind: capability\ndomain: domains/auth\n---\n' },
     { slug: 'domains/auth', content: '---\nkind: domain\ntitle: Auth\n---\n' },
   ]);
   try {
@@ -8073,7 +8139,10 @@ await test('delete --confirm --force — 적용 출력에 dangling backlink 를 
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /deleted/);
     assert.match(clean, /deleted node\s+Foo/);
-    assert.match(clean, /# Foo/);
+    // The preview quotes the body's first line of prose, so a person reading
+    // the confirmation sees what they are about to lose rather than a heading
+    // that only repeats the title.
+    assert.match(clean, /Turns a reviewed folder of Markdown into a graph/);
     assert.match(clean, /2 dangling backlink\(s\) left/);
     assert.match(clean, /capabilities\/bar\s+· Bar\s+\(relates\)/);
     assert.match(clean, /domains\/auth\s+· Auth\s+\(capabilities\)/);
@@ -8149,7 +8218,7 @@ await test('merge --confirm — 적용 출력에 변경 파일과 key 를 보여
     assert.match(clean, /[1-9]\d* file\(s\) updated/);
     assert.match(clean, /capabilities\/foo\.md deleted/);
     assert.match(clean, /deleted source\s+Foo/);
-    assert.match(clean, /# Foo/);
+    assert.match(clean, /Turns a reviewed folder of Markdown into a graph/);
     assert.match(clean, /domains\/auth\s+· Auth/);
     assert.match(clean, /capabilities changed/);
     assert.equal(existsSyncTest(join(root, 'capabilities/foo.md')), false);

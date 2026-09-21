@@ -26,6 +26,12 @@ const SOURCE_EXTENSIONS = new Set([
   '.c', '.cc', '.cpp', '.cs', '.css', '.go', '.h', '.hpp', '.html', '.java',
   '.js', '.jsx', '.kt', '.kts', '.mjs', '.mts', '.php', '.py', '.rb', '.rs',
   '.scss', '.sh', '.swift', '.ts', '.tsx', '.vue', '.zig',
+  // Prose the project ships beside its code. A headless construction run on an
+  // unfamiliar repository (2026-09-21) could cite the README only "by heading
+  // name and line number" because this list refused it, so the project's own
+  // statement of purpose reached the builder through the package manifest
+  // alone. Prose is text under the same byte caps; it is not a manifest.
+  '.markdown', '.md', '.rst', '.txt',
 ]);
 const MANIFESTS = new Set([
   'Cargo.toml', 'Gemfile', 'go.mod', 'package.json', 'pyproject.toml',

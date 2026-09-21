@@ -4,6 +4,16 @@
  * filtered queries, and source passages.
  */
 
+import {
+  COMPETENCY_ANSWERS_GUIDE_EN,
+  CONSTRUCTION_CARD_EN,
+  CONSTRUCTION_GUIDE_TOPICS,
+} from '../construction-card.mjs';
+import { CONSTRUCTION_LIFECYCLE_EN } from '../construction-lifecycle.mjs';
+import {
+  CONSTRUCTION_RULES_EN,
+  META_MODEL_RULES_EN,
+} from '../construction-rules.mjs';
 import { scoreEvidence } from '../evidence-rank.mjs';
 import {
   buildFindEvidenceZeroHitsGrowthHint,
@@ -15,6 +25,10 @@ import { NODE_KIND_VALUES } from '../ontology-engine.mjs';
 import { parseFilter } from '../query.mjs';
 import { nodeUidIssue } from '../schema.mjs';
 import { SERVER_VERSION } from '../server-version.mjs';
+import {
+  WORKFLOWS_SECTION_EN,
+  WRITE_SAFETY_SECTION_EN,
+} from '../server/instructions.mjs';
 import {
   READ_ONLY_MODE,
   TOOLS_FOR_LIST,
@@ -485,12 +499,31 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
   return result;
 }
 
-function connectionInfoTool() {
+/**
+ * The long-form rules a truncating host never delivers.
+ *
+ * A live Claude Code session kept only the first 2,048 characters of the
+ * `instructions` string, so everything past the construction card was invisible
+ * to the attached agent. Tool descriptions and tool results arrive whole, so
+ * this map is the reliable channel: one topic per section, each pointing at the
+ * same constant the instructions interpolate rather than a second copy.
+ */
+const CONSTRUCTION_GUIDE_TEXT = {
+  meta_model: META_MODEL_RULES_EN,
+  construction: CONSTRUCTION_RULES_EN,
+  lifecycle: CONSTRUCTION_LIFECYCLE_EN,
+  write_safety: WRITE_SAFETY_SECTION_EN,
+  workflows: WORKFLOWS_SECTION_EN,
+  competency: COMPETENCY_ANSWERS_GUIDE_EN,
+};
+
+function connectionInfoTool({ guide } = {}) {
+  requireOptionalEnum(guide, 'guide', [...CONSTRUCTION_GUIDE_TOPICS]);
   const toolNames = TOOLS_FOR_LIST.map((tool) => tool.name);
   const toolsetHash = createHash('sha256')
     .update(JSON.stringify(TOOLS_FOR_LIST))
     .digest('hex');
-  return {
+  const result = {
     vaultRoot: VAULT_ROOT,
     repoRoot: REPO_ROOT,
     vaultResolution: VAULT_RESOLUTION,
@@ -505,7 +538,15 @@ function connectionInfoTool() {
       toolNames,
       toolsetHash,
     },
+    guide: {
+      card: CONSTRUCTION_CARD_EN,
+      topics: [...CONSTRUCTION_GUIDE_TOPICS],
+    },
   };
+  if (guide !== undefined) {
+    result.guideText = CONSTRUCTION_GUIDE_TEXT[guide];
+  }
+  return result;
 }
 
 function findBacklinksTool({ slug }) {

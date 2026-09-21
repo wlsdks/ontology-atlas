@@ -1,4 +1,9 @@
 import { parseFrontmatter } from "./parse-frontmatter";
+import {
+  meaningFindings,
+  slugOutsideKindFolderFinding,
+  type MeaningFinding,
+} from "./meaning-findings";
 
 /**
  * Makes silent frontmatter corruption visible.
@@ -28,7 +33,24 @@ export type VaultIssueCode =
   | "duplicate-uid"
   | "missing-expected-field"
   | "non-canonical-graph-array"
-  | "parse-zero-keys";
+  | "parse-zero-keys"
+  /*
+   * The meaning findings — the half of a node the frontmatter checks never
+   * opened. They joined the three validators on 2026-09-22: the write door had
+   * reported them to the agent since 2026-09-21, and nothing the *person* could
+   * run said a word, so "validation is clean" and "this vault says nothing" were
+   * true at the same time with only the agent able to tell.
+   *
+   * `folder-only-evidence` is not here. It asks the filesystem whether a cited
+   * path is a directory, which a browser cannot do and a guessed repository root
+   * would answer wrongly; `validate_vault` and the CLI report it where a root is
+   * known.
+   */
+  | "definition-missing"
+  | "boundary-missing"
+  | "epistemic-exclusion"
+  | "uncertainty-missing"
+  | "slug-outside-kind-folder";
 
 /**
  * R14 — per-kind fields that ought to be present. Matches `requiredExtras` in
@@ -89,7 +111,20 @@ const GRAPH_ARRAY_KEYS = [
   "broader",
 ] as const;
 
-export function validateVaultDocument(raw: string): VaultDocumentReport {
+export interface VaultDocumentOptions {
+  /**
+   * The document's vault-relative slug, when the caller knows where the file
+   * sits. Only `slug-outside-kind-folder` needs it, and that code is a fact
+   * about position rather than about bytes — so a caller holding only the text
+   * is never told a node is in the wrong place.
+   */
+  slug?: string;
+}
+
+export function validateVaultDocument(
+  raw: string,
+  options: VaultDocumentOptions = {},
+): VaultDocumentReport {
   const issues: VaultDocumentIssue[] = [];
 
   // The same normalization the parser applies (bug sweep 2026-09-01): a
@@ -115,7 +150,7 @@ export function validateVaultDocument(raw: string): VaultDocumentReport {
     return { ok: true, issues };
   }
 
-  const { frontmatter, diagnostics = [] } = parseFrontmatter(raw);
+  const { frontmatter, body = "", diagnostics = [] } = parseFrontmatter(raw);
   pushFrontmatterDiagnostics(diagnostics, issues);
   const keys = Object.keys(frontmatter);
 
@@ -169,8 +204,79 @@ export function validateVaultDocument(raw: string): VaultDocumentReport {
   }
 
   pushNonCanonicalGraphArrayIssues(frontmatter, issues);
+  pushMeaningIssues(frontmatter, body, resolveDocumentSlug(frontmatter, options), issues);
 
   return { ok: issuesHaveNoErrors(issues), issues };
+}
+
+/**
+ * The slug this document is addressed by, when anybody knows it.
+ *
+ * The caller's value wins: it is the file's real position in the vault, while
+ * `slug:` in frontmatter is a claim the document makes about itself, and a
+ * document can claim the wrong one.
+ */
+function resolveDocumentSlug(
+  frontmatter: Record<string, unknown>,
+  options: VaultDocumentOptions,
+): string {
+  const given = typeof options.slug === "string" ? options.slug.trim() : "";
+  if (given) return given;
+  const declared = typeof frontmatter.slug === "string" ? frontmatter.slug.trim() : "";
+  return declared;
+}
+
+/**
+ * The body half, read from the same raw text the frontmatter came out of.
+ *
+ * Message text is composed here rather than imported, because the two sides of
+ * this port write for different readers: `mcp/src/construction-rules.mjs`
+ * answers an agent mid-write and names the tool call that repairs it, while this
+ * validator's messages sit beside the Korean ones this file has always spoken to
+ * the person reading a screen. What the parity contract holds is the *judgement*
+ * — identical code sets for identical bodies — not the sentence.
+ */
+function pushMeaningIssues(
+  frontmatter: Record<string, unknown>,
+  body: string,
+  slug: string,
+  issues: VaultDocumentIssue[],
+): void {
+  const rawKind = frontmatter.kind;
+  const kind = typeof rawKind === "string" ? rawKind.trim() : "";
+  if (!kind || !(KNOWN_VAULT_KINDS as readonly string[]).includes(kind)) return;
+  const title = typeof frontmatter.title === "string" ? frontmatter.title : "";
+  for (const finding of meaningFindings({ kind, slug, title, body })) {
+    issues.push({
+      code: finding.code,
+      severity: "warning",
+      message: meaningFindingMessage(finding, kind, slug),
+    });
+  }
+}
+
+/** The one sentence each meaning finding says to a person reading a screen. */
+function meaningFindingMessage(
+  finding: MeaningFinding,
+  kind: string,
+  slug: string,
+): string {
+  switch (finding.code) {
+    case "definition-missing":
+      return `본문이 이 ${kind} 가 무엇인지 말하지 않습니다 — 첫 \`##\` 앞이나 \`## Definition\` 아래에, 제목을 되풀이하지 않는 한 문장을 쓰세요.`;
+    case "boundary-missing":
+      return finding.key === "excludes"
+        ? "`## Excludes` 에 내용이 없습니다 — 이 개념과 혼동되지만 아닌 것을 한 줄 적으세요. 코드에는 남지 않는 절반입니다."
+        : "`## Includes` 에 내용이 없습니다 — 이 개념이 실제로 무엇을 포함하는지 한 줄 적으세요.";
+    case "uncertainty-missing":
+      return "`## Uncertainty` 가 비어 있어 본문이 완결된 것처럼 읽힙니다 — 읽지 않은 파일이나 확인하지 못한 것을 적으세요. (`## Open questions` · `## Unknowns` · `## Not checked` · `## Confidence` 도 같은 칸입니다.)";
+    case "epistemic-exclusion":
+      return `\`## Excludes\` 의 ${finding.refs.length}개 항목이 제품의 경계가 아니라 "확인하지 못했다"는 사실을 말합니다 (${finding.refs[0] ?? ""}). \`## Uncertainty\` 로 옮기세요.`;
+    case "slug-outside-kind-folder":
+      return `\`${slug}\` 는 kind=${kind} 인데 종류 폴더 밖 vault 루트에 있습니다 — 다른 ${kind} 들은 \`${finding.refs[0] ?? ""}\` 처럼 읽힙니다. 유효하지만 어떤 묶음에도 들어가지 않습니다.`;
+    default:
+      return "";
+  }
 }
 
 /**
@@ -301,6 +407,7 @@ const ONTOLOGY_SIGNAL_KEYS = [
 export function validateVaultDocFrontmatter(
   frontmatter: Record<string, unknown>,
   diagnostics: ReadonlyArray<{ code: string; message: string }> = [],
+  options: VaultDocumentOptions = {},
 ): VaultDocumentReport {
   const issues: VaultDocumentIssue[] = [];
   /*
@@ -360,8 +467,40 @@ export function validateVaultDocFrontmatter(
   }
 
   pushNonCanonicalGraphArrayIssues(frontmatter, issues);
+  pushPositionIssue(frontmatter, resolveDocumentSlug(frontmatter, options), issues);
 
   return { ok: issuesHaveNoErrors(issues), issues };
+}
+
+/**
+ * The only meaning finding this fast path can answer.
+ *
+ * ⚠️ **The other four need the body, and this function never sees one.** It
+ * exists so the UI can check a whole manifest without re-reading every `.md`,
+ * and the manifest keeps a flattened excerpt rather than the prose — headings,
+ * placeholders and section boundaries are all gone by then, and a definition
+ * check run on an excerpt would answer a different question under the same code
+ * name. Half an answer under a shared code is worse than no answer: it would put
+ * the app and the CLI into disagreement about one document while both claimed to
+ * run "the validator". Those four stay with `validateVaultDocument`,
+ * `validate_vault`, and the CLI's own validate command, which all hold the raw
+ * text.
+ */
+function pushPositionIssue(
+  frontmatter: Record<string, unknown>,
+  slug: string,
+  issues: VaultDocumentIssue[],
+): void {
+  const rawKind = frontmatter.kind;
+  const kind = typeof rawKind === "string" ? rawKind.trim() : "";
+  if (!kind || !(KNOWN_VAULT_KINDS as readonly string[]).includes(kind)) return;
+  const finding = slugOutsideKindFolderFinding({ kind, slug });
+  if (!finding) return;
+  issues.push({
+    code: finding.code,
+    severity: "warning",
+    message: meaningFindingMessage(finding, kind, slug),
+  });
 }
 
 function pushNonCanonicalGraphArrayIssues(

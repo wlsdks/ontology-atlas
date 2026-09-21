@@ -53,7 +53,7 @@ const VERIFY_VAULT = path.join(ROOT, 'docs', 'ontology');
 // The generated surface record is the machine-owned count `pnpm docs:surface:check`
 // keeps current by asking the running server for `tools/list`.
 const TOOL_INVENTORY_COUNT = JSON.parse(readFileSync(MCP_SURFACE, 'utf8')).mcp.toolCount;
-const VERIFY_CONCEPT = 'capabilities/mcp-server';
+const VERIFY_CONCEPT = 'capabilities/mcp-tool-server';
 
 const argv = process.argv.slice(2);
 const checkOnly = argv.includes('--check');

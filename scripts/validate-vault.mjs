@@ -14,6 +14,25 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseFrontmatter } from "./lib/parse-frontmatter.mjs";
 import { inspectMergedUids, nodeUidIssue } from "../cli/src/lib/schema.mjs";
+/*
+ * The body half, imported from the canonical module rather than reimplemented.
+ *
+ * This script is the one lane that reads *this repository's own* vault on every
+ * `pnpm vault:validate`, so it is where a rule first meets 100-odd real
+ * documents. A second implementation would mean the number printed here and the
+ * number `validate_vault` reports could disagree about the same folder, which is
+ * exactly the confusion the three-way validator contract exists to prevent.
+ * `meaning-findings.mjs` and `parser.mjs` import only sibling `mcp/src` modules
+ * and `node:` builtins, so a plain `node` run resolves them with no install.
+ */
+import {
+  boundaryFindings,
+  definitionFinding,
+  epistemicExclusionFinding,
+  uncertaintyFinding,
+} from "../mcp/src/meaning-findings.mjs";
+import { parseFrontmatter as parseMcpFrontmatter } from "../mcp/src/parser.mjs";
+import { folderForKind } from "../cli/src/lib/schema.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -125,6 +144,57 @@ async function walk(dir) {
     }
   }
   return out;
+}
+
+/**
+ * The meaning codes this lane counts, in the order the summary prints them.
+ *
+ * Named rather than derived so a code that stops firing is visible as a zero
+ * instead of silently disappearing from the line. A summary that only lists what
+ * it found cannot tell "none of these" from "this check is gone".
+ */
+const MEANING_CODES = [
+  "definition-missing",
+  "boundary-missing",
+  "uncertainty-missing",
+  "epistemic-exclusion",
+  "slug-outside-kind-folder",
+];
+
+/**
+ * The half of a node the frontmatter checks never opened.
+ *
+ * Warnings, all of them, and the exit code does not move: a thin body is not a
+ * broken vault, and turning this lane red the day the check landed would say the
+ * repository broke when what changed is that somebody finally asked. The summary
+ * states the counts, which is the point — the honest state of `docs/ontology`
+ * printed where the owner already looks.
+ */
+function meaningIssues(raw, slug) {
+  const { frontmatter, body = "" } = parseMcpFrontmatter(raw);
+  const kind = typeof frontmatter?.kind === "string" ? frontmatter.kind.trim() : "";
+  if (!kind || !KNOWN_VAULT_KINDS.includes(kind)) return [];
+  const title = typeof frontmatter?.title === "string" ? frontmatter.title : "";
+  const input = { kind, slug, title, body };
+  const issues = [
+    definitionFinding(input),
+    ...boundaryFindings(input),
+    uncertaintyFinding(input),
+    epistemicExclusionFinding(input),
+  ]
+    .filter(Boolean)
+    .map((finding) => ({ code: finding.code, severity: "warning", message: finding.message }));
+  const folder = folderForKind(kind);
+  if (slug && folder && !slug.startsWith(folder)) {
+    issues.push({
+      code: "slug-outside-kind-folder",
+      severity: "warning",
+      message:
+        `\`${slug}\` is a ${kind} at the vault root rather than inside \`${folder}\`. ` +
+        `Valid, and it groups with nothing: every reader that shows a vault by kind groups on that folder.`,
+    });
+  }
+  return issues;
 }
 
 function validate(raw) {
@@ -319,6 +389,7 @@ export async function main({ argv = process.argv, cwd = process.cwd() } = {}) {
       .normalize("NFC");
     entries.push({ file, slug, frontmatter });
     const report = validate(raw);
+    report.issues.push(...meaningIssues(raw, slug));
     reportByFile.set(file, report);
   }
 
@@ -352,6 +423,9 @@ export async function main({ argv = process.argv, cwd = process.cwd() } = {}) {
     else warningFiles += 1;
   }
 
+  const meaningCounts = countMeaningIssues(reports);
+  const meaningLine = MEANING_CODES.map((code) => `${code} ${meaningCounts[code]}`).join(" · ");
+
   if (reports.length === 0) {
     console.log(
       `[validate-vault] ${files.length} files scanned — 0 issues. vault clean ✓`,
@@ -370,8 +444,23 @@ export async function main({ argv = process.argv, cwd = process.cwd() } = {}) {
   console.log(
     `\n[validate-vault] ${files.length} files / ${reports.length} issues (error ${errorFiles} · warning ${warningFiles})`,
   );
+  // The meaning half on its own line: it is a different question from
+  // frontmatter integrity, it never changes the exit code, and rolling it into
+  // the warning total would hide how much of the total it is.
+  console.log(`[validate-vault] meaning (advisory, exit unaffected): ${meaningLine}`);
 
   return errorFiles > 0 ? 1 : 0;
+}
+
+/** Per-code counts, one per issue, so a document missing both boundary sides counts twice. */
+function countMeaningIssues(reports) {
+  const counts = Object.fromEntries(MEANING_CODES.map((code) => [code, 0]));
+  for (const { report } of reports) {
+    for (const issue of report.issues) {
+      if (issue.code in counts) counts[issue.code] += 1;
+    }
+  }
+  return counts;
 }
 
 function collectGraphRefs(frontmatter) {

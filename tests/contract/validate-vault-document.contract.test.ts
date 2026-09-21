@@ -24,10 +24,16 @@ interface ValidatorReport {
   }>;
 }
 
-const VALIDATORS: Record<string, (raw: string) => ValidatorReport> = {
+interface ValidatorOptions {
+  slug?: string;
+}
+
+type Validator = (raw: string, options?: ValidatorOptions) => ValidatorReport;
+
+const VALIDATORS: Record<string, Validator> = {
   'src/shared/lib (TS)': validateTs,
-  'mcp/src/validate.mjs': validateMcp as (raw: string) => ValidatorReport,
-  'cli/src/lib/validate.mjs': validateCli as (raw: string) => ValidatorReport,
+  'mcp/src/validate.mjs': validateMcp as Validator,
+  'cli/src/lib/validate.mjs': validateCli as Validator,
 };
 
 describe('validator contract — 3 implementations agree on issue codes', () => {
@@ -35,7 +41,7 @@ describe('validator contract — 3 implementations agree on issue codes', () => 
     describe(validatorName, () => {
       for (const c of VALIDATE_CASES) {
         it(c.name, () => {
-          const result = validate(c.input);
+          const result = validate(c.input, c.options);
           expect(result.ok).toBe(c.expectedOk);
           const codes = result.issues.map((i) => i.code).sort();
           expect(codes).toEqual([...c.expectedCodes].sort());

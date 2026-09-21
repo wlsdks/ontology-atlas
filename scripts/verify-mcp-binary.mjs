@@ -282,7 +282,7 @@ export async function verifyMcpBinary({ binaryPath, vaultPath, expectedMinTools 
       }),
     );
     child.stdin.write(request(2, 'tools/list'));
-    child.stdin.write(request(3, 'tools/call', { name: 'get_concept', arguments: { slug: 'project' } }));
+    child.stdin.write(request(3, 'tools/call', { name: 'get_concept', arguments: { slug: 'ontology-atlas' } } /* the dogfood project node; 'project' used to resolve by accident to elements/project, which the product-built vault does not have */));
 
     deadline = setTimeout(() => {
       finish(

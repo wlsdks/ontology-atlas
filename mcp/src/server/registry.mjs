@@ -9,6 +9,7 @@
  */
 
 import { AGENT_BRIEF_TASK_MAX_CHARS } from '../agent-brief-compact.mjs';
+import { CONSTRUCTION_GUIDE_TOPICS } from '../construction-card.mjs';
 import { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from '../construction-qualification.mjs';
 import {
   ELEMENT_NAMING_RULE_BATCH_EN,
@@ -355,8 +356,19 @@ const TOOLS = [
   {
     name: 'connection_info',
     description:
-      'Return the exact active vault root and code-repository root used by this MCP process, including how each root was resolved. Call first when a client may have stale configuration or multiple workspaces. Root changes require restarting the MCP process.',
-    inputSchema: { type: 'object', properties: {} },
+      'Return the exact active vault root and code-repository root used by this MCP process, including how each root was resolved. Call first when a client may have stale configuration or multiple workspaces. Root changes require restarting the MCP process. '
+      + 'Always returns `guide.card`, the construction card, plus `guide.topics`. Pass `guide` to also receive `guideText`, the full text of that topic, because a host may truncate the server `instructions` while tool results arrive whole.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        guide: {
+          type: 'string',
+          enum: [...CONSTRUCTION_GUIDE_TOPICS],
+          description:
+            'Return the long-form rules for one topic in `guideText`: `meta_model` (the five authorable kinds and the is_a boundary), `construction` (the rules to read before add_concept), `lifecycle` (review before write), `write_safety` (the dry-run/confirm and expected_mtime patterns), `workflows` (the three starting workflows), or `competency` (the exact `## Competency answers` section `finalize_project_meaning` parses).',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -382,8 +394,18 @@ const TOOLS = [
           required: ['name', 'version', 'readOnly', 'toolCount', 'toolNames', 'toolsetHash'],
           additionalProperties: false,
         },
+        guide: {
+          type: 'object',
+          properties: {
+            card: NON_BLANK_STRING_SCHEMA,
+            topics: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+          },
+          required: ['card', 'topics'],
+          additionalProperties: false,
+        },
+        guideText: NON_BLANK_STRING_SCHEMA,
       },
-      required: ['vaultRoot', 'repoRoot', 'vaultResolution', 'repoResolution', 'sameRoot', 'restartRequiredForRootChange', 'server'],
+      required: ['vaultRoot', 'repoRoot', 'vaultResolution', 'repoResolution', 'sameRoot', 'restartRequiredForRootChange', 'server', 'guide'],
       additionalProperties: false,
     },
   },

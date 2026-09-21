@@ -20,6 +20,20 @@ name is evidence to investigate—not a domain by itself.
 Kind and relation contract:
 https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
+## Includes
+
+- The one responsibility this area owns, in your own words, once you rename it.
+
+## Excludes
+
+- The neighbouring area this one is most often confused with, so a reader can
+  tell the two apart.
+
+## Uncertainty
+
+- Nothing here has been checked against your code yet: this file is a starter,
+  not an observation.
+
 ## How to fill it in
 
 - Describe the responsibility it owns, what is inside and outside the boundary,

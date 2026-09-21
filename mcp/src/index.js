@@ -192,7 +192,7 @@ server.setRequestHandler('tools/call', async (request) => {
 
     switch (name) {
       case 'connection_info':
-        return ok(connectionInfoTool());
+        return ok(connectionInfoTool(args));
       case 'git_status':
         return ok(gitStatusTool());
       case 'git_history':

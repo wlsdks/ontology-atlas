@@ -9,6 +9,66 @@ which is all a comparison needs.
 
 ---
 
+## 2026-09-21 — the app's ACP first-run door, reproduced headless, before and after the construction card
+
+**Subject**: an unfamiliar MIT Node.js command-line argument-parsing library
+(216 files, one entry file, six implementation files, hand-written type
+declarations). Not a cold CLI bootstrap: this row reproduces the desktop app's
+"Build a first ontology for my code" door without the app — `claude -p` with
+the vault MCP attached at `<project>/atlas`, the session's exact appended
+handoff as `--append-system-prompt`, the exact first-run prompt as turn one,
+then "go ahead" resumed as turn two. Builder: Opus. Reader: Sonnet with the
+Atlas read tools only and six questions sealed before any vault existed, plus a
+seventh asked afterwards: which claims does the vault itself mark as unchecked.
+
+### Construction
+
+| measurement | before (main) | after (final committed card) |
+|---|---:|---:|
+| person turns until nodes existed | **3** (turn 2 dead-ended at `canWrite:false`, $3.23, empty vault) | **2** |
+| builder cost / wall | $10.06 / 312 s | $5.18 / 173 s |
+| nodes written | 16 (1 project, 3 domains, 8 capabilities, 4 elements) | 20 (1 project, 4 domains, 9 capabilities, 6 elements) |
+| validate / path drift | 0 problems, 12/12 files | 0 problems, all `path:` entries files, slugs under kind folders |
+| finalize receipt | not written (builder believed it gated) | written; `impact` honestly `partial` (static imports only) |
+| write-door findings on the result | project `Excludes` carried 3 evidence-limit bullets | 0 |
+| nodes stating an unknown (`## Uncertainty`) | 16/16 | **20/20** (an intermediate card without the clause produced 0/12) |
+
+Two intermediate runs on the branch drove the last two card clauses: one wrote
+19 nodes flat at the vault root (nothing warned; now `slug-outside-kind-folder`),
+one read the Atlas MCP source outside the vault to learn the competency layout
+(now a guide topic and the finalize refusal), and one, after both fixes, dropped
+every per-node unknown (now clause 3 requires `## Uncertainty`).
+
+### Persisted-vault-only handoff
+
+- Before: 5 of 6 answered with slug and path citations; q4 (where the
+  unknown-option error is raised) honestly partial. 29 turns, 135 s, $0.42.
+- After: 5 of 6 answered with citations and line ranges; q4 again "the vault
+  does not say", and this time the vault says why — each error node's
+  Uncertainty line records that the throwing call sites were not read. The
+  seventh question returned a per-node list for all 20 nodes (which lines were
+  read of 2,790, that no code was executed, that the source reader refused the
+  README so headings were corroborated by name only). 15 turns, 71 s, $0.37.
+
+### Accuracy
+
+Every cited fact was grepped in the clone: before **14/14**, after **12/12**
+including the recorded line numbers (`node:child_process` import at line 2, the
+executable-handler fields at lines 43–44, the lazily created help option at
+lines 79–87). Invented claims: 0 in either arm.
+
+### What this row does not show
+
+One repository, one builder model, one run per arm; the grader was the
+coordinating agent, not an independent one; the app's permission card was
+replaced by an allow-list, so "the person approves every write" was assumed.
+Node counts vary between runs of the same arm (12, 19, 20) under "prefer few,
+well-evidenced concepts"; that is builder variance, not a measured effect.
+The bounded source reader refused the README, so the project's own statement
+of purpose reached the builder only through the package manifest.
+
+---
+
 ## 2026-08-31 — bounded Rust dependency coverage replay
 
 **Subject**: the same unfamiliar dual MIT/Apache-2.0 optical-record Rust

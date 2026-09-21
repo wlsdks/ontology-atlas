@@ -370,13 +370,30 @@ const VAULT_MCP_SENTENCE =
   'The `atlas-vault` MCP server is already connected to this exact folder. Use it for everything about this graph. Do not shell out, list directories, or open the markdown files yourself to find your way around — the tools already answer those questions, and reading the files by hand is how stale and duplicated nodes get made. When you report counts, keep their units explicit and treat `query_ontology` health `relationCensus` as the authority: MCP `graph.edges` and `internalEdges` count compiled frontmatter relation declarations, so parent and child declarations can describe the same containment twice; the map\'s canonical relation census counts deduplicated normalized typed edges across the loaded ontology, not the current view filter. The MCP process does not know that app-side numeric census. Neither number is wrong, and never present them as the same census.';
 
 /**
- * Construction is a different path from ordinary one-node editing. The MCP server already owns
- * the reviewPlan/qualification/writePlan contract; ACP has to tell the agent to enter that path or
- * it will take the tempting shortcut of calling add_concepts/add_relations from a folder scan.
- * This is a routing instruction, not a qualification result and never grants write authority.
+ * Construction is a different path from ordinary one-node editing. This is a routing
+ * instruction, not a qualification result, and it never grants write authority — every write it
+ * leads to still stops at the permission card.
+ *
+ * ⚠️ **It used to route every build into the bulk qualification lifecycle, which cannot finish
+ * here.** Reproduced on the app's own first-run path (the 「build a first ontology」 door, this
+ * handoff, the atlas-vault MCP) against an unfamiliar repository: turn 1 surveyed for 41 s and
+ * wrote nothing; after the person said "go ahead and build all of it", turn 2 spent 146 s and
+ * $3.23 authoring a full `analyze_repo_structure` proposal, got `canWrite:false` because an app
+ * session has no independent evaluator, and stopped with the vault still empty — the small-batch
+ * path was mentioned only afterwards, so a third "go" was needed before any node existed.
+ *
+ * So the sentence now describes one path that completes in this session, and names the bulk
+ * route once as the thing a terminal run with a separate evaluator lane can take.
+ *
+ * **What a body must carry is stated here because the write door only advises.** `add_concepts`
+ * returns `definition-missing`, `boundary-missing`, `uncertainty-missing`, `epistemic-exclusion`,
+ * `folder-only-evidence`, and `slug-outside-kind-folder` as findings, not refusals — an agent that
+ * learns the shape from them has already written the node. The `## Uncertainty` line is the one a
+ * prompt cannot leave out: a node with no stated unknown claims completeness, and an evidence
+ * limit pushed into `## Excludes` states a product boundary that was never observed.
  */
 const VAULT_CONSTRUCTION_SENTENCE =
-  'When the person asks you to build or rebuild an ontology from this repository, use the construction lifecycle: verify `connection_info`, call `index_project` for the read-only source packet, author a complete proposal, and call `analyze_repo_structure` without qualification first. Show the returned reviewPlan, source/meaning gaps, and exact plan digest in plain language. Do not call `add_concepts`, `add_relations`, `patch_concept`, or `finalize_project_meaning` for that bulk plan while `canWrite` is false, `writePlan` is absent, or `writeEligibility` is not executable. Only after the person explicitly accepts that exact plan and visible gaps, and an independent qualification packet makes the unchanged proposal return an exact writePlan, pass those rows unchanged to the batch writers, then validate and compile. If an independent evaluator is unavailable, do not invent one: keep the bulk plan review-only and offer a small evidence-backed batch for the person to inspect.';
+  'When the person asks you to build or rebuild this repository\'s ontology: verify `connection_info` and read the construction card in its `guide`; survey with `analyze_repo_structure`, `index_project`, and `infer_imports` where structure does not say what depends on what; propose in plain sentences — each candidate one definition, what it includes and excludes, and the file proving it — preferring few well-evidenced concepts to many thin ones; then wait. Once they agree, write in reviewed batches of ≤12 with `add_concepts`: each slug under its kind folder, each body carrying the definition, `## Includes` / `## Excludes`, an `## Uncertainty` line naming what you did not read or could not check, and on a capability or element a `path:` naming a file. Then `add_relations` each with a `why`, `validate_vault`, `connect_project_source`, `finalize_project_meaning`. Answer every warning by the repair it names, or say why not. This session does not have an independent evaluator, and the bulk `analyze_repo_structure` writePlan route needs one, so do not author a qualification proposal or wait for `canWrite`; it stays open to a terminal run with one. Do not fabricate an evaluator.';
 
 function vaultHandoffPrompt(hasVaultMcp: boolean, locale: string): string {
   const rules = hasVaultMcp

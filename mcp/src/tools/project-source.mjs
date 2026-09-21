@@ -4,6 +4,7 @@
  * `finalize_project_meaning` receipt.
  */
 
+import { COMPETENCY_SECTION_HINT_EN } from '../construction-card.mjs';
 import {
   MEANING_COMPETENCY_CONTRACT,
   MEANING_COMPETENCY_EVALUATOR,
@@ -332,7 +333,17 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
     throw new Error('finalize_project_meaning blocked: a valid project source receipt is required first.');
   }
 
-  const competency = parseProjectCompetencyMarkdown(context.projectDoc.body);
+  // The parser accepts one exact shape and names only what it tripped on, which
+  // left a caller reading this server's source to learn the layout. Say the
+  // layout here, and point at the guide that carries it in full, because a host
+  // may have truncated the `instructions` that would otherwise have explained it.
+  let competency;
+  try {
+    competency = parseProjectCompetencyMarkdown(context.projectDoc.body);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`${reason} ${COMPETENCY_SECTION_HINT_EN}`);
+  }
   const witnessAssessment = deriveMeaningAssessment({
     projectSlug: canonicalSlug,
     graphHash: context.graphHash,

@@ -24,6 +24,7 @@ export interface ClusterFrameResult {
 
 export interface ClusterFrameStageSources {
   expandedParentsRef: SourceRef<ReadonlySet<string>>;
+  overviewFitRef: SourceRef<"spine" | "full">;
   realmExpandChainRef: SourceRef<{
     rootId: string;
     chain: ReadonlySet<string>;
@@ -38,9 +39,21 @@ export interface ClusterFrameStageSources {
   batchAppearStartRef: SourceRef<Map<string, number>>;
 }
 
+export function clusterBatchShownCount(
+  rankedCount: number,
+  overviewFit: "spine" | "full",
+  revealedBatches: number | undefined,
+  batchSize: number,
+): number {
+  return overviewFit === "full"
+    ? rankedCount
+    : Math.max(1, revealedBatches ?? 1) * batchSize;
+}
+
 export function createClusterFrameStage(sources: ClusterFrameStageSources) {
   const {
     expandedParentsRef,
+    overviewFitRef,
     realmExpandChainRef,
     realmDataRef,
     focusedSlugRef,
@@ -262,9 +275,12 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
         // shown = batches × batch size, the same arithmetic as
         // `selectiveEgoNeighbors`, sliced directly to preserve order. The
         // remainder collapses behind a "+N more" chip.
-        const shown =
-          Math.max(1, clusterRevealBatchesRef.current.get(parentId) ?? 1) *
-          expandPrefRef.current.batchSize;
+        const shown = clusterBatchShownCount(
+          ranked.length,
+          overviewFitRef.current,
+          clusterRevealBatchesRef.current.get(parentId),
+          expandPrefRef.current.batchSize,
+        );
         const visibleOrdered = ranked.slice(0, shown);
         const hidden = ranked.slice(shown);
         for (const id of visibleOrdered) batchAppearVisible.add(id);
@@ -328,4 +344,3 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
     return result;
   };
 }
-

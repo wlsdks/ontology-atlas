@@ -10,6 +10,14 @@ import {
   verifyTaskNavigationEvidenceCoordinate,
 } from './task-navigation-evidence.mjs';
 import { parseSourceRangeCitation } from './source-range-citation.mjs';
+/*
+ * The rule moved to the text layer so the write-path meaning findings can
+ * apply the same sentence without importing this module — that import closed
+ * a cycle (`ontology-engine` → findings → here → `ontology-engine`). One
+ * implementation, two callers; the behaviour is byte-identical to the copy
+ * that used to live below.
+ */
+import { isEpistemicExclusionBoundary } from './construction-rules.mjs';
 
 const DEFAULT_THRESHOLDS = Object.freeze({
   conceptPrecision: 0.8,
@@ -854,19 +862,6 @@ function validateOptionalConceptBoundaryList(value, path, findings) {
   ));
 }
 
-function isEpistemicExclusionBoundary(value) {
-  const normalized = String(value).replace(/\s+/g, ' ').trim().toLowerCase();
-  return (
-    /\bnot\s+(?:established|asserted|proven|verified|measured|observed|known|confirmed)\b/.test(normalized) ||
-    /\bremain(?:s|ed)?\s+outside\s+(?:this|the)\s+(?:bounded\s+)?(?:scan|evidence)\b/.test(normalized) ||
-    // A 2026-08-28 field trial encoded “operations not named in the bounded
-    // semantic excerpt” as product scope. A source-hidden reader then upgraded
-    // four observed examples to the only operations the capability covers,
-    // while the source documented more. Missing from selected evidence is an
-    // uncertainty, never a negative product fact.
-    /\bnot\s+(?:named|listed|mentioned|included|covered|present)\s+in\s+(?:this|the)\s+(?:bounded\s+)?(?:semantic\s+)?(?:excerpt|evidence|scan|packet)\b/.test(normalized)
-  );
-}
 
 function alignedSemanticAuthoritySources({
   sources,

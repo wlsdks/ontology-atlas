@@ -714,6 +714,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     },
     clusterFrameStage: {
       expandedParentsRef,
+      overviewFitRef,
       realmExpandChainRef,
       realmDataRef,
       focusedSlugRef,

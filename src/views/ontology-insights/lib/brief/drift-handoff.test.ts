@@ -58,3 +58,29 @@ describe('the request names what the tools take', () => {
     expect(request).toContain('Do not write to the vault');
   });
 });
+
+describe('the request says where an unknown goes', () => {
+  /*
+   * Asked only to "propose the sentence to change", an agent that cannot verify a claim proposes
+   * striking it, and the vault then reads as if that boundary had been checked and found absent.
+   * The vault has a place for the difference, and the MCP write door names that place as the
+   * repair for an unstated unknown, so the request names it too.
+   */
+  it('routes what could not be checked into the Uncertainty line, not into a deletion', () => {
+    const request = buildDriftHandoff({ rows, locale: 'en' })!;
+    expect(request).toContain('`## Uncertainty` line');
+    expect(request).toContain('do not propose deleting a claim');
+  });
+
+  it('asks for the file the judgement was read in, so it can be rechecked', () => {
+    const request = buildDriftHandoff({ rows, locale: 'en' })!;
+    expect(request).toContain('naming the exact file you read them in');
+  });
+
+  it('says the same in Korean, because the person reads this before sending it', () => {
+    const request = buildDriftHandoff({ rows, locale: 'ko' })!;
+    expect(request).toContain('`## Uncertainty` 줄');
+    expect(request).toContain('주장을 지우지는 마');
+    expect(request).toContain('어느 파일의 어느 줄에서 읽었는지');
+  });
+});

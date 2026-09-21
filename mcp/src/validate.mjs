@@ -21,8 +21,20 @@ export function isValidVaultTitle(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+import {
+  boundaryFindings,
+  definitionFinding,
+  epistemicExclusionFinding,
+  uncertaintyFinding,
+} from './meaning-findings.mjs';
 import { parseFrontmatter } from './parser.mjs';
-import { inspectMergedUids, missingExpectedFields, nodeUidIssue } from './schema.mjs';
+import {
+  folderForKind,
+  inspectMergedUids,
+  missingExpectedFields,
+  nodeUidIssue,
+} from './schema.mjs';
+import { slugOutsideKindFolderMessage } from './construction-rules.mjs';
 
 /**
  * Detects silent corruption in vault frontmatter. Guarantees the same issue codes
@@ -40,8 +52,14 @@ import { inspectMergedUids, missingExpectedFields, nodeUidIssue } from './schema
  *  - malformed-frontmatter-line (error)
  *  - malformed-quoted-scalar (error)
  *  - dangling-graph-reference (warning) — whole-vault graph validation
+ *  - definition-missing / boundary-missing / epistemic-exclusion /
+ *    uncertainty-missing (warning) — the body half, read from the same raw text
+ *  - slug-outside-kind-folder (warning) — only when the caller knows the slug
  *
  * @param {string} raw
+ * @param {{ slug?: string }} [options] the document's vault-relative slug, when
+ *   the caller knows it. `slug-outside-kind-folder` is a fact about where the
+ *   file sits, so a caller holding only the bytes cannot be told it.
  * @returns {{ ok: boolean, issues: Array<{code: string, severity: 'error'|'warning', message: string}> }}
  */
 export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
@@ -66,6 +84,24 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   // A per-file check cannot catch it in principle — either file alone looks perfect.
   'duplicate-slug',
   'duplicate-uid',
+  /*
+   * The six meaning findings the write door already reports to the agent.
+   *
+   * They arrived here on 2026-09-22 because the door alone was not enough: an
+   * agent reads them, tells the person "validation is clean", and every surface
+   * the person can check for themselves agreed. Five are decided by one
+   * document's own text and live in `validateVaultDocument`;
+   * `folder-only-evidence` needs a repository root and the filesystem, so it is
+   * a whole-vault pass beside the dangling-reference one. All six are warnings —
+   * `construction-rules.mjs` rule 5 does not stop being true because the reader
+   * changed.
+   */
+  'definition-missing',
+  'boundary-missing',
+  'epistemic-exclusion',
+  'uncertainty-missing',
+  'slug-outside-kind-folder',
+  'folder-only-evidence',
 ]);
 
 export const KNOWN_VAULT_KINDS = [
@@ -95,7 +131,7 @@ const GRAPH_ARRAY_KEYS = [
   'broader',
 ];
 
-export function validateVaultDocument(raw) {
+export function validateVaultDocument(raw, options = {}) {
   const issues = [];
   // The same normalization the parser applies (bug sweep 2026-09-01): a
   // Windows-authored `﻿---` file failed `startsWith('---')`, so this
@@ -120,7 +156,7 @@ export function validateVaultDocument(raw) {
     return { ok: !issues.some((issue) => issue.severity === 'error'), issues };
   }
 
-  const { frontmatter, diagnostics = [] } = parseFrontmatter(raw);
+  const { frontmatter, body = '', diagnostics = [] } = parseFrontmatter(raw);
   pushFrontmatterDiagnostics(diagnostics, issues);
   const keys = Object.keys(frontmatter);
 
@@ -179,11 +215,92 @@ export function validateVaultDocument(raw) {
 
   pushNonCanonicalGraphArrayIssues(frontmatter, issues);
   pushSwallowedRelationNoteIssues(frontmatter, issues);
+  pushMeaningIssues({ frontmatter, body, slug: resolveDocumentSlug(frontmatter, options), issues });
 
   return {
     ok: !issues.some((i) => i.severity === 'error'),
     issues,
   };
+}
+
+/**
+ * The slug this document is addressed by, when anybody knows it.
+ *
+ * The caller's value wins: it is the file's real position in the vault, while
+ * `slug:` in frontmatter is a claim the document makes about itself, and a
+ * document can claim the wrong one. The fallback exists because two of the three
+ * validators (the app's raw path, and a caller holding only bytes) never have the
+ * position, and a self-declared slug is still better than pretending the node has
+ * no name.
+ */
+function resolveDocumentSlug(frontmatter, options) {
+  const given = typeof options?.slug === 'string' ? options.slug.trim() : '';
+  if (given) return given;
+  const declared = typeof frontmatter?.slug === 'string' ? frontmatter.slug.trim() : '';
+  return declared;
+}
+
+/**
+ * The half of a node the frontmatter checks never opened.
+ *
+ * **Why this is a validator question and not only a write-door one.** Every one
+ * of these findings already existed, and an agent already read them at
+ * `add_concept` time. What did not exist was any way for the *person* to ask.
+ * `validate_vault`, `ontology-atlas validate`, and the app's to-do queue all
+ * answered from frontmatter alone, so an agent could report six findings, call
+ * the vault clean in the same sentence, and nothing the owner could run
+ * disagreed. A finding nobody but the writer can see is a finding that becomes
+ * reassurance.
+ *
+ * The logic is **imported, never re-derived**: `meaning-findings.mjs` owns these
+ * five judgements for the write door, and two copies would mean the door and the
+ * validator disagreeing about one body. Severity is `warning` for all of them,
+ * which is construction rule 5 restated — the vault is valid, it is thin, and
+ * telling those apart is the whole point of the two severities.
+ *
+ * `folder-only-evidence` is deliberately absent. It has to ask the filesystem
+ * whether one cited path is a directory, which needs a repository root this
+ * function has no way to know; it runs in `validate_vault` and in the CLI
+ * command, beside the other whole-vault passes.
+ */
+function pushMeaningIssues({ frontmatter, body, slug, issues }) {
+  const kind = typeof frontmatter?.kind === 'string' ? frontmatter.kind.trim() : '';
+  if (!kind || !KNOWN_VAULT_KINDS.includes(kind)) return;
+  const title = typeof frontmatter?.title === 'string' ? frontmatter.title : '';
+  const findings = [
+    definitionFinding({ kind, slug, title, body }),
+    ...boundaryFindings({ kind, slug, title, body }),
+    uncertaintyFinding({ kind, slug, title, body }),
+    epistemicExclusionFinding({ kind, slug, title, body }),
+  ];
+  for (const finding of findings) {
+    if (!finding) continue;
+    issues.push({ code: finding.code, severity: 'warning', message: finding.message });
+  }
+  pushSlugOutsideKindFolderIssue({ kind, slug, issues });
+}
+
+/**
+ * A node written at the vault root instead of inside its kind folder.
+ *
+ * Silent when the slug is unknown, because the question is literally "where does
+ * this file sit" and guessing an answer would accuse every document a caller
+ * handed over as bytes. Silent for `project` and `document` too — `folderForKind`
+ * returns an empty prefix for both, and those kinds live at the root by design.
+ */
+function pushSlugOutsideKindFolderIssue({ kind, slug, issues }) {
+  if (!slug) return;
+  const folder = folderForKind(kind);
+  if (!folder || slug.startsWith(folder)) return;
+  issues.push({
+    code: 'slug-outside-kind-folder',
+    severity: 'warning',
+    message: slugOutsideKindFolderMessage({
+      slug,
+      kind,
+      canonicalSlug: `${folder}${slug}`,
+    }),
+  });
 }
 
 /**

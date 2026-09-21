@@ -7,6 +7,33 @@ import {
 
 const VALID_UID = "00000000-0000-4000-8000-000000000001";
 
+/**
+ * A finished body, per kind.
+ *
+ * The validator reads the prose too since 2026-09-22, so a case written to test
+ * one frontmatter rule needs a body that answers every meaning question —
+ * otherwise the rule under test arrives buried under findings about a body
+ * nobody meant to write.
+ */
+const FINISHED_BODY: Record<string, string> = {
+  domain:
+    "\n# Area\n\n" +
+    "Owns how an outside coding agent reaches this folder and what it may change.\n\n" +
+    "## Includes\n\n- The stdio child this product starts itself\n\n" +
+    "## Excludes\n\n- The coding agent provider traffic, which nothing here sees\n\n" +
+    "## Uncertainty\n\n- The Windows launcher path was never exercised\n",
+  capability:
+    "\n# Ability\n\n" +
+    "Turns a reviewed folder of Markdown into a graph a reader can walk without opening code.\n\n" +
+    "## Includes\n\n- Reading frontmatter relations from every document\n\n" +
+    "## Excludes\n\n- Drawing the result on screen, which the map surface owns\n\n" +
+    "## Uncertainty\n\n- The symlinked-subtree case was never measured\n",
+  element:
+    "\n# Role\n\n" +
+    "Holds the one address every agent-facing link resolves to, so a moved surface renames once.\n\n" +
+    "## Uncertainty\n\n- The older build deep-link fallback was not read\n",
+};
+
 describe("validateVaultDocument", () => {
   it("frontmatter 자체가 없는 docs 파일은 ok", () => {
     const r = validateVaultDocument("# Heading\n\n그냥 메모.");
@@ -65,7 +92,7 @@ describe("validateVaultDocument", () => {
     // capability/element warn with `missing-expected-field` when `domain` is
     // absent; this case is about recognising the kind, so `domain` is supplied
     // to keep the result clean.
-    const raw = `---\nuid: ${VALID_UID}\nkind:    capability   \ndomain: domains/auth\n---\n`;
+    const raw = `---\nuid: ${VALID_UID}\nkind:    capability   \ndomain: domains/auth\n---\n${FINISHED_BODY.capability}`;
     const r = validateVaultDocument(raw);
     expect(r.ok).toBe(true);
     expect(r.issues).toHaveLength(0);
@@ -85,7 +112,7 @@ describe("validateVaultDocument", () => {
     for (const c of cases) {
       const extraLine = c.extra ? `\n${c.extra}` : "";
       const r = validateVaultDocument(
-        `---\nuid: ${VALID_UID}\nkind: ${c.kind}${extraLine}\n---\n`,
+        `---\nuid: ${VALID_UID}\nkind: ${c.kind}${extraLine}\n---\n${FINISHED_BODY[c.kind] ?? ""}`,
       );
       expect(r.ok, `kind=${c.kind}`).toBe(true);
       expect(r.issues, `kind=${c.kind}`).toHaveLength(0);

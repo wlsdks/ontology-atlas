@@ -78,6 +78,17 @@ function vaultRef(vaultPath: string | null | undefined): string {
  * not expire; a fresh session simply re-authors the proposal by default and
  * invalidates its own approval. Saying "save what you showed them" costs one
  * sentence and removes that whole failure.
+ *
+ * ## Why the incremental path is step 6 and the bulk route follows it
+ *
+ * Naming the open path was not enough while it sat at step 9, behind three steps
+ * of a route this reader usually cannot take. Reproduced on the app's own
+ * first-run path against an unfamiliar repository: the agent spent a whole turn
+ * authoring the full proposal, hit `canWrite:false`, and only then offered the
+ * small batches — the person had already approved the build and still had an
+ * empty vault. So the reviewed small batch is now the first thing described, and
+ * the bulk lifecycle is stated once, as what a session with an independent
+ * evaluation lane does instead.
  */
 export function buildAgentAnalyzePrompt({
   vaultPath,
@@ -105,29 +116,41 @@ export function buildAgentAnalyzePrompt({
     `5. Qualify project meaning separately: report project source currentness,`,
     `   competency questions, witnesses, gaps, and any review-required state.`,
     `   Structural readiness is not semantic qualification.`,
-    `6. Present the proposal and its qualification gaps for human review. Do`,
-    `   not write the proposal wholesale while proposalValidation.canWrite is`,
-    `   false: approval alone does not make it true, and only the writePlan`,
-    `   the server returns authorizes the plan as a whole.`,
-    `7. After the human accepts, save the exact proposal you showed them,`,
-    `   unchanged. The plan digest their acceptance is bound to is derived`,
+    `6. Present the proposal and its qualification gaps for human review,`,
+    `   then land what they accept the way a single session can actually`,
+    `   finish: a few concepts at a time. Show one short batch with its`,
+    `   evidence, write what they approve with add_concepts and`,
+    `   add_relations, and repeat. Every body carries its definition`,
+    `   sentence, its Includes/Excludes boundary, and an Uncertainty line`,
+    `   naming what you could not check; an evidence limit belongs in that`,
+    `   line and never in an Excludes bullet. Every relation carries a why,`,
+    `   every slug sits under its kind folder, and a capability or element`,
+    `   carries a path naming a file.`,
+    `   After a batch lands, run validate_vault, and once the shape is`,
+    `   settled call connect_project_source and finalize_project_meaning.`,
+    `   Answer every warning a tool returns by the repair it names, or say`,
+    `   why you are not. That path is not gated on the qualification below,`,
+    `   so it reaches a vault the person can cite from today.`,
+    `7. The bulk route is a different one, and it belongs to a session that`,
+    `   has an independent evaluation lane. Do not write the proposal wholesale`,
+    `   while proposalValidation.canWrite is false: approval alone does not`,
+    `   make it true, and only the writePlan the server returns authorizes`,
+    `   the plan as a whole.`,
+    `8. On that route, after the human accepts, save the exact proposal you`,
+    `   showed them, unchanged. Their acceptance binds to a digest derived`,
     `   from that proposal, so resubmitting it verbatim reproduces the same`,
-    `   digest, while re-deriving the proposal produces a different one their`,
-    `   acceptance no longer matches.`,
-    `8. Releasing that whole plan additionally needs an independent evaluation`,
-    `   lane: the server rejects a qualification whose evaluator is its`,
-    `   builder. Do not fabricate an evaluator, and do not keep calling the`,
-    `   server hoping canWrite turns true on its own.`,
+    `   digest, while re-deriving it produces a different one their`,
+    `   acceptance no longer matches. Releasing it also needs an evaluator`,
+    `   that is not its builder: the server rejects a qualification whose`,
+    `   evaluator is its builder. Do not fabricate an evaluator, and do not`,
+    `   keep calling the server hoping canWrite turns true on its own.`,
     `9. If you cannot run that lane as a separate context, stop pursuing the`,
     `   whole plan and say so: the plan is accepted and waiting on an`,
     `   independent evaluation, and here is where you saved the proposal.`,
-    `   Then offer the path that stays open. Add a few concepts at a time:`,
-    `   show the person one short batch with its evidence, write what they`,
-    `   approve with add_concepts and add_relation, and repeat. That path is`,
-    `   not gated on the qualification, so it reaches a vault they can cite`,
-    `   from today. Follow the nextStep the server returns throughout; this`,
-    `   server publishes its full construction lifecycle in its own`,
-    `   instructions, so read that rather than inferring the rest.`,
+    `   Keep building by the reviewed batches of step 6 meanwhile. Follow`,
+    `   the nextStep the server returns throughout; this server publishes`,
+    `   its full construction lifecycle in its own instructions, so read`,
+    `   that rather than inferring the rest.`,
     `10. Never use delete_concept, merge_concepts, rename_concept,`,
     `   absorb_document, or git_snapshot as part of ordinary synchronization`,
     `   unless the human explicitly requested that operation and reviewed its`,

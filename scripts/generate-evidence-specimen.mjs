@@ -62,7 +62,7 @@ const VAULT = path.join(ROOT, 'docs', 'ontology');
 const OUT = path.join(ROOT, 'src', 'views', 'download', 'model', 'evidence-specimen.generated.ts');
 
 /** The pinned specimen. Changing this is a content decision, not a refactor. */
-const SPECIMEN_SLUG = 'capabilities/mcp-server';
+const SPECIMEN_SLUG = 'capabilities/mcp-tool-server';
 /** Longer lines are elided and counted — `relation_notes` carries a paragraph per edge. */
 const MAX_LINE = 64;
 /**

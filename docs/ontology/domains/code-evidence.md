@@ -1,0 +1,28 @@
+---
+uid: 1fb4a663-aa24-4cfc-8e61-722261aa6b57
+slug: domains/code-evidence
+kind: domain
+title: Code evidence
+display_en: Code evidence
+display_ko: 코드 근거
+capabilities: [capabilities/analysis-archive, capabilities/architecture-conformance, capabilities/construction-qualification-gate, capabilities/evidence-drift-detection, capabilities/import-dependency-inference, capabilities/project-source-binding, capabilities/repo-structure-analysis]
+created_by: "agent:claude-code"
+relation_notes: { capabilities/repo-structure-analysis: You asked which capabilities sit under each domain; you approved this one under code evidence., capabilities/import-dependency-inference: You asked which capabilities sit under each domain; you approved this one under code evidence., capabilities/project-source-binding: You asked which capabilities sit under each domain; you approved this one under code evidence., capabilities/evidence-drift-detection: You asked which capabilities sit under each domain; you approved this one under code evidence., capabilities/architecture-conformance: You asked which capabilities sit under each domain; you approved this one under code evidence., capabilities/construction-qualification-gate: "You asked me to add any capability the code shows that the map lacks; this is one, and the tool asked the domain to declare it back.", capabilities/analysis-archive: "You asked me to add any capability the code shows that the map lacks; this is one, and the tool asked the domain to declare it back.", elements/project-identity-detection: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/semantic-evidence-packet: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/non-js-implementation-evidence: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/business-meaning-gate: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/source-element-candidates: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/rust-feature-evidence: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/import-reconciliation: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/source-inspection-probe: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/source-witness-claims: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/source-receipt-store: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/source-remedy-map: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/source-root-discovery: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/evidence-verdict-rule: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/git-evidence-dating: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/architecture-record-receipt: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back., elements/qualification-packet-evaluator: You asked me to answer the warnings the tools return; this one asked the domain to declare the role back. }
+elements: [elements/architecture-record-receipt, elements/business-meaning-gate, elements/evidence-verdict-rule, elements/git-evidence-dating, elements/import-reconciliation, elements/non-js-implementation-evidence, elements/project-identity-detection, elements/qualification-packet-evaluator, elements/rust-feature-evidence, elements/semantic-evidence-packet, elements/source-element-candidates, elements/source-inspection-probe, elements/source-receipt-store, elements/source-remedy-map, elements/source-root-discovery, elements/source-witness-claims]
+---
+
+The link from a recorded meaning back to the source file that proves it, and the detection of when the record and the code have drifted apart.
+
+## Includes
+- Scanning a repository's structure for candidate concepts and the file that evidences each.
+- Deriving static import edges as reviewable dependency candidates.
+- Binding a project to the local code folder it describes so its evidence can be rechecked later.
+- Reporting when a cited file has moved or changed, and setting reviewed architecture rules beside the imports actually observed.
+
+## Excludes
+- Deciding what a meaning should say; folders, README headings and imports are evidence, never accepted meaning on their own.
+- Running, building, or testing the analyzed code.
+- Copying the analyzed code into the vault.
+
+## Uncertainty
+- Read from the module names under `mcp/src/analyze/`, `mcp/src/infer-imports.mjs`, `mcp/src/detect-drift.mjs`, `mcp/src/architecture-profile.mjs` and `mcp/src/tools/project-source.mjs`, plus one live `analyze_repo_structure` and one focused `infer_imports` run against this repository. Which languages the scanner handles well in practice, and how drift behaves on a repository with a long history, were not measured here.

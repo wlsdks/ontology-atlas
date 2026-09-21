@@ -35,7 +35,7 @@ const TASKS = [
     id: "A1",
     label: "Domain composition",
     prompt:
-      "이 repo 의 ontology vault (docs/ontology/) 에서 local-vault-management 도메인 아래에 어떤 capability 와 element 들이 있는지 정리해줘. 도메인 자체의 한 줄 설명도 포함.",
+      "이 repo 의 ontology vault (docs/ontology/) 에서 human-workbench 도메인 아래에 어떤 capability 와 element 들이 있는지 정리해줘. 도메인 자체의 한 줄 설명도 포함.",
   },
   {
     id: "A2",
@@ -47,7 +47,7 @@ const TASKS = [
     id: "A3",
     label: "Reference graph",
     prompt:
-      "capabilities/mcp-server 를 frontmatter 에서 참조하고 있는 모든 노드를 찾아 kind 별로 분류해줘.",
+      "capabilities/mcp-tool-server 를 frontmatter 에서 참조하고 있는 모든 노드를 찾아 kind 별로 분류해줘.",
   },
   {
     id: "B1",
@@ -96,10 +96,10 @@ const TASKS = [
     id: "D1",
     label: "Documented exclusion (meaning)",
     prompt:
-      "MCP 서버에 코드 심볼 검색을 넣으려고 해. 이 기능이 mcp-server capability 의 범위 안인지 밖인지, 이 프로젝트에 이미 기록된 경계가 뭐라고 말하는지 알려줘. 새로 판단하지 말고 기록된 것만.",
+      "MCP 서버에 코드 심볼 검색을 넣으려고 해. 이 기능이 mcp-tool-server capability 의 범위 안인지 밖인지, 이 프로젝트에 이미 기록된 경계가 뭐라고 말하는지 알려줘. 새로 판단하지 말고 기록된 것만.",
     /*
-     * The key is pinned to what `capabilities/mcp-server` `## Inclusions /
-     * Exclusions` says today. If that section changes, this key is wrong and must
+     * The key is pinned to what `capabilities/mcp-tool-server` `## Excludes`
+     * says today. If that section changes, this key is wrong and must
      * change with it — that is the point of keeping it beside the prompt.
      */
     key: {
@@ -110,7 +110,7 @@ const TASKS = [
        * a verdict that puts the request outside the capability.
        */
       boundary: [/\bAST\b/i, /제외|[Ee]xclud/, /범위 밖|밖입니다|밖에 있|out of scope|not in scope/i],
-      provenance: [/capabilities\/mcp-server/, /Inclusions? \/ Exclusions?|## Exclusions?/],
+      provenance: [/capabilities\/mcp-tool-server/, /Inclusions? \/ Exclusions?|## Exclude/],
       /*
        * Only unambiguous affirmative scope claims. A bare affirmation ("that is
        * right") was tried first and rejected: correct answers use it too, as in
@@ -120,7 +120,7 @@ const TASKS = [
        * The patterns themselves stay in the answer language, the way the prompts do:
        * they are match data, not prose.
        */
-      contradicts: [/범위\s*안에?\s*(포함|들어|속)/, /mcp-server\s*가?\s*담당해야/, /포함하는 것이 맞/],
+      contradicts: [/범위\s*안에?\s*(포함|들어|속)/, /mcp-tool-server\s*가?\s*담당해야/, /포함하는 것이 맞/],
     },
   },
   {
@@ -131,7 +131,7 @@ const TASKS = [
     key: {
       mustRefuse: false,
       boundary: [/read and write contract|읽기.{0,4}쓰기 계약|agent-facing/i],
-      provenance: [/capabilities\/vault-ontology/, /relation_notes|dependencies:/],
+      provenance: [/elements\/vault-kind-schema/, /relation_notes|dependencies:/],
       contradicts: [],
     },
   },
@@ -143,7 +143,7 @@ const TASKS = [
     key: {
       mustRefuse: false,
       boundary: [/Job Object|taskkill/i, /브라우저|[Bb]rowsers? cannot|프로세스를 실행할 수 없/],
-      provenance: [/capabilities\/acp-runtime/, /## Boundaries|`Boundaries`|Boundaries \uc139\uc158/],
+      provenance: [/elements\/acp-runtime-gate/, /## Boundaries|`Boundaries`|Boundaries \uc139\uc158/],
       // The vault says the opposite of each of these.
       contradicts: [/Windows.{0,30}(프로세스 트리|process tree).{0,30}(보장|책임|covered|guarantee)/i],
     },
@@ -179,7 +179,7 @@ const PARKED_CODEX_CONFIG = resolve(".codex/config.toml.benchmark-parked");
  * **Why a third mode, and why it has to hide the folder.**
  *
  * Measured 2026-08-25: in "MCP off" the agent answered D1 perfectly by running
- * `cat docs/ontology/capabilities/mcp-server.md`. Of course it did — the vault is
+ * `cat docs/ontology/capabilities/mcp-tool-server.md`. Of course it did — the vault is
  * ordinary markdown inside the repository, and removing the MCP server does not
  * remove the files.
  *

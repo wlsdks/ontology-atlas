@@ -232,10 +232,10 @@ test.describe("ontology view UI", () => {
       window.localStorage.setItem("demo:sample-source:v1", "dogfood");
     });
 
-    await page.goto("/en/ontology/?node=capability:mcp-server");
+    await page.goto("/en/ontology/?node=capability:mcp-tool-server");
 
     await expect(page).toHaveURL(
-      /\/en\/topology\/\?index=expanded&p=capability%3Amcp-server/,
+      /\/en\/topology\/\?index=expanded&p=capability%3Amcp-tool-server/,
     );
     await expect(page.locator("html")).toHaveAttribute(
       "data-topology-index",
@@ -245,7 +245,7 @@ test.describe("ontology view UI", () => {
     await expect(page.getByTestId("map-detail-panel")).toBeVisible();
     await expect(page.getByTestId("map-detail-panel")).toHaveAttribute(
       "data-selected-node-id",
-      "capability:mcp-server",
+      "capability:mcp-tool-server",
     );
   });
 });

@@ -7,7 +7,7 @@ import {
   normalizeLocaleLabels,
 } from '../schema.mjs';
 import { structuredRowErrorDetails } from '../server/rpc.mjs';
-import { VAULT_ROOT } from '../server/runtime.mjs';
+import { REPO_ROOT, REPO_ROOT_IS_GROUNDED, VAULT_ROOT } from '../server/runtime.mjs';
 import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../server/tool-schemas.mjs';
 import {
   requireAllowedObjectKeys,
@@ -20,6 +20,7 @@ import {
 import { formatAllowedValueError } from '../suggestions.mjs';
 import { isValidVaultTitle } from '../validate.mjs';
 import {
+  configureNodeEligibilityRepoRoot,
   detectDuplicateTitle,
   loadVaultDocs,
   updateDoc,
@@ -35,6 +36,16 @@ import {
 } from './vault-nodes.mjs';
 
 /** Creating and patching nodes: `add_concept`, `add_concepts`, `patch_concept`. */
+
+/*
+ * These three are the only writes that can set a `path:`, so this is where the
+ * write gate learns which repository a cited path resolves against. It cannot
+ * import the root itself — `server/runtime.mjs` imports `vault.mjs` — and an
+ * ungrounded root is passed as nothing rather than as a guess, because
+ * measuring this vault against whichever directory the process started in
+ * reports drift that is not there.
+ */
+configureNodeEligibilityRepoRoot(REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null);
 
 function addConcept({ slug, kind, title, domain, capabilities, elements, path, body, labels }, options = {}) {
   requireNonBlankString(slug, 'slug');

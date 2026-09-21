@@ -271,6 +271,12 @@ export const MAINTENANCE_KIND_VALUES = Object.freeze([
   //     and a compiled snapshot sees neither; only Git history separates the
   //     judgement from the membership it judges.
   'rejudge_summary_membership',
+  'definition_missing',
+  'boundary_missing',
+  'epistemic_exclusion',
+  'folder_only_evidence',
+  'slug_outside_kind_folder',
+  'uncertainty_missing',
 ]);
 const MAINTENANCE_PHASES = new Set(MAINTENANCE_PHASE_VALUES);
 const MAINTENANCE_SEVERITIES = new Set(MAINTENANCE_SEVERITY_VALUES);
@@ -525,7 +531,7 @@ export function createOntologyEngine(artifact, options = {}) {
     topHubs, uniqueEdges,
   });
   const { maintenancePlan } = createMaintenanceQueries({
-    artifact, nodeBySlug, nodeEligibilityFindings, staleSummaries,
+    artifact, nodes, nodeBySlug, sourceDocBySlug, nodeEligibilityFindings, staleSummaries,
     maintenancePhases: MAINTENANCE_PHASES, maintenanceSeverities: MAINTENANCE_SEVERITIES,
     maintenanceKinds: MAINTENANCE_KINDS, capabilityWithoutEvidenceCandidates,
     compareMaintenanceActions, countBy, cycles, danglingReferenceCandidates, emptyDomainCandidates,

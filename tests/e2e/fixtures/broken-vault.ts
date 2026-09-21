@@ -157,6 +157,65 @@ export const BROKEN_VAULT: Record<string, string> = {
  * it turn green" are different questions, and both must be asked to know the detector
  * is not always-red.
  */
+/**
+ * A finished body, per kind.
+ *
+ * `validate_vault` and `ontology-atlas validate` read the prose as well as the
+ * frontmatter since 2026-09-22, so a fixture named HEALTHY has to be a written
+ * vault and not only a well-formed one: a document with nothing under its title
+ * now carries `definition-missing`, both `boundary-missing` sides, and
+ * `uncertainty-missing`. The text is Korean because every title in this fixture
+ * is — it stands in for a real person's folder, and a half-translated sample
+ * would not.
+ */
+const FINISHED_BODY: Record<string, string[]> = {
+  domain: [
+    "",
+    "이 영역은 손님이 물건을 고른 뒤부터 값을 치르기까지의 흐름 전체를 맡는다.",
+    "",
+    "## Includes",
+    "",
+    "- 주문서가 만들어지고 결제가 끝날 때까지의 단계",
+    "",
+    "## Excludes",
+    "",
+    "- 배송과 반품, 그 둘은 물류 영역이 맡는다",
+    "",
+    "## Uncertainty",
+    "",
+    "- 외부 정산 시스템이 이 흐름을 어떻게 읽는지는 확인하지 못했다",
+  ],
+  capability: [
+    "",
+    "손님이 고른 물건의 값을 실제로 받아 주문을 확정하는 일을 이 능력이 해낸다.",
+    "",
+    "## Includes",
+    "",
+    "- 결제 수단을 고르고 승인을 받는 단계",
+    "",
+    "## Excludes",
+    "",
+    "- 영수증을 보내는 일, 그것은 알림 쪽이 맡는다",
+    "",
+    "## Uncertainty",
+    "",
+    "- 해외 카드 승인 경로는 읽어 보지 못했다",
+  ],
+  element: [
+    "",
+    "이 단위는 한 가지 구현 역할을 맡아, 그 역할이 바뀌면 여기 한 곳만 고치면 된다.",
+    "",
+    "## Uncertainty",
+    "",
+    "- 예전 버전에서 쓰던 대체 경로는 확인하지 못했다",
+  ],
+};
+
+/** Appends the finished body for a kind to a fixture document's lines. */
+function written(kind: string, lines: string[]): string[] {
+  return [...lines, ...(FINISHED_BODY[kind] ?? [])];
+}
+
 export const HEALTHY_VAULT: Record<string, string> = {
   "project.md": [
     "---",
@@ -171,7 +230,7 @@ export const HEALTHY_VAULT: Record<string, string> = {
     "# 우리 가게",
     "",
   ].join("\n"),
-  "domains/orders.md": [
+  "domains/orders.md": written("domain", [
     "---",
     "kind: domain",
     "slug: orders",
@@ -184,8 +243,8 @@ export const HEALTHY_VAULT: Record<string, string> = {
     "",
     "# 주문",
     "",
-  ].join("\n"),
-  "capabilities/checkout.md": [
+  ]).join("\n"),
+  "capabilities/checkout.md": written("capability", [
     "---",
     "kind: capability",
     "slug: checkout",
@@ -196,8 +255,8 @@ export const HEALTHY_VAULT: Record<string, string> = {
     "",
     "# 결제하기",
     "",
-  ].join("\n"),
-  "capabilities/payment.md": [
+  ]).join("\n"),
+  "capabilities/payment.md": written("capability", [
     "---",
     "kind: capability",
     "slug: payment",
@@ -208,8 +267,8 @@ export const HEALTHY_VAULT: Record<string, string> = {
     "",
     "# 결제 수단",
     "",
-  ].join("\n"),
-  "elements/ghost.md": [
+  ]).join("\n"),
+  "elements/ghost.md": written("element", [
     "---",
     "kind: element",
     "slug: ghost",
@@ -220,8 +279,8 @@ export const HEALTHY_VAULT: Record<string, string> = {
     "",
     "# 유령 모듈",
     "",
-  ].join("\n"),
-  "elements/legacy.md": [
+  ]).join("\n"),
+  "elements/legacy.md": written("element", [
     "---",
     "kind: element",
     "slug: legacy",
@@ -232,7 +291,7 @@ export const HEALTHY_VAULT: Record<string, string> = {
     "",
     "# 레거시 위젯",
     "",
-  ].join("\n"),
+  ]).join("\n"),
   "notes/handover.md": [
     "---",
     "kind: document",
@@ -245,7 +304,7 @@ export const HEALTHY_VAULT: Record<string, string> = {
     "# 인수인계 메모",
     "",
   ].join("\n"),
-  "elements/twin-a.md": [
+  "elements/twin-a.md": written("element", [
     "---",
     "kind: element",
     "slug: twin-a",
@@ -256,8 +315,8 @@ export const HEALTHY_VAULT: Record<string, string> = {
     "",
     "# 쌍둥이 A",
     "",
-  ].join("\n"),
-  "elements/twin-b.md": [
+  ]).join("\n"),
+  "elements/twin-b.md": written("element", [
     "---",
     "kind: element",
     "slug: twin-b",
@@ -268,5 +327,5 @@ export const HEALTHY_VAULT: Record<string, string> = {
     "",
     "# 쌍둥이 B",
     "",
-  ].join("\n"),
+  ]).join("\n"),
 };

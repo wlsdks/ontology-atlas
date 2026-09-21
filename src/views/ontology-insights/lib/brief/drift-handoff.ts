@@ -14,6 +14,13 @@ const DRIFT_HANDOFF_LIMIT = 5;
  * It asks for a judgement and an explicit proposal, never a write: Atlas writes pause on the
  * typed review card, and a request that told an agent to "fix the vault" would be asking for
  * approval the person has not given. The person owns Send; nothing here submits.
+ *
+ * ⚠️ **It says where the unknown goes, because the cheapest repair is deletion.** Asked only to
+ * "propose the sentence to change", an agent that cannot verify a claim proposes striking it, and
+ * the vault then reads as if that boundary had been checked and found absent. The vault has a
+ * place for the difference — the concept's `## Uncertainty` line, which the MCP write door names
+ * as the repair for an unstated unknown — so the request names it, and asks for the file the
+ * judgement was read in, since a quoted line with no file cannot be rechecked.
  */
 export function buildDriftHandoff({
   rows,
@@ -55,8 +62,9 @@ export function buildDriftHandoff({
         '',
         '각 개념에 대해: 괄호 안 슬러그로 get_concept 을 불러 기록된 의미를 읽고, 위 근거 파일의 현재 내용을 읽어.',
         '슬러그가 없는 줄은 자기 문서가 없는 개념이니, 그 이름을 적어 둔 문서부터 찾아.',
-        '그다음 기록된 의미가 아직 맞는지, 좁아졌는지, 틀렸는지 한 문장으로 판단하고 근거 줄을 인용해.',
-        '틀렸다면 고쳐야 할 문장을 제안만 해. 볼트를 직접 바꾸지 말고, 판단할 수 없으면 모른다고 말해.',
+        '그다음 기록된 의미가 아직 맞는지, 좁아졌는지, 틀렸는지 한 문장으로 판단하고, 어느 파일의 어느 줄에서 읽었는지 밝히며 인용해.',
+        '틀렸다면 고쳐야 할 문장을 제안만 해. 확인하지 못한 것은 그 개념의 `## Uncertainty` 줄에 적을 문장으로 제안해. 주장을 지우지는 마 — 문장을 지우면 모르는 것이 드러나지 않고 묻힌다.',
+        '볼트를 직접 바꾸지 말고, 판단할 수 없으면 모른다고 말해.',
       ]
     : [
         'These concepts in this folder stand on code that changed after their recorded meaning.',
@@ -66,8 +74,9 @@ export function buildDriftHandoff({
         '',
         'For each: call get_concept with the slug in brackets to read the recorded meaning, then read the current contents of the evidence file above.',
         'A line with no slug is a concept that owns no document, so start from whichever document wrote its name down.',
-        'Then judge in one sentence whether the recorded meaning still holds, has narrowed, or is now wrong, and quote the lines you judged from.',
-        'If it is wrong, propose the sentence to change. Do not write to the vault, and say so plainly when you cannot tell.',
+        'Then judge in one sentence whether the recorded meaning still holds, has narrowed, or is now wrong, and quote the lines you judged from, naming the exact file you read them in.',
+        'If it is wrong, propose the sentence to change. Whatever you could not check belongs in that concept\'s `## Uncertainty` line, as a sentence to add — do not propose deleting a claim, because a removed sentence hides the unknown instead of stating it.',
+        'Do not write to the vault, and say so plainly when you cannot tell.',
       ]
   ).join('\n');
 }

@@ -21,6 +21,7 @@ import {
   suppressParentedExpectedFieldIssues,
   validateVaultDocument,
 } from '../validate.mjs';
+import { folderOnlyEvidenceFinding } from '../meaning-findings.mjs';
 import { loadVaultDocs } from '../vault.mjs';
 import { collectPathLastChanges } from '../git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../evidence-drift.mjs';
@@ -127,12 +128,19 @@ function validateVaultTool({ repoRoot } = {}) {
   const docs = loadVaultDocs(VAULT_ROOT);
   const docIssues = new Map();
   for (const doc of docs) {
-    const result = validateVaultDocument(doc.raw || '');
+    // The slug is passed because `slug-outside-kind-folder` is a fact about
+    // where the file sits, and only this caller knows it.
+    const result = validateVaultDocument(doc.raw || '', { slug: doc.slug });
     docIssues.set(doc.slug, result.issues || []);
   }
   for (const [slug, danglingIssues] of groupDanglingIssuesBySlug(docs)) {
     const issues = docIssues.get(slug) || [];
     issues.push(...danglingIssues);
+    docIssues.set(slug, issues);
+  }
+  for (const { slug, issue } of findFolderOnlyEvidenceIssues(docs, repoRoot)) {
+    const issues = docIssues.get(slug) || [];
+    issues.push(issue);
     docIssues.set(slug, issues);
   }
   /*
@@ -265,6 +273,45 @@ function validateVaultTool({ repoRoot } = {}) {
             : 'no frontmatter path:/elements: source paths to check.',
     },
   };
+}
+
+/**
+ * Evidence that names a folder rather than the one file to open.
+ *
+ * **Why it is here and not in `validateVaultDocument`.** The judgement asks the
+ * filesystem whether one cited `path:` is a directory, and the answer only means
+ * anything relative to a repository root. A per-document validator has neither,
+ * so it would either guess a root — comparing this vault against whichever
+ * directory the process started in, the exact mistake `REPO_ROOT_IS_GROUNDED`
+ * exists to prevent — or say nothing. It says nothing, and this pass, which does
+ * hold the root, answers instead. Merged per slug exactly like the dangling
+ * references above, because both are whole-vault facts that no single file
+ * reveals.
+ *
+ * Silent when the root is not grounded. Not looking is not the same as finding
+ * nothing, and `pathDrift` already states which of the two happened.
+ */
+function findFolderOnlyEvidenceIssues(docs, repoRoot) {
+  const grounded = Boolean(repoRoot) || REPO_ROOT_IS_GROUNDED;
+  if (!grounded) return [];
+  const root = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : REPO_ROOT;
+  const issues = [];
+  for (const doc of docs) {
+    const kind = typeof doc?.frontmatter?.kind === 'string' ? doc.frontmatter.kind.trim() : '';
+    if (!kind) continue;
+    const finding = folderOnlyEvidenceFinding({
+      kind,
+      slug: doc.slug,
+      frontmatter: doc.frontmatter,
+      repoRoot: root,
+    });
+    if (!finding) continue;
+    issues.push({
+      slug: doc.slug,
+      issue: { code: finding.code, severity: 'warning', message: finding.message },
+    });
+  }
+  return issues;
 }
 
 const EVIDENCE_ROW_LIMIT = 50;

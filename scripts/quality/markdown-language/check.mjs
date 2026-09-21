@@ -18,7 +18,7 @@ export const MARKDOWN_LANGUAGE_BASELINES = Object.freeze({
     unexpectedHangulCodePoints: 0,
     // Focused-test coordinates that quote a Korean test title (see
     // inventory.mjs). Raise this only with the vault change that adds them.
-    quotedEvidenceLines: 6,
+    quotedEvidenceLines: 0,
   }),
   historical: Object.freeze({
     unexpectedFiles: 19,

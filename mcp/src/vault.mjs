@@ -30,6 +30,7 @@ import {
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
   flatSlugIssue,
+  folderForKind,
   generateNodeUid,
   inspectMergedUids,
   nodeUidIssue,
@@ -43,8 +44,10 @@ import {
   looksLikePath,
   pathShapedReferenceMessage,
   pathShapedTitleMessage,
+  slugOutsideKindFolderMessage,
 } from './construction-rules.mjs';
 import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
+import { meaningFindings } from './meaning-findings.mjs';
 
 /**
  * External-change detection — blocks a silent overwrite when a human GUI, an
@@ -802,7 +805,29 @@ const GATE = {
   parentGrewBy: new Map(),
   /** Lazy slug index: { rootPath, names: Set<string> }. */
   index: null,
+  /**
+   * Repository root the meaning findings resolve a cited `path:` against, or
+   * `null` while nothing has grounded one.
+   *
+   * It arrives through a setter rather than an import because `server/runtime.mjs`
+   * imports this module — asking it for `REPO_ROOT` here would close the cycle.
+   * `null` is the honest default: an ungrounded root would measure this vault
+   * against whichever directory the process started in, and an ungrounded
+   * comparison must say it did not look rather than produce a number.
+   */
+  repoRoot: null,
 };
+
+/**
+ * Ground the meaning findings against the repository the vault describes.
+ *
+ * Called once, at module load, by the door that owns `add_concept` /
+ * `add_concepts` / `patch_concept` — the only writes that can set `path:`.
+ * Passing `null` (an ungrounded root) leaves the folder-only check silent.
+ */
+export function configureNodeEligibilityRepoRoot(repoRoot) {
+  GATE.repoRoot = typeof repoRoot === 'string' && repoRoot.trim() ? repoRoot : null;
+}
 
 /** Test seam, and the reset a long-lived server would need if the vault root moved. */
 export function resetNodeEligibilityGate() {
@@ -1006,7 +1031,12 @@ function pushRefFinding(slug, code, key, refs, message) {
  * @param {{ created?: boolean }} [options] `created` marks a brand-new node, the
  *   only case where bulk provenance means anything.
  */
-function runNodeEligibilityGate(rootPath, slug, frontmatter, { created = false } = {}) {
+function runNodeEligibilityGate(
+  rootPath,
+  slug,
+  frontmatter,
+  { created = false, body = '', bodyWritten = false, pathWritten = false } = {},
+) {
   if (!frontmatter || typeof frontmatter !== 'object') return;
 
   // ⓪ A capability born with no evidence. Creation only — the honest sequence is
@@ -1027,6 +1057,32 @@ function runNodeEligibilityGate(rootPath, slug, frontmatter, { created = false }
         refs: [],
         count: 1,
         message: capabilityWithoutEvidenceMessage({ slug }),
+      });
+    }
+  }
+
+  // ⓪b A node written outside its kind folder. Creation only: the slug is minted
+  //     once, and repeating it on every later write would be a standing
+  //     accusation about a decision the author cannot undo with a patch. Measured
+  //     2026-09-21 — a trial built a whole vault flat at the root and
+  //     `validate_vault` answered 0 issues, so nothing in the product ever said
+  //     the convention exists. Advisory: a flat slug is valid, it just groups
+  //     with nothing. The hard error next door (`flatSlugIssue`, in `writeDoc`)
+  //     covers the different shape that silently merges distinct nodes.
+  if (created && typeof frontmatter.kind === 'string') {
+    const folder = folderForKind(frontmatter.kind.trim());
+    if (folder && !slug.startsWith(folder)) {
+      GATE.findings.push({
+        code: 'slug-outside-kind-folder',
+        slug,
+        key: 'slug',
+        refs: [`${folder}${slug}`],
+        count: 1,
+        message: slugOutsideKindFolderMessage({
+          slug,
+          kind: frontmatter.kind.trim(),
+          canonicalSlug: `${folder}${slug}`,
+        }),
       });
     }
   }
@@ -1127,7 +1183,36 @@ function runNodeEligibilityGate(rootPath, slug, frontmatter, { created = false }
     }
   }
 
-  // ④ Bulk provenance. Not a size limit — a statement about *who* made these and
+  // ④ Meaning gaps in the body. Everything above judges frontmatter, and
+  //    frontmatter is half a node: measured, this door let through nodes whose
+  //    body is still the starter scaffold, exclusions that are evidence limits
+  //    rather than product boundaries, and evidence pointing at a folder whose
+  //    drift can never be checked. `meaning-findings.mjs` owns the logic and
+  //    `construction-rules.mjs` the sentences; this is only the wiring, so the
+  //    three doors inherit it the same way they inherit the four checks above.
+  //
+  //    Gated on what the write touched. A patch that renames a node has not
+  //    opened its body, and a standing accusation on every unrelated write is
+  //    how `missing-expected-field` became invisible.
+  for (const finding of meaningFindings({
+    kind: frontmatter.kind,
+    slug,
+    frontmatter,
+    body,
+    repoRoot: GATE.repoRoot,
+    bodyWritten: created || bodyWritten,
+    pathWritten: created || pathWritten,
+  })) {
+    if (!shouldNotice(GATE.noticed, `${slug}\0${finding.code}\0${finding.key}`, finding.count ?? 1, {
+      threshold: NOTICE_THRESHOLD,
+      multiple: NOTICE_REPEAT_MULTIPLE,
+    })) {
+      continue;
+    }
+    GATE.findings.push(finding);
+  }
+
+  // ⑤ Bulk provenance. Not a size limit — a statement about *who* made these and
   //    *when*. Only the write path can know that, which is the entire argument
   //    for putting this check here rather than in the compiled maintenance plan.
   if (!created) return;
@@ -1172,6 +1257,8 @@ function commitDoc(
   body,
   {
     created = false,
+    bodyWritten = false,
+    pathWritten = false,
     previousFrontmatter,
     expectedRaw,
     expectedMtime,
@@ -1188,7 +1275,7 @@ function commitDoc(
   });
   if (created) noteGateWrite(rootPath, slug);
   noteParentGrowth(slug, previousFrontmatter, frontmatter);
-  runNodeEligibilityGate(rootPath, slug, frontmatter, { created });
+  runNodeEligibilityGate(rootPath, slug, frontmatter, { created, body, bodyWritten, pathWritten });
   return filePath;
 }
 
@@ -1397,6 +1484,7 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
   const mintedUid = fillMissingUid(frontmatter, next);
   assertNodeIdentity(rootPath, slug, next);
   commitDoc(rootPath, slug, filePath, next, body, {
+    pathWritten: Object.hasOwn(patch, 'path'),
     previousFrontmatter: frontmatter,
     expectedRaw: doc.raw,
     expectedMtime: doc.mtime,
@@ -1441,6 +1529,8 @@ export function updateDoc(rootPath, slug, {
   if (preview.status !== 'available') throw new Error('The writer could not resolve the document identity required for this patch.');
   assertNodeIdentity(rootPath, slug, preview.frontmatter);
   commitDoc(rootPath, slug, filePath, preview.frontmatter, preview.body, {
+    bodyWritten: body !== undefined,
+    pathWritten: Boolean(patch) && Object.hasOwn(patch, 'path'),
     previousFrontmatter: frontmatter,
     expectedRaw: doc.raw,
     expectedMtime: doc.mtime,

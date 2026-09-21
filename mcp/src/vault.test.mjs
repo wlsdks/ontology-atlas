@@ -3,12 +3,14 @@ import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { nodeUidIssue } from './schema.mjs';
+import { defaultBody, nodeUidIssue } from './schema.mjs';
 
 import {
   FULL_BODY_MAX_CHARS,
   canonicalDiskSlug,
   deleteDoc,
+  drainNodeEligibilityFindings,
+  resetNodeEligibilityGate,
   describeBodyDelivery,
   detectDuplicateTitle,
   extractSummaryExcerpt,
@@ -698,5 +700,93 @@ describe('detectDuplicateTitle', () => {
 
   it('빈 docs → null', () => {
     assert.equal(detectDuplicateTitle('MCP Server', 'x', []), null);
+  });
+});
+
+/**
+ * The door every real ontology build actually uses.
+ *
+ * `add_concept` fills the starter scaffold when the caller passes no body, so
+ * the default write is exactly the shape the field trial measured: a node whose
+ * body is a template, in a vault an agent will later be handed without the
+ * source. This asserts that the write still succeeds — construction rule 5 —
+ * and that the reader is told what is still owed, then that saying it clears it.
+ */
+describe('write-time meaning findings — the default body is reported, a written one is not', () => {
+  beforeEach(() => {
+    resetNodeEligibilityGate();
+    mkdirSync(join(root, 'domains'), { recursive: true });
+    writeFileSync(
+      join(root, 'domains', 'vault.md'),
+      '---\nuid: 11111111-1111-4111-8111-111111111111\nslug: domains/vault\nkind: domain\ntitle: Vault\n---\n',
+    );
+  });
+
+  afterEach(() => {
+    resetNodeEligibilityGate();
+  });
+
+  it('a capability created with the starter body is told its body is still a label', () => {
+    const filePath = writeDoc(root, 'capabilities/folder-access', {
+      frontmatter: {
+        uid: '22222222-2222-4222-8222-222222222222',
+        slug: 'capabilities/folder-access',
+        kind: 'capability',
+        title: 'Folder Access',
+        domain: 'domains/vault',
+        path: 'README.md',
+      },
+      body: defaultBody('capability', 'Folder Access'),
+    });
+    // The write is never blocked; the file is on disk with the scaffold intact.
+    assert.ok(filePath.endsWith('capabilities/folder-access.md'));
+    const codes = drainNodeEligibilityFindings()
+      .filter((finding) => finding.slug === 'capabilities/folder-access')
+      .map((finding) => finding.code)
+      .sort();
+    assert.deepEqual(codes, ['boundary-missing', 'boundary-missing', 'definition-missing', 'uncertainty-missing']);
+  });
+
+  it('patching in a written body clears them — the gate does not keep accusing a repaired node', () => {
+    writeDoc(root, 'capabilities/folder-access', {
+      frontmatter: {
+        uid: '33333333-3333-4333-8333-333333333333',
+        slug: 'capabilities/folder-access',
+        kind: 'capability',
+        title: 'Folder Access',
+        domain: 'domains/vault',
+        path: 'README.md',
+      },
+      body: defaultBody('capability', 'Folder Access'),
+    });
+    drainNodeEligibilityFindings();
+    // A fresh ledger, so the silence below is the body's doing rather than the
+    // first-crossing-then-multiples rule keeping quiet on its own.
+    resetNodeEligibilityGate();
+    updateDoc(root, 'capabilities/folder-access', {
+      body: [
+        '# Folder Access',
+        '',
+        'Opens one Markdown folder on the person\'s own disk and keeps reading it as',
+        'the graph, so no part of the ontology waits on a server.',
+        '',
+        '## Includes',
+        '',
+        '- Choosing the folder and remembering the handle between sessions.',
+        '',
+        '## Excludes',
+        '',
+        '- Copying that folder anywhere else; team sync is a separate layer.',
+        '',
+        '## Uncertainty',
+        '',
+        '- The Safari fallback was inferred from the feature check, not exercised.',
+        '',
+      ].join('\n'),
+    });
+    const codes = drainNodeEligibilityFindings().map((finding) => finding.code);
+    assert.equal(codes.includes('definition-missing'), false, codes.join(', '));
+    assert.equal(codes.includes('boundary-missing'), false, codes.join(', '));
+    assert.equal(codes.includes('uncertainty-missing'), false, codes.join(', '));
   });
 });

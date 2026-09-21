@@ -19,6 +19,18 @@ elements:
 kind와 관계 정본:
 https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
+## Includes
+
+- 이름을 바꾼 뒤, 이 영역이 실제로 맡는 책임 하나를 여기에 적습니다.
+
+## Excludes
+
+- 이 영역과 자주 헷갈리지만 아닌 이웃 영역을 적어, 읽는 사람이 둘을 가릅니다.
+
+## Uncertainty
+
+- 아직 코드에 견주어 확인한 것이 없습니다. 이 파일은 관찰이 아니라 스타터입니다.
+
 ## 어떻게 채우나
 
 - 이 도메인이 맡는 책임, 경계 안과 밖, 그 의미를 뒷받침하는 근거를 적습니다.

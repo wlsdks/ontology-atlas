@@ -19,16 +19,21 @@ the shared mental model between the humans building Atlas and you.
 ## Where to start
 
 - `ontology-atlas.md`: the `kind: project` root. Everything hangs off it.
-- `domains/`: the six functional areas (agent integration, graph modeling,
-  local vault management, onboarding & shell, project portfolio, topology
-  navigation). Domain boundaries are human judgment: see `created_by:`.
+- `domains/`: the four responsibility boundaries this product is built from
+  (`domains/meaning-layer`, `domains/code-evidence`, `domains/human-workbench`,
+  `domains/agent-access`). Each one states where it stops, so a capability that
+  seems to fit two of them is a boundary question, not a filing question.
 - `capabilities/`: user-visible features inside those domains, including the
-  two agent surfaces: `capabilities/mcp-server` (runtime-advertised tools in
-  `mcp/`) and `capabilities/cli-developer-entry` (local commands in `cli/`).
-  `capabilities/saved-constellations` records the durable task scope shared by
-  Galaxy, Library, MCP, and CLI without making saved membership a graph edge.
+  two agent surfaces: `capabilities/mcp-tool-server` (the JSON-RPC tool
+  registry in `mcp/`) and `capabilities/cli-commands` (the local commands in
+  `cli/`). `capabilities/saved-constellations` records the durable task scope
+  shared by Galaxy, Library, MCP, and CLI without making saved membership a
+  graph edge.
 - `elements/`: implementation evidence. Each element names a *role* (flat
   slug); the file location lives in its `path:` frontmatter, never in the slug.
+- `architecture/`: not ontology nodes. `architecture/ontology-atlas-web.md` is
+  the human-authored architecture profile the Architecture screen measures the
+  source imports against.
 
 **No document writes the census number**: it rots the moment anyone adds a
 node. Ask the vault itself:
@@ -44,12 +49,14 @@ node cli/src/index.mjs overview        # from the repo root
   readable `slug` address. Relations stay slug-based; exact agent handoff and
   `urn:uuid:<uid>` export identity use UID. Never hand-patch UID or
   merge-owned `merged_uids`.
-- Slugs are flat identifiers under their kind folder (`elements/ontology-map`,
-  never `elements/src/widgets/ontology-map`): path-style slugs collide on
-  tail aliases and are rejected at every write door.
-- Every node carries `created_by:`: `human` for nodes that exist only because
-  a person judged them (project definition, domain boundaries, the charter
-  capabilities), `agent:*` for everything derivable from code.
+- Slugs are flat identifiers under their kind folder (`elements/map-camera`,
+  never `elements/src/widgets/ontology-map/engine/camera`): path-style slugs
+  collide on tail aliases and are rejected at every write door.
+- Every node carries `created_by:`. Every graph node in this folder reads
+  `agent:claude-code`, because the product built this ontology through its own
+  construction path and nothing here was hand-written to read better than what
+  the product produces. `human` stays reserved for what a person judged rather
+  than derived, which in this folder is the architecture profile.
 - Agents write through the MCP server (`add_concept`, `patch_concept`,
   `rename_concept`, …) or the CLI (`node cli/src/index.mjs add …`); both stamp
   provenance and run the same construction gates.

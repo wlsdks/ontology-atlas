@@ -18,6 +18,18 @@ elements:
 kind와 관계 정본:
 https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
+## Includes
+
+- 이름을 바꾼 뒤, 이 역량이 실제로 해내는 일 하나를 여기에 적습니다.
+
+## Excludes
+
+- 이 역량이 제공하지 않는 가까운 능력을 적어, 읽는 사람이 여기서 찾지 않게 합니다.
+
+## Uncertainty
+
+- 아직 코드에 견주어 확인한 것이 없습니다. 이 파일은 관찰이 아니라 스타터입니다.
+
 ## 어떻게 채우나
 
 - 관찰 가능한 결과와 경계, 수용 시나리오 한두 개를 적은 뒤 파일 이름과

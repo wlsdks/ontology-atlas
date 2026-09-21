@@ -1,8 +1,35 @@
 import { normalizeLimit, normalizeOptionalBoolean, summarizeNode } from './query-primitives.mjs';
+import { folderForKind } from '../schema.mjs';
+import {
+  boundaryFindings,
+  definitionFinding,
+  epistemicExclusionFinding,
+  uncertaintyFinding,
+} from '../meaning-findings.mjs';
+import { slugOutsideKindFolderMessage } from '../construction-rules.mjs';
+
+const MEANING_GAP_KIND_BY_CODE = Object.freeze({
+  'definition-missing': 'definition_missing',
+  'boundary-missing': 'boundary_missing',
+  'epistemic-exclusion': 'epistemic_exclusion',
+  'folder-only-evidence': 'folder_only_evidence',
+  'slug-outside-kind-folder': 'slug_outside_kind_folder',
+  'uncertainty-missing': 'uncertainty_missing',
+});
+const MEANING_GAP_SCORE_BY_CODE = Object.freeze({
+  'definition-missing': 0.6,
+  'boundary-missing': 0.55,
+  'epistemic-exclusion': 0.7,
+  'folder-only-evidence': 0.5,
+  'slug-outside-kind-folder': 0.35,
+  'uncertainty-missing': 0.55,
+});
 
 export function createMaintenanceQueries({
   artifact,
+  nodes,
   nodeBySlug,
+  sourceDocBySlug,
   nodeEligibilityFindings,
   staleSummaries,
   maintenancePhases,
@@ -21,6 +48,52 @@ export function createMaintenanceQueries({
   unearnedNodeCandidates,
   annotateMaintenanceAction,
 }) {
+  function limitedCandidateGroup(rows, limit) {
+    return { total: rows.length, limited: rows.length > limit, rows: rows.slice(0, limit) };
+  }
+
+  function meaningGapCandidates(limit) {
+    const rows = [];
+    for (const node of [...nodes].sort((a, b) => a.slug.localeCompare(b.slug))) {
+      const doc = sourceDocBySlug.get(node.slug);
+      if (!doc || typeof doc.body !== 'string') continue;
+      const input = { kind: node.kind, slug: node.slug, title: node.title, body: doc.body };
+      const found = [
+        definitionFinding(input),
+        ...boundaryFindings(input),
+        uncertaintyFinding(input),
+        epistemicExclusionFinding(input),
+      ].filter(Boolean);
+      for (const finding of found) {
+        rows.push({
+          kind: MEANING_GAP_KIND_BY_CODE[finding.code],
+          score: MEANING_GAP_SCORE_BY_CODE[finding.code],
+          slug: node.slug,
+          reason: finding.message,
+          node: summarizeNode(node),
+        });
+      }
+    }
+    return { ...limitedCandidateGroup(rows, limit), keys: rows.map((row) => `${row.kind}\0${row.slug}`) };
+  }
+
+  function slugOutsideKindFolderCandidates(limit) {
+    const rows = [];
+    for (const node of [...nodes].sort((a, b) => a.slug.localeCompare(b.slug))) {
+      if (typeof node.kind !== 'string' || typeof node.slug !== 'string') continue;
+      const folder = folderForKind(node.kind);
+      if (!folder || node.slug.startsWith(folder)) continue;
+      rows.push({
+        kind: 'slug_outside_kind_folder',
+        score: MEANING_GAP_SCORE_BY_CODE['slug-outside-kind-folder'],
+        slug: node.slug,
+        reason: slugOutsideKindFolderMessage({ slug: node.slug, kind: node.kind, canonicalSlug: `${folder}${node.slug}` }),
+        node: summarizeNode(node),
+      });
+    }
+    return { ...limitedCandidateGroup(rows, limit), keys: rows.map((row) => `${row.kind}\0${row.slug}`) };
+  }
+
   function nodeEligibilityActions() {
     const shape = {
       'path-shaped-title': { kind: 'separate_evidence_from_concept', phase: 'repair', severity: 'warn', score: 0.9 },
@@ -39,6 +112,12 @@ export function createMaintenanceQueries({
       // missing; this one fires once, at the moment the author still has the file
       // in hand. Same kind on purpose — it is one question, asked at two times.
       'capability-without-evidence': { kind: 'capability_without_evidence', phase: 'review', severity: 'info', score: 0.5 },
+      ...Object.fromEntries(
+        Object.entries(MEANING_GAP_KIND_BY_CODE).map(([code, kind]) => [
+          code,
+          { kind, phase: 'review', severity: 'info', score: MEANING_GAP_SCORE_BY_CODE[code] },
+        ]),
+      ),
     };
     const rows = [];
     for (const finding of nodeEligibilityFindings) {
@@ -83,6 +162,8 @@ export function createMaintenanceQueries({
     const emptyDomains = emptyDomainCandidates(limit);
     const unearnedNodes = unearnedNodeCandidates(limit);
     const capabilitiesWithoutEvidence = capabilityWithoutEvidenceCandidates(limit);
+    const meaningGaps = meaningGapCandidates(limit);
+    const flatSlugs = slugOutsideKindFolderCandidates(limit);
     const canonicalizationActions = Array.isArray(artifact?.canonicalizationActions)
       ? artifact.canonicalizationActions
       : [];
@@ -199,12 +280,16 @@ export function createMaintenanceQueries({
         node: row.node,
       });
     }
+    for (const row of [...meaningGaps.rows, ...flatSlugs.rows]) {
+      actions.push({ phase: 'review', kind: row.kind, severity: 'info', score: row.score, reason: row.reason, node: row.node });
+    }
 
     // A freshly written node is caught by two paths at once — the write gate, then
     // the full vault scan. Writing the same question about the same node on two
     // rows makes the queue generate its own noise, so whatever the full scan
     // already said is dropped here.
     const capabilitiesWithoutEvidenceSlugs = new Set(capabilitiesWithoutEvidence.slugs ?? []);
+    const meaningGapKeys = new Set([...(meaningGaps.keys ?? []), ...(flatSlugs.keys ?? [])]);
     for (const action of nodeEligibilityActions()) {
       if (
         action.kind === 'capability_without_evidence' &&
@@ -212,6 +297,7 @@ export function createMaintenanceQueries({
       ) {
         continue;
       }
+      if (meaningGapKeys.has(`${action.kind}\0${action.node?.slug}`)) continue;
       actions.push(action);
     }
 

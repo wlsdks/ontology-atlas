@@ -5,6 +5,7 @@ import { walkMd } from '../lib/walk-vault.mjs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
+  folderOnlyEvidenceFinding,
   validateVaultDocument,
   suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
@@ -96,6 +97,44 @@ export const KNOWN_CODES = [
     severity: 'warning',
     scope: 'vault',
     description: 'a graph reference resolves to no node in the vault.',
+  },
+  /*
+   * The meaning findings. Warnings, every one — the document is valid Markdown
+   * that the graph reads correctly, and what is missing is the half a reader
+   * needs and code cannot supply. `--strict` and `--fail-on` can still hard-gate
+   * any of them; the default exit stays on errors, so a folder does not turn red
+   * the day this list grew.
+   */
+  {
+    code: 'definition-missing',
+    severity: 'warning',
+    description: 'a domain, capability, or element whose body never says what it is, or only restates its title.',
+  },
+  {
+    code: 'boundary-missing',
+    severity: 'warning',
+    description: 'a domain or capability with no `## Includes` or no `## Excludes` holding more than a placeholder.',
+  },
+  {
+    code: 'epistemic-exclusion',
+    severity: 'warning',
+    description: 'an exclusion bullet that states what the writer did not read rather than what the product does not do.',
+  },
+  {
+    code: 'uncertainty-missing',
+    severity: 'warning',
+    description: 'a node that records no unknown at all, so its body reads as complete when no vault is.',
+  },
+  {
+    code: 'slug-outside-kind-folder',
+    severity: 'warning',
+    description: 'a domain, capability, or element written at the vault root instead of inside its kind folder.',
+  },
+  {
+    code: 'folder-only-evidence',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'frontmatter `path:` names a directory, so this node\'s evidence can never be dated against the code.',
   },
   {
     code: 'duplicate-slug',
@@ -189,7 +228,9 @@ export function runValidate(args) {
       .normalize('NFC');
     const { frontmatter } = parseFrontmatter(raw);
     entries.push({ file, slug, frontmatter });
-    const report = validateVaultDocument(raw);
+    // The slug travels with the raw text: `slug-outside-kind-folder` is a fact
+    // about where the file sits, which the bytes alone never state.
+    const report = validateVaultDocument(raw, { slug });
     reportByFile.set(file, report);
   }
 
@@ -229,6 +270,13 @@ export function runValidate(args) {
   }
 
   for (const { file, issue } of findDanglingGraphReferenceIssues(entries)) {
+    const report = reportByFile.get(file);
+    if (!report) continue;
+    report.issues.push(issue);
+    report.ok = !report.issues.some((i) => i.severity === 'error');
+  }
+
+  for (const { file, issue } of findFolderOnlyEvidenceIssues(entries)) {
     const report = reportByFile.get(file);
     if (!report) continue;
     report.issues.push(issue);
@@ -621,6 +669,42 @@ function findDuplicateUidIssues(entries) {
  * the one a person reads first was the wrong one.** Claiming to have run a check
  * that did not happen is the worst kind.
  */
+/**
+ * Evidence that names a folder instead of the one file to open.
+ *
+ * **Why this one is not inside `validateVaultDocument`.** The question is
+ * whether a cited `path:` is a directory on disk, and a path only means
+ * something against a repository root. This command validates a *vault*, which
+ * may sit anywhere, so the root has to be stated: `OATLAS_REPO_ROOT` is the same
+ * variable the MCP server reads, and with it unset the check stays silent rather
+ * than measuring the vault against whatever directory the shell happened to be
+ * in. Silence here means "not looked at", which is why `--list-codes` calls it a
+ * vault-scope code beside the dangling-reference one.
+ */
+function findFolderOnlyEvidenceIssues(entries) {
+  const repoRoot = typeof process.env.OATLAS_REPO_ROOT === 'string'
+    ? process.env.OATLAS_REPO_ROOT.trim()
+    : '';
+  if (!repoRoot) return [];
+  const issues = [];
+  for (const entry of entries) {
+    const kind = typeof entry.frontmatter?.kind === 'string' ? entry.frontmatter.kind.trim() : '';
+    if (!kind) continue;
+    const finding = folderOnlyEvidenceFinding({
+      kind,
+      slug: entry.slug,
+      frontmatter: entry.frontmatter,
+      repoRoot,
+    });
+    if (!finding) continue;
+    issues.push({
+      file: entry.file,
+      issue: { code: finding.code, severity: 'warning', message: finding.message },
+    });
+  }
+  return issues;
+}
+
 function findDanglingGraphReferenceIssues(entries) {
   const isNodeEntry = (entry) =>
     typeof entry.frontmatter?.kind === 'string' && entry.frontmatter.kind.trim() !== '';

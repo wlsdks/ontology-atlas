@@ -394,8 +394,8 @@ describe('package contract helpers', () => {
   });
 
   it('keeps dogfood CLI capability and MCP capability nodes concise and delegates inventories to their generated public sources', () => {
-    const cliDoc = readFileSync('docs/ontology/capabilities/cli-developer-entry.md', 'utf-8');
-    const mcpDoc = readFileSync('docs/ontology/capabilities/mcp-server.md', 'utf-8');
+    const cliDoc = readFileSync('docs/ontology/capabilities/cli-commands.md', 'utf-8');
+    const mcpDoc = readFileSync('docs/ontology/capabilities/mcp-tool-server.md', 'utf-8');
     const cliTitle = cliDoc.match(/^title:\s*(.+)$/m)?.[1] ?? '';
     const mcpTitle = mcpDoc.match(/^title:\s*(.+)$/m)?.[1] ?? '';
     const cliHeading = cliDoc.match(/^#\s+(.+)$/m)?.[1] ?? '';

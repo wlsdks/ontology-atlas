@@ -530,6 +530,12 @@ kept in lock-step by
 | `dangling-graph-reference` | warning | *(whole-vault validators only — see below)* a relation array or `domain` key points at a slug that does not exist anywhere in the vault |
 | `swallowed-relation-note` | **error** | *(MCP and CLI validators only — see below)* a `relation_notes` value contains another declared target in `target: ` form: an unquoted value swallowed the entries after it, and their rationale is gone |
 | `orphaned-relation-note` | **error** | *(MCP and CLI validators only — see below)* a `relation_notes` key names no relation the document declares, so no edge carries the sentence; the key side of the same unquoted-value accident, or a note left behind by a manual relation removal |
+| `definition-missing` | warning | *(body scope — see below)* a `domain`, `capability`, or `element` whose body states no definition, neither before its first `##` nor under a `## Definition` / `## Summary` / `## Overview` heading: still the starter scaffold, too short to be a sentence, or circular — adding fewer than six words the title does not already supply |
+| `boundary-missing` | warning | *(body scope)* a `domain` or `capability` with no `## Includes` or no `## Excludes` section holding anything but placeholders; one finding per missing side |
+| `epistemic-exclusion` | warning | *(body scope)* an exclusion bullet that states an evidence limit ("not mentioned in this scan") rather than a product boundary — the one claim a source-hidden reader cannot check and does repeat as fact |
+| `folder-only-evidence` | warning | *(write-path gate, plus `validate_vault` and the CLI when a repository root is known)* frontmatter `path:` resolves to a directory, so this node's evidence drift can never be judged: a folder changes on almost any commit beneath it |
+| `uncertainty-missing` | warning | *(body scope)* a `domain`, `capability`, or `element` with no `## Uncertainty` / `## Open questions` / `## Unknowns` / `## Not checked` / `## Confidence` section holding anything but a placeholder. A node that records no unknown claims completeness, and §2.1 evidence is always partial |
+| `slug-outside-kind-folder` | warning | *(body scope, and only where the caller knows the document's position)* a `domain`, `capability`, or `element` whose slug does not start with its kind's folder (§4). Valid, never blocked, and reported once at creation: a flat node groups with nothing in any reader that shows a vault by kind |
 
 Structural parse failures and v2 identity failures are errors; the other
 quality codes remain advisory. A v1 vault without UID is intentionally not a
@@ -545,6 +551,35 @@ difference, not drift: detecting a dangling reference requires scanning
 every other node's slug, which only a whole-vault pass can do. A per-file
 UI check (fast path, used while a human is editing a single file) cannot
 and does not claim to catch it.
+
+The last six are advisories about a node's body and its address rather than
+about frontmatter shape, so **body scope** above means they read the Markdown
+after the frontmatter. The judgement lives in one place,
+`mcp/src/meaning-findings.mjs`, and reaches a reader through four channels: the
+`add_concept` / `add_concepts` / `patch_concept` response, `query_ontology({operation:"maintenance_plan"})`,
+`validate_vault`, and the CLI's validate command. `src/shared/lib/meaning-findings.ts`
+is the browser port of the same rules, checked against the canonical module by
+`tests/contract/meaning-findings-parity.contract.test.ts`.
+
+Two of them carry a narrower scope than the other four, and for opposite
+reasons. `folder-only-evidence` must ask the filesystem whether a cited `path:`
+is a directory, which only means something relative to a repository root, so it
+runs as a whole-vault pass beside `dangling-graph-reference` and stays silent
+when no root is known — silence there means *not looked at*, never *nothing
+found*. `slug-outside-kind-folder` is a fact about where a file sits rather than
+about its bytes, so a validator handed only text does not report it; a caller
+that knows the document's vault-relative slug passes it in. The app's
+frontmatter-only fast path answers that one alone, because a manifest keeps a
+flattened excerpt rather than the prose, and running a body check on an excerpt
+would answer a different question under the same code name.
+
+They exist because the write path is the one a session without an independent
+evaluator lane must use, and it previously never opened the body at all; they
+reached the *person's* validators later, on 2026-09-22, because until then an
+agent could read six findings and report a clean vault without contradicting any
+surface the person could run. Like every other advisory here they never block a
+write (construction rules, step 5); a conformant implementation MAY omit them and
+MUST NOT turn them into errors.
 
 `swallowed-relation-note` and `orphaned-relation-note` live in
 `mcp/src/validate.mjs` and its byte-identical CLI copy

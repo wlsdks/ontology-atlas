@@ -37,49 +37,47 @@ export interface EvidenceSpecimen {
 }
 
 export const EVIDENCE_SPECIMEN: EvidenceSpecimen = {
-    "slug": "capabilities/mcp-server",
-    "file": "docs/ontology/capabilities/mcp-server.md",
-    "url": "https://github.com/wlsdks/ontology-atlas/blob/main/docs/ontology/capabilities/mcp-server.md",
+    "slug": "capabilities/mcp-tool-server",
+    "file": "docs/ontology/capabilities/mcp-tool-server.md",
+    "url": "https://github.com/wlsdks/ontology-atlas/blob/main/docs/ontology/capabilities/mcp-tool-server.md",
     "frontmatter": {
       "ko": [
         "kind: capability",
-        "title: MCP Server",
-        "domain: domains/agent-integration",
-        "path: mcp/src",
-        "dependencies: [capabilities/vault-ontology]",
-        "display_ko: AI 연결 서버"
+        "title: MCP tool server",
+        "display_ko: MCP 도구 서버",
+        "domain: domains/agent-access",
+        "path: mcp/src/server/registry.mjs"
       ],
       "en": [
         "kind: capability",
-        "title: MCP Server",
-        "domain: domains/agent-integration",
-        "path: mcp/src",
-        "dependencies: [capabilities/vault-ontology]",
-        "display_en: AI Connection Server"
+        "title: MCP tool server",
+        "display_en: MCP tool server",
+        "domain: domains/agent-access",
+        "path: mcp/src/server/registry.mjs"
       ]
     },
     "omittedLines": {
-      "ko": 6,
-      "en": 6
+      "ko": 7,
+      "en": 7
     },
     "facts": {
       "name": {
-        "ko": "AI 연결 서버",
-        "en": "AI Connection Server",
-        "nodeId": "capability:mcp-server"
+        "ko": "MCP 도구 서버",
+        "en": "MCP tool server",
+        "nodeId": "capability:mcp-tool-server"
       },
       "kind": "capability",
       "domain": {
-        "ko": "AI 에이전트 연동",
-        "en": "AI Agent Integration",
-        "nodeId": "domain:agent-integration"
+        "ko": "에이전트 접근",
+        "en": "Agent access",
+        "nodeId": "domain:agent-access"
       },
       "dependency": {
-        "ko": "볼트 온톨로지 스키마 작성",
-        "en": "Vault Ontology Schema Authoring",
-        "nodeId": "capability:vault-ontology"
+        "ko": "구축 지침",
+        "en": "Construction guidance",
+        "nodeId": "capability:construction-guidance"
       },
-      "implPath": "mcp/src"
+      "implPath": "mcp/src/server/registry.mjs"
     },
-    "vaultNodeCount": 108
+    "vaultNodeCount": 92
   } as const;

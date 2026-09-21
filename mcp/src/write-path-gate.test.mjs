@@ -22,7 +22,9 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { defaultBody } from './schema.mjs';
 import {
+  configureNodeEligibilityRepoRoot,
   drainNodeEligibilityFindings,
   patchFrontmatter,
   resetNodeEligibilityGate,
@@ -32,6 +34,34 @@ import {
 
 let root;
 let uidSequence = 0;
+
+/**
+ * A body that answers the three questions the gate now asks of one.
+ *
+ * The cases below are about frontmatter, and they assert an exact code list. A
+ * starter or empty body would add the body codes to every one of those lists and
+ * bury the fact each case exists to pin, so they hand the gate a written node and
+ * the body half is proved on its own, further down.
+ */
+const WRITTEN_BODY = [
+  '# Written',
+  '',
+  'This node states one behaviour the vault can point at, in a sentence that does',
+  'not repeat its own title back to the reader.',
+  '',
+  '## Includes',
+  '',
+  '- The one thing it actually covers.',
+  '',
+  '## Excludes',
+  '',
+  '- The neighbouring thing it is confused with and does not do.',
+  '',
+  '## Uncertainty',
+  '',
+  '- The second caller was inferred from imports rather than read.',
+  '',
+].join('\n');
 
 function nextTestUid() {
   uidSequence += 1;
@@ -79,7 +109,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
         domain: 'domains/cli',
         elements: ['cli/src/commands/absorb.mjs'],
       },
-      body: '',
+      body: WRITTEN_BODY,
     });
     const findings = drainNodeEligibilityFindings();
     assert.deepEqual(codesFor(findings, 'capabilities/fresh'), [
@@ -181,7 +211,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
           title: 'No Evidence',
           domain: 'domains/cli',
         },
-        body: '',
+        body: WRITTEN_BODY,
       });
       const findings = drainNodeEligibilityFindings();
       assert.deepEqual(codesFor(findings, 'capabilities/no-evidence'), [
@@ -253,7 +283,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
           domain: 'domains/cli',
           elements: refs,
         },
-        body: '',
+        body: WRITTEN_BODY,
       });
       const findings = drainNodeEligibilityFindings();
       assert.deepEqual(findings.filter((f) => f.code === 'dense-parent'), []);
@@ -360,5 +390,189 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       frontmatter: { slug: 'services/auth-api', kind: 'element', title: 'Auth API' },
       body: '',
     });
+  });
+
+  /**
+   * The kind-folder convention, stated at the one moment a slug is minted.
+   *
+   * Measured 2026-09-21: a trial built an entire vault flat at the root —
+   * `slug: option-declaration` with `kind: capability` — and `validate_vault`
+   * answered 0 issues. The builder could not have known a convention it was
+   * never told about. Advisory, and creation-only: a slug cannot be repaired by
+   * a patch, so repeating it on every later write would be an accusation with
+   * no exit.
+   */
+  describe('slug outside its kind folder — said once, never blocked', () => {
+    it('reports a capability written at the vault root and names the canonical slug', () => {
+      const filePath = writeDoc(root, 'option-declaration', {
+        frontmatter: {
+          slug: 'option-declaration',
+          kind: 'capability',
+          title: 'Option Declaration',
+          domain: 'domains/cli',
+          path: 'cli/src/index.mjs',
+        },
+        body: WRITTEN_BODY,
+      });
+      // Never blocked: the file lands exactly where the caller asked for it.
+      assert.ok(filePath.endsWith('/option-declaration.md'));
+      const findings = drainNodeEligibilityFindings().filter((f) => f.code === 'slug-outside-kind-folder');
+      assert.equal(findings.length, 1);
+      assert.equal(findings[0].slug, 'option-declaration');
+      assert.equal(findings[0].key, 'slug');
+      assert.deepEqual(findings[0].refs, ['capabilities/option-declaration']);
+      assert.match(findings[0].message, /rename_concept\(\{oldSlug:"option-declaration", newSlug:"capabilities\/option-declaration"\}\)/);
+      assert.match(findings[0].message, /confirm/);
+      assert.match(findings[0].message, /nothing here blocks it/);
+    });
+
+    it('reports a domain written at the vault root too', () => {
+      writeDoc(root, 'help-documentation', {
+        frontmatter: { slug: 'help-documentation', kind: 'domain', title: 'Help Documentation' },
+        body: WRITTEN_BODY,
+      });
+      const findings = drainNodeEligibilityFindings().filter((f) => f.code === 'slug-outside-kind-folder');
+      assert.deepEqual(findings.map((f) => f.refs[0]), ['domains/help-documentation']);
+    });
+
+    it('stays silent when the slug is already inside its folder', () => {
+      writeDoc(root, 'capabilities/option-declaration', {
+        frontmatter: {
+          slug: 'capabilities/option-declaration',
+          kind: 'capability',
+          title: 'Option Declaration',
+          domain: 'domains/cli',
+          path: 'cli/src/index.mjs',
+        },
+        body: WRITTEN_BODY,
+      });
+      assert.deepEqual(
+        drainNodeEligibilityFindings().filter((f) => f.code === 'slug-outside-kind-folder'),
+        [],
+      );
+    });
+
+    it('stays silent for the two kinds that have no folder', () => {
+      // `project` and `document` live at the vault root by schema, so telling
+      // them to move would be telling them to break the convention.
+      writeDoc(root, 'atlas', {
+        frontmatter: { slug: 'atlas', kind: 'project', title: 'Atlas' },
+        body: WRITTEN_BODY,
+      });
+      writeDoc(root, 'release-notes', {
+        frontmatter: { slug: 'release-notes', kind: 'document', title: 'Release Notes' },
+        body: WRITTEN_BODY,
+      });
+      assert.deepEqual(
+        drainNodeEligibilityFindings().filter((f) => f.code === 'slug-outside-kind-folder'),
+        [],
+      );
+    });
+
+    it('says it once — a later patch to the same node does not repeat it', () => {
+      writeDoc(root, 'option-declaration', {
+        frontmatter: {
+          slug: 'option-declaration',
+          kind: 'capability',
+          title: 'Option Declaration',
+          domain: 'domains/cli',
+          path: 'cli/src/index.mjs',
+        },
+        body: WRITTEN_BODY,
+      });
+      drainNodeEligibilityFindings();
+      patchFrontmatter(root, 'option-declaration', { title: 'Option Declaration, renamed' });
+      assert.deepEqual(
+        drainNodeEligibilityFindings().filter((f) => f.code === 'slug-outside-kind-folder'),
+        [],
+      );
+    });
+  });
+
+  /**
+   * The body half of the same claim. Frontmatter was only ever half a node, and
+   * the door every real build actually uses — the app's ACP session, which has
+   * no independent evaluator lane — never opened the other half. One case here,
+   * for the same reason as the rest of this file: it proves the wiring, and
+   * `meaning-findings.test.mjs` proves what each code decides.
+   */
+  it('a body that is still the starter scaffold is reported on the creation door', () => {
+    writeDoc(root, 'capabilities/labelled', {
+      frontmatter: {
+        slug: 'capabilities/labelled',
+        kind: 'capability',
+        title: 'Labelled',
+        domain: 'domains/cli',
+        path: 'cli/src/commands/absorb.mjs',
+      },
+      body: defaultBody('capability', 'Labelled'),
+    });
+    const codes = codesFor(drainNodeEligibilityFindings(), 'capabilities/labelled');
+    assert.deepEqual(codes, ['boundary-missing', 'boundary-missing', 'definition-missing', 'uncertainty-missing']);
+  });
+
+  it('a cited folder is reported once the write door has grounded a repository root', () => {
+    // Ungrounded first: measuring this vault against whichever directory the
+    // process started in would report drift that is not there.
+    configureNodeEligibilityRepoRoot(null);
+    patchFrontmatter(root, 'capabilities/entry', { path: 'capabilities' });
+    assert.deepEqual(
+      codesFor(drainNodeEligibilityFindings(), 'capabilities/entry').filter((code) => code === 'folder-only-evidence'),
+      [],
+    );
+    resetNodeEligibilityGate();
+    configureNodeEligibilityRepoRoot(root);
+    patchFrontmatter(root, 'capabilities/entry', { path: 'capabilities' });
+    const codes = codesFor(drainNodeEligibilityFindings(), 'capabilities/entry');
+    assert.ok(codes.includes('folder-only-evidence'), codes.join(', '));
+    configureNodeEligibilityRepoRoot(null);
+  });
+
+  it('a create whose `path:` climbs out of the repository lists nothing and reports nothing', () => {
+    // `path:` is a value an agent wrote, so it is untrusted input at this door.
+    const outside = join(root, '..', `outside-${Date.now()}`);
+    mkdirSync(outside, { recursive: true });
+    writeFileSync(join(outside, 'private-notes.txt'), 'not for a tool response\n');
+    try {
+      configureNodeEligibilityRepoRoot(root);
+      writeDoc(root, 'capabilities/escape', {
+        frontmatter: {
+          slug: 'capabilities/escape',
+          kind: 'capability',
+          title: 'Escape',
+          domain: 'domains/cli',
+          path: `../${outside.split('/').pop()}`,
+        },
+        body: WRITTEN_BODY,
+      });
+      const findings = drainNodeEligibilityFindings();
+      assert.deepEqual(findings.filter((f) => f.code === 'folder-only-evidence'), []);
+      // Nothing from outside the repository reached the response at all.
+      assert.equal(JSON.stringify(findings).includes('private-notes'), false);
+    } finally {
+      configureNodeEligibilityRepoRoot(null);
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  it('updateDoc reports the body it was handed, and patchFrontmatter stays out of a body it never opened', () => {
+    // A patch that replaces the body is judged…
+    updateDoc(root, 'capabilities/entry', { body: defaultBody('capability', 'Entry') });
+    assert.deepEqual(
+      codesFor(drainNodeEligibilityFindings(), 'capabilities/entry').filter((code) =>
+        code.startsWith('definition') || code.startsWith('boundary') || code.startsWith('uncertainty'),
+      ),
+      ['boundary-missing', 'boundary-missing', 'definition-missing', 'uncertainty-missing'],
+    );
+    resetNodeEligibilityGate();
+    // …while a frontmatter-only write is not. A standing accusation on every
+    // unrelated patch is how `missing-expected-field` became invisible.
+    patchFrontmatter(root, 'capabilities/entry', { title: 'Entry, renamed' });
+    assert.deepEqual(
+      codesFor(drainNodeEligibilityFindings(), 'capabilities/entry').filter((code) =>
+        code.startsWith('definition') || code.startsWith('boundary') || code.startsWith('uncertainty'),
+      ),
+      [],
+    );
   });
 });
