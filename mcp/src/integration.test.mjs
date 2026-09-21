@@ -10482,7 +10482,7 @@ DER parsing and unrelated encodings.
   }
 });
 
-await test("query_ontology agent_brief — read-only known-task wire path stays below 20000 characters", async () => {
+await test("query_ontology agent_brief — read-only known-task wire path stays below 22000 characters", async () => {
   const scratch = mkdtempSync(join(tmpdir(), "ontology-atlas-compact-wire-"));
   const vault = join(scratch, "vault");
   const repo = resolve(__dirname, "../..");
@@ -10522,9 +10522,15 @@ await test("query_ontology agent_brief — read-only known-task wire path stays 
     assert.equal(compact.focus.verification.manifest, "mcp/package.json");
     assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") <= 12000);
     const wireCharacters = JSON.stringify(connectionResponse).length + JSON.stringify(compactResponse).length;
+    // The budget was 20,000 before connection_info carried the construction
+    // card (decision 2026-09-21: a host may cut `instructions` at 2,048
+    // characters, so the card rides in the first read every construction
+    // prompt makes). The card is capped at CONSTRUCTION_CARD_MAX_CHARS, and the
+    // budget moves by exactly that allowance rounded up, not by whatever the
+    // dogfood vault's prose happens to weigh.
     assert.ok(
-      wireCharacters < 20_000,
-      `connection_info + compact read-only wire path must stay below 20000 characters; received ${wireCharacters}`,
+      wireCharacters < 22_000,
+      `connection_info + compact read-only wire path must stay below 22000 characters; received ${wireCharacters}`,
     );
     assert.equal(JSON.stringify(compactResponse).includes(repo), false, "wire response must not expose the private root");
   } finally {
