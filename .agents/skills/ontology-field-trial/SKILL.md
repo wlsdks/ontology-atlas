@@ -173,6 +173,53 @@ tells them apart.
 
 Record: **claims verified / claims made**, and every claim that failed.
 
+## Headless ACP replay
+
+The same door the app opens — the vault MCP bound to one folder, the session's
+appended handoff, and the first-run instruction sent as the person's own turn —
+assembled outside the app so the trial can be repeated after every change.
+
+Run it for any change to the construction rules, to the card the agent reads in
+`connection_info`'s guide, to the write-door findings, or to the two prompts the
+app sends (`vaultHandoffPrompt` in `src/features/acp-session/model/use-acp-session.ts`
+and `buildFromCodePrompt` in `src/features/first-run-starter/model/build-from-code-prompt.ts`).
+The scripts read those two texts out of the app source at run time and stop with
+a non-zero exit if they cannot, so a replay always measures what the app sends.
+
+The four assets are shared with the other harness and live in its tree; this is
+a pointer to them, the way this repository's visibility table allows:
+
+```bash
+# 1. Seal six questions into scratch before any vault exists.
+cp .claude/skills/ontology-field-trial/scripts/sealed-questions.template.md \
+   ~/scratch/atlas-field-trial/sealed-questions.md
+
+# 2. Replay the door: two turns, the second resuming the first.
+.claude/skills/ontology-field-trial/scripts/acp-replay.sh ~/scratch/atlas-field-trial/repo \
+  --model opus --out ~/scratch/atlas-field-trial/replay
+
+# 3. Phase 3, sealed: the vault's read tools and nothing else.
+.claude/skills/ontology-field-trial/scripts/sealed-reader.sh ~/scratch/atlas-field-trial/repo \
+  ~/scratch/atlas-field-trial/sealed-questions.md --out ~/scratch/atlas-field-trial/reader
+
+# 4. What the write door would still say about the finished vault.
+node .claude/skills/ontology-field-trial/scripts/scan-findings.mjs \
+  ~/scratch/atlas-field-trial/repo/atlas ~/scratch/atlas-field-trial/repo
+```
+
+Phase 2 still runs from the CLI and phase 4 is still done by hand against the
+clone. Record in [BASELINE.md](BASELINE.md): the two turns' cost and wall clock
+from the run's `<out>/replay.json`; nodes per kind folder and whether the final answer reached
+finalizing the project meaning; one verdict per sealed question plus the seventh
+question's answer verbatim; the finding tally from `<scripts>/scan-findings.mjs`; and the
+target repository **by shape, never by name** (`.claude/rules/forbidden.md`).
+
+Known limits: the permission card is replaced by an allow-list, so the run is
+never evidence that the checkpoint holds; n = 1, so only a moved category counts
+as a change; the grader is the session that made the change, which is why phase
+4 against the clone stays mandatory; and it reproduces the door's three inputs,
+not the app, so the installed build stays unproven.
+
 ## Report
 
 Write the four numbers and the two lists (unanswered questions, failed claims)

@@ -352,6 +352,88 @@ tells them apart.
 
 Record: **claims verified / claims made**, and every claim that failed.
 
+## Headless ACP replay
+
+The four phases above describe a trial run by hand through a real session. That
+run is honest and slow, and its cost is why construction rules used to change
+without being measured at all. This replay assembles the same door outside the
+app — the vault MCP bound to one folder, the session's appended handoff, and the
+first-run instruction sent as the person's own turn — so the trial can be run
+again the same way after every change.
+
+**Run it for:** any change to the construction rules, to the card the agent
+reads in `connection_info`'s guide, to the write-door findings, or to the two
+prompts the app sends (`vaultHandoffPrompt` and `buildFromCodePrompt`). A
+wording change in either prompt is exactly the case: the scripts read those two
+texts out of the app source at run time and refuse to run if they cannot, so a
+replay always measures the wording the app is actually sending.
+
+Skip it for changes that touch none of those.
+
+### The commands, in order
+
+```bash
+# 1. Seal the questions first, into scratch, before any vault exists.
+cp .claude/skills/ontology-field-trial/scripts/sealed-questions.template.md \
+   ~/scratch/atlas-field-trial/sealed-questions.md
+# fill in six questions and the date; do not look at the repository's vault
+
+# 2. Replay the door: two turns, the second resuming the first.
+.claude/skills/ontology-field-trial/scripts/acp-replay.sh ~/scratch/atlas-field-trial/repo \
+  --model opus --out ~/scratch/atlas-field-trial/replay
+
+# 3. Phase 3, sealed: the reader gets the vault's read tools and nothing else.
+.claude/skills/ontology-field-trial/scripts/sealed-reader.sh ~/scratch/atlas-field-trial/repo \
+  ~/scratch/atlas-field-trial/sealed-questions.md --out ~/scratch/atlas-field-trial/reader
+
+# 4. What the write door would still say about the finished vault.
+node .claude/skills/ontology-field-trial/scripts/scan-findings.mjs \
+  ~/scratch/atlas-field-trial/repo/atlas ~/scratch/atlas-field-trial/repo
+```
+
+Phase 2 is unchanged and still runs from the CLI; the replay does not check
+cited paths. Phase 4 is still yours: take the reader's answers back to the clone
+and verify each claim by hand.
+
+The four assets are
+[acp-replay.sh](scripts/acp-replay.sh),
+[sealed-reader.sh](scripts/sealed-reader.sh),
+[scan-findings.mjs](scripts/scan-findings.mjs), and
+[sealed-questions.template.md](scripts/sealed-questions.template.md).
+
+### What goes in BASELINE.md
+
+One row per replay, next to the hand-run rows, carrying:
+
+- **cost** — the two turns' agent turns, seconds, and dollars, and the wall
+  clock, from the run's `<out>/replay.json`
+- **what was built** — nodes per kind folder, and whether the final answer
+  reached finalizing the project meaning or stopped short of it
+- **phase 3** — per sealed question, one of answered-with-checkable-citation /
+  answered-uncited / refused-honestly / invented, and the seventh question's
+  answer verbatim
+- **the write door** — the finding tally from `<scripts>/scan-findings.mjs` and the count
+  of nodes per kind keeping a section that admits what was not checked
+- **the target, by shape** — "a single-package command-line argument parser,
+  about 7k lines, permissively licensed" and never its name
+  (`.claude/rules/forbidden.md`)
+
+### What this run cannot prove
+
+- **The permission card is not in it.** A headless run replaces the card with an
+  allow-list, so every write is pre-approved. Decisions (113) and (114) are
+  untested here; a replay is never evidence that the checkpoint holds.
+- **n = 1.** One repository, one run, one model. Two replays that disagree by a
+  dollar or a node are the same result. Only a moved category — a question that
+  went from invented to refused-honestly, a finding code that emptied — is a
+  change worth recording.
+- **The grader is the session that made the change.** The reader is sealed; the
+  person reading its answers is not. Keep phase 4 against the clone, and keep
+  the failed claims in the ledger even when the totals improved.
+- **It is not the app.** It reproduces the door's three inputs, not the app's
+  transport, its cancellation, or anything a person sees. A replay that passes
+  still leaves the installed app unproven.
+
 ## Report
 
 Write the four numbers and the two lists (unanswered questions, failed claims)
