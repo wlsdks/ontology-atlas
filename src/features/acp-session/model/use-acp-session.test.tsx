@@ -518,10 +518,18 @@ describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
     ]);
     const meta = params._meta as { systemPrompt?: { append?: string } } | undefined;
     expect(meta?.systemPrompt?.append).toContain('atlas-vault');
-    expect(meta?.systemPrompt?.append).toContain('use the construction lifecycle');
-    expect(meta?.systemPrompt?.append).toContain('reviewPlan');
-    expect(meta?.systemPrompt?.append).toContain('writeEligibility');
-    expect(meta?.systemPrompt?.append).toContain('pass those rows unchanged to the batch writers');
+    /*
+     * The construction routing used to send every build into the bulk qualification lifecycle,
+     * which an app session cannot finish: it has no independent evaluator, so the reproduction
+     * spent a whole turn on a proposal and left the vault empty. What is pinned here is the path
+     * that does finish — reviewed batches — and the refusal that names why the other one is not
+     * taken here.
+     */
+    expect(meta?.systemPrompt?.append).toContain('reviewed batches');
+    expect(meta?.systemPrompt?.append).toContain('verify `connection_info` and read the construction card');
+    expect(meta?.systemPrompt?.append).toContain('does not have an independent evaluator');
+    expect(meta?.systemPrompt?.append).toContain('Do not fabricate an evaluator');
+    expect(meta?.systemPrompt?.append).not.toContain('use the construction lifecycle');
 
     await act(async () => {
       await result.current.stop();
@@ -543,7 +551,9 @@ describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
     const params = call?.params as Record<string, unknown>;
     const meta = params._meta as { systemPrompt?: { append?: string } } | undefined;
     expect(meta?.systemPrompt?.append).not.toContain('atlas-vault');
-    expect(meta?.systemPrompt?.append).not.toContain('use the construction lifecycle');
+    expect(meta?.systemPrompt?.append).not.toContain('reviewed batches');
+    expect(meta?.systemPrompt?.append).not.toContain('read the construction card');
+    expect(meta?.systemPrompt?.append).not.toContain('does not have an independent evaluator');
     // The remaining rules (write the why, do not leave the folder) stay as they are.
     expect(meta?.systemPrompt?.append).toContain('`why`');
 

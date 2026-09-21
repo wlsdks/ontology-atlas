@@ -12,6 +12,13 @@
  * already record. So the sentence asks for the survey first, the proposal second, and the writing
  * only after the person has seen what is proposed.
  *
+ * **The writing step names the batch path, because 「only then create the nodes」 did not say how.**
+ * Reproduced against an unfamiliar repository: the agent read this step beside a handoff that
+ * routed every build through the bulk qualification lifecycle, spent a turn authoring a full
+ * proposal, and stopped at `canWrite:false` — an app session has no independent evaluator — with
+ * the vault still empty after the person had already said to build it. So step 3 now names the
+ * path that finishes here: small reviewed batches, then validate, bind, and finalize.
+ *
  * **It promises nothing the checkpoint does not keep.** Every write this leads to still stops at
  * the permission card (decisions (113) and (114)); this sentence does not and cannot bypass one.
  * It is written in the person's own voice because it lands in the transcript as their turn — a
@@ -40,11 +47,15 @@ export function buildFromCodePrompt(
     '1. Survey the code with `analyze_repo_structure`, and use `infer_imports` where the',
     '   structure alone does not say what depends on what. Read before you write.',
     '   Skip the vault folder itself; it holds the map, not the product.',
-    '2. Tell me, in plain sentences, what you found: which domains this product seems to have,',
-    '   which capabilities sit under them, and which files implement each one. Name anything you',
-    '   are unsure about rather than guessing it into a node.',
-    '3. Only then create the nodes and relations, with `connect_project_source` binding this code',
-    '   folder to the vault so each capability keeps its evidence.',
+    '2. Tell me, in plain sentences, what you found: which domains this product seems to have and',
+    '   which capabilities sit under them. For each one give me a single sentence defining it, what',
+    '   it includes and what it excludes, and the file that proves it. Name anything you are unsure',
+    '   about rather than guessing it into a node.',
+    '3. After I say yes, write it in small reviewed batches — each node carrying its definition and',
+    '   its boundary in the body, each relation carrying a `why`. Then check the result with',
+    '   `validate_vault`, bind this code folder with `connect_project_source` so each capability',
+    '   keeps its evidence, and finish with `finalize_project_meaning`. Tell me what the folder',
+    '   holds now.',
     '',
     'Prefer few, well-evidenced concepts over many thin ones. If two things look like the same',
     'concept, ask me instead of making both.',
