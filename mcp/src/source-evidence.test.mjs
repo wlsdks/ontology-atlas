@@ -125,8 +125,15 @@ test('validates literal selectors and supported source types', () => {
     readSourceEvidence(root, [{ path: 'C:relative.ts', startLine: 1, maxLines: 1 }]).rows[0].reason,
     'ambiguous_separator',
   );
-  const packet = readSourceEvidence(root, [{ path: 'notes.txt', startLine: 1, maxLines: 1 }]);
+  writeFileSync(join(root, 'logo.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  const packet = readSourceEvidence(root, [{ path: 'logo.png', startLine: 1, maxLines: 1 }]);
   assert.equal(packet.rows[0].reason, 'unsupported_source_type');
+  // Prose beside the code is readable: a README is the project's own statement
+  // of purpose, and refusing it left a builder citing headings by line number.
+  writeFileSync(join(root, 'README.md'), '# Tool\n\nParses a command line.\n');
+  const prose = readSourceEvidence(root, [{ path: 'README.md', startLine: 3, maxLines: 1 }]);
+  assert.equal(prose.rows[0].status, 'read');
+  assert.match(prose.rows[0].text ?? JSON.stringify(prose.rows[0]), /Parses a command line/);
 });
 
 test('rejects absolute, drive, UNC, traversal, controls, symlink directories and directories', () => {
