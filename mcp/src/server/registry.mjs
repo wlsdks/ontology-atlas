@@ -365,7 +365,7 @@ const TOOLS = [
           type: 'string',
           enum: [...CONSTRUCTION_GUIDE_TOPICS],
           description:
-            'Return the long-form rules for one topic in `guideText`: `meta_model` (the five authorable kinds and the is_a boundary), `construction` (the rules to read before add_concept), `lifecycle` (review before write), `write_safety` (the dry-run/confirm and expected_mtime patterns), or `workflows` (the three starting workflows).',
+            'Return the long-form rules for one topic in `guideText`: `meta_model` (the five authorable kinds and the is_a boundary), `construction` (the rules to read before add_concept), `lifecycle` (review before write), `write_safety` (the dry-run/confirm and expected_mtime patterns), `workflows` (the three starting workflows), or `competency` (the exact `## Competency answers` section `finalize_project_meaning` parses).',
         },
       },
     },

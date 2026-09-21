@@ -5,6 +5,7 @@
  */
 
 import {
+  COMPETENCY_ANSWERS_GUIDE_EN,
   CONSTRUCTION_CARD_EN,
   CONSTRUCTION_GUIDE_TOPICS,
 } from '../construction-card.mjs';
@@ -513,6 +514,7 @@ const CONSTRUCTION_GUIDE_TEXT = {
   lifecycle: CONSTRUCTION_LIFECYCLE_EN,
   write_safety: WRITE_SAFETY_SECTION_EN,
   workflows: WORKFLOWS_SECTION_EN,
+  competency: COMPETENCY_ANSWERS_GUIDE_EN,
 };
 
 function connectionInfoTool({ guide } = {}) {

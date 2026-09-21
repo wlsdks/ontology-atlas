@@ -37,9 +37,14 @@ const SURVIVING_WINDOW = RENDERED_INSTRUCTIONS.slice(0, TRUNCATION_WINDOW);
 
 /**
  * Clauses a model that reads only the surviving window still needs: what the
- * five kinds are, what every written node owes, what a relation owes, where the
- * write sequence ends, the refusal that must not be faked, and how to reach
- * everything the host dropped.
+ * five kinds are, where a node's slug lives, what every written node owes, what
+ * a relation owes, where the write sequence ends, the refusal that must not be
+ * faked, and how to reach everything the host dropped.
+ *
+ * The slug clauses were added after a trial run: with slug shape unstated, the
+ * builder wrote every node flat at the vault root (`slug: option-declaration`)
+ * instead of under its kind folder, and nothing in the surviving window said
+ * otherwise.
  */
 const REQUIRED_CLAUSES = [
   "project",
@@ -47,6 +52,10 @@ const REQUIRED_CLAUSES = [
   "capability",
   "element",
   "document",
+  "domains/",
+  "capabilities/",
+  "elements/",
+  "never a code path",
   "Includes",
   "Excludes",
   "why",

@@ -95,7 +95,7 @@ Source receipts retain safe explicit repository-root directory paths from frontm
 
 ## Core Flow
 
-1. Connect `connection_info` → `list_kinds` / `list_concepts` → `validate_vault` to check connection and vault status first. `connection_info` also returns `guide.card`, the construction card, and accepts `guide` to return one long-form rule section in `guideText`, so a host that truncates the server `instructions` does not take the construction rules with it.
+1. Connect `connection_info` → `list_kinds` / `list_concepts` → `validate_vault` to check connection and vault status first. `connection_info` also returns `guide.card`, the construction card, and accepts `guide` to return one long-form rule section in `guideText`, so a host that truncates the server `instructions` does not take the construction rules with it. Its `competency` topic carries the exact `## Competency answers` layout that `finalize_project_meaning` parses.
 2. Read only the necessary scope of meaning, evidence, paths, and impacts using `get_concept` / `get_concepts` and graph query tools.
 3. Review new meaning candidates for code evidence and duplication, writing only those approved by the user.
 4. Pass the previous `mtime` for existing node writes. Destructive operations like rename/merge/delete require explicit confirmation after preview.
