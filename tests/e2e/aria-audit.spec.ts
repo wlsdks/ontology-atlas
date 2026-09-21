@@ -25,7 +25,7 @@ import { expect, test } from "@playwright/test";
  * quietly.
  *
  * ⚠️ **With no vault chosen, this screen renders the *sample* vault**, not this
- * repository's dogfood vault. So a dogfood name like `capability:mcp-server` also
+ * repository's dogfood vault. So a dogfood name like `capability:mcp-tool-server` also
  * fails to focus here (measured). Use a real node name read from the instrument.
  */
 const FOCUS_NODE_ID = "capability:cart";
