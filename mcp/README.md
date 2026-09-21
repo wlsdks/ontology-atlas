@@ -1824,6 +1824,22 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/vault-nodes.mjs` | node identity, the gates every write passes, and the whole-vault issue finders |
 | `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
 | `src/tools/maintenance.mjs` | what a result carries rather than being asked for |
+| `src/ontology-engine.mjs` | public exports and explicit query-family composition |
+| `src/ontology-engine/artifact-context.mjs` | graph indexes and reference resolution |
+| `src/ontology-engine/context-operations.mjs` | shared graph lookups and scope helpers |
+| `src/ontology-engine/query-planner.mjs` | bounded query planning |
+| `src/ontology-engine/traversal-analysis.mjs` | centrality, reachability, impact, and builder context |
+| `src/ontology-engine/selection-queries.mjs` | scans, profiles, matrices, components, and similarity |
+| `src/ontology-engine/scope-queries.mjs` | containment, lineage, cycles, relation recommendations, and growth |
+| `src/ontology-engine/maintenance-queries.mjs` | repair and review action planning |
+| `src/ontology-engine/brief-queries.mjs` | evidence-aware agent and workspace briefs |
+| `src/ontology-engine/health-query.mjs` | structural health reporting |
+| `src/ontology-engine/engine-helpers.mjs` | graph-analysis helpers and normalization shared across families |
+| `src/ontology-engine/query-dispatch.mjs` | operation-to-query dispatch |
+| `src/ontology-engine/traversal-queries.mjs` | neighbor enumeration, shortest paths, and bounded all-path searches |
+| `src/ontology-engine/query-values.mjs` | shared node/relation vocabulary and default limits |
+| `src/ontology-engine/query-primitives.mjs` | shared input normalization and node/edge result shaping |
+| `src/ontology-engine/agent-responses.mjs` | agent handoff prompts and CLI follow-up formatting |
 
 Adding a module means adding it to `files` in `mcp/package.json` — the bundle and
 the MCPB artifact copy that list, so an undeclared import ships a server that
