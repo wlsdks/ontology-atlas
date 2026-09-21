@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 
 import {
   parseWebviewVerifyPayload,
@@ -107,6 +108,25 @@ test("payload contract · topology route accepts the current map shell", () => {
   assert.equal(markers.every((marker) => marker.test("Map\nLibrary\nAutomations")), false);
   assert.equal(markers.every((marker) => marker.test("INDEX")), false);
   assert.equal(markers.every((marker) => marker.test("Atlas\nDocs\nWorkshop")), false);
+});
+
+test("Insights accepts both localized subject previews without map or brand body copy", () => {
+  const locales = ["en", "ko"];
+  assert.equal(locales.length, 2);
+  for (const locale of locales) {
+    const messages = JSON.parse(readFileSync(new URL(`../messages/${locale}.json`, import.meta.url), "utf8"));
+    const insights = messages.ontologyPages.insights;
+    const markers = webviewWorkbenchMarkersForPath(`/${locale}/ontology/insights/?tab=harness`);
+    assert.equal(markers.length, 2, "both destination and subject content must be checked");
+    for (const subject of ["library", "harness"]) {
+      const body = `${insights.title}\n${insights.core[subject]}`;
+      assert.equal(markers.every((marker) => marker.test(body)), true, `${locale} ${subject}`);
+    }
+    assert.equal(markers.every((marker) => marker.test(insights.title)), false);
+    assert.equal(markers.every((marker) => marker.test(insights.core.harness)), false);
+    assert.equal(markers.every((marker) => marker.test("Atlas\nMap\nINDEX")), false);
+    assert.equal(markers.every((marker) => marker.test("")), false);
+  }
 });
 
 test("payload contract · 정상 페이로드는 통과한다", () => {

@@ -96,6 +96,11 @@ const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
   /INDEX|Concept map|개념|Workspace|작업공간|Relief/,
 ];
 
+const WEBVIEW_INSIGHTS_WORKBENCH_MARKERS = [
+  /Insights|Analysis|분석/i,
+  /Brief|Wiki|Guidance|브리핑|위키|지침/i,
+];
+
 /**
  * The verifier can open any packaged route. Do not make non-topology routes
  * repeat map copy merely to satisfy a launch gate; require two route-owned,
@@ -115,6 +120,9 @@ export function webviewWorkbenchMarkersForPath(expectedPath = null) {
     }
     if (/\/(?:ko|en)\/topology\/?$/.test(pathname)) {
       return WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS;
+    }
+    if (/\/(?:ko|en)\/ontology\/insights\/?$/.test(pathname)) {
+      return WEBVIEW_INSIGHTS_WORKBENCH_MARKERS;
     }
   }
   return WEBVIEW_WORKBENCH_MARKERS;
