@@ -172,6 +172,15 @@ async function measureRoute(
       page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
     ).toBeVisible();
   }
+  if (route === "/ko/ontology/insights/") {
+    // The dynamic entry paints a real h1 inside its loading shell. Measuring that
+    // shell makes the title baseline look valid while the registered Brief figure
+    // has not mounted yet, so the stale-exception guard reports a product defect
+    // that never existed. Wait for the route's actual subject, not for a size or
+    // expected hierarchy result, then require the loading owner to be gone.
+    await expect(page.getByTestId("brief-tab")).toBeVisible();
+    await expect(page.getByTestId("insights-loading")).toHaveCount(0);
+  }
   await waitForDocumentPaint(page);
 
   if (PROBE.some((k) => k.length > 0)) {

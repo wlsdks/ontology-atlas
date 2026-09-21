@@ -201,12 +201,12 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent, onOpenTab }: { core: 
        */}
       {core.headline == null ? (
         core.availability === 'measured' ? (
-          <p className="text-display leading-display-tight text-[color:var(--color-text-tertiary)]">
+          <p className="text-title text-[color:var(--color-text-tertiary)]">
             <span className="text-label" data-testid="brief-core-unmeasured">{t('notMeasured')}</span>
           </p>
         ) : (
           <p
-            className="font-mono text-display leading-display-tight font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-quaternary)]"
+            className="font-mono text-title font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-quaternary)]"
             data-testid="brief-core-headline-absent"
             aria-hidden
           >
@@ -214,7 +214,7 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent, onOpenTab }: { core: 
           </p>
         )
       ) : (
-        <p className="font-mono text-display leading-display-tight font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-primary)]">
+        <p className="font-mono text-title font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-primary)]">
           {core.headline}
           {unit ? <span className="ml-1.5 text-label text-[color:var(--color-text-quaternary)]">{unit}</span> : null}
         </p>
