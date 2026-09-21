@@ -1,0 +1,12 @@
+{
+  "runId": "0b359c34-4a38-4681-b7da-eda2e1c70395",
+  "date": "2026-09-21",
+  "proof": "pass",
+  "ownerClear": "pending",
+  "boundaryMiss": "no",
+  "laterResult": "pending",
+  "evidence": "Installed-app before/after capture verifies compact folder recovery and readable names without deleting records. Korean/English 320-2560px chooser sweep, keyboard cancellation, coarse targets, and 13 production-export scenarios passed. Three development-mode reproductions exposed stale automation creation during lane navigation; three reruns passed after navigation disables the old action. Contract suite 2794 passed; 16 follow-up recommendations passed. Evidence retained at /Users/jinan/scratch/atlas-pr1796-20260921. Visual owner acceptance remains pending.",
+  "schema": "po-pilot-update/v1",
+  "id": "6bba0dda-804f-4570-a51a-c219857b0ba0",
+  "recordedAt": "2026-09-21T13:01:59.872Z"
+}
