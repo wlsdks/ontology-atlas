@@ -16,6 +16,10 @@ domain: domains/example-domain
 kind와 관계 정본:
 https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
+## Uncertainty
+
+- 아직 코드에 견주어 확인한 것이 없습니다. 이 파일은 관찰이 아니라 스타터입니다.
+
 ## 어떻게 채우나
 
 - 어떤 역할을 맡고 어느 역량을 실현하거나 증명하며, 어느 경로나 인터페이스로

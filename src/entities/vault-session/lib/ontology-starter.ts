@@ -225,6 +225,20 @@ name is evidence to investigate—not a domain by itself.
 Kind and relation contract:
 https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
+## Includes
+
+- The one responsibility this area owns, in your own words, once you rename it.
+
+## Excludes
+
+- The neighbouring area this one is most often confused with, so a reader can
+  tell the two apart.
+
+## Uncertainty
+
+- Nothing here has been checked against your code yet: this file is a starter,
+  not an observation.
+
 ## How to fill it in
 
 - Describe the responsibility it owns, what is inside and outside the boundary,
@@ -265,6 +279,20 @@ heading is not a capability without an independent ability claim.
 Kind and relation contract:
 https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
+## Includes
+
+- The one thing this ability actually does, in your own words, once you rename it.
+
+## Excludes
+
+- The nearby ability this one does not provide, so a reader stops looking for it
+  here.
+
+## Uncertainty
+
+- Nothing here has been checked against your code yet: this file is a starter,
+  not an observation.
+
 ## How to fill it in
 
 - State the observable outcome, its boundary, and one or two acceptance
@@ -294,6 +322,11 @@ canonical repository-relative entrypoint in \`path:\`.
 
 Kind and relation contract:
 https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
+
+## Uncertainty
+
+- Nothing here has been checked against your code yet: this file is a starter,
+  not an observation.
 
 ## How to fill it in
 
@@ -504,6 +537,18 @@ elements:
 kind와 관계 정본:
 https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
+## Includes
+
+- 이름을 바꾼 뒤, 이 영역이 실제로 맡는 책임 하나를 여기에 적습니다.
+
+## Excludes
+
+- 이 영역과 자주 헷갈리지만 아닌 이웃 영역을 적어, 읽는 사람이 둘을 가릅니다.
+
+## Uncertainty
+
+- 아직 코드에 견주어 확인한 것이 없습니다. 이 파일은 관찰이 아니라 스타터입니다.
+
 ## 어떻게 채우나
 
 - 이 도메인이 맡는 책임, 경계 안과 밖, 그 의미를 뒷받침하는 근거를 적습니다.
@@ -542,6 +587,18 @@ elements:
 kind와 관계 정본:
 https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
+## Includes
+
+- 이름을 바꾼 뒤, 이 역량이 실제로 해내는 일 하나를 여기에 적습니다.
+
+## Excludes
+
+- 이 역량이 제공하지 않는 가까운 능력을 적어, 읽는 사람이 여기서 찾지 않게 합니다.
+
+## Uncertainty
+
+- 아직 코드에 견주어 확인한 것이 없습니다. 이 파일은 관찰이 아니라 스타터입니다.
+
 ## 어떻게 채우나
 
 - 관찰 가능한 결과와 경계, 수용 시나리오 한두 개를 적은 뒤 파일 이름과
@@ -570,6 +627,10 @@ domain: domains/example-domain
 
 kind와 관계 정본:
 https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
+
+## Uncertainty
+
+- 아직 코드에 견주어 확인한 것이 없습니다. 이 파일은 관찰이 아니라 스타터입니다.
 
 ## 어떻게 채우나
 
