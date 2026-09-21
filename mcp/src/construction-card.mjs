@@ -16,8 +16,13 @@
  * `tests/contract/mcp-instructions-card.contract.test.ts` hold that budget.
  */
 
-/** 1,900 leaves room for the identity line ahead of the card inside 2,048. */
-export const CONSTRUCTION_CARD_MAX_CHARS = 1900;
+/**
+ * The identity line ahead of the card is 97 characters plus a blank line, so a
+ * card of 1,949 would end exactly on the 2,048th character. 1,940 keeps a small
+ * margin under that ceiling; the contract test measures the real end offset in
+ * the rendered instructions rather than trusting this number.
+ */
+export const CONSTRUCTION_CARD_MAX_CHARS = 1940;
 
 /** The on-demand long-form topics `connection_info({guide})` accepts. */
 export const CONSTRUCTION_GUIDE_TOPICS = Object.freeze([
@@ -31,11 +36,11 @@ export const CONSTRUCTION_GUIDE_TOPICS = Object.freeze([
 
 export const CONSTRUCTION_CARD_EN = `## Construction card
 
-1. Each \`.md\` with frontmatter \`kind:\` is a node; frontmatter is the graph. You propose meaning, the person decides.
-2. Five authorable kinds and their tests. project = the outcome the code exists to create. domain = a stable responsibility boundary, not a folder or team. capability = an observable ability the product performs, with one implementation entry point. element = a distinct implementation role a capability uses, named by role not file. document = narrative that describes a concept. Never author \`vault-readme\`. A folder, package, README heading or path is evidence, not a concept.
-3. On every create or patch: a slug under the kind folder (\`domains/x\`, \`capabilities/x\`, \`elements/x\`; project/document at root), flat, never a code path; a definition sentence in the body; \`## Includes\` / \`## Excludes\` bullets stating product boundaries, an Excludes bullet may not be an evidence limit ("not mentioned in this scan" is uncertainty); for capability and element one \`path:\` naming a FILE (a folder cannot be drift-checked) or an \`elements:\` role; \`why\` on every relation; \`labels\` for every locale the vault uses.
-4. Order: \`connection_info\` → \`list_kinds\` → \`find_evidence\` / \`query_ontology similar_nodes\` before any create → propose in plain sentences, they approve → \`add_concepts\` in batches of ≤12, bodies filled → \`add_relations\` with \`why\` → \`validate_vault\` → \`connect_project_source\` → \`finalize_project_meaning\`. Prefer \`patch_concept\` on a near-twin to a new node. Warnings never block a write; each names its repair call.
-5. The bulk \`analyze_repo_structure\` writePlan needs an independent evaluator; with none here, do not fabricate one or stall — build in reviewed small batches.
+1. Each \`.md\` with frontmatter \`kind:\` is a node; frontmatter is the graph. You propose, the person decides.
+2. Five authorable kinds: project = the outcome the code exists to create. domain = a stable responsibility boundary, not a folder or team. capability = an observable ability the product performs, with one entry point. element = a distinct implementation role a capability uses, named by role not file. document = narrative describing a concept. Never author \`vault-readme\`. A folder, package, README heading or path is evidence, not a concept.
+3. On every create or patch: a slug under the kind folder (\`domains/x\`, \`capabilities/x\`, \`elements/x\`; project/document at root), flat, never a code path; a definition sentence in the body; \`## Includes\` / \`## Excludes\` bullets stating product boundaries, an Excludes bullet may not be an evidence limit; an \`## Uncertainty\` line naming what you did not read or could not check ("not mentioned in this scan" goes there; a node with no stated unknown claims completeness); for capability/element one \`path:\` naming a FILE (a folder cannot be drift-checked) or an \`elements:\` role; \`why\` on every relation; \`labels\` for every locale the vault uses.
+4. Order: \`connection_info\` → \`list_kinds\` → \`find_evidence\` / \`query_ontology similar_nodes\` before any create → propose in sentences, they approve → \`add_concepts\` in batches of ≤12 with bodies → \`add_relations\` with \`why\` → \`validate_vault\` → \`connect_project_source\` → \`finalize_project_meaning\`. Prefer \`patch_concept\` on a near-twin. Warnings never block a write; each names its repair call.
+5. The bulk \`analyze_repo_structure\` writePlan needs an independent evaluator; with none here, do not fabricate one or stall; build in small reviewed batches.
 6. Long rules on demand: \`connection_info({guide:"<topic>"})\`; topics \`meta_model\`, \`construction\`, \`lifecycle\`, \`write_safety\`, \`workflows\`, \`competency\`.`;
 
 /**

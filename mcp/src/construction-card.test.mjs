@@ -64,6 +64,18 @@ test('the card states where a slug lives', () => {
   }
 });
 
+/**
+ * The first version of clause 3 enumerated the body parts a node owes and left
+ * `## Uncertainty` out. A trial then built 12 nodes and not one stated an
+ * unknown, where every node had before: an enumeration is read as complete, so
+ * a silent omission is read as "not required" and the vault quietly starts
+ * claiming completeness it never measured.
+ */
+test('the card says where an unknown goes', () => {
+  assert.ok(CONSTRUCTION_CARD_EN.includes('`## Uncertainty`'));
+  assert.ok(CONSTRUCTION_CARD_EN.includes('claims completeness'));
+});
+
 test('the competency guide returns the layout and an example the real parser accepts', () => {
   const { guideText } = connectionInfoTool({ guide: 'competency' });
   assert.equal(guideText, COMPETENCY_ANSWERS_GUIDE_EN);

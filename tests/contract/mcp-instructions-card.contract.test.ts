@@ -45,6 +45,13 @@ const SURVIVING_WINDOW = RENDERED_INSTRUCTIONS.slice(0, TRUNCATION_WINDOW);
  * builder wrote every node flat at the vault root (`slug: option-declaration`)
  * instead of under its kind folder, and nothing in the surviving window said
  * otherwise.
+ *
+ * `Uncertainty` was added after the next trial measured a regression the card
+ * itself caused: clause 3 listed the body parts a node owes and never named
+ * where an unknown goes, so 0 of 12 built nodes carried a `## Uncertainty`
+ * section where every node had carried one before. A reader asking which claims
+ * rest on files nobody read could name none. An enumeration is read as complete,
+ * so anything missing from it is read as not required.
  */
 const REQUIRED_CLAUSES = [
   "project",
@@ -58,6 +65,7 @@ const REQUIRED_CLAUSES = [
   "never a code path",
   "Includes",
   "Excludes",
+  "Uncertainty",
   "why",
   "connect_project_source",
   "finalize_project_meaning",
