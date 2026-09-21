@@ -1049,7 +1049,7 @@ is limited to `inspect_compile_issue` / `break_dependency_cycle` /
 `empty_domain` / `separate_evidence_from_concept` / `fold_bulk_siblings` /
 `retire_unearned_node` / `capability_without_evidence` / `rejudge_summary_membership` /
 `definition_missing` / `boundary_missing` / `epistemic_exclusion` / `folder_only_evidence` /
-`slug_outside_kind_folder` for the same reason.
+`slug_outside_kind_folder` / `uncertainty_missing` for the same reason.
 `separate_evidence_from_concept` and `fold_bulk_siblings` come from the write-path
 node-eligibility gate (2026-07-31 council) and only ever appear on a write response:
 a path sitting in a meaning slot, and siblings a single machine batch created under
@@ -1074,7 +1074,10 @@ build actually uses — `add_concept` / `add_concepts` / `patch_concept`, becaus
 app session has no independent evaluator lane — never opened the prose. So each
 write that touches a body is now also told when that body carries no definition
 sentence — neither before its first `##` nor under a `## Definition` / `## Summary`
-/ `## Overview` heading — when an `## Includes` or `## Excludes` section is absent or
+/ `## Overview` heading, and a sentence that only restates the title does not count:
+it must add at least six words the title does not already supply, because
+construction rule 3a asks for a *non-circular* definition and length alone cannot
+tell terse from circular. It is told when an `## Includes` or `## Excludes` section is absent or
 still holds only placeholders, and when an `## Excludes` bullet states an evidence
 limit ("not mentioned in this scan") rather than a product boundary — the one claim
 a reader handed the vault without the source cannot check, and the one it repeats as
@@ -1090,7 +1093,17 @@ that only reads the queue still sees them. A compiled snapshot carries no bodies
 the engine reports nothing when a caller hands over none; that is "not looked at",
 never "clean". `folder_only_evidence` is write-path only, because deciding whether a
 cited path is a directory needs the repository root that a snapshot does not carry.
-`slug_outside_kind_folder` is the fifth, and it is about where a node lives rather than
+`uncertainty_missing` is the fifth: a `domain`, `capability`, or `element` whose body
+has no `## Uncertainty` / `## Open questions` / `## Unknowns` / `## Not checked` /
+`## Confidence` section holding anything but a placeholder. A node that records no
+unknown is claiming completeness, and the claim is always false — the builder read
+some files and not others, and which ones is the fact a later reader most needs and
+can least recover. It is the section an `Excludes` bullet belongs in once someone
+notices it was an evidence limit rather than a product boundary, which is why it sits
+beside `epistemic_exclusion` rather than replacing it. Measured on this repository's
+own vault: 64 of 109 nodes have no such section today. That is the honest state of the
+vault, not a false-positive rate.
+`slug_outside_kind_folder` is the sixth, and it is about where a node lives rather than
 what it says: a `domain`, `capability`, or `element` whose slug does not start with its
 kind's folder (`domains/`, `capabilities/`, `elements/`). Measured 2026-09-21 — a trial
 built an entire vault flat at the root and `validate_vault` answered **0 issues**, so

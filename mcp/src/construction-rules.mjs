@@ -525,7 +525,7 @@ export const BODY_DEFINITION_SECTIONS = Object.freeze([
 
 /** Warning literal for a node whose body never says what the node is. */
 export function definitionMissingMessage({ slug, kind }) {
-  return `"${slug}" is a ${kind} whose body carries no definition — it is still the starter scaffold, or it opens straight into headings. The write succeeded and nothing here blocks it; what is missing is the one sentence that makes this a concept instead of a label. Write what this ${kind} is and what it is not, in prose before the first \`##\` or under \`## Definition\`: patch_concept({slug:"${slug}", body:"# <title>\\n\\n<one non-circular sentence: what it is, and what it is not>\\n\\n…"}). An agent handed only this vault can read the title and learn nothing it did not already know from the title.`;
+  return `"${slug}" is a ${kind} whose body carries no definition — it is still the starter scaffold, it opens straight into headings, or it only restates the title. The write succeeded and nothing here blocks it; what is missing is the one sentence that makes this a concept instead of a label. Write what this ${kind} is and what it is not, in prose before the first \`##\` or under \`## Definition\`: patch_concept({slug:"${slug}", body:"# <title>\\n\\n<one non-circular sentence: what it is, and what it is not>\\n\\n…"}). An agent handed only this vault can read the title and learn nothing it did not already know from the title.`;
 }
 
 /** Warning literal for a boundary side the body never states. */
@@ -582,4 +582,35 @@ export function folderOnlyEvidenceMessage({ slug, path, suggestion }) {
  */
 export function slugOutsideKindFolderMessage({ slug, kind, canonicalSlug }) {
   return `"${slug}" is a ${kind} written at the vault root instead of inside its kind folder, so it reads as "${slug}" where every other ${kind} reads as "${canonicalSlug}". The write succeeded and nothing here blocks it — a flat slug is valid, it just groups with nothing. The map, the README generator, and every other reader that shows a vault by kind group on that folder, so a root-level ${kind} sits beside the project node rather than with its own kind. Move it when you are ready: rename_concept({oldSlug:"${slug}", newSlug:"${canonicalSlug}"}) without \`confirm\` returns a dry-run listing every backlink that would be rewritten; repeat the same call with \`confirm: true\` to move the file and rewrite them in one pass. The UID does not change, so nothing loses its identity.`;
+}
+
+/**
+ * Heading names a body section may use to record what the writer did not check.
+ *
+ * ## Why a node needs one at all
+ *
+ * A node that states no unknown is claiming completeness, and nothing in a
+ * vault is complete — the builder read some files and not others, and which
+ * ones is the fact a later reader most needs and can least recover. Measured
+ * 2026-08-28: exclusions that were really evidence limits were repeated as
+ * product facts by a source-hidden reader, because the vault gave those limits
+ * nowhere else to live. `epistemic-exclusion` tells a writer to move such a
+ * line out of `Excludes`; this says where it goes, and asks for it even when
+ * `Excludes` happens to be clean.
+ *
+ * `confidence` is in the list because a vault already in the wild uses it for
+ * exactly this, and a check that renames someone's honest section is a check
+ * they switch off.
+ */
+export const BODY_UNCERTAINTY_SECTIONS = Object.freeze([
+  'uncertainty',
+  'open questions',
+  'unknowns',
+  'not checked',
+  'confidence',
+]);
+
+/** Warning literal for a node that records no unknown at all. */
+export function uncertaintyMissingMessage({ slug, kind }) {
+  return `"${slug}" (${kind}) records no uncertainty, so the body reads as complete — and nothing in a vault is. The write succeeded and nothing here blocks it; what is missing is the fact a later reader most needs and can least recover: which files you did not open, which claim you inferred rather than read, what you could not check. Without it an agent handed only this vault treats every silence as a settled negative. Say it plainly: patch_concept({slug:"${slug}", body:"…\\n\\n## Uncertainty\\n\\n- <what you did not read or could not check>\\n"}). \`## Open questions\`, \`## Unknowns\`, \`## Not checked\` and \`## Confidence\` are read as the same section, and this is also where an \`Excludes\` bullet belongs once you notice it was an evidence limit rather than a product boundary.`;
 }

@@ -57,6 +57,10 @@ const WRITTEN_BODY = [
   '',
   '- The neighbouring thing it is confused with and does not do.',
   '',
+  '## Uncertainty',
+  '',
+  '- The second caller was inferred from imports rather than read.',
+  '',
 ].join('\n');
 
 function nextTestUid() {
@@ -504,7 +508,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       body: defaultBody('capability', 'Labelled'),
     });
     const codes = codesFor(drainNodeEligibilityFindings(), 'capabilities/labelled');
-    assert.deepEqual(codes, ['boundary-missing', 'boundary-missing', 'definition-missing']);
+    assert.deepEqual(codes, ['boundary-missing', 'boundary-missing', 'definition-missing', 'uncertainty-missing']);
   });
 
   it('a cited folder is reported once the write door has grounded a repository root', () => {
@@ -556,9 +560,9 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     updateDoc(root, 'capabilities/entry', { body: defaultBody('capability', 'Entry') });
     assert.deepEqual(
       codesFor(drainNodeEligibilityFindings(), 'capabilities/entry').filter((code) =>
-        code.startsWith('definition') || code.startsWith('boundary'),
+        code.startsWith('definition') || code.startsWith('boundary') || code.startsWith('uncertainty'),
       ),
-      ['boundary-missing', 'boundary-missing', 'definition-missing'],
+      ['boundary-missing', 'boundary-missing', 'definition-missing', 'uncertainty-missing'],
     );
     resetNodeEligibilityGate();
     // …while a frontmatter-only write is not. A standing accusation on every
@@ -566,7 +570,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     patchFrontmatter(root, 'capabilities/entry', { title: 'Entry, renamed' });
     assert.deepEqual(
       codesFor(drainNodeEligibilityFindings(), 'capabilities/entry').filter((code) =>
-        code.startsWith('definition') || code.startsWith('boundary'),
+        code.startsWith('definition') || code.startsWith('boundary') || code.startsWith('uncertainty'),
       ),
       [],
     );

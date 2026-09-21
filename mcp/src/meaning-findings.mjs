@@ -37,11 +37,13 @@ import { isAbsolute, join, resolve, sep } from 'node:path';
 import {
   BODY_BOUNDARY_SECTIONS,
   BODY_DEFINITION_SECTIONS,
+  BODY_UNCERTAINTY_SECTIONS,
   boundaryMissingMessage,
   definitionMissingMessage,
   epistemicExclusionMessage,
   folderOnlyEvidenceMessage,
   isEpistemicExclusionBoundary,
+  uncertaintyMissingMessage,
 } from './construction-rules.mjs';
 import { NODE_ELIGIBILITY_GATE, ONTOLOGY_META_MODEL_REFERENCE, defaultBody } from './schema.mjs';
 
@@ -55,8 +57,32 @@ import { NODE_ELIGIBILITY_GATE, ONTOLOGY_META_MODEL_REFERENCE, defaultBody } fro
  */
 const DEFINITION_MIN_WORDS = 8;
 
+/**
+ * Words a definition must carry that the title does not already say.
+ *
+ * A review falsifier, and a fair one: "Mobile/web bottom tab navigation widget
+ * for the app" is eight words and clears the length bar while telling a reader
+ * nothing the title `Bottom Tab Bar` did not. Construction rule 3a asks for a
+ * *non-circular* sentence, and length alone cannot tell circular from terse.
+ * Six, because a definition that adds five new words is a paraphrase and one
+ * that adds six has begun to say something — measured against both trial vaults
+ * and this repository's own.
+ */
+const DEFINITION_MIN_NOVEL_WORDS = 6;
+
+/**
+ * Words that carry no meaning of their own, so restating the title around them
+ * is still restating the title. Deliberately tiny: a long stop list starts
+ * deciding which real words count, and this only needs to stop grammar from
+ * passing as content.
+ */
+const DEFINITION_STOP_WORDS = Object.freeze(
+  new Set(['a', 'an', 'the', 'of', 'and', 'or', 'for', 'to', 'in', 'on', 'is', 'are']),
+);
+
 const DEFINITION_KINDS = new Set(['domain', 'capability', 'element']);
 const BOUNDARY_KINDS = new Set(['domain', 'capability']);
+const UNCERTAINTY_KINDS = new Set(['domain', 'capability', 'element']);
 const EPISTEMIC_KINDS = new Set(['domain', 'capability', 'element', 'project']);
 const FOLDER_EVIDENCE_KINDS = new Set(['capability', 'element']);
 
@@ -76,6 +102,27 @@ function fold(text) {
 /** Strips a list marker (`-`, `*`, `1.`) or a blockquote caret from one line. */
 function stripMarker(line) {
   return String(line ?? '').replace(/^\s*(?:[-*+]|\d+[.)]|>)\s*/, '').trim();
+}
+
+/** Lowercased word tokens, punctuation and markup dropped. */
+function wordTokens(text) {
+  return fold(text)
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean);
+}
+
+/**
+ * How much of this sentence is not already in the title?
+ *
+ * Counts distinct tokens, so repeating one new word six times does not pass.
+ */
+function novelWordCount(text, titleWords) {
+  const novel = new Set();
+  for (const token of wordTokens(text)) {
+    if (DEFINITION_STOP_WORDS.has(token) || titleWords.has(token)) continue;
+    novel.add(token);
+  }
+  return novel.size;
 }
 
 function wordCount(text) {
@@ -248,11 +295,18 @@ export function definitionFinding({ kind, slug, title, body }) {
   const leadText = lead.join(' ');
   const starterLead = starter ? starter.lead.join(' ') : '';
   const leadIsStarter = Boolean(starterLead) && fold(leadText).includes(fold(starterLead));
-  if (!leadIsStarter && wordCount(leadText) >= DEFINITION_MIN_WORDS) return null;
   const stated = contentLines(findDefinitionSection(sections), placeholders)
     .map((line) => stripMarker(line))
     .join(' ');
-  if (wordCount(stated) >= DEFINITION_MIN_WORDS) return null;
+  // Either place may hold the definition, and one of them holding it is enough.
+  // Each candidate has to clear both bars: long enough to be a sentence, and
+  // new enough not to be the title with grammar around it.
+  const titleWords = new Set(wordTokens(title));
+  for (const candidate of [leadIsStarter ? '' : leadText, stated]) {
+    if (wordCount(candidate) < DEFINITION_MIN_WORDS) continue;
+    if (novelWordCount(candidate, titleWords) < DEFINITION_MIN_NOVEL_WORDS) continue;
+    return null;
+  }
   return {
     code: 'definition-missing',
     slug,
@@ -289,6 +343,32 @@ export function boundaryFindings({ kind, slug, title, body }) {
     });
   }
   return findings;
+}
+
+/**
+ * Does the body say what the writer did not check?
+ *
+ * A node that records no unknown claims completeness, and the claim is always
+ * false — the builder read some files and not others. A placeholder bullet does
+ * not count, for the same reason it does not count on either boundary side: a
+ * slot is not an answer, and letting the scaffold satisfy the check would mean
+ * the default write silences the one question the default write cannot have
+ * answered.
+ */
+export function uncertaintyFinding({ kind, slug, title, body }) {
+  if (!UNCERTAINTY_KINDS.has(kind)) return null;
+  const { sections } = parseBodySections(body);
+  const placeholders = starterPlaceholders(starterShape(kind, title));
+  const section = sections.find((row) => headingNames(row.heading, BODY_UNCERTAINTY_SECTIONS)) ?? null;
+  if (contentLines(section, placeholders).length > 0) return null;
+  return {
+    code: 'uncertainty-missing',
+    slug,
+    key: 'uncertainty',
+    refs: [],
+    count: 1,
+    message: uncertaintyMissingMessage({ slug, kind }),
+  };
 }
 
 /**
@@ -422,6 +502,8 @@ export function meaningFindings({
     const definition = definitionFinding({ kind, slug, title, body });
     if (definition) findings.push(definition);
     findings.push(...boundaryFindings({ kind, slug, title, body }));
+    const uncertainty = uncertaintyFinding({ kind, slug, title, body });
+    if (uncertainty) findings.push(uncertainty);
     const epistemic = epistemicExclusionFinding({ kind, slug, title, body });
     if (epistemic) findings.push(epistemic);
   }

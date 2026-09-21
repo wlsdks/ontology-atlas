@@ -448,6 +448,8 @@ export const VAULT_KIND_SCHEMA = {
       `- <one neighbouring responsibility this domain does not own>\n\n` +
       `## Evidence\n\n` +
       `- <what makes this more than a folder or a team name>\n\n` +
+      `## Uncertainty\n\n` +
+      `- <what you did not read or could not check>\n\n` +
       metaModelStarterLine(),
   },
   capability: {
@@ -485,6 +487,8 @@ export const VAULT_KIND_SCHEMA = {
       `- <one nearby ability this capability does not provide>\n\n` +
       `## Evidence\n\n` +
       `- path: <file> — what it proves\n\n` +
+      `## Uncertainty\n\n` +
+      `- <what you did not read or could not check>\n\n` +
       metaModelStarterLine(),
   },
   element: {
@@ -518,6 +522,8 @@ export const VAULT_KIND_SCHEMA = {
       `- <one nearby role this element does not play>\n\n` +
       `## Evidence\n\n` +
       `- path: <file> — what it proves\n\n` +
+      `## Uncertainty\n\n` +
+      `- <what you did not read or could not check>\n\n` +
       metaModelStarterLine(),
   },
   document: {

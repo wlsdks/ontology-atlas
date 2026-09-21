@@ -20,6 +20,7 @@ import {
   definitionFinding,
   epistemicExclusionFinding,
   folderOnlyEvidenceFinding,
+  uncertaintyFinding,
   meaningFindings,
 } from './meaning-findings.mjs';
 
@@ -36,6 +37,10 @@ const WRITTEN_CAPABILITY = [
   '## Excludes',
   '',
   '- Syncing that folder to another machine; team sync is a separate layer.',
+  '',
+  '## Uncertainty',
+  '',
+  '- The Safari fallback was inferred from the feature check, not exercised.',
   '',
 ].join('\n');
 
@@ -125,6 +130,46 @@ describe('definition-missing — a label is not a concept', () => {
     );
   });
 
+  /*
+   * The review falsifier, and a fair one: length alone cannot tell a terse
+   * definition from the title with grammar wrapped around it. Construction
+   * rule 3a asks for a *non-circular* sentence, so the check counts the words
+   * the title does not already supply.
+   */
+  it('fires on an eight-word sentence that only restates the title', () => {
+    const finding = definitionFinding({
+      kind: 'element',
+      slug: 'elements/bottom-tab-bar',
+      title: 'Bottom Tab Bar',
+      body: '## Definition\n\nMobile/web bottom tab navigation widget for the app\n',
+    });
+    assert.ok(finding);
+    assert.match(finding.message, /only restates the title/);
+  });
+
+  it('stays silent on a definition of the same length that says something new', () => {
+    assert.equal(
+      definitionFinding({
+        kind: 'capability',
+        slug: 'capabilities/option-declaration',
+        title: 'Option Declaration',
+        body: '## Definition\n\nTurns the declared option list into a value map, recording which source won\n',
+      }),
+      null,
+    );
+  });
+
+  it('counts distinct words, so repeating one new word is still a restatement', () => {
+    assert.ok(
+      definitionFinding({
+        kind: 'element',
+        slug: 'elements/parser',
+        title: 'Parser',
+        body: '## Definition\n\nThe parser parses and parses and parses the parsed parse\n',
+      }),
+    );
+  });
+
   it('does not judge a project or a document body', () => {
     for (const kind of ['project', 'document']) {
       assert.equal(definitionFinding({ kind, slug: `${kind}/x`, title: 'X', body: '' }), null);
@@ -173,6 +218,57 @@ describe('boundary-missing — one finding per missing side', () => {
       boundaryFindings({ kind: 'element', slug: 'elements/parser', title: 'Parser', body: '' }),
       [],
     );
+  });
+});
+
+describe('uncertainty-missing — a body with no unknown claims completeness', () => {
+  it('fires when no section records what was not checked', () => {
+    const body = [
+      '# Folder Access',
+      '',
+      'Opens one Markdown folder on disk and keeps reading it as the ontology graph.',
+      '',
+      '## Includes',
+      '',
+      '- Choosing the folder and remembering it.',
+      '',
+    ].join('\n');
+    const finding = uncertaintyFinding({ kind: 'capability', slug: 'capabilities/folder-access', title: 'Folder Access', body });
+    assert.ok(finding);
+    assert.equal(finding.code, 'uncertainty-missing');
+    assert.equal(finding.key, 'uncertainty');
+    assert.match(finding.message, /## Uncertainty/);
+    assert.match(finding.message, /patch_concept/);
+    assert.match(finding.message, /nothing here blocks it/);
+  });
+
+  it('stays silent once the section says something, under any of its names', () => {
+    for (const heading of ['Uncertainty', 'Open questions', 'Unknowns', 'Not checked', 'Confidence']) {
+      const body = `# X\n\nOne sentence that states what this capability does and where its edge is.\n\n## ${heading}\n\n- The second caller was inferred from imports, not read.\n`;
+      assert.equal(
+        uncertaintyFinding({ kind: 'capability', slug: 'capabilities/x', title: 'X', body }),
+        null,
+        heading,
+      );
+    }
+  });
+
+  it('still fires when the section is there but holds only the scaffold placeholder', () => {
+    // A slot is not an answer. Letting the template satisfy this would mean the
+    // default write silences the one question the default write cannot answer.
+    const finding = uncertaintyFinding({
+      kind: 'element',
+      slug: 'elements/parser',
+      title: 'Parser',
+      body: defaultBody('element', 'Parser'),
+    });
+    assert.ok(finding);
+  });
+
+  it('does not judge a project or a document body', () => {
+    for (const kind of ['project', 'document']) {
+      assert.equal(uncertaintyFinding({ kind, slug: `${kind}/x`, title: 'X', body: '' }), null);
+    }
   });
 });
 
@@ -401,7 +497,12 @@ describe('meaningFindings — only what this write touched', () => {
       body: defaultBody('capability', 'Fresh'),
       bodyWritten: true,
     });
-    assert.deepEqual(codes(findings), ['boundary-missing', 'boundary-missing', 'definition-missing']);
+    assert.deepEqual(codes(findings), [
+      'boundary-missing',
+      'boundary-missing',
+      'definition-missing',
+      'uncertainty-missing',
+    ]);
   });
 
   it('reports nothing on a body that answered every question', () => {

@@ -530,10 +530,11 @@ kept in lock-step by
 | `dangling-graph-reference` | warning | *(whole-vault validators only — see below)* a relation array or `domain` key points at a slug that does not exist anywhere in the vault |
 | `swallowed-relation-note` | **error** | *(MCP and CLI validators only — see below)* a `relation_notes` value contains another declared target in `target: ` form: an unquoted value swallowed the entries after it, and their rationale is gone |
 | `orphaned-relation-note` | **error** | *(MCP and CLI validators only — see below)* a `relation_notes` key names no relation the document declares, so no edge carries the sentence; the key side of the same unquoted-value accident, or a note left behind by a manual relation removal |
-| `definition-missing` | warning | *(write-path gate and `maintenance_plan` only — see below)* a `domain`, `capability`, or `element` whose body states no definition, neither before its first `##` nor under a `## Definition` / `## Summary` / `## Overview` heading: still the starter scaffold, or a title restated as a phrase |
+| `definition-missing` | warning | *(write-path gate and `maintenance_plan` only — see below)* a `domain`, `capability`, or `element` whose body states no definition, neither before its first `##` nor under a `## Definition` / `## Summary` / `## Overview` heading: still the starter scaffold, too short to be a sentence, or circular — adding fewer than six words the title does not already supply |
 | `boundary-missing` | warning | *(write-path gate and `maintenance_plan` only)* a `domain` or `capability` with no `## Includes` or no `## Excludes` section holding anything but placeholders; one finding per missing side |
 | `epistemic-exclusion` | warning | *(write-path gate and `maintenance_plan` only)* an exclusion bullet that states an evidence limit ("not mentioned in this scan") rather than a product boundary — the one claim a source-hidden reader cannot check and does repeat as fact |
 | `folder-only-evidence` | warning | *(write-path gate only)* frontmatter `path:` resolves to a directory, so this node's evidence drift can never be judged: a folder changes on almost any commit beneath it |
+| `uncertainty-missing` | warning | *(write-path gate and `maintenance_plan` only)* a `domain`, `capability`, or `element` with no `## Uncertainty` / `## Open questions` / `## Unknowns` / `## Not checked` / `## Confidence` section holding anything but a placeholder. A node that records no unknown claims completeness, and §2.1 evidence is always partial |
 | `slug-outside-kind-folder` | warning | *(write-path gate and `maintenance_plan` only)* a `domain`, `capability`, or `element` whose slug does not start with its kind's folder (§4). Valid, never blocked, and reported once at creation: a flat node groups with nothing in any reader that shows a vault by kind |
 
 Structural parse failures and v2 identity failures are errors; the other
@@ -551,7 +552,7 @@ every other node's slug, which only a whole-vault pass can do. A per-file
 UI check (fast path, used while a human is editing a single file) cannot
 and does not claim to catch it.
 
-The last five are advisories about a node's body and its address rather than
+The last six are advisories about a node's body and its address rather than
 about frontmatter shape, and they have a different scope again. They are produced by the write-path node-eligibility
 gate inside `mcp/src/meaning-findings.mjs`, so they reach an author through the
 `add_concept` / `add_concepts` / `patch_concept` response and through

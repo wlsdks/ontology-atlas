@@ -744,7 +744,7 @@ describe('write-time meaning findings — the default body is reported, a writte
       .filter((finding) => finding.slug === 'capabilities/folder-access')
       .map((finding) => finding.code)
       .sort();
-    assert.deepEqual(codes, ['boundary-missing', 'boundary-missing', 'definition-missing']);
+    assert.deepEqual(codes, ['boundary-missing', 'boundary-missing', 'definition-missing', 'uncertainty-missing']);
   });
 
   it('patching in a written body clears them — the gate does not keep accusing a repaired node', () => {
@@ -778,10 +778,15 @@ describe('write-time meaning findings — the default body is reported, a writte
         '',
         '- Copying that folder anywhere else; team sync is a separate layer.',
         '',
+        '## Uncertainty',
+        '',
+        '- The Safari fallback was inferred from the feature check, not exercised.',
+        '',
       ].join('\n'),
     });
     const codes = drainNodeEligibilityFindings().map((finding) => finding.code);
     assert.equal(codes.includes('definition-missing'), false, codes.join(', '));
     assert.equal(codes.includes('boundary-missing'), false, codes.join(', '));
+    assert.equal(codes.includes('uncertainty-missing'), false, codes.join(', '));
   });
 });

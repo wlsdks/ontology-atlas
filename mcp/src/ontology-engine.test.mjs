@@ -4542,6 +4542,10 @@ describe('maintenance_plan — meaning gaps in the body', () => {
     '',
     '- Copying it anywhere else; team sync is a separate layer.',
     '',
+    '## Uncertainty',
+    '',
+    '- The Safari fallback was inferred from the feature check, not exercised.',
+    '',
   ].join('\n');
 
   function rows(bodyBySlug, { withBodies = true } = {}) {
@@ -4564,7 +4568,7 @@ describe('maintenance_plan — meaning gaps in the body', () => {
       withBodies ? { sourceDocs: docs } : {},
     );
     return result.actions.filter((action) =>
-      ['definition_missing', 'boundary_missing', 'epistemic_exclusion'].includes(action.kind),
+      ['definition_missing', 'boundary_missing', 'epistemic_exclusion', 'uncertainty_missing'].includes(action.kind),
     );
   }
 
@@ -4574,6 +4578,7 @@ describe('maintenance_plan — meaning gaps in the body', () => {
       'boundary_missing',
       'boundary_missing',
       'definition_missing',
+      'uncertainty_missing',
     ]);
     // Review items: no tool call writes a definition, and offering a scaffold
     // for one is the shape that produced the problem.
@@ -4582,6 +4587,17 @@ describe('maintenance_plan — meaning gaps in the body', () => {
       assert.equal(action.phase, 'review');
       assert.equal(action.severity, 'info');
     }
+  });
+
+  it('reports a node that records no unknown, and stops once it does', () => {
+    const withoutSection = WRITTEN.split('\n## Uncertainty')[0];
+    assert.deepEqual(
+      rows({ 'capabilities/folder-access': withoutSection })
+        .filter((action) => action.kind === 'uncertainty_missing')
+        .map((action) => action.node.slug),
+      ['capabilities/folder-access'],
+    );
+    assert.deepEqual(rows({}).filter((action) => action.kind === 'uncertainty_missing'), []);
   });
 
   it('reports an exclusion that states an evidence limit rather than a boundary', () => {

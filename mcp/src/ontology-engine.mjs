@@ -13,6 +13,7 @@ import {
   boundaryFindings,
   definitionFinding,
   epistemicExclusionFinding,
+  uncertaintyFinding,
 } from './meaning-findings.mjs';
 import { slugOutsideKindFolderMessage } from './construction-rules.mjs';
 
@@ -280,6 +281,10 @@ export const MAINTENANCE_KIND_VALUES = Object.freeze([
   // reads first, and handing over a ready-made rename of every node at once is
   // exactly the scaffold that makes a queue dangerous.
   'slug_outside_kind_folder',
+  // A node that records no unknown (2026-09-21). It claims completeness, and
+  // the claim is always false: the builder read some files and not others, and
+  // which ones is the fact a later reader most needs and can least recover.
+  'uncertainty_missing',
 ]);
 /**
  * Write-gate finding code → maintenance kind, and the score each carries.
@@ -294,6 +299,7 @@ const MEANING_GAP_KIND_BY_CODE = Object.freeze({
   'epistemic-exclusion': 'epistemic_exclusion',
   'folder-only-evidence': 'folder_only_evidence',
   'slug-outside-kind-folder': 'slug_outside_kind_folder',
+  'uncertainty-missing': 'uncertainty_missing',
 });
 const MEANING_GAP_SCORE_BY_CODE = Object.freeze({
   'definition-missing': 0.6,
@@ -306,6 +312,9 @@ const MEANING_GAP_SCORE_BY_CODE = Object.freeze({
   // and groups with nothing, and the repair moves a file rather than writing
   // meaning, so it waits behind every question about what a node means.
   'slug-outside-kind-folder': 0.35,
+  // Beside the boundary questions: it is the same kind of work, one sentence
+  // the writer alone can supply, and nothing else in the vault can stand in.
+  'uncertainty-missing': 0.55,
 });
 
 const MAINTENANCE_PHASES = new Set(MAINTENANCE_PHASE_VALUES);
@@ -2944,6 +2953,7 @@ export function createOntologyEngine(artifact, options = {}) {
       const found = [
         definitionFinding(input),
         ...boundaryFindings(input),
+        uncertaintyFinding(input),
         epistemicExclusionFinding(input),
       ].filter(Boolean);
       for (const finding of found) {
