@@ -212,9 +212,23 @@ function scriptChunkPathsFromHtml(html) {
 }
 
 function readRouteChunkText(outDir, html) {
-  return scriptChunkPathsFromHtml(html)
-    .map((chunkPath) => readTextUnder(outDir, chunkPath) ?? "")
-    .join("\n");
+  const pending = scriptChunkPathsFromHtml(html);
+  const visited = new Set();
+  const chunks = [];
+  // A client route can load its implementation after hydration. Follow only
+  // references reachable from this route, so unrelated output cannot hide a
+  // missing implementation. Turbopack uses paths relative to _next for these.
+  for (let index = 0; index < pending.length; index += 1) {
+    const chunkPath = pending[index];
+    if (visited.has(chunkPath)) continue;
+    visited.add(chunkPath);
+    const text = readTextUnder(outDir, chunkPath) ?? "";
+    chunks.push(text);
+    for (const match of text.matchAll(/(?:_next\/)?static\/chunks\/[A-Za-z0-9_.-]+\.js/g)) {
+      pending.push(match[0].startsWith("_next/") ? match[0] : `_next/${match[0]}`);
+    }
+  }
+  return chunks.join("\n");
 }
 
 function isMissingBuildArtifact(check) {

@@ -357,6 +357,35 @@ test("desktop smoke detects a missing current component marker", () => {
   assert.match(report.nextAction, /contract drift|current route/i);
 });
 
+test("desktop smoke follows reachable lazy chunks without accepting unrelated output", () => {
+  const outDir = makeCurrentOut();
+  const entry = routeChunkPath("en", "/ontology/insights");
+  const lazy = "_next/static/chunks/insights-lazy.js";
+  const nested = "_next/static/chunks/insights-handoff.js";
+  const markers = DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"];
+  const evaluate = () => evaluateDesktopSmoke({ outDir, routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT });
+  try {
+    write(outDir, entry, 'load("static/chunks/insights-lazy.js")');
+    write(outDir, lazy, `${markers.slice(0, 2).join("\n")}\nload("static/chunks/insights-handoff.js")`);
+    write(outDir, nested, `${markers[2]}\nload("${entry}")`);
+    assert.equal(evaluate().ok, true, "lazy descendants and cycles remain reachable");
+
+    fs.unlinkSync(path.join(outDir, nested));
+    write(outDir, "_next/static/chunks/unrelated.js", markers[2]);
+    const missing = evaluate();
+    assert.equal(missing.ok, false, "an unrelated chunk cannot replace a missing descendant");
+    assert.ok(missing.missing.some((check) => check.id === "route-chunk-text:en:/ontology/insights"));
+
+    write(outDir, nested, markers[2]);
+    assert.equal(evaluate().ok, true, "restoring the reachable artifact restores the gate");
+
+    write(outDir, entry, "");
+    assert.equal(evaluate().ok, false, "orphaned output cannot satisfy a route contract");
+  } finally {
+    fs.rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("desktop smoke detects drift in the current download handoff", () => {
   const outDir = makeCurrentOut();
   const routePath = routeIndexPath("ko", "/download");
