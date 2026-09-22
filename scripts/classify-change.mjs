@@ -370,8 +370,11 @@ function gatesPlan({ suggestions, full }) {
   // (2026-09-01 review: without them here, a PR touching those scripts got a
   // gates lane that died on missing mcp/node_modules — a false red no rerun
   // fixes, because checks.yml gates `pnpm --dir mcp install` on this flag).
+  // test:cli:commands joined on 2026-09-23: `cli/src/commands/growth.test.mjs`
+  // runs the real `growth` command, which calls the source MCP server through
+  // `callMcpTool`, and PR #1801's first CI run died on exactly that.
   const needsMcp = commands.some((command) =>
-    /^pnpm (?:test:(?:architecture|claude:hooks)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
+    /^pnpm (?:test:(?:architecture|claude:hooks|cli:commands)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
       command,
     ),
   );

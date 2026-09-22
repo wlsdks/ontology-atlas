@@ -245,6 +245,9 @@ test('token, toc, and package gates reach the PRs that touch their inputs', () =
 
   const cli = buildImpactPlan({ files: ['cli/src/commands/relate.mjs'] });
   assert.ok(cli.lanes.gates.commands.includes('pnpm test:cli:commands'));
+  // The command tests spawn the source MCP server (growth.test.mjs), so the
+  // lane must install mcp/node_modules first; PR #1801 went red without it.
+  assert.equal(cli.lanes.gates.needsMcp, true);
 });
 
 test('per-file lint carries the warning ratchet', () => {
