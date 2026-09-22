@@ -11,6 +11,7 @@ import {
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import { DEFAULT_IGNORE } from './analyze/constants.mjs';
+import { OUTLINE_DECLARATION_LIMIT, outlineSource } from './source-outline.mjs';
 
 const SOURCE_READ_LIMITS = Object.freeze({
   requests: 8,
@@ -20,6 +21,11 @@ const SOURCE_READ_LIMITS = Object.freeze({
   rangeBytes: 8 * 1024,
   aggregateTextBytes: 32 * 1024,
   packetBytes: 64 * 1024,
+  // An outline is a table of contents, so it is bounded like one range of text:
+  // it stops at the declaration ceiling `source-outline.mjs` applies and again
+  // at these bytes, and what it returns counts against the same aggregate.
+  outlineDeclarations: OUTLINE_DECLARATION_LIMIT,
+  outlineBytes: 16 * 1024,
 });
 
 const SOURCE_EXTENSIONS = new Set([
@@ -58,11 +64,18 @@ function isWellFormedUnicode(value) {
   return true;
 }
 
+function isOutline(selector) {
+  return selector.mode === 'outline';
+}
+
 function refuse(selector, reason) {
   return {
     status: 'refused',
     path: selector.path,
-    requestedRange: { startLine: selector.startLine, maxLines: selector.maxLines },
+    ...(isOutline(selector) ? { mode: 'outline' } : {}),
+    requestedRange: isOutline(selector)
+      ? null
+      : { startLine: selector.startLine, maxLines: selector.maxLines },
     reason,
     requestComplete: false,
     next: null,
@@ -77,9 +90,12 @@ export function validateSourceReadSelectors(selectors) {
     if (!selector || typeof selector !== 'object' || Array.isArray(selector)) {
       throw new Error(`sourceReads[${index}] must be an object.`);
     }
-    const allowed = new Set(['path', 'startLine', 'maxLines', 'expectedSha256']);
+    const allowed = new Set(['path', 'startLine', 'maxLines', 'expectedSha256', 'mode']);
     const unknown = Object.keys(selector).filter((key) => !allowed.has(key));
     if (unknown.length) throw new Error(`Unknown field "${unknown[0]}" in sourceReads[${index}].`);
+    if (selector.mode !== undefined && selector.mode !== 'lines' && selector.mode !== 'outline') {
+      throw new Error(`sourceReads[${index}].mode must be "lines" or "outline".`);
+    }
     if (typeof selector.path !== 'string' || selector.path.length === 0) {
       throw new Error(`sourceReads[${index}].path must be a non-empty string.`);
     }
@@ -89,13 +105,24 @@ export function validateSourceReadSelectors(selectors) {
     if ([...selector.path].length > SOURCE_READ_LIMITS.pathCharacters) {
       throw new Error(`sourceReads[${index}].path must be at most ${SOURCE_READ_LIMITS.pathCharacters} characters.`);
     }
-    for (const key of ['startLine', 'maxLines']) {
-      if (!Number.isSafeInteger(selector[key]) || selector[key] <= 0) {
-        throw new Error(`sourceReads[${index}].${key} must be a positive safe integer.`);
+    if (isOutline(selector)) {
+      // An outline has no range: it lists the whole file's declarations. A
+      // selector that carries one is asking for two different reads at once,
+      // and silently ignoring the range would return lines nobody can see.
+      for (const key of ['startLine', 'maxLines']) {
+        if (selector[key] !== undefined) {
+          throw new Error(`sourceReads[${index}].${key} does not apply to mode "outline".`);
+        }
       }
-    }
-    if (selector.maxLines > SOURCE_READ_LIMITS.maxLines) {
-      throw new Error(`sourceReads[${index}].maxLines must be <= ${SOURCE_READ_LIMITS.maxLines}.`);
+    } else {
+      for (const key of ['startLine', 'maxLines']) {
+        if (!Number.isSafeInteger(selector[key]) || selector[key] <= 0) {
+          throw new Error(`sourceReads[${index}].${key} must be a positive safe integer.`);
+        }
+      }
+      if (selector.maxLines > SOURCE_READ_LIMITS.maxLines) {
+        throw new Error(`sourceReads[${index}].maxLines must be <= ${SOURCE_READ_LIMITS.maxLines}.`);
+      }
     }
     if (selector.expectedSha256 !== undefined && !DIGEST.test(selector.expectedSha256)) {
       throw new Error(`sourceReads[${index}].expectedSha256 must be 64 lowercase hexadecimal characters.`);
@@ -193,6 +220,47 @@ function completeLines(text) {
   return text.match(/.*?(?:\r\n|\n|\r|$)/gs).filter((line) => line.length > 0);
 }
 
+/**
+ * One outline row: the file's declarations with their line numbers, so the next
+ * bounded read can name an exact range instead of starting at line 1 again.
+ *
+ * It returns no source text and mints no citation, because a list of names is
+ * not evidence of behaviour. The declarations are trimmed to `outlineBytes` and
+ * the row says `truncated` when either that budget or the declaration ceiling
+ * cut the list short.
+ */
+function outlineOne(selector, bytes, text, fileLines, fullFileSha256) {
+  const outline = outlineSource(text, selector.path);
+  const declarations = [];
+  let returnedBytes = 0;
+  let truncated = outline.truncated;
+  for (const declaration of outline.declarations) {
+    const declarationBytes = Buffer.byteLength(JSON.stringify(declaration), 'utf8') + 1;
+    if (returnedBytes + declarationBytes > SOURCE_READ_LIMITS.outlineBytes) {
+      truncated = true;
+      break;
+    }
+    declarations.push(declaration);
+    returnedBytes += declarationBytes;
+  }
+  return {
+    status: 'outlined',
+    mode: 'outline',
+    path: selector.path,
+    requestedRange: null,
+    sha256: fullFileSha256,
+    fileBytes: bytes.length,
+    fileLines,
+    language: outline.language,
+    declarationCount: declarations.length,
+    declarations,
+    returnedBytes,
+    truncated,
+    requestComplete: !truncated,
+    next: null,
+  };
+}
+
 function readOne(rootPath, selector, ignore, hooks) {
   const policyReason = pathRefusal(selector.path, ignore);
   if (policyReason) return refuse(selector, policyReason);
@@ -204,6 +272,7 @@ function readOne(rootPath, selector, ignore, hooks) {
   const fullFileSha256 = sha256(stable.bytes);
   if (selector.expectedSha256 && selector.expectedSha256 !== fullFileSha256) return refuse(selector, 'hash_mismatch');
   const lines = completeLines(text);
+  if (isOutline(selector)) return outlineOne(selector, stable.bytes, text, lines.length, fullFileSha256);
   if (selector.startLine > lines.length) return refuse(selector, 'range_beyond_eof');
   const requested = lines.slice(selector.startLine - 1, selector.startLine - 1 + selector.maxLines);
   const delivered = [];
@@ -267,11 +336,13 @@ export function readSourceEvidence(
   };
   for (const selector of selectors) {
     let row = readOne(rootPath, selector, ignore, { onBeforeOpen, onDescriptorRead });
-    if (row.status === 'read' && packet.totalReturnedBytes + row.returnedBytes > SOURCE_READ_LIMITS.aggregateTextBytes) {
+    // An outline row is bounded like a text row and spends the same aggregate.
+    const delivered = row.status === 'read' || row.status === 'outlined';
+    if (delivered && packet.totalReturnedBytes + row.returnedBytes > SOURCE_READ_LIMITS.aggregateTextBytes) {
       row = { ...refuse(selector, 'aggregate_text_budget'), status: 'omitted' };
     }
     const candidate = { ...packet, rows: [...packet.rows, row] };
-    if (row.status === 'read') candidate.totalReturnedBytes += row.returnedBytes;
+    if (row.status === 'read' || row.status === 'outlined') candidate.totalReturnedBytes += row.returnedBytes;
     candidate.serializedBytes = 0;
     setSerializedBytes(candidate);
     if (candidate.serializedBytes > SOURCE_READ_LIMITS.packetBytes) {
@@ -296,6 +367,11 @@ export function composeSourceDigest(repositoryFingerprint, sourceEvidence) {
       actualRange: row.actualRange,
       fullFileSha256: row.fullFileSha256,
       citation: row.citation,
+    } : row.status === 'outlined' ? {
+      mode: 'outline',
+      fullFileSha256: row.sha256,
+      declarationCount: row.declarationCount,
+      truncated: row.truncated,
     } : { reason: row.reason }),
   }));
   return `sha256:${sha256(Buffer.from(JSON.stringify({ repositoryFingerprint, manifest })) )}`;

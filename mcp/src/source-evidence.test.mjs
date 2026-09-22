@@ -201,3 +201,108 @@ test('rechecks every path component after read and refuses parent symlink reconf
   assert.equal('text' in packet.rows[0], false);
   assert.equal('citation' in packet.rows[0], false);
 });
+
+test('outlines a whole file through the same reader, sharing its path and hash checks', () => {
+  const root = fixture();
+  mkdirSync(join(root, 'src'));
+  const body = [
+    'package command',
+    '',
+    'type Command struct {',
+    '\tName string',
+    '}',
+    '',
+    'func (c *Command) SuggestionsFor(typed string) []string {',
+    '\treturn nil',
+    '}',
+  ].join('\n');
+  writeFileSync(join(root, 'src', 'command.go'), `${body}\n`);
+  const packet = readSourceEvidence(root, [{ path: 'src/command.go', mode: 'outline' }]);
+  const row = packet.rows[0];
+  assert.equal(row.status, 'outlined');
+  assert.equal(row.mode, 'outline');
+  assert.equal(row.language, 'go');
+  assert.equal(row.fileLines, 9);
+  assert.equal(row.truncated, false);
+  assert.equal(row.requestComplete, true);
+  assert.equal(row.declarationCount, 2);
+  assert.deepEqual(row.declarations.map((entry) => [entry.line, entry.kind, entry.name]), [
+    [3, 'struct', 'Command'],
+    [7, 'method', 'Command.SuggestionsFor'],
+  ]);
+  // An outline is a map to the next read, not evidence: no text, no citation.
+  assert.equal('text' in row, false);
+  assert.equal('citation' in row, false);
+  assert.equal(row.next, null);
+  assert.match(row.sha256, /^[a-f0-9]{64}$/);
+  assert.equal(packet.totalReturnedBytes, row.returnedBytes);
+  // The hash it returns is the one the following exact read replays with.
+  const exact = readSourceEvidence(root, [
+    { path: 'src/command.go', startLine: 7, maxLines: 1, expectedSha256: row.sha256 },
+  ]).rows[0];
+  assert.equal(exact.status, 'read');
+  assert.equal(exact.text, 'func (c *Command) SuggestionsFor(typed string) []string {\n');
+});
+
+test('an outline refuses exactly what a line read refuses', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'key.pem'), 'key\n');
+  writeFileSync(join(root, 'safe.ts'), 'export const safe = true;\n');
+  writeFileSync(join(root, 'large.ts'), Buffer.alloc(256 * 1024 + 1, 0x61));
+  const packet = readSourceEvidence(root, [
+    { path: 'key.pem', mode: 'outline' },
+    { path: '../outside.ts', mode: 'outline' },
+    { path: 'safe.ts', mode: 'outline', expectedSha256: '0'.repeat(64) },
+    { path: 'large.ts', mode: 'outline' },
+  ]);
+  assert.deepEqual(packet.rows.map((row) => row.reason), [
+    'sensitive_path', 'path_traversal', 'hash_mismatch', 'file_too_large',
+  ]);
+  assert.ok(packet.rows.every((row) => row.status === 'refused' && row.mode === 'outline'));
+  assert.ok(packet.rows.every((row) => row.requestedRange === null && !('text' in row)));
+});
+
+test('an outline selector states a mode instead of a range, and the two do not mix', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'a.py'), 'def a():\n    pass\n');
+  assert.throws(
+    () => readSourceEvidence(root, [{ path: 'a.py', mode: 'outline', startLine: 1 }]),
+    /startLine does not apply to mode "outline"/,
+  );
+  assert.throws(
+    () => readSourceEvidence(root, [{ path: 'a.py', mode: 'headings' }]),
+    /mode must be "lines" or "outline"/,
+  );
+  assert.throws(
+    () => readSourceEvidence(root, [{ path: 'a.py', mode: 'lines' }]),
+    /startLine must be a positive safe integer/,
+  );
+  const row = readSourceEvidence(root, [{ path: 'a.py', mode: 'lines', startLine: 1, maxLines: 1 }]).rows[0];
+  assert.equal(row.status, 'read');
+  assert.equal(row.text, 'def a():\n');
+});
+
+test('an outline stays inside the byte budget and says when it was cut', () => {
+  const root = fixture();
+  const lines = [];
+  for (let index = 0; index < 900; index += 1) lines.push(`def function_number_${index}():`, '    pass');
+  writeFileSync(join(root, 'wide.py'), `${lines.join('\n')}\n`);
+  const row = readSourceEvidence(root, [{ path: 'wide.py', mode: 'outline' }]).rows[0];
+  assert.equal(row.status, 'outlined');
+  assert.equal(row.truncated, true);
+  assert.equal(row.requestComplete, false);
+  assert.ok(row.returnedBytes <= 16 * 1024);
+  assert.ok(row.declarationCount < 400);
+  assert.equal(row.declarations[0].name, 'function_number_0');
+});
+
+test('an outline binds the source digest to the file it listed', () => {
+  const repository = `sha256:${'a'.repeat(64)}`;
+  const root = fixture();
+  writeFileSync(join(root, 'a.py'), 'def a():\n    pass\n');
+  const first = readSourceEvidence(root, [{ path: 'a.py', mode: 'outline' }]);
+  writeFileSync(join(root, 'a.py'), 'def a():\n    pass\n\n\ndef b():\n    pass\n');
+  const second = readSourceEvidence(root, [{ path: 'a.py', mode: 'outline' }]);
+  assert.notEqual(composeSourceDigest(repository, first), composeSourceDigest(repository, second));
+  assert.equal(composeSourceDigest(repository, first), composeSourceDigest(repository, first));
+});
