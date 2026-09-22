@@ -9,6 +9,63 @@ which is all a comparison needs.
 
 ---
 
+## 2026-09-22 — two more unfamiliar repositories through the shipped replay, and what they taught the product
+
+**Subjects**: an MIT Python HTTP client library (125 files) and an Apache-2.0
+Go command-line framework (66 files), each through `scripts/acp-replay.sh`
+with an Opus builder and `scripts/sealed-reader.sh` with a Sonnet reader on six
+questions sealed before any vault existed.
+
+### Construction
+
+| measurement | Python library | Go framework |
+|---|---:|---:|
+| person turns | 2 | 2 |
+| builder cost / wall | $6.43 / 499 s | $7.25 / 520 s |
+| nodes | 24 (4 domains, 12 capabilities, 7 elements) | 22 (5 domains, 7 capabilities, 9 elements) |
+| write-door findings | 0 | 0 |
+| nodes stating an unknown | 24/24 | 22/22 |
+| finalize receipt | written | written |
+
+### Persisted-vault-only handoff
+
+- Python: **6/6** answered with slug and path citations; every node's
+  Uncertainty line states how much of the file was read ("first 60 of 406
+  lines"). Five line counts exact, import claims true, class lists true.
+  Invented: 0.
+- Go: 3 full, 1 partial, 2 "the vault does not say" with the reason recorded.
+  The two missed behaviours (help templates, misspelling suggestions) live at
+  lines 781 and 863 of a 2,072-line file the builder read only at its head.
+  `type Command struct` cited as line 53, actual 54. Invented: 0.
+
+### What the runs exposed, and what changed because of them
+
+1. Both vaults carried the three starter example nodes untouched and
+   unmentioned. The replay had run `init` where the app's door creates an empty
+   folder (the script now mirrors the door; `--starter` reproduces the other
+   door), and the product gained `starter-example-node`: silent on a fresh `init`,
+   one warning per starter kind once a real node of that kind exists (verified
+   on an `init` vault plus one real domain), 0 on the dogfood vault.
+2. Head-only reads. The bounded source reader gained `mode: 'outline'`, which
+   lists a file's declarations with line numbers so the next lines read is
+   exact; a 928-line synthetic Go file yields its method at line 921.
+3. Recorded unknowns had no next step. `growth_plan` now reads Uncertainty
+   sections into `nextReads`: on the dogfood vault, 0 write candidates against
+   96 reads.
+4. Declared dependencies with no witness in the citing file: `dependency-
+   unwitnessed`, 15 on the dogfood vault; a product-driven repair turn
+   re-pointed two paths, removed one relation with a stated reason and gave the
+   rest a witness in `why`; the check then had to learn to read the file a
+   `why` names, editor-style paths included, and the last two were re-typed as a
+   relation and re-targeted through `replace_relation`. Dogfood: 0.
+
+### What this row does not show
+
+Same limits as the row below: one run per arm, one builder model, the
+coordinating agent as grader, the permission card replaced by an allow-list.
+
+---
+
 ## 2026-09-21 — the app's ACP first-run door, reproduced headless, before and after the construction card
 
 **Subject**: an unfamiliar MIT Node.js command-line argument-parsing library
