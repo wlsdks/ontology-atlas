@@ -239,6 +239,14 @@ const OPENERS: readonly Opener[] = [
   },
 ];
 
+/*
+ * Measured Guidance needs the installed-app-like harness fixture, so it is intentionally not a
+ * generic OPENERS row. `harness-tab.spec.ts` owns both real opening paths (desktop anchored dialog
+ * and narrow modal), waits for their finite motion, and applies this file's same nonempty axe floor
+ * with zero allowed WCAG violations. Keeping that proof beside its fixture avoids a fake opener
+ * that can only reach the unavailable example.
+ */
+
 /**
  * **This number only goes down.** It is a literal — derived from the measurement,
  * "it never grows" would be impossible to fail in principle (exactly how the hard-cut

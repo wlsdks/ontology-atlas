@@ -1061,6 +1061,9 @@ Canonical utility classes (globals.css `@layer base`):
   (`panelCrossfadeIn` reuse + `--motion-fast`). Hero number count-up uses JS
   hook (`useCountUp`, immediate final value if `prefers-reduced-motion`), bar fill uses width
   0→target transition (`--motion-settle`, 30ms stagger).
+- `RowDisclosure` owns the measured height lifecycle, exit retention and immediate inert state.
+  `Disclosure animated` adds a keyboard button and turning chevron for secondary evidence.
+  Interrupted toggles retarget the painted height; reduced motion fades content before releasing its space.
 - `.ai-row-disclosure` / `.ai-row-disclosure-body` / `.ai-row-swap` —
   **List row expansion** (next section).
 
@@ -1106,13 +1109,20 @@ Now, **the surface requiring an equivalent is a list**, and `tests/contract/redu
 1. **The global kill rule remains.** It is a safety net for un-audited motion (infinite heartbeat `.agent-pending-dot`, decorative flow `.studio-strut-flow`). Stopping is correct there, and the fact of progression is already stated by the adjacent text.
 2. **Crossfade types reclaim time** — `.insights-tab-crossfade` ·
    `.insights-disclosure-in` · `.ai-row-swap` · `.agent-panel-stage-swap` ·
-   `.overlay-fade-only` · `.app-settings-scrim-in` · `.map-overlay-in` ·
+   `.overlay-fade-only` · `.app-settings-scrim-in` · `.settings-section-in` · `.map-overlay-in` ·
    `.overlay-spring-scrim`. Since they are opacity-only, we only restore the duration token.
 3. **Appearances with transforms change only the keyframe name** —
    `.app-settings-panel-in` · `.topology-chrome-in` / `-out` ·
    `.rail-status-dot-in` switch to `animation-name: panelCrossfadeIn` (opacity-only) and retain their own duration token. **New keyframes 0 · New duration 0.**
 4. **The override block must appear later in source order than the global block.** If it appears first, it silently fails.
 5. **No literal ms rewrites.** Equivalents reclaim time only via tokens (the gate checks this).
+
+Settings section selection keeps the dialog and navigation stationary, resets the content scroll
+to its first control, and fades only the new content with `--motion-fast`. Opening the dialog
+uses the panel's existing entry; it does not also start a section transition.
+Below `sm`, the same settings destinations form a horizontally scrollable strip above the
+full-width content pane. Choice and slider labels stack above their controls so neither the
+navigation rail nor fixed label widths clip the input or its value. Desktop keeps its fixed LNB.
 
 Measured result (Settings sheet open, reduced-motion): 1-frame 98.9% hard-cut →
 `1.217 → 1.664 → 1.731 (peak at frame 3) → 1.591 → 1.217 → 0.961 → 0.913 → 0.155`

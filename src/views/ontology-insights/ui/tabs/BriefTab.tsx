@@ -1,11 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { CensusSubStat, CensusTile } from '@/shared/ui/census-tile';
 import { controlClass } from '@/shared/ui/control-class';
-import { Button, Disclosure } from '@/shared/ui';
+import { Button } from '@/shared/ui';
+import { RowDisclosure } from '@/shared/ui/row-disclosure';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { CopyAgentTextButton } from '../parts/CopyAgentTextButton';
 import { buildDriftHandoff } from '../../lib/brief/drift-handoff';
 import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
@@ -198,12 +201,12 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent, onOpenTab }: { core: 
        */}
       {core.headline == null ? (
         core.availability === 'measured' ? (
-          <p className="text-body-lg text-[color:var(--color-text-quaternary)]">
+          <p className="text-title text-[color:var(--color-text-tertiary)]">
             <span className="text-label" data-testid="brief-core-unmeasured">{t('notMeasured')}</span>
           </p>
         ) : (
           <p
-            className="font-mono text-body-lg font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-quaternary)]"
+            className="font-mono text-title font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-quaternary)]"
             data-testid="brief-core-headline-absent"
             aria-hidden
           >
@@ -211,7 +214,7 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent, onOpenTab }: { core: 
           </p>
         )
       ) : (
-        <p className="font-mono text-body-lg font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-primary)]">
+        <p className="font-mono text-title font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-primary)]">
           {core.headline}
           {unit ? <span className="ml-1.5 text-label text-[color:var(--color-text-quaternary)]">{unit}</span> : null}
         </p>
@@ -224,12 +227,12 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent, onOpenTab }: { core: 
       <ul className="mt-1 flex flex-1 flex-col gap-3" data-testid="brief-core-lines">
         {core.availability === 'reading' || core.availability === 'unreadable' ? (
           <li className="text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-${core.availability}-${core.core}`}>
-            {t(core.availability)}
+            {t(core.core === 'ontology' && core.availability === 'unreadable' ? 'evidenceUnreadable' : core.availability)}
           </li>
         ) : null}
         {core.availability === 'no-source' ? (
           <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-no-source-${core.core}`}>
-            <span className="min-w-0">{t('noSource')}</span>
+            <span className="min-w-0">{t(core.core === 'ontology' ? 'evidenceNoSource' : 'noSource')}</span>
             <DestinationLink href={CORE_NEXT_HREF[core.core]} className={LINE_LINK} onOpenTab={onOpenTab}>
               {t(`emptyAction.${core.core}`)}
             </DestinationLink>
@@ -301,7 +304,7 @@ function destinationLabel(href: string, t: (key: string) => string): string {
  * vault, 2026-09-20: "50 concepts whose code could not be checked · Get the app".
  */
 function lineHref(lineId: string, availability: BriefCore['availability']): string | undefined {
-  if (lineId === 'ontology-evidence-unchecked' && availability === 'measured') return '/topology/';
+  if (lineId === 'ontology-evidence-unchecked' && availability !== 'app-only') return '/topology/';
   return LINE_HREF[lineId];
 }
 
@@ -365,6 +368,8 @@ function DestinationLink({
  * the falsifier this decision wrote down for itself (PO evidence seat, 2026-09-19).
  */
 function BriefLineRow({ line, availability, details, nowMs, onAskAgent, onOpenTab }: { line: BriefLine; availability: BriefCore['availability']; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
+  const [open, setOpen] = useState(false);
+  const detailId = useId();
   const t = useTranslations('ontologyPages.insights.brief');
   const format = useFormatter();
   const locale = useLocale();
@@ -382,44 +387,57 @@ function BriefLineRow({ line, availability, details, nowMs, onAskAgent, onOpenTa
       <div className="flex items-start gap-2.5">
         <span aria-hidden="true" className={cn('shrink-0', STATE_MARK[line.state])} />
         {shown.length > 0 ? (
-          <Disclosure className="min-w-0 flex-1" summary={sentence} summaryTestId={`brief-line-open-${line.id}`}>
-            <ul className="mt-2 flex flex-col gap-1.5 border-l border-[color:var(--color-divider)] pl-3" data-testid={`brief-line-rows-${line.id}`}>
-              {shown.map((row, index) => (
-                <li key={`${row.name}-${row.path}-${index}`} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <Link href={row.href} className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>
-                    {row.name}
-                  </Link>
-                  <code className="min-w-0 break-all font-mono text-label text-[color:var(--color-text-tertiary)]">{row.path}</code>
-                  <span className="text-label text-[color:var(--color-text-quaternary)]">
-                    {row.at
-                      ? t('detailMoved', {
-                          moved: format.relativeTime(new Date(row.at), nowMs),
-                          doc: row.docAt ? format.relativeTime(new Date(row.docAt), nowMs) : t('detailDocUnknown'),
-                        })
-                      : t('detailGone')}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {handoff ? (
-              <div className="mt-3 flex flex-wrap items-center gap-2 pl-3" data-testid={`brief-line-handoff-${line.id}`}>
-                {onAskAgent ? (
-                  <Button variant="outline" size="sm" onClick={() => onAskAgent(handoff)} data-testid="brief-ask-agent">
-                    {t('askAgent')}
-                  </Button>
-                ) : null}
-                <CopyAgentTextButton label={t('copyRequest')} copiedLabel={t('copiedRequest')} text={handoff} compact />
-              </div>
-            ) : null}
-            <HiddenCountLine
-              total={details.length}
-              shown={shown.length}
-              label={(hidden) => t('detailHidden', { count: hidden })}
-              route={href ? <DestinationLink href={href} className="text-[color:var(--color-indigo-text-strong)]" onOpenTab={onOpenTab}>{destinationLabel(href, t)}</DestinationLink> : null}
-              className="mt-2 pl-3"
-              data-testid={`brief-line-hidden-${line.id}`}
-            />
-          </Disclosure>
+          <div className="min-w-0 flex-1">
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls={detailId}
+              data-testid={`brief-line-open-${line.id}`}
+              onClick={() => setOpen((value) => !value)}
+              className={controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong', className: 'gap-1.5 text-left' })}
+            >
+              <ChevronRight size={ICON_SIZE.sm} aria-hidden className={cn('mt-1 shrink-0 self-start transition-transform', open && 'rotate-90')} />
+              <span className="min-w-0 break-keep">{sentence}</span>
+            </button>
+            <RowDisclosure open={open} id={detailId} className="pt-2">
+              <ul className="flex flex-col gap-1.5 border-l border-[color:var(--color-divider)] pl-3" data-testid={`brief-line-rows-${line.id}`}>
+                {shown.map((row, index) => (
+                  <li key={`${row.name}-${row.path}-${index}`} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <Link href={row.href} className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>
+                      {row.name}
+                    </Link>
+                    <code className="min-w-0 break-all font-mono text-label text-[color:var(--color-text-tertiary)]">{row.path}</code>
+                    <span className="text-label text-[color:var(--color-text-quaternary)]">
+                      {row.at
+                        ? t('detailMoved', {
+                            moved: format.relativeTime(new Date(row.at), nowMs),
+                            doc: row.docAt ? format.relativeTime(new Date(row.docAt), nowMs) : t('detailDocUnknown'),
+                          })
+                        : t('detailGone')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {handoff ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2 pl-3" data-testid={`brief-line-handoff-${line.id}`}>
+                  {onAskAgent ? (
+                    <Button variant="outline" size="sm" onClick={() => onAskAgent(handoff)} data-testid="brief-ask-agent">
+                      {t('askAgent')}
+                    </Button>
+                  ) : null}
+                  <CopyAgentTextButton label={t('copyRequest')} copiedLabel={t('copiedRequest')} text={handoff} compact />
+                </div>
+              ) : null}
+              <HiddenCountLine
+                total={details.length}
+                shown={shown.length}
+                label={(hidden) => t('detailHidden', { count: hidden })}
+                route={href ? <DestinationLink href={href} className="text-[color:var(--color-indigo-text-strong)]" onOpenTab={onOpenTab}>{destinationLabel(href, t)}</DestinationLink> : null}
+                className="mt-2 pl-3"
+                data-testid={`brief-line-hidden-${line.id}`}
+              />
+            </RowDisclosure>
+          </div>
         ) : (
           <>
             <span className="min-w-0 flex-1 break-keep">{sentence}</span>
@@ -450,13 +468,13 @@ function BriefSinceList({ rows, total, nowMs }: { rows: readonly SinceRow[]; tot
       </h3>
       <ol className="mt-3 flex flex-col divide-y divide-[color:var(--color-divider)]">
         {rows.map((row, index) => (
-          <li key={`${row.core}-${row.at}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 py-2 text-body" data-since-core={row.core}>
-            <span className="min-w-0 truncate text-[color:var(--color-text-primary)]" title={row.label}>
+          <li key={`${row.core}-${row.at}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-3 text-body sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:py-2" data-since-core={row.core}>
+            <span className="col-span-2 min-h-10 min-w-0 line-clamp-2 break-words text-[color:var(--color-text-primary)] sm:col-span-1 sm:min-h-0 sm:line-clamp-1" title={row.label}>
               <span className="text-[color:var(--color-text-tertiary)]">{t(`since.${row.kind}`)}</span>
               {' '}
               {row.label}
             </span>
-            <time dateTime={row.at} className="font-mono tabular-nums text-label text-[color:var(--color-text-quaternary)]">
+            <time dateTime={row.at} className="font-mono tabular-nums text-label text-[color:var(--color-text-tertiary)]">
               {format.relativeTime(new Date(row.at), nowMs)}
             </time>
             {row.href ? (

@@ -68,6 +68,41 @@ function dragRailTo(fraction: number) {
 }
 
 describe('the new round sheet', () => {
+  it('keeps the draft usable when saving rejects', async () => {
+    const onSave = vi.fn(async () => {
+      throw new Error('disk unavailable');
+    });
+    const view = open({ onSave });
+
+    fireEvent.click(screen.getByTestId('library-rounds-allow'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not save');
+    expect(screen.getByTestId('library-rounds-allow')).toBeEnabled();
+    expect(screen.getByTestId('library-rounds-rename')).toHaveTextContent('Pages still match');
+    view.close();
+  });
+
+  it('cannot be dismissed while saving is pending', async () => {
+    let finish!: (saved: boolean) => void;
+    const onSave = vi.fn(() => new Promise<boolean>((resolve) => { finish = resolve; }));
+    const onClose = vi.fn();
+    const view = open({ onSave, onClose });
+
+    fireEvent.click(screen.getByTestId('library-rounds-allow'));
+    expect(screen.getByTestId('library-rounds-allow')).toHaveTextContent('Scheduling…');
+    expect(screen.getByTestId('library-rounds-rename')).toBeDisabled();
+    fireEvent.click(screen.getByTestId('library-rounds-allow'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.click(screen.getByTestId('library-rounds-sheet').parentElement!);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onSave).toHaveBeenCalledTimes(1);
+
+    finish(true);
+    await vi.waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    view.close();
+  });
+
   it('offers a name no sibling is already wearing', () => {
     const first = open();
     expect(first.name()).toContain('Pages still match');

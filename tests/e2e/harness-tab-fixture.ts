@@ -24,6 +24,20 @@ import { seedFirstRunSeen } from "./first-run-seed";
 export const HARNESS_VAULT_ROOT = "/Users/probe/atlas-vault";
 export const HARNESS_SOURCE_ROOT = "/Users/probe/storefront";
 
+function domainDoc(slug: string, title: string, capability: string, purpose: string): string {
+  return ['---', `uid: ${fixtureUid(slug)}`, `slug: ${slug}`, 'kind: domain', `title: ${title}`, `capabilities: [${capability}]`, '---', '', '## Definition', purpose, ''].join('\n');
+}
+
+function capabilityDoc(slug: string, title: string, domain: string, path: string): string {
+  return ['---', `uid: ${fixtureUid(slug)}`, `slug: ${slug}`, 'kind: capability', `title: ${title}`, `domain: ${domain}`, `path: ${path}`, '---', '', `${title}.`, ''].join('\n');
+}
+
+function fixtureUid(value: string): string {
+  let hash = 2166136261;
+  for (const character of value) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+  return `00000000-0000-4000-8000-${(hash >>> 0).toString(16).padStart(12, '0')}`;
+}
+
 /** The vault: one project node plus the sidecar binding that says where its source lives. */
 const VAULT_FILES: Record<string, string> = {
   "projects/storefront.md": [
@@ -136,6 +150,18 @@ const VAULT_FILES: Record<string, string> = {
     "Placing and reading one order.",
     "",
   ].join("\n"),
+  "domains/design-system.md": domainDoc('domains/design-system', 'Design System and Interface Foundations', 'capabilities/design-system', 'Keeps interface values, controls and visual contracts coherent.'),
+  "capabilities/design-system.md": capabilityDoc('capabilities/design-system', 'Design foundations', 'domains/design-system', 'src/shared/ui'),
+  "domains/agent-runtime.md": domainDoc('domains/agent-runtime', 'Agent Runtime Coordination and External Tools', 'capabilities/agent-runtime', 'Coordinates coding agents and the tools they can use.'),
+  "capabilities/agent-runtime.md": capabilityDoc('capabilities/agent-runtime', 'Agent runtime', 'domains/agent-runtime', 'src/features/acp-session'),
+  "domains/content-lifecycle.md": domainDoc('domains/content-lifecycle', '콘텐츠 수명 주기와 의미 검토', 'capabilities/content-lifecycle', 'Keeps authored meaning reviewable as source material changes.'),
+  "capabilities/content-lifecycle.md": capabilityDoc('capabilities/content-lifecycle', 'Content lifecycle', 'domains/content-lifecycle', 'src/entities/docs-vault'),
+  "domains/onboarding.md": domainDoc('domains/onboarding', '사용자 온보딩과 폴더 선택 경험', 'capabilities/onboarding', 'Helps a person choose and understand the folder they will work in.'),
+  "capabilities/onboarding.md": capabilityDoc('capabilities/onboarding', 'Folder onboarding', 'domains/onboarding', 'src/features/vault-switch'),
+  "domains/architecture-evidence.md": domainDoc('domains/architecture-evidence', 'Architecture Evidence and Conformance', 'capabilities/architecture-evidence', 'Explains architecture decisions and the evidence that supports them.'),
+  "capabilities/architecture-evidence.md": capabilityDoc('capabilities/architecture-evidence', 'Architecture evidence', 'domains/architecture-evidence', 'src/views/architecture'),
+  "domains/topology-review.md": domainDoc('domains/topology-review', '토폴로지 탐색 및 관계 검토 워크벤치', 'capabilities/topology-review', 'Supports graph exploration and review of recorded relationships.'),
+  "capabilities/topology-review.md": capabilityDoc('capabilities/topology-review', 'Topology review', 'domains/topology-review', 'src/widgets/ontology-map'),
   ".ontology-atlas/project-sources.json": JSON.stringify({
     contractVersion: 1,
     bindings: [
@@ -148,6 +174,13 @@ const VAULT_FILES: Record<string, string> = {
       },
     ],
   }),
+};
+
+const OVERFLOW_VAULT_FILES: Record<string, string> = {
+  "domains/library-automation.md": domainDoc('domains/library-automation', 'Library Automation and Scheduled Source Review', 'capabilities/library-automation', 'Schedules bounded document review while keeping evidence inspectable.'),
+  "capabilities/library-automation.md": capabilityDoc('capabilities/library-automation', 'Library automation', 'domains/library-automation', 'src/entities/library-round'),
+  "domains/release-integrity.md": domainDoc('domains/release-integrity', '릴리스 무결성과 설치 검증', 'capabilities/release-integrity', 'Keeps packaged artifacts attributable and verifiable.'),
+  "capabilities/release-integrity.md": capabilityDoc('capabilities/release-integrity', 'Release integrity', 'domains/release-integrity', 'scripts'),
 };
 
 const SKILL_BODY = "# po-pass\n\nRoute the work.\n";
@@ -172,10 +205,19 @@ const SOURCE_FILES: Record<string, string> = {
   "src/AGENTS.md": "# src\n\nCodex merges this one root-down. Claude Code never auto-loads it.\n",
   // No `paths:`, so it is always loaded and reaches every area: the universal row, once.
   ".claude/rules/forbidden.md": "# Forbidden\n",
-  // A path-scoped rule: it reaches the shop front and nothing else.
+  // A path-scoped rule: it reaches recorded capabilities under the shared `src/features/` prefix.
   ".claude/rules/cart.md": ['---', 'paths:', '  - "src/features/**"', '---', '', '# Cart rules', ''].join("\n"),
+  ".claude/rules/a-very-long-outside-domain-mapping-identity.md": ['---', 'paths:', '  - "packages/not-recorded/**"', '---', '', '# Outside mapping declaration label', ''].join("\n"),
   "src/features/cart/index.ts": "export const cart = [];\n",
   "api/orders/index.ts": "export const orders = [];\n",
+  "src/shared/ui/index.ts": "export const controls = [];\n",
+  "src/features/acp-session/index.ts": "export const agents = [];\n",
+  "src/entities/docs-vault/index.ts": "export const docs = [];\n",
+  "src/features/vault-switch/index.ts": "export const folders = [];\n",
+  "src/views/architecture/index.ts": "export const architecture = [];\n",
+  "src/widgets/ontology-map/index.ts": "export const map = [];\n",
+  "src/entities/library-round/index.ts": "export const rounds = [];\n",
+  "scripts/release-check.mjs": "export const release = true;\n",
   "api/AGENTS.md": "# api\n\nCodex merges this one root-down.\n",
   // A document a guide names by path, and one nothing names.
   "docs/checkout.md": "# Checkout\n",
@@ -226,7 +268,7 @@ const SOURCE_FILES: Record<string, string> = {
  * script's own scope: `addInitScript` serializes the function, so a module-level reference here
  * would be `undefined` in the page.
  */
-export async function installHarnessRuntime(page: Page): Promise<void> {
+export async function installHarnessRuntime(page: Page, options: { includeOverflowDomains?: boolean } = {}): Promise<void> {
   await seedFirstRunSeen(page);
   await page.addInitScript(
     (input: {
@@ -360,7 +402,7 @@ export async function installHarnessRuntime(page: Page): Promise<void> {
     {
       vaultRoot: HARNESS_VAULT_ROOT,
       sourceRoot: HARNESS_SOURCE_ROOT,
-      vaultFiles: VAULT_FILES,
+      vaultFiles: options.includeOverflowDomains ? { ...VAULT_FILES, ...OVERFLOW_VAULT_FILES } : VAULT_FILES,
       sourceFiles: SOURCE_FILES,
     },
   );

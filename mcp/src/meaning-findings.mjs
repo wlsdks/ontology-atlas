@@ -542,9 +542,20 @@ function declaredDependencies(frontmatter) {
   return refs;
 }
 
-/** `src/shared/lib/nav.ts` → `nav`, the name an import statement would carry. */
-function witnessNameFor(path) {
-  return basename(path).replace(/\.[^.]+$/, '');
+/**
+ * `src/shared/lib/nav.ts` → `nav`, the name an import statement would carry.
+ * A module root answers to its folder instead: `src/export/mod.rs` is what
+ * `use crate::export::…` reaches, `src/lib/index.ts` is what `'./lib'` loads,
+ * `pkg/__init__.py` is `import pkg`. Measured on a Rust trial vault
+ * (2026-09-23): eight edges pointed at `mod.rs` files and the basename alone
+ * witnessed none of them.
+ */
+const MODULE_ROOT_BASENAMES = new Set(['mod', 'index', '__init__']);
+function witnessNamesFor(path) {
+  const base = basename(path).replace(/\.[^.]+$/, '');
+  if (!MODULE_ROOT_BASENAMES.has(base)) return [base];
+  const folder = basename(dirname(path));
+  return folder && folder !== '.' ? [base, folder] : [base];
 }
 
 function escapeRegExp(value) {
@@ -552,19 +563,59 @@ function escapeRegExp(value) {
 }
 
 /**
- * Does this file name that file?
+ * The module specifiers a file brings in, in every language this vault
+ * describes: JavaScript/TypeScript `import … from '…'`, `import '…'`,
+ * `import('…')` and `require('…')` (multi-line `import {\n…\n} from '…'` is
+ * the common shape, so the whole text is read, never a line); Python
+ * `import a.b` and `from a.b import c`; Rust `use a::b` and `mod b`; Go's
+ * quoted paths inside `import (…)`; C-family `#include`; Ruby `require`.
+ */
+const SPECIFIER_PATTERNS = [
+  /\bfrom\s*['"]([^'"\n]+)['"]/g,
+  /\bimport\s*\(\s*['"]([^'"\n]+)['"]/g,
+  /\bimport\s+['"]([^'"\n]+)['"]/g,
+  /\brequire(?:_relative)?\s*\(?\s*['"]([^'"\n]+)['"]/g,
+  /^\s*(?:from\s+([\w.]+)\s+import\b|import\s+([\w.]+))/gm,
+  /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:use|mod)\s+([\w:{}\s,]+?)\s*;/gm,
+  /^\s*#\s*include\s*[<"]([^>"\n]+)[>"]/gm,
+];
+const GO_IMPORT_BLOCK = /^\s*import\s*\(([\s\S]*?)\)/gm;
+
+function moduleSpecifiers(text) {
+  const specifiers = [];
+  for (const pattern of SPECIFIER_PATTERNS) {
+    for (const match of String(text).matchAll(pattern)) {
+      specifiers.push(...match.slice(1).filter(Boolean));
+    }
+  }
+  for (const block of String(text).matchAll(GO_IMPORT_BLOCK)) {
+    for (const quoted of block[1].matchAll(/"([^"\n]+)"/g)) specifiers.push(quoted[1]);
+  }
+  return specifiers;
+}
+
+/**
+ * Does this file bring that file in?
  *
  * Two spellings count, and only two. The target path verbatim is what a
- * relative-free reference looks like; the basename without its extension as a
- * **whole word** is what every import statement in every language this vault
- * describes actually writes. Case-sensitive on purpose: `Vault` and `vault` are
- * different identifiers, and folding them would let an unrelated English word
- * witness an edge.
+ * relative-free reference looks like; the basename without its extension as
+ * the last segment of an import specifier is what every import statement in
+ * every language this vault describes actually writes. A bare name anywhere
+ * else in the file is not a witness: measured on this repository's own vault
+ * (2026-09-23), the words "camera" and "layout" inside unrelated hook names
+ * kept two edges green with no import behind them, which is the false
+ * confidence the decision's falsifier names. Case-sensitive on purpose:
+ * `Vault` and `vault` are different modules.
  */
-function textWitnesses(text, targetPath, witnessName) {
-  if (text.includes(targetPath)) return true;
-  if (!witnessName) return false;
-  return new RegExp(`\\b${escapeRegExp(witnessName)}\\b`).test(text);
+function textWitnesses(text, targetPath, witnessNames) {
+  if (String(text).includes(targetPath)) return true;
+  const names = witnessNames.filter(Boolean);
+  if (names.length === 0) return false;
+  return moduleSpecifiers(text).some((specifier) =>
+    specifier
+      .split(/::|[/\\{},\s]+|\.(?![A-Za-z0-9]{1,10}$)/)
+      .some((segment) => names.includes(segment.replace(/\.[^.]+$/, ''))),
+  );
 }
 
 /**
@@ -585,7 +636,7 @@ const NOTE_PATH_EXTENSION = /\.[A-Za-z][A-Za-z0-9]{0,9}$/;
  * an editor copies. Stripped in the same loop as the punctuation, because
  * `` `src/consumer.ts`:1, `` needs both passes twice: quote, line, backtick.
  */
-const NOTE_PATH_LINE_SUFFIX = /:\d+(?::\d+)?$/;
+const NOTE_PATH_LINE_SUFFIX = /(?::\d+(?:[-\u2013]\d+)?(?::\d+)?|#L\d+(?:-L?\d+)?)$/;
 
 function pathTokensIn(text) {
   const tokens = new Set();
@@ -722,14 +773,14 @@ export function dependencyWitnessFinding({
     }
     const resolved = insideRepo(repoRoot, targetPath);
     if (!resolved) continue;
-    const witnessName = witnessNameFor(resolved.path);
+    const witnessNames = witnessNamesFor(resolved.path);
     // The source file first, then every file the edge's own rationale names.
     const candidates = [sourceText];
     for (const token of pathTokensIn(relationNoteText(frontmatter, target))) {
       const text = readCandidate(token);
       if (typeof text === 'string') candidates.push(text);
     }
-    if (candidates.some((text) => textWitnesses(text, resolved.path, witnessName))) continue;
+    if (candidates.some((text) => textWitnesses(text, resolved.path, witnessNames))) continue;
     findings.push({
       code: 'dependency-unwitnessed',
       slug,
@@ -741,7 +792,7 @@ export function dependencyWitnessFinding({
         sourcePath: source.path,
         target,
         targetPath: resolved.path,
-        witnessName,
+        witnessName: witnessNames[0],
       }),
     });
   }

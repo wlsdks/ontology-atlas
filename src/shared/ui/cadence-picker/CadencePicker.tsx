@@ -176,9 +176,12 @@ export function CadencePicker({
 
   return (
     <div className={cn("flex flex-col gap-2", className)} data-testid={testId} data-cadence-unit={unit}>
-      <p id={legendId} className={fieldLabel()}>
-        {labels.legend}
-      </p>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p id={legendId} className={fieldLabel()}>{labels.legend}</p>
+        <span aria-hidden className="text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+          {unit === "day" ? `${weekdaysOnly ? labels.weekdays : labels.daily} ${daily}` : labels.valueText(detents[index] ?? detents[0])}
+        </span>
+      </div>
       {/*
         Compact (`md`, 28px) and joined: the unit is a frame around the rail below it, not a
         second decision competing with it. The rail is the protagonist of this group.
@@ -222,7 +225,7 @@ export function CadencePicker({
           />
         </div>
       ) : (
-        <div className="mt-1">
+        <div className="mt-1 px-6">
           {/*
             The hit region is 44px tall while the track draws 4px: a finger aiming at a hairline
             is aiming at nothing, and the touch floor is the whole rail, not only the thumb.

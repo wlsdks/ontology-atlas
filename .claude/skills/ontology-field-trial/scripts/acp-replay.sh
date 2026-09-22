@@ -240,12 +240,46 @@ cd "$target"
 allowed="mcp__atlas-vault__*"
 started=$(date +%s)
 
+# <prefix>.jsonl -> <prefix>.json (the final result record) and <prefix>.tools.json
+# (tool name -> call count, plus every read_source call's file and mode).
+extract_result() {
+  node -e '
+const { readFileSync, writeFileSync } = require("node:fs");
+const prefix = process.argv[1];
+let result = null;
+const calls = {};
+const reads = [];
+for (const line of readFileSync(`${prefix}.jsonl`, "utf8").split("\n")) {
+  if (!line.trim()) continue;
+  let event;
+  try { event = JSON.parse(line); } catch { continue; }
+  if (event.type === "result") result = event;
+  const content = event.type === "assistant" ? event.message?.content : null;
+  for (const block of Array.isArray(content) ? content : []) {
+    if (block.type !== "tool_use") continue;
+    const name = String(block.name).replace(/^mcp__[^_]+(?:_[^_]+)*__/, "");
+    calls[name] = (calls[name] ?? 0) + 1;
+    if (/read_source$/.test(String(block.name))) {
+      reads.push({ path: block.input?.path ?? null, mode: block.input?.mode ?? "text" });
+    }
+  }
+}
+writeFileSync(`${prefix}.json`, result ? JSON.stringify(result) : "");
+writeFileSync(`${prefix}.tools.json`, JSON.stringify({ calls, reads }, null, 2));
+' "$1"
+}
+
 printf 'acp-replay: turn one (survey and proposal)\n'
+# stream-json keeps every tool call in turn-<n>.jsonl; the last `result` line is
+# the same record --output-format json would have written, saved as turn-<n>.json.
+# Kept because the 2026-09-23 Rust row could not say whether the builder had
+# outlined a file it cited: the result record alone does not carry tool calls.
 claude -p "$(cat "$out/turn-one.txt")" \
-  --model "$model" --max-turns 80 --output-format json \
+  --model "$model" --max-turns 80 --output-format stream-json --verbose \
   --mcp-config "$out/mcp.json" --strict-mcp-config --allowedTools "$allowed" \
   --append-system-prompt "$(cat "$out/handoff.txt")" \
-  > "$out/turn-one.json" 2> "$out/turn-one.err" || true
+  > "$out/turn-one.jsonl" 2> "$out/turn-one.err" || true
+extract_result "$out/turn-one"
 
 session=$(node -e '
 const data = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
@@ -256,10 +290,11 @@ console.log(data.session_id);
 printf 'acp-replay: turn two (the person says go ahead), session %s\n' "$session"
 claude -p "Yes. Go ahead and build all of it exactly as you proposed, and finish the job in this turn: create the nodes and relations, bind the code folder, validate, and tell me what the vault now holds." \
   --resume "$session" \
-  --model "$model" --max-turns 120 --output-format json \
+  --model "$model" --max-turns 120 --output-format stream-json --verbose \
   --mcp-config "$out/mcp.json" --strict-mcp-config --allowedTools "$allowed" \
   --append-system-prompt "$(cat "$out/handoff.txt")" \
-  > "$out/turn-two.json" 2> "$out/turn-two.err" || true
+  > "$out/turn-two.jsonl" 2> "$out/turn-two.err" || true
+extract_result "$out/turn-two"
 
 elapsed=$(( $(date +%s) - started ))
 
@@ -286,13 +321,22 @@ if (existsSync(vault)) {
   }
 }
 const finalText = typeof two?.result === "string" ? two.result : "";
-const finalized = finalText.includes("finalize_project_meaning") || /finali[sz]/i.test(finalText);
+const tools = (name) => {
+  try { return JSON.parse(readFileSync(`${outDir}/${name}.tools.json`, "utf8")); } catch { return null; }
+};
+const twoTools = tools("turn-two");
+// The tool trace decides; the wording of the final answer only stands in when
+// the trace is missing (the 2026-09-23 Rust run finalized and said "finalization").
+const finalized = twoTools
+  ? Object.keys(twoTools.calls).some((name) => name.endsWith("finalize_project_meaning"))
+  : finalText.includes("finalize_project_meaning") || /finali[sz]/i.test(finalText);
 const report = {
   target, vault, model,
   wallClockSeconds: Number(elapsed),
   turns: { one: summarise(one), two: summarise(two) },
   nodesByKindFolder: byKind,
-  finalizeMentionedInFinalText: finalized,
+  finalized,
+  toolCalls: twoTools?.calls ?? null,
 };
 writeFileSync(`${outDir}/replay.json`, JSON.stringify(report, null, 1));
 const cost = (t) => (t?.total_cost_usd == null ? "?" : `$${t.total_cost_usd.toFixed(2)}`);
@@ -306,7 +350,11 @@ console.log(`  turn one      ${one?.num_turns ?? "?"} agent turns, ${secs(one)},
 console.log(`  turn two      ${two?.num_turns ?? "?"} agent turns, ${secs(two)}, ${cost(two)}`);
 console.log(`  wall clock    ${elapsed}s      total $${total.toFixed(2)}`);
 console.log(`  vault         ${nodes} nodes — ${Object.entries(byKind).map(([k, n]) => `${k} ${n}`).join(", ") || "empty"}`);
-console.log(`  finished      ${finalized ? "the final answer speaks of finalizing the project meaning" : "the final answer never mentions finalizing — the build stopped short"}`);
+console.log(`  finished      ${finalized ? (twoTools ? "finalize_project_meaning was called" : "the final answer speaks of finalizing the project meaning") : (twoTools ? "finalize_project_meaning was never called — the build stopped short" : "the final answer never mentions finalizing — the build stopped short")}`);
+if (twoTools) {
+  const outlines = twoTools.reads.filter((r) => r.mode === "outline").length;
+  console.log(`  reads         ${twoTools.reads.length} read_source calls in turn two, ${outlines} in outline mode`);
+}
 console.log(`  written to    ${outDir}/replay.json`);
 console.log("");
 console.log("  The permission card was replaced by an allow-list. This run is not evidence that the card holds.");

@@ -1,7 +1,6 @@
 # AGENTS.md — ontology-atlas
 
-Canonical repository contract. Read the authority for the current task; do not
-load every linked document before an edit.
+Canonical contract. Read the task's authority, not every linked document.
 
 ## Product and architecture
 
@@ -97,7 +96,7 @@ Read the named authority only for its subject:
 | Subject | Authority |
 |---|---|
 | Product and inventory | `docs/PRODUCT-DIRECTION.md`, `docs/FEATURES.md` |
-| Architecture/routes | `docs/ARCHITECTURE.md`, `.claude/rules/architecture.md` |
+| Architecture/routes/module ownership | `docs/ARCHITECTURE.md`, `.claude/rules/architecture.md` |
 | UI values | `docs/DESIGN-SYSTEM.md`, `.claude/rules/design.md` |
 | Gates | `.claude/rules/design-gates.md` |
 | Storage/surface boundaries | `.claude/rules/local-first.md`, `.claude/rules/surfaces.md`, `.claude/rules/forbidden.md` |

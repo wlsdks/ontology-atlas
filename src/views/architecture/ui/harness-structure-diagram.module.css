@@ -1,0 +1,15 @@
+.diagram { position: relative; flex: none; padding: 1rem; border: 1px solid var(--color-border-soft); border-radius: var(--radius-panel); background: radial-gradient(ellipse at 50% 0%, var(--color-indigo-a08), transparent 65%), var(--color-panel); }
+.root { position: relative; z-index: 1; display: flex; align-items: center; gap: 0.75rem; width: fit-content; max-width: 100%; margin: 0 auto; padding: 0.75rem 1.25rem; border: 1px solid var(--color-indigo-line-a32); border-radius: var(--radius-card); background: var(--color-elevated); color: var(--color-indigo-text-soft); }
+.connections { display: block; width: 100%; height: 2rem; overflow: visible; }
+.connection { stroke: var(--color-indigo-line-a32); stroke-width: 1.5; animation: connect var(--motion-settle) var(--motion-ease) both; }
+.bands { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; }
+.bandTitle { display: flex; justify-content: center; align-items: center; gap: 0.5rem; font-size: var(--text-body-lg); line-height: var(--leading-body-lg); color: var(--color-text-secondary); }
+.slots { display: grid; grid-template-columns: minmax(0,1fr); gap: 0.5rem; margin: 0.75rem 0 0 1rem; border-left: 1px solid var(--color-border-strong); padding-left: 1rem; }
+.slot, .nodeHead { position: relative; min-width: 0; }
+.nodeHead::before { content: ''; position: absolute; top: 50%; right: 100%; width: 1rem; border-top: 1px solid var(--color-border-strong); }
+.nodeHead::after { content: ''; position: absolute; top: calc(50% - 3px); left: -3px; width: 6px; height: 6px; border: 1px solid var(--color-border-strong); border-radius: 50%; background: var(--color-panel); pointer-events: none; }
+.nodeHead:focus-within::before, .nodeHead:focus-within::after { border-color: var(--color-indigo-text-soft); }
+.slot[data-status='absent'] .nodeHead::before { border-top-style: dashed; }
+@keyframes connect { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 47.99rem) { .diagram { padding: 1rem; } .bands { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; } .connections { display: none; } .root { margin-bottom: 1.5rem; } .bandTitle { justify-content: flex-start; } }
+@media (prefers-reduced-motion: reduce) { .connection { animation: none; } }

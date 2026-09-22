@@ -41,6 +41,7 @@ mod llm;
 /// LLM call audit log — implementation of "do not send if logging fails."
 mod llm_audit;
 mod managed_node;
+mod map_entry_diagnostic;
 /// Immutable task-bound code/meaning transition records and retained review artifacts.
 mod meaning_transition_archive;
 mod secrets;
@@ -3939,6 +3940,12 @@ pub fn run() {
         builder = builder.plugin(tauri_plugin_deep_link::init());
     }
 
+    // A fixed, read-only document-start observer for one owner-run native entry diagnosis. It is
+    // independent of the WebView verifier and does not change storage, route or window state.
+    if map_entry_diagnostic::enabled_from_env() {
+        builder = builder.plugin(map_entry_diagnostic::init());
+    }
+
     // Registered after single-instance, and **not at all** under the verification harness. Skipping
     // only the initial restore would not be enough: the plugin also writes on exit, so a harness run
     // that resizes the window would overwrite the owner's real geometry, and the next verification
@@ -4064,7 +4071,12 @@ pub fn run() {
 
             #[cfg(target_os = "macos")]
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-                disable_webview_frame_rate_cap(&window);
+                let diagnostic_default_pacing =
+                    map_entry_diagnostic::default_pacing_from_env();
+                map_entry_diagnostic::write_pacing_metadata(diagnostic_default_pacing);
+                if !diagnostic_default_pacing {
+                    disable_webview_frame_rate_cap(&window);
+                }
             }
 
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {

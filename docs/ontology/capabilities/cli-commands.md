@@ -10,7 +10,7 @@ elements: [elements/cli-mcp-verify, elements/cli-vault-bootstrap]
 path: cli/src/lib/cli-commands.mjs
 created_by: "agent:claude-code"
 dependencies: [capabilities/vault-validation]
-relation_notes: { capabilities/vault-validation: "You asked for what depends on what: the terminal validate command reports the same findings by the same codes as the agent surface.", elements/cli-vault-bootstrap: You asked for element nodes named by role under the capability that uses them; the first-time build from a repository is this role., elements/cli-mcp-verify: You asked for element nodes named by role under the capability that uses them; proving the installed server answers is this role. }
+relation_notes: { elements/cli-vault-bootstrap: You asked for element nodes named by role under the capability that uses them; the first-time build from a repository is this role., elements/cli-mcp-verify: You asked for element nodes named by role under the capability that uses them; proving the installed server answers is this role., capabilities/vault-validation: "cli/src/lib/validate.mjs:7 names mcp/src/validate.mjs and :8 loads that module at runtime, re-exporting validateVaultDocument for cli/src/commands/validate.mjs, the module the registry dispatches for the validate command at cli/src/lib/cli-commands.mjs:11." }
 ---
 
 Carries the same authority over the vault from a terminal, so scaffolding a vault, exploring the graph, and writing to it are available without opening the app or connecting an agent. The public inventory of commands and their flags lives in `cli/README.md`.

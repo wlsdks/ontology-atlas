@@ -1,0 +1,13 @@
+.homeRow { display: flex; align-items: center; gap: 1rem; width: 100%; }
+.room { --atlas-mascot-sequence-duration: calc(var(--motion-fast) * 5); position: relative; display: block; flex: none; width: 112px; height: 80px; overflow: hidden; color: var(--color-text-tertiary); }
+.window { position: absolute; top: 0.5rem; right: 0.75rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; width: 1.5rem; height: 1.5rem; padding: 2px; border: 1px solid var(--color-border-soft); }
+.window > span { background: var(--color-overlay-2); }
+.floor { position: absolute; bottom: 0.5rem; inset-inline: 0; height: 1px; background: var(--color-border-soft); }
+.resident { position: absolute; bottom: 0.5rem; left: 0; width: 64px; height: 64px; }
+.idle { display: block; width: 64px; height: 64px; background-size: 64px 64px; image-rendering: pixelated; }
+.shelf { position: absolute; bottom: 0.75rem; right: 0; display: flex; gap: 0.25rem; align-items: end; }
+.workPose { position: relative; display: block; width: 64px; height: 64px; transform: scale(0.5); flex: none; }
+.workPose:has([data-testid='agent-mascot-presence']) > .idle { visibility: hidden; }
+.memoryAdded { animation: memoryEnter var(--motion-fast) var(--motion-ease) both; }
+@keyframes memoryEnter { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 480px) { .homeRow { gap: 0.5rem; } }

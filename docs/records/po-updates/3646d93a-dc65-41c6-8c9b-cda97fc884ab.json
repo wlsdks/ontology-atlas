@@ -1,0 +1,12 @@
+{
+  "runId": "37fa9cb3-c7d4-4a9d-8afd-b97c8ead1d52",
+  "date": "2026-09-21",
+  "proof": "pass",
+  "ownerClear": "pending",
+  "boundaryMiss": "no",
+  "laterResult": "pending",
+  "evidence": "Follow-up QA found and fixed cadence display, stale drafts, reversed-exit pointer lockout, async save recovery, transparent nested menus and missing document navigation. Source-hidden initial walkthrough, corrective follow-up, failure-path tests, geometry and installed-app evidence: /tmp/atlas-audit-v3/verification.md. Owner design acceptance remains pending.",
+  "schema": "po-pilot-update/v1",
+  "id": "3646d93a-dc65-41c6-8c9b-cda97fc884ab",
+  "recordedAt": "2026-09-21T06:23:47.255Z"
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /**
  * Expand/collapse for a list row — the lifecycle that puts **opening, closing, and
@@ -54,11 +54,14 @@ export function useRowDisclosure(open: boolean): {
     if (open || !mounted) return undefined;
     // Exit: unmount after the transition ends. The CSS token owns the duration, so
     // it is read rather than copied here — a copy would drift silently.
-    const timer = window.setTimeout(() => setMounted(false), readDisclosureExitMs());
+    const timer = window.setTimeout(() => {
+      if (boxRef.current) boxRef.current.style.height = '0px';
+      setMounted(false);
+    }, readDisclosureExitMs());
     return () => window.clearTimeout(timer);
   }, [open, mounted]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Record the previous value **before** checking for the box. While closed the
     // box is unmounted, so putting this update after the guard below leaves
     // `previous` at `null` forever — and then a user-initiated open (closed →
@@ -74,11 +77,13 @@ export function useRowDisclosure(open: boolean): {
     const isTransition = previous !== null && previous !== open;
 
     if (!open) {
+      // Preserve the fading content's space when height travel is disabled.
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
       // Closing: pin the start at a measured px value, then go to 0. Starting from
       // `auto` leaves the browser with no value to interpolate from, so the row
       // simply vanishes.
       if (isTransition) {
-        box.style.height = `${box.scrollHeight}px`;
+        box.style.height = `${box.getBoundingClientRect().height}px`;
         forceReflow(box);
       }
       box.style.height = '0px';
@@ -105,9 +110,17 @@ export function useRowDisclosure(open: boolean): {
       return undefined;
     }
 
-    box.style.height = '0px';
+    // Reversing an unfinished close starts at its painted height, never at zero.
+    const fromHeight = box.style.height ? box.getBoundingClientRect().height : 0;
+    box.style.height = `${fromHeight}px`;
+    if (fromHeight === 0) {
+      content.style.transition = 'none';
+      content.style.opacity = '0';
+    }
     forceReflow(box);
     box.style.height = `${content.offsetHeight}px`;
+    content.style.transition = '';
+    content.style.opacity = '';
 
     if (typeof ResizeObserver === 'undefined') return undefined;
     // Content swaps (a successful save turning the form into a confirmation line, a

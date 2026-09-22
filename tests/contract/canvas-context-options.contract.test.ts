@@ -27,7 +27,8 @@ import { describe, expect, it } from "vitest";
  * or is a buffer.
  */
 
-const MAIN_CANVAS = "src/widgets/ontology-map/ui/use-topology-loop.ts";
+const MAIN_CANVAS = "src/widgets/ontology-map/ui/use-topology-frame-loop.ts";
+const COMPOSITION = "src/widgets/ontology-map/ui/use-topology-loop.ts";
 const OFFSCREEN = [
   "src/widgets/ontology-map/render/grid.ts",
   "src/widgets/ontology-map/render/animated-background.ts",
@@ -40,6 +41,7 @@ function read(rel: string): string {
 describe("canvas 2d 컨텍스트 옵션 계약", () => {
   it("소스를 실제로 읽는다 — 빈 스캔은 통과가 아니라 결함이다", () => {
     expect(read(MAIN_CANVAS).length).toBeGreaterThan(1000);
+    expect(read(COMPOSITION)).toMatch(/useTopologyFrameLoop\(\{\s*canvasRef,/);
     for (const rel of OFFSCREEN) expect(read(rel).length).toBeGreaterThan(200);
   });
 

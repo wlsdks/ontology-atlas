@@ -276,22 +276,20 @@ export function buildDuplicatePairs(
   interface PairTokens {
     slug: Set<string>;
     title: Set<string>;
+    all: Set<string>;
   }
   const tokenSetsOf = new Map<string, PairTokens>();
   for (const [id, candidate] of candidates) {
-    tokenSetsOf.set(id, {
-      slug: new Set(similarityTokens(candidate.slug)),
-      title: new Set(similarityTokens(candidate.title)),
-    });
+    const slug = new Set(similarityTokens(candidate.slug));
+    const title = new Set(similarityTokens(candidate.title));
+    tokenSetsOf.set(id, { slug, title, all: new Set([...slug, ...title]) });
   }
   const scorePair = (
-    leftId: string,
-    rightId: string,
     left: SimilarityCandidate,
     right: SimilarityCandidate,
+    leftTokens: PairTokens,
+    rightTokens: PairTokens,
   ): number => {
-    const leftTokens = tokenSetsOf.get(leftId)!;
-    const rightTokens = tokenSetsOf.get(rightId)!;
     const slug = tokenSetJaccard(leftTokens.slug, rightTokens.slug) * 0.35;
     const title = tokenSetJaccard(leftTokens.title, rightTokens.title) * 0.35;
     const kind = left.kind && right.kind && left.kind === right.kind ? 0.1 : 0;
@@ -303,54 +301,67 @@ export function buildDuplicatePairs(
   // Word → node inverted index. If the threshold is at or below the ceiling reachable with no
   // shared word, narrowing could change the result, so it falls back to exhaustive comparison.
   const useTokenIndex = minScore > MAX_SCORE_WITHOUT_SHARED_TOKEN;
-  const nodesByToken = new Map<string, string[]>();
+  interface IndexedCandidate {
+    id: string;
+    candidate: GraphSimilarityCandidate;
+    tokens: PairTokens;
+  }
+  const indexedCandidates: IndexedCandidate[] = [];
+  for (const [id, candidate] of candidates) {
+    indexedCandidates.push({ id, candidate, tokens: tokenSetsOf.get(id)! });
+  }
+  const nodesByToken = new Map<string, IndexedCandidate[]>();
+  const tokenOrder = new Map<string, number>();
   if (useTokenIndex) {
-    for (const [id] of candidates) {
-      const sets = tokenSetsOf.get(id)!;
-      const tokens = new Set([...sets.slug, ...sets.title]);
-      for (const token of tokens) {
+    for (const indexed of indexedCandidates) {
+      for (const token of indexed.tokens.all) {
+        if (!tokenOrder.has(token)) tokenOrder.set(token, tokenOrder.size);
         const bucket = nodesByToken.get(token);
-        if (bucket) bucket.push(id);
-        else nodesByToken.set(token, [id]);
+        if (bucket) bucket.push(indexed);
+        else nodesByToken.set(token, [indexed]);
       }
     }
   }
 
-  const degreeOf = (id: string): number => candidates.get(id)?.neighbors.size ?? 0;
-  // The duplicate-visit key — two nodes sharing several words appear in several buckets, so the
-  // same pair is reached more than once. This key is **internal only**, so an integer combination
-  // of candidate indices is enough; the previous implementation built a string per pair
-  // (JSON.stringify), a noticeable constant cost in the inner loop of an n² comparison. The row
-  // `id` output is still a JSON array — its rationale (the 2026-08-08 accident where a NUL
-  // composite key made git treat the file as binary) is about the printability of strings written
-  // into source, and is unrelated to this integer key.
-  const indexOfId = new Map<string, number>();
-  for (const id of candidates.keys()) indexOfId.set(id, indexOfId.size);
-  const indexSpan = indexOfId.size;
-  const seen = new Set<number>();
+  const shown = Math.max(0, limit);
+  const folded = Math.max(0, restLimit);
+  const shownLimit = sliceCount(shown);
+  const restEndLimit = sliceCount(shown + folded);
+  const retainedLimit = Math.max(shownLimit, restEndLimit);
   const scored: DuplicatePairRow[] = [];
+  let suspectCount = 0;
 
-  const consider = (leftId: string, rightId: string) => {
-    const leftIndex = indexOfId.get(leftId);
-    const rightIndex = indexOfId.get(rightId);
-    if (leftIndex === undefined || rightIndex === undefined) return;
-    const pairKey =
-      leftIndex < rightIndex
-        ? leftIndex * indexSpan + rightIndex
-        : rightIndex * indexSpan + leftIndex;
-    if (seen.has(pairKey)) return;
-    seen.add(pairKey);
-    const left = candidates.get(leftId);
-    const right = candidates.get(rightId);
-    if (!left || !right) return;
-    const total = scorePair(leftId, rightId, left, right);
+  const compareRows = (a: DuplicatePairRow, b: DuplicatePairRow) =>
+    b.score - a.score || a.id.localeCompare(b.id);
+
+  const retain = (row: DuplicatePairRow) => {
+    suspectCount += 1;
+    if (retainedLimit === 0) return;
+    if (retainedLimit === Infinity || scored.length < retainedLimit) {
+      scored.push(row);
+      return;
+    }
+    let worst = 0;
+    for (let index = 1; index < scored.length; index += 1) {
+      // On an exact comparator tie, choose the later row as the eviction candidate. Array#sort is
+      // stable, so keeping the earlier row preserves the old full-sort-then-slice prefix even if a
+      // malformed graph gives two document pairs the same printable row id.
+      if (compareRows(scored[worst], scored[index]) <= 0) worst = index;
+    }
+    if (compareRows(row, scored[worst]) < 0) scored[worst] = row;
+  };
+
+  const consider = (leftEntry: IndexedCandidate, rightEntry: IndexedCandidate) => {
+    const left = leftEntry.candidate;
+    const right = rightEntry.candidate;
+    const total = scorePair(left, right, leftEntry.tokens, rightEntry.tokens);
     if (total < minScore) return;
 
   // The side to keep is the more connected one — merging gathers backlinks there, so the fewest
   // relations have to be reconnected. Ties break by name, so the same suggestion is given every time.
     const leftKeeps =
-      degreeOf(leftId) !== degreeOf(rightId)
-        ? degreeOf(leftId) > degreeOf(rightId)
+      left.neighbors.size !== right.neighbors.size
+        ? left.neighbors.size > right.neighbors.size
         : left.slug.localeCompare(right.slug) <= 0;
     const keep = leftKeeps ? left : right;
     const dissolve = leftKeeps ? right : left;
@@ -366,7 +377,7 @@ export function buildDuplicatePairs(
       .filter((token) => keepTokens.has(token) && !folders.has(token))
       .sort((a, b) => b.length - a.length || a.localeCompare(b));
 
-    scored.push({
+    retain({
       id: JSON.stringify([keep.slug, dissolve.slug]),
       keepId: keep.node.id,
       keepSlug: keep.slug,
@@ -381,24 +392,44 @@ export function buildDuplicatePairs(
   };
 
   if (useTokenIndex) {
-    for (const bucket of nodesByToken.values()) {
+    for (const [token, bucket] of nodesByToken) {
+      const currentOrder = tokenOrder.get(token)!;
       for (let i = 0; i < bucket.length; i += 1) {
-        for (let j = i + 1; j < bucket.length; j += 1) consider(bucket[i], bucket[j]);
+        const leftTokens = bucket[i].tokens.all;
+        for (let j = i + 1; j < bucket.length; j += 1) {
+          const rightTokens = bucket[j].tokens.all;
+          let visitedEarlier = false;
+          for (const shared of leftTokens) {
+            const order = tokenOrder.get(shared)!;
+            if (order < currentOrder && rightTokens.has(shared)) {
+              visitedEarlier = true;
+              break;
+            }
+          }
+          if (!visitedEarlier) consider(bucket[i], bucket[j]);
+        }
       }
     }
   } else {
-    const ids = [...candidates.keys()];
-    for (let i = 0; i < ids.length; i += 1) {
-      for (let j = i + 1; j < ids.length; j += 1) consider(ids[i], ids[j]);
+    for (let i = 0; i < indexedCandidates.length; i += 1) {
+      for (let j = i + 1; j < indexedCandidates.length; j += 1) {
+        consider(indexedCandidates[i], indexedCandidates[j]);
+      }
     }
   }
 
-  scored.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+  scored.sort(compareRows);
 
-  const shown = Math.max(0, limit);
   return {
-    rows: scored.slice(0, shown),
-    restRows: scored.slice(shown, shown + Math.max(0, restLimit)),
-    suspectCount: scored.length,
+    rows: scored.slice(0, shownLimit),
+    restRows: scored.slice(shownLimit, restEndLimit),
+    suspectCount,
   };
+}
+
+/** Match Array#slice's non-negative end coercion used by the previous implementation. */
+function sliceCount(value: number): number {
+  const nonNegative = Math.max(0, value);
+  if (nonNegative === Infinity) return Infinity;
+  return Number.isFinite(nonNegative) ? Math.floor(nonNegative) : 0;
 }

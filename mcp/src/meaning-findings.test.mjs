@@ -944,6 +944,96 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
     });
     assert.deepEqual(findings.map((row) => row.key).sort(), ['elements/helper', 'elements/second']);
   });
+
+  /*
+   * The decision's falsifier, met on this repository's own vault on
+   * 2026-09-23: a frame loop that never imports the camera module still
+   * cleared its edge because the word "camera" sat inside hook names. A
+   * witness is an import, not a word. The multi-line import is the shape
+   * three of the twelve first-round edges actually had — the closing
+   * `} from '…'` line carries the path and does not begin with `import`.
+   */
+  it('a bare word does not witness; an import does, even split across lines', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    writeFileSync(
+      join(root, 'src', 'mention.ts'),
+      'export const useHelperCamera = () => "helper is a word here, not a module";\n',
+    );
+    writeFileSync(
+      join(root, 'src', 'multiline.ts'),
+      "import {\n  helper,\n} from './lib/helper';\n\nexport const used = helper();\n",
+    );
+    const finding = (path) =>
+      dependencyWitnessFinding({
+        slug: 'capabilities/edge',
+        frontmatter: { path, dependencies: ['elements/helper'] },
+        repoRoot: root,
+        resolveTargetPath,
+      });
+    assert.equal(finding('src/mention.ts').length, 1, 'a word in an identifier is not a witness');
+    assert.deepEqual(finding('src/multiline.ts'), [], 'a multi-line import is one');
+  });
+
+  /*
+   * Measured on a Rust trial vault (2026-09-23): every edge into a `mod.rs`
+   * was unwitnessed because `use crate::export::…` names the folder, and
+   * `use super::{relative_speed, Benchmark}` hides the module inside braces.
+   */
+  it('Rust module paths witness the mod.rs they reach, braces included', (t) => {
+    const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-dependency-witness-rust-'));
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    mkdirSync(join(root, 'src', 'export'), { recursive: true });
+    mkdirSync(join(root, 'src', 'benchmark'), { recursive: true });
+    writeFileSync(join(root, 'src', 'export', 'mod.rs'), 'pub struct ExportManager;\n');
+    writeFileSync(join(root, 'src', 'benchmark', 'relative_speed.rs'), 'pub fn compute() {}\n');
+    writeFileSync(
+      join(root, 'src', 'benchmark', 'scheduler.rs'),
+      'use super::{relative_speed, Benchmark};\nuse crate::export::{\n    ExportManager,\n};\n',
+    );
+    const targets = {
+      'capabilities/export': 'src/export/mod.rs',
+      'capabilities/speed': 'src/benchmark/relative_speed.rs',
+    };
+    assert.deepEqual(
+      dependencyWitnessFinding({
+        slug: 'capabilities/scheduling',
+        frontmatter: {
+          path: 'src/benchmark/scheduler.rs',
+          dependencies: ['capabilities/export', 'capabilities/speed'],
+        },
+        repoRoot: root,
+        resolveTargetPath: (ref) => targets[ref] ?? null,
+      }),
+      [],
+    );
+  });
+
+  /*
+   * The first repair turn on this vault wrote one witness as a line range,
+   * `lib/barrel.ts:3-9`, and the check dropped the token because only `:42`
+   * and `:42:7` were stripped. An editor's `#L3-L9` is the same address.
+   */
+  it('a `why` witness carrying a line range still resolves', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    for (const suffix of [':1-3', ':1\u20133', '#L1-L3', '#L1']) {
+      assert.deepEqual(
+        dependencyWitnessFinding({
+          slug: 'capabilities/stranger',
+          frontmatter: {
+            path: 'src/stranger.ts',
+            dependencies: ['elements/helper'],
+            relation_notes: { 'elements/helper': `re-exported from \`src/lib/barrel.ts${suffix}\`.` },
+          },
+          repoRoot: root,
+          resolveTargetPath,
+        }),
+        [],
+        suffix,
+      );
+    }
+  });
 });
 
 /**

@@ -18,7 +18,7 @@ Lists a file's declarations with the line each one starts at, so the next bounde
 
 ## Excludes
 - Claiming what a declaration does; this is a table of contents, never a reading of behaviour.
-- Opening a file itself, and proving absence — a declaration it misses is not evidence there is none.
+- Opening a file itself, and proving absence: a declaration it misses is not evidence there is none.
 
 ## Uncertainty
 - Read the module header and its exports (`mcp/src/source-outline.mjs:1-27` and `:364`). The per-language scanning rules between them were not read, so which declaration shapes each of the listed languages actually matches is unverified here.

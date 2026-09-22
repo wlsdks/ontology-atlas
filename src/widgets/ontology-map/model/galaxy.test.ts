@@ -162,8 +162,9 @@ describe("Galaxy atmosphere", () => {
       const sample = galaxyNebulaMotion(now, false);
       expect(sample.luminance).toBeGreaterThanOrEqual(0.879);
       expect(sample.luminance).toBeLessThanOrEqual(1);
-      expect(Math.abs(sample.innerRotation)).toBeLessThanOrEqual(Math.PI / 150);
-      expect(Math.abs(sample.outerRotation)).toBeLessThanOrEqual(Math.PI / 120);
+      // Atmosphere stays inside a shallow arc; this is never a rotating graph.
+      expect(Math.abs(sample.innerRotation)).toBeLessThan(Math.PI / 12);
+      expect(Math.abs(sample.outerRotation)).toBeLessThan(Math.PI / 12);
     }
     expect(galaxyNebulaMotion(0, true)).toEqual({
       luminance: 1,

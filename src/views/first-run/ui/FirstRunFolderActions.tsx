@@ -34,7 +34,7 @@ export function FirstRunFolderActions({ busy, showJustStart, onOpen, onCreate, t
   };
 
   return (
-    <div className="relative flex flex-wrap items-center gap-2" aria-busy={busy} data-testid="first-run-folder-actions">
+    <div className="relative flex min-w-0 max-w-full flex-wrap items-center gap-2" aria-busy={busy} data-testid="first-run-folder-actions">
       <Button size="sm" className="atlas-touch-floor" variant="outline" onClick={onOpen} disabled={busy} data-testid="first-run-open">
         <FolderOpen size={ICON_SIZE.sm} aria-hidden />
         {busy ? tFirstRun('busy') : t('openAction')}
@@ -46,7 +46,7 @@ export function FirstRunFolderActions({ busy, showJustStart, onOpen, onCreate, t
           {t('createAction')}
           <ChevronDown size={ICON_SIZE.sm} aria-hidden />
         </Button>
-        <Surface open={open} origin="top left" className="absolute left-0 top-full z-20 mt-2 w-64 max-w-[calc(100vw-3rem)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--shadow-elevation-2)]">
+        <Surface open={open} className="absolute left-0 top-full z-20 mt-2 w-64 max-w-full origin-top-left rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--shadow-elevation-2)] sm:right-0 sm:left-auto sm:origin-top-right">
           <div id="first-run-create-options" className="grid gap-1">
             {showJustStart ? <RowButton tone="strong" hoverInk="strong" hoverSurface="lift" className="w-full text-left"
               disabled={busy} onClick={() => choose('just-start')} data-testid="first-run-just-start">

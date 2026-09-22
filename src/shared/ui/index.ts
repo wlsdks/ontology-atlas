@@ -5,8 +5,10 @@ export { Button, buttonVariants, type ButtonProps } from './button';
  * were inline panels.
  */
 export { Surface } from './surface';
+export { RowDisclosure } from './row-disclosure';
 export { AGENT_DOCK_INSET_SURFACE_CLASS } from './agent-dock-surface';
 export { Dialog } from './dialog';
+export { DialogBody, DialogFooter } from './dialog-sections';
 export { Disclosure } from './disclosure';
 export { Textarea } from './input';
 export { Checkbox } from './checkbox';

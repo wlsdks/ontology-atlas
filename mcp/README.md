@@ -1031,9 +1031,18 @@ all three go together; or `patch_concept` into a real concept followed by
 
 `dependency-unwitnessed` is the one that reads source instead of the vault. A
 `depends_on` edge between two nodes that each cite an implementation file is
-*witnessed* when some file names the target file — the path itself, or its
-basename without the extension as a whole word, which is what an import
-statement writes. Two files are looked at: the source node's own `path:`, and
+*witnessed* when some file brings the target file in — the path itself
+written anywhere, or the target's module name as a segment of an import
+specifier: `import … from './lib/helper'`, `require('…/helper')`, Python
+`from pkg.helper import`, Rust `use crate::helper::…` or `use super::{helper}`,
+Go's quoted paths inside `import (…)`, C's `#include`. A module root answers to
+its folder (`src/export/mod.rs` is what `crate::export` reaches; `index.ts` and
+`__init__.py` likewise). A bare word elsewhere in the file is not a witness:
+on this vault (2026-09-23) the words "camera" and "layout" inside unrelated
+hook names had kept two edges green with no import behind them, and the
+tightened rule found seven such edges in the dogfood vault and two in a Rust
+trial vault that the previous rule had called clean. Two files are looked at:
+the source node's own `path:`, and
 every repository-relative file path written in that edge's `relation_notes`,
 each clamped inside the repository and each required to exist. Naming the
 witness in the `why` is therefore a real repair and not a formality — it is also
@@ -1041,8 +1050,9 @@ the only way a cross-boundary edge gets witnessed, because what proves a browser
 module depends on an MCP module is the barrel, bridge or contract test between
 them. Write that path from the repository root; a path relative to `src/` or to
 the module's own folder resolves to nothing and is ignored rather than guessed
-at. Measured on this repository's own vault (2026-09-22): 70 of 85
-such edges are witnessed and 15 are not, all 15 carrying a reviewed `why` and
+at; a line suffix (`:42`, `:42:7`, `:3-9`, `#L3-L9`) is stripped before the
+file is opened. Measured on this repository's own vault (2026-09-22): 70 of 85
+such edges were witnessed and 15 were not, all 15 carrying a reviewed `why` and
 validating clean. `add_relation` and `patch_concept` report it for the edge the
 write just added, while the validators report every edge; both stay silent with
 no repository root, when either node cites a folder instead of a file, or when
@@ -1982,6 +1992,22 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/vault-nodes.mjs` | node identity, the gates every write passes, and the whole-vault issue finders |
 | `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
 | `src/tools/maintenance.mjs` | what a result carries rather than being asked for |
+| `src/ontology-engine.mjs` | public exports and explicit query-family composition |
+| `src/ontology-engine/artifact-context.mjs` | graph indexes and reference resolution |
+| `src/ontology-engine/context-operations.mjs` | shared graph lookups and scope helpers |
+| `src/ontology-engine/query-planner.mjs` | bounded query planning |
+| `src/ontology-engine/traversal-analysis.mjs` | centrality, reachability, impact, and builder context |
+| `src/ontology-engine/selection-queries.mjs` | scans, profiles, matrices, components, and similarity |
+| `src/ontology-engine/scope-queries.mjs` | containment, lineage, cycles, relation recommendations, and growth |
+| `src/ontology-engine/maintenance-queries.mjs` | repair and review action planning |
+| `src/ontology-engine/brief-queries.mjs` | evidence-aware agent and workspace briefs |
+| `src/ontology-engine/health-query.mjs` | structural health reporting |
+| `src/ontology-engine/engine-helpers.mjs` | graph-analysis helpers and normalization shared across families |
+| `src/ontology-engine/query-dispatch.mjs` | operation-to-query dispatch |
+| `src/ontology-engine/traversal-queries.mjs` | neighbor enumeration, shortest paths, and bounded all-path searches |
+| `src/ontology-engine/query-values.mjs` | shared node/relation vocabulary and default limits |
+| `src/ontology-engine/query-primitives.mjs` | shared input normalization and node/edge result shaping |
+| `src/ontology-engine/agent-responses.mjs` | agent handoff prompts and CLI follow-up formatting |
 
 Adding a module means adding it to `files` in `mcp/package.json` — the bundle and
 the MCPB artifact copy that list, so an undeclared import ships a server that

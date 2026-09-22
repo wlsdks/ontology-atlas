@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
@@ -16,6 +16,7 @@ import {
 } from '@/shared/lib/appearance-preferences';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';
+import { RowDisclosure } from '@/shared/ui/row-disclosure';
 import { Choice, DETAIL_TOGGLE_CHIP, RESET_LINK_INK, Slider } from './settings-primitives';
 
 /**
@@ -64,6 +65,7 @@ export function ExpandSettings() {
    * second), so that is used rather than inventing a new one.
    */
   const [detailOpen, setDetailOpen] = useState(false);
+  const detailId = useId();
 
   const AFFORDANCES: readonly { value: ExpandAffordance; label: string }[] = [
     { value: 'pill', label: t('affordancePill') },
@@ -79,7 +81,7 @@ export function ExpandSettings() {
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-expand">
-      <p className="break-keep text-label text-[color:var(--color-text-quaternary)]">
+      <p className="break-keep text-label text-[color:var(--color-text-tertiary)]">
         {t('caption')}
       </p>
 
@@ -97,7 +99,7 @@ export function ExpandSettings() {
             the mockup had hints). */}
         <p
           data-testid="app-settings-expand-affordance-hint"
-          className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-quaternary)]"
+          className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-tertiary)]"
         >
           {t(`affordanceHint.${pref.affordance}`)}
         </p>
@@ -114,17 +116,19 @@ export function ExpandSettings() {
         />
         <p
           data-testid="app-settings-expand-structure-hint"
-          className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-quaternary)]"
+          className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-tertiary)]"
         >
           {t(`structureHint.${pref.structure}`)}
         </p>
       </div>
 
+      <div className="min-w-0">
       <Chip
         size="lg"
         tone="secondary"
         data-testid="app-settings-expand-detail-toggle"
         aria-expanded={detailOpen}
+        aria-controls={detailId}
         onClick={() => setDetailOpen((open) => !open)}
         className={DETAIL_TOGGLE_CHIP}
       >
@@ -136,7 +140,7 @@ export function ExpandSettings() {
         {detailOpen ? t('detailHide') : t('detailShow')}
       </Chip>
 
-      {detailOpen ? (
+      <RowDisclosure open={detailOpen} id={detailId} className="pt-3">
       <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-2">
         <Slider
           label={t('batchLabel')}
@@ -146,7 +150,7 @@ export function ExpandSettings() {
           format={(v) => String(v)}
           onChange={(batchSize) => set({ batchSize })}
         />
-        <p className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-quaternary)]">
+        <p className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-tertiary)]">
           {t('batchHint')}
         </p>
         <Slider
@@ -157,7 +161,7 @@ export function ExpandSettings() {
           format={(v) => String(v)}
           onChange={(labelAttempts) => set({ labelAttempts })}
         />
-        <p className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-quaternary)]">
+        <p className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-tertiary)]">
           {t('labelAttemptsHint')}
         </p>
         <Slider
@@ -168,11 +172,12 @@ export function ExpandSettings() {
           format={(v) => String(v)}
           onChange={(maxOpenParents) => set({ maxOpenParents })}
         />
-        <p className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-quaternary)]">
+        <p className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-tertiary)]">
           {t('maxOpenHint')}
         </p>
       </div>
-      ) : null}
+      </RowDisclosure>
+      </div>
 
       <button
         type="button"

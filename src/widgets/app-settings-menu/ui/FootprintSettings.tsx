@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import { controlClass } from '@/shared/ui/control-class';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { Chip } from '@/shared/ui/controls';
+import { RowDisclosure } from '@/shared/ui/row-disclosure';
 import { Choice, DETAIL_TOGGLE_CHIP, RESET_LINK_INK, Slider } from './settings-primitives';
 import {
   DEFAULT_FOOTPRINT,
@@ -187,11 +188,12 @@ export function FootprintSettings() {
   const t = useTranslations('nav.settingsMenu.footprint');
   const pref = useFootprint();
   const [detailOpen, setDetailOpen] = useState(false);
+  const detailId = useId();
   const set = (patch: Partial<FootprintPreference>) => writeFootprint({ ...pref, ...patch });
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-footprint">
-      <p className="break-keep text-label text-[color:var(--color-text-quaternary)]">
+      <p className="break-keep text-label text-[color:var(--color-text-tertiary)]">
         {t('caption')}
       </p>
       <FootprintPreview pref={pref} />
@@ -228,11 +230,13 @@ export function FootprintSettings() {
         }))}
       />
 
+      <div className="min-w-0">
       <Chip
         size="lg"
         tone="secondary"
         data-testid="app-settings-footprint-detail-toggle"
         aria-expanded={detailOpen}
+        aria-controls={detailId}
         onClick={() => setDetailOpen((open) => !open)}
         className={DETAIL_TOGGLE_CHIP}
       >
@@ -244,7 +248,7 @@ export function FootprintSettings() {
         {detailOpen ? t('detailHide') : t('detailShow')}
       </Chip>
 
-      {detailOpen ? (
+      <RowDisclosure open={detailOpen} id={detailId} className="pt-3">
         <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-2">
           <Slider
             label={t('size')}
@@ -303,7 +307,8 @@ export function FootprintSettings() {
             {t('reset')}
           </button>
         </div>
-      ) : null}
+      </RowDisclosure>
+      </div>
     </div>
   );
 }

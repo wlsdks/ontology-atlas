@@ -64,7 +64,6 @@ import {
   selectInsightsDocumentTitle,
   selectInsightsScopeTitle,
 } from "../lib/insights-scope-title";
-import { buildImpactRanking } from "../lib/impact-ranking";
 import {
   buildDoNextQueue,
   fillHandoffTemplate,
@@ -733,15 +732,6 @@ export function OntologyInsightsPage() {
     [hubRanking],
   );
 
-  // Impact ranking — "if I change this, how far do I have to re-read?". It calls the
-  // same `computeOntologyDependents` (the semantics of MCP `blast_radius`) as the map
-  // drawer and the change diff. It is a full-node BFS, so it re-runs only when
-  // nodes/edges change.
-  const impact = useMemo(
-    () => buildImpactRanking(nodes, edges, IMPACT_DISPLAY_LIMIT),
-    [nodes, edges],
-  );
-
   // Suspected duplicate pairs — how much the names, parents, and neighbours overlap.
   // A faithful mirror of MCP `similar_nodes`, so the pairs the screen names are the
   // pairs the agent answers with.
@@ -1093,6 +1083,7 @@ export function OntologyInsightsPage() {
     // The library and harness panels read the same model, so the work runs for those tabs too.
     enabled: tab === "brief" || tab === "library" || tab === "harness",
   });
+  const measuredHarness = tab === "harness" && brief.harnessDetail.availability === "measured";
   /**
    * The scale of each finding group — the **same** `InsightsSignalCounts` the verdict is built
    * from, re-keyed. One argument means the ten group counts and the one title count cannot drift
@@ -1356,7 +1347,7 @@ export function OntologyInsightsPage() {
         * space (measured at 1512×900). It is a `min-h-full` chain, so long content still grows
         * and scrolling is unchanged.
         */}
-      <div className="@container/insights flex min-w-0 flex-1 flex-col overflow-y-auto">
+      <div className="@container/insights flex min-w-0 flex-1 flex-col overflow-y-auto max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]">
         {/*
          * ⚠️ **The live indicator was removed** (2026-08-03, owner report — same reason as the
          * project list). "Live · N changed" is **the map's object**: it draws what changed onto
@@ -1379,7 +1370,7 @@ export function OntologyInsightsPage() {
           // The `lg` breath moved into `PAGE_FRAME` on 2026-09-05 — stating it here as well
           // would be the second source the frame spec exists to remove. What stays is the
           // below-`lg` tab-bar reserve, which is the page's to decide.
-          className={`${PAGE_FRAME} flex min-h-full shrink-0 flex-col max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]`}
+          className={`${PAGE_FRAME} flex flex-col max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] ${measuredHarness ? 'h-full min-h-0 flex-1 overflow-hidden' : 'min-h-full shrink-0'}`}
         >
         <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />
 
@@ -1554,7 +1545,7 @@ export function OntologyInsightsPage() {
           // The content crossfades in while **the box jumped in one frame** (measured 878.5 →
           // 605px, a 246px jump for the whole document). The height is set one step (base) later
           // so the crossfade wraps the reflow.
-          <div ref={insightsSwapHostRef} className="flex flex-1 flex-col">
+          <div ref={insightsSwapHostRef} className={`flex flex-1 flex-col ${measuredHarness ? 'min-h-0 overflow-hidden' : ''}`}>
           <div
             key={tab}
             ref={insightsPanelRef}
@@ -1578,7 +1569,7 @@ export function OntologyInsightsPage() {
               : ({ role: "region", "aria-label": t(`core.${coreOfTab(tab)}`) } as const))}
             id={`insights-tabpanel-${tab}`}
             data-insights-panel={tab}
-            className="insights-tab-crossfade mt-[var(--section-gap)] flex flex-1 flex-col"
+            className={`insights-tab-crossfade mt-[var(--section-gap)] flex flex-1 flex-col ${measuredHarness ? 'min-h-0 overflow-hidden' : ''}`}
           >
             {tab === "library" ? <LibraryTab detail={brief.library} nowMs={brief.nowMs} /> : null}
             {tab === "harness" ? <HarnessTab detail={brief.harnessDetail} /> : null}
@@ -1721,7 +1712,9 @@ export function OntologyInsightsPage() {
                   ariaLabel: (title) => t("hubRowAriaLabel", { title }),
                 }}
                 labels={connectionsLabels}
-                impact={impact}
+                impactNodes={nodes}
+                impactEdges={edges}
+                impactLimit={IMPACT_DISPLAY_LIMIT}
                 impactLink={{
                   href: mapNodeHref,
                   // The bar is `aria-hidden`, so the two numbers are carried in the link name — a

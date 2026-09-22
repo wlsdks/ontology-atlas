@@ -1343,18 +1343,20 @@ export function OntologyMapDetailPanel({
        `presence` prop, which made «does this surface have an exit» a fact living
        outside this file.
 
-       The `origin` prop is **not given.** This popover's growth origin is not a
-       static string but the screen coordinates of the node just clicked, and
-       HomePage's positioner injects that as `--topology-chrome-in-origin` (local px
-       coordinates) — CSS variables inherit, so overriding `transform-origin` inline
-       here would instead make the popover born at a fixed position. The class side's
-       `var(--topology-chrome-in-origin, center top)` wins as it is.
+       The inspector can occupy nearly the full window height. Use the existing
+       large-surface fade: the camera approaches the target while the reading
+       surface remains stationary. Small menus inside it retain chrome motion.
 
        The outer box carries **width only** — the inner box is the scroll container
        (max-height plus overflow-y-auto) and the sticky footer anchors to that
        scrollport, so that role is not moved. */
     <Surface
       open={open}
+      motion="overlay"
+      // A dense target shares its first paint with the camera/layout work. The
+      // settle ramp keeps the reading surface's fade legible in that frame;
+      // closing still uses Surface's faster exit and reduced-motion equivalent.
+      style={open ? { animationDuration: 'var(--motion-settle)' } : undefined}
       onExited={onExited}
       className={[
         "w-[var(--map-panel-width)]",

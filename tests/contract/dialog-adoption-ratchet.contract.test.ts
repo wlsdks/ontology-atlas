@@ -80,7 +80,7 @@ function scanProduction(): Map<string, number> {
  */
 const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: string]> = [
   [
-    "src/views/home/ui/HomePage.tsx",
+    "src/views/home/ui/TopologyBlockingOverlays.tsx",
     3,
     "지도 컴포저 — --z-map-scrim(25) 층·지도 좌표계 내부에 산다. body 포털(--z-dialog 60)로 올리면 지도 위 다른 크롬과의 층 계약이 깨진다.",
   ],
@@ -99,6 +99,18 @@ const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: stri
       "content a dialog, and `role=\"menu\"` was rejected by the interaction and " +
       "workbench seats for having no menu items (2026-09-13). Focus in and focus back to " +
       "the trigger are implemented at the call site via `Surface`'s ref and `onExited`.",
+  ],
+  [
+    "src/views/ontology-insights/ui/tabs/HarnessCoverageOverview.tsx",
+    1,
+    "Measured Guidance evidence is a rich **non-modal anchored dialog**: the reader must be " +
+      "able to select another domain/role mark while evidence is open, so the modal Dialog " +
+      "primitive's scrim, focus trap and scroll lock would violate the interaction. The desktop " +
+      "surface portals to document.body, declares transientSurface('anchored'), takes focus once, " +
+      "retains inert evidence through Surface exit, and restores only the correct live trigger for " +
+      "Escape/Close intent. Replacement and outside intent cannot steal focus. The narrow branch " +
+      "still uses the modal Dialog primitive. Behavioral evidence: HarnessCoverageOverview.test.tsx " +
+      "and tests/e2e/harness-tab.spec.ts. Native geometry/motion acceptance remains separate.",
   ],
 ];
 

@@ -11,20 +11,22 @@ import { describe, expect, it } from "vitest";
  * modal, so the blocking-surface predicate must not swallow every shortcut; only the drawer
  * toggle goes quiet while the dock is open.
  */
+const keyboardSource = readFileSync("src/views/home/model/use-topology-keyboard-tour.tsx", "utf8");
 const homePageSource = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
 
 describe("documents drawer shortcut while the agent dock is open", () => {
   it("does not toggle the drawer over an open agent dock", () => {
-    const handler = homePageSource.slice(
-      homePageSource.indexOf('combo: { key: "d" }'),
-      homePageSource.indexOf("setDocsDrawerOpen((v) => !v)"),
+    expect(homePageSource).toContain("useTopologyKeyboardTour({");
+    const handler = keyboardSource.slice(
+      keyboardSource.indexOf('combo: { key: "d" }'),
+      keyboardSource.indexOf("setDocsDrawerOpen((v) => !v)"),
     );
     expect(handler).toContain("if (agentDockOpen) return;");
   });
 
   it("keeps the other global shortcuts alive while the dock is open", () => {
     // The dock is a side panel beside the map, not a modal: ⌘K and `?` stay usable.
-    expect(homePageSource).not.toContain("agentDockOpen: agentDockOpen");
-    expect(homePageSource).toContain("agentAwaitingDecision: acpTurnActivityFrame?.activity.state");
+    expect(keyboardSource).not.toContain("agentDockOpen: agentDockOpen");
+    expect(keyboardSource).toContain("agentAwaitingDecision: acpTurnActivityFrame?.activity.state");
   });
 });

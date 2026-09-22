@@ -96,6 +96,22 @@ if (!existsSync(outFile)) fail(`bun reported success but ${outFile} is missing`)
 const sizeMb = (statSync(outFile).size / (1024 * 1024)).toFixed(1);
 console.log(`✔ ${path.relative(root, outFile)} — ${sizeMb} MB (bun ${bunProbe.stdout.trim()})`);
 
+/*
+ * macOS 27 refuses to run the signature bun leaves on a compiled binary: the
+ * process is killed before its first instruction (exit 137, no output), and a
+ * hello-world compiled the same way dies the same way. Re-signing ad hoc makes
+ * it run (measured 2026-09-23, bun 1.4.0, Darwin 27.0). The release pipeline
+ * signs the sidecar again with the real identity; this only keeps the local
+ * spawn check and the desktop bridge lane honest on the host that builds it.
+ */
+if (process.platform === 'darwin' && triple.endsWith('-apple-darwin')) {
+  const signed = spawnSync('codesign', ['-s', '-', '-f', outFile], { encoding: 'utf-8' });
+  if (signed.status !== 0) {
+    fail(`codesign -s - failed with exit ${signed.status}: ${(signed.stderr || '').trim()}`);
+  }
+  console.log('✔ ad-hoc re-signed for the local spawn check');
+}
+
 if (argv.includes('--skip-verify')) process.exit(0);
 
 if (triple !== hostTargetTriple()) {

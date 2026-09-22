@@ -171,8 +171,8 @@ export function CanvasBackgroundPicker() {
      * would differ per section (measured: 20px in other sections, 32px only here).
      */
     <div data-testid="app-settings-canvas-background">
-      <p className="text-body text-[color:var(--color-text-secondary)]">{t('canvasBgLabel')}</p>
-      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-quaternary)]">
+      <p className="text-body text-[color:var(--color-text-primary)]">{t('canvasBgLabel')}</p>
+      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-tertiary)]">
         {t('canvasBgCaption')}
       </p>
       <div {...group.groupProps} aria-label={t('canvasBgLabel')} className="mt-3 grid grid-cols-2 gap-2.5">
@@ -222,8 +222,8 @@ export function GlyphSetPicker() {
   const group = useRovingRadioGroup({ value, values: GLYPH_SETS, onChange: writeGlyphSet });
   return (
     <div className="px-3 py-2.5" data-testid="app-settings-glyph-set">
-      <p className="text-body text-[color:var(--color-text-secondary)]">{t('glyphSetLabel')}</p>
-      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-quaternary)]">
+      <p className="text-body text-[color:var(--color-text-primary)]">{t('glyphSetLabel')}</p>
+      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-tertiary)]">
         {t('glyphSetCaption')}
       </p>
       <div {...group.groupProps} aria-label={t('glyphSetLabel')} className="mt-2 grid grid-cols-2 gap-2">
@@ -309,8 +309,8 @@ export function AccentPicker() {
   const group = useRovingRadioGroup({ value, values: ACCENTS, onChange: writeAccent });
   return (
     <div className="px-3 py-2.5" data-testid="app-settings-accent">
-      <p className="text-body text-[color:var(--color-text-secondary)]">{t('accentLabel')}</p>
-      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-quaternary)]">
+      <p className="text-body text-[color:var(--color-text-primary)]">{t('accentLabel')}</p>
+      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-tertiary)]">
         {t('accentCaption')}
       </p>
       <div {...group.groupProps} aria-label={t('accentLabel')} className="mt-2 grid grid-cols-2 gap-2">

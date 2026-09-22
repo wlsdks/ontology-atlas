@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForFiniteAnimations } from './visual-ready';
 
 import {
   HARNESS_SOURCE_ROOT,
@@ -6,6 +7,269 @@ import {
   installProfilelessHarnessRuntime,
   mountHarnessVault,
 } from "./harness-tab-fixture";
+
+const AXE_PATH = require.resolve('axe-core/axe.min.js');
+const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+const MIN_AXE_RULES_PASSED = 15;
+
+async function auditGuidanceSurface(page: import('@playwright/test').Page, testId: string, role: 'dialog') {
+  const surface = page.getByTestId(testId);
+  await expect(surface).toBeVisible();
+  await expect(surface).toHaveRole(role);
+  await waitForFiniteAnimations(page);
+  if (!(await page.evaluate(() => 'axe' in window))) await page.addScriptTag({ path: AXE_PATH });
+  const result = await page.evaluate(async (tags) => {
+    type Run = { violations: Array<{ id: string; nodes: unknown[] }>; passes: unknown[] };
+    const run = await (window as unknown as { axe: { run: (context: Document, options: unknown) => Promise<Run> } }).axe.run(document, {
+      runOnly: { type: 'tag', values: tags },
+      resultTypes: ['violations', 'passes'],
+    });
+    return { rulesPassed: run.passes.length, violations: run.violations.map((violation) => ({ id: violation.id, count: violation.nodes.length })) };
+  }, WCAG_TAGS);
+  expect(result.rulesPassed, `${testId} axe collection was empty`).toBeGreaterThanOrEqual(MIN_AXE_RULES_PASSED);
+  expect(result.violations, `${testId} introduced WCAG violations`).toEqual([]);
+}
+
+async function measureGuidanceGeometry(
+  page: import('@playwright/test').Page,
+  sample: { domains: 8 | 10; locale: 'ko' | 'en'; zoom: boolean; width: number; height: number },
+) {
+  await page.setViewportSize({ width: sample.width, height: sample.height });
+  await page.goto(`/${sample.locale}/ontology/insights/?tab=harness&guides=off`);
+  if (sample.zoom) await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+  const overview = page.getByTestId('harness-coverage-overview');
+  await expect(overview).toBeVisible();
+  const domains = overview.locator('[data-testid^="harness-domain-"]');
+  await expect(domains).toHaveCount(sample.domains);
+  const field = overview.locator('[data-domain-count]');
+  const before = await field.evaluate((fieldElement) => {
+    const fieldRect = (fieldElement as HTMLElement).getBoundingClientRect();
+    const main = fieldElement.closest<HTMLElement>('main')!;
+    const overview = fieldElement.closest<HTMLElement>('[data-testid="harness-coverage-overview"]')!;
+    const rectOf = (element: Element | null) => {
+      const rect = element?.getBoundingClientRect();
+      return rect ? { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height } : null;
+    };
+    const bottomBarCandidate = document.querySelector<HTMLElement>('[data-tabbar="primary"]')?.getBoundingClientRect();
+    const bottomBar = bottomBarCandidate && bottomBarCandidate.width > 0 && bottomBarCandidate.height > 0 ? bottomBarCandidate : null;
+    const chain: Array<{ label: string; capacity: number; overflowY: string }> = [];
+    for (let element: HTMLElement | null = fieldElement as HTMLElement; element; element = element.parentElement) {
+      chain.push({
+        label: element === fieldElement ? 'field' : element.matches('[data-testid="app-shell-body-slot"]') ? 'body-slot' : element.tagName.toLowerCase(),
+        capacity: element.scrollHeight - element.clientHeight,
+        overflowY: getComputedStyle(element).overflowY,
+      });
+      if (element === document.body) break;
+    }
+    return {
+      chain,
+      fieldCapacity: (fieldElement as HTMLElement).scrollHeight - (fieldElement as HTMLElement).clientHeight,
+      fieldClientHeight: (fieldElement as HTMLElement).clientHeight,
+      fieldBounds: { left: fieldRect.left, right: fieldRect.right, top: fieldRect.top, bottom: fieldRect.bottom },
+      usableBottom: bottomBar?.top ?? innerHeight,
+      mobileMetrics: {
+        main: { rect: rectOf(main), paddingTop: getComputedStyle(main).paddingTop, paddingBottom: getComputedStyle(main).paddingBottom },
+        settingsRow: rectOf(main.previousElementSibling),
+        pageHeader: rectOf(main.querySelector(':scope > header')),
+        subjectTabs: rectOf(main.querySelector('[data-testid="insights-core-switch"]')?.parentElement?.parentElement ?? null),
+        overview: rectOf(overview),
+        overviewHeader: rectOf(overview.querySelector('[data-guidance-overview-header]')),
+        fieldStyle: {
+          padding: getComputedStyle(fieldElement).padding,
+          minHeight: getComputedStyle(fieldElement).minHeight,
+          rowGap: getComputedStyle(fieldElement).rowGap,
+        },
+        paintedNav: bottomBar ? { top: bottomBar.top, bottom: bottomBar.bottom, height: bottomBar.height } : null,
+      },
+      documentCapacity: document.documentElement.scrollHeight - innerHeight,
+      horizontalCapacity: document.documentElement.scrollWidth - innerWidth,
+      pageScroll: { x: scrollX, y: scrollY },
+    };
+  });
+  if (sample.width === 390 && sample.zoom) console.info('GUIDANCE_MOBILE_200_METRICS', JSON.stringify({ ...sample, before }));
+  expect(before.fieldClientHeight).toBeGreaterThan(0);
+  expect(before.chain.slice(1).filter((entry) => entry.overflowY === 'auto' || entry.overflowY === 'scroll').every((entry) => entry.capacity <= 1), JSON.stringify(before.chain)).toBe(true);
+  expect(before.documentCapacity).toBeLessThanOrEqual(1);
+  expect(before.horizontalCapacity).toBeLessThanOrEqual(1);
+  expect(before.fieldBounds.top).toBeGreaterThanOrEqual(0);
+  expect(before.fieldBounds.bottom).toBeLessThanOrEqual(before.usableBottom + 1);
+  expect(before.mobileMetrics.overviewHeader?.top).toBeGreaterThanOrEqual(before.fieldBounds.top);
+  expect(before.mobileMetrics.overviewHeader?.left).toBeGreaterThanOrEqual(before.fieldBounds.left);
+  expect(before.mobileMetrics.overviewHeader?.right).toBeLessThanOrEqual(before.fieldBounds.right);
+  await field.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  const result = await page.evaluate(() => {
+    const fieldElement = document.querySelector<HTMLElement>('[data-domain-count]')!;
+    const domainElements = [...document.querySelectorAll<HTMLElement>('[data-testid^="harness-domain-"]')];
+    const intersects = (a: DOMRect, b: DOMRect) => Math.min(a.right, b.right) > Math.max(a.left, b.left) && Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
+    const geometry = domainElements.map((domain) => {
+      const title = domain.querySelector('h4')!;
+      const titleRange = document.createRange();
+      titleRange.selectNodeContents(title);
+      const titleRect = titleRange.getBoundingClientRect();
+      const titleBox = title.getBoundingClientRect();
+      const roles = [...domain.querySelectorAll<HTMLElement>('[data-role]')].map((role) => {
+        const rect = role.getBoundingClientRect();
+        return { role: role.dataset.role, height: rect.height, intersectsTitle: intersects(rect, titleRect) };
+      });
+      const ports = [...domain.querySelectorAll<SVGPathElement>('[data-role-connection]')].map((port) => {
+        const roleName = port.dataset.roleConnection!;
+        const role = domain.querySelector<HTMLElement>(`[data-role="${roleName}"]`)!;
+        const roleRect = role.getBoundingClientRect();
+        const matrix = port.getScreenCTM()!;
+        const point = (length: number) => {
+          const local = port.getPointAtLength(length);
+          return new DOMPoint(local.x, local.y).matrixTransform(matrix);
+        };
+        const length = port.getTotalLength();
+        const start = point(0);
+        const end = point(length);
+        const told = roleName === 'told';
+        const headingPoint = told ? end : start;
+        const controlPoint = told ? start : end;
+        return {
+          intersectsTitle: Array.from({ length: 25 }, (_, index) => point(length * index / 24)).some((sample) => sample.x > titleRect.left && sample.x < titleRect.right && sample.y > titleRect.top && sample.y < titleRect.bottom),
+          centerDrift: Math.abs(controlPoint.x - (roleRect.left + roleRect.right) / 2),
+          endpointDrift: Math.abs(controlPoint.y - (told ? roleRect.bottom : roleRect.top)),
+          headingCenterDrift: Math.abs(headingPoint.x - (titleBox.left + titleBox.right) / 2),
+          headingEndpointDrift: Math.abs(headingPoint.y - (told ? titleBox.top : titleBox.bottom)),
+        };
+      });
+      return { roles, ports };
+    });
+    return {
+      fieldScrollTop: fieldElement.scrollTop,
+      geometry,
+      documentCapacity: document.documentElement.scrollHeight - innerHeight,
+      horizontalCapacity: document.documentElement.scrollWidth - innerWidth,
+      pageScroll: { x: scrollX, y: scrollY },
+    };
+  });
+  if (before.fieldCapacity > 0) expect(result.fieldScrollTop).toBeGreaterThan(0);
+  else expect(result.fieldScrollTop).toBe(0);
+  expect(result.geometry.every((domain) => domain.roles.length === 3 && domain.roles.every((role) => !role.intersectsTitle))).toBe(true);
+  expect(result.geometry.every((domain) => domain.ports.every((port) => !port.intersectsTitle && port.centerDrift <= 1 && port.endpointDrift <= 1 && port.headingCenterDrift <= 1 && port.headingEndpointDrift <= 1))).toBe(true);
+  const fieldStyle = await field.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { paddingTop: style.paddingTop, paddingBottom: style.paddingBottom, borderTopWidth: style.borderTopWidth, borderBottomWidth: style.borderBottomWidth };
+  });
+  const requiredFieldHeight = Math.max(...result.geometry.flatMap((domain) => domain.roles.map((role) => role.height)))
+    + Number.parseFloat(fieldStyle.paddingTop) + Number.parseFloat(fieldStyle.paddingBottom)
+    + Number.parseFloat(fieldStyle.borderTopWidth) + Number.parseFloat(fieldStyle.borderBottomWidth);
+  expect(before.fieldClientHeight).toBeGreaterThanOrEqual(requiredFieldHeight);
+  const lastRoles = overview.locator('[data-testid^="harness-domain-"]').last().locator('[data-role]');
+  await expect(lastRoles).toHaveCount(3);
+  const roleHits: Array<{ role: string | undefined; insideField: boolean; hit: boolean; pageScrollUnchanged: boolean; fieldBoundsUnchanged: boolean }> = [];
+  for (const role of await lastRoles.all()) {
+    roleHits.push(await role.evaluate((element) => {
+      const fieldElement = element.closest<HTMLElement>('[data-domain-count]')!;
+      const roleRect = element.getBoundingClientRect();
+      const fieldRect = fieldElement.getBoundingClientRect();
+      const pageScrollBefore = { x: scrollX, y: scrollY };
+      fieldElement.scrollTop += (roleRect.top + roleRect.bottom) / 2 - (fieldRect.top + fieldRect.bottom) / 2;
+      const settledRect = element.getBoundingClientRect();
+      const settledFieldRect = fieldElement.getBoundingClientRect();
+      return {
+        role: element.dataset.role,
+        insideField: settledRect.top >= settledFieldRect.top && settledRect.bottom <= settledFieldRect.bottom,
+        hit: element.contains(document.elementFromPoint(settledRect.left + settledRect.width / 2, settledRect.top + settledRect.height / 2)),
+        pageScrollUnchanged: scrollX === pageScrollBefore.x && scrollY === pageScrollBefore.y,
+        fieldBoundsUnchanged: settledFieldRect.top === fieldRect.top && settledFieldRect.bottom === fieldRect.bottom,
+      };
+    }));
+  }
+  expect(roleHits.every((role) => role.insideField && role.hit && role.pageScrollUnchanged && role.fieldBoundsUnchanged), JSON.stringify(roleHits)).toBe(true);
+  expect(result.documentCapacity).toBeLessThanOrEqual(1);
+  expect(result.horizontalCapacity).toBeLessThanOrEqual(1);
+  expect(result.pageScroll).toEqual(before.pageScroll);
+  return { ...sample, before, result, roleHits };
+}
+
+async function measureGuidanceText(
+  page: import('@playwright/test').Page,
+  sample: { domains: 8 | 10; locale: 'ko' | 'en'; zoom: boolean; width: number; height: number },
+) {
+  await page.setViewportSize({ width: sample.width, height: sample.height });
+  await page.goto(`/${sample.locale}/ontology/insights/?tab=harness&guides=off`);
+  if (sample.zoom) await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+  const overview = page.getByTestId('harness-coverage-overview');
+  await expect(overview).toBeVisible();
+  const diagramFacts = await overview.locator('[data-testid^="harness-domain-"]').evaluateAll((domains) => domains.map((domain) => ({
+    name: domain.getAttribute('aria-label'),
+    roles: [...domain.querySelectorAll<HTMLElement>('[data-role]')].map((role) => ({ role: role.dataset.role, count: role.textContent?.match(/\d+/)?.[0] })),
+  })));
+  await page.getByTestId('guidance-mode-text').click();
+  const rows = overview.locator('[data-testid^="harness-text-domain-"]');
+  await expect(rows).toHaveCount(sample.domains);
+  const textFacts = await rows.evaluateAll((items) => items.map((item) => ({
+    name: item.querySelector('h4')?.textContent,
+    roles: [...item.querySelectorAll<HTMLElement>('[data-role]')].map((role) => ({ role: role.dataset.role, count: role.textContent?.match(/\d+/)?.[0] })),
+  })));
+  expect(textFacts).toEqual(diagramFacts);
+  const field = overview.locator('[data-domain-count]');
+  const before = await field.evaluate((element) => ({
+    fieldCapacity: element.scrollHeight - element.clientHeight,
+    fieldRect: (() => { const rect = element.getBoundingClientRect(); return { top: rect.top, bottom: rect.bottom }; })(),
+    usableBottom: (() => { const rect = document.querySelector<HTMLElement>('[data-tabbar="primary"]')?.getBoundingClientRect(); return rect && rect.width > 0 && rect.height > 0 ? rect.top : innerHeight; })(),
+    outerCapacities: (() => { const values: number[] = []; for (let parent = element.parentElement; parent; parent = parent.parentElement) { const style = getComputedStyle(parent); if (style.overflowY === 'auto' || style.overflowY === 'scroll') values.push(parent.scrollHeight - parent.clientHeight); if (parent === document.body) break; } return values; })(),
+    documentCapacity: document.documentElement.scrollHeight - innerHeight,
+    horizontalCapacity: document.documentElement.scrollWidth - innerWidth,
+    page: { x: scrollX, y: scrollY },
+  }));
+  await field.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  const last = rows.last();
+  const lastMetrics = await last.evaluate((element) => {
+    const row = element.getBoundingClientRect();
+    const fieldRect = element.closest('[data-domain-count]')!.getBoundingClientRect();
+    return { rowHeight: row.height, fieldHeight: fieldRect.height };
+  });
+  if (lastMetrics.rowHeight <= lastMetrics.fieldHeight) {
+    await expect.poll(() => last.evaluate((element) => {
+      const row = element.getBoundingClientRect();
+      const fieldRect = element.closest('[data-domain-count]')!.getBoundingClientRect();
+      return row.top >= fieldRect.top && row.bottom <= fieldRect.bottom;
+    })).toBe(true);
+  }
+  const heading = last.locator('h4');
+  for (const text of [heading, last.locator('p').first()]) {
+    const lineCount = await text.evaluate((element) => { const range = document.createRange(); range.selectNodeContents(element); return range.getClientRects().length; });
+    for (let line = 0; line < lineCount; line += 1) {
+      expect(await text.evaluate((element, lineIndex) => {
+        const fieldElement = element.closest<HTMLElement>('[data-domain-count]')!;
+        const range = document.createRange(); range.selectNodeContents(element);
+        let rect = range.getClientRects()[lineIndex]!;
+        const fieldRect = fieldElement.getBoundingClientRect();
+        const pageBefore = { x: scrollX, y: scrollY };
+        fieldElement.scrollTop += (rect.top + rect.bottom) / 2 - (fieldRect.top + fieldRect.bottom) / 2;
+        const refreshed = document.createRange(); refreshed.selectNodeContents(element);
+        rect = refreshed.getClientRects()[lineIndex]!;
+        const settledField = fieldElement.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return rect.top >= settledField.top && rect.bottom <= settledField.bottom && style.textOverflow !== 'ellipsis' && style.overflow !== 'hidden' && scrollX === pageBefore.x && scrollY === pageBefore.y && settledField.top === fieldRect.top && settledField.bottom === fieldRect.bottom;
+      }, line)).toBe(true);
+    }
+  }
+  for (const role of await last.locator('[data-role]').all()) {
+    const roleReach = await role.evaluate((element) => {
+      const fieldElement = element.closest<HTMLElement>('[data-domain-count]')!;
+      const roleRect = element.getBoundingClientRect();
+      const fieldRect = fieldElement.getBoundingClientRect();
+      const pageBefore = { x: scrollX, y: scrollY };
+      fieldElement.scrollTop += (roleRect.top + roleRect.bottom) / 2 - (fieldRect.top + fieldRect.bottom) / 2;
+      const settled = element.getBoundingClientRect();
+      const settledField = fieldElement.getBoundingClientRect();
+      return { inside: settled.top >= settledField.top && settled.bottom <= settledField.bottom, hit: element.contains(document.elementFromPoint(settled.left + settled.width / 2, settled.top + settled.height / 2)), fieldStable: settledField.top === fieldRect.top && settledField.bottom === fieldRect.bottom, pageStable: scrollX === pageBefore.x && scrollY === pageBefore.y };
+    });
+    expect(roleReach).toEqual({ inside: true, hit: true, fieldStable: true, pageStable: true });
+  }
+  const after = await page.evaluate(() => ({ documentCapacity: document.documentElement.scrollHeight - innerHeight, horizontalCapacity: document.documentElement.scrollWidth - innerWidth, page: { x: scrollX, y: scrollY } }));
+  expect(before.documentCapacity).toBeLessThanOrEqual(1);
+  expect(before.outerCapacities.every((capacity) => capacity <= 1)).toBe(true);
+  expect(before.fieldRect.bottom).toBeLessThanOrEqual(before.usableBottom + 1);
+  expect(after.documentCapacity).toBeLessThanOrEqual(1);
+  expect(after.horizontalCapacity).toBeLessThanOrEqual(1);
+  expect(after.page).toEqual(before.page);
+  return { ...sample, fieldCapacity: before.fieldCapacity, members: textFacts.length, lastMetrics };
+}
 
 /**
  * **The Harness tab, read on a repository that actually has a harness.**
@@ -20,6 +284,348 @@ test.describe("하네스 탭", () => {
     await page.setViewportSize({ width: 1512, height: 949 });
     await installHarnessRuntime(page);
   });
+
+  test('Guidance connection paths attach controls to the domain heading at both ends', async ({ page }) => {
+    await mountHarnessVault(page);
+    await page.goto('/en/ontology/insights/?tab=harness&guides=off');
+    const overview = page.getByTestId('harness-coverage-overview');
+    await expect(overview).toBeVisible();
+    const gaps = await overview.locator('[data-testid^="harness-domain-"]').evaluateAll((domains) => domains.flatMap((domain) => {
+      const heading = domain.querySelector('h4')!.getBoundingClientRect();
+      const textRects: DOMRect[] = [];
+      const walker = document.createTreeWalker(domain, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (!node.textContent?.trim()) continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        textRects.push(...range.getClientRects());
+      }
+      return [...domain.querySelectorAll<SVGPathElement>('[data-role-connection]')].map((connection) => {
+        const role = domain.querySelector<HTMLElement>(`[data-role="${connection.dataset.roleConnection}"]`)!;
+        const roleRect = role.getBoundingClientRect();
+        const matrix = connection.getScreenCTM()!;
+        const point = (length: number) => {
+          const local = connection.getPointAtLength(length);
+          return new DOMPoint(local.x, local.y).matrixTransform(matrix);
+        };
+        const start = point(0);
+        const end = point(connection.getTotalLength());
+        const told = connection.dataset.roleConnection === 'told';
+        const headingPoint = told ? end : start;
+        const controlPoint = told ? start : end;
+        const intersectsText = Array.from({ length: 25 }, (_, index) => point(connection.getTotalLength() * index / 24)).some((sample) =>
+          textRects.some((rect) => sample.x > rect.left && sample.x < rect.right && sample.y > rect.top && sample.y < rect.bottom));
+        return {
+          role: connection.dataset.roleConnection,
+          headingCenterDrift: Math.abs(headingPoint.x - (heading.left + heading.right) / 2),
+          headingBoundaryDrift: Math.abs(headingPoint.y - (told ? heading.top : heading.bottom)),
+          controlCenterDrift: Math.abs(controlPoint.x - (roleRect.left + roleRect.right) / 2),
+          controlBoundaryDrift: Math.abs(controlPoint.y - (told ? roleRect.bottom : roleRect.top)),
+          intersectsText,
+        };
+      });
+    }));
+    console.info('GUIDANCE_CONNECTION_ATTACHMENT', JSON.stringify(gaps));
+    expect(gaps.every((gap) => gap.headingCenterDrift <= 1 && gap.headingBoundaryDrift <= 1 && gap.controlCenterDrift <= 1 && gap.controlBoundaryDrift <= 1 && !gap.intersectsText), JSON.stringify(gaps)).toBe(true);
+  });
+
+  test('Guidance anchored evidence closes when its field anchor leaves view without stealing outside focus', async ({ page }) => {
+    await mountHarnessVault(page);
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.goto('/en/ontology/insights/?tab=harness&guides=off');
+    const overview = page.getByTestId('harness-coverage-overview');
+    await expect(overview).toBeVisible();
+    const field = overview.locator('[data-domain-count]');
+    const trigger = overview.locator('[data-role][data-state="filled"]').first();
+    await trigger.click();
+    const popup = page.getByTestId('harness-role-popup');
+    await expect(popup).toBeVisible();
+    const safePopupTop = await popup.evaluate((element) => element.getBoundingClientRect().top);
+    expect(safePopupTop).toBeGreaterThanOrEqual(0);
+
+    const evidenceBody = popup.getByTestId('harness-role-evidence').locator(':scope > div').last();
+    await evidenceBody.evaluate((element) => { element.scrollTop = Math.min(8, element.scrollHeight - element.clientHeight); });
+    await expect(popup).toBeVisible();
+    await expect(popup).not.toHaveAttribute('inert');
+
+    await field.evaluate((element) => { element.scrollTop += 4; });
+    await expect(popup).toBeVisible();
+    await expect(popup).not.toHaveAttribute('inert');
+
+    const outside = page.getByTestId('insights-core-harness');
+    await outside.focus();
+    const pageScrollBefore = await page.evaluate(() => ({ x: scrollX, y: scrollY }));
+    await field.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    await expect(popup).toHaveAttribute('inert');
+    expect(await popup.evaluate((element) => element.getBoundingClientRect().top)).toBeGreaterThanOrEqual(0);
+    await expect(popup).toHaveCount(0);
+    await expect(outside).toBeFocused();
+    expect(await field.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => ({ x: scrollX, y: scrollY }))).toEqual(pageScrollBefore);
+
+    await field.evaluate((element) => { element.scrollTop = 0; });
+    await trigger.click();
+    await expect(popup).toBeFocused();
+    await field.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    await expect(popup).toHaveCount(0);
+    await expect(field).toBeFocused();
+  });
+
+  test('Guidance expansions keep full source identity and distinct labels across domain, separate, and outside presenters', async ({ page }) => {
+    await mountHarnessVault(page);
+    await page.goto('/en/ontology/insights/?tab=harness&guides=off');
+    const overview = page.getByTestId('harness-coverage-overview');
+    await expect(overview).toBeVisible();
+    const assertExpandedIdentity = async (row: import('@playwright/test').Locator) => {
+      const sourceId = await row.getAttribute('data-evidence-source');
+      const button = row.getByRole('button');
+      await button.click();
+      const detail = page.locator(`#${await button.getAttribute('aria-controls')}`);
+      await expect(detail).toHaveAttribute('data-state', 'open');
+      await expect(detail.getByText(sourceId!, { exact: true })).toBeVisible();
+      const identity = await detail.evaluate((element) => ({ text: element.textContent, fits: element.scrollWidth <= element.clientWidth + 1 || getComputedStyle(element).overflowWrap === 'anywhere' }));
+      expect(identity.text).toContain(sourceId);
+      expect(identity.fits).toBe(true);
+      expect(identity.text).toMatch(/Source label/);
+      return sourceId;
+    };
+
+    await overview.locator('[data-role="told"][data-state="filled"]').first().click();
+    const domainId = await assertExpandedIdentity(page.locator('[data-evidence-kind="scoped"]').first());
+    await page.getByTestId('harness-role-popup').getByRole('button', { name: 'Close' }).click();
+    await expect(page.getByTestId('harness-role-popup')).toHaveCount(0);
+
+    await page.locator('[data-guidance-evidence-action="separate:gated"]').click();
+    const separateId = await assertExpandedIdentity(page.locator('[data-evidence-kind="global"]').first());
+    await page.getByTestId('harness-role-popup').getByRole('button', { name: 'Close' }).click();
+    await expect(page.getByTestId('harness-role-popup')).toHaveCount(0);
+
+    await page.locator('[data-guidance-evidence-action="outside"]').click();
+    const outsideRows = page.locator('[data-evidence-kind="outside"]');
+    expect(await outsideRows.count(), 'fixture must expose an actual outside declaration').toBeGreaterThan(0);
+    const outsideId = await assertExpandedIdentity(outsideRows.first());
+    expect(new Set([domainId, separateId, outsideId]).size).toBe(3);
+  });
+
+  test('Guidance Findings body is a genuine keyboard scroll stop with fixed heading and stable outer field', async ({ page }) => {
+    await mountHarnessVault(page);
+    await page.setViewportSize({ width: 1024, height: 600 });
+    await page.goto('/en/ontology/insights/?tab=harness&guides=off');
+    const trigger = page.locator('[data-guidance-evidence-action="findings"]');
+    const count = Number((await trigger.textContent())?.match(/\d+/)?.[0]);
+    expect(count).toBeGreaterThan(0);
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    const popup = page.getByTestId('harness-role-popup');
+    await expect(popup).toBeFocused();
+    const close = popup.getByRole('button', { name: 'Close' });
+    await page.keyboard.press('Tab');
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Tab');
+    const body = page.getByTestId('harness-collection-scroll-body');
+    await expect(body).toBeFocused();
+    expect(await body.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+    await waitForFiniteAnimations(page);
+    await expect(page.getByTestId('harness-findings-list').locator('li')).toHaveCount(count);
+    const stable = await page.evaluate(() => ({
+      header: document.querySelector<HTMLElement>('[data-testid="harness-collection-evidence"] > div')!.getBoundingClientRect().toJSON(),
+      fieldScroll: document.querySelector<HTMLElement>('[data-domain-count]')!.scrollTop,
+      page: { x: scrollX, y: scrollY },
+    }));
+    await page.keyboard.press('PageDown');
+    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    const advanced = await body.evaluate((element) => element.scrollTop);
+    await page.keyboard.press('PageUp');
+    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeLessThan(advanced);
+    await page.keyboard.press('End');
+    const last = page.getByTestId('harness-findings-list').locator('li').last();
+    await expect.poll(() => last.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const bodyRect = element.closest('[data-testid="harness-collection-scroll-body"]')!.getBoundingClientRect();
+      return rect.top >= bodyRect.top && rect.bottom <= bodyRect.bottom;
+    })).toBe(true);
+    expect(await page.evaluate(() => ({
+      header: document.querySelector<HTMLElement>('[data-testid="harness-collection-evidence"] > div')!.getBoundingClientRect().toJSON(),
+      fieldScroll: document.querySelector<HTMLElement>('[data-domain-count]')!.scrollTop,
+      page: { x: scrollX, y: scrollY },
+    }))).toEqual(stable);
+    await page.keyboard.press('Escape');
+    await expect(popup).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+
+  for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+    test(`Guidance narrow Role body joins the dialog keyboard order with ${reducedMotion} motion`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: { width: 1512, height: 949 }, reducedMotion });
+      const rolePage = await context.newPage();
+      try {
+        await installHarnessRuntime(rolePage);
+        await mountHarnessVault(rolePage);
+        await rolePage.setViewportSize({ width: 390, height: 600 });
+        await rolePage.goto('/en/ontology/insights/?tab=harness&guides=off');
+        const trigger = rolePage.locator('[data-role="told"][data-state="filled"]').first();
+        await trigger.focus();
+        await rolePage.keyboard.press('Enter');
+        const dialog = rolePage.getByTestId('harness-role-dialog');
+        await expect(dialog).toBeVisible();
+        const body = rolePage.getByTestId('harness-role-scroll-body');
+        for (let index = 0; index < 3 && !(await body.evaluate((element) => element === document.activeElement)); index += 1) await rolePage.keyboard.press('Tab');
+        await expect(body).toBeFocused();
+        expect(await body.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+        await rolePage.keyboard.press('Tab');
+        expect(await body.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+        await rolePage.keyboard.press('Escape');
+        await expect(dialog).toHaveCount(0);
+        await expect(trigger).toBeFocused();
+      } finally {
+        await context.close();
+      }
+    });
+  }
+
+  test('Guidance desktop Role body scrolls from the genuine keyboard stop', async ({ page }) => {
+    await mountHarnessVault(page);
+    await page.setViewportSize({ width: 1024, height: 420 });
+    await page.goto('/en/ontology/insights/?tab=harness&guides=off');
+    const trigger = page.locator('[data-role="told"][data-state="filled"]').first();
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    const popup = page.getByTestId('harness-role-popup');
+    await expect(popup).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(popup.getByRole('button', { name: 'Close' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    const body = page.getByTestId('harness-role-scroll-body');
+    await expect(body).toBeFocused();
+    expect(await body.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0);
+    await page.keyboard.press('PageDown');
+    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await page.keyboard.press('Escape');
+    await expect(popup).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+
+  for (const domains of [8, 10] as const) {
+    for (const locale of ['ko', 'en'] as const) {
+      for (const zoom of [false, true] as const) {
+        for (const viewport of [
+          { width: 1512, height: 949 },
+          { width: 1440, height: 900 },
+          { width: 1024, height: 768 },
+          { width: 390, height: 844 },
+        ] as const) {
+          test(`Guidance geometry ledger ${domains} ${locale} ${zoom ? '200%' : 'normal'} ${viewport.width}x${viewport.height}`, async ({ browser, page }) => {
+            if (domains === 8) {
+              await mountHarnessVault(page);
+              const entry = await measureGuidanceGeometry(page, { domains, locale, zoom, ...viewport });
+              console.info('GUIDANCE_32_STATE', JSON.stringify(entry));
+              return;
+            }
+            const context = await browser.newContext({ viewport: { width: 1512, height: 949 } });
+            const overflowPage = await context.newPage();
+            try {
+              await installHarnessRuntime(overflowPage, { includeOverflowDomains: true });
+              await mountHarnessVault(overflowPage);
+              const entry = await measureGuidanceGeometry(overflowPage, { domains, locale, zoom, ...viewport });
+              console.info('GUIDANCE_32_STATE', JSON.stringify(entry));
+            } finally {
+              await context.close();
+            }
+          });
+        }
+      }
+    }
+  }
+
+  for (const sample of [{ width: 1512, height: 949, narrow: false }, { width: 390, height: 844, narrow: true }] as const) {
+    test(`Guidance reduced-motion presenter preserves facts and focus at ${sample.width}px`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: { width: 1512, height: 949 }, reducedMotion: 'reduce' });
+      const reducedPage = await context.newPage();
+      try {
+        await installHarnessRuntime(reducedPage);
+        await mountHarnessVault(reducedPage);
+        await reducedPage.setViewportSize({ width: sample.width, height: sample.height });
+        await reducedPage.goto('/en/ontology/insights/?tab=harness&guides=off');
+        expect(await reducedPage.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
+        const overview = reducedPage.getByTestId('harness-coverage-overview');
+        await expect(overview).toBeVisible();
+        const diagramFacts = await overview.locator('[data-testid^="harness-domain-"]').evaluateAll((domains) => domains.map((domain) => ({ name: domain.getAttribute('aria-label'), roles: [...domain.querySelectorAll<HTMLElement>('[data-role]')].map((role) => ({ role: role.dataset.role, count: role.textContent?.match(/\d+/)?.[0] })) })));
+        const textMode = reducedPage.getByTestId('guidance-mode-text');
+        await textMode.focus();
+        await textMode.click();
+        await expect(textMode).toBeFocused();
+        const textRows = overview.locator('[data-testid^="harness-text-domain-"]');
+        await expect(textRows).toHaveCount(8);
+        expect(await textRows.evaluateAll((rows) => rows.map((row) => ({ name: row.querySelector('h4')?.textContent, roles: [...row.querySelectorAll<HTMLElement>('[data-role]')].map((role) => ({ role: role.dataset.role, count: role.textContent?.match(/\d+/)?.[0] })) })))).toEqual(diagramFacts);
+        const trigger = textRows.first().locator('[data-role][data-state="filled"]').first();
+        await trigger.click();
+        const surface = sample.narrow ? reducedPage.getByTestId('harness-role-dialog') : reducedPage.getByTestId('harness-role-popup');
+        await expect(surface).toBeVisible();
+        await expect(reducedPage.getByTestId('harness-role-evidence')).toHaveAttribute('data-domain');
+        const globalToggle = reducedPage.getByTestId('harness-global-evidence-toggle');
+        await globalToggle.click();
+        const firstGlobal = reducedPage.locator('[data-evidence-kind="global"]').first();
+        if (await firstGlobal.count()) {
+          await firstGlobal.getByRole('button').click();
+          await expect(firstGlobal.locator('.ai-row-disclosure')).toHaveAttribute('data-state', 'open');
+        }
+        if (sample.narrow) {
+          await surface.getByRole('button', { name: 'Close' }).click();
+          await expect(surface).toHaveCount(0);
+          await expect(trigger).toBeFocused();
+        } else {
+          await reducedPage.setViewportSize({ width: 1512, height: 650 });
+          const field = overview.locator('[data-domain-count]');
+          expect(await field.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0);
+          await field.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+          await expect(surface).toHaveCount(0);
+          await expect(field).toBeFocused();
+        }
+      } finally {
+        await context.close();
+      }
+    });
+  }
+
+  for (const locale of ['ko', 'en'] as const) {
+    for (const viewport of [
+      { width: 2560, height: 949 },
+      { width: 834, height: 900 },
+      { width: 600, height: 844 },
+      { width: 320, height: 844 },
+    ] as const) {
+      test(`Guidance missing normal-width ledger ${locale} ${viewport.width}x${viewport.height}`, async ({ page }) => {
+        await mountHarnessVault(page);
+        const entry = await measureGuidanceGeometry(page, { domains: 8, locale, zoom: false, ...viewport });
+        console.info('GUIDANCE_MISSING_WIDTH', JSON.stringify(entry));
+      });
+    }
+  }
+
+  for (const domains of [8, 10] as const) {
+    for (const locale of ['ko', 'en'] as const) {
+      for (const zoom of [false, true] as const) {
+        for (const viewport of [{ width: 1512, height: 949 }, { width: 1024, height: 768 }, { width: 390, height: 844 }] as const) {
+          test(`Guidance Text ledger ${domains} ${locale} ${zoom ? '200%' : 'normal'} ${viewport.width}x${viewport.height}`, async ({ browser, page }) => {
+            if (domains === 8) {
+              await mountHarnessVault(page);
+              console.info('GUIDANCE_TEXT_STATE', JSON.stringify(await measureGuidanceText(page, { domains, locale, zoom, ...viewport })));
+              return;
+            }
+            const context = await browser.newContext({ viewport: { width: 1512, height: 949 } });
+            const textPage = await context.newPage();
+            try {
+              await installHarnessRuntime(textPage, { includeOverflowDomains: true });
+              await mountHarnessVault(textPage);
+              console.info('GUIDANCE_TEXT_STATE', JSON.stringify(await measureGuidanceText(textPage, { domains, locale, zoom, ...viewport })));
+            } finally {
+              await context.close();
+            }
+          });
+        }
+      }
+    }
+  }
 
   test("목적지 이름과 한 줄 설명이 하네스를 말한다", async ({ page }) => {
     await mountHarnessVault(page);
@@ -42,6 +648,332 @@ test.describe("하네스 탭", () => {
     expect(new URL(page.url()).pathname).toBe("/ko/architecture/");
   });
 
+  test('Analysis guidance evidence is one portalled anchored dialog with a narrow modal equivalent', async ({ page }) => {
+    await mountHarnessVault(page);
+    await page.goto('/ko/ontology/insights/?tab=harness&guides=off');
+    const overview = page.getByTestId('harness-coverage-overview');
+    await expect(overview).toBeVisible();
+    const trigger = overview.locator('[data-role]').first();
+    await trigger.focus();
+    await trigger.click();
+    const popup = page.getByTestId('harness-role-popup');
+    await expect(popup).toBeVisible();
+    await expect(popup).toBeFocused();
+    expect(await popup.evaluate((node) => ({
+      parent: node.parentElement === document.body,
+      insideOverview: !!node.closest('[data-testid="harness-coverage-overview"]'),
+      kind: node.getAttribute('data-transient-surface'),
+      modal: node.getAttribute('aria-modal'),
+    }))).toEqual({ parent: true, insideOverview: false, kind: 'anchored', modal: 'false' });
+    const globalExplanation = popup.getByTestId('harness-global-evidence-explanation');
+    const globalAction = popup.getByTestId('harness-global-evidence-toggle');
+    expect(await globalExplanation.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+    expect(await globalAction.evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const text = range.getBoundingClientRect();
+      const control = element.getBoundingClientRect();
+      return text.left >= control.left - 1 && text.right <= control.right + 1 && text.top >= control.top - 1 && text.bottom <= control.bottom + 1;
+    })).toBe(true);
+    await auditGuidanceSurface(page, 'harness-role-popup', 'dialog');
+    await page.keyboard.press('Escape');
+    await expect(popup).toHaveAttribute('inert');
+    await expect(popup).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await trigger.click();
+    await expect(page.getByTestId('harness-role-dialog')).toBeVisible();
+    await expect(page.getByTestId('harness-role-popup')).toHaveCount(0);
+    await auditGuidanceSurface(page, 'harness-role-dialog', 'dialog');
+  });
+
+  test('measured Guidance keeps balanced tracks, readable ports, and pane-bounded evidence across affected bands', async ({ page }) => {
+    await mountHarnessVault(page);
+    const measurements: unknown[] = [];
+    const cases = [
+      { locale: 'ko', width: 1512, height: 949, columns: 4, zoom: false },
+      { locale: 'en', width: 1440, height: 900, columns: 4, zoom: false },
+      { locale: 'en', width: 1920, height: 1080, columns: 4, zoom: false },
+      { locale: 'ko', width: 1024, height: 800, columns: 2, zoom: false },
+      { locale: 'en', width: 768, height: 900, columns: 2, zoom: false },
+      { locale: 'ko', width: 390, height: 844, columns: 1, zoom: false },
+      { locale: 'ko', width: 1512, height: 949, columns: 4, zoom: true },
+      { locale: 'en', width: 1512, height: 949, columns: 4, zoom: true },
+    ] as const;
+
+    for (const sample of cases) {
+      await page.setViewportSize({ width: sample.width, height: sample.height });
+      await page.goto(`/${sample.locale}/ontology/insights/?tab=harness&guides=off`);
+      if (sample.zoom) await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+      const overview = page.getByTestId('harness-coverage-overview');
+      await expect(overview).toBeVisible();
+      const field = overview.locator('[data-domain-count]');
+      const vertical = await field.evaluate((fieldElement) => {
+        const chain: Array<{ label: string; clientHeight: number; scrollHeight: number; capacity: number; overflowY: string; rect: { top: number; bottom: number; height: number } }> = [];
+        for (let element: HTMLElement | null = fieldElement as HTMLElement; element; element = element.parentElement) {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          chain.push({
+            label: element === fieldElement ? 'field' : element.matches('[data-testid="app-shell-body-slot"]') ? 'body-slot' : element.tagName.toLowerCase() + (element.id ? `#${element.id}` : '') + (element.getAttribute('data-insights-panel') ? `[insights=${element.getAttribute('data-insights-panel')}]` : ''),
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+            capacity: element.scrollHeight - element.clientHeight,
+            overflowY: style.overflowY,
+            rect: { top: rect.top, bottom: rect.bottom, height: rect.height },
+          });
+          if (element === document.body) break;
+        }
+        const fieldRect = (fieldElement as HTMLElement).getBoundingClientRect();
+        const bottomBarCandidate = document.querySelector<HTMLElement>('[data-tabbar="primary"]')?.getBoundingClientRect();
+        const bottomBar = bottomBarCandidate && bottomBarCandidate.width > 0 && bottomBarCandidate.height > 0 ? bottomBarCandidate : null;
+        return {
+          chain,
+          documentCapacity: document.documentElement.scrollHeight - innerHeight,
+          fieldBottom: fieldRect.bottom,
+          usableBottom: bottomBar?.top ?? innerHeight,
+          mobileBottomReserve: getComputedStyle(document.documentElement).getPropertyValue('--topology-mobile-bottom-tab-reserve').trim(),
+          outerScrollable: chain.slice(1).filter((entry) => entry.overflowY === 'auto' || entry.overflowY === 'scroll'),
+        };
+      });
+      console.info('GUIDANCE_VERTICAL_CHAIN', JSON.stringify({ locale: sample.locale, width: sample.width, zoom: sample.zoom, ...vertical }));
+      expect(vertical.outerScrollable.every((entry) => entry.capacity <= 1), `outer scroll owners retained capacity: ${JSON.stringify(vertical.outerScrollable)}`).toBe(true);
+      expect(vertical.documentCapacity, `document retained ${vertical.documentCapacity}px vertical capacity`).toBeLessThanOrEqual(1);
+      expect(vertical.fieldBottom, 'field crossed the usable pane or fixed bottom navigation').toBeLessThanOrEqual(vertical.usableBottom + 1);
+      const observedColumns = await overview.locator('[data-guidance-domain-grid]').evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(' ').filter(Boolean).length);
+      expect(observedColumns).toBe(sample.columns);
+
+      const geometry = await overview.locator('[data-testid^="harness-domain-"]').evaluateAll((domains) => domains.map((domain) => {
+        const title = domain.querySelector('h4')!;
+        const titleRange = document.createRange();
+        titleRange.selectNodeContents(title);
+        const titleRect = titleRange.getBoundingClientRect();
+        const titleBox = title.getBoundingClientRect();
+        const domainRect = domain.getBoundingClientRect();
+        const domainStyle = getComputedStyle(domain);
+        const intersects = (a: DOMRect, b: DOMRect) => Math.min(a.right, b.right) > Math.max(a.left, b.left) && Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
+        return {
+          top: Math.round(domain.getBoundingClientRect().top),
+          domain: { clientHeight: (domain as HTMLElement).clientHeight, scrollHeight: (domain as HTMLElement).scrollHeight, rect: { top: domainRect.top, bottom: domainRect.bottom, height: domainRect.height }, rows: domainStyle.gridTemplateRows, alignContent: domainStyle.alignContent },
+          title: { range: { left: titleRect.left, right: titleRect.right, top: titleRect.top, bottom: titleRect.bottom, height: titleRect.height }, box: { left: titleBox.left, right: titleBox.right, top: titleBox.top, bottom: titleBox.bottom, height: titleBox.height } },
+          roles: [...domain.querySelectorAll<HTMLElement>('[data-role]')].map((role) => {
+            const rect = role.getBoundingClientRect();
+            return { role: role.dataset.role, rect: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }, width: rect.width, height: rect.height, intersectsTitle: intersects(rect, titleRect) };
+          }),
+          ports: [...domain.querySelectorAll<SVGPathElement>('[data-role-connection]')].map((port) => {
+            const roleName = port.dataset.roleConnection!;
+            const role = domain.querySelector<HTMLElement>(`[data-role="${roleName}"]`)!;
+            const roleRect = role.getBoundingClientRect();
+            const matrix = port.getScreenCTM()!;
+            const point = (length: number) => {
+              const local = port.getPointAtLength(length);
+              return new DOMPoint(local.x, local.y).matrixTransform(matrix);
+            };
+            const length = port.getTotalLength();
+            const start = point(0);
+            const end = point(length);
+            const told = roleName === 'told';
+            const headingPoint = told ? end : start;
+            const controlPoint = told ? start : end;
+            return {
+              intersectsTitle: Array.from({ length: 25 }, (_, index) => point(length * index / 24)).some((sample) => sample.x > titleRect.left && sample.x < titleRect.right && sample.y > titleRect.top && sample.y < titleRect.bottom),
+              centerDrift: Math.abs(controlPoint.x - (roleRect.left + roleRect.right) / 2),
+              endpointDrift: Math.abs(controlPoint.y - (told ? roleRect.bottom : roleRect.top)),
+              headingCenterDrift: Math.abs(headingPoint.x - (titleBox.left + titleBox.right) / 2),
+              headingEndpointDrift: Math.abs(headingPoint.y - (told ? titleBox.top : titleBox.bottom)),
+            };
+          }),
+        };
+      }));
+      expect(geometry).toHaveLength(8);
+      const roleFailures = geometry.flatMap((domain, index) => domain.roles.filter((role) => role.width < 24 || role.height < 24 || role.intersectsTitle).map((role) => ({ domain: index, ...role })));
+      if (roleFailures.length > 0) {
+        const fieldMetrics = await field.evaluate((element) => ({ clientHeight: element.clientHeight, scrollHeight: element.scrollHeight, rows: getComputedStyle(element).gridTemplateRows, autoRows: getComputedStyle(element).gridAutoRows, alignContent: getComputedStyle(element).alignContent }));
+        console.info('GUIDANCE_ROLE_GEOMETRY_RED', JSON.stringify({ locale: sample.locale, width: sample.width, zoom: sample.zoom, fieldMetrics, failingDomains: [...new Set(roleFailures.map((failure) => failure.domain))].map((index) => geometry[index]), roleFailures }));
+      }
+      expect(geometry.every((domain) => domain.roles.length === 3 && domain.roles.every((role) => role.width >= 24 && role.height >= 24 && !role.intersectsTitle))).toBe(true);
+      const maxPortCenterDrift = Math.max(0, ...geometry.flatMap((domain) => domain.ports.map((port) => port.centerDrift)));
+      const maxPortEndpointDrift = Math.max(0, ...geometry.flatMap((domain) => domain.ports.map((port) => port.endpointDrift)));
+      const maxHeadingCenterDrift = Math.max(0, ...geometry.flatMap((domain) => domain.ports.map((port) => port.headingCenterDrift)));
+      const maxHeadingEndpointDrift = Math.max(0, ...geometry.flatMap((domain) => domain.ports.map((port) => port.headingEndpointDrift)));
+      console.info('GUIDANCE_PORT_ALIGNMENT', JSON.stringify({ locale: sample.locale, width: sample.width, zoom: sample.zoom, maxPortCenterDrift, maxPortEndpointDrift, maxHeadingCenterDrift, maxHeadingEndpointDrift }));
+      expect(geometry.every((domain) => domain.ports.every((port) => !port.intersectsTitle && port.centerDrift <= 1 && port.endpointDrift <= 1 && port.headingCenterDrift <= 1 && port.headingEndpointDrift <= 1)), `ports drifted: control ${maxPortCenterDrift}/${maxPortEndpointDrift}px · heading ${maxHeadingCenterDrift}/${maxHeadingEndpointDrift}px`).toBe(true);
+      const rowPopulation = [...geometry.reduce((rows, domain) => rows.set(domain.top, (rows.get(domain.top) ?? 0) + 1), new Map<number, number>()).values()];
+      expect(rowPopulation).toEqual(Array.from({ length: 8 / sample.columns }, () => sample.columns));
+
+      const trigger = overview.locator('[data-role][data-state="filled"]').first();
+      const scopedCount = Number(await trigger.locator('span').last().textContent());
+      await trigger.click();
+      const surface = sample.width <= 767 ? page.getByTestId('harness-role-dialog') : page.getByTestId('harness-role-popup');
+      await expect(surface).toBeVisible();
+      const evidence = page.getByTestId('harness-role-evidence');
+      expect(Number(await evidence.getAttribute('data-scoped-count'))).toBe(scopedCount);
+      await expect(evidence.locator('[data-evidence-kind="scoped"]')).toHaveCount(scopedCount);
+      const globalCount = Number(await evidence.locator('[data-global-count]').getAttribute('data-global-count'));
+      await evidence.getByTestId('harness-global-evidence-toggle').click();
+      await expect(evidence.locator('[data-evidence-kind="global"]')).toHaveCount(globalCount);
+
+      let popupBounds: unknown = null;
+      if (sample.width > 767) {
+        const bounds = await page.evaluate(() => {
+          const popup = document.querySelector<HTMLElement>('[data-testid="harness-role-popup"]')!.getBoundingClientRect();
+          const triggerRect = document.querySelector<HTMLElement>('[data-role][aria-expanded="true"]')!.getBoundingClientRect();
+          const rail = document.querySelector<HTMLElement>('[data-testid="app-nav-rail"]')?.getBoundingClientRect();
+          const intersects = Math.min(popup.right, triggerRect.right) > Math.max(popup.left, triggerRect.left) && Math.min(popup.bottom, triggerRect.bottom) > Math.max(popup.top, triggerRect.top);
+          return { left: popup.left, right: popup.right, top: popup.top, bottom: popup.bottom, railRight: rail?.right ?? 0, width: innerWidth, height: innerHeight, intersects };
+        });
+        expect(bounds.left).toBeGreaterThanOrEqual(bounds.railRight);
+        expect(bounds.right).toBeLessThanOrEqual(bounds.width);
+        expect(bounds.top).toBeGreaterThanOrEqual(0);
+        expect(bounds.bottom).toBeLessThanOrEqual(bounds.height);
+        expect(bounds.intersects).toBe(false);
+        popupBounds = bounds;
+        await page.keyboard.press('Escape');
+        await expect(surface).toHaveCount(0);
+      } else {
+        await surface.getByRole('button', { name: sample.locale === 'ko' ? '닫기' : 'Close' }).click();
+        await expect(surface).toHaveCount(0);
+      }
+      measurements.push({
+        ...sample,
+        observedColumns,
+        domains: geometry.length,
+        minRoleWidth: Math.min(...geometry.flatMap((domain) => domain.roles.map((role) => role.width))),
+        minRoleHeight: Math.min(...geometry.flatMap((domain) => domain.roles.map((role) => role.height))),
+        popupBounds,
+        scopedCount,
+        globalCount,
+      });
+    }
+
+    console.info('GUIDANCE_GEOMETRY_MATRIX', JSON.stringify(measurements));
+  });
+
+  for (const sample of [
+    { locale: 'ko', zoom: false },
+    { locale: 'en', zoom: false },
+    { locale: 'ko', zoom: true },
+    { locale: 'en', zoom: true },
+  ] as const) {
+    test(`measured Guidance keeps ten ${sample.locale} domains reachable inside its own scroller${sample.zoom ? ' at 200% text' : ''}`, async ({ browser }) => {
+      const overflowContext = await browser.newContext({ viewport: { width: 1512, height: 949 } });
+      const overflowPage = await overflowContext.newPage();
+      try {
+        await installHarnessRuntime(overflowPage, { includeOverflowDomains: true });
+        await mountHarnessVault(overflowPage);
+        await overflowPage.goto(`/${sample.locale}/ontology/insights/?tab=harness&guides=off`);
+        if (sample.zoom) await overflowPage.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+        const overview = overflowPage.getByTestId('harness-coverage-overview');
+        await expect(overview).toBeVisible();
+        await expect(overview.locator('[data-testid^="harness-domain-"]')).toHaveCount(10);
+        const field = overview.locator('[data-domain-count]');
+        const before = await field.evaluate((fieldElement) => {
+          const chain: Array<{ label: string; capacity: number; overflowY: string }> = [];
+          for (let element: HTMLElement | null = fieldElement as HTMLElement; element; element = element.parentElement) {
+            chain.push({
+              label: element === fieldElement ? 'field' : element.matches('[data-testid="app-shell-body-slot"]') ? 'body-slot' : element.tagName.toLowerCase(),
+              capacity: element.scrollHeight - element.clientHeight,
+              overflowY: getComputedStyle(element).overflowY,
+            });
+            if (element === document.body) break;
+          }
+          return {
+            chain,
+            fieldCapacity: (fieldElement as HTMLElement).scrollHeight - (fieldElement as HTMLElement).clientHeight,
+            documentCapacity: document.documentElement.scrollHeight - innerHeight,
+            pageScroll: { x: scrollX, y: scrollY },
+          };
+        });
+        expect(before.chain.slice(1).filter((entry) => entry.overflowY === 'auto' || entry.overflowY === 'scroll').every((entry) => entry.capacity <= 1)).toBe(true);
+        expect(before.documentCapacity).toBeLessThanOrEqual(1);
+        await field.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+        const last = overview.locator('[data-testid^="harness-domain-"]').last();
+        await expect.poll(() => last.evaluate((element) => {
+          const box = element.getBoundingClientRect();
+          const fieldBox = element.closest('[data-domain-count]')!.getBoundingClientRect();
+          return box.top >= fieldBox.top && box.bottom <= fieldBox.bottom;
+        })).toBe(true);
+        const after = await overflowPage.evaluate(() => {
+          const fieldElement = document.querySelector<HTMLElement>('[data-domain-count]')!;
+          const lastDomain = [...document.querySelectorAll<HTMLElement>('[data-testid^="harness-domain-"]')].at(-1)!;
+          const roles = [...lastDomain.querySelectorAll<HTMLElement>('[data-role]')].map((role) => {
+            const rect = role.getBoundingClientRect();
+            return {
+              role: role.dataset.role,
+              hit: role.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)),
+            };
+          });
+          return {
+            fieldScrollTop: fieldElement.scrollTop,
+            roles,
+            documentCapacity: document.documentElement.scrollHeight - innerHeight,
+            pageScroll: { x: scrollX, y: scrollY },
+            overflowX: document.documentElement.scrollWidth - innerWidth,
+          };
+        });
+        if (before.fieldCapacity > 0) expect(after.fieldScrollTop).toBeGreaterThan(0);
+        else expect(after.fieldScrollTop).toBe(0);
+        expect(after.roles).toHaveLength(3);
+        expect(after.roles.every((role) => role.hit), `last-domain roles were not hit-testable: ${JSON.stringify(after.roles)}`).toBe(true);
+        expect(after.documentCapacity).toBeLessThanOrEqual(1);
+        expect(after.pageScroll).toEqual(before.pageScroll);
+        expect(after.overflowX).toBe(0);
+        console.info('GUIDANCE_TEN_DOMAIN_SCROLL', JSON.stringify({ ...sample, before, after }));
+      } finally {
+        await overflowContext.close();
+      }
+    });
+  }
+
+  test('Brief restores its normal scrolling contract after measured Guidance', async ({ page }) => {
+    await mountHarnessVault(page);
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await page.goto('/en/ontology/insights/?tab=brief&guides=off');
+    await expect(page.getByTestId('brief-tab')).toBeVisible();
+    const main = page.locator('main[data-insights-surface="maintenance-board"]');
+    const swapHost = page.locator('[data-insights-panel]').locator('..');
+    const briefBefore = await main.evaluate((element) => ({ overflowY: getComputedStyle(element).overflowY, className: element.className }));
+    expect(briefBefore.className).toContain('min-h-full');
+    expect(briefBefore.className).not.toContain('overflow-hidden');
+
+    await page.getByTestId('insights-core-harness').click();
+    await expect(page.getByTestId('harness-coverage-overview')).toBeVisible();
+    await waitForFiniteAnimations(page);
+    expect(await main.getAttribute('class')).toContain('overflow-hidden');
+
+    await page.getByTestId('insights-core-brief').click();
+    await expect(page.getByTestId('brief-tab')).toBeVisible();
+    await waitForFiniteAnimations(page);
+    await expect.poll(() => swapHost.evaluate((element) => ({ height: (element as HTMLElement).style.height, transition: (element as HTMLElement).style.transition }))).toEqual({ height: '', transition: '' });
+    const briefAfter = await main.evaluate((element) => ({ overflowY: getComputedStyle(element).overflowY, className: element.className }));
+    expect(briefAfter).toEqual(briefBefore);
+    expect(await page.locator('[data-insights-panel="brief"]').getAttribute('class')).not.toContain('overflow-hidden');
+    console.info('GUIDANCE_BRIEF_SCROLL_RESTORE', JSON.stringify({ briefBefore, briefAfter }));
+  });
+
+  test('measured Guidance role controls keep the coarse-pointer touch floor', async ({ browser }) => {
+    const touchContext = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const touchPage = await touchContext.newPage();
+    try {
+      await installHarnessRuntime(touchPage);
+      await touchPage.goto('/ko/?guides=off');
+      await touchPage.getByTestId('first-run-open').click();
+      await expect(touchPage.locator('[data-tabbar="primary"]')).toBeVisible();
+      await touchPage.goto('/ko/ontology/insights/?tab=harness&guides=off');
+      const touchOverview = touchPage.getByTestId('harness-coverage-overview');
+      await expect(touchOverview).toBeVisible();
+      expect(await touchPage.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+      const touchFloor = await touchOverview.locator('[data-role]').evaluateAll((roles) => roles.map((role) => {
+        const rect = role.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      }));
+      expect(touchFloor.every((role) => role.width >= 44 && role.height >= 44)).toBe(true);
+      console.info('GUIDANCE_COARSE_POINTER', JSON.stringify({ minWidth: Math.min(...touchFloor.map((role) => role.width)), minHeight: Math.min(...touchFloor.map((role) => role.height)) }));
+    } finally {
+      await touchContext.close();
+    }
+  });
+
   test("기본 보기는 하네스 구조이고, 세그먼트가 보기를 주소에 적는다", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/");
@@ -62,6 +994,45 @@ test.describe("하네스 탭", () => {
     await page.reload();
     await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
     await expect(page).toHaveURL(/\?view=coverage$/);
+  });
+
+  test('diagram keyboard traversal keeps each focused part above mobile navigation', async ({page}) => {
+    await mountHarnessVault(page);
+    await page.setViewportSize({width:390,height:844});
+    await page.goto('/ko/architecture/?view=structure&guides=off');
+    const nodes=page.locator('[data-testid^="harness-diagram-node-"]');
+    await expect(nodes).toHaveCount(13);
+    await nodes.first().focus();
+    for(const node of await nodes.all()){
+      await expect(node).toBeFocused();
+      await expect.poll(()=>node.evaluate(el=>{
+        const box=el.getBoundingClientRect();const bar=document.querySelector('[data-tabbar="primary"]')?.getBoundingClientRect();
+        return box.top>=0 && box.bottom<=(bar?.top??innerHeight) && el.contains(document.elementFromPoint(box.x+box.width/2,box.y+box.height/2));
+      })).toBe(true);
+      await page.keyboard.press('Tab');
+    }
+  });
+
+  test('structure fits a desktop viewport and confines long evidence to its work area', async ({ page }) => {
+    await mountHarnessVault(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/ko/architecture/?view=structure&guides=off');
+    const work = page.getByTestId('harness-structure-scroll');
+    await expect(page.getByTestId('harness-structure-diagram')).toBeVisible();
+    await expect.poll(() => work.evaluate(el => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
+
+    const panel = page.locator('#harness-tabpanel-structure');
+    const panelTop = await panel.evaluate(el => el.getBoundingClientRect().top);
+    await page.setViewportSize({ width: 1440, height: 650 });
+    await page.getByTestId('harness-diagram-node-always').click();
+    await expect(page.getByTestId('harness-anatomy-slot-always')).toBeVisible();
+    await expect.poll(() => work.evaluate(el => el.scrollHeight - el.clientHeight)).toBeGreaterThan(0);
+    await work.evaluate(el => el.scrollTo({ top: el.scrollHeight, behavior: 'instant' }));
+    await expect.poll(() => panel.evaluate(el => el.scrollTop)).toBe(0);
+    expect(await panel.evaluate(el => el.getBoundingClientRect().top)).toBe(panelTop);
+    await expect(page.getByTestId('harness-view-diagram')).toBeInViewport();
+    await expect(page.getByTestId('harness-view-text')).toBeInViewport();
+    expect(await page.evaluate(() => ({ x: scrollX, y: scrollY, overflow: document.documentElement.scrollWidth - innerWidth }))).toEqual({ x: 0, y: 0, overflow: 0 });
   });
 
   test("은퇴한 sensors 주소는 그 질문에 답하는 보기로 간다", async ({ page }) => {
@@ -154,6 +1125,12 @@ test.describe("하네스 탭", () => {
     await expect(page.getByTestId("harness-anatomy-band-tells")).toContainText("말해둔 것");
     await expect(page.getByTestId("harness-anatomy-band-gates")).toContainText("막는 것");
     await expect(page.getByTestId("harness-anatomy-band-watches")).toContainText("지켜보는 것");
+
+    await expect(page.getByTestId('harness-structure-diagram')).toBeVisible();
+    await page.getByTestId('harness-diagram-node-always').click();
+    await expect(page.getByTestId('harness-anatomy-slot-always')).toContainText('.claude/rules/forbidden.md');
+    await page.getByTestId('harness-view-text').click();
+    await expect(page.getByTestId('harness-structure-diagram')).toHaveCount(0);
 
     // A rule with no `paths:` is read every time; one with `paths:` joins only for its folder.
     await expect(page.getByTestId("harness-anatomy-slot-always")).toContainText(
@@ -537,9 +1514,10 @@ test.describe("하네스 탭", () => {
     await expect(sentence).toContainText("검사");
     /* ⚠️ The fixture holds two exclusion files (`.cursorignore`, `.geminiignore`), and this number
        must not move for them: a file that says what an agent may not see is the opposite of a
-       document the repository speaks through. The structure view proves the rows; this proves the
-       census they are kept out of. */
-    await expect(sentence).toContainText("문서 10개");
+       document the repository speaks through. The outside-mapping fixture adds one valid Claude
+       guide; the exact total is eleven. The structure view proves the rows; this proves the
+       census the exclusions are kept out of. */
+    await expect(sentence).toContainText("문서 11개");
     /* The two numbers here are file counts. The coverage claim has its own denominator and its own
        kind of statement, so it is not folded in beside them. */
     await expect(sentence.locator("p").first()).not.toContainText("영역");

@@ -524,20 +524,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
    * `conditional` — when the value layer gains that axis the registration is
    * deleted and the place drops back into debt.
    */
-  {
-    file: 'src/views/home/ui/HomePage.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--chrome-tile-size',
-    why:
-      '지도 우상단 크롬 타일(좁은 폭 레일 대체) 하나. ' +
-      '36px 이고 coarse 포인터에서 `max(36px, --touch-target-min)` 으로 승격한다 ' +
-      '— globals.css 에 선언이 둘이라 토큰 검사를 통과한다. 값 층은 포인터 ' +
-      '조건부 높이를 못 낸다. 2026-09-05: 이 줄은 셋이었다. 투어 · 단축키 도움말 ' +
-      '타일이 `ChromeTile` 로 옮겨 갔다(우측 유틸 레일이 그룹으로 이름을 말하게 ' +
-      '되면서 라벨 모드가 프리미티브에 생겼다) — 등재 수는 갚은 만큼 내린다.',
-    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
-  },
+
   {
     file: 'src/widgets/topology-index-panel/ui/TopologyIndexTab.tsx',
     count: 1,
@@ -698,7 +685,9 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
  * directions. Raising the registered count requires editing this number **by
  * hand**, and that diff is where the "why" goes.
  */
-const BASELINE_REGISTERED = 25;
+// Reclassification only: one existing full-screen scrim was counted as a chrome
+// button in Home. Total registered + no-basis controls is unchanged (29).
+const BASELINE_REGISTERED = 24;
 
 /**
  * **Only this number may fall.** The total (108) minus registered (30) minus
@@ -766,8 +755,10 @@ const NO_BASIS: readonly NoBasisEntry[] = [
       '않는다** — 씌울 규격이 없어서다.',
   },
   {
-    file: 'src/views/home/ui/HomePage.tsx',
-    count: 2,
+    // Three existing scrims moved together; the old Home inventory misclassified
+    // one as a chrome button using the unrelated Git anchor as its proof.
+    file: 'src/views/home/ui/TopologyBlockingOverlays.tsx',
+    count: 3,
     family: 'button',
     claim: 'click-surface',
     proof: 'data-backdrop-contract',
@@ -820,7 +811,7 @@ const NO_BASIS_ANCHORS = NO_BASIS.filter((e) => e.family === 'anchor');
  * screen) and **zero** ramp-owned properties (placement plus one background
  * layer, nothing to apply a spec to).
  */
-const BASELINE_NO_BASIS = 4;
+const BASELINE_NO_BASIS = 5;
 const BASELINE_ANCHOR_NO_BASIS = 0;
 
 /**
@@ -1127,7 +1118,7 @@ const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 19, a: 8 };
 const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
   /* 2026-08-06 — **the last two links.** With these, hand-styled links reach 0. */
   {
-    file: 'src/views/home/ui/HomePage.tsx',
+    file: 'src/views/home/ui/TopologyCommandChrome.tsx',
     count: 1,
     claim: 'chrome-token',
     proof: '--chrome-tile-size',
@@ -2259,7 +2250,7 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
  */
 const WORKBENCH_HOSTED_PANEL = 'src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx';
 const WORKBENCH_HOSTS = [
-  'src/views/home/ui/HomePage.tsx',
+  'src/views/home/ui/TopologyAgentDock.tsx',
   'src/views/ontology-insights/ui/parts/InsightsAgentDock.tsx',
   'src/views/architecture/ui/ArchitectureAgentDock.tsx',
 ] as const;

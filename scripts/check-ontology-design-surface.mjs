@@ -105,6 +105,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     id: "contextual-write-review-loop",
     files: [
       "src/views/home/ui/HomePage.tsx",
+      "src/views/home/ui/TopologyCanvasSurface.tsx",
       "src/views/home/ui/CreateNodeForm.tsx",
       "src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx",
       "src/features/ontology-change-review/ui/OntologyChangeReview.tsx",
@@ -116,6 +117,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "buildOntologyRelationEditPlan",
       "meaning-editor-change-review",
       "create-node-change-review",
+      "<TopologyCanvasSurface",
       "previewEdge={mapRelationPreview}",
       "acp-ontology-change-review",
       "reviewKind === 'ontology-write'",

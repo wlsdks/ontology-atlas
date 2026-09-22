@@ -269,8 +269,9 @@ export interface GalaxyNebulaMotion {
  * Calm motion for the diffuse Galaxy atmosphere.
  *
  * The anchored base texture and every real concept stay fixed. Two transparent
- * wisp layers oscillate by less than two degrees over long, unequal cycles, so
- * gas can flow inside the arms without turning the ontology disc as a whole.
+ * wisp layers carry fine dust through shallow, unequal arcs. The movement must
+ * be visible during an ordinary glance, while the real concepts and base disc
+ * never rotate, re-layout, or become harder to point at.
  * Reduced motion resolves to the readable anchored frame at every timestamp.
  */
 export function galaxyNebulaMotion(elapsedMs: number, reducedMotion: boolean): GalaxyNebulaMotion {
@@ -282,8 +283,8 @@ export function galaxyNebulaMotion(elapsedMs: number, reducedMotion: boolean): G
     // Six percent is visible across a few seconds without making the whole
     // canvas pulse. Only light changes; the footprint never scales.
     luminance: 0.94 + Math.sin((time / 8400) * Math.PI * 2) * 0.06,
-    innerRotation: Math.sin((time / 26000) * Math.PI * 2) * (Math.PI / 150),
-    outerRotation: Math.sin((time / 37000) * Math.PI * 2 + Math.PI * 0.72) * (Math.PI / 120),
+    innerRotation: Math.sin((time / 18000) * Math.PI * 2) * (Math.PI / 26),
+    outerRotation: Math.sin((time / 27000) * Math.PI * 2 + Math.PI * 0.72) * (Math.PI / 36),
   };
 }
 

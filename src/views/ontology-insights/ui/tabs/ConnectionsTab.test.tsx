@@ -4,6 +4,19 @@ import { describe, expect, it, vi } from "vitest";
 import { ConnectionsTab, type ConnectionsTabLabels } from "./ConnectionsTab";
 import type { ImpactRankingLabels } from "./ImpactRankingCard";
 
+const impactMocks = vi.hoisted(() => ({ buildCalls: vi.fn() }));
+
+vi.mock("../../lib/impact-ranking", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../lib/impact-ranking")>();
+  return {
+    ...actual,
+    buildImpactRanking: (...args: Parameters<typeof actual.buildImpactRanking>) => {
+      impactMocks.buildCalls();
+      return actual.buildImpactRanking(...args);
+    },
+  };
+});
+
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
     <a href={String(href)} {...props}>
@@ -58,20 +71,85 @@ const impactLabels: ImpactRankingLabels = {
 
 const impactLink = {
   href: (nodeId: string) => `/ontology/?node=${encodeURIComponent(nodeId)}`,
-  ariaLabel: ({ title }: { title: string }) => `${title} — view on the map`,
+  ariaLabel: ({ title, direct, total }: { title: string; direct: number; total: number }) =>
+    `${title}: ${direct} direct, ${total} total`,
   evidenceAriaLabel: ({ title }: { title: string }) => `${title} — view on the map`,
 };
 
-const emptyImpact = {
-  declaredDependencyEdges: 0,
-  declaredWithRationaleEdges: 0,
-  rows: [],
-  rankedCount: 0,
-  evidenceRows: [],
-  evidenceRankedCount: 0,
-};
-
 describe("ConnectionsTab", () => {
+  it("memoizes the mounted impact ranking and recomputes its exact counts for a new graph", () => {
+    const graphNode = (id: string) => ({
+      id,
+      title: id,
+      kind: "capability",
+      projectIds: [],
+      evidenceIds: [],
+      lastApprovedAt: new Date(0),
+      lastApprovedBy: "test",
+    });
+    const baseProps = {
+      edgeTypeRows: [],
+      totalEdges: 0,
+      edgeTypeLabel: (type: string) => type,
+      hubs: [],
+      hubTotalCount: 0,
+      kindLabel: (kind: string) => kind,
+      hubLink,
+      labels,
+      impactLimit: 12,
+      impactLink,
+      impactLabels,
+    };
+    const foundation = graphNode("foundation");
+    const consumer = graphNode("consumer");
+    const firstEdge = {
+      id: "consumer--depends_on-->foundation",
+      from: "consumer",
+      to: "foundation",
+      type: "depends_on" as const,
+      projectIds: [],
+      evidenceIds: [],
+      lastApprovedAt: new Date(0),
+      lastApprovedBy: "test",
+    };
+    const firstNodes = [foundation, consumer];
+    const firstEdges = [firstEdge];
+    impactMocks.buildCalls.mockClear();
+    const { rerender } = render(
+      <ConnectionsTab
+        {...baseProps}
+        impactNodes={firstNodes}
+        impactEdges={firstEdges}
+      />,
+    );
+    expect(screen.getByTestId("insights-impact-row-link")).toHaveAttribute(
+      "aria-label",
+      "foundation: 1 direct, 1 total",
+    );
+    expect(impactMocks.buildCalls).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <ConnectionsTab {...baseProps} impactNodes={firstNodes} impactEdges={firstEdges} />,
+    );
+    expect(impactMocks.buildCalls).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <ConnectionsTab
+        {...baseProps}
+        impactNodes={[foundation, consumer, graphNode("leaf")]}
+        impactEdges={[
+          firstEdge,
+          { ...firstEdge, id: "leaf--depends_on-->consumer", from: "leaf", to: "consumer" },
+        ]}
+      />,
+    );
+    expect(screen.getAllByTestId("insights-impact-row-link")[0]).toHaveAttribute(
+      "aria-label",
+      "foundation: 1 direct, 2 total",
+    );
+    expect(impactMocks.buildCalls).toHaveBeenCalledTimes(2);
+  });
+
   /**
    * The readiness meter and the repair-queue counters were moved out of this tab and later
    * removed altogether (owner decision, 2026-08-31: the "to do" tab is one list). The assertion
@@ -89,7 +167,9 @@ describe("ConnectionsTab", () => {
         kindLabel={(kind) => kind}
         hubLink={hubLink}
         labels={labels}
-        impact={emptyImpact}
+        impactNodes={[]}
+        impactEdges={[]}
+        impactLimit={12}
         impactLink={impactLink}
         impactLabels={impactLabels}
       />,
@@ -111,7 +191,9 @@ describe("ConnectionsTab", () => {
         kindLabel={(kind) => kind}
         hubLink={hubLink}
         labels={labels}
-        impact={emptyImpact}
+        impactNodes={[]}
+        impactEdges={[]}
+        impactLimit={12}
         impactLink={impactLink}
         impactLabels={impactLabels}
       />,
@@ -136,7 +218,9 @@ describe("ConnectionsTab", () => {
         kindLabel={(kind) => kind}
         hubLink={hubLink}
         labels={labels}
-        impact={emptyImpact}
+        impactNodes={[]}
+        impactEdges={[]}
+        impactLimit={12}
         impactLink={impactLink}
         impactLabels={impactLabels}
       />,
@@ -161,7 +245,9 @@ describe("ConnectionsTab", () => {
         kindLabel={(kind) => kind}
         hubLink={hubLink}
         labels={labels}
-        impact={emptyImpact}
+        impactNodes={[]}
+        impactEdges={[]}
+        impactLimit={12}
         impactLink={impactLink}
         impactLabels={impactLabels}
       />,
@@ -181,7 +267,9 @@ describe("ConnectionsTab", () => {
         kindLabel={(kind) => kind}
         hubLink={hubLink}
         labels={labels}
-        impact={emptyImpact}
+        impactNodes={[]}
+        impactEdges={[]}
+        impactLimit={12}
         impactLink={impactLink}
         impactLabels={impactLabels}
       />,
@@ -202,7 +290,9 @@ describe("ConnectionsTab", () => {
         kindLabel={(kind) => kind}
         hubLink={hubLink}
         labels={labels}
-        impact={emptyImpact}
+        impactNodes={[]}
+        impactEdges={[]}
+        impactLimit={12}
         impactLink={impactLink}
         impactLabels={impactLabels}
       />,

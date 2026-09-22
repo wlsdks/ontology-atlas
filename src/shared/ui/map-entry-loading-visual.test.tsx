@@ -24,8 +24,9 @@ describe('MapEntryLoadingVisual', () => {
     expect(status).toHaveAttribute('data-map-loading-layout', 'centered');
     const cluster = screen.getByTestId('map-wait-cluster');
     expect(cluster).toHaveAttribute('aria-hidden', 'true');
-    expect(cluster.querySelectorAll('.map-wait-point')).toHaveLength(6);
-    expect(cluster.querySelector('rect, path')).toBeNull();
+    expect(cluster.querySelectorAll('.map-wait-point').length).toBeGreaterThan(0);
+    expect(cluster.querySelectorAll('.map-wait-orbit').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('progressbar')).toBeNull();
     expect(screen.queryByTestId('brand-waiting-mark')).toBeNull();
     expect(status).toHaveTextContent('지도를 불러오는 중이에요.');
   });

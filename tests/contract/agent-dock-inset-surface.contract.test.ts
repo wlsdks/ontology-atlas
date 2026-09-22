@@ -5,6 +5,9 @@ import ts from 'typescript';
 import { AGENT_DOCK_INSET_SURFACE_CLASS } from "../../src/shared/ui/agent-dock-surface";
 
 const home = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+const dock = readFileSync("src/views/home/ui/TopologyAgentDock.tsx", "utf8");
+const orchestration = readFileSync("src/views/home/model/use-topology-agent-orchestration.tsx", "utf8");
+const runtimeController = readFileSync("src/views/home/model/use-acp-runtime-controller.ts", "utf8");
 const vaultAgent = readFileSync("src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx", "utf8");
 
 function insetDockOpenSources(source: string): string[][] {
@@ -49,7 +52,7 @@ describe("agent dock inset surface", () => {
   });
 
   it("applies the same surface to both agent implementations", () => {
-    for (const source of [home, vaultAgent]) {
+    for (const source of [dock, vaultAgent]) {
       expect(source).toContain("AGENT_DOCK_INSET_SURFACE_CLASS");
       expect(source).toContain('data-agent-dock-surface="inset"');
       expect(source).toContain("var(--chrome-inset)");
@@ -57,25 +60,26 @@ describe("agent dock inset surface", () => {
   });
 
   it("mounts the ACP scaffold with the dock, and starts only after reflow settles", () => {
-    expect(insetDockOpenSources(home)).toEqual([['acpDockFrameOpen', 'meaningWorkbenchOpen']]);
-    expect(home).toContain('motion="overlay"');
-    expect(home).toContain("sessionEnabled={acpChatOpen}");
+    expect(insetDockOpenSources(dock)).toEqual([['acpDockFrameOpen', 'meaningWorkbenchOpen']]);
+    expect(dock).toContain('motion="overlay"');
+    expect(dock).toContain("sessionEnabled={acpChatOpen}");
   });
 
   it('probes the actual dock Surface even when its child still has the correct open expression', () => {
-    const broken = home.replace('open={acpDockFrameOpen || meaningWorkbenchOpen}', 'open={false /* probe */}');
-    expect(broken).not.toBe(home);
+    const broken = dock.replace('open={acpDockFrameOpen || meaningWorkbenchOpen}', 'open={false /* probe */}');
+    expect(broken).not.toBe(dock);
     expect(broken).toContain('open={acpDockFrameOpen || meaningWorkbenchOpen}');
     expect(insetDockOpenSources(broken)).not.toEqual([['acpDockFrameOpen', 'meaningWorkbenchOpen']]);
   });
 
   it("lets the map camera finish before ACP startup can occupy the main thread", () => {
-    expect(home).toContain("ACP_SESSION_START_AFTER_REFLOW_MS");
-    expect(home).toContain("scheduleAcpSessionStart");
-    expect(home).toMatch(
+    expect(home).toMatch(/\buseAcpRuntimeController\(setAcpChatOpen\)/);
+    expect(runtimeController).toContain("ACP_SESSION_START_AFTER_REFLOW_MS");
+    expect(dock).toContain("scheduleAcpSessionStart()");
+    expect(runtimeController).toMatch(
       /window\.setTimeout\([\s\S]*setAcpChatOpen\(true\)[\s\S]*ACP_SESSION_START_AFTER_REFLOW_MS/,
     );
-    expect(home).toContain("cancelAcpSessionStart");
+    expect(orchestration).toContain("cancelAcpSessionStart()");
   });
 
   it("publishes the real dock width before the delayed ACP session starts", () => {
@@ -83,4 +87,9 @@ describe("agent dock inset surface", () => {
       /style=\{[\s\S]*acpDockFrameOpen\s*\|\|\s*runtimeChatOpen[\s\S]*--agent-panel-width/,
     );
   });
+});
+
+it("keeps the protected topology owners connected to the route", () => {
+  const route = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+  expect(route).toContain('<TopologyAgentDock');
 });

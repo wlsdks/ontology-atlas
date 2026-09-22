@@ -218,7 +218,7 @@ export function SettingsRow({
     >
       {hasMarkSlot ? <VendorMark src={icon ?? null} ink={iconInk ?? null} /> : null}
       <div className="min-w-0 flex-1 basis-40">
-        <p className="text-body text-[color:var(--color-text-secondary)]">{label}</p>
+        <p className="text-body text-[color:var(--color-text-primary)]">{label}</p>
         {caption ? (
           <p
             className={cn(
@@ -227,7 +227,7 @@ export function SettingsRow({
                 ? 'text-[color:var(--color-status-danger)]'
                 : captionTone === 'warning'
                   ? 'text-[color:var(--color-status-warning)]'
-                  : 'text-[color:var(--color-text-quaternary)]',
+                  : 'text-[color:var(--color-text-tertiary)]',
             )}
           >
             {caption}
@@ -268,8 +268,8 @@ export function Slider({
 }) {
   const filled = ((value - range.min) / (range.max - range.min)) * 100;
   return (
-    <label className="flex min-h-11 items-center gap-3 px-1 py-2">
-      <span className="w-28 shrink-0 text-body text-[color:var(--color-text-secondary)]">{label}</span>
+    <label className="grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-1 py-2 sm:flex">
+      <span className="col-span-2 shrink-0 text-body text-[color:var(--color-text-primary)] sm:w-28">{label}</span>
       <input
         type="range"
         data-testid={testId}
@@ -281,7 +281,7 @@ export function Slider({
         style={{
           background: `linear-gradient(to right, var(--color-indigo-accent) ${filled}%, var(--color-overlay-3) ${filled}%)`,
         }}
-        className="h-1 min-w-0 flex-1 cursor-pointer appearance-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[color:var(--color-indigo-accent)]"
+        className="h-1 w-full min-w-0 flex-1 cursor-pointer appearance-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] sm:w-auto [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[color:var(--color-indigo-accent)]"
       />
       <span className="w-12 shrink-0 text-right font-mono text-label text-[color:var(--color-text-tertiary)]">
         {format(value)}
@@ -327,8 +327,8 @@ export function Choice<T extends string | boolean>({
   optionTestId?: (value: T) => string;
 }) {
   return (
-    <div className="flex min-h-11 items-center gap-3 px-1 py-2">
-      <span className="w-28 shrink-0 text-body text-[color:var(--color-text-secondary)]">{label}</span>
+    <div className="flex min-h-11 flex-col items-stretch gap-3 px-1 py-2 sm:flex-row sm:items-center">
+      <span className="shrink-0 text-body text-[color:var(--color-text-primary)] sm:w-28">{label}</span>
       <SegmentedControl
         ariaLabel={label}
         variant="chips"

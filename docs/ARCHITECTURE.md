@@ -118,6 +118,22 @@ node identity in `tools/vault-nodes.mjs` and post-write maintenance in
 `scripts/check-decision-record.mjs` watches `server/registry.mjs` alongside the
 entry point, because that is where a public-contract change now lands.
 
+### Runtime module ownership
+
+The public entrypoints remain stable while internal modules own narrower work:
+
+| Entrypoint | Internal responsibilities |
+|---|---|
+| `src/views/home/ui/HomePage.tsx` | Composes typed domain controllers and surface components. `home/model/use-topology-*` owns graph projection, route/index navigation, authoring, source actions, selection, keyboard/tour state, and review actions; ACP hooks own startup and session orchestration. `TopologyCommandChrome`, `TopologyCanvasSurface`, `TopologyIndexSlot`, `TopologyInspectorSurfaces`, `TopologyAgentDock`, and overlay components own their respective JSX. |
+| `src/widgets/ontology-map/ui/use-topology-loop.ts` | Wires camera, world, realm, interaction, and presentation state to their lifecycle hooks. Ordered frame stages own dome projection, world motion, physics/camera, clusters, realms, reveal, visual state, and rendering. The frame scheduler owns request/cancel, idle/yield decisions, and context recovery. Stage factories capture stable dependencies once per effect and reuse frame result objects. Viewport lifecycle and opt-in instrumentation remain separate. |
+| `mcp/src/ontology-engine.mjs` | Composes public query methods. `artifact-context.mjs` builds indexes; `context-operations.mjs` owns graph lookups; planner, traversal, selection, scope, maintenance, brief, and health modules own their query families. Dependencies between families are explicit named functions. Dispatch, vocabulary, validation, result shaping, and response formatting are separate owners. |
+| `src/views/ontology-insights/ui/InsightsPageEntry.tsx` | Commits the lightweight `InsightsLoadingView` before mounting the dynamically imported analysis workbench. Two animation frames cross a paint boundary; unmount cancels pending frames. Heavy derivation still runs on the main thread after that visible handoff. |
+| `src/views/automations/ui/AutomationsPage.tsx` | Owns lane and selected-schedule navigation. `AutomationScheduleRow` displays timing/status and targets the runner's existing actions; `AutomationRunHistory` owns latest/older result presentation. Scheduling and execution authority remain in Library rounds. |
+
+These modules preserve the existing React lifecycle, frame order, query result
+ordering, and error contracts. The MCP package's explicit file inventory includes
+every engine module so source, bundled, and installed callers use the same code.
+
 ### Agent instruction ownership
 
 Atlas has several instruction channels, each with a different runtime boundary:
@@ -177,6 +193,22 @@ gates and checks declare, so a domain nothing names is stated rather than inferr
 reads which, size against a documented cap, declared mirror-pair drift, and hook wiring — from
 files only, through the installed app's bridge (`entities/agent-files`); the browser cannot see a
 dot directory at all and says so instead of drawing a shorter list.
+
+`HarnessAnatomyView` offers diagram and text presentations of the same `buildHarnessAnatomy`
+result. Its header and presentation switch stay fixed; only the bounded work area scrolls
+when evidence expands or the viewport cannot contain the content. `HarnessStructureDiagram`
+renders composition edges and inline evidence disclosures; it does not infer an execution graph.
+Measured Insights Guidance uses `projectHarnessCoverageEvidence` to retain the existing
+coverage matrix members and add only the capability paths reached by canonical `scopeReaches`.
+`HarnessCoverageOverview` presents Diagram/Text from that same projection and the actual
+finding rows. One local scroll owner contains the overview and all domains; one desktop
+anchored Surface or narrow Dialog presents role, separate, outside-mapping, unreached-entrypoint
+and finding evidence. Mode changes and clipped anchors dismiss the old selection without stale
+focus restoration. The measured/null availability contract, scanner, join, and write authority
+remain unchanged; declaration counts, discovered tests, and execution evidence are not merged.
+The `relationship-preview` widget supplies explicitly
+labelled Wiki/Guidance examples and their real next action, shared with unavailable Harness
+states. Its decorative motion pauses offscreen and under reduced motion; it never creates data.
 
 ## Surface contract — web and app
 
@@ -662,6 +694,13 @@ pressing it opens the known folders plus a picker. The same list
 is the launch chooser: when two or more folders are known the cold restore stops
 rather than guess, leaving the folder screen to own the launch. Decision:
 `docs/DECISIONS.md`, "The folder count decides the launch".
+
+The optional companion home/journal is owned by `features/agent-activity` and
+mounted in `FirstRunPage` and the topology utility lane. Its versioned localStorage
+record contains only explicitly authored personal reflections and cosmetic keepsakes;
+it is not a second ontology store, receives no automatic agent-write or approval
+signals, and never writes vault frontmatter. The existing verified mascot pose
+machine is mounted inline beside work status instead of as an AppShell map overlay.
 
 **One piece of code decides which nav item is active; each screen size shows a
 different list of buttons.** The desktop rail shows eight destinations: Map,

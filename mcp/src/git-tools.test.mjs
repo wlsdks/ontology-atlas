@@ -475,7 +475,8 @@ test('collectPathLastChanges keeps every concept document when the cited paths w
       'the document must survive the cap: undated documents read as "no commit in the window"',
     );
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    // A large Git fixture can briefly retain directory entries during macOS cleanup.
+    rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
   }
 });
 

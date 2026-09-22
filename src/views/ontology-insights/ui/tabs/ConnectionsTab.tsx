@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Waypoints } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import {
@@ -6,9 +7,13 @@ import {
   OntologyMapKindGlyph,
   OntologyMapTraceMark,
 } from "@/shared/ui";
-import { isContainmentRelation } from "@/entities/knowledge-graph";
+import {
+  isContainmentRelation,
+  type KnowledgeGraphEdge,
+  type KnowledgeGraphNode,
+} from "@/entities/knowledge-graph";
 import { relationTypeIndigo } from "../../lib/relation-type-tone";
-import type { ImpactRanking } from "../../lib/impact-ranking";
+import { buildImpactRanking } from "../../lib/impact-ranking";
 import { InsightsBar } from "../parts/InsightsBar";
 import {
   ImpactRankingCard,
@@ -59,7 +64,7 @@ interface ConnectionsTabHubLink {
   ariaLabel: (title: string) => string;
 }
 
-export interface ConnectionsTabProps {
+interface ConnectionsTabBaseProps {
   edgeTypeRows: Array<{ type: string; count: number }>;
   totalEdges: number;
   edgeTypeLabel: (type: string) => string;
@@ -68,9 +73,14 @@ export interface ConnectionsTabProps {
   kindLabel: (kind: string) => string;
   hubLink: ConnectionsTabHubLink;
   labels: ConnectionsTabLabels;
-  impact: ImpactRanking;
   impactLink: ImpactRankingLink;
   impactLabels: ImpactRankingLabels;
+}
+
+export interface ConnectionsTabProps extends ConnectionsTabBaseProps {
+  impactNodes: readonly KnowledgeGraphNode[];
+  impactEdges: readonly KnowledgeGraphEdge[];
+  impactLimit: number;
 }
 
 /**
@@ -104,10 +114,18 @@ export function ConnectionsTab({
   kindLabel,
   hubLink,
   labels,
-  impact,
+  impactNodes,
+  impactEdges,
+  impactLimit,
   impactLink,
   impactLabels,
 }: ConnectionsTabProps) {
+  // This full-graph walk belongs to this tab alone. Keeping it below the conditional tab mount
+  // lets Brief and the other views arrive without paying the O(nodes × reachable graph) cost.
+  const impact = useMemo(
+    () => buildImpactRanking(impactNodes, impactEdges, impactLimit),
+    [impactNodes, impactEdges, impactLimit],
+  );
   const edgeMax = edgeTypeRows.reduce((m, r) => Math.max(m, r.count), 0);
   // `hubs` is already sorted by degree descending — `hubs[0]` is the maximum within this list.
   const hubDegreeMax = hubs.reduce((m, h) => Math.max(m, h.degree), 0);

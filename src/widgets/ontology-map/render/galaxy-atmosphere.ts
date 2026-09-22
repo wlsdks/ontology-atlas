@@ -92,7 +92,7 @@ function buildNebulaTexture(warmInk: string, coolInk: string, accentInk: string)
       const wispCtx = t < 0.56 ? innerTexture.ctx : outerTexture.ctx;
       glow(wispCtx, half + point.x + scatterX, half + point.y + scatterY,
         width * (0.9 + random() * 1.1), color,
-        (0.025 + random() * 0.035) * envelope, GALAXY_VERTICAL_FLATTEN);
+        (0.04 + random() * 0.045) * envelope, GALAXY_VERTICAL_FLATTEN);
     }
   }
   // Fine particulate light breaks up the cloud. These subpixel grains cannot be
@@ -105,9 +105,12 @@ function buildNebulaTexture(warmInk: string, coolInk: string, accentInk: string)
     const x = half + point.x + (random() + random() + random() - 1.5) * spread;
     const y = half + point.y + (random() + random() + random() - 1.5) * spread * GALAXY_VERTICAL_FLATTEN;
     const energy = (0.07 + random() ** 4 * 0.34) * Math.sin(Math.PI * t) ** 0.45;
-    baseCtx.fillStyle = rgba(blend(warm, cool, Math.min(1, t * 1.7)), energy);
+    // The anchored third holds the spiral; the other grains ride the cached gas
+    // layers, making depth visible without another canvas pass or moving a hit target.
+    const grainCtx = index % 3 === 0 ? baseCtx : t < 0.56 ? innerTexture.ctx : outerTexture.ctx;
+    grainCtx.fillStyle = rgba(blend(warm, cool, Math.min(1, t * 1.7)), energy);
     const size = 0.4 + random() * 0.85;
-    baseCtx.fillRect(x, y, size, size);
+    grainCtx.fillRect(x, y, size, size);
   }
   // The luminous bulge belongs to the actual project core. Its footprint is
   // painted light only; it never adds a selectable pseudo-concept.

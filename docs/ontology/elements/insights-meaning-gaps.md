@@ -14,7 +14,7 @@ Lists the nodes whose prose is missing something a concept needs as rows a perso
 
 ## Includes
 - Two rows a person can close on the spot by writing one frontmatter key: no definition, and no stated parent area.
-- Four rows that name the node and open it — no stated boundary, no stated unknown, an exclusion that only says what the author did not read, and a file sitting outside its kind's folder — because each is answered by writing prose or moving a file.
+- Four rows that name the node and open it (no stated boundary, no stated unknown, an exclusion that only says what the author did not read, and a file sitting outside its kind's folder), because each is answered by writing prose or moving a file.
 
 ## Excludes
 - Writing the missing prose.

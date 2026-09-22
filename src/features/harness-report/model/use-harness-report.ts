@@ -38,6 +38,14 @@ export type HarnessReportState =
   | { status: 'ready'; sourceRoot: string; report: HarnessReport }
   | { status: 'failed'; sourceRoot: string; message: string };
 
+interface HarnessReportSnapshot {
+  handle: FileSystemDirectoryHandle;
+  slugKey: string;
+  capabilityKey: string;
+  reloadNonce: number;
+  state: HarnessReportState;
+}
+
 function bridgePort(sourceRoot: string): HarnessScanPort {
   return {
     async listDir(relativePath) {
@@ -94,7 +102,7 @@ export function useHarnessReport(
   /** Bumped by the failed state's retry, so a transient bridge error is not a dead end. */
   reloadNonce = 0,
 ): HarnessReportState {
-  const [state, setState] = useState<HarnessReportState>({ status: 'unsupported' });
+  const [snapshot, setSnapshot] = useState<HarnessReportSnapshot | null>(null);
   const slugKey = projectSlugs.join('\0');
   const capabilityKey = capabilityPaths.join('\0');
   /*
@@ -107,15 +115,19 @@ export function useHarnessReport(
   useEffect(() => {
     if (!supported || !handle) return;
     let cancelled = false;
+    const commit = (state: HarnessReportState) => {
+      if (!cancelled) setSnapshot({ handle, slugKey, capabilityKey, reloadNonce, state });
+    };
     void (async () => {
-      const sourceRoot = await resolveSourceRoot(handle, slugKey ? slugKey.split('\0') : []);
-      if (cancelled) return;
-      if (!sourceRoot) {
-        setState({ status: 'no-source' });
-        return;
-      }
-      setState({ status: 'loading', sourceRoot, progress: null });
+      let sourceRoot = '';
       try {
+        sourceRoot = (await resolveSourceRoot(handle, slugKey ? slugKey.split('\0') : [])) ?? '';
+        if (cancelled) return;
+        if (!sourceRoot) {
+          commit({ status: 'no-source' });
+          return;
+        }
+        commit({ status: 'loading', sourceRoot, progress: null });
         /*
          * The ontology folder is excluded from the document census when it lives inside the
          * checkout, as Atlas's own does: those files are the graph an agent reads over MCP, not
@@ -136,18 +148,16 @@ export function useHarnessReport(
            * would make the screen claim a pass had lasted longer than it did.
            */
           onProgress: (progress) => {
-            if (!cancelled) setState({ status: 'loading', sourceRoot, progress });
+            commit({ status: 'loading', sourceRoot, progress });
           },
         });
-        if (!cancelled) setState({ status: 'ready', sourceRoot, report });
+        commit({ status: 'ready', sourceRoot, report });
       } catch (error) {
-        if (!cancelled) {
-          setState({
-            status: 'failed',
-            sourceRoot,
-            message: error instanceof Error ? error.message : String(error),
-          });
-        }
+        commit({
+          status: 'failed',
+          sourceRoot,
+          message: error instanceof Error ? error.message : String(error),
+        });
       }
     })();
     return () => {
@@ -155,5 +165,13 @@ export function useHarnessReport(
     };
   }, [supported, handle, slugKey, capabilityKey, reloadNonce]);
 
-  return supported ? state : { status: 'unsupported' };
+  if (!supported || !handle) return { status: 'unsupported' };
+  const matchesCurrentRequest =
+    snapshot?.handle === handle &&
+    snapshot.slugKey === slugKey &&
+    snapshot.capabilityKey === capabilityKey &&
+    snapshot.reloadNonce === reloadNonce;
+  return matchesCurrentRequest
+    ? snapshot.state
+    : { status: 'loading', sourceRoot: '', progress: null };
 }

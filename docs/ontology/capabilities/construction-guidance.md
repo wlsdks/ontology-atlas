@@ -24,5 +24,5 @@ Tells a person or an agent how to build this graph well, from one written source
 - Rules about the format of a file, which the schema owns.
 
 ## Uncertainty
-- Read today: the two message literals this module authors — `dependencyUnwitnessedMessage` (`mcp/src/construction-rules.mjs:677`) and `starterExampleNodeMessage` (`:733`) — and the import list that pulls both, plus the starter's slug and body markers, into the detector (`mcp/src/meaning-findings.mjs:37-52`). The dependency message insists a cited path be written repository-relative or it is ignored; whether writers actually do so was not measured here.
+- Read today: the two message literals this module authors, `dependencyUnwitnessedMessage` (`mcp/src/construction-rules.mjs:677`) and `starterExampleNodeMessage` (`:733`), and the import list that pulls both, plus the starter's slug and body markers, into the detector (`mcp/src/meaning-findings.mjs:37-52`). The dependency message insists a cited path be written repository-relative or it is ignored; whether writers actually do so was not measured here.
 - Otherwise read from the module header, which records the 2026-07-31 decision that produced it and the case it was written against. The full rule text was not read, and whether following it measurably improves a vault is not a claim the repository makes.

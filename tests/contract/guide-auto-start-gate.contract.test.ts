@@ -31,7 +31,7 @@ const read = (rel: string): string => readFileSync(join(ROOT, rel), "utf8");
 
 /** Files that own an auto-start = files that must read the switch. This list is the reach. */
 const AUTO_START_SITES = [
-  "src/views/home/ui/HomePage.tsx",
+  "src/views/home/model/use-topology-keyboard-tour.tsx",
   "src/features/guided-tour/ui/DestinationGuide.tsx",
   /**
    * The folder-prompt sheet — **the third site, and it was not registered**
@@ -124,4 +124,9 @@ describe("화면 안내 자동 표시 — 스위치가 모든 발화 지점을 �
     const replayRow = settings.slice(settings.indexOf("app-settings-replay-guide"));
     expect(replayRow.slice(0, 900)).not.toContain("guideAutoStart");
   });
+});
+
+it("keeps the protected topology owners connected to the route", () => {
+  const route = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+  expect(route).toContain('useTopologyKeyboardTour({');
 });

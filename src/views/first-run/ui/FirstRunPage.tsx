@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FolderOpen, Layers, Library, Map as MapIcon, Orbit, Sparkles, Zap } from "lucide-react";
+import { CircleHelp, FolderOpen, Layers, Library, Map as MapIcon, Orbit, Sparkles, Zap } from "lucide-react";
 import type { VaultShape } from "@/shared/lib/vault-shape";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
@@ -17,6 +17,9 @@ import { useToast } from "@/shared/ui/toast";
 import { controlClass } from '@/shared/ui/control-class';
 import { FirstRunFolderActions } from "./FirstRunFolderActions";
 import { Chip } from '@/shared/ui/controls';
+import { Button, Dialog, IconButton } from '@/shared/ui';
+import { CompanionHome } from "@/features/agent-activity";
+import styles from './first-run-chooser.module.css';
 
 /**
  * First run of the installed app (the desktop shell) — `/` with no vault chosen.
@@ -47,6 +50,7 @@ import { Chip } from '@/shared/ui/controls';
  * zero marketing prose, download CTAs, or screenshots.
  */
 export function FirstRunPage() {
+  const [chooserHelpOpen, setChooserHelpOpen] = useState(false);
   const t = useTranslations("firstRun");
   // The chooser's words are shared with the `/docs` chooser; see `choosingFolder` below.
   const tSwitch = useTranslations("vaultSwitch");
@@ -216,23 +220,18 @@ export function FirstRunPage() {
     <main
       id="main"
       tabIndex={-1}
-      /*
-       * `my-auto` on the section rather than `items-center` here, and the main owns the
-       * scroll — the same contract its twin `DesktopVaultWelcome` already used, and for the
-       * reason written there: with fixed centring, content taller than the viewport clips at
-       * the top out of reach. Measured at the app's 1040x720 window floor with five known
-       * folders, the "create a new folder" card sat 60px below the fold (responsive seat,
-       * 2026-09-13).
-       */
-      className={`flex min-h-0 flex-1 justify-center overflow-auto bg-[color:var(--color-canvas)] px-6 ${choosingFolderHome ? "pt-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1.5rem)] scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1.5rem)] lg:pb-6 lg:scroll-pb-6" : "py-10"}`}
+      data-folder-chooser={choosingFolderHome ? 'fixed' : undefined}
+      className={`flex min-h-0 flex-1 justify-center bg-[color:var(--color-canvas)] px-6 ${choosingFolderHome ? `${styles.chooser} overflow-hidden pt-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1.5rem)] lg:pb-6` : "overflow-auto py-10"}`}
     >
       <section
-        className={`my-auto grid h-fit w-full gap-6 ${choosingFolderHome ? "max-w-3xl" : "max-w-[var(--dialog-w-sm)]"}`}
+        className={choosingFolderHome
+          ? `${styles.frame} architecture-result-arrive flex min-h-0 w-full max-w-3xl flex-col gap-5`
+          : "my-auto grid h-fit w-full max-w-[var(--dialog-w-sm)] gap-6"}
       >
         <header
-          className={`grid gap-3 ${choosingFolderHome ? "justify-items-start text-left" : "justify-items-center text-center"}`}
+          className={`grid shrink-0 gap-3 ${choosingFolderHome ? "justify-items-start text-left" : "justify-items-center text-center"}`}
         >
-          <div className="inline-flex items-center gap-3">
+          <div className={`${styles.identity} inline-flex items-center gap-3`}>
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
               <Orbit size={ICON_SIZE.md} aria-hidden />
             </span>
@@ -241,14 +240,14 @@ export function FirstRunPage() {
             </span>
           </div>
           <div className="grid gap-1.5">
-            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+            {!choosingFolderHome ? <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
               {choosingFolder ? tSwitch("choose.eyebrow") : t("eyebrow")}
-            </p>
-            <h1 className="break-keep text-display font-[var(--font-weight-signature)] leading-display text-[color:var(--color-text-primary)]">
+            </p> : null}
+            <div className="flex items-center gap-3"><h1 className={`${styles.title} min-w-0 break-keep font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] ${choosingFolderHome ? "text-hero" : "text-display"}`}>
               {choosingFolder ? tSwitch("choose.title") : t("title")}
-            </h1>
+            </h1>{choosingFolderHome ? <div className={styles.help}><IconButton label={tSwitch('choose.helpLabel')} size="lg" className="atlas-touch-floor atlas-touch-floor-wide" onClick={()=>setChooserHelpOpen(true)}><CircleHelp size={ICON_SIZE.md} aria-hidden /></IconButton></div> : null}</div>
             <p
-              className={`break-keep leading-body text-[color:var(--color-text-tertiary)] ${choosingFolderHome ? "text-body" : "mx-auto max-w-[360px] text-body"}`}
+              className={`${styles.description} break-keep text-[color:var(--color-text-tertiary)] ${choosingFolderHome ? "text-body-lg" : "mx-auto max-w-[360px] text-body"}`}
             >
               {choosingFolder
                 ? isTauriVaultRuntime()
@@ -258,6 +257,8 @@ export function FirstRunPage() {
             </p>
           </div>
         </header>
+
+        {!choosingFor ? <div className="shrink-0"><CompanionHome /></div> : null}
 
         {choosingFor ? (
           <div ref={shapePanel} tabIndex={-1} className="grid gap-2" aria-busy={busy} data-testid="first-run-shape">
@@ -321,23 +322,25 @@ export function FirstRunPage() {
               The region is named by its own visible caption (`aria-labelledby`) rather than
               by a copy of it, so a screen reader does not announce the same words twice.
             */}
-            {choosingFolderHome ? (
-              <FirstRunFolderActions trigger={createTrigger} busy={busy} showJustStart={showJustStart} onOpen={() => void handleOpen()} onCreate={setChoosingFor} />
-            ) : null}
             {knownFolders.length > 0 ? (
-              <section className="grid gap-2" aria-labelledby="known-folders-heading">
-                <p
-                  id="known-folders-heading"
-                  className="px-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]"
-                >
-                  {tSwitch("choose.listTitle")}
-                </p>
+              <section className={choosingFolderHome ? `${styles.listRegion} grid min-h-0 shrink grid-rows-[auto_minmax(0,1fr)_auto] gap-2` : "grid gap-2"} aria-labelledby="known-folders-heading">
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+                  <p
+                    id="known-folders-heading"
+                    className="px-1 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]"
+                  >
+                    {tSwitch("choose.listTitle")}
+                  </p>
+                  {choosingFolderHome ? (
+                    <FirstRunFolderActions trigger={createTrigger} busy={busy} showJustStart={showJustStart} onOpen={() => void handleOpen()} onCreate={setChoosingFor} />
+                  ) : null}
+                </div>
                 <RecentVaultList
                   records={knownFolders}
                   currentKey={storedFolderKey}
                   busy={busy}
                   emphasis={choosingFolder}
-                  scroll={choosingFolderHome ? "page" : "contained"}
+                  scroll={choosingFolderHome ? "viewport" : "contained"}
                   onOpen={(record) => void vault.openRecent(record)}
                   onForget={(record) => void vault.forgetRecent(record)}
                   onLocate={() => void handleOpen()}
@@ -347,7 +350,7 @@ export function FirstRunPage() {
                   clause of the intro paragraph (design-lead seat, 2026-09-13).
                 */}
                 {choosingFolder ? (
-                  <p className="px-1 text-caption leading-body text-[color:var(--color-text-quaternary)]">
+                  <p className={`${styles.release} px-1 text-label text-[color:var(--color-text-tertiary)]`}>
                     {tSwitch("choose.releaseValve")}
                   </p>
                 ) : null}
@@ -463,7 +466,7 @@ export function FirstRunPage() {
 
         <p
           data-token="engraved-numeral"
-          className="text-center font-mono text-caption uppercase tracking-[var(--tracking-caps-16)]"
+          className={`${styles.trust} shrink-0 text-center font-mono text-caption uppercase tracking-[var(--tracking-caps-16)]`}
           style={{
             color: "var(--engraved-numeral-face)",
             textShadow: "var(--engraved-numeral-text-shadow)",
@@ -472,6 +475,15 @@ export function FirstRunPage() {
           {t("trustLine")}
         </p>
       </section>
+      <Dialog open={chooserHelpOpen} onClose={()=>setChooserHelpOpen(false)} labelledBy="folder-chooser-help-title" size="sm">
+        <h2 id="folder-chooser-help-title" className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{tSwitch('choose.helpLabel')}</h2>
+        <div className="mt-4 grid gap-3 text-body-lg text-[color:var(--color-text-secondary)]">
+          <p>{isTauriVaultRuntime()?tSwitch('choose.bodyDesktop'):tSwitch('choose.bodyWeb')}</p>
+          <p>{tSwitch('choose.releaseValve')}</p>
+          <p>{t('trustLine')}</p>
+        </div>
+        <div className="mt-6 flex justify-end"><Button variant="outline" className="atlas-touch-floor atlas-touch-floor-wide" onClick={()=>setChooserHelpOpen(false)}>{tSwitch('choose.closeHelp')}</Button></div>
+      </Dialog>
     </main>
   );
 }

@@ -104,7 +104,7 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   'folder-only-evidence',
   /*
    * The seventh, and the second that no single document can decide: a
-   * `dependencies:` entry whose citing file never names the cited one. It needs
+   * `dependencies:` entry whose citing file never imports the cited one. It needs
    * a repository root, the file on disk, AND the `path:` of the node at the
    * other end of the edge, so like `folder-only-evidence` it is a whole-vault
    * pass in `validate_vault` and in the CLI, and absent from the per-document

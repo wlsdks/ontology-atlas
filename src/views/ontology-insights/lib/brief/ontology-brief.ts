@@ -39,6 +39,8 @@ export interface OntologyBriefInput {
   nodes: readonly OntologyBriefNode[];
   docs: ReadonlyMap<string, OntologyBriefDoc>;
   evidence: OntologyEvidenceStates | null;
+  /** Why evidence is absent; app sessions must never suggest installing the app. */
+  evidenceAvailability?: Extract<BriefCore['availability'], 'app-only' | 'reading' | 'unreadable' | 'no-source'>;
   /** The to-do tab's verdict total: findings a person can act on. */
   repairCount: number;
   /** Names agents asked this folder for that it does not hold. */
@@ -110,7 +112,7 @@ export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
 
   return {
     core: 'ontology',
-    availability: concepts.length === 0 ? 'no-data' : input.evidence ? 'measured' : 'app-only',
+    availability: concepts.length === 0 ? 'no-data' : input.evidence ? 'measured' : input.evidenceAvailability ?? 'app-only',
     headline: concepts.length,
     current: input.evidence ? current : null,
     stale: input.evidence ? stale : null,

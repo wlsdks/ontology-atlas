@@ -329,7 +329,14 @@ const BASELINE_HARD_CUTS = 0;
  * it is not an `OPENERS` entry; `AutomationsPage.test.tsx` and the Library sheet contract own
  * its open path, and the web no-vault route correctly keeps it closed.
  */
-const BASELINE_APPEARING_SURFACES = 54;
+/*
+ * 54 -> 55 (2026-09-22): measured Guidance adds one logical evidence presentation. Its desktop
+ * owner is an anchored Surface and its narrow owner is Dialog, but they are mutually exclusive at
+ * one breakpoint and replace the retired measured table rather than stacking two tasks. The actual
+ * opening path and both owners are audited in `tests/e2e/harness-tab.spec.ts` (portal/nonmodal and
+ * narrow modal, settled axe floor, zero violations). Hard-cut debt remains unchanged.
+ */
+const BASELINE_APPEARING_SURFACES = 55;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

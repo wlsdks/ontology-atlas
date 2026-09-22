@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { OntologyInsightsPage } from "@/views/ontology-insights";
-import { RouteLoadingFallback } from "@/shared/ui";
+import { InsightsLoadingView, OntologyInsightsPage } from "@/views/ontology-insights";
 import { buildPageMetadata } from "@/shared/lib/page-metadata";
 
 export async function generateMetadata({
@@ -26,7 +25,7 @@ export async function generateMetadata({
  */
 export default function Page() {
   return (
-    <Suspense fallback={<RouteLoadingFallback />}>
+    <Suspense fallback={<InsightsLoadingView />}>
       <OntologyInsightsPage />
     </Suspense>
   );

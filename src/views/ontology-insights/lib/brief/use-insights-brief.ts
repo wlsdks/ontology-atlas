@@ -32,6 +32,10 @@ import { buildOntologyBrief, type OntologyBriefNode } from './ontology-brief';
 import { buildWikiBrief } from './wiki-brief';
 import { buildSinceList, type SinceRow } from './since-list';
 import type { BriefCore } from './brief-model';
+import {
+  projectHarnessCoverageEvidence,
+  type HarnessCoverageEvidence,
+} from './harness-detail';
 
 export interface InsightsBrief {
   anchor: BriefAnchor;
@@ -78,15 +82,22 @@ export interface InsightsBrief {
     passes: { endedAt: string; outcome: string; checked: number; written: number; summary: string }[];
   };
   /** What the harness panel lists: the coverage table's own rows and the mirror findings. */
-  harnessDetail: {
-    availability: BriefCore['availability'];
-    areas: { slug: string; title: string; told: number; gated: number; watched: number }[];
-    everywhere: { told: number; gated: number; watched: number };
-    drift: { path: string; message: string }[];
-    guideFiles: number;
-    checks: number;
-  };
+  harnessDetail: HarnessDetail;
 }
+
+interface HarnessDetailBase {
+  areas: { slug: string; title: string; told: number; gated: number; watched: number }[];
+  everywhere: { told: number; gated: number; watched: number };
+  drift: { path: string; message: string }[];
+  guideFiles: number;
+  checks: number;
+}
+
+type HarnessUnavailableAvailability = 'app-only' | 'no-source' | 'reading' | 'unreadable';
+
+type HarnessDetail =
+  | (HarnessDetailBase & { availability: 'measured'; evidence: HarnessCoverageEvidence })
+  | (HarnessDetailBase & { availability: HarnessUnavailableAvailability; evidence: null });
 
 const EMPTY_DOCS: readonly VaultDoc[] = [];
 const EMPTY_LEDGER: readonly RoundPassEntry[] = [];
@@ -250,7 +261,7 @@ export function useInsightsBrief({
 
   const [evidenceChanges, setEvidenceChanges] = useState<{
     key: string;
-    changes: ReadonlyMap<string, GitPathLastChange>;
+    changes: ReadonlyMap<string, GitPathLastChange> | null;
   } | null>(null);
   const evidenceKey = nativeRootPath ? `${nativeRootPath}\0${vault.lastLoadedAt ?? ''}` : '';
   useEffect(() => {
@@ -262,20 +273,30 @@ export function useInsightsBrief({
     const key = evidenceKey;
     void gitPathsLastChange(nativeRootPath, repoPaths, vaultPaths)
       .then((rows) => {
-        if (cancelled || !rows) return;
-        setEvidenceChanges({ key, changes: new Map(rows.map((row) => [row.path, row])) });
+        if (cancelled) return;
+        setEvidenceChanges({ key, changes: rows ? new Map(rows.map((row) => [row.path, row])) : null });
       })
       .catch(() => {
-        /* no repository or no git: the brief says unknown, which is the truth here */
+        if (!cancelled) setEvidenceChanges({ key, changes: null });
       });
     return () => {
       cancelled = true;
     };
   }, [enabled, nativeRootPath, evidenceKey, evidenceConcepts]);
   const evidence = useMemo(() => {
-    if (!evidenceChanges || evidenceChanges.key !== evidenceKey) return null;
+    if (nativeRootPath && evidenceConcepts.every((concept) => concept.evidencePaths.length === 0)) {
+      return resolveEvidenceStates(evidenceConcepts, new Map());
+    }
+    if (!evidenceChanges?.changes || evidenceChanges.key !== evidenceKey) return null;
     return resolveEvidenceStates(evidenceConcepts, evidenceChanges.changes);
-  }, [evidenceChanges, evidenceKey, evidenceConcepts]);
+  }, [evidenceChanges, evidenceKey, evidenceConcepts, nativeRootPath]);
+  const evidenceAvailability = !isGitBridgeAvailable()
+    ? 'app-only'
+    : harnessState.status === 'no-source'
+      ? 'no-source'
+      : evidenceChanges?.key === evidenceKey && evidenceChanges.changes === null
+        ? 'unreadable'
+        : 'reading';
 
   /*
    * When this concept document last changed — from Git where the walk reached it, from the
@@ -286,7 +307,7 @@ export function useInsightsBrief({
   const docChangedAt = useCallback(
     (slug: string, fallback: string | null) => {
       const fromGit = evidenceChanges?.key === evidenceKey
-        ? evidenceChanges.changes.get(`${slug}.md`)?.lastChangedAt ?? null
+        ? evidenceChanges.changes?.get(`${slug}.md`)?.lastChangedAt ?? null
         : null;
       return fromGit ?? fallback;
     },
@@ -311,11 +332,12 @@ export function useInsightsBrief({
         nodes,
         docs: docFacts,
         evidence,
+        evidenceAvailability,
         repairCount,
         unmatchedCount,
         anchorMs: anchor.anchorMs,
       }),
-    [nodes, docFacts, evidence, repairCount, unmatchedCount, anchor.anchorMs],
+    [nodes, docFacts, evidence, evidenceAvailability, repairCount, unmatchedCount, anchor.anchorMs],
   );
 
   const libraryDetail = useMemo(() => {
@@ -398,39 +420,43 @@ export function useInsightsBrief({
 
   const harnessDetail = useMemo(() => {
     if (!harnessReport) {
+      const availability: HarnessUnavailableAvailability = harnessState.status === 'loading'
+        ? 'reading'
+        : harnessState.status === 'failed'
+          ? 'unreadable'
+          : harnessState.status === 'no-source'
+            ? 'no-source'
+            : 'app-only';
       return {
-        availability: (harnessState.status === 'loading'
-          ? 'reading'
-          : harnessState.status === 'failed'
-            ? 'unreadable'
-            : harnessState.status === 'no-source'
-              ? 'no-source'
-              : 'app-only') as BriefCore['availability'],
+        availability,
         areas: [],
         everywhere: { told: 0, gated: 0, watched: 0 },
         drift: [],
         guideFiles: 0,
         checks: 0,
+        evidence: null,
       };
     }
     const matrix = buildCoverageMatrix(harnessReport.coverage, coverage.areas, harnessReport.testFiles);
+    const evidence = projectHarnessCoverageEvidence(matrix);
     return {
-      availability: 'measured' as BriefCore['availability'],
-      areas: matrix.areas.map((area) => ({
+      availability: 'measured' as const,
+      areas: evidence.areas.map((area) => ({
         slug: area.slug,
         title: area.title,
-        told: area.told.length,
-        gated: area.gated.length,
-        watched: area.watched.length,
+        told: area.roles.told.declarations.length,
+        gated: area.roles.gated.declarations.length,
+        watched: area.roles.watched.declarations.length,
       })),
       everywhere: {
-        told: matrix.everywhere.told.length,
-        gated: matrix.everywhere.gated.length,
-        watched: matrix.everywhere.watched.length,
+        told: evidence.everywhere.told.length,
+        gated: evidence.everywhere.gated.length,
+        watched: evidence.everywhere.watched.length,
       },
       drift: harnessReport.analysis.drift.map((finding) => ({ path: finding.path, message: finding.message })),
       guideFiles: harnessReport.guideDocumentCount,
       checks: harnessReport.checks.total,
+      evidence,
     };
   }, [harnessReport, harnessState.status, coverage.areas]);
 

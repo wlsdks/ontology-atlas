@@ -12,7 +12,7 @@ dependencies: [elements/meaning-gap-findings]
 relation_notes: { elements/meaning-gap-findings: "You asked me to witness the import: mcp/src/uncertainty-reads.mjs:14 imports uncertaintySectionLines from meaning-findings.mjs to find the section it reads." }
 ---
 
-Reads what a node's author recorded as not read and turns each of those sentences into a named next read — which file, which lines, and what kind of gap — so the most honest prose in the vault becomes work somebody can pick up.
+Reads what a node's author recorded as not read and turns each of those sentences into a named next read (which file, which lines, and what kind of gap), so the most honest prose in the vault becomes work somebody can pick up.
 
 ## Includes
 - One row per statement under a node's `## Uncertainty` heading, sorted so the cheapest complete answer comes first: a named range, then an unread file, then an unopened area.

@@ -71,6 +71,39 @@ exact in the clone) and the edit-distance helper at cobra.go:192; q5 answered
 with `Help`, `UsageTemplate`, `HelpTemplate` in command.go (lines cited and
 checked). 10 turns, $0.29. Pass condition, stated before the run, met.
 
+### The third repository (2026-09-23): a Rust command-line benchmarking tool
+
+The falsifier asked for a third unknown repository. An MIT Rust CLI (66
+files, 37 of them Rust, module tree under `src/`), same replay, same reader,
+six questions sealed before the clone. Build: 2 turns, $6.69, 443 s, 18 nodes (4 domains,
+9 capabilities, 5 elements), finalize written with `impact` left partial on
+purpose ("no runtime call graph was traced"). The replay's own summary line
+called the build "stopped short" because the final answer never used the word
+finalize; the receipt on disk says otherwise, so that heuristic is wrong and
+the receipt is the record.
+
+Reader (Sonnet, 11 turns, $0.28): q1, q2, q3, q5, q6 answered with slug and
+path citations, every cited path present in the clone, invented 0. q4 (what
+happens on a non-zero exit) answered "the vault does not say" and named the
+two facts it could find (exit code is collected; a failure has a warning
+wording). The truth sits at `src/cli.rs:227` (`--ignore-failure`),
+`src/options.rs:421-433` (the failure action is chosen) and
+`src/benchmark/mod.rs:67`; the execution node's own Uncertainty line says
+lines 141-220 of `run` were read and the rest was not, so the miss is declared,
+not hidden. It is still a miss of the kind the falsifier names: the outline
+mode existed and the builder cited `src/options.rs` as an entry point without
+outlining it. The replay saves only each turn's result record, so whether any
+outline read happened cannot be counted from the artifacts; the next script
+revision keeps the tool trace.
+
+The vault validated clean under the witness rule that shipped in this round.
+Under the tightened rule (an import, not a word) it carries 2 unwitnessed
+edges out of 12: execution → timer (the timer is used from `executor.rs`, not
+from the cited `mod.rs`) and export → terminal formatting (used from
+`markup.rs`). Both `why`s are beliefs about the right module with the witness
+one file away. The dogfood vault showed 7 such edges under the same rule; the
+old rule had passed all 9 on the strength of a word or a folder name.
+
 ### What this row does not show
 
 Same limits as the row below: one run per arm, one builder model, the

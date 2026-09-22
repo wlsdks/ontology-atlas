@@ -519,7 +519,7 @@ test("WebView verification waits for the latest snapshot that passes route gates
     href: "tauri://localhost/en/topology/",
     title: "Relief · ontology-atlas",
     bodyText:
-      "Workspace\nOntology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      "Workspace\nOntology\nMap\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
     bodyChildren: 19,
     readyState: "complete",
     markers: {

@@ -27,6 +27,36 @@ for (const width of [390, 768, 1040, 1440]) {
         if (width < 1024) expect(Math.min(button.width, button.height)).toBeGreaterThanOrEqual(44);
       }
     });
+
+    test('expanded map controls fit the pane and remain reachable', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto('/ko/ontology/insights/?guides=off');
+      await page.locator('[data-testid="app-settings-trigger"]:visible').click();
+      for (const section of ['expand', 'footprint']) {
+        await page.getByTestId(`app-settings-nav-${section}`).click();
+        await page.getByTestId(`app-settings-${section}-detail-toggle`).click();
+        const pane = page.getByTestId(`app-settings-pane-${section}`);
+        const sliders = await pane.getByRole('slider').all();
+        expect(sliders.length).toBeGreaterThan(0);
+        for (const slider of sliders) {
+          await slider.scrollIntoViewIfNeeded();
+          const geometry = await slider.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            const pane = element.closest('[data-testid^="app-settings-pane-"]')!;
+            const bounds = pane.getBoundingClientRect();
+            return {
+              left: rect.left, right: rect.right, boundsLeft: bounds.left, boundsRight: bounds.right,
+              overflow: pane.scrollWidth - pane.clientWidth,
+              reachable: document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2) === element,
+            };
+          });
+          expect(geometry.overflow).toBeLessThanOrEqual(1);
+          expect(geometry.left).toBeGreaterThanOrEqual(geometry.boundsLeft);
+          expect(geometry.right).toBeLessThanOrEqual(geometry.boundsRight);
+          expect(geometry.reachable).toBe(true);
+        }
+      }
+    });
   });
 }
 

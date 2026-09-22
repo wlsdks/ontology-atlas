@@ -4,6 +4,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { controlClass } from '@/shared/ui/control-class';
 import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
+import { RelationshipPreview } from '@/widgets/relationship-preview';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 
 const ROWS = 6;
@@ -29,14 +30,8 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
   const format = useFormatter();
   if (detail.availability !== 'measured') {
     return (
-      <section data-testid="library-tab" className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-        {/* A panel with nothing to count still says what it is for. */}
-        <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">{t('about.title')}</h3>
-        <p className="mt-1 max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{t('about.body')}</p>
-        <p className="mt-3 text-body text-[color:var(--color-text-tertiary)]">{t('empty')}</p>
-        <Link href="/library/" className={controlClass({ shape: 'link', className: 'mt-2 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]' })}>
-          {t('open')}
-        </Link>
+      <section data-testid="library-tab" className="flex flex-col gap-[var(--card-gap)]">
+        <WikiAnalysisPreview />
       </section>
     );
   }
@@ -90,6 +85,51 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
       </Card>
       </div>
     </section>
+  );
+}
+
+function WikiAnalysisPreview() {
+  const t = useTranslations('ontologyPages.insights.libraryTab.preview');
+  const stages = ['source', 'page', 'check'] as const;
+  return <RelationshipPreview title={t('title')} description={t('body')} exampleLabel={t('exampleLabel')} pauseLabel={t('pauseAnimation')} resumeLabel={t('resumeAnimation')} emphasizedItemId="page"
+    items={stages.map(id => ({ id, title:t(`stages.${id}.title`),caption:t(`stages.${id}.example`),label:t(`stages.${id}.buttonLabel`),explanation:t(`stages.${id}.setup`),visual:<StagePreview kind={id} />,
+      description:id==='source'?`${t('exampleLabel')} ${t('sourceExcerpt')}`:id==='page'?`${t('pageEyebrow')}: ${t('pageExampleTitle')}. ${t('pageExampleBody')} ${t('stages.page.citation')}`:t('stages.check.example'),
+    }))}
+    footer={<><div className="min-w-0 max-w-prose"><p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('emptyTitle')}</p><p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('emptyDescription')}</p></div>
+      <Link href="/library/" data-testid="preview-primary-action" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide shrink-0'})}>{t('openLibrary')}</Link></>} />;
+}
+
+function StagePreview({ kind }: { kind: 'source' | 'page' | 'check' }) {
+  const t = useTranslations('ontologyPages.insights.libraryTab.preview');
+  if (kind === 'source') {
+    return (
+      <span data-relationship-port className="relative flex min-h-24 w-full max-w-48 flex-col gap-3 rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-4 text-left shadow-[var(--shadow-elevation-1)] max-sm:max-w-none">
+        <span className="text-label text-[color:var(--color-text-tertiary)]">{t('stages.source.example')}</span>
+        <span className="text-body leading-prose text-[color:var(--color-text-secondary)]">{t('sourceExcerpt')}</span>
+      </span>
+    );
+  }
+  if (kind === 'page') {
+    return (
+      <span data-relationship-port className="flex min-w-0 w-full max-w-80 flex-col rounded-panel border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-elevated)] p-4 text-left shadow-[var(--shadow-elevation-2)] sm:p-5">
+        <span className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]">{t('pageEyebrow')}</span>
+        <span className="mt-3 break-words text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] sm:text-display">{t('pageExampleTitle')}</span>
+        <span className="mt-3 break-words text-body-lg text-[color:var(--color-text-secondary)]">{t('pageExampleBody')}</span>
+        <span className="mt-5 h-px w-full bg-[color:var(--color-divider)]" />
+        <span className="mt-3 border-l-2 border-[color:var(--color-indigo-line-a32)] pl-3 text-body text-[color:var(--color-indigo-text-soft)]">{t('stages.page.citation')}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="relative flex w-full max-w-40 flex-col gap-3 pl-5 text-left text-body text-[color:var(--color-text-secondary)]">
+      <span data-relationship-port className="absolute inset-y-0 left-0 w-2 border-y border-l border-[color:var(--color-border-strong)]" />
+      {(['citation', 'links', 'sourceChanges'] as const).map((item) => (
+        <span key={item} className="flex items-center gap-1.5">
+          <span className="h-2 w-2 flex-none rounded-full border border-[color:var(--color-indigo-text-soft)]" />
+          <span>{t(`stages.check.${item}`)}</span>
+        </span>
+      ))}
+    </span>
   );
 }
 

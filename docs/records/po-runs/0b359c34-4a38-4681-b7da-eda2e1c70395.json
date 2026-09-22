@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-21",
+  "decision": "Restore readable folder selection within the owner-selected integrated list and prevent stale automation creation during lane navigation",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "orient",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-21",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "0b359c34-4a38-4681-b7da-eda2e1c70395",
+  "recordedAt": "2026-09-21T12:40:29.477Z"
+}

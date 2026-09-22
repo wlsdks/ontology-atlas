@@ -1387,7 +1387,7 @@ export function ArchitectureWorkbench({
                       {profile.title}
                     </span>
                     {current ? (
-                      <span className="shrink-0 text-caption text-[color:var(--color-text-quaternary)]">
+                      <span className="shrink-0 text-caption text-[color:var(--color-text-tertiary)]">
                         {t('profileCurrent')}
                       </span>
                     ) : null}
