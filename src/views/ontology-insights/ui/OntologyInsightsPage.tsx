@@ -20,6 +20,7 @@ import {
   computeEdgeTypeDistribution,
   rankAllByDegree,
   resolveNodeAgentTarget,
+  type MeaningFindingGapKind,
 } from "@/entities/knowledge-graph";
 import {
   useOntologyInsight,
@@ -957,17 +958,34 @@ export function OntologyInsightsPage() {
     insightsPanelRef.current?.focus();
   }, [tab]);
 
+  const findingReviewRows = useMemo(
+    () => Object.values(meaningGapResult.findingRows).flat(),
+    [meaningGapResult.findingRows],
+  );
   const activeReviewIds = useMemo(
     () =>
       new Set([
         ...doNextQueue.activeRowIds,
         ...dependencyCycles.activeCycleIds.map((id) => `cycle:${id}`),
+        ...findingReviewRows.map((row) => row.id),
       ]),
-    [doNextQueue.activeRowIds, dependencyCycles.activeCycleIds],
+    [doNextQueue.activeRowIds, dependencyCycles.activeCycleIds, findingReviewRows],
+  );
+  // A finding section cut to its display limit cannot say a row past the cut is gone.
+  const limitedReviewPrefixes = useMemo(
+    () =>
+      new Set(
+        (Object.keys(meaningGapResult.findingRows) as MeaningFindingGapKind[]).filter(
+          (kind) =>
+            meaningGapResult.counts.findings[kind] > meaningGapResult.findingRows[kind].length,
+        ),
+      ),
+    [meaningGapResult.findingRows, meaningGapResult.counts.findings],
   );
   const titleByReviewId = useMemo(() => {
     const titles = new Map<string, string>();
     for (const row of doNextQueue.rows) titles.set(row.id, row.title);
+    for (const row of findingReviewRows) titles.set(row.id, row.title);
     for (const cycle of dependencyCycles.cycles) {
       const firstNodeId = cycle.nodeIds[0];
       titles.set(
@@ -976,7 +994,7 @@ export function OntologyInsightsPage() {
       );
     }
     return titles;
-  }, [doNextQueue.rows, dependencyCycles.cycles, nodeById]);
+  }, [doNextQueue.rows, dependencyCycles.cycles, nodeById, findingReviewRows]);
   const reviewAuthoritative =
     dataSourceMode === "local"
       ? vault.status === "loaded"
@@ -989,6 +1007,7 @@ export function OntologyInsightsPage() {
         activeReviewIds,
         titleByReviewId,
         cycleInventoryLimited: dependencyCycles.limited,
+        limitedPrefixes: limitedReviewPrefixes,
       }),
     [
       reviewId,
@@ -996,6 +1015,7 @@ export function OntologyInsightsPage() {
       activeReviewIds,
       titleByReviewId,
       dependencyCycles.limited,
+      limitedReviewPrefixes,
     ],
   );
   const onReviewStart = useCallback(

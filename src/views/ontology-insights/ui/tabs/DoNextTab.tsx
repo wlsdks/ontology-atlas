@@ -503,23 +503,38 @@ export function DoNextTab({
          * wrong folder is a file that moves — so the row names the node and opens it.
          */
         if (!meaningGaps) return [];
-        return meaningGaps.findingRows[group].map((row) => (
-          <FixRow
-            key={row.id}
-            kind={group}
-            glyph={<OntologyMapKindGlyph kind={row.nodeKind} size={13} />}
-            title={row.title}
-            sentence={labels.whyMeaningFinding(group)}
-            actions={
-              <FixRowActions
-                labels={labels}
-                fixHref={builderHref(row.nodeId)}
-                viewHref={mapHref(row.nodeId)}
-                viewLabel={labels.viewOnMap}
-              />
-            }
-          />
-        ));
+        const sentence = labels.whyMeaningFinding(group);
+        return meaningGaps.findingRows[group].map((row) => {
+          /*
+           * The same claim-before-leaving contract as an orphan row: the visible chips
+           * carry the review id and write it to this board's address, and the row menu
+           * hands the node and the validator's own sentence to an agent. Without it the
+           * first group on a fresh vault stranded the reader on the way back (CI sample
+           * vault, 2026-09-23).
+           */
+          const candidate = { id: row.id, title: row.title };
+          return (
+            <FixRow
+              key={row.id}
+              kind={group}
+              active={isActive(row.id)}
+              rowRef={(element) => registerReviewRow(row.id, element)}
+              glyph={<OntologyMapKindGlyph kind={row.nodeKind} size={13} />}
+              title={row.title}
+              sentence={sentence}
+              actions={
+                <FixRowActions
+                  labels={labels}
+                  fixHref={builderHref(row.nodeId, row.id)}
+                  viewHref={mapHref(row.nodeId, row.id)}
+                  viewLabel={labels.viewOnMap}
+                  onLeaveRow={() => onReviewStart?.(candidate)}
+                  menu={rowMenu(candidate, row.nodeId, `${row.ownSlug}: ${sentence}`, row.id)}
+                />
+              }
+            />
+          );
+        });
       }
 
       case "duplicate":

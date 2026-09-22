@@ -45,6 +45,36 @@ describe("do-next review loop", () => {
     expect(state?.phase).toBe("unverified");
   });
 
+  it("소견 행의 id 는 리뷰 id 다 — 잘린 묶음의 부재는 cleared 가 아니라 unverified 다", () => {
+    expect(isDoNextReviewId("missing-boundary:capabilities/pay")).toBe(true);
+    expect(
+      resolveDoNextReviewState({
+        reviewId: "missing-boundary:capabilities/pay",
+        authoritative: true,
+        activeReviewIds: new Set(["missing-boundary:capabilities/pay"]),
+        cycleInventoryLimited: false,
+      })?.phase,
+    ).toBe("active");
+    expect(
+      resolveDoNextReviewState({
+        reviewId: "missing-uncertainty:capabilities/refund",
+        authoritative: true,
+        activeReviewIds: new Set(),
+        cycleInventoryLimited: false,
+        limitedPrefixes: new Set(["missing-uncertainty"]),
+      })?.phase,
+    ).toBe("unverified");
+    expect(
+      resolveDoNextReviewState({
+        reviewId: "missing-uncertainty:capabilities/refund",
+        authoritative: true,
+        activeReviewIds: new Set(),
+        cycleInventoryLimited: false,
+        limitedPrefixes: new Set(),
+      })?.phase,
+    ).toBe("cleared");
+  });
+
   it("잘못된 id는 URL에 있어도 소비하지 않는다", () => {
     expect(isDoNextReviewId("done:anything")).toBe(false);
     expect(

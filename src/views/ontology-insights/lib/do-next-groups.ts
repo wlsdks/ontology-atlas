@@ -100,6 +100,11 @@ export function groupOfReviewId(reviewId: string | null | undefined): DoNextGrou
     "orphan",
     "cycle",
     "duplicate",
+    // The four finding sections claim their rows the same way (2026-09-23).
+    "missing-boundary",
+    "missing-uncertainty",
+    "epistemic-exclusion",
+    "slug-outside-kind-folder",
   ];
   return known.find((key) => key === prefix) ?? null;
 }

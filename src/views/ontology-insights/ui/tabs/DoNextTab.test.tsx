@@ -544,9 +544,43 @@ describe("DoNextTab — 검사 소견 묶음", () => {
       expect(rows[0]).toHaveTextContent(title);
       expect(rows[0]).toHaveTextContent(`finding:${kind}`);
       // A way into the node, and no write form: these are read-then-write-prose rows.
-      expect(rows[0].querySelector('a[href*="/topology/"]'), kind).not.toBeNull();
+      const view = rows[0].querySelector('a[href*="/topology/"]');
+      expect(view, kind).not.toBeNull();
       expect(rows[0].querySelector("input"), kind).toBeNull();
+      // Leaving claims the row: the chip carries the review id like an orphan's does, and
+      // the row menu exists (the a11y audit opens it on whatever group comes first).
+      expect(view?.getAttribute("href"), kind).toContain(`review=${kind}:`);
+      expect(rows[0].querySelector('[data-testid="do-next-row-menu"]'), kind).not.toBeNull();
     }
+  });
+
+  /**
+   * The finding rows leave through the same chips as an orphan's, so coming back has to
+   * reopen their group and mark the row: measured on the CI sample vault (2026-09-23),
+   * the first group was a finding section and Back returned to a closed accordion.
+   */
+  it("소견 행의 review 로 돌아오면 그 묶음이 스스로 열리고 그 행이 현재 단계다", () => {
+    renderTab({
+      totalCount: 4,
+      groupCounts: {
+        ...NO_COUNTS,
+        "missing-boundary": 1,
+        "missing-uncertainty": 1,
+        "epistemic-exclusion": 1,
+        "slug-outside-kind-folder": 1,
+      },
+      queue: emptyQueue,
+      meaningGaps,
+      reviewState: { phase: "active", id: "missing-uncertainty:capabilities/refund", title: "Refund" },
+    });
+    const group = screen
+      .getAllByTestId("do-next-group")
+      .find((el) => el.getAttribute("data-group-kind") === "missing-uncertainty");
+    expect(group).toHaveAttribute("data-group-open", "true");
+    const active = screen
+      .getAllByTestId("do-next-item")
+      .find((row) => row.getAttribute("aria-current") === "step");
+    expect(active).toHaveTextContent("Refund");
   });
 
   it("소견이 없으면 그 자리는 그려지지 않는다 — 0을 말하는 빈 묶음이 생기지 않는다", () => {
