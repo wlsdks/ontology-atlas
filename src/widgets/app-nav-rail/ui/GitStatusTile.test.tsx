@@ -133,8 +133,13 @@ describe("GitStatusTile — 데스크톱(Tauri)", () => {
 
     renderTile(<GitStatusTile onActivate={() => {}} vaultPath="/repo/vault" sessionDirty />);
     await waitFor(() => expect(tauriApiMock.invoke).toHaveBeenCalledTimes(1));
-    // A git_status result (clean) wins over the sessionDirty fallback.
-    expect(screen.queryByTestId("app-nav-rail-git-dot")).not.toBeInTheDocument();
+    // A git_status result (clean) wins over the sessionDirty fallback. The call being made
+    // is not the result being rendered: the dot drawn for `sessionDirty` stays until the
+    // resolved status lands, so this waits for the absence rather than asserting it once
+    // (CI shard 2/3 caught the dot still there on 2026-09-23).
+    await waitFor(() =>
+      expect(screen.queryByTestId("app-nav-rail-git-dot")).not.toBeInTheDocument(),
+    );
   });
 });
 
