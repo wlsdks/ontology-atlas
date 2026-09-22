@@ -8,5 +8,6 @@
 .shelf { position: absolute; bottom: 0.75rem; right: 0; display: flex; gap: 0.25rem; align-items: end; }
 .workPose { position: relative; display: block; width: 64px; height: 64px; transform: scale(0.5); flex: none; }
 .workPose:has([data-testid='agent-mascot-presence']) > .idle { visibility: hidden; }
-.memoryAdded { animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both; }
+.memoryAdded { animation: memoryEnter var(--motion-fast) var(--motion-ease) both; }
+@keyframes memoryEnter { from { opacity: 0; } to { opacity: 1; } }
 @media (max-width: 480px) { .homeRow { gap: 0.5rem; } }

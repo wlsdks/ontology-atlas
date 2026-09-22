@@ -189,3 +189,30 @@ test('rotation keeps a draft and a failed write never pretends to save it',async
   await expect(journal.getByRole('textbox')).toHaveValue('This question is still open.');
   await expect(journal.getByTestId('companion-memories')).toHaveCount(0);
 });
+
+test('a newly saved memory has a real opacity transition',async({page})=>{
+  await seedEmptyDesktop(page);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.goto('/en/?shell=desktop&guides=off');
+  await page.getByTestId('companion-home').click();
+  const journal=page.getByTestId('companion-journal');
+  await journal.getByRole('textbox').fill('A visible new memory.');
+  await page.evaluate(()=>{
+    (window as unknown as {memoryEntrance:Promise<{active:boolean;opacity:number}>}).memoryEntrance=new Promise(resolve=>{
+      const observer=new MutationObserver(()=>{
+        const section=document.querySelector('[data-testid="companion-memories"]')?.parentElement;
+        if(!section)return;
+        observer.disconnect();
+        const animation=section.getAnimations()[0];
+        if(animation){animation.pause();animation.currentTime=60;}
+        resolve({active:!!animation,opacity:Number(getComputedStyle(section).opacity)});
+      });
+      observer.observe(document.body,{childList:true,subtree:true});
+    });
+  });
+  await journal.getByRole('button',{name:'Keep memory',exact:true}).click();
+  const entry=await page.evaluate(()=>(window as unknown as {memoryEntrance:Promise<{active:boolean;opacity:number}>}).memoryEntrance);
+  expect(entry.active,'the new memory must animate, not reference a missing keyframe').toBe(true);
+  expect(entry.opacity).toBeGreaterThan(0);
+  expect(entry.opacity).toBeLessThan(1);
+});
