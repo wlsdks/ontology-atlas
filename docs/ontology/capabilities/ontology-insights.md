@@ -18,10 +18,14 @@ A maintenance board that asks a fixed set of measured questions about the graph'
 ## Includes
 - Duplicate pairs, dependency cycles, unmatched nodes, meaning gaps, impact ranking, and a flow view of recent change.
 - A do-next grouping that turns findings into concrete repairs.
+- The same five prose judgements the validator makes, computed once while the folder's manifest is built and carried on each row as codes, so the queue judges what a body states rather than whether an excerpt exists.
 
 ## Excludes
 - Accepting a meaning on the person's behalf; a clean board is not evidence the meaning is right.
 - The per-file well-formedness check, which the meaning layer's validation owns.
+- Answering anything that needs a repository root; on this board a folder is all there is.
 
 ## Uncertainty
-- Read from the file names under `src/views/ontology-insights/lib/` and the repository's description of a six-tab Insights page. The page was not opened, and the overlap between its health questions and `capabilities/vault-validation` is a boundary the owner has not yet ruled on.
+- Read today: the manifest builder runs the five judgements once per document, at the one point that already holds the whole body, and stores only each finding's code on the row (`src/entities/docs-vault/lib/build-local-manifest.ts:489-518`, importing the browser copy at `:9`). The comment there says the slug it passes is the file's vault-relative path, which is exactly what `slug-outside-kind-folder` asks. What the queue does with those codes afterwards was not traced.
+- Of the validator's findings, only the five a browser can answer reach this board; the two needing a repository root are absent by design (`src/shared/lib/meaning-findings.ts:1-18`). Whether the board and the validator stay in step rests on the parity test named there, which was read about but not run.
+- The page itself was read from the file names under `src/views/ontology-insights/lib/` and the repository's description of a six-tab Insights page. It was not opened, and the overlap between its health questions and `capabilities/vault-validation` is a boundary the owner has not yet ruled on.

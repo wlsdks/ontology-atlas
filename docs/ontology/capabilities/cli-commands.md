@@ -17,6 +17,7 @@ Carries the same authority over the vault from a terminal, so scaffolding a vaul
 
 ## Includes
 - Scaffolding a new vault, importing and exporting, graph queries, writes, validation, and the connection smoke check.
+- A growth command that prints the plan the agent surface returns, counting the next reads recorded unknowns ask for beside the writes waiting.
 - The same findings and codes the MCP surface reports, by the same names.
 
 ## Excludes
@@ -25,3 +26,4 @@ Carries the same authority over the vault from a terminal, so scaffolding a vaul
 
 ## Uncertainty
 - Read from the file list under `cli/src/commands/` and the command table in `docs/FEATURES.md`; the command count stated there was not verified against the code, and no command was run in this scan.
+- The growth command was read at its header and its next-reads handling (`cli/src/commands/growth.mjs:1-14`, `:25`, `:82`, `:96-118`), which show it refusing to print "no growth candidates" while reads are waiting. Its shared response contract in `cli/src/lib/query-result-contract.mjs` was seen referenced but not opened.
