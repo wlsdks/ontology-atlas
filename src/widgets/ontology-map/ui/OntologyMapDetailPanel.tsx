@@ -1353,6 +1353,10 @@ export function OntologyMapDetailPanel({
     <Surface
       open={open}
       motion="overlay"
+      // A dense target shares its first paint with the camera/layout work. The
+      // settle ramp keeps the reading surface's fade legible in that frame;
+      // closing still uses Surface's faster exit and reduced-motion equivalent.
+      style={open ? { animationDuration: 'var(--motion-settle)' } : undefined}
       onExited={onExited}
       className={[
         "w-[var(--map-panel-width)]",
