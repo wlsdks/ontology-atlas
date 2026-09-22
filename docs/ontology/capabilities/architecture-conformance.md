@@ -10,7 +10,7 @@ elements: [elements/architecture-record-receipt]
 path: mcp/src/architecture-profile.mjs
 created_by: "agent:claude-code"
 dependencies: [capabilities/import-dependency-inference]
-relation_notes: { capabilities/import-dependency-inference: "You asked for a first ontology showing what depends on what: the architecture check reads the same import scan, so changing that scan changes its verdicts.", elements/architecture-record-receipt: You asked for element nodes named by role under the capability that uses them; keeping one dated receipt per measurement is this role. }
+relation_notes: { elements/architecture-record-receipt: You asked for element nodes named by role under the capability that uses them; keeping one dated receipt per measurement is this role., capabilities/import-dependency-inference: "You asked me to name where the witness is: mcp/src/tools/repo-analysis.mjs:138 calls inferImports(target) and :145 passes that exact result into buildArchitectureBrief, so the import scan's output is what every conformance verdict is measured against." }
 ---
 
 Sets the architecture rules a person reviewed and wrote down beside the imports actually observed in the code, one declared role per row, and reports each rule as met, violated, or unknown.

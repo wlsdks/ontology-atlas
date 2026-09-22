@@ -10,7 +10,7 @@ elements: [elements/evidence-verdict-rule, elements/git-evidence-dating]
 path: mcp/src/detect-drift.mjs
 created_by: "agent:claude-code"
 dependencies: [elements/git-evidence-dating]
-relation_notes: { elements/evidence-verdict-rule: You asked for element nodes named by role under the capability that uses them; stating the verdict once for both surfaces is this role., elements/git-evidence-dating: "You asked me to turn imports I actually witnessed into dependencies: tools/validate-vault.mjs imports both detect-drift.mjs and evidence-drift.mjs, which is where the two halves of drift meet.", capabilities/project-source-binding: "You asked for dependencies I actually witnessed: detect-drift.mjs imports nothing and takes its root and file check as parameters, so this is a real relationship but not a dependency. Downgrading it also breaks the cycle the tools flagged." }
+relation_notes: { elements/evidence-verdict-rule: You asked for element nodes named by role under the capability that uses them; stating the verdict once for both surfaces is this role., capabilities/project-source-binding: "You asked for dependencies I actually witnessed: detect-drift.mjs imports nothing and takes its root and file check as parameters, so this is a real relationship but not a dependency. Downgrading it also breaks the cycle the tools flagged.", elements/git-evidence-dating: "You asked me to name where the witness is: mcp/src/tools/validate-vault.mjs:10 imports detect-drift.mjs and :27 imports evidenceConceptsFromDocs and resolveEvidenceStates from evidence-drift.mjs, so one report carries both halves of drift." }
 relates: [capabilities/project-source-binding]
 ---
 

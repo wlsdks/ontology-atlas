@@ -7,7 +7,7 @@ display_en: Vault folder session
 display_ko: 볼트 폴더 세션
 domain: domains/human-workbench
 elements: [elements/recent-vault-reachability]
-path: src/features/vault-switch/index.ts
+path: src/features/vault-switch/ui/RecentVaultList.tsx
 created_by: "agent:claude-code"
 relation_notes: { elements/recent-vault-reachability: "You asked me to turn imports I actually witnessed into dependencies: the vault-switch barrel records that this hook is used by RecentVaultList, the list this capability shows." }
 dependencies: [elements/recent-vault-reachability]
