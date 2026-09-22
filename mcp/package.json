@@ -121,6 +121,8 @@
     "src/project-source-inspection.mjs",
     "src/project-source-receipt.mjs",
     "src/source-evidence.mjs",
+    "src/source-outline.mjs",
+    "src/uncertainty-reads.mjs",
     "src/source-range-citation.mjs",
     "src/project-source-vocabulary.mjs",
     "src/project-source-mint.mjs",

@@ -558,10 +558,6 @@ function witnessNamesFor(path) {
   return folder && folder !== '.' ? [base, folder] : [base];
 }
 
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 /**
  * The module specifiers a file brings in, in every language this vault
  * describes: JavaScript/TypeScript `import … from '…'`, `import '…'`,

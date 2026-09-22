@@ -95,7 +95,6 @@ function writeSmallVault() {
 
 /** The command colours its output; the assertions are about the words. */
 function plain(text) {
-  // eslint-disable-next-line no-control-regex
   return String(text).replace(/\u001B\[[0-9;]*m/g, '');
 }
 
