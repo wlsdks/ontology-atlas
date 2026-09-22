@@ -21,7 +21,11 @@ import {
   suppressParentedExpectedFieldIssues,
   validateVaultDocument,
 } from '../validate.mjs';
-import { folderOnlyEvidenceFinding } from '../meaning-findings.mjs';
+import {
+  dependencyWitnessFinding,
+  folderOnlyEvidenceFinding,
+  starterExampleFindings,
+} from '../meaning-findings.mjs';
 import { loadVaultDocs } from '../vault.mjs';
 import { collectPathLastChanges } from '../git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../evidence-drift.mjs';
@@ -139,6 +143,16 @@ function validateVaultTool({ repoRoot } = {}) {
     docIssues.set(slug, issues);
   }
   for (const { slug, issue } of findFolderOnlyEvidenceIssues(docs, repoRoot)) {
+    const issues = docIssues.get(slug) || [];
+    issues.push(issue);
+    docIssues.set(slug, issues);
+  }
+  for (const { slug, issue } of findDependencyWitnessIssues(docs, repoRoot)) {
+    const issues = docIssues.get(slug) || [];
+    issues.push(issue);
+    docIssues.set(slug, issues);
+  }
+  for (const { slug, issue } of findStarterExampleIssues(docs)) {
     const issues = docIssues.get(slug) || [];
     issues.push(issue);
     docIssues.set(slug, issues);
@@ -312,6 +326,91 @@ function findFolderOnlyEvidenceIssues(docs, repoRoot) {
     });
   }
   return issues;
+}
+
+/**
+ * Which implementation file does each node cite? Full slug first, then the tail
+ * every author actually types — and only when that tail is unambiguous, because
+ * a guess here becomes an accusation about the wrong file.
+ */
+function evidencePathIndex(docs) {
+  const bySlug = new Map();
+  const tailCounts = new Map();
+  for (const doc of docs) {
+    const path = typeof doc?.frontmatter?.path === 'string' ? doc.frontmatter.path.trim() : '';
+    if (!path) continue;
+    bySlug.set(doc.slug, path);
+    const tail = doc.slug.split('/').pop();
+    if (tail && tail !== doc.slug) tailCounts.set(tail, (tailCounts.get(tail) ?? 0) + 1);
+  }
+  const byTail = new Map();
+  for (const [slug, path] of bySlug) {
+    const tail = slug.split('/').pop();
+    if (tail && tail !== slug && tailCounts.get(tail) === 1) byTail.set(tail, path);
+  }
+  return (ref) => bySlug.get(ref) ?? byTail.get(ref) ?? null;
+}
+
+/**
+ * Declared dependencies the citing file never mentions.
+ *
+ * The same judgement the write door makes, read at a different moment: the door
+ * asks about the edge somebody just added, this asks about every edge in the
+ * vault. It is here rather than in `validateVaultDocument` for the reason the
+ * folder-only pass above states — it opens a file on disk, and a path only means
+ * something against a repository root — with one more reason of its own: it has
+ * to know what the node at the *other* end of the edge cites, which no single
+ * document reveals.
+ *
+ * Silent when the root is not grounded. `pathDrift` already says which of "found
+ * nothing" and "did not look" happened.
+ */
+function findDependencyWitnessIssues(docs, repoRoot) {
+  const grounded = Boolean(repoRoot) || REPO_ROOT_IS_GROUNDED;
+  if (!grounded) return [];
+  const root = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : REPO_ROOT;
+  const resolveTargetPath = evidencePathIndex(docs);
+  const issues = [];
+  for (const doc of docs) {
+    const kind = typeof doc?.frontmatter?.kind === 'string' ? doc.frontmatter.kind.trim() : '';
+    if (!kind) continue;
+    for (const finding of dependencyWitnessFinding({
+      slug: doc.slug,
+      frontmatter: doc.frontmatter,
+      repoRoot: root,
+      resolveTargetPath,
+    })) {
+      issues.push({
+        slug: doc.slug,
+        issue: { code: finding.code, severity: 'warning', message: finding.message },
+      });
+    }
+  }
+  return issues;
+}
+
+/**
+ * Starter examples the vault has outgrown.
+ *
+ * Unlike the two passes above this one needs **no repository root and no
+ * filesystem** — a slug, a kind and a title decide it — so it never goes silent,
+ * and it runs on every call. It is still a whole-vault pass rather than a
+ * per-document check for one reason: the question is not "is this a starter" but
+ * "is this starter still the only node of its kind", and one document cannot see
+ * the other.
+ */
+function findStarterExampleIssues(docs) {
+  return starterExampleFindings(
+    docs.map((doc) => ({
+      slug: doc.slug,
+      kind: doc?.frontmatter?.kind,
+      title: doc?.frontmatter?.title,
+      body: doc?.body,
+    })),
+  ).map((finding) => ({
+    slug: finding.slug,
+    issue: { code: finding.code, severity: 'warning', message: finding.message },
+  }));
 }
 
 const EVIDENCE_ROW_LIMIT = 50;

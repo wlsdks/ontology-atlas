@@ -18,11 +18,16 @@ import { defaultBody } from './schema.mjs';
 import {
   boundaryFindings,
   definitionFinding,
+  dependencyWitnessFinding,
   epistemicExclusionFinding,
   folderOnlyEvidenceFinding,
+  isStarterExampleNode,
+  starterExampleFindings,
   uncertaintyFinding,
   meaningFindings,
 } from './meaning-findings.mjs';
+import { compileOntology } from './ontology-compiler.mjs';
+import { queryCompiledOntology } from './ontology-engine.mjs';
 
 const WRITTEN_CAPABILITY = [
   '# Vault Folder Access',
@@ -516,5 +521,582 @@ describe('meaningFindings — only what this write touched', () => {
       }),
       [],
     );
+  });
+});
+
+/**
+ * A declared dependency the citing file never mentions.
+ *
+ * Measured 2026-09-22 on this repository's own vault: 70 of 85 file-to-file
+ * `depends_on` edges are witnessed by the citing file naming the cited one, and
+ * 15 are not. The silent half of this block is the load-bearing half twice over.
+ * Once for the usual reason — a check that accuses a witnessed edge is a check
+ * somebody turns off. And once for a reason peculiar to this code: the absence
+ * of an import is not proof of independence, so every input this cannot be sure
+ * about has to produce silence rather than a guess.
+ */
+describe('dependency-unwitnessed — the file cited does not name the file depended on', () => {
+  /**
+   * Two source files, and the deliberate asymmetry between them: `consumer.ts`
+   * imports the helper by name, `stranger.ts` does not mention it at all.
+   */
+  function repoWithSources() {
+    const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-dependency-witness-'));
+    mkdirSync(join(root, 'src', 'lib'), { recursive: true });
+    mkdirSync(join(root, 'src', 'empty'), { recursive: true });
+    writeFileSync(
+      join(root, 'src', 'lib', 'helper.ts'),
+      'export function helper() { return 1; }\n',
+    );
+    writeFileSync(
+      join(root, 'src', 'consumer.ts'),
+      "import { helper } from './lib/helper';\n\nexport const used = helper();\n",
+    );
+    writeFileSync(join(root, 'src', 'lib', '.toolrc'), '{ "on": true }\n');
+    /*
+     * The one file that proves the path branch is load-bearing. For an ordinary
+     * name the two spellings collapse: `src/lib/helper.ts` *contains*
+     * `helper` delimited by `/` and `.`, so the whole-word rule alone already
+     * sees it. A dotfile has no basename left once the extension rule runs, and
+     * a config file is exactly the kind of dependency the message says an import
+     * would never witness.
+     */
+    writeFileSync(
+      join(root, 'src', 'quoted.ts'),
+      "const config = await load('src/lib/.toolrc');\nexport default config;\n",
+    );
+    writeFileSync(
+      join(root, 'src', 'stranger.ts'),
+      'export const nothing = "this file mentions no other file at all";\n',
+    );
+    writeFileSync(
+      join(root, 'src', 'bystander.ts'),
+      'export const unrelated = "a real file that knows nothing about the target";\n',
+    );
+    // The barrel shape: a third file that witnesses the edge neither end shows.
+    writeFileSync(
+      join(root, 'src', 'lib', 'barrel.ts'),
+      "export { helper } from './helper';\n",
+    );
+    return root;
+  }
+
+  const TARGETS = { 'elements/helper': 'src/lib/helper.ts' };
+  const resolveTargetPath = (ref) => TARGETS[ref] ?? null;
+
+  it('fires on an edge this write added, naming both files and both repairs', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const findings = dependencyWitnessFinding({
+      slug: 'capabilities/stranger',
+      frontmatter: { path: 'src/stranger.ts', dependencies: ['elements/helper'] },
+      previousFrontmatter: { path: 'src/stranger.ts', dependencies: [] },
+      repoRoot: root,
+      resolveTargetPath,
+    });
+    assert.equal(findings.length, 1);
+    const [finding] = findings;
+    assert.equal(finding.code, 'dependency-unwitnessed');
+    // The target rides in `key`, so the gate's own notice key is per edge.
+    assert.equal(finding.key, 'elements/helper');
+    assert.deepEqual(finding.refs, ['elements/helper']);
+    assert.match(finding.message, /src\/stranger\.ts/);
+    assert.match(finding.message, /src\/lib\/helper\.ts/);
+    // An import is evidence; its absence is not proof of independence, so the
+    // sentence must offer the witness before it offers the deletion.
+    assert.match(finding.message, /not.*proof of independence/);
+    assert.match(finding.message, /replace_relation/);
+    assert.match(finding.message, /remove_relation/);
+  });
+
+  /**
+   * The witness the message asks for, read where the message says to put it.
+   *
+   * Corrected 2026-09-22. The first version told the writer to name the file and
+   * the line in the `why`, then read only the source node's own `path:` — so a
+   * repair turn that gave twelve edges an exact witness cleared none of them.
+   * These four cases pin the rule that replaced it: the `why`'s file paths are
+   * candidates, and they are candidates on the same terms as any other file.
+   */
+  it('a `why` naming a file that does import the target clears the finding', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    assert.deepEqual(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: {
+          path: 'src/stranger.ts',
+          dependencies: ['elements/helper'],
+          relation_notes: {
+            'elements/helper': 'The screen reaches it through `src/consumer.ts`:1, which imports it.',
+          },
+        },
+        repoRoot: root,
+        resolveTargetPath,
+      }),
+      [],
+    );
+  });
+
+  it('a `why` naming a real file that never mentions the target does not clear it', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    assert.equal(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: {
+          path: 'src/stranger.ts',
+          dependencies: ['elements/helper'],
+          relation_notes: { 'elements/helper': 'See `src/bystander.ts` for the wiring.' },
+        },
+        repoRoot: root,
+        resolveTargetPath,
+      }).length,
+      1,
+      'naming a file is not the same as that file carrying the witness',
+    );
+  });
+
+  /*
+   * Measured on this repository's own vault: five of twelve repaired edges named
+   * a real witness file by a path relative to `src/` or to the module's own
+   * folder. Nothing resolves that from the repository root, and guessing which
+   * file was meant is how an advisory starts accusing the wrong one — so the
+   * finding stands and the message says "repository-relative" out loud.
+   */
+  it('a `why` naming the witness relative to the wrong root does not clear it', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    assert.equal(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: {
+          path: 'src/stranger.ts',
+          dependencies: ['elements/helper'],
+          // A path that resolves nowhere, from the root or from any ancestor
+          // of the citing file, is dropped and the finding stands.
+          relation_notes: { 'elements/helper': 're-exported from `nowhere/barrel.ts`:1.' },
+        },
+        repoRoot: root,
+        resolveTargetPath,
+      }).length,
+      1,
+    );
+    // The barrel named the way an editor shows it from src/ (no root segment)
+    // resolves from the citing file's ancestor and clears the finding: the
+    // first repair turn wrote every witness that way and cleared nothing.
+    assert.deepEqual(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: {
+          path: 'src/stranger.ts',
+          dependencies: ['elements/helper'],
+          relation_notes: { 'elements/helper': 're-exported from `lib/barrel.ts`:1.' },
+        },
+        repoRoot: root,
+        resolveTargetPath,
+      }),
+      [],
+    );
+    // The same sentence with the root on it clears it too.
+    assert.deepEqual(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: {
+          path: 'src/stranger.ts',
+          dependencies: ['elements/helper'],
+          relation_notes: { 'elements/helper': 're-exported from `src/lib/barrel.ts`:1.' },
+        },
+        repoRoot: root,
+        resolveTargetPath,
+      }),
+      [],
+    );
+  });
+
+  /*
+   * A `why` is an English sentence, and a word in it is not a file to open. The
+   * fixture makes that bite: `notes` really is a readable file at the fixture
+   * root, and it really does name the target — so a rule that treated every
+   * whitespace token as a path would clear this edge on the strength of a word
+   * in a sentence. A separator AND an extension are both required.
+   */
+  it('a `why` that is prose only does not clear it, even when a word names a real file', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    writeFileSync(join(root, 'notes'), 'src/lib/helper.ts is imported all over this repository.\n');
+    assert.equal(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: {
+          path: 'src/stranger.ts',
+          dependencies: ['elements/helper'],
+          relation_notes: { 'elements/helper': 'The stranger needs the helper at runtime, see notes.' },
+        },
+        repoRoot: root,
+        resolveTargetPath,
+      }).length,
+      1,
+    );
+  });
+
+  /*
+   * A `why` is a sentence somebody wrote, so its paths are untrusted input on
+   * exactly the same terms as `path:` — the clamp is what stops a rationale
+   * from making this check open an arbitrary file on the machine.
+   */
+  it('a `why` naming a path outside the repository is ignored', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const outside = join(root, '..', `outside-${randomUUID()}`);
+    mkdirSync(outside, { recursive: true });
+    // The escaping file WOULD witness the edge if it were ever read.
+    writeFileSync(join(outside, 'witness.ts'), "import './lib/helper';\n");
+    t.after(() => rmSync(outside, { recursive: true, force: true }));
+    const escape = `../${outside.split(sep).pop()}/witness.ts`;
+    assert.equal(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: {
+          path: 'src/stranger.ts',
+          dependencies: ['elements/helper'],
+          relation_notes: { 'elements/helper': `Proved by \`${escape}\`.` },
+        },
+        repoRoot: root,
+        resolveTargetPath,
+      }).length,
+      1,
+    );
+  });
+
+  it('stays silent on an edge that was already on disk before this write', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    assert.deepEqual(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: { path: 'src/stranger.ts', dependencies: ['elements/helper'] },
+        previousFrontmatter: { path: 'src/stranger.ts', dependencies: ['elements/helper'] },
+        repoRoot: root,
+        resolveTargetPath,
+      }),
+      [],
+    );
+  });
+
+  it('stays silent when the citing file names the target by its basename', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    assert.deepEqual(
+      dependencyWitnessFinding({
+        slug: 'capabilities/consumer',
+        frontmatter: { path: 'src/consumer.ts', dependencies: ['elements/helper'] },
+        repoRoot: root,
+        resolveTargetPath,
+      }),
+      [],
+    );
+  });
+
+  it('stays silent when the citing file names the target path in full', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    assert.deepEqual(
+      dependencyWitnessFinding({
+        slug: 'capabilities/quoted',
+        frontmatter: { path: 'src/quoted.ts', dependencies: ['elements/toolrc'] },
+        repoRoot: root,
+        resolveTargetPath: (ref) => (ref === 'elements/toolrc' ? 'src/lib/.toolrc' : null),
+      }),
+      [],
+    );
+    // Positive control on the same pair: a file that does not name the config
+    // still fires, so the silence above is the path spelling and not the
+    // dotfile being exempt.
+    assert.equal(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: { path: 'src/stranger.ts', dependencies: ['elements/toolrc'] },
+        repoRoot: root,
+        resolveTargetPath: (ref) => (ref === 'elements/toolrc' ? 'src/lib/.toolrc' : null),
+      }).length,
+      1,
+    );
+  });
+
+  /*
+   * A folder has no text to read, so asking whether it mentions anything has no
+   * answer. `folder-only-evidence` already tells this node what to do about the
+   * same `path:`, and saying it twice under two codes trains a reader to skim.
+   */
+  it('stays silent when the citing node cites a directory rather than a file', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    assert.deepEqual(
+      dependencyWitnessFinding({
+        slug: 'capabilities/folder',
+        frontmatter: { path: 'src/empty', dependencies: ['elements/helper'] },
+        repoRoot: root,
+        resolveTargetPath,
+      }),
+      [],
+    );
+  });
+
+  /*
+   * `path:` is a value an agent wrote, so both ends are untrusted input. An
+   * escaping target must not cause a file outside the repository to be opened,
+   * named, or judged.
+   */
+  it('stays silent when the target path climbs out of the repository', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const outside = join(root, '..', `outside-${randomUUID()}`);
+    mkdirSync(outside, { recursive: true });
+    writeFileSync(join(outside, 'private-notes.txt'), 'not for a tool response\n');
+    t.after(() => rmSync(outside, { recursive: true, force: true }));
+    const escape = `../${outside.split(sep).pop()}/private-notes.txt`;
+    assert.deepEqual(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: { path: 'src/stranger.ts', dependencies: ['elements/outside'] },
+        repoRoot: root,
+        resolveTargetPath: (ref) => (ref === 'elements/outside' ? escape : null),
+      }),
+      [],
+    );
+    // Positive control, so the empty array above is the clamp and not a typo.
+    assert.equal(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: { path: 'src/stranger.ts', dependencies: ['elements/helper'] },
+        repoRoot: root,
+        resolveTargetPath,
+      }).length,
+      1,
+    );
+  });
+
+  it('stays silent with no repository root — an ungrounded root measures the wrong tree', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    assert.deepEqual(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: { path: 'src/stranger.ts', dependencies: ['elements/helper'] },
+        repoRoot: null,
+        resolveTargetPath,
+      }),
+      [],
+    );
+  });
+
+  it('stays silent when the target node cites no implementation file of its own', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    assert.deepEqual(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: { path: 'src/stranger.ts', dependencies: ['domains/meaning'] },
+        repoRoot: root,
+        resolveTargetPath,
+      }),
+      [],
+    );
+  });
+
+  /*
+   * `depends_on:` is a legal authoring alias for `dependencies:`. Reading only
+   * the canonical key would judge an `add_relation` edge and say nothing about a
+   * hand-written one, which is the same vault answered two ways.
+   */
+  it('reads the `depends_on:` alias as the same edge', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    assert.equal(
+      dependencyWitnessFinding({
+        slug: 'capabilities/stranger',
+        frontmatter: { path: 'src/stranger.ts', depends_on: ['elements/helper'] },
+        repoRoot: root,
+        resolveTargetPath,
+      }).length,
+      1,
+    );
+  });
+
+  /*
+   * Omitting `previousFrontmatter` is how the whole-vault passes ask the same
+   * question at a different moment: the write door judges what a write added,
+   * a validator somebody chose to run judges everything.
+   */
+  it('judges every declared edge when no previous frontmatter is supplied', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const findings = dependencyWitnessFinding({
+      slug: 'capabilities/stranger',
+      frontmatter: {
+        path: 'src/stranger.ts',
+        dependencies: ['elements/helper', 'elements/second'],
+      },
+      repoRoot: root,
+      resolveTargetPath: (ref) =>
+        ref === 'elements/second' ? 'src/lib/helper.ts' : resolveTargetPath(ref),
+    });
+    assert.deepEqual(findings.map((row) => row.key).sort(), ['elements/helper', 'elements/second']);
+  });
+});
+
+/**
+ * The `init` starter examples, once the vault has outgrown them.
+ *
+ * Measured 2026-09-22 on two unfamiliar repositories: both builders wrote a real
+ * map through the first-run door and left all three scaffold nodes standing,
+ * wired only to each other, with "Example domain" on the map beside the real
+ * domains. The silent half here is the half that keeps the check honest — a
+ * brand-new vault is *nothing but* starters, and a product that scolds a person
+ * for the file it just wrote them is worse than one that says nothing.
+ */
+describe('starter-example-node — the scaffold left standing', () => {
+  const STARTERS = [
+    { slug: 'domains/example-domain', kind: 'domain', title: 'Example domain' },
+    { slug: 'capabilities/example-capability', kind: 'capability', title: 'Example capability' },
+    { slug: 'elements/example-element', kind: 'element', title: 'Example element' },
+  ];
+
+  it('fires on the starter once a real node of the same kind exists', () => {
+    const findings = starterExampleFindings([
+      ...STARTERS,
+      { slug: 'domains/billing', kind: 'domain', title: 'Billing' },
+    ]);
+    // Only the domain: no real capability or element has arrived yet, so those
+    // two starters are still the instructions.
+    assert.deepEqual(findings.map((row) => row.slug), ['domains/example-domain']);
+    const [finding] = findings;
+    assert.equal(finding.code, 'starter-example-node');
+    assert.deepEqual(finding.refs, ['domains/billing']);
+    assert.match(finding.message, /domains\/billing/);
+    assert.match(finding.message, /delete_concept/);
+    assert.match(finding.message, /rename_concept/);
+    // The repair names the kind's own folder, not the kind with an `s` glued on.
+    assert.match(finding.message, /newSlug:"domains\/<real-name>"/);
+  });
+
+  it('the rename hint uses the kind folder, which is not the kind plus an s', () => {
+    const [finding] = starterExampleFindings([
+      { slug: 'capabilities/example-capability', kind: 'capability', title: 'Example capability' },
+      { slug: 'capabilities/charge-card', kind: 'capability', title: 'Charge a card' },
+    ]);
+    assert.match(finding.message, /newSlug:"capabilities\/<real-name>"/);
+    assert.equal(/capabilitys/.test(finding.message), false);
+  });
+
+  /*
+   * A vault straight out of `init`. Every node in it is a starter, which is the
+   * product's own doing — nothing here is wrong yet, and `pnpm --dir cli test`
+   * plus the init integration cases stay clean because of this branch.
+   */
+  it('stays silent in a vault that holds only the three starters', () => {
+    assert.deepEqual(starterExampleFindings(STARTERS), []);
+  });
+
+  it('names all three once the vault holds a real node of each kind', () => {
+    const findings = starterExampleFindings([
+      ...STARTERS,
+      { slug: 'domains/billing', kind: 'domain', title: 'Billing' },
+      { slug: 'capabilities/charge-card', kind: 'capability', title: 'Charge a card' },
+      { slug: 'elements/stripe-client', kind: 'element', title: 'Stripe client' },
+    ]);
+    assert.deepEqual(findings.map((row) => row.slug), [
+      'capabilities/example-capability',
+      'domains/example-domain',
+      'elements/example-element',
+    ]);
+  });
+
+  it('stays silent once the example was renamed into a real address', () => {
+    assert.deepEqual(
+      starterExampleFindings([
+        { slug: 'domains/billing', kind: 'domain', title: 'Billing' },
+        { slug: 'domains/identity', kind: 'domain', title: 'Identity' },
+      ]),
+      [],
+    );
+  });
+
+  /*
+   * The generalized shape: somebody copied the starter instead of renaming it.
+   * Both halves are required, and these cases pin which half does what. Neither
+   * half alone is allowed to accuse a real node, and the residual overlap — a
+   * real node about examples, named "Example …", addressed `example-…` — is
+   * accepted rather than papered over.
+   */
+  it('reads a copied starter, and needs both the address and the title to do it', () => {
+    assert.equal(
+      isStarterExampleNode({ slug: 'domains/example-thing', kind: 'domain', title: 'Example thing' }),
+      true,
+      'a copied scaffold keeps both halves',
+    );
+    assert.equal(
+      isStarterExampleNode({ slug: 'domains/rendering', kind: 'domain', title: 'Example Rendering' }),
+      false,
+      'a title alone is not an address',
+    );
+    assert.equal(
+      isStarterExampleNode({ slug: 'domains/example-rendering', kind: 'domain', title: 'Rendering' }),
+      false,
+      'an address alone is not a scaffold',
+    );
+    // The three template addresses are recognised without any title at all: the
+    // scaffold's own `title:` is what a builder most often edits first.
+    assert.equal(
+      isStarterExampleNode({ slug: 'elements/example-element', kind: 'element', title: 'Retry policy' }),
+      true,
+    );
+  });
+
+  /*
+   * A starter somebody rewrote the prose of is still a starter address on the
+   * map. Letting an edited body clear the check would reward exactly the
+   * half-finished state this exists to name — what changes is only whether the
+   * message says the body is untouched.
+   */
+  it('still fires when the body was rewritten, and says so only when it was not', () => {
+    const untouched = starterExampleFindings([
+      { ...STARTERS[0], body: '# Example domain\n\n- Nothing here has been checked against your code yet: this file is a starter, not an observation.\n\n## How to fill it in\n' },
+      { slug: 'domains/billing', kind: 'domain', title: 'Billing' },
+    ]);
+    const rewritten = starterExampleFindings([
+      { ...STARTERS[0], body: '# Example domain\n\nA real sentence somebody wrote about this area.\n' },
+      { slug: 'domains/billing', kind: 'domain', title: 'Billing' },
+    ]);
+    assert.equal(untouched.length, 1);
+    assert.equal(rewritten.length, 1);
+    assert.match(untouched[0].message, /still the starter's own explanation/);
+    assert.equal(/still the starter's own explanation/.test(rewritten[0].message), false);
+  });
+
+  /**
+   * The read path. This is the one meaning question that needs neither a body
+   * nor a repository root, so unlike its four neighbours it must answer on a
+   * plain `maintenance_plan` call over a compiled artifact with no `sourceDocs`
+   * at all — which is precisely the state the measured vaults were in.
+   */
+  it('queues as `retire_starter_example` on the read path with no bodies loaded', () => {
+    const uid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+    const docs = [
+      { slug: 'domains/example-domain', frontmatter: { uid: uid(1), kind: 'domain', title: 'Example domain' }, body: '', mtime: 1 },
+      { slug: 'domains/billing', frontmatter: { uid: uid(2), kind: 'domain', title: 'Billing' }, body: '', mtime: 1 },
+    ];
+    const plan = queryCompiledOntology(compileOntology(docs), {
+      operation: 'maintenance_plan',
+      limit: 50,
+    });
+    const rows = plan.actions.filter((action) => action.kind === 'retire_starter_example');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].node.slug, 'domains/example-domain');
+    assert.equal(rows[0].phase, 'review');
+    assert.equal(rows[0].severity, 'info');
+    // Never executable: the repair deletes somebody's file.
+    assert.equal(rows[0].proposedAction, undefined);
   });
 });

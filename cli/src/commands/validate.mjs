@@ -5,7 +5,9 @@ import { walkMd } from '../lib/walk-vault.mjs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
+  dependencyWitnessFinding,
   folderOnlyEvidenceFinding,
+  starterExampleFindings,
   validateVaultDocument,
   suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
@@ -137,6 +139,18 @@ export const KNOWN_CODES = [
     description: 'frontmatter `path:` names a directory, so this node\'s evidence can never be dated against the code.',
   },
   {
+    code: 'dependency-unwitnessed',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a declared dependency whose citing file never names the file the target cites, so nothing in the source witnesses the edge.',
+  },
+  {
+    code: 'starter-example-node',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a starter example the `init` scaffold wrote, still standing after real nodes of the same kind arrived.',
+  },
+  {
     code: 'duplicate-slug',
     severity: 'error',
     scope: 'vault',
@@ -226,8 +240,11 @@ export function runValidate(args) {
       .replace(/\\/g, '/')
       .replace(/\.md$/, '')
       .normalize('NFC');
-    const { frontmatter } = parseFrontmatter(raw);
-    entries.push({ file, slug, frontmatter });
+    // The body travels with the frontmatter so the whole-vault passes can say
+    // exactly what `validate_vault` says about the same node — one vault must
+    // not be described two ways by the two tools that read it.
+    const { frontmatter, body } = parseFrontmatter(raw);
+    entries.push({ file, slug, frontmatter, body });
     // The slug travels with the raw text: `slug-outside-kind-folder` is a fact
     // about where the file sits, which the bytes alone never state.
     const report = validateVaultDocument(raw, { slug });
@@ -277,6 +294,20 @@ export function runValidate(args) {
   }
 
   for (const { file, issue } of findFolderOnlyEvidenceIssues(entries)) {
+    const report = reportByFile.get(file);
+    if (!report) continue;
+    report.issues.push(issue);
+    report.ok = !report.issues.some((i) => i.severity === 'error');
+  }
+
+  for (const { file, issue } of findDependencyWitnessIssues(entries)) {
+    const report = reportByFile.get(file);
+    if (!report) continue;
+    report.issues.push(issue);
+    report.ok = !report.issues.some((i) => i.severity === 'error');
+  }
+
+  for (const { file, issue } of findStarterExampleIssues(entries)) {
     const report = reportByFile.get(file);
     if (!report) continue;
     report.issues.push(issue);
@@ -703,6 +734,95 @@ function findFolderOnlyEvidenceIssues(entries) {
     });
   }
   return issues;
+}
+
+/**
+ * Which implementation file does each node cite? Full slug, then the tail an
+ * author actually types — and only when that tail names exactly one node, since
+ * a guess here becomes an accusation about the wrong file.
+ */
+function evidencePathIndex(entries) {
+  const bySlug = new Map();
+  const tailCounts = new Map();
+  for (const entry of entries) {
+    const path = typeof entry.frontmatter?.path === 'string' ? entry.frontmatter.path.trim() : '';
+    if (!path) continue;
+    bySlug.set(entry.slug, path);
+    const tail = entry.slug.split('/').pop();
+    if (tail && tail !== entry.slug) tailCounts.set(tail, (tailCounts.get(tail) ?? 0) + 1);
+  }
+  const byTail = new Map();
+  for (const [slug, path] of bySlug) {
+    const tail = slug.split('/').pop();
+    if (tail && tail !== slug && tailCounts.get(tail) === 1) byTail.set(tail, path);
+  }
+  return (ref) => bySlug.get(ref) ?? byTail.get(ref) ?? null;
+}
+
+/**
+ * A declared dependency the citing file never mentions.
+ *
+ * **Why this one is not inside `validateVaultDocument` either.** It opens the
+ * source file the node cites, which needs a repository root — `OATLAS_REPO_ROOT`,
+ * the same variable the MCP server reads — and it needs the `path:` of the node
+ * at the far end of the edge, which no single document carries. With the
+ * variable unset it stays silent, and silence means "not looked at": that is why
+ * `--list-codes` marks it vault scope beside the folder-only one.
+ *
+ * Every declared edge is judged here, not only a new one. The write door limits
+ * itself to what a write just added because repeating an old accusation on every
+ * patch makes the channel furniture; a validator somebody chose to run is the
+ * opposite situation, and being asked about the whole vault is the point of it.
+ */
+function findDependencyWitnessIssues(entries) {
+  const repoRoot = typeof process.env.OATLAS_REPO_ROOT === 'string'
+    ? process.env.OATLAS_REPO_ROOT.trim()
+    : '';
+  if (!repoRoot) return [];
+  const resolveTargetPath = evidencePathIndex(entries);
+  const issues = [];
+  for (const entry of entries) {
+    const kind = typeof entry.frontmatter?.kind === 'string' ? entry.frontmatter.kind.trim() : '';
+    if (!kind) continue;
+    for (const finding of dependencyWitnessFinding({
+      slug: entry.slug,
+      frontmatter: entry.frontmatter,
+      repoRoot,
+      resolveTargetPath,
+    })) {
+      issues.push({
+        file: entry.file,
+        issue: { code: finding.code, severity: 'warning', message: finding.message },
+      });
+    }
+  }
+  return issues;
+}
+
+/**
+ * Starter examples the vault has outgrown.
+ *
+ * The one whole-vault meaning pass with no environment condition attached: no
+ * `OATLAS_REPO_ROOT`, no file on disk, no body. So it is never silent, and a
+ * person who ran `init`, built a real map and then ran `validate` is told about
+ * the three files the scaffold left behind — which is the moment measured on two
+ * trial repositories where nothing said anything at all.
+ */
+function findStarterExampleIssues(entries) {
+  const fileBySlug = new Map(entries.map((entry) => [entry.slug, entry.file]));
+  return starterExampleFindings(
+    entries.map((entry) => ({
+      slug: entry.slug,
+      kind: entry.frontmatter?.kind,
+      title: entry.frontmatter?.title,
+      body: entry.body,
+    })),
+  )
+    .filter((finding) => fileBySlug.has(finding.slug))
+    .map((finding) => ({
+      file: fileBySlug.get(finding.slug),
+      issue: { code: finding.code, severity: 'warning', message: finding.message },
+    }));
 }
 
 function findDanglingGraphReferenceIssues(entries) {

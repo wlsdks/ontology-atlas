@@ -12,6 +12,16 @@
  * admits what it did not check. That is the finding the sealed reader's seventh
  * question asks for from the other side, and the two should agree.
  *
+ * ## Per-node and whole-vault findings
+ *
+ * `meaningFindings` judges one node from its own text. Three codes cannot be
+ * decided that way — `starter-example-node` has to know whether a real node of
+ * the same kind exists, and `dependency-unwitnessed` has to know what file the
+ * node at the far end of an edge cites — so they run once over the collected
+ * vault after the per-node loop. Without that second pass this scanner reported
+ * a clean vault for exactly the defect the 2026-09-22 trials found: three
+ * scaffold examples left standing in a finished map.
+ *
  * usage: node scan-findings.mjs <vault> <repo-root>
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -29,7 +39,11 @@ function findRepositoryRoot() {
 }
 
 const repository = findRepositoryRoot();
-const { meaningFindings } = await import(join(repository, 'mcp', 'src', 'meaning-findings.mjs'));
+const {
+  dependencyWitnessFinding,
+  meaningFindings,
+  starterExampleFindings,
+} = await import(join(repository, 'mcp', 'src', 'meaning-findings.mjs'));
 const { parseFrontmatter } = await import(join(repository, 'mcp', 'src', 'parser.mjs'));
 
 const [vaultArg, repoRootArg] = process.argv.slice(2);
@@ -61,6 +75,14 @@ const tally = {};
 const examples = {};
 const byKind = {};
 let nodes = 0;
+/** Every node as the whole-vault findings want it, collected during the walk. */
+const collected = [];
+
+function record(finding) {
+  tally[finding.code] = (tally[finding.code] ?? 0) + 1;
+  examples[finding.code] ??= [];
+  if (examples[finding.code].length < 3) examples[finding.code].push(finding.slug);
+}
 
 for (const file of markdownFiles(vault)) {
   let parsed;
@@ -81,6 +103,7 @@ for (const file of markdownFiles(vault)) {
   byKind[kind] ??= { nodes: 0, withDoubtSection: 0 };
   byKind[kind].nodes += 1;
   if (DOUBT_HEADINGS.test(body)) byKind[kind].withDoubtSection += 1;
+  collected.push({ slug, kind, title: frontmatter.title, frontmatter, body });
 
   for (const finding of meaningFindings({
     kind,
@@ -91,9 +114,29 @@ for (const file of markdownFiles(vault)) {
     bodyWritten: true,
     pathWritten: true,
   })) {
-    tally[finding.code] = (tally[finding.code] ?? 0) + 1;
-    examples[finding.code] ??= [];
-    if (examples[finding.code].length < 3) examples[finding.code].push(slug);
+    record(finding);
+  }
+}
+
+// The whole-vault half. One node's own text cannot answer either of these: a
+// starter example is only a defect once a real sibling of its kind exists, and a
+// declared dependency is only unwitnessed relative to the file the *target*
+// cites. Both run here, over everything the walk collected.
+for (const finding of starterExampleFindings(collected)) record(finding);
+
+const evidencePathBySlug = new Map(
+  collected
+    .map((node) => [node.slug, typeof node.frontmatter?.path === 'string' ? node.frontmatter.path.trim() : ''])
+    .filter(([, path]) => path),
+);
+for (const node of collected) {
+  for (const finding of dependencyWitnessFinding({
+    slug: node.slug,
+    frontmatter: node.frontmatter,
+    repoRoot,
+    resolveTargetPath: (ref) => evidencePathBySlug.get(ref) ?? null,
+  })) {
+    record(finding);
   }
 }
 

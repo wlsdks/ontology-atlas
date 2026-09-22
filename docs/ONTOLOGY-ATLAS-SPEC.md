@@ -534,6 +534,8 @@ kept in lock-step by
 | `boundary-missing` | warning | *(body scope)* a `domain` or `capability` with no `## Includes` or no `## Excludes` section holding anything but placeholders; one finding per missing side |
 | `epistemic-exclusion` | warning | *(body scope)* an exclusion bullet that states an evidence limit ("not mentioned in this scan") rather than a product boundary — the one claim a source-hidden reader cannot check and does repeat as fact |
 | `folder-only-evidence` | warning | *(write-path gate, plus `validate_vault` and the CLI when a repository root is known)* frontmatter `path:` resolves to a directory, so this node's evidence drift can never be judged: a folder changes on almost any commit beneath it |
+| `dependency-unwitnessed` | warning | *(write-path gate for an edge the write just added, plus `validate_vault` and the CLI for every edge, when a repository root is known)* a `dependencies:` entry no file names: neither the source node's own file nor any repository-relative file path written in that edge's `relation_notes` mentions the target's path or its basename. An import witnesses a code dependency; its absence is **not** proof of independence, so the repair asked for is the witness (which file, which line, in the relation's `why`), not the deletion |
+| `starter-example-node` | warning | *(write-path gate at the creation of a real node, plus `validate_vault`, the CLI, and `maintenance_plan` for the starter itself)* a node `init` wrote as a shape to copy — `domains/example-domain`, `capabilities/example-capability`, `elements/example-element`, or any `example-…` slug whose title opens with "Example" — still standing after a real node of the same kind arrived. Needs no repository root, no body, and no filesystem, only the other nodes' kinds |
 | `uncertainty-missing` | warning | *(body scope)* a `domain`, `capability`, or `element` with no `## Uncertainty` / `## Open questions` / `## Unknowns` / `## Not checked` / `## Confidence` section holding anything but a placeholder. A node that records no unknown claims completeness, and §2.1 evidence is always partial |
 | `slug-outside-kind-folder` | warning | *(body scope, and only where the caller knows the document's position)* a `domain`, `capability`, or `element` whose slug does not start with its kind's folder (§4). Valid, never blocked, and reported once at creation: a flat node groups with nothing in any reader that shows a vault by kind |
 
@@ -552,26 +554,73 @@ every other node's slug, which only a whole-vault pass can do. A per-file
 UI check (fast path, used while a human is editing a single file) cannot
 and does not claim to catch it.
 
-The last six are advisories about a node's body and its address rather than
-about frontmatter shape, so **body scope** above means they read the Markdown
-after the frontmatter. The judgement lives in one place,
+The last eight are advisories about a node's body, its address, and the code it
+stands on rather than about frontmatter shape, so **body scope** above means
+they read the Markdown after the frontmatter. The judgement lives in one place,
 `mcp/src/meaning-findings.mjs`, and reaches a reader through four channels: the
 `add_concept` / `add_concepts` / `patch_concept` response, `query_ontology({operation:"maintenance_plan"})`,
 `validate_vault`, and the CLI's validate command. `src/shared/lib/meaning-findings.ts`
 is the browser port of the same rules, checked against the canonical module by
 `tests/contract/meaning-findings-parity.contract.test.ts`.
 
-Two of them carry a narrower scope than the other four, and for opposite
+Four of them carry a narrower scope than the other four, and for different
 reasons. `folder-only-evidence` must ask the filesystem whether a cited `path:`
 is a directory, which only means something relative to a repository root, so it
 runs as a whole-vault pass beside `dangling-graph-reference` and stays silent
 when no root is known — silence there means *not looked at*, never *nothing
-found*. `slug-outside-kind-folder` is a fact about where a file sits rather than
-about its bytes, so a validator handed only text does not report it; a caller
-that knows the document's vault-relative slug passes it in. The app's
+found*. `dependency-unwitnessed` needs the same root and one thing more: the
+`path:` of the node at the far end of the edge, which no single document
+carries, so it is a whole-vault pass in both validators and reaches the write
+door only for the edge a write just added. Neither of those two has a
+vault-wide half in the maintenance plan, because a compiled snapshot carries no
+repository root. `starter-example-node` is narrow for the opposite reason: it
+asks for nothing outside the vault — no root, no body, not even the file on
+disk — but the question is *"is this starter still the only node of its kind"*,
+and one document cannot see another. So it too is a whole-vault pass, it never
+goes silent, and it does queue in the maintenance plan as `retire_starter_example`.
+`slug-outside-kind-folder` is a fact about where a file sits
+rather than about its bytes, so a validator handed only text does not report it;
+a caller that knows the document's vault-relative slug passes it in. The app's
 frontmatter-only fast path answers that one alone, because a manifest keeps a
 flattened excerpt rather than the prose, and running a body check on an excerpt
 would answer a different question under the same code name.
+
+`starter-example-node` is the one code here that judges a node the product
+itself wrote. `init` scaffolds three examples — `domains/example-domain`,
+`capabilities/example-capability`, `elements/example-element` — whose bodies
+explain what a domain, a capability and an element *are*; they exist to be
+copied. Measured on two unfamiliar repositories (2026-09-22): both builders then
+wrote the real map through the first-run door and left all three standing, wired
+only to each other, referenced by nothing, with «Example domain» rendering on the
+map beside the real domains. Nothing warned. The trigger is a real node of the
+same kind, and only that: while the starter is the only node of its kind it is
+instructions, and a product that scolds a person for the file it just wrote them
+is worse than one that says nothing. A starter whose prose was rewritten still
+fires — the address is what shows on the map — and the residual false positive (a
+real node that is about examples, named “Example …” and addressed `example-…`) is
+accepted, because the repair for such a node is the rename it wanted anyway.
+
+`dependency-unwitnessed` is the one code here that reads source rather than the
+vault. Measured on this repository's own vault (2026-09-22): of 85 `depends_on`
+edges between two file-backed nodes, 70 are witnessed by the citing file naming
+the cited one and 15 are not, every one of the 15 carrying a reviewed `why` and
+validating clean. `query_ontology({operation:"impact"})` already marks every
+declared edge `sourceBacked: false`, and continues to — this code does not change
+that flag, it names the rows behind it.
+
+The witness may live in either of two places, and the second was added on
+2026-09-22 after a repair turn found the message lying. It told the writer to
+name the file and the line in the edge's `why`, while the check read only the
+source node's own `path:` — so twelve edges given an exact witness cleared
+nothing. The candidates are now the source node's file **and** every
+repository-relative file path written in `relation_notes` for that edge, each
+clamped inside the repository and each required to exist as a file; any one of
+them naming the target is enough. That is also the only way a cross-boundary
+edge can be witnessed at all, since what proves a browser module depends on an
+MCP module is the bridge, the barrel or the contract test between them rather
+than either end. A path that does not resolve from the repository root is
+ignored rather than guessed at, which is why the message asks for a
+repository-relative path in those words.
 
 They exist because the write path is the one a session without an independent
 evaluator lane must use, and it previously never opened the body at all; they

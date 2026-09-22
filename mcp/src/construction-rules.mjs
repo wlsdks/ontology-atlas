@@ -614,3 +614,128 @@ export const BODY_UNCERTAINTY_SECTIONS = Object.freeze([
 export function uncertaintyMissingMessage({ slug, kind }) {
   return `"${slug}" (${kind}) records no uncertainty, so the body reads as complete — and nothing in a vault is. The write succeeded and nothing here blocks it; what is missing is the fact a later reader most needs and can least recover: which files you did not open, which claim you inferred rather than read, what you could not check. Without it an agent handed only this vault treats every silence as a settled negative. Say it plainly: patch_concept({slug:"${slug}", body:"…\\n\\n## Uncertainty\\n\\n- <what you did not read or could not check>\\n"}). \`## Open questions\`, \`## Unknowns\`, \`## Not checked\` and \`## Confidence\` are read as the same section, and this is also where an \`Excludes\` bullet belongs once you notice it was an evidence limit rather than a product boundary.`;
 }
+
+/**
+ * Frontmatter keys that hold a declared dependency edge.
+ *
+ * `depends_on:` is a legal authoring alias for `dependencies:` — the read layer
+ * canonicalizes it, so a check that reads only the canonical key would judge an
+ * `add_relation` edge and stay silent on a hand-authored one. The constant lives
+ * here rather than beside `NEIGHBOR_KEY_ALIASES` because `vault.mjs` imports the
+ * findings module and the findings module would have to import back.
+ */
+export const DEPENDENCY_FRONTMATTER_KEYS = Object.freeze(['dependencies', 'depends_on']);
+
+/**
+ * Warning literal for a declared dependency the citing file does not witness.
+ *
+ * ## What was measured (2026-09-22, this repository's own vault)
+ *
+ * Of 85 `depends_on` edges between two file-backed nodes, 70 are witnessed —
+ * the file behind the source node names the file behind the target. Fifteen are
+ * not: they carry a `why`, they resolve, they validate clean, and the file they
+ * stand on never mentions the file they point at. `query_ontology({operation:
+ * "impact"})` already marks **every** declared edge `sourceBacked: false`, so
+ * the aggregate was honest; what nobody said was *which* edge, and nobody said
+ * it at the one moment it is cheap to answer — while the writer still has the
+ * reason in mind.
+ *
+ * ## Why it asks for the witness rather than the edge
+ *
+ * ⚠️ An import is evidence of a code dependency. **The absence of an import is
+ * not evidence of independence** — the 2026-08-31 decision ("Rust imports are
+ * bounded source receipts, never inferred impact") says the same thing from the
+ * other side, and a dependency carried by a runtime lookup, a build step, a
+ * configuration key, or a spawned process is real and leaves no mention in the
+ * source. So this never proposes deleting the edge first. It asks for the
+ * sentence that makes the edge checkable by the next reader, and offers removal
+ * only for the case the writer alone can recognise: an edge inferred because two
+ * names look alike.
+ *
+ * ## The sentence has to be true (corrected 2026-09-22)
+ *
+ * The first version of this message told the writer to name the file and the
+ * line in the `why` — and the check then read only the source node's own
+ * `path:`, so doing exactly what it asked cleared nothing and the warning stood.
+ * A repair turn on this repository's own vault gave twelve edges a precise
+ * witness and all twelve stayed red. The check now reads the files the `why`
+ * names, which is both the fix and the only way a cross-boundary edge can be
+ * witnessed at all: the file that proves a browser module depends on an MCP one
+ * is the bridge between them, not either end.
+ *
+ * The same repair turn showed why the sentence has to say *repository-relative*
+ * out loud: five of the twelve `why` values named a real witness file by a path
+ * relative to `src/` or to the module's own folder (`features/library/index.ts`
+ * for `src/features/library/index.ts`), which resolves to nothing from the
+ * repository root. The check does not guess which file a partial path meant —
+ * guessing is how an advisory starts accusing the wrong file — so the
+ * instruction states the root instead.
+ *
+ * Advisory, like every finding here. Construction rule 5 holds: the write
+ * succeeded before this sentence was built.
+ */
+export function dependencyUnwitnessedMessage({ slug, sourcePath, target, targetPath, witnessName }) {
+  return `"${slug}" declares a dependency on "${target}", and \`${sourcePath}\` never names \`${targetPath}\` — neither the path nor \`${witnessName}\` appears anywhere in that file. The write succeeded and nothing here blocks it. A file naming the file it imports is evidence of a code dependency; not naming it is **not** proof of independence, because a dependency carried by a runtime lookup, a build step, or a configuration key is real and leaves no mention in the source. So state the witness instead of deleting the edge: in the \`why\`, name the file that imports or calls the target and the line it does it on — **repository-relative, the way \`path:\` is written**, because the check opens that file and reads it. \`src/features/thing/index.ts:42\` is read; \`thing/index.ts:42\` is not a path from the repository root, so it is ignored and this finding stands. A \`why\` naming a readable file clears this once that file really does name \`${targetPath}\`. That is how a cross-boundary dependency gets witnessed at all: browser code depending on an MCP module, or TypeScript on Rust, is proved by the barrel, the bridge or the contract test that binds them, never by either end alone. Write it with replace_relation({from:"${slug}", oldTo:"${target}", oldType:"depends_on", newTo:"${target}", newType:"depends_on", why:"<file>:<line> — what the source does with the target", confirm:true}), or write the same sentence straight into the note with patch_concept({slug:"${slug}", frontmatter:{relation_notes:{"${target}":"<file>:<line> — …"}}}). If the edge came from the two names looking alike rather than from something you read, remove it: remove_relation({from:"${slug}", to:"${target}", type:"depends_on", confirm:true}).`;
+}
+
+/**
+ * The three nodes `init` writes into a brand-new vault, by slug.
+ *
+ * `cli/templates/vault/**` and `cli/templates/vault-ko/**` ship the same three
+ * addresses, and `src/entities/vault-session/lib/ontology-starter.ts` mirrors
+ * them for the browser's "start fresh" door. One list, so the check and the
+ * scaffold cannot disagree about what a starter is.
+ */
+export const STARTER_EXAMPLE_SLUGS = Object.freeze({
+  domain: 'domains/example-domain',
+  capability: 'capabilities/example-capability',
+  element: 'elements/example-element',
+});
+
+/**
+ * Sentences only the untouched starter body carries.
+ *
+ * Strictly a strengthener for the message — the slug and the title already
+ * decide whether the finding fires. A body somebody edited is still a starter
+ * address on the map, and treating an edited body as proof of a real concept
+ * would let "I fixed the prose but kept the name" pass as finished work.
+ */
+export const STARTER_EXAMPLE_BODY_MARKERS = Object.freeze([
+  'this file is a starter, not an observation',
+  '## How to fill it in',
+]);
+
+/**
+ * Warning literal for an `init` starter example left standing beside real nodes.
+ *
+ * ## What was measured (2026-09-22, two unfamiliar repositories)
+ *
+ * A vault created with `init` carries `domains/example-domain`,
+ * `capabilities/example-capability` and `elements/example-element` — three nodes
+ * whose bodies explain what a domain, a capability and an element *are*. They
+ * exist to be copied. On both trial repositories the builder then wrote the real
+ * map through the first-run door and **left all three in place**: connected only
+ * to each other, referenced by nothing, and «Example domain» rendering on the
+ * map beside the real domains. Nothing in the product said a word.
+ *
+ * ## Why the trigger is "a real sibling exists" and not "a starter exists"
+ *
+ * While the starter is the only node of its kind, it is instructions and the
+ * vault is empty — accusing it then would mean the product scolding a person for
+ * the file the product itself just wrote. The moment a real node of that kind
+ * lands, the same file stops being a shape to copy and becomes a fake concept
+ * competing for attention with the real ones. One condition, and it is the
+ * condition that changes what the file means.
+ *
+ * Advisory. Construction rule 5 holds: deleting somebody's file is not a
+ * decision a write gate gets to make.
+ */
+export function starterExampleNodeMessage({ starterSlug, kind, realSlug, renameTo, untouchedBody }) {
+  const bodyNote = untouchedBody
+    ? ` Its body is still the starter's own explanation of what a ${kind} is, so a reader who opens it asking what this ${kind} does gets a definition of the word instead.`
+    : '';
+  const sibling = realSlug
+    ? `"${realSlug}" is now a real ${kind} beside it`
+    : `this vault now holds a real ${kind} beside it`;
+  return `"${starterSlug}" is the ${kind} the \`init\` starter wrote as a shape to copy, and ${sibling}. The write succeeded and nothing here blocks it. While the starter was the only ${kind} in the vault it was instructions; now it is a fake concept sitting on the map next to the real ones, and the only relations it has run to the other two starter examples.${bodyNote} Delete it: delete_concept({slug:"${starterSlug}"}) without \`confirm\` returns a dry-run listing its backlinks first — they are the other two starter examples, so delete all three together and the graph loses nothing. If you meant to keep this one, it is not a starter any more: patch_concept it into a real concept, then give it a real address with rename_concept({oldSlug:"${starterSlug}", newSlug:"${renameTo}", confirm:true}). The UID does not change, so nothing loses its identity.`;
+}

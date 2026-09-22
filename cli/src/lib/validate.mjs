@@ -22,3 +22,5 @@ export const suppressLibraryKindIssues = validate.suppressLibraryKindIssues;
 /** @type {typeof import('../../../mcp/src/meaning-findings.mjs')} */
 const meaningFindings = await loadMcpModule('meaning-findings.mjs');
 export const folderOnlyEvidenceFinding = meaningFindings.folderOnlyEvidenceFinding;
+export const dependencyWitnessFinding = meaningFindings.dependencyWitnessFinding;
+export const starterExampleFindings = meaningFindings.starterExampleFindings;

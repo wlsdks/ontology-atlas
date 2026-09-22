@@ -102,6 +102,25 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   'uncertainty-missing',
   'slug-outside-kind-folder',
   'folder-only-evidence',
+  /*
+   * The seventh, and the second that no single document can decide: a
+   * `dependencies:` entry whose citing file never names the cited one. It needs
+   * a repository root, the file on disk, AND the `path:` of the node at the
+   * other end of the edge, so like `folder-only-evidence` it is a whole-vault
+   * pass in `validate_vault` and in the CLI, and absent from the per-document
+   * validator. A warning, and never more than that: an import is evidence of a
+   * dependency, but its absence is not proof of independence.
+   */
+  'dependency-unwitnessed',
+  /*
+   * The eighth, and the only one of the three whole-vault meaning codes that
+   * needs nothing but the vault itself: an `init` starter example still standing
+   * after real nodes of its kind arrived. No repository root, no bodies, no
+   * filesystem — so unlike the two above it never goes quiet, which matters
+   * because the vault that most needs telling is the freshly built one nobody
+   * has compiled yet.
+   */
+  'starter-example-node',
 ]);
 
 export const KNOWN_VAULT_KINDS = [
@@ -258,10 +277,14 @@ function resolveDocumentSlug(frontmatter, options) {
  * which is construction rule 5 restated — the vault is valid, it is thin, and
  * telling those apart is the whole point of the two severities.
  *
- * `folder-only-evidence` is deliberately absent. It has to ask the filesystem
- * whether one cited path is a directory, which needs a repository root this
- * function has no way to know; it runs in `validate_vault` and in the CLI
- * command, beside the other whole-vault passes.
+ * `folder-only-evidence` and `dependency-unwitnessed` are deliberately absent.
+ * One has to ask the filesystem whether a cited path is a directory and the
+ * other has to read the cited file and the `path:` of the node at the far end of
+ * an edge; both need a repository root this function has no way to know, and the
+ * second needs the whole vault besides. `starter-example-node` needs neither a
+ * root nor a file, but it does need every other node's kind, which one document
+ * cannot supply. All three run in `validate_vault` and in the CLI command,
+ * beside the other whole-vault passes.
  */
 function pushMeaningIssues({ frontmatter, body, slug, issues }) {
   const kind = typeof frontmatter?.kind === 'string' ? frontmatter.kind.trim() : '';

@@ -31,21 +31,31 @@
  * the tool's back.
  */
 
-import { existsSync, readdirSync, statSync } from 'node:fs';
-import { isAbsolute, join, resolve, sep } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { basename, dirname, isAbsolute, join, resolve, sep } from 'node:path';
 
 import {
   BODY_BOUNDARY_SECTIONS,
   BODY_DEFINITION_SECTIONS,
   BODY_UNCERTAINTY_SECTIONS,
+  DEPENDENCY_FRONTMATTER_KEYS,
+  STARTER_EXAMPLE_BODY_MARKERS,
+  STARTER_EXAMPLE_SLUGS,
   boundaryMissingMessage,
   definitionMissingMessage,
+  dependencyUnwitnessedMessage,
   epistemicExclusionMessage,
   folderOnlyEvidenceMessage,
   isEpistemicExclusionBoundary,
+  starterExampleNodeMessage,
   uncertaintyMissingMessage,
 } from './construction-rules.mjs';
-import { NODE_ELIGIBILITY_GATE, ONTOLOGY_META_MODEL_REFERENCE, defaultBody } from './schema.mjs';
+import {
+  NODE_ELIGIBILITY_GATE,
+  ONTOLOGY_META_MODEL_REFERENCE,
+  defaultBody,
+  folderForKind,
+} from './schema.mjs';
 
 /**
  * Words of real prose before the first `##` below which a body is a label.
@@ -372,6 +382,23 @@ export function uncertaintyFinding({ kind, slug, title, body }) {
 }
 
 /**
+ * The author's own uncertainty lines for one node, placeholders removed.
+ *
+ * {@link uncertaintyFinding} above asks whether this section says anything;
+ * a reader that wants to act on what it says needs the same lines, chosen by
+ * the same section synonyms and filtered by the same starter scaffold. Exported
+ * so `uncertainty-reads.mjs` can turn those lines into next reads without a
+ * second copy of the heading rules — two copies would mean the write-time
+ * question and the read-time queue disagreeing about which bullet is filled.
+ */
+export function uncertaintySectionLines({ kind, title, body }) {
+  const { sections } = parseBodySections(body);
+  const section =
+    sections.find((row) => headingNames(row.heading, BODY_UNCERTAINTY_SECTIONS)) ?? null;
+  return contentLines(section, starterPlaceholders(starterShape(kind, title ?? '')));
+}
+
+/**
  * Exclusions that state what the writer did not see rather than what the
  * product does not do.
  *
@@ -476,6 +503,354 @@ export function folderOnlyEvidenceFinding({ kind, slug, frontmatter, repoRoot })
       suggestion: entry ? `${path.replace(/\/$/, '')}/${entry}` : null,
     }),
   };
+}
+
+/**
+ * Resolve one vault-relative path against the repository and say what it is.
+ *
+ * The clamp is the one `folderOnlyEvidenceFinding` already uses, reused rather
+ * than restated: a vault is ordinary Markdown an agent writes, so `path:` is
+ * untrusted input, and `path: ../../somewhere` leaves the tree just as well as
+ * an absolute one. Lexical comparison only — no `realpath`, so this agrees with
+ * every other boundary in the server on a machine whose temp directory is a
+ * symlink.
+ *
+ * Returns `null` whenever the answer would be a guess, which is what every
+ * caller here treats as "do not speak".
+ */
+function insideRepo(repoRoot, path) {
+  const value = typeof path === 'string' ? path.trim() : '';
+  if (!value || !repoRoot || isAbsolute(value)) return null;
+  const boundary = resolve(repoRoot);
+  const absolute = resolve(boundary, value);
+  if (absolute !== boundary && !absolute.startsWith(boundary + sep)) return null;
+  return { path: value, absolute };
+}
+
+/** Every dependency ref a node declares, under either spelling of the key. */
+function declaredDependencies(frontmatter) {
+  const refs = new Set();
+  for (const key of DEPENDENCY_FRONTMATTER_KEYS) {
+    const value = frontmatter?.[key];
+    if (!Array.isArray(value)) continue;
+    for (const ref of value) {
+      if (typeof ref !== 'string') continue;
+      const trimmed = ref.trim();
+      if (trimmed) refs.add(trimmed);
+    }
+  }
+  return refs;
+}
+
+/** `src/shared/lib/nav.ts` → `nav`, the name an import statement would carry. */
+function witnessNameFor(path) {
+  return basename(path).replace(/\.[^.]+$/, '');
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Does this file name that file?
+ *
+ * Two spellings count, and only two. The target path verbatim is what a
+ * relative-free reference looks like; the basename without its extension as a
+ * **whole word** is what every import statement in every language this vault
+ * describes actually writes. Case-sensitive on purpose: `Vault` and `vault` are
+ * different identifiers, and folding them would let an unrelated English word
+ * witness an edge.
+ */
+function textWitnesses(text, targetPath, witnessName) {
+  if (text.includes(targetPath)) return true;
+  if (!witnessName) return false;
+  return new RegExp(`\\b${escapeRegExp(witnessName)}\\b`).test(text);
+}
+
+/**
+ * A repo-relative file path written inside a sentence.
+ *
+ * `/` **and** an extension, both required, backticked or not. The rule is the
+ * conservative half of the one `uncertainty-reads.mjs` uses on prose — that
+ * module also accepts a bare backticked basename, which cannot be resolved
+ * against a repository root and so is useless here. It is restated rather than
+ * imported because that module does not export it, and a `why` is a sentence a
+ * person wrote: every token that is not plainly an address has to fall through.
+ */
+const NOTE_PATH_EDGES = /^[([{"'`\u201c\u2018]+|[)\]}"'`\u201d\u2019.,;:!?]+$/g;
+const NOTE_PATH_EXTENSION = /\.[A-Za-z][A-Za-z0-9]{0,9}$/;
+
+/**
+ * The `:42` the message explicitly asks the writer to append, and the `:42:7`
+ * an editor copies. Stripped in the same loop as the punctuation, because
+ * `` `src/consumer.ts`:1, `` needs both passes twice: quote, line, backtick.
+ */
+const NOTE_PATH_LINE_SUFFIX = /:\d+(?::\d+)?$/;
+
+function pathTokensIn(text) {
+  const tokens = new Set();
+  for (const raw of String(text ?? '').split(/\s+/)) {
+    let token = raw;
+    let previous = null;
+    while (token !== previous) {
+      previous = token;
+      token = token.replace(NOTE_PATH_EDGES, '').replace(NOTE_PATH_LINE_SUFFIX, '');
+    }
+    if (!token || token.startsWith('http://') || token.startsWith('https://')) continue;
+    if (!token.includes('/') || !NOTE_PATH_EXTENSION.test(token)) continue;
+    tokens.add(token);
+  }
+  return tokens;
+}
+
+/** The rationale stored for one edge, under the canonical key or its tail. */
+function relationNoteText(frontmatter, target) {
+  const notes = frontmatter?.relation_notes;
+  if (!notes || typeof notes !== 'object' || Array.isArray(notes)) return '';
+  if (typeof notes[target] === 'string') return notes[target];
+  const tail = String(target).split('/').pop();
+  for (const [key, value] of Object.entries(notes)) {
+    if (typeof value !== 'string') continue;
+    if (key === target || key.split('/').pop() === tail) return value;
+  }
+  return '';
+}
+
+/**
+ * A declared dependency the file it stands on never mentions.
+ *
+ * Measured 2026-09-22 on this repository's own vault: 70 of 85 file-to-file
+ * `depends_on` edges are witnessed by the citing file naming the cited one;
+ * 15 are declared with a `why` and witnessed nowhere. `impact` already answers
+ * `sourceBacked: false` for every declared edge and must keep doing so — this
+ * does not change that flag, it names the rows behind it, at the moment the
+ * writer still holds the reason.
+ *
+ * **New edges only.** `previousFrontmatter` is what the door held before this
+ * write, so an edge somebody landed last week is not re-accused on every
+ * unrelated patch — the restraint that kept `missing-expected-field` from
+ * becoming invisible. A whole-vault pass omits it and judges them all, which is
+ * the same rule read at a different moment.
+ *
+ * **Where the witness may live.** Two places, and the second was added on
+ * 2026-09-22 after the first repair turn found the message lying. It told the
+ * writer to name, in the `why`, the file and line that carries the dependency —
+ * and then read only the source node's own `path:`, so a `why` naming the exact
+ * importing file cleared nothing and the finding stood. The candidates are now
+ * the source node's file *and* every repo-relative file path written in
+ * `relation_notes` for that edge, each clamped inside the repository and each
+ * required to be a file that exists. Any one of them naming the target is
+ * enough. This is what makes the repair the message asks for actually work, and
+ * it is the honest shape besides: a browser module depending on an MCP module,
+ * or TypeScript on Rust, is witnessed by a third file — the barrel, the bridge,
+ * the contract test — not by either end.
+ *
+ * Silent whenever an input is a guess: no repository root, no `path:` on either
+ * end, a source `path:` that is a directory (`folder-only-evidence` owns that
+ * one and saying it twice trains the reader to skim), or either path resolving
+ * out of the tree. A note path that is missing, a directory, or outside the
+ * repository is dropped, never guessed at.
+ *
+ * @param {object} args
+ * @param {string} args.slug
+ * @param {Record<string, unknown>} args.frontmatter
+ * @param {Record<string, unknown>} [args.previousFrontmatter] absent means every
+ *   declared dependency is judged.
+ * @param {string|null} args.repoRoot
+ * @param {(ref: string) => string|null} args.resolveTargetPath maps a target
+ *   slug to its frontmatter `path:`, or null when the caller cannot say.
+ * @returns {Array<object>} one finding per unwitnessed target; `key` is the
+ *   target slug so the gate's own notice key is per edge, not per node.
+ */
+export function dependencyWitnessFinding({
+  slug,
+  frontmatter,
+  previousFrontmatter,
+  repoRoot,
+  resolveTargetPath,
+}) {
+  if (!repoRoot || typeof resolveTargetPath !== 'function') return [];
+  const source = insideRepo(repoRoot, frontmatter?.path);
+  if (!source) return [];
+  let sourceText;
+  try {
+    if (!statSync(source.absolute).isFile()) return [];
+    sourceText = readFileSync(source.absolute, 'utf-8');
+  } catch {
+    return [];
+  }
+  const previous = previousFrontmatter ? declaredDependencies(previousFrontmatter) : new Set();
+  /** One read per file however many edges cite it; `null` marks unreadable. */
+  const textCache = new Map([[source.path, sourceText]]);
+  /**
+   * Where a note path is looked for: as written from the repository root,
+   * then from each ancestor folder of the citing file, nearest first. A
+   * writer copies paths the way an editor shows them ("features/library/
+   * index.ts:13" from a file under src/), and the first repair turn wrote
+   * exactly that; a root-only reading dropped every one of them. Each try is
+   * still clamped inside the repository and must be an existing file.
+   */
+  const sourceAncestors = [];
+  for (let dir = dirname(source.path); dir && dir !== '.'; dir = dirname(dir)) {
+    sourceAncestors.push(dir);
+  }
+  const readCandidate = (path) => {
+    if (textCache.has(path)) return textCache.get(path);
+    let text = null;
+    for (const base of ['', ...sourceAncestors]) {
+      const resolved = insideRepo(repoRoot, base ? `${base}/${path}` : path);
+      if (!resolved) continue;
+      try {
+        if (!statSync(resolved.absolute).isFile()) continue;
+        text = readFileSync(resolved.absolute, 'utf-8');
+        break;
+      } catch {
+        continue;
+      }
+    }
+    textCache.set(path, text);
+    return text;
+  };
+  const findings = [];
+  for (const target of declaredDependencies(frontmatter)) {
+    if (previous.has(target)) continue;
+    let targetPath;
+    try {
+      targetPath = resolveTargetPath(target);
+    } catch {
+      continue;
+    }
+    const resolved = insideRepo(repoRoot, targetPath);
+    if (!resolved) continue;
+    const witnessName = witnessNameFor(resolved.path);
+    // The source file first, then every file the edge's own rationale names.
+    const candidates = [sourceText];
+    for (const token of pathTokensIn(relationNoteText(frontmatter, target))) {
+      const text = readCandidate(token);
+      if (typeof text === 'string') candidates.push(text);
+    }
+    if (candidates.some((text) => textWitnesses(text, resolved.path, witnessName))) continue;
+    findings.push({
+      code: 'dependency-unwitnessed',
+      slug,
+      key: target,
+      refs: [target],
+      count: 1,
+      message: dependencyUnwitnessedMessage({
+        slug,
+        sourcePath: source.path,
+        target,
+        targetPath: resolved.path,
+        witnessName,
+      }),
+    });
+  }
+  return findings;
+}
+
+/** The kinds `init` ships a starter example for. */
+const STARTER_EXAMPLE_KINDS = new Set(Object.keys(STARTER_EXAMPLE_SLUGS));
+
+/**
+ * Is this node one of the examples `init` wrote for somebody to copy?
+ *
+ * Two shapes, and the second is why the first is not the whole rule. The three
+ * addresses the templates ship are recognised outright — `vault/` and
+ * `vault-ko/` use the same slugs, and the browser's starter mirrors them. Beyond
+ * those, a slug whose last segment opens with `example-` **and** whose title
+ * opens with "Example" is the same thing under another name: someone copied the
+ * file and renamed neither half.
+ *
+ * ⚠️ Both halves of the second shape are required, and the pair is still not a
+ * proof. A slug alone would accuse a real domain at `domains/example-rendering`;
+ * a title alone would accuse one genuinely called "Example Rendering" at an
+ * ordinary address. Requiring both narrows it to the shape a copied scaffold
+ * actually has, and what remains — a real node that is *about* examples, named
+ * "Example …", and addressed `example-…` — is a false positive this accepts on
+ * purpose. It is advisory, the repair for such a node is the rename it wanted
+ * anyway, and the alternative is missing every starter somebody copied rather
+ * than renamed. The three template addresses above need no title at all.
+ *
+ * The body is deliberately **not** consulted: a starter whose prose somebody
+ * rewrote while keeping the name is still a starter address on the map, and
+ * letting an edited body clear the check would reward exactly the half-finished
+ * state this exists to name.
+ */
+export function isStarterExampleNode({ slug, kind, title }) {
+  const address = typeof slug === 'string' ? slug.trim() : '';
+  if (!address) return false;
+  if (typeof kind === 'string' && STARTER_EXAMPLE_SLUGS[kind.trim()] === address) return true;
+  if (Object.values(STARTER_EXAMPLE_SLUGS).includes(address)) return true;
+  const tail = address.split('/').pop() ?? '';
+  if (!tail.startsWith('example-')) return false;
+  // "Example", capitalised, is what every template writes and what a copy keeps.
+  return String(title ?? '').trim().startsWith('Example');
+}
+
+/** Does this body still carry the sentences only the untouched starter has? */
+function hasUntouchedStarterBody(body) {
+  const text = String(body ?? '').toLowerCase();
+  return STARTER_EXAMPLE_BODY_MARKERS.every((marker) => text.includes(marker.toLowerCase()));
+}
+
+/**
+ * One starter example that is no longer alone.
+ *
+ * Pure: the caller states which real node of the same kind now exists, because
+ * "is there a real sibling" is a whole-vault question and this module answers
+ * one node at a time. `realSlug` may be null when the caller knows a sibling
+ * exists but not which one.
+ */
+export function starterExampleFinding({ slug, kind, title, body, realSlug = null }) {
+  const address = typeof slug === 'string' ? slug.trim() : '';
+  const nodeKind = typeof kind === 'string' ? kind.trim() : '';
+  if (!STARTER_EXAMPLE_KINDS.has(nodeKind)) return null;
+  if (!isStarterExampleNode({ slug: address, kind: nodeKind, title })) return null;
+  const folder = folderForKind(nodeKind) ?? '';
+  return {
+    code: 'starter-example-node',
+    slug: address,
+    key: 'slug',
+    refs: realSlug ? [realSlug] : [],
+    count: 1,
+    message: starterExampleNodeMessage({
+      starterSlug: address,
+      kind: nodeKind,
+      realSlug,
+      renameTo: `${folder}<real-name>`,
+      untouchedBody: hasUntouchedStarterBody(body),
+    }),
+  };
+}
+
+/**
+ * Every starter example in a vault that has outgrown it.
+ *
+ * The whole-vault half, shared by `validate_vault`, the CLI command and the
+ * maintenance plan. It needs no bodies and no repository root — a slug, a kind
+ * and a title are the entire input — which matters, because the vault most in
+ * need of this answer is the one nobody has compiled with bodies loaded.
+ *
+ * `nodes` is any iterable of `{ slug, kind, title, body? }`.
+ */
+export function starterExampleFindings(nodes) {
+  const rows = [];
+  for (const node of nodes ?? []) {
+    const kind = typeof node?.kind === 'string' ? node.kind.trim() : '';
+    if (!kind) continue;
+    rows.push({ ...node, kind, starter: isStarterExampleNode({ slug: node.slug, kind, title: node.title }) });
+  }
+  const findings = [];
+  for (const node of rows) {
+    if (!node.starter) continue;
+    // The one condition: a real node of the same kind. Until one exists the
+    // starter is the instructions, and the product wrote it.
+    const sibling = rows.find((other) => other.kind === node.kind && !other.starter);
+    if (!sibling) continue;
+    const finding = starterExampleFinding({ ...node, realSlug: sibling.slug ?? null });
+    if (finding) findings.push(finding);
+  }
+  return findings.sort((a, b) => String(a.slug).localeCompare(String(b.slug)));
 }
 
 /**

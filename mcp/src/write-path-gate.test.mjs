@@ -528,6 +528,172 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     configureNodeEligibilityRepoRoot(null);
   });
 
+  /**
+   * The edge half of the same claim. `add_relation`, `add_relations`,
+   * `replace_relation`, and `patch_concept` all land through `patchFrontmatter`,
+   * so one case at that primitive proves all four inherit it — the split this
+   * file has kept since the council: wiring here, judgement in
+   * `meaning-findings.test.mjs`.
+   *
+   * It needs `previousFrontmatter` to reach the gate, which is the one thing
+   * `commitDoc` received and did not forward until 2026-09-22. Without it every
+   * patch would re-accuse every edge the node already had.
+   */
+  it('a dependency added by a relation write is reported when the citing file never names the target', () => {
+    mkdirSync(join(root, 'src', 'lib'), { recursive: true });
+    writeFileSync(join(root, 'src', 'lib', 'helper.ts'), 'export const helper = 1;\n');
+    writeFileSync(join(root, 'src', 'stranger.ts'), 'export const nothing = "no other file";\n');
+    writeFileSync(
+      join(root, 'capabilities', 'helper.md'),
+      `---\nuid: ${nextTestUid()}\nslug: capabilities/helper\nkind: capability\ntitle: Helper\ndomain: domains/cli\npath: src/lib/helper.ts\n---\n`,
+    );
+    try {
+      configureNodeEligibilityRepoRoot(root);
+      patchFrontmatter(root, 'capabilities/entry', { path: 'src/stranger.ts' });
+      drainNodeEligibilityFindings();
+      // The relation write itself — what add_relation({type:"depends_on"}) does.
+      patchFrontmatter(root, 'capabilities/entry', {
+        dependencies: ['capabilities/helper'],
+        relation_notes: { 'capabilities/helper': 'The entry point delegates to the helper.' },
+      });
+      const findings = drainNodeEligibilityFindings()
+        .filter((f) => f.code === 'dependency-unwitnessed');
+      assert.equal(findings.length, 1);
+      assert.equal(findings[0].key, 'capabilities/helper');
+      assert.match(findings[0].message, /src\/stranger\.ts/);
+      assert.match(findings[0].message, /src\/lib\/helper\.ts/);
+
+      /*
+       * A later, unrelated patch must not repeat it. Within one session the
+       * notice map alone would hold, so the reset here is the load-bearing part:
+       * it is the next server run touching the same node, and the only thing
+       * that can still tell the edge is old is `previousFrontmatter` arriving
+       * from `commitDoc`. Without that thread this fires again on a title patch,
+       * for as long as the node exists.
+       */
+      resetNodeEligibilityGate();
+      patchFrontmatter(root, 'capabilities/entry', { title: 'Entry, renamed' });
+      assert.deepEqual(
+        drainNodeEligibilityFindings().filter((f) => f.code === 'dependency-unwitnessed'),
+        [],
+      );
+    } finally {
+      configureNodeEligibilityRepoRoot(null);
+    }
+  });
+
+  it('a dependency whose citing file does name the target is never mentioned', () => {
+    mkdirSync(join(root, 'src', 'lib'), { recursive: true });
+    writeFileSync(join(root, 'src', 'lib', 'helper.ts'), 'export const helper = 1;\n');
+    writeFileSync(
+      join(root, 'src', 'consumer.ts'),
+      "import { helper } from './lib/helper';\nexport const used = helper;\n",
+    );
+    writeFileSync(
+      join(root, 'capabilities', 'helper.md'),
+      `---\nuid: ${nextTestUid()}\nslug: capabilities/helper\nkind: capability\ntitle: Helper\ndomain: domains/cli\npath: src/lib/helper.ts\n---\n`,
+    );
+    try {
+      configureNodeEligibilityRepoRoot(root);
+      patchFrontmatter(root, 'capabilities/entry', { path: 'src/consumer.ts' });
+      drainNodeEligibilityFindings();
+      patchFrontmatter(root, 'capabilities/entry', { dependencies: ['capabilities/helper'] });
+      assert.deepEqual(
+        drainNodeEligibilityFindings().filter((f) => f.code === 'dependency-unwitnessed'),
+        [],
+      );
+    } finally {
+      configureNodeEligibilityRepoRoot(null);
+    }
+  });
+
+  /**
+   * The starter examples `init` writes, once the vault has outgrown them.
+   *
+   * Wiring only, as everywhere in this file: what the finding decides belongs to
+   * `meaning-findings.test.mjs`. What is proved here is that the creation door
+   * notices, that it attaches the row to the STARTER rather than to the node
+   * just written, and that it says it once however many real nodes follow.
+   */
+  it('reports the starter example when the first real node of its kind is created', () => {
+    writeFileSync(
+      join(root, 'domains', 'example-domain.md'),
+      `---\nuid: ${nextTestUid()}\nslug: domains/example-domain\nkind: domain\ntitle: Example domain\ncapabilities: [capabilities/example-capability]\n---\n\n# Example domain\n\n- Nothing here has been checked against your code yet: this file is a starter, not an observation.\n\n## How to fill it in\n`,
+    );
+    writeDoc(root, 'domains/billing', {
+      frontmatter: { slug: 'domains/billing', kind: 'domain', title: 'Billing' },
+      body: WRITTEN_BODY,
+    });
+    const findings = drainNodeEligibilityFindings().filter((f) => f.code === 'starter-example-node');
+    assert.equal(findings.length, 1);
+    // The row names the file somebody has to act on, not the one just written,
+    // so this and the vault-wide row are the same row and the queue can dedupe.
+    assert.equal(findings[0].slug, 'domains/example-domain');
+    assert.deepEqual(findings[0].refs, ['domains/billing']);
+    assert.match(findings[0].message, /domains\/billing/);
+    assert.match(findings[0].message, /delete_concept/);
+
+    // Said once per starter: a thirty-node build must not repeat it thirty times.
+    writeDoc(root, 'domains/identity', {
+      frontmatter: { slug: 'domains/identity', kind: 'domain', title: 'Identity' },
+      body: WRITTEN_BODY,
+    });
+    assert.deepEqual(
+      drainNodeEligibilityFindings().filter((f) => f.code === 'starter-example-node'),
+      [],
+    );
+  });
+
+  /*
+   * `init` writing its own scaffold into an empty folder. Every node is a
+   * starter and nothing is wrong yet — a product that scolds a person for the
+   * file it just wrote them is worse than one that says nothing.
+   */
+  it('stays silent while the starter is still the only node of its kind', () => {
+    writeFileSync(
+      join(root, 'domains', 'example-domain.md'),
+      `---\nuid: ${nextTestUid()}\nslug: domains/example-domain\nkind: domain\ntitle: Example domain\n---\n`,
+    );
+    // A capability arriving does not make the DOMAIN starter stale.
+    writeDoc(root, 'capabilities/charge-card', {
+      frontmatter: {
+        slug: 'capabilities/charge-card',
+        kind: 'capability',
+        title: 'Charge a card',
+        domain: 'domains/cli',
+        path: 'cli/src/index.mjs',
+      },
+      body: WRITTEN_BODY,
+    });
+    assert.deepEqual(
+      drainNodeEligibilityFindings().filter((f) => f.code === 'starter-example-node'),
+      [],
+    );
+  });
+
+  /*
+   * The starter arriving *after* the real node — `add_concept` on the scaffold
+   * address itself. Whatever else that is, it is not news to the person who just
+   * typed it, and the only sentence this door could produce would name the
+   * starter as its own real sibling. The vault-wide pass says it on the next
+   * `validate_vault`, which is the right moment for it.
+   */
+  it('stays silent when the node being created IS the starter example', () => {
+    writeDoc(root, 'domains/billing', {
+      frontmatter: { slug: 'domains/billing', kind: 'domain', title: 'Billing' },
+      body: WRITTEN_BODY,
+    });
+    drainNodeEligibilityFindings();
+    writeDoc(root, 'domains/example-domain', {
+      frontmatter: { slug: 'domains/example-domain', kind: 'domain', title: 'Example domain' },
+      body: WRITTEN_BODY,
+    });
+    assert.deepEqual(
+      drainNodeEligibilityFindings().filter((f) => f.code === 'starter-example-node'),
+      [],
+    );
+  });
+
   it('a create whose `path:` climbs out of the repository lists nothing and reports nothing', () => {
     // `path:` is a value an agent wrote, so it is untrusted input at this door.
     const outside = join(root, '..', `outside-${Date.now()}`);

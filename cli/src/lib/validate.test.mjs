@@ -1,5 +1,11 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { validateVaultDocument } from './validate.mjs';
 
 // `cli/src/lib/validate.mjs` re-exports mcp/src/validate.mjs rather than copying
@@ -106,5 +112,157 @@ describe('relation_notes guard (swallowed entries and orphaned keys)', () => {
       validateVaultDocument(raw, { slug: 'acp' }).issues.map((issue) => issue.code),
       ['slug-outside-kind-folder'],
     );
+  });
+});
+
+/**
+ * The whole-vault half of the validator.
+ *
+ * `dependency-unwitnessed` cannot live in `validateVaultDocument` for two
+ * reasons at once: it opens the source file a node cites, which only means
+ * something against a repository root, and it needs the `path:` of the node at
+ * the *far* end of the edge, which no single document carries. So it runs as a
+ * pass over the whole vault, and the only honest way to prove that wiring is to
+ * run the command the way a person does.
+ */
+describe('dependency-unwitnessed — the whole-vault pass in `validate`', () => {
+  function fixture() {
+    const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-cli-witness-'));
+    const vault = join(root, 'vault');
+    mkdirSync(join(vault, 'capabilities'), { recursive: true });
+    mkdirSync(join(vault, 'domains'), { recursive: true });
+    mkdirSync(join(root, 'src', 'lib'), { recursive: true });
+    writeFileSync(join(root, 'src', 'lib', 'helper.ts'), 'export const helper = 1;\n');
+    writeFileSync(join(root, 'src', 'stranger.ts'), 'export const nothing = "no other file";\n');
+    writeFileSync(
+      join(root, 'src', 'consumer.ts'),
+      "import { helper } from './lib/helper';\nexport const used = helper;\n",
+    );
+    const node = (slug, extra) =>
+      `---\nuid: ${randomUUID()}\nslug: ${slug}\nkind: capability\ntitle: ${slug}\ndomain: domains/core\n${extra}---\n${FINISHED_CAPABILITY_BODY}`;
+    writeFileSync(
+      join(vault, 'domains', 'core.md'),
+      `---\nuid: ${randomUUID()}\nslug: domains/core\nkind: domain\ntitle: Core\n---\n${FINISHED_CAPABILITY_BODY}`,
+    );
+    writeFileSync(join(vault, 'capabilities', 'helper.md'), node('capabilities/helper', 'path: src/lib/helper.ts\n'));
+    writeFileSync(
+      join(vault, 'capabilities', 'stranger.md'),
+      node('capabilities/stranger', 'path: src/stranger.ts\ndependencies: [capabilities/helper]\nrelation_notes: { capabilities/helper: "The stranger is said to use the helper." }\n'),
+    );
+    writeFileSync(
+      join(vault, 'capabilities', 'consumer.md'),
+      node('capabilities/consumer', 'path: src/consumer.ts\ndependencies: [capabilities/helper]\nrelation_notes: { capabilities/helper: "The consumer imports the helper." }\n'),
+    );
+    return { root, vault };
+  }
+
+  function runCli(vault, env) {
+    const result = spawnSync(
+      process.execPath,
+      [fileURLToPath(new URL('../index.mjs', import.meta.url)), 'validate', vault, '--json'],
+      { encoding: 'utf-8', env: { ...process.env, ...env } },
+    );
+    return JSON.parse(result.stdout);
+  }
+
+  it('names the one unwitnessed edge and leaves the witnessed one alone', (t) => {
+    const { root, vault } = fixture();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const report = runCli(vault, { OATLAS_REPO_ROOT: root });
+    const rows = report.problems.flatMap((problem) =>
+      problem.issues
+        .filter((issue) => issue.code === 'dependency-unwitnessed')
+        .map((issue) => ({ file: problem.file, message: issue.message })),
+    );
+    assert.equal(rows.length, 1);
+    assert.match(rows[0].file, /stranger/);
+    assert.match(rows[0].message, /src\/lib\/helper\.ts/);
+    // A warning, never an error: the vault is valid Markdown the graph reads
+    // correctly, and the absence of an import is not proof of independence.
+    assert.equal(report.summary.errorFiles, 0);
+  });
+
+  /*
+   * With no root, the check has no tree to measure against. Silence here means
+   * "not looked at", which is the opposite of "nothing found" and the reason
+   * `--list-codes` marks this one vault scope.
+   */
+  it('stays silent with OATLAS_REPO_ROOT unset', (t) => {
+    const { root, vault } = fixture();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const report = runCli(vault, { OATLAS_REPO_ROOT: '' });
+    assert.equal(
+      report.problems.flatMap((p) => p.issues).filter((i) => i.code === 'dependency-unwitnessed').length,
+      0,
+    );
+  });
+});
+
+/**
+ * The starter examples `init` leaves behind.
+ *
+ * The one whole-vault meaning pass with no environment condition: no repository
+ * root, no file on disk, no body. So the interesting case is not that it fires
+ * but that a freshly scaffolded vault — which is nothing *but* starters — comes
+ * back clean, because that is the vault `ontology-atlas init` hands a person on
+ * their first minute.
+ */
+describe('starter-example-node — the whole-vault pass in `validate`', () => {
+  function vaultWith(extra) {
+    const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-cli-starter-'));
+    mkdirSync(join(root, 'domains'), { recursive: true });
+    mkdirSync(join(root, 'capabilities'), { recursive: true });
+    mkdirSync(join(root, 'elements'), { recursive: true });
+    const write = (path, slug, kind, title, extraKeys = '') =>
+      writeFileSync(
+        join(root, path),
+        `---\nuid: ${randomUUID()}\nslug: ${slug}\nkind: ${kind}\ntitle: ${title}\n${extraKeys}---\n${FINISHED_CAPABILITY_BODY}`,
+      );
+    write('domains/example-domain.md', 'domains/example-domain', 'domain', 'Example domain');
+    write('capabilities/example-capability.md', 'capabilities/example-capability', 'capability', 'Example capability', 'domain: domains/example-domain\n');
+    write('elements/example-element.md', 'elements/example-element', 'element', 'Example element', 'domain: domains/example-domain\n');
+    for (const row of extra) write(...row);
+    return root;
+  }
+
+  function runCli(vault) {
+    const result = spawnSync(
+      process.execPath,
+      [fileURLToPath(new URL('../index.mjs', import.meta.url)), 'validate', vault, '--json'],
+      { encoding: 'utf-8', env: { ...process.env, OATLAS_REPO_ROOT: '' } },
+    );
+    return JSON.parse(result.stdout);
+  }
+
+  function starterRows(report) {
+    return report.problems.flatMap((problem) =>
+      problem.issues
+        .filter((issue) => issue.code === 'starter-example-node')
+        .map(() => problem.file),
+    );
+  }
+
+  it('a vault straight out of `init` is clean', (t) => {
+    const root = vaultWith([]);
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const report = runCli(root);
+    assert.deepEqual(starterRows(report), []);
+    assert.equal(report.summary.errorFiles, 0);
+  });
+
+  it('names each starter once a real node of that kind arrives', (t) => {
+    const root = vaultWith([
+      ['domains/billing.md', 'domains/billing', 'domain', 'Billing'],
+      ['elements/stripe-client.md', 'elements/stripe-client', 'element', 'Stripe client', 'domain: domains/billing\n'],
+    ]);
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const report = runCli(root);
+    // The capability starter stays silent: no real capability exists yet.
+    assert.deepEqual(starterRows(report).sort(), [
+      'domains/example-domain.md',
+      'elements/example-element.md',
+    ]);
+    // A warning, never an error — the vault is valid and nothing blocks.
+    assert.equal(report.summary.errorFiles, 0);
   });
 });

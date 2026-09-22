@@ -36,6 +36,7 @@ import {
   nodeUidIssue,
 } from './schema.mjs';
 import {
+  STARTER_EXAMPLE_SLUGS,
   bulkProvenanceMessage,
   capabilityWithoutEvidenceMessage,
   danglingGraphReferenceMessage,
@@ -47,7 +48,12 @@ import {
   slugOutsideKindFolderMessage,
 } from './construction-rules.mjs';
 import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
-import { meaningFindings } from './meaning-findings.mjs';
+import {
+  dependencyWitnessFinding,
+  isStarterExampleNode,
+  meaningFindings,
+  starterExampleFinding,
+} from './meaning-findings.mjs';
 
 /**
  * External-change detection — blocks a silent overwrite when a human GUI, an
@@ -892,6 +898,53 @@ function gateResolves(rootPath, ref) {
   return gateIndex(rootPath, { rebuild: true }).names.has(name);
 }
 
+/**
+ * What implementation file does the node on the other end of an edge cite?
+ *
+ * The dependency-witness finding is pure and needs this one fact about the
+ * target, so the door supplies it through the read helpers that already exist
+ * rather than opening a second path to disk. `null` whenever the answer would
+ * be a guess: no such document, unreadable, or no `path:` of its own. The
+ * caller treats every `null` as "do not speak", so a tail alias nobody
+ * canonicalized costs silence, not a wrong accusation.
+ */
+function gateTargetPath(rootPath, ref) {
+  const name = String(ref ?? '').trim();
+  if (!name) return null;
+  try {
+    const filePath = slugToPath(rootPath, name);
+    if (!existsSync(filePath)) return null;
+    const path = readDoc(rootPath, filePath).frontmatter?.path;
+    return typeof path === 'string' && path.trim() ? path.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The `init` starter example for one kind, if this vault still has it.
+ *
+ * One `existsSync` and at most one `readDoc` per created node — the canonical
+ * address is known (`domains/example-domain` and its two siblings), so there is
+ * no scan to pay for. A starter somebody renamed is not looked for here on
+ * purpose: renaming it is the finished state, and the whole-vault pass covers
+ * the copied-under-another-name shape where it can see every node at once.
+ */
+function gateStarterExample(rootPath, kind) {
+  const starterSlug = STARTER_EXAMPLE_SLUGS[kind];
+  if (!starterSlug) return null;
+  try {
+    const filePath = slugToPath(rootPath, starterSlug);
+    if (!existsSync(filePath)) return null;
+    const doc = readDoc(rootPath, filePath);
+    const docKind = typeof doc.frontmatter?.kind === 'string' ? doc.frontmatter.kind.trim() : '';
+    if (docKind !== kind) return null;
+    return { slug: starterSlug, kind, title: doc.frontmatter?.title, body: doc.body };
+  } catch {
+    return null;
+  }
+}
+
 /** Keep the cache warm across a batch instead of rebuilding on every row. */
 function noteGateWrite(rootPath, slug) {
   if (!GATE.index || GATE.index.rootPath !== rootPath) return;
@@ -1029,13 +1082,21 @@ function pushRefFinding(slug, code, key, refs, message) {
  * @param {string} slug
  * @param {Record<string, unknown>} frontmatter
  * @param {{ created?: boolean }} [options] `created` marks a brand-new node, the
- *   only case where bulk provenance means anything.
+ *   only case where bulk provenance means anything. `previousFrontmatter` is the
+ *   frontmatter this write replaced, which is how a check can tell an edge that
+ *   arrived just now from one that was already on disk.
  */
 function runNodeEligibilityGate(
   rootPath,
   slug,
   frontmatter,
-  { created = false, body = '', bodyWritten = false, pathWritten = false } = {},
+  {
+    created = false,
+    body = '',
+    bodyWritten = false,
+    pathWritten = false,
+    previousFrontmatter,
+  } = {},
 ) {
   if (!frontmatter || typeof frontmatter !== 'object') return;
 
@@ -1212,6 +1273,73 @@ function runNodeEligibilityGate(
     GATE.findings.push(finding);
   }
 
+  // ④b A dependency the file it stands on never mentions. Everything above
+  //     reads one document; this one opens the source file the node cites and
+  //     asks whether it names the file the target cites. Measured 2026-09-22 on
+  //     this repository's own vault: 70 of 85 file-to-file `depends_on` edges
+  //     are witnessed that way and 15 are not, every one of them carrying a
+  //     `why` and validating clean. `impact` already answers
+  //     `sourceBacked: false` for the whole set and keeps doing so — nothing
+  //     here touches that flag; this names which rows it was talking about, at
+  //     the moment the writer still holds the reason.
+  //
+  //     New edges only, which is why `previousFrontmatter` had to be threaded
+  //     this far: re-accusing an edge on every unrelated patch is how a channel
+  //     becomes furniture. The notice key carries the target, so two edges added
+  //     to one node are two sentences rather than one that names neither.
+  //
+  //     Like `folder-only-evidence`, this has no vault-wide half in the compiled
+  //     maintenance plan: reading the cited file needs the repository root, which
+  //     the write door grounds and a compiled snapshot does not carry. The two
+  //     validators hold the root, so they answer instead.
+  for (const finding of dependencyWitnessFinding({
+    slug,
+    frontmatter,
+    previousFrontmatter,
+    repoRoot: GATE.repoRoot,
+    resolveTargetPath: (ref) => gateTargetPath(rootPath, ref),
+  })) {
+    if (!shouldNotice(GATE.noticed, `${slug}\0${finding.code}\0${finding.key}`, finding.count ?? 1, {
+      threshold: NOTICE_THRESHOLD,
+      multiple: NOTICE_REPEAT_MULTIPLE,
+    })) {
+      continue;
+    }
+    GATE.findings.push(finding);
+  }
+
+  // ④c The `init` starter example, once it is no longer alone. Measured
+  //     2026-09-22 on two unfamiliar repositories: both builders wrote a real
+  //     map through the first-run door and left `domains/example-domain`,
+  //     `capabilities/example-capability` and `elements/example-element`
+  //     standing, connected only to each other, with "Example domain" rendering
+  //     on the map beside the real ones. Nothing said a word.
+  //
+  //     Creation only, and only for a node that is not itself a starter: the
+  //     moment a real node of that kind lands is the moment the starter stops
+  //     being instructions and becomes a fake concept. The finding is attached
+  //     to the STARTER, not to the node just written — that is the file somebody
+  //     has to act on, and it keeps this row and the vault-wide row below
+  //     identical so the maintenance queue can drop the duplicate. It reaches
+  //     the agent on the new node's write response all the same.
+  //
+  //     Said once per starter per session: a thirty-node build must not repeat
+  //     it thirty times.
+  if (created && typeof frontmatter.kind === 'string') {
+    const kind = frontmatter.kind.trim();
+    const title = frontmatter.title;
+    if (!isStarterExampleNode({ slug, kind, title })) {
+      const starter = gateStarterExample(rootPath, kind);
+      if (starter && shouldNotice(GATE.noticed, `${starter.slug}\0starter-example-node`, 1, {
+        threshold: NOTICE_THRESHOLD,
+        multiple: NOTICE_REPEAT_MULTIPLE,
+      })) {
+        const finding = starterExampleFinding({ ...starter, realSlug: slug });
+        if (finding) GATE.findings.push(finding);
+      }
+    }
+  }
+
   // ⑤ Bulk provenance. Not a size limit — a statement about *who* made these and
   //    *when*. Only the write path can know that, which is the entire argument
   //    for putting this check here rather than in the compiled maintenance plan.
@@ -1275,7 +1403,7 @@ function commitDoc(
   });
   if (created) noteGateWrite(rootPath, slug);
   noteParentGrowth(slug, previousFrontmatter, frontmatter);
-  runNodeEligibilityGate(rootPath, slug, frontmatter, { created, body, bodyWritten, pathWritten });
+  runNodeEligibilityGate(rootPath, slug, frontmatter, { created, body, bodyWritten, pathWritten, previousFrontmatter });
   return filePath;
 }
 

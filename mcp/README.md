@@ -484,6 +484,22 @@ running the full installed-style MCP verify walk.
 without running the full installed-style MCP verify walk.
 `dogfood:growth` prints the dogfood vault `growth_plan` JSON snapshot
 without running the full installed-style MCP verify walk.
+
+`growth_plan` also returns `nextReads`, the reads this vault's own nodes asked
+for. Every node records what its author did not open, did not finish, or took on
+somebody else's word in its `## Uncertainty` section; this group reads those
+lines and returns one row each — `slug`, `kind` (`unread-range`, `unread-file`,
+`unopened-area`, `not-executed`, `unverified-claim`, `other`), the author's own
+`statement`, the `paths` and line `ranges` it names, and a one-sentence
+`proposedAction` naming the file to read and the `patch_concept` that closes the
+question. Bounded partial reads come first because they are the cheapest to
+finish. A statement that says something was not read but names no file inherits
+the node's own `path:`; an unopened area, an unrun command and an unchecked
+claim do not, because pointing a reader at the wrong file is worse than saying
+nothing. The group needs node bodies, which a compiled artifact does not carry,
+so a caller that supplies none gets `{total: 0, rows: [], reason: 'no_bodies'}`
+rather than a silence that would read as a vault with no unknowns left. This
+repository's own vault answers 96 next reads against 0 write actions.
 `dogfood:maintenance` prints the dogfood vault `maintenance_plan` JSON snapshot
 without running the full installed-style MCP verify walk.
 `dogfood:status` always runs health + workspace-brief + agent-brief + maintenance, prints `[dogfood:status] health:N · workspace-brief:N · agent-brief:N · maintenance:N`, preserves the first failing exit before escalating, and prints failed-child focused follow-ups (`pnpm dogfood:health`, `pnpm dogfood:brief`, `pnpm dogfood:agent`, or `pnpm dogfood:maintenance` + `pnpm test:mcp:maintenance`) before the `pnpm dogfood:verify` follow-up hint on failure.
@@ -608,7 +624,7 @@ the evidence row fail closed.
 | `find_orphans` | **v0.5** Finds isolated nodes — docs that no other node references through graph frontmatter (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`). Options: enum-validated `kind` (filter) and `excludeKinds` (skip, default `['project', 'vault-readme']`; pass `[]` to include every kind); typos fail with nearest-value hints. Each orphan row includes `uid`, current `slug`, `kind`, `title`, `domain`, and `mtime` (same shape as `list_concepts` / `find_backlinks`) — agents can retain stable identity and sort/filter "old orphans in domain X" without follow-up `get_concept` calls. Useful as a starting point for cleanup or auditing unused nodes. |
 | `query_concepts` | **v0.6** Typed filter DSL — `kind=X AND has(Y) AND NOT ...`. Saved-filter / smart-list use case. `kind` values and `has(...)` graph keys are enum-validated with nearest-value hints, and `has(depends_on)` is canonicalized to `dependencies`, so typos do not silently return empty match sets. `limit` defaults to 100 and is capped at 500. Each match row includes `uid, slug, kind, title, domain, capabilities, elements, mtime` (same shape as `list_concepts` / `find_backlinks` / `find_orphans`) so agents retain stable identity and sort/filter staleness without follow-up calls. **Ask-to-Grow**: when `total=0`, the response includes `growthHint` — flags a referenced `kind`/`domain` with 0 nodes in the real vault census, or a generic loosen-the-filter nudge otherwise. |
 | `compile_ontology` | **R+** Compiler-style graph artifact for database-like use. Compiles the whole vault into deterministic `nodes[]`, canonical `edges[]`, alias tables, graph issues, graph-array canonicalization actions, stable semantic `graphHash`, `maxMtime`, and optional query indexes (`out`, `in`, `byKind`, `byDomain`, `edgeById`, `aliasToSlug` with `includeIndexes:true`). Canonicalization action `keys` are schema-bound to relation-array frontmatter keys, and action `frontmatter` is relation-array-only so agents can distinguish safe reordering patches from arbitrary frontmatter mutation. Use before advanced reasoning, export, caching, or non-developer graph views. side effect 0. <br>**Large-vault opts (R+):** `summary: true` returns counts + `graphHash` + `byKind`/`byDomain` aggregates (no arrays) — cheap polling for cache invalidation. `nodesLimit`/`nodesOffset` and `edgesLimit`/`edgesOffset` slice arrays with `nodesPagination` / `edgesPagination` meta (`{offset, limit, total, returned, hasMore, nextOffset}`); page-size limits are capped at 500. Avoid token limit overruns in vaults with 100+ nodes. |
-| `query_ontology` | **R+** Graph-engine query over the compiled artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus `limit` / `searchBudget` / `exhaustive` / `truncatedByBudget` / `totalPathsExact` metadata and `evidence` guidance), `query_plan` (EXPLAIN-style cost/index estimate plus `execution.shouldRun`, `nextStep`, filter-preserving `suggestedQuery`, filter-aware `estimate.totalMatches` for `match_nodes` / `match_edges`, and safer narrowed payload guidance before a target operation), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges + shortest path + shared-neighbor explanation), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths), `impact` (incoming by default: what depends on this?), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice), `builder_context` (persisted Workshop focus address — `/topology/?p=<focusParam>&workbench=edit`, app-relative and locale-less, so a caller prepends the workbench origin, its own `/en` or `/ko` segment, and any deployment base path; bounded graph neighborhood, `canvasPosition` plus `expected_mtime`, and low-level MCP write handoff; the operation/response field name remains for client compatibility, unsaved UI drafts are explicitly excluded, and the emitted canonical `focusParam` is accepted as the next call's `slug` for round-trip handoff), `overview` (counts, relation distribution, hubs), `schema` (`kind → relation → kind` patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a `followUp` packet for the first returned row: `node_profile`, incoming/outgoing `match_edges`, `blast_radius`, and CLI fallback commands), `match_edges` (graph DB-style edge pattern rows plus a `followUp` packet for the first returned real edge: `explain_relation`, `path`, `relation_check`, and CLI fallback commands), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before `add_relation`), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks, bounded by `searchBudget` with `exhaustive` / `truncatedByBudget` / `totalCyclesExact` — a budget-truncated zero does **not** mean acyclic), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, cursor resume via `afterActionId`, ready pages with `cursor.found=true` / `cursor.reason=null`, cursor miss `reason`, executable graph-array canonicalization, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, `executable` flags, current-page `nextExecutableAction` / `nextReviewAction`, and `executableOnly` / `phases` / `severities` / `kinds` filters; `phases`, `severities`, and `kinds` are enum-validated), `agent_brief` (Claude Code/Codex handoff prompt, structured `businessOntologyLens` with the business-first `outcome` → `domain` → `capability` → `element` read order, structured `graphDbQueryPack` for graph DB-style node scan / edge scan / graph facets / domain coupling / path evidence / business questions, structured `cliFallbackCommands[]` for connector-less sessions, recipes, graph entrypoints, playbook `evidence[]` and `stopWhen[]` checklists, `traversalStrategy` for plan-first bounded path evidence, write guardrails including post-change `health` / `cycles` / `growth_plan` / `maintenance_plan` / `validate_vault`, `relation_check` decision guide, `resultContracts` for interpreting `all_paths` completeness and `match_nodes` / `match_edges` followUp evidence, and read-first write policy; `business_questions` runs outcome facets, domain node scans, domain coupling, capability node scans, and capability→element evidence edge scans so agents answer outcome / boundary / capability claim / implementation evidence questions before treating paths or APIs as ontology roots; `agent-brief --graph-db-pack` and the UI copyable CLI pack include intent, evidence-rule, and proof-checklist comments so connector-less sessions see that scan rows are candidates until `totalMatches`/`limited`/row count, node or edge follow-up detail, and `evidence.pathsComplete` are cited), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard; raw `components` are still reported, but vault README-only components are ignored for actionable health/nextActions). `match_nodes.kind` and `match_edges.fromKind` use the ontology node-kind enum; `match_edges.type` uses the relation-type enum; `match_edges.toKind` also accepts `external` and `unresolved` target kinds. `match_edges.filters`, `match_edges.edges[].relationType`, `followUp.focusEdge.relationType`, and `query_plan(match_edges).normalized` include public names such as `depends_on` alongside canonical frontmatter `types` or `via` values such as `dependencies`, so CLIs and agents can show user-facing relation names without losing executable graph keys. `node_profile.edges.incoming/outgoing.byRelationType` and edge `relationType` expose public names such as `depends_on` for node detail views; `domain_matrix.filters.relationTypes`, `connections.rows[].byRelationType`, and connection examples do the same for coupling views, while canonical `types`, `via`, and `byRelation` stay available for graph-key callers. The UI semantic coupling matrix and CLI node deep dive can be rerun from Claude Code, Codex, or terminal fallbacks with the same user-facing names. Typoed values return nearest-value hints instead of empty result sets. `health` / `workspace_brief` / `agent_brief` can tune their internal probes with `componentLimit`, `cycleLimit`, `recommendationLimit`, `orderLimit`, `nodeLimit`, `dependencyTypes`, and `componentTypes`; `agent_brief` forwards the same probe tuning into its embedded readiness checks. Accepts canonical slugs or unique aliases. Use for graph-database-like answers without pulling the full compile payload. side effect 0. |
+| `query_ontology` | **R+** Graph-engine query over the compiled artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus `limit` / `searchBudget` / `exhaustive` / `truncatedByBudget` / `totalPathsExact` metadata and `evidence` guidance), `query_plan` (EXPLAIN-style cost/index estimate plus `execution.shouldRun`, `nextStep`, filter-preserving `suggestedQuery`, filter-aware `estimate.totalMatches` for `match_nodes` / `match_edges`, and safer narrowed payload guidance before a target operation), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges + shortest path + shared-neighbor explanation), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths), `impact` (incoming by default: what depends on this?), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice), `builder_context` (persisted Workshop focus address — `/topology/?p=<focusParam>&workbench=edit`, app-relative and locale-less, so a caller prepends the workbench origin, its own `/en` or `/ko` segment, and any deployment base path; bounded graph neighborhood, `canvasPosition` plus `expected_mtime`, and low-level MCP write handoff; the operation/response field name remains for client compatibility, unsaved UI drafts are explicitly excluded, and the emitted canonical `focusParam` is accepted as the next call's `slug` for round-trip handoff), `overview` (counts, relation distribution, hubs), `schema` (`kind → relation → kind` patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a `followUp` packet for the first returned row: `node_profile`, incoming/outgoing `match_edges`, `blast_radius`, and CLI fallback commands), `match_edges` (graph DB-style edge pattern rows plus a `followUp` packet for the first returned real edge: `explain_relation`, `path`, `relation_check`, and CLI fallback commands), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before `add_relation`), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks, bounded by `searchBudget` with `exhaustive` / `truncatedByBudget` / `totalCyclesExact` — a budget-truncated zero does **not** mean acyclic), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates, plus `nextReads` — the files each node's own `## Uncertainty` section says were not read, with the line ranges it names and the `patch_concept` that would close each one; `reason: 'no_bodies'` when no bodies were loaded), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, cursor resume via `afterActionId`, ready pages with `cursor.found=true` / `cursor.reason=null`, cursor miss `reason`, executable graph-array canonicalization, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, `executable` flags, current-page `nextExecutableAction` / `nextReviewAction`, and `executableOnly` / `phases` / `severities` / `kinds` filters; `phases`, `severities`, and `kinds` are enum-validated), `agent_brief` (Claude Code/Codex handoff prompt, structured `businessOntologyLens` with the business-first `outcome` → `domain` → `capability` → `element` read order, structured `graphDbQueryPack` for graph DB-style node scan / edge scan / graph facets / domain coupling / path evidence / business questions, structured `cliFallbackCommands[]` for connector-less sessions, recipes, graph entrypoints, playbook `evidence[]` and `stopWhen[]` checklists, `traversalStrategy` for plan-first bounded path evidence, write guardrails including post-change `health` / `cycles` / `growth_plan` / `maintenance_plan` / `validate_vault`, `relation_check` decision guide, `resultContracts` for interpreting `all_paths` completeness and `match_nodes` / `match_edges` followUp evidence, and read-first write policy; `business_questions` runs outcome facets, domain node scans, domain coupling, capability node scans, and capability→element evidence edge scans so agents answer outcome / boundary / capability claim / implementation evidence questions before treating paths or APIs as ontology roots; `agent-brief --graph-db-pack` and the UI copyable CLI pack include intent, evidence-rule, and proof-checklist comments so connector-less sessions see that scan rows are candidates until `totalMatches`/`limited`/row count, node or edge follow-up detail, and `evidence.pathsComplete` are cited), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard; raw `components` are still reported, but vault README-only components are ignored for actionable health/nextActions). `match_nodes.kind` and `match_edges.fromKind` use the ontology node-kind enum; `match_edges.type` uses the relation-type enum; `match_edges.toKind` also accepts `external` and `unresolved` target kinds. `match_edges.filters`, `match_edges.edges[].relationType`, `followUp.focusEdge.relationType`, and `query_plan(match_edges).normalized` include public names such as `depends_on` alongside canonical frontmatter `types` or `via` values such as `dependencies`, so CLIs and agents can show user-facing relation names without losing executable graph keys. `node_profile.edges.incoming/outgoing.byRelationType` and edge `relationType` expose public names such as `depends_on` for node detail views; `domain_matrix.filters.relationTypes`, `connections.rows[].byRelationType`, and connection examples do the same for coupling views, while canonical `types`, `via`, and `byRelation` stay available for graph-key callers. The UI semantic coupling matrix and CLI node deep dive can be rerun from Claude Code, Codex, or terminal fallbacks with the same user-facing names. Typoed values return nearest-value hints instead of empty result sets. `health` / `workspace_brief` / `agent_brief` can tune their internal probes with `componentLimit`, `cycleLimit`, `recommendationLimit`, `orderLimit`, `nodeLimit`, `dependencyTypes`, and `componentTypes`; `agent_brief` forwards the same probe tuning into its embedded readiness checks. Accepts canonical slugs or unique aliases. Use for graph-database-like answers without pulling the full compile payload. side effect 0. |
 
 `query_ontology({operation:"health"})` adds a typed `relationCensus`. Both edge
 count fields use compiled frontmatter declaration records, reciprocal declarations
@@ -978,17 +994,68 @@ path is checked by `validate_vault` against the configured repository root.
 `validate_vault` reads the body as well as the frontmatter. Alongside the
 structural codes it reports `definition-missing`, `boundary-missing`,
 `uncertainty-missing`, `epistemic-exclusion`, `slug-outside-kind-folder`, and —
-when the vault sits inside a known repository — `folder-only-evidence`. These
-are the same six findings the write door returns from `add_concept` /
-`add_concepts` / `patch_concept`, produced by the same module
-(`src/meaning-findings.mjs`), and every one is a **warning**: the document is
-valid Markdown the graph reads correctly, and what is missing is the half a
-reader needs and code cannot supply, so `ok` stays true and nothing blocks. They
-are here because an agent used to be the only reader who could see them — it
-could report six findings and call the vault clean in the same turn, and no
-surface the person could run disagreed. `summary.byCode` counts them per file
-like every other code, so a first-contact call now states how much of the vault
-says nothing.
+when the vault sits inside a known repository — `folder-only-evidence` and
+`dependency-unwitnessed` — plus `starter-example-node`, which needs no
+repository at all. These are the same eight findings the write door
+returns from `add_concept` / `add_concepts` / `patch_concept`, produced by the
+same module (`src/meaning-findings.mjs`), and every one is a **warning**: the
+document is valid Markdown the graph reads correctly, and what is missing is the
+half a reader needs and code cannot supply, so `ok` stays true and nothing
+blocks. They are here because an agent used to be the only reader who could see
+them — it could report the findings and call the vault clean in the same turn,
+and no surface the person could run disagreed. `summary.byCode` counts them per
+file like every other code, so a first-contact call now states how much of the
+vault says nothing.
+
+`retire_starter_example` is the seventh meaning kind, and the only one that
+judges a file Atlas itself wrote. `init` scaffolds three examples —
+`domains/example-domain`, `capabilities/example-capability`,
+`elements/example-element` — whose bodies explain what a domain, a capability and
+an element *are*. Measured 2026-09-22 on two unfamiliar repositories: both
+builders wrote a real map through the first-run door and left all three standing,
+connected only to each other, with «Example domain» on the map beside the real
+domains, and nothing in the product said a word. The row appears the moment a
+real node of the same kind exists and not before — while the starter is the only
+node of its kind it is the instructions, and scolding somebody for the file you
+just handed them is worse than silence. Unlike every other meaning kind it needs
+**no bodies and no repository root**, only the other nodes' kinds, so it answers
+on every `maintenance_plan` call including the compiled-snapshot one; that
+matters because the vault that most needs telling is the freshly built one nobody
+has compiled with bodies loaded. It is `review` / `info`, never blocks a write,
+and is deliberately **not executable**: the repair deletes somebody's files, and a
+queue that hands over a ready-made delete of three nodes is the one row a person
+must read before running. The action names it in full — `delete_concept({slug})`
+without `confirm` for the dry-run whose backlinks are the other two starters, so
+all three go together; or `patch_concept` into a real concept followed by
+`rename_concept`, which keeps the UID.
+
+`dependency-unwitnessed` is the one that reads source instead of the vault. A
+`depends_on` edge between two nodes that each cite an implementation file is
+*witnessed* when some file names the target file — the path itself, or its
+basename without the extension as a whole word, which is what an import
+statement writes. Two files are looked at: the source node's own `path:`, and
+every repository-relative file path written in that edge's `relation_notes`,
+each clamped inside the repository and each required to exist. Naming the
+witness in the `why` is therefore a real repair and not a formality — it is also
+the only way a cross-boundary edge gets witnessed, because what proves a browser
+module depends on an MCP module is the barrel, bridge or contract test between
+them. Write that path from the repository root; a path relative to `src/` or to
+the module's own folder resolves to nothing and is ignored rather than guessed
+at. Measured on this repository's own vault (2026-09-22): 70 of 85
+such edges are witnessed and 15 are not, all 15 carrying a reviewed `why` and
+validating clean. `add_relation` and `patch_concept` report it for the edge the
+write just added, while the validators report every edge; both stay silent with
+no repository root, when either node cites a folder instead of a file, or when
+either path leaves the repository. ⚠️ It never proposes deleting the edge first.
+An import is evidence of a code dependency, but its **absence is not proof of
+independence** — a dependency carried by a runtime lookup, a build step, or a
+configuration key is real and leaves no mention in the source. So the repair it
+names is the witness: which file and which line, stated in the relation's `why`
+through `replace_relation` or written into `relation_notes` with
+`patch_concept`. Removal via `remove_relation` is offered only for the case the
+writer alone can recognise — an edge inferred because two names look alike.
+`query_ontology({operation:"impact"})` keeps marking every declared edge
+`sourceBacked: false`; this names which rows that aggregate was about.
 
 `query_ontology({operation:"cycles"})` keeps the slug path in each
 `cycles[].nodes` array and also returns aligned `cycles[].nodeSummaries`
@@ -1064,7 +1131,8 @@ is limited to `inspect_compile_issue` / `break_dependency_cycle` /
 `empty_domain` / `separate_evidence_from_concept` / `fold_bulk_siblings` /
 `retire_unearned_node` / `capability_without_evidence` / `rejudge_summary_membership` /
 `definition_missing` / `boundary_missing` / `epistemic_exclusion` / `folder_only_evidence` /
-`slug_outside_kind_folder` / `uncertainty_missing` for the same reason.
+`slug_outside_kind_folder` / `uncertainty_missing` / `retire_starter_example`
+for the same reason.
 `separate_evidence_from_concept` and `fold_bulk_siblings` come from the write-path
 node-eligibility gate (2026-07-31 council) and only ever appear on a write response:
 a path sitting in a meaning slot, and siblings a single machine batch created under
@@ -1215,6 +1283,28 @@ limited to 1,024 Unicode characters and reject ambiguous delimiters and malforme
 Unicode. Source extensions and conventional package manifests are defined by
 `mcp/src/source-evidence.mjs`; arbitrary text/data formats are not implicitly
 admitted.
+
+A selector may instead ask for an outline: `{ "path": "command.go", "mode":
+"outline" }` returns no source text but the file's declarations with their line
+numbers — `{ "line": 921, "kind": "method", "name": "Command.SuggestionsFor",
+"signature": "func (c *Command) SuggestionsFor(typed string) []string {" }` — so
+the next `lines` read names an exact range instead of the head of the file. Two
+measured construction runs read the first 40–60 lines of every file and then
+recorded that the parse methods were not read and that the file defining the
+suggestion logic could not be found, while that function sat past line 900 of a
+2,000-line file; for a file longer than about 200 lines, outline it first and
+then read the exact lines. `mode: "outline"` takes no `startLine` or `maxLines`
+and rejects them; it reads the whole file under the same 256 KiB file cap and
+the same root, symlink, sensitive-path, binary and `expectedSha256` checks, and
+refuses with the same reasons. The row carries `status: "outlined"`, the
+file's `sha256` to replay with, `language`, `declarationCount`, and `truncated`
+when the 400-declaration ceiling or the 16 KiB outline budget cut the list
+short. Declarations are found by a deterministic line scanner
+(`mcp/src/source-outline.mjs`) for JavaScript/TypeScript, Python, Go, Rust,
+Java/Kotlin/C#, Ruby and Markdown headings; a missing declaration is not
+evidence of absence, an unscanned language returns an empty list, and an outline
+mints no citation, so it supports no claim. Replay line ranges, not outlines,
+with a `proposal` or `qualification`.
 
 The reader honors the authorized analysis root and default/caller folder-name
 exclusions, refuses dotfiles, credential/key paths, symlink components,
