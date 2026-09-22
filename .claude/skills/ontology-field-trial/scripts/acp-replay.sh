@@ -14,24 +14,26 @@
 # into this file would let the trial keep measuring a wording the app no longer
 # sends, which is the one failure that makes every number below meaningless.
 #
-# usage: acp-replay.sh <target-repo> [--model opus] [--out <dir>]
+# usage: acp-replay.sh <target-repo> [--model opus] [--out <dir>] [--starter]
 set -euo pipefail
 
 die() { printf 'acp-replay: %s\n' "$1" >&2; exit 1; }
 
 target=""
 model="opus"
+starter=0
 out=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --model) [ "$#" -ge 2 ] || die "--model needs a value"; model="$2"; shift 2 ;;
     --out) [ "$#" -ge 2 ] || die "--out needs a value"; out="$2"; shift 2 ;;
+    --starter) starter=1; shift ;;
     -h|--help) sed -n '3,18p' "$0"; exit 0 ;;
     --*) die "unknown option $1" ;;
     *) [ -z "$target" ] || die "only one target repository"; target="$1"; shift ;;
   esac
 done
-[ -n "$target" ] || die "usage: acp-replay.sh <target-repo> [--model opus] [--out <dir>]"
+[ -n "$target" ] || die "usage: acp-replay.sh <target-repo> [--model opus] [--out <dir>] [--starter]"
 [ -d "$target" ] || die "no such folder: $target"
 target="$(cd "$target" && pwd)"
 
@@ -47,8 +49,17 @@ command -v claude >/dev/null 2>&1 || die "the agent command 'claude' is not on P
 command -v node >/dev/null 2>&1 || die "node is not on PATH"
 
 vault="$target/atlas"
+# The app's "build from code" door creates an EMPTY atlas folder (it writes no
+# starter nodes; `use-build-from-code.ts` only mkdirs). Running `init` here
+# planted the starter example domain, capability and element, and two Opus
+# builds on unfamiliar repositories (2026-09-22) left them in the finished map
+# without a word. Pass --starter to reproduce the "start fresh" door instead.
 if [ ! -d "$vault" ]; then
-  node "$repo_root/cli/src/index.mjs" init "$vault" >/dev/null
+  if [ "$starter" = "1" ]; then
+    node "$repo_root/cli/src/index.mjs" init "$vault" >/dev/null
+  else
+    mkdir -p "$vault"
+  fi
 fi
 
 if [ -z "$out" ]; then
