@@ -90,11 +90,40 @@ wording). The truth sits at `src/cli.rs:227` (`--ignore-failure`),
 `src/options.rs:421-433` (the failure action is chosen) and
 `src/benchmark/mod.rs:67`; the execution node's own Uncertainty line says
 lines 141-220 of `run` were read and the rest was not, so the miss is declared,
-not hidden. It is still a miss of the kind the falsifier names: the outline
-mode existed and the builder cited `src/options.rs` as an entry point without
-outlining it. The replay saves only each turn's result record, so whether any
-outline read happened cannot be counted from the artifacts; the next script
-revision keeps the tool trace.
+not hidden. **Corrected 2026-09-23:** this row first said the builder cited
+`src/options.rs` without outlining it. It did outline it: the configuration
+node's own Uncertainty line reads "`Options::from_cli_arguments` runs from line
+276 to line 470 and was read only in outline", and the answer sits at 421-433,
+inside that declared span. The loss was downstream. `growth_plan.nextReads`
+filed that sentence under `other` with no file and no range, because it knew
+neither "read only in outline" nor "from line A to line B", so the exact next
+read the builder had written down never reached a queue. The same parser
+handed back "only lines 141-220 were read" as the next read (the lines already
+read) and filed "lines 138-414 of src/cli.rs" under `src/error.rs`, the file
+named earlier in the sentence. All three are fixed in the round after this
+one; on this vault the unrecognised lines fell from 7 of 19 to 1 and the
+options span now heads the queue.
+
+**The deepening turn (2026-09-23, after the parser fix).** The same builder
+session was resumed once with a prompt naming no file: take `growth_plan`'s
+`nextReads`, work the first six rows, patch each node, adds none. 26 agent
+turns, $8.78, 225 s; six outline reads; validate clean. It read
+`src/options.rs:276-470`, `src/cli.rs:138-414`, the rest of
+`src/benchmark/mod.rs`, `scheduler.rs` and `tokenize.rs`, and rewrote each
+Uncertainty line to what is still unread. The same sealed reader (14 turns,
+$0.37) then answered q4 instead of refusing it: the tolerated exit codes are
+chosen in `src/options.rs` (true), a failing setup/prepare/conclude/cleanup
+command stops the benchmark (true, `src/benchmark/mod.rs:86-134`), and the
+wording lives in `src/output/warnings.rs` (true). It also said a failing
+benchmarked command "is still counted" by default, which is **false**: the
+default is `RaiseError` (`src/options.rs:257`) and `executor.rs:86-112`
+aborts; only a tolerated code is counted and warned about. `executor.rs` was
+still unread and the node said so; the reader stitched the default together
+from neighbouring facts. Grade: q4 partial with one invented default, up from
+an honest refusal. One product defect surfaced on the way: the builder first
+tried `read_source` on a code file and was refused, because that tool opens
+only the vault's `sources/` documents; it found the analyzer's source reader
+by itself, and a less persistent agent would have stopped there.
 
 The vault validated clean under the witness rule that shipped in this round.
 Under the tightened rule (an import, not a word) it carries 2 unwitnessed

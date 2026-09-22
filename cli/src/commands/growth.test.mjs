@@ -132,11 +132,11 @@ describe('ontology-atlas growth — next reads', () => {
     assert.equal(parsed.nextReads.reason, null);
     assert.deepEqual(parsed.nextReads.rows.map((row) => row.kind), ['unread-range', 'unopened-area']);
     assert.deepEqual(parsed.nextReads.rows[0].ranges, [
-      { path: 'mcp/src/index.js', from: 1, to: 110 },
+      { path: 'mcp/src/index.js', from: 111, to: 2790 },
     ]);
     assert.match(
       parsed.nextReads.rows[0].proposedAction,
-      /^Read mcp\/src\/index\.js \(lines 1–110\), then patch_concept/,
+      /^Read mcp\/src\/index\.js \(lines 111–2790\), then patch_concept/,
     );
   });
 });

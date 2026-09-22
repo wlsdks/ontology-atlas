@@ -4975,10 +4975,12 @@ describe('query_ontology growth_plan — the reads a vault asks for', () => {
       assert.equal(plan.summary.nextReads, 2);
       assert.deepEqual(plan.nextReads.rows.map((row) => row.kind), ['unread-range', 'unopened-area']);
       const [bounded, unopened] = plan.nextReads.rows;
-      assert.deepEqual(bounded.ranges, [{ path: 'mcp/src/index.js', from: 1, to: 110 }]);
+      // Lines 1-110 were READ; the next read is the rest of the file (2026-09-23).
+      assert.deepEqual(bounded.ranges, [{ path: 'mcp/src/index.js', from: 111, to: 2790 }]);
+      assert.deepEqual(bounded.readRanges, [{ path: 'mcp/src/index.js', from: 1, to: 110 }]);
       assert.equal(
         bounded.proposedAction,
-        'Read mcp/src/index.js (lines 1\u2013110), then patch_concept capabilities/folder-access'
+        'Read mcp/src/index.js (lines 111\u20132790), then patch_concept capabilities/folder-access'
           + ' to state what it settled or to move the statement out of Uncertainty.',
       );
       assert.deepEqual(unopened.paths, ['src-tauri/']);

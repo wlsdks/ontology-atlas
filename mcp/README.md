@@ -490,16 +490,24 @@ for. Every node records what its author did not open, did not finish, or took on
 somebody else's word in its `## Uncertainty` section; this group reads those
 lines and returns one row each — `slug`, `kind` (`unread-range`, `unread-file`,
 `unopened-area`, `not-executed`, `unverified-claim`, `other`), the author's own
-`statement`, the `paths` and line `ranges` it names, and a one-sentence
-`proposedAction` naming the file to read and the `patch_concept` that closes the
-question. Bounded partial reads come first because they are the cheapest to
-finish. A statement that says something was not read but names no file inherits
+`statement`, the `paths` it names, the line `ranges` still unread, the
+`readRanges` it says were already read, and a one-sentence `proposedAction`
+naming the file to read and the `patch_concept` that closes the question.
+Bounded partial reads come first because they are the cheapest to finish. A span
+the author read ("lines 1–110 of 2790 were read") becomes the lines after it
+when the file's end is known and "beyond lines 1–110" when it is not; until
+2026-09-23 the queue handed the read span back as the next read. "Read only in
+outline", "read from the module header", "by layout" and "from line 276 to
+line 470" are read as the builders on a Rust trial and on this vault write
+them: on those two vaults the lines no rule recognised fell from 7 of 19 to 1
+and from 49 of 107 to 6, and the Rust range that held a question its reader
+missed moved from `other` to the head of the queue. A statement that says something was not read but names no file inherits
 the node's own `path:`; an unopened area, an unrun command and an unchecked
 claim do not, because pointing a reader at the wrong file is worse than saying
 nothing. The group needs node bodies, which a compiled artifact does not carry,
 so a caller that supplies none gets `{total: 0, rows: [], reason: 'no_bodies'}`
 rather than a silence that would read as a vault with no unknowns left. This
-repository's own vault answers 96 next reads against 0 write actions.
+repository's own vault answers 107 next reads against 0 write actions.
 `dogfood:maintenance` prints the dogfood vault `maintenance_plan` JSON snapshot
 without running the full installed-style MCP verify walk.
 `dogfood:status` always runs health + workspace-brief + agent-brief + maintenance, prints `[dogfood:status] health:N · workspace-brief:N · agent-brief:N · maintenance:N`, preserves the first failing exit before escalating, and prints failed-child focused follow-ups (`pnpm dogfood:health`, `pnpm dogfood:brief`, `pnpm dogfood:agent`, or `pnpm dogfood:maintenance` + `pnpm test:mcp:maintenance`) before the `pnpm dogfood:verify` follow-up hint on failure.

@@ -40,7 +40,17 @@ const UNCERTAINTY_READ_KINDS = Object.freeze([
 const KIND_ORDER = new Map(UNCERTAINTY_READ_KINDS.map((kind, index) => [kind, index]));
 
 /** "was not read", "still unread", "not traced", "not scanned", "not inspected". */
-const UNREAD_PHRASE = /\bnot\s+read\b|\bunread\b|\bnot\s+traced\b|\bnot\s+scanned\b|\bnot\s+inspected\b/i;
+const UNREAD_PHRASE =
+  /\bnot\s+(?:re-?)?read\b|\bunread\b|\bnot\s+traced\b|\bnot\s+scanned\b|\bnot\s+inspected\b|\bwithout\s+re-?reading\b/i;
+/**
+ * "Read from the module header", "by name", "by layout", "the feature's file
+ * layout only": the author saw the outside of the file and not its body. On
+ * this repository's own vault (2026-09-23) 22 of 107 Uncertainty lines were
+ * written this way and every one fell to `other`, so the body each of them
+ * names as unread was never queued.
+ */
+const SURFACE_ONLY_PHRASE =
+  /\bread\s+from\s+(?:the|its)\s+(?:module\s+)?header\b|\bread\s+from\b[^.;]*\bheaders\b|\bheaders?\s+only\b|\bonly\s+from\s+their\s+headers\b|\bby\s+(?:name|layout)\b(?!\s+only)|\b(?:file|folder)\s+layout\b|\bgrammar\s+comment\b/i;
 /** "was not opened", "never opened" — an area the author did not enter at all. */
 const UNOPENED_PHRASE = /\bnot\s+opened\b|\bnever\s+opened\b/i;
 /**
@@ -52,18 +62,55 @@ const UNOPENED_PHRASE = /\bnot\s+opened\b|\bnever\s+opened\b/i;
  * not run" under the kind that names the work.
  */
 const NOT_EXECUTED_PHRASE =
-  /\b(?:not|never)\s+run\b|\b(?:not|never)\s+executed\b|\bno\s+code\s+was\s+executed\b/i;
+  /\b(?:not|never)\s+(?:run|executed|exercised|rendered|tested)\b|\bno\s+code\s+was\s+executed\b|\bnothing\b[^.;]{0,40}\bwas\s+(?:run|rendered|exercised)\b|\bno\s+\w+\s+was\s+(?:run|rendered|exercised|taken)\b/i;
 /** Corroboration that never touched the thing it corroborates. */
-const UNVERIFIED_PHRASE = /\bheading\s+name\s+only\b|\bby\s+name\s+only\b|\basserted\s+by\b|\bnot\s+verified\b|\bunverified\b/i;
-/**
- * "lines 1–110 of 2790" — the denominator is what makes a partial read partial.
- * Matched on its own so "of 2790 were read" upgrades a range to `unread-range`
- * even where the author never wrote the word "unread".
- */
-const OUT_OF_PHRASE = /\bof\s+[\d][\d,]*\b/i;
+const UNVERIFIED_PHRASE =
+  /\bheading\s+name\s+only\b|\bby\s+name\s+only\b|\basserted\s+by\b|\bnot\s+verified\b|\bunverified\b|\bnot\s+(?:checked|confirmed|reproduced|observed|measured|enumerated)\b/i;
 
-/** `lines 1–110`, `lines 45-74`, `line 42`. En dash, em dash and hyphen all read the same. */
-const RANGE_PATTERN = /\blines?\s+(\d[\d,]*)\s*(?:[–—-]\s*(\d[\d,]*))?/gi;
+/**
+ * `lines 1–110`, `lines 45-74`, `line 42`, `lines 10 to 20`, `lines 10 through 20`.
+ * En dash, em dash and hyphen all read the same.
+ */
+const RANGE_PATTERN = /\blines?\s+(\d[\d,]*)(?:\s*[–—-]\s*|\s+(?:to|through)\s+)?(\d[\d,]*)?/gi;
+/**
+ * `from line 276 to line 470`: the shape a builder writes for a function's
+ * extent. Read before RANGE_PATTERN so the two `line N` inside it are not
+ * counted as two one-line ranges (measured on a Rust trial vault, 2026-09-23,
+ * where this sentence was the one that held the missed answer).
+ */
+const FROM_TO_PATTERN = /\bfrom\s+line\s+(\d[\d,]*)\s+(?:to|through|until)\s+line\s+(\d[\d,]*)/gi;
+/** `through line 414`, `up to line 414`: the end of whatever the author read before it. */
+const THROUGH_LINE = /\b(?:through|up\s+to|until)\s+$/i;
+/** `lines 1–110 of 2790`: the file's length, which bounds the part left unread. */
+const DENOMINATOR_AFTER = /^\s+of\s+(\d[\d,]*)\b/;
+/** `lines 138–414 of src/cli.rs`: the file named right after the span owns it. */
+const PATH_AFTER = /^\s+of\s+(?:the\s+)?(`?)([^\s`,;]+)\1/;
+
+/**
+ * Which way a span points: the lines the author read, or the lines they did not.
+ *
+ * "Only lines 141–220 were read" names what was read, and the next read is
+ * everything else; queueing 141–220 sends the reader back over ground already
+ * covered. The first polarity phrase after the span decides, then the nearest
+ * before it; with neither, a span in an Uncertainty line is taken as unread,
+ * which is what the heading means.
+ */
+const READ_POLARITY = /\b(?:was|were)\s+read\b(?!\s+(?:only\s+)?(?:in|as)\s+(?:an?\s+)?outline)|\bread\s+(?:directly|in\s+full|line\s+by\s+line)\b/gi;
+/**
+ * "read only in outline", "seen as an outline", "outline only": the author saw
+ * the declarations and not the bodies, so the lines themselves are unread. A
+ * Rust trial builder wrote six of nineteen Uncertainty lines this way and every
+ * one fell to `other`, including the one holding the answer a reader then missed.
+ */
+const OUTLINE_ONLY_PHRASE = /\b(?:read|seen)\s+(?:only\s+)?(?:in|as)\s+(?:an?\s+)?outline\b|\boutline\s+only\b|\bonly\s+in\s+outline\b/i;
+const UNREAD_POLARITY = new RegExp(
+  [
+    /\bnot\s+read\b|\bunread\b|\bnot\s+traced\b|\bnot\s+scanned\b|\bnot\s+inspected\b/.source,
+    /\bnot\s+opened\b|\bnever\s+opened\b/.source,
+    OUTLINE_ONLY_PHRASE.source,
+  ].join('|'),
+  'gi',
+);
 
 /** A backtick span, which is how this vault's authors usually write a path. */
 const BACKTICK_PATTERN = /`([^`\n]+)`/g;
@@ -73,6 +120,9 @@ const LEADING_MARKER = /^\s*(?:[-*+]|\d+[.)]|>)\s+/;
 
 /** Punctuation an English sentence leaves stuck to a path. */
 const TRIM_EDGES = /^[([{"'“‘]+|[)\]}"'”’.,;:!?]+$/g;
+
+/** `x.mjs:42`, `x.mjs:640-748`: an editor-style citation, which names the file first. */
+const LINE_SUFFIX = /:\d+(?:[–—-]\d+)?$/;
 
 /** `.ts`, `.mjs`, `.md`, `.rs` — enough of an extension to call a token a file. */
 const EXTENSION = /\.[A-Za-z][A-Za-z0-9]{0,9}$/;
@@ -123,7 +173,7 @@ function locatePaths(statement) {
   const covered = [];
   for (const match of statement.matchAll(BACKTICK_PATTERN)) {
     covered.push([match.index, match.index + match[0].length]);
-    const token = stripEdges(match[1].trim());
+    const token = stripEdges(match[1].trim()).replace(LINE_SUFFIX, '');
     if (!looksLikePath(token, { backticked: true })) continue;
     if (seen.has(token)) continue;
     seen.add(token);
@@ -132,7 +182,7 @@ function locatePaths(statement) {
   const isCovered = (index) => covered.some(([from, to]) => index >= from && index < to);
   for (const match of statement.matchAll(/\S+/g)) {
     if (isCovered(match.index)) continue;
-    const token = stripEdges(match[0]);
+    const token = stripEdges(stripEdges(match[0]).replace(LINE_SUFFIX, ''));
     if (!looksLikePath(token, { backticked: false })) continue;
     if (seen.has(token)) continue;
     seen.add(token);
@@ -159,18 +209,95 @@ function pathForRange(index, paths, fallbackPath) {
   return fallbackPath ?? null;
 }
 
+function polarityAt(statement, start, end) {
+  const after = statement.slice(end);
+  const before = statement.slice(0, start);
+  const first = (text, pattern) => {
+    pattern.lastIndex = 0;
+    const match = pattern.exec(text);
+    return match ? match.index : -1;
+  };
+  const readAfter = first(after, READ_POLARITY);
+  const unreadAfter = first(after, UNREAD_POLARITY);
+  if (readAfter >= 0 || unreadAfter >= 0) {
+    if (unreadAfter < 0) return 'read';
+    if (readAfter < 0) return 'unread';
+    return readAfter < unreadAfter ? 'read' : 'unread';
+  }
+  const last = (text, pattern) => {
+    let index = -1;
+    pattern.lastIndex = 0;
+    for (const match of text.matchAll(pattern)) index = match.index;
+    return index;
+  };
+  return last(before, READ_POLARITY) > last(before, UNREAD_POLARITY) ? 'read' : 'unread';
+}
+
+/**
+ * Every span in a statement, as the lines still to read.
+ *
+ * A span the author read becomes its complement when the file's end is known
+ * (a denominator, or a later "through line N"); otherwise it is kept as a
+ * `readRanges` entry so the action can say "beyond lines 141–220" rather than
+ * send the reader back over them.
+ */
 function locateRanges(statement, paths, fallbackPath) {
-  const ranges = [];
+  const spans = [];
+  const masked = [];
+  const push = (match, from, to, extra = {}) => {
+    const tail = statement.slice(match.index + match[0].length);
+    const explicit = PATH_AFTER.exec(tail);
+    const explicitPath =
+      explicit && looksLikePath(stripEdges(explicit[2]), { backticked: explicit[1] === '`' })
+        ? stripEdges(explicit[2])
+        : null;
+    const path = explicitPath ?? pathForRange(match.index, paths, fallbackPath);
+    if (!path) return;
+    const denominator = DENOMINATOR_AFTER.exec(tail);
+    spans.push({
+      path,
+      from,
+      to: Math.max(from, to),
+      polarity: polarityAt(statement, match.index, match.index + match[0].length),
+      total: denominator ? toInteger(denominator[1]) : null,
+      ...extra,
+    });
+  };
+  for (const match of statement.matchAll(FROM_TO_PATTERN)) {
+    masked.push([match.index, match.index + match[0].length]);
+    const from = toInteger(match[1]);
+    const to = toInteger(match[2]);
+    if (Number.isFinite(from) && Number.isFinite(to)) push(match, from, to);
+  }
+  const isMasked = (index) => masked.some(([from, to]) => index >= from && index < to);
   for (const match of statement.matchAll(RANGE_PATTERN)) {
+    if (isMasked(match.index)) continue;
     const from = toInteger(match[1]);
     if (!Number.isFinite(from)) continue;
     const to = match[2] === undefined ? from : toInteger(match[2]);
     if (!Number.isFinite(to)) continue;
-    const path = pathForRange(match.index, paths, fallbackPath);
-    if (!path) continue;
-    ranges.push({ path, from, to: Math.max(from, to) });
+    const boundOnly = match[2] === undefined && THROUGH_LINE.test(statement.slice(0, match.index));
+    push(match, from, to, boundOnly ? { bound: true } : {});
   }
-  return ranges;
+
+  const ranges = [];
+  const readRanges = [];
+  spans.sort((a, b) => a.from - b.from);
+  for (const span of spans) {
+    if (span.bound) continue;
+    if (span.polarity === 'unread') {
+      ranges.push({ path: span.path, from: span.from, to: span.to });
+      continue;
+    }
+    readRanges.push({ path: span.path, from: span.from, to: span.to });
+    const bound = spans.find(
+      (other) => other.bound && other.path === span.path && other.from > span.to,
+    );
+    const end = span.total ?? bound?.from ?? null;
+    if (span.from > 1 && span.total) ranges.push({ path: span.path, from: 1, to: span.from - 1 });
+    if (end !== null && end > span.to) ranges.push({ path: span.path, from: span.to + 1, to: end });
+  }
+  return { ranges, readRanges };
 }
 
 /**
@@ -181,24 +308,32 @@ function locateRanges(statement, paths, fallbackPath) {
  * file: the author who wrote "lines 1–110 of 2790 were read" left a bookmark,
  * and that bookmark is the cheapest thing in the queue.
  */
-function classify(statement, hasRange) {
-  const unread = UNREAD_PHRASE.test(statement);
+function classify(statement, { hasRange, hasReadRange }) {
+  const unread =
+    UNREAD_PHRASE.test(statement) ||
+    OUTLINE_ONLY_PHRASE.test(statement) ||
+    SURFACE_ONLY_PHRASE.test(statement);
   const unopened = UNOPENED_PHRASE.test(statement);
-  if (hasRange && (unread || unopened || OUT_OF_PHRASE.test(statement))) return 'unread-range';
+  if (hasRange) return 'unread-range';
   if (unread) return 'unread-file';
   if (unopened) return 'unopened-area';
   if (NOT_EXECUTED_PHRASE.test(statement)) return 'not-executed';
   if (UNVERIFIED_PHRASE.test(statement)) return 'unverified-claim';
+  // "Only lines 141–220 were read" says the rest was not, without the words.
+  if (hasReadRange) return 'unread-file';
   return 'other';
 }
 
 /** One sentence, so the row can be pasted into a plan without editing. */
-function proposeAction({ slug, path, range }) {
+function proposeAction({ slug, path, range, readRange }) {
   const tail =
     `then patch_concept ${slug} to state what it settled` +
     ' or to move the statement out of Uncertainty.';
   if (!path) return `Read the source behind ${slug}, ${tail}`;
   if (range) return `Read ${path} (lines ${range.from}–${range.to}), ${tail}`;
+  if (readRange) {
+    return `Read ${path} beyond lines ${readRange.from}–${readRange.to}, which were already read, ${tail}`;
+  }
   return `Read ${path}, ${tail}`;
 }
 
@@ -220,21 +355,31 @@ export function extractUncertaintyReads({ slug, kind, path, body, title } = {}) 
     const statement = String(line).replace(LEADING_MARKER, '').trim();
     if (!statement) continue;
     const located = locatePaths(statement);
-    const preliminaryRanges = locateRanges(statement, located, path);
-    const rowKind = classify(statement, preliminaryRanges.length > 0);
+    const preliminary = locateRanges(statement, located, path);
+    const rowKind = classify(statement, {
+      hasRange: preliminary.ranges.length > 0,
+      hasReadRange: preliminary.readRanges.length > 0,
+    });
     const inherits = rowKind === 'unread-file' || rowKind === 'unread-range';
+    const keepSpans = located.length > 0 || inherits;
+    const ranges = keepSpans ? preliminary.ranges : [];
+    const readRanges = keepSpans ? preliminary.readRanges : [];
     const paths =
       located.length > 0
         ? located.map((entry) => entry.path)
         : inherits && typeof path === 'string' && path
           ? [path]
           : [];
-    const ranges = located.length > 0 || inherits ? preliminaryRanges : [];
+    // A span's own file belongs in `paths` even when the sentence never wrote it.
+    for (const span of [...ranges, ...readRanges]) {
+      if (!paths.includes(span.path)) paths.push(span.path);
+    }
     rows.push({
       slug,
       statement,
       paths,
       ranges,
+      readRanges,
       kind: rowKind,
     });
   }
@@ -267,12 +412,14 @@ export function orderUncertaintyReads(rows) {
       statement: row.statement,
       paths: row.paths,
       ranges: row.ranges,
+      readRanges: row.readRanges ?? [],
       proposedAction: proposeAction({
         slug: row.slug,
         // The range's own file wins over the first path named: a sentence that
         // mentions two files and bounds one of them means the bounded one.
-        path: row.ranges[0]?.path ?? row.paths[0] ?? null,
+        path: row.ranges[0]?.path ?? row.readRanges?.[0]?.path ?? row.paths[0] ?? null,
         range: row.ranges[0] ?? null,
+        readRange: row.readRanges?.[0] ?? null,
       }),
     }));
 }

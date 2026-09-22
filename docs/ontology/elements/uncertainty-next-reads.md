@@ -16,6 +16,8 @@ Reads what a node's author recorded as not read and turns each of those sentence
 
 ## Includes
 - One row per statement under a node's `## Uncertainty` heading, sorted so the cheapest complete answer comes first: a named range, then an unread file, then an unopened area.
+- The direction of a span: lines the author says were read are kept as what was read, and the next read is the lines after them (to the file's stated end, or "beyond" them when the end is unknown), never the same lines again.
+- The phrasing builders actually write: read only in outline, read from the module header, by layout, from line A to line B, never exercised, not checked.
 - A kept row for a statement whose wording matches no known shape, so the vault never learns that only recognised phrasing counts.
 
 ## Excludes
@@ -23,4 +25,4 @@ Reads what a node's author recorded as not read and turns each of those sentence
 - Judging whether the recorded unknown matters to the product.
 
 ## Uncertainty
-- Read the module header and both exports (`mcp/src/uncertainty-reads.mjs:1-30`, `:215`, `:252`) and the call site inside the growth plan (`mcp/src/ontology-engine.mjs:3471`). The classification phrasings themselves were not read, and the parallel copy the header points at in `cli/src/lib/query-result-contract.mjs` was seen referenced but not opened.
+- Read the whole module after this revision (`mcp/src/uncertainty-reads.mjs:1-425`, with span direction at `:212` and span assembly at `:244`) and its call site in the growth plan (`mcp/src/ontology-engine/scope-queries.mjs:849`). The parallel shape check in `cli/src/lib/query-result-contract.mjs` was read only for the row fields it validates. The phrasing table was measured on two vaults (this one and one Rust trial); a builder in another language or style may still write lines that fall to the unrecognised kind.
