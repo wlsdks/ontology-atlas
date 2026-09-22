@@ -33,6 +33,10 @@ export type DoNextGroupKey =
   | "island"
   | "containment"
   | "missing-definition"
+  | "missing-boundary"
+  | "missing-uncertainty"
+  | "epistemic-exclusion"
+  | "slug-outside-kind-folder"
   | "missing-domain"
   | "duplicate"
   | "promotion"
@@ -52,6 +56,10 @@ export function buildDoNextGroupCounts(counts: InsightsSignalCounts): DoNextGrou
     island: Math.max(0, counts.islands),
     containment: Math.max(0, counts.missingContainment),
     "missing-definition": Math.max(0, counts.sections["missing-definition"]),
+    "missing-boundary": Math.max(0, counts.sections["missing-boundary"]),
+    "missing-uncertainty": Math.max(0, counts.sections["missing-uncertainty"]),
+    "epistemic-exclusion": Math.max(0, counts.sections["epistemic-exclusion"]),
+    "slug-outside-kind-folder": Math.max(0, counts.sections["slug-outside-kind-folder"]),
     "missing-domain": Math.max(0, counts.sections["missing-domain"]),
     duplicate: Math.max(0, counts.sections.duplicate),
     promotion: Math.max(0, counts.sections.promotion),

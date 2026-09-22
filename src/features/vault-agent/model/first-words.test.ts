@@ -40,7 +40,7 @@ function facts(
   return new Map(
     Object.entries(entries).map(([slug, value]) => [
       slug,
-      { hasDefinition: true, domainRef: 'billing', mtime: null, ...value },
+      { findings: [], domainRef: 'billing', mtime: null, ...value },
     ]),
   );
 }
@@ -61,7 +61,7 @@ describe('buildFirstWords', () => {
       {
         nodes: [node({ title: 'pay' }), node({ title: 'refund' })],
         docFacts: facts({
-          'capabilities/pay': { hasDefinition: false },
+          'capabilities/pay': { findings: ['definition-missing'] },
           'capabilities/refund': { domainRef: null },
         }),
         focusedRef: 'capabilities/pay',
@@ -103,7 +103,7 @@ describe('buildFirstWords', () => {
     const chips = buildFirstWords(
       {
         nodes: [node({ title: 'pay' })],
-        docFacts: facts({ 'capabilities/pay': { hasDefinition: false } }),
+        docFacts: facts({ 'capabilities/pay': { findings: ['definition-missing'] } }),
         focusedRef: 'capabilities/pay',
       },
       labels,
@@ -116,7 +116,7 @@ describe('buildFirstWords', () => {
     const chips = buildFirstWords(
       {
         nodes: [derived],
-        docFacts: facts({ 'capabilities/derived': { hasDefinition: false } }),
+        docFacts: facts({ 'capabilities/derived': { findings: ['definition-missing'] } }),
         focusedRef: 'capabilities/derived',
       },
       labels,
@@ -139,8 +139,8 @@ describe('buildFirstWords', () => {
     const input = {
       nodes: [node({ title: 'zulu' }), node({ title: 'alpha' })],
       docFacts: facts({
-        'capabilities/zulu': { hasDefinition: false },
-        'capabilities/alpha': { hasDefinition: false },
+        'capabilities/zulu': { findings: ['definition-missing'] },
+        'capabilities/alpha': { findings: ['definition-missing'] },
       }),
       focusedRef: null,
     };
@@ -159,7 +159,7 @@ describe('S7 이음새 — 같은 생성기', () => {
 
   it('큐 행에서 건너온 문장과 빈 대화 1번 칩이 같은 문장이다', () => {
     const target = node({ title: 'pay' });
-    const docFacts = facts({ 'capabilities/pay': { hasDefinition: false } });
+    const docFacts = facts({ 'capabilities/pay': { findings: ['definition-missing'] } });
     const fromChip = buildFirstWords(
       { nodes: [target], docFacts, focusedRef: 'capabilities/pay' },
       labels,

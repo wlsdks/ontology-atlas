@@ -1,20 +1,28 @@
 import {
+  detectMeaningFindingGaps,
   detectMeaningGaps,
   resolveNodeAgentTarget,
   resolveNodeDocument,
+  MEANING_FINDING_GAP_KINDS,
   type ConceptDocFacts,
   type KnowledgeGraphNode,
+  type MeaningFindingGapKind,
   type MeaningGapKind,
 } from "@/entities/knowledge-graph";
 import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 import { fillHandoffTemplate, withDoNextVerification } from "./do-next-queue";
 
 /**
- * **Work that ends in one sentence** — it selects only the two gaps someone who does not read code
- * can close on the spot.
+ * **The meaning rows of the to-do queue** — the two gaps someone who does not read code can close
+ * on the spot, plus the four findings that name a node and open it.
  *
  * - `missing-definition` — nowhere states what this concept means.
  * - `missing-domain` — a capability or element with no stated parent area.
+ *
+ * Those two are written from here, one frontmatter key each. The other four —
+ * `missing-boundary`, `missing-uncertainty`, `epistemic-exclusion` and
+ * `slug-outside-kind-folder` — are `MeaningFindingRow`s: they name the node and open it,
+ * because each is answered by writing prose or moving a file, not by filling a field.
  *
  * **Where the definition is written.** It goes in the **frontmatter `description` key**. Because:
  * ① the schema source of truth (`mcp/src/schema.mjs`) gives all four kinds a `description` and
@@ -26,9 +34,14 @@ import { fillHandoffTemplate, withDoNextVerification } from "./do-next-queue";
  * **What does not count as missing a definition.** Even with no `description`, **a body that
  * explains the concept counts as a definition.** Measured 2026-07-26: 91 of the dogfood vault's 92
  * concepts stated their meaning in the body with no `description`. Judging by key presence alone
- * would raise 91 false to-dos on a well-written vault, which makes the queue unusable. Derivation
- * (`derive-ontology-from-vault`) already builds the summary as `description ?? excerpt`, so it is a
- * gap only when that summary is empty.
+ * would raise 91 false to-dos on a well-written vault, which makes the queue unusable.
+ *
+ * Which body counts is no longer decided here. Until 2026-09-22 the test was "a `description` or
+ * any excerpt at all", so a heading and a placeholder bullet passed, and the queue called a node
+ * defined while `validate_vault` was reporting `definition-missing` on the same file to the agent
+ * standing next to the person. The verdict is now the manifest's recorded finding
+ * (`VaultDoc.meaningFindings`), which both manifest builders take from
+ * `src/shared/lib/meaning-findings.ts` — the port the parity contract holds to the canonical rule.
  *
  * **A concept with no document never appears here.** The verdict on where to write uses
  * `resolveNodeDocument` **alone**. A derived concept with no `.md` of its own has no file to fix
@@ -61,10 +74,52 @@ export interface MeaningGapRow {
   handoffPayload: string;
 }
 
+/**
+ * One node reported by a finding the person cannot close by typing into a field.
+ *
+ * Narrower than `MeaningGapRow` on purpose: there is no handoff template and no write
+ * form, because answering "what does this exclude?" or "where should this file sit?"
+ * means opening the node and writing prose, not filling one frontmatter key. The row
+ * carries only what is needed to name the node and open it.
+ */
+interface MeaningFindingRow {
+  /** The row's unique id — `<section>:<slug>`, the same shape the queue's other ids use. */
+  id: string;
+  gap: MeaningFindingGapKind;
+  /** The graph node id — for map and workshop deeplinks. */
+  nodeId: string;
+  /** The document the finding is about. */
+  ownSlug: string;
+  title: string;
+  nodeKind: string;
+}
+
+/** Per-section row lists and pre-truncation totals, one entry per finding section. */
+export type MeaningFindingRows = Record<MeaningFindingGapKind, MeaningFindingRow[]>;
+type MeaningFindingCounts = Record<MeaningFindingGapKind, number>;
+
 export interface MeaningGapResult {
   definitionRows: MeaningGapRow[];
   domainRows: MeaningGapRow[];
-  counts: { missingDefinition: number; missingDomain: number };
+  /**
+   * The four advisory finding sections, already truncated to the display limit.
+   * Their totals live in `counts.findings`, so a shortened list still states its scale.
+   */
+  findingRows: MeaningFindingRows;
+  counts: {
+    missingDefinition: number;
+    missingDomain: number;
+    findings: MeaningFindingCounts;
+  };
+}
+
+function emptyFindingRows(): MeaningFindingRows {
+  return {
+    "missing-boundary": [],
+    "missing-uncertainty": [],
+    "epistemic-exclusion": [],
+    "slug-outside-kind-folder": [],
+  };
 }
 
 /** One area available when assigning a parent. */
@@ -99,6 +154,7 @@ export function buildMeaningGapRows(
   const perKindLimit = options.perKindLimit ?? 3;
   const definitionRows: MeaningGapRow[] = [];
   const domainRows: MeaningGapRow[] = [];
+  const findingRows = emptyFindingRows();
 
   for (const node of nodes) {
     const { ownSlug } = resolveNodeDocument(node);
@@ -127,6 +183,16 @@ export function buildMeaningGapRows(
         ),
       });
     }
+    for (const finding of detectMeaningFindingGaps(doc)) {
+      findingRows[finding].push({
+        id: `${finding}:${ownSlug}`,
+        gap: finding,
+        nodeId: base.nodeId,
+        ownSlug,
+        title: base.title,
+        nodeKind: base.nodeKind,
+      });
+    }
     if (gaps.includes("missing-domain")) {
       domainRows.push({
         ...base,
@@ -142,16 +208,28 @@ export function buildMeaningGapRows(
   }
 
   // By name — if the order changed between two visits to the same screen, the row just seen would have to be found again.
-  const byTitle = (a: MeaningGapRow, b: MeaningGapRow) => a.title.localeCompare(b.title);
+  const byTitle = (a: { title: string }, b: { title: string }) =>
+    a.title.localeCompare(b.title);
   definitionRows.sort(byTitle);
   domainRows.sort(byTitle);
+
+  const findingCounts = {} as MeaningFindingCounts;
+  const shownFindingRows = emptyFindingRows();
+  for (const section of MEANING_FINDING_GAP_KINDS) {
+    const rows = findingRows[section];
+    rows.sort(byTitle);
+    findingCounts[section] = rows.length;
+    shownFindingRows[section] = rows.slice(0, perKindLimit);
+  }
 
   return {
     definitionRows: definitionRows.slice(0, perKindLimit),
     domainRows: domainRows.slice(0, perKindLimit),
+    findingRows: shownFindingRows,
     counts: {
       missingDefinition: definitionRows.length,
       missingDomain: domainRows.length,
+      findings: findingCounts,
     },
   };
 }

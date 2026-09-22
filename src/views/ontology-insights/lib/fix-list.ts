@@ -19,6 +19,10 @@ export type FixBlockKey =
   | "blocked-document"
   | "repair"
   | "missing-definition"
+  | "missing-boundary"
+  | "missing-uncertainty"
+  | "epistemic-exclusion"
+  | "slug-outside-kind-folder"
   | "missing-domain"
   | "duplicate"
   | "promotion"
@@ -44,7 +48,22 @@ const LEADING_BLOCKS: readonly FixBlockKey[] = ["blocked-document", "repair"];
 
 /** The queue's own sections, in the order each group already rendered them. */
 const GROUP_BLOCKS = {
-  meaning: ["missing-definition", "missing-domain", "duplicate", "promotion"],
+  /*
+   * The meaning order is the order the validator asks its questions in: what is this,
+   * what does it include and exclude, what did you not check, is an exclusion really a
+   * limit of the reading, and where does the file sit. The two write-in-place rows keep
+   * the top, because they close without leaving the screen.
+   */
+  meaning: [
+    "missing-definition",
+    "missing-domain",
+    "missing-boundary",
+    "missing-uncertainty",
+    "epistemic-exclusion",
+    "slug-outside-kind-folder",
+    "duplicate",
+    "promotion",
+  ],
   code: ["neglected-hub", "orphan", "cycle"],
 } as const satisfies Record<"meaning" | "code", readonly FixBlockKey[]>;
 

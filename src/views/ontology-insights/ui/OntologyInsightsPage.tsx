@@ -1040,6 +1040,11 @@ export function OntologyInsightsPage() {
   const queueSectionTotals = useMemo<Record<QueueSectionKey, number>>(
     () => ({
       "missing-definition": meaningGapResult.counts.missingDefinition,
+      "missing-boundary": meaningGapResult.counts.findings["missing-boundary"],
+      "missing-uncertainty": meaningGapResult.counts.findings["missing-uncertainty"],
+      "epistemic-exclusion": meaningGapResult.counts.findings["epistemic-exclusion"],
+      "slug-outside-kind-folder":
+        meaningGapResult.counts.findings["slug-outside-kind-folder"],
       "missing-domain": meaningGapResult.counts.missingDomain,
       duplicate: duplicates.suspectCount,
       promotion: doNextQueue.counts.promotion,
@@ -1231,6 +1236,9 @@ export function OntologyInsightsPage() {
     whyDuplicate: (percent: number) => t("doNext.whyDuplicate", { percent }),
     whyMissingDefinition: t("doNext.whyMissingDefinition"),
     whyMissingDomain: t("doNext.whyMissingDomain"),
+    // Keyed the same way `groupName` is, so a finding's name and its sentence are added
+    // together or not at all.
+    whyMeaningFinding: (group: DoNextGroupKey) => t(`doNext.whyFinding.${group}`),
     whyIsland: t("doNext.whyIsland"),
     whyContainment: t("doNext.whyContainment"),
     whyBlockedDocument: (reason: string) => t("doNext.whyBlockedDocument", { reason }),
@@ -1628,6 +1636,7 @@ export function OntologyInsightsPage() {
                 meaningGaps={{
                   definitionRows: meaningGapResult.definitionRows,
                   domainRows: meaningGapResult.domainRows,
+                  findingRows: meaningGapResult.findingRows,
                   domainChoices,
                   onWrite: writeMeaningGap,
                   definitionLabels: meaningGapDefinitionLabels,

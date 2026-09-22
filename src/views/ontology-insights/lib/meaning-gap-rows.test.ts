@@ -30,7 +30,7 @@ function node(partial: Partial<KnowledgeGraphNode> & { id: string }): KnowledgeG
 }
 
 const facts = (partial: Partial<ConceptDocFacts> = {}): ConceptDocFacts => ({
-  hasDefinition: true,
+  findings: [],
   domainRef: "billing",
   mtime: 1700,
   ...partial,
@@ -45,8 +45,8 @@ describe("buildMeaningGapRows", () => {
     const result = buildMeaningGapRows(
       nodes,
       new Map([
-        ["capabilities/a", facts({ hasDefinition: false })],
-        ["capabilities/b", facts({ hasDefinition: true })],
+        ["capabilities/a", facts({ findings: ["definition-missing"] })],
+        ["capabilities/b", facts({ findings: [] })],
       ]),
       { prose: PROSE },
     );
@@ -67,7 +67,7 @@ describe("buildMeaningGapRows", () => {
     ];
     const result = buildMeaningGapRows(
       nodes,
-      new Map([["capabilities/owner", facts({ hasDefinition: false, domainRef: null })]]),
+      new Map([["capabilities/owner", facts({ findings: ["definition-missing"], domainRef: null })]]),
       { prose: PROSE },
     );
     expect(result.definitionRows).toEqual([]);
@@ -116,7 +116,7 @@ describe("buildMeaningGapRows", () => {
     );
     const result = buildMeaningGapRows(
       nodes,
-      new Map(nodes.map((n) => [n.evidenceIds[0], facts({ hasDefinition: false })])),
+      new Map(nodes.map((n) => [n.evidenceIds[0], facts({ findings: ["definition-missing"] })])),
       { perKindLimit: 2, prose: PROSE },
     );
     expect(result.definitionRows).toHaveLength(2);
@@ -134,7 +134,7 @@ describe("buildMeaningGapRows", () => {
           hasOwnDocument: true,
         }),
       ],
-      new Map([["ontology/capabilities/pay", facts({ hasDefinition: false, mtime: 42 })]]),
+      new Map([["ontology/capabilities/pay", facts({ findings: ["definition-missing"], mtime: 42 })]]),
       { prose: PROSE },
     );
     const [row] = result.definitionRows;
@@ -151,6 +151,92 @@ describe("buildMeaningGapRows", () => {
       { prose: PROSE },
     );
     expect(result.definitionRows).toEqual([]);
+  });
+});
+
+describe("buildMeaningGapRows — 검사 소견 줄", () => {
+  const nodes = [
+    node({
+      id: "capability:pay",
+      title: "Pay",
+      evidenceIds: ["capabilities/pay"],
+      hasOwnDocument: true,
+    }),
+    node({
+      id: "capability:refund",
+      title: "Refund",
+      evidenceIds: ["capabilities/refund"],
+      hasOwnDocument: true,
+    }),
+  ];
+
+  it("경계가 없는 개념은 경계 자리에 한 줄로 선다", () => {
+    const result = buildMeaningGapRows(
+      nodes.slice(0, 1),
+      new Map([["capabilities/pay", facts({ findings: ["boundary-missing"] })]]),
+      { prose: PROSE },
+    );
+    expect(result.findingRows["missing-boundary"]).toEqual([
+      {
+        id: "missing-boundary:capabilities/pay",
+        gap: "missing-boundary",
+        nodeId: "capability:pay",
+        ownSlug: "capabilities/pay",
+        title: "Pay",
+        nodeKind: "capability",
+      },
+    ]);
+    expect(result.counts.findings["missing-boundary"]).toBe(1);
+    // The other three sections stay empty — one finding does not raise four rows.
+    expect(result.counts.findings["missing-uncertainty"]).toBe(0);
+    expect(result.counts.findings["epistemic-exclusion"]).toBe(0);
+    expect(result.counts.findings["slug-outside-kind-folder"]).toBe(0);
+    expect(result.definitionRows).toEqual([]);
+  });
+
+  it("양쪽이 다 비어도 문서 하나에 줄 하나", () => {
+    const result = buildMeaningGapRows(
+      nodes.slice(0, 1),
+      new Map([
+        [
+          "capabilities/pay",
+          facts({ findings: ["boundary-missing", "boundary-missing"] }),
+        ],
+      ]),
+      { prose: PROSE },
+    );
+    expect(result.findingRows["missing-boundary"]).toHaveLength(1);
+    expect(result.counts.findings["missing-boundary"]).toBe(1);
+  });
+
+  it("줄은 이름순이고, 총계는 자르기 전 수를 말한다", () => {
+    const result = buildMeaningGapRows(
+      nodes,
+      new Map([
+        ["capabilities/pay", facts({ findings: ["uncertainty-missing"] })],
+        ["capabilities/refund", facts({ findings: ["uncertainty-missing"] })],
+      ]),
+      { prose: PROSE, perKindLimit: 1 },
+    );
+    expect(result.findingRows["missing-uncertainty"].map((row) => row.title)).toEqual([
+      "Pay",
+    ]);
+    expect(result.counts.findings["missing-uncertainty"]).toBe(2);
+  });
+
+  it("자기 문서가 없는 개념은 소견 줄도 만들지 않는다", () => {
+    const derived = node({
+      id: "capability:derived",
+      title: "Derived",
+      evidenceIds: ["capabilities/pay"],
+      hasOwnDocument: false,
+    });
+    const result = buildMeaningGapRows(
+      [derived],
+      new Map([["capabilities/pay", facts({ findings: ["boundary-missing"] })]]),
+      { prose: PROSE },
+    );
+    expect(result.findingRows["missing-boundary"]).toEqual([]);
   });
 });
 

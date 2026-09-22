@@ -274,6 +274,16 @@ export function DocFrontmatterBlock({
       // routed in they would have surfaced as the bare code string.
       "malformed-frontmatter-line": t("validatorIssues.malformedFrontmatterLine"),
       "malformed-quoted-scalar": t("validatorIssues.malformedQuotedScalar"),
+      // The meaning findings a write can see in the body, and the two the
+      // validators add with a repository root. Without a sentence here the
+      // strip showed the raw code (seen in the broken-vault e2e, 2026-09-22).
+      "definition-missing": t("validatorIssues.definitionMissing"),
+      "boundary-missing": t("validatorIssues.boundaryMissing"),
+      "uncertainty-missing": t("validatorIssues.uncertaintyMissing"),
+      "epistemic-exclusion": t("validatorIssues.epistemicExclusion"),
+      "slug-outside-kind-folder": t("validatorIssues.slugOutsideKindFolder"),
+      "folder-only-evidence": t("validatorIssues.folderOnlyEvidence"),
+      "dependency-unwitnessed": t("validatorIssues.dependencyUnwitnessed"),
     }),
     [t],
   );

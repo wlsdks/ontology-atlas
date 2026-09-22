@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { cpSync } from 'node:fs';
 import { mkdtemp, mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { after, before, describe, it, test } from 'node:test';
+
+/** This checkout's root — the source the bare-worktree probe below copies from. */
+const SOURCE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 import {
   comparableDoc,
@@ -286,6 +291,95 @@ test('virtual ledger keeps its public slug, hides record fragments, and takes th
     assert.equal(result.content.DECISIONS, '# Decisions\n\nComposed.\n');
     assert.equal(result.manifest.docs[0].updatedAt, '2026-03-08');
     assert.deepEqual(result.publicFiles.map((file) => file.relativePath), ['DECISIONS.md', 'records/README.md']);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+/**
+ * **The manifest records what the validator hears about each body — or says it did not ask.**
+ *
+ * The five portable meaning findings come from `mcp/src`, a sibling package this script
+ * imports rather than retypes, so the static manifest and the app's own builder answer
+ * with one rule. That import is optional: `prepare` copies this script alone into a bare
+ * worktree, and a checkout with no `mcp/` must still build a manifest — recording `null`
+ * (nobody asked) rather than `[]` (asked and clean), because a later reader turning the
+ * second into "this file is fine" is the whole failure this field exists to prevent.
+ */
+test('meaning findings ride the scan: codes for a node, no key for a plain document', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-meaning-findings-'));
+  try {
+    await mkdir(path.join(root, 'docs', 'ontology', 'capabilities'), { recursive: true });
+    await writeFile(
+      path.join(root, 'docs', 'ontology', 'capabilities', 'pay.md'),
+      ['---', 'title: Pay', 'kind: capability', '---', '# Pay', ''].join('\n'),
+      'utf8',
+    );
+    await writeFile(path.join(root, 'docs', 'GUIDE.md'), '# Guide\n\nPlain prose.\n', 'utf8');
+
+    const result = await scanVaultDir(path.join(root, 'docs'), {
+      rootDir: root,
+      check: true,
+      publicOutDir: null,
+      vaultSlugPrefix: 'ontology/',
+    });
+    const bySlug = new Map(result.manifest.docs.map((doc) => [doc.slug, doc]));
+    assert.deepEqual(bySlug.get('ontology/capabilities/pay').meaningFindings, [
+      'definition-missing',
+      'boundary-missing',
+      'boundary-missing',
+      'uncertainty-missing',
+    ]);
+    // The vault root is `docs/ontology`, so the node is inside its kind folder and the
+    // position finding stays quiet — without the prefix subtraction every sample node
+    // would be accused of sitting outside its own folder.
+    assert.equal(
+      bySlug.get('ontology/capabilities/pay').meaningFindings.includes('slug-outside-kind-folder'),
+      false,
+    );
+    assert.equal('meaningFindings' in bySlug.get('GUIDE'), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('a checkout with no mcp/ records null, not an empty list, and says why', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-no-mcp-'));
+  try {
+    // The shape `prepare` materializes: this script and the libraries it imports, no `mcp/`.
+    await mkdir(path.join(root, 'scripts', 'lib'), { recursive: true });
+    for (const relative of [
+      'scripts/build-docs-vault.mjs',
+      'scripts/lib/parse-frontmatter.mjs',
+      'scripts/lib/record-ledgers.mjs',
+      'scripts/lib/po-pilot-records.mjs',
+      'scripts/lib/po-pilot.mjs',
+      'scripts/lib/po-risk-router.mjs',
+      'scripts/lib/decision-record-template.mjs',
+    ]) {
+      cpSync(path.join(SOURCE_ROOT, relative), path.join(root, relative));
+    }
+    await mkdir(path.join(root, 'docs', 'capabilities'), { recursive: true });
+    await writeFile(
+      path.join(root, 'docs', 'capabilities', 'pay.md'),
+      ['---', 'title: Pay', 'kind: capability', '---', '# Pay', ''].join('\n'),
+      'utf8',
+    );
+
+    const probe = [
+      "const { scanVaultDir } = await import('./scripts/build-docs-vault.mjs');",
+      "const result = await scanVaultDir(process.cwd() + '/docs', { rootDir: process.cwd(), check: true, publicOutDir: null });",
+      "console.log(JSON.stringify(result.manifest.docs.map((doc) => [doc.slug, doc.meaningFindings])));",
+    ].join('\n');
+    const run = spawnSync(process.execPath, ['--input-type=module', '-e', probe], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    assert.equal(run.status, 0, run.stderr);
+    const rows = JSON.parse(run.stdout.trim().split('\n').at(-1));
+    assert.deepEqual(rows, [['capabilities/pay', null]]);
+    // The silence is named once, where whoever reads the build output can see it.
+    assert.match(run.stderr, /mcp\/src is not in this checkout/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

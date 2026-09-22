@@ -679,6 +679,80 @@ async function assertOutputsCurrent({
  * repository as `rootDir`/`dir` to prove that rewriting commit times within the
  * same day produces byte-identical output (`check: true` writes nothing).
  */
+/**
+ * The canonical meaning judgements, loaded **if this checkout has them**.
+ *
+ * They live in `mcp/src`, a sibling package with no build step, and are imported here
+ * rather than retyped so the static manifest and the app's own builder answer with one
+ * rule. The import is dynamic and optional because this script is also copied on its own
+ * into a bare worktree by the `prepare` hook (`scripts/worktree-materialization.test.mjs`,
+ * `tests/contract/precommit-hook-wired.contract.test.ts` both seed a repository with a
+ * `scripts/` and no `mcp/`): a static import there is a module-resolution crash before
+ * the first document is read.
+ */
+const meaningRules = await (async () => {
+  try {
+    const [findings, schema] = await Promise.all([
+      import('../mcp/src/meaning-findings.mjs'),
+      import('../mcp/src/schema.mjs'),
+    ]);
+    return { findings, folderForKind: schema.folderForKind };
+  } catch {
+    return null;
+  }
+})();
+
+if (!meaningRules) {
+  console.warn(
+    '[docs-vault] mcp/src is not in this checkout: meaning findings are recorded as null (not computed), not as an empty list.',
+  );
+}
+
+/**
+ * The meaning findings for one document, as portable codes.
+ *
+ * Three answers, and the difference between them is what the manifest is for:
+ * `undefined` — this document has no `kind:` and was never a node to ask about;
+ * `null` — it is a node and the rule was not available, so nothing was measured;
+ * an array — the rule ran, and an empty array means it found nothing.
+ *
+ * This mirrors `meaningFindings` in `src/shared/lib/meaning-findings.ts`, which the
+ * browser and desktop manifest builder call. The canonical judgements live in
+ * `mcp/src/meaning-findings.mjs`; the fifth, `slug-outside-kind-folder`, sits in the write
+ * gate instead of that module, so it is read from the schema it is built on — the same two
+ * lines `tests/contract/meaning-findings-parity.contract.test.ts` runs to prove the port
+ * and the canonical rule agree.
+ *
+ * The sixth finding, `folder-only-evidence`, is deliberately absent on both paths: it asks
+ * the filesystem whether a cited path is a directory, and the browser has no filesystem, so
+ * including it here would make the static manifest report something a user's own folder
+ * never can.
+ */
+function meaningFindingCodes({ kind, slug, title, body }) {
+  if (typeof kind !== 'string' || !kind.trim()) return undefined;
+  if (!meaningRules) return null;
+  const {
+    definitionFinding,
+    boundaryFindings,
+    uncertaintyFinding,
+    epistemicExclusionFinding,
+  } = meaningRules.findings;
+  const input = { kind, slug: slug ?? '', title: title ?? '', body: body ?? '' };
+  const codes = [
+    definitionFinding(input),
+    ...boundaryFindings(input),
+    uncertaintyFinding(input),
+    epistemicExclusionFinding(input),
+  ]
+    .filter(Boolean)
+    .map((finding) => finding.code);
+  const folder = meaningRules.folderForKind(kind);
+  if (slug && folder && !slug.startsWith(folder)) {
+    codes.push('slug-outside-kind-folder');
+  }
+  return codes;
+}
+
 export async function scanVaultDir(
   dir,
   {
@@ -687,6 +761,16 @@ export async function scanVaultDir(
     check = false,
     treeName = 'docs',
     sourceReaders = [readLedgerSource, readPoPilotSource],
+    /**
+     * The part of a manifest slug that is **not** part of the vault the agent is
+     * handed. The dogfood manifest is scanned over the whole `/docs` tree while the
+     * vault root is `docs/ontology`, so an ontology node's slug reads
+     * `ontology/capabilities/…` here and `capabilities/…` there. The same
+     * subtraction `StaticVaultSource.agentSlugPrefix` makes for copied MCP calls has
+     * to happen before `slug-outside-kind-folder` is asked where a file sits, or
+     * every node in the sample is accused of sitting outside its kind folder.
+     */
+    vaultSlugPrefix = '',
   } = {},
 ) {
   const files = await walk(dir);
@@ -740,6 +824,17 @@ export async function scanVaultDir(
     }
     const inputPaths = composed?.inputs ?? [relPath];
     const updatedAt = await latestInputDay(inputPaths, rootDir, gitDays);
+    // Asked where the body is already in hand, exactly as `buildMdEntry` does it.
+    const vaultSlug =
+      vaultSlugPrefix && slug.startsWith(vaultSlugPrefix)
+        ? slug.slice(vaultSlugPrefix.length)
+        : slug;
+    const meaningCodes = meaningFindingCodes({
+      kind: frontmatter.kind,
+      slug: vaultSlug,
+      title,
+      body,
+    });
     const nextDoc = {
       slug,
       path: relPath,
@@ -750,6 +845,9 @@ export async function scanVaultDir(
       ...(diagnostics && diagnostics.length > 0 ? { diagnostics } : {}),
       headings,
       excerpt: buildExcerpt(body),
+      // `null` is recorded, not dropped: "nobody asked" and "asked and clean" must not
+      // read the same downstream.
+      ...(meaningCodes === undefined ? {} : { meaningFindings: meaningCodes }),
       wordCount: body.split(/\s+/).filter(Boolean).length,
       // Commit date wins; the mtime date is used only for documents that are dirty in
       // the working tree or still untracked. Both are dates, so the value is stable as
@@ -902,6 +1000,7 @@ async function buildDocsVault({ check = false } = {}) {
     rootDir: ROOT,
     publicOutDir: PUBLIC_OUT,
     check,
+    vaultSlugPrefix: 'ontology/',
   });
   const { content, gatewayContent, publicFiles } = scanned;
   // The bundled manifest ships with headings split into a separate file — see the

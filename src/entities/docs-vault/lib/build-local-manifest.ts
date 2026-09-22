@@ -6,6 +6,7 @@ import {
   parseFrontmatter,
   type LinkContext,
 } from '@/shared/lib/parse-frontmatter';
+import { meaningFindings } from '@/shared/lib/meaning-findings';
 import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-meaning-evidence';
 import { nativeVaultFingerprint, type NativeVaultStamp } from '@/shared/lib/tauri-vault-fs';
 import type {
@@ -487,6 +488,14 @@ function buildMdEntry(
       : [];
   const { slugs: linksOut, contexts: linkContexts } =
     extractOutLinksWithContext(body, slug);
+  /*
+   * The findings are computed here, in the one place that already holds the whole
+   * body, so asking what the body says costs no second read. The slug is the
+   * vault-relative path of the file, which is exactly the question
+   * `slug-outside-kind-folder` asks.
+   */
+  const kind =
+    typeof frontmatter.kind === 'string' ? frontmatter.kind.trim() : '';
 
   const doc: VaultDoc = {
     slug,
@@ -500,6 +509,13 @@ function buildMdEntry(
     excerpt: buildExcerpt(body),
     ...(frontmatter.kind === 'project'
       ? { meaningEvidencePaths: extractProjectMeaningEvidencePaths(body) }
+      : {}),
+    ...(kind
+      ? {
+          meaningFindings: meaningFindings({ kind, slug, title, body }).map(
+            (finding) => finding.code,
+          ),
+        }
       : {}),
     wordCount: body.split(/\s+/).filter(Boolean).length,
     updatedAt: new Date(lastModified).toISOString(),

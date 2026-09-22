@@ -27,6 +27,28 @@ export interface VaultDoc {
    * Derived at load time; never written back to vault Markdown.
    */
   meaningEvidencePaths?: string[];
+  /**
+   * The meaning findings the validator reads, as their portable codes
+   * (`src/shared/lib/meaning-findings.ts`): `definition-missing`,
+   * `boundary-missing`, `uncertainty-missing`, `epistemic-exclusion`,
+   * `slug-outside-kind-folder`.
+   *
+   * Three answers, and telling them apart is the point. Absent means the document has
+   * no `kind:` and was never a node to ask about. `null` means it is a node and the rule
+   * was not available where the manifest was built (`scripts/build-docs-vault.mjs` run
+   * from a worktree with no `mcp/`), so nothing was measured. An array means the rule ran,
+   * and `[]` means it found nothing. A reader must never turn `null` into "clean".
+   *
+   * Computed where the body is already in hand (`buildMdEntry`, and the same step
+   * in `scripts/build-docs-vault.mjs`), so it costs no extra read. `boundary-missing`
+   * may appear twice, once per side, exactly as the validator reports it; a reader
+   * counting nodes rather than findings dedupes.
+   *
+   * The sixth finding, `folder-only-evidence`, is never here: it asks the
+   * filesystem whether a cited path is a directory, which neither manifest builder
+   * can answer for an arbitrary vault.
+   */
+  meaningFindings?: string[] | null;
   wordCount: number;
   updatedAt: string;
   linksOut: string[];

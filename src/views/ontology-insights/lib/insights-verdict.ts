@@ -79,6 +79,14 @@ export interface InsightsSignalCounts {
  */
 const SECTION_SEVERITY: Record<QueueSectionKey, "blocking" | "advisory"> = {
   "missing-definition": "advisory",
+  // The four meaning findings are advisory by construction rule 5: nothing here refuses a
+  // body, because refusing one would make the honest sequence — name it, then say what it
+  // is — an error. They are what the validator already tells the agent; this is the same
+  // sentence said to the person.
+  "missing-boundary": "advisory",
+  "missing-uncertainty": "advisory",
+  "epistemic-exclusion": "advisory",
+  "slug-outside-kind-folder": "advisory",
   "missing-domain": "advisory",
   duplicate: "advisory",
   promotion: "advisory",

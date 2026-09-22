@@ -18,10 +18,49 @@
 /** The kinds of blank a person can fill as soon as they know what the thing means. */
 export type MeaningGapKind = "missing-definition" | "missing-domain";
 
+/**
+ * The rest of what the validator hears about one document's body and position.
+ *
+ * Kept apart from `MeaningGapKind` on purpose. That type is the opening-line chip's
+ * vocabulary too (`features/vault-agent/model/first-words.ts`), and a chip can only
+ * offer a sentence it has prose for; these four are queue rows that open a node, not
+ * fields a panel can offer to fill. One list would have made every new finding a new
+ * chip the panel cannot speak.
+ */
+export type MeaningFindingGapKind =
+  | "missing-boundary"
+  | "missing-uncertainty"
+  | "epistemic-exclusion"
+  | "slug-outside-kind-folder";
+
+/**
+ * Finding code → the queue section that shows it. Written out rather than derived, so
+ * a code the manifest starts emitting is either mapped here on purpose or ignored —
+ * never renamed into a section by accident.
+ */
+const FINDING_GAP_BY_CODE: Readonly<Record<string, MeaningFindingGapKind>> = {
+  "boundary-missing": "missing-boundary",
+  "uncertainty-missing": "missing-uncertainty",
+  "epistemic-exclusion": "epistemic-exclusion",
+  "slug-outside-kind-folder": "slug-outside-kind-folder",
+};
+
+/** The order the sections are read in — the validator's own order, minus the definition. */
+export const MEANING_FINDING_GAP_KINDS: readonly MeaningFindingGapKind[] = [
+  "missing-boundary",
+  "missing-uncertainty",
+  "epistemic-exclusion",
+  "slug-outside-kind-folder",
+];
+
 /** Only the facts a gap verdict needs, read from one vault document. */
 export interface ConceptDocFacts {
-  /** `description` or a body summary — either one means the meaning is written down. */
-  hasDefinition: boolean;
+  /**
+   * The document's meaning findings as portable codes, carried verbatim from
+   * `VaultDoc.meaningFindings` — the same judgement `validate_vault` and the CLI
+   * report. Empty means the question was asked and nothing came back.
+   */
+  findings: readonly string[];
   /** The raw `domain:` value, before normalization. Empty means no parent yet. */
   domainRef: string | null;
   /** `file.lastModified`, for the concurrent-edit guard. Null for static samples. */
@@ -49,9 +88,31 @@ export function detectMeaningGaps(
   doc: ConceptDocFacts,
 ): MeaningGapKind[] {
   const gaps: MeaningGapKind[] = [];
-  if (!doc.hasDefinition) gaps.push("missing-definition");
+  // The definition verdict is the validator's, not this screen's. It used to be
+  // "`description` or any excerpt", which counted a heading and a placeholder as a
+  // definition and let the queue call a body clean that `validate_vault` was already
+  // reporting as `definition-missing` to the agent reading the same folder.
+  if (doc.findings.includes("definition-missing")) gaps.push("missing-definition");
   if (DOMAIN_REQUIRED_KINDS.has(node.kind) && !doc.domainRef) {
     gaps.push("missing-domain");
   }
   return gaps;
+}
+
+/**
+ * The remaining findings for this document, deduplicated and in a fixed order.
+ *
+ * Deduplicated because a section here is **one row per node**: `boundary-missing`
+ * arrives once per missing side, so a capability stating neither what it includes nor
+ * what it excludes would otherwise be two rows pointing at one file.
+ */
+export function detectMeaningFindingGaps(
+  doc: ConceptDocFacts,
+): MeaningFindingGapKind[] {
+  const seen = new Set<MeaningFindingGapKind>();
+  for (const code of doc.findings) {
+    const gap = FINDING_GAP_BY_CODE[code];
+    if (gap) seen.add(gap);
+  }
+  return MEANING_FINDING_GAP_KINDS.filter((gap) => seen.has(gap));
 }

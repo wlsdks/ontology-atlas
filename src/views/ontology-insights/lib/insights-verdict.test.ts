@@ -9,6 +9,10 @@ import { buildInsightsVerdict, type InsightsSignalCounts } from "./insights-verd
  */
 const NO_SECTIONS: InsightsSignalCounts["sections"] = {
   "missing-definition": 0,
+  "missing-boundary": 0,
+  "missing-uncertainty": 0,
+  "epistemic-exclusion": 0,
+  "slug-outside-kind-folder": 0,
   "missing-domain": 0,
   duplicate: 0,
   promotion: 0,

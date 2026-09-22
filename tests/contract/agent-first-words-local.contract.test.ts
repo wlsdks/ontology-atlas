@@ -74,7 +74,7 @@ describe('첫 마디 생성기 — 모델 호출 0', () => {
         ref: null,
       } as unknown as Parameters<typeof buildFirstWords>[0]['nodes'][number];
       const docFacts = new Map([
-        ['capabilities/pay', { hasDefinition: false, domainRef: null, mtime: null }],
+        ['capabilities/pay', { findings: ['definition-missing'], domainRef: null, mtime: null }],
       ]);
 
       // Empty folder, folder with a queue, node selected — all three cases the screen renders.

@@ -32,6 +32,10 @@ export type QueueWorkGroup = "meaning" | "code";
 /** A section identifier inside the queue card — the source of truth for which group each section belongs to. */
 export type QueueSectionKey =
   | "missing-definition"
+  | "missing-boundary"
+  | "missing-uncertainty"
+  | "epistemic-exclusion"
+  | "slug-outside-kind-folder"
   | "missing-domain"
   | "duplicate"
   | "promotion"
@@ -39,8 +43,19 @@ export type QueueSectionKey =
   | "orphan"
   | "cycle";
 
+/*
+ * The four sections added on 2026-09-22 are meaning work by the same test as the rest of
+ * that group: each is answered from what the concept means, not from reading the code.
+ * What a thing includes and excludes, what the writer did not check, whether an exclusion
+ * is really a limit of the reading, and which kind folder a node belongs in are all
+ * decidable by the person who knows the product — the screen already names the node.
+ */
 const GROUP_OF_SECTION: Record<QueueSectionKey, QueueWorkGroup> = {
   "missing-definition": "meaning",
+  "missing-boundary": "meaning",
+  "missing-uncertainty": "meaning",
+  "epistemic-exclusion": "meaning",
+  "slug-outside-kind-folder": "meaning",
   "missing-domain": "meaning",
   duplicate: "meaning",
   promotion: "meaning",

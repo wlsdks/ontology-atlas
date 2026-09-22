@@ -69,8 +69,11 @@ export {
   stripVaultSlugPrefix,
 } from "./lib/node-agent-target";
 export {
+  detectMeaningFindingGaps,
   detectMeaningGaps,
+  MEANING_FINDING_GAP_KINDS,
   type ConceptDocFacts,
+  type MeaningFindingGapKind,
   type MeaningGapKind,
 } from "./lib/meaning-gaps";
 export {

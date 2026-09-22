@@ -26,7 +26,7 @@ import type { QueueSectionKey } from "../../src/views/ontology-insights/lib/queu
  *
  * On 2026-09-06 the groups came back, because eight rows repeating one sentence is not a list a
  * person can read. **A number beside a group is safe only while the numbers add up**, so the
- * grouping ships with this check: for any signal counts, the ten group counts sum exactly to
+ * grouping ships with this check: for any signal counts, every group count sums exactly to
  * `buildInsightsVerdict(...).total`, which is the number the list title and the tab badge print.
  *
  * ## Why it is not covered by the type checker alone
@@ -39,6 +39,10 @@ import type { QueueSectionKey } from "../../src/views/ontology-insights/lib/queu
 
 const SECTION_KEYS: readonly QueueSectionKey[] = [
   "missing-definition",
+  "missing-boundary",
+  "missing-uncertainty",
+  "epistemic-exclusion",
+  "slug-outside-kind-folder",
   "missing-domain",
   "duplicate",
   "promotion",
@@ -52,6 +56,10 @@ const ALL_GROUPS: readonly DoNextGroupKey[] = [
   "island",
   "containment",
   "missing-definition",
+  "missing-boundary",
+  "missing-uncertainty",
+  "epistemic-exclusion",
+  "slug-outside-kind-folder",
   "missing-domain",
   "duplicate",
   "promotion",
@@ -107,7 +115,7 @@ describe("do-next 묶음 수의 합 = 목록 제목의 수", () => {
     expect(sumDoNextGroupCounts(zero)).toBe(0);
   });
 
-  it("묶음 열쇠는 정확히 열 개이고, 순서는 그 열 개를 한 번씩만 낸다", () => {
+  it("묶음 열쇠는 표 그대로이고, 순서는 그 전부를 한 번씩만 낸다", () => {
     const groups = buildDoNextGroupCounts(signalCountsAt(1));
     expect(Object.keys(groups).sort()).toEqual([...ALL_GROUPS].sort());
     for (const abilities of [

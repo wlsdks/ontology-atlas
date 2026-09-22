@@ -6,6 +6,9 @@ import type { DoNextGroupCounts, DoNextGroupKey } from "../../lib/do-next-groups
 import type { DoNextQueue } from "../../lib/do-next-queue";
 import type { DependencyCyclesResult } from "../../lib/dependency-cycles";
 import type { DuplicatePairRow } from "../../lib/duplicate-pairs";
+import type { MeaningFindingRows } from "../../lib/meaning-gap-rows";
+import type { MeaningFindingGapKind } from "@/entities/knowledge-graph";
+import type { MeaningGapLabels } from "./MeaningGapSection";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
@@ -25,6 +28,10 @@ const GROUP_NAMES: Record<DoNextGroupKey, string> = {
   island: "Disconnected groups",
   containment: "Domains that do not point back",
   "missing-definition": "Concepts with no meaning written",
+  "missing-boundary": "Concepts with no boundary written",
+  "missing-uncertainty": "Concepts that record no unknown",
+  "epistemic-exclusion": "Exclusions that are really reading limits",
+  "slug-outside-kind-folder": "Documents outside their kind folder",
   "missing-domain": "Concepts with no domain",
   duplicate: "Pairs whose names overlap",
   promotion: "Broader-concept candidates",
@@ -38,6 +45,10 @@ const NO_COUNTS: DoNextGroupCounts = {
   island: 0,
   containment: 0,
   "missing-definition": 0,
+  "missing-boundary": 0,
+  "missing-uncertainty": 0,
+  "epistemic-exclusion": 0,
+  "slug-outside-kind-folder": 0,
   "missing-domain": 0,
   duplicate: 0,
   promotion: 0,
@@ -66,6 +77,7 @@ const labels: DoNextTabLabels = {
   whyDuplicate: (percent) => `The names overlap ${percent}%.`,
   whyMissingDefinition: "Nothing says what this means.",
   whyMissingDomain: "No domain is written down.",
+  whyMeaningFinding: (group) => `finding:${group}`,
   whyIsland: "It sits in a group that links to nothing else.",
   whyContainment: "Its domain does not point back at it.",
   whyBlockedDocument: (reason) => `${reason} Your AI cannot read this document yet.`,
@@ -459,5 +471,93 @@ describe("DoNextTab — 검토 루프", () => {
       .getAllByTestId("do-next-item")
       .find((row) => row.getAttribute("aria-current") === "step");
     expect(active).toHaveTextContent("Alone");
+  });
+});
+
+/**
+ * The four advisory findings the validator already reported to the agent.
+ *
+ * Each is one row per node with a sentence and a way into the node — no write form,
+ * because none of them closes by typing into one frontmatter key. The check that matters
+ * is that the group's count and the rows it opens are about the same finding: the rows are
+ * built inside the open branch of `rowsOfGroup`, so a key wired to the wrong list would
+ * draw a boundary row under "records no unknown" and nothing would fail elsewhere.
+ */
+describe("DoNextTab — 검사 소견 묶음", () => {
+  const findingRow = (gap: MeaningFindingGapKind, slug: string, title: string) => ({
+    id: `${gap}:${slug}`,
+    gap,
+    nodeId: `capability:${title.toLowerCase()}`,
+    ownSlug: slug,
+    title,
+    nodeKind: "capability",
+  });
+
+  const findingRows: MeaningFindingRows = {
+    "missing-boundary": [findingRow("missing-boundary", "capabilities/pay", "Pay")],
+    "missing-uncertainty": [
+      findingRow("missing-uncertainty", "capabilities/refund", "Refund"),
+    ],
+    "epistemic-exclusion": [
+      findingRow("epistemic-exclusion", "capabilities/ship", "Ship"),
+    ],
+    "slug-outside-kind-folder": [findingRow("slug-outside-kind-folder", "loose", "Loose")],
+  };
+
+  const meaningGaps = {
+    definitionRows: [],
+    domainRows: [],
+    findingRows,
+    domainChoices: [],
+    onWrite: async () => {},
+    // Unused by these four sections — they draw `FixRow`s, not the write form. An empty
+    // object here is the honest statement that no label of that set is read.
+    definitionLabels: {} as MeaningGapLabels,
+    domainLabels: {} as MeaningGapLabels,
+  };
+
+  const sections: Array<[MeaningFindingGapKind, string]> = [
+    ["missing-boundary", "Pay"],
+    ["missing-uncertainty", "Refund"],
+    ["epistemic-exclusion", "Ship"],
+    ["slug-outside-kind-folder", "Loose"],
+  ];
+
+  it("네 자리 모두 자기 개념을 이름으로 세우고, 사유 한 줄과 여는 길을 준다", () => {
+    renderExpanded({
+      totalCount: 4,
+      groupCounts: {
+        ...NO_COUNTS,
+        "missing-boundary": 1,
+        "missing-uncertainty": 1,
+        "epistemic-exclusion": 1,
+        "slug-outside-kind-folder": 1,
+      },
+      queue: emptyQueue,
+      meaningGaps,
+    });
+    for (const [kind, title] of sections) {
+      const rows = screen
+        .getAllByTestId("do-next-item")
+        .filter((row) => row.getAttribute("data-fix-kind") === kind);
+      expect(rows, kind).toHaveLength(1);
+      expect(rows[0]).toHaveTextContent(title);
+      expect(rows[0]).toHaveTextContent(`finding:${kind}`);
+      // A way into the node, and no write form: these are read-then-write-prose rows.
+      expect(rows[0].querySelector('a[href*="/topology/"]'), kind).not.toBeNull();
+      expect(rows[0].querySelector("input"), kind).toBeNull();
+    }
+  });
+
+  it("소견이 없으면 그 자리는 그려지지 않는다 — 0을 말하는 빈 묶음이 생기지 않는다", () => {
+    renderExpanded({ totalCount: 4, queue, meaningGaps: null });
+    for (const [kind] of sections) {
+      expect(
+        screen
+          .getAllByTestId("do-next-item")
+          .filter((row) => row.getAttribute("data-fix-kind") === kind),
+        kind,
+      ).toHaveLength(0);
+    }
   });
 });
