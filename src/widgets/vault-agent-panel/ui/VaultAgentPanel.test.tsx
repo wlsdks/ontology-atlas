@@ -46,7 +46,7 @@ function emitSecretChange() {
  * folder, folder with a queue, node selected).
  */
 const conceptFacts = vi.hoisted(() => ({
-  map: new Map<string, { hasDefinition: boolean; domainRef: string | null; mtime: number | null }>(),
+  map: new Map<string, { findings: readonly string[]; domainRef: string | null; mtime: number | null }>(),
 }));
 
 vi.mock('@/features/vault-ontology', () => ({
@@ -132,8 +132,8 @@ const refundNode = {
 /** "Payment Processing" with an empty meaning plus "Refund" with an empty owner — the two concepts the queue points at. */
 function loadQueueFolder() {
   conceptFacts.map = new Map([
-    ['capabilities/payment', { hasDefinition: false, domainRef: 'billing', mtime: null }],
-    ['capabilities/refund', { hasDefinition: true, domainRef: null, mtime: null }],
+    ['capabilities/payment', { findings: ['definition-missing'], domainRef: 'billing', mtime: null }],
+    ['capabilities/refund', { findings: [], domainRef: null, mtime: null }],
   ]);
 }
 

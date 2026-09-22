@@ -92,7 +92,10 @@ export function detectMeaningGaps(
   // "`description` or any excerpt", which counted a heading and a placeholder as a
   // definition and let the queue call a body clean that `validate_vault` was already
   // reporting as `definition-missing` to the agent reading the same folder.
-  if (doc.findings.includes("definition-missing")) gaps.push("missing-definition");
+  // A consumer built before findings existed passes none; none is "no rows",
+  // never a crash and never a claim of cleanliness (the count stays visible).
+  const findings = doc.findings ?? [];
+  if (findings.includes("definition-missing")) gaps.push("missing-definition");
   if (DOMAIN_REQUIRED_KINDS.has(node.kind) && !doc.domainRef) {
     gaps.push("missing-domain");
   }
@@ -110,7 +113,7 @@ export function detectMeaningFindingGaps(
   doc: ConceptDocFacts,
 ): MeaningFindingGapKind[] {
   const seen = new Set<MeaningFindingGapKind>();
-  for (const code of doc.findings) {
+  for (const code of doc.findings ?? []) {
     const gap = FINDING_GAP_BY_CODE[code];
     if (gap) seen.add(gap);
   }
