@@ -3807,6 +3807,9 @@ describe('queryCompiledOntology', () => {
       danglingReferences: 1,
       unassignedNodes: 1,
       emptyDomains: 1,
+      // No `sourceDocs` on this call, so the uncertainty reader was handed no
+      // bodies and says so in the group rather than reporting a clean vault.
+      nextReads: 0,
       totalActions: 3,
     });
     assert.deepEqual(
@@ -3983,6 +3986,7 @@ describe('queryCompiledOntology', () => {
       danglingReferences: 1,
       unassignedNodes: 0,
       emptyDomains: 0,
+      nextReads: 0,
       totalActions: 3,
     });
     assert.equal(result.nextActions.some((action) => action.kind === 'health_check'), true);
@@ -4844,6 +4848,141 @@ describe('query_ontology maintenance_plan — the read path sees the body too', 
       // Write-path only, and this is a read: deciding whether a cited path is a
       // directory needs the repository root a compiled snapshot does not carry.
       assert.equal(kinds.includes('folder_only_evidence'), false, kinds.join(', '));
+    } finally {
+      rmSync(vault, { recursive: true, force: true });
+    }
+  });
+});
+
+// R3-B. Every node records what its author did not read; until `growth_plan`
+// could see bodies, nothing turned that record into the next step.
+describe('query_ontology growth_plan — the reads a vault asks for', () => {
+  const __growthdir = dirname(fileURLToPath(import.meta.url));
+  const GROWTH_SERVER_ENTRY = resolve(__growthdir, 'index.js');
+
+  function writeVaultNode(vault, slug, frontmatter, body) {
+    const filePath = join(vault, `${slug}.md`);
+    mkdirSync(dirname(filePath), { recursive: true });
+    const yaml = Object.entries(frontmatter).map(([key, value]) => `${key}: ${value}`);
+    writeFileSync(filePath, `---\n${yaml.join('\n')}\n---\n\n${body}\n`, 'utf8');
+  }
+
+  it('says no_bodies rather than nothing when it is handed a compiled snapshot alone', () => {
+    const graph = compileOntology(
+      [
+        doc('domains/vault', { kind: 'domain', title: 'Vault', capabilities: ['capabilities/folder-access'] }),
+        doc('capabilities/folder-access', {
+          kind: 'capability',
+          title: 'Folder Access',
+          domain: 'domains/vault',
+          path: 'mcp/src/index.js',
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const result = queryCompiledOntology(graph, { operation: 'growth_plan', limit: 10 });
+
+    assert.equal(result.summary.nextReads, 0);
+    assert.deepEqual(result.nextReads, { total: 0, limited: false, rows: [], reason: 'no_bodies' });
+    // The write queue is unchanged: a read is not a write.
+    assert.equal(
+      result.summary.totalActions,
+      result.summary.relationRecommendations
+        + result.summary.externalElementRefs
+        + result.summary.danglingReferences,
+    );
+  });
+
+  it('returns the reads a node\u2019s own Uncertainty section asks for, through the server', async () => {
+    const vault = mkdtempSync(join(tmpdir(), 'ontology-atlas-growth-next-reads-'));
+    try {
+      writeVaultNode(vault, 'domains/vault', {
+        uid: 'b1111111-1111-4111-8111-111111111111',
+        kind: 'domain',
+        title: 'Vault',
+        capabilities: '[capabilities/folder-access]',
+      }, [
+        '# Vault',
+        '',
+        'Owns how a person chooses one Markdown folder and keeps reading it as the graph.',
+        '',
+        '## Includes',
+        '',
+        '- Choosing the folder and remembering it between sessions.',
+        '',
+        '## Excludes',
+        '',
+        '- Copying it anywhere else; team sync is a separate layer.',
+        '',
+        '## Uncertainty',
+        '',
+        '- `src-tauri/` was never opened, so the native half is described from the bridge.',
+      ].join('\n'));
+      writeVaultNode(vault, 'capabilities/folder-access', {
+        uid: 'b2222222-2222-4222-8222-222222222222',
+        kind: 'capability',
+        title: 'Folder Access',
+        domain: 'domains/vault',
+        path: 'mcp/src/index.js',
+      }, [
+        '# Folder Access',
+        '',
+        'Opens one Markdown folder from the terminal and keeps reading it as the graph.',
+        '',
+        '## Includes',
+        '',
+        '- Opening the folder and reporting what it found.',
+        '',
+        '## Excludes',
+        '',
+        '- Writing to it; that is a separate door.',
+        '',
+        '## Uncertainty',
+        '',
+        '- Of `mcp/src/index.js`, lines 1\u2013110 of 2790 were read; the rest was not read.',
+      ].join('\n'));
+
+      const { responses } = await runJsonRpcProcess({
+        command: process.execPath,
+        args: [GROWTH_SERVER_ENTRY],
+        env: { ...process.env, OATLAS_VAULT: vault },
+        requests: [
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'initialize',
+            params: {
+              protocolVersion: '2024-11-05',
+              capabilities: {},
+              clientInfo: { name: 'growth-next-reads-test', version: '1' },
+            },
+          },
+          { jsonrpc: '2.0', method: 'notifications/initialized' },
+          {
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'tools/call',
+            params: { name: 'query_ontology', arguments: { operation: 'growth_plan', limit: 25 } },
+          },
+        ],
+        timeoutMs: 20_000,
+      });
+
+      const plan = responses.find((response) => response.id === 2)?.result?.structuredContent;
+      assert.ok(plan, `no growth_plan payload: ${JSON.stringify(responses)}`);
+      assert.equal(plan.nextReads.reason, null);
+      assert.equal(plan.summary.nextReads, 2);
+      assert.deepEqual(plan.nextReads.rows.map((row) => row.kind), ['unread-range', 'unopened-area']);
+      const [bounded, unopened] = plan.nextReads.rows;
+      assert.deepEqual(bounded.ranges, [{ path: 'mcp/src/index.js', from: 1, to: 110 }]);
+      assert.equal(
+        bounded.proposedAction,
+        'Read mcp/src/index.js (lines 1\u2013110), then patch_concept capabilities/folder-access'
+          + ' to state what it settled or to move the statement out of Uncertainty.',
+      );
+      assert.deepEqual(unopened.paths, ['src-tauri/']);
+      assert.equal(unopened.slug, 'domains/vault');
     } finally {
       rmSync(vault, { recursive: true, force: true });
     }

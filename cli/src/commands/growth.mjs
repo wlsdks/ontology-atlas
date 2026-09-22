@@ -22,7 +22,11 @@ const GROUPS = [
   ['danglingReferences', 'dangling references', 'rows'],
   ['unassignedNodes', 'unassigned nodes', 'rows'],
   ['emptyDomains', 'empty domains', 'rows'],
+  ['nextReads', 'next reads', 'rows'],
 ];
+
+/** Enough of the author's sentence to judge the row without opening the node. */
+const STATEMENT_WIDTH = 100;
 
 export async function runGrowth(args) {
   const parsed = parseArgs(args);
@@ -75,6 +79,7 @@ function renderGrowth(result) {
         `dangling:${summary.danglingReferences}`,
         `unassigned:${summary.unassignedNodes}`,
         `emptyDomains:${summary.emptyDomains}`,
+        `nextReads:${summary.nextReads ?? 0}`,
       ].join(', ') +
       '\n',
   );
@@ -86,7 +91,17 @@ function renderGrowth(result) {
   }
   process.stdout.write('\n');
 
-  if (summary.totalActions === 0) {
+  // `totalActions` counts writes. A vault with nothing to write can still have
+  // a page of unread files its own nodes asked for, and returning early on the
+  // write count alone would hide exactly the queue this command grew to show.
+  if (summary.totalActions === 0 && (summary.nextReads ?? 0) === 0) {
+    if (result.nextReads?.reason === 'no_bodies') {
+      process.stdout.write(
+        `${COLORS.green}no growth candidates${COLORS.reset}` +
+          ` ${COLORS.dim}· node bodies were not loaded, so nothing was read for next reads${COLORS.reset}\n`,
+      );
+      return;
+    }
     process.stdout.write(`${COLORS.green}no growth candidates${COLORS.reset}\n`);
     return;
   }
@@ -97,10 +112,37 @@ function renderGrowth(result) {
     const total = key === 'relationRecommendations' ? group.totalRecommendations : group.total;
     if (!total) continue;
     process.stdout.write(`${COLORS.bold}${label}${COLORS.reset} ${COLORS.dim}· ${rows.length}/${total}${group.limited ? ' limited' : ''}${COLORS.reset}\n`);
-    for (const row of rows) renderGrowthRow(row);
+    for (const row of rows) {
+      if (key === 'nextReads') renderNextReadRow(row);
+      else renderGrowthRow(row);
+    }
     process.stdout.write('\n');
   }
   printNextGrowth(result);
+}
+
+/**
+ * One unread file per line.
+ *
+ * The author's own sentence is the evidence and is printed next to the address,
+ * truncated rather than summarised: a shortened quote is still the author
+ * speaking, while a paraphrase would be this command inventing a reason.
+ */
+function renderNextReadRow(row) {
+  const path = Array.isArray(row.paths) && row.paths.length > 0 ? row.paths[0] : '(no path named)';
+  const statement = truncateStatement(row.statement);
+  process.stdout.write(
+    `  ${COLORS.cyan}${row.slug}${COLORS.reset}` +
+      ` ${COLORS.dim}·${COLORS.reset} ${row.kind}` +
+      ` ${COLORS.dim}·${COLORS.reset} ${path}` +
+      ` ${COLORS.dim}· ${statement}${COLORS.reset}\n`,
+  );
+}
+
+function truncateStatement(statement) {
+  const text = String(statement ?? '').replace(/\s+/g, ' ').trim();
+  if (text.length <= STATEMENT_WIDTH) return text;
+  return `${text.slice(0, STATEMENT_WIDTH - 1)}…`;
 }
 
 function renderGrowthRow(row) {
@@ -168,7 +210,9 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas growth [vault] [--vault path] [--json] [--limit N]\n\n` +
       `Inspect MCP growth_plan candidates without writing to the vault.\n` +
       `Non-JSON output includes relation recommendations, external element refs,\n` +
-      `dangling references, unassigned nodes, empty domains, and ignored external refs.\n` +
+      `dangling references, unassigned nodes, empty domains, ignored external refs,\n` +
+      `and next reads — the files each node's own Uncertainty section says were\n` +
+      `not read.\n` +
       `--limit range 1-${LIMIT_CAP}.\n`,
   );
 }

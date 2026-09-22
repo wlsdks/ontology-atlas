@@ -2055,6 +2055,7 @@ describe('query-result-contract', () => {
         danglingReferences: 0,
         unassignedNodes: 0,
         emptyDomains: 0,
+        nextReads: 1,
         totalActions: 2,
       },
       relationRecommendations: {
@@ -2093,6 +2094,23 @@ describe('query-result-contract', () => {
       danglingReferences: { total: 0, limited: false, rows: [] },
       unassignedNodes: { total: 0, limited: false, rows: [] },
       emptyDomains: { total: 0, limited: false, rows: [] },
+      nextReads: {
+        total: 1,
+        limited: false,
+        reason: null,
+        rows: [
+          {
+            slug: 'capabilities/foo',
+            kind: 'unread-range',
+            statement: 'Of `src/foo.ts`, lines 1–110 of 2790 were read; the rest was not read.',
+            paths: ['src/foo.ts'],
+            ranges: [{ path: 'src/foo.ts', from: 1, to: 110 }],
+            proposedAction:
+              'Read src/foo.ts (lines 1–110), then patch_concept capabilities/foo to state what'
+              + ' it settled or to move the statement out of Uncertainty.',
+          },
+        ],
+      },
       compiledSummary: { nodes: 2, edges: 1, issues: 0 },
     };
 
@@ -2171,6 +2189,66 @@ describe('query-result-contract', () => {
         },
       }),
       /externalElementRefs\.rows\[0\] proposedAction\.slug must match suggestedSlug/,
+    );
+    // Next reads are not writes: they carry no score and no executable tool
+    // call, so they keep their own row contract.
+    assert.equal(
+      assertGrowthPlanShape({
+        ...valid,
+        summary: { ...valid.summary, nextReads: 0 },
+        nextReads: { total: 0, limited: false, rows: [], reason: 'no_bodies' },
+      }).nextReads.reason,
+      'no_bodies',
+    );
+    assert.throws(
+      () => assertGrowthPlanShape({ ...valid, summary: { ...valid.summary, nextReads: 2 } }),
+      /nextReads\.total must equal summary\.nextReads/,
+    );
+    assert.throws(
+      () => assertGrowthPlanShape({
+        ...valid,
+        nextReads: { ...valid.nextReads, reason: 'no_bodies' },
+      }),
+      /nextReads\.reason "no_bodies" must accompany a zero total/,
+    );
+    assert.throws(
+      () => assertGrowthPlanShape({
+        ...valid,
+        nextReads: { ...valid.nextReads, reason: 'because' },
+      }),
+      /nextReads\.reason must be null or "no_bodies"/,
+    );
+    assert.throws(
+      () => assertGrowthPlanShape({
+        ...valid,
+        nextReads: {
+          ...valid.nextReads,
+          rows: [{ ...valid.nextReads.rows[0], kind: 'skimmed' }],
+        },
+      }),
+      /nextReads\.rows\[0\] kind must be one of: unread-range/,
+    );
+    assert.throws(
+      () => assertGrowthPlanShape({
+        ...valid,
+        nextReads: {
+          ...valid.nextReads,
+          rows: [{ ...valid.nextReads.rows[0], proposedAction: '' }],
+        },
+      }),
+      /nextReads\.rows\[0\] must carry slug, kind, statement, and proposedAction strings/,
+    );
+    assert.throws(
+      () => assertGrowthPlanShape({
+        ...valid,
+        nextReads: {
+          ...valid.nextReads,
+          rows: [
+            { ...valid.nextReads.rows[0], ranges: [{ path: 'src/foo.ts', from: 110, to: 1 }] },
+          ],
+        },
+      }),
+      /nextReads\.rows\[0\] ranges entries must carry an ordered integer line span/,
     );
   });
 

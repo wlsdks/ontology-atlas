@@ -7428,7 +7428,7 @@ await test('growth --json — fails closed on malformed growth_plan payloads', a
       "  const msg = JSON.parse(line);",
       "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
       "  if (msg.id === 2) {",
-      "    const payload = { operation: 'growth_plan', summary: { relationRecommendations: 0, externalElementRefs: 1, externalElementRefsIgnored: 0, danglingReferences: 0, unassignedNodes: 0, emptyDomains: 0, totalActions: 1 }, relationRecommendations: { operation: 'recommend_relations', mode: 'domain_containment', totalRecommendations: 0, limited: false, recommendations: [] }, externalElementRefs: { total: 1, limited: false, rows: [] }, danglingReferences: { total: 0, limited: false, rows: [] }, unassignedNodes: { total: 0, limited: false, rows: [] }, emptyDomains: { total: 0, limited: false, rows: [] } };",
+      "    const payload = { operation: 'growth_plan', summary: { relationRecommendations: 0, externalElementRefs: 1, externalElementRefsIgnored: 0, danglingReferences: 0, unassignedNodes: 0, emptyDomains: 0, nextReads: 0, totalActions: 1 }, relationRecommendations: { operation: 'recommend_relations', mode: 'domain_containment', totalRecommendations: 0, limited: false, recommendations: [] }, externalElementRefs: { total: 1, limited: false, rows: [] }, danglingReferences: { total: 0, limited: false, rows: [] }, unassignedNodes: { total: 0, limited: false, rows: [] }, emptyDomains: { total: 0, limited: false, rows: [] }, nextReads: { total: 0, limited: false, rows: [], reason: 'no_bodies' } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
       "});",

@@ -284,6 +284,13 @@ async function queryOntologyTool(args = {}) {
   // load, both answers, and the docs are loaded here exactly once.
   const maintenanceDocs =
     args.operation === 'maintenance_plan' ? loadVaultDocs(VAULT_ROOT) : null;
+  // `growth_plan` needs the same bodies for a different question. Its
+  // `nextReads` group reads each node's `## Uncertainty` section and returns
+  // the reads it asks for, and a compiled artifact carries no bodies, so on the
+  // snapshot path the group could only report that it was handed nothing. One
+  // walk, loaded here for the same reason the maintenance walk is: the read
+  // operation is the only call an unattended round makes.
+  const growthDocs = args.operation === 'growth_plan' ? loadVaultDocs(VAULT_ROOT) : null;
   const maintenanceFreshness = maintenanceDocs ? buildSummaryFreshness(maintenanceDocs) : null;
   const agentBriefInput = args.operation === 'agent_brief'
     ? scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns)
@@ -293,6 +300,7 @@ async function queryOntologyTool(args = {}) {
     ontologyAtlasIgnorePatterns,
     ...(args.operation === 'builder_context' ? { sourceDocs: loadVaultDocs(VAULT_ROOT) } : {}),
     ...(maintenanceDocs ? { sourceDocs: maintenanceDocs } : {}),
+    ...(growthDocs ? { sourceDocs: growthDocs } : {}),
     ...(maintenanceFreshness?.checked ? { staleSummaries: maintenanceFreshness.stale } : {}),
   });
   const validatedResult = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)

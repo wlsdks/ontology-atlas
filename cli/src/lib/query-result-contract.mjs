@@ -228,6 +228,16 @@ export function assertMaintenancePlanShape(result) {
   return result;
 }
 
+/** The gap kinds `mcp/src/uncertainty-reads.mjs` classifies, in its own order. */
+const NEXT_READ_KINDS = new Set([
+  'unread-range',
+  'unread-file',
+  'unopened-area',
+  'not-executed',
+  'unverified-claim',
+  'other',
+]);
+
 export function assertGrowthPlanShape(result) {
   assertQueryOperation(result, 'growth_plan');
   if (!isPlainObject(result.summary)) {
@@ -240,6 +250,7 @@ export function assertGrowthPlanShape(result) {
     'danglingReferences',
     'unassignedNodes',
     'emptyDomains',
+    'nextReads',
     'totalActions',
   ]) {
     if (!validCount(result.summary[field])) {
@@ -260,8 +271,78 @@ export function assertGrowthPlanShape(result) {
   assertGrowthRowsGroup('danglingReferences', result.danglingReferences, result.summary.danglingReferences);
   assertGrowthRowsGroup('unassignedNodes', result.unassignedNodes, result.summary.unassignedNodes);
   assertGrowthRowsGroup('emptyDomains', result.emptyDomains, result.summary.emptyDomains);
+  assertNextReadsGroup(result.nextReads, result.summary.nextReads);
   assertCompiledSummaryShape('growth_plan', result.compiledSummary);
   return result;
+}
+
+/**
+ * The next-reads group keeps its own contract.
+ *
+ * Every other growth group is a proposed vault write and carries `kind`,
+ * `reason`, `score` and an executable `proposedAction`. A next read is not a
+ * write: its evidence is the author's own sentence, its address is a path and
+ * an optional line range, and its action is one sentence a person or an agent
+ * performs by reading. Forcing it through the write-shaped check would mean
+ * inventing a score nothing measured.
+ */
+function assertNextReadsGroup(group, expectedTotal) {
+  if (!isPlainObject(group)) {
+    throw new Error('growth_plan nextReads must be an object');
+  }
+  if (!validCount(group.total)) {
+    throw new Error('growth_plan nextReads.total must be a non-negative integer');
+  }
+  if (group.total !== expectedTotal) {
+    throw new Error('growth_plan nextReads.total must equal summary.nextReads');
+  }
+  if (typeof group.limited !== 'boolean') {
+    throw new Error('growth_plan nextReads.limited must be a boolean');
+  }
+  if (!Array.isArray(group.rows)) {
+    throw new Error('growth_plan nextReads.rows must be an array');
+  }
+  if (group.rows.length > group.total) {
+    throw new Error('growth_plan nextReads.rows length must not exceed total');
+  }
+  if (!group.limited && group.rows.length !== group.total) {
+    throw new Error('growth_plan nextReads.rows length must equal total when not limited');
+  }
+  // `no_bodies` is the one reason an empty group is not a clean vault, so it is
+  // required to be stated rather than inferred from a zero.
+  if (group.reason !== null && group.reason !== undefined && group.reason !== 'no_bodies') {
+    throw new Error('growth_plan nextReads.reason must be null or "no_bodies"');
+  }
+  if (group.reason === 'no_bodies' && group.total !== 0) {
+    throw new Error('growth_plan nextReads.reason "no_bodies" must accompany a zero total');
+  }
+  for (let index = 0; index < group.rows.length; index += 1) {
+    const failure = nextReadRowFailure(group.rows[index]);
+    if (failure) throw new Error(`growth_plan nextReads.rows[${index}] ${failure}`);
+  }
+}
+
+function nextReadRowFailure(row) {
+  if (!isPlainObject(row)) return 'must be an object';
+  if (!hasNonEmptyString(row.slug, row.kind, row.statement, row.proposedAction)) {
+    return 'must carry slug, kind, statement, and proposedAction strings';
+  }
+  if (!NEXT_READ_KINDS.has(row.kind)) {
+    return `kind must be one of: ${[...NEXT_READ_KINDS].join(', ')}`;
+  }
+  if (!Array.isArray(row.paths) || row.paths.some((path) => !hasNonEmptyString(path))) {
+    return 'paths must be an array of non-empty strings';
+  }
+  if (!Array.isArray(row.ranges)) return 'ranges must be an array';
+  for (const range of row.ranges) {
+    if (!isPlainObject(range) || !hasNonEmptyString(range.path)) {
+      return 'ranges entries must carry a path';
+    }
+    if (!Number.isInteger(range.from) || !Number.isInteger(range.to) || range.from > range.to) {
+      return 'ranges entries must carry an ordered integer line span';
+    }
+  }
+  return null;
 }
 
 export function assertHealthShape(result) {

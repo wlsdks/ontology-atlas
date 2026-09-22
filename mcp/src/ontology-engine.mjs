@@ -13,9 +13,11 @@ import {
   boundaryFindings,
   definitionFinding,
   epistemicExclusionFinding,
+  starterExampleFindings,
   uncertaintyFinding,
 } from './meaning-findings.mjs';
 import { slugOutsideKindFolderMessage } from './construction-rules.mjs';
+import { extractUncertaintyReads, orderUncertaintyReads } from './uncertainty-reads.mjs';
 
 /**
  * Is this body still the template `add_concept` writes when no body is given?
@@ -285,6 +287,15 @@ export const MAINTENANCE_KIND_VALUES = Object.freeze([
   // the claim is always false: the builder read some files and not others, and
   // which ones is the fact a later reader most needs and can least recover.
   'uncertainty_missing',
+  // An `init` starter example still standing beside real nodes (2026-09-22).
+  // Measured on two unfamiliar repositories: both builders wrote a real map and
+  // left all three scaffold examples in the finished vault, connected only to
+  // each other, with "Example domain" rendering on the map. `review` / `info`
+  // and not executable — the repair deletes somebody's file, and a queue that
+  // hands over a ready-made delete of three nodes is the one kind of row a
+  // person must read before running. Unlike every other meaning kind it needs
+  // no bodies and no repository root, so it answers on every call.
+  'retire_starter_example',
 ]);
 /**
  * Write-gate finding code → maintenance kind, and the score each carries.
@@ -300,6 +311,7 @@ const MEANING_GAP_KIND_BY_CODE = Object.freeze({
   'folder-only-evidence': 'folder_only_evidence',
   'slug-outside-kind-folder': 'slug_outside_kind_folder',
   'uncertainty-missing': 'uncertainty_missing',
+  'starter-example-node': 'retire_starter_example',
 });
 const MEANING_GAP_SCORE_BY_CODE = Object.freeze({
   'definition-missing': 0.6,
@@ -315,6 +327,13 @@ const MEANING_GAP_SCORE_BY_CODE = Object.freeze({
   // Beside the boundary questions: it is the same kind of work, one sentence
   // the writer alone can supply, and nothing else in the vault can stand in.
   'uncertainty-missing': 0.55,
+  // Second highest, and the reasoning is the same as `epistemic-exclusion`'s:
+  // both put a claim on the map that is simply not true of the codebase. This
+  // one is worse in reach — a reader sees «Example domain» beside the real
+  // domains before opening anything — and better in cost, because the repair is
+  // one delete rather than a sentence only the author can write. Ranked just
+  // under the exclusion, which a source-hidden reader repeats as fact.
+  'starter-example-node': 0.65,
 });
 
 const MAINTENANCE_PHASES = new Set(MAINTENANCE_PHASE_VALUES);
@@ -3010,6 +3029,33 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   /**
+   * `init` starter examples the vault has outgrown.
+   *
+   * Beside `slugOutsideKindFolderCandidates` because it shares that function's
+   * one useful property: it needs nothing the compiled artifact does not already
+   * carry — a slug, a kind and a title — so it answers on every
+   * `maintenance_plan` call, bodies or no bodies. That is the whole point here.
+   * The vault measured on 2026-09-22 was freshly built by an agent through the
+   * first-run door; nobody had compiled it with bodies loaded, and it is exactly
+   * the vault that needed telling.
+   */
+  function starterExampleCandidates(limit) {
+    const rows = starterExampleFindings(
+      [...nodes].sort((a, b) => String(a.slug).localeCompare(String(b.slug))),
+    ).map((finding) => ({
+      kind: 'retire_starter_example',
+      score: MEANING_GAP_SCORE_BY_CODE['starter-example-node'],
+      slug: finding.slug,
+      reason: finding.message,
+      node: summarizeNode(nodeBySlug.get(finding.slug)),
+    }));
+    return {
+      ...limitedCandidateGroup(rows, limit),
+      keys: rows.map((row) => `${row.kind}\0${row.slug}`),
+    };
+  }
+
+  /**
    * Bridge nodes that group nothing — the fourth bridge condition, enforced.
    *
    * ## Why the predicate is this narrow
@@ -3369,6 +3415,52 @@ export function createOntologyEngine(artifact, options = {}) {
     };
   }
 
+  /**
+   * The reads this vault's own uncertainty asks for.
+   *
+   * Every node here records what its author did not open, did not finish, or
+   * took on somebody else's word. Until this group existed that record was
+   * where the loop stopped: the product asked for the admission, stored it as
+   * prose, and then had nothing that turned it back into a next step. This
+   * reads those lines and hands each one back as a read with an address.
+   *
+   * ## Why it says `no_bodies` instead of nothing
+   *
+   * A compiled artifact carries no bodies, and `growth_plan` was until now a
+   * pure snapshot read. An empty group would be indistinguishable from a vault
+   * whose every unknown is settled — the most flattering possible lie a queue
+   * can tell. `meaningGapCandidates` on the maintenance path accepts the same
+   * degradation and states it the same way; this names it in the response so a
+   * caller can tell "nothing to read" from "nothing was handed to me".
+   */
+  function nextReadCandidates(limit) {
+    const docsWithBodies = nodes
+      .map((node) => ({ node, doc: sourceDocBySlug.get(node.slug) }))
+      .filter((entry) => typeof entry.doc?.body === 'string');
+    if (docsWithBodies.length === 0) {
+      return { total: 0, limited: false, rows: [], reason: 'no_bodies' };
+    }
+    const rows = [];
+    for (const { node, doc } of docsWithBodies) {
+      rows.push(
+        ...extractUncertaintyReads({
+          slug: node.slug,
+          kind: node.kind,
+          title: node.title,
+          path: typeof node.path === 'string' ? node.path : null,
+          body: doc.body,
+        }),
+      );
+    }
+    const ordered = orderUncertaintyReads(rows);
+    return {
+      total: ordered.length,
+      limited: ordered.length > limit,
+      rows: ordered.slice(0, limit),
+      reason: null,
+    };
+  }
+
   function growthPlan(options = {}) {
     const limit = normalizeLimit(options.limit, 25);
     const relationRecommendations = recommendRelations({ limit });
@@ -3376,6 +3468,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const danglingReferences = danglingReferenceCandidates(limit);
     const unassignedNodes = unassignedNodeCandidates(limit);
     const emptyDomains = emptyDomainCandidates(limit);
+    const nextReads = nextReadCandidates(limit);
 
     return {
       operation: 'growth_plan',
@@ -3386,6 +3479,11 @@ export function createOntologyEngine(artifact, options = {}) {
         danglingReferences: danglingReferences.total,
         unassignedNodes: unassignedNodes.total,
         emptyDomains: emptyDomains.total,
+        nextReads: nextReads.total,
+        // Deliberately unchanged. `totalActions` counts what a writer would
+        // change in the vault; a next read changes the reader first, and
+        // folding it in here would inflate the one number other surfaces
+        // already treat as "writes waiting".
         totalActions:
           relationRecommendations.totalRecommendations +
           externalElementRefs.total +
@@ -3396,6 +3494,7 @@ export function createOntologyEngine(artifact, options = {}) {
       danglingReferences,
       unassignedNodes,
       emptyDomains,
+      nextReads,
     };
   }
 
@@ -3495,6 +3594,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const capabilitiesWithoutEvidence = capabilityWithoutEvidenceCandidates(limit);
     const meaningGaps = meaningGapCandidates(limit);
     const flatSlugs = slugOutsideKindFolderCandidates(limit);
+    const starterExamples = starterExampleCandidates(limit);
     const canonicalizationActions = Array.isArray(artifact?.canonicalizationActions)
       ? artifact.canonicalizationActions
       : [];
@@ -3611,7 +3711,7 @@ export function createOntologyEngine(artifact, options = {}) {
         node: row.node,
       });
     }
-    for (const row of [...meaningGaps.rows, ...flatSlugs.rows]) {
+    for (const row of [...meaningGaps.rows, ...flatSlugs.rows, ...starterExamples.rows]) {
       actions.push({
         phase: 'review',
         kind: row.kind,
@@ -3627,7 +3727,11 @@ export function createOntologyEngine(artifact, options = {}) {
     // rows makes the queue generate its own noise, so whatever the full scan
     // already said is dropped here.
     const capabilitiesWithoutEvidenceSlugs = new Set(capabilitiesWithoutEvidence.slugs ?? []);
-    const meaningGapKeys = new Set([...(meaningGaps.keys ?? []), ...(flatSlugs.keys ?? [])]);
+    const meaningGapKeys = new Set([
+      ...(meaningGaps.keys ?? []),
+      ...(flatSlugs.keys ?? []),
+      ...(starterExamples.keys ?? []),
+    ]);
     for (const action of nodeEligibilityActions()) {
       if (
         action.kind === 'capability_without_evidence' &&
