@@ -63,6 +63,10 @@ questions sealed before any vault existed.
 
 Same limits as the row below: one run per arm, one builder model, the
 coordinating agent as grader, the permission card replaced by an allow-list.
+The two scratch vaults and reader transcripts were discarded when the session
+was resumed; the numbers above were recorded before the loss and cannot be
+re-derived from those artifacts. The mechanisms were shipped after the reads,
+so this row shows the failure, not the recovery; the recovery is a rerun.
 
 ---
 
