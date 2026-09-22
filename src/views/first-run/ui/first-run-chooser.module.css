@@ -1,6 +1,7 @@
 .chooser { container: folder-chooser / size; }
+.frame { height: fit-content; max-height: 100%; margin-block: auto; }
 .help { display: none; }
-.listRegion { min-height: min(10rem, 25vh); }
+.listRegion { min-height: 0; }
 @container folder-chooser (max-height: 40rem) or (max-width: 32rem) {
   .identity, .description, .release, .trust { display: none; }
   .help { display: block; flex: none; }

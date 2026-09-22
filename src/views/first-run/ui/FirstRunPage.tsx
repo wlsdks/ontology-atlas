@@ -319,17 +319,19 @@ export function FirstRunPage() {
               The region is named by its own visible caption (`aria-labelledby`) rather than
               by a copy of it, so a screen reader does not announce the same words twice.
             */}
-            {choosingFolderHome ? (
-              <FirstRunFolderActions trigger={createTrigger} busy={busy} showJustStart={showJustStart} onOpen={() => void handleOpen()} onCreate={setChoosingFor} />
-            ) : null}
             {knownFolders.length > 0 ? (
-              <section className={choosingFolderHome ? `${styles.listRegion} grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-2` : "grid gap-2"} aria-labelledby="known-folders-heading">
-                <p
-                  id="known-folders-heading"
-                  className="px-1 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]"
-                >
-                  {tSwitch("choose.listTitle")}
-                </p>
+              <section className={choosingFolderHome ? `${styles.listRegion} grid min-h-0 shrink grid-rows-[auto_minmax(0,1fr)_auto] gap-2` : "grid gap-2"} aria-labelledby="known-folders-heading">
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+                  <p
+                    id="known-folders-heading"
+                    className="px-1 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]"
+                  >
+                    {tSwitch("choose.listTitle")}
+                  </p>
+                  {choosingFolderHome ? (
+                    <FirstRunFolderActions trigger={createTrigger} busy={busy} showJustStart={showJustStart} onOpen={() => void handleOpen()} onCreate={setChoosingFor} />
+                  ) : null}
+                </div>
                 <RecentVaultList
                   records={knownFolders}
                   currentKey={storedFolderKey}
