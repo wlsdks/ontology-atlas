@@ -144,6 +144,7 @@ interface StorageEntry {
 }
 
 const STORAGE_KEY_REGISTRY: StorageEntry[] = [
+  { key: "ontology-atlas:companion-journal:v1", kind: "storage", scope: "global", file: "src/features/agent-activity/model/companion-journal.ts", provenBy: "src/features/agent-activity/model/use-companion-journal.test.tsx", note: "Device-local personal reflections, deliberately independent of vault truth; explicit reset only." },
   // ── State about the app itself (vault-independent) ───────────────────────
   { key: "app-update:dismissed-version", kind: "storage", scope: "global", note: "무시한 업데이트 버전" },
   { key: "app-update:last-check", kind: "storage", scope: "global", note: "업데이트 확인 시각" },

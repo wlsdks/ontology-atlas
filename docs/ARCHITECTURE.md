@@ -695,6 +695,13 @@ is the launch chooser: when two or more folders are known the cold restore stops
 rather than guess, leaving the folder screen to own the launch. Decision:
 `docs/DECISIONS.md`, "The folder count decides the launch".
 
+The optional companion home/journal is owned by `features/agent-activity` and
+mounted in `FirstRunPage` and the topology utility lane. Its versioned localStorage
+record contains only explicitly authored personal reflections and cosmetic keepsakes;
+it is not a second ontology store, receives no automatic agent-write or approval
+signals, and never writes vault frontmatter. The existing verified mascot pose
+machine is mounted inline beside work status instead of as an AppShell map overlay.
+
 **One piece of code decides which nav item is active; each screen size shows a
 different list of buttons.** The desktop rail shows eight destinations: Map,
 Architecture, Library, Automations, Insights, Projects, Agents, and Git. MCP is the

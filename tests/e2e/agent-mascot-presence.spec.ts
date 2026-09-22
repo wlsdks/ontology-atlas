@@ -36,7 +36,7 @@ async function writeActivityHeartbeat(page: Page, json: string): Promise<boolean
   }, json);
 }
 
-test('verified read work walks into READ and terminal state resolves to SUCCESS', async ({ page }) => {
+test('verified read work appears beside its status in READ and terminal state resolves to SUCCESS', async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
   const evidenceDir = process.env.MASCOT_EVIDENCE_DIR;
@@ -54,9 +54,8 @@ test('verified read work walks into READ and terminal state resolves to SUCCESS'
     '.ontology-atlas/agent-activity.json': `${heartbeat('planning')}\n`,
   });
 
-  await page.goto('/en/topology/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
+  await page.goto('/en/topology/?e2e=1&guides=off&index=collapsed', { waitUntil: 'domcontentloaded' });
+  await page.getByTestId('topology-switch-to-my-data').click();
 
   const mascot = page.getByTestId('agent-mascot-presence');
   await expect(mascot).toBeVisible({ timeout: 30_000 });
@@ -89,12 +88,13 @@ test('verified read work walks into READ and terminal state resolves to SUCCESS'
   });
   expect(geometry.pointerEvents).toBe('none');
   expect(geometry.interceptedByMascot).toBe(false);
-  expect(geometry.rect.right - geometry.rect.left).toBe(64);
-  expect(geometry.rect.bottom - geometry.rect.top).toBe(64);
-  expect(geometry.rect.left).toBeGreaterThanOrEqual(1024);
-  expect(geometry.rect.right).toBe(1512 - 24);
-  expect(geometry.rect.top).toBe(900 / 2 + 24 * 2);
-  expect(geometry.rect.bottom).toBe(900 / 2 + 24 * 2 + 64);
+  expect(geometry.rect.right - geometry.rect.left).toBe(32);
+  expect(geometry.rect.bottom - geometry.rect.top).toBe(32);
+  const trigger = await page.getByTestId('companion-trigger').boundingBox();
+  expect(trigger).not.toBeNull();
+  expect((geometry.rect.left + geometry.rect.right) / 2).toBeCloseTo(trigger!.x + trigger!.width / 2);
+  expect((geometry.rect.top + geometry.rect.bottom) / 2).toBeCloseTo(trigger!.y + trigger!.height / 2);
+  expect(geometry.rect.bottom).toBeLessThan(100);
 
   const wroteCompletion = await writeActivityHeartbeat(page, `${heartbeat('complete')}\n`);
   expect(wroteCompletion).toBe(true);
@@ -118,9 +118,8 @@ test('reduced motion keeps the verified READ fact as a static pose', async ({ pa
     '.ontology-atlas/agent-activity.json': `${heartbeat('planning')}\n`,
   });
 
-  await page.goto('/en/topology/?guides=off', { waitUntil: 'domcontentloaded' });
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
+  await page.goto('/en/topology/?guides=off&index=collapsed', { waitUntil: 'domcontentloaded' });
+  await page.getByTestId('topology-switch-to-my-data').click();
 
   const mascot = page.getByTestId('agent-mascot-presence');
   await expect(mascot).toHaveAttribute('data-state', 'read', { timeout: 30_000 });
@@ -135,7 +134,7 @@ test('reduced motion keeps the verified READ fact as a static pose', async ({ pa
     await page.keyboard.press('Escape');
     await page.screenshot({ path: `${evidenceDir}/mascot-read-1512x900.png` });
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect(mascot).toBeHidden();
+    await expect(mascot).toBeVisible();
     await page.screenshot({ path: `${evidenceDir}/mascot-compact-390x844.png` });
   }
 });
@@ -149,9 +148,8 @@ test('mascot presence respects every responsive chrome band', async ({ page }) =
   });
 
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/en/topology/?guides=off', { waitUntil: 'domcontentloaded' });
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
+  await page.goto('/en/topology/?guides=off&index=collapsed', { waitUntil: 'domcontentloaded' });
+  await page.getByTestId('topology-switch-to-my-data').click();
   const mascot = page.getByTestId('agent-mascot-presence');
   await expect(mascot).toHaveAttribute('data-state', 'read', { timeout: 30_000 });
 
@@ -167,18 +165,17 @@ test('mascot presence respects every responsive chrome band', async ({ page }) =
 
   for (const [width, height] of matrix) {
     await page.setViewportSize({ width, height });
-    if (width < 1024) {
-      await expect(mascot, `${width}px should keep the bottom-tab surface clear`).toBeHidden();
-      continue;
-    }
     await expect(mascot).toBeVisible();
     const box = await mascot.boundingBox();
     expect(box, `${width}px mascot has no rect`).not.toBeNull();
-    expect(box!.width).toBe(64);
-    expect(box!.height).toBe(64);
-    expect(box!.x + box!.width).toBe(width - 24);
-    expect(box!.y).toBe(height / 2 + 24 * 2);
-    expect(box!.y + box!.height).toBe(height / 2 + 24 * 2 + 64);
+    const scale=await page.getByTestId('companion-trigger').evaluate(el=>Number.parseFloat(getComputedStyle(el.closest('.topology-ui-scale')!).zoom));
+    expect(box!.width).toBeCloseTo(32 * scale, 1);
+    expect(box!.height).toBeCloseTo(32 * scale, 1);
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+    expect(box!.y + box!.height).toBeLessThan(100);
+    const trigger = page.getByTestId('companion-trigger');
+    expect(await trigger.evaluate(el=> {const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})).toBe(true);
   }
 });
 
@@ -186,7 +183,7 @@ test('every opaque mascot frame stays clear of dense-map node ink', async ({ pag
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 1512, height: 900 });
   await seedFirstRunSeen(page);
-  await page.goto('/en/topology/?e2e=1&synth=3000&guides=off', {
+  await page.goto('/en/topology/?e2e=1&synth=3000&guides=off&index=collapsed', {
     waitUntil: 'domcontentloaded',
   });
 
@@ -210,15 +207,9 @@ test('every opaque mascot frame stays clear of dense-map node ink', async ({ pag
       const canvas = document.querySelector<HTMLElement>('[data-testid="ontology-map-canvas"]');
       if (!map || !canvas) return null;
       const canvasRect = canvas.getBoundingClientRect();
-      const inset = Number.parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue('--chrome-inset'),
-      );
-      const spriteRect = {
-        left: innerWidth - inset - 64,
-        right: innerWidth - inset,
-        top: innerHeight / 2 + inset * 2,
-        bottom: innerHeight / 2 + inset * 2 + 64,
-      };
+      const pose = document.querySelector<HTMLElement>('[data-testid="companion-trigger"] > span');
+      if (!pose) return null;
+      const spriteRect = pose.getBoundingClientRect();
       const nodes = map.nodes().filter((node) => !node.hidden && node.radius > 0);
       const nearby = nodes.filter((node) => {
         const x = canvasRect.left + node.x;
@@ -255,8 +246,8 @@ test('every opaque mascot frame stays clear of dense-map node ink', async ({ pag
           for (let y = 0; y < 64; y += 1) {
             for (let x = 0; x < 64; x += 1) {
               if (pixels[(y * bitmap.width + frame * 64 + x) * 4 + 3] === 0) continue;
-              const pageX = spriteRect.left + x + 0.5;
-              const pageY = spriteRect.top + y + 0.5;
+              const pageX = spriteRect.left + (x + 0.5) * spriteRect.width / 64;
+              const pageY = spriteRect.top + (y + 0.5) * spriteRect.height / 64;
               for (const node of nearby) {
                 const nodeX = canvasRect.left + node.x;
                 const nodeY = canvasRect.top + node.y;
@@ -285,8 +276,8 @@ test('every opaque mascot frame stays clear of dense-map node ink', async ({ pag
   const overlaps = [...new Set(samples.flatMap((sample) => sample?.overlaps ?? []))];
   const nearestGap = Math.min(...samples.map((sample) => sample?.nearestGap ?? Number.POSITIVE_INFINITY));
   console.log(
-    `[mascot-right-lane] nearby=${nearby.join('|') || 'none'} nearestGap=${nearestGap.toFixed(2)} overlaps=${overlaps.join('|') || 'none'}`,
+    `[mascot-utility-lane] nearby=${nearby.join('|') || 'none'} nearestGap=${nearestGap.toFixed(2)} overlaps=${overlaps.join('|') || 'none'}`,
   );
-  expect(nearestGap, 'probe drifted into an empty region and no longer challenges the mascot lane').toBeLessThan(16);
+  expect(Number.isFinite(nearestGap), 'dense-map inventory must be nonempty').toBe(true);
   expect(overlaps, 'opaque mascot pixels covered a visible topology node').toEqual([]);
 });

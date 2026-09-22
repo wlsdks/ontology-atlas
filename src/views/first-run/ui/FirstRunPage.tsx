@@ -18,6 +18,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { FirstRunFolderActions } from "./FirstRunFolderActions";
 import { Chip } from '@/shared/ui/controls';
 import { Button, Dialog, IconButton } from '@/shared/ui';
+import { CompanionHome } from "@/features/agent-activity";
 import styles from './first-run-chooser.module.css';
 
 /**
@@ -256,6 +257,8 @@ export function FirstRunPage() {
             </p>
           </div>
         </header>
+
+        {!choosingFor ? <div className="shrink-0"><CompanionHome /></div> : null}
 
         {choosingFor ? (
           <div ref={shapePanel} tabIndex={-1} className="grid gap-2" aria-busy={busy} data-testid="first-run-shape">

@@ -627,6 +627,14 @@ had become false).
   there is no human authorship INDEX lens or red review ring. `vault-readme` is read as Docs reader guide
   but excluded from topology adapter, INDEX, canonical concept census, editor target.
 
+#### Companion home and personal memories
+
+- The launch chooser contains a compact home for the existing pixel companion. Its journal is also available beside the map's work-status controls; the mascot no longer travels over the map's reading area.
+- A person explicitly writes a short memory as checked, corrected, or still unsure, and chooses a book, plant, or star for the home. All kinds and keepsakes are available equally; no approval, node count, streak, or automatic agent activity advances it.
+- These are self-authored personal reflections, not review receipts, accepted meaning, or an ontology quality score. The journal records the current folder name only when a real folder is loaded; it does not attach inferred evidence or mark any ontology fact reviewed.
+- Up to 50 memories stay in versioned device-local storage, separate from vault Markdown. A full journal never silently evicts an older memory. Individual removal and an explicit reset are available; clearing app/browser data removes the journal. Save failures keep the draft, and unreadable storage is preserved until explicit reset.
+- Saving a memory produces one finite sprite response. Existing verified agent read/completion poses stay independent, beside work status. Reduced motion uses the existing static sprite equivalent.
+
 #### Locale-specific Node Names (`display_<locale>`, 2026-07-24)
 - A feature to assign different names per language to a single node. The map labels, INDEX, and popovers draw names from `display_ko` / `display_en` in frontmatter according to the screen language. If no name for that language exists, it searches down the order: `display_<screen language>` → `display` → `title`. Search and name comparison always use the full `title` — attaching a label does not narrow the search scope.
 - There are three ways to enter names: MCP `add_concept`/`add_concepts`'s `labels: { ko, en }` · writing keys directly via `patch_concept` · language-specific name fields in the map's node composer.

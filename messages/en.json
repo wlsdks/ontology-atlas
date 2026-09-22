@@ -6608,5 +6608,43 @@
     "cancel": "Cancel",
     "saving": "Saving…",
     "save": "Save constellation"
+  },
+  "companion": {
+    "open": "Open companion journal",
+    "home": "Our little home",
+    "emptyHome": "A place for what we learn together.",
+    "title": "Memories together",
+    "personal": "Your personal reflections, separate from ontology review or approval.",
+    "close": "Close journal",
+    "welcome": "Start with one small memory.",
+    "settled": "What we learned together has a home here.",
+    "kindLabel": "What kind of memory?",
+    "kind": {
+      "checked": "I checked",
+      "corrected": "I corrected",
+      "uncertain": "Still unsure"
+    },
+    "noteLabel": "A line to remember",
+    "placeholder": "What did you learn? An unanswered question belongs here too.",
+    "keepsakeLabel": "A keepsake for home",
+    "object": {
+      "book": "Book",
+      "plant": "Plant",
+      "star": "Star"
+    },
+    "save": "Keep memory",
+    "saved": "Remembered. Your keepsake is at home too.",
+    "storage": "Saved only on this device. Clearing app data also clears these memories.",
+    "saveFailed": "Could not save. Your draft is still here.",
+    "unreadable": "Could not read your saved memories. Nothing was overwritten. Reset to start again.",
+    "full": "You have 50 memories. Remove one before adding another.",
+    "memories": "Kept memories",
+    "remove": "Remove memory: {note}",
+    "removePrompt": "Remove this memory? This cannot be undone.",
+    "removeConfirm": "Remove this memory",
+    "reset": "Reset memories",
+    "resetPrompt": "Clear all memories and keepsakes on this device? Your folders and ontology will stay as they are.",
+    "cancel": "Cancel",
+    "resetConfirm": "Clear all memories"
   }
 }

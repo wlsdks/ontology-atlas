@@ -55,6 +55,11 @@
 
 ---
 
+The pixel companion has a small home in the folder chooser and a personal journal
+beside map work status. Keep a short reflection about something checked, corrected,
+or still uncertain, with a small keepsake. Memories stay on this device and remain
+separate from ontology review or approval; no agent activity automatically grows it.
+
 ## In 30 seconds
 
 When an agent finishes a change, you still need to judge what it understood,

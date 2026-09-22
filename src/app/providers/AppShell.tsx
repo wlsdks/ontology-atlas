@@ -33,7 +33,6 @@ import {
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { useSoleProjectHref } from "@/features/project-data-source";
-import { AgentMascotPresence } from "@/features/agent-activity";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
 import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/map-navigation-pending";
@@ -263,11 +262,7 @@ function ShellColumn({ children }: { children: ReactNode }) {
           places lets one drift. */}
       <AppUpdateSurface />
 
-      {/* One persistent, non-interactive mascot journey. It reads the same verified
-          Agent Work Visibility projection as the activity surface; silence never
-          becomes invented work. AppShell owns it so route changes cannot restart the
-          sequence or remount a second copy. */}
-      <AgentMascotPresence />
+
     </div>
   );
 }

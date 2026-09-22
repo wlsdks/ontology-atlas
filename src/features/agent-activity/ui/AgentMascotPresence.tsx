@@ -27,7 +27,7 @@ export const MASCOT_WALK_MS = 600;
  * SUCCESS only when that same observed sequence receives a terminal completion.
  * There is no idle loop and no inferred work state.
  */
-export function AgentMascotPresence() {
+export function AgentMascotPresence({ inline = false }: { inline?: boolean }) {
   const t = useTranslations('agentActivity.mascot');
   const feed = useAgentActivityFeed();
   const [state, setState] = useState<AgentMascotState>('hidden');
@@ -131,8 +131,8 @@ export function AgentMascotPresence() {
       data-state={state}
       data-traveling={traveling ? 'true' : undefined}
       className={cn(
-        'atlas-mascot-presence pointer-events-none absolute right-[var(--chrome-inset)] top-[calc(50%+var(--chrome-inset)*2)] z-10 hidden size-16 overflow-visible lg:block',
-        traveling && 'atlas-mascot-presence--walking',
+        inline ? 'atlas-mascot-presence pointer-events-none absolute inset-0 size-16 overflow-hidden' : 'atlas-mascot-presence pointer-events-none absolute right-[var(--chrome-inset)] top-[calc(50%+var(--chrome-inset)*2)] z-10 hidden size-16 overflow-visible lg:block',
+        traveling && !inline && 'atlas-mascot-presence--walking',
       )}
     >
       <div

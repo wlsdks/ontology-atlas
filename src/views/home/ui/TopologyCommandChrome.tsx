@@ -1,5 +1,5 @@
 import { buildOntologyInsightsReturnHref } from "@/entities/knowledge-graph";
-import { AgentActivityChip } from "@/features/agent-activity";
+import { AgentActivityChip, CompanionHome } from "@/features/agent-activity";
 import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
 import type { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
@@ -767,6 +767,7 @@ export function TopologyCommandChrome({
                   {/* Work status is anchored below this row, and only the notification bell stands as the
                         last square tile of this row. The same component owns both feeds and
                         outside click/Escape to avoid duplicating polling/read state. */}
+                  <CompanionHome compact />
                   <AgentActivityChip
                     /*
                      * The stack recedes for a datasheet — but not out from under an open
