@@ -615,6 +615,10 @@ had become false).
   does not temporarily switch current vault to sample graph; independent consumers only
   use `/topology?mode=focus&p=…` fallback. Heartbeat/tool input reveals current vault's
   actual slug only then drawing the existing amber agent-focus ring.
+- Changed agent phase and target labels crossfade in place while their controls retain focus.
+  Elapsed time updates separately without replaying the transition. The current-work body
+  scrolls within its viewport cap. Map inspectors use the large-surface fade, keeping the
+  reading surface stationary while the camera approaches the selected concept.
 - App ontology write allow/deny and final state remain in the vault as limited work receipts in
   `.ontology-atlas/acp-work.jsonl`. Full conversation/thought/
   tool output/absolute paths are not saved. Recent receipts can be viewed collapsed in the activity popover,

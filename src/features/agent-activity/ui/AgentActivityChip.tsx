@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Bell } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 import { Link } from '@/i18n/navigation';
 import { getTopologyFocusHref } from '@/entities/project';
@@ -11,7 +12,9 @@ import { controlClass } from '@/shared/ui/control-class';
 import { Surface } from '@/shared/ui/surface';
 import { cn } from '@/shared/lib/cn';
 import { elapsedParts } from '@/shared/lib/elapsed';
+import { MOTION } from '@/shared/motion';
 import { AgentInboxPanel, MarkAllReadDoor } from './AgentInboxPanel';
+import { AgentWorkFact } from './AgentWorkFact';
 import { deriveBellInbox } from '../model/bell-inbox';
 import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
 import type { AgentLiveWorkInput } from '../model/agent-work-projection';
@@ -70,6 +73,7 @@ export function AgentActivityChip({
   const t = useTranslations('agentActivity');
   const format = useFormatter();
   const feed = useAgentActivityFeed(liveWork);
+  const reducedMotion = useReducedMotion();
   /*
    * Derived here rather than inside the panel: the bell's own badge has to know whether
    * anything waits on the person **before** the panel is ever opened.
@@ -219,7 +223,9 @@ export function AgentActivityChip({
       data-work-mode={feed.work.mode}
     >
       {showStatus ? (
-        <div
+        <motion.div
+          layout={!reducedMotion}
+          transition={MOTION.base}
           className={cn(
             CHROME_STATUS_CHIP_CLASS,
             'absolute right-0 top-[calc(100%+8px)] w-max min-w-0 max-w-[min(var(--git-setup-measure),calc(100vw-var(--chrome-inset)*2))]',
@@ -227,7 +233,9 @@ export function AgentActivityChip({
           data-agent-activity-status-slot="utility-row-below"
           data-writing={feed.writing ? 'true' : 'false'}
         >
-          <button
+          <motion.button
+            layout={reducedMotion ? false : 'position'}
+            transition={MOTION.base}
             ref={statusRef}
             type="button"
             aria-haspopup="true"
@@ -253,13 +261,22 @@ export function AgentActivityChip({
             />
             <span
               data-testid="agent-activity-status"
-              className="min-w-0 truncate text-[color:var(--color-text-primary)]"
+              className="flex min-w-0 items-baseline gap-1.5 text-[color:var(--color-text-primary)]"
             >
-              {statusLabel}
+              <AgentWorkFact text={feed.work.mode === 'live' ? liveLabel : statusLabel} />
+              {feed.work.mode === 'live' && elapsed ? (
+                <span className="shrink-0 font-mono tabular-nums text-[color:var(--color-text-tertiary)]">
+                  · {elapsed}
+                </span>
+              ) : null}
             </span>
-          </button>
+          </motion.button>
           {feed.lastNode ? (
-            <span className="flex min-w-0 items-center gap-1.5 max-md:hidden">
+            <motion.span
+              layout={reducedMotion ? false : 'position'}
+              transition={MOTION.base}
+              className="flex min-w-0 items-center gap-1.5 max-md:hidden"
+            >
               <span aria-hidden className="shrink-0 text-[color:var(--color-text-quaternary)]">
                 ·
               </span>
@@ -280,7 +297,7 @@ export function AgentActivityChip({
                   <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
                     {targetPrefix}:
                   </span>
-                  <span className="min-w-0 truncate">{feed.lastNode.name}</span>
+                  <AgentWorkFact text={feed.lastNode.name} />
                 </button>
               ) : (
                 <Link
@@ -298,12 +315,12 @@ export function AgentActivityChip({
                   <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
                     {targetPrefix}:
                   </span>
-                  <span className="min-w-0 truncate">{feed.lastNode.name}</span>
+                  <AgentWorkFact text={feed.lastNode.name} />
                 </Link>
               )}
-            </span>
+            </motion.span>
           ) : null}
-        </div>
+        </motion.div>
       ) : null}
 
       {showBell ? (
@@ -414,18 +431,18 @@ export function AgentActivityChip({
         ) : feed.work.mode !== 'idle' ? (
           <section
             data-testid="agent-activity-current-work"
-            className="px-3 py-3"
+            className="min-h-0 overflow-y-auto px-3 py-3"
           >
             <div className="flex min-w-0 items-center justify-between gap-2">
               <span className="min-w-0 truncate text-label text-[color:var(--color-text-primary)]">
                 {feed.agentName ?? t('unknownAgent')}
               </span>
-              <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)]">
-                {feed.work.mode === 'live'
+              <span className="min-w-0 font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                <AgentWorkFact text={feed.work.mode === 'live'
                   ? phase ?? t('writing')
                   : feed.work.mode === 'recent-write'
                     ? t('recentWriteShort')
-                    : t('complete')}
+                    : t('complete')} />
               </span>
             </div>
             {feed.work.summary ? (
