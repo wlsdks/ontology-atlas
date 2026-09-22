@@ -779,6 +779,23 @@ function queryConceptsTool({ filter, limit }) {
  */
 function readSourceTool({ path, from, limit, sheet } = {}) {
   const relPath = String(path ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
+  if (!relPath.startsWith('sources/') && relPath && !relPath.split('/').includes('..')) {
+    /*
+     * A repository path, not a vault source. A Rust trial builder (2026-09-23) asked
+     * this tool for `src/options.rs` lines 276-470 and got only "must name a file
+     * under sources/"; it found the code reader by itself, and a less persistent
+     * agent would have stopped with the next read undone. The refusal names the
+     * door that reads repository code, in the shape that call takes.
+     */
+    const quoted = JSON.stringify(relPath);
+    throw new Error(
+      `read_source: \`${relPath}\` is repository code, and read_source reads only the documents in ` +
+        "the vault's `sources/` folder (for example `sources/plan.docx`). Read repository code with " +
+        `analyze_repo_structure({ sourceReads: [{ path: ${quoted}, mode: "outline" }] }) for its ` +
+        `declarations with line numbers, then { path: ${quoted}, startLine: <n>, maxLines: <at most 200> } ` +
+        'for the exact lines.',
+    );
+  }
   if (!relPath.startsWith('sources/') || relPath.split('/').includes('..') || relPath.endsWith('/')) {
     throw new Error('read_source: `path` must name a file under `sources/`, such as `sources/plan.docx`.');
   }

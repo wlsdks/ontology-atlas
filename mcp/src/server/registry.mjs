@@ -2730,6 +2730,7 @@ const TOOLS = [
   {
     name: 'read_source',
     description:
+      'Vault source documents only; repository code is read through analyze_repo_structure `sourceReads`. ' +
       'Read the text of one raw source under `sources/`, cut into the units a wiki citation names ' +
       '(`docs/ONTOLOGY-ATLAS-SPEC.md` §11): a DOCX by heading (`h:<slug>`; paragraphs before the first ' +
       'heading are `p1`), an XLSX by sheet and row (`s<n>r<m>`), a CSV by row (`r<n>`), a text or HTML file by ' +

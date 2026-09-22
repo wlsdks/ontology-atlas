@@ -2372,6 +2372,30 @@ await test("README first exploration — documented read-only MCP calls stay val
   }
 });
 
+await test("read_source — a repository code path is refused with the call that reads it", async () => {
+  // A Rust trial builder asked read_source for `src/options.rs` and was told only
+  // that the path must sit under sources/ (2026-09-23). The refusal now names the
+  // code reader in the exact shape it takes, so the next read is not lost.
+  const vaultRoot = makeVault();
+  try {
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "read_source", { path: "src/options.rs", from: 276, limit: 195 }),
+      callTool(3, "read_source", { path: "../outside.md" }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true);
+    const text = JSON.stringify(responses.find((r) => r.id === 2));
+    assert.match(text, /analyze_repo_structure/);
+    assert.match(text, /sourceReads/);
+    assert.match(text, /src\/options\.rs/);
+    // A traversal is still refused on the path rule, with no reader offered.
+    assert.equal(isErrorResponse(responses, 3), true);
+    assert.doesNotMatch(JSON.stringify(responses.find((r) => r.id === 3)), /analyze_repo_structure/);
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+  }
+});
+
 await test("tools/call — arguments 생략은 빈 object, non-object 는 명시적으로 거부", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Demo\n---\n" },
