@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-22",
+  "decision": "A replay on two unknown repositories names the next four gaps, and the product closes them at the door",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "handoff",
+  "changes": [
+    "public-contract"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "affected",
+    "human-correction": "unchanged"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-22",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "dbcebc72-7e7d-4dda-a4bf-5a8621c944e2",
+  "recordedAt": "2026-09-22T15:09:51.927Z"
+}

@@ -59,14 +59,26 @@ questions sealed before any vault existed.
    `why` names, editor-style paths included, and the last two were re-typed as a
    relation and re-targeted through `replace_relation`. Dogfood: 0.
 
+### The rerun (after the mechanisms shipped)
+
+Go framework again, fresh shallow clone, same six sealed questions, same
+reader. Build: 2 turns, $4.55, 340 s, 16 nodes (5 domains, 11 capabilities);
+the builder's own words: "I read its outline and the `Command` struct, not
+every method body." Two capabilities the first run lacked now exist:
+did-you-mean suggestions and help-and-usage rendering. Reader: q4 answered
+with `SuggestionsFor` at command.go:863 and `findSuggestions` at :781 (both
+exact in the clone) and the edit-distance helper at cobra.go:192; q5 answered
+with `Help`, `UsageTemplate`, `HelpTemplate` in command.go (lines cited and
+checked). 10 turns, $0.29. Pass condition, stated before the run, met.
+
 ### What this row does not show
 
 Same limits as the row below: one run per arm, one builder model, the
 coordinating agent as grader, the permission card replaced by an allow-list.
-The two scratch vaults and reader transcripts were discarded when the session
-was resumed; the numbers above were recorded before the loss and cannot be
-re-derived from those artifacts. The mechanisms were shipped after the reads,
-so this row shows the failure, not the recovery; the recovery is a rerun.
+The first two scratch vaults and reader transcripts were discarded when the
+session was resumed; their numbers were recorded before the loss and cannot be
+re-derived from those artifacts. The rerun's clone is a later revision than
+the first run's, and only the Go arm was rerun.
 
 ---
 
