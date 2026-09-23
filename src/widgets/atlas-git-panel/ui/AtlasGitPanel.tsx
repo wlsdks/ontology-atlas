@@ -2410,6 +2410,13 @@ function StepList({
          */
         const why = human ? t("stepAutoSubject", { summary: human }) : commit.subject;
         const stepConcepts = concepts.get(commit.hash) ?? [];
+        /*
+         * Two names only when two are all there is. With a third behind them, two slots cut both
+         * names to a few characters ("Agent … Agent… and 25 more" in the Korean UI, installed app on
+         * this repo's own vault, 2026-09-24) and the pair could not be told apart; one whole name and the count
+         * keep the row's height and say something.
+         */
+        const slots = stepConcepts.length > STEP_CONCEPT_SLOTS ? 1 : STEP_CONCEPT_SLOTS;
         const names = summary.slugs.join(", ");
         const trail = summary.overflow > 0 ? t("moreSlugs", { count: summary.overflow }) : "";
         const expanded = selection.kind === "commit" && selection.hash === commit.hash;
@@ -2470,18 +2477,18 @@ function StepList({
                       ellipsis, on eight of the eleven rows on screen. Four characters is not a
                       name, and there was nothing to hover.
                     */}
-                    {stepConcepts.slice(0, STEP_CONCEPT_SLOTS).map((concept) => (
+                    {stepConcepts.slice(0, slots).map((concept) => (
                       <span key={concept.id} className="inline-flex min-w-0 shrink items-center gap-1.5">
                         <OntologyMapKindGlyph kind={concept.kind} size={12} />
                         <span className="truncate" title={concept.label}>{concept.label}</span>
                       </span>
                     ))}
-                    {stepConcepts.length > STEP_CONCEPT_SLOTS ? (
+                    {stepConcepts.length > slots ? (
                       <span
                         className="shrink-0 text-label font-normal text-[color:var(--color-text-quaternary)]"
-                        title={stepConcepts.slice(STEP_CONCEPT_SLOTS).map((concept) => concept.label).join(", ")}
+                        title={stepConcepts.slice(slots).map((concept) => concept.label).join(", ")}
                       >
-                        {t("moreSlugs", { count: stepConcepts.length - STEP_CONCEPT_SLOTS })}
+                        {t("moreSlugs", { count: stepConcepts.length - slots })}
                       </span>
                     ) : null}
                   </>

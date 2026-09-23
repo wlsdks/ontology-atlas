@@ -1060,6 +1060,27 @@ describe("AtlasGitPanel — 걸음의 주어는 개념이다", () => {
     expect(step).toHaveTextContent("사람이 직접 쓴 커밋 제목");
   });
 
+  it("개념이 셋 이상이면 이름 하나를 온전히 두고 나머지는 수로 센다", async () => {
+    // Two slots cut both names to a few characters when a third stood behind them
+    // ("Agent … Agent… and 25 more" in the Korean UI, installed app, 2026-09-24).
+    const node = (id: string, display: string) => ({
+      ...GRAPH.nodes[0],
+      id: `capability:${id}`,
+      display,
+      evidenceIds: [`capabilities/${id}`],
+      agentSlug: `capabilities/${id}`,
+    });
+    const file = (id: string) => ({ path: `docs/capabilities/${id}.md`, status: "modified", kind: "capability", slug: `capabilities/${id}`, renamedFrom: null });
+    const graph = { nodes: [node("a", "에이전트 접근 권한"), node("b", "에이전트 실행 게이트"), node("c", "세 번째")], edges: [] } as unknown as typeof GRAPH;
+    installDesktopGit({ history: [{ ...HISTORY_WITH_FILES[0], files: [file("a"), file("b"), file("c")] }] });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={graph} />);
+    await screen.findByTestId("atlas-git-steps");
+    const step = screen.getByTestId("atlas-git-history-item");
+    expect(step).toHaveTextContent("에이전트 접근 권한");
+    expect(step).not.toHaveTextContent("에이전트 실행 게이트");
+    expect(step).toHaveTextContent("외 2건");
+  });
+
   it("볼트의 개념이 아닌 파일만 건드린 걸음은 개념을 지어내지 않는다", async () => {
     installDesktopGit({
       history: [
