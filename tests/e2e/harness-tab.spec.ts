@@ -576,7 +576,10 @@ test.describe("하네스 탭", () => {
         } else {
           await reducedPage.setViewportSize({ width: 1512, height: 650 });
           const field = overview.locator('[data-domain-count]');
-          expect(await field.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0);
+          // A condition wait, not one read: the field refits to the new window a frame after the
+          // resize, and the single read measured the old fit — red on every local run and green in
+          // CI only on retry (2026-09-24), which `.claude/rules/testing.md` says is not a gate.
+          await expect.poll(() => field.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0);
           await field.evaluate((element) => { element.scrollTop = element.scrollHeight; });
           await expect(surface).toHaveCount(0);
           await expect(field).toBeFocused();
