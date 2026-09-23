@@ -121,7 +121,7 @@ pnpm dev
 
 The web development server is for the browser workbench. Open the installed app to inspect native Agents and Jev behavior. The repository intentionally exports static pages and has no API routes, server actions, backend, login, or npm package. [Source setup](cli/README.md#set-up-from-a-source-checkout) · [architecture](docs/ARCHITECTURE.md).
 
-Contributors should start with [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Run **pnpm checks:changed -- --run** for the files you change. Open pull requests as drafts and use **pnpm pr:land** for the reviewed merge. Keep visual review captures outside the repository.
+Contributors should start with [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Run **pnpm checks:changed -- --run** for the files you change and **pnpm knip** to audit unused code. Open pull requests as drafts and use **pnpm pr:land** for the reviewed merge. Keep visual review captures outside the repository.
 
 ## More detail
 
