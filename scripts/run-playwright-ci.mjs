@@ -70,7 +70,11 @@ export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), 
   const filters = selected.files.map((file) => `/${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
   const reportFile = resolve(cwd, `output/playwright/results-${index}.json`);
   rmSync(reportFile, { force: true });
-  const result = spawn('pnpm', ['exec', 'playwright', 'test', ...project, ...filters, '--reporter=list,json'], {
+  // A red shard cannot become green by running more files. CI retries the failing
+  // test first, then stops this shard so a shared setup regression does not spend
+  // the full matrix budget repeating the same failure in every spec.
+  const failFast = env.CI === 'true' || env.CI === '1' ? ['--max-failures=1'] : [];
+  const result = spawn('pnpm', ['exec', 'playwright', 'test', ...project, ...filters, ...failFast, '--reporter=list,json'], {
     cwd, env: { ...env, PLAYWRIGHT_JSON_OUTPUT_NAME: reportFile }, stdio: 'inherit',
   });
   if (result.status === 0) {

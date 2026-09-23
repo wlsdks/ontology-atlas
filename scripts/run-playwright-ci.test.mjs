@@ -42,9 +42,12 @@ test('executor keeps discovery errors and test failures red, and excludes only s
       calls.push(args);
       return args.includes('--list') ? {status:0,stdout:JSON.stringify(report(['a.spec.ts','web-surface-smoke.spec.ts']))} : {status:7};
     };
-    assert.equal(runPlaywrightCi(['--shard=1/1','--exclude=web-surface-smoke.spec.ts'],{cwd,spawn}),7);
+    assert.equal(runPlaywrightCi(['--shard=1/1','--exclude=web-surface-smoke.spec.ts'],{cwd,spawn,env:{CI:'true'}}),7);
     assert.ok(calls[1].includes('/a\\.spec\\.ts$'));
     assert.ok(!calls[1].some((arg)=>arg.includes('web-surface')));
+    assert.ok(calls[1].includes('--max-failures=1'), 'a red CI shard must stop after its first confirmed failure');
+    assert.equal(runPlaywrightCi(['--shard=1/1','--exclude=web-surface-smoke.spec.ts'],{cwd,spawn,env:{CI:'false'}}),7);
+    assert.ok(!calls[3].some((arg)=>arg.startsWith('--max-failures=')), 'local runs keep their full diagnostic inventory');
     assert.throws(()=>runPlaywrightCi(['--shard=4/3'],{cwd,spawn}),/exceeds/);
     assert.throws(()=>runPlaywrightCi(['--exclude=a.spec.ts'],{cwd,spawn}),/separately/);
     assert.throws(()=>runPlaywrightCi([],{cwd,spawn:()=>({status:1,stderr:'bad config'})}),/discovery failed/);
