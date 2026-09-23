@@ -1,4 +1,4 @@
-import { existsSync, realpathSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -8,6 +8,8 @@ const MAX_WALK_PATHS = 512;
 const MAX_GIT_BATCH_OUTPUT = 64 * 1024 * 1024;
 const NODE_REVISION_CACHE_LIMIT = 8;
 const nodeRevisionCache = new Map();
+const PATH_CHANGE_CACHE_LIMIT = 8;
+const pathChangeCache = new Map();
 
 export function discoverGitRepositoryRoot(startPath) {
   const absoluteStart = resolve(startPath);
@@ -625,6 +627,61 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
   }
   const changes = new Map();
   if (wanted.length === 0) return { operation: 'path_last_changes', ok: true, repoRoot: gitRoot, changes };
+  const commitLimit = Math.max(1, Math.min(maxCommits, 20000));
+  const historyState = pathHistoryState(gitRoot);
+  const cacheKey = historyState && JSON.stringify([gitRoot, historyState, commitLimit, wanted]);
+  let last = cacheKey ? pathChangeCache.get(cacheKey) : null;
+  if (last) {
+    pathChangeCache.delete(cacheKey);
+    pathChangeCache.set(cacheKey, last);
+  } else {
+    const walked = walkPathLastChanges(gitRoot, wanted, commitLimit);
+    last = walked.last;
+    // Do not retain a failed walk or one taken across a history change. HEAD
+    // alone is insufficient: shallow fetches, grafts, and replace refs can
+    // change the visible history without changing the commit at HEAD.
+    if (walked.ok && cacheKey && historyState === pathHistoryState(gitRoot)) {
+      pathChangeCache.set(cacheKey, last);
+      while (pathChangeCache.size > PATH_CHANGE_CACHE_LIMIT) {
+        pathChangeCache.delete(pathChangeCache.keys().next().value);
+      }
+    }
+  }
+  // Only committed dates are reusable. A delete, restore, or file/directory
+  // replacement in the working tree must be visible on every request.
+  for (const { key, resolved } of wanted) {
+    const onDisk = resolve(gitRoot, resolved);
+    let isDir = false;
+    try {
+      isDir = statSync(onDisk).isDirectory();
+    } catch {
+      isDir = false;
+    }
+    changes.set(key, { exists: existsSync(onDisk), isDir, lastChangedAt: last.get(key) ?? null });
+  }
+  return { operation: 'path_last_changes', ok: true, repoRoot: gitRoot, changes };
+}
+
+function pathHistoryState(gitRoot) {
+  const state = git(gitRoot, ['rev-parse', 'HEAD', '--git-path', 'shallow', '--git-path', 'info/grafts'], { allowFailure: true });
+  if (!state.ok) return null;
+  const [head, shallowPath, graftsPath, ...extra] = state.stdout.trimEnd().split('\n');
+  if (!/^[a-f0-9]{40,64}$/i.test(head) || !shallowPath || !graftsPath || extra.length) return null;
+  const replacements = git(gitRoot, ['for-each-ref', '--format=%(refname) %(objectname)', 'refs/replace'], { allowFailure: true });
+  if (!replacements.ok) return null;
+  const historyFiles = [];
+  for (const path of [shallowPath, graftsPath]) {
+    try {
+      historyFiles.push(readFileSync(resolve(gitRoot, path), 'utf8'));
+    } catch (error) {
+      if (error.code !== 'ENOENT') return null;
+      historyFiles.push(null);
+    }
+  }
+  return JSON.stringify([head, ...historyFiles, replacements.stdout]);
+}
+
+function walkPathLastChanges(gitRoot, wanted, commitLimit) {
   const REC = '\x1e';
   const log = git(
     gitRoot,
@@ -634,7 +691,7 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
       '-c',
       'core.quotepath=false',
       'log',
-      `--max-count=${Math.max(1, Math.min(maxCommits, 20000))}`,
+      `--max-count=${commitLimit}`,
       `--pretty=format:${REC}%cI`,
       '--name-only',
       '--no-renames',
@@ -660,17 +717,7 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
       }
     }
   }
-  for (const { key, resolved } of wanted) {
-    const onDisk = resolve(gitRoot, resolved);
-    let isDir = false;
-    try {
-      isDir = statSync(onDisk).isDirectory();
-    } catch {
-      isDir = false;
-    }
-    changes.set(key, { exists: existsSync(onDisk), isDir, lastChangedAt: last.get(key) ?? null });
-  }
-  return { operation: 'path_last_changes', ok: true, repoRoot: gitRoot, changes };
+  return { ok: log.ok, last };
 }
 
 function safeRelativePath(raw) {
