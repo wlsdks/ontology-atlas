@@ -12,6 +12,12 @@ export function createCompiledOntologyCache({ loadDocs, compile }) {
   let misses = 0;
 
   function get(options = {}) {
+    return getWithDocs(options).artifact;
+  }
+
+  // Always load current bytes, including on a cache hit. Read-only callers can
+  // share these documents through one request without walking the vault again.
+  function getWithDocs(options = {}) {
     const docs = loadDocs();
     const signature = docsSignature(docs);
     const includeIndexes = options.includeIndexes === true;
@@ -21,7 +27,7 @@ export function createCompiledOntologyCache({ loadDocs, compile }) {
       cached.includeIndexes === includeIndexes
     ) {
       hits += 1;
-      return cached.artifact;
+      return { artifact: cached.artifact, docs };
     }
     misses += 1;
     const artifact = compile(docs, { includeIndexes });
@@ -30,7 +36,7 @@ export function createCompiledOntologyCache({ loadDocs, compile }) {
       includeIndexes,
       signature,
     };
-    return artifact;
+    return { artifact, docs };
   }
 
   function clear() {
@@ -41,7 +47,7 @@ export function createCompiledOntologyCache({ loadDocs, compile }) {
     return { hits, misses, cached: Boolean(cached) };
   }
 
-  return { clear, get, stats };
+  return { clear, get, getWithDocs, stats };
 }
 
 function docsSignature(docs) {

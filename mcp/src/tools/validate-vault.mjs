@@ -127,9 +127,9 @@ function validateWikiTool({ paths } = {}) {
   };
 }
 
-function validateVaultTool({ repoRoot } = {}) {
+function validateVaultTool({ repoRoot } = {}, loadedDocs = null) {
   requireOptionalNonBlankString(repoRoot, 'repoRoot');
-  const docs = loadVaultDocs(VAULT_ROOT);
+  const docs = loadedDocs ?? loadVaultDocs(VAULT_ROOT);
   const docIssues = new Map();
   for (const doc of docs) {
     // The slug is passed because `slug-outside-kind-folder` is a fact about
