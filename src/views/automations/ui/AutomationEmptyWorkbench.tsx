@@ -1,4 +1,4 @@
-import { CalendarClock, Clock3, Plus, ShieldCheck } from 'lucide-react';
+import { Clock3, Plus, ShieldCheck } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import styles from './automation-empty-workbench.module.css';
@@ -18,7 +18,7 @@ export function AutomationEmptyWorkbench({ title, description, guard, action, pr
 }) {
   return <div className={styles.workbench} data-testid="automations-empty-workbench">
     <div className={styles.intro}>
-      <span className={styles.kicker}><CalendarClock size={ICON_SIZE.sm} aria-hidden />{previewTitle}</span>
+      {/* No eyebrow: it repeated the preview's own title a column away. */}
       <h2 className={styles.title}>{title}</h2>
       <p className={styles.description}>{description}</p>
       <div className={styles.action}>{action}</div>
@@ -34,7 +34,6 @@ export function AutomationEmptyWorkbench({ title, description, guard, action, pr
       </div>
       <div className={styles.emptyRow}>
         <span className={styles.emptyName}><Plus size={ICON_SIZE.sm} aria-hidden />{previewEmpty}</span>
-        <span className={styles.emptyDash}>—</span><span className={styles.emptyDash}>—</span>
       </div>
       <div className={styles.result}>
         <Clock3 size={ICON_SIZE.sm} aria-hidden />
