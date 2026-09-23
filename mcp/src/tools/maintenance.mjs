@@ -17,8 +17,8 @@ import {
 import { validateVaultTool } from './validate-vault.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
 
-function attachVaultValidation(result, args = {}) {
-  const validation = validateVaultTool({});
+function attachVaultValidation(result, args = {}, loadedDocs = null) {
+  const validation = validateVaultTool({}, loadedDocs);
   const pathsChecked = validation.pathDrift?.checked !== false;
   const driftCount = validation.pathDrift?.drifts?.length ?? 0;
   const errorCount = validation.summary.errorFiles;

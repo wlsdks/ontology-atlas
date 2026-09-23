@@ -123,7 +123,7 @@ function resolveAgentBriefProject(artifact, requestedProject) {
   );
 }
 
-function completeAgentBriefProjectScope(artifact, projectSlug) {
+function completeAgentBriefProjectScope(artifact, projectSlug, loadedDocs) {
   const nodes = Array.isArray(artifact?.nodes) ? artifact.nodes : [];
   const edges = Array.isArray(artifact?.edges) ? artifact.edges : [];
   const nodeBySlug = new Map(nodes.map((node) => [node.slug, node]));
@@ -152,7 +152,7 @@ function completeAgentBriefProjectScope(artifact, projectSlug) {
     .map((slug) => nodeBySlug.get(slug))
     .filter(Boolean)
     .sort((left, right) => left.slug.localeCompare(right.slug));
-  const docs = loadVaultDocs(VAULT_ROOT).filter((doc) => included.has(doc.slug));
+  const docs = loadedDocs.filter((doc) => included.has(doc.slug));
   if (rows.length !== included.size || docs.length !== included.size) {
     throw new Error(
       `agent_brief blocked: selected project "${projectSlug}" contains a compiled node without one readable vault document. Run validate_vault and repair the missing document before using the handoff.`,
@@ -185,7 +185,7 @@ function completeAgentBriefProjectScope(artifact, projectSlug) {
   };
 }
 
-function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns) {
+function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns, loadedDocs) {
   const projectSlug = resolveAgentBriefProject(artifact, args.project);
   if (projectSlug === null) {
     if (args.detail === 'compact') {
@@ -201,7 +201,7 @@ function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns) {
       result: queryCompiledOntology(artifact, engineArgs, { ontologyAtlasIgnorePatterns }),
     };
   }
-  const scope = completeAgentBriefProjectScope(artifact, projectSlug);
+  const scope = completeAgentBriefProjectScope(artifact, projectSlug, loadedDocs);
   const scopedArtifact = compileOntology(scope.docs, { includeIndexes: true });
   const engineArgs = { ...args, project: projectSlug };
   delete engineArgs.detail;
@@ -254,18 +254,20 @@ async function queryOntologyTool(args = {}) {
     return listAnalysisRecords(VAULT_ROOT, { limit: args.limit ?? 30, cursor: args.analysisCursor ?? null, mode: args.analysisMode ?? null, project: args.project ?? null });
   }
   if (args.operation === 'analysis_record') return readAnalysisRecord(VAULT_ROOT, args.recordId);
-  const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
+  const { artifact, docs: loadedDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs({ includeIndexes: true });
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
   if (args.operation === 'meaning_repair_review') {
     const agentBrief = queryCompiledOntology(artifact, {
       operation: 'agent_brief',
       project: args.project,
     }, { ontologyAtlasIgnorePatterns });
-    const validatedBrief = attachVaultValidation(agentBrief, { operation: 'agent_brief' });
+    const validatedBrief = attachVaultValidation(agentBrief, { operation: 'agent_brief' }, loadedDocs);
     const context = projectMeaningContext(
       artifact,
       validatedBrief.projectSlug,
       validatedBrief.readiness?.status,
+      null,
+      loadedDocs,
     );
     return buildMeaningRepairReviewPage(context.meaningRepairInput, args);
   }
@@ -281,30 +283,29 @@ async function queryOntologyTool(args = {}) {
   // correct behaviour for "no bodies were handed over", and the wrong answer
   // for an unattended round that only ever calls this read operation and would
   // therefore never see a node whose body is still the starter scaffold. One
-  // load, both answers, and the docs are loaded here exactly once.
+  // load, both answers, using the documents already read for compilation.
   const maintenanceDocs =
-    args.operation === 'maintenance_plan' ? loadVaultDocs(VAULT_ROOT) : null;
+    args.operation === 'maintenance_plan' ? loadedDocs : null;
   // `growth_plan` needs the same bodies for a different question. Its
   // `nextReads` group reads each node's `## Uncertainty` section and returns
   // the reads it asks for, and a compiled artifact carries no bodies, so on the
   // snapshot path the group could only report that it was handed nothing. One
-  // walk, loaded here for the same reason the maintenance walk is: the read
-  // operation is the only call an unattended round makes.
-  const growthDocs = args.operation === 'growth_plan' ? loadVaultDocs(VAULT_ROOT) : null;
+  // load is shared with compilation, as it is for the maintenance read.
+  const growthDocs = args.operation === 'growth_plan' ? loadedDocs : null;
   const maintenanceFreshness = maintenanceDocs ? buildSummaryFreshness(maintenanceDocs) : null;
   const agentBriefInput = args.operation === 'agent_brief'
-    ? scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns)
+    ? scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns, loadedDocs)
     : null;
   const queryArtifact = agentBriefInput?.scopedArtifact ?? artifact;
   const queryResult = agentBriefInput?.result ?? queryCompiledOntology(artifact, args, {
     ontologyAtlasIgnorePatterns,
-    ...(args.operation === 'builder_context' ? { sourceDocs: loadVaultDocs(VAULT_ROOT) } : {}),
+    ...(args.operation === 'builder_context' ? { sourceDocs: loadedDocs } : {}),
     ...(maintenanceDocs ? { sourceDocs: maintenanceDocs } : {}),
     ...(growthDocs ? { sourceDocs: growthDocs } : {}),
     ...(maintenanceFreshness?.checked ? { staleSummaries: maintenanceFreshness.stale } : {}),
   });
   const validatedResult = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)
-    ? attachVaultValidation(queryResult, args)
+    ? attachVaultValidation(queryResult, args, loadedDocs)
     : queryResult;
   const meaningContext = args.operation === 'agent_brief'
     ? projectMeaningContext(
@@ -317,7 +318,7 @@ async function queryOntologyTool(args = {}) {
   const attached = args.operation === 'agent_brief'
     ? attachProjectMeaning(validatedResult, artifact, meaningContext)
     : ['health', 'workspace_brief'].includes(args.operation)
-      ? attachMeaningReadiness(validatedResult, artifact, args)
+      ? attachMeaningReadiness(validatedResult, artifact, args, loadedDocs)
       : validatedResult;
   /*
    * **Count it, do not maintain it** (measured 2026-08-17).
@@ -438,7 +439,7 @@ const MEANING_NEXT_ACTION_HINTS = Object.freeze({
   use_current_evidence: 'Nothing to repair — the measured evidence is current.',
 });
 
-function meaningReadinessCheck(artifact) {
+function meaningReadinessCheck(artifact, loadedDocs) {
   const projectSlugs = (Array.isArray(artifact?.nodes) ? artifact.nodes : [])
     .filter((node) => node?.kind === 'project' && typeof node.slug === 'string')
     .map((node) => node.slug)
@@ -448,7 +449,7 @@ function meaningReadinessCheck(artifact) {
       // The graph engine's health status includes semantic checks; meaning
       // assessment needs the structural readiness input only. Scope and
       // inventory failures below still fail closed via a null graph hash.
-      const context = projectMeaningContext(artifact, projectSlug, 'ready');
+      const context = projectMeaningContext(artifact, projectSlug, 'ready', null, loadedDocs);
       return {
         projectSlug,
         status: context.meaningAssessment?.status ?? 'invalid',
@@ -517,8 +518,8 @@ function meaningReadinessCheck(artifact) {
   };
 }
 
-function attachMeaningReadiness(result, artifact, args = {}) {
-  const meaning = meaningReadinessCheck(artifact);
+function attachMeaningReadiness(result, artifact, args = {}, loadedDocs = null) {
+  const meaning = meaningReadinessCheck(artifact, loadedDocs);
   if (meaning.status === 'pass') return result;
   const check = {
     id: 'meaning_assessment',
@@ -603,8 +604,8 @@ function projectSourceScope(artifact, projectSlug, allDocs = null) {
   return { scope, docs, graphHash };
 }
 
-function projectMeaningContext(artifact, projectSlug, structureStatus, scopedProject = null) {
-  const { scope, docs, graphHash } = scopedProject ?? projectSourceScope(artifact, projectSlug);
+function projectMeaningContext(artifact, projectSlug, structureStatus, scopedProject = null, loadedDocs = null) {
+  const { scope, docs, graphHash } = scopedProject ?? projectSourceScope(artifact, projectSlug, loadedDocs);
   const projectSource = readProjectSourceView(VAULT_ROOT, projectSlug, graphHash, {
     currentWitnesses: deriveProjectSourceWitnessesFromDocs({ projectSlug, docs }),
   });

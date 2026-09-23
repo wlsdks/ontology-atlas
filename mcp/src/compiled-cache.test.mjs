@@ -8,6 +8,38 @@ function doc(slug, mtime = 1, raw = '---\nkind: capability\n---\n') {
 }
 
 describe('createCompiledOntologyCache', () => {
+  it('returns freshly loaded documents with cached artifacts and detects changed bytes at the same mtime', () => {
+    let current = doc('capabilities/a', 1, 'old bytes');
+    let loads = 0;
+    let compilations = 0;
+    let compiledDocs;
+    const cache = createCompiledOntologyCache({
+      loadDocs: () => { loads += 1; return [structuredClone(current)]; },
+      compile: (docs) => {
+        compilations += 1;
+        compiledDocs = docs;
+        return { raw: docs[0].raw };
+      },
+    });
+    const first = cache.getWithDocs();
+    assert.equal(first.docs, compiledDocs);
+    first.docs[0].raw = 'caller mutation';
+    const second = cache.getWithDocs();
+    assert.equal(second.artifact, first.artifact);
+    assert.notEqual(second.docs, first.docs);
+    assert.equal(second.docs[0].raw, 'old bytes');
+    assert.equal(loads, 2);
+    assert.equal(compilations, 1);
+
+    current = { ...current, raw: 'new bytes' };
+    const third = cache.getWithDocs();
+    assert.equal(third.docs[0].mtime, first.docs[0].mtime);
+    assert.notEqual(third.artifact, first.artifact);
+    assert.equal(third.artifact.raw, 'new bytes');
+    assert.equal(loads, 3);
+    assert.equal(compilations, 2);
+  });
+
   it('reuses a compiled artifact while the vault document signature is unchanged', () => {
     let compileCount = 0;
     let docs = [doc('capabilities/a')];
