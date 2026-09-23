@@ -6,8 +6,8 @@ title: Customer Support
 display_ko: 고객지원
 display_en: Customer Support
 description: "This area owns the question \"how do we put a wrong thing right, and make sure the same thing does not happen twice?\". The inquiry, the return, the exchange, and the judgement call about whether money goes back all live here."
-capabilities: [capabilities/exchange-request, capabilities/faq, capabilities/inquiry, capabilities/refund-review, capabilities/return-request]
-elements: [elements/exchange-record, elements/faq-article, elements/inquiry-ticket, elements/return-record]
+capabilities: [capabilities/exchange-request, capabilities/faq, capabilities/inquiry, capabilities/refund-review, capabilities/return-request, capabilities/support-case-closure, capabilities/support-escalation-routing, capabilities/support-exchange-request, capabilities/support-help-article, capabilities/support-queue-assignment, capabilities/support-refund-inquiry, capabilities/support-response-deadline, capabilities/support-ticket-intake]
+elements: [elements/exchange-record, elements/faq-article, elements/inquiry-ticket, elements/return-record, elements/support-case-closure-decision, elements/support-escalation-decision, elements/support-exchange-request-record, elements/support-help-article-draft, elements/support-queue-assignment-record, elements/support-refund-inquiry-case, elements/support-response-deadline, elements/support-support-ticket]
 ---
 
 # Customer Support

@@ -11,7 +11,7 @@
  * default. `mcp` answers *"what does an agent reach through this folder"* — the folder handed to
  * a tool, and the connectors that tool may reach.
  */
-const AGENTS_TABS = ['agents', 'mcp'] as const;
+const AGENTS_TABS = ['agents', 'mcp', 'jev'] as const;
 
 export type AgentsTab = (typeof AGENTS_TABS)[number];
 
@@ -43,6 +43,10 @@ export function buildAgentsTabHref(tab: AgentsTab, current: URL): string {
     query.delete('install');
   } else {
     query.set(AGENTS_TAB_PARAM, tab);
+    if (tab !== 'mcp') {
+      query.delete('mcp');
+      query.delete('install');
+    }
   }
   const search = query.toString();
   return search ? `${current.pathname}?${search}` : current.pathname;

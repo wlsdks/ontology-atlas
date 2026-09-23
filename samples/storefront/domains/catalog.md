@@ -6,8 +6,8 @@ title: Product Catalog
 display_ko: 상품
 display_en: Product Catalog
 description: "This area owns one question: what does the shopper get to see? What this t-shirt costs today, which colours and sizes exist, which category it lives in, and what earlier buyers said about it. Everything a shopper sees before deciding to buy is decided here."
-capabilities: [capabilities/product-category, capabilities/product-detail, capabilities/product-option, capabilities/product-pricing, capabilities/product-recommendation, capabilities/product-registration, capabilities/product-review, capabilities/product-search]
-elements: [elements/category-tree, elements/price-history, elements/product-image-store, elements/product-record, elements/recommendation-rule, elements/review-record, elements/search-index, elements/sku]
+capabilities: [capabilities/catalog-attribute-filtering, capabilities/catalog-bundle-configuration, capabilities/catalog-category-navigation, capabilities/catalog-media-approval, capabilities/catalog-product-retirement, capabilities/catalog-review-moderation, capabilities/catalog-search-suggestions, capabilities/catalog-variant-availability, capabilities/product-category, capabilities/product-detail, capabilities/product-option, capabilities/product-pricing, capabilities/product-recommendation, capabilities/product-registration, capabilities/product-review, capabilities/product-search]
+elements: [elements/catalog-attribute-facet-index, elements/catalog-bundle-composition-rule, elements/catalog-category-breadcrumb, elements/catalog-media-approval-decision, elements/catalog-product-retirement-state, elements/catalog-review-moderation-queue, elements/catalog-suggestion-index, elements/catalog-variant-availability-state, elements/category-tree, elements/price-history, elements/product-image-store, elements/product-record, elements/recommendation-rule, elements/review-record, elements/search-index, elements/sku]
 relates: [domains/inventory, domains/marketing]
 ---
 

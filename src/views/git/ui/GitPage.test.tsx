@@ -2,6 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { GitPage } from "./GitPage";
 
+vi.mock('@/shared/lib/tauri-vault-fs', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/shared/lib/tauri-vault-fs')>(),
+  isTauriVaultRuntime: () => true,
+}));
+
 /**
  * The history destination (elements/git) composes elements/atlas-git-panel as its
  * route body and owns nothing else — no rendering, no diff formatting, no writes.

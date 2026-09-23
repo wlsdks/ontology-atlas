@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-23",
+  "decision": "Remove in-repository review captures and rewrite README for current source behavior",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "orient",
+  "changes": [
+    "positioning"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "positioning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-wedge"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-23",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "a0f0e5b5-1f6b-4079-8e6f-78a85af25521",
+  "recordedAt": "2026-09-23T03:50:26.233Z"
+}

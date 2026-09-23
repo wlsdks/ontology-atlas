@@ -1,12 +1,8 @@
-# Library workspace visual evidence — 2026-09-14
+# Library workspace review — 2026-09-14
 
-Historical snapshots for the Library integration and design review. Before images are the owner's reports. After images are actual installed macOS app captures, with matching accessibility trees retained in the local verification packet. These images record source `27c7fa13b`; the subsequent Escape-only correction does not change their layout.
+Historical review of the Library integration. The owner's reports and installed macOS app captures were inspected with matching accessibility trees in the local verification packet. The captures recorded source `27c7fa13b`; the subsequent Escape-only correction did not change the layout. Image files are not retained in the repository.
 
-| Surface | Before | Installed after |
-| --- | --- | --- |
-| Library tabs | ![Before tabs](tabs-before.png) | ![Connected Library tabs](tabs-after.png) |
-| Document creation | ![Before creation](create-before.png) | ![Centered creation dialog with Markdown preview](create-after.png) |
-| Known folders | ![Before folder chooser](chooser-before.png) | ![Readable full folder paths](chooser-after.png) |
+The review covered connected Library tabs, the centered document creation dialog with Markdown preview, and the folder chooser with readable full paths.
 
 The installed bundle identity for these captures is `98d76fa50fd44f88941d8a9e94895cbe0d22e0e9eb80b55ae0bbba68cfbcc7fe` (11 entries). Creation and Library captures use an isolated fixture folder. The chooser uses the person's existing recent-folder records; normal launch preserved both choices and reopening the original folder returned to its map.
 

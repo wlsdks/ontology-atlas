@@ -2,19 +2,23 @@ import { expect, test } from '@playwright/test';
 import { installDesktopBridge } from './rounds-desktop-bridge';
 
 test.describe('Automations workspace', () => {
-  test('exposes both lanes and a valid tabpanel in the browser no-vault state', async ({ page }) => {
+  test('exposes both read-only example lanes and a valid tabpanel in the browser', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/ko/automations/?guides=off', { waitUntil: 'domcontentloaded' });
 
     await expect(page.getByTestId('app-nav-rail-item-automations')).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('automations-tab-ontology')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[role="tabpanel"]')).toHaveAttribute('id', 'automations-tabpanel-ontology');
-    await expect(page.getByText('자동화는 맥 앱에서 돕니다')).toBeVisible();
+    const example = page.getByTestId('web-automation-example');
+    await expect(example).toContainText('일정을 만들거나 실행하지 않습니다.');
+    await example.getByRole('button', { name: '예시 단계 보기' }).click();
+    await expect(example.locator('ol li')).toHaveCount(3);
 
     await page.getByTestId('automations-tab-documents').click();
     await expect(page).toHaveURL(/\/ko\/automations\/\?guides=off&kind=documents$/);
     await expect(page.getByTestId('automations-tab-documents')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[role="tabpanel"]')).toHaveAttribute('id', 'automations-tabpanel-documents');
+    await expect(page.getByTestId('web-automation-example')).toContainText('일정을 만들거나 실행하지 않습니다.');
   });
 
   test('keeps the lane strip and no-vault stage inside a narrow viewport', async ({ page }) => {

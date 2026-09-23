@@ -208,7 +208,7 @@ test.describe("인사이트 인구조사 — 타일 큰 숫자와 탭 배지가 
 test.describe("인사이트 구성 — 도메인 행이 한 축과 읽을 수 있는 꼬리를 공유한다", () => {
   test.use({ viewport: { width: 1920, height: 1080 } });
 
-  test("Storefront 아홉 행의 192px 꼬리가 잘리지 않고 트랙 끝이 정렬된다", async ({ page }) => {
+  test("Storefront 열 행의 192px 꼬리가 잘리지 않고 트랙 끝이 정렬된다", async ({ page }) => {
     const { seedFirstRunSeen } = await import("./first-run-seed");
     await seedFirstRunSeen(page);
     await page.addInitScript(() => {
@@ -220,7 +220,7 @@ test.describe("인사이트 구성 — 도메인 행이 한 축과 읽을 수 �
     });
 
     const rows = page.getByTestId("domain-capacity-bar-row");
-    await expect(rows).toHaveCount(9, { timeout: 20_000 });
+    await expect(rows).toHaveCount(10, { timeout: 20_000 });
     const kindStack = page.getByTestId("insights-kind-stack");
     await expect(kindStack).toBeVisible();
     const kindStackMetrics = await kindStack.evaluate((element) => {

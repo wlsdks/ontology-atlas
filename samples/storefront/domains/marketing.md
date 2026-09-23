@@ -6,8 +6,8 @@ title: Marketing & Promotions
 display_ko: 마케팅
 display_en: Marketing & Promotions
 description: "This area owns the question \"what will bring this person back?\". Half the job is making reasons: coupons, points, time-limited sales, curated campaigns. The other half is carrying those reasons to a person through messages and notifications."
-capabilities: [capabilities/campaign-planning, capabilities/coupon-issue, capabilities/coupon-redeem, capabilities/customer-messaging, capabilities/flash-sale, capabilities/loyalty-point, capabilities/referral]
-elements: [elements/campaign-page, elements/coupon-policy, elements/coupon-wallet, elements/email-sender, elements/kakao-alimtalk, elements/point-ledger, elements/push-sender, elements/referral-code, elements/sale-schedule, elements/sms-gateway]
+capabilities: [capabilities/campaign-planning, capabilities/coupon-issue, capabilities/coupon-redeem, capabilities/customer-messaging, capabilities/flash-sale, capabilities/loyalty-point, capabilities/marketing-abandoned-cart-outreach, capabilities/marketing-audience-segmentation, capabilities/marketing-campaign-reporting, capabilities/marketing-experiment-allocation, capabilities/marketing-offer-eligibility, capabilities/marketing-promotion-budget, capabilities/marketing-referral-attribution, capabilities/marketing-seasonal-event, capabilities/referral]
+elements: [elements/campaign-page, elements/coupon-policy, elements/coupon-wallet, elements/email-sender, elements/kakao-alimtalk, elements/marketing-audience-segment-rule, elements/marketing-campaign-report, elements/marketing-experiment-assignment, elements/marketing-offer-eligibility-decision, elements/marketing-outreach-queue, elements/marketing-promotion-budget-ledger, elements/marketing-referral-attribution-link, elements/marketing-seasonal-event-plan, elements/point-ledger, elements/push-sender, elements/referral-code, elements/sale-schedule, elements/sms-gateway]
 ---
 
 # Marketing & Promotions

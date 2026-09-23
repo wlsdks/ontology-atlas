@@ -1100,9 +1100,12 @@ async function buildStorefrontSample({ check = false } = {}) {
     return;
   }
 
-  await writeFile(STOREFRONT_MANIFEST_OUT, JSON.stringify(manifest, null, 2), 'utf8');
+  // Storefront grows with the interactive example. Keep the authored Markdown
+  // readable, but serialize the generated runtime manifest compactly so its
+  // whitespace does not consume the shared-bundle data budget.
+  await writeFile(STOREFRONT_MANIFEST_OUT, JSON.stringify(manifest), 'utf8');
   await writeFile(STOREFRONT_HEADINGS_OUT, JSON.stringify(headingsBySlug, null, 2), 'utf8');
-  await writeFile(STOREFRONT_CONTENT_OUT, JSON.stringify(content, null, 2), 'utf8');
+  await writeFile(STOREFRONT_CONTENT_OUT, JSON.stringify(content), 'utf8');
   console.log(
     `[docs-vault] storefront sample ${manifest.docs.length} docs → ${path.relative(ROOT, STOREFRONT_MANIFEST_OUT)}`,
   );

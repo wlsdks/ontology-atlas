@@ -302,13 +302,6 @@ type DegradedSurface = {
 
 const DEGRADED_SURFACES: readonly DegradedSurface[] = [
   {
-    name: "기록(git) — 브라우저는 이 컴퓨터의 git 을 실행할 수 없다",
-    url: "/ko/git/?focus=main",
-    card: "atlas-git-panel",
-    reason: /브라우저는[\s\S]*권한이 없어요/,
-    destination: "atlas-git-web-get-app",
-  },
-  {
     // Rounds (2026-09-17) keep a clock and open a headless agent session while the
     // person is away; a browser tab can do neither, so the tab explains and points at
     // the app. Registering a round on the web would be a promise nothing could keep.
@@ -352,39 +345,6 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     card: "agent-server-unavailable",
     reason: /브라우저는[\s\S]*설정 파일을 대신 저장하지 못해요/,
     destination: "agent-connect-web-get-app",
-  },
-  {
-    // **The "Runtimes" section** (registered 2026-08-16) — the screen that
-    // finds coding agents installed on this machine and launches them inside the app.
-    // A browser has no permission to launch programs on this computer, so the
-    // rejection is in principle and the card states a reason rather than "coming
-    // soon".
-    //
-    // **The first row whose destination is prose** — this section has no link element
-    // today.
-    //
-    // **Also the first row where item ③ actually exists.** Before registration the
-    // wording was only "The browser cannot run tools", and a web user reading just that sentence concludes the web cannot
-    // use agents at all — precisely the falsehood `agent-server-unavailable` was
-    // corrected for on 2026-08-01. Web users can attach an agent they started
-    // themselves to this folder, and that path ("MCP") is in the same sheet. So that
-    // sentence went into the card and is locked here.
-    //
-    // ⚠️ **Re-aimed 2026-08-21** (ledger 90). This section left the settings sheet
-    // and became the "Agent" destination. The check is **re-addressed, not
-    // deleted** — whether the degradation sentence is alive is a question worth asking
-    // wherever the surface moves. Opening a sheet is no longer needed: the destination
-    // opens directly by address.
-    name: "실행기 — 브라우저는 이 컴퓨터의 프로그램을 띄우지 못한다",
-    url: "/ko/agents/",
-    card: "app-settings-runtimes-web",
-    reason: /브라우저는[\s\S]*권한이 없어요/,
-    destinationText: /맥 앱을 받으면/,
-    // ⚠️ **Re-aimed 2026-09-05.** The sentence used to name a section of this same
-    // screen; MCP became its own destination, so the row now names the place *and*
-    // carries a link to it. A name with no way there is the dead pointer this whole
-    // registry exists to prevent.
-    alsoHereLink: { testId: "app-settings-runtimes-mcp-link", href: /\/agents\/\?tab=mcp/ },
   },
   {
     // **"Connectors"** (registered 2026-09-05) — external MCP servers a person lets the
@@ -485,17 +445,16 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
      * sentence says.
      */
     /*
-     * ⚠️ **Re-addressed 2026-09-06.** The claim did not change; the screen carrying it
-     * did. Sources and Wiki left `/docs` for `/library`, and with no folder open that
-     * destination is a single stage whose one control is the picker — so the two presses
-     * this row used to need became one.
+     * The website's no-folder Library now shows an example. Open a real folder from
+     * the map before checking the actual document-finding limit.
      */
     name: "문서 찾기 — 브라우저는 연결해 둔 프로젝트 폴더까지 훑지 못한다",
-    url: "/ko/library/",
+    url: "/ko/topology/",
     open: async (page) => {
-      const picker = page.getByTestId("library-open-vault");
-      await picker.waitFor({ timeout: 25_000 });
-      await picker.click();
+      await page.getByTestId("first-run-starter-open").click();
+      await page.getByTestId("vault-guide-pick-existing").click();
+      await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
+      await page.getByTestId("app-nav-rail").getByRole("link", { name: "자료실" }).click();
       await page.getByTestId("library-find-documents").waitFor({ timeout: 20_000 });
       await page.getByTestId("library-find-documents").click();
     },
@@ -505,6 +464,69 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     destination: "find-documents-web-get-app",
   },
 ];
+
+test.describe('웹 예시의 정직한 동작', () => {
+  test('Git과 에이전트는 예시를 살펴보되 실행 기록으로 가장하지 않는다', async ({ page }) => {
+    await gotoSettled(page, '/ko/git/');
+    const git = page.getByTestId('web-git-example');
+    await expect(git).toBeVisible();
+    await git.getByTestId('web-git-row-1').click();
+    await expect(git).toContainText(ko.webExamples.gitExamples.refund.detail);
+    await expect(git).toContainText(ko.webExamples.noRealCommits);
+
+    await gotoSettled(page, '/ko/agents/');
+    const agents = page.getByTestId('web-agents-example');
+    await expect(agents).toBeVisible();
+    await agents.getByRole('button', { name: ko.webExamples.handoff }).click();
+    await expect(agents).toContainText(ko.webExamples.noAgentRun);
+  });
+
+  test('자료실 예시의 위키는 원문과 개념을 같은 작업대에서 연다', async ({ page }) => {
+    await gotoSettled(page, '/ko/library/?tab=wiki');
+    await expect(page.getByTestId('library-index')).toBeVisible();
+    await page.getByTestId('web-library-wiki-row').first().click();
+    await expect(page.getByTestId('web-library-wiki-row').first()).toHaveAttribute('aria-current', 'page');
+    const reader = page.getByTestId('web-library-reading-pane');
+    await expect(reader).toContainText(ko.webExamples.libraryDemo.checkout.wikiSummary);
+    await reader.getByRole('button', { name: ko.webExamples.libraryDemo.checkout.sourceTitle }).click();
+    await expect(reader).toContainText(ko.webExamples.libraryDemo.checkout.sourceText);
+    await page.setViewportSize({ width: 600, height: 900 });
+    await expect(page.getByTestId('library-index')).toBeHidden();
+    expect((await reader.boundingBox())?.height).toBeGreaterThan(700);
+  });
+
+  test('좁은 자료실에서 키보드로 문서를 열고 관계도로 돌아와도 초점이 남는다', async ({ page }) => {
+    await page.setViewportSize({ width: 600, height: 900 });
+    await gotoSettled(page, '/ko/library/?tab=wiki');
+    const row = page.getByTestId('web-library-wiki-row').first();
+    await row.focus();
+    await page.keyboard.press('Enter');
+    const reader = page.getByTestId('web-library-reading-pane');
+    const back = reader.getByRole('button', { name: ko.webExamples.libraryDemo.backToGraph });
+    await expect(back).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(reader.getByRole('button', { name: ko.webExamples.libraryDemo.checkout.sourceTitle })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(back).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(row).toBeFocused();
+    await expect(page.getByTestId('library-graph')).toBeVisible();
+  });
+
+  test('작은 화면에서도 자료실 관계도와 설명을 끝까지 볼 수 있다', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await gotoSettled(page, '/ko/library/?tab=wiki');
+    const demo = page.getByTestId('web-library-demo');
+    const canvas = page.getByTestId('library-graph-canvas');
+    expect((await canvas.boundingBox())?.height).toBeGreaterThan(200);
+    await demo.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    const hint = page.getByTestId('library-graph-hint');
+    const hintBox = await hint.boundingBox();
+    expect(hintBox).not.toBeNull();
+    expect(hintBox!.y + hintBox!.height).toBeLessThan(568 - 56);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+  });
+});
 
 test.describe("웹 스모크 ③ 정직한 강등", () => {
   for (const surface of DEGRADED_SURFACES) {

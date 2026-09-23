@@ -130,12 +130,12 @@ Typos, comments, isolated style, lint, and fixtures without meaning changes skip
 
 ## Documentation, landing, and instruction integrity
 
-Keep the owner document current: public behavior in `README.md` and
-`docs/FEATURES.md`; architecture/routes in `docs/ARCHITECTURE.md`; MCP/CLI
-contracts in their READMEs. Authored prose is English; `display_ko` and
-`cli/templates/vault-ko/**` are localized data. Current links must resolve.
-`docs/records/README.md` owns decision/change/release/pilot fragments. Never edit
-frozen history. Check machine-derived facts and references, not exact sentences.
+Keep public behavior current in `README.md` and `docs/FEATURES.md`, routes
+in `docs/ARCHITECTURE.md`, and MCP/CLI contracts in their READMEs. Write prose
+in English; `display_ko` and `cli/templates/vault-ko/**` are localized data.
+Resolve current links. `docs/records/README.md` owns decision/change/release/pilot
+fragments; never edit frozen history. Check derived facts and references rather
+than exact prose. Keep review captures outside Git; preserve written findings.
 
 `pnpm docs-vault:build` materializes ignored `src/entities/docs-vault/data/` and
 `public/docs-vault/` on install, checkout, merge, and build. Never edit or stage

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type RefObject } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { Info, PanelLeftClose, PanelLeftOpen } from "lucide-react";
@@ -12,6 +12,8 @@ import type { LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
 import { useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { OpenVaultCta } from "@/features/docs-vault-local";
+import { WebLibraryDemo } from './WebLibraryDemo';
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { useVaultConnectors } from "@/features/mcp-connectors";
 import { isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import type { AcpEvent, AcpTurnActivity, AcpTurnCompletion, AcpTurnToolActivity } from "@/features/acp-session";
@@ -248,6 +250,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
      namespace rather than the Library's. */
   const tChat = useTranslations("acpChat");
   const locale = useLocale();
+  const desktop = useSyncExternalStore(() => () => {}, isTauriVaultRuntime, () => null);
   const toast = useToast();
   /*
    * **A failure speaks the reader's language.** Both catch sites below used to prefer
@@ -2064,6 +2067,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   }, [agent, busy, locale, nativeVaultRootPath, selectedWikiDoc, t, toast, turnRunning, wikiProblems, writeMode]);
 
   // ── With no folder, one centred stage rather than two empty panes. ───────────────
+  if (!hasFolder && desktop === false) return <WebLibraryDemo key={indexSegment} segment={indexSegment} />;
   if (!hasFolder) {
     return (
       /*

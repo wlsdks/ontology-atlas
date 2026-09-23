@@ -117,6 +117,15 @@ explicit sample to local in the same fail-closed way. Mutations (create / edit /
 mode-aware: local → show an exact change review, then write to vault `.md`; static web → ask for a
 writable folder instead of presenting a dead editor.
 
+The bundled Online Store example now contains 277 ontology documents and feeds the map and
+analysis together. Without a local folder, Library keeps its index, graph, and reading
+layout and offers four paired source and wiki examples linked to sample concepts. Git,
+Agents, and Automations show labelled example interactions
+that do not inspect Git, launch agents, or run schedules. Installed-app Agents
+has a separate Jev tab for a user-supplied TypeSafe key held in macOS Keychain.
+It sends only a claim and evidence the user explicitly submits, logs transfer
+metadata locally, and returns advice without changing or accepting vault meaning.
+
 **Bootstrap from existing docs (2026-07-20, Slice 1)**: opening a folder that
 already has markdown but no `kind:` frontmatter used to strand the user on a
 "0 concepts" map with misdirected copy. Now the topology empty state

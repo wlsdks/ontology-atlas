@@ -94,7 +94,9 @@ const SCAN_MAX_DEPTH = 4;
 const MARKDOWN_MAX_DEPTH = 8;
 const MARKDOWN_MAX_DIRECTORIES = 3000;
 /** Documents read for the citation walk beyond the ones the harness scan already holds. */
-const MARKDOWN_MAX_READS = 600;
+// The connected Online Store example adds authored Markdown; keep the walk bounded while
+// allowing the full checkout census to finish instead of reporting a partial floor.
+const MARKDOWN_MAX_READS = 1200;
 
 /** The hook configs this scan knows how to read, and whether the tool gates execution on approval. */
 const HOOK_CONFIGS: ReadonlyArray<{ path: string; approvalGate: boolean }> = Object.freeze([

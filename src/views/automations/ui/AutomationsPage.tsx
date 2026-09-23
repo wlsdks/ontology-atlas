@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
 
 import { OpenVaultCta } from "@/features/docs-vault-local";
+import { WebAutomationExample } from '@/features/web-showcase';
 import type { RoundRecord } from "@/entities/library-round";
 import type { RoundsRunnerValue } from "@/features/library-rounds";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -109,8 +110,9 @@ export function AutomationsPage({
 
         <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col gap-5">
           {state === "app-required" ? (
-            <EmptyState title={t("appRequiredTitle")} description={t("appRequiredDescription")} icon={<CalendarClock />} tone="solid"
-              action={<Link href="/download/" className={cn(controlClass({ shape: "link", size: "lg", tone: "accent" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("getApp")}</Link>} />
+            <div className="flex flex-col gap-5"><WebAutomationExample lane={lane} />
+              <Link href="/download/" className={cn(controlClass({ shape: "link", size: "lg", tone: "accent" }), "atlas-touch-floor atlas-touch-floor-wide self-start")}>{t("getApp")}</Link>
+            </div>
           ) : state === "no-vault" ? (
             <EmptyState title={t("openFolderTitle")} description={t("openFolderDescription")} icon={<CalendarClock />} tone="solid"
               action={<OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" />} />

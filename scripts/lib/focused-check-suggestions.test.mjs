@@ -29,6 +29,11 @@ describe('focused check suggestions', () => {
     assert.equal(normalizeChangedPath('  docs/ontology/project.md  '), 'docs/ontology/project.md');
   });
 
+  it('runs the Markdown census contract when its bounded repository scanner changes', () => {
+    const commands = commandNames(suggestFocusedChecks(['src/entities/agent-files/model/repo-scan.ts']));
+    assert.ok(commands.includes('pnpm test:contracts'));
+  });
+
   it('suggests the narrow registration gate for source-checkout MCP templates', () => {
     const result = suggestFocusedChecks(['.mcp.json', '.mcp.json.example']);
 
@@ -207,6 +212,12 @@ describe('focused check suggestions', () => {
       'pnpm test:guide-examples',
       'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
     ]);
+  });
+
+  it('suggests the offline guide-example gate for the external judgment probe', () => {
+    for (const path of ['examples/external-judgment/probe.mjs', 'examples/external-judgment/probe.test.mjs']) {
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:guide-examples'), path);
+    }
   });
 
   it('suggests cross-package contracts for parser schema and validator drift', () => {

@@ -2,9 +2,12 @@
 
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 
 import { AcpRuntimeSettings } from '@/widgets/app-settings-menu';
+import { JevPanel } from '@/features/jev-judgment';
+import { WebAgentsExample } from '@/features/web-showcase';
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { TabBar } from '@/shared/ui';
 import { useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
@@ -25,7 +28,7 @@ import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } 
  * what is behind it and owns Esc; a sheet unmounts entirely when closed; settings is where you
  * pick values, and this is an operational task with progress state.
  *
- * **Two tabs in the body, not a header strip** (owner, 2026-09-19). MCP has been one subject
+ * **Tabs in the body, not a header strip** (owner, 2026-09-19). MCP has been one subject
  * with Agents since 2026-09-17; on 2026-09-18 the owner rejected the *header* tab strip that
  * split them ("a 56px chrome band on two words"), and it became a section below the tool list.
  * The owner then rejected the stack as well: *"I don't want agents and MCP on one screen with a
@@ -33,6 +36,7 @@ import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } 
  * the strip is the page's own, under the title where the Library and Insights carry theirs:
  * no chrome band, and one question on screen at a time. Only the selected tab mounts; the MCP
  * tab is the children the app layer hands in, so neither view imports the other.
+ * Jev is a separate third tab for an explicit, advisory evidence check in the Mac app.
  *
  * `?tab=mcp` is what `/mcp/` redirects into and what `DESTINATION_HREF.mcp` names, so every
  * older link and the installed app's deep link (`ontology-atlas://mcp?install=…`) keep resolving.
@@ -55,6 +59,7 @@ export function AgentsPage({
 }: { children?: ReactNode; mcpCount?: number } = {}) {
   const t = useTranslations('agents');
   const tMcp = useTranslations('mcp');
+  const desktop = useSyncExternalStore(() => () => {}, isTauriVaultRuntime, () => null);
   const router = useRouter();
   const openChatOnMap = useCallback(
     (runtimeId: string) => {
@@ -164,7 +169,7 @@ export function AgentsPage({
         data-testid="agents-lede"
         className="mt-2 max-w-2xl break-keep text-body-lg leading-title text-[color:var(--color-text-tertiary)]"
       >
-        {tab === 'mcp' ? tMcp('lede') : t('lede')}
+        {tab === 'mcp' ? tMcp('lede') : tab === 'jev' ? t('jev.lede') : t('lede')}
       </p>
 
       <nav className="mt-5" data-testid="agents-tabs">
@@ -175,6 +180,7 @@ export function AgentsPage({
           onSelect={selectTab}
           items={[
             { key: 'agents', label: t('workspace.agents'), testId: 'agents-tab-agents' },
+            { key: 'jev', label: t('workspace.jev'), testId: 'agents-tab-jev' },
             {
               key: 'mcp',
               label: t('workspace.mcp'),
@@ -214,8 +220,10 @@ export function AgentsPage({
             screen reader hearing the same words twice before the rows it introduces.
           */
           <section className="min-w-0" aria-label={t('runtimesHeading')}>
-            <AcpRuntimeSettings embedded onOpenChat={openChatOnMap} />
+            {desktop === false ? <WebAgentsExample /> : desktop === true ? <AcpRuntimeSettings embedded onOpenChat={openChatOnMap} /> : null}
           </section>
+        ) : tab === 'jev' ? (
+          <JevPanel />
         ) : (
           children
         )}

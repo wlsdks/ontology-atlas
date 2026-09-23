@@ -6,8 +6,8 @@ title: Customers
 display_ko: 회원
 display_en: Customers
 description: "This area owns two questions: is the person at the screen really that member, and what is the store allowed to remember about them until the next visit? Separating the memories that make the next visit easier, like a name, saved addresses and a wishlist, from the memories the store must not keep happens here."
-capabilities: [capabilities/account-closure, capabilities/address-book, capabilities/login, capabilities/membership-tier, capabilities/signup, capabilities/wishlist]
-elements: [elements/address-record, elements/customer-account, elements/login-session, elements/tier-rule, elements/wishlist-entry]
+capabilities: [capabilities/account-closure, capabilities/address-book, capabilities/customer-account-recovery, capabilities/customer-address-validation, capabilities/customer-consent-capture, capabilities/customer-contact-change, capabilities/customer-data-export, capabilities/customer-guest-conversion, capabilities/customer-identity-verification, capabilities/customer-profile-merge, capabilities/login, capabilities/membership-tier, capabilities/signup, capabilities/wishlist]
+elements: [elements/address-record, elements/customer-account, elements/customer-address-validation-result, elements/customer-consent-receipt, elements/customer-contact-change-event, elements/customer-data-export-package, elements/customer-guest-conversion-link, elements/customer-profile-merge-plan, elements/customer-recovery-challenge, elements/customer-verification-decision, elements/login-session, elements/tier-rule, elements/wishlist-entry]
 relates: [domains/marketing, domains/order]
 ---
 

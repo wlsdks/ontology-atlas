@@ -169,9 +169,10 @@ const RULES = [
   },
   {
     command: 'pnpm test:guide-examples',
-    reason: 'public guide ontology examples must satisfy the live UID schema',
+    reason: 'public guide ontology examples and the external judgment probe must satisfy their contracts',
     matches: [
       /^docs\/guide\/[^/]+\.md$/,
+      /^examples\/external-judgment\//,
       /^scripts\/check-guide-frontmatter-examples\.test\.mjs$/,
     ],
   },
@@ -386,7 +387,7 @@ const RULES = [
   {
     command: 'pnpm test:contracts',
     reason:
-      'cross-package parser/schema contract, or a UI file the design-system and a11y contracts scan from disk',
+      'cross-package parser/schema, Markdown census, or UI design and accessibility contracts changed',
     matches: [
       // 2026-08-04 — for a new `.tsx` view and a new route this advisor suggested
       // nothing beyond tsc and i18n. But several gates in `tests/contract/` **read the
@@ -402,6 +403,8 @@ const RULES = [
       /^cli\/src\/commands\/validate\.mjs$/,
       /^scripts\/lib\/parse-frontmatter\.mjs$/,
       /^src\/shared\/lib\/(?:parse-frontmatter|validate-vault-document)\.ts$/,
+      // The authored-Markdown census contract reads this scanner's traversal budget.
+      /^src\/entities\/agent-files\/model\/repo-scan\.ts$/,
       /^scripts\/migrate-vault\.mjs$/,
       /^scripts\/migrations\/[^/]+\.mjs$/,
     ],
