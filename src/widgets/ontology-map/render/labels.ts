@@ -562,8 +562,13 @@ export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, token
    * its label faded would leave a legible hole in the shape of a word nobody can read.
    */
   const fill = ctx.fillStyle;
-  if (kind === "project") {
+  if (kind === "project" || kind === "domain") {
     /*
+     * Domains share the reason (2026-09-24, installed app, every domain expanded): each
+     * domain's name sits where its whole fan of relations converges, and "Human workbench"
+     * read through two dozen lines. Domains are few and are the map's anchors, so they take the
+     * plate too; capability and element names keep the glyph halo alone.
+     *
      * The project sits at the centre with relations leaving in every direction, so the one
      * running straight down to the domain below always crosses its own name. The glyph halo
      * stops a line at the letterform but not in the gap between words or strokes: measured on
