@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-23",
+  "decision": "Parse each dependency witness source once per finding invocation while preserving import evidence and fresh reads",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "judge",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-23",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "7f4bb8f3-a6f3-4033-882d-a380e5228909",
+  "recordedAt": "2026-09-23T14:00:30.214Z"
+}
