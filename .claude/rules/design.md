@@ -81,6 +81,11 @@ ramp.”
 
 ## Design charter
 
+Before arranging workbench UI, read `docs/DESIGN-SYSTEM.md`, “Workbench
+composition and motion.” Choose the fact or action that owns the screen, draw
+its real object or causal relationship, and make any motion explain a state
+change. Tokens do not make an equal-card layout into a useful composition.
+
 - Rest on an achromatic palette with indigo as the protagonist. Since
   2026-09-08 (owner, `docs/DECISIONS.md` "The expression bans are lifted")
   gradients, glass, glow, halo, bloom, animated backgrounds, scale hover,
@@ -116,6 +121,10 @@ ramp.”
   red-green distinction, so it was not information-safe.
 - Kind colour is data, not a card decoration. Use neutral surfaces with a small
   marker and label; never a full-height coloured rail.
+- A new workbench card or diagram row does not get a colored left-edge stripe.
+  Use its whole surface and boundary, label, and connected evidence; see “No
+  left-edge selection stripe” in `docs/DESIGN-SYSTEM.md`. Existing dense Git
+  rows and the document outline have separately reviewed position markers.
 - Galaxy is the view-bounded exception to kind silhouettes, selected by the
   owner on 2026-09-15. Its canvas nodes have no polygon, outline, nested ring,
   or expanded orbit: only a circular core, radial corona, and sparse glint.

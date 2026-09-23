@@ -334,6 +334,9 @@
     "diagramView": "Diagram",
     "textView": "Text",
     "diagramRoot": "Repository harness",
+    "diagramParts": "{count} parts",
+    "diagramEvidence": "File evidence",
+    "diagramSelectPart": "Select a part to trace its source",
     "diagramHint": "Composition found in files. Select a part to inspect its evidence. This is not an execution trace.",
     "noSourceBody": "The harness belongs to the repository agents actually edit. Connect a source folder to a project and this list fills in. When more than one folder is connected we do not pick which harness you meant.",
     "failed": "Could not read it",
@@ -414,7 +417,7 @@
     "reachMirroredLabel": "the Codex copy of a declared pair",
     "reachNamedDirectLabel": "named by a guide directly",
     "anatomyTitle": "Harness structure",
-    "anatomyCaption": "The parts an agent meets when it works in this repository, in the order it meets them. Each number is files read from this folder. No score, no grade.",
+    "anatomyCaption": "Repository-defined guidance, gates, and checks are placed by how they relate to an agent's work. Counts describe recorded components, not observed runs or scores.",
     "anatomyProvenanceLabel": "Where these parts come from",
     "anatomyProvenance": "Four public sources name roughly the same parts. Fowler and Böckeler, “Harness engineering for coding agent users”, split guides from sensors. arXiv 2609.00006, “Harness Engineering: Anatomy, Architecture, and Evolution of Coding Agents” (CC BY 4.0), counts seven subsystems: agent loop, model integration, tools, memory and context, safety and permissions, orchestration, extensibility. OpenAI’s “Harness engineering” and the Codex AGENTS.md guide describe the instruction chain merged root-down, and Anthropic’s “Effective harnesses for long-running agents” describes what carries work across context windows. Five of the seven are countable from a checkout. The loop and the model are not.",
     "anatomyTellsCaption": "What an agent reads or is handed before it touches anything.",
@@ -5547,6 +5550,7 @@
       "guard": "Read-only · no ontology writes or meaning finalization",
       "emptyTitle": "Nothing is reviewing the ontology yet",
       "emptyDescription": "Schedule a read-only pass to find one evidence-backed improvement area at a time. The result waits for review before anything can change.",
+      "preview": { "title": "Schedule workbench", "empty": "Schedules appear here", "name": "Name", "cadence": "Cadence", "next": "Next run", "resultLabel": "Run result", "resultEmpty": "Available here after the first run" },
       "defaultName": "Ontology refinement",
       "eyebrow": "ONTOLOGY REVIEW",
       "sheet": {
@@ -5571,7 +5575,8 @@
       "guard": "Existing Library scope · ontology writes refused",
       "emptyTitle": "No document round is scheduled",
       "emptyDescription": "Create a consistency or service round here, then open the Library for the full ledger and page review.",
-      "openRounds": "Open full Library rounds"
+      "preview": { "title": "Schedule workbench", "empty": "Schedules appear here", "name": "Name", "cadence": "Cadence", "next": "Next run", "resultLabel": "Check history", "resultEmpty": "Review in the Library after the first run" },
+      "openRounds": "Open Library check history"
     }
   },
   "library": {
@@ -6217,7 +6222,7 @@
       "wikiCount": "Wiki pages",
       "ontology": "Ontology",
       "collections": "Collections",
-      "rounds": "Rounds",
+      "rounds": "Check history",
       "roundsCount": "Rounds switched on"
     },
     "collections": {
@@ -6235,6 +6240,8 @@
       "retry": "Read again",
       "emptyTitle": "No collection yet",
       "emptyDescription": "Switch the map to its Galaxy view, pick a few concepts and give them a name and a purpose; that set is kept here so you can return to the same scope. “Pick on the map” takes you there.",
+      "startingSource": "Concepts available in this ontology",
+      "startingNoConcepts": "Add concepts to the map first to see them here.",
       "memberCount": "{count, plural, one {# concept} other {# concepts}}",
       "referenceCount": "{count, plural, one {# reference} other {# references}}",
       "shape": {
@@ -6258,8 +6265,8 @@
     },
     "rounds": {
       "eyebrow": "WHILE YOU ARE AWAY",
-      "title": "Rounds",
-      "lede": "A round is a rule the Library keeps on its own while Atlas is open on this Mac: what to check, how often, and what it may write. Nothing else runs without a press.",
+      "title": "Check history",
+      "lede": "Review the document checks scheduled in Automations. Manage schedules and execution settings there.",
       "indexHeader": "Rounds · {count, number}",
       "indexAria": "Rounds this Mac keeps for this folder",
       "newRound": "New round",
@@ -6277,8 +6284,9 @@
         "cadence": "Cadence",
         "next": "Next run"
       },
-      "emptyTitle": "Nothing runs on its own yet",
-      "emptyDescription": "Register a round: every hour, check that every page still matches its sources; every morning, re-read what a service sent and redraft what changed.",
+      "emptyTitle": "No document check history yet",
+      "emptyDescription": "Schedule a document check in Automations. While this Mac is awake, Atlas runs it and leaves the results here for review.",
+      "historyShape": { "run": "Run", "outcome": "Outcome", "review": "Review", "empty": "This ledger fills after the first run" },
       "kind": {
         "consistency": "Pages still match their sources",
         "consistencyBody": "Hashes every cited source on this Mac and runs the page check. No agent turn.",

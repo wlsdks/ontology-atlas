@@ -37,9 +37,8 @@ import { cn } from '@/shared/lib/cn';
  * judgement where it belongs.
  *
  * **The vault's purpose sentence is the row, not decoration.** A row whose Watched column is empty
- * has to be able to say *this area does X and nothing watches it*; without the sentence it can only
- * say *a file is absent*. So the sentence takes the second line and the count shrinks to a figure
- * beside it.
+ * has to say what this area does. The row keeps its leading sentence in one line; each cell's
+ * detail carries the full purpose with the declaration evidence.
  *
  * ---
  *
@@ -439,14 +438,14 @@ function CellDetail({
         role="group"
         aria-label={t(COLUMN_HEAD[column])}
       >
+        <p className="mb-3 border-b border-[color:var(--color-border-soft)] pb-3 text-body leading-body text-[color:var(--color-text-secondary)]">
+          {area.purpose}
+        </p>
         {entries.length === 0 ? (
           <div className="flex flex-col gap-2">
             <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-a90)]">
               {t(COLUMN_EMPTY[column])}
             </p>
-            {/* The vault's own record of the area's purpose, which is what makes a gap judgeable
-                rather than merely absent. */}
-            <p className="text-body text-[color:var(--color-text-secondary)]">{area.purpose}</p>
             {/*
               The second operand, and the reason this cell is safe to read. "No check names this
               domain" is about how commands are written in `package.json`; it says nothing about
@@ -936,10 +935,10 @@ export function HarnessCoverageView({
         <table className="w-full table-fixed border-collapse text-left">
           <caption className="sr-only">{t('coverageTableCaption')}</caption>
           <colgroup>
-            <col className="w-[46%]" />
-            <col className="w-[18%]" />
-            <col className="w-[18%]" />
-            <col className="w-[18%]" />
+            <col className="w-[55%]" />
+            <col className="w-[15%]" />
+            <col className="w-[15%]" />
+            <col className="w-[15%]" />
           </colgroup>
           <thead>
             <tr>
@@ -979,37 +978,24 @@ export function HarnessCoverageView({
                   data-harness-area={area.slug}
                   className="border-t border-[color:var(--color-border-soft)]"
                 >
-                  {/*
-                    One rhythm, so every row is the same height: a name on one line, the vault's
-                    purpose clamped to two, and the recorded-path count as a figure. `forbidden.md`
-                    rules out repeated units whose heights differ only because their copy does, and
-                    the first build ran 80px to 160px purely on how token lists wrapped.
-                  */}
-                  <th scope="row" className="px-3 py-3 align-top font-normal">
+                  {/* One rhythm: a name, one purpose line, and the recorded-path count. */}
+                  <th scope="row" className="px-3 py-3 align-middle font-normal">
                     <span className="flex flex-wrap items-baseline gap-x-2">
                       <span className="min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                         {area.title}
                       </span>
-                      <span className="text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                      <span className="text-caption tabular-nums text-[color:var(--color-text-tertiary)]">
                         {t('coveragePathCount', { count: area.capabilities.length })}
                       </span>
                     </span>
-                    {/*
-                      ⚠️ **Two lines, both ends fixed, and `block` must not be here.** `line-clamp-2`
-                      emits `display:-webkit-box`; the `block` utility sits later in the same layer
-                      at the same specificity and won, so the clamp was dead and the reserve was a
-                      floor with no ceiling. On the real vault every purpose is a 320-character
-                      excerpt: rows ran 70px against 84px at 768 and 220px+ at 390 — the
-                      content-decided height `forbidden.md` rules out, caused by a utility nobody
-                      would look at twice (design-responsive, 2026-09-13).
-                    */}
-                    <span className="mt-1 line-clamp-2 min-h-[2.8em] text-body text-[color:var(--color-text-secondary)]">
+                    {/* The complete purpose remains in every cell's detail, including populated cells. */}
+                    <span className="mt-1 line-clamp-1 text-body text-[color:var(--color-text-secondary)]" title={area.purpose}>
                       {area.purpose}
                     </span>
                     {/* The node behind the row. Without it a reader can refute a cell — every
                         declaration is cited — and cannot refute the sentence the row rests on
                         (Steward seat, 2026-09-13). */}
-                    <span className="mt-1 block font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                    <span className="sr-only">
                       {area.slug}
                     </span>
                   </th>
@@ -1020,7 +1006,7 @@ export function HarnessCoverageView({
                       /* `h-px` on the cell gives `h-full` on the button something definite to
                          resolve against. Without it the button was 44px inside a 94px row and 54%
                          of every cell was not pressable (design-responsive, 2026-09-13). */
-                      <td key={column} className="h-px p-0 align-top">
+                      <td key={column} className="h-px p-0 align-middle">
                         <button
                           type="button"
                           ref={(node) => {

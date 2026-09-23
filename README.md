@@ -89,9 +89,10 @@ discriminator and standards boundary live in the
 [vault specification](docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
 
 The Analysis tab opens with visible loading feedback before preparing its views.
-In the Mac app, Automations groups recurring reviews by schedule, with the next
+In the Mac app, Automations owns recurring review schedules, with the next
 run and latest result on each row. Ontology reviews are read-only; document rounds
-retain their approved Library scope. See the [feature inventory](docs/FEATURES.md)
+retain their approved scope. Library → Check history shows document pass results
+and links back to Automations to manage a schedule. See the [feature inventory](docs/FEATURES.md)
 for the full execution and review boundaries.
 
 ## Use it in the next task

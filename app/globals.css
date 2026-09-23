@@ -4547,6 +4547,10 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+    [data-harness-detail] {
+      /* Slot swaps retain an opacity-only acknowledgement after the global travel stop. */
+      animation-duration: var(--motion-fast) !important;
+    }
   }
 
   /*

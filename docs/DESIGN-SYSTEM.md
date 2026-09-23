@@ -47,6 +47,7 @@ The criterion for separation is not the topic, but **"when it is read."** All fo
 - [Product Surface Hierarchy](#product-surface-hierarchy)
 - [Topology node focus & scale (ego popover)](#topology-node-focus--scale-ego-popover)
 - [Anti-AI Design Criteria](#anti-ai-design-criteria)
+- [Workbench composition and motion](#workbench-composition-and-motion)
 - [Architecture canvas — the flow surface (new, 2026-08-28)](#architecture-canvas--the-flow-surface-new-2026-08-28)
 - [Library index — readable page titles](#library-index--readable-page-titles)
 - [Absolute rules (Don'ts)](#absolute-rules-donts)
@@ -1505,6 +1506,13 @@ Apply these checks before shipping ontology surfaces:
   neutral surfaces, compact swatches / markers, and low-alpha borders. Avoid
   full-height colored rails inside detail cards; they read as decorative
   generated-callout chrome before they explain the data.
+- **No left-edge selection stripe on workbench cards or diagram rows.** Do not
+  attach a colored vertical line to a selected card or Harness part. It is a
+  generic callout cue and says nothing about that part's source or effect. Show
+  selection with the whole control's surface and boundary, its label, and the
+  corresponding evidence or relation. Dense Git table rows and the document
+  outline have separately reviewed position markers; changing those patterns
+  requires their own state and motion review.
 - **Qualitative, not theatrical.** Kind colors are nominal categories, so they
   use a quiet qualitative palette in the ColorBrewer sense. Avoid neon yellow,
   magenta, or over-saturated "AI dashboard" tones when label/icon/shape can do
@@ -1550,6 +1558,46 @@ Reference anchors:
 - W3C Understanding SC 1.4.11: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast
 - ColorBrewer scheme types: https://colorbrewer2.org/learnmore/schemes_full.html
 - Linear, "Why is quality so rare?": https://linear.app/now/why-is-quality-so-rare
+
+## Workbench composition and motion
+
+Tokens keep screens related; they cannot decide what the screen is about. Before
+placing a card, name the **one fact or action** that must be understood at first
+glance. Draw its real object or relationship at the largest useful scale, then
+place controls and evidence around it. If three equal panels can be swapped
+without changing the meaning, the composition is unfinished. A structure view
+must draw its causal links; a table of categories with decorative connectors is
+still a table.
+
+Empty states follow the same rule. Show the actual zero state and the next
+available action in one scene. A preview may show column names or a labelled
+vacant slot, but it must never look like an existing schedule, result, or agent
+execution. Keep the preview visually quieter than the action. Avoid numbered
+steps unless the user must perform those steps in that order.
+
+Motion is a change of *a named object*, not a property of an empty canvas. Use
+existing `--motion-*` values to connect input to result: selection reveals its
+evidence, a schedule enters the ledger, a changed path highlights its real
+edges. The object moves or changes with its state; unrelated panels stay still.
+On first load a short entrance may establish hierarchy once. Idle animation is
+allowed only when it represents a live fact or bounded atmosphere, never an
+invented run or pending task. Every sequence must be readable with reduced
+motion as a stable state. A screen recording, not a CSS value, proves continuity.
+
+For external references, use the source as a principle, then verify the Atlas
+translation. Refero explicitly permits design research and normal product work
+based on learned insights, including commercial work; it does **not** grant a
+license to redistribute third-party screenshots, logos, fonts, code, or a
+recognizable whole composition. Do not put reference images or copied DESIGN.md
+content in this repository. The MIT license of Refero's agent skill covers that
+skill, not the designs it indexes. Examples below are interpretive, not token or
+layout imports:
+
+| Source | Atlas rule | Verifier |
+|---|---|---|
+| [Refero's Vercel style analysis](https://styles.refero.design/style/f24daf3a-d43f-4dec-85a9-8ac1d5148a03) | Use type and fine dividers to separate evidence from controls; keep Atlas's own palette and typography. | Actual app capture identifies the main fact before metadata. |
+| [Refero's Raycast style analysis](https://styles.refero.design/style/3b6a17f0-3bdf-418c-a95e-0b89e5a8b2f8) | Give the active tool state a single bounded emphasis; supporting rows remain neutral. | Selection and keyboard focus are legible without color alone. |
+| [Refero Terms of Use, §§10, 13](https://doc.refero.design/legal/terms-of-use) | Research may inform an original Atlas screen; no third-party content is shipped. | Source and asset diff contains no copied material. |
 
 ## Architecture canvas — the flow surface (new, 2026-08-28)
 

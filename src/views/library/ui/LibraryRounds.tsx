@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Clock3, Pause, Play, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { CalendarClock, Clock3, Pause, Play, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 
@@ -14,24 +14,22 @@ import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_FRAME_FORM } from "@/shared/ui/page-frame";
-import { Button, Chip, EmptyState, IconButton, InfoHint, RowButton, useToast } from "@/shared/ui";
+import { Button, EmptyState, InfoHint, RowButton } from "@/shared/ui";
 
 import { useLibraryRounds } from "../lib/library-rounds-context";
 import { capitalize } from "../lib/round-presentation";
 import { lastOutcome, lastPass, nextRound, sinceSpan, summarizeSince } from "../lib/round-presentation";
-import { useVaultFolders } from "../lib/use-vault-folders";
-import { NewRoundSheet } from "./parts/NewRoundSheet";
-import { EmptyShape } from "./parts/EmptyShape";
 import { RoundsLedger } from "./parts/RoundsLedger";
 import { SinceYouLeft } from "./parts/SinceYouLeft";
+import { EmptyShape } from "./parts/EmptyShape";
+import { RoundsHistoryEmpty } from "./parts/RoundsHistoryEmpty";
 
 /**
- * **Rounds** — the fifth Library tab (spec §9).
+ * **Check history** — the Library's read side of document rounds.
  *
- * Index on the left, in the Library's own column: the rounds this Mac keeps, one row each, and
- * the New round press. Stage on the right: a header line saying what ran last and what runs
- * next, the morning card, then the ledger on its axis. Selecting a round in the index filters
- * the ledger to it and puts its own presses (run now, pause, remove) in the header.
+ * Index on the left: document rounds this Mac keeps. Stage on the right: the last and next
+ * run, the morning card, and the ledger. Selection filters the ledger. Schedule controls
+ * live in Automations; the Library keeps the execution evidence and page links.
  *
  * The web build has no clock and no agent, so it draws the explanation and the app door and
  * nothing that would be a lie there.
@@ -43,15 +41,9 @@ export function LibraryRounds() {
   const t = useTranslations("library.rounds");
   const locale = useLocale();
   const router = useRouter();
-  const toast = useToast();
   const runner = useLibraryRounds();
   const vault = useLocalVault();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [sheetNonce, setSheetNonce] = useState(0);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  // Read from disk only while the sheet is up: the folder list is the sheet's, and the
-  // architecture rule forbids building a model for a surface nobody is looking at.
-  const folders = useVaultFolders(sheetOpen);
 
   const time = useMemo(() => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }), [locale]);
   const dayTime = useMemo(() => new Intl.DateTimeFormat(locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }), [locale]);
@@ -151,41 +143,6 @@ export function LibraryRounds() {
     danger: "border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a12)] text-[color:var(--color-danger-text)]",
   };
 
-  const openSheet = () => {
-    setSheetNonce((value) => value + 1);
-    setSheetOpen(true);
-  };
-
-  const save = async (round: RoundRecord) => {
-    if (!runner) return false;
-    /*
-     * **The toast says what happened, not what usually happens.** "Running it once now" was
-     * printed for every consistency round, but the runner starts that first pass only when
-     * nothing else is running — so a round saved while another pass was in flight was promised
-     * a run that never came, and the person watched a ledger that stayed empty.
-     */
-    const { ok, startedNow } = await runner.save(round);
-    if (ok) {
-      toast.show(
-        t(startedNow ? "sheet.savedRunningNow" : "sheet.saved", { name: round.name, time: dueLabel(round.nextDueAt) }),
-        "success",
-      );
-      setSelectedId(round.id);
-    }
-    return ok;
-  };
-
-  const removeRound = async (round: RoundRecord) => {
-    if (!runner) return;
-    await runner.remove(round.id);
-    if (selectedId === round.id) setSelectedId(null);
-  };
-
-  const setAll = async (enabled: boolean) => {
-    if (!runner) return;
-    for (const round of rounds) if (round.enabled !== enabled) await runner.setEnabled(round.id, enabled);
-  };
-
   /* ---- Not on this surface ------------------------------------------------------------- */
 
   if (!runner || runner.storeStatus === "no-vault") {
@@ -282,27 +239,15 @@ export function LibraryRounds() {
             <h1 className="sr-only">{t("indexHeader", { count: rounds.length })}</h1>
             <InfoHint label={t("lede")} align="left">{t("lede")}</InfoHint>
           </div>
-          {/*
-            The column's door wears the column's door grammar — the muted, left-reading chip
-            "Add files" and "Bring from a service" wear one tab away. As a filled 40px indigo
-            slab it measured the loudest object on the screen (255 × 40 of solid
-            `--color-indigo`), which put the attention winner on a door to a form instead of
-            on the morning card that says what went stale. The filled press still exists
-            where the commitment is made: the sheet's "Allow and save", and the empty stage.
-          */}
-          <div className="mt-2 min-w-0">
-            <Chip
-              onClick={openSheet}
-              data-testid="library-rounds-new"
-              tone="muted"
-              className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
-            >
-              <Plus size={ICON_SIZE.sm} aria-hidden />
-              <span className="min-w-0 truncate">{t("newRound")}</span>
-            </Chip>
-          </div>
+          {/* Schedule changes live in Automations; this door keeps results and controls distinct. */}
+          <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-new"
+            className={cn(controlClass({ shape: "link", size: "md", tone: "secondary" }), "mt-2 flex w-full justify-start atlas-touch-floor") }>
+            <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}
+          </Link>
         </div>
         <ul className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-1 pb-3 pt-2" data-testid="library-rounds-list">
+          {rounds.length === 0 ? <li aria-hidden className="px-2 py-3"><EmptyShape icon={<Clock3 size={ICON_SIZE.sm} aria-hidden />}
+            columns={[t("shape.name"), t("shape.cadence"), t("shape.next")]} /></li> : null}
           {rounds.map((round) => {
             const word = outcomeWord(round);
             const isRunning = running?.roundId === round.id;
@@ -355,52 +300,16 @@ export function LibraryRounds() {
                 {" · "}
                 <span className={running ? "text-[color:var(--color-indigo-text-soft)]" : undefined}>{headerLine}</span>
               </p>
-              {selected ? (
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => runner.runNow(selected.id)}
-                    disabled={running !== null}
-                    data-testid="library-rounds-run-now"
-                    aria-label={t("runNowNamed", { name: selected.name })}
-                    className="atlas-touch-floor"
-                  >
-                    <Play size={ICON_SIZE.sm} aria-hidden />
-                    {t("runNow")}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => void runner.setEnabled(selected.id, !selected.enabled)} className="atlas-touch-floor" data-testid="library-rounds-toggle">
-                    {selected.enabled ? <Pause size={ICON_SIZE.sm} aria-hidden /> : <Play size={ICON_SIZE.sm} aria-hidden />}
-                    {selected.enabled ? t("pause") : t("resume")}
-                  </Button>
-                  <IconButton onClick={() => void removeRound(selected)} label={t("removeNamed", { name: selected.name })} data-testid="library-rounds-remove" className="atlas-touch-floor">
-                    <Trash2 size={ICON_SIZE.sm} aria-hidden />
-                  </IconButton>
-                </div>
-              ) : rounds.length > 0 ? (
-                <Button variant="ghost" size="sm" onClick={() => void setAll(allPaused)} className="atlas-touch-floor" data-testid="library-rounds-toggle-all">
-                  {allPaused ? <Play size={ICON_SIZE.sm} aria-hidden /> : <Pause size={ICON_SIZE.sm} aria-hidden />}
-                  {allPaused ? t("resumeAll") : t("pauseAll")}
-                </Button>
-              ) : null}
+              {selected ? <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-manage-automations"
+                className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>{t("manageAutomations")}</Link> : null}
             </div>
             <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">{t("limit")}</p>
           </header>
 
           {rounds.length === 0 ? (
-            <EmptyState
-              title={t("emptyTitle")}
-              description={t("emptyDescription")}
-              icon={<Clock3 />}
-              shape={<EmptyShape icon={<Clock3 size={ICON_SIZE.md} aria-hidden />} columns={[t("shape.name"), t("shape.cadence"), t("shape.next")]} />}
-              tone="solid"
-              action={
-                <Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={openSheet}>
-                  <Plus size={ICON_SIZE.sm} aria-hidden />
-                  {t("newRound")}
-                </Button>
-              }
-            />
+            <RoundsHistoryEmpty title={t("emptyTitle")} description={t("emptyDescription")} action={t("manageAutomations")}
+              columns={[t("historyShape.run"), t("historyShape.outcome"), t("historyShape.review")]}
+              empty={t("historyShape.empty")} />
           ) : (
             <>
               <SinceYouLeft span={span} summary={summary} locale={locale} onOpenPage={openPage} titleFor={titleFor} />
@@ -424,17 +333,6 @@ export function LibraryRounds() {
         </div>
       </section>
 
-      <NewRoundSheet
-        key={sheetNonce}
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        connectors={runner.connectors.map((connector) => ({ ...connector, name: connector.name }))}
-        agentReady={runner.agentReady}
-        onSave={save}
-        folders={folders}
-        existingNames={rounds.map((round) => round.name)}
-        passRunning={running !== null}
-      />
     </main>
   );
 }

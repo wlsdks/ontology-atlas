@@ -1,0 +1,28 @@
+.workbench { display: grid; grid-template-columns: minmax(0,.9fr) minmax(0,1.1fr); align-items: center; gap: clamp(2rem,5vw,5rem); width: 100%; min-height: 25rem; padding: clamp(1rem,2vw,2rem) 0; }
+.intro { min-width: 0; max-width: 32rem; }
+.kicker { display: inline-flex; align-items: center; gap: .5rem; color: var(--color-indigo-text-soft); font-size: var(--text-label); line-height: var(--leading-label); }
+.title { margin-top: 1rem; color: var(--color-text-primary); font-size: var(--text-display); line-height: var(--leading-display); font-weight: var(--font-weight-signature); }
+.description { margin-top: .875rem; color: var(--color-text-secondary); font-size: var(--text-body-lg); line-height: var(--leading-title); overflow-wrap: anywhere; }
+.action { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 1.75rem; }
+.guard { display: flex; align-items: center; gap: .5rem; margin-top: 1rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
+.guard svg { flex: none; }
+.preview { min-width: 0; border: 1px solid var(--color-border-soft); border-radius: var(--radius-panel); background: var(--color-panel); box-shadow: var(--shadow-elevation-1); animation: previewIn var(--motion-base) var(--motion-ease) both; }
+.previewHead { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--color-divider); }
+.previewTitle { color: var(--color-text-primary); font-size: var(--text-body-lg); font-weight: var(--font-weight-emphasis); }
+.zero { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; margin-left: auto; border: 1px solid var(--color-border-soft); border-radius: var(--radius-chip); color: var(--color-text-secondary); font: var(--text-label)/var(--leading-label) var(--font-mono); }
+.columnHead, .emptyRow { display: grid; grid-template-columns: minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr); gap: .75rem; align-items: center; }
+.columnHead { padding: .75rem 1.25rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
+.emptyRow { margin: 0 1.25rem; min-height: 4.5rem; padding: .75rem 1rem; border: 1px dashed var(--color-indigo-line-a32); border-radius: var(--radius-card); background: var(--color-indigo-a06); animation: rowIn var(--motion-base) var(--motion-ease) .05s both; }
+.emptyName { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; color: var(--color-text-secondary); font-size: var(--text-body); line-height: var(--leading-body); }
+.emptyName svg { flex: none; color: var(--color-indigo-text-soft); }
+.emptyDash { color: var(--color-text-quaternary); text-align: center; }
+.result { display: flex; align-items: flex-start; gap: .75rem; margin: 1.25rem 1.25rem 0; padding: 1rem 0 1.25rem; border-top: 1px solid var(--color-divider); color: var(--color-text-secondary); }
+.result > svg { flex: none; margin-top: .125rem; color: var(--color-indigo-text-soft); }
+.result span { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
+.result strong { color: var(--color-text-primary); font-size: var(--text-body); font-weight: var(--font-weight-emphasis); }
+.result small { color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
+@keyframes previewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes rowIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 63.99rem) { .workbench { grid-template-columns: minmax(0,1fr); gap: 2rem; min-height: 0; } .intro { max-width: 38rem; } }
+@media (max-width: 47.99rem) { .workbench { gap: 1.5rem; } .columnHead, .emptyRow { grid-template-columns: minmax(0,1fr) 3.5rem 3.5rem; } .columnHead { padding-inline: .875rem; } .emptyRow { margin-inline: .875rem; padding-inline: .625rem; } .previewHead { padding-inline: .875rem; } .result { margin-inline: .875rem; } }
+@media (prefers-reduced-motion: reduce) { .preview, .emptyRow { animation: none; } }

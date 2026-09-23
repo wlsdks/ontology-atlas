@@ -23,7 +23,13 @@ import { installDesktopBridge, openRounds } from "./rounds-desktop-bridge";
  */
 async function shoot(page: import("@playwright/test").Page, name: string) {
   await page.evaluate(() => document.querySelector("[data-testid='library-rounds-sheet']")?.scrollTo(0, 0));
-  await page.screenshot({ path: `.claude/shots-2026-09-21/${name}.png`, animations: "disabled" });
+  await page.screenshot({ path: `/tmp/atlas-rounds-${name}.png`, animations: "disabled" });
+}
+
+async function openNewDocumentSchedule(page: import("@playwright/test").Page) {
+  await page.getByTestId("library-rounds-new").click();
+  await expect(page.getByTestId("automations")).toHaveAttribute("data-automations-lane", "documents");
+  await page.getByTestId("automations-new").click();
 }
 
 test.describe("Library rounds — the cadence rail", () => {
@@ -37,7 +43,7 @@ test.describe("Library rounds — the cadence rail", () => {
     await installDesktopBridge(page, { seedRounds: false });
     await openRounds(page);
 
-    await page.getByTestId("library-rounds-new").click();
+    await openNewDocumentSchedule(page);
     const sheet = page.getByTestId("library-rounds-sheet");
     await expect(sheet).toBeVisible();
 
@@ -104,6 +110,7 @@ test.describe("Library rounds — the cadence rail", () => {
 
     await page.getByTestId("library-rounds-allow").click();
     await expect(sheet).toBeHidden();
+    await page.getByTestId("automations-open-library-rounds").click();
 
     // The index row says how often first — the column's own job — then where.
     const list = page.getByTestId("library-rounds-list");
@@ -142,7 +149,7 @@ test.describe("Library rounds — the cadence rail", () => {
     await installDesktopBridge(page, { seedRounds: false });
     await openRounds(page);
 
-    await page.getByTestId("library-rounds-new").click();
+    await openNewDocumentSchedule(page);
     await page.getByTestId("library-rounds-cadence-unit").getByRole("radio", { name: "Minutes" }).click();
     const thumb = page.getByTestId("library-rounds-cadence-thumb");
     await thumb.focus();

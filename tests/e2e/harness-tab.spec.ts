@@ -1013,6 +1013,44 @@ test.describe("하네스 탭", () => {
     }
   });
 
+  test('mobile diagram reveals selected file evidence beside its keyboard-activated row', async ({page}) => {
+    await mountHarnessVault(page);
+    await page.setViewportSize({width:390,height:844});
+    await page.goto('/ko/architecture/?view=structure&guides=off');
+    const row=page.getByTestId('harness-diagram-node-scoped');
+    await row.focus();
+    await page.keyboard.press('Enter');
+    const evidence=page.getByTestId('harness-anatomy-slot-scoped');
+    await expect(evidence).toBeVisible();
+    await expect(row).toHaveAttribute('aria-expanded','true');
+    await expect.poll(()=>page.evaluate(({rowId,evidenceId})=>{
+      const row=document.querySelector(`[data-testid="${rowId}"]`)!.getBoundingClientRect();
+      const evidence=document.querySelector(`[data-testid="${evidenceId}"]`)!.getBoundingClientRect();
+      const bar=document.querySelector('[data-tabbar="primary"]')!.getBoundingClientRect();
+      const button=document.querySelector(`[data-testid="${rowId}"]`)!;
+      const rowHit=button.contains(document.elementFromPoint(row.left+row.width/2,row.top+row.height/2));
+      return rowHit && row.bottom<=evidence.top && evidence.top<bar.top;
+    },{rowId:'harness-diagram-node-scoped',evidenceId:'harness-anatomy-slot-scoped'})).toBe(true);
+  });
+
+  test('reduced motion keeps the selected evidence fade without travel', async ({page}) => {
+    await page.emulateMedia({reducedMotion:'reduce'});
+    await mountHarnessVault(page);
+    await page.setViewportSize({width:390,height:844});
+    await page.goto('/ko/architecture/?view=structure&guides=off');
+    await page.getByTestId('harness-diagram-node-scoped').click();
+    const evidence=page.getByTestId('harness-anatomy-slot-scoped');
+    await expect(evidence).toBeVisible();
+    const motion=await evidence.evaluate(el=>{
+      const detail=el.closest('ul')!.parentElement!;
+      const style=getComputedStyle(detail);
+      return {name:style.animationName,duration:style.animationDuration,transform:style.transform};
+    });
+    expect(motion.name).toContain('detailFade');
+    expect(motion.duration).toBe('0.12s');
+    expect(motion.transform).toBe('none');
+  });
+
   test('structure fits a desktop viewport and confines long evidence to its work area', async ({ page }) => {
     await mountHarnessVault(page);
     await page.setViewportSize({ width: 1440, height: 900 });
