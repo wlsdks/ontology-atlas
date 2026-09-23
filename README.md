@@ -14,18 +14,7 @@ Atlas keeps a reviewed **codebase ontology** in ordinary Markdown alongside the 
 
 The map is a way to inspect those files, not a second database. Structural reachability is not a verified runtime blast radius, and a source path is evidence to inspect, not proof that a written claim is true. A person remains responsible for accepting or correcting meaning.
 
-~~~mermaid
-flowchart LR
-  source[Code and source documents] --> vault[Reviewed atlas/ Markdown]
-  vault --> brief[Bounded task brief through MCP]
-  vault --> workbench[Map, Library, and Analysis]
-  brief --> agent[Agent inspects source and changes code]
-  workbench --> person[Person judges evidence and unknowns]
-  agent --> person
-  person -->|Accept or correct meaning| vault
-~~~
-
-The diagram shows the review path; an MCP connection does not make every agent use the brief automatically.
+An MCP connection does not make every agent use a task brief automatically; the agent and the person must still inspect the relevant source and evidence.
 
 ## Explore the connected Online Store example
 
