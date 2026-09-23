@@ -466,7 +466,10 @@ export function ArchitectureWorkbench({
 
   if (!selected) {
     return (
-      <main className="flex min-h-0 flex-1 flex-col items-center justify-center p-5 md:p-10">
+      /* Starts under the tabs rather than in the middle of the leftover height: centred, the card
+         sat 254px below the tab strip at 1512x900, the same floating empty state Automations had
+         (design sweep, 2026-09-23). */
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-start p-5 md:p-10">
         {profileNotices ? <div className="w-full max-w-[var(--measure-stage-column)]">{profileNotices}</div> : null}
         <EmptyState
           title={t('noProfiles')}
@@ -487,7 +490,10 @@ export function ArchitectureWorkbench({
            * EmptyState intentionally demotes centred titles to body text, so this
            * page-owned h1 restores the existing display/strong/primary contract.
            */
-          className="max-w-[var(--measure-stage-column)] [&_h1]:break-keep [&_h1]:font-[var(--font-weight-strong)] [&_h1]:text-display [&_h1]:text-[color:var(--color-text-primary)]"
+          /* Embedded, the title is an `h2` and wore EmptyState's centred body step in tertiary ink,
+             so it read quieter than the paragraph under it (design sweep, 2026-09-23). It takes the
+             title step a rung under the page headline instead. */
+          className="max-w-[var(--measure-stage-column)] [&_h1]:break-keep [&_h1]:font-[var(--font-weight-strong)] [&_h1]:text-display [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:break-keep [&_h2]:font-[var(--font-weight-strong)] [&_h2]:text-title [&_h2]:text-[color:var(--color-text-primary)]"
           /*
            * ⚠️ **The button carries the task; it used to only change the address.**
            *
