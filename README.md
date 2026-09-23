@@ -35,7 +35,6 @@
   <a href="https://glama.ai/mcp/servers/@wlsdks/ontology-atlas"><img width="300" src="https://glama.ai/mcp/servers/@wlsdks/ontology-atlas/badge" alt="Ontology Atlas MCP server on Glama" /></a>
 </p>
 
-![The current Ontology Atlas macOS app with the Online Store project selected: the domains it contains named around it, everything unrelated receding, and the right inspector showing the project record, its code-evidence state, and the offer to connect a code folder](docs/assets/readme/topology-overview.png)
 
 <p align="center">
   <sub>The installed macOS app reading
@@ -239,11 +238,10 @@ so **commit `atlas/`, push it, or copy it to another machine, and the map goes
 with it.** The exact path is shown before anything is written, and an existing
 `atlas/` is reused and reported rather than overwritten.
 
-Every screenshot below reads [`samples/storefront`](samples/storefront), an
-example folder in this repository; `node cli/src/index.mjs overview
+The examples below use [`samples/storefront`](samples/storefront), an example
+folder in this repository; `node cli/src/index.mjs overview
 samples/storefront` prints its current census.
 
-![The Library Ontology workspace in the installed macOS app, with the vault tree open on the capabilities folder, the Checkout document beside it, its expanded frontmatter, word count and source date, its backlinks, and a link back to the same node on the map](docs/assets/readme/docs-workspace.png)
 
 **Library → Ontology** opens only the folder's explicitly typed `project`, `domain`,
 `capability`, `element`, and `document` nodes without the canvas: preview or edit Markdown,
@@ -257,7 +255,6 @@ search matches localized display names as well as canonical paths.
 
 ### 2. Connect your agent
 
-![The current Agents screen in the installed macOS app, listing the three coding tools found on this computer with their readiness, Open a chat with this tool and Check connection for the two that can run inside Atlas, the note on which tools can pause writes for review, and the option to show the other 36](docs/assets/readme/agent-connect.png)
 
 **Agents** finds the coding tools already installed on this computer and opens a
 conversation beside the map. **MCP** holds the folder's own connection, the setup
@@ -272,7 +269,6 @@ website shows a read-only Agents example and does not connect to Jev. See the
 [Jev evidence-check guide](docs/guide/external-judgment.md).
 The source-only example runs offline contract tests with `pnpm test:guide-examples`.
 
-![The current MCP screen in the installed macOS app, with Share this folder open: how many connection files are ready and which file comes next, one connect button each for Claude Code, Codex, Cursor and Antigravity, the note that the server runs only while a conversation needs it, and the two later steps to restart the agent and confirm the connection](docs/assets/readme/mcp-connect.png)
 
 - **Connect once, with visible scope.** The flow names the folder and config it
   will change, and writes plain text you can inspect. Claude Code, Codex, Cursor
@@ -287,7 +283,6 @@ The source-only example runs offline contract tests with `pnpm test:guide-exampl
 
 ### 3. Read the map
 
-![The current map with the Orders domain selected: unrelated concepts recede, the concepts it contains are named on the canvas, and the right inspector lists contains, used by, leans on, and belongs to beside Ask the agent, Edit, and full detail](docs/assets/readme/topology-focus.png)
 
 Selecting a node dims everything unrelated and opens its record without hiding
 the node behind the inspector — a visual hierarchy for a person and typed
@@ -295,7 +290,6 @@ parents, evidence and actions for an agent, from the same fact. Recent changes
 can narrow the map while keeping project and domain context, and Footprints
 record the order in which you opened concepts.
 
-![The installed macOS map picker offering Flat, Galaxy, Cone, Strata, and Neural, with the relation-driven Neural view behind it](docs/assets/readme/three-dimensional-views.png)
 
 Five views keep their questions explicit: **Flat** is the normal 2D map and
 **Galaxy** turns every real concept into a stable three-arm sky: the project is
@@ -320,7 +314,6 @@ curves shared by rendering and picking. Changing the view never changes the grap
 
 ### 4. Gather and read documents in the Library
 
-![The current Library in the installed macOS app: the Sources 3 and Wiki 1 tabs over Add files, Find documents and Bring from a service, three gathered documents with their format, byte size and either a not-compiled badge or a written-up check, the line saying two are not written up yet, and beside them the Gather, Compile and Read stages with Gather done, Compile next on the two waiting sources, and Read offering the one page that exists](docs/assets/readme/library-sources.png)
 
 A codebase's meaning is rarely only in the codebase. The plan, the spreadsheet,
 the handover note, the page somebody wrote on a wiki — the Library keeps those
@@ -369,7 +362,6 @@ tab. Writer readback, code checks, merge and deployment remain separate facts.
 
 ### 5. Plan against reviewed architecture
 
-![The current Architecture screen in the installed macOS app, comparing the seven reviewed roles of this repository, numbered from Routes down to Shared foundation with what each role is in two lines, against the imports observed in code beside each one, a check in the Delta column where they agree, every stroke stating its rule as a sentence and the measured crossing with its import count, and the reviewed structure and inspection receipt named above with Re-inspect source and Roles and rules](docs/assets/readme/architecture-flow.png)
 
 <p align="center">
   <sub>This screen reads Atlas's own repository rather than the storefront
@@ -386,7 +378,6 @@ folder names.
 
 ### 6. Review a relation beside its node
 
-![The current relation review beside the map, showing the source, relation type, target and the reason typed for it, then what the concept depends on as a Now list and an After list and the connection reason that will be written, above Keep editing and Confirm and write](docs/assets/readme/relation-review.png)
 
 Atlas shows a directional preview on the map, then a compact review of the
 source, type, target, reason, and exact frontmatter fields. **Confirm and write**
@@ -394,7 +385,6 @@ is the only point that changes the file.
 
 ### 7. Review the change, then record it
 
-![The current History screen in the installed macOS app, showing one unsaved concept change, the exact Markdown diff of the dependencies and relation_notes lines, the current branch and its remote with Fetch, Pull and Push, earlier vault commits, and the explicit save action](docs/assets/readme/history-review.png)
 
 Whatever wrote — you, the map editor, the CLI, or an agent over MCP — lands here
 first as a diff you read before it becomes history. Above is the change confirmed
@@ -424,7 +414,6 @@ drifting agent is visible before it writes.
 
 ### 8. Keep it healthy
 
-![The current Analysis screen in the installed macOS app, with four measurements above the tabs (concepts by kind, relations by type, health in words, the last four weeks), the Do next, Not held, Inventory, Connections, Boundaries, Growth, Recent changes, Structure and Flow tabs, and the things to fix grouped by kind with the first group open on a pair whose names overlap](docs/assets/readme/graph-insights.png)
 
 Insights opens on a Brief across concepts, wiki pages, guidance and agent activity.
 Choose a subject to inspect its evidence. When Wiki or Guidance cannot yet show
