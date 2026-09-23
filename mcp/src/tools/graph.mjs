@@ -185,6 +185,11 @@ function completeAgentBriefProjectScope(artifact, projectSlug, loadedDocs) {
   };
 }
 
+// The parent artifact is reused only after current vault bytes have been read
+// and their signature checked. Keep at most one separately compiled project
+// per parent, without retaining its source documents or older vault versions.
+const lastProjectArtifact = new WeakMap();
+
 function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns, loadedDocs) {
   const projectSlug = resolveAgentBriefProject(artifact, args.project);
   if (projectSlug === null) {
@@ -202,7 +207,20 @@ function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns, load
     };
   }
   const scope = completeAgentBriefProjectScope(artifact, projectSlug, loadedDocs);
-  const scopedArtifact = compileOntology(scope.docs, { includeIndexes: true });
+  let scopedArtifact;
+  if (scope.docs.length === loadedDocs.length) {
+    // Identical compiler inputs: even ordinary non-node documents must be in
+    // scope before the parent's counts and diagnostics can be reused verbatim.
+    scopedArtifact = artifact;
+  } else {
+    const cached = lastProjectArtifact.get(artifact);
+    if (cached?.projectSlug === projectSlug) {
+      scopedArtifact = cached.artifact;
+    } else {
+      scopedArtifact = compileOntology(scope.docs, { includeIndexes: true });
+      lastProjectArtifact.set(artifact, { projectSlug, artifact: scopedArtifact });
+    }
+  }
   const engineArgs = { ...args, project: projectSlug };
   delete engineArgs.detail;
   delete engineArgs.task;
