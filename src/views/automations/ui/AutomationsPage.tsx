@@ -132,7 +132,7 @@ export function AutomationsPage({
                 {lane === "documents" ? <Link href="/library/?tab=rounds" data-testid="automations-open-library-rounds" className={cn(controlClass({ shape: "link", tone: "secondary" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("documents.openRounds")}</Link> : null}
               </div> : null}
               {rounds.length === 0 ? (
-                <div className="flex flex-1 items-center py-8">
+                <div className="flex pt-6 pb-8">
                   <AutomationEmptyWorkbench title={t(`${lane}.emptyTitle`)} description={t(`${lane}.emptyDescription`)} guard={t(`${lane}.guard`)}
                     previewTitle={t(`${lane}.preview.title`)} previewEmpty={t(`${lane}.preview.empty`)}
                     columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.next`)]}
