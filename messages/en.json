@@ -208,6 +208,7 @@
         "othersHeadingEmpty": "{count} tools you can use",
         "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Agent or Codex and they show up here. The install guides are in the list below.",
+        "noneReadyCaptionNoList": "Install Claude Agent or Codex and they show up here. Press “Check again” after installing.",
         "webLabel": "A browser is not allowed to start programs on this computer",
         "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Pointing a tool you started yourself at this folder works right now, in the “Share this folder” section on the MCP tab.",
         "state": {

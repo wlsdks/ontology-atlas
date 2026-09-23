@@ -497,6 +497,16 @@ describe('실행기 목록 — 못 하는 일은 정직하게', () => {
     expect(screen.getByText('noneReadyCaption')).toBeInTheDocument();
   });
 
+  it('목록이 아예 비었으면 「아래 목록」을 가리키지 않는다', async () => {
+    // The caption promised install guides "in the list below"; with no other tool found there
+    // was no list below at all (design sweep, 2026-09-23).
+    bridge.detect.mockResolvedValue([]);
+    render(<AcpRuntimeSettings />);
+    await waitFor(() => expect(screen.getByText('noneReady')).toBeInTheDocument());
+    expect(screen.getByText('noneReadyCaptionNoList')).toBeInTheDocument();
+    expect(screen.queryByText('noneReadyCaption')).toBeNull();
+  });
+
   it('다 찾기 전에는 「찾는 중」이라고만 한다 — 없다고 단정하지 않는다', () => {
     bridge.detect.mockReturnValue(new Promise(() => {}));
     render(<AcpRuntimeSettings />);
