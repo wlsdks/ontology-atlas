@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { pathToFileURL } from 'node:url';
 
 import {
   collectNodeRevisions,
@@ -56,6 +57,119 @@ function makeRepo() {
   git(root, 'commit', '-m', 'initial');
   return { root, vault };
 }
+
+function commitAt(root, date, message) {
+  git(root, 'add', '.');
+  return execFileSync('git', ['-C', root, 'commit', '-m', message], {
+    encoding: 'utf8',
+    env: { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date },
+  });
+}
+
+function makeDatedRepo() {
+  const fixture = makeRepo();
+  writeFileSync(join(fixture.vault, 'project.md'), 'Recorded meaning.\n');
+  commitAt(fixture.root, '2026-09-10T00:00:00Z', 'record meaning');
+  writeFileSync(join(fixture.root, 'outside.txt'), 'Changed code.\n');
+  commitAt(fixture.root, '2026-09-12T00:00:00Z', 'change evidence');
+  return fixture;
+}
+
+test('collectPathLastChanges reuses one history walk while keeping filesystem facts and returned rows fresh', () => {
+  const { root, vault } = makeDatedRepo();
+  const previousTrace = process.env.GIT_TRACE;
+  const tracePath = join(root, 'git-trace.log');
+  process.env.GIT_TRACE = tracePath;
+  try {
+    const input = { repoRoot: root, vaultRoot: vault, repoPaths: ['outside.txt'], vaultPaths: ['project.md'] };
+    const first = collectPathLastChanges(input);
+    const expectedDate = first.changes.get('outside.txt').lastChangedAt;
+    assert.ok(expectedDate, 'the fixture must yield an actual committed date');
+    first.changes.get('outside.txt').lastChangedAt = 'caller mutation';
+    const second = collectPathLastChanges(input);
+    assert.equal(second.changes.get('outside.txt').lastChangedAt, expectedDate);
+
+    rmSync(join(root, 'outside.txt'));
+    assert.equal(collectPathLastChanges(input).changes.get('outside.txt').exists, false);
+    mkdirSync(join(root, 'outside.txt'));
+    const replaced = collectPathLastChanges(input).changes.get('outside.txt');
+    assert.deepEqual(replaced, { exists: true, isDir: true, lastChangedAt: expectedDate });
+    const walks = readFileSync(tracePath, 'utf8').split('\n').filter((line) => /built-in: git log /.test(line));
+    assert.equal(walks.length, 1, 'unchanged committed history must not be walked for every read');
+  } finally {
+    if (previousTrace === undefined) delete process.env.GIT_TRACE;
+    else process.env.GIT_TRACE = previousTrace;
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collectPathLastChanges separates paths, bounds, and HEAD when reusing dates', () => {
+  const { root, vault } = makeDatedRepo();
+  try {
+    const input = { repoRoot: root, vaultRoot: vault, repoPaths: ['outside.txt'], vaultPaths: ['project.md'], maxCommits: 1 };
+    assert.equal(collectPathLastChanges(input).changes.get('project.md').lastChangedAt, null);
+    assert.equal(Date.parse(collectPathLastChanges({ ...input, maxCommits: 2 }).changes.get('project.md').lastChangedAt), Date.parse('2026-09-10T00:00:00Z'));
+    assert.equal(Date.parse(collectPathLastChanges({ ...input, repoPaths: [] }).changes.get('project.md').lastChangedAt), Date.parse('2026-09-10T00:00:00Z'));
+    writeFileSync(join(vault, 'project.md'), 'Revised meaning.\n');
+    commitAt(root, '2026-09-14T00:00:00Z', 'revise meaning');
+    assert.equal(Date.parse(collectPathLastChanges(input).changes.get('project.md').lastChangedAt), Date.parse('2026-09-14T00:00:00Z'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collectPathLastChanges invalidates dates after shallow history expands without a new HEAD', () => {
+  const { root } = makeDatedRepo();
+  const cloneParent = mkdtempSync(join(tmpdir(), 'ontology-atlas-shallow-'));
+  const clone = join(cloneParent, 'repo');
+  try {
+    execFileSync('git', ['clone', '--quiet', '--depth=1', pathToFileURL(root).href, clone]);
+    const input = { repoRoot: clone, vaultRoot: join(clone, 'vault'), repoPaths: ['outside.txt'], vaultPaths: ['project.md'] };
+    const head = git(clone, 'rev-parse', 'HEAD');
+    assert.equal(Date.parse(collectPathLastChanges(input).changes.get('project.md').lastChangedAt), Date.parse('2026-09-12T00:00:00Z'));
+    git(clone, 'fetch', '--quiet', '--unshallow');
+    assert.equal(git(clone, 'rev-parse', 'HEAD'), head);
+    assert.equal(Date.parse(collectPathLastChanges(input).changes.get('project.md').lastChangedAt), Date.parse('2026-09-10T00:00:00Z'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(cloneParent, { recursive: true, force: true });
+  }
+});
+
+test('collectPathLastChanges invalidates dates when replacement refs change without a new HEAD', () => {
+  const { root, vault } = makeDatedRepo();
+  try {
+    const input = { repoRoot: root, vaultRoot: vault, repoPaths: ['outside.txt'] };
+    const head = git(root, 'rev-parse', 'HEAD');
+    assert.equal(Date.parse(collectPathLastChanges(input).changes.get('outside.txt').lastChangedAt), Date.parse('2026-09-12T00:00:00Z'));
+    const replacement = execFileSync('git', ['-C', root, 'commit-tree', 'HEAD^{tree}', '-p', 'HEAD^', '-m', 'replacement'], {
+      encoding: 'utf8', env: { ...process.env, GIT_AUTHOR_DATE: '2026-09-15T00:00:00Z', GIT_COMMITTER_DATE: '2026-09-15T00:00:00Z' },
+    }).trim();
+    git(root, 'replace', head, replacement);
+    assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+    assert.equal(Date.parse(collectPathLastChanges(input).changes.get('outside.txt').lastChangedAt), Date.parse('2026-09-15T00:00:00Z'));
+    git(root, 'replace', '-d', head);
+    assert.equal(Date.parse(collectPathLastChanges(input).changes.get('outside.txt').lastChangedAt), Date.parse('2026-09-12T00:00:00Z'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collectPathLastChanges invalidates dates when grafted ancestry changes without a new HEAD', () => {
+  const { root, vault } = makeDatedRepo();
+  try {
+    const input = { repoRoot: root, vaultRoot: vault, repoPaths: ['outside.txt'], vaultPaths: ['project.md'] };
+    const head = git(root, 'rev-parse', 'HEAD');
+    assert.equal(Date.parse(collectPathLastChanges(input).changes.get('project.md').lastChangedAt), Date.parse('2026-09-10T00:00:00Z'));
+    const grafts = join(root, '.git', 'info', 'grafts');
+    writeFileSync(grafts, `${head}\n`);
+    assert.equal(Date.parse(collectPathLastChanges(input).changes.get('project.md').lastChangedAt), Date.parse('2026-09-12T00:00:00Z'));
+    rmSync(grafts);
+    assert.equal(Date.parse(collectPathLastChanges(input).changes.get('project.md').lastChangedAt), Date.parse('2026-09-10T00:00:00Z'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test('inspectVaultGit reports vault files and outside staged risk separately', () => {
   const { root, vault } = makeRepo();

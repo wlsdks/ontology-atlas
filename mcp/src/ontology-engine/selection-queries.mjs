@@ -702,7 +702,13 @@ export function createSelectionQueries({
     };
   }
 
+  // health() needs both the displayed groups and the complete actionable
+  // count. Share that traversal only within this engine and relation filter.
+  const componentGroupsByTypes = new Map();
+
   function connectedComponentGroups(typeSet) {
+    const key = JSON.stringify(typeSet ? [...typeSet].sort() : null);
+    if (componentGroupsByTypes.has(key)) return componentGroupsByTypes.get(key);
     const visited = new Set();
     const groups = [];
 
@@ -732,6 +738,7 @@ export function createSelectionQueries({
     groups.sort(
       (a, b) => b.size - a.size || (a.slugs[0] || '').localeCompare(b.slugs[0] || ''),
     );
+    componentGroupsByTypes.set(key, groups);
     return groups;
   }
 
