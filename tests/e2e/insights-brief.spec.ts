@@ -80,23 +80,23 @@ test("브리핑은 연 폴더의 위키·에이전트를 이름으로 말하고,
   const brief = page.getByTestId("brief-tab");
   await expect(brief).toBeVisible({ timeout: 30_000 });
 
-  // The wiki card measures the folder: one page, and its source moved under it.
-  const wiki = page.getByTestId("brief-core-wiki");
-  await expect(wiki.locator('[data-brief-line="wiki-stale-pages"]')).toHaveText(/1/, { timeout: 30_000 });
+  // The wiki core measures the folder: one page, and its source moved under it. Since
+  // 2026-09-23 every core's lines share one list, and each row carries its core.
+  await expect(page.locator('[data-brief-core="wiki"][data-brief-line="wiki-stale-pages"]')).toHaveText(/1/, { timeout: 30_000 });
 
-  // The agent card counts what happened since, including the write.
-  const agent = page.getByTestId("brief-core-agent");
-  await expect(agent.locator('[data-brief-line="agent-calls-since"]')).toHaveText(/2/);
-  await expect(agent.locator('[data-brief-line="agent-writes-since"]')).toHaveText(/1/);
+  // The agent core counts what happened since, including the write.
+  const agent = page.getByTestId("brief-lines");
+  await expect(agent.locator('[data-brief-core="agent"][data-brief-line="agent-calls-since"]')).toHaveText(/2/);
+  await expect(agent.locator('[data-brief-core="agent"][data-brief-line="agent-writes-since"]')).toHaveText(/1/);
 
   // A concept an agent wrote that nobody has reviewed is named as unknown, not as fine.
-  const ontology = page.getByTestId("brief-core-ontology");
-  await expect(ontology.locator('[data-brief-line="ontology-agent-unreviewed"]')).toHaveText(/1/);
+  const ontology = page.getByTestId("brief-lines");
+  await expect(ontology.locator('[data-brief-core="ontology"][data-brief-line="ontology-agent-unreviewed"]')).toHaveText(/1/);
   await expect(
     ontology.locator('[data-brief-line="ontology-evidence-moved"]'),
     "a browser cannot date the code beside the folder, so it must not claim anything moved or is fine",
   ).toHaveCount(0);
-  await expect(ontology).toContainText("앱에서만 잴 수 있어요");
+  await expect(page.getByTestId("brief-app-only")).toContainText("앱에서만 잴 수 있어요");
 
   // The heading sums lines, and the since list names what changed rather than counting again.
   await expect(page.getByTestId("brief-headline")).toContainText("새로 알아야 할 것");

@@ -78,6 +78,9 @@ export interface InsightsCensusStripLabels {
   recentThisWeek: (count: number) => string;
   /** What the bars are, for a reader who cannot see them. */
   recentBarsAria: (weeks: number, total: number) => string;
+  /** End labels under the weekly bars; without them four bars read as a shape, not as time. */
+  recentBarsStart?: (weeks: number) => string;
+  recentBarsEnd?: string;
 }
 
 export function InsightsCensusStrip({
@@ -146,18 +149,22 @@ export function InsightsCensusStrip({
        * view. Width never removes a tile: all four numbers stay drawn, and two-by-two is the
        * shape only below 960, where the rail is gone.
        */
-      className="grid grid-cols-2 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-4"
+      /*
+       * One band, the brief's shape (owner direction C, 2026-09-23): four cells share one panel
+       * and a 1px divider instead of four cards, so switching subject keeps the band in place.
+       */
+      className="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-divider)] @min-[960px]/insights:grid-cols-4"
     >
-      <CensusTile testId="insights-census-tile" label={labels.concepts}>
-        <CensusBigNumber testId="insights-bignum" value={totalNodes} />
+      <BandCell><CensusTile testId="insights-census-tile" surface="bare" label={labels.concepts}>
+        <CensusBigNumber testId="insights-bignum" value={totalNodes} scale="section" tone="primary" />
         <div className="mt-auto flex flex-col gap-1.5">
           <CensusSubStrip items={kindsSummary} />
           <CensusSubStat label={labels.membershipLabel} value={`${health.domainMembershipPct}%`} />
         </div>
-      </CensusTile>
+      </CensusTile></BandCell>
 
-      <CensusTile testId="insights-census-tile" label={labels.relations}>
-        <CensusBigNumber testId="insights-bignum" value={totalEdges} />
+      <BandCell><CensusTile testId="insights-census-tile" surface="bare" label={labels.relations}>
+        <CensusBigNumber testId="insights-bignum" value={totalEdges} scale="section" tone="primary" />
         <div className="mt-auto flex flex-col gap-1.5">
           <CensusSubStrip items={relationsSummary} />
           <HiddenCountLine
@@ -180,14 +187,14 @@ export function InsightsCensusStrip({
             {labels.densityGloss}
           </span>
         </div>
-      </CensusTile>
+      </CensusTile></BandCell>
 
       {/* The health tile's value is the verdict **in words**. A number here would be the third
           place counting the same work; the words are the fact the number never carried. */}
-      <CensusTile testId="insights-census-tile" label={labels.health}>
+      <BandCell><CensusTile testId="insights-census-tile" surface="bare" label={labels.health}>
         <p
           data-testid="insights-verdict-word"
-          className="text-display font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+          className="break-keep text-display font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
         >
           {verdict.status === "healthy" ? labels.statusHealthy : labels.statusNeedsAttention}
         </p>
@@ -205,15 +212,17 @@ export function InsightsCensusStrip({
             <CensusSubStat label={labels.cycle} value={health.cycleCount} />
           </div>
         </div>
-      </CensusTile>
+      </CensusTile></BandCell>
 
-      <CensusTile testId="insights-census-tile" label={labels.recentTitle}>
+      <BandCell><CensusTile testId="insights-census-tile" surface="bare" label={labels.recentTitle}>
         <WeeklyBars
           weeklyTotals={weeklyTotals}
           ariaLabel={labels.recentBarsAria(
             weeklyTotals.length,
             weeklyTotals.reduce((sum, count) => sum + count, 0),
           )}
+          startLabel={labels.recentBarsStart?.(weeklyTotals.length)}
+          endLabel={labels.recentBarsEnd}
         />
         <div className="mt-auto flex flex-col gap-1.5">
           <span className="text-label text-[color:var(--color-text-tertiary)]">
@@ -221,7 +230,7 @@ export function InsightsCensusStrip({
           </span>
           <CensusSubStat label={labels.evidenceLinked} value={`${health.evidenceLinkedPct}%`} />
         </div>
-      </CensusTile>
+      </CensusTile></BandCell>
     </div>
   );
 }
@@ -234,11 +243,17 @@ export function InsightsCensusStrip({
  * right now" is answered without a legend. Every other week is a neutral overlay step — no colour
  * gauge, no second palette.
  */
-function WeeklyBars({ weeklyTotals, ariaLabel }: { weeklyTotals: number[]; ariaLabel: string }) {
+/** A band cell: the panel ink and padding a card used to carry, inside the shared panel. */
+function BandCell({ children }: { children: React.ReactNode }) {
+  return <div className="flex min-w-0 flex-col bg-[color:var(--color-panel)] p-[var(--card-pad)]">{children}</div>;
+}
+
+function WeeklyBars({ weeklyTotals, ariaLabel, startLabel, endLabel }: { weeklyTotals: number[]; ariaLabel: string; startLabel?: string; endLabel?: string }) {
   if (weeklyTotals.length === 0) return null;
   const max = Math.max(1, ...weeklyTotals);
   const lastIndex = weeklyTotals.length - 1;
   return (
+    <div className="flex flex-col gap-1">
     <div
       role="img"
       aria-label={ariaLabel}
@@ -257,15 +272,24 @@ function WeeklyBars({ weeklyTotals, ariaLabel }: { weeklyTotals: number[]; ariaL
             // which is the one thing a 12-bar strip must never do. Non-zero weeks start at 12% so
             // a single update is still visible beside a 40× larger neighbour.
             height: count === 0 ? "2px" : `${Math.max(12, Math.round((count / max) * 100))}%`,
+            // Non-zero weeks in tertiary ink: overlay-3 measured 1.29:1 on the panel and the zero
+            // tick 1.15:1, both under the 3:1 a graphical mark needs (design-infoviz, 2026-09-23).
             backgroundColor:
               index === lastIndex && count > 0
                 ? "var(--color-indigo-brand)"
                 : count === 0
-                  ? "var(--color-overlay-2)"
-                  : "var(--color-overlay-3)",
+                  ? "var(--color-text-quaternary)"
+                  : "var(--color-text-tertiary)",
           }}
         />
       ))}
+    </div>
+    {startLabel && endLabel ? (
+      <div aria-hidden="true" data-testid="insights-weekly-ends" className="flex justify-between text-label text-[color:var(--color-text-tertiary)]">
+        <span>{startLabel}</span>
+        <span>{endLabel}</span>
+      </div>
+    ) : null}
     </div>
   );
 }

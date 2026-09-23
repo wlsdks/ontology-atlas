@@ -1,10 +1,10 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { CensusSubStat, CensusTile } from '@/shared/ui/census-tile';
+import { CensusSubStat } from '@/shared/ui/census-tile';
 import { controlClass } from '@/shared/ui/control-class';
 import { Button } from '@/shared/ui';
 import { RowDisclosure } from '@/shared/ui/row-disclosure';
@@ -14,8 +14,11 @@ import { buildDriftHandoff } from '../../lib/brief/drift-handoff';
 import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
 import type { SinceRow } from '../../lib/brief/since-list';
 import { cn } from '@/shared/lib/cn';
+import { useCountUp } from '@/shared/lib/use-count-up';
+import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { parseInsightsTabHref, type InsightsTab } from '../../lib/insights-tab-state';
-import { briefTotals, visibleLines, type BriefCore, type BriefLine, type BriefLineDetail, type BriefState } from '../../lib/brief/brief-model';
+import { briefTotals, type BriefCore, type BriefLine, type BriefLineDetail, type BriefState } from '../../lib/brief/brief-model';
+import { briefRows, type BriefRow } from '../../lib/brief/brief-rows';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 
 /**
@@ -171,99 +174,271 @@ export function BriefTab({
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-[var(--card-gap)] md:grid-cols-2 xl:grid-cols-4">
-        {cores.map((core) => (
-          <BriefCoreCard key={core.core} core={core} details={brief.details} nowMs={brief.nowMs} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
-        ))}
-      </div>
+      {/*
+        * **One band of counts, one list of lines** (owner's direction C, 2026-09-23). Four equal
+        * cards reserved a quarter of the row for a core with nothing to say: at 1512x900 on the
+        * hosted sample 55% of the first screen was blank, three cards used 179 of their 276px and
+        * eight dashes stood in for values nobody could measure. The band keeps every core's
+        * magnitude in one glance; the list under it is where the eye goes next.
+        */}
+      <BriefBand cores={cores} />
+      <BriefLineList rows={briefRows(cores)} details={brief.details} nowMs={brief.nowMs} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
       <BriefSinceList rows={brief.since} total={brief.sinceTotal} nowMs={brief.nowMs} />
     </section>
   );
 }
 
-function BriefCoreCard({ core, details, nowMs, onAskAgent, onOpenTab }: { core: BriefCore; details: InsightsBrief['details']; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
+/**
+ * The four cores as one band: each cell a name, a magnitude and three counts in the core's own
+ * words. A core that cannot count here says so in two or three words where its counts would be,
+ * because the list below already carries the sentence and the door; a dash in three columns was
+ * alignment pretending to be a value.
+ */
+function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
   const t = useTranslations('ontologyPages.insights.brief');
-  // The card is already titled with the subject, so a unit that repeats it is ink for nothing.
-  const unit = t(`unit.${core.core}`);
-  const [c1, c2, c3] = COLUMNS[core.core];
-  const lines = visibleLines(core);
-  const measured = core.availability === 'measured';
   return (
-    <CensusTile label={t(`core.${core.core}`)} testId={`brief-core-${core.core}`} rowKey={core.core}>
-      {/*
-       * **The magnitude row is drawn even when this session cannot count it.** A card that
-       * cannot be measured already prints why one line below, so this row says nothing new —
-       * but omitting the row moved the card's state band and its sentence 31px up while its
-       * three siblings kept theirs, one row of four cards reading on two baselines (measured
-       * 2026-09-20 at 1512x900 and 1920x1080: 49/80 against 48/79). The dash is the mark the
-       * state columns underneath already use for a value this session cannot state, and it is
-       * hidden from assistive technology because it carries alignment, not a fact.
-       */}
-      {core.headline == null ? (
-        core.availability === 'measured' ? (
-          <p className="text-title text-[color:var(--color-text-tertiary)]">
-            <span className="text-label" data-testid="brief-core-unmeasured">{t('notMeasured')}</span>
-          </p>
-        ) : (
-          <p
-            className="font-mono text-title font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-quaternary)]"
-            data-testid="brief-core-headline-absent"
-            aria-hidden
+    <div
+      data-testid="brief-band"
+      // The slot decides, not the window: at the app's 1040 floor the slot is 896px and a viewport
+      // `xl` gave a 2x2 band 101px taller than the Concepts band beside it (design-responsive).
+      className="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-divider)] @min-[960px]/insights:grid-cols-4"
+    >
+      {cores.map((core) => {
+        const [c1, c2, c3] = COLUMNS[core.core];
+        const measured = core.availability === 'measured';
+        const unit = t(`unit.${core.core}`);
+        return (
+          <div
+            key={core.core}
+            data-testid={`brief-core-${core.core}`}
+            data-brief-availability={core.availability}
+            className="flex min-w-0 flex-col gap-1 bg-[color:var(--color-panel)] px-[var(--card-pad)] py-4"
           >
-            –
-          </p>
-        )
-      ) : (
-        <p className="font-mono text-title font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-primary)]">
-          {core.headline}
-          {unit ? <span className="ml-1.5 text-label text-[color:var(--color-text-quaternary)]">{unit}</span> : null}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-x-4 gap-y-1" data-testid="brief-core-columns">
-        <CensusSubStat label={t(`col.${c1}`)} value={measured && core.current != null ? core.current : '–'} />
-        <CensusSubStat label={t(`col.${c2}`)} value={measured && core.stale != null ? core.stale : '–'} tone={core.stale ? 'warning' : 'numeral'} />
-        <CensusSubStat label={t(`col.${c3}`)} value={core.unknown != null ? core.unknown : '–'} />
-      </div>
-      <ul className="mt-1 flex flex-1 flex-col gap-3" data-testid="brief-core-lines">
-        {core.availability === 'reading' || core.availability === 'unreadable' ? (
-          <li className="text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-${core.availability}-${core.core}`}>
-            {t(core.core === 'ontology' && core.availability === 'unreadable' ? 'evidenceUnreadable' : core.availability)}
-          </li>
-        ) : null}
-        {core.availability === 'no-source' ? (
-          <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-no-source-${core.core}`}>
-            <span className="min-w-0">{t(core.core === 'ontology' ? 'evidenceNoSource' : 'noSource')}</span>
-            <DestinationLink href={CORE_NEXT_HREF[core.core]} className={LINE_LINK} onOpenTab={onOpenTab}>
-              {t(`emptyAction.${core.core}`)}
-            </DestinationLink>
-          </li>
-        ) : null}
-        {core.availability === 'app-only' ? (
-          <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]">
-            <span className="min-w-0">{t('appOnly')}</span>
+            <span className="min-w-0 break-keep text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+              {t(`core.${core.core}`)}
+            </span>
+            {/*
+              * The magnitude is the cell's answer, so it sits under the name at the title step in
+              * primary ink (the display step tied the page title and `screen-hierarchy` refused it). At the far end of a 340px cell at the title step it read as a footnote
+              * the eye had to travel to (checkpoint, 2026-09-23). A core with no magnitude keeps the
+              * row's height so four cells share one baseline.
+              */}
+            <span className="flex min-h-[var(--leading-title)] items-baseline gap-1.5">
+              {core.headline != null ? (
+                <BandNumber value={core.headline} unit={unit} />
+              ) : (
+                <span className="text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-state-${core.core}`}>
+                  {t(`bandState.${core.availability}`)}
+                </span>
+              )}
+            </span>
+            {measured ? (
+              <div className="flex flex-wrap gap-x-4 gap-y-1" data-testid="brief-core-columns">
+                <CensusSubStat label={t(`col.${c1}`)} value={core.current ?? 0} />
+                <CensusSubStat label={t(`col.${c2}`)} value={core.stale ?? 0} tone={core.stale ? 'warning' : 'numeral'} />
+                <CensusSubStat label={t(`col.${c3}`)} value={core.unknown ?? 0} />
+              </div>
+            ) : core.headline != null ? (
+              <span className="text-label text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-state-${core.core}`}>
+                {t(`bandState.${core.availability}`)}
+              </span>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** One band magnitude, counted up on arrival and down when a visit is marked. */
+function BandNumber({ value, unit }: { value: number; unit: string }) {
+  const shown = useCountUp(value, 400, { animateChanges: true });
+  return (
+    <>
+      <span className="font-mono text-title font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-primary)]" aria-hidden="true">
+        {shown}
+      </span>
+      {unit ? <span className="text-label text-[color:var(--color-text-tertiary)]" aria-hidden="true">{unit}</span> : null}
+      <span className="sr-only">{unit ? `${value} ${unit}` : value}</span>
+    </>
+  );
+}
+
+/** The one list. See `briefRows` for the order and why a core adds at most one status row. */
+function BriefLineList({
+  rows,
+  details,
+  nowMs,
+  onAskAgent,
+  onOpenTab,
+}: {
+  rows: readonly BriefRow[];
+  details: InsightsBrief['details'];
+  nowMs: number;
+  onAskAgent?: (request: string) => void;
+  onOpenTab?: (tab: InsightsTab) => void;
+}) {
+  const t = useTranslations('ontologyPages.insights.brief');
+  const appRow = rows.some((row) => row.kind === 'app-only');
+  const leaving = useLeavingRows(rows);
+  return (
+    <ol
+      data-testid="brief-lines"
+      className="flex flex-col divide-y divide-[color:var(--color-divider)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-[var(--card-pad)]"
+    >
+      {withLeaving(rows, leaving).map(({ row, leaving: isLeaving }) => {
+        if (isLeaving) {
+          return <LeavingRow key={`leaving-${rowKey(row)}`} label={leavingLabel(row, t)} />;
+        }
+        if (row.kind === 'line') {
+          return (
+            <BriefLineRow
+              key={row.line.id}
+              line={row.line}
+              core={row.core}
+              availability={row.availability}
+              appRowPresent={appRow}
+              details={details.get(row.line.id) ?? EMPTY_DETAILS}
+              nowMs={nowMs}
+              onAskAgent={onAskAgent}
+              onOpenTab={onOpenTab}
+            />
+          );
+        }
+        if (row.kind === 'status') {
+          const sentence =
+            row.status === 'quiet'
+              ? t('quiet')
+              : row.status === 'no-data'
+                ? t(`empty.${row.core}`)
+                : row.status === 'no-source'
+                  ? t(row.core === 'ontology' ? 'evidenceNoSource' : 'noSource')
+                  : t(row.core === 'ontology' && row.status === 'unreadable' ? 'evidenceUnreadable' : row.status);
+          const door = row.status === 'no-data' || row.status === 'no-source';
+          return (
+            <li key={`status-${row.core}`} className={ROW} data-testid={`brief-core-${row.status === 'quiet' ? 'quiet' : row.status === 'no-data' ? 'empty' : row.status}-${row.core}`} data-brief-core={row.core}>
+              {/* A status row counts nothing, so it wears no state mark: the dash means "happened"
+                  and a row saying "nothing here yet" is not an event (design-infoviz, 2026-09-23). */}
+              <span aria-hidden="true" className={MARK_SLOT} />
+              <span className={CORE_LABEL}>{t(`core.${row.core}`)}</span>
+              <span className="min-w-0 flex-1 break-keep text-[color:var(--color-text-tertiary)]">{sentence}</span>
+              {door ? (
+                <DestinationLink href={CORE_NEXT_HREF[row.core]} className={LINE_LINK} onOpenTab={onOpenTab}>
+                  {t(`emptyAction.${row.core}`)}
+                </DestinationLink>
+              ) : null}
+            </li>
+          );
+        }
+        return (
+          <li key="app-only" className={ROW} data-testid="brief-app-only" data-brief-core={row.cores.join(' ')}>
+            <span aria-hidden="true" className={MARK_SLOT}><span className={STATE_MARK.unknown} /></span>
+            <span className={CORE_LABEL}>{row.cores.map((key) => t(`core.${key}`)).join(t('coreJoin'))}</span>
+            <span className="min-w-0 flex-1 break-keep text-[color:var(--color-text-tertiary)]">{t('appOnly')}</span>
             <DestinationLink href="/download/" className={LINE_LINK} onOpenTab={onOpenTab}>
               {t('getApp')}
             </DestinationLink>
           </li>
-        ) : null}
-        {core.availability === 'no-data' ? (
-          <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-empty-${core.core}`}>
-            <span className="min-w-0">{t(`empty.${core.core}`)}</span>
-            <DestinationLink href={CORE_NEXT_HREF[core.core]} className={LINE_LINK} onOpenTab={onOpenTab}>
-              {t(`emptyAction.${core.core}`)}
-            </DestinationLink>
-          </li>
-        ) : null}
-        {core.availability === 'measured' && lines.length === 0 ? (
-          <li className="text-body text-[color:var(--color-text-tertiary)]">{t('quiet')}</li>
-        ) : null}
-        {lines.map((line) => (
-          <BriefLineRow key={line.id} line={line} availability={core.availability} details={details.get(line.id) ?? EMPTY_DETAILS} nowMs={nowMs} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
-        ))}
-      </ul>
-    </CensusTile>
+        );
+      })}
+    </ol>
   );
 }
+
+function rowKey(row: BriefRow): string {
+  if (row.kind === 'line') return row.line.id;
+  if (row.kind === 'status') return `status-${row.core}`;
+  return 'app-only';
+}
+
+function leavingLabel(row: BriefRow, t: (key: string, values?: Record<string, number>) => string): { core: string; sentence: string } {
+  if (row.kind === 'line') return { core: t(`core.${row.core}`), sentence: t(`line.${row.line.id}`, { count: row.line.count }) };
+  if (row.kind === 'status') return { core: t(`core.${row.core}`), sentence: '' };
+  return { core: '', sentence: '' };
+}
+
+/**
+ * Rows that were in the list a moment ago and are not now, with the index they stood at.
+ *
+ * "Seen up to here" moves the anchor, and every line counting what happened since falls to
+ * zero and leaves the list. Until 2026-09-23 they vanished in one frame and the walkthrough
+ * found a reader could not tell the press had done anything but change a 12px eyebrow. Only
+ * line rows fold, and only for one settle window; a status row that swaps for a line is a
+ * different fact, not a departure.
+ */
+function useLeavingRows(rows: readonly BriefRow[]): ReadonlyArray<{ row: BriefRow; index: number }> {
+  const keys = rows.map(rowKey).join('|');
+  const previousRef = useRef<{ keys: string; rows: readonly BriefRow[] }>({ keys, rows });
+  const [leaving, setLeaving] = useState<ReadonlyArray<{ row: BriefRow; index: number }>>([]);
+  // Reduced motion gets the one-frame change, not a held copy: measured 2026-09-23, the held row
+  // stood at full height for 200ms and then vanished, a pause with a cut at the end.
+  const reduce = usePrefersReducedMotion();
+  // A layout effect, so the copy lands in the same painted frame the line left: with `useEffect`
+  // the removal painted first and the rows below jumped 44px up and back (design-motion,
+  // measured 2026-09-23: the line gone at 29ms, the copy back at 52ms).
+  useLayoutEffect(() => {
+    const previous = previousRef.current;
+    previousRef.current = { keys, rows };
+    if (previous.keys === keys || reduce) return undefined;
+    const now = new Set(keys.split('|'));
+    const gone = previous.rows
+      .map((row, index) => ({ row, index }))
+      .filter((entry) => entry.row.kind === 'line' && !now.has(rowKey(entry.row)));
+    if (gone.length === 0) return undefined;
+    setLeaving(gone);
+    const timer = window.setTimeout(() => setLeaving([]), LEAVING_WINDOW_MS);
+    return () => window.clearTimeout(timer);
+    // `rows` is read through the key string; a new array with the same keys is the same list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keys, reduce]);
+  return leaving;
+}
+
+/**
+ * `RowDisclosure` closes on `--motion-base` (180ms); the copy leaves one frame after. A 600ms
+ * window left the row's 1px divider standing for 450ms after the fold ended (measured
+ * 2026-09-23: height 44 to 1px by 174ms, the 1px stub until 650ms).
+ */
+const LEAVING_WINDOW_MS = 220;
+
+function withLeaving(rows: readonly BriefRow[], leaving: ReadonlyArray<{ row: BriefRow; index: number }>): Array<{ row: BriefRow; leaving: boolean }> {
+  const out: Array<{ row: BriefRow; leaving: boolean }> = rows.map((row) => ({ row, leaving: false }));
+  for (const entry of [...leaving].sort((a, b) => a.index - b.index)) {
+    out.splice(Math.min(entry.index, out.length), 0, { row: entry.row, leaving: true });
+  }
+  return out;
+}
+
+/** A departing line: drawn open for one frame, then folded by the shared row disclosure. */
+function LeavingRow({ label }: { label: { core: string; sentence: string } }) {
+  const [open, setOpen] = useState(true);
+  const id = useId();
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setOpen(false));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  return (
+    <li aria-hidden="true" data-brief-leaving="" className="text-body">
+      <RowDisclosure open={open} id={id}>
+        <div className="flex flex-wrap items-start gap-x-3 gap-y-1 py-3 text-[color:var(--color-text-tertiary)] sm:flex-nowrap">
+          <span className={MARK_SLOT}><span className={STATE_MARK.current} /></span>
+          <span className={CORE_LABEL}>{label.core}</span>
+          <span className="min-w-0 flex-1 break-keep">{label.sentence}</span>
+          {/* The door's height without the door, so the copy starts as tall as the line it
+              replaces: without it the rows below stepped up 8px in the first frame. */}
+          <span className="min-h-7 w-0 shrink-0" />
+        </div>
+      </RowDisclosure>
+    </li>
+  );
+}
+
+/** One row of the list: mark, core, sentence, door. `flex-wrap` lets the core name sit above at 390. */
+const ROW = 'flex flex-wrap items-start gap-x-3 gap-y-1 py-3 text-body sm:flex-nowrap';
+/** A fixed column so every sentence starts on one line down the list, whatever the core's name. */
+const CORE_LABEL = 'shrink-0 break-keep text-label leading-body text-[color:var(--color-text-tertiary)] sm:w-24';
+/** A fixed slot for the state mark, so a ring, a dot and a dash all leave the sentence on one line. */
+const MARK_SLOT = 'flex w-2.5 shrink-0 justify-center';
 
 const EMPTY_DETAILS: readonly BriefLineDetail[] = [];
 const DETAIL_ROWS = 5;
@@ -303,12 +478,16 @@ function destinationLabel(href: string, t: (key: string) => string): string {
  * panel back once before. Measured in the installed app at 1040x720 on this repository's own
  * vault, 2026-09-20: "50 concepts whose code could not be checked · Get the app".
  */
-function lineHref(lineId: string, availability: BriefCore['availability']): string | undefined {
+function lineHref(lineId: string, availability: BriefCore['availability'], appRowPresent = false): string | undefined {
   if (lineId === 'ontology-evidence-unchecked' && availability !== 'app-only') return '/topology/';
-  return LINE_HREF[lineId];
+  const href = LINE_HREF[lineId];
+  // The app row at the foot of the list carries the one "Get the app"; a second copy on this
+  // line was the duplicate the 2026-09-19 decision forbids (measured 3x on one screen).
+  if (href === '/download/' && appRowPresent) return undefined;
+  return href;
 }
 
-const LINE_LINK = 'atlas-touch-floor shrink-0 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]';
+const LINE_LINK = 'atlas-touch-floor atlas-touch-floor-wide shrink-0 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]';
 
 /**
  * A destination link that knows when it is not leaving.
@@ -367,13 +546,13 @@ function DestinationLink({
  * rests on. A count whose only destination is another screen counting something else is
  * the falsifier this decision wrote down for itself (PO evidence seat, 2026-09-19).
  */
-function BriefLineRow({ line, availability, details, nowMs, onAskAgent, onOpenTab }: { line: BriefLine; availability: BriefCore['availability']; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
+function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs, onAskAgent, onOpenTab }: { line: BriefLine; core: BriefCore['core']; availability: BriefCore['availability']; appRowPresent: boolean; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
   const [open, setOpen] = useState(false);
   const detailId = useId();
   const t = useTranslations('ontologyPages.insights.brief');
   const format = useFormatter();
   const locale = useLocale();
-  const href = lineHref(line.id, availability);
+  const href = lineHref(line.id, availability, appRowPresent);
   const sentence = t(`line.${line.id}`, { count: line.count });
   const shown = details.slice(0, DETAIL_ROWS);
   /*
@@ -383,9 +562,10 @@ function BriefLineRow({ line, availability, details, nowMs, onAskAgent, onOpenTa
    */
   const handoff = line.id === 'ontology-evidence-moved' ? buildDriftHandoff({ rows: details, locale }) : null;
   return (
-    <li className="text-body text-[color:var(--color-text-primary)]" data-brief-line={line.id} data-brief-state={line.state}>
-      <div className="flex items-start gap-2.5">
-        <span aria-hidden="true" className={cn('shrink-0', STATE_MARK[line.state])} />
+    <li className="py-3 text-body text-[color:var(--color-text-primary)]" data-brief-line={line.id} data-brief-state={line.state} data-brief-core={core}>
+      <div className="flex flex-wrap items-start gap-x-3 gap-y-1 sm:flex-nowrap">
+        <span aria-hidden="true" className={MARK_SLOT}><span className={STATE_MARK[line.state]} /></span>
+        <span className={CORE_LABEL}>{t(`core.${core}`)}</span>
         {shown.length > 0 ? (
           <div className="min-w-0 flex-1">
             <button

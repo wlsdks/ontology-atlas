@@ -1154,6 +1154,8 @@ export function OntologyInsightsPage() {
     recentThisWeek: (count: number) => t("recentThisWeek", { count }),
     recentBarsAria: (weeks: number, total: number) =>
       t("recentBarsAria", { weeks, total }),
+    recentBarsStart: (weeks: number) => t("recentBarsStart", { weeks }),
+    recentBarsEnd: t("recentBarsEnd"),
   };
   const overviewLabels = {
     kindCensusTitle: t("kindCensusTitle"),

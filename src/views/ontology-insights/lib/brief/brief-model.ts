@@ -13,7 +13,7 @@
  */
 export type BriefState = 'current' | 'stale' | 'unknown';
 
-type BriefCoreKey = 'ontology' | 'wiki' | 'harness' | 'agent';
+export type BriefCoreKey = 'ontology' | 'wiki' | 'harness' | 'agent';
 
 /**
  * Why a core's numbers are what they are. `measured` means the counts are real; `app-only`
@@ -26,7 +26,7 @@ type BriefCoreKey = 'ontology' | 'wiki' | 'harness' | 'agent';
  * those last two used to read "measured in the app only", which told a person standing in
  * the app to go and get the app (measured on this repository's own vault, 2026-09-19).
  */
-type BriefAvailability = 'measured' | 'app-only' | 'no-data' | 'reading' | 'unreadable' | 'no-source';
+export type BriefAvailability = 'measured' | 'app-only' | 'no-data' | 'reading' | 'unreadable' | 'no-source';
 
 export interface BriefLine {
   /** Message id under `brief.line.*`. Stable; screens and tests key on it. */

@@ -101,11 +101,17 @@ export function OverviewTab({
               );
             })}
           </div>
-          <div className="mt-3 flex flex-1 flex-col justify-evenly gap-1">
+          {/*
+            * Rows pack from the top at the domain card's row pitch (48px) instead of spreading
+            * evenly. Four kinds stretched to the domain card's nine rows stood about 100px apart at
+            * 1512x900, so the card read as four islands; packed, a row here sits level with a row
+            * beside it (design sweep, 2026-09-23).
+            */}
+          <div className="mt-3 flex flex-col">
             {kindRows.map((row, i) => {
               const width = kindMax > 0 ? Math.max(2, Math.round((row.count / kindMax) * 100)) : 0;
               return (
-                <div key={row.kind} className="flex items-center gap-3 py-0.5">
+                <div key={row.kind} className="flex min-h-12 items-center gap-3">
                   <span className="flex w-[var(--insights-row-label-w)] flex-none items-center gap-2 text-body-lg text-[color:var(--color-text-secondary)]">
                     <OntologyMapKindGlyph kind={row.kind} size={16} />
                     {kindLabel(row.kind)}
