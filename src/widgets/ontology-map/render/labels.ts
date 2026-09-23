@@ -116,6 +116,10 @@ export interface LabelTokens {
  */
 export const LABEL_HALO_PX = 2;
 
+/** Clearance of the project name's ground plate beyond its glyph box, in CSS px. */
+const PROJECT_PLATE_PAD_X = 6;
+const PROJECT_PLATE_PAD_Y = 2;
+
 /**
  * Font string per kind — single source shared by `draw` and
  * `measureLabelWidth` so measured bboxes match painted glyphs.
@@ -558,6 +562,22 @@ export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, token
    * its label faded would leave a legible hole in the shape of a word nobody can read.
    */
   const fill = ctx.fillStyle;
+  if (kind === "project") {
+    /*
+     * The project sits at the centre with relations leaving in every direction, so the one
+     * running straight down to the domain below always crosses its own name. The glyph halo
+     * stops a line at the letterform but not in the gap between words or strokes: measured on
+     * the installed app 2026-09-24 at 1512x949, a vertical relation read through the middle of
+     * the dogfood project's two-word name. The anchor's name alone gets a ground plate the size
+     * of its box, in the halo's colour and alpha; smaller names keep the glyph halo, because a
+     * plate on every name would cut relations short across a dense map.
+     */
+    const width = measureLabelWidth(ctx, kind, text, fontScale);
+    const size = scaledLabelFontSize(kind, fontScale);
+    ctx.fillStyle = tokens.labelHalo;
+    ctx.fillRect(x - width / 2 - PROJECT_PLATE_PAD_X, ty - size - PROJECT_PLATE_PAD_Y, width + PROJECT_PLATE_PAD_X * 2, size * 1.25 + PROJECT_PLATE_PAD_Y * 2);
+    ctx.fillStyle = fill;
+  }
   ctx.strokeStyle = tokens.labelHalo;
   ctx.lineWidth = LABEL_HALO_PX * 2;
   ctx.lineJoin = "round";
