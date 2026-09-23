@@ -584,6 +584,56 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
   const TARGETS = { 'elements/helper': 'src/lib/helper.ts' };
   const resolveTargetPath = (ref) => TARGETS[ref] ?? null;
 
+  it('scans source imports once for many dependencies and releases the parsed source after each call', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const dependencies = Array.from({ length: 12 }, (_, index) => `elements/dependency-${index}`);
+    const source = dependencies.slice(0, -1)
+      .map((ref) => `import './lib/${ref.split('/').pop()}';`).join('\n')
+      + '\nconst note = "dependency-11 is only a word";\n';
+    writeFileSync(join(root, 'src', 'consumer.ts'), source);
+    const input = {
+      slug: 'capabilities/consumer',
+      frontmatter: { path: 'src/consumer.ts', dependencies },
+      repoRoot: root,
+      resolveTargetPath: (ref) => `src/lib/${ref.split('/').pop()}.ts`,
+    };
+    const matchAll = String.prototype.matchAll;
+    let scans = 0;
+    t.mock.method(String.prototype, 'matchAll', function (pattern) {
+      if (String(this) === source) scans += 1;
+      return matchAll.call(this, pattern);
+    });
+    assert.deepEqual(dependencyWitnessFinding(input).map((row) => row.key), [dependencies.at(-1)]);
+    assert.ok(scans > 0, 'the fixture must parse imports, not take the literal-path shortcut');
+    assert.ok(scans < dependencies.length * 2,
+      `${scans} source scans for ${dependencies.length} dependencies; reuse the parsed imports within one call`);
+    const firstScans = scans;
+    assert.deepEqual(dependencyWitnessFinding(input).map((row) => row.key), [dependencies.at(-1)]);
+    assert.ok(scans > firstScans, 'source text must not be retained in a process-wide cache');
+  });
+
+  it('keeps source and rationale imports distinct and rereads changed files on the next call', (t) => {
+    const root = repoWithSources();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const input = {
+      slug: 'capabilities/consumer',
+      frontmatter: {
+        path: 'src/consumer.ts',
+        dependencies: ['elements/helper', 'elements/second', 'elements/absent'],
+        relation_notes: { 'elements/second': 'Wired by src/lib/barrel.ts:1.' },
+      },
+      repoRoot: root,
+      resolveTargetPath: (ref) => `src/lib/${ref.split('/').pop()}.ts`,
+    };
+    writeFileSync(join(root, 'src', 'lib', 'barrel.ts'), "export { second } from './second';\n");
+    assert.deepEqual(dependencyWitnessFinding(input).map((row) => row.key), ['elements/absent']);
+    writeFileSync(join(root, 'src', 'lib', 'barrel.ts'), 'export const second = "a bare word";\n');
+    assert.deepEqual(dependencyWitnessFinding(input).map((row) => row.key), ['elements/second', 'elements/absent']);
+    writeFileSync(join(root, 'src', 'consumer.ts'), "import './lib/second';\n");
+    assert.deepEqual(dependencyWitnessFinding(input).map((row) => row.key), ['elements/helper', 'elements/absent']);
+  });
+
   it('fires on an edge this write added, naming both files and both repairs', (t) => {
     const root = repoWithSources();
     t.after(() => rmSync(root, { recursive: true, force: true }));

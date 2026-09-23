@@ -603,15 +603,20 @@ function moduleSpecifiers(text) {
  * confidence the decision's falsifier names. Case-sensitive on purpose:
  * `Vault` and `vault` are different modules.
  */
-function textWitnesses(text, targetPath, witnessNames) {
+function textWitnesses(text, targetPath, witnessNames, moduleNamesByText) {
   if (String(text).includes(targetPath)) return true;
   const names = witnessNames.filter(Boolean);
   if (names.length === 0) return false;
-  return moduleSpecifiers(text).some((specifier) =>
-    specifier
-      .split(/::|[/\\{},\s]+|\.(?![A-Za-z0-9]{1,10}$)/)
-      .some((segment) => names.includes(segment.replace(/\.[^.]+$/, ''))),
-  );
+  let moduleNames = moduleNamesByText.get(text);
+  if (!moduleNames) {
+    moduleNames = new Set(moduleSpecifiers(text).flatMap((specifier) =>
+      specifier
+        .split(/::|[/\\{},\s]+|\.(?![A-Za-z0-9]{1,10}$)/)
+        .map((segment) => segment.replace(/\.[^.]+$/, '')),
+    ));
+    moduleNamesByText.set(text, moduleNames);
+  }
+  return names.some((name) => moduleNames.has(name));
 }
 
 /**
@@ -729,6 +734,9 @@ export function dependencyWitnessFinding({
   const previous = previousFrontmatter ? declaredDependencies(previousFrontmatter) : new Set();
   /** One read per file however many edges cite it; `null` marks unreadable. */
   const textCache = new Map([[source.path, sourceText]]);
+  // Several dependencies often share the same source or rationale file. Parse
+  // its imports once for this invocation; later calls still read current bytes.
+  const moduleNamesByText = new Map();
   /**
    * Where a note path is looked for: as written from the repository root,
    * then from each ancestor folder of the citing file, nearest first. A
@@ -776,7 +784,7 @@ export function dependencyWitnessFinding({
       const text = readCandidate(token);
       if (typeof text === 'string') candidates.push(text);
     }
-    if (candidates.some((text) => textWitnesses(text, resolved.path, witnessNames))) continue;
+    if (candidates.some((text) => textWitnesses(text, resolved.path, witnessNames, moduleNamesByText))) continue;
     findings.push({
       code: 'dependency-unwitnessed',
       slug,
