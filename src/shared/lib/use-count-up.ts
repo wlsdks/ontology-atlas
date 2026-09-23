@@ -27,7 +27,17 @@ const MIN_COUNTABLE_TARGET = 3;
  * count does not shake the layout. Under reduced motion the final value appears
  * immediately.
  */
-export function useCountUp(target: number, durationMs = 400): number {
+export function useCountUp(
+  target: number,
+  durationMs = 400,
+  /**
+   * Also count a later change instead of snapping to it. Off by default: most callers swap
+   * one folder's numbers for another's and must not animate across that. The brief's band
+   * turns it on, because its numbers fall when the reader marks a visit and that fall is the
+   * answer to the press (owner direction C, 2026-09-23).
+   */
+  options: { animateChanges?: boolean } = {},
+): number {
   const reduce = usePrefersReducedMotion();
   // useSyncExternalStore keeps the server and the hydration render on the exact
   // target, then flips once React owns the client. The animated 0 therefore never
@@ -79,13 +89,35 @@ export function useCountUp(target: number, durationMs = 400): number {
 
   // After mount, keep the displayed value synced to later target changes (skip
   // the initial run so it never clobbers the intro animation).
+  const valueRef = useRef(0);
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+  const animateChanges = options.animateChanges === true;
+
   useEffect(() => {
     if (!synced.current) {
       synced.current = true;
       return;
     }
-    setValue(target);
-  }, [target]);
+    if (!animateChanges || !canAnimate || !introDone.current) {
+      setValue(target);
+      return;
+    }
+    const from = valueRef.current;
+    if (from === target) return;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setValue(Math.round(from + (target - from) * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+      else setValue(target);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, animateChanges, canAnimate, durationMs]);
 
   return canAnimate ? value : target;
 }

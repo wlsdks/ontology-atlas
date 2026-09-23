@@ -145,4 +145,46 @@ describe("useCountUp — insights count-up (#3)", () => {
       vi.unstubAllGlobals();
     }
   });
+
+  /*
+   * The brief's band answers "Seen up to here" by letting its numbers fall (owner direction C,
+   * 2026-09-23). Every other caller keeps the snap: they swap one folder's numbers for another's,
+   * and counting across that swap would animate a meaningless difference.
+   */
+  it("animates a later change only when asked, and snaps otherwise", () => {
+    mockReducedMotion(false);
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    vi.stubGlobal("cancelAnimationFrame", () => {});
+    let clock = 0;
+    const nowSpy = vi.spyOn(performance, "now").mockImplementation(() => clock);
+    const settle = (result: { current: number }) => {
+      clock += 1_000;
+      while (frames.length > 0) act(() => frames.shift()!(clock));
+      return result.current;
+    };
+    try {
+      const animated = renderHook(({ target }) => useCountUp(target, 400, { animateChanges: true }), {
+        initialProps: { target: 20 },
+      });
+      expect(settle(animated.result)).toBe(20);
+      animated.rerender({ target: 0 });
+      clock += 200;
+      act(() => frames.shift()!(clock));
+      expect(animated.result.current, "a marked visit should fall, not jump").toBeGreaterThan(0);
+      expect(animated.result.current).toBeLessThan(20);
+      expect(settle(animated.result)).toBe(0);
+
+      const snapped = renderHook(({ target }) => useCountUp(target), { initialProps: { target: 20 } });
+      expect(settle(snapped.result)).toBe(20);
+      snapped.rerender({ target: 0 });
+      expect(snapped.result.current).toBe(0);
+    } finally {
+      nowSpy.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
 });

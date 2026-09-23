@@ -1788,7 +1788,15 @@
         },
         "markSeenUndo": "되돌리기",
         "evidenceUnreadable": "연결된 코드를 확인하지 못했어요. 폴더를 다시 열면 다시 시도해요.",
-        "evidenceNoSource": "이 폴더에 연결된 코드 저장소가 없어요. 지도에서 코드 폴더를 연결하세요."
+        "evidenceNoSource": "이 폴더에 연결된 코드 저장소가 없어요. 지도에서 코드 폴더를 연결하세요.",
+        "bandState": {
+          "app-only": "현재·낡음은 앱에서 재요",
+          "no-data": "아직 없음",
+          "no-source": "저장소 연결 전",
+          "reading": "읽는 중",
+          "unreadable": "읽지 못함"
+        },
+        "coreJoin": " · "
       },
       "tabCountTitle": {
         "do-next": "고칠 항목 수",
@@ -1836,6 +1844,8 @@
       "statusAdvisory": "권고",
       "recentWindowTitle": "최근 {weeks}주",
       "recentThisWeek": "이번 주 갱신일 {count}건",
+      "recentBarsStart": "{weeks}주 전",
+      "recentBarsEnd": "이번 주",
       "recentBarsAria": "파일 갱신일 기준으로 최근 {weeks}주에 {total}건, 주마다 막대 하나. 갱신일은 파일이 디스크에 마지막으로 쓰인 때라, 내려받기나 브랜치 전환도 갱신일을 옮겨요",
       "heroDensityGloss": "개념 1개당 평균 연결 {ratio}개",
       "heroMembershipLabel": "도메인에 담김",

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import ko from "../../../../../messages/ko.json";
@@ -99,25 +99,29 @@ describe("BriefTab", () => {
     expect(screen.getByText("2 일 전 본 뒤로")).toBeInTheDocument();
   });
 
-  it("draws only nonzero lines, each with its state mark and a way to open it", () => {
+  it("draws only nonzero lines in one list, stale before unknown before what happened", () => {
     mount(brief());
-    const ontology = screen.getByTestId("brief-core-ontology");
-    const lines = ontology.querySelectorAll("[data-brief-line]");
+    const list = screen.getByTestId("brief-lines");
+    const lines = list.querySelectorAll("[data-brief-line]");
     expect([...lines].map((line) => line.getAttribute("data-brief-line"))).toEqual([
       "ontology-evidence-moved",
       "ontology-agent-unreviewed",
       "ontology-repair",
+      "agent-calls-since",
     ]);
     expect(lines[0]).toHaveAttribute("data-brief-state", "stale");
-    expect(ontology.querySelector('a[href="/ontology/insights/?tab=do-next"]')).not.toBeNull();
+    expect(lines[0]).toHaveAttribute("data-brief-core", "ontology");
+    // Every row names its core, so a reader never looks back at the band to place it.
+    expect(lines[3]).toHaveTextContent("에이전트");
+    expect(list.querySelector('a[href="/ontology/insights/?tab=do-next"]')).not.toBeNull();
     fireEvent.click(screen.getByTestId("brief-line-open-ontology-evidence-moved"));
     // The stale line names what it counts: concept, the file, and both dates — never a bare number.
-    const rows = ontology.querySelectorAll('[data-testid="brief-line-rows-ontology-evidence-moved"] li');
+    const rows = list.querySelectorAll('[data-testid="brief-line-rows-ontology-evidence-moved"] li');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent("Payments");
     expect(rows[0]).toHaveTextContent("src/pay.ts");
-    expect(ontology.querySelector('a[href="/topology/?p=capabilities%2Fpay"]')).not.toBeNull();
-    expect(screen.getByTestId("brief-core-wiki").querySelectorAll("[data-brief-line]")).toHaveLength(0);
+    expect(list.querySelector('a[href="/topology/?p=capabilities%2Fpay"]')).not.toBeNull();
+    expect(list.querySelectorAll('[data-brief-line][data-brief-core="wiki"]')).toHaveLength(0);
   });
 
   it("makes exiting evidence inert and reopens the same rows on interruption", () => {
@@ -140,42 +144,35 @@ describe("BriefTab", () => {
 
   it("says where a core cannot be measured instead of showing zeros as fine", () => {
     mount(brief());
-    const harness = screen.getByTestId("brief-core-harness");
-    expect(harness).toHaveTextContent("앱에서만 잴 수 있어요");
-    expect(harness.querySelectorAll("[data-brief-line]")).toHaveLength(0);
-    const wiki = screen.getByTestId("brief-core-wiki");
+    // The band says it in words where the counts would be, never as three dashes.
+    expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("앱에서 재요");
+    expect(screen.getByTestId("brief-core-state-wiki")).toHaveTextContent("아직 없음");
+    // The list says why and where to go, one row per core.
+    const wiki = screen.getByTestId("brief-core-empty-wiki");
     expect(wiki).toHaveTextContent("이 폴더엔 아직 위키 페이지가 없어요");
-    // A core with nothing to count still owes a next step rather than a dead end.
     expect(wiki.querySelector('a[href="/library/"]')).not.toBeNull();
-    expect(harness.querySelector('a[href="/download/"]')).not.toBeNull();
+    const appOnly = screen.getByTestId("brief-app-only");
+    expect(appOnly).toHaveTextContent("앱에서만 잴 수 있어요");
+    expect(appOnly).toHaveTextContent("지침");
+    expect(appOnly.querySelector('a[href="/download/"]')).not.toBeNull();
   });
 
-  it("gives every card the same three bands, so a core nobody could count still starts where its siblings do", () => {
-    /*
-     * The row is four cards wide and the harness cannot be counted in a browser. While that card
-     * printed no magnitude row its state columns and its sentence rose into the number's line —
-     * 48/79 against the siblings' 49/80 at 1512x900 and 1920x1080 (design-audit 2026-09-20). The
-     * structural invariant behind that geometry: label, magnitude, columns, lines — four children,
-     * in that order, on every card.
-     */
-    mount(brief());
-    for (const key of ["ontology", "wiki", "harness", "agent"]) {
-      const card = screen.getByTestId(`brief-core-${key}`);
-      expect([...card.children].map((child) => child.tagName)).toEqual(["DIV", "P", "DIV", "UL"]);
-    }
-    const absent = screen.getByTestId("brief-core-headline-absent");
-    expect(screen.getByTestId("brief-core-harness")).toContainElement(absent);
-    // The dash is the columns' own mark for a value this session cannot state, and it is alignment
-    // rather than a fact, so it stays out of the accessibility tree.
-    expect(absent).toHaveAttribute("aria-hidden");
+  /*
+   * The hosted sample drew eight dashes, the app-only sentence twice and "Get the app" three
+   * times on one screen (2026-09-23), against a decision that says nothing is listed twice.
+   */
+  it("prints no placeholder dash in the band and offers the app exactly once", () => {
+    const unchecked = { id: "ontology-evidence-unchecked", count: 125, state: "unknown" } as const;
+    mount(brief({ ontology: core({ core: "ontology", availability: "app-only", headline: 125, current: null, stale: null, unknown: 125, lines: [unchecked] }) }));
+    expect(screen.getByTestId("brief-band")).not.toHaveTextContent("–");
+    expect(document.querySelectorAll('a[href="/download/"]')).toHaveLength(1);
+    expect(screen.getAllByText(/앱에서만 잴 수 있어요/)).toHaveLength(1);
+    expect(screen.getByTestId("brief-app-only")).toHaveTextContent("개념 · 지침");
   });
 
-  it("keeps the four bands when a measured core has no magnitude to print", () => {
-    // The other way into an empty magnitude row: the input was read and still yields no size.
+  it("gives a measured core with nothing new one quiet row, not an empty card", () => {
     mount(brief({ agent: core({ core: "agent", headline: null, lines: [] }) }));
-    const card = screen.getByTestId("brief-core-agent");
-    expect([...card.children].map((child) => child.tagName)).toEqual(["DIV", "P", "DIV", "UL"]);
-    expect(card).toContainElement(screen.getByTestId("brief-core-unmeasured"));
+    expect(screen.getByTestId("brief-core-quiet-agent")).toHaveTextContent("그 뒤로 새로 알아야 할 것이 없어요");
   });
 
   it("names what changed since, newest first, and counts the rest", () => {
@@ -273,6 +270,41 @@ describe("a line that opens another question on this same board", () => {
   });
 });
 
+describe("a marked visit folds what it cleared", () => {
+  /*
+   * Direction C (owner, 2026-09-23): pressing "Seen up to here" re-anchors the list, and the lines
+   * counting what happened since leave it. They fold instead of vanishing, so the press has an
+   * answer a reader can see; the folding copy is out of the accessibility tree.
+   */
+  it("keeps a departing line for one fold, hidden from assistive technology, then drops it", async () => {
+    vi.useFakeTimers();
+    try {
+      const first = brief();
+      const { rerender } = render(
+        <NextIntlClientProvider locale="ko" messages={ko}>
+          <BriefTab brief={first} />
+        </NextIntlClientProvider>,
+      );
+      expect(document.querySelector('[data-brief-line="agent-calls-since"]')).not.toBeNull();
+      rerender(
+        <NextIntlClientProvider locale="ko" messages={ko}>
+          <BriefTab brief={{ ...first, agent: core({ core: "agent", headline: 0, lines: [] }) }} />
+        </NextIntlClientProvider>,
+      );
+      expect(document.querySelector('[data-brief-line="agent-calls-since"]')).toBeNull();
+      const leaving = document.querySelector("[data-brief-leaving]");
+      expect(leaving).not.toBeNull();
+      expect(leaving).toHaveAttribute("aria-hidden", "true");
+      await act(async () => {
+        vi.advanceTimersByTime(1_000);
+      });
+      expect(document.querySelector("[data-brief-leaving]")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("marking the visit", () => {
   it("says so, in a live region, and keeps the button usable", () => {
     const markSeen = vi.fn();
@@ -339,7 +371,7 @@ describe("a line that cannot be checked", () => {
     /*
      * Measured in the installed app at 1040x720 on this repository's own vault: "50 concepts
      * whose code could not be checked · Get the app", inside the app. In a browser the same line
-     * is honest, because a browser cannot read the code beside a folder at all.
+     * is honest, and since 2026-09-23 its door is the one app row at the foot of the list.
      */
     const line = { id: "ontology-evidence-unchecked", count: 4, state: "unknown" } as const;
 
@@ -348,18 +380,17 @@ describe("a line that cannot be checked", () => {
         <BriefTab brief={brief({ ontology: core({ core: "ontology", availability: "app-only", headline: 9, lines: [line] }) })} />
       </NextIntlClientProvider>,
     );
-    const inBrowser = browser.container.querySelector('[data-brief-line="ontology-evidence-unchecked"] a');
-    expect(inBrowser?.getAttribute("href")).toContain("/download/");
+    expect(browser.container.querySelector('[data-brief-line="ontology-evidence-unchecked"] a')).toBeNull();
+    expect(browser.container.querySelectorAll('a[href="/download/"]')).toHaveLength(1);
     browser.unmount();
 
     const app = render(
       <NextIntlClientProvider locale="ko" messages={ko}>
-        <BriefTab brief={brief({ ontology: core({ core: "ontology", availability, headline: 9, lines: [line] }) })} />
+        <BriefTab brief={brief({ ontology: core({ core: "ontology", availability, headline: 9, lines: [line] }), harness: core({ core: "harness", availability: "no-data", headline: 0 }) })} />
       </NextIntlClientProvider>,
     );
     const inApp = app.container.querySelector('[data-brief-line="ontology-evidence-unchecked"] a');
-    expect(app.container.querySelector('[data-testid="brief-core-ontology"] a[href="/download/"]')).toBeNull();
-    expect(inApp?.getAttribute("href"), "앱 안에서 앱을 받으라고 한다").not.toContain("/download/");
+    expect(app.container.querySelector('a[href="/download/"]'), "앱 안에서 앱을 받으라고 한다").toBeNull();
     expect(inApp?.getAttribute("href")).toContain("/topology/");
   });
 });
