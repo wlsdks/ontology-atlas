@@ -298,7 +298,7 @@ describe("label halo", () => {
     const state: Record<string, unknown> = {};
     const ctx = new Proxy({} as Record<string, unknown>, {
       get(_t, prop: string) {
-        if (prop === "strokeText" || prop === "fillText" || prop === "measureText") {
+        if (prop === "strokeText" || prop === "fillText" || prop === "measureText" || prop === "fillRect") {
           return (...args: unknown[]) => {
             calls.push({ op: prop, args: [...args, { ...state }] });
             return { width: 40 } as TextMetrics;
@@ -341,6 +341,24 @@ describe("label halo", () => {
     // Relations are drawn at lineWidth 1; the halo is a half-width, so the stroke is twice it.
     expect(style.lineWidth).toBe(LABEL_HALO_PX * 2);
     expect(LABEL_HALO_PX * 2).toBeGreaterThan(1);
+  });
+
+  /*
+   * The project's name sits where a relation runs straight down from it; the glyph halo left
+   * the line visible between its two words (installed app, 2026-09-24). Only the anchor gets a
+   * plate, painted before the glyph and at the name's alpha; other names keep the halo alone.
+   */
+  it("lays a ground plate under the project name only, before its glyph", () => {
+    const { ctx, calls } = record();
+    draw(ctx, { kind: "project", text: "Ontology Atlas", screenX: 100, screenY: 100, screenRadius: 20 } as never, tokens);
+    const plate = calls.findIndex((c) => c.op === "fillRect");
+    const glyph = calls.findIndex((c) => c.op === "fillText");
+    expect(plate).toBeGreaterThan(-1);
+    expect(glyph).toBeGreaterThan(plate);
+    const plateStyle = calls[plate].args.at(-1) as Record<string, unknown>;
+    expect(plateStyle.fillStyle).toBe("#ground");
+    expect(plateStyle.globalAlpha).toBe((calls[glyph].args.at(-1) as Record<string, unknown>).globalAlpha);
+    expect(paint().some((c) => c.op === "fillRect")).toBe(false);
   });
 
   it("holds the halo at the name's own alpha, never above it", () => {
