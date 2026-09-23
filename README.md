@@ -270,6 +270,7 @@ to send, and review Jev's advisory answer. Atlas records a local metadata
 receipt and never accepts the answer as vault meaning automatically. The
 website shows a read-only Agents example and does not connect to Jev. See the
 [Jev evidence-check guide](docs/guide/external-judgment.md).
+The source-only example runs offline contract tests with `pnpm test:guide-examples`.
 
 ![The current MCP screen in the installed macOS app, with Share this folder open: how many connection files are ready and which file comes next, one connect button each for Claude Code, Codex, Cursor and Antigravity, the note that the server runs only while a conversation needs it, and the two later steps to restart the agent and confirm the connection](docs/assets/readme/mcp-connect.png)
 

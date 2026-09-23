@@ -214,6 +214,12 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests the offline guide-example gate for the external judgment probe', () => {
+    for (const path of ['examples/external-judgment/probe.mjs', 'examples/external-judgment/probe.test.mjs']) {
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:guide-examples'), path);
+    }
+  });
+
   it('suggests cross-package contracts for parser schema and validator drift', () => {
     const result = suggestFocusedChecks([
       'mcp/src/schema.mjs',

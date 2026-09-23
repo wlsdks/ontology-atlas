@@ -169,9 +169,10 @@ const RULES = [
   },
   {
     command: 'pnpm test:guide-examples',
-    reason: 'public guide ontology examples must satisfy the live UID schema',
+    reason: 'public guide ontology examples and the external judgment probe must satisfy their contracts',
     matches: [
       /^docs\/guide\/[^/]+\.md$/,
+      /^examples\/external-judgment\//,
       /^scripts\/check-guide-frontmatter-examples\.test\.mjs$/,
     ],
   },
