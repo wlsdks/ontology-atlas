@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-24",
+  "decision": "Reuse the selected project artifact only under the same fresh full-vault artifact and project scope",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "orient",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-24",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "7d99c63f-5548-43a2-ac5f-27d6d5be7a2e",
+  "recordedAt": "2026-09-23T15:44:29.215Z"
+}

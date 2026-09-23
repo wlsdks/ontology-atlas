@@ -25,13 +25,14 @@ test('graph read requests load every vault document once and observe edits on th
       writeFileSync(path, raw);
       utimesSync(path, 1, 1);
     }
-    writeFileSync(join(root, 'note.md'), 'An ordinary document without a graph kind.\n');
+    writeFileSync(join(root, 'note.md'), '---\ntitle: Note\nmalformed header\n---\nA non-node document.\n');
     const graphModule = new URL('./tools/graph.mjs', import.meta.url).href;
     const validationModule = new URL('./tools/validate-vault.mjs', import.meta.url).href;
     // An isolated process gives the server one explicit root. Count actual
     // descriptor opens rather than elapsed time or references to loader names.
     const script = `
       import fs from 'node:fs';
+      import crypto from 'node:crypto';
       import { syncBuiltinESMExports } from 'node:module';
       import { isAbsolute, relative, sep } from 'node:path';
       const root = process.env.OATLAS_VAULT;
@@ -45,6 +46,23 @@ test('graph read requests load every vault document once and observe edits on th
           }
         }
         return originalOpen.call(this, path, ...args);
+      };
+      const originalCreateHash = crypto.createHash;
+      let graphInputs = [];
+      crypto.createHash = function(...args) {
+        const hash = originalCreateHash(...args);
+        const originalUpdate = hash.update;
+        hash.update = function(data, ...options) {
+          if (typeof data === 'string' && data.startsWith('{')) {
+            try {
+              const value = JSON.parse(data);
+              if (Array.isArray(value.nodes) && Array.isArray(value.edges)
+                && Array.isArray(value.aliases) && Array.isArray(value.issues)) graphInputs.push(value);
+            } catch {}
+          }
+          return originalUpdate.call(this, data, ...options);
+        };
+        return hash;
       };
       syncBuiltinESMExports();
       const { queryOntologyTool } = await import(${JSON.stringify(graphModule)});
@@ -65,18 +83,38 @@ test('graph read requests load every vault document once and observe edits on th
         observations.push({ operation, reads: [...reads.values()] });
         if (operation === 'agent_brief') brief = result;
       }
+      const measureBrief = async (project) => {
+        graphInputs = [];
+        const value = await queryOntologyTool({ operation: 'agent_brief', project, limit: 5 });
+        return { compiles: graphInputs.length, nodes: graphInputs.flatMap((input) => input.nodes),
+          project: value.projectSlug, maxMtime: value.graph.maxMtime,
+          compileIssues: value.health.checks.find((check) => check.id === 'compile_issues').count,
+          validationErrors: value.health.validation.summary.errorFiles };
+      };
+      const warm = await measureBrief('project-p');
+      const switched = await measureBrief('project-q');
+      const returned = await measureBrief('project-p');
       const path = root + '/capabilities/a.md';
       const raw = fs.readFileSync(path, 'utf8');
       fs.writeFileSync(path, raw.replace('title: "capabilities/a"', 'title: "Updated title"'));
       fs.utimesSync(path, 1, 1);
       const updated = await queryOntologyTool({ operation: 'node_profile', slug: 'capabilities/a' });
+      const changed = await measureBrief('project-p');
+      fs.utimesSync(path, 2, 2);
+      const touched = await measureBrief('project-p');
       fs.rmSync(root + '/project-q.md');
       const afterDelete = await queryOntologyTool({ operation: 'overview' });
+      const withNote = await measureBrief('project-p');
       reads.clear();
       const standalone = validateVaultTool();
+      const standaloneReads = [...reads.values()];
+      fs.rmSync(root + '/note.md');
+      const full = await measureBrief('project-p');
+      const fullWarm = await measureBrief('project-p');
       console.log(JSON.stringify({ observations, scanned: brief.health.validation.scanned,
         updatedTitle: updated.node.title, remainingNodes: afterDelete.graph.nodes,
-        standaloneScanned: standalone.scanned, standaloneReads: [...reads.values()] }));
+        standaloneScanned: standalone.scanned, standaloneReads,
+        warm, switched, returned, changed, touched, withNote, full, fullWarm }));
     `;
     const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
       encoding: 'utf8',
@@ -92,6 +130,19 @@ test('graph read requests load every vault document once and observe edits on th
     assert.equal(result.remainingNodes, 3, 'a later request must observe deletions');
     assert.equal(result.standaloneScanned, 4);
     assert.deepEqual(result.standaloneReads, [1, 1, 1, 1], 'standalone validation must still perform a fresh read');
+    assert.equal(result.warm.compiles, 0, 'an unchanged project must reuse its compiled artifact');
+    assert.equal(result.switched.compiles, 1);
+    assert.equal(result.switched.project, 'project-q', 'project scopes must never share the wrong artifact');
+    assert.equal(result.returned.compiles, 1, 'retain at most one separate project projection per parent');
+    assert.equal(result.changed.compiles, 1, 'changed bytes must invalidate a project projection');
+    assert.equal(result.changed.nodes.find((node) => node.slug === 'capabilities/a').title, 'Updated title');
+    assert.equal(result.touched.compiles, 2, 'a changed mtime must refresh both artifacts even when graphHash is unchanged');
+    assert.equal(result.touched.maxMtime, 2000);
+    assert.equal(result.withNote.compiles, 1, 'non-node documents prevent whole-artifact reuse');
+    assert.equal(result.withNote.compileIssues, 0, 'outside diagnostics must not leak into the selected project');
+    assert.equal(result.withNote.validationErrors, 1, 'whole-vault validation must still report the outside error');
+    assert.equal(result.full.compiles, 1, 'identical full-scope inputs need only the parent compilation');
+    assert.equal(result.fullWarm.compiles, 0);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
