@@ -10,7 +10,7 @@ const gitExamples = ['checkout', 'refund', 'handoff'] as const;
 export function WebGitExample() {
   const t = useTranslations('webExamples');
   const [selected, setSelected] = useState(0);
-  return <div data-testid="web-git-example" className="grid min-h-0 gap-5 lg:grid-cols-[minmax(280px,0.9fr)_minmax(360px,1.1fr)]">
+  return <div data-testid="web-git-example" className="grid min-h-0 w-full max-w-6xl gap-5 lg:grid-cols-[minmax(280px,0.9fr)_minmax(360px,1.1fr)]">
     <section className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
       <p className="text-label text-[color:var(--color-indigo-text-soft)]">{t('sampleBadge')}</p>
       <h1 className="mt-2 text-display font-[var(--font-weight-signature)]">{t('gitTitle')}</h1>
