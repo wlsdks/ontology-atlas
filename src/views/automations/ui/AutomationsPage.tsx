@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, FileSearch, Plus, ScanSearch, ShieldCheck, TriangleAlert } from "lucide-react";
+import { CalendarClock, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
@@ -18,6 +18,7 @@ import { Button, EmptyState, TabBar, useToast } from "@/shared/ui";
 
 import { PAGE_FRAME_FORM, PAGE_HEADER_ROW } from "@/shared/ui/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
+import { AutomationEmptyWorkbench } from "./AutomationEmptyWorkbench";
 
 import { NewOntologyRoundSheet } from "./NewOntologyRoundSheet";
 
@@ -133,11 +134,12 @@ export function AutomationsPage({
                 {lane === "documents" ? <Link href="/library/?tab=rounds" data-testid="automations-open-library-rounds" className={cn(controlClass({ shape: "link", tone: "secondary" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("documents.openRounds")}</Link> : null}
               </div> : null}
               {rounds.length === 0 ? (
-                <div className="flex flex-1 items-center justify-center py-8">
-                  <EmptyState title={<span className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t(`${lane}.emptyTitle`)}</span>} titleAs="h2" description={<><span className="text-body-lg text-[color:var(--color-text-secondary)]">{t(`${lane}.emptyDescription`)}</span><span className="mt-4 flex items-center justify-center gap-2 text-body text-[color:var(--color-text-tertiary)]"><ShieldCheck size={ICON_SIZE.sm} className="flex-none" aria-hidden />{t(`${lane}.guard`)}</span></>}
-                    action={<Button onClick={add} disabled={lanePending} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide"><Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}</Button>}
-                    icon={lane === "ontology" ? <ScanSearch size={ICON_SIZE.md} /> : <FileSearch size={ICON_SIZE.md} />}
-                    tone="solid" align="center" className="w-full max-w-[var(--measure-stage-column)] break-keep" />
+                <div className="flex flex-1 items-center py-8">
+                  <AutomationEmptyWorkbench title={t(`${lane}.emptyTitle`)} description={t(`${lane}.emptyDescription`)} guard={t(`${lane}.guard`)}
+                    previewTitle={t(`${lane}.preview.title`)} previewEmpty={t(`${lane}.preview.empty`)}
+                    columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.next`)]}
+                    resultLabel={t(`${lane}.preview.resultLabel`)} resultEmpty={t(`${lane}.preview.resultEmpty`)}
+                    action={<Button onClick={add} disabled={lanePending} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide"><Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}</Button>} />
                 </div>
               ) : (
                 <ul data-testid="automations-list" className="divide-y divide-[color:var(--color-divider)] border-y border-[color:var(--color-divider)]">

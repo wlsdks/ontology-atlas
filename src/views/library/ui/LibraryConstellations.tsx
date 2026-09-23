@@ -17,7 +17,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { PAGE_FRAME_FORM } from '@/shared/ui/page-frame';
 import { Button, EmptyState, RowButton, Surface } from '@/shared/ui';
-import { EmptyShape } from './parts/EmptyShape';
+import { ConstellationsStartingPoint } from './parts/ConstellationsStartingPoint';
 
 type MemberRow =
   | { kind: 'ontology'; resolution: ResolvedCollectionMember }
@@ -58,6 +58,13 @@ export function LibraryConstellations({
     () => new Map(saved.constellations.map(({ folder, items }) => [folder.id, memberRows(items, documents)])),
     [documents, saved.constellations],
   );
+  const availableConcepts = useMemo(() => documents.filter(doc => ['domain', 'capability', 'element'].includes(documentKind(doc))), [documents]);
+  const startingConcepts = useMemo(() => [...availableConcepts]
+    .sort((a, b) => Number(documentKind(a) !== 'domain') - Number(documentKind(b) !== 'domain'))
+    .slice(0, 3)
+    .map(doc => ({ id: doc.slug, name: resolveLocaleDisplayName(doc.frontmatter, locale, doc.title),
+      kind: documentKind(doc) === 'domain' ? tCreateNode('kindDomain') : documentKind(doc) === 'capability' ? tCreateNode('kindCapability') : tCreateNode('kindElement') })),
+  [availableConcepts, locale, tCreateNode]);
 
   const createInGalaxy = () => router.push('/topology/?constellation=new');
   const openInGalaxy = (id: string) => router.push(`/topology/?constellation=${encodeURIComponent(id)}`);
@@ -135,16 +142,9 @@ export function LibraryConstellations({
       />
     );
   } else if (saved.constellations.length === 0) {
-    content = (
-      <EmptyState
-        title={t('emptyTitle')}
-        description={t('emptyDescription')}
-        icon={<Orbit />}
-        shape={<EmptyShape icon={<Orbit size={ICON_SIZE.md} aria-hidden />} columns={[t('shape.name'), t('shape.members'), t('shape.purpose')]} />}
-        action={<Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInGalaxy}>{t('create')}</Button>}
-        tone="solid"
-      />
-    );
+    content = <ConstellationsStartingPoint title={t('emptyTitle')} description={t('emptyDescription')}
+      sourceLabel={t('startingSource')} sourceCount={availableConcepts.length} concepts={startingConcepts} noConcepts={t('startingNoConcepts')}
+      action={<Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInGalaxy}><Plus size={ICON_SIZE.sm} aria-hidden />{t('create')}</Button>} />;
   } else {
     content = (
       <ul

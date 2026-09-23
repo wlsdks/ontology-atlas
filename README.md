@@ -58,7 +58,7 @@ The ontology is not required to describe every symbol. Give a node to something 
 
 ## What the installed app adds
 
-The macOS app is the full local workbench. Its **Agents** screen finds supported coding tools installed on that Mac and can open an in-app conversation. The **MCP** screen handles this folder's agent connection and optional external connectors. The **Git** screen reads the folder's actual history. The **Automations** manager can schedule reviewed local work: Ontology reviews remain read-only, while document rounds retain their approved Library scope. [Feature inventory](docs/FEATURES.md).
+The macOS app is the full local workbench. Its **Agents** screen finds supported coding tools installed on that Mac and can open an in-app conversation. The **MCP** screen handles this folder's agent connection and optional external connectors. The **Git** screen reads the folder's actual history. The **Automations** manager can schedule reviewed local work: Ontology reviews remain read-only, while document rounds retain their approved scope. Library → Check history shows document pass results and links back to Automations to manage the schedule. [Feature inventory](docs/FEATURES.md).
 
 **Jev is a separate, optional Agents tab on macOS.** Save your own TypeSafe API key in that Mac's Keychain, enter a specific claim and an evidence passage, inspect the exact request preview, and choose **Send to Jev**. The answer is advisory. Atlas writes a local transfer-metadata receipt but never changes or accepts vault meaning because of the answer. The browser's Agents example neither stores a key nor calls Jev. A source-only synthetic probe and its offline tests are available in the [Jev evidence-check guide](docs/guide/external-judgment.md).
 

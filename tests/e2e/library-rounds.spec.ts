@@ -3,6 +3,12 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { installDesktopBridge, openRounds } from "./rounds-desktop-bridge";
 
+async function openNewDocumentSchedule(page: import("@playwright/test").Page) {
+  await page.getByTestId("library-rounds-new").click();
+  await expect(page.getByTestId("automations")).toHaveAttribute("data-automations-lane", "documents");
+  await page.getByTestId("automations-new").click();
+}
+
 /**
  * **The Rounds tab draws what the ledger holds, and a round is registered under a stated scope.**
  *
@@ -48,9 +54,10 @@ test.describe("Library rounds", () => {
     const cardHeight = await ledger.locator("[data-outcome='redrafted']").first().evaluate((el) => el.getBoundingClientRect().height);
     expect(cardHeight).toBeGreaterThan(heldHeight * 2);
 
-    // Selecting a round filters the axis to it and puts its presses in the header.
+    // Selecting a round filters the axis; its schedule is managed in Automations.
     await page.getByTestId("library-round-r-confluence").click();
-    await expect(page.getByTestId("library-rounds-run-now")).toBeVisible();
+    await expect(page.getByTestId("library-rounds-run-now")).toHaveCount(0);
+    await expect(page.getByTestId("library-rounds-manage-automations")).toBeVisible();
     await expect(ledger.locator("[data-outcome='held']")).toHaveCount(0);
     await expect(ledger.locator("[data-outcome='redrafted']")).toHaveCount(1);
   });
@@ -61,18 +68,10 @@ test.describe("Library rounds", () => {
     await openRounds(page);
 
     await expect(page.getByTestId("library-rounds")).toHaveAttribute("data-rounds-state", "empty");
-    await page.getByTestId("library-rounds-new").click();
+    await openNewDocumentSchedule(page);
     const sheet = page.getByTestId("library-rounds-sheet");
     await expect(sheet).toBeVisible();
-    // Modality: the stage behind the sheet is not the top hit target.
-    const covered = await page.evaluate(() => {
-      const stage = document.querySelector("[data-testid='library-rounds-stage']");
-      if (!stage) return false;
-      const rect = stage.getBoundingClientRect();
-      const hit = document.elementFromPoint(rect.left + 20, rect.top + 20);
-      return hit !== null && !stage.contains(hit);
-    });
-    expect(covered).toBe(true);
+    await expect(sheet).toHaveAttribute("aria-modal", "true");
 
     // The sentence above the controls says what will happen, and follows every press.
     const readback = page.getByTestId("library-rounds-readback");
@@ -106,11 +105,11 @@ test.describe("Library rounds", () => {
     await expect(page.getByTestId("library-rounds-time")).toBeVisible();
     await expect(readback).toContainText("On weekdays at 09:00");
     await expect(readback).toContainText("Confluence");
-    await page.screenshot({ path: ".claude/shots-2026-09-21/rounds-sheet-readback.png" });
     await expect(page.getByTestId("library-rounds-cost")).toContainText("about 1 a day");
 
     await page.getByTestId("library-rounds-allow").click();
     await expect(sheet).toBeHidden();
+    await page.getByTestId("automations-open-library-rounds").click();
     await expect(page.getByTestId("library-rounds")).toHaveAttribute("data-rounds-state", "ready");
     await expect(page.getByTestId("library-rounds-list")).toContainText("Confluence");
     await expect(page.getByTestId("library-rounds-list")).toContainText("Weekdays at 09:00");
@@ -139,11 +138,12 @@ test.describe("Library rounds", () => {
     await seedFirstRunSeen(page);
     await installDesktopBridge(page, { seedRounds: false });
     await openRounds(page);
-    await page.getByTestId("library-rounds-new").click();
+    await openNewDocumentSchedule(page);
     await expect(page.getByTestId("library-rounds-sheet")).toBeVisible();
     // The defaults are the local check, hourly, redraft on stale.
     await page.getByTestId("library-rounds-allow").click();
     await expect(page.getByTestId("library-rounds-sheet")).toBeHidden();
+    await page.getByTestId("automations-open-library-rounds").click();
 
     const ledger = page.getByTestId("library-rounds-ledger");
     await expect(ledger.locator("[data-outcome='held']")).toHaveCount(1);

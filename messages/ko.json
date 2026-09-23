@@ -334,6 +334,9 @@
     "diagramView": "다이어그램",
     "textView": "글로 보기",
     "diagramRoot": "저장소의 하네스",
+    "diagramParts": "구성 {count}개",
+    "diagramEvidence": "파일 근거",
+    "diagramSelectPart": "구성을 고르면 근거가 이어져요",
     "diagramHint": "파일에서 확인한 구성 연결이에요. 항목을 누르면 근거를 볼 수 있어요. 실제 실행 기록은 아니에요.",
     "noSourceBody": "하네스는 에이전트가 실제로 고치는 저장소의 것이에요. 프로젝트에 소스 폴더를 연결하면 이 목록이 채워져요. 폴더가 두 곳 이상 연결되어 있으면, 어느 쪽 하네스인지 저희가 고르지 않아요.",
     "failed": "읽지 못했어요",
@@ -414,7 +417,7 @@
     "reachMirroredLabel": "선언된 짝의 Codex 사본",
     "reachNamedDirectLabel": "지침이 직접 부른 것",
     "anatomyTitle": "하네스 구조",
-    "anatomyCaption": "에이전트가 이 저장소에서 한 번 일할 때 거치는 자리를, 거치는 순서대로 놓았어요. 숫자는 이 폴더에서 읽은 파일 수이고, 점수나 등급은 매기지 않아요.",
+    "anatomyCaption": "저장소에서 확인한 지침·차단·검사를 에이전트 작업과의 관계에 따라 놓았어요. 숫자는 구성 근거의 수이지 실행 횟수나 점수가 아니에요.",
     "anatomyProvenanceLabel": "이 구분은 어디서 왔나",
     "anatomyProvenance": "부속을 나누는 말은 공개된 네 곳이 대체로 같게 써요. Fowler·Böckeler 「Harness engineering for coding agent users」가 알려주는 것(guides)과 지켜보는 것(sensors)을 나눴고, arXiv 2609.00006 「Harness Engineering: Anatomy, Architecture, and Evolution of Coding Agents」(CC BY 4.0)가 일곱 부속(루프·모델 연결·도구·기억과 맥락·안전과 권한·오케스트레이션·확장)을 셌어요. OpenAI 「Harness engineering」과 Codex AGENTS.md 문서는 뿌리에서 아래로 합쳐 읽는 지침 사슬을, Anthropic 「Effective harnesses for long-running agents」는 맥락 창이 바뀌어도 일이 이어지게 하는 장치를 설명해요. 일곱 중 다섯은 저장소 파일로 셀 수 있고, 루프와 모델은 셀 수 없어요.",
     "anatomyTellsCaption": "에이전트가 손대기 전에 읽거나 받는 것이에요.",
@@ -5642,6 +5645,7 @@
       "guard": "읽기 전용 · 온톨로지 쓰기·의미 확정 없음",
       "emptyTitle": "온톨로지 점검을 예약하세요",
       "emptyDescription": "에이전트가 빠진 연결이나 부족한 근거를 찾아 개선안을 남깁니다. 주기를 정해 두고, 다음에 돌아와 결과를 검토하세요.",
+      "preview": { "title": "예약 작업대", "empty": "예약하면 여기에 표시됩니다", "name": "이름", "cadence": "주기", "next": "다음 실행", "resultLabel": "실행 결과", "resultEmpty": "첫 실행 뒤 이 예약에서 확인할 수 있어요" },
       "defaultName": "온톨로지 정교화",
       "eyebrow": "온톨로지 검토",
       "sheet": {
@@ -5666,7 +5670,8 @@
       "guard": "기존 자료실 범위 · 온톨로지 쓰기 거부",
       "emptyTitle": "예약된 문서 점검이 없습니다",
       "emptyDescription": "일치 점검이나 서비스 점검을 여기서 만들고, 전체 실행 기록과 페이지 검토는 자료실에서 여세요.",
-      "openRounds": "자료실 자동 점검 열기"
+      "preview": { "title": "예약 작업대", "empty": "예약하면 여기에 표시됩니다", "name": "이름", "cadence": "주기", "next": "다음 실행", "resultLabel": "점검 기록", "resultEmpty": "첫 실행 뒤 자료실에서 검토할 수 있어요" },
+      "openRounds": "자료실 점검 기록 열기"
     }
   },
   "library": {
@@ -6312,7 +6317,7 @@
       "wikiCount": "위키 문서",
       "ontology": "온톨로지",
       "collections": "작업 범위",
-      "rounds": "자동 점검",
+      "rounds": "점검 기록",
       "roundsCount": "켜진 자동 점검"
     },
     "collections": {
@@ -6330,6 +6335,8 @@
       "retry": "다시 읽기",
       "emptyTitle": "아직 남긴 작업 범위가 없어요",
       "emptyDescription": "지도를 갤럭시 보기로 바꾸고 개념 몇 개를 골라 이름과 목적을 붙이면, 그 묶음이 여기에 남아 같은 범위로 다시 돌아갈 수 있어요. 「지도에서 고르기」가 그 자리로 데려가요.",
+      "startingSource": "이 온톨로지에서 고를 수 있는 개념",
+      "startingNoConcepts": "지도의 개념을 먼저 추가하면 여기에서 볼 수 있어요.",
       "memberCount": "개념 {count, number}개",
       "referenceCount": "참고 자료 {count, number}개",
       "shape": {
@@ -6353,8 +6360,8 @@
     },
     "rounds": {
       "eyebrow": "자리를 비운 동안",
-      "title": "자동 점검",
-      "lede": "자동 점검은 이 맥에서 Atlas가 켜져 있는 동안 자료실이 스스로 지키는 규칙이에요. 무엇을 확인하고, 얼마나 자주, 무엇을 써도 되는지. 그 밖의 일은 누르지 않으면 돌지 않아요.",
+      "title": "점검 기록",
+      "lede": "자동화에서 예약한 문서 점검의 실행 기록을 살펴봅니다. 예약과 실행 설정은 자동화에서 관리해요.",
       "indexHeader": "자동 점검 · {count, number}",
       "indexAria": "이 폴더를 위해 이 맥이 지키는 자동 점검",
       "newRound": "새 자동 점검",
@@ -6372,8 +6379,9 @@
         "cadence": "주기",
         "next": "다음 실행"
       },
-      "emptyTitle": "아직 스스로 도는 것이 없어요",
-      "emptyDescription": "자동 점검을 등록하세요. 한 시간마다 모든 문서가 원문과 여전히 맞는지 확인하고, 아침마다 서비스가 보낸 것을 다시 읽어 바뀐 문서를 다시 써요.",
+      "emptyTitle": "아직 문서 점검 기록이 없어요",
+      "emptyDescription": "자동화에서 점검을 예약하면 이 맥이 켜져 있는 동안 실행합니다. 실행 결과와 바뀐 문서는 여기에서 확인하세요.",
+      "historyShape": { "run": "실행", "outcome": "결과", "review": "검토", "empty": "첫 실행 뒤 이 기록이 채워집니다" },
       "kind": {
         "consistency": "문서가 원문과 여전히 맞는지",
         "consistencyBody": "이 맥에서 인용된 원문마다 해시를 재고 문서 점검을 돌려요. 에이전트 턴 없음.",

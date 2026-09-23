@@ -157,7 +157,7 @@ function SlotRow({
       {slot.items.length > 0 ? (
         /* The names are the citation: a reader who doubts the count opens one of them. Monospace,
            because every one of them is a path or a server key that can be typed. */
-        <p className="mt-1.5 break-all font-mono text-caption text-[color:var(--color-text-quaternary)]">
+        <p className="mt-1.5 break-words font-mono text-caption text-[color:var(--color-text-quaternary)]">
           {slot.items.join(' · ')}
           {slot.overflow > 0 ? ` · ${t('anatomyMore', { count: slot.overflow })}` : ''}
         </p>
@@ -213,7 +213,7 @@ export function HarnessAnatomyView({
   const t = useTranslations('harness');
   const anatomy = useMemo(() => buildHarnessAnatomy(report), [report]);
   const [presentation, setPresentation] = useState<'diagram' | 'text'>('diagram');
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>('always');
   const detailId = useId();
   const selected = anatomy.slots.find(slot => slot.id === selectedSlot);
   const toolSlot = anatomy.slots.find((slot) => slot.band === 'tool');
@@ -283,7 +283,7 @@ export function HarnessAnatomyView({
       </div>
 
       {presentation === 'diagram' ? <>
-        <HarnessStructureDiagram slots={anatomy.slots} sourceRoot={sourceRoot} selectedId={selectedSlot} detailId={detailId} onSelect={id=>setSelectedSlot(selectedSlot===id?null:id)}
+        <HarnessStructureDiagram slots={anatomy.slots} sourceRoot={sourceRoot} selectedId={selectedSlot} detailId={detailId} onSelect={setSelectedSlot}
           selectedContent={<ul className="px-3 py-2">
             {selected ? <SlotRow slot={selected} t={t} copied={copiedId===selected.id} onCopy={copy} /> : null}
           </ul>} />
