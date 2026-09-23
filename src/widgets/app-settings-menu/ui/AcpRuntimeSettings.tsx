@@ -393,7 +393,9 @@ export function AcpRuntimeSettings({
             }
           >
             {ready.length === 0 ? (
-              <SettingsRow label={t('noneReady')} caption={t('noneReadyCaption')} control={null} />
+              /* "The install guides are in the list below" is true only when there is a list below;
+                 with none it pointed at nothing (design sweep, 2026-09-23). */
+              <SettingsRow label={t('noneReady')} caption={t(others.length > 0 ? 'noneReadyCaption' : 'noneReadyCaptionNoList')} control={null} />
             ) : (
               ready.map((runtime) => (
                 <RuntimeRow
