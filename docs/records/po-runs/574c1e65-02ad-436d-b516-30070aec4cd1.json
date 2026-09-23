@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-23",
+  "decision": "Reuse committed evidence dates only under unchanged Git history while checking live file existence on every request",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "judge",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-23",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "574c1e65-02ad-436d-b516-30070aec4cd1",
+  "recordedAt": "2026-09-23T13:36:02.255Z"
+}
