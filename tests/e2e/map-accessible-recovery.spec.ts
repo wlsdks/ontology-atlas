@@ -21,6 +21,9 @@ test('keyboard focus stays visible across the canvas and related concept replace
   const canvas = page.getByTestId('ontology-map-canvas');
   for (let i = 0; i < 50 && !(await canvas.evaluate(el => el === document.activeElement)); i += 1) await page.keyboard.press('Tab');
   await expect(canvas).toBeFocused();
+  // Focus can land while the browser is still applying the canvas theme after hydration.
+  // Wait for the painted ring rather than sampling the transient default outline.
+  await expect.poll(async () => canvas.evaluate(el => parseFloat(getComputedStyle(el).outlineOffset))).toBeLessThan(0);
   const focus = await canvas.evaluate(el => {
     const s = getComputedStyle(el);
     return { visible: el.matches(':focus-visible'), style: s.outlineStyle, color: s.outlineColor, offset: parseFloat(s.outlineOffset) };

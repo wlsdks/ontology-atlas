@@ -16,6 +16,7 @@ import { deriveCoverageAreas, useHarnessReport } from '@/features/harness-report
 import { atlasBareToolMode } from '@/features/acp-session';
 import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/tauri-git';
 import { resolveEvidenceStates, type EvidenceConceptInput } from './evidence-states';
 import type { BriefLineDetail } from './brief-model';
@@ -492,7 +493,7 @@ export function useInsightsBrief({
       buildSinceList({
         docs: docs.map((doc) => ({
           slug: doc.slug,
-          title: doc.title,
+          title: resolveLocaleDisplayName(doc.frontmatter, locale, doc.title),
           kind: typeof doc.frontmatter.kind === 'string' ? doc.frontmatter.kind : null,
           updatedAt: docChangedAt(doc.slug, doc.updatedAt ?? null),
         })),
@@ -501,7 +502,7 @@ export function useInsightsBrief({
         agentCalls: mode === 'local' ? vault.agentActivityLog : [],
         anchorMs: anchor.anchorMs,
       }),
-    [docs, docChangedAt, log, harnessReport, mode, vault.agentActivityLog, anchor.anchorMs],
+    [docs, docChangedAt, log, harnessReport, locale, mode, vault.agentActivityLog, anchor.anchorMs],
   );
 
   return {
