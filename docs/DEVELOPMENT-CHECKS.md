@@ -102,12 +102,18 @@ use both workers inside their assigned file. The runner
 compares the actual report's file/test inventory with its assignment before
 accepting success. Dedicated web/static specs leave the broad shards only when
 the corresponding protected job owns them; otherwise they stay in the suite.
+On CI, a shard stops after its first test still fails following retries. The
+failed shard remains red; a green shard still runs and verifies its complete
+assigned inventory. Local runs continue through all failures for diagnosis.
 
 Assignments and JSON reports are uploaded as `playwright-timings-*` artifacts on
 successful and failed runs. The timing baseline cites its successful source
 runs; stale estimates can affect balance, never test selection. Re-measure from
 first-attempt results before refreshing weights. The PR smoke inventory remains
 unchanged; this optimization does not move behavioral coverage into nightly CI.
+The 2026-09-22 successful run had 734/1,185/1,194 test-seconds across its three
+shards; its refreshed weights assign that same inventory at about 1,038 seconds
+per shard. Actual wall time still depends on runner load and retries.
 
 Layout audits wait for fonts and finite paint transitions instead of fixed
 route delays. Real idle/physics measurement windows remain unchanged. Browser
