@@ -114,7 +114,7 @@ describe("InsightsCensusStrip — 네 타일, 그리고 세 번째 총계는 없
     // A week with no update is a 2px baseline tick, never a short bar — a quiet week and a busy
     // week must not be drawn the same size.
     expect(bars[0].style.height).toBe("2px");
-    expect(bars[0].style.backgroundColor).toBe("var(--color-overlay-2)");
+    expect(bars[0].style.backgroundColor).toBe("var(--color-text-quaternary)");
     expect(bars[1].style.height).not.toBe("2px");
   });
 

@@ -1788,7 +1788,15 @@
         },
         "markSeenUndo": "Undo",
         "evidenceUnreadable": "The linked code could not be checked. Reopen the folder to try again.",
-        "evidenceNoSource": "No code repository is connected to this folder yet. Connect it from the project on the map."
+        "evidenceNoSource": "No code repository is connected to this folder yet. Connect it from the project on the map.",
+        "bandState": {
+          "app-only": "current and stale are measured in the app",
+          "no-data": "none yet",
+          "no-source": "no repository yet",
+          "reading": "reading",
+          "unreadable": "could not read"
+        },
+        "coreJoin": " · "
       },
       "tabCountTitle": {
         "do-next": "Things to fix",
@@ -1836,6 +1844,8 @@
       "statusAdvisory": "Advisory",
       "recentWindowTitle": "Last {weeks} weeks",
       "recentThisWeek": "{count} dated this week",
+      "recentBarsStart": "{weeks} weeks ago",
+      "recentBarsEnd": "This week",
       "recentBarsAria": "{total} files dated within the last {weeks} weeks, one bar per week. A file's date is when it was last written to disk, so a clone or a branch switch moves it too",
       "heroDensityGloss": "{ratio} connections per concept, on average",
       "heroMembershipLabel": "in a domain",

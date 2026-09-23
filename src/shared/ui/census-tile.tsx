@@ -110,7 +110,12 @@ export function CensusBigNumber({
   suffix?: string;
   scale?: 'signature' | 'section';
   /** `warning` is for a number whose subject is an absence — the one amber this grammar allows. */
-  tone?: 'numeral' | 'warning';
+  /**
+   * `primary` is the ink a verdict word beside it already wears. The Concepts board drew its
+   * counts in the grey numeral face next to a white verdict, so the one tile without a number
+   * out-ranked the two whose number was the point (direction C, 2026-09-23).
+   */
+  tone?: 'numeral' | 'warning' | 'primary';
   testId?: string;
 }) {
   /*
@@ -131,9 +136,11 @@ export function CensusBigNumber({
           : 'text-display',
         tone === 'warning'
           ? 'text-[color:var(--color-amber-source-a90)]'
-          : 'text-[color:var(--map-numeral-face)]',
+          : tone === 'primary'
+            ? 'text-[color:var(--color-text-primary)]'
+            : 'text-[color:var(--map-numeral-face)]',
       )}
-      style={{ textShadow: '0 2px 0 var(--map-numeral-shadow)' }}
+      style={tone === 'primary' ? undefined : { textShadow: '0 2px 0 var(--map-numeral-shadow)' }}
       data-testid={testId}
     >
       <span aria-hidden="true" data-insights-animated-value>
