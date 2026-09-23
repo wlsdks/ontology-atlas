@@ -150,10 +150,10 @@ async function openGraph(page: Page): Promise<void> {
   // The picture is the home (2026-09-12): nothing is chosen, so the canvas is already up.
   await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
   await expect
-    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.nodes().length ?? 0), {
+    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.nodes().some((node) => node.id === 'source:sources/budget.xlsx') ?? false), {
       timeout: 15_000,
     })
-    .toBeGreaterThan(10);
+    .toBe(true);
   // The picture is still arriving; wait for the simulation to come to rest so that what
   // moves next moved because of the gesture.
   await expect

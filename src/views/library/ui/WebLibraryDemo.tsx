@@ -11,6 +11,7 @@ import { Link } from '@/i18n/navigation';
 import { controlClass } from '@/shared/ui/control-class';
 import { Input } from '@/shared/ui/input';
 import { RowButton, Button } from '@/shared/ui';
+import { OpenVaultCta } from '@/features/docs-vault-local';
 import type { LibraryIndexSegment } from '@/shared/lib/appearance-preferences';
 
 const examples = [
@@ -64,7 +65,13 @@ export function WebLibraryDemo({ segment }: { segment: LibraryIndexSegment }) {
   return <main id="main" tabIndex={-1} data-testid="web-library-demo" className={`topology-ui-scale relative flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)] max-lg:flex-col ${selected ? '' : 'max-lg:overflow-y-auto'}`}>
     <aside data-testid="library-index" aria-label={t('indexLabel')} className={`flex w-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] max-lg:h-[var(--library-index-min)] max-lg:flex-none lg:w-[var(--docs-list-width)] lg:flex-none ${selected ? 'max-lg:hidden' : ''}`}>
       <div className="flex-none px-3 pb-2 pt-3">
-        <p className="text-caption text-[color:var(--color-indigo-text-soft)]">{t('sampleBadge')}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-caption text-[color:var(--color-indigo-text-soft)]">{t('sampleBadge')}</p>
+            <h1 className="text-title font-[var(--font-weight-strong)]">{t('indexLabel')}</h1>
+          </div>
+          <OpenVaultCta testId="library-open-vault" />
+        </div>
         <div className="mt-2"><Input label={t('searchLabel')} value={query} onChange={(event) => setQuery(event.target.value)} className="w-full" /></div>
       </div>
       <div className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-1 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]">
