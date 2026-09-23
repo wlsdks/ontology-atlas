@@ -1,6 +1,12 @@
 "use client";
 
+import { useSyncExternalStore, type ComponentProps } from 'react';
+import { WebGitExample } from '@/features/web-showcase';
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { AtlasGitPanel, useAtlasGitContext } from "@/widgets/atlas-git-panel";
+
+const subscribeToRuntime = () => () => {};
+const serverRuntimeSnapshot = (): boolean | null => null;
 
 /**
  * History — the **destination** recording how vault documents changed (promoted 2026-07-25).
@@ -27,6 +33,7 @@ import { AtlasGitPanel, useAtlasGitContext } from "@/widgets/atlas-git-panel";
  */
 export function GitPage() {
   const { vaultPath, changeset, graph } = useAtlasGitContext();
+  const desktop = useSyncExternalStore(subscribeToRuntime, isTauriVaultRuntime, serverRuntimeSnapshot);
 
   return (
     <main
@@ -55,13 +62,17 @@ export function GitPage() {
           job"*. Setup narrows itself with `--git-setup-measure` and the single column with
           `--git-single-measure`. */}
       <div className="mx-auto flex w-full min-h-0 flex-1 flex-col overflow-hidden px-4 pt-5 sm:px-8">
-        <AtlasGitPanel
+        {desktop === false ? <WebGitExample /> : desktop === true ? <NativeGitContent
           vaultPath={vaultPath}
           sessionChangeset={changeset}
           graph={graph}
           className="flex-1"
-        />
+        /> : null}
       </div>
     </main>
   );
+}
+
+function NativeGitContent(props: ComponentProps<typeof AtlasGitPanel>) {
+  return <AtlasGitPanel {...props} />;
 }

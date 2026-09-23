@@ -29,6 +29,11 @@ describe('focused check suggestions', () => {
     assert.equal(normalizeChangedPath('  docs/ontology/project.md  '), 'docs/ontology/project.md');
   });
 
+  it('runs the Markdown census contract when its bounded repository scanner changes', () => {
+    const commands = commandNames(suggestFocusedChecks(['src/entities/agent-files/model/repo-scan.ts']));
+    assert.ok(commands.includes('pnpm test:contracts'));
+  });
+
   it('suggests the narrow registration gate for source-checkout MCP templates', () => {
     const result = suggestFocusedChecks(['.mcp.json', '.mcp.json.example']);
 

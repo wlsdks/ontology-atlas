@@ -5,6 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import ko from '../../../../messages/ko.json';
 import { AgentsPage } from './AgentsPage';
 
+const runtime = vi.hoisted(() => ({ desktop: true }));
+vi.mock('@/shared/lib/tauri-vault-fs', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/shared/lib/tauri-vault-fs')>(),
+  isTauriVaultRuntime: () => runtime.desktop,
+}));
+
 vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
@@ -29,6 +35,7 @@ function renderPage(children?: React.ReactNode, mcpCount?: number) {
 }
 
 afterEach(() => {
+  runtime.desktop = true;
   search = '';
   window.history.replaceState(null, '', '/ko/agents/');
 });
@@ -77,7 +84,7 @@ describe('한 목록에 이름 하나', () => {
   });
 });
 
-describe('두 탭, 한 번에 하나', () => {
+describe('탭은 한 번에 하나', () => {
   it('기본은 에이전트 탭이고 MCP 탭의 몸통은 그리지 않는다', () => {
     renderPage(<div data-testid="mcp-body" />);
     expect(screen.getByRole('tab', { name: ko.agents.workspace.agents })).toHaveAttribute(

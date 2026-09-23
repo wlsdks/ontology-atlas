@@ -708,6 +708,9 @@ Architecture, Library, Automations, Insights, Projects, Agents, and Git. MCP is 
 second tab of Agents. The mobile bottom
 bar shows five persistent destinations: Map, Architecture, Library, Insights, and Projects;
 web adds Get App as a separate utility. Library contains Sources, Wiki, Ontology, and Collections;
+the installed Agents screen adds a Jev tab whose Keychain secret and fixed-endpoint HTTP call
+stay in Tauri. The web Agents and Git screens render labelled examples without invoking native tools;
+the web Automations and empty-folder Library screens read the bundled Storefront example.
 `/docs` remains an exact-document compatibility address for non-ontology files and resolves
 active navigation to Library; it does not restore a general Docs home.
 Contextual writing stays inside Map, while Agents, MCP and Git keep their narrow-screen

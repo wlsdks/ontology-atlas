@@ -6,8 +6,8 @@ title: Orders
 display_ko: 주문
 display_en: Orders
 description: "This area owns the question \"what state is this order in, and what can still be changed?\". The line between browsing and buying sits here, and so does every change a shopper makes after crossing it: cancelling, cancelling part of it, moving the delivery address."
-capabilities: [capabilities/cart, capabilities/checkout, capabilities/order-address-change, capabilities/order-cancel, capabilities/order-lookup, capabilities/order-notification, capabilities/order-partial-cancel, capabilities/order-placement]
-elements: [elements/cart-session, elements/checkout-draft, elements/order-line-item, elements/order-number, elements/order-record, elements/order-status-log]
+capabilities: [capabilities/cart, capabilities/checkout, capabilities/order-address-change, capabilities/order-cancel, capabilities/order-cart-recovery, capabilities/order-delivery-instructions, capabilities/order-gift-options, capabilities/order-invoice-issuance, capabilities/order-lookup, capabilities/order-notification, capabilities/order-order-amendment, capabilities/order-partial-cancel, capabilities/order-placement, capabilities/order-reservation-expiry, capabilities/order-split-shipment, capabilities/order-tax-calculation]
+elements: [elements/cart-session, elements/checkout-draft, elements/order-cart-recovery-snapshot, elements/order-delivery-instruction, elements/order-gift-instruction, elements/order-invoice-record, elements/order-line-item, elements/order-number, elements/order-order-amendment-draft, elements/order-record, elements/order-reservation-timer, elements/order-shipment-split-plan, elements/order-status-log, elements/order-tax-breakdown]
 relates: [domains/fulfillment, domains/payment, domains/support]
 ---
 

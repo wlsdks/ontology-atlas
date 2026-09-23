@@ -264,6 +264,13 @@ conversation beside the map. **MCP** holds the folder's own connection, the setu
 for each client, and the Connectors that attach external servers to that
 conversation.
 
+**Jev** is a separate Agents tab in the installed Mac app. Save your own
+TypeSafe key in the local Keychain, compare one claim with a passage you choose
+to send, and review Jev's advisory answer. Atlas records a local metadata
+receipt and never accepts the answer as vault meaning automatically. The
+website shows a read-only Agents example and does not connect to Jev. See the
+[Jev evidence-check guide](docs/guide/external-judgment.md).
+
 ![The current MCP screen in the installed macOS app, with Share this folder open: how many connection files are ready and which file comes next, one connect button each for Claude Code, Codex, Cursor and Antigravity, the note that the server runs only while a conversation needs it, and the two later steps to restart the agent and confirm the connection](docs/assets/readme/mcp-connect.png)
 
 - **Connect once, with visible scope.** The flow names the folder and config it
@@ -639,7 +646,8 @@ are in [set up from a source checkout](cli/README.md#set-up-from-a-source-checko
 
 **Use it:** [hosted guide](https://ontologyatlas.com/en/guide/) ·
 [features](docs/FEATURES.md) · [MCP setup](mcp/README.md) ·
-[CLI reference](cli/README.md)
+[CLI reference](cli/README.md) ·
+[optional Jev evidence check](docs/guide/external-judgment.md)
 **Model a vault:** [what becomes a node?](docs/guide/what-becomes-a-node.md) ·
 [relations](docs/guide/relations.md) ·
 [v2 specification](docs/ONTOLOGY-ATLAS-SPEC.md) ·

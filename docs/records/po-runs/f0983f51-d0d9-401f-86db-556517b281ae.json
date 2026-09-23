@@ -1,0 +1,35 @@
+{
+  "date": "2026-09-23",
+  "decision": "Build and verify Mac-only Jev evidence check and connected web examples",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "judge",
+  "changes": [
+    "public-contract",
+    "surface-inventory"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "affected",
+    "agent-write": "unchanged",
+    "human-correction": "affected"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "narrowed",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-23",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "f0983f51-d0d9-401f-86db-556517b281ae",
+  "recordedAt": "2026-09-23T02:00:13.063Z"
+}

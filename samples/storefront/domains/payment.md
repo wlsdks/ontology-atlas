@@ -6,8 +6,8 @@ title: Payments
 display_ko: 결제
 display_en: Payments
 description: "This area owns the question \"where is the money right now?\": received, merely held, or given back. Taking the money, holding it while the order settles, and giving it back when the order does not."
-capabilities: [capabilities/installment, capabilities/payment-authorize, capabilities/payment-cancel, capabilities/refund, capabilities/tax-receipt, capabilities/wallet-payment]
-elements: [elements/bank-transfer, elements/card-payment, elements/kakao-pay, elements/naver-pay, elements/payment-gateway, elements/payment-transaction, elements/refund-record, elements/toss-pay, elements/virtual-account]
+capabilities: [capabilities/installment, capabilities/payment-authorize, capabilities/payment-cancel, capabilities/payment-card-tokenization, capabilities/payment-chargeback-review, capabilities/payment-fraud-screening, capabilities/payment-partial-capture, capabilities/payment-payment-receipt, capabilities/payment-payment-retry, capabilities/payment-settlement-reconciliation, capabilities/payment-wallet-charge, capabilities/refund, capabilities/tax-receipt, capabilities/wallet-payment]
+elements: [elements/bank-transfer, elements/card-payment, elements/kakao-pay, elements/naver-pay, elements/payment-capture-allocation, elements/payment-card-token-reference, elements/payment-chargeback-case, elements/payment-gateway, elements/payment-receipt-record, elements/payment-retry-decision, elements/payment-screening-decision, elements/payment-settlement-difference, elements/payment-transaction, elements/payment-wallet-charge-result, elements/refund-record, elements/toss-pay, elements/virtual-account]
 relates: [domains/support]
 ---
 

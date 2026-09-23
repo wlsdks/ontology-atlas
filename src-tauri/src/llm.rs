@@ -294,7 +294,7 @@ fn verify_request(provider: &str, target: &Target<'_>) -> Result<VerifyRequest, 
 
 /// Arguments that go on argv — **not a single secret among them**. URL, headers, and
 /// body go via stdin. Chat round-trips differ only in the timeout.
-fn curl_argv_with_timeout(timeout_seconds: &'static str) -> [&'static str; 9] {
+pub(crate) fn curl_argv_with_timeout(timeout_seconds: &'static str) -> [&'static str; 9] {
     [
         // curl skips ~/.curlrc only when this option is the **first argument**. It keeps
         // user config from adding redirect/proxy/header entries that would change the
@@ -330,7 +330,7 @@ fn curl_quote(value: &str) -> String {
 }
 
 /// curl config passed via stdin — keys are only here, and in conversation round-trips, **vault excerpts in the body** also go only here (no argv or temp file intermediaries).
-fn curl_config_for(url: &str, headers: &[(String, String)], body: Option<&str>) -> String {
+pub(crate) fn curl_config_for(url: &str, headers: &[(String, String)], body: Option<&str>) -> String {
     let mut config = format!("url = {}\n", curl_quote(url));
     for (name, value) in headers {
         config.push_str(&format!(
@@ -378,7 +378,7 @@ fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
     }
 }
 
-fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), String> {
+pub(crate) fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), String> {
     let mut child = Command::new("curl")
         .args(argv)
         .stdin(Stdio::piped())

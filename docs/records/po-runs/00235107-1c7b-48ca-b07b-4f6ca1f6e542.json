@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-23",
+  "decision": "Probe Jev with explicit synthetic transfer before a public command",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "judge",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "affected",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "narrowed",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-23",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "00235107-1c7b-48ca-b07b-4f6ca1f6e542",
+  "recordedAt": "2026-09-23T01:06:04.982Z"
+}

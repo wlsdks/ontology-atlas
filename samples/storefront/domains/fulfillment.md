@@ -6,8 +6,8 @@ title: Fulfillment & Delivery
 display_ko: 배송
 display_en: Fulfillment & Delivery
 description: "This area owns the question \"where is this parcel right now, and when will it arrive?\". Getting goods out of the warehouse, onto a carrier, into the shopper's hands, and back again when they must return: that is the whole job."
-capabilities: [capabilities/carrier-integration, capabilities/return-pickup, capabilities/shipment-tracking, capabilities/shipping-fee, capabilities/warehouse-picking]
-elements: [elements/cj-logistics, elements/delivery-status-log, elements/hanjin-express, elements/korea-post, elements/picking-list, elements/pickup-request, elements/shipping-fee-rule, elements/waybill]
+capabilities: [capabilities/carrier-integration, capabilities/fulfillment-carrier-selection, capabilities/fulfillment-delivery-exception, capabilities/fulfillment-delivery-proof, capabilities/fulfillment-dispatch-handoff, capabilities/fulfillment-label-creation, capabilities/fulfillment-pack-verification, capabilities/fulfillment-pick-list, capabilities/fulfillment-return-label, capabilities/return-pickup, capabilities/shipment-tracking, capabilities/shipping-fee, capabilities/warehouse-picking]
+elements: [elements/cj-logistics, elements/delivery-status-log, elements/fulfillment-carrier-selection-rule, elements/fulfillment-delivery-exception-case, elements/fulfillment-delivery-proof-record, elements/fulfillment-dispatch-handoff-event, elements/fulfillment-pack-verification-result, elements/fulfillment-pick-list-record, elements/fulfillment-return-label-record, elements/fulfillment-shipping-label, elements/hanjin-express, elements/korea-post, elements/picking-list, elements/pickup-request, elements/shipping-fee-rule, elements/waybill]
 relates: [domains/support]
 ---
 

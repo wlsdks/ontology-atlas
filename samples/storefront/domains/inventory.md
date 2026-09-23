@@ -6,8 +6,8 @@ title: Inventory
 display_ko: 재고
 display_en: Inventory
 description: "This area owns the question \"how many do we actually have, and how many of those must already count as sold?\". The count on the shelf and the count you can sell are different numbers: an item ordered a minute ago must count as sold even though it is still sitting there, and mixing the two means selling goods that do not exist."
-capabilities: [capabilities/restock-alert, capabilities/stock-receiving, capabilities/stock-reservation, capabilities/stock-tracking]
-elements: [elements/backorder-queue, elements/purchase-order, elements/restock-subscription, elements/shelf-location, elements/stock-adjustment, elements/stock-count-sheet, elements/stock-hold, elements/stock-ledger, elements/stock-snapshot, elements/supplier-lead-time]
+capabilities: [capabilities/inventory-availability-promise, capabilities/inventory-batch-tracking, capabilities/inventory-cycle-counting, capabilities/inventory-damage-recording, capabilities/inventory-reorder-planning, capabilities/inventory-safety-stock, capabilities/inventory-stock-reservation, capabilities/inventory-stock-transfer, capabilities/restock-alert, capabilities/stock-receiving, capabilities/stock-reservation, capabilities/stock-tracking]
+elements: [elements/backorder-queue, elements/inventory-availability-snapshot, elements/inventory-batch-trace, elements/inventory-cycle-count-sheet, elements/inventory-damage-report, elements/inventory-reorder-proposal, elements/inventory-safety-stock-threshold, elements/inventory-stock-reservation-record, elements/inventory-stock-transfer-event, elements/purchase-order, elements/restock-subscription, elements/shelf-location, elements/stock-adjustment, elements/stock-count-sheet, elements/stock-hold, elements/stock-ledger, elements/stock-snapshot, elements/supplier-lead-time]
 relates: [domains/fulfillment]
 ---
 
