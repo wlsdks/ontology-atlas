@@ -348,7 +348,7 @@ describe("label halo", () => {
    * the line visible between its two words (installed app, 2026-09-24). Only the anchor gets a
    * plate, painted before the glyph and at the name's alpha; other names keep the halo alone.
    */
-  it("lays a ground plate under the project name only, before its glyph", () => {
+  it("lays a ground plate under the anchor names (project, domain) only, before their glyph", () => {
     const { ctx, calls } = record();
     draw(ctx, { kind: "project", text: "Ontology Atlas", screenX: 100, screenY: 100, screenRadius: 20 } as never, tokens);
     const plate = calls.findIndex((c) => c.op === "fillRect");
@@ -358,7 +358,10 @@ describe("label halo", () => {
     const plateStyle = calls[plate].args.at(-1) as Record<string, unknown>;
     expect(plateStyle.fillStyle).toBe("#ground");
     expect(plateStyle.globalAlpha).toBe((calls[glyph].args.at(-1) as Record<string, unknown>).globalAlpha);
-    expect(paint().some((c) => c.op === "fillRect")).toBe(false);
+    expect(paint().some((c) => c.op === "fillRect"), "a domain name sits where its fan converges").toBe(true);
+    const element = record();
+    draw(element.ctx, { kind: "element", text: "meaning editor", screenX: 100, screenY: 100, screenRadius: 8 } as never, tokens);
+    expect(element.calls.some((c) => c.op === "fillRect"), "smaller names keep the glyph halo alone").toBe(false);
   });
 
   it("holds the halo at the name's own alpha, never above it", () => {
