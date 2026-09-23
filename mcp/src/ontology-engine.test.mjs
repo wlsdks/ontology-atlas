@@ -9,6 +9,7 @@ import { runJsonRpcProcess } from '../../scripts/lib/mcp-test-rpc.mjs';
 
 import { compileOntology } from './ontology-compiler.mjs';
 import { deriveBridgeShapes, queryCompiledOntology } from './ontology-engine.mjs';
+import { createContextOperations } from './ontology-engine/context-operations.mjs';
 import { defaultBody } from './schema.mjs';
 import { parseFrontmatter } from './parser.mjs';
 import { validateVaultDocument } from './validate.mjs';
@@ -133,6 +134,75 @@ describe('frontmatter integrity gate', () => {
 });
 
 describe('queryCompiledOntology', () => {
+  it('checks a high-fanout domain without rescanning its children for every membership lookup', () => {
+    const childCount = 1000;
+    let inspectedTargets = 0;
+    const edges = Array.from({ length: childCount }, (_, index) => ({
+      resolved: true,
+      via: 'capabilities',
+      get to() {
+        inspectedTargets += 1;
+        return `capabilities/child-${index}`;
+      },
+    }));
+    const { hasResolvedEdge } = createContextOperations({
+      outgoing: new Map([['domains/work', edges]]),
+    });
+    for (let index = 0; index < childCount; index += 1) {
+      assert.equal(hasResolvedEdge('domains/work', `capabilities/child-${index}`, 'capabilities'), true);
+    }
+    assert.equal(hasResolvedEdge('domains/work', 'capabilities/missing', 'capabilities'), false);
+    assert.equal(hasResolvedEdge('domains/work', 'capabilities/child-0', 'contains'), false);
+    assert.ok(inspectedTargets > 0, 'the fixture must exercise actual relation lookups');
+    assert.ok(inspectedTargets <= childCount * 2,
+      `membership checks inspected ${inspectedTargets} targets for ${childCount} children; repeated adjacency scans must stay linear`);
+  });
+
+  it('preserves bounded traversal order when artifact edges arrive out of order', () => {
+    const graph = compileOntology([
+      doc('capabilities/a', { kind: 'capability', depends_on: ['capabilities/b', 'capabilities/c'] }),
+      doc('capabilities/b', { kind: 'capability', depends_on: ['capabilities/a', 'capabilities/c'] }),
+      doc('capabilities/c', { kind: 'capability', depends_on: ['capabilities/a', 'capabilities/b'] }),
+    ]);
+    const reversed = { ...graph, edges: [...graph.edges].reverse() };
+    const inputs = [
+      { operation: 'neighbors', slug: 'capabilities/a', limit: 1 },
+      { operation: 'path', from: 'capabilities/a', to: 'capabilities/c' },
+      { operation: 'all_paths', from: 'capabilities/a', to: 'capabilities/c', searchBudget: 1 },
+      { operation: 'cycles', limit: 1, searchBudget: 3 },
+      { operation: 'node_profile', slug: 'capabilities/a', limit: 1 },
+    ];
+    const originalOrder = [...reversed.edges];
+    for (const input of inputs) {
+      assert.deepEqual(queryCompiledOntology(reversed, input), queryCompiledOntology(graph, input));
+    }
+    assert.deepEqual(reversed.edges, originalOrder, 'query preparation must not reorder the artifact');
+  });
+
+  it('keeps containment membership typed, resolved, and fresh across repeated queries', () => {
+    const graph = compileOntology([
+      doc('domains/work', {
+        kind: 'domain', capabilities: ['capabilities/a'], contains: ['capabilities/b'],
+        relates: ['capabilities/c'],
+      }),
+      ...['a', 'b', 'c', 'd'].map((name) => doc(`capabilities/${name}`, {
+        kind: 'capability', domain: 'domains/work',
+      })),
+    ]);
+    const aEdge = graph.edges.find((edge) => edge.from === 'domains/work' && edge.to === 'capabilities/a');
+    graph.edges.push({ ...aEdge, id: 'unresolved', to: 'capabilities/d', ref: 'missing', resolved: false });
+    const query = { operation: 'recommend_relations' };
+    assert.deepEqual(queryCompiledOntology(graph, query).recommendations.map((row) => row.to), [
+      'capabilities/c', 'capabilities/d',
+    ]);
+    // A new call must observe a changed artifact even if graphHash is unchanged.
+    aEdge.resolved = false;
+    graph.edges.push({ ...aEdge, id: 'new-containment', to: 'capabilities/c', ref: 'capabilities/c', resolved: true });
+    assert.deepEqual(queryCompiledOntology(graph, query).recommendations.map((row) => row.to), [
+      'capabilities/a', 'capabilities/d',
+    ]);
+  });
+
   it('suggests close enum values for direct graph-engine callers', () => {
     assert.throws(
       () => queryCompiledOntology(artifact(), { operation: 'overveiw' }),

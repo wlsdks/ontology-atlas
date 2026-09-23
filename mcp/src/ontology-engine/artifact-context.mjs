@@ -22,16 +22,18 @@ export function createArtifactContext(artifact, options = {}) {
 
   const outgoing = new Map();
   const incoming = new Map();
-  for (const edge of edges) {
+  // Every adjacency list is a subsequence of this order. Compute each key once
+  // instead of rebuilding it for every comparison in both indexes. Compiler
+  // output is already ordered, but callers may supply an unordered artifact.
+  const orderedEdges = edges.map((edge) => ({ edge, key: edgeSortKey(edge) }));
+  orderedEdges.sort((left, right) => left.key.localeCompare(right.key));
+  for (const { edge } of orderedEdges) {
     if (!outgoing.has(edge.from)) outgoing.set(edge.from, []);
     outgoing.get(edge.from).push(edge);
     if (edge.resolved) {
       if (!incoming.has(edge.to)) incoming.set(edge.to, []);
       incoming.get(edge.to).push(edge);
     }
-  }
-  for (const list of [...outgoing.values(), ...incoming.values()]) {
-    list.sort((left, right) => edgeSortKey(left).localeCompare(edgeSortKey(right)));
   }
 
   // Keep unresolved names queryable as evidence even though they are not nodes.

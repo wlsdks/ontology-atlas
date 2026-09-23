@@ -228,7 +228,13 @@ export function createContextOperations({
     return candidates;
   }
 
+  // Health, growth, and project summaries revisit the same containment tree
+  // within one query. These indexes expire with the engine, never the vault.
+  const childrenBySlug = new Map();
+  const parentsBySlug = new Map();
+
   function containmentChildren(slug) {
+    if (childrenBySlug.has(slug)) return childrenBySlug.get(slug);
     const bySlug = new Map();
     for (const candidate of containmentTraversalEdges(slug, 'descendants')) {
       const previous = bySlug.get(candidate.next);
@@ -236,10 +242,13 @@ export function createContextOperations({
         bySlug.set(candidate.next, candidate);
       }
     }
-    return [...bySlug.values()].sort((a, b) => a.next.localeCompare(b.next));
+    const children = [...bySlug.values()].sort((a, b) => a.next.localeCompare(b.next));
+    childrenBySlug.set(slug, children);
+    return children;
   }
 
   function containmentParentsFor(slug) {
+    if (parentsBySlug.has(slug)) return parentsBySlug.get(slug);
     const bySlug = new Map();
     for (const candidate of containmentTraversalEdges(slug, 'ancestors')) {
       const previous = bySlug.get(candidate.next);
@@ -247,7 +256,9 @@ export function createContextOperations({
         bySlug.set(candidate.next, candidate);
       }
     }
-    return [...bySlug.values()].sort((a, b) => a.next.localeCompare(b.next));
+    const parents = [...bySlug.values()].sort((a, b) => a.next.localeCompare(b.next));
+    parentsBySlug.set(slug, parents);
+    return parents;
   }
 
   function resolveOptional(input) {
@@ -257,10 +268,23 @@ export function createContextOperations({
     return aliasToSlug.get(candidate) || null;
   }
 
+  // A large domain's containment list is consulted once per child by health
+  // and growth queries. Index a source on its first lookup to avoid repeatedly
+  // scanning the same high-degree list. This lives only for this engine call.
+  const resolvedTargetsBySource = new Map();
+
   function hasResolvedEdge(from, to, via) {
-    return (outgoing.get(from) || []).some(
-      (edge) => edge.resolved && edge.to === to && edge.via === via,
-    );
+    let targetsByRelation = resolvedTargetsBySource.get(from);
+    if (!targetsByRelation) {
+      targetsByRelation = new Map();
+      for (const edge of outgoing.get(from) || []) {
+        if (!edge.resolved) continue;
+        if (!targetsByRelation.has(edge.via)) targetsByRelation.set(edge.via, new Set());
+        targetsByRelation.get(edge.via).add(edge.to);
+      }
+      resolvedTargetsBySource.set(from, targetsByRelation);
+    }
+    return targetsByRelation.get(via)?.has(to) ?? false;
   }
 
   function hasResolvedContainmentParent(slug) {
