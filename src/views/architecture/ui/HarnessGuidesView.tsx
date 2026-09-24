@@ -49,9 +49,12 @@ const WARNING_BADGE =
  *    stamps every file with the moment it arrived.
  */
 
-/** The pair column's two inks: a difference reads a step above "same" and "not applicable". */
-const PAIR_NEUTRAL_BADGE =
-  'border border-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]';
+/**
+ * Only a difference wears a tag in the pair column. "Same content" is plain text and "not
+ * applicable" is the dash the changed column already uses for no value: outlining every row made
+ * four identical "not applicable" tags the column's loudest ink, and the one finding beat them by a
+ * single step (design review, 2026-09-25).
+ */
 const PAIR_DRIFT_BADGE =
   'border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-secondary)]';
 
@@ -461,7 +464,10 @@ export function HarnessGuidesView({
   return (
     <div className="flex flex-col gap-4" data-testid="harness-guides">
       <header>
-        <h2 className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+        {/* A section head, on the same step as the two below it. At `text-title` it stood 30px
+            under the census sentence at the same size, and the screen had two headlines; the
+            thesis above is the one step over body here (design review, 2026-09-25). */}
+        <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
           {t('guidesTitle')}
         </h2>
         <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
@@ -487,7 +493,7 @@ export function HarnessGuidesView({
                      name, and the hint panel inside it is a 137-character paragraph. The label is
                      the column's name; the hint stays reachable on its own button. */
                   aria-label={t(key)}
-                  className="pb-2 pr-4 text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-label)] text-[color:var(--color-text-quaternary)]"
+                  className="whitespace-nowrap pb-2 pr-4 text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-label)] text-[color:var(--color-text-quaternary)]"
                 >
                   <span className="inline-flex items-center gap-1">
                     {t(key)}
@@ -528,26 +534,28 @@ export function HarnessGuidesView({
                     build printed a drift count beside `.codex/`, which has no pair at all (measured
                     in the browser, 2026-09-13).
                   */}
-                  {/* One badge in every row, so the column reads as one kind of fact. Only a
-                      difference lifts its ink; "same" and "not applicable" stay neutral. */}
                   {row.declaredPair === null ? (
-                    <span className={badgeClass({ shape: 'tag', className: PAIR_NEUTRAL_BADGE })}>
-                      {t('pairNotApplicable')}
+                    <span
+                      title={t('pairNotApplicable')}
+                      className="text-body text-[color:var(--color-text-quaternary)]"
+                    >
+                      <span aria-hidden>—</span>
+                      <span className="sr-only">{t('pairNotApplicable')}</span>
                     </span>
                   ) : row.pairDrift.length > 0 ? (
-                    <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
+                    <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
                       {t('driftTitle', { count: row.pairDrift.length })}
                     </span>
                   ) : (
                     <span
-                      className={badgeClass({ shape: 'tag', className: PAIR_NEUTRAL_BADGE })}
+                      className="whitespace-nowrap text-label text-[color:var(--color-text-tertiary)]"
                       title={row.declaredPair}
                     >
                       {t('pairMatchesTwin')}
                     </span>
                   )}
                 </td>
-                <td className="py-2 pr-4 text-body tabular-nums text-[color:var(--color-text-tertiary)]">
+                <td className="whitespace-nowrap py-2 pr-4 text-body tabular-nums text-[color:var(--color-text-tertiary)]">
                   {formatWhen(row.lastModified, locale)}
                 </td>
               </tr>

@@ -37,6 +37,9 @@ export function HarnessStructureDiagram({ slots, sourceRoot, selectedId, detailI
   const t = useTranslations('harness');
   const stacked = useSyncExternalStore(subscribeToLayout, getStackedLayout, getServerLayout);
   const name = sourceRoot.split(/[\\/]/).filter(Boolean).at(-1) ?? sourceRoot;
+  /* The path is printed once: its parent quietly, the folder's own name in the stronger ink. It
+     used to be the name and then the whole path beside it, so the folder was named twice. */
+  const parent = sourceRoot.endsWith(name) ? sourceRoot.slice(0, sourceRoot.length - name.length) : '';
   const selected = slots.find(slot => slot.id === selectedId);
   const loopSlot = slots.find(slot => slot.band === 'tool');
   const selectSlot = (id: string, button: HTMLButtonElement) => {
@@ -76,7 +79,7 @@ export function HarnessStructureDiagram({ slots, sourceRoot, selectedId, detailI
     </section>;
   };
   return <div data-testid="harness-structure-diagram" className={styles.diagram} data-active-band={selected?.band ?? 'tool'}>
-    <div className={styles.source}><FolderCode size={ICON_SIZE.md} aria-hidden /><span>{t('diagramRoot')}</span><code title={sourceRoot}><span className={styles.sourceName}>{name}</span>{sourceRoot !== name ? <span className={styles.sourcePath}>{sourceRoot}</span> : null}</code></div>
+    <div className={styles.source}><FolderCode size={ICON_SIZE.md} aria-hidden /><span>{t('diagramRoot')}</span><code title={sourceRoot}>{parent ? <span className={styles.sourcePath}>{parent}</span> : null}<span className={styles.sourceName}>{name}</span></code></div>
     <div className={styles.workbench}>
       <div className={styles.flow}>
         {band('tells')}

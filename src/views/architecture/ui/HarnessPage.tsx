@@ -34,6 +34,7 @@ import { HarnessAnatomyView } from './HarnessAnatomyView';
 import { HarnessCoverageView } from './HarnessCoverageView';
 import { HarnessGuidesView } from './HarnessGuidesView';
 import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
+import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
 
 /**
  * **The Harness destination: one spine, and two views that detail it.**
@@ -363,9 +364,12 @@ function HarnessPageInner() {
       <p className="max-w-prose break-keep text-title tabular-nums text-[color:var(--color-text-primary)]">
         {t('structureSentence', structureCount)}
       </p>
-      {/* Inline flow rather than flex: as a flex item the two-line caption took the whole
-          measure and pushed its hint onto a third line of its own. */}
-      <div className="mt-1 max-w-prose break-keep text-label text-[color:var(--color-text-tertiary)]">
+      {/* Inline flow rather than flex: as a flex item the caption took the whole measure and
+          pushed its hint onto a line of its own. Not held to the prose measure either: at that
+          width it broke into two ragged lines with the hint hanging off the second, beside a
+          panel that runs the full frame (design review, 2026-09-25). One label line at desktop
+          widths, and the one place this view says what its numbers are not. */}
+      <div className="mt-1 break-keep text-label text-[color:var(--color-text-tertiary)]">
         <span>{t('anatomyCaption')} </span>
         <InfoHint
           align="left"
@@ -380,7 +384,7 @@ function HarnessPageInner() {
   ) : null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', HARNESS_FRAME_CONTAINER)}>
       {/*
         The chrome row: the destination's name and the one tab set share a line, so the title's `y`
         does not depend on which view is open and the tabs never move out from under the pointer
@@ -404,7 +408,7 @@ function HarnessPageInner() {
          * not thirty-six. When the row wraps at narrow widths the tab strip takes the rail alone,
          * which is the same shape and still continuous.
          */
-        className={`flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-[color:var(--color-divider)] px-5 pb-0 md:px-10 ${PAGE_TOP_PAD}`}
+        className={cn('flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-[color:var(--color-divider)] pb-0', HARNESS_GUTTER_X, PAGE_TOP_PAD)}
       >
         <h1 className="pb-3 text-display font-[var(--font-weight-strong)] leading-display-tight text-[color:var(--color-text-primary)]">
           {t('title')}
@@ -446,7 +450,8 @@ function HarnessPageInner() {
              explainer's first line sat at y 85.4 against a rail whose own y was 85.4 (measured
              1512×901, 2026-09-13) — the cramping the owner reported, reintroduced by the fix for
              it. */
-          className={cn('min-h-0 flex-1 px-5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] pt-4 md:px-10 lg:pb-[var(--page-bottom-breath)] max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
+          className={cn('min-h-0 flex-1 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] pt-4 lg:pb-[var(--page-bottom-breath)] max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
+            HARNESS_GUTTER_X,
             view === 'structure' && reportState.status === 'ready' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto')}
         >
           <div className={cn('w-full', view === 'structure' && reportState.status === 'ready' && 'flex min-h-0 flex-1 flex-col')}>

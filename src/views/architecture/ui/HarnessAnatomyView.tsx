@@ -289,7 +289,7 @@ export function HarnessAnatomyView({
 
       {presentation === 'diagram' ? <>
         <HarnessStructureDiagram slots={anatomy.slots} sourceRoot={sourceRoot} selectedId={selectedSlot} detailId={detailId} onSelect={setSelectedSlot}
-          selectedContent={<ul className="px-3 py-2">
+          selectedContent={<ul className="py-2">
             {selected ? <SlotRow slot={selected} t={t} copied={copiedId===selected.id} onCopy={copy} hideTitle /> : null}
           </ul>} />
         {anatomy.silentGuards.missing.length > 0 || anatomy.approvalGates.length > 0 ? (

@@ -935,12 +935,16 @@ export function HarnessCoverageView({
         <table className="w-full table-fixed border-collapse text-left">
           <caption className="sr-only">{t('coverageTableCaption')}</caption>
           <colgroup>
-            {/* Fixed value tracks from `lg`: a mark and a count need ~140px, and a percentage track
-                stretched them to 216px at 1920 while the domain's purpose line was clamped. */}
-            <col className="w-[55%] lg:w-auto" />
-            <col className="w-[15%] lg:w-36" />
-            <col className="w-[15%] lg:w-36" />
-            <col className="w-[15%] lg:w-36" />
+            {/* From `lg` the domain takes 46% and the three answers share the rest. Fixed 144px
+                answer tracks left the domain column 1,350px wide around a purpose line that ended
+                near x 530, so every row had a 900px empty band in its middle and the answers stood
+                crammed at the far edge (design review, 2026-09-25). At the frame's 1600px cap 46%
+                is ~700px — room for a purpose line with no clamp — and the answers sit a readable
+                step apart instead of at the wall. */}
+            <col className="w-[55%] lg:w-[46%]" />
+            <col className="w-[15%] lg:w-[18%]" />
+            <col className="w-[15%] lg:w-[18%]" />
+            <col className="w-[15%] lg:w-[18%]" />
           </colgroup>
           <thead>
             <tr>
