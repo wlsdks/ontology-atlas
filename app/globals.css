@@ -1680,6 +1680,76 @@
   }
 
   /*
+   * **Words still being worked on — a light band sweeping across them** (owner, 2026-09-24:
+   * "while it works I cannot tell whether it is doing anything; make the letters ripple").
+   *
+   * Worn by a running tool row's label and its 「running」 word, an active work group's title and
+   * the composer's 「thinking · 25s」, and removed the frame the work lands, so a sweeping line is
+   * in flight and a still line is finished. `src/widgets/acp-chat-panel/ui/working-ink.ts` owns
+   * which states qualify.
+   *
+   * The ink at rest is the row's own `--color-text-tertiary`, so a running row and a finished one
+   * share a column and differ only by the band — `--color-text-primary`, the brightest ink the
+   * text ramp has, which is what makes the travel visible on a 12px line. The gradient is painted
+   * through the glyphs (`background-clip: text`), never behind them: no box, no glow.
+   *
+   * ⚠️ **`linear`, and twice the scan period.** A loop that never arrives takes the linear curve
+   * for the reason `.harness-scan-sweep` records. The period is that bar's `--motion-settle * 4`
+   * doubled: the bar crosses an empty track, this band crosses words someone is reading, and at
+   * 960ms it flickered across a label before the eye settled on it. Two scan beats keep one
+   * rhythm family rather than inventing a second.
+   */
+  @keyframes acpWorkingShimmer {
+    from { background-position: 100% 0; }
+    to { background-position: 0% 0; }
+  }
+
+  .acp-working-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-text-tertiary) 0%,
+      var(--color-text-tertiary) 40%,
+      var(--color-text-primary) 50%,
+      var(--color-text-tertiary) 60%,
+      var(--color-text-tertiary) 100%
+    );
+    /* 250% puts the band (the gradient's middle) outside the text at both ends of the loop,
+       so every pass enters from the left edge and leaves past the right one. */
+    background-size: 250% 100%;
+    background-position: 100% 0;
+    background-repeat: no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: acpWorkingShimmer calc(var(--motion-settle) * 8) linear infinite;
+  }
+
+  /*
+   * **Reduced motion: no sweep, a brighter still ink.** The global rule stops the travel; this
+   * takes the painted gradient away so the words are ordinary text again, one step brighter
+   * (`--color-text-secondary`) than a finished row's tertiary. Beside it the running row keeps
+   * its hollow indigo ring and its 「running」 word, the work group keeps its accent dot and
+   * 「working」, and the composer keeps its ticking clock — each already says the same fact in a
+   * form that does not move. None of these properties is one the global rule marks `!important`,
+   * so nothing here fights it.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .acp-working-shimmer {
+      background-image: none;
+      -webkit-text-fill-color: currentColor;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  /* A forced palette cannot paint text through a gradient; give the glyphs back their colour. */
+  @media (forced-colors: active) {
+    .acp-working-shimmer {
+      background-image: none;
+      -webkit-text-fill-color: currentColor;
+    }
+  }
+
+  /*
  * ## Architecture canvas — a calm comparison surface
  *
  * This is not the topology map. A repeated dot field competed with every caption and dependency
