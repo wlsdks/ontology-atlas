@@ -110,6 +110,7 @@ const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string }> = {
   via: { scope: "global", note: "인사이트 복귀 마커 — 탭 이름(볼트 무관)" },
   review: { scope: "global", note: "인사이트 큐 행 id — 큐가 매번 파생되므로 볼트 이름이 아니다" },
   ask: { scope: "global", note: "의도 종류 열거" },
+  view: { scope: "global", note: "territories 하나뿐인 지도 보기 열거" },
 };
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -151,6 +152,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.appearance.frameMeter", kind: "storage", scope: "global", note: "프레임 미터 표시 선호" },
   { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D 보기(지도 돔 뷰) 선호 — 기본 꺼짐(2D)" },
   { key: "atlas.appearance.galaxy", kind: "storage", scope: "global", note: "갤럭시 보기(평면 지도를 별하늘로) 선호 — 기본 꺼짐" },
+  { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "영역 보기(모든 역량을 도메인별로 펼친 평면 지도) 선호 — 기본 꺼짐" },
   { key: "atlas.appearance.map-arrangement", kind: "storage", scope: "global", note: "3D 배치 기준: 소유(돔, 기본)/결합(힘 구름)" },
   { key: "atlas.agentActivity.status", kind: "storage", scope: "global", note: "상태 칩 on/off 선호" },
   { key: "atlas.agentActivity.notifications", kind: "storage", scope: "global", note: "알림함 on/off 선호" },
