@@ -114,3 +114,45 @@ export function resolveEvidenceStates(
   }
   return { current, stale, missing, unknown, folderOnly, rows };
 }
+
+/** The two facts `buildEvidenceConcepts` reads from a vault document. */
+export interface EvidenceSourceDoc {
+  slug: string;
+  frontmatter: { path?: unknown; elements?: unknown };
+}
+
+/**
+ * Where each concept's evidence lives, from the vault alone: its own `path:` and the `path:` of
+ * every element it lists. One builder for every screen that asks the Git walk, so the insights
+ * brief and the map's Territories view send the same paths and judge the same concepts.
+ */
+export function buildEvidenceConcepts(
+  docs: readonly EvidenceSourceDoc[],
+  nodes: readonly { id: string; docSlug?: string | null }[],
+): EvidenceConceptInput[] {
+  const pathBySlug = new Map<string, string>();
+  const docBySlug = new Map<string, EvidenceSourceDoc>();
+  for (const doc of docs) {
+    if (!docBySlug.has(doc.slug)) docBySlug.set(doc.slug, doc);
+    const path = doc.frontmatter.path;
+    if (typeof path === 'string' && path.length > 0) pathBySlug.set(doc.slug, path);
+  }
+  const out: EvidenceConceptInput[] = [];
+  for (const node of nodes) {
+    if (!node.docSlug) continue;
+    const doc = docBySlug.get(node.docSlug);
+    if (!doc) continue;
+    const own = pathBySlug.get(doc.slug);
+    const elements = Array.isArray(doc.frontmatter.elements)
+      ? (doc.frontmatter.elements as unknown[]).filter((slug): slug is string => typeof slug === 'string')
+      : [];
+    const paths = new Set<string>();
+    if (own) paths.add(own);
+    for (const slug of elements) {
+      const path = pathBySlug.get(slug);
+      if (path) paths.add(path);
+    }
+    out.push({ id: node.id, docPath: `${doc.slug}.md`, evidencePaths: [...paths] });
+  }
+  return out;
+}
