@@ -15,10 +15,22 @@ import type { GrowthDraft } from './CompanionStudy';
 const CompanionGrowth = lazy(() => import('./CompanionGrowth').then(module => ({default: module.CompanionGrowth})));
 import type { MemoryDraft } from './CompanionMemories';
 import { CompanionRoom } from './CompanionRoom';
+import { CompanionSprite } from './CompanionSprite';
 import styles from './companion-home.module.css';
 
+/**
+ * How the host draws the full-width row when it stands among its own door cards (the first-run
+ * column, 2026-09-25): the host's card class and its 32px glyph chip. The room scene is 112px
+ * wide, so beside 32px door glyphs it put this row's title 78px right of every door title; as a
+ * door the row keeps the column's one text start line, and the room itself stays in the journal.
+ */
+export interface CompanionDoor {
+  className: string;
+  glyphClassName: string;
+}
+
 /** The existing entry stays put; all new interaction lives inside this home. */
-export function CompanionHome({ compact = false }: { compact?: boolean }) {
+export function CompanionHome({ compact = false, door }: { compact?: boolean; door?: CompanionDoor }) {
   const t = useTranslations('companion');
   const locale = useLocale();
   const vault = useLocalVault();
@@ -56,6 +68,19 @@ export function CompanionHome({ compact = false }: { compact?: boolean }) {
           </span>
         }
       />
+    ) : door ? (
+      <RowButton onClick={show} data-testid="companion-home" className={door.className}>
+        <span className={door.glyphClassName} aria-hidden="true">
+          {/* The room's own resident (the fox), at the toolbar tile's half scale. */}
+          <span className={styles.workPose}>
+            <CompanionSprite pose="idle" />
+          </span>
+        </span>
+        <span className="min-w-0 text-left">
+          <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t('home')}</span>
+          <span className="mt-0.5 block truncate text-body leading-body text-[color:var(--color-text-tertiary)]">{latest ? latest.note : t('emptyHome')}</span>
+        </span>
+      </RowButton>
     ) : (
       <RowButton onClick={show} data-testid="companion-home" className="w-full">
         <span className={styles.homeRow}>

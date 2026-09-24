@@ -1044,6 +1044,6 @@ describe('AppSettingsMenu — 가져오기 모듈의 자리', () => {
     expect(
       workspaceBranch,
       '가져오기 모듈이 작업 공간 절에서 사라졌다 — INDEX 로 되돌아갔거나 통째로 없어졌다',
-    ).toContain('<BlockImportModule />');
+    ).toContain('<BlockImportModule');
   });
 });

@@ -262,9 +262,23 @@ export function FirstRunPage() {
           </div>
         </header>
 
-        {/* On the first-run column the companion row wears the door cards' surface, so the
-            column reads as one stack of cards rather than one bare row above three framed ones. */}
-        {!choosingFor ? <div className={choosingFolderHome ? "shrink-0" : "shrink-0 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"}><CompanionHome /></div> : null}
+        {/* On the first-run column the companion is one more door: the door cards' surface, their
+            32px glyph chip and their title line, so the column keeps one text start line (the
+            112px room scene put its title 78px right of the doors'). */}
+        {!choosingFor ? (
+          <div className="shrink-0">
+            {choosingFolderHome ? (
+              <CompanionHome />
+            ) : (
+              <CompanionHome
+                door={{
+                  className: `${secondaryCardBase} w-full border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`,
+                  glyphClassName: `${iconChip} overflow-hidden`,
+                }}
+              />
+            )}
+          </div>
+        ) : null}
 
         {choosingFor ? (
           <div ref={shapePanel} tabIndex={-1} className="grid gap-2" aria-busy={busy} data-testid="first-run-shape">

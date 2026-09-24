@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useEffect, useMemo, useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { RefreshCw } from 'lucide-react';
 
-import { useAppUpdateContext } from '@/features/app-update';
+import { readUpdateMemory, useAppUpdateContext } from '@/features/app-update';
 import { isDesktopShell } from '@/shared/lib/desktop-shell';
 import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -70,6 +70,17 @@ export function AppUpdateSettings() {
     };
   }, [readAttempt]);
 
+  /*
+   * What the automatic check remembers, stated as facts (2026-09-25). The pane held one row and
+   * left most of the fixed sheet blank; these are the two things a person here can not see
+   * anywhere else — when the app last asked, and which build they put off. Re-read whenever the
+   * phase moves, because a finished manual check writes a new time.
+   */
+  const format = useFormatter();
+  const phaseKind = update?.phase.kind;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the phase is the re-read signal, not an input
+  const memory = useMemo(() => readUpdateMemory(), [phaseKind]);
+
   if (!isDesktopShell() || !update) return null;
 
   const phase = update.phase;
@@ -128,6 +139,26 @@ export function AppUpdateSettings() {
               {checking ? t('checking') : t('check')}
             </Chip>
           }
+        />
+        <SettingsRow
+          label={t('autoLabel')}
+          caption={[
+            memory?.lastCheckedAt
+              ? t('autoLast', {
+                  when: format.dateTime(new Date(memory.lastCheckedAt), {
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  }),
+                })
+              : t('autoNever'),
+            memory?.dismissedVersion ? t('autoDismissed', { version: memory.dismissedVersion }) : null,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          testId="app-settings-update-auto"
+          control={null}
         />
       </SettingsGroup>
       {outcome ? (

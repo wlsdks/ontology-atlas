@@ -934,48 +934,51 @@ export function AppSettingsMenu({
                     the no-transient-stacking contract. */}
                 {/*
                   Auto-display switch — it does not delete the guide. Off simply means
-                  it does not appear by itself; "View Again" below and the map's compass
+                  it does not appear by itself; "View Again" beside it and the map's compass
                   tile still open it. Owner: *"It only needs to show the first time, or when clicked"*
                   (it only needs to show the first time, or when clicked).
                 */}
+                {/*
+                  One row for the guide (2026-09-25): whether it opens by itself, and the
+                  button that opens it now. They were two rows, and the first one's caption
+                  pointed at the second ("the Replay button below"); with the pane head the
+                  Screen pane no longer fitted the 672 sheet. The replay chip is the row's
+                  trailing action and stays outside the switch's reach: turning
+                  auto-display off never hides the way back.
+                */}
                 <SettingsRow
                   testId="app-settings-guide-auto-start"
-                  label={t('guideAutoStartLabel')}
+                  label={t('replayGuideLabel')}
                   caption={t('guideAutoStartCaption')}
                   control={
-                    <SegmentSwitch
-                      ariaLabel={t('guideAutoStartLabel')}
-                      testId="app-settings-guide-auto-start-switch"
-                      value={guideAutoStart}
-                      onChange={writeGuideAutoStart}
-                      options={[
-                        { value: true, label: t('guideAutoStartOn') },
-                        { value: false, label: t('guideAutoStartOff') },
-                      ]}
-                    />
+                    <>
+                      <SegmentSwitch
+                        ariaLabel={t('guideAutoStartLabel')}
+                        testId="app-settings-guide-auto-start-switch"
+                        value={guideAutoStart}
+                        onChange={writeGuideAutoStart}
+                        options={[
+                          { value: true, label: t('guideAutoStartOn') },
+                          { value: false, label: t('guideAutoStartOff') },
+                        ]}
+                      />
+                      {replayGuide ? (
+                        <Chip
+                          size="lg"
+                          tone="secondary"
+                          data-testid="app-settings-replay-guide-button"
+                          onClick={() => {
+                            closePanel(false);
+                            replayGuide();
+                          }}
+                          className={DETAIL_TOGGLE_CHIP}
+                        >
+                          {t('replayGuideAction')}
+                        </Chip>
+                      ) : null}
+                    </>
                   }
                 />
-                {replayGuide ? (
-                  <SettingsRow
-                    testId="app-settings-replay-guide"
-                    label={t('replayGuideLabel')}
-                    caption={t('replayGuideCaption')}
-                    control={
-                      <Chip
-                        size="lg"
-                        tone="secondary"
-                        data-testid="app-settings-replay-guide-button"
-                        onClick={() => {
-                          closePanel(false);
-                          replayGuide();
-                        }}
-                        className="border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-                      >
-                        {t('replayGuideAction')}
-                      </Chip>
-                    }
-                  />
-                ) : null}
                   </SettingsGroup>
                   </>
                 ) : section === 'notify' ? (
@@ -1244,35 +1247,53 @@ export function AppSettingsMenu({
                       {vaultBody}
                     </span>
                   </span>
-                  {/* The whole row is the link; its trailing mark wears the same secondary
-                      chip as the pane's other row actions instead of a bare accent text link. */}
-                  <span className={controlClass({ shape: 'chip', size: 'lg', tone: 'secondary', className: 'shrink-0 gap-1 border-[color:var(--color-border-soft)]' })}>
+                  {/* The whole row is the link, so its trailing mark is the row-link grammar the
+                      nav's MCP row uses: a quiet word and a chevron, no box. A chip-shaped span
+                      inside a link read as a second target that was not its own button. */}
+                  <span className="flex shrink-0 items-center gap-1 text-body text-[color:var(--color-text-tertiary)]">
                     {vaultCta}
-                    <ChevronRight size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+                    <ChevronRight size={ICON_SIZE.sm} aria-hidden />
                   </span>
                 </Link>
-                  </SettingsGroup>
                     {/*
                       "Import nodes from another folder"
                       — moved here from the bottom of INDEX (2026-08-02, owner:
-                      *"What is this?
-                      why is this text here? is it unnecessary?"*
-                      (what is this?
-                      why is this text here? is it unnecessary?).
+                      *"What is this? why is this text here? is it unnecessary?"*).
 
                       Why here: this job is about **what comes into this folder**, and
                       that is this section's subject. It does not belong as a permanent
                       button on a screen for reading the map — it gets used once or
                       twice in a lifetime.
 
-                      The name changed too. "Block" in the old "Import Block" is
-                      defined nowhere in this app, so a first-time reader had no way to
-                      know what the button opens.
-
-                      The module is self-contained and renders itself only while a
-                      vault is loaded.
+                      It is the group's last row (2026-09-25) rather than a dim bordered
+                      chip under the card: the pane ended on its lowest-quality element,
+                      11px quaternary ink in a box of its own. The module still owns the
+                      pick, the preview and its states; this pane only draws the row.
                     */}
-                    <BlockImportModule />
+                    <BlockImportModule
+                      renderTrigger={(trigger) => (
+                        <SettingsRow
+                          testId="app-settings-block-import"
+                          label={trigger.label}
+                          caption={trigger.status ?? trigger.caption}
+                          captionTone={trigger.statusKind === 'error' ? 'danger' : 'neutral'}
+                          control={
+                            <Chip
+                              size="lg"
+                              tone="secondary"
+                              data-testid="block-import-open"
+                              onClick={trigger.onPick}
+                              disabled={trigger.disabled}
+                              title={trigger.title}
+                              className={DETAIL_TOGGLE_CHIP}
+                            >
+                              {trigger.action}
+                            </Chip>
+                          }
+                        />
+                      )}
+                    />
+                  </SettingsGroup>
                     </>
 
                 ) : section === 'update' ? (

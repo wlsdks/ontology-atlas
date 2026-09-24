@@ -100,15 +100,17 @@ export const SETTINGS_SECTION_LABEL =
  * The head every pane opens with — the section's name on the title step and one finished
  * sentence saying what the pane decides (2026-09-25).
  *
- * ⚠️ **This overturns "the section title is not repeated"** (2026-07-29). That rule held
- * while the nav was the loudest type in the sheet (14px against 12.5px row titles), but it
- * left the pane with no attention winner and nothing on the right saying where you are, and
- * three panes grew their own substitute: a free-floating 11px intro line (Update, Expand,
- * Footprint) or a dot-joined 12.5px fragment (API Key), while Screen and Workspace opened
- * straight into a card. One head in one place replaces all four patterns, and type now
- * descends pane head (16) → row title (12.5) → caption (11), with the nav quiet at 12.5.
- * Falsifier: if a measured session shows people reading the nav and head as a stutter
- * (the same word twice), fold the name back and keep only the sentence.
+ * It overturns "the section title is not repeated" (2026-07-29) and steps the nav down from
+ * 14px: the record, with its dissent and falsifier, is
+ * `docs/records/decisions/2026-09-25-settings-pane-head-ac02840d-c96d-45d0-83d4-8ebf11daa06c.md`.
+ * Type descends pane head (16) → row title (12.5) → caption (11).
+ *
+ * The head's text stands on the row labels' start line: the rows sit inside a group whose
+ * 1px border and `px-3` put their text 13px in, so the head carries the same transparent
+ * border and inset (it hung 9px left at `px-1`). No bottom padding: the pane's grid gap
+ * already separates it from the first group, and the Screen pane has to fit 672. The
+ * sentence is prose, so it keeps the prose measure (520), not the row measure, and is
+ * balanced: `text-pretty` still left a two-word last line on the API Key sentence.
  */
 export function SettingsPaneHead({
   title,
@@ -120,11 +122,11 @@ export function SettingsPaneHead({
   testId?: string;
 }) {
   return (
-    <header className="grid min-w-0 gap-1 px-1 pb-1" data-testid={testId}>
+    <header className="grid min-w-0 gap-1 border-x border-transparent px-3" data-testid={testId}>
       <h3 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
         {title}
       </h3>
-      <p className="max-w-[var(--settings-content-measure)] break-keep text-body leading-body text-pretty text-[color:var(--color-text-tertiary)]">
+      <p className="max-w-[var(--git-setup-measure)] break-keep text-body leading-body text-balance text-[color:var(--color-text-tertiary)]">
         {description}
       </p>
     </header>
