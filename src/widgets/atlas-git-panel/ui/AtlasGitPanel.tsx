@@ -1285,7 +1285,7 @@ function PageHeader({
             needs confirmed is not a product description but "nothing outside my
             folder is touched". */}
         {showScope ? (
-          <p className="flex items-center gap-1.5 text-label leading-prose break-keep text-[color:var(--color-text-quaternary)]">
+          <p className="flex items-center gap-1.5 text-label leading-prose text-[color:var(--color-text-quaternary)]">
             <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
             {t("scopeNotice")}
           </p>
@@ -1625,7 +1625,7 @@ function SetupFrame({
             {title}
           </h1>
           {body ? (
-            <p className="max-w-[34em] text-body-lg leading-body-lg break-keep text-[color:var(--color-text-secondary)]">
+            <p className="max-w-[34em] text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
               {body}
             </p>
           ) : null}
@@ -1633,7 +1633,7 @@ function SetupFrame({
         {step ? <ConnectLadder t={t} current={step} /> : null}
         {children}
         {note ? (
-          <p className="flex items-start gap-2 text-label leading-prose break-keep text-[color:var(--color-text-quaternary)]">
+          <p className="flex items-start gap-2 text-label leading-prose text-[color:var(--color-text-quaternary)]">
             <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
             <span>{note}</span>
           </p>
@@ -2032,7 +2032,7 @@ function RemoteResultLine({
       role="status"
       data-testid={error ? `atlas-git-${kind}-error` : `atlas-git-${kind}-notice`}
       className={cn(
-        "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-prose break-keep",
+        "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-prose",
         error
           ? "text-[color:var(--color-danger-text)]"
           : "text-[color:var(--color-text-tertiary)]",
@@ -2079,7 +2079,7 @@ function RemoteSetup({
       data-testid="atlas-git-remote-setup"
       className="git-fade-in flex shrink-0 flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
     >
-      <p className="text-label leading-prose break-keep text-[color:var(--color-text-tertiary)]">
+      <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
         {t("remoteSetupBody")}
       </p>
       <div className="flex flex-wrap items-center gap-2">
@@ -2166,7 +2166,7 @@ function DiscardDock({
           className="git-fade-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
           data-testid="atlas-git-discard-step"
         >
-          <p className="text-label leading-prose break-keep text-[color:var(--color-text-secondary)]">
+          <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
             {status === "deleted"
               ? t("discardConfirmDeleted")
               : t("discardConfirmBody", { added: delta?.added ?? 0, removed: delta?.removed ?? 0 })}
@@ -3201,7 +3201,7 @@ function DesktopBody({
       >
         <div className="flex flex-col gap-4" data-testid="atlas-git-not-initialized">
           {/* Say what will be created **before** it is pressed. */}
-          <p className="text-body leading-body break-keep text-[color:var(--color-text-tertiary)]">
+          <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t("initWhatHappens")}
           </p>
 
@@ -3420,7 +3420,7 @@ function DesktopBody({
               repeat what the dock says ("all committed") but states **what the
               current state actually is**. */}
           {!hasChanges ? (
-            <p className="flex-none border-b border-[color:var(--color-divider)] px-4 py-3 text-label leading-prose break-keep text-[color:var(--color-text-tertiary)]">
+            <p className="flex-none border-b border-[color:var(--color-divider)] px-4 py-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">
               {t("noChangesHint")}
             </p>
           ) : null}

@@ -248,12 +248,12 @@ export function LibraryRounds() {
               <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {t("title")}
               </h1>
-              <p data-testid="library-rounds-header-line" className="mt-2 max-w-prose text-body-lg leading-title text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+              <p data-testid="library-rounds-header-line" className="mt-2 max-w-prose text-body-lg leading-title text-[color:var(--color-text-tertiary)]">
                 <span className="text-[color:var(--color-text-secondary)]">{t("header.rounds", { count: rounds.length })}</span>
                 {" · "}
                 <span className={running ? "text-[color:var(--color-indigo-text-soft)]" : undefined}>{headerLine}</span>
               </p>
-              <p className="mt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]">{t("limit")}</p>
+              <p className="mt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]">{t("limit")}</p>
             </div>
           </header>
 

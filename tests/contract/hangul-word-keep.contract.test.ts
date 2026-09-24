@@ -90,8 +90,12 @@ describe("<html lang> is right before the first paint", () => {
  * *mentions* the class is not a use). Measured 2026-09-25: 256 + 108 = 364. The ceiling is
  * exact in both directions: a removal fails the gate until the ceiling is lowered to the new
  * count, so the room a removal frees cannot be spent silently by the next site.
+ *
+ * 364 → 357 (2026-09-25, polish bundle): the screens that landed beside this rule (projects,
+ * download, gateway, library ops, history, insights, agents) had added per-element sites; each
+ * was dropped from its new line, which also took seven sites on moved or rewritten lines.
  */
-const BREAK_KEEP_CEILING = 364;
+const BREAK_KEEP_CEILING = 357;
 
 function stripComments(source: string): string {
   return source

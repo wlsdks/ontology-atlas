@@ -268,7 +268,7 @@ function StartingSuggestionPreview({ heading, items, labelFor }: {
           <li
             key={suggestion.kind}
             data-testid={`acp-starting-suggestion-${suggestion.kind}`}
-            className="break-keep text-balance text-label leading-label text-[color:var(--color-text-tertiary)]"
+            className="text-balance text-label leading-label text-[color:var(--color-text-tertiary)]"
           >
             {labelFor(suggestion)}
           </li>

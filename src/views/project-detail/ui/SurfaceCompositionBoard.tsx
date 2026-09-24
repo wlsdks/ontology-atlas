@@ -92,7 +92,7 @@ export function SurfaceCompositionBoard({
           {closesOnNote(cell) ? (
             <p
               data-testid="project-detail-surface-note"
-              className="self-end break-keep text-body leading-body text-[color:var(--color-text-tertiary)]"
+              className="self-end text-body leading-body text-[color:var(--color-text-tertiary)]"
             >
               {cell.note}
             </p>

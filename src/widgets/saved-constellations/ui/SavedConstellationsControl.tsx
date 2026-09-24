@@ -514,7 +514,7 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
             >
               <CircleAlert size={ICON_SIZE.md} aria-hidden="true" className="mt-0.5 shrink-0 text-[color:var(--color-danger-text-strong)]" />
               <div className="min-w-0 flex-1 space-y-3">
-                <p className="break-keep text-body text-[color:var(--color-text-primary)]">{t('loadError')}</p>
+                <p className="text-body text-[color:var(--color-text-primary)]">{t('loadError')}</p>
                 <Button variant="outline" size="sm" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => void store.reload()}>{t('reload')}</Button>
               </div>
             </div>

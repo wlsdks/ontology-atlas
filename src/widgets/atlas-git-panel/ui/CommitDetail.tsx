@@ -333,14 +333,14 @@ export function CommitDetail({
           title={subject}
           /* Bounded by the document column's measure, balanced so a two-line sentence does not
              leave one word alone on its second line. */
-          className="max-w-[var(--measure-doc-column)] text-balance text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] break-keep"
+          className="max-w-[var(--measure-doc-column)] text-balance text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
         >
           {title}
         </h2>
         {byline ? (
           <p
             data-testid="atlas-git-detail-byline"
-            className="text-body-lg leading-body-lg text-[color:var(--color-text-secondary)] break-keep"
+            className="text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
           >
             {byline}
           </p>
@@ -592,11 +592,11 @@ function RestoreDock({
           className="git-fade-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
           data-testid="atlas-git-restore-step"
         >
-          <p className="text-label leading-prose break-keep text-[color:var(--color-text-secondary)]">
+          <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
             {t("restoreConfirmBody", { path, when })}
           </p>
           {pending && pending.added + pending.removed > 0 ? (
-            <p className="text-label leading-prose break-keep text-[color:var(--color-danger-text)]">
+            <p className="text-label leading-prose text-[color:var(--color-danger-text)]">
               {t("restoreConfirmPending", { added: pending.added, removed: pending.removed })}
             </p>
           ) : null}
@@ -820,7 +820,7 @@ function DocumentHistory({
         </button>
       ) : null}
       {older && (expanded || others.length <= DOCUMENT_HISTORY_PREVIEW) ? (
-        <p className="text-label leading-label text-[color:var(--color-text-quaternary)] break-keep">{t("docHistoryOlder")}</p>
+        <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">{t("docHistoryOlder")}</p>
       ) : null}
     </section>
   );

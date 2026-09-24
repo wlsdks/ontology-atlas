@@ -683,7 +683,7 @@ export function LibrarySection({
           /* Polite, not assertive: the count settling as files land is progress a
              screen reader should hear once it has, not on every published file. */
           aria-live="polite"
-          className={`min-h-[var(--leading-caption)] text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all] ${INDEX_TEXT_LINE}`}
+          className={`min-h-[var(--leading-caption)] text-caption text-[color:var(--color-text-quaternary)] ${INDEX_TEXT_LINE}`}
         >
           <IndexGlyph />
           {!needle ? null : search.phase === "reading" ? (

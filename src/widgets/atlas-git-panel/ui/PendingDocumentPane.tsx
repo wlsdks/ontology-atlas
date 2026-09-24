@@ -321,7 +321,7 @@ export function DocumentChangeReader({
       </header>
 
       {lines.length === 0 ? (
-        <p className="text-label leading-prose break-keep text-[color:var(--color-text-quaternary)]">{t("diffEmpty")}</p>
+        <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">{t("diffEmpty")}</p>
       ) : null}
 
       {/*

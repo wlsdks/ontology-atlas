@@ -170,7 +170,7 @@ export function DomainCouplingCard({
             {selected ? (
               <SelectedPairDetail pair={selected} edgeTypeLabel={edgeTypeLabel} nodeLink={nodeLink} />
             ) : (
-              <p className="break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">{labels.gridSelectHint}</p>
+              <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">{labels.gridSelectHint}</p>
             )}
           </div>
         </div>

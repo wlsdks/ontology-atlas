@@ -348,7 +348,7 @@ function RequestScroller({ request }: { request: string }) {
           ...(mask ? { maskImage: mask, WebkitMaskImage: mask } : null),
           ...(viewport != null ? { height: viewport, bottom: "auto" } : null),
         }}
-        className="atlas-scroll-quiet absolute inset-0 overflow-auto whitespace-pre-wrap break-keep break-words p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)]"
+        className="atlas-scroll-quiet absolute inset-0 overflow-auto whitespace-pre-wrap break-words p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)]"
       >
         {request}
       </pre>

@@ -126,7 +126,7 @@ export function SettingsPaneHead({
       <h3 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
         {title}
       </h3>
-      <p className="max-w-[var(--git-setup-measure)] break-keep text-body leading-body text-balance text-[color:var(--color-text-tertiary)]">
+      <p className="max-w-[var(--git-setup-measure)] text-body leading-body text-balance text-[color:var(--color-text-tertiary)]">
         {description}
       </p>
     </header>

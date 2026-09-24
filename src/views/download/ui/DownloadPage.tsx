@@ -299,11 +299,11 @@ function SectionIntro({
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
         {eyebrow}
       </p>
-      <h2 className="mt-4 break-keep text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
+      <h2 className="mt-4 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
         {title}
       </h2>
       {sub ? (
-        <p className="mt-3 max-w-[40rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]">
+        <p className="mt-3 max-w-[40rem] text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]">
           {sub}
         </p>
       ) : null}

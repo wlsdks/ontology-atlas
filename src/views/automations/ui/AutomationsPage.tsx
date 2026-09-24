@@ -104,7 +104,7 @@ export function AutomationsPage({
               floated alone at the top right, tied to nothing, as a fourth header text size. */}
           <div className="min-w-0">
             <h1 className="text-display font-[var(--font-weight-signature)]">{t("title")}</h1>
-            <p className="mt-2 max-w-prose break-keep text-body-lg text-[color:var(--color-text-tertiary)]">{t("lede")}</p>
+            <p className="mt-2 max-w-prose text-body-lg text-[color:var(--color-text-tertiary)]">{t("lede")}</p>
           </div>
         </header>
 
@@ -146,7 +146,7 @@ export function AutomationsPage({
               {rounds.length > 0 ? <div data-testid="automations-lane-card" className="flex min-h-8 flex-wrap items-center justify-between gap-x-4 gap-y-2">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                   <h2 className="text-body font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-secondary)]">{t("scheduleCount", { count: rounds.length })}</h2>
-                  <p className="flex items-center gap-1.5 break-keep text-body text-[color:var(--color-text-tertiary)]">
+                  <p className="flex items-center gap-1.5 text-body text-[color:var(--color-text-tertiary)]">
                     <ShieldCheck size={ICON_SIZE.sm} className="flex-none" aria-hidden />{t(`${lane}.guard`)}
                   </p>
                 </div>

@@ -221,7 +221,7 @@ export function AcpRuntimeSettings({
         <EmptyState
           tone="solid"
           title={t('webLabel')}
-          description={<span className="block break-keep">{t('webCaption')}</span>}
+          description={<span className="block">{t('webCaption')}</span>}
           action={
             <>
               <Link
@@ -608,7 +608,7 @@ export function AcpRuntimeSettings({
                   />
                   <p
                     data-testid="app-settings-runtimes-unknown-shelf-note"
-                    className="break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]"
+                    className="text-label leading-prose text-[color:var(--color-text-tertiary)]"
                   >
                     {t('unknownShelfNote')}
                   </p>
