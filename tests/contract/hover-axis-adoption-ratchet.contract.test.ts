@@ -96,8 +96,11 @@ const ROOT = process.cwd();
  * 299 → 295 (2026-09-14): the compact project index removed three card-local hover
  * declarations with its metric dashboard, then moved the project-name hover ink onto
  * `controlClass({ hoverInk: "strong" })`. Four hand declarations are now owned by the axis.
+ *
+ * 292 → 290 (2026-09-25): the root error screen's hand-built pills (indigo hover border and
+ * fill) became the standard `Button` and `buttonVariants` outline.
  */
-const CEILING = 292;
+const CEILING = 290;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

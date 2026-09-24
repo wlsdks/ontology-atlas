@@ -36,13 +36,20 @@ export function GatewayNav() {
    * chrome, the same name would live in two places and only one would change. The
    * address is the source of truth.
    */
+  /*
+   * The crumb names only the three routes this chrome belongs to. The 404 wears this chrome
+   * too (2026-09-25), and a fallback of "download" there claimed a lost visitor was on the
+   * download page.
+   */
   const crumb = atRoot
     ? null
     : path.startsWith('/guide')
       ? tNav('guide')
       : path.startsWith('/changelog')
         ? tNav('changelog')
-        : t('downloadSectionLabel');
+        : path.startsWith('/download')
+          ? t('downloadSectionLabel')
+          : null;
 
   const xHref = xProfileUrl();
 
@@ -130,6 +137,12 @@ export function GatewayNav() {
           </span>
 
           {/*
+           * The two marks are one group: 32px square targets (`shape: 'icon'`, the row's chip
+           * height) 4px apart. As bare `link` shapes they were 15×24 and 14×24, under the 24px
+           * WCAG 2.2 target minimum across, and read as loose glyphs (measured 2026-09-25).
+           */}
+          <span className="flex items-center gap-1">
+          {/*
            * The repository (2026-09-02). The eyebrow on `/download` says "open source" and the
            * chrome offered no way to the source — the only github.com links on the page were the
            * release files. Same shape and tone as the X mark beside it: one row, one kind of
@@ -141,7 +154,7 @@ export function GatewayNav() {
             rel="noreferrer noopener"
             data-testid="gateway-github-link"
             aria-label={tNav('githubLabel')}
-            className={controlClass({ hoverInk: 'strong', shape: "link", tone: "muted", className: "touch-hit-expand" })}
+            className={controlClass({ hoverInk: 'strong', shape: 'icon', size: 'lg', tone: 'muted' })}
           >
             <GithubMark size={15} aria-hidden />
           </a>
@@ -162,7 +175,7 @@ export function GatewayNav() {
               rel="noreferrer noopener"
               data-testid="gateway-x-link"
               aria-label={tNav('xLabel')}
-              className={controlClass({ hoverInk: 'strong', shape: "link", tone: "muted", className: "touch-hit-expand" })}
+              className={controlClass({ hoverInk: 'strong', shape: 'icon', size: 'lg', tone: 'muted' })}
             >
               <XMark size={14} aria-hidden />
             </a>
@@ -177,12 +190,13 @@ export function GatewayNav() {
               data-testid="gateway-x-placeholder"
               aria-disabled="true"
               title={tNav('xPending')}
-              className="inline-flex h-8 cursor-not-allowed items-center rounded-chip px-2 text-[color:var(--color-text-quaternary)]"
+              className="inline-flex size-8 cursor-not-allowed items-center justify-center rounded-chip text-[color:var(--color-text-quaternary)]"
             >
               <XMark size={15} aria-hidden />
               <span className="sr-only">{tNav('xPending')}</span>
             </span>
           )}
+          </span>
 
           {/*
            * ⚠️ **There is no "back to the map"** (2026-07-31, owner: *"this is a promotional
