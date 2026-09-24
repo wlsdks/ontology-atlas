@@ -118,7 +118,10 @@ export function SettingsGroupHeading({
   id?: string;
 }) {
   return (
-    <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1">
+    /* No side inset (round 4, 2026-09-25): the heading shares the start line of the card or
+       tiles beneath it. `px-1` put the eyebrow 4px right of the card edge, so every group on
+       both Agents tabs had two start lines in one column. */
+    <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1">
       <h3 id={id} className={SETTINGS_SECTION_LABEL}>
         {label}
       </h3>

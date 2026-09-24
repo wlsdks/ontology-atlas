@@ -706,14 +706,30 @@ describe('runtime rows: marks, columns and the result block (design polish, 2026
     }
   });
 
-  it('offers the Mac app with the same pill the other web-only screens use', () => {
+  it('offers the Mac app as the one filled press, from the ramp rather than a hand tint', () => {
     bridge.available = false;
     render(<AcpRuntimeSettings embedded />);
     const getApp = screen.getByTestId('app-settings-runtimes-get-app');
     expect(getApp).toHaveAttribute('href', '/download/');
     expect(getApp).toHaveClass('rounded-full', 'atlas-touch-floor');
-    // No hand tint on top of the tone: the class list carries no indigo fill of its own.
+    // The fill is the ramp's `onAccent` tone (it clears the border), not an indigo tint mixed here.
+    expect(getApp).toHaveClass('border-transparent');
     expect(getApp.className).not.toMatch(/indigo-a16/);
+  });
+
+  it('lists the tools the app looks for, read from the registry the app ships with', async () => {
+    bridge.available = false;
+    const registry = (await import('@/src-tauri/src/acp-registry.json')).default;
+    render(<AcpRuntimeSettings embedded />);
+    const list = screen.getByTestId('app-settings-runtimes-web-tools');
+    expect(within(list).getByText(`webToolsHeading:${JSON.stringify({ count: registry.agents.length })}`)).toBeInTheDocument();
+    for (const agent of registry.agents) {
+      expect(within(list).getByTestId(`app-settings-runtimes-web-tool-${agent.id}`)).toHaveTextContent(agent.name);
+    }
+    // Nothing to press and no state to claim in a browser: marks and names only.
+    expect(within(list).queryByRole('button')).toBeNull();
+    expect(within(list).queryByRole('link')).toBeNull();
+    expect(list.querySelector('[data-vendor-mark="monogram"]')).toBeNull();
   });
 
   it('keeps one winner on the web card: the app is a pill, MCP steps back to a link', () => {
@@ -752,6 +768,9 @@ describe('the other-tools shelf (round 3, 2026-09-25)', () => {
     fireEvent.click(await screen.findByTestId('app-settings-runtimes-tile-cursor'));
     expect(screen.getByTestId('app-settings-runtimes-others-dialog')).toBeInTheDocument();
     expect(screen.getByTestId('app-settings-runtimes-others-search')).toHaveValue('cursor');
+    // The dialog names its errand; the count stays with the shelf heading on the page.
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('othersDialogTitle');
+    expect(screen.getByText(`othersHeading:${JSON.stringify({ count: 2 })}`)).toBeInTheDocument();
     expect(screen.getByTestId('app-settings-runtime-cursor')).toBeInTheDocument();
     expect(screen.queryByTestId('app-settings-runtime-gemini')).toBeNull();
   });

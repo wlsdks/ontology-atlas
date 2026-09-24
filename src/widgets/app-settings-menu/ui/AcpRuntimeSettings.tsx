@@ -1,7 +1,7 @@
 'use client';
 
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
-import { MessageSquare, RefreshCw, Search } from 'lucide-react';
+import { Download, MessageSquare, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -26,6 +26,7 @@ import {
   SettingsGroupHeading,
   SettingsRow,
 } from './settings-primitives';
+import { APP_CODING_TOOLS } from '../model/app-coding-tools';
 
 /**
  * 「Runners」 (runners) — the coding agents this machine can invoke.
@@ -216,7 +217,7 @@ export function AcpRuntimeSettings({
      * that works in this browser today.
      */
     return (
-      <div data-testid="app-settings-runtimes-web" className="min-w-0">
+      <div data-testid="app-settings-runtimes-web" className="grid min-w-0 gap-3">
         <EmptyState
           tone="solid"
           title={t('webLabel')}
@@ -226,16 +227,26 @@ export function AcpRuntimeSettings({
               <Link
                 href="/download/"
                 data-testid="app-settings-runtimes-get-app"
-                /* The same press as every other web-only empty state (Harness, Automations):
-                   one pill in the accent ink with the touch floor, not a hand-tinted chip that
-                   no tone produces (round 2, 2026-09-25). */
+                /* The pill shape every web-only empty state uses (Harness, Automations), with the
+                   touch floor (round 2). ⚠️ **Filled, on this tab alone** (round 4, 2026-09-25):
+                   there the card is one state among the screen's content, here it is the tab's
+                   only way forward, and an accent-ink pill beside a link weighed barely more than
+                   the link. `onAccent` is the ramp's one filled press — the tone the folder
+                   guide's own 「get the app」 uses — so the winner is said by the ramp, not by a
+                   hand-mixed fill. */
                 className={controlClass({
                   shape: 'pill',
                   size: 'lg',
-                  tone: 'accent',
-                  className: 'atlas-touch-floor atlas-touch-floor-wide',
+                  tone: 'onAccent',
+                  // The pill shape carries no gap of its own; the glyph takes the chip's 6px.
+                  // The value layer's focus ring is an inset indigo ring, which vanishes on an
+                  // indigo fill (1.00:1, `focus-ring-contrast.spec.ts`); on this press the inset
+                  // ring takes the primary ink instead.
+                  className:
+                    'atlas-touch-floor atlas-touch-floor-wide gap-1.5 focus-visible:ring-[color:var(--color-text-primary)]',
                 })}
               >
+                <Download size={ICON_SIZE.md} aria-hidden />
                 {t('webGetApp')}
               </Link>
               {/*
@@ -265,6 +276,43 @@ export function AcpRuntimeSettings({
             </>
           }
         />
+        {/*
+          ── What the app would find (round 4, 2026-09-25) ──────────────────────────────────────
+          The card above was the whole tab, and 60% of the window stood empty under it. A browser
+          cannot say which of these tools is on this computer, but it can say which tools the app
+          looks for: the registry the app's detection walks ships in this build. So the space holds
+          that list — marks and names, no states and no controls, because there is nothing true to
+          report and nothing to press for any of them here. It is the fact the 「get the Mac app」
+          press is buying, one glance below it, and it repeats nothing the lede or the card says.
+        */}
+        <section
+          className="min-w-0"
+          aria-labelledby="app-settings-runtimes-web-tools-heading"
+          data-testid="app-settings-runtimes-web-tools"
+        >
+          <SettingsGroupHeading
+            id="app-settings-runtimes-web-tools-heading"
+            label={t('webToolsHeading', { count: APP_CODING_TOOLS.length })}
+          />
+          <ul className="mt-1.5 grid min-w-0 grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-3 xl:grid-cols-4">
+            {APP_CODING_TOOLS.map((tool) => (
+              <li
+                key={tool.id}
+                data-testid={`app-settings-runtimes-web-tool-${tool.id}`}
+                className="flex min-w-0 items-center gap-2.5"
+              >
+                {/* Stepped back like the desktop shelf's marks: 41 white plates at full weight
+                    outweighed the one filled press above them. */}
+                <span className="flex shrink-0 opacity-60">
+                  <ProductMark icon={tool.icon} ink={tool.brandInk} monogram={tool.name} />
+                </span>
+                <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
+                  {tool.name}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     );
   }
@@ -376,7 +424,7 @@ export function AcpRuntimeSettings({
         12px gap above a heading it no longer introduces.
       */}
       {!embedded || showGuardNote ? (
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 px-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           {embedded ? null : (
             <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
               {t('intro')}
@@ -480,7 +528,7 @@ export function AcpRuntimeSettings({
             >
               <SettingsGroupHeading
                 id="app-settings-runtimes-others-heading"
-                label={t('othersDialogTitle', { count: others.length })}
+                label={t('othersHeading', { count: others.length })}
                 trailing={
                   <Chip
                     size="lg"
@@ -540,10 +588,20 @@ export function AcpRuntimeSettings({
                           hoverInk: 'strong',
                           hoverBorder: 'strong',
                           className:
-                            'w-full gap-2.5 bg-[color:var(--color-overlay-1)] py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+                            'group w-full gap-2.5 bg-[color:var(--color-overlay-1)] py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
                         })}
                       >
-                        <ProductMark icon={mark.icon} ink={mark.ink} monogram={runtime.label} />
+                        {/*
+                          ⚠️ **The mark's weight follows the state, not the drawing** (round 4,
+                          2026-09-25). Forty white brand plates at full strength made the shelf the
+                          loudest thing on the tab, heavier than the one tool that can open a chat
+                          above it. Nothing on this shelf is usable yet, so its marks step back to
+                          60% and come forward under the pointer or focus — the tile that is about
+                          to be pressed is the one at full weight.
+                        */}
+                        <span className="flex shrink-0 opacity-60 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)] group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none">
+                          <ProductMark icon={mark.icon} ink={mark.ink} monogram={runtime.label} />
+                        </span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-body">{runtime.label}</span>
                           <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
@@ -630,7 +688,9 @@ function OtherRuntimesDialog({
         id="app-settings-runtimes-others-title"
         className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
       >
-        {t('othersDialogTitle', { count: runtimes.length })}
+        {/* The errand, not the shelf's name (round 4): the heading on the page already counts
+            these tools, and a dialog opening with the same words was the page said twice. */}
+        {t('othersDialogTitle')}
       </h2>
       {/*
         What "could not check" means, stated once at the top rather than on every row. Nineteen
