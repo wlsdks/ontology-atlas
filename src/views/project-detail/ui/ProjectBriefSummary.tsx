@@ -102,22 +102,37 @@ export function ProjectBriefSummary({
    * contents line. Below `@5xl` of the page column the two tracks stack in the same order.
    */
   const twoTracks = Boolean(opening) && (hasBoundary || hasContents);
-  const contentsLine = (withRule: boolean) => (
+  /*
+   * The contents line has two shapes. Beside the prose (no boundary bullets) it is the second
+   * track, so it reads as a short list under its label: set on one line it sat alone at the top
+   * of a ~600px track with the rest of that track bare (round four, storefront at 1920). Under
+   * the boundary grid it closes the card as one line under a rule.
+   */
+  const contentsLine = (shape: "list" | "line") => (
     <div
-      className={`flex flex-wrap items-baseline gap-x-2 gap-y-1.5 ${
-        withRule ? "border-t border-[color:var(--color-divider)] pt-4" : ""
-      }`}
+      className={
+        shape === "list"
+          ? "flex min-w-0 flex-col gap-2"
+          : "flex flex-wrap items-baseline gap-x-2 gap-y-1.5 border-t border-[color:var(--color-divider)] pt-4"
+      }
     >
       <span className="text-label text-[color:var(--color-text-quaternary)]">
         {coversLabel}
       </span>
       <ol
         data-testid="project-detail-brief-sections"
-        className="flex min-w-0 list-none flex-wrap items-baseline gap-x-2 gap-y-1.5 p-0"
+        className={
+          shape === "list"
+            ? "min-w-0 list-decimal space-y-1.5 pl-4 marker:font-mono marker:text-label marker:text-[color:var(--color-text-quaternary)]"
+            : "flex min-w-0 list-none flex-wrap items-baseline gap-x-2 gap-y-1.5 p-0"
+        }
       >
         {brief.sections.map((section, index) => (
-          <li key={`${index}-${section.title}`} className="flex items-baseline gap-2">
-            {index > 0 ? (
+          <li
+            key={`${index}-${section.title}`}
+            className={shape === "list" ? "pl-1" : "flex items-baseline gap-2"}
+          >
+            {shape === "line" && index > 0 ? (
               <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
                 ·
               </span>
@@ -178,9 +193,9 @@ export function ProjectBriefSummary({
         {hasBoundary ? boundaryGrid : null}
         {/* Without boundary bullets the contents line is the second track; with them it closes
             the card under both tracks. */}
-        {hasContents && !hasBoundary ? contentsLine(false) : null}
+        {hasContents && !hasBoundary ? contentsLine("list") : null}
       </div>
-      {hasContents && hasBoundary ? <div className="mt-5">{contentsLine(true)}</div> : null}
+      {hasContents && hasBoundary ? <div className="mt-5">{contentsLine("line")}</div> : null}
     </div>
   );
 }

@@ -152,7 +152,7 @@ export function DomainCapacityBar({
           axis, distorting the comparison value itself by up to 1.2%.
           The 「Connections」 (connections) tab's impact ranking already uses this grammar (fixed
           track plus fixed number column), so its column-width discipline is taken
-          verbatim. 192px fits all nine current English Storefront tails without clipping.
+          verbatim. `w-48` (192px, on the spacing scale) fits all nine current English Storefront tails without clipping.
           `tabular-nums` is applied to both rows so the digit positions do not shift either. */}
       {tail === "inline" ? (
         <span
@@ -172,7 +172,7 @@ export function DomainCapacityBar({
       ) : (
         <span
           data-testid="domain-capacity-bar-tail"
-          className="w-[192px] flex-none text-right"
+          className="w-48 flex-none text-right"
         >
           <span className="block font-mono text-title tabular-nums text-[color:var(--map-numeral-face)]">
             {row.total}

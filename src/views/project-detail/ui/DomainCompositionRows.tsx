@@ -81,13 +81,17 @@ export function DomainCompositionRows({ domains, labels }: Props) {
         The footnote is **one paragraph**. How to read the bar and "the hero chip sum ≠ the row sum" are
         the same kind of annotation needed to read this list, so splitting them into two paragraphs
         doubles the quiet grey block competing with the list's last row.
+        The rule spans the list; the words keep the reading column's line (round four: across a
+        page-wide card at 1920 they ran as one ~950px caption).
       */}
-      <p
-        data-testid="project-detail-domain-overlap-note"
-        className="mt-2.5 break-keep border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-label text-[color:var(--color-text-quaternary)]"
-      >
-        {labels.legendCaption} {labels.overlapNote}
-      </p>
+      <div className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5">
+        <p
+          data-testid="project-detail-domain-overlap-note"
+          className="max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-pretty text-label leading-label text-[color:var(--color-text-quaternary)]"
+        >
+          {labels.legendCaption} {labels.overlapNote}
+        </p>
+      </div>
     </div>
   );
 }

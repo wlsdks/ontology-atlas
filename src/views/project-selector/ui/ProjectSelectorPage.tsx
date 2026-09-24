@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { findProjectDocInList } from "@/entities/docs-vault";
 import { getProjectRuntimeDetailHref, getTopologyProjectHref, projectDisplayName, type Project } from "@/entities/project";
+import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault } from "@/entities/vault-session";
 import { Link } from "@/i18n/navigation";
 import { Copy } from "lucide-react";
@@ -47,8 +48,6 @@ export function ProjectSelectorPage() {
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
 
-  const newProjectHref = `/project/new/?returnTo=${encodeURIComponent("/projects/")}`;
-
   return (
     <VaultSourceHydrationBoundary>
       <div className="flex min-h-full w-full">
@@ -57,27 +56,34 @@ export function ProjectSelectorPage() {
             <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
           </div>
           <div className={`${PAGE_FRAME} pb-6 md:pb-10`}>
+            {/*
+              **One way in to adding a project, and the count says its own scope** (2026-09-25,
+              round four). The header used to carry a "New project" button while the tile closing
+              the grid carried the agent path: two add entries at two control sizes with no rule
+              for which one wins. Both paths now live in that tile, side by side. The sample's
+              scope used to be a caption under the lede explaining the count and pointing at the
+              map's first-run card; the count itself now says "sample", and the control that makes
+              it the person's own count (open a folder) stands where the header's action stood.
+            */}
             <header className={PAGE_HEADER_ROW}>
               <div className={PAGE_TITLE_ROW}>
                 <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
                   {t("headerTitle")}
                 </h1>
-                <span className="pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]">
-                  {t("projectCount", { count: projects.length })}
+                <span
+                  data-testid="project-selector-count"
+                  className="pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]"
+                >
+                  {dataSourceMode === "static"
+                    ? t("projectCountSample", { count: projects.length })
+                    : t("projectCount", { count: projects.length })}
                 </span>
               </div>
-              <Link href={newProjectHref} data-testid="project-selector-new-cta" className={controlClass({ shape: "chip", size: "lg", tone: "accent" })}>
-                {t("ctaNewProject")}
-              </Link>
+              {dataSourceMode === "static" ? <OpenVaultCta testId="project-selector-open-vault" /> : null}
             </header>
-            <p className="mt-2 max-w-[720px] text-body leading-title text-[color:var(--color-text-tertiary)]">
+            <p className="mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] text-body leading-title text-[color:var(--color-text-tertiary)]">
               {t("lede")}
             </p>
-            {dataSourceMode === "static" ? (
-              <p data-testid="project-selector-sample-scope-note" className="mt-1 max-w-[720px] text-label leading-prose text-[color:var(--color-text-quaternary)]">
-                {t("sampleScopeNote")}
-              </p>
-            ) : null}
 
             {/*
               **A grid of equal cards, not a page-wide row** (2026-09-25). The content is the compact
@@ -104,12 +110,12 @@ export function ProjectSelectorPage() {
                 {/* An even count leaves the tile alone on its row, so it spans the row as a band
                     rather than standing half-width beside nothing. */}
                 <li className={`flex min-w-0 ${projects.length % 2 === 0 ? "md:col-span-2" : ""}`}>
-                  <NextProjectTile t={t} band={projects.length % 2 === 0} />
+                  <NextProjectTile t={t} />
                 </li>
               </ul>
             ) : (
               <div className="mt-7 flex">
-                <NextProjectTile t={t} band description={t("emptyStateDesc")} />
+                <NextProjectTile t={t} description={t("emptyStateDesc")} />
               </div>
             )}
           </div>
@@ -156,10 +162,11 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
             </Link>
           </h2>
         </div>
-        {/* Three lines reserved and four allowed, so cards in a row end on one line.
-            The sentence is whole (`resolveAuthoredDescription` never cuts mid-clause); the clamp is
-            the last resort for a first sentence longer than four lines of the card. */}
-        <p className="mt-2.5 line-clamp-4 min-h-[calc(3*var(--leading-body-lg))] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+        {/* Four lines allowed and none reserved. A three-line floor kept an empty ~60px band under
+            a one-line purpose (round four); cards in a row still end on one line because the row
+            stretches them and the footer is pinned to the bottom. The sentence is whole
+            (`resolveAuthoredDescription` never cuts mid-clause); the clamp is the last resort. */}
+        <p className="mt-2.5 line-clamp-4 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
           {description ?? (
             <span className="text-[color:var(--color-text-tertiary)]">{t("cardDescriptionFallback")}</span>
           )}
@@ -191,67 +198,82 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
 
 
 /**
- * The tile that closes the grid: the second way a project arrives, with its own control.
+ * The tile that closes the grid, and the page's one way to add a project.
  *
- * The header's "New project" is the form. This tile is the other path, a connected agent, and it
- * carries the one thing that path needs: the request to paste. Round two's tile only restated the
- * header button in prose ("use New project above, or ask your agent") and stretched to its
- * neighbour's height, so two lines of text sat over ~110px of empty dashed box. It now draws the
- * card's own grammar (heading, sentence, a footer row with the control on the card's footer line),
- * so the equal height is spent the way the card beside it spends it. Round one's raw CLI and MCP
- * signatures stay out of the product copy; the request inside the clipboard names the tool calls
- * for the agent, which is the reader that needs them.
+ * A project arrives two ways: the form (`/project/new`, which owns creation) or a connected agent
+ * given a request to paste. Until round four the form was the header's button and the agent path
+ * was this tile, so the page offered two add entries at two control sizes (12.5 against 11px at
+ * 1040) with no rule for which one wins. Both paths now stand here side by side, each a sentence
+ * saying what happens and a control under it, drawn in the card's own grammar: words in the body,
+ * `md` chips on a footer line, the accent on the first door exactly as each card's footer carries it.
  *
- * As a band (an even project count, or no project yet) the words and the control share one row.
+ * With two paths in two columns the tile's body is two lines deep, the depth of a card's one- or
+ * two-line purpose, so a card standing beside it does not stretch around a void.
+ *
+ * With an even project count, or no project yet, it spans the row as a band in the same two columns.
  */
-function NextProjectTile({ t, description, band = false }: { t: SelectorTranslator; description?: string; band?: boolean }) {
+function NextProjectTile({ t, description }: { t: SelectorTranslator; description?: string }) {
   const copy = useCopyFeedback();
   const copyLabel =
     copy.state === "copied" ? t("nextSlotCopied") : copy.state === "failed" ? t("nextSlotCopyError") : t("nextSlotCopy");
-  const control = (
-    <button
-      type="button"
-      data-testid="project-selector-next-copy"
-      onClick={() => void copy.copy(t("nextSlotPrompt"))}
-      className={controlClass({ shape: "chip", size: "md", tone: "secondary", className: "shrink-0" })}
-    >
-      <Copy size={ICON_SIZE.sm} aria-hidden />
-      <span aria-live="polite">{copyLabel}</span>
-    </button>
-  );
-  const words = (
-    <div className="min-w-0 flex-1">
-      <h2
-        id="project-selector-next-slot-title"
-        className="text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-secondary)]"
-      >
-        {t("nextSlotTitle")}
-      </h2>
-      <p className="mt-2.5 min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]">
-        {description ?? t("nextSlotSub")}
-      </p>
-    </div>
-  );
+  const newProjectHref = `/project/new/?returnTo=${encodeURIComponent("/projects/")}`;
+  // The two columns share one template in the body and on the footer line, so each control stands
+  // under its own sentence. Narrow, the sentences stack and the controls share one row.
+  const columns = "grid grid-cols-1 gap-x-6 gap-y-2 @md/next-slot:grid-cols-2";
+  // The slot wears the soft border every card here wears, only dashed: a divider-ink border on
+  // the overlay fill was a ninth surface combination the surface-vocabulary ratchet refuses.
   return (
     <section
       data-testid="project-selector-next-slot"
       aria-labelledby="project-selector-next-slot-title"
-      className="flex w-full min-w-0 flex-col rounded-card border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)]"
+      className="@container/next-slot flex w-full min-w-0 flex-col rounded-card border border-dashed border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
     >
-      {band ? (
-        <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-3 p-[var(--card-pad)]">
-          {words}
-          {control}
+      <div className="flex min-w-0 flex-1 flex-col p-[var(--card-pad)]">
+        <h2
+          id="project-selector-next-slot-title"
+          className="text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-secondary)]"
+        >
+          {t("nextSlotTitle")}
+        </h2>
+        {description ? (
+          <p className="mt-2.5 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-pretty text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+            {description}
+          </p>
+        ) : null}
+        <div className={`mt-2.5 ${columns}`}>
+          <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]">
+            {t("nextSlotFormSub")}
+          </p>
+          <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]">
+            {t("nextSlotSub")}
+          </p>
         </div>
-      ) : (
-        <>
-          <div className="flex min-w-0 flex-1 p-[var(--card-pad)]">{words}</div>
-          {/* The card's footer line: same divider, same inset, the control where the card's doors stand. */}
-          <div className="flex min-w-0 items-center justify-end border-t border-dashed border-[color:var(--color-divider)] px-[var(--card-pad)] py-3">
-            {control}
+      </div>
+      {/* The card's footer line: same divider, same inset, the doors where the card's doors stand. */}
+      <div className="border-t border-dashed border-[color:var(--color-divider)] px-[var(--card-pad)] py-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 @md/next-slot:grid @md/next-slot:grid-cols-2 @md/next-slot:gap-x-6">
+          <div className="min-w-0">
+            <Link
+              href={newProjectHref}
+              data-testid="project-selector-new-cta"
+              className={controlClass({ shape: "chip", size: "md", tone: "accent" })}
+            >
+              {t("ctaNewProject")}
+            </Link>
           </div>
-        </>
-      )}
+          <div className="min-w-0">
+            <button
+              type="button"
+              data-testid="project-selector-next-copy"
+              onClick={() => void copy.copy(t("nextSlotPrompt"))}
+              className={controlClass({ shape: "chip", size: "md", tone: "secondary", className: "max-w-full" })}
+            >
+              <Copy size={ICON_SIZE.sm} aria-hidden />
+              <span aria-live="polite" className="min-w-0 truncate">{copyLabel}</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
