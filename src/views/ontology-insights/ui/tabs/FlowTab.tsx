@@ -249,16 +249,25 @@ export function FlowTab({
               <p className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{labels.noVersionTitle}</p>
               <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{labels.noVersionBody}</p>
             </div>
-            <div className="mt-auto border-t border-[color:var(--color-divider)] pt-4">{actionBlock}</div>
+            <div className="border-t border-[color:var(--color-divider)] pt-4">{actionBlock}</div>
           </div>
-          <section aria-label={labels.requestLabel} className="flex min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+          {/*
+            * ⚠️ **The explanation sets the row's height; the request scrolls inside it.** With the
+            * 256px request sizing the row, the explanation card stretched to it and carried ~160px
+            * of empty middle at 1512 (review, 2026-09-25). The request text now fills whatever
+            * height the explanation takes, out of flow, so neither card holds a blank band; on a
+            * single column it keeps a 16rem floor.
+            */}
+          <section aria-label={labels.requestLabel} data-testid="flow-request" className="flex min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-body text-[color:var(--color-text-secondary)]">{labels.requestLabel}</h3>
               {copyButton}
             </div>
-            <pre className="max-h-64 min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 text-label leading-prose text-[color:var(--color-text-secondary)]">
-              {request}
-            </pre>
+            <div className="relative min-h-64 flex-1 @min-[960px]/insights:min-h-32">
+              <pre className="absolute inset-0 overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 text-label leading-prose text-[color:var(--color-text-secondary)]">
+                {request}
+              </pre>
+            </div>
           </section>
         </div>
       )}

@@ -150,41 +150,37 @@ export function DomainCouplingCard({
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <CardHead label={labels.title} unit={labels.countUnit} count={crossDomainEdgeCount} />
-        <CouplingGrid
-          grid={grid}
-          selectedKey={selectedKey}
-          onSelect={setSelectedKey}
-          hasPair={(key) => pairByKey.has(key)}
-          labels={labels}
-        />
-        {/* The detail area reserves its space even with nothing selected — if the card height
-            jumped on every cell click, the grid being compared would move under the eye.
-            The empty state's guidance sits **centred** in that reserved space. Pinned to the top
-            it left 58px below (measured 2026-07-26) and read as a dead gap between two captions
-            rather than a reserved slot. */}
         {/*
-          * **One caption row, and the selection replaces it.** Two grey paragraphs sat under the
-          * grid, one of them centred in a reserved 76px slot, and the card read as a matrix with
-          * a footnote block under it (1512x949: 84px of dead card below them). How to read the
-          * grid and how to open a cell are one sentence pair now; picking a cell puts the pair's
-          * connections in the same slot, and the slot keeps its floor so the card does not jump.
+          * ⚠️ **The selection sits beside the grid, the reading key on the card's floor.** Under
+          * the grid the selection slot left the matrix ~90px short of the card's right edge and a
+          * 200px gap between each name and its first cell (review, 2026-09-25), and its 76px floor
+          * lifted this card's caption 30px off the line the card beside it ends on. The pane
+          * beside the grid is where "here" in the hint points; it wraps under the grid on a
+          * narrow card. The one caption closes the card on the same floor as its neighbour.
           */}
-        <div
-          data-testid="domain-coupling-selection"
-          className="mt-auto flex min-h-[76px] flex-col justify-start border-t border-[color:var(--color-divider)] pt-2.5"
-        >
-          {selected ? (
-            <SelectedPairDetail pair={selected} edgeTypeLabel={edgeTypeLabel} nodeLink={nodeLink} />
-          ) : (
-            <p className="text-label leading-body text-[color:var(--color-text-quaternary)]">
-              {grid.totalDomainCount > grid.domains.length
-                ? `${labels.gridTruncated(grid.domains.length, grid.totalDomainCount)} · `
-                : ""}
-              {grid.hiddenCrossEdgeCount > 0 ? `${labels.gridHiddenCross(grid.hiddenCrossEdgeCount)} · ` : ""}
-              {labels.gridCaption} {labels.gridSelectHint}
-            </p>
-          )}
+        <div className="@container/coupling mt-2.5 flex min-w-0 flex-wrap items-start gap-x-5 gap-y-3">
+          <CouplingGrid
+            grid={grid}
+            selectedKey={selectedKey}
+            onSelect={setSelectedKey}
+            hasPair={(key) => pairByKey.has(key)}
+            labels={labels}
+          />
+          <div data-testid="domain-coupling-selection" className="min-w-[12rem] flex-1 pt-6">
+            {selected ? (
+              <SelectedPairDetail pair={selected} edgeTypeLabel={edgeTypeLabel} nodeLink={nodeLink} />
+            ) : (
+              <p className="break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">{labels.gridSelectHint}</p>
+            )}
+          </div>
         </div>
+        <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
+          {grid.totalDomainCount > grid.domains.length
+            ? `${labels.gridTruncated(grid.domains.length, grid.totalDomainCount)} · `
+            : ""}
+          {grid.hiddenCrossEdgeCount > 0 ? `${labels.gridHiddenCross(grid.hiddenCrossEdgeCount)} · ` : ""}
+          {labels.gridCaption}
+        </p>
       </section>
 
       <section
@@ -204,7 +200,7 @@ export function DomainCouplingCard({
                 <div className="flex items-center gap-2 text-body text-[color:var(--color-text-secondary)]">
                   <OntologyMapKindGlyph kind="domain" size={14} className="flex-none" />
                   <span className="min-w-0 flex-1 truncate">{row.title}</span>
-                  <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                  <span className="flex-none text-label tabular-nums text-[color:var(--color-text-quaternary)]">
                     {labels.boundarySelfLabel} {row.selfEdges} · {labels.boundaryCrossLabel} {row.crossEdges} ({crossPct}%)
                   </span>
                 </div>
@@ -284,7 +280,7 @@ function CouplingGrid({
   // Column headers are numbers — six domain names laid on their side require turning your head
   // to read, and the name is already beside the row header with the same number.
   //
-  // The name column is capped at 14rem. Left as `1fr` it eats the whole card width, putting
+  // The name column is never `1fr`: left to share the card it eats the whole width, putting
   // hundreds of px between the name and the cells so reading one row drags the eye across the screen.
   //
   // The cell size once had two steps (`--coupling-cell`): 28px on narrow screens to prevent
@@ -296,23 +292,28 @@ function CouplingGrid({
   // ⚠️ **The cell is sized by the card, not by a breakpoint** (2026-09-25). Two fixed steps
   // (28 / 44px) left three domains as a 180px block in a 510px card, with 84px of dead card under
   // it at 1512 and 215px at 1920. The cell now takes the card's inline size shared out over the
-  // columns, clamped to 28-64px: few domains draw large, countable cells that fill the card, and
-  // six still fit a phone without horizontal scroll. The name column gives up the 4rem it
-  // reserved beyond its measured need (10rem) before a cell shrinks.
+  // columns and clamped: few domains draw large, countable cells that fill the card, and
+  // six still fit a phone without horizontal scroll.
+  //
+  // ⚠️ **One grid, the name column as wide as the longest name** (review, 2026-09-25). Each row
+  // was its own grid, so the name column could only be a fixed cap (14rem) and short names stood
+  // ~200px from their first cell. The rows are now subgrids of one grid, so `fit-content` sizes
+  // the name column once for every row. The cell takes what the card has left after the names
+  // (budgeted at 7rem) and the selection pane beside it (12rem), shared over the columns and
+  // clamped to 28-52px; when the pane cannot fit, it wraps under the grid.
   const n = Math.max(1, grid.domains.length);
-  const template = `minmax(0,14rem) repeat(${grid.domains.length}, var(--coupling-cell))`;
-  const cell = `clamp(1.75rem, calc((100cqw - 10rem - ${n * 2}px) / ${n}), 4rem)`;
+  const template = `fit-content(10rem) repeat(${grid.domains.length}, var(--coupling-cell))`;
+  const cell = `clamp(1.75rem, calc((100cqw - 7rem - 12rem - 1.25rem - ${n * 2}px) / ${n}), 3.25rem)`;
 
   return (
-    <div className="@container/coupling mt-2.5 w-full min-w-0">
     <div
       role="grid"
       aria-label={labels.title}
       data-testid="domain-coupling-grid"
-      className="flex w-fit max-w-full flex-col gap-0.5"
-      style={{ "--coupling-cell": cell } as CSSProperties}
+      className="grid max-w-full gap-0.5"
+      style={{ "--coupling-cell": cell, gridTemplateColumns: template } as CSSProperties}
     >
-      <div role="row" className="grid items-center gap-0.5" style={{ gridTemplateColumns: template }}>
+      <div role="row" className="col-span-full grid grid-cols-subgrid items-center">
         {/* The empty header above the name column. `sr-only` is absolute and drops out of the grid
             flow, shifting every column by one — so this is an empty cell that occupies space. */}
         <span role="columnheader" aria-label={labels.title} />
@@ -331,8 +332,7 @@ function CouplingGrid({
         <div
           key={from.id}
           role="row"
-          className="grid items-center gap-0.5"
-          style={{ gridTemplateColumns: template }}
+          className="col-span-full grid grid-cols-subgrid items-center"
         >
           <span
             role="rowheader"
@@ -421,7 +421,6 @@ function CouplingGrid({
           })}
         </div>
       ))}
-    </div>
     </div>
   );
 }

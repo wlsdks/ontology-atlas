@@ -152,7 +152,7 @@ export function DomainCapacityBar({
         </span>
         <span
           data-testid="domain-capacity-bar-breakdown"
-          className="block truncate font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]"
+          className="block truncate text-label tabular-nums text-[color:var(--color-text-quaternary)]"
         >
           {labels.capabilityUnit} {row.capabilityCount} · {labels.elementUnit} {row.elementCount}
         </span>

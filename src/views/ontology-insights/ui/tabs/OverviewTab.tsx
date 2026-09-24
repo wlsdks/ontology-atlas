@@ -188,8 +188,10 @@ export function OverviewTab({
                  * the text and bar axes stay in line with the caption and the key.
                  */}
                 {domainRows.map((row) => (
+                  // The divider sits on this plain cell, on the card's padding line; the link
+                  // inside bleeds 6px for its hover surface only (`insights-list.ts`).
+                  <div key={row.id}>
                   <Link
-                    key={row.id}
                     href={domainLink.href(row.id)}
                     aria-label={domainLink.ariaLabel(row)}
                     data-testid="insights-domain-row-link"
@@ -204,6 +206,7 @@ export function OverviewTab({
                       labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
                     />
                   </Link>
+                  </div>
                 ))}
               </div>
             </div>

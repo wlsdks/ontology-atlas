@@ -2114,7 +2114,7 @@
         "checking": "Checking which local agent can open here.",
         "requestLabel": "The request that goes to the agent",
         "unavailableTitle": "The app does this",
-        "unavailableBody": "A browser cannot start a process, so no agent launches here. Copying the request below into the terminal you already use gets the same answer.",
+        "unavailableBody": "A browser cannot start a process, so no agent launches here. Paste “The request that goes to the agent” into the terminal you already use and you get the same answer.",
         "copy": "Copy request",
         "copied": "Copied",
         "noVaultTitle": "Open a folder first",

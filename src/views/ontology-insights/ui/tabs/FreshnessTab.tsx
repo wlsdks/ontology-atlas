@@ -137,7 +137,7 @@ export function FreshnessTab({
           <InsightsSectionTitle level={3} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
             {labels.domainFreshnessTitle}
           </InsightsSectionTitle>
-          <span className="ml-auto font-mono text-label text-[color:var(--color-text-quaternary)]">{labels.windowCaption}</span>
+          <span className="ml-auto text-label text-[color:var(--color-text-quaternary)]">{labels.windowCaption}</span>
         </div>
         {domainRows.length === 0 ? (
           <div className="mt-3.5 flex flex-1 flex-col items-start">
@@ -162,8 +162,10 @@ export function FreshnessTab({
               // Row hover highlight — it aids the 700px horizontal scan (label → 12 cells → date)
               // using the same -mx/px offset pattern as the existing hub and recently-updated rows,
               // so the cell and axis alignment is unchanged (content x positions do not move).
+              // The divider sits on this plain cell, on the card's padding line; the row inside
+              // bleeds 6px for its hover surface only (`insights-list.ts`).
+              <div key={row.domainId}>
               <div
-                key={row.domainId}
                 data-testid="insights-freshness-domain-row"
                 className={`-mx-1.5 flex items-center gap-2 rounded-chip px-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)] ${INSIGHTS_LIST_ROW}`}
               >
@@ -203,9 +205,10 @@ export function FreshnessTab({
                     />
                   ))}
                 </span>
-                <span className="w-12 flex-none text-right font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                <span className="w-12 flex-none text-right text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
                   {row.daysAgo !== null ? labels.daysAgo(row.daysAgo) : labels.unknownDate}
                 </span>
+              </div>
               </div>
             ))}
             </div>

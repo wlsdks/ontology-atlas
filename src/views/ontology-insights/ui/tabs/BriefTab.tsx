@@ -258,8 +258,19 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
                 <CensusSubStat label={t(`col.${c2}`)} value={core.stale ?? 0} tone={core.stale ? 'warning' : 'numeral'} />
                 <CensusSubStat label={t(`col.${c3}`)} value={core.unknown ?? 0} />
               </div>
-            ) : core.headline != null && noSource ? (
-              <UnknownMark label={t(`bandState.${core.availability}`)} testId={`brief-core-state-${core.core}`} word={t('col.unknown')} small />
+            ) : noSource && core.headline != null ? (
+              <UnknownMark label={t(`bandState.${core.availability}`)} testId={`brief-core-state-${core.core}`} word={t(`bandState.${core.availability}`)} small />
+            ) : noSource ? (
+              /*
+               * ⚠️ **The reason stays in sight.** With the reason only in `sr-only`, a cell with no
+               * magnitude showed one line where its peers showed three, and a sighted reader had to
+               * find the list row to learn why the value was unknown (review, 2026-09-25). Three
+               * words under the mark carry the why; the list row still carries the sentence and
+               * the one connect action, so the fix is not said twice.
+               */
+              <span className="text-label text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-reason-${core.core}`}>
+                {t(`bandState.${core.availability}`)}
+              </span>
             ) : core.headline != null ? (
               <span className="text-label text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-state-${core.core}`}>
                 {t(`bandState.${core.availability}`)}
@@ -720,17 +731,6 @@ function BriefLineRow({ line, core, repeatCore = false, availability, appRowPres
   );
 }
 
-/** Rows grouped by kind, in the order each kind's newest row appears; rows keep their order. */
-function sinceGroups(rows: readonly SinceRow[]): Array<{ kind: SinceRow['kind']; rows: SinceRow[] }> {
-  const groups = new Map<SinceRow['kind'], SinceRow[]>();
-  for (const row of rows) {
-    const list = groups.get(row.kind);
-    if (list) list.push(row);
-    else groups.set(row.kind, [row]);
-  }
-  return [...groups].map(([kind, list]) => ({ kind, rows: list }));
-}
-
 /**
  * The cards count; this names. Everything that happened after the anchor, newest first,
  * from the dates the folder already carries — no list is invented and none is copied.
@@ -745,39 +745,43 @@ function BriefSinceList({ rows, total, nowMs }: { rows: readonly SinceRow[]; tot
         {t('sinceTitle', { count: total })}
       </h3>
       {/*
-        * **Grouped by kind, the kind named once.** Every row used to open with its kind
-        * ("Concept doc …" twelve times down the list), so the eye read the same two words before
-        * each name (design sweep, 2026-09-25). A group keeps its rows newest first and the
-        * groups keep the order their newest row set.
+        * **Newest first, the kind named once per run.** Grouping by kind cost the list its
+        * chronology (every row of the first group came before newer rows of the second) and put
+        * a third heading level into a small card (review, 2026-09-25). The rows keep one time
+        * order; the kind stands in its own column the way the core names do in the list above,
+        * printed where a run starts and kept for a screen reader where it repeats.
         */}
-      {sinceGroups(rows).map((group) => (
-      <div key={group.kind} className="mt-3" data-since-group={group.kind}>
-      <p className="text-label text-[color:var(--color-text-tertiary)]">
-        {t(`since.${group.kind}`)}
-        <span className="ml-1.5 font-mono tabular-nums text-[color:var(--color-text-quaternary)]">{group.rows.length}</span>
-      </p>
-      <ol className="mt-1 flex flex-col divide-y divide-[color:var(--color-divider)]">
-        {group.rows.map((row, index) => (
-          <li key={`${row.core}-${row.at}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-3 text-body sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:py-2" data-since-core={row.core}>
-            <span className="col-span-2 min-h-10 min-w-0 line-clamp-2 break-words text-[color:var(--color-text-primary)] sm:col-span-1 sm:min-h-0 sm:line-clamp-1" title={row.label}>
-              <span className="sr-only">{t(`since.${row.kind}`)} </span>
-              {row.label}
-            </span>
-            <time dateTime={row.at} className="font-mono tabular-nums text-label text-[color:var(--color-text-tertiary)]">
-              {format.relativeTime(new Date(row.at), nowMs)}
-            </time>
-            {row.href ? (
-              <Link href={row.href} className={controlClass({ shape: 'link', className: LINE_LINK })}>
-                {t('open')}
-              </Link>
-            ) : (
-              <span />
-            )}
-          </li>
-        ))}
+      <ol className="mt-2 flex flex-col divide-y divide-[color:var(--color-divider)]">
+        {rows.map((row, index) => {
+          const repeated = index > 0 && rows[index - 1]?.kind === row.kind;
+          const kind = t(`since.${row.kind}`);
+          return (
+            <li key={`${row.core}-${row.at}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-3 text-body sm:grid-cols-[0.625rem_6rem_minmax(0,1fr)_auto_auto] sm:py-2" data-since-core={row.core} data-since-kind={row.kind}>
+              {/* The list above opens each row with a state mark; an empty slot of the same width
+                  keeps both cards' kind column and text on one start line. */}
+              <span aria-hidden="true" className="hidden sm:block" />
+              <span className="col-span-2 break-keep text-label leading-body text-[color:var(--color-text-tertiary)] sm:col-span-1">
+                {repeated ? <span className="sr-only">{kind}</span> : kind}
+              </span>
+              <span className="col-span-2 min-h-10 min-w-0 line-clamp-2 break-words text-[color:var(--color-text-primary)] sm:col-span-1 sm:min-h-0 sm:line-clamp-1" title={row.label}>
+                {row.label}
+              </span>
+              {/* Tabular figures in the text face: the relative time carries Hangul in Korean,
+                  and the monospace face fell back glyph by glyph with word-wide gaps. */}
+              <time dateTime={row.at} className="tabular-nums text-label text-[color:var(--color-text-tertiary)]">
+                {format.relativeTime(new Date(row.at), nowMs)}
+              </time>
+              {row.href ? (
+                <Link href={row.href} className={controlClass({ shape: 'link', className: LINE_LINK })}>
+                  {t('open')}
+                </Link>
+              ) : (
+                <span />
+              )}
+            </li>
+          );
+        })}
       </ol>
-      </div>
-      ))}
       <HiddenCountLine
         total={total}
         shown={rows.length}
