@@ -6,7 +6,7 @@
  */
 
 import type { CameraAxes } from "../engine/camera";
-import { collectDomeAncestry, domeAncestryEdgeKey } from "../model/dome-ancestry";
+import { collectDomeAncestry, collectDomeSubtree, domeAncestryEdgeKey } from "../model/dome-ancestry";
 import { buildTrailGlintLegs, trailGlintLocalPhase } from "../model/footprint-steps";
 import { bodyPresence, filamentPresence, galaxyAppearance, galaxyMeteorPhase, galaxySelectionInk, galaxyTemperatureKey, galaxyTwinkle, starLuminance } from "../model/galaxy";
 import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
@@ -45,6 +45,17 @@ import {
   type DomeViewKind,
 } from "../model/dome-view";
 import { draw as domeRingsDraw, drawTierLabels as domeTierLabelsDraw } from "../render/dome-rings";
+import {
+  drawEmissiveHalo,
+  drawEvidenceRing,
+  drawStrataStage,
+  EVIDENCE_EMISSION,
+  focusFogFactor,
+  hexToRgb,
+  mixRgbHex,
+  type DomeLightFrame,
+  type EvidenceLight,
+} from "../render/dome-light";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, HITTABLE_MIN_TIER_ALPHA, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
 import {
@@ -189,6 +200,8 @@ const domeAncestryColorNodesReused = new Set<string>();
 const domeAncestryColorEdgesReused = new Set<string>();
 const domeAncestryUnionReused = new Set<string>();
 const domeAncestryColorUnionReused = new Set<string>();
+/** Lit 3D — the sectors of the focused line (its domain, and its capability). */
+const litSectorIdsReused = new Set<string>();
 const domeRingScreenReused: {
   kind: DomeViewKind;
   a: number;
@@ -318,6 +331,58 @@ export function lastDrawnNodeCount(): number {
   return drawnNodeCount;
 }
 let drawnNodeCount = 0;
+
+/**
+ * Lit 3D — how many drawn nodes this frame wore each evidence light. An instrument of what
+ * was painted, not of what was measured: the legend's counts come from the measurement, and
+ * a spec compares the two.
+ */
+const litDrawnStateCounts: Record<EvidenceLight, number> = { current: 0, stale: 0, unknown: 0 };
+export function lastLitStateCounts(): Readonly<Record<EvidenceLight, number>> {
+  return { ...litDrawnStateCounts };
+}
+
+/** How strongly each kind emits — the hub tiers carry the most light, the leaves the least. */
+const LIT_KIND_STRENGTH: Readonly<Record<DomeViewKind, number>> = {
+  project: 1,
+  domain: 1,
+  capability: 0.9,
+  element: 0.7,
+};
+
+/** The lit body per (fill, stroke, kind colour, state, quantised ramp) — strings built once. */
+const litBodyCache = new Map<string, { fill: string; stroke: string }>();
+const WHITE_RGB = [255, 255, 255] as const;
+
+function litBodyInk(
+  fill: string,
+  stroke: string,
+  rgb: readonly [number, number, number],
+  state: "current" | "stale",
+  ramp: number,
+): { fill: string; stroke: string } {
+  const q = Math.round(Math.min(1, Math.max(0, ramp)) * 20) / 20;
+  const key = `${fill}|${stroke}|${rgb[0]},${rgb[1]},${rgb[2]}|${state}|${q}`;
+  const hit = litBodyCache.get(key);
+  if (hit) return hit;
+  const base = hexToRgbOrNull(fill) ?? [20, 20, 26];
+  const rim = hexToRgbOrNull(stroke) ?? base;
+  // A current core is the kind colour lifted toward white — the emissive centre. A stale
+  // core stops a third of the way, which reads as light that is still there but weaker.
+  const core = state === "current" ? hexToRgbOrNull(mixRgbHex(rgb, WHITE_RGB, 0.18)) ?? rgb : rgb;
+  const t = (state === "current" ? 0.94 : 0.38) * q;
+  const out = {
+    fill: mixRgbHex(base, core, t),
+    stroke: mixRgbHex(rim, state === "current" ? (hexToRgbOrNull(mixRgbHex(rgb, WHITE_RGB, 0.35)) ?? rgb) : rgb, (state === "current" ? 0.9 : 0.5) * q),
+  };
+  if (litBodyCache.size > 512) litBodyCache.clear();
+  litBodyCache.set(key, out);
+  return out;
+}
+
+function hexToRgbOrNull(hex: string): readonly [number, number, number] | null {
+  return hexToRgb(hex);
+}
 
 /**
  * The label boxes this frame actually **drew**, in CSS pixels.
@@ -1056,6 +1121,12 @@ export interface FrameDrawParams {
     | ((edge: WorldEdge) => { x: number; y: number } | null)
     | null;
   /**
+   * 3D lit hologram (2026-09-25) — the inks and facts the light is drawn from. Null keeps
+   * the pre-light 3D look (the download hero and any caller that does not light).
+   * `render/dome-light.ts` owns what each state emits.
+   */
+  domeLight?: DomeLightFrame | null;
+  /**
    * Strength 0..1 of the trail lens — an on/off exponential ramp stepped by the loop.
    *
    * Not a boolean: the trail colour hard-cutting in and out reads as decoration
@@ -1155,6 +1226,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     domeTierLabels = null,
     domeTierRaisedKind = null,
     domeControlFor = null,
+    domeLight = null,
     trailLensRamp,
   } = params;
 
@@ -1490,9 +1562,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
    * way the neighbourhood already lights. 2D is untouched: the flat map's ego stays 1-hop.
    */
   const parentOf = (id: string) => world.nodeById.get(id)?.parentId;
+  const childrenOf = (id: string) => world.childrenByParent.get(id);
+  /*
+   * Lit 3D (2026-09-25): a focus lights **one subtree**, apex to leaves — the ancestry above
+   * plus everything the focused node contains (`collectDomeSubtree`), joined through the same
+   * neighbour set and ego edge state, so no new grammar is needed to light it.
+   */
+  const litOn = domeOn && domeLight !== null;
   const domeAncestryOn =
     domeOn && focusedNodeId !== null &&
-    collectDomeAncestry(focusedNodeId, parentOf, domeAncestryNodesReused, domeAncestryEdgesReused) > 0;
+    collectDomeAncestry(focusedNodeId, parentOf, domeAncestryNodesReused, domeAncestryEdgesReused) +
+      (litOn ? collectDomeSubtree(focusedNodeId, childrenOf, domeAncestryNodesReused, domeAncestryEdgesReused) : 0) >
+      0;
   let neighborsOfFocused: ReadonlySet<string> = neighborsOfFocusedRaw;
   if (domeAncestryOn) {
     domeAncestryUnionReused.clear();
@@ -1520,12 +1601,37 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       parentOf,
       domeAncestryColorNodesReused,
       domeAncestryColorEdgesReused,
-    ) > 0
+    ) +
+      (litOn
+        ? collectDomeSubtree(colorFocusedNodeId, childrenOf, domeAncestryColorNodesReused, domeAncestryColorEdgesReused)
+        : 0) >
+      0
   ) {
     domeAncestryColorUnionReused.clear();
     for (const id of colorNeighborsRaw) domeAncestryColorUnionReused.add(id);
     for (const id of domeAncestryColorNodesReused) domeAncestryColorUnionReused.add(id);
     colorNeighbors = domeAncestryColorUnionReused;
+  }
+  /*
+   * The lit line and its ramp — the retained colour focus, so the light leaves with the same
+   * fade the ego dim takes. `inLitLine` is the family the focus lights; everything else takes
+   * the deeper focus fog (`focusFogFactor`) and gives up its light.
+   */
+  const litFocusId = litOn ? colorFocusedNodeId : null;
+  const litFocusRamp =
+    litFocusId !== null ? Math.min(1, Math.max(0, focusRampById.get(litFocusId) ?? 0)) : 0;
+  const inLitLine = (id: string): boolean =>
+    litFocusId !== null && (id === litFocusId || domeAncestryColorNodesReused.has(id));
+  litSectorIdsReused.clear();
+  if (litFocusId !== null) {
+    // The focus and its ancestors own the lit sectors — a descendant's band would light a
+    // slice of the floor the focus did not ask about.
+    let cursor: string | null | undefined = litFocusId;
+    for (let hop = 0; cursor && hop < 8; hop += 1) {
+      const kind = world.nodeById.get(cursor)?.kind;
+      if (kind === "domain" || kind === "capability") litSectorIdsReused.add(cursor);
+      cursor = parentOf(cursor);
+    }
   }
   // perf 2026-08-19 — on a frame with no focus, pair, or lens (the usual rotating
   // or idle state) every node's ego classification is fixed at "normal"
@@ -1727,7 +1833,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // both produce the same Set on the same frame with no shared state — computing
   // the draw-side condition separately cannot drift.
   const egoContainsComets =
-    focusedNodeId === null
+    focusedNodeId === null || litOn
       ? EMPTY_EGO_CONTAINS_COMETS
       : selectEgoContainsComets(
           world.edges.filter(
@@ -1764,9 +1870,26 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
   // Replaces the array `filter` allocated every frame — same elements, same order.
   ambientDependsInputReused.length = 0;
+  /*
+   * Lit 3D (2026-09-25): particles run **only along the focused subtree's dependency edges**
+   * — an edge with at least one end at or under the focus. At rest nothing flows, so the one
+   * moving thing on the lit map is the answer to "what does this part depend on". Reduced
+   * motion draws none at all.
+   */
+  const inLitSubtree = (id: string): boolean => {
+    if (litFocusId === null) return false;
+    let cursor: string | null | undefined = id;
+    for (let hop = 0; cursor && hop < 8; hop += 1) {
+      if (cursor === litFocusId) return true;
+      cursor = parentOf(cursor);
+    }
+    return false;
+  };
+  const litComets = litOn && litFocusId !== null && domeLight !== null && !domeLight.reducedMotion;
   for (let i = 0; i < world.edges.length; i += 1) {
     const edge = world.edges[i];
     if (edge.kind === "depends" && edgeAlphaReused[i] > 0.02) {
+      if (litOn && !(litComets && (inLitSubtree(edge.sourceId) || inLitSubtree(edge.targetId)))) continue;
       ambientDependsInputReused.push(edge);
     }
   }
@@ -1839,6 +1962,21 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
    * void (`gridPattern: null` above) and the rings take its place, because the
    * floor of a 3D scene is a sphere, so its coordinate system must be spherical.
    */
+  /*
+   * Lit Strata floors — under the rings, the relations and the nodes. The focus sinks the
+   * floor with the rest of the structure (its lit band excepted, `drawStrataStage`).
+   */
+  if (litOn && domeLight !== null && domeLight.sampleStage !== null) {
+    drawStrataStage(
+      ctx,
+      domeLight.sampleStage(litSectorIdsReused.size > 0 ? litSectorIdsReused : null),
+      { kindRgb: domeLight.kindRgb, focusRgb: domeLight.focusRgb },
+      project,
+      domeFogAlpha,
+      1 - 0.55 * litFocusRamp,
+    );
+  }
+
   let domeRingsState: Parameters<typeof domeRingsDraw>[1] | null = null;
   let domeRingsTokens: Parameters<typeof domeRingsDraw>[2] | null = null;
   if (domeOn && domeRings !== null && domeRings.length > 0) {
@@ -1958,7 +2096,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           domeEdgeFog = 1 + (domeEdgeFogAlpha(uAvg) - 1) * aMin;
           domeWidthScale = 1 + (domeEdgeWidthFactor(uAvg) - 1) * aMin;
           domeMinWidthPx = domeEdgeMinWidthPx(canvasDpr) * aMin;
-          domeHaloWidthPx = domeHaloPx(uAvg) * aMin;
+          // Lit 3D: no background-colour halo — over a lit floor it cuts a black groove, not a gap.
+          domeHaloWidthPx = litOn ? 0 : domeHaloPx(uAvg) * aMin;
           domeEdgeDetail = 1 + (domeDetailFactor(uAvg) - 1) * aMin;
         }
       }
@@ -2115,7 +2254,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // same ramp — the fog (near 1.0 → far 0.09) otherwise swallows the lift on
       // the far side of the cone tree, and a hover that lights only the near
       // half reads as broken rather than as depth.
-      const domeEdgeFogForEdge = domeEdgeExempt ? 1 : 1 + (domeEdgeFog - 1) * (1 - hoverLift);
+      const domeEdgeFogForEdge =
+        (domeEdgeExempt ? 1 : 1 + (domeEdgeFog - 1) * (1 - hoverLift)) *
+        // Lit 3D: a focus deepens the fog on every line outside the lit line.
+        (litOn && !domeEdgeExempt ? focusFogFactor((edgeFrameA.u + edgeFrameB.u) / 2, litFocusRamp) : 1);
       // A line is never brighter than its dimmer endpoint's appear ramp: a node
       // swelling into view (new node, growth replay) brings its lines with it
       // instead of the lines arriving first.
@@ -2387,6 +2529,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
 
   drawnNodeCount = 0;
+  litDrawnStateCounts.current = 0;
+  litDrawnStateCounts.stale = 0;
+  litDrawnStateCounts.unknown = 0;
   for (let drawPos = 0; drawPos < nodeDrawOrder.length; drawPos += 1) {
     const node = nodeDrawOrder[drawPos];
     const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
@@ -2588,6 +2733,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         domeDetail = 1 + (domeDetailFactor(nodeDome.u) - 1) * nodeDome.a;
         domeRimAlphaScale = domeFog > 1e-4 ? Math.max(1, DOME_RIM_FOG_FLOOR / domeFog) : 1;
       }
+      // Lit 3D: a focus sinks everything outside the lit line and its relations deeper by depth.
+      if (litOn && litFocusRamp > 0.001 && !isHoveredNode && egoState !== "center" && egoState !== "neighbor" && !inLitLine(node.id)) {
+        realmClarityAlpha *= focusFogFactor(nodeDome.u, litFocusRamp);
+      }
     }
 
     // Depth parallax adds the band offset (in world units) to the RENDER
@@ -2659,7 +2808,24 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
     let bodyFill = visual.fill;
     let bodyStroke = visual.stroke;
-    if (neural > 0.001 && colorEgoState !== "dim") {
+    /*
+     * Lit 3D — **evidence decides how much a node emits** (`render/dome-light.ts`). A current
+     * node's core takes its kind colour; a stale one keeps a dimmer core; an unknown one keeps
+     * the dark body and emits nothing. The mix rides the assembly ramp, so the light rises
+     * with the structure instead of switching on.
+     */
+    let litState: EvidenceLight | null = null;
+    let litRgb: readonly [number, number, number] | null = null;
+    if (litOn && domeLight !== null && nodeDome.a > 0.01) {
+      litRgb = domeLight.kindRgb[node.kind] ?? null;
+      litState = domeLight.evidence?.get(node.id) ?? "unknown";
+      if (litRgb !== null && colorEgoState !== "dim" && litState !== "unknown") {
+        const body = litBodyInk(visual.fill, visual.stroke, litRgb, litState, nodeDome.a);
+        bodyFill = body.fill;
+        bodyStroke = body.stroke;
+      }
+    }
+    if (neural > 0.001 && colorEgoState !== "dim" && !litOn) {
       const ink = node.kind === "project" ? tokens.amberHub : tokens.indigoBright;
       let palette = neuralPaletteCache.get(visual);
       if (!palette || palette.ramp !== neural || palette.ink !== ink) {
@@ -2716,7 +2882,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
      * **inside** the bundle. Strength follows the edges' rule: the alpha this node
      * is currently drawn at.
      */
-    if (domeOn && nodeDome.a > 0.01) {
+    if (domeOn && !litOn && nodeDome.a > 0.01) {
       // Far-side detail ramp — the same attenuation as the edge halo: continuous,
       // and unchanged on the near side.
       const haloPx = domeHaloPx(nodeDome.u) * nodeDome.a * domeDetail;
@@ -2742,7 +2908,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             : 0;
       drawNodeBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, bloomRamp, tokens);
     }
-    if (neural > 0.001 && colorEgoState !== "dim") {
+    // Lit 3D emissive light — under the body, added with `lighter`. Evidence sets how much;
+    // a focus keeps the lit line's light and takes it from everything else.
+    if (litRgb !== null && litState !== null) {
+      const lineBoost = litFocusRamp > 0.001 ? (inLitLine(node.id) ? 1 : 1 - 0.85 * litFocusRamp) : 1;
+      const strength =
+        EVIDENCE_EMISSION[litState] * LIT_KIND_STRENGTH[node.kind] * lineBoost * nodeDome.a * (colorEgoState === "dim" ? 0.3 : 1);
+      drawEmissiveHalo(ctx, screen.x, screen.y, screenRadius, litRgb, strength);
+    }
+    if (neural > 0.001 && colorEgoState !== "dim" && !litOn) {
       // Each glow hugs a real cell body. No region or inferred edge is painted.
       const strength = attended ? 1 : node.kind === "element" ? 0.35 : 0.6;
       drawNeuralBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, neural, strength, tokens, canvasDpr,
@@ -2813,6 +2987,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       },
       nodeShapeTokensFrame,
     );
+    // Lit 3D — the one mark that says why a node emits less (stale amber, unknown dashed).
+    if (litRgb !== null && litState !== null && litState !== "current" && domeLight !== null) {
+      drawEvidenceRing(
+        ctx,
+        screen.x,
+        screen.y,
+        screenRadius,
+        litState,
+        litRgb,
+        domeLight.warningRgb,
+        nodeLayerAlpha * nodeDome.a * (colorEgoState === "dim" ? 0.45 : 1),
+      );
+    }
+    if (litState !== null) litDrawnStateCounts[litState] += 1;
 
     // Diffraction spike: the ranked "bright star" set PLUS the project node
     // unconditionally — reusing the pattern hub nodes already use, i.e. the exact

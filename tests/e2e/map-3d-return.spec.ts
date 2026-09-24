@@ -56,7 +56,7 @@ test("the press that dismisses the 3D picker does not also walk the map", async 
   await waitForMapStill(page);
 
   await openPicker(page);
-  await page.getByTestId("topology-view-3d-choice-ownership").click();
+  await page.getByTestId("topology-view-3d-choice-strata").click();
   await waitForDomeAssembled(page);
 
   // The chip closes its own picker — without this the reader has no way out but the map.
@@ -112,7 +112,7 @@ test("a deliberate node click in 3D does survive the return to 2D", async ({ pag
   await waitForMapStill(page);
 
   await openPicker(page);
-  await page.getByTestId("topology-view-3d-choice-ownership").click();
+  await page.getByTestId("topology-view-3d-choice-strata").click();
   await waitForDomeAssembled(page);
 
   const target = await page.evaluate(() => {
