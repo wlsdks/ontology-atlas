@@ -1,25 +1,32 @@
 'use client';
 
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
-import { MessageSquare, RefreshCw, Search } from 'lucide-react';
+import { Download, MessageSquare, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 
-import { badgeClass } from '@/shared/ui/badge-class';
-import { cn } from '@/shared/lib/cn';
 import { useArrivalMemory } from '@/shared/lib/route-arrival-memory';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip, Dialog, InfoHint } from '@/shared/ui';
+import { Chip, Dialog, EmptyState, InfoHint, Surface } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
 import { isGuardedRuntime } from '@/features/acp-session';
+import { AGENT_CLIENTS } from '@/entities/vault-session';
+import { RowStateBadge } from '@/features/docs-vault-local';
 import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
 
-import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primitives';
+import {
+  DETAIL_TOGGLE_CHIP,
+  ProductMark,
+  SettingsGroup,
+  SettingsGroupHeading,
+  SettingsRow,
+} from './settings-primitives';
+import { APP_CODING_TOOLS } from '../model/app-coding-tools';
 
 /**
  * 「Runners」 (runners) — the coding agents this machine can invoke.
@@ -86,19 +93,13 @@ import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primi
  * shouting beside the indigo action it should have been deferring to. The charter's own spelling of
  * a signal is *"one solid dot and three translucent surface/edge/text steps"*, and the dot is the
  * half that carries the meaning here. So the emerald stays — same tokens, no new hue — and moves
- * from the fill to the dot, while the label joins the row's neutral voice.
+ * from the fill to the dot, while the label joins the row's neutral voice. The badge itself is
+ * `RowStateBadge` (round 3), shared with the MCP tab's rows so 「Ready」 is one shape on both tabs.
  *
  * `CommitDetail` keeps the filled pill on purpose. There the status **is** the subject of the line;
  * here it trails two controls, and the same treatment in the two places would be the divergence, not
  * the fix.
  */
-const READY_INK =
-  'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-secondary)]';
-
-const NOT_READY_INK =
-  'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]';
-
-
 export function AcpRuntimeSettings({
   embedded = false,
   onOpenChat = requestAgentChat,
@@ -143,8 +144,13 @@ export function AcpRuntimeSettings({
    * short list there is nothing to bury.
    */
   const [othersOpen, setOthersOpen] = useState(false);
-  /** What the person is typing in the other-tools dialog. Reset every time it opens. */
+  /** What the person is typing in the other-tools dialog. Set every time it opens. */
   const [othersQuery, setOthersQuery] = useState('');
+  /** The search chip opens it empty; a shelf tile opens it already searched to that tool. */
+  const openOthers = (query: string) => {
+    setOthersQuery(query);
+    setOthersOpen(true);
+  };
 
   /**
    * Re-scan from the button — it is a response to a press, so it shows "searching".
@@ -195,40 +201,152 @@ export function AcpRuntimeSettings({
   // A browser cannot spawn a process — impossible in principle, so the reason and
   // the place to go are stated together (`.claude/rules/surfaces.md`).
   if (!isAcpBridgeAvailable()) {
+    /*
+     * ⚠️ **An empty state, not a settings row** (2026-09-25, design polish). This was one
+     * `SettingsRow`: a 110-character caption running as a single 796px line at 11px, and the
+     * only way on an 11px text link to MCP. It is the whole content of the tab on the web, so it
+     * takes the page's own empty-state shape: a title that says why, one line that says what
+     * works from here, and the two ways on as real buttons — the app first, because it is the
+     * path this tab is about; MCP second, because it works from here today. No icon tile:
+     * `EmptyState` indents the text beside it but not the actions, which would give the card two
+     * start lines.
+     *
+     * ⚠️ **What the app changes is the page lede's sentence, not this card's** (round 2). The lede
+     * above already says the Mac app finds the tools and opens them inside Atlas; the caption used
+     * to open with the same fact 160px lower. It now carries only what the lede does not: the way
+     * that works in this browser today.
+     */
     return (
-      <SettingsGroup>
-        <SettingsRow
-          label={t('webLabel')}
-          caption={t('webCaption')}
-          testId="app-settings-runtimes-web"
-          /*
-           * ⚠️ **A link, because the place it names is no longer on this screen**
-           * (2026-09-05). The caption used to say "the «MCP connection» section on this
-           * screen", and a section name is guidance only while that section is here to be
-           * scrolled to. MCP became its own destination, so the row carries the way there
-           * instead of a name — the same rule that forbids a degradation card from stating
-           * a reason with nowhere to go.
-           */
-          control={
-            <Link
-              href={DESTINATION_HREF.mcp}
-              data-testid="app-settings-runtimes-mcp-link"
-              className={controlClass({
-                shape: 'link',
-                tone: 'accent',
-                className: 'font-[var(--font-weight-signature)]',
-              })}
-            >
-              {t('webMcpLink')}
-            </Link>
+      <div data-testid="app-settings-runtimes-web" className="grid min-w-0 gap-3">
+        <EmptyState
+          tone="solid"
+          title={t('webLabel')}
+          description={<span className="block break-keep">{t('webCaption')}</span>}
+          action={
+            <>
+              <Link
+                href="/download/"
+                data-testid="app-settings-runtimes-get-app"
+                /* The pill shape every web-only empty state uses (Harness, Automations), with the
+                   touch floor (round 2). ⚠️ **Filled, on this tab alone** (round 4, 2026-09-25):
+                   there the card is one state among the screen's content, here it is the tab's
+                   only way forward, and an accent-ink pill beside a link weighed barely more than
+                   the link. `onAccent` is the ramp's one filled press — the tone the folder
+                   guide's own 「get the app」 uses — so the winner is said by the ramp, not by a
+                   hand-mixed fill. */
+                className={controlClass({
+                  shape: 'pill',
+                  size: 'lg',
+                  tone: 'onAccent',
+                  // The pill shape carries no gap of its own; the glyph takes the chip's 6px.
+                  // The value layer's focus ring is an inset indigo ring, which vanishes on an
+                  // indigo fill (1.00:1, `focus-ring-contrast.spec.ts`); on this press the inset
+                  // ring takes the primary ink instead.
+                  className:
+                    'atlas-touch-floor atlas-touch-floor-wide gap-1.5 focus-visible:ring-[color:var(--color-text-primary)]',
+                })}
+              >
+                <Download size={ICON_SIZE.md} aria-hidden />
+                {t('webGetApp')}
+              </Link>
+              {/*
+               * ⚠️ **A link, because the place it names is no longer on this screen**
+               * (2026-09-05). The caption used to say "the «MCP connection» section on this
+               * screen", and a section name is guidance only while that section is here to be
+               * scrolled to. MCP became its own destination, so the card carries the way there
+               * instead of a name — the same rule that forbids a degradation card from stating
+               * a reason with nowhere to go.
+               */}
+              {/* ⚠️ **One winner** (round 3, 2026-09-25). As a second pill at the same 32px this
+                  carried nearly the weight of 「get the Mac app」, and on a tab whose only job in a
+                  browser is to send the person to the app there was no clear first press. It
+                  steps back to a link: still a real way on, no longer a peer of the app. */}
+              <Link
+                href={DESTINATION_HREF.mcp}
+                data-testid="app-settings-runtimes-mcp-link"
+                className={controlClass({
+                  shape: 'link',
+                  size: 'lg',
+                  tone: 'default',
+                  hoverInk: 'strong',
+                })}
+              >
+                {t('webMcpLink')}
+              </Link>
+            </>
           }
         />
-      </SettingsGroup>
+        {/*
+          ── What the app would find (round 4, 2026-09-25) ──────────────────────────────────────
+          The card above was the whole tab, and 60% of the window stood empty under it. A browser
+          cannot say which of these tools is on this computer, but it can say which tools the app
+          looks for: the registry the app's detection walks ships in this build. So the space holds
+          that list — marks and names, no states and no controls, because there is nothing true to
+          report and nothing to press for any of them here. It is the fact the 「get the Mac app」
+          press is buying, one glance below it, and it repeats nothing the lede or the card says.
+        */}
+        <section
+          className="min-w-0"
+          aria-labelledby="app-settings-runtimes-web-tools-heading"
+          data-testid="app-settings-runtimes-web-tools"
+        >
+          <SettingsGroupHeading
+            id="app-settings-runtimes-web-tools-heading"
+            label={t('webToolsHeading', { count: APP_CODING_TOOLS.length })}
+          />
+          <ul className="mt-1.5 grid min-w-0 grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-3 xl:grid-cols-4">
+            {APP_CODING_TOOLS.map((tool) => (
+              <li
+                key={tool.id}
+                data-testid={`app-settings-runtimes-web-tool-${tool.id}`}
+                className="flex min-w-0 items-center gap-2.5"
+              >
+                {/* Stepped back like the desktop shelf's marks: 41 white plates at full weight
+                    outweighed the one filled press above them. */}
+                <span className="flex shrink-0 opacity-60">
+                  <ProductMark icon={tool.icon} ink={tool.brandInk} monogram={tool.name} />
+                </span>
+                <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
+                  {tool.name}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
     );
   }
 
   const ready = (runtimes ?? []).filter((r) => isRuntimeUsable(r.state));
   const others = (runtimes ?? []).filter((r) => !isRuntimeUsable(r.state));
+  /** What a person can make ready: a sign-in first (one terminal run), then the installs. */
+  const nextUp = others
+    .filter((r) => r.state !== 'cli-unknown')
+    .sort((a, b) => nextStepRank(a.state) - nextStepRank(b.state));
+  /** What Atlas cannot detect on this computer, whatever is really installed. */
+  const unknown = others.filter((r) => r.state === 'cli-unknown');
+
+  /*
+   * The door to the setup window stands on the first shelf group's heading, whichever that is.
+   * ⚠️ **With nothing confirmed, the door is the emphasis** (see the shelf's note below).
+   */
+  const searchChip = (
+    <Chip
+      size="lg"
+      tone={ready.length === 0 ? 'accentOnTint' : 'secondary'}
+      data-testid="app-settings-runtimes-others-toggle"
+      aria-haspopup="dialog"
+      onClick={() => openOthers('')}
+      className={
+        ready.length === 0
+          ? `${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]`
+          : `${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`
+      }
+    >
+      <Search size={ICON_SIZE.md} aria-hidden />
+      {t('othersSearchLabel')}
+    </Chip>
+  );
 
   /*
    * **The re-scan press belongs to the group it re-scans** (2026-09-20).
@@ -334,7 +452,7 @@ export function AcpRuntimeSettings({
         12px gap above a heading it no longer introduces.
       */}
       {!embedded || showGuardNote ? (
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 px-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           {embedded ? null : (
             <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
               {t('intro')}
@@ -430,28 +548,80 @@ export function AcpRuntimeSettings({
              * live in these rows, so the chip carries the indigo rather than making somebody find
              * a quiet control to reach the only answer on the screen (walkthrough, 2026-08-20 —
              * the same reasoning that used to auto-expand the fold).
+             *
+             * ── The shelf, grouped by what a person can do next (round 5, 2026-09-25) ────────
+             * The page names the other tools as a shelf of marks (round 3: the tab otherwise ended
+             * 600px above the window's bottom edge). It used to follow registry order, so the
+             * tools a person could act on — Codex waiting for a sign-in, a dozen waiting for an
+             * install — sat among 29 tiles repeating 「Not checked」 at the same weight, and the one
+             * useful fact (which tool can be made ready next) was lost in the wall. Now a sign-in
+             * comes first (one terminal run away), then the installs; the tools Atlas cannot
+             * detect go to their own quiet group below, with their meaning said once.
+             *
+             * ⚠️ **What this keeps from the 2026-09-07 owner call.** The complaint there was a
+             * fold of 36 full rows poured onto the page, with no search. Setting a tool up still
+             * happens in the window with a search; the page shows only a scannable index of names
+             * and a tile opens that window already searched to its tool. Falsifier: if a
+             * walkthrough shows a person reading the shelf instead of reaching the ready tools
+             * above it, the shelf goes back behind the chip.
              */
-            <div className="grid min-w-0 gap-1.5">
-              <Chip
-                size="lg"
-                tone={ready.length === 0 ? 'accentOnTint' : 'secondary'}
-                data-testid="app-settings-runtimes-others-toggle"
-                aria-haspopup="dialog"
-                onClick={() => {
-                  setOthersQuery('');
-                  setOthersOpen(true);
-                }}
-                className={
-                  ready.length === 0
-                    ? `${DETAIL_TOGGLE_CHIP} border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]`
-                    : DETAIL_TOGGLE_CHIP
-                }
-              >
-                <Search size={ICON_SIZE.md} aria-hidden />
-                {ready.length === 0
-                  ? t('othersHeadingEmpty', { count: others.length })
-                  : t('othersHeading', { count: others.length })}
-              </Chip>
+            <>
+              {nextUp.length > 0 ? (
+                <section
+                  className="min-w-0"
+                  aria-labelledby="app-settings-runtimes-others-heading"
+                  data-testid="app-settings-runtimes-others"
+                >
+                  <SettingsGroupHeading
+                    id="app-settings-runtimes-others-heading"
+                    label={t('nextHeading', { count: nextUp.length })}
+                    trailing={searchChip}
+                  />
+                  <ul
+                    data-testid="app-settings-runtimes-others-shelf"
+                    className="mt-1.5 grid min-w-0 grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4"
+                  >
+                    {nextUp.map((runtime) => (
+                      <ShelfTile key={runtime.id} runtime={runtime} onOpen={openOthers} />
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+              {unknown.length > 0 ? (
+                /*
+                 * ── What Atlas cannot detect, said once (round 5) ──────────────────────────────
+                 * 「Not checked」 was the second line of 29 tiles and was explained only inside the
+                 * dialog, so on the page it read as a detection failure repeated 29 times. The
+                 * heading now names the state and one sentence under it says its effect; the
+                 * tiles drop the state line and step back to borderless, name-only entries —
+                 * still pressable, still the way to that tool's install guide.
+                 */
+                <section
+                  className="min-w-0"
+                  aria-labelledby="app-settings-runtimes-unknown-heading"
+                  data-testid={nextUp.length > 0 ? 'app-settings-runtimes-unknown' : 'app-settings-runtimes-others'}
+                >
+                  <SettingsGroupHeading
+                    id="app-settings-runtimes-unknown-heading"
+                    label={t('unknownHeading', { count: unknown.length })}
+                    trailing={nextUp.length > 0 ? null : searchChip}
+                  />
+                  <p
+                    data-testid="app-settings-runtimes-unknown-shelf-note"
+                    className="break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]"
+                  >
+                    {t('unknownShelfNote')}
+                  </p>
+                  <ul
+                    data-testid="app-settings-runtimes-unknown-shelf"
+                    className="mt-1 grid min-w-0 grid-cols-2 gap-x-2 md:grid-cols-3 xl:grid-cols-4"
+                  >
+                    {unknown.map((runtime) => (
+                      <ShelfTile key={runtime.id} runtime={runtime} onOpen={openOthers} quiet />
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
               <OtherRuntimesDialog
                 open={othersOpen}
                 onClose={() => setOthersOpen(false)}
@@ -461,7 +631,7 @@ export function AcpRuntimeSettings({
                 onOpenChat={onOpenChat}
                 onRuntimesChanged={() => void refresh()}
               />
-            </div>
+            </>
           ) : null}
         </>
       )}
@@ -527,14 +697,18 @@ function OtherRuntimesDialog({
         id="app-settings-runtimes-others-title"
         className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
       >
-        {t('othersDialogTitle', { count: runtimes.length })}
+        {/* The errand, not the shelf's name (round 4): the heading on the page already counts
+            these tools, and a dialog opening with the same words was the page said twice. */}
+        {t('othersDialogTitle')}
       </h2>
       {/*
         What "could not check" means, stated once at the top rather than on every row. Nineteen
         copies of one sentence is the defect this screen already went through and recorded; the
         explanation goes before the list so somebody reading in order meets it first.
       */}
-      {runtimes.some((runtime) => runtime.state === 'cli-unknown') ? (
+      {/* Only while a listed row carries that state: a tile opens this window searched to one
+          tool, and explaining 「Not checked」 above a lone 「Install needed」 row answered nothing. */}
+      {matches.some((runtime) => runtime.state === 'cli-unknown') ? (
         <p
           data-testid="app-settings-runtimes-unknown-note"
           className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
@@ -597,6 +771,122 @@ function isRuntimeUsable(state: AcpRuntimeStatus['state']): boolean {
   return state === 'ready' || state === 'login-unknown';
 }
 
+/**
+ * How near a tool is to usable: a sign-in is one terminal run, an install is a download, and a
+ * tool that needs a runtime first (Node, uv) or its own installer is one step further. The sort
+ * is stable, so tools in one state keep the registry's order.
+ */
+const NEXT_STEP_ORDER: readonly AcpRuntimeStatus['state'][] = [
+  'login-needed',
+  'cli-missing',
+  'node-missing',
+  'uvx-missing',
+  'binary-missing',
+];
+function nextStepRank(state: AcpRuntimeStatus['state']): number {
+  const rank = NEXT_STEP_ORDER.indexOf(state);
+  return rank === -1 ? NEXT_STEP_ORDER.length : rank;
+}
+
+/**
+ * One tool on the page's shelf: its mark and name, and — where the state differs tile to tile —
+ * that state. Pressing it opens the setup window already searched to this tool.
+ *
+ * ⚠️ **The mark's weight follows the state, not the drawing** (round 4, then round 5). Forty
+ * brand plates at full strength made the shelf the loudest thing on the tab, and at a flat 60%
+ * the few inked marks (purple, orange, violet) still outweighed the grey ones — weight that came
+ * from the drawing, not from anything about the tool. So every shelf mark rests in greyscale at
+ * 70%, and colour returns under the pointer or focus: the tile about to be pressed is the one at
+ * full weight. The undetectable group carries no marks at all — names only.
+ */
+function ShelfTile({
+  runtime,
+  onOpen,
+  quiet = false,
+}: {
+  runtime: AcpRuntimeStatus;
+  onOpen: (query: string) => void;
+  /** The undetectable group: no state line (its heading says it once), no card. */
+  quiet?: boolean;
+}) {
+  const t = useTranslations('nav.settingsMenu.runtimes');
+  const mark = runtimeMark(runtime);
+  const label = t('othersTileLabel', { name: runtime.label, state: t(`state.${runtime.state}`) });
+  if (quiet) {
+    /* A name, not a card: no plate, no border, no inset — so the names start on the same line as
+       the heading above them and the group reads as an index, not a second wall of tiles. Its
+       marks are in the setup window a press away. */
+    return (
+      <li className="min-w-0">
+        <button
+          type="button"
+          data-testid={`app-settings-runtimes-tile-${runtime.id}`}
+          data-shelf-tone="quiet"
+          aria-haspopup="dialog"
+          aria-label={label}
+          onClick={() => onOpen(runtime.label)}
+          className={controlClass({
+            shape: 'link',
+            size: 'lg',
+            tone: 'default',
+            hoverInk: 'strong',
+            className:
+              'atlas-touch-floor min-h-8 w-full min-w-0 text-left text-[color:var(--color-text-tertiary)]',
+          })}
+        >
+          <span className="min-w-0 truncate">{runtime.label}</span>
+        </button>
+      </li>
+    );
+  }
+  return (
+    <li className="min-w-0">
+      <button
+        type="button"
+        data-testid={`app-settings-runtimes-tile-${runtime.id}`}
+        data-shelf-tone="next"
+        aria-haspopup="dialog"
+        aria-label={label}
+        onClick={() => onOpen(runtime.label)}
+        className={controlClass({
+          shape: 'card',
+          size: 'md',
+          tone: 'secondary',
+          hoverInk: 'strong',
+          hoverBorder: 'strong',
+          className:
+            'group w-full gap-2.5 bg-[color:var(--color-overlay-1)] py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+        })}
+      >
+        <span className="flex shrink-0 opacity-70 grayscale transition-[opacity,filter] duration-[var(--motion-fast)] ease-[var(--motion-ease)] group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0 motion-reduce:transition-none">
+          <ProductMark icon={mark.icon} ink={mark.ink} monogram={runtime.label} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-body">{runtime.label}</span>
+          <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
+            {t(`state.${runtime.state}`)}
+          </span>
+        </span>
+      </button>
+    </li>
+  );
+}
+
+/**
+ * **The same product wears the same mark on both tabs** (2026-09-25).
+ *
+ * The runtime list takes its mark from the registry, and a registry entry without one drew an
+ * empty 32px tile — while the MCP tab one press away drew Claude Code, Codex and Cursor with their
+ * full brand tiles. Where the registry is silent and the MCP tab knows the product (its bundled
+ * mark is this runtime's own `/acp-icons/<id>.svg`), that mark and ink are used; anything else
+ * falls back to the row's monogram, never to a blank tile.
+ */
+function runtimeMark(runtime: AcpRuntimeStatus): { icon: string | null; ink: string | null } {
+  if (runtime.icon) return { icon: runtime.icon, ink: runtime.brandInk };
+  const client = AGENT_CLIENTS.find((entry) => entry.icon === `/acp-icons/${runtime.id}.svg`);
+  return client ? { icon: client.icon, ink: runtime.brandInk ?? client.brandInk } : { icon: null, ink: null };
+}
+
 function RuntimeRow({
   runtime,
   onOpenChat,
@@ -632,6 +922,7 @@ function RuntimeRow({
    * help. On the web there is neither a process nor a keychain to see, so it is absent.
    */
   const doctor = useAgentDoctor(runtime.id, onRuntimesChanged);
+  const mark = runtimeMark(runtime);
   const showDoctor = isGuardedRuntime(runtime.id, runtime.isolated) && isAgentDoctorAvailable();
 
   /*
@@ -658,10 +949,18 @@ function RuntimeRow({
               : undefined
         }
         testId={`app-settings-runtime-${runtime.id}`}
-        icon={runtime.icon}
-        iconInk={runtime.brandInk}
+        icon={mark.icon}
+        iconInk={mark.ink}
+        monogram={runtime.label}
         control={
-          /* Owner (2026-08-20): *"The buttons are so close together it feels cramped"* — the buttons are so close together it feels cramped. Three controls plus a status badge stand on one row, and at `gap-1.5` (6px) the eye cannot tell where one button ends. Widen by one step on the ramp. */
+          /* Owner (2026-08-20): *"The buttons are so close together it feels cramped"* — the buttons are so close together it feels cramped. Three controls plus a status badge stand on one row, and at `gap-1.5` (6px) the eye cannot tell where one button ends. Widen by one step on the ramp.
+
+             ⚠️ **Columns are read from the right** (2026-09-25, design polish). The cluster is
+             right-aligned, so the controls every row carries — the check and the state badge —
+             stand at the right end and the optional ones (open a chat, install guide) at the
+             left. In the other-tools dialog the check used to start at x=855 on one row and
+             x=778 on the next because the optional install link stood between it and the name;
+             now the check and the fixed-width badge share one edge down the whole list. */
         <span className="flex items-center gap-2">
             {/*
              * ⚠️ **The badge was revised three times and finally removed.** Worth recording:
@@ -682,9 +981,17 @@ function RuntimeRow({
              * Offered only for tools with a gate. Opening a conversation with an ungated tool would break the promise this screen makes one sentence above (it asks first before going outside the folder).
              */}
             {isUsable && isGuardedRuntime(runtime.id, runtime.isolated) ? (
+              /*
+               * ⚠️ **Filled: the tab's one winner** (round 5, 2026-09-25). As a tinted outline pill
+               * beside 「Check connection」 it weighed barely more than its neighbour, and the shelf's 40
+               * tiles below won the eye by area. Opening a chat is the only thing on this tab a
+               * person can do right now, so it takes the ramp's one filled press (`onAccent`, the
+               * same tone the web tab's 「Get the Mac app」 uses). The inset indigo focus ring vanishes on
+               * an indigo fill, so this press takes the primary ink for its ring.
+               */
               <Chip
                 size="lg"
-                tone="accentOnTint"
+                tone="onAccent"
                 data-testid={`app-settings-runtime-chat-${runtime.id}`}
                 /*
                  * **The verb alone, and the sentence as the name** (2026-09-19). The row already
@@ -696,7 +1003,7 @@ function RuntimeRow({
                  */
                 aria-label={t('openChat')}
                 onClick={() => onOpenChat(runtime.id)}
-                className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
+                className="shrink-0 focus-visible:ring-[color:var(--color-text-primary)]"
               >
                 <MessageSquare size={ICON_SIZE.md} aria-hidden />
                 {t('openChatShort')}
@@ -712,7 +1019,6 @@ function RuntimeRow({
              * opened a conversation**. Someone stuck on "the conversation will not
              * open at all" comes to this screen.
              */}
-            {showDoctor ? doctor.scanButton : null}
             {/*
              * ⚠️ Tools that only lacked a login were being offered 「Installation Method」 — to people who had already installed them. Different action, different sentence.
              */}
@@ -728,9 +1034,11 @@ function RuntimeRow({
                    pressable. That it leaves the app is still said by the glyph (↗). */
                 className={controlClass({
                   shape: 'chip',
-                  /* The row's third control — the same step as the doctor chips beside it. */
-                  size: 'md',
-                  tone: 'muted',
+                  /* One size for every control on the row (2026-09-25): the label size used to
+                     step 12.5 → 11 across one row, so the smaller ones read as disabled. The
+                     primary is told apart by tone, not by type size. */
+                  size: 'lg',
+                  tone: 'secondary',
                   hoverInk: 'strong',
                   className: 'shrink-0',
                 })}
@@ -742,35 +1050,29 @@ function RuntimeRow({
                 {t('installGuide')}
               </a>
             ) : null}
-            <span
-              data-runtime-state={runtime.state}
-              /*
-               * A state, not a control — so it keeps a badge shape rather than growing into a
-               * button. But `micro` puts it on the caption ramp, and beside a row of 32px chips the
-               * one thing stating whether the tool actually works was the smallest text there.
-               * `tag` moves it one step onto the label ramp without pretending it is pressable.
-               */
-              className={badgeClass({
-                shape: 'tag',
-                className: cn(
-                  'inline-flex items-center gap-1.5 py-0.5',
-                  isReady ? READY_INK : NOT_READY_INK,
-                ),
-              })}
-            >
-              {isReady ? (
-                <span
-                  aria-hidden
-                  data-testid="app-settings-runtime-ready-dot"
-                  className="size-1.5 shrink-0 rounded-full bg-[color:var(--color-status-success)]"
-                />
-              ) : null}
+            {showDoctor ? doctor.scanButton : null}
+            {/* A state, not a control — so it keeps a badge shape rather than growing into a
+                button, on the label ramp beside the row's 32px chips. */}
+            <RowStateBadge ready={isReady} data-runtime-state={runtime.state}>
               {t(`state.${runtime.state}`)}
-            </span>
+            </RowStateBadge>
           </span>
         }
       />
-      {showDoctor ? <div className="min-w-0 px-3 pb-2.5">{doctor.result}</div> : null}
+      {/* Only when there is a result. The wrapper used to be drawn around a null result, so every
+          guarded row carried an empty 10px strip under it: the card's content sat 16px from the
+          top and 26px from the bottom (measured 2026-09-25). */}
+      {/* ⚠️ Through `Surface`, not a bare conditional (round 2, 2026-09-25): the result arrives
+          under a row the person just pressed, and a block that appears in one frame is the hard
+          cut the motion charter forbids. `Surface` brings the ramp's enter/exit and the global
+          reduced-motion cut; the result never returns to null while the row lives (a re-run
+          keeps the previous checks until the new ones land), so the exit window never fades an
+          empty box. */}
+      {showDoctor ? (
+        <Surface open={Boolean(doctor.result)} className="min-w-0 px-3 pb-2.5">
+          {doctor.result}
+        </Surface>
+      ) : null}
     </div>
   );
 }

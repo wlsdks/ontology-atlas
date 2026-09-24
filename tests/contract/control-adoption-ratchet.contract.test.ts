@@ -185,7 +185,7 @@ import { describe, expect, it } from 'vitest';
  *
  * | Category | Count | What's missing / Why outside? |
  * |---|---:|---|
- * | **[Registration] `standard-button`** | 11 | Shape yielded by value layer. DownloadPage 7 · AgentClientButtons 1 · Architecture empty-state exit 1 · Two 404 files 2. |
+ * | **[Registration] `standard-button`** | 10 | Shape yielded by value layer. DownloadPage 7 · Architecture empty-state exit 1 · Two 404 files 2. |
  * | **[Registration] `chrome-token`** | 3 | AtlasGitPanel 2(`--git-setup-action-height`) · TopologyReviewLink 1(`--chrome-tile-size`). Both have multiple declarations, passing token check. |
  * | **[Registration] `no-spec`** | 3 | MacosDownloadLink(passthrough) · PublicQuickActions 2(`inline-flex` wrapper). |
  * | **[Registration] `value-layer-peer`** | 1 | `<Link>` branch of `ChromeTile`. |
@@ -1113,7 +1113,8 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // buttons (primary, ghost sm) instead of text links, so `Link` 19→21.
 // 2026-09-25: Check history's first-run door to Automations is one `<Link>` through
 // `buttonVariants`, so `Link` 21→22.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 22, a: 9 };
+// 2026-09-25 (agents polish): AgentClientButtons' outline anchor became a `<Button>`, so `a` 9→8.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 22, a: 8 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1180,13 +1181,6 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     conditional:
       '⚠️ 이 중 둘은 `className` 이 프리미티브의 반경·인셋을 덮는다(`rounded-chip px-4 sm:px-6`). ' +
       '그건 이 게이트가 아니라 다음 디자인 라운드의 일이다 — 등재가 그 결함을 승인하지는 않는다.',
-  },
-  {
-    file: 'src/features/docs-vault-local/ui/AgentClientButtons.tsx',
-    count: 1,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
   },
   {
     file: 'src/views/automations/ui/AutomationsPage.tsx',
@@ -1351,9 +1345,11 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // 28 → 30 (2026-09-25): Automations' two navigating actions, registered for the reason their
 // row states — the standard-button shape, at the two tags a navigating button needs.
 // 30 → 31 (2026-09-25): Check history's first-run door, the standard-button shape again.
-const BASELINE_ANCHOR_REGISTERED = 31;
+// 31 → 30 (2026-09-25, agents polish): `AgentClientButtons` left the anchor census — its
+// control is a `<Button>` now, so its row is gone.
+const BASELINE_ANCHOR_REGISTERED = 30;
 
-/** **Only this number may fall.** The current anchor total (31) minus registered (31). */
+/** **Only this number may fall.** The current anchor total (30) minus registered (30). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
