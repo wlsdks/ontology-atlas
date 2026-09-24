@@ -1027,6 +1027,7 @@
     "trustVerifyCommandWindows": "Get-FileHash {file} -Algorithm SHA256",
     "demoTitle": "Inspect the context your agent reads",
     "demoSub": "This recorded demo selects a concept and its evidence, then Codex follows a declared path in the same vault. It shows a bounded lookup, not a complete change-impact check.",
+    "demoPromptLabel": "What Codex was asked in this take",
     "demoAgentPrompt": "Use only `get_concept` and `find_path` to explain the path from `capabilities/mcp-tool-server` to `capabilities/ontology-map` in one sentence. Do not change files.",
     "demoProvisionalNote": "{seconds}s from one take. Only the agent's thinking time is cut; nothing is sped up, and there is no sound.",
     "evidenceTitle": "Meaning you can inspect, in files you own",

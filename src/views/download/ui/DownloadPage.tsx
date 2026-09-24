@@ -11,6 +11,7 @@ import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
+import { availableDemoClips } from '../model/demo-clips';
 import { HeroTypewriter, heroSentence } from './HeroTypewriter';
 import { EvidenceSpecimen, type EvidenceDemoKey } from './EvidenceSpecimen';
 import { CountUp } from './CountUp';
@@ -399,16 +400,17 @@ function HeroSection({
   ];
 
   return (
-    /* **The first screen is the hero's** (2026-09-02). Measured at 1512×982 the facts strip ended
-       at 754 and 150px of nothing followed before the fold; at 1920×1080 the gap was wider. At the
-       split width the section now claims the viewport below the chrome (`min-h`, so a short
-       window never clips) and the split band takes the slack, which centres the decision block
-       and the object in the room that was empty. The strip stays the hero's bottom rule and now
-       sits on the fold. Below `xl` the object stacks under the type and the hero is taller than
-       any viewport, so nothing changes there. */
+    /* **The hero is as tall as what it says** (2026-09-25). From 2026-09-02 it claimed the
+       viewport below the chrome at the split width, so the facts strip stood on the fold. The
+       copy is ≈440px tall and the fold 884px (1512×949), so that claim was ≈440px of slack with
+       nowhere good to go: under the CTAs it was a 370px empty lower-left column, and split above
+       and below the copy it was a 250px empty band under the chrome (h1 at y=347; 391 at 1920).
+       Every placement moved the void. Now the hero ends at the strip and the section rhythm
+       follows, so the fold holds the headline, the decision, the strip and the start of the demo
+       — the next thing to look at, instead of nothing. */
     <section
       data-testid="gateway-hero"
-      className={cn(PAGE_GUTTER, 'relative flex w-full flex-col min-[90rem]:min-h-[calc(100svh-4rem)]')}
+      className={cn(PAGE_GUTTER, 'relative flex w-full flex-col')}
     >
       {/* The monument measure — the headline uses the full column as its measure. `@container`
           declares that measure and `--text-monument` (4.8cqw) sizes against it, so both sentences
@@ -422,13 +424,7 @@ function HeroSection({
       {/* `pointer-events-none` on the two wrappers, `pointer-events-auto` on what they hold: the
           wrappers span the whole column, and the stage behind them takes the hand wherever the
           type is not — measured, a full-width band ate the hover over the plane's apex. */}
-      {/* **The copy block stands on the hero's centre, not its top** (2026-09-25). With the
-          headline pinned under the chrome and the strip on the fold, the room between them all
-          fell under the CTAs: measured 370px of empty left column at 1512×949 and 470px at
-          1920×1080, a void exactly where the eye lands after the decision, while the dome's
-          centre (`anchor.y` 0.52 in `HeroAtlas`) sat far below the type. `mt-auto` here and on
-          the strip split that room in two, so headline, CTAs and the dome share one centre. */}
-      <div className={cn(PAGE_COLUMN, '@container pointer-events-none relative z-[1] min-w-0 pt-12 md:pt-16 min-[90rem]:mt-auto')}>
+      <div className={cn(PAGE_COLUMN, '@container pointer-events-none relative z-[1] min-w-0 pt-12 md:pt-16')}>
         <p
           className={cn(
             rise('gateway-t240'),
@@ -574,10 +570,8 @@ function HeroSection({
 
       </div>
 
-      {/* `mt-auto`: at the split width the strip sits on the fold, and the room between the
-          decision block and the strip is the dome's. */}
       <FactsStrip
-        className="relative z-[1] mt-auto"
+        className="relative z-[1]"
         published={published}
         primaryAsset={primaryAsset}
         windowsAsset={windowsInstaller}
@@ -835,10 +829,7 @@ function ScreensSection() {
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <SectionIntro eyebrow={t('eyebrow')} title={t('title')} sub={t('sub')} />
-        <div className="gateway-scroll-stage">
-          <ScreensStage />
-        </div>
+        <ScreensStage intro={<SectionIntro eyebrow={t('eyebrow')} title={t('title')} sub={t('sub')} />} />
       </div>
     </section>
   );
@@ -846,6 +837,8 @@ function ScreensSection() {
 
 function DemoSection() {
   const t = useTranslations('download');
+  /** The request belongs to the take — with no clip attached there is no take to quote. */
+  const hasClip = availableDemoClips().length > 0;
 
   return (
     <section
@@ -863,8 +856,9 @@ function DemoSection() {
        * starts at the origin like every other section's, the stage ends on the column's right
        * edge, and the stage keeps its approved width. Narrower, the head stacks above a stage
        * that starts at the origin too. The head sits on the video's vertical centre (`pb-9`
-       * discounts the caption under the video): at 1920 the head is a third of the stage's
-       * height, and top-aligned it left 400px of empty track beneath a two-line lede.
+       * discounts the caption under the video), and under its lede it quotes the request the
+       * take was filmed on (`DemoPrompt`): the head alone was a third of the stage's height at
+       * 1920, with ≈170px of empty track above it and ≈200px below.
        */}
       <div
         className={cn(
@@ -874,12 +868,43 @@ function DemoSection() {
       >
         <div data-testid="gateway-demo-head" className="min-w-0 min-[90rem]:self-center min-[90rem]:pb-9">
           <SectionIntro eyebrow={t('demoEyebrow')} title={t('demoTitle')} sub={t('demoSub')} />
+          {hasClip ? <DemoPrompt text={t('demoAgentPrompt')} label={t('demoPromptLabel')} /> : null}
         </div>
         <div className="gateway-scroll-stage mt-9 min-w-0 min-[90rem]:mt-0">
           <DemoStage />
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * **The request the take was filmed on, verbatim** (2026-09-25). The shoot sends the locale's
+ * `download.demoAgentPrompt` word for word (`docs/DEMO-SCENARIO.md` §3), and until now the page
+ * never showed it: a visitor watched Codex answer a question they could not read. At the split
+ * width it also closes the head's track — beside a 768px stage at 1920 the head was a third of
+ * the video's height, with ≈170px of empty track above it and ≈200px below. It wears the chat
+ * scene's user bubble (label over a bordered bubble), because it is the same thing: what a person
+ * typed to an agent. Tool names and slugs keep the mono face; the sentence around them does not.
+ */
+function DemoPrompt({ text, label }: { text: string; label: string }) {
+  return (
+    <figure data-testid="gateway-demo-prompt" className="mt-7 min-w-0 max-w-[40rem]">
+      <figcaption className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">
+        {label}
+      </figcaption>
+      <blockquote className="mt-1.5 break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 text-body leading-body text-[color:var(--color-text-secondary)]">
+        {text.split('`').map((part, i) =>
+          i % 2 === 1 ? (
+            <code key={i} className="break-words font-mono text-[color:var(--color-text-primary)] sm:whitespace-nowrap">
+              {part}
+            </code>
+          ) : (
+            part
+          ),
+        )}
+      </blockquote>
+    </figure>
   );
 }
 
@@ -1112,14 +1137,15 @@ function AgentSection() {
        * scene, the same height class as the cards, and both columns start on the eyebrow's line.
        * This is also the demo section's grammar — its head stands in the track beside its stage.
        *
-       * The split opens at `xl`. At `lg` (1040) the left track was 326px: the scene's bubble and
-       * record wrapped every few words and the head would have run seven lines. Below `xl` the
-       * head, the scene and the cards stack at the column's full width.
+       * The split opens at 90rem, the hero's split width. At `lg` (1040) the left track was 326px
+       * and at `xl` (1280) 458px: the user bubble left its last words alone on a second line and
+       * the record's `why` broke mid-clause. Below 90rem the head, the scene and the cards stack
+       * at the column's full width.
        */}
       <div
         className={cn(
           PAGE_COLUMN,
-          'grid min-w-0 gap-y-10 xl:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] xl:gap-x-12',
+          'grid min-w-0 gap-y-10 min-[90rem]:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] min-[90rem]:gap-x-12',
         )}
       >
         <div className="min-w-0">

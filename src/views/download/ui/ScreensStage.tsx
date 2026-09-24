@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
@@ -41,8 +41,8 @@ const SCREEN_ORDER: readonly CapturedId[] = DESTINATION_IDS.filter(
 const CAPTURE_WIDTH = 1336;
 const CAPTURE_HEIGHT = 860;
 
-/** From `xl` the names stand as a column beside the picture; below it they are a strip above. */
-const COLUMN_FROM_PX = 1280;
+/** From 90rem the names stand as a column beside the picture; below it they are a strip above. */
+const COLUMN_FROM_PX = 1440;
 
 /**
  * **One stage, the app's own rail** (owner, 2026-09-24 — direction B, `docs/DECISIONS.md`).
@@ -70,11 +70,19 @@ const COLUMN_FROM_PX = 1280;
  *   that gap (≈230px between "Git" and a caption-step footnote in an 11rem track). So the rail is
  *   a quarter of the stage instead of a fixed 11rem, and the active screen's sentence follows the
  *   names directly on the body step, under a rule: the names, then what the chosen one does, then
- *   its door — one reading order, top down. Below `xl` the same block follows the picture. The
- *   captions stack and crossfade exactly as the panels do, so the block's height is the tallest
- *   caption's and a swap moves nothing.
+ *   its door — one reading order, top down. Below the split the same block follows the picture.
+ *   The captions stack and crossfade exactly as the panels do, so the block's height is the
+ *   tallest caption's and a swap moves nothing.
+ * - **The split opens at 90rem, and from 112rem the section head joins the rail** (2026-09-25).
+ *   At `xl` (1280) the quarter-width rail was 210px: the caption ran four lines and the door hung
+ *   35px under the picture. Below 90rem the names are a strip above a full-width picture. At
+ *   1920 the picture is 715px tall against a ≈410px rail, and the rail ended 300px short; the
+ *   head (`intro`) standing at the rail's top is what the demo and agent sections already do,
+ *   and it closes that column to within ≈150px. Between 90 and 112rem the picture is short
+ *   enough that the head above the split fits better, so it spans both tracks there. Only the
+ *   picture carries the scroll entrance; the head, names and caption are still.
  */
-export function ScreensStage() {
+export function ScreensStage({ intro }: { intro: ReactNode }) {
   const t = useTranslations('download.screens');
   const tRail = useTranslations('navRail');
   const locale = useLocale();
@@ -100,9 +108,15 @@ export function ScreensStage() {
   return (
     <div
       data-testid="gateway-screens-stage"
-      className="mt-9 grid min-w-0 gap-y-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] xl:grid-rows-[auto_minmax(0,1fr)] xl:gap-x-10 xl:gap-y-6"
+      className="grid min-w-0 gap-y-3 min-[90rem]:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] min-[90rem]:grid-rows-[auto_auto_minmax(0,1fr)] min-[90rem]:gap-x-10 min-[90rem]:gap-y-6"
     >
-      <div className="flex min-w-0 items-end max-xl:mb-3 xl:col-start-1 xl:row-start-1 xl:flex-col xl:items-stretch xl:gap-0.5">
+      <div
+        data-testid="gateway-screens-head"
+        className="mb-6 min-w-0 min-[90rem]:col-span-2 min-[90rem]:row-start-1 min-[90rem]:mb-3 min-[112rem]:col-span-1 min-[112rem]:col-start-1"
+      >
+        {intro}
+      </div>
+      <div className="flex min-w-0 items-end max-[90rem]:mb-3 min-[90rem]:col-start-1 min-[90rem]:row-start-2 min-[90rem]:flex-col min-[90rem]:items-stretch min-[90rem]:gap-0.5">
         {/*
          * The map is the first rail entry and the one screen this page shows live, so its row
          * goes back up to it instead of repeating it as a picture. The `↑` is the direction of
@@ -120,9 +134,9 @@ export function ScreensStage() {
             className: cn(
               // The same box as a tab row beside it: the lg control floor, the row inset, the
               // body step and the secondary ink. In the strip it is only as wide as its words.
-              'min-h-[var(--control-h-lg)] w-auto shrink-0 gap-2 whitespace-nowrap px-3 py-0 leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] xl:w-full',
+              'min-h-[var(--control-h-lg)] w-auto shrink-0 gap-2 whitespace-nowrap px-3 py-0 leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] min-[90rem]:w-full',
               // In the strip it stands on the strip's rule; in the column it is one more row.
-              'rounded-none border-b border-[color:var(--color-divider)] xl:rounded-card xl:border-b-0',
+              'rounded-none border-b border-[color:var(--color-divider)] min-[90rem]:rounded-card min-[90rem]:border-b-0',
             ),
           })}
         >
@@ -137,7 +151,7 @@ export function ScreensStage() {
             ↑ {t('mapHint')}
           </span>
         </a>
-        <div className="min-w-0 flex-1 xl:flex-none">
+        <div className="min-w-0 flex-1 min-[90rem]:flex-none">
           <TabBar
             ariaLabel={t('listLabel')}
             idPrefix="gateway-screens"
@@ -161,7 +175,7 @@ export function ScreensStage() {
 
       {/* The picture stops at its own CSS size (1336px): at 2560 the column is 1920 and a full-width
           picture would be a 2672px capture stretched past 2× — bigger, and blurrier. */}
-      <div className="grid w-full min-w-0 max-w-[83.5rem] xl:col-start-2 xl:row-span-2 xl:row-start-1 [&>*]:[grid-area:1/1]">
+      <div className="gateway-scroll-stage grid w-full min-w-0 max-w-[83.5rem] min-[90rem]:col-start-2 min-[90rem]:row-span-2 min-[90rem]:row-start-2 min-[112rem]:row-span-3 min-[112rem]:row-start-1 [&>*]:[grid-area:1/1]">
         {SCREEN_ORDER.map((id) => {
           const isActive = id === active;
           const name = tRail(id);
@@ -196,7 +210,7 @@ export function ScreensStage() {
           spaced-out printout (2026-09-25). */}
       <div
         data-testid="gateway-screens-captions"
-        className="grid min-w-0 xl:col-start-1 xl:row-start-2 xl:self-start xl:border-t xl:border-[color:var(--color-divider)] xl:pt-5 [&>*]:[grid-area:1/1]"
+        className="grid min-w-0 min-[90rem]:col-start-1 min-[90rem]:row-start-3 min-[90rem]:self-start min-[90rem]:border-t min-[90rem]:border-[color:var(--color-divider)] min-[90rem]:pt-5 [&>*]:[grid-area:1/1]"
       >
         {SCREEN_ORDER.map((id) => {
           const name = tRail(id);
@@ -206,7 +220,7 @@ export function ScreensStage() {
               data-state={stateOf(id)}
               inert={id !== active}
               className={cn(
-                'flex min-w-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-3 xl:flex-col xl:flex-nowrap xl:items-start xl:justify-start',
+                'flex min-w-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-3 min-[90rem]:flex-col min-[90rem]:flex-nowrap min-[90rem]:items-start min-[90rem]:justify-start',
                 swapClass(id),
               )}
             >

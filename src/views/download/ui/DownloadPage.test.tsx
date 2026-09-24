@@ -750,6 +750,19 @@ describe('DownloadPage', () => {
     expect(note).toHaveTextContent(new RegExp(`${DEMO_CLIPS[0].seconds}s`, 'i'));
   });
 
+  it('quotes the request the take was filmed on, word for word, with its tool names as code', () => {
+    renderDownloadPage();
+
+    // The shoot sends `download.demoAgentPrompt` verbatim (docs/DEMO-SCENARIO.md §3), so the page
+    // quotes that message and nothing else — the backticks become code, not characters.
+    const prompt = screen.getByTestId('gateway-demo-prompt');
+    const sentence = enMessages.download.demoAgentPrompt;
+    expect(prompt.querySelector('blockquote')!.textContent).toBe(sentence.replaceAll('`', ''));
+    const codes = [...prompt.querySelectorAll('code')].map((node) => node.textContent);
+    expect(codes).toEqual([...sentence.matchAll(/`([^`]+)`/g)].map((match) => match[1]));
+    expect(codes).toContain('find_path');
+  });
+
   // ─── One screen, one version (regression 2026-07-28) ──────────────────────
   //
   // The deployed site really did this: `v1.0.0-rc.3` (package.json) in the badge at the card's
