@@ -9,7 +9,6 @@
  * `demo-clip-assets.contract` guards for the demo video).
  */
 export const GATEWAY_SCREEN_LOCALES = ['ko', 'en'] as const;
-export type GatewayScreenLocale = (typeof GATEWAY_SCREEN_LOCALES)[number];
 
 /** File stems in `public/gateway/`, one per captured destination. */
 export const GATEWAY_SCREEN_FILES = [
