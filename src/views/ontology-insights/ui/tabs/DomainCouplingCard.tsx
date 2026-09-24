@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Link } from "@/i18n/navigation";
 import { OntologyMapKindGlyph } from "@/shared/ui";
 import { relationTypeIndigo } from "../../lib/relation-type-tone";
@@ -8,6 +8,7 @@ import type {
   DomainCouplingPairRow,
 } from "../../lib/domain-coupling-rows";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { INSIGHTS_LIST, INSIGHTS_LIST_ROW } from "../parts/insights-list";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
 import { controlClass } from '@/shared/ui/control-class';
 
@@ -143,35 +144,37 @@ export function DomainCouplingCard({
     // ceiling is max-content, so **the length of one caption sentence below the card** ends up
     // deciding the card width (measured 746px). Dimensions are a design decision, not a byproduct
     // of sentence length.
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
+    <div className="grid min-h-0 grid-cols-1 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-[minmax(0,34rem)_minmax(0,1fr)] @min-[960px]/insights:grid-rows-[auto_auto_auto] @min-[960px]/insights:gap-y-0">
       <section
         aria-label={labels.title}
-        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className={PEER_CARD}
       >
         <CardHead label={labels.title} unit={labels.countUnit} count={crossDomainEdgeCount} />
-        <CouplingGrid
-          grid={grid}
-          selectedKey={selectedKey}
-          onSelect={setSelectedKey}
-          hasPair={(key) => pairByKey.has(key)}
-          labels={labels}
-        />
-        {/* The detail area reserves its space even with nothing selected — if the card height
-            jumped on every cell click, the grid being compared would move under the eye.
-            The empty state's guidance sits **centred** in that reserved space. Pinned to the top
-            it left 58px below (measured 2026-07-26) and read as a dead gap between two captions
-            rather than a reserved slot. */}
-        <div
-          data-testid="domain-coupling-selection"
-          className="mt-2.5 flex min-h-[76px] flex-col justify-center border-t border-[color:var(--color-divider)] pt-2.5"
-        >
-          {selected ? (
-            <SelectedPairDetail pair={selected} edgeTypeLabel={edgeTypeLabel} nodeLink={nodeLink} />
-          ) : (
-            <p className="text-label text-[color:var(--color-text-quaternary)]">{labels.gridSelectHint}</p>
-          )}
+        {/*
+          * ⚠️ **The selection sits beside the grid, the reading key on the card's floor.** Under
+          * the grid the selection slot left the matrix ~90px short of the card's right edge and a
+          * 200px gap between each name and its first cell (review, 2026-09-25), and its 76px floor
+          * lifted this card's caption 30px off the line the card beside it ends on. The pane
+          * beside the grid is where "here" in the hint points; it wraps under the grid on a
+          * narrow card. The one caption closes the card on the same floor as its neighbour.
+          */}
+        <div className="@container/coupling mt-2.5 mb-2.5 flex min-w-0 flex-wrap items-start gap-x-5 gap-y-3">
+          <CouplingGrid
+            grid={grid}
+            selectedKey={selectedKey}
+            onSelect={setSelectedKey}
+            hasPair={(key) => pairByKey.has(key)}
+            labels={labels}
+          />
+          <div data-testid="domain-coupling-selection" className="min-w-[12rem] flex-1 pt-6">
+            {selected ? (
+              <SelectedPairDetail pair={selected} edgeTypeLabel={edgeTypeLabel} nodeLink={nodeLink} />
+            ) : (
+              <p className="break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">{labels.gridSelectHint}</p>
+            )}
+          </div>
         </div>
-        <p className="mt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+        <p className="border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
           {grid.totalDomainCount > grid.domains.length
             ? `${labels.gridTruncated(grid.domains.length, grid.totalDomainCount)} · `
             : ""}
@@ -182,10 +185,10 @@ export function DomainCouplingCard({
 
       <section
         aria-label={labels.boundaryTitle}
-        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className={PEER_CARD}
       >
         <CardHead label={labels.boundaryTitle} unit={labels.boundaryCountUnit} count={domainCount} />
-        <div className="mt-3 flex flex-1 flex-col justify-evenly gap-2.5">
+        <div className={`mt-2 mb-2.5 ${INSIGHTS_LIST}`}>
           {boundaries.map((row) => {
             // The bar is the cross share itself (0–100%). No max-value normalization, because the
             // share is already on a 0–100 scale — dividing again by the list's maximum would
@@ -193,11 +196,11 @@ export function DomainCouplingCard({
             const crossPct = Math.round(row.crossRatio * 100);
             const width = crossPct > 0 ? Math.max(2, crossPct) : 0;
             return (
-              <div key={row.id} className="flex flex-col gap-1">
+              <div key={row.id} className={`flex flex-col justify-center gap-1.5 ${INSIGHTS_LIST_ROW}`}>
                 <div className="flex items-center gap-2 text-body text-[color:var(--color-text-secondary)]">
                   <OntologyMapKindGlyph kind="domain" size={14} className="flex-none" />
                   <span className="min-w-0 flex-1 truncate">{row.title}</span>
-                  <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                  <span className="flex-none text-label tabular-nums text-[color:var(--color-text-quaternary)]">
                     {labels.boundarySelfLabel} {row.selfEdges} · {labels.boundaryCrossLabel} {row.crossEdges} ({crossPct}%)
                   </span>
                 </div>
@@ -214,7 +217,7 @@ export function DomainCouplingCard({
             );
           })}
         </div>
-        <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+        <p className="border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
           {boundaryTotalCount > boundaries.length
             ? `${labels.gridTruncated(boundaries.length, boundaryTotalCount)} · `
             : ""}
@@ -224,6 +227,18 @@ export function DomainCouplingCard({
     </div>
   );
 }
+
+/**
+ * ⚠️ **The two peer cards share one anatomy by construction** (review, 2026-09-25). Each card
+ * placed its caption with `mt-auto`, so the caption *bottoms* met but a two-line caption beside a
+ * one-line one put the two rules 20px apart (y≈639 vs 659 at 1512), and the shorter body left a
+ * 30px band above the right caption. On a two-column board each card now spans the three rows of
+ * its parent (head, body, caption) as a subgrid: the rules sit on one line, the bodies end on one
+ * line, and a card taller than its content cannot occur because no row stretches past the tallest
+ * content in it. The parent's row gap is 0 there, so the card's own margins are its rhythm.
+ */
+const PEER_CARD =
+  "flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] @min-[960px]/insights:row-span-3 @min-[960px]/insights:grid @min-[960px]/insights:grid-rows-subgrid @min-[960px]/insights:gap-y-0";
 
 /**
  * A cell's saturation — four indigo alpha steps. Colour is for skimming (where is it noisy?);
@@ -277,24 +292,40 @@ function CouplingGrid({
   // Column headers are numbers — six domain names laid on their side require turning your head
   // to read, and the name is already beside the row header with the same number.
   //
-  // The name column is capped at 14rem. Left as `1fr` it eats the whole card width, putting
+  // The name column is never `1fr`: left to share the card it eats the whole width, putting
   // hundreds of px between the name and the cells so reading one row drags the eye across the screen.
   //
-  // The cell size has two steps (`--coupling-cell`). Narrow screens stay at 28px to prevent
-  // horizontal overflow, and from lg it grows to 44px so the card is filled by the grid —
+  // The cell size once had two steps (`--coupling-cell`): 28px on narrow screens to prevent
+  // horizontal overflow, 44px from lg so the card is filled by the grid —
   // measured 2026-07-26, a 404×197 grid sat inside a 735px card leaving 45% of the right side
   // empty, and that gap made the screen read as unfinished. What grew is data ink, not
   // whitespace (the digits move up one ramp step, 11px → 12.5px).
-  const template = `minmax(0,14rem) repeat(${grid.domains.length}, var(--coupling-cell))`;
+  //
+  // ⚠️ **The cell is sized by the card, not by a breakpoint** (2026-09-25). Two fixed steps
+  // (28 / 44px) left three domains as a 180px block in a 510px card, with 84px of dead card under
+  // it at 1512 and 215px at 1920. The cell now takes the card's inline size shared out over the
+  // columns and clamped: few domains draw large, countable cells that fill the card, and
+  // six still fit a phone without horizontal scroll.
+  //
+  // ⚠️ **One grid, the name column as wide as the longest name** (review, 2026-09-25). Each row
+  // was its own grid, so the name column could only be a fixed cap (14rem) and short names stood
+  // ~200px from their first cell. The rows are now subgrids of one grid, so `fit-content` sizes
+  // the name column once for every row. The cell takes what the card has left after the names
+  // (budgeted at 7rem) and the selection pane beside it (12rem), shared over the columns and
+  // clamped to 28-52px; when the pane cannot fit, it wraps under the grid.
+  const n = Math.max(1, grid.domains.length);
+  const template = `fit-content(10rem) repeat(${grid.domains.length}, var(--coupling-cell))`;
+  const cell = `clamp(1.75rem, calc((100cqw - 7rem - 12rem - 1.25rem - ${n * 2}px) / ${n}), 3.25rem)`;
 
   return (
     <div
       role="grid"
       aria-label={labels.title}
       data-testid="domain-coupling-grid"
-      className="mt-2.5 flex w-fit max-w-full flex-col gap-0.5 [--coupling-cell:1.75rem] lg:[--coupling-cell:2.75rem]"
+      className="grid max-w-full gap-0.5"
+      style={{ "--coupling-cell": cell, gridTemplateColumns: template } as CSSProperties}
     >
-      <div role="row" className="grid items-center gap-0.5" style={{ gridTemplateColumns: template }}>
+      <div role="row" className="col-span-full grid grid-cols-subgrid items-center">
         {/* The empty header above the name column. `sr-only` is absolute and drops out of the grid
             flow, shifting every column by one — so this is an empty cell that occupies space. */}
         <span role="columnheader" aria-label={labels.title} />
@@ -313,8 +344,7 @@ function CouplingGrid({
         <div
           key={from.id}
           role="row"
-          className="grid items-center gap-0.5"
-          style={{ gridTemplateColumns: template }}
+          className="col-span-full grid grid-cols-subgrid items-center"
         >
           <span
             role="rowheader"

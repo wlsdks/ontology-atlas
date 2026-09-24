@@ -26,5 +26,20 @@ describe('buildSinceList', () => {
       ['wiki', 'wiki-log', 'compile · a.md → budget (new)'],
       ['ontology', 'concept-doc', 'Payments'],
     ]);
+    expect(list.soleKind).toBeNull();
+  });
+
+  // A title may name one kind only when every counted row has it, shown or not.
+  it('names the sole kind over every row, not only the shown ones', () => {
+    const base = { wikiLog: [], guideFiles: [], anchorMs, limit: 1 };
+    const docs = [
+      { slug: 'capabilities/a', title: 'A', kind: 'capability', updatedAt: '2026-09-18T03:00:00Z' },
+      { slug: 'capabilities/b', title: 'B', kind: 'capability', updatedAt: '2026-09-18T02:00:00Z' },
+    ];
+    expect(buildSinceList({ ...base, docs, agentCalls: [] }).soleKind).toBe('concept-doc');
+    const mixed = buildSinceList({ ...base, docs, agentCalls: [{ at: '2026-09-18T01:00:00Z', tool: 'add_concept', target: '' }] });
+    expect(mixed.rows.map((row) => row.kind)).toEqual(['concept-doc']);
+    expect(mixed.soleKind).toBeNull();
+    expect(buildSinceList({ ...base, docs: [], agentCalls: [] }).soleKind).toBeNull();
   });
 });

@@ -17,6 +17,17 @@ describe("DomainCapacityBar", () => {
     expect(screen.getByText("Capability 3 · Element 5")).toBeInTheDocument();
   });
 
+  it("keeps the default tail breakdown, and moves it under the title when asked", () => {
+    const row = { id: "domain:auth", title: "Auth", capabilityCount: 3, elementCount: 5, total: 8 };
+    const { unmount } = render(<DomainCapacityBar row={row} labels={labels} />);
+    expect(screen.getByTestId("domain-capacity-bar-tail")).toContainElement(screen.getByTestId("domain-capacity-bar-breakdown"));
+    unmount();
+    render(<DomainCapacityBar row={row} labels={labels} breakdownPlacement="title" />);
+    const tail = screen.getByTestId("domain-capacity-bar-tail");
+    expect(tail).toHaveTextContent(/^8$/);
+    expect(tail).not.toContainElement(screen.getByTestId("domain-capacity-bar-breakdown"));
+  });
+
   it("두 세그먼트는 앱 공통 막대 문법 — 主 계열 인디고 + 무채, kind tone 아님", () => {
     // The kind tones (amber/eucalyptus) measure 1.14:1 against each other on the
     // track, so they never separated by brightness — only by hue, and that hue pair

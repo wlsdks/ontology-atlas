@@ -198,7 +198,12 @@ export function VaultPresentStack({
         exceeds the room at 390), the figure turns: one layer per row, its name and count on
         the left, its wall taking the rest. Measured there at 390 the card falls 503 -> 359.
       */}
-      <div className="flex flex-col gap-3 @min-[640px]/insights:flex-row @min-[640px]/insights:items-end @min-[640px]/insights:justify-between @min-[640px]/insights:gap-5">
+      {/*
+        From 640 the four layers are a four-column grid across the card, each pile and its
+        count on the column's start line: spread with `justify-between` inside a centred cap,
+        the first pile began a third of the way into the card (2026-09-25, design sweep).
+      */}
+      <div className="flex flex-col gap-3 @min-[640px]/insights:grid @min-[640px]/insights:grid-cols-4 @min-[640px]/insights:items-end @min-[640px]/insights:gap-5">
         {LAYER_ORDER.map((layer, index) => {
           const count = present[layer];
           const size = blocks[index] ?? 0;
@@ -212,7 +217,7 @@ export function VaultPresentStack({
                 the wall first in the DOM, so the reading order a screen reader gets is the
                 same one the wide layout shows: the picture, then what it counts.
               */
-              className="flex min-w-0 flex-row-reverse items-end gap-3 @min-[640px]/insights:flex-col @min-[640px]/insights:items-center @min-[640px]/insights:gap-2"
+              className="flex min-w-0 flex-row-reverse items-end gap-3 @min-[640px]/insights:flex-col @min-[640px]/insights:items-start @min-[640px]/insights:gap-2"
             >
               {/*
                 `flex-wrap-reverse` fills from the bottom row upward, so the wall grows the
@@ -262,7 +267,7 @@ export function VaultPresentStack({
                   );
                 })}
               </ol>
-              <div className="flex w-16 shrink-0 flex-col items-start gap-0.5 @min-[640px]/insights:w-auto @min-[640px]/insights:items-center">
+              <div className="flex w-16 shrink-0 flex-col items-start gap-0.5 @min-[640px]/insights:w-auto">
                 <span className="font-mono text-body-lg tabular-nums text-[color:var(--color-text-primary)]">
                   {count}
                 </span>
@@ -276,7 +281,7 @@ export function VaultPresentStack({
       </div>
       {/* Silent while a block is a file, because then there is no scale to explain. */}
       {filesPerBlock > 1 ? (
-        <p className="text-center text-caption text-[color:var(--color-text-quaternary)]">
+        <p className="text-caption text-[color:var(--color-text-quaternary)]">
           {labels.scaleNote(filesPerBlock)}
         </p>
       ) : null}

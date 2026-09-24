@@ -38,13 +38,21 @@ export function VaultHistorySection({
       className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
     >
       {/*
-        One centred column for the header and the figure together. Eighteen weekly columns
-        stretched across a full-width band merged into an area; capped, they read as the
-        countable stacks they are — and a header spanning the whole card above a narrower
-        figure reads as two unrelated things, so the title and the caption take the figure's
-        own edges rather than the card's.
+        One column for the header and the figure together. Eighteen weekly columns stretched
+        across a full-width band merged into an area; capped, they read as the countable
+        stacks they are — and a header spanning the whole card above a narrower figure reads
+        as two unrelated things, so the title and the caption take the figure's own edges.
       */}
-      <div className="mx-auto flex w-full max-w-[var(--vault-history-width)] flex-col">
+      {/*
+        ⚠️ **Left-aligned on the card's padding line, not centred** (2026-09-25). Centred, the
+        whole composition started 304px (1512) and 380px (1920) inside the panel's edge while
+        every other panel on the board starts its text at the padding, so this was the one card
+        whose title stood on its own vertical line. The weekly tracks keep their width cap (the
+        reason above still holds for them); the present piles take the card's full width.
+      */}
+      <div
+        className={`flex w-full flex-col ${state.status === "ready" ? "max-w-[var(--vault-history-width)]" : ""}`}
+      >
       {/*
         The caption shares the title's line only where there is a line to share. Measured at
         390x844 the two fought for one row and the caption broke into two lines pressed

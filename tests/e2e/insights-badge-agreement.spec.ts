@@ -208,7 +208,7 @@ test.describe("인사이트 인구조사 — 타일 큰 숫자와 탭 배지가 
 test.describe("인사이트 구성 — 도메인 행이 한 축과 읽을 수 있는 꼬리를 공유한다", () => {
   test.use({ viewport: { width: 1920, height: 1080 } });
 
-  test("Storefront 아홉 행의 192px 꼬리가 잘리지 않고 트랙 끝이 정렬된다", async ({ page }) => {
+  test("Storefront 아홉 행의 내역이 잘리지 않고, 같은 열의 트랙 끝과 합계 열이 정렬된다", async ({ page }) => {
     const { seedFirstRunSeen } = await import("./first-run-seed");
     await seedFirstRunSeen(page);
     await page.addInitScript(() => {
@@ -233,8 +233,9 @@ test.describe("인사이트 구성 — 도메인 행이 한 축과 읽을 수 �
       };
     });
     expect(kindStackMetrics.segmentCount).toBe(4);
-    expect(kindStackMetrics.gap).toBeCloseTo(1, 1);
-    expect(kindStackMetrics.seams.every((gap) => gap >= 0.9)).toBe(true);
+    // The seam between kind segments is the panel itself (2px), not a divider-coloured run.
+    expect(kindStackMetrics.gap).toBeCloseTo(2, 1);
+    expect(kindStackMetrics.seams.every((gap) => gap >= 1.9)).toBe(true);
     const metrics = await rows.evaluateAll((elements) =>
       elements.map((row) => {
         const tail = row.querySelector<HTMLElement>('[data-testid="domain-capacity-bar-tail"]');
@@ -247,6 +248,8 @@ test.describe("인사이트 구성 — 도메인 행이 한 축과 읽을 수 �
           tailCssWidth: Number.parseFloat(getComputedStyle(tail).width),
           breakdownOverflow: breakdown.scrollWidth - breakdown.clientWidth,
           trackRight: track.getBoundingClientRect().right,
+          // Rows fold into two columns on a wide board; alignment is a promise within a column.
+          column: Math.round(row.getBoundingClientRect().left),
         };
       }),
     );
@@ -254,12 +257,16 @@ test.describe("인사이트 구성 — 도메인 행이 한 축과 읽을 수 �
     const concrete = metrics.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
     expect(concrete.every(({ rowOverflow }) => rowOverflow <= 1)).toBe(true);
     expect(concrete.every(({ breakdownOverflow }) => breakdownOverflow <= 1)).toBe(true);
-    expect(concrete.every(({ tailCssWidth }) => Math.abs(tailCssWidth - 192) <= 1)).toBe(true);
+    // The breakdown sits under the name, so the tail holds the total alone in a fixed
+    // 32px column and every bar ends right beside its number.
+    expect(concrete.every(({ tailCssWidth }) => Math.abs(tailCssWidth - 32) <= 1)).toBe(true);
     const tailVariance = Math.max(...concrete.map(({ tailWidth }) => tailWidth)) -
       Math.min(...concrete.map(({ tailWidth }) => tailWidth));
-    const trackEndVariance = Math.max(...concrete.map(({ trackRight }) => trackRight)) -
-      Math.min(...concrete.map(({ trackRight }) => trackRight));
     expect(tailVariance).toBeLessThanOrEqual(1);
-    expect(trackEndVariance).toBeLessThanOrEqual(1);
+    const columns = new Map<number, number[]>();
+    for (const { column, trackRight } of concrete) columns.set(column, [...(columns.get(column) ?? []), trackRight]);
+    for (const ends of columns.values()) {
+      expect(Math.max(...ends) - Math.min(...ends)).toBeLessThanOrEqual(1);
+    }
   });
 });
