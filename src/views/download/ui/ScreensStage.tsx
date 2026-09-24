@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 
+import { Link } from '@/i18n/navigation';
 import { DESTINATION_IDS } from '@/shared/config/destinations';
 import { cn } from '@/shared/lib/cn';
 import { useSurfaceSwap } from '@/shared/lib/use-presence';
@@ -63,6 +64,13 @@ const COLUMN_FROM_PX = 1280;
  * - **The swap is a crossfade.** `useSurfaceSwap` holds the leaving panel for the exit window
  *   under `.gateway-screen-out` while the arriving one plays `.gateway-screen-in`; reduced motion
  *   keeps the same fade on `--motion-fast` (`app/globals.css`).
+ * - **The caption and the door stand at the foot of the rail** (2026-09-25). They used to sit
+ *   under the picture while the rail stopped at the last name: measured 1512, a 250px list beside
+ *   a 613px picture left 320px of empty column under "Git" (584px at 1920). From `xl` the rail is
+ *   two rows — the names at the picture's top line, the active screen's sentence and door on its
+ *   bottom line — so the column is framed top and bottom. Below `xl` the same block follows the
+ *   picture. The captions stack and crossfade exactly as the panels do, so the block's height is
+ *   the tallest caption's and a swap moves nothing.
  */
 export function ScreensStage() {
   const t = useTranslations('download.screens');
@@ -74,12 +82,25 @@ export function ScreensStage() {
   const { leaving } = useSurfaceSwap(active);
   const narrow = useViewportBelow(COLUMN_FROM_PX);
 
+  /** Where each screen stands in the swap — the panels and the captions share one reading. */
+  const stateOf = (id: CapturedId) =>
+    id === active ? 'active' : id === leaving ? 'leaving' : 'hidden';
+  const swapClass = (id: CapturedId) => {
+    const state = stateOf(id);
+    return cn(
+      state === 'active' && 'relative z-[1]',
+      state === 'active' && swapped && 'gateway-screen-in',
+      state === 'leaving' && 'gateway-screen-out',
+      state === 'hidden' && 'invisible',
+    );
+  };
+
   return (
     <div
       data-testid="gateway-screens-stage"
-      className="mt-9 grid min-w-0 gap-6 xl:grid-cols-[11rem_minmax(0,1fr)] xl:gap-10"
+      className="mt-9 grid min-w-0 gap-6 xl:grid-cols-[11rem_minmax(0,1fr)] xl:grid-rows-[auto_minmax(0,1fr)] xl:gap-x-10"
     >
-      <div className="flex min-w-0 items-end xl:flex-col xl:items-stretch xl:gap-0.5">
+      <div className="flex min-w-0 items-end xl:col-start-1 xl:row-start-1 xl:flex-col xl:items-stretch xl:gap-0.5">
         {/*
          * The map is the first rail entry and the one screen this page shows live, so its row
          * goes back up to it instead of repeating it as a picture. The `↑` is the direction of
@@ -97,16 +118,19 @@ export function ScreensStage() {
             className: cn(
               // The same box as a tab row beside it: the lg control floor, the row inset, the
               // body step and the secondary ink. In the strip it is only as wide as its words.
-              'min-h-[var(--control-h-lg)] w-auto shrink-0 whitespace-nowrap px-3 py-0 leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] xl:w-full',
+              'min-h-[var(--control-h-lg)] w-auto shrink-0 gap-2 whitespace-nowrap px-3 py-0 leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] xl:w-full',
               // In the strip it stands on the strip's rule; in the column it is one more row.
               'rounded-none border-b border-[color:var(--color-divider)] xl:rounded-card xl:border-b-0',
             ),
           })}
         >
           {tRail('map')}
+          {/* The hint is on the tabs' own type step (2026-09-25) — it was the mono label step,
+              so the first row of the list read as a different kind of row. Only its ink steps
+              down, which is what makes it a hint. */}
           <span
             aria-hidden
-            className="font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
+            className="text-body font-normal leading-body text-[color:var(--color-text-quaternary)]"
           >
             ↑ {t('mapHint')}
           </span>
@@ -135,10 +159,9 @@ export function ScreensStage() {
 
       {/* The picture stops at its own CSS size (1336px): at 2560 the column is 1920 and a full-width
           picture would be a 2672px capture stretched past 2× — bigger, and blurrier. */}
-      <div className="grid w-full min-w-0 max-w-[83.5rem] [&>*]:[grid-area:1/1]">
+      <div className="grid w-full min-w-0 max-w-[83.5rem] xl:col-start-2 xl:row-span-2 xl:row-start-1 [&>*]:[grid-area:1/1]">
         {SCREEN_ORDER.map((id) => {
           const isActive = id === active;
-          const isLeaving = id === leaving && !isActive;
           const name = tRail(id);
           return (
             <div
@@ -146,18 +169,13 @@ export function ScreensStage() {
               role="tabpanel"
               id={`gateway-screens-tabpanel-${id}`}
               aria-labelledby={`gateway-screens-tab-${id}`}
+              aria-describedby={`gateway-screens-caption-${id}`}
               /* The two panels that were sections until 2026-09-24 keep their old test ids, so
                  anything that located the architecture or the library still finds it. */
               data-testid={`gateway-${id}-section`}
-              data-state={isActive ? 'active' : isLeaving ? 'leaving' : 'hidden'}
+              data-state={stateOf(id)}
               inert={!isActive}
-              className={cn(
-                'min-w-0',
-                isActive && 'relative z-[1]',
-                isActive && swapped && 'gateway-screen-in',
-                isLeaving && 'gateway-screen-out',
-                !isActive && !isLeaving && 'invisible',
-              )}
+              className={cn('min-w-0', swapClass(id))}
             >
               <SurfaceCapture
                 testId={`gateway-${id}-capture`}
@@ -165,10 +183,50 @@ export function ScreensStage() {
                 width={CAPTURE_WIDTH}
                 height={CAPTURE_HEIGHT}
                 alt={t('alt', { name })}
-                caption={t(`caption.${id}`)}
-                href={SCREENS[id].href}
-                door={t('door', { name })}
               />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* The active screen's sentence and its door — the rail's foot from `xl`, under the picture
+          below it. Sans caption face: these are sentences, and Hangul in the mono face read as
+          spaced-out printout (2026-09-25). */}
+      <div
+        data-testid="gateway-screens-captions"
+        className="grid min-w-0 max-xl:-mt-3 xl:col-start-1 xl:row-start-2 xl:self-end [&>*]:[grid-area:1/1]"
+      >
+        {SCREEN_ORDER.map((id) => {
+          const name = tRail(id);
+          return (
+            <div
+              key={id}
+              data-state={stateOf(id)}
+              inert={id !== active}
+              className={cn(
+                'flex min-w-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-3 xl:flex-col xl:items-start xl:justify-end',
+                swapClass(id),
+              )}
+            >
+              <p
+                id={`gateway-screens-caption-${id}`}
+                className="min-w-0 max-w-[var(--measure-doc-column)] break-keep text-caption leading-caption text-[color:var(--color-text-tertiary)]"
+              >
+                {t(`caption.${id}`)}
+              </p>
+              <Link
+                href={SCREENS[id].href}
+                data-testid={`gateway-${id}-door`}
+                className={cn(
+                  controlClass({ shape: 'link', size: 'md' }),
+                  // `touch-hit-expand`: a link's own box is 24px tall, and a coarse pointer needs
+                  // 44 (`touch-target-contract.spec.ts`). The class buys the finger target without
+                  // moving a pixel of layout.
+                  'touch-hit-expand shrink-0 text-body font-[var(--font-weight-emphasis)] leading-body text-[color:var(--color-indigo-text-soft)] underline decoration-[color:var(--color-indigo-a40)] underline-offset-4 hover:decoration-[color:var(--color-indigo-accent)]',
+                )}
+              >
+                {t('door', { name })}
+              </Link>
             </div>
           );
         })}

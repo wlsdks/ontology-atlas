@@ -270,28 +270,19 @@ export function DownloadPage() {
  * notation in both locales, while their words come from the locale catalog so the Korean page
  * does not introduce an English label before each Korean sentence.
  *
- * With `still` it renders without the entrance choreography — the install section's stillness
- * was its consumer.
+ * [Retired 2026-09-25] The `centered` variant. The demo section was the page's one centred
+ * block, so the page ran two alignment grammars (measured 1512: its head's ink at x≈508–930
+ * while every other section's text began at the origin, x=200). Every head now starts at the
+ * origin; the demo answers its narrower stage by standing the head beside it (`DemoSection`).
  */
 function SectionIntro({
   eyebrow,
   title,
   sub,
-  centered = false,
 }: {
   eyebrow: string;
   title: string;
   sub?: string;
-  /**
-   * Centre the head on the same axis as the section's content.
-   *
-   * ⚠️ **This is a property of the section, not a preference of the head.** The demo section is
-   * the page's one *stage* — a single object narrower than the column, with a caption — so it is
-   * centred, and its head has to be centred with it or the section runs two axes. Every other
-   * section fills its column and stays left. The 2026-08-23 defect was exactly this half-applied:
-   * the stage was centred and its head was not (`docs/DECISIONS.md` 2026-08-23).
-   */
-  centered?: boolean;
 }) {
   /*
    * A section head is still. Until 2026-08-30 its three lines rose on the scroll timeline and
@@ -302,31 +293,16 @@ function SectionIntro({
    */
   return (
     <>
-      <p
-        className={cn(
-          'flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]',
-          centered && 'justify-center',
-        )}
-      >
+      <p className="flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
         {/* A static dot — a signal is a state, and there is no state here, so it does not blink. */}
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
         {eyebrow}
       </p>
-      <h2
-        className={cn(
-          'mt-4 break-keep text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]',
-          centered && 'text-center',
-        )}
-      >
+      <h2 className="mt-4 break-keep text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
         {title}
       </h2>
       {sub ? (
-        <p
-          className={cn(
-            'mt-3 max-w-[40rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]',
-            centered && 'mx-auto text-center',
-          )}
-        >
+        <p className="mt-3 max-w-[40rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]">
           {sub}
         </p>
       ) : null}
@@ -446,7 +422,13 @@ function HeroSection({
       {/* `pointer-events-none` on the two wrappers, `pointer-events-auto` on what they hold: the
           wrappers span the whole column, and the stage behind them takes the hand wherever the
           type is not — measured, a full-width band ate the hover over the plane's apex. */}
-      <div className={cn(PAGE_COLUMN, '@container pointer-events-none relative z-[1] min-w-0 pt-12 md:pt-16')}>
+      {/* **The copy block stands on the hero's centre, not its top** (2026-09-25). With the
+          headline pinned under the chrome and the strip on the fold, the room between them all
+          fell under the CTAs: measured 370px of empty left column at 1512×949 and 470px at
+          1920×1080, a void exactly where the eye lands after the decision, while the dome's
+          centre (`anchor.y` 0.52 in `HeroAtlas`) sat far below the type. `mt-auto` here and on
+          the strip split that room in two, so headline, CTAs and the dome share one centre. */}
+      <div className={cn(PAGE_COLUMN, '@container pointer-events-none relative z-[1] min-w-0 pt-12 md:pt-16 min-[90rem]:mt-auto')}>
         <p
           className={cn(
             rise('gateway-t240'),
@@ -577,6 +559,7 @@ function HeroSection({
           </div>
 
           <p
+            data-testid="gateway-hero-trust"
             className={cn(
               rise('gateway-t400'),
               'mt-5 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]',
@@ -741,18 +724,23 @@ function FactsStrip({
 
   return (
     <div className={cn('gateway-rise gateway-t400', heroIn && 'is-in', 'w-full', className)}>
-      {/* Two flex items on one rule: the facts list and the destination pair. The pair is one
-          item so it moves as a unit — measured at 834 with the links loose in the list, the
-          push-right left one link alone on a third row. From `lg` the pair sits on the column's
-          right edge; narrower, it wraps whole beneath the facts. */}
+      {/* **One row where it fits, shared tracks where it does not** (2026-09-25). From 94.5rem
+          (1512) the facts and the destination pair stand on one rule, the pair on the column's
+          right edge. Narrower, the strip used to wrap as flex and the pair was pushed right:
+          measured at 1040 its first label started at x=505, a line nothing above it used. Below
+          that the strip is a grid instead (three tracks from `lg`; at 1440 the English row
+          wrapped its pair onto a right-pushed orphan line), and the two groups dissolve into it
+          (`display: contents`), so every wrapped item lands on a track the row above it
+          started. */}
       <div
         data-testid="gateway-facts"
         className={cn(
           PAGE_COLUMN,
-          'flex flex-wrap gap-x-12 gap-y-4 border-t border-[color:var(--color-border-soft)] py-5',
+          'grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-x-8 gap-y-4 border-t border-[color:var(--color-border-soft)] py-5 lg:grid-cols-3',
+          'min-[94.5rem]:flex min-[94.5rem]:flex-wrap min-[94.5rem]:gap-x-12',
         )}
       >
-        <dl className="flex min-w-0 flex-wrap gap-x-12 gap-y-4">
+        <dl className="contents min-[94.5rem]:flex min-[94.5rem]:min-w-0 min-[94.5rem]:flex-wrap min-[94.5rem]:gap-x-12 min-[94.5rem]:gap-y-4">
           {facts.map((fact) => (
             <div key={fact.label} className="min-w-0">
               <dt className={FACT_LABEL}>{fact.label}</dt>
@@ -765,7 +753,7 @@ function FactsStrip({
             </div>
           ))}
         </dl>
-        <div className="flex min-w-0 flex-wrap gap-x-12 gap-y-4 lg:ml-auto">
+        <div className="contents min-[94.5rem]:ml-auto min-[94.5rem]:flex min-[94.5rem]:min-w-0 min-[94.5rem]:flex-wrap min-[94.5rem]:gap-x-12 min-[94.5rem]:gap-y-4">
           {links.map((link) => (
             <div key={link.label} className="min-w-0">
               <span className={cn(FACT_LABEL, 'block')}>{link.label}</span>
@@ -846,14 +834,29 @@ function DemoSection() {
       data-testid="gateway-demo-section"
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
-      <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <SectionIntro
-          eyebrow={t('demoEyebrow')}
-          title={t('demoTitle')}
-          sub={t('demoSub')}
-          centered
-        />
-        <div className="gateway-scroll-stage mt-9">
+      {/*
+       * **Head beside the stage from the split width** (2026-09-25). The demo is the page's one
+       * stage narrower than the column (`--gateway-stage-max`), and until now it answered that
+       * by centring the whole section — the page's one second axis (measured 1512: the head's
+       * ink at x≈508–930, the stage at 372–1140, every other section at 200). Left-aligned in
+       * the same stacked layout, the right 30% of the column would stand empty instead. So from
+       * 90rem the head takes the column's left track and the stage its right one: the head's text
+       * starts at the origin like every other section's, the stage ends on the column's right
+       * edge, and the stage keeps its approved width. Narrower, the head stacks above a stage
+       * that starts at the origin too. The head sits on the video's vertical centre (`pb-9`
+       * discounts the caption under the video): at 1920 the head is a third of the stage's
+       * height, and top-aligned it left 400px of empty track beneath a two-line lede.
+       */}
+      <div
+        className={cn(
+          PAGE_COLUMN,
+          'min-w-0 min-[90rem]:grid min-[90rem]:grid-cols-[minmax(15rem,1fr)_minmax(0,var(--gateway-stage-max))] min-[90rem]:gap-12',
+        )}
+      >
+        <div data-testid="gateway-demo-head" className="min-w-0 min-[90rem]:self-center min-[90rem]:pb-9">
+          <SectionIntro eyebrow={t('demoEyebrow')} title={t('demoTitle')} sub={t('demoSub')} />
+        </div>
+        <div className="gateway-scroll-stage mt-9 min-w-0 min-[90rem]:mt-0">
           <DemoStage />
         </div>
       </div>
@@ -1011,12 +1014,15 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
           data-testid="download-portrait-caption"
           className={cn('gateway-map-after', captionIn && 'is-in', 'pointer-events-none mt-5')}
         >
-          <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-            <span>docs/ontology</span>
-            <span aria-hidden>·</span>
+          {/* Mono only for the data — the path and the census — and the sans caption face for
+              the two sentences beside them (2026-09-25): Hangul set in the mono face falls back
+              with visibly spaced glyphs and reads as a printout, not a sentence. */}
+          <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-caption leading-caption text-[color:var(--color-text-tertiary)]">
+            <span className="font-mono text-[color:var(--color-text-quaternary)]">docs/ontology</span>
+            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
             <span
               data-token="engraved-numeral"
-              className="text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+              className="font-mono text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
             >
               {t.rich('portraitCensus', {
                 concepts: graph.nodes.length,
@@ -1027,11 +1033,11 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
                 r: () => <CountUp value={graph.edges.length} />,
               })}
             </span>
-            <span aria-hidden>·</span>
-            <span className="min-w-0 break-keep text-[color:var(--color-text-tertiary)]">
+            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+            <span className="min-w-0 break-keep text-[color:var(--color-text-secondary)]">
               {t('portraitHint')}
             </span>
-            <span aria-hidden>·</span>
+            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
             <span className="min-w-0 break-keep">{t('portraitScope')}</span>
           </span>
         </p>
@@ -1067,7 +1073,7 @@ function AgentSection() {
   const columns = [
     { title: t('col1Title'), body: t('col1Body'), code: t('col1Code') },
     { title: t('col2Title'), body: t('col2Body'), code: t('col2Code') },
-    { title: t('col3Title'), body: t('col3Body'), code: 'git diff docs/ontology/' },
+    { title: t('col3Title'), body: t('col3Body'), code: 'git diff docs/ontology/', mono: true },
   ];
 
   return (
@@ -1089,12 +1095,20 @@ function AgentSection() {
          * cards are still, now stacked with a rule between them instead of beside each other.
          * Below `lg` the cards stack under the scene at full width.
          */}
+        {/*
+         * **One top line, one bottom line** (2026-09-25). Both columns used to be
+         * `self-center`, so the scene floated at the cards' middle: measured 1512, the first card
+         * title at y≈205 and the scene's top at ≈327, and 160px at 1040 — two columns with no
+         * shared start. Now the scene's frame stretches to the cards' height (its top on the
+         * first title's line, its bottom on the last card's), and the conversation inside it
+         * settles to the frame's floor the way a chat window does (`AcpChatScene`).
+         */}
         <div className="mt-9 grid min-w-0 gap-10 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] lg:gap-12">
-          <div data-testid="gateway-agent-scene" className="gateway-scroll-stage min-w-0 lg:self-center">
+          <div data-testid="gateway-agent-scene" className="gateway-scroll-stage flex min-w-0 flex-col">
             <AcpChatScene />
           </div>
           {/* The three cards are still — one moving thing beside them is enough. */}
-          <div className="grid min-w-0 content-start lg:self-center">
+          <div className="grid min-w-0 content-start">
             {columns.map((column, i) => (
               <div
                 key={column.title}
@@ -1109,9 +1123,31 @@ function AgentSection() {
                 <p className="mt-2.5 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
                   {column.body}
                 </p>
-                <code className="mt-4 block border-l border-[color:var(--color-border-strong)] pl-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]">
-                  {column.code}
-                </code>
+                {/* Wraps only at the `·` between two facts (2026-09-25): at 1040 the column is
+                    266px wide and the Korean "write → review" pair broke inside its last word,
+                    leaving one syllable alone on the second line. Each fact is one unbreakable run and words keep whole. Only the
+                    literal command is set in mono; the two Korean phrase rows were mono too and
+                    read as spaced-out printout, not as the short facts they are. */}
+                {(() => {
+                  const Row = column.mono ? 'code' : 'p';
+                  return (
+                    <Row
+                      className={cn(
+                        'mt-4 flex flex-wrap gap-x-2 break-keep border-l border-[color:var(--color-border-strong)] pl-3 text-body leading-body text-[color:var(--color-text-tertiary)]',
+                        column.mono && 'font-mono',
+                      )}
+                    >
+                      {column.code.split(' · ').map((part, j) => (
+                        <span key={part} className="whitespace-nowrap">
+                          {j > 0 ? (
+                            <span className="mr-2 text-[color:var(--color-text-quaternary)]">·</span>
+                          ) : null}
+                          {part}
+                        </span>
+                      ))}
+                    </Row>
+                  );
+                })()}
               </div>
             ))}
           </div>

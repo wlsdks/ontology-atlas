@@ -141,18 +141,21 @@ export function AcpChatScene() {
     <div
       ref={rootRef}
       data-testid="gateway-agent-chat"
-      className="min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] text-left"
+      className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] text-left"
     >
-      <div className="border-b border-[color:var(--color-border-soft)] px-6 py-3.5 font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+      <div className="flex items-center gap-2 border-b border-[color:var(--color-border-soft)] px-6 py-3.5 text-caption leading-caption text-[color:var(--color-text-tertiary)]">
         {t('acpSceneTab')}
       </div>
 
-      {/* Reserve the height so arriving lines do not push the section below (the terminal-era contract). */}
-      <div className="grid min-h-[17rem] content-start gap-5 px-6 pb-6 pt-5">
+      {/* Reserve the height so arriving lines do not push the section below (the terminal-era contract).
+          From `lg` the frame stretches to the three cards beside it (2026-09-25) and the lines
+          settle to its floor, as a conversation does in a chat window: the room above the
+          latest message is history, and nothing hangs as a dead band under the last line. */}
+      <div className="grid min-h-[17rem] flex-1 content-start gap-5 px-6 pb-6 pt-5 lg:content-end">
         {/* ① The person's sentence — the user input of the measured session, verbatim. */}
         <div className={cn('gateway-term-line', shown >= 1 && 'is-on', 'flex min-w-0 justify-end')}>
           <div className="min-w-0 max-w-[34rem]">
-            <p className="text-right font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
+            <p className="text-right text-caption leading-caption text-[color:var(--color-text-tertiary)]">
               {t('acpUserLabel')}
             </p>
             <p className="mt-1.5 break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">
@@ -163,7 +166,7 @@ export function AcpChatScene() {
 
         {/* ② The agent's tool call — the name verbatim, the `why` in the screen's language. */}
         <div className={cn('gateway-term-line', shown >= 2 && 'is-on', 'min-w-0')}>
-          <p className="break-keep font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
+          <p className="break-keep text-caption leading-caption text-[color:var(--color-text-tertiary)]">
             {t('acpToolCaption')}
           </p>
           {/*
@@ -172,7 +175,7 @@ export function AcpChatScene() {
            * `<pre>` — a generic element may not carry a name (the a11y ratchet rejected exactly
            * that in CI, `aria-prohibited-attr`, 2026-08-23).
            */}
-          <pre className="mt-1.5 overflow-x-auto rounded-panel border border-[color:var(--color-border-soft)] px-4 py-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]">
+          <pre className="mt-1.5 overflow-x-auto whitespace-pre-wrap break-keep rounded-panel border border-[color:var(--color-border-soft)] px-4 py-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]">
             <span className="sr-only">{toolCallLine(t('acpToolWhy'))}</span>
             <HeroTypewriter
               lines={[{ text: toolCallLine(t('acpToolWhy')) }]}
@@ -187,7 +190,7 @@ export function AcpChatScene() {
           className={cn(
             'gateway-term-line',
             shown >= 3 && 'is-on',
-            'min-w-0 break-keep font-mono text-body leading-body text-[color:var(--color-indigo-accent)]',
+            'min-w-0 break-keep text-body leading-body text-[color:var(--color-indigo-accent)]',
           )}
         >
           {t('acpResultLine')}
