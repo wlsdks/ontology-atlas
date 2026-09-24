@@ -25,8 +25,10 @@ export interface DomainCapacityBarProps {
    * `stacked` (default): the total over its breakdown, right-aligned in the fixed tail column.
    * `inline`: the total and its breakdown on one line, left-aligned directly after the track, for
    * a wide card where a right-aligned column left ~185px of dead gutter between the bar's end and
-   * its number (project page at 1512, measured 2026-09-25). The column keeps its fixed width either
-   * way, so every row's track still ends on one axis.
+   * its number (project page at 1512, measured 2026-09-25). Its width is `--capacity-tail-inline`,
+   * which the list sets to its widest tail, so every row's track still ends on one axis and no row
+   * carries a gutter wider than its longest number. Unset, the tail is as wide as its own words.
+   * (A fixed 200px only moved the gutter: ~100px stood between the breakdown and the chevron.)
    */
   tail?: "stacked" | "inline";
 }
@@ -155,7 +157,7 @@ export function DomainCapacityBar({
       {tail === "inline" ? (
         <span
           data-testid="domain-capacity-bar-tail"
-          className="flex w-[200px] flex-none items-baseline gap-2.5 whitespace-nowrap"
+          className="flex w-[var(--capacity-tail-inline,auto)] flex-none items-baseline gap-2.5 whitespace-nowrap"
         >
           <span className="text-title font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--map-numeral-face)]">
             {row.total}

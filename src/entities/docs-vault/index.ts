@@ -73,7 +73,7 @@ export { deriveOntologyFromVault, slugifyName } from './lib/derive-ontology-from
 export { daysBehind, SUMMARY_KINDS, summaryStalenessBySlug } from './lib/summary-freshness';
 export type { NodeRevision, SummaryStaleness } from './lib/summary-freshness';
 export { deriveProjectsFromVault } from './lib/derive-projects-from-vault';
-export { deriveBundledProjects, bundledProjectSlugs, bundledSampleSourceOf } from './lib/bundled-projects';
+export { deriveBundledProjects, bundledProjectSlugs } from './lib/bundled-projects';
 export {
   findProjectVaultDoc,
   findProjectDocInList,

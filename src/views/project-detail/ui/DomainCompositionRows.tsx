@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getTopologyFocusHref } from "@/entities/project";
@@ -63,6 +63,8 @@ interface Props {
  * button.
  */
 export function DomainCompositionRows({ domains, labels }: Props) {
+  const listRef = useRef<HTMLUListElement>(null);
+  useTailColumnWidth(listRef, domains, labels);
   return (
     <div className="flex flex-col">
       {/* The key to the bar's two segments appears once per group — repeating it per row is noise. */}
@@ -70,7 +72,7 @@ export function DomainCompositionRows({ domains, labels }: Props) {
         labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
         className="mb-1.5"
       />
-      <ul data-testid="project-detail-domain-rows" className="flex flex-col">
+      <ul ref={listRef} data-testid="project-detail-domain-rows" className="flex flex-col">
         {domains.map((domain) => (
           <DomainRow key={domain.id} domain={domain} labels={labels} />
         ))}
@@ -88,6 +90,43 @@ export function DomainCompositionRows({ domains, labels }: Props) {
       </p>
     </div>
   );
+}
+
+/**
+ * **The tail column is as wide as the widest tail in this list** (2026-09-25, round two).
+ *
+ * Every row's track has to end on one axis, so the number column cannot follow each row's own
+ * words (the 11.4px staircase `DomainCapacityBar` documents). A fixed 200px held the axis but set
+ * the column by guess: at 1512 about 100px of bare card stood between the widest breakdown and the
+ * row's chevron. The list measures its tails at their own width once the fonts are in and pins
+ * `--capacity-tail-inline` to the widest, so the track takes everything the words do not need.
+ */
+function useTailColumnWidth(
+  listRef: RefObject<HTMLUListElement | null>,
+  domains: DomainCompositionRow[],
+  labels: DomainCompositionRowsLabels,
+) {
+  const { capabilityUnit, elementUnit } = labels;
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    let cancelled = false;
+    const measure = () => {
+      if (cancelled) return;
+      list.style.removeProperty("--capacity-tail-inline");
+      let widest = 0;
+      list.querySelectorAll<HTMLElement>('[data-testid="domain-capacity-bar-tail"]').forEach((tail) => {
+        widest = Math.max(widest, tail.getBoundingClientRect().width);
+      });
+      if (widest > 0) list.style.setProperty("--capacity-tail-inline", `${Math.ceil(widest)}px`);
+    };
+    measure();
+    // A webfont that arrives after the first paint changes every tail's width.
+    void document.fonts?.ready.then(measure);
+    return () => {
+      cancelled = true;
+    };
+  }, [listRef, domains, capabilityUnit, elementUnit]);
 }
 
 function DomainRow({

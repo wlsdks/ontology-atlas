@@ -41,22 +41,3 @@ export function bundledProjectSlugs(): string[] {
   const slugs = deriveBundledProjects().map((p) => p.slug);
   return slugs.length > 0 ? slugs : ['iam'];
 }
-
-/**
- * Which bundled sample holds this project slug — the dogfood first on a collision, the same
- * precedence `deriveBundledProjects` applies.
- *
- * A project's canonical address is prerendered for every bundled sample, but a static screen draws
- * one sample at a time. When the address names a project of the sample that is not showing,
- * `/ko/project/ontology-atlas/` opened on "this project is not in the folder" (measured
- * 2026-09-25) — a dead end at the flagship's own URL. The page asks this which sample the address
- * belongs to and shows that one; a screen still draws a single vault.
- */
-export function bundledSampleSourceOf(slug: string): SampleSource | null {
-  for (const source of BUNDLED_SOURCES) {
-    if (deriveProjectsFromVault(resolveStaticVaultSource(source).manifest).some((p) => p.slug === slug)) {
-      return source;
-    }
-  }
-  return null;
-}

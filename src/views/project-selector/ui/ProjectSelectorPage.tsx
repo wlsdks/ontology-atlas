@@ -136,7 +136,7 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
     >
       <div className="flex min-w-0 flex-1 flex-col p-[var(--card-pad)]">
         <div className="flex min-w-0 items-center gap-2.5">
-          <OntologyMapKindGlyph kind="project" size={18} className="shrink-0" />
+          <OntologyMapKindGlyph kind="project" className="shrink-0" />
           <h2 className="min-w-0 flex-1 truncate text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)]">
             <Link
               href={detailHref}
@@ -186,39 +186,34 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
   );
 }
 
+
 /**
- * The tile that closes the grid: how the next card gets here. The header's "New project" is the
- * easy door; this names the two paths that need no screen at all, so a person who works from a
- * terminal or through an agent sees theirs without leaving the list.
+ * The tile that closes the grid: where the next card comes from, in one sentence of fact and effect.
+ *
+ * Round one drew the two no-screen paths as raw strings (a CLI invocation and an MCP call
+ * signature), truncated mono text with nothing to copy them with, and at 1920 a ~450px gap stood
+ * between the sentence and that command column. A person choosing a project needs to know where the
+ * next card comes from, not its syntax: the sentence names the header's button and the connected
+ * agent. As a band the title and the sentence share one line, so the slot is as tall as what it says.
  */
 function NextProjectTile({ t, description, band = false }: { t: SelectorTranslator; description?: string; band?: boolean }) {
   return (
     <section
       data-testid="project-selector-next-slot"
       aria-labelledby="project-selector-next-slot-title"
-      className={`grid w-full min-w-0 content-between gap-x-10 gap-y-4 rounded-card border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] ${band ? "md:grid-cols-2 md:items-center" : ""}`}
+      className={`flex w-full min-w-0 flex-col gap-2 rounded-card border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] ${
+        band ? "md:flex-row md:items-baseline md:gap-4" : ""
+      }`}
     >
-      <div className="min-w-0">
-        <h2 id="project-selector-next-slot-title" className="text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-secondary)]">
-          {t("nextSlotTitle")}
-        </h2>
-        <p className="mt-2 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-          {description ?? t("nextSlotSub")}
-        </p>
-      </div>
-      <dl className="grid min-w-0 gap-1.5">
-        {[
-          { label: t("nextSlotCliLabel"), command: t("nextSlotCliCommand") },
-          { label: t("nextSlotAgentLabel"), command: t("nextSlotAgentCommand") },
-        ].map((row) => (
-          <div key={row.label} className="grid min-w-0 grid-cols-[88px_minmax(0,1fr)] items-baseline gap-3">
-            <dt className="text-label text-[color:var(--color-text-quaternary)]">{row.label}</dt>
-            <dd className="min-w-0 truncate font-mono text-label text-[color:var(--color-text-tertiary)]" title={row.command}>
-              {row.command}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <h2
+        id="project-selector-next-slot-title"
+        className="shrink-0 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-secondary)]"
+      >
+        {t("nextSlotTitle")}
+      </h2>
+      <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+        {description ?? t("nextSlotSub")}
+      </p>
     </section>
   );
 }

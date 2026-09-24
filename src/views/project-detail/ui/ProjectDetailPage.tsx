@@ -36,8 +36,8 @@ import {
   useVaultDocs,
   useVaultManifest,
 } from "@/features/project-data-source";
-import { buildDocsVaultHref, bundledSampleSourceOf, findProjectDocInList, hasSeveralProjectDocs } from "@/entities/docs-vault";
-import { VaultConflictError, useLocalVault, useSampleSource } from "@/entities/vault-session";
+import { buildDocsVaultHref, findProjectDocInList, hasSeveralProjectDocs } from "@/entities/docs-vault";
+import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
 import { buildProjectOntologyMetrics, computeCanonicalCensus, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
@@ -173,8 +173,9 @@ function ProjectDetailTopBar({
         ▸
       </span>
       {/* The name in the words the page draws it, not a mono slug: the mono face drew
-          a Korean name with a double gap between its words (measured 2026-09-25). */}
-      <span aria-current="page" className="max-w-[320px] truncate text-body text-[color:var(--color-text-primary)]">
+          a Korean name with a double gap between its words (measured 2026-09-25). It takes what
+          the row leaves beside the right-hand doors and truncates there, not at a fixed cap. */}
+      <span aria-current="page" className="min-w-0 flex-1 basis-32 truncate text-body text-[color:var(--color-text-primary)]">
         {projectName ?? slug ?? t("topBarProjectFallback")}
       </span>
 
@@ -329,30 +330,8 @@ export function ProjectDetailPage({
   // project.md body.
   const { body: vaultBody } = useProjectBody(project?.slug ?? null);
   const bodyContent = project?.detail ?? vaultBody ?? null;
-  /*
-   * **The address picks the sample** (2026-09-25). Static export prerenders every bundled
-   * sample's project, but a static screen shows one sample, chosen elsewhere. The flagship's own
-   * URL, `/ko/project/ontology-atlas/`, therefore opened on "not in this folder" whenever the
-   * example business was the one showing. When the address names a project only another bundled
-   * sample holds, that sample is the one this visit is about, so it becomes the one showing — the
-   * whole screen then reads one vault, as `resolveStaticVaultSource` requires. An open folder is
-   * never touched: this only runs with no folder, and only for a slug a sample really holds.
-   */
-  const [sampleSource, setSampleSource] = useSampleSource();
-  const addressSample = useMemo(() => {
-    if (!slug || projectsQuery.mode !== "static") return null;
-    if (projectsQuery.projects.some((candidate) => candidate.slug === slug)) return null;
-    return bundledSampleSourceOf(slug);
-  }, [slug, projectsQuery.mode, projectsQuery.projects]);
-  const switchingSample = addressSample !== null && addressSample !== sampleSource;
-  useEffect(() => {
-    if (switchingSample && addressSample) setSampleSource(addressSample);
-  }, [switchingSample, addressSample, setSampleSource]);
   useEffect(() => {
     if (!slug) return;
-    // The sample that holds this address is about to be the one showing; the server's copy of
-    // the project stands until it is, rather than flashing "not found" for one frame.
-    if (switchingSample) return;
     let cancelled = false;
     // The static-mode fallback used to carry 15 `SEED_PROJECTS`, and their content described
     // **already-removed features as fact** (Firebase Hosting, Sigma/WebGL, a whitelist admin). The
@@ -383,7 +362,6 @@ export function ProjectDetailPage({
     projectsQuery.loaded,
     projectsQuery.error,
     slug,
-    switchingSample,
   ]);
 
   // This project's ontology nodes and relations — the hero metric strip, the mini domain map, the
@@ -558,9 +536,13 @@ export function ProjectDetailPage({
     column was widened and centred (`docs/DECISIONS.md`, "The reading column is worth more of
     its pane than the measure was buying"). The card keeps its track; the column inside it is
     the same box the Library's open page reads.
+
+    Since 2026-09-25 the card is a summary under a hero that carries the definition, so it reads
+    one step down, at body-lg, in that same column box. The size lives in this class rather than
+    being string-patched at the call site, where a renamed token would have silently done nothing.
   */
   const storyMarkdownClassName =
-    "text-reading leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[var(--font-weight-strong)] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[var(--font-weight-strong)] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[var(--font-weight-strong)] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
+    "text-body-lg leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[var(--font-weight-strong)] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[var(--font-weight-strong)] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[var(--font-weight-strong)] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
   const projectFullEditHref = getProjectEditHref(project.slug, {
     returnTo: getProjectRuntimeDetailHref(project.slug),
   });
@@ -612,7 +594,7 @@ export function ProjectDetailPage({
       {/* zone 1 — hero band: glyph, title, and description plus the engraved metric strip and the
           topology/edit actions. **The right column is deliberately empty** — see the comment below
           about removing the radial map. */}
-      <header className="@container/project-hero mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[18px_20px] shadow-[inset_0_1px_0_var(--color-overlay-1)] lg:p-[18px_26px]">
+      <header className="@container/project-hero mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
         <div className="flex min-w-0 flex-1 flex-col">
           {/*
             The action cluster stands beside the name only when the hero band itself is wide
@@ -626,23 +608,27 @@ export function ProjectDetailPage({
             buttons are the ones that move.
           */}
           {/*
-            **One start line inside the hero** (2026-09-25). The glyph keeps its own column and
-            everything else — name, meta, definition and, once they wrap, the buttons — stands in
-            the one column beside it. The buttons used to wrap back under the glyph (x=131 at 1040
-            under a name at x=175), so the band had two left edges.
+            **One start line for the hero and the cards under it** (2026-09-25, round two). The
+            glyph used to stand in a column of its own, so the name, meta and definition started
+            at x=175 while every card below started its words at x=123 (1512): two left edges in
+            one page column. The glyph now leads the name inside its line, the way the list's cards
+            draw it, and the band wears the cards' own inset, so the glyph, the meta, the
+            definition and the wrapped buttons start where the cards' titles do.
           */}
-          <div className="flex items-start gap-3.5">
-            <OntologyMapKindGlyph kind="project" size={30} className="mt-1 shrink-0" />
-            <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-8 gap-y-4 @5xl/project-hero:flex-nowrap">
-            <div className="min-w-0 flex-1 basis-[24rem]">
-              <InlineEditable
-                as="h1"
-                value={displayName ?? project.name}
-                editable={canManageProject}
-                onSave={(next) => saveProjectField("name", next)}
-                ariaLabel={t("inlineNameAria")}
-                className="text-display leading-display-tight font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-pretty text-[color:var(--color-text-primary)]"
-              />
+          <div className="flex min-w-0 flex-wrap items-start gap-x-8 gap-y-4 @5xl/project-hero:flex-nowrap">
+            <div className="min-w-0 flex-1 basis-96">
+              {/* 22 is the heading glyph the full-detail sheet draws beside its display title. */}
+              <div className="flex min-w-0 items-center gap-2.5">
+                <OntologyMapKindGlyph kind="project" size={22} className="shrink-0" />
+                <InlineEditable
+                  as="h1"
+                  value={displayName ?? project.name}
+                  editable={canManageProject}
+                  onSave={(next) => saveProjectField("name", next)}
+                  ariaLabel={t("inlineNameAria")}
+                  className="min-w-0 text-display leading-display-tight font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-pretty text-[color:var(--color-text-primary)]"
+                />
+              </div>
               {/*
                 The meta row ends here. The description used to flow **into** this dot row, so a
                 paragraph-length text was treated as 13px tertiary meta — half of the "it feels
@@ -670,11 +656,12 @@ export function ProjectDetailPage({
                 // The cap is the column box, not a per-line `ch` count: `64ch` resolved at this
                 // element's own 14px to 534px inside a 1350px band (2026-09-19), the same three-
                 // right-edges defect the Library removed on 2026-09-19 (#1667).
-                // 2026-09-25: the hero carries the whole first sentence at the title step, and the
-                // overview below starts after it. It was 14px under a 580px cap, cut at 160
-                // characters, while the overview repeated the full paragraph at 16px — the lower
-                // copy outranked the hero's. The column beside the buttons is the cap now.
-                className="mt-3 max-w-[calc(var(--measure-doc-column)*1.6)] break-keep text-title leading-title text-pretty text-[color:var(--color-text-secondary)]"
+                // 2026-09-25: the hero carries the whole first sentence, and the overview below
+                // starts after it (it used to repeat the paragraph one step larger). Round two put it
+                // back at body-lg: at the title step a three-line paragraph competed with the name
+                // above it. Its cap is the overview prose's own box, so the hero's words and the
+                // cards' words share one left edge and one right edge.
+                className="mt-2.5 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-body-lg leading-body-lg text-pretty text-[color:var(--color-text-secondary)]"
               />
             </div>
             {/* `flex-none` created horizontal overflow at a 390px viewport, the read-only badge and
@@ -738,7 +725,6 @@ export function ProjectDetailPage({
                   <OpenVaultCta testId="project-detail-open-vault" />
                 </div>
               )}
-            </div>
             </div>
           </div>
 
@@ -937,9 +923,9 @@ export function ProjectDetailPage({
                   // The line is the column (`docs/DECISIONS.md`, 2026-09-12): the measure spent at
                   // the reading size. Left-aligned rather than centred, because heading, prose,
                   // contents line and door all start on one line inside a card.
-                  // A summary card reads at the body-lg step, one below the hero's definition: at the
-                  // reading size (16) the card outranked the hero (14) it follows (2026-09-25).
-                  proseClassName={`${storyMarkdownClassName.replace("text-reading", "text-body-lg")} max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))]`}
+                  // The summary reads at the hero definition's step (body-lg): at the reading size (16)
+                  // the card outranked the hero (14) it follows (2026-09-25).
+                  proseClassName={`${storyMarkdownClassName} max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))]`}
                   coversLabel={t("bodyCovers")}
                   leadSentence={heroTagline}
                   sectionNames={{
@@ -975,8 +961,12 @@ export function ProjectDetailPage({
         <aside data-testid="project-detail-connected" className="flex flex-col gap-[var(--card-gap)]">
           {connectedProjects.length > 0 || folderHasSeveralProjects ? (
           <section data-testid="project-detail-connected-card" className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
-            {/* The relation trace mark that led this heading drew as a stray "--" before the
-                words (2026-09-25); the caption beside the title already names the relation. */}
+            {/* No relation trace mark before this heading. The mark is not broken: it is the
+                canvas edge in miniature, dashed for a non-containment relation, and its own
+                contract (`map-kind-glyph.tsx`) is "one per row, not a group-header marker". The
+                insights Connections tab and the full-detail groups panel use it that way. As a
+                card heading it read as a stray "--" (2026-09-25); the rows below carry the
+                relation, and the caption beside the title names it. */}
             <div className="mb-2.5 flex items-baseline gap-2">
               <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {t("connectedTitle")}
@@ -1054,13 +1044,15 @@ export function ProjectDetailPage({
 
           <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             {/*
-              **One place for agents on this page** (2026-09-19), and since 2026-09-25 **one block**
-              inside it. The card stacked two near-identical halves — a sentence, a copy button and
-              its own "preview what is copied" disclosure, twice, split by a rule. The two copies do
-              different jobs (rewrite this overview; start reading this project's map), so both stay,
-              but as two buttons in one row under one sentence, with one preview that names each.
-              Owner's earlier verdict on this card still holds: say what it does first, and let
-              whoever wants the text expand it.
+              **One place for agents on this page** (2026-09-19). Two copies live here and they do
+              different jobs: rewrite this overview, or start an AI reading this project's map. Round
+              one set both buttons side by side under one sentence and hid the second one's reason in
+              the preview, so at rest nothing said how they differed. Each job is now one sentence
+              with its own button under it, both buttons are named by their job, and one preview below
+              holds both texts under those same names. The owner's earlier verdict on this card still
+              holds: say what it does first, and let whoever wants the text expand it.
+              `break-keep`: Korean trips the reader when it breaks mid-word (measured 2026-08-12 in
+              this 400px rail).
             */}
             <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t("handoffTitle")}
@@ -1071,52 +1063,69 @@ export function ProjectDetailPage({
               data-agent-route={agent.route}
               className="mt-2"
             >
-              <p className="break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-                {agent.route === "agent"
-                  ? t("briefAskAgent")
-                  : briefIsStructured
-                    ? t("briefAskStructured")
-                    : t("briefAskUnstructured")}
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                {agent.route === "agent" ? (
+              <ul className="flex list-none flex-col gap-4 p-0">
+                <li className="min-w-0">
+                  <p className="break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+                    {agent.route === "agent"
+                      ? t("briefAskAgent")
+                      : briefIsStructured
+                        ? t("briefAskStructured")
+                        : t("briefAskUnstructured")}
+                  </p>
+                  {agent.route === "agent" ? (
+                    <Button
+                      type="button"
+                      variant={briefIsStructured ? "outline" : "primary"}
+                      size="sm"
+                      onClick={() => agent.start(briefPrompt)}
+                      data-testid="project-detail-brief-ask-open"
+                      className="mt-2.5"
+                    >
+                      {t("briefAskOpen")}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant={briefIsStructured ? "outline" : "primary"}
+                      size="sm"
+                      onClick={() => void briefCopy.copy(briefPrompt)}
+                      data-testid="project-detail-brief-ask-copy"
+                      className="mt-2.5"
+                    >
+                      {briefCopyLabel}
+                    </Button>
+                  )}
+                </li>
+                <li className="min-w-0">
+                  <p className="break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+                    {t("handoffDesc")}
+                  </p>
                   <Button
                     type="button"
-                    variant={briefIsStructured ? "outline" : "primary"}
+                    variant="outline"
                     size="sm"
-                    onClick={() => agent.start(briefPrompt)}
-                    data-testid="project-detail-brief-ask-open"
+                    onClick={handleCopyHandoff}
+                    data-testid="project-detail-handoff-copy"
+                    className="mt-2.5"
                   >
-                    {t("briefAskOpen")}
+                    {handoffCopyLabel}
                   </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant={briefIsStructured ? "outline" : "primary"}
-                    size="sm"
-                    onClick={() => void briefCopy.copy(briefPrompt)}
-                    data-testid="project-detail-brief-ask-copy"
-                  >
-                    {briefCopyLabel}
-                  </Button>
-                )}
-                <Button type="button" variant="outline" size="sm" onClick={handleCopyHandoff} data-testid="project-detail-handoff-copy">
-                  {handoffCopyLabel}
-                </Button>
-              </div>
-              <details className="mt-3">
+                </li>
+              </ul>
+              <details className="mt-4 border-t border-[color:var(--color-divider)] pt-3">
                 <summary className="select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                   {t("handoffHumanCaption")}
                 </summary>
-                <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap break-keep text-[color:var(--color-text-quaternary)]">
+                <h3 className="mt-3 text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">
+                  {agent.route === "agent" ? t("briefAskOpen") : t("briefAskCopy")}
+                </h3>
+                <pre className="mt-1.5 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap break-keep text-[color:var(--color-text-quaternary)]">
                   {briefPrompt}
                 </pre>
-                {/* `break-keep` — Korean trips the reader when it breaks mid-word (measured
-                    2026-08-12 in this 400px rail). */}
-                <p className="mt-3 border-t border-[color:var(--color-divider)] pt-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-                  {t("handoffDesc")}
-                </p>
-                <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
+                <h3 className="mt-3 text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">
+                  {t("handoffCopyLabel")}
+                </h3>
+                <pre className="mt-1.5 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
                   {handoffSnippet}
                 </pre>
               </details>
