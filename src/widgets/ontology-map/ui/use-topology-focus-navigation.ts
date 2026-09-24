@@ -211,6 +211,7 @@ export function useTopologyFocusNavigation({
      * the reader put them; flying to a node is its own gesture — a double-click or Enter,
      * consumed by the dome frame (`DOME_FLY_MS`). A selection still stops the attention
      * spin ("stop it turning after I click"), so nothing slides out from under a focus.
+     * The only click-made move, the nudge off the inspector, is undone on deselect.
      * A deselect does not fly back either: Esc and Home do, and a click on empty space is a
      * click.
      */
@@ -219,6 +220,9 @@ export function useTopologyFocusNavigation({
       if (focusedSlug !== null) {
         dome.spinArmed = false;
         commitDomeEntrySweep(dome);
+      } else if (dome.nudgeReturn !== null) {
+        // The one exception: a click's nudge off the inspector is undone with the selection.
+        dome.flyRequest = { slug: null, unnudge: true };
       }
       lastActiveMsRef.current = performance.now();
       return;

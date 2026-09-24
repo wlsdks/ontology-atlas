@@ -2640,6 +2640,7 @@ export function settleDomeRuntimeOffscreen(runtime: DomeRuntime): void {
   runtime.entryArmed = false;
   // A fly-to belongs to the 3D view it moved; the flat map has nothing to fly back to.
   runtime.flyRequest = null;
+  runtime.nudgeReturn = null;
   runtime.flight = null;
   runtime.lag.project = 0;
   runtime.lag.domain = 0;
@@ -3005,7 +3006,15 @@ export interface DomeRuntime {
    * no zoom, no turn, no flight to return from. A selected node hidden behind its own
    * inspector would make the click unsafe in a different way.
    */
-  flyRequest: { slug: string | null; nudge?: true } | null;
+  flyRequest: { slug: string | null; nudge?: true; unnudge?: true } | null;
+  /**
+   * The camera before a click's nudge, and where the nudge left it. A deselect (`unnudge`)
+   * slides back to `before` — but only while the camera target still equals `landed`, so a
+   * view the reader moved since is never taken from them. Measured 2026-09-25 at 1040×720 on
+   * the sample vault: without the return, one nudge left the next concept under the INDEX
+   * panel after the selection had cleared, and a click aimed at it pressed the panel.
+   */
+  nudgeReturn: { before: { tx: number; ty: number; tscale: number }; landed: { tx: number; ty: number; tscale: number } } | null;
   /** The fly-to in effect and the view it left from; null when no fly-to has moved the view. */
   flight: DomeFlight | null;
   /** Per-kind yaw trig of the last drawn frame (torsion included) — read by `projectDomePlanePoint`. */
@@ -3137,6 +3146,7 @@ export function createDomeRuntime(model: DomeModel): DomeRuntime {
     frame: new Map(),
     rings: [],
     flyRequest: null,
+    nudgeReturn: null,
     flight: null,
     kindTrig: { project: [1, 0], domain: [1, 0], capability: [1, 0], element: [1, 0] },
     kindRamp: { project: 0, domain: 0, capability: 0, element: 0 },

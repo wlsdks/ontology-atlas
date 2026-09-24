@@ -504,7 +504,22 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           const request = dome.flyRequest;
           dome.flyRequest = null;
           const { width: vw, height: vh } = viewportRef.current;
-          if (request.nudge === true && request.slug !== null && vw > 0 && vh > 0) {
+          const sameTarget = (a: CameraTarget, b: CameraTarget) =>
+            Math.abs(a.tx - b.tx) < 0.01 && Math.abs(a.ty - b.ty) < 0.01 && Math.abs(a.tscale - b.tscale) < 1e-4;
+          if (request.unnudge === true) {
+            // The selection cleared: undo the click's nudge if the view is still where it put it.
+            const back = dome.nudgeReturn;
+            dome.nudgeReturn = null;
+            if (back !== null && dome.flight === null && sameTarget(cameraTargetRef.current, back.landed)) {
+              const target = { ...back.before };
+              cameraTargetRef.current = target;
+              userDrivenCameraRef.current = false;
+              dampingRef.current = tokens.cameraDampingDefault;
+              cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+              beginCameraTween(target);
+              lastActiveMsRef.current = now;
+            }
+          } else if (request.nudge === true && request.slug !== null && vw > 0 && vh > 0) {
             /*
              * The click's one allowed move (see `DomeRuntime.flyRequest`): slide sideways
              * until the selected node clears the panels, and nothing else.
@@ -520,6 +535,12 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               const shift = hi <= lo ? 0 : sx > hi ? sx - hi : sx < lo ? sx - lo : 0;
               if (Math.abs(shift) > 0.5) {
                 const target = { tx: current.tx + shift / current.tscale, ty: current.ty, tscale: current.tscale };
+                // Chained nudges keep the first view as the one a deselect returns to.
+                const before =
+                  dome.nudgeReturn !== null && sameTarget(current, dome.nudgeReturn.landed)
+                    ? dome.nudgeReturn.before
+                    : { ...current };
+                dome.nudgeReturn = { before, landed: { ...target } };
                 cameraTargetRef.current = target;
                 userDrivenCameraRef.current = false;
                 dampingRef.current = tokens.cameraDampingDefault;
@@ -591,8 +612,14 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                     slug: request.slug,
                     returnYaw: dome.flight?.returnYaw ?? dome.yaw,
                     returnPitch: dome.flight?.returnPitch ?? dome.pitch,
-                    returnCamera: dome.flight?.returnCamera ?? { ...cameraTargetRef.current },
+                    // A nudge before the flight is the click's, not the reader's: return past it.
+                    returnCamera:
+                      dome.flight?.returnCamera ??
+                      (dome.nudgeReturn !== null && sameTarget(cameraTargetRef.current, dome.nudgeReturn.landed)
+                        ? { ...dome.nudgeReturn.before }
+                        : { ...cameraTargetRef.current }),
                   };
+                  dome.nudgeReturn = null;
                   flyPose(targetYaw, targetPitch);
                   flyCamera(target);
                 }

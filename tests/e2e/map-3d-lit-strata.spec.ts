@@ -215,6 +215,51 @@ test.describe("lit 3D map on the dogfood vault", () => {
     expect(back.dome!.pitch).toBeCloseTo(afterClick.dome!.pitch, 2);
   });
 
+  /*
+   * The one move a click may make is the nudge that slides a node out from under the inspector
+   * it opened, and it has to leave with the selection. Without the return (CI, 2026-09-25, at
+   * 1040×720) the nudged view outlived the deselect and the next concept sat under the INDEX
+   * panel, so a click aimed at it pressed the panel.
+   */
+  test("Strata: a click's nudge off the inspector is undone when the selection clears", async ({ page }) => {
+    await openLit(page, "strata", true);
+    await waitForMapStill(page, { what: "camera" });
+    const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+    const start = (await probe(page, (p) => p.camera()))!;
+    const nodes = await probe(page, (p) => p.nodes());
+    const right = nodes
+      .filter((n) => !n.hidden && n.kind === "capability" && n.y > 160 && n.y < box.height - 160)
+      .sort((a, b) => b.x - a.x)[0]!;
+    await page.mouse.click(box.x + right.x, box.y + right.y);
+    await expect.poll(() => probe(page, (p) => p.selection().nodeId)).toBe(right.id);
+    await expect(page.getByTestId("map-detail-panel")).toBeVisible();
+    await waitForMapStill(page, { what: "camera" });
+    const nudged = (await probe(page, (p) => p.camera()))!;
+    expect(Math.abs(nudged.x - start.x), "the right-most capability was not under the inspector — no nudge to undo").toBeGreaterThan(1);
+    expect(nudged.y).toBeCloseTo(start.y, 1);
+    expect(nudged.scale).toBeCloseTo(start.scale, 3);
+    // Clear the selection with a press on bare canvas, far from any disc.
+    const spare = await page.evaluate(() => {
+      const el = document.querySelector<HTMLElement>('[data-testid="ontology-map-canvas"]')!;
+      const r = el.getBoundingClientRect();
+      const drawn = (window as unknown as { __atlasMap: { nodes(): Array<{ x: number; y: number; radius: number; hidden: boolean }> } }).__atlasMap
+        .nodes()
+        .filter((n) => !n.hidden);
+      for (let y = 40; y < r.height - 40; y += 20)
+        for (let x = 360; x < r.width - 90; x += 20)
+          if (drawn.every((n) => Math.hypot(n.x - x, n.y - y) > n.radius + 40) && document.elementFromPoint(r.x + x, r.y + y) === el)
+            return { x: r.x + x, y: r.y + y };
+      return null;
+    });
+    expect(spare, "no bare canvas to press").not.toBeNull();
+    await page.mouse.click(spare!.x, spare!.y);
+    await expect.poll(() => probe(page, (p) => p.selection().nodeId)).toBeNull();
+    await waitForMapStill(page, { what: "camera" });
+    const back = (await probe(page, (p) => p.camera()))!;
+    expect(back.x).toBeCloseTo(start.x, 1);
+    expect(back.scale).toBeCloseTo(start.scale, 3);
+  });
+
   test("Strata: a hard vertical drag cannot tip the planes past 0.15–0.95 rad", async ({ page }) => {
     await openLit(page, "strata", true);
     await waitForMapStill(page, { what: "camera" });
