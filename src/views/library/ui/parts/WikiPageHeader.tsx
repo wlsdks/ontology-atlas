@@ -55,6 +55,7 @@ export function WikiPageHeader({
   originals,
   onOpenSource,
   compactTop = false,
+  missingOriginalNamedBelow = false,
   t,
 }: {
   doc: VaultDoc;
@@ -63,6 +64,12 @@ export function WikiPageHeader({
   onOpenSource: (path: string) => void;
   /** Retained answers already sit below workspace and reader chrome. */
   compactTop?: boolean;
+  /**
+   * The problem card under this header already names the cited file that is not in the
+   * folder and says what to do about it. The header then leaves its own one-line copy out,
+   * so the fact is said once, not twice 40px apart (design sweep, 2026-09-25).
+   */
+  missingOriginalNamedBelow?: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   const frontmatter = doc.frontmatter as Record<string, unknown>;
@@ -70,21 +77,33 @@ export function WikiPageHeader({
   const status = typeof frontmatter.status === "string" ? frontmatter.status : null;
   const only = originals.length === 1 ? originals[0] : null;
 
+  /*
+   * **Title, byline, then a breath before whatever the page opens on** (design sweep round
+   * 2, 2026-09-25). With the missing-original line handed to the problem card, the card
+   * followed the byline by 16px — the same gap as title to byline, so the three read as
+   * one run. The header's `pb-2` makes it 24 below the byline against 8 above it. A retained
+   * answer (`compactTop`) keeps its tight top instead: its own context block follows the
+   * byline, and the answer's Summary has to stay above 45% of the 1040×720 window floor
+   * (`library-answer-comparison-rows.spec.ts`). The title
+   * keeps `text-display`'s own 28px leading, the pair `app/globals.css` writes for a page
+   * headline; the 24px `leading-title` it used to carry is the 16px panel title's pair and
+   * set a wrapping headline's lines tighter than its size.
+   */
   return (
     <header
       data-testid="library-wiki-header"
-      className={`mx-auto w-full max-w-[var(--measure-doc-column)] px-6 md:px-10 ${compactTop ? "pt-3" : "pt-8"}`}
+      className={`mx-auto w-full max-w-[var(--measure-doc-column)] px-6 md:px-10 ${compactTop ? "pt-3" : "pb-2 pt-8"}`}
     >
-      <h2 className="text-display font-[var(--font-weight-signature)] leading-title tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+      <h2 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
         {doc.title}
       </h2>
       {/* Words, not identifiers: `agent:claude · reviewed` is the file's vocabulary; the
           reader gets the runtime's name and the status in their own language. */}
-      <p className="mt-1.5 text-caption text-[color:var(--color-text-tertiary)]">
+      <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">
         {t("wiki.writtenBy", { author: writerLabel(createdBy, t) })}
         {wikiStatusLabel(status, t) ? ` · ${wikiStatusLabel(status, t)}` : ""}
       </p>
-      {only ? (
+      {only && only.state === null && missingOriginalNamedBelow ? null : only ? (
         <div className="mt-3">
           {only.state === null ? (
             <p

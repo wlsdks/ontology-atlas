@@ -5775,6 +5775,8 @@
       "compileFailed": "Could not start the agent turn: {reason}",
       "compileWebLimit": "Writing pages needs a coding agent running on this computer, which only the app can start. Reading and editing the pages works here.",
       "compileWebGetApp": "Get the app",
+      "agentMissing": "Connect a coding agent to check page format and compile sources into pages.",
+      "agentMissingDoor": "Connect an agent",
       "offTemplateReason": "Does not fit the wiki template: {code}. Open the page to see what to change.",
       "offTemplateAriaLabel": "How this page differs from the wiki template",
       "offTemplateTitle": "{count, number} to fix · page template",
