@@ -455,13 +455,13 @@ export interface AgentClientControls {
  * `focus-visible:ring`, so the browser default `outline: rgb(208,214,224) auto 1px` appeared,
  * while nine or more other places in the app used the indigo ring token.
  *
- * Only this surface's three dialects are overridden — full width (`w-full`), this sheet's radius
- * (`rounded-chip`), and the settings-sheet type dialect (`text-body`). Everything else (colour,
- * state, press, disabled, focus ring) is owned by the primitive. `size="sm"`'s `h-8` is exactly
+ * Only this surface's two dialects are overridden — full width (`w-full`) and the settings-sheet
+ * type dialect (`text-body`); `sm` has worn the chip radius itself since 2026-09-25. Everything
+ * else (colour, state, press, disabled, focus ring) is owned by the primitive. `size="sm"`'s `h-8` is exactly
  * `--control-h-md` (32px), so the height is unchanged.
  */
 function clientControlClass(extra?: string) {
-  return cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full rounded-chip text-body", extra);
+  return cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full text-body", extra);
 }
 
 function ClientStatus({

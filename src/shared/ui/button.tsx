@@ -5,7 +5,7 @@ import { cn } from '@/shared/lib/cn';
 const buttonVariants = cva(
   [
     'inline-flex items-center justify-center gap-2 whitespace-nowrap',
-    'leading-caption',
+    'text-body-lg leading-caption',
     'font-[var(--font-weight-signature)]',
     'border border-transparent',
     'select-none',
@@ -66,28 +66,42 @@ const buttonVariants = cva(
          * rule, `--color-danger-text` ink) — the same four steps the insights copy-failure
          * state already wears by hand — so the variant adds no value, only a name.
          * Use it for the confirm step only, never for the button that opens the question.
+         *
+         * **Disabled drops the hue, not the value.** The one disabled treatment
+         * (`opacity-55`) took the danger ink to 2.42:1 on /en/automations while the removal
+         * was pending (rendered pixels, 1512, 2026-09-25); the neutral ink at the same
+         * opacity stays readable. So while disabled the variant wears `outline`'s plane,
+         * rule and ink, and the shared opacity still says "not now" — a pending confirm has
+         * nothing left to warn about.
          */
         danger:
-          'border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-danger-text)] hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)] active:bg-[color:var(--color-danger-a12)] active:shadow-[var(--shadow-control-press)]',
+          'border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-danger-text)] hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)] active:bg-[color:var(--color-danger-a12)] active:shadow-[var(--shadow-control-press)] disabled:border-[color:var(--color-overlay-3)] disabled:bg-[color:var(--color-overlay-1)] disabled:text-[color:var(--color-text-primary)]',
       },
       /*
-       * **Radius and type follow the box, not the component** (2026-09-25).
+       * **Radius follows the box** (2026-09-25).
        *
-       * Every size used to wear `rounded-panel` (12px) and `text-body-lg` (14px). Three
-       * screen reviews found the same seam independently (Harness toolbar, Insights brief,
-       * Projects top bar): a 32px `Button sm` stood beside a 32px `controlClass` chip `lg`
-       * that wears `rounded-chip` (6px) and `text-body` (12.5px), and the two read as two
-       * products. The radius ramp already said so — `--radius-chip` is "chips, badges,
-       * small buttons" — and 40px fields (`fieldClass`) wear the chip radius too, so `md`
-       * joins them. `lg` (44px) is the gateway's hero CTA and the only size that is a
-       * large surface, so it keeps `rounded-panel`.
+       * Every size used to wear `rounded-panel` (12px). A 32px `Button sm` stood beside a
+       * 32px `controlClass` chip `lg` and a 32px `fieldClass` field, both `rounded-chip`
+       * (6px), and read as a second product — the seam three screen reviews found at 32px
+       * (Harness toolbar, Insights brief, Projects top bar). `sm` joins them.
+       *
+       * `lg` (44px) is the download hero, whose every consumer already overrode the panel
+       * radius back to the chip radius (six call sites); the override moved here. The other
+       * `lg` consumers — the Harness toolbar's split action and rules toggle — sit in a row of
+       * chip-radius controls, so they gain the same radius, not lose one. `md` (40px) keeps
+       * `rounded-panel`: no reviewed screen showed a seam at 40px, so it is not changed on
+       * speculation.
+       *
+       * Type stays `text-body-lg` (14px) at every size: a 32px field (`fieldClass` md) sets
+       * its text at 14px, and a 12.5px `sm` label beside it read one step smaller than the
+       * value it acts on (captured /en/project/new, 2026-09-25).
        *
        * No new value: every class here is an existing ramp step.
        */
       size: {
-        sm: 'h-8 px-3.5 text-body rounded-chip',
-        md: 'h-10 px-4.5 text-body-lg rounded-chip',
-        lg: 'h-11 px-6 text-body-lg rounded-panel',
+        sm: 'h-8 px-3.5 rounded-chip',
+        md: 'h-10 px-4.5 rounded-panel',
+        lg: 'h-11 px-6 rounded-chip',
       },
     },
     defaultVariants: {

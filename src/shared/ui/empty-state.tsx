@@ -71,7 +71,8 @@ function DefaultSkeleton({ align }: { align: 'left' | 'center' }) {
 
 /**
  * Shared empty state for lists and sections. A whole empty page calls it with
- * `tone="solid"` + `align="center"` to show one centred sentence.
+ * `tone="solid"` + `align="center"`: with no `description` that is one centred sentence
+ * (the title drops to the body step); with a `description` the title keeps the heading step.
  */
 export function EmptyState({
   title,

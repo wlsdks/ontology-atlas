@@ -746,7 +746,7 @@ every relation line, 5.23:1), `--color-indigo-brand` (the selection, 4.24:1). Co
 
 #### Korean breaks between words, from one rule (2026-09-25)
 
-`:root:lang(ko) body { word-break: keep-all; overflow-wrap: break-word; }` in `app/globals.css`, outside every layer. Before it, each screen opted in with its own `break-keep` (274 sites in 76 files) and any element that forgot wrapped mid-word. New code does not add `break-keep` for Korean prose; an element that must break anywhere (a path, a hash) declares `break-all` or `[overflow-wrap:anywhere]` on itself, which wins over inheritance. Gate: `tests/contract/hangul-word-keep.contract.test.ts`.
+`:root:lang(ko) body { word-break: keep-all; overflow-wrap: break-word; }` in `app/globals.css`, outside every layer. Before it, each screen opted in with its own `break-keep` or `[word-break:keep-all]` (364 sites) and any element that forgot wrapped mid-word. The rule holds from the first paint: the root layout cannot know the locale, so the inline boot script (`accent-boot-script.tsx`, `LANG_BOOT`) sets `<html lang>` from the path before the body is parsed; `LocaleHtmlLang` only follows client-side switches. The per-element count is a ratchet: it may fall as screens are touched, never rise, so new Korean prose does not add `break-keep`. An element that must break anywhere (a path, a hash) declares `break-all` or `[overflow-wrap:anywhere]` on itself, which wins over inheritance. Gates: `tests/contract/hangul-word-keep.contract.test.ts` (rule, boot locales, ratchet) and `tests/e2e/hangul-first-paint.spec.ts` (computed `word-break` with every script blocked).
 
 #### Do not overlay Latin-only decorations on Korean (2026-07-26)
 
@@ -2538,9 +2538,9 @@ Tailwind v4 `--radius-*` namespace generates `rounded-<step>`.
 | Unit | Token (Utility) | px | Target |
 |---|---|---|---|
 | micro | `--radius-micro` (`rounded-micro`) | 4 | Micro badge, command tag, kbd — one layer below the chip |
-| chip | `--radius-chip` (`rounded-chip`) | 6 | Chip, badge, `Button` `sm`·`md` (32/40px — the same box family as chips and fields) |
-| card | `--radius-card` (`rounded-card`) | 9 | Card · Input · Medium Surface |
-| panel | `--radius-panel` (`rounded-panel`) | 12 | Panel, Modal, Large Surface, `Button` `lg` (44px hero CTA) |
+| chip | `--radius-chip` (`rounded-chip`) | 6 | Chip, badge, field (`fieldClass`, every boxed size above `xs`), `Button` `sm` (32px, the box family of chips and fields) and `lg` (44px hero CTA) |
+| card | `--radius-card` (`rounded-card`) | 9 | Card · Medium Surface |
+| panel | `--radius-panel` (`rounded-panel`) | 12 | Panel, Modal, Large Surface, `Button` `md` (40px, the default) |
 
 | sheet | `--radius-sheet` (`rounded-sheet`) | 18 | Floating sheet/palette — a large temporary surface that floats above the screen and obscures what's below |
 
@@ -2840,7 +2840,7 @@ Chrome surfaces (tiles/chips) must only be created via `ChromeTile` / `ChromeChi
 |---|---|---|
 | `Select` (Dark Listbox) | `src/shared/ui/select.tsx` | Native `<select>` replacement — macOS gray system dropdown adapted to dark app syntax |
 | `EmptyState` | `src/shared/ui/empty-state.tsx` | Empty lists/charts/pages — skeleton placeholders + icon + one-line guidance |
-| `Button` | `src/shared/ui/button.tsx` | Standard action — `primary` · `outline` · `ghost` · `danger` (the confirm step of an irreversible action only, drawn from the danger ramp). Radius and type follow the size: `sm` 32px/`text-body`/chip radius, `md` 40px/`text-body-lg`/chip radius, `lg` 44px/`text-body-lg`/panel radius, so a `Button sm` and a `controlClass` chip `lg` beside it are one control. Gate: `src/shared/ui/button.test.tsx` |
+| `Button` | `src/shared/ui/button.tsx` | Standard action — `primary` · `outline` · `ghost` · `danger` (the confirm step of an irreversible action only, drawn from the danger ramp). Radius follows the size: `sm` 32px and `lg` 44px wear the chip radius, `md` 40px keeps the panel radius; type is `text-body-lg` at every size, the step a 32px field sets its value in. So a `Button sm` beside a `fieldClass` field or a `controlClass` chip `lg` shares their corner. While disabled, `danger` drops its hue for `outline`'s (the danger ink at `opacity-55` measured 2.42:1). Gate: `src/shared/ui/button.test.tsx` |
 | `ChromeTile` / `ChromeChip` | `src/shared/ui/chrome-tile.tsx` · `chrome-chip.tsx` | Chrome tiles/chips (see separate "Chrome Syntax" section) |
 | `controlClass()` | `src/shared/ui/control-class.ts` | **Value Layer** — single source of classes for interactive elements (see section below) |
 | `Chip` · `IconButton` · `RowButton` | `src/shared/ui/controls.tsx` | **Action Layer** — defaults to `type="button"` · enforces accessible names · button semantics |

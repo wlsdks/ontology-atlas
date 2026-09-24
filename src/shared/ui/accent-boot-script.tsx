@@ -35,6 +35,26 @@ const ACCENT_BOOT = [
 ].join("");
 
 /**
+ * Plants `<html lang>` from the locale path segment **before the first paint** (2026-09-25).
+ *
+ * The root layout cannot know the locale (it sits above `[locale]`), so the static HTML ships
+ * `lang="en"` and `LocaleHtmlLang` corrects it in an effect — after hydration, so after the
+ * first paint. Every `:lang(ko)` rule (the Korean line rule on `body` above all) therefore
+ * missed the first frame on `/ko/*` and the text reflowed once when the effect ran.
+ *
+ * The locale is always the first path segment after an optional `basePath`
+ * (`localePrefix: 'always'`), so the first segment that is a known locale is the answer. The
+ * list is a constant, not interpolated — `tests/contract/accent-palette-switch.contract.test.ts`
+ * holds it equal to `routing.locales`. `LocaleHtmlLang` stays for client-side locale switches.
+ */
+const LANG_BOOT = [
+  "try{",
+  "var s=location.pathname.split('/');",
+  "for(var i=0;i<s.length;i++){if(s[i]==='en'||s[i]==='ko'){document.documentElement.lang=s[i];break;}}",
+  "}catch(e){}",
+].join("");
+
+/**
  * **Where this script may live — three placements that each cost something**
  * (2026-08-18). A bare raw `<script>` in the layout tree failed in a different way
  * everywhere it was tried, and each failure arrived three hops away: a React
@@ -71,5 +91,5 @@ export function AccentBootScript() {
    * async="" or moving it into the root `<head>` tag."* This follows that
    * prescription verbatim.
    */
-  return <script async dangerouslySetInnerHTML={{ __html: ACCENT_BOOT }} />;
+  return <script async dangerouslySetInnerHTML={{ __html: ACCENT_BOOT + LANG_BOOT }} />;
 }

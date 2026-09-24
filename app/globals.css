@@ -5147,7 +5147,9 @@ body *::-webkit-scrollbar {
  * only when the run would otherwise overflow, and leaves min-content sizing alone. Scoped to
  * `:lang(ko)` because `keep-all` only means "between words" for a script that puts spaces
  * between words. Outside every layer, beside the caps override, for the same reason it gives.
- * Gate: `tests/contract/hangul-word-keep.contract.test.ts`.
+ * `:lang(ko)` holds from the first paint because the inline boot script sets `<html lang>` from
+ * the path before the body is parsed (`accent-boot-script.tsx`, `LANG_BOOT`).
+ * Gates: `tests/contract/hangul-word-keep.contract.test.ts`, `tests/e2e/hangul-first-paint.spec.ts`.
  */
 :root:lang(ko) body {
   word-break: keep-all;
