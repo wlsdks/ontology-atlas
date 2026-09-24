@@ -135,7 +135,7 @@ export function LibraryHomeStrip({
       {clauses.length > 0 ? (
         <p
           data-testid="library-home-strip"
-          className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-label leading-body text-[color:var(--color-text-secondary)]"
+          className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-label leading-body text-[color:var(--color-text-secondary)] lg:flex-nowrap"
         >
           {clauses.map((clause, index) => (
             <span key={clause.kind} className="contents">

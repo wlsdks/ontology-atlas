@@ -55,6 +55,7 @@ export function WikiPageHeader({
   originals,
   onOpenSource,
   compactTop = false,
+  missingOriginalNamedBelow = false,
   t,
 }: {
   doc: VaultDoc;
@@ -63,6 +64,12 @@ export function WikiPageHeader({
   onOpenSource: (path: string) => void;
   /** Retained answers already sit below workspace and reader chrome. */
   compactTop?: boolean;
+  /**
+   * The problem card under this header already names the cited file that is not in the
+   * folder and says what to do about it. The header then leaves its own one-line copy out,
+   * so the fact is said once, not twice 40px apart (design sweep, 2026-09-25).
+   */
+  missingOriginalNamedBelow?: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   const frontmatter = doc.frontmatter as Record<string, unknown>;
@@ -75,16 +82,16 @@ export function WikiPageHeader({
       data-testid="library-wiki-header"
       className={`mx-auto w-full max-w-[var(--measure-doc-column)] px-6 md:px-10 ${compactTop ? "pt-3" : "pt-8"}`}
     >
-      <h2 className="text-display font-[var(--font-weight-signature)] leading-title tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+      <h2 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
         {doc.title}
       </h2>
       {/* Words, not identifiers: `agent:claude · reviewed` is the file's vocabulary; the
           reader gets the runtime's name and the status in their own language. */}
-      <p className="mt-1.5 text-caption text-[color:var(--color-text-tertiary)]">
+      <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">
         {t("wiki.writtenBy", { author: writerLabel(createdBy, t) })}
         {wikiStatusLabel(status, t) ? ` · ${wikiStatusLabel(status, t)}` : ""}
       </p>
-      {only ? (
+      {only && only.state === null && missingOriginalNamedBelow ? null : only ? (
         <div className="mt-3">
           {only.state === null ? (
             <p

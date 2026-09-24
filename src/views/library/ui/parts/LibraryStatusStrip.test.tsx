@@ -160,3 +160,43 @@ describe("LibraryStatusStrip — counts past a thousand are grouped", () => {
     expect(text).not.toMatch(/\d{4}/);
   });
 });
+
+/**
+ * **"Compile next" names its object, and a count the index shows is said once**
+ * (design sweep, 2026-09-25). In the reader the strip read *Compile next · 2 not compiled*
+ * while the home said *Compile next: chargeback-runbook.md* and the Sources index beside it
+ * already said *not compiled 2*.
+ */
+describe("LibraryStatusStrip — the next step names its file", () => {
+  const withSources = (indexShowsSourceStates: boolean) => {
+    const value = {
+      ...model({ "wiki/a": [] }, { needsCompileCount: 2, notCompiledCount: 2 }),
+      sources: [
+        { path: "sources/chargeback-runbook.md", state: "not-compiled" },
+        { path: "sources/fee-schedule.csv", state: "not-compiled" },
+      ],
+    } as unknown as LibraryUiModel;
+    function Strip() {
+      const t = useTranslations("library");
+      return <LibraryStatusStrip model={value} indexShowsSourceStates={indexShowsSourceStates} t={t} />;
+    }
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <Strip />
+      </NextIntlClientProvider>,
+    );
+    return screen.getByTestId("library-status-strip").textContent ?? "";
+  };
+
+  it("prints the file Compile would start on", () => {
+    expect(withSources(false)).toContain("정리 다음: chargeback-runbook.md");
+  });
+
+  it("leaves the not-compiled count to the Sources index when it is beside the strip", () => {
+    expect(withSources(true)).not.toContain("정리 전 2개");
+  });
+
+  it("keeps the count when the index shows the wiki", () => {
+    expect(withSources(false)).toContain("정리 전 2개");
+  });
+});

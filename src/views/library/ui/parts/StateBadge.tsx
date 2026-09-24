@@ -22,7 +22,12 @@ export function StateBadge({
   children,
   testId,
 }: {
-  tone: "neutral" | "warning";
+  /**
+   * `quiet` is a claim nothing has measured yet (a source `checking`): the neutral badge's
+   * geometry and ink with a dashed edge, so it lines up with the other states in a column
+   * while still reading as unsettled rather than as a verdict (design sweep, 2026-09-25).
+   */
+  tone: "neutral" | "warning" | "quiet";
   children: ReactNode;
   testId?: string;
 }) {
@@ -35,7 +40,9 @@ export function StateBadge({
           "flex-none border",
           tone === "warning"
             ? "border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]"
-            : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]",
+            : tone === "quiet"
+              ? "border-dashed border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]"
+              : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]",
         ),
       })}
     >

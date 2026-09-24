@@ -2,7 +2,7 @@
 
 import type { useTranslations } from "next-intl";
 
-import { libraryDanglingLinkCount, libraryOffTemplateCount } from "@/features/library";
+import { libraryDanglingLinkCount, libraryOffTemplateCount, selectCompileTargets } from "@/features/library";
 import { libraryStepStates } from "../../lib/stage-steps";
 import type { LibraryUiModel } from "@/features/library";
 
@@ -26,15 +26,31 @@ import type { LibraryUiModel } from "@/features/library";
  */
 export function LibraryStatusStrip({
   model,
+  indexShowsSourceStates = false,
   t,
 }: {
   model: LibraryUiModel;
+  /**
+   * The index beside this strip is the Sources list, whose head already counts the
+   * not-compiled rows. The strip then leaves that clause out, so one fact is said once on
+   * the screen rather than twice, 300px apart (design sweep, 2026-09-25).
+   */
+  indexShowsSourceStates?: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   const states = libraryStepStates(model);
   const titles = [t("stage.gather.title"), t("stage.compile.title"), t("stage.read.title")];
   const parts: string[] = [];
-  if (states.leadIndex >= 0) {
+  /*
+   * **"Compile next" names what is next** (design sweep, 2026-09-25). The home strip says
+   * *Compile next: chargeback-runbook.md*; this strip said *Compile next* and stopped — a
+   * label with its object cut off. Both read the file `selectCompileTargets` would start
+   * on, which is what the press itself runs.
+   */
+  const compileTarget = states.leadIndex === 1 ? (selectCompileTargets(model.sources)[0] ?? null) : null;
+  if (compileTarget) {
+    parts.push(t("home.compileNext", { source: compileTarget.path.replace(/^sources\//, "") }));
+  } else if (states.leadIndex >= 0) {
     parts.push(
       t("stage.status", {
         step: titles[states.leadIndex] as string,
@@ -72,7 +88,7 @@ export function LibraryStatusStrip({
    * that remainder keeps the old waiting word so the arithmetic still closes, and it is
    * zero on every folder where the three states are the whole story.
    */
-  if (model.notCompiledCount > 0) {
+  if (model.notCompiledCount > 0 && !indexShowsSourceStates) {
     parts.push(t("stage.statusNotCompiled", { count: model.notCompiledCount }));
   }
   if (model.staleCount > 0) parts.push(t("home.staleClause", { count: model.staleCount }));

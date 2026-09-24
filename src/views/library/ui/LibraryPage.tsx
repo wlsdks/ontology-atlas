@@ -133,6 +133,7 @@ import { LibraryStage } from "./parts/LibraryStage";
 import { LocalCompileCard } from "./parts/LocalCompileCard";
 import { LibraryStartStage } from "./parts/LibraryStartStage";
 import { LibraryStatusStrip } from "./parts/LibraryStatusStrip";
+import { usePaneArrival } from "../lib/use-pane-arrival";
 import { LibraryAgentDock, type LibraryAgentOpeningRequest } from "./parts/LibraryAgentDock";
 import { LibraryConversationDoor } from "./parts/LibraryConversationDoor";
 import { SelectionAsk } from "./parts/SelectionAsk";
@@ -1775,6 +1776,21 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   useEffect(() => {
     if (localReviewVisible) readerRef.current?.focus({ preventScroll: true });
   }, [localReviewVisible]);
+  /* The pane's content arrives on every change of what it shows — the graph, a page, a
+     source, the report — rather than swapping in one frame (`use-pane-arrival.ts`). */
+  const paneBodyRef = useRef<HTMLDivElement | null>(null);
+  usePaneArrival(
+    paneBodyRef,
+    localReviewVisible
+      ? "local-review"
+      : selected === null
+        ? "home"
+        : selected.kind === "wiki"
+          ? `wiki:${selected.slug}`
+          : selected.kind === "source"
+            ? `source:${selected.path}`
+            : "report",
+  );
   const lastFocusedSelection = useRef<typeof selected | undefined>(undefined);
   useEffect(() => {
     if (lastFocusedSelection.current === undefined) {
@@ -2686,6 +2702,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               selected === null || nativeVaultRootPath === null ? null : agentOnlyReason
             }
             inApp={nativeVaultRootPath !== null}
+            agentMissing={nativeVaultRootPath !== null && agent.route === "unavailable"}
             busy={busy}
             /*
              * Both routes that can write a page: the agent turn this view starts, and the
@@ -2744,7 +2761,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
             )
           }
         />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div ref={paneBodyRef} data-testid="library-pane-body" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {/*
            * ⚠️ **One row above the pane, not two** (owner, 2026-09-12; `docs/DECISIONS.md`
            * 2026-09-06 `:587`). This header used to be drawn in every state, so the home
@@ -2774,7 +2791,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               >
                 {t(localReviewVisible ? "localCompile.back" : "graph.readerClose")}
               </button>
-              <div className="min-w-0 flex-1"><LibraryStatusStrip model={model} t={t} /></div>
+              <div className="min-w-0 flex-1"><LibraryStatusStrip model={model} indexShowsSourceStates={indexSegment === "sources" && !indexCollapsed} t={t} /></div>
               <span className="flex shrink-0 items-center gap-2">
                 {answerRefresh.proposal ? <Button className="atlas-touch-floor" size="sm" variant="outline" data-testid="answer-review-open" onClick={() => setAnswerComparisonOpen(true)}>{t('answers.reviewDraft')}</Button> : null}
                 {conversationDoor}
@@ -2921,6 +2938,12 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                 originals={model.pairing.originalsByWiki.get(selectedWikiDoc.slug) ?? EMPTY_ORIGINALS}
                 onOpenSource={(path) => choose({ kind: "source", path })}
                 compactTop={selectedAnswer !== null}
+                /* The open problem card names a missing citation in its own sentence; the
+                   header's one-line copy of that fact stands down while the card is drawn. */
+                missingOriginalNamedBelow={
+                  selectedAnswer === null &&
+                  wikiProblems.some((problem) => problem.code === "citation-target-missing")
+                }
                 t={t}
               />
               {/*

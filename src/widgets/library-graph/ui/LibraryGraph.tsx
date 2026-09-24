@@ -527,12 +527,20 @@ export function LibraryGraph({
       aria-label={t("graph.title")}
       className="flex min-h-0 flex-1 flex-col px-5 py-2 sm:px-6 md:px-10"
     >
-      <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1">
+      <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1 lg:flex-nowrap">
         {/* The counts are the caption of the picture, and now its only title: with the
             canvas always drawn there is no disclosure left to name. */}
+        {/*
+          ⚠️ **At `lg` and up the row does not wrap; the counts give way first** (design
+          sweep, 2026-09-25). At 1040 the counts plus the clauses filled the line and the
+          guide and questions doors dropped to a second 40px row taken from the canvas. The
+          counts are the one child that truncates cleanly, so they shrink first and keep the
+          whole sentence in their `title`; below `lg` the row still wraps as before.
+        */}
         <p
           data-testid="library-graph-counts"
-          className="min-w-0 truncate text-label leading-body text-[color:var(--color-text-tertiary)]"
+          title={caption}
+          className="min-w-0 truncate text-label leading-body text-[color:var(--color-text-tertiary)] lg:shrink-[20]"
         >
           {caption}
         </p>

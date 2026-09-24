@@ -1,7 +1,7 @@
 "use client";
 
 import type { useTranslations } from "next-intl";
-import { BookText, FileText, FolderOpen, Download, Sparkles } from "lucide-react";
+import { BookText, FileText, FolderOpen, Download, Hash, Sparkles } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import {
@@ -412,13 +412,20 @@ export function SourceSummary({
        */
       className="mx-auto w-full max-w-[var(--measure-doc-column)] px-6 pb-8 pt-8 md:px-10"
     >
-      <div className="flex items-start gap-2">
+      {/*
+        **The document's headline, at the step a wiki page's headline uses** (design sweep,
+        2026-09-25). The file name was 14px while a wiki page's title was 23px, so an open
+        source had no headline and the key-value table below it was the loudest ink in the
+        pane. Both reader kinds now open on `text-display` with its own leading; the glyph
+        says it is a file, at the size that sits on the first line's cap height.
+      */}
+      <div className="flex items-start gap-2.5">
         <FileText
-          size={ICON_SIZE.md}
+          size={ICON_SIZE.lg}
           aria-hidden
-          className="mt-1 flex-none text-[color:var(--color-text-quaternary)]"
+          className="mt-1.5 flex-none text-[color:var(--color-text-quaternary)]"
         />
-        <h2 className="min-w-0 break-all text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
+        <h2 className="min-w-0 break-all text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
           {row.name}
         </h2>
       </div>
@@ -666,11 +673,12 @@ export function SourceSummary({
                      * leaving it as text made the outline the one list on this screen whose
                      * addresses a person could read and not follow.
                      *
-                     * Accent ink, like the index caption's address and unlike the counted
-                     * rows beside it: at rest that is what separates *a place you can go*
-                     * from *a number about this file*, and a row whose rest state equals
-                     * its neighbours' is the false negative this repository has already
-                     * ruled on twice.
+                     * ⚠️ **Neutral ink with a leading glyph, not accent** (design sweep,
+                     * 2026-09-25). Accent on every heading spread the one primary colour over
+                     * five rows, directly under the write-up rows that do the same job in
+                     * grey. What separates *a place you can go* from *a number about this
+                     * file* is now the `#` glyph in the slot the write-ups' book glyph uses,
+                     * plus the row's hover and focus — the write-ups' own grammar.
                      */
                     <button
                       type="button"
@@ -680,12 +688,13 @@ export function SourceSummary({
                       className={controlClass({
                         shape: "row",
                         size: "xs",
-                        tone: "accent",
+                        tone: "muted",
                         hoverInk: "strong",
                         hoverSurface: "lift",
-                        className: `atlas-touch-floor w-full ${PANE_ROW_INSET} text-body`,
+                        className: `atlas-touch-floor w-full gap-2 ${PANE_ROW_INSET} text-body`,
                       })}
                     >
+                      <Hash size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
                       <span className="min-w-0 flex-1 truncate text-left">{line.text}</span>
                     </button>
                   ) : (

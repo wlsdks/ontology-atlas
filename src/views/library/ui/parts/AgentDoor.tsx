@@ -44,12 +44,21 @@ import { buttonVariants } from "@/shared/ui";
  * to one by `tests/e2e/library-spine.spec.ts`, because the same sentence twice ~200px
  * apart is what design-interaction measured as a defect), and the answer reader prints
  * `answers.refreshUnavailable` on a screen of its own. The source pane's own
- * `compileNote` is the third site and follows the same rule.
+ * `compileNote` is the third site and follows the same rule. The index column's no-agent
+ * notice (2026-09-25) is the fourth: it replaces the two dead Check and Compile doors in
+ * the installed app once detection has found no runtime, and ends in this door.
  *
  * It is absent on the web, where the missing thing is the app itself and the existing
  * degradation card to `/download/` is the honest door.
  */
-export function AgentDoor({ testId }: { testId?: string }) {
+export function AgentDoor({
+  testId,
+  fill = false,
+}: {
+  testId?: string;
+  /** Take the width of the block it closes — the index column's no-agent notice (2026-09-25). */
+  fill?: boolean;
+}) {
   const nav = useTranslations("navRail");
   return (
     <Link
@@ -60,7 +69,7 @@ export function AgentDoor({ testId }: { testId?: string }) {
        * out of a refusal is not the strongest box on the screen. `sm` matches the Ask
        * button it sits near in step three.
        */
-      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "atlas-touch-floor max-w-full")}
+      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "atlas-touch-floor max-w-full", fill && "w-full")}
     >
       {nav("agents")}
     </Link>

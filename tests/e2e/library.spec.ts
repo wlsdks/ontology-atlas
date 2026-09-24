@@ -349,7 +349,8 @@ test.describe("the Library destination", () => {
     await expect(handover).toHaveAttribute("aria-label", /section-order/);
     await expect(handover.getByTestId("library-spine-attention-dot")).toBeAttached();
     await expect(handover).toContainText("off-template");
-    await expect(page.getByTestId("library-off-template-count")).toBeVisible();
+    // The card says it; the header strip counts it; no third copy under the shelf (2026-09-25).
+    await expect(page.getByTestId("library-off-template-count")).toHaveCount(0);
 
     /*
      * A search is an answer to a question, so the rows come back — and with them the pill
