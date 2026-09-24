@@ -18,7 +18,6 @@ import {
   EmptyState,
   InlineEditable,
   OntologyMapKindGlyph,
-  OntologyMapTraceMark,
   controlClass,
   useToast,
 } from "@/shared/ui";
@@ -37,9 +36,9 @@ import {
   useVaultDocs,
   useVaultManifest,
 } from "@/features/project-data-source";
-import { buildDocsVaultHref, findProjectDocInList, hasSeveralProjectDocs } from "@/entities/docs-vault";
-import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
-import { computeCanonicalCensus, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
+import { buildDocsVaultHref, bundledSampleSourceOf, findProjectDocInList, hasSeveralProjectDocs } from "@/entities/docs-vault";
+import { VaultConflictError, useLocalVault, useSampleSource } from "@/entities/vault-session";
+import { buildProjectOntologyMetrics, computeCanonicalCensus, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { useProjectAgent } from "../lib/use-project-agent";
@@ -54,7 +53,6 @@ import { useConstructionReviewSession } from "@/features/construction-review-loc
 import { resolveSubscribeUpdate } from "../model/resolve-subscribe-update";
 import { resolveProjectTagline } from "../model/project-tagline";
 import { stripDuplicateHeading } from "../model/strip-duplicate-heading";
-import { buildProjectOntologyMetrics } from "../model/project-ontology-metrics";
 import { buildProjectDomainComposition } from "../model/domain-composition";
 import { buildSurfaceComposition } from "../model/surface-composition";
 import { buildConnectedProjects, findRelatesGraphProjectSlugs } from "../model/connected-projects";
@@ -91,14 +89,19 @@ function ProjectDetailShell({ children, dock = null }: { children: ReactNode; do
           before `md:py-14` in the stylesheet and silently lost between 768 and 1023, leaving the
           content end 1px from the tab bar's top (measured 968.1 against a top of 967 at 768×1024).
           Replaced with a deterministic composition that does not depend on variant order. */}
-      <main id="main" tabIndex={-1} className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10 md:pt-12 lg:pb-[max(3.5rem,env(safe-area-inset-bottom))] xl:px-12">
+      {/* **One frame with the list** (2026-09-25). The inset used to live on `main` (40, then 48
+          from `xl`) with the 1600 cap inside it, while `/projects` wears `PAGE_FRAME`: the cap
+          outside and the 40 inset inside. The two sibling screens started 8px apart at 1512
+          (104 vs 112) and 40px apart at 1920 (232 vs 192). The column now carries the inset
+          inside the cap exactly as the frame does, still fed by the safe-area insets. */}
+      <main id="main" tabIndex={-1} className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-0 md:pt-12 lg:pb-[max(3.5rem,env(safe-area-inset-bottom))]">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={MOTION.base}
           // The page column is a named container: with the agent dock open the column is
           // narrower than the viewport says, and the two-track zone below reads the column.
-          className="@container/project-page mx-auto w-full max-w-[var(--page-max)]"
+          className="@container/project-page mx-auto w-full max-w-[var(--page-max)] md:pr-[max(2.5rem,env(safe-area-inset-right))] md:pl-[max(2.5rem,env(safe-area-inset-left))]"
         >
           {children}
         </motion.div>
@@ -162,14 +165,16 @@ function ProjectDetailTopBar({
       </span>
       <Link
         href={projectsListHref}
-        className={controlClass({ shape: "link", tone: "muted", className: "font-mono uppercase tracking-[var(--tracking-caps-12)] hover:text-[color:var(--color-text-primary)]" })}
+        className={controlClass({ shape: "link", size: "lg", tone: "muted", className: "break-keep hover:text-[color:var(--color-text-primary)]" })}
       >
         {t("topBarProjectsLabel")}
       </Link>
       <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
         ▸
       </span>
-      <span className="max-w-[240px] truncate font-mono text-label text-[color:var(--color-text-primary)]">
+      {/* The name in the words the page draws it, not a mono slug: the mono face drew
+          a Korean name with a double gap between its words (measured 2026-09-25). */}
+      <span aria-current="page" className="max-w-[320px] truncate text-body text-[color:var(--color-text-primary)]">
         {projectName ?? slug ?? t("topBarProjectFallback")}
       </span>
 
@@ -215,7 +220,17 @@ function ProjectDetailState({
           tone="solid"
           align="center"
           icon={<FolderSearch size={ICON_SIZE.lg} aria-hidden />}
-          title={<span data-testid={testId}>{title}</span>}
+          /* The centred pattern draws its title as body text, which is right for a one-sentence
+             state. This one has a sentence under it, so the title takes the heading step and the
+             primary ink, one step above the 14px tertiary body it sat level with. */
+          title={
+            <span
+              data-testid={testId}
+              className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+            >
+              {title}
+            </span>
+          }
           description={description}
           action={
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -227,7 +242,7 @@ function ProjectDetailState({
               </Link>
               {/* The label says "open the map" — `/` is the gateway, not the map. */}
               <Link href={'/topology/'}>
-                <Button type="button" variant="ghost" size="sm">
+                <Button type="button" variant="outline" size="sm">
                   {t("stateBackToMap")}
                 </Button>
               </Link>
@@ -314,8 +329,30 @@ export function ProjectDetailPage({
   // project.md body.
   const { body: vaultBody } = useProjectBody(project?.slug ?? null);
   const bodyContent = project?.detail ?? vaultBody ?? null;
+  /*
+   * **The address picks the sample** (2026-09-25). Static export prerenders every bundled
+   * sample's project, but a static screen shows one sample, chosen elsewhere. The flagship's own
+   * URL, `/ko/project/ontology-atlas/`, therefore opened on "not in this folder" whenever the
+   * example business was the one showing. When the address names a project only another bundled
+   * sample holds, that sample is the one this visit is about, so it becomes the one showing — the
+   * whole screen then reads one vault, as `resolveStaticVaultSource` requires. An open folder is
+   * never touched: this only runs with no folder, and only for a slug a sample really holds.
+   */
+  const [sampleSource, setSampleSource] = useSampleSource();
+  const addressSample = useMemo(() => {
+    if (!slug || projectsQuery.mode !== "static") return null;
+    if (projectsQuery.projects.some((candidate) => candidate.slug === slug)) return null;
+    return bundledSampleSourceOf(slug);
+  }, [slug, projectsQuery.mode, projectsQuery.projects]);
+  const switchingSample = addressSample !== null && addressSample !== sampleSource;
+  useEffect(() => {
+    if (switchingSample && addressSample) setSampleSource(addressSample);
+  }, [switchingSample, addressSample, setSampleSource]);
   useEffect(() => {
     if (!slug) return;
+    // The sample that holds this address is about to be the one showing; the server's copy of
+    // the project stands until it is, rather than flashing "not found" for one frame.
+    if (switchingSample) return;
     let cancelled = false;
     // The static-mode fallback used to carry 15 `SEED_PROJECTS`, and their content described
     // **already-removed features as fact** (Firebase Hosting, Sigma/WebGL, a whitelist admin). The
@@ -346,6 +383,7 @@ export function ProjectDetailPage({
     projectsQuery.loaded,
     projectsQuery.error,
     slug,
+    switchingSample,
   ]);
 
   // This project's ontology nodes and relations — the hero metric strip, the mini domain map, the
@@ -587,9 +625,16 @@ export function ProjectDetailPage({
             band's own width is the fact; a name and its definition outrank four buttons, so the
             buttons are the ones that move.
           */}
-          <div className="flex flex-wrap items-start gap-3.5 @5xl/project-hero:flex-nowrap">
+          {/*
+            **One start line inside the hero** (2026-09-25). The glyph keeps its own column and
+            everything else — name, meta, definition and, once they wrap, the buttons — stands in
+            the one column beside it. The buttons used to wrap back under the glyph (x=131 at 1040
+            under a name at x=175), so the band had two left edges.
+          */}
+          <div className="flex items-start gap-3.5">
             <OntologyMapKindGlyph kind="project" size={30} className="mt-1 shrink-0" />
-            <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-8 gap-y-4 @5xl/project-hero:flex-nowrap">
+            <div className="min-w-0 flex-1 basis-[24rem]">
               <InlineEditable
                 as="h1"
                 value={displayName ?? project.name}
@@ -625,7 +670,11 @@ export function ProjectDetailPage({
                 // The cap is the column box, not a per-line `ch` count: `64ch` resolved at this
                 // element's own 14px to 534px inside a 1350px band (2026-09-19), the same three-
                 // right-edges defect the Library removed on 2026-09-19 (#1667).
-                className="mt-2.5 max-w-[var(--measure-doc-column)] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
+                // 2026-09-25: the hero carries the whole first sentence at the title step, and the
+                // overview below starts after it. It was 14px under a 580px cap, cut at 160
+                // characters, while the overview repeated the full paragraph at 16px — the lower
+                // copy outranked the hero's. The column beside the buttons is the cap now.
+                className="mt-3 max-w-[calc(var(--measure-doc-column)*1.6)] break-keep text-title leading-title text-pretty text-[color:var(--color-text-secondary)]"
               />
             </div>
             {/* `flex-none` created horizontal overflow at a 390px viewport, the read-only badge and
@@ -682,13 +731,14 @@ export function ProjectDetailPage({
                     // drew four boxes of which one could not be pressed, and the difference was a
                     // border colour. A state fact is drawn as a fact here: the folder census over the
                     // composition board is engraved text with no box, and so is this.
-                    className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-mono text-label text-[color:var(--color-text-tertiary)]"
+                    className="inline-flex min-w-0 items-center gap-1.5 py-1.5 text-label text-[color:var(--color-text-tertiary)]"
                   >
                     {t("readOnlyBadge")}
                   </span>
                   <OpenVaultCta testId="project-detail-open-vault" />
                 </div>
               )}
+            </div>
             </div>
           </div>
 
@@ -777,7 +827,7 @@ export function ProjectDetailPage({
               vault readme as well, so the same folder said 109 here and 108 one click away. */}
           <span
             data-testid="project-detail-global-census"
-            className="ml-auto hidden font-mono text-label tracking-[var(--tracking-caps-08)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] md:inline"
+            className="ml-auto hidden text-label tabular-nums text-[color:var(--color-text-tertiary)] md:inline"
           >
             {t("globalCensus", { concepts: folderCensus.conceptCount, relations: folderCensus.relationCount })}
           </span>
@@ -818,7 +868,7 @@ export function ProjectDetailPage({
               <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {t("domainsCardTitle")}
               </span>
-              <span className="font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+              <span className="text-body tabular-nums text-[color:var(--color-text-tertiary)]">
                 {domainComposition.domains.length}
               </span>
             </div>
@@ -887,8 +937,17 @@ export function ProjectDetailPage({
                   // The line is the column (`docs/DECISIONS.md`, 2026-09-12): the measure spent at
                   // the reading size. Left-aligned rather than centred, because heading, prose,
                   // contents line and door all start on one line inside a card.
-                  proseClassName={`${storyMarkdownClassName} max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))]`}
+                  // A summary card reads at the body-lg step, one below the hero's definition: at the
+                  // reading size (16) the card outranked the hero (14) it follows (2026-09-25).
+                  proseClassName={`${storyMarkdownClassName.replace("text-reading", "text-body-lg")} max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))]`}
                   coversLabel={t("bodyCovers")}
+                  leadSentence={heroTagline}
+                  sectionNames={{
+                    includes: t("bodySectionIncludes"),
+                    excludes: t("bodySectionExcludes"),
+                    uncertainty: t("bodySectionUncertainty"),
+                    competencyAnswers: t("bodySectionCompetencyAnswers"),
+                  }}
                 />
                 <Link
                   href={projectDoc ? buildDocsVaultHref({ slug: projectDoc.slug }) : "/docs/"}
@@ -916,8 +975,9 @@ export function ProjectDetailPage({
         <aside data-testid="project-detail-connected" className="flex flex-col gap-[var(--card-gap)]">
           {connectedProjects.length > 0 || folderHasSeveralProjects ? (
           <section data-testid="project-detail-connected-card" className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
+            {/* The relation trace mark that led this heading drew as a stray "--" before the
+                words (2026-09-25); the caption beside the title already names the relation. */}
             <div className="mb-2.5 flex items-baseline gap-2">
-              <OntologyMapTraceMark containment={false} />
               <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {t("connectedTitle")}
               </span>
@@ -994,60 +1054,56 @@ export function ProjectDetailPage({
 
           <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             {/*
-              What this card actually does is "copy a starting prompt so my AI can pick up reading this
-              project". Yet it was named "agent handoff" with the caption "a person does not need to
-              read this — it is for an AI agent". Owner's verdict: *"Too AI-ish."* (too AI-ish). Both
-              were right — it is internal jargon, and a negative framing ("you don't need to read this")
-              pushes the reader away while never actually saying what it does.
-
-              The order is now explanation → button → (collapsed) preview. Say what it does first, and
-              let whoever wants the code expand it.
+              **One place for agents on this page** (2026-09-19), and since 2026-09-25 **one block**
+              inside it. The card stacked two near-identical halves — a sentence, a copy button and
+              its own "preview what is copied" disclosure, twice, split by a rule. The two copies do
+              different jobs (rewrite this overview; start reading this project's map), so both stay,
+              but as two buttons in one row under one sentence, with one preview that names each.
+              Owner's earlier verdict on this card still holds: say what it does first, and let
+              whoever wants the text expand it.
             */}
-            {/*
-              **One place for agents on this page** (2026-09-19). The overview's "hand it to an
-              agent" ask stood in the body card while this card stood in the rail, so the page had
-              two agent hand-offs with near-identical names a column apart. They are one card now:
-              the specific job first, the general "read this project's map" snippet under it.
-            */}
-            <div className="mb-2">
-              <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                {t("handoffTitle")}
-              </span>
-            </div>
+            <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+              {t("handoffTitle")}
+            </h2>
             <div
               data-testid="project-detail-brief-ask"
               data-brief-state={briefIsStructured ? "structured" : "unstructured"}
               data-agent-route={agent.route}
-              className="mb-4 border-b border-[color:var(--color-divider)] pb-4"
+              className="mt-2"
             >
-              <p className="mb-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+              <p className="break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
                 {agent.route === "agent"
                   ? t("briefAskAgent")
                   : briefIsStructured
                     ? t("briefAskStructured")
                     : t("briefAskUnstructured")}
               </p>
-              {agent.route === "agent" ? (
-                <Button
-                  type="button"
-                  variant={briefIsStructured ? "outline" : "primary"}
-                  size="sm"
-                  onClick={() => agent.start(briefPrompt)}
-                  data-testid="project-detail-brief-ask-open"
-                >
-                  {t("briefAskOpen")}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {agent.route === "agent" ? (
+                  <Button
+                    type="button"
+                    variant={briefIsStructured ? "outline" : "primary"}
+                    size="sm"
+                    onClick={() => agent.start(briefPrompt)}
+                    data-testid="project-detail-brief-ask-open"
+                  >
+                    {t("briefAskOpen")}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant={briefIsStructured ? "outline" : "primary"}
+                    size="sm"
+                    onClick={() => void briefCopy.copy(briefPrompt)}
+                    data-testid="project-detail-brief-ask-copy"
+                  >
+                    {briefCopyLabel}
+                  </Button>
+                )}
+                <Button type="button" variant="outline" size="sm" onClick={handleCopyHandoff} data-testid="project-detail-handoff-copy">
+                  {handoffCopyLabel}
                 </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant={briefIsStructured ? "outline" : "primary"}
-                  size="sm"
-                  onClick={() => void briefCopy.copy(briefPrompt)}
-                  data-testid="project-detail-brief-ask-copy"
-                >
-                  {briefCopyLabel}
-                </Button>
-              )}
+              </div>
               <details className="mt-3">
                 <summary className="select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                   {t("handoffHumanCaption")}
@@ -1055,30 +1111,16 @@ export function ProjectDetailPage({
                 <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap break-keep text-[color:var(--color-text-quaternary)]">
                   {briefPrompt}
                 </pre>
+                {/* `break-keep` — Korean trips the reader when it breaks mid-word (measured
+                    2026-08-12 in this 400px rail). */}
+                <p className="mt-3 border-t border-[color:var(--color-divider)] pt-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+                  {t("handoffDesc")}
+                </p>
+                <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
+                  {handoffSnippet}
+                </pre>
               </details>
             </div>
-            {/*
-             * `break-keep` — **Korean trips the reader when it breaks mid-word** (measured 2026-08-12).
-             *
-             * This paragraph broke as 「i peurojeok|iteo-ui map-eul」 in the 400px rail (362px real width).
-             * Instrument: a `Range` per character reveals the characters on either side of the line
-             * break — both Korean with no space means mid-word. The cause is `word-break: normal`, and
-             * this repository already used `break-keep` elsewhere.
-             */}
-            <p className="mb-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-              {t("handoffDesc")}
-            </p>
-            <Button type="button" variant="outline" size="sm" onClick={handleCopyHandoff}>
-              {handoffCopyLabel}
-            </Button>
-            <details className="mt-3">
-              <summary className=" select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-                {t("handoffHumanCaption")}
-              </summary>
-              <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
-                {handoffSnippet}
-              </pre>
-            </details>
           </section>
         </aside>
       </section>

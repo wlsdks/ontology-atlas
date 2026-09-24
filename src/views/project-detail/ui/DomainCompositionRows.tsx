@@ -126,13 +126,14 @@ function DomainRow({
           shape: "row",
           size: "sm",
           className:
-            "-mx-1.5 w-[calc(100%+0.75rem)] gap-2 px-1.5 py-0 hover:bg-[color:var(--color-overlay-1)]",
+            "-mx-1.5 w-[calc(100%+0.75rem)] gap-2 px-1.5 py-1.5 hover:bg-[color:var(--color-overlay-1)]",
         })}
       >
         <span className="min-w-0 flex-1">
           <DomainCapacityBar
             row={domain}
             labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
+            tail="inline"
           />
         </span>
         {/*

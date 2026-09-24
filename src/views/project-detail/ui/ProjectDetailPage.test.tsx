@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 
 import { LocalVaultProvider } from "@/entities/vault-session";
+import { resetSampleSourceCacheForTests } from "@/shared/lib/sample-source";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectDetailPage } from "./ProjectDetailPage";
@@ -281,6 +282,9 @@ describe("ProjectDetailPage", () => {
   beforeEach(() => {
     // The tab is URL state, so it is reset between tests to stop it leaking.
     nav.search = "";
+    // The page may pick the bundled sample its address names; each test starts from none chosen.
+    localStorage.clear();
+    resetSampleSourceCacheForTests();
     mocks.vaultBody = null;
     mocks.projects = [];
     mocks.projectsMode = "static";
@@ -307,6 +311,30 @@ describe("ProjectDetailPage", () => {
       readFile: vi.fn(),
       inputProps: {},
     };
+  });
+
+  // The flagship's canonical address opened on "not in this folder" whenever the example business
+  // was the sample showing (measured 2026-09-25 at /ko/project/ontology-atlas/). The address names a
+  // project only the dogfood sample holds, so that sample becomes the one showing.
+  it("shows the bundled sample its address names instead of a not-found dead end", async () => {
+    mocks.projects = [];
+    mocks.projectsMode = "static";
+    renderPage();
+
+    // Until the switched sample's projects arrive, the server's copy of the project stands: the
+    // first frame is the page, not the not-found state.
+    expect(screen.queryByTestId("project-detail-not-found")).not.toBeInTheDocument();
+    expect(screen.getByTestId("project-detail-composition")).toBeInTheDocument();
+    await waitFor(() => expect(localStorage.getItem("demo:sample-source:v1")).toBe("dogfood"));
+  });
+
+  it("never changes the sample while a folder is open", async () => {
+    mocks.projects = [];
+    mocks.projectsMode = "local";
+    renderPage();
+
+    await waitFor(() => expect(screen.getByTestId("project-detail-not-found")).toBeInTheDocument());
+    expect(localStorage.getItem("demo:sample-source:v1")).toBeNull();
   });
 
   it("local source가 확정되면 같은 slug의 static initial fact를 지운다", async () => {
@@ -411,6 +439,8 @@ describe("ProjectDetailPage", () => {
   });
 
   it("opens one local review result below the hero without persisting it", async () => {
+    // The showing sample holds this project, so nothing else on the page writes storage either.
+    mocks.projects = [baseProject()];
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     const parsed = await import("@/entities/construction-review").then(({ parseConstructionReviewEnvelope }) =>
@@ -558,7 +588,7 @@ describe("ProjectDetailPage", () => {
     renderPage();
 
     expect(screen.getByTestId("project-detail-global-census")).toHaveTextContent(
-      "WHOLE FOLDER · 6 CONCEPTS · 3 RELATIONS",
+      "Whole folder · 6 concepts · 3 relations",
     );
   });
 
