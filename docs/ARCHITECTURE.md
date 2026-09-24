@@ -430,8 +430,9 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   Its Ontology lane registers `kind: "ontology"` read-only ACP review rounds: the runner may
   read `atlas-vault` and source evidence, records a bounded review summary, and refuses every
   ontology/file write and `finalize_project_meaning`. Its Documents lane opens the existing
-  Library round registration and ledger. The map's contextual Automations chip opens the
-  Ontology lane; Library's round header opens the Documents lane. No scheduler runs while the
+  Library round registration and ledger. The rail's Automations destination opens on the
+  Ontology lane (the map no longer repeats it as a toolbar chip, 2026-09-24); Library's round
+  header opens the Documents lane. No scheduler runs while the
   web build lacks a native folder root.
 - `src/entities/library-collection/` owns the compatible `v1` saved-constellation
   schema and UID-based member resolution. The selected vault sidecar is shared by

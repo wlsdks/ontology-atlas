@@ -290,10 +290,20 @@ async function drawnNodes(page: Page): Promise<DrawnNode[]> {
   );
 }
 
-/** A canvas point with no drawn disc within 40 px — clicking it clears the focus. */
+/**
+ * A canvas point with no drawn disc within 40 px — clicking it clears the focus.
+ *
+ * The point must also reach the canvas itself. The map's chrome floats over it, and
+ * "no disc here" is not "nothing here": once the toolbar's search lane moved to the
+ * free map's left edge (2026-09-24), the first empty point this scan found, 360 px
+ * in and 40 px down, was the Expand all tile, and the "spare" click expanded the map
+ * under the next measurement.
+ */
 async function emptyPoint(page: Page): Promise<{ x: number; y: number }> {
   return page.evaluate(() => {
-    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const canvasEl = document.querySelector<HTMLElement>('[data-testid="ontology-map-canvas"]')!;
+    const canvas = canvasEl.getBoundingClientRect();
+    const bare = (x: number, y: number) => document.elementFromPoint(canvas.x + x, canvas.y + y) === canvasEl;
     const nodes = (
       window as unknown as {
         __atlasMap: { nodes: () => Array<{ x: number; y: number; radius: number; hidden: boolean }> };
@@ -303,7 +313,7 @@ async function emptyPoint(page: Page): Promise<{ x: number; y: number }> {
       .filter((n) => !n.hidden);
     for (let y = 40; y < canvas.height - 40; y += 20) {
       for (let x = 360; x < canvas.width - 90; x += 20) {
-        if (nodes.every((n) => Math.hypot(n.x - x, n.y - y) > n.radius + 40)) return { x, y };
+        if (nodes.every((n) => Math.hypot(n.x - x, n.y - y) > n.radius + 40) && bare(x, y)) return { x, y };
       }
     }
     return { x: canvas.width - 40, y: canvas.height - 40 };

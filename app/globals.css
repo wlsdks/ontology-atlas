@@ -5162,11 +5162,11 @@ body *::-webkit-scrollbar {
    so it reflects automatically, but the fixed node inspector covers above the column, requiring separate reservation. Moving left by half the right inset equal to the panel width places the command column
    at the center of the actual remaining map area excluding the inspector. It is not pixel-per-screen or chat-width constant, but the sum of current design tokens. */
 /* Since 2026-09-24 the reserve lands on the whole top toolbar
-   (`topology-top-toolbar`), which centres the search lane between its own left and
-   right edges while the node inspector owns the right rail (the utility lane is not
-   mounted then). Pulling the right edge in by the inspector's width plus its inset
-   puts that centre where the old `left: 50% - (panel + inset) / 2` put it, and the
-   2rem is the toolbar's own `xl` inset. The toolbar also carries
+   (`topology-top-toolbar`), which holds the search lane at its left edge (since the
+   balance fix of 2026-09-24; it used to centre it) while the node inspector owns the
+   right rail (the utility lane is not mounted then). Pulling the right edge in by the
+   inspector's width plus its inset keeps a wrapped or truncating lane clear of the
+   inspector, and the 2rem is the toolbar's own `xl` inset. The toolbar also carries
    `data-agent-dock-adjacent-rail`; its `left` moves when INDEX opens or closes, so
    the transition list below names `left` as well as `right`. */
 @media (min-width: 1280px) {
