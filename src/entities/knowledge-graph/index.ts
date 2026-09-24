@@ -113,7 +113,6 @@ export {
   buildReachabilityIndex,
   computeEdgeTypeDistribution,
   computeDegreeCentrality,
-  countConnectedDocuments,
   formatAgentPostChangeSyncPacket,
   MEANINGFUL_ONTOLOGY_KINDS,
   flattenTree,
@@ -130,6 +129,8 @@ export type {
   OntologyTreeBuildResult,
 } from "./lib/ontology-tree";
 export { computeCanonicalCensus, isCanonicalConcept } from "./lib/ontology-tree/canonical-census";
+export { buildProjectOntologyMetrics } from "./lib/project-ontology-metrics";
+export type { ProjectOntologyMetrics } from "./lib/project-ontology-metrics";
 export type { CanonicalCensus } from "./lib/ontology-tree/canonical-census";
 export { buildConnections, groupConnectionsByRole, groupConnectionsByDirection } from "./lib/ontology-tree/connections";
 export type { ConnectionSourceEdge, ConnectionSourceNode, DatasheetConnection } from "./lib/ontology-tree/connections";

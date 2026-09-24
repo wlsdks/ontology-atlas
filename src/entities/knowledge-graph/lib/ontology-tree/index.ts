@@ -55,4 +55,4 @@ export {
   selectRecentVaultDocs,
 } from "./recent-changes";
 export type { DomainCensusRow } from "./domain-census";
-export { computeDomainCensusRows, countConnectedDocuments, domainCensusById } from "./domain-census";
+export { computeDomainCensusRows, domainCensusById } from "./domain-census";

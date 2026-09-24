@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../model/types";
 import { buildProjectOntologyMetrics } from "./project-ontology-metrics";
 
 function n(id: string, kind: string, projectIds: string[] = []): KnowledgeGraphNode {
