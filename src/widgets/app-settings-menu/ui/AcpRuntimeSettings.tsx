@@ -319,6 +319,34 @@ export function AcpRuntimeSettings({
 
   const ready = (runtimes ?? []).filter((r) => isRuntimeUsable(r.state));
   const others = (runtimes ?? []).filter((r) => !isRuntimeUsable(r.state));
+  /** What a person can make ready: a sign-in first (one terminal run), then the installs. */
+  const nextUp = others
+    .filter((r) => r.state !== 'cli-unknown')
+    .sort((a, b) => nextStepRank(a.state) - nextStepRank(b.state));
+  /** What Atlas cannot detect on this computer, whatever is really installed. */
+  const unknown = others.filter((r) => r.state === 'cli-unknown');
+
+  /*
+   * The door to the setup window stands on the first shelf group's heading, whichever that is.
+   * ⚠️ **With nothing confirmed, the door is the emphasis** (see the shelf's note below).
+   */
+  const searchChip = (
+    <Chip
+      size="lg"
+      tone={ready.length === 0 ? 'accentOnTint' : 'secondary'}
+      data-testid="app-settings-runtimes-others-toggle"
+      aria-haspopup="dialog"
+      onClick={() => openOthers('')}
+      className={
+        ready.length === 0
+          ? `${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]`
+          : `${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`
+      }
+    >
+      <Search size={ICON_SIZE.md} aria-hidden />
+      {t('othersSearchLabel')}
+    </Chip>
+  );
 
   /*
    * **The re-scan press belongs to the group it re-scans** (2026-09-20).
@@ -520,99 +548,80 @@ export function AcpRuntimeSettings({
              * live in these rows, so the chip carries the indigo rather than making somebody find
              * a quiet control to reach the only answer on the screen (walkthrough, 2026-08-20 —
              * the same reasoning that used to auto-expand the fold).
+             *
+             * ── The shelf, grouped by what a person can do next (round 5, 2026-09-25) ────────
+             * The page names the other tools as a shelf of marks (round 3: the tab otherwise ended
+             * 600px above the window's bottom edge). It used to follow registry order, so the
+             * tools a person could act on — Codex waiting for a sign-in, a dozen waiting for an
+             * install — sat among 29 tiles repeating 「Not checked」 at the same weight, and the one
+             * useful fact (which tool can be made ready next) was lost in the wall. Now a sign-in
+             * comes first (one terminal run away), then the installs; the tools Atlas cannot
+             * detect go to their own quiet group below, with their meaning said once.
+             *
+             * ⚠️ **What this keeps from the 2026-09-07 owner call.** The complaint there was a
+             * fold of 36 full rows poured onto the page, with no search. Setting a tool up still
+             * happens in the window with a search; the page shows only a scannable index of names
+             * and a tile opens that window already searched to its tool. Falsifier: if a
+             * walkthrough shows a person reading the shelf instead of reaching the ready tools
+             * above it, the shelf goes back behind the chip.
              */
-            <section
-              className="min-w-0"
-              aria-labelledby="app-settings-runtimes-others-heading"
-              data-testid="app-settings-runtimes-others"
-            >
-              <SettingsGroupHeading
-                id="app-settings-runtimes-others-heading"
-                label={t('othersHeading', { count: others.length })}
-                trailing={
-                  <Chip
-                    size="lg"
-                    tone={ready.length === 0 ? 'accentOnTint' : 'secondary'}
-                    data-testid="app-settings-runtimes-others-toggle"
-                    aria-haspopup="dialog"
-                    onClick={() => openOthers('')}
-                    className={
-                      ready.length === 0
-                        ? `${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]`
-                        : `${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`
-                    }
+            <>
+              {nextUp.length > 0 ? (
+                <section
+                  className="min-w-0"
+                  aria-labelledby="app-settings-runtimes-others-heading"
+                  data-testid="app-settings-runtimes-others"
+                >
+                  <SettingsGroupHeading
+                    id="app-settings-runtimes-others-heading"
+                    label={t('nextHeading', { count: nextUp.length })}
+                    trailing={searchChip}
+                  />
+                  <ul
+                    data-testid="app-settings-runtimes-others-shelf"
+                    className="mt-1.5 grid min-w-0 grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4"
                   >
-                    <Search size={ICON_SIZE.md} aria-hidden />
-                    {t('othersSearchLabel')}
-                  </Chip>
-                }
-              />
-              {/*
-                ── The shelf (round 3, 2026-09-25) ─────────────────────────────────────────────
-                The rest used to be one chip, 「show the other N」, and the destination's primary
-                tab ended 600px above the window's bottom edge at 1512×949: one row, a chip, and a
-                canvas with nothing on it. What that canvas can honestly hold is the fact the chip
-                hid — **which other tools Atlas knows, and what state each is in** — so the names
-                stand here as a compact shelf of marks: four across, one line of state under each
-                name, no controls. A tile opens the same dialog, already searched to that tool,
-                where its install guide and check live.
-
-                ⚠️ **What this keeps from the 2026-09-07 owner call.** The complaint there was a
-                fold of 36 full rows poured onto the page, with no search. Setting a tool up still
-                happens in the window with a search; the page shows only a scannable index of
-                names (nine lines at 36 tools, not 36 rows). Falsifier: if a walkthrough shows a
-                person reading the shelf instead of reaching the ready tools above it, the shelf
-                goes back behind the chip.
-              */}
-              <ul
-                data-testid="app-settings-runtimes-others-shelf"
-                className="mt-1.5 grid min-w-0 grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4"
-              >
-                {others.map((runtime) => {
-                  const mark = runtimeMark(runtime);
-                  return (
-                    <li key={runtime.id} className="min-w-0">
-                      <button
-                        type="button"
-                        data-testid={`app-settings-runtimes-tile-${runtime.id}`}
-                        aria-haspopup="dialog"
-                        aria-label={t('othersTileLabel', {
-                          name: runtime.label,
-                          state: t(`state.${runtime.state}`),
-                        })}
-                        onClick={() => openOthers(runtime.label)}
-                        className={controlClass({
-                          shape: 'card',
-                          size: 'md',
-                          tone: 'secondary',
-                          hoverInk: 'strong',
-                          hoverBorder: 'strong',
-                          className:
-                            'group w-full gap-2.5 bg-[color:var(--color-overlay-1)] py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
-                        })}
-                      >
-                        {/*
-                          ⚠️ **The mark's weight follows the state, not the drawing** (round 4,
-                          2026-09-25). Forty white brand plates at full strength made the shelf the
-                          loudest thing on the tab, heavier than the one tool that can open a chat
-                          above it. Nothing on this shelf is usable yet, so its marks step back to
-                          60% and come forward under the pointer or focus — the tile that is about
-                          to be pressed is the one at full weight.
-                        */}
-                        <span className="flex shrink-0 opacity-60 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)] group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none">
-                          <ProductMark icon={mark.icon} ink={mark.ink} monogram={runtime.label} />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-body">{runtime.label}</span>
-                          <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
-                            {t(`state.${runtime.state}`)}
-                          </span>
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                    {nextUp.map((runtime) => (
+                      <ShelfTile key={runtime.id} runtime={runtime} onOpen={openOthers} />
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+              {unknown.length > 0 ? (
+                /*
+                 * ── What Atlas cannot detect, said once (round 5) ──────────────────────────────
+                 * 「Not checked」 was the second line of 29 tiles and was explained only inside the
+                 * dialog, so on the page it read as a detection failure repeated 29 times. The
+                 * heading now names the state and one sentence under it says its effect; the
+                 * tiles drop the state line and step back to borderless, name-only entries —
+                 * still pressable, still the way to that tool's install guide.
+                 */
+                <section
+                  className="min-w-0"
+                  aria-labelledby="app-settings-runtimes-unknown-heading"
+                  data-testid={nextUp.length > 0 ? 'app-settings-runtimes-unknown' : 'app-settings-runtimes-others'}
+                >
+                  <SettingsGroupHeading
+                    id="app-settings-runtimes-unknown-heading"
+                    label={t('unknownHeading', { count: unknown.length })}
+                    trailing={nextUp.length > 0 ? null : searchChip}
+                  />
+                  <p
+                    data-testid="app-settings-runtimes-unknown-shelf-note"
+                    className="break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]"
+                  >
+                    {t('unknownShelfNote')}
+                  </p>
+                  <ul
+                    data-testid="app-settings-runtimes-unknown-shelf"
+                    className="mt-1 grid min-w-0 grid-cols-2 gap-x-2 md:grid-cols-3 xl:grid-cols-4"
+                  >
+                    {unknown.map((runtime) => (
+                      <ShelfTile key={runtime.id} runtime={runtime} onOpen={openOthers} quiet />
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
               <OtherRuntimesDialog
                 open={othersOpen}
                 onClose={() => setOthersOpen(false)}
@@ -622,7 +631,7 @@ export function AcpRuntimeSettings({
                 onOpenChat={onOpenChat}
                 onRuntimesChanged={() => void refresh()}
               />
-            </section>
+            </>
           ) : null}
         </>
       )}
@@ -697,7 +706,9 @@ function OtherRuntimesDialog({
         copies of one sentence is the defect this screen already went through and recorded; the
         explanation goes before the list so somebody reading in order meets it first.
       */}
-      {runtimes.some((runtime) => runtime.state === 'cli-unknown') ? (
+      {/* Only while a listed row carries that state: a tile opens this window searched to one
+          tool, and explaining 「Not checked」 above a lone 「Install needed」 row answered nothing. */}
+      {matches.some((runtime) => runtime.state === 'cli-unknown') ? (
         <p
           data-testid="app-settings-runtimes-unknown-note"
           className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
@@ -758,6 +769,107 @@ function OtherRuntimesDialog({
  */
 function isRuntimeUsable(state: AcpRuntimeStatus['state']): boolean {
   return state === 'ready' || state === 'login-unknown';
+}
+
+/**
+ * How near a tool is to usable: a sign-in is one terminal run, an install is a download, and a
+ * tool that needs a runtime first (Node, uv) or its own installer is one step further. The sort
+ * is stable, so tools in one state keep the registry's order.
+ */
+const NEXT_STEP_ORDER: readonly AcpRuntimeStatus['state'][] = [
+  'login-needed',
+  'cli-missing',
+  'node-missing',
+  'uvx-missing',
+  'binary-missing',
+];
+function nextStepRank(state: AcpRuntimeStatus['state']): number {
+  const rank = NEXT_STEP_ORDER.indexOf(state);
+  return rank === -1 ? NEXT_STEP_ORDER.length : rank;
+}
+
+/**
+ * One tool on the page's shelf: its mark and name, and — where the state differs tile to tile —
+ * that state. Pressing it opens the setup window already searched to this tool.
+ *
+ * ⚠️ **The mark's weight follows the state, not the drawing** (round 4, then round 5). Forty
+ * brand plates at full strength made the shelf the loudest thing on the tab, and at a flat 60%
+ * the few inked marks (purple, orange, violet) still outweighed the grey ones — weight that came
+ * from the drawing, not from anything about the tool. So every shelf mark rests in greyscale at
+ * 70%, and colour returns under the pointer or focus: the tile about to be pressed is the one at
+ * full weight. The undetectable group carries no marks at all — names only.
+ */
+function ShelfTile({
+  runtime,
+  onOpen,
+  quiet = false,
+}: {
+  runtime: AcpRuntimeStatus;
+  onOpen: (query: string) => void;
+  /** The undetectable group: no state line (its heading says it once), no card. */
+  quiet?: boolean;
+}) {
+  const t = useTranslations('nav.settingsMenu.runtimes');
+  const mark = runtimeMark(runtime);
+  const label = t('othersTileLabel', { name: runtime.label, state: t(`state.${runtime.state}`) });
+  if (quiet) {
+    /* A name, not a card: no plate, no border, no inset — so the names start on the same line as
+       the heading above them and the group reads as an index, not a second wall of tiles. Its
+       marks are in the setup window a press away. */
+    return (
+      <li className="min-w-0">
+        <button
+          type="button"
+          data-testid={`app-settings-runtimes-tile-${runtime.id}`}
+          data-shelf-tone="quiet"
+          aria-haspopup="dialog"
+          aria-label={label}
+          onClick={() => onOpen(runtime.label)}
+          className={controlClass({
+            shape: 'link',
+            size: 'lg',
+            tone: 'default',
+            hoverInk: 'strong',
+            className:
+              'atlas-touch-floor min-h-8 w-full min-w-0 text-left text-[color:var(--color-text-tertiary)]',
+          })}
+        >
+          <span className="min-w-0 truncate">{runtime.label}</span>
+        </button>
+      </li>
+    );
+  }
+  return (
+    <li className="min-w-0">
+      <button
+        type="button"
+        data-testid={`app-settings-runtimes-tile-${runtime.id}`}
+        data-shelf-tone="next"
+        aria-haspopup="dialog"
+        aria-label={label}
+        onClick={() => onOpen(runtime.label)}
+        className={controlClass({
+          shape: 'card',
+          size: 'md',
+          tone: 'secondary',
+          hoverInk: 'strong',
+          hoverBorder: 'strong',
+          className:
+            'group w-full gap-2.5 bg-[color:var(--color-overlay-1)] py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+        })}
+      >
+        <span className="flex shrink-0 opacity-70 grayscale transition-[opacity,filter] duration-[var(--motion-fast)] ease-[var(--motion-ease)] group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0 motion-reduce:transition-none">
+          <ProductMark icon={mark.icon} ink={mark.ink} monogram={runtime.label} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-body">{runtime.label}</span>
+          <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
+            {t(`state.${runtime.state}`)}
+          </span>
+        </span>
+      </button>
+    </li>
+  );
 }
 
 /**
@@ -869,9 +981,17 @@ function RuntimeRow({
              * Offered only for tools with a gate. Opening a conversation with an ungated tool would break the promise this screen makes one sentence above (it asks first before going outside the folder).
              */}
             {isUsable && isGuardedRuntime(runtime.id, runtime.isolated) ? (
+              /*
+               * ⚠️ **Filled: the tab's one winner** (round 5, 2026-09-25). As a tinted outline pill
+               * beside 「Check connection」 it weighed barely more than its neighbour, and the shelf's 40
+               * tiles below won the eye by area. Opening a chat is the only thing on this tab a
+               * person can do right now, so it takes the ramp's one filled press (`onAccent`, the
+               * same tone the web tab's 「Get the Mac app」 uses). The inset indigo focus ring vanishes on
+               * an indigo fill, so this press takes the primary ink for its ring.
+               */
               <Chip
                 size="lg"
-                tone="accentOnTint"
+                tone="onAccent"
                 data-testid={`app-settings-runtime-chat-${runtime.id}`}
                 /*
                  * **The verb alone, and the sentence as the name** (2026-09-19). The row already
@@ -883,7 +1003,7 @@ function RuntimeRow({
                  */
                 aria-label={t('openChat')}
                 onClick={() => onOpenChat(runtime.id)}
-                className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
+                className="shrink-0 focus-visible:ring-[color:var(--color-text-primary)]"
               >
                 <MessageSquare size={ICON_SIZE.md} aria-hidden />
                 {t('openChatShort')}

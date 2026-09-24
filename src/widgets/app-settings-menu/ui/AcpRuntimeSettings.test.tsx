@@ -742,6 +742,51 @@ describe('runtime rows: marks, columns and the result block (design polish, 2026
 });
 
 describe('the other-tools shelf (round 3, 2026-09-25)', () => {
+  it('puts what a person can make ready first — a sign-in, then installs — and says the undetectable state once', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'amp', state: 'cli-unknown' }),
+      makeRuntime({ id: 'cursor', state: 'cli-missing' }),
+      makeRuntime({ id: 'devin', state: 'binary-missing' }),
+      makeRuntime({ id: 'codex-acp', isolated: true, state: 'login-needed' }),
+      makeRuntime({ id: 'zed', state: 'cli-unknown' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    const next = screen.getByTestId('app-settings-runtimes-others-shelf');
+    expect(
+      within(next).getAllByRole('button').map((b) => b.getAttribute('data-testid')),
+    ).toEqual([
+      'app-settings-runtimes-tile-codex-acp',
+      'app-settings-runtimes-tile-cursor',
+      'app-settings-runtimes-tile-devin',
+    ]);
+    const unknown = screen.getByTestId('app-settings-runtimes-unknown-shelf');
+    expect(within(unknown).getAllByRole('button')).toHaveLength(2);
+    // The state is said by the group, not by every tile; the tile's accessible name keeps it.
+    expect(within(unknown).queryByText('state.cli-unknown')).toBeNull();
+    expect(screen.getByTestId('app-settings-runtimes-unknown-shelf-note')).toHaveTextContent('unknownShelfNote');
+    expect(within(unknown).getByTestId('app-settings-runtimes-tile-amp')).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('state.cli-unknown'),
+    );
+    // One door to the setup window, on the first group's heading.
+    expect(screen.getAllByTestId('app-settings-runtimes-others-toggle')).toHaveLength(1);
+  });
+
+  it('with only undetectable tools, the door moves to that group', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'amp', state: 'cli-unknown' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    expect(screen.queryByTestId('app-settings-runtimes-others-shelf')).toBeNull();
+    expect(
+      within(screen.getByTestId('app-settings-runtimes-others')).getByTestId('app-settings-runtimes-others-toggle'),
+    ).toBeInTheDocument();
+  });
+
   it('names every other tool on the page as a tile, without its row controls', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
@@ -770,7 +815,7 @@ describe('the other-tools shelf (round 3, 2026-09-25)', () => {
     expect(screen.getByTestId('app-settings-runtimes-others-search')).toHaveValue('cursor');
     // The dialog names its errand; the count stays with the shelf heading on the page.
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('othersDialogTitle');
-    expect(screen.getByText(`othersHeading:${JSON.stringify({ count: 2 })}`)).toBeInTheDocument();
+    expect(screen.getByText(`nextHeading:${JSON.stringify({ count: 2 })}`)).toBeInTheDocument();
     expect(screen.getByTestId('app-settings-runtime-cursor')).toBeInTheDocument();
     expect(screen.queryByTestId('app-settings-runtime-gemini')).toBeNull();
   });
