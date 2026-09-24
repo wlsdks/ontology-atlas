@@ -307,10 +307,12 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
         .filter((rect): rect is DOMRect => Boolean(rect))
         .map((rect) => ({ y: Math.round(rect.y), height: Math.round(rect.height) })),
     );
+    /* 40, the standard `md` control height: at 44 the toolbar stood beside the Harness shell's
+       40px tabs as a different product (design audit, 2026-09-25). */
     expect(toolbarGeometry.map((rect) => rect.height), `${where} toolbar heights`).toEqual([
-      44,
-      44,
-      44,
+      40,
+      40,
+      40,
     ]);
     expect(new Set(toolbarGeometry.map((rect) => rect.y)).size, `${where} toolbar alignment`).toBe(1);
 

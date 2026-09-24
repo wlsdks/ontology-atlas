@@ -280,10 +280,10 @@
       "guides": "지침",
       "structure": "구조",
       "coverage": "커버리지",
-      "architecture": "아키텍처",
-      "beforeSource": "하네스"
+      "architecture": "아키텍처"
     },
     "sentence": "이 저장소는 에이전트에게 문서 {documents}개로 말하고, 검사 {checks}개를 걸어두었어요.",
+    "structureSentence": "이 저장소는 하네스 자리 {total}곳 중 {filled}곳을 채워 두었어요.",
     "checksBreakdown": "훅 스크립트 {hooks}개 · .githooks/ 파일 {gitHooks}개 · package.json 스크립트 {scripts}개",
     "checksHint": "「검사」는 서로 다른 보호 장치가 아니라 선언을 세요. Claude Code 용과 Codex 용으로 미러링된 훅은 보호 장치 하나에 스크립트 둘이고, .githooks/에는 훅 옆에 도우미 모듈도 있으며, 스크립트 목록에는 감시 모드와 한 번의 실행이 다시 도는 레인도 들어 있어요. 세는 대상은 설정이 이름을 부른 훅 스크립트 중 실제로 파일이 있는 것, .githooks/ 안의 파일, package.json의 lint·typecheck·test 스크립트예요. 실제로 도는지, 무언가를 잡아낸 적이 있는지는 여기서 알 수 없어요.",
     "retry": "다시 읽기",
@@ -307,6 +307,7 @@
     "capNone": "한도 없음",
     "capMerged": "Codex는 루트 AGENTS.md와 작업 경로의 중첩 AGENTS.md를 합쳐서 읽고, 합친 길이가 한도를 넘으면 조용히 잘라내요. 막대는 합친 길이예요.",
     "capMergedValue": "{used} / {cap} (합친 길이)",
+    "capMergedShare": "한도 {cap}의 {percent}% · 합친 길이",
     "capOver": "한도 초과",
     "pairCompared": "참고용 {count}쌍 비교",
     "pairMatchesTwin": "내용 같음",
@@ -339,7 +340,7 @@
     "diagramParts": "구성 {count}개",
     "diagramEvidence": "파일 근거",
     "diagramSelectPart": "구성을 고르면 근거가 이어져요",
-    "diagramHint": "파일에서 확인한 구성 연결이에요. 항목을 누르면 근거를 볼 수 있어요. 실제 실행 기록은 아니에요.",
+    "diagramHint": "항목을 누르면 그 부속을 뒷받침하는 파일이 열려요.",
     "noSourceBody": "하네스는 에이전트가 실제로 고치는 저장소의 것이에요. 프로젝트에 소스 폴더를 연결하면 이 목록이 채워져요. 폴더가 두 곳 이상 연결되어 있으면, 어느 쪽 하네스인지 저희가 고르지 않아요.",
     "failed": "읽지 못했어요",
     "empty": "에이전트 지침 파일이 없어요",
@@ -419,7 +420,7 @@
     "reachMirroredLabel": "선언된 짝의 Codex 사본",
     "reachNamedDirectLabel": "지침이 직접 부른 것",
     "anatomyTitle": "하네스 구조",
-    "anatomyCaption": "저장소에서 확인한 지침·차단·검사를 에이전트 작업과의 관계에 따라 놓았어요. 숫자는 구성 근거의 수이지 실행 횟수나 점수가 아니에요.",
+    "anatomyCaption": "저장소 파일에서 찾은 지침·차단·검사를 에이전트 작업과의 관계에 따라 놓았어요. 숫자는 찾은 근거의 수이고, 실행 기록이나 점수가 아니에요.",
     "anatomyProvenanceLabel": "이 구분은 어디서 왔나",
     "anatomyProvenance": "부속을 나누는 말은 공개된 네 곳이 대체로 같게 써요. Fowler·Böckeler 「Harness engineering for coding agent users」가 알려주는 것(guides)과 지켜보는 것(sensors)을 나눴고, arXiv 2609.00006 「Harness Engineering: Anatomy, Architecture, and Evolution of Coding Agents」(CC BY 4.0)가 일곱 부속(루프·모델 연결·도구·기억과 맥락·안전과 권한·오케스트레이션·확장)을 셌어요. OpenAI 「Harness engineering」과 Codex AGENTS.md 문서는 뿌리에서 아래로 합쳐 읽는 지침 사슬을, Anthropic 「Effective harnesses for long-running agents」는 맥락 창이 바뀌어도 일이 이어지게 하는 장치를 설명해요. 일곱 중 다섯은 저장소 파일로 셀 수 있고, 루프와 모델은 셀 수 없어요.",
     "anatomyTellsCaption": "에이전트가 손대기 전에 읽거나 받는 것이에요.",
@@ -1341,7 +1342,6 @@
         "flat": "평면",
         "territories": "영역",
         "galaxy": "갤럭시",
-        "ownership": "원뿔",
         "strata": "층",
         "coupling": "뉴런"
       },
@@ -1349,8 +1349,7 @@
         "flat": "보통의 2D 지도",
         "territories": "도메인마다 모든 역량을 이름과 함께 펼친 모양",
         "galaxy": "별자리처럼 온 지도를 하늘로 보는 모양",
-        "ownership": "담긴 구조대로 원뿔이 층층이 매달린 모양",
-        "strata": "같은 담김 구조를 층으로 나눠 읽는 모양",
+        "strata": "담김 구조를 빛나는 층으로 나눠 읽는 모양",
         "coupling": "관계가 가까운 것끼리 모인 모양"
       },
       "mapViewAriaLabel": "지도 보기",
@@ -3214,6 +3213,18 @@
     "explanationEdit": {
       "saved": "설명 저장됨",
       "error": "설명을 저장하지 못했어요."
+    },
+    "light3d": {
+      "legendLabel": "3D 지도 범례",
+      "kindsHeading": "종류",
+      "evidenceHeading": "근거",
+      "current": "현재 {count, number}",
+      "stale": "낡음 {count, number}",
+      "unknown": "모름 {count, number}",
+      "noteReading": "Git 기록을 읽는 중이에요. 다 읽기 전까지는 모두 모름이에요.",
+      "noteAppOnly": "근거는 앱에서 Git 기록으로 재요. 여기서는 모두 모름이에요.",
+      "noteUnreadable": "Git 기록을 읽지 못해 모두 모름이에요.",
+      "noteNoPaths": "코드 경로를 적은 개념이 없어 모두 모름이에요."
     },
     "analysis": {
       "healthStale": "오래된 근거",
@@ -5749,6 +5760,8 @@
       "compileFailed": "에이전트 턴을 시작하지 못했어요: {reason}",
       "compileWebLimit": "문서를 쓰려면 이 컴퓨터에서 도는 코딩 에이전트가 필요하고, 그건 앱만 띄울 수 있어요. 문서를 읽고 고치는 일은 여기서도 돼요.",
       "compileWebGetApp": "앱 받기",
+      "agentMissing": "코딩 에이전트를 연결하면 서식 확인과 원문 정리를 맡길 수 있어요.",
+      "agentMissingDoor": "에이전트 연결하기",
       "offTemplateReason": "위키 서식에 맞지 않아요: {code}. 문서를 열면 무엇을 고칠지 볼 수 있어요.",
       "offTemplateAriaLabel": "이 문서가 위키 서식과 다른 점",
       "offTemplateTitle": "고칠 곳 {count, number}개 · 서식",

@@ -19,7 +19,7 @@ import {
  * vault at 1920 that left the median node rim at **1.15 : 1** against the pixels
  * beside it, with 117 of 125 nodes under 3 : 1 and 92 under 1.5 : 1: a hundred
  * shapes whose edge you cannot see. The flat map holds its own painted nodes to
- * the 3 : 1 ink floor, and the same four stroke tokens are what the cone paints
+ * the 3 : 1 ink floor, and the same four stroke tokens are what the 3D map paints
  * with — only the alpha differed.
  *
  * ## What this locks
@@ -34,10 +34,10 @@ import {
  * line-width attenuation, the perspective size and the painter's-algorithm draw
  * order all still carry depth. Only the edge has a floor.
  *
- * A pixel measurement is deliberately *not* the gate. In a cone of 125 nodes the
+ * A pixel measurement is deliberately *not* the gate. In a 3D view of 125 nodes the
  * "adjacent background" is often another node's containment edge or its own base
  * ring rather than the ground, so a screen sample measures the crowd as much as
- * the rim; `tests/e2e/map-3d-cone-drawing.spec.ts` records that number as an
+ * the rim; the retired Cone drawing spec recorded that number as an
  * observation, and this file owns the floor.
  */
 

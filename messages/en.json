@@ -280,10 +280,10 @@
       "guides": "Guides",
       "structure": "Structure",
       "coverage": "Coverage",
-      "architecture": "Architecture",
-      "beforeSource": "Harness"
+      "architecture": "Architecture"
     },
     "sentence": "This repository speaks to agents through {documents, plural, one {# document} other {# documents}} and has {checks, plural, one {# check} other {# checks}} in place.",
+    "structureSentence": "This repository fills {filled} of the {total} places a harness has.",
     "checksBreakdown": "{hooks, plural, one {# hook script} other {# hook scripts}} · {gitHooks, plural, one {# file under .githooks/} other {# files under .githooks/}} · {scripts, plural, one {# package.json script} other {# package.json scripts}}",
     "checksHint": "\"Checks\" counts declarations, not distinct guards: a hook mirrored for Claude Code and for Codex is two scripts for one guard, .githooks/ holds helper modules beside its hooks, and the script list includes watch mode and the lanes a single run re-runs. What it counts is hook scripts a config names that exist on disk, files under .githooks/, and package.json lint, typecheck and test scripts. Whether any of them runs, or has ever caught anything, is not something we can know from files.",
     "retry": "Read it again",
@@ -307,6 +307,7 @@
     "capNone": "No cap",
     "capMerged": "Codex reads the root AGENTS.md merged with the nested AGENTS.md on the working path, and silently truncates the merge past the cap. The bar measures the merged length.",
     "capMergedValue": "{used} / {cap} (merged)",
+    "capMergedShare": "{percent}% of the {cap} cap, merged",
     "capOver": "Over the cap",
     "pairCompared": "{count, plural, one {# reference pair compared} other {# reference pairs compared}}",
     "pairMatchesTwin": "Same content",
@@ -339,7 +340,7 @@
     "diagramParts": "{count} parts",
     "diagramEvidence": "File evidence",
     "diagramSelectPart": "Select a part to trace its source",
-    "diagramHint": "Composition found in files. Select a part to inspect its evidence. This is not an execution trace.",
+    "diagramHint": "Select a part to open the files behind it.",
     "noSourceBody": "The harness belongs to the repository agents actually edit. Connect a source folder to a project and this list fills in. When more than one folder is connected we do not pick which harness you meant.",
     "failed": "Could not read it",
     "empty": "No agent guide files",
@@ -419,7 +420,7 @@
     "reachMirroredLabel": "the Codex copy of a declared pair",
     "reachNamedDirectLabel": "named by a guide directly",
     "anatomyTitle": "Harness structure",
-    "anatomyCaption": "Repository-defined guidance, gates, and checks are placed by how they relate to an agent's work. Counts describe recorded components, not observed runs or scores.",
+    "anatomyCaption": "Guidance, gates and checks found in the repository's files, placed by how they relate to an agent's work. Counts are recorded parts, not runs or scores.",
     "anatomyProvenanceLabel": "Where these parts come from",
     "anatomyProvenance": "Four public sources name roughly the same parts. Fowler and Böckeler, “Harness engineering for coding agent users”, split guides from sensors. arXiv 2609.00006, “Harness Engineering: Anatomy, Architecture, and Evolution of Coding Agents” (CC BY 4.0), counts seven subsystems: agent loop, model integration, tools, memory and context, safety and permissions, orchestration, extensibility. OpenAI’s “Harness engineering” and the Codex AGENTS.md guide describe the instruction chain merged root-down, and Anthropic’s “Effective harnesses for long-running agents” describes what carries work across context windows. Five of the seven are countable from a checkout. The loop and the model are not.",
     "anatomyTellsCaption": "What an agent reads or is handed before it touches anything.",
@@ -1341,7 +1342,6 @@
         "flat": "Flat",
         "territories": "Territories",
         "galaxy": "Galaxy",
-        "ownership": "Cone",
         "strata": "Strata",
         "coupling": "Neural"
       },
@@ -1349,8 +1349,7 @@
         "flat": "the ordinary 2D map",
         "territories": "every capability named, gathered around its domain",
         "galaxy": "the whole map drawn as a sky of stars",
-        "ownership": "stacked in tiers, the way things are contained",
-        "strata": "the same containment, read level by level",
+        "strata": "containment, read level by lit level",
         "coupling": "clustered by what relates to what"
       },
       "mapViewAriaLabel": "Map view",
@@ -3214,6 +3213,18 @@
     "explanationEdit": {
       "saved": "Explanation saved",
       "error": "Could not save the explanation."
+    },
+    "light3d": {
+      "legendLabel": "3D map key",
+      "kindsHeading": "Kinds",
+      "evidenceHeading": "Evidence",
+      "current": "Current {count, number}",
+      "stale": "Stale {count, number}",
+      "unknown": "Unknown {count, number}",
+      "noteReading": "Reading the Git history. Until it is read, everything is unknown.",
+      "noteAppOnly": "The app measures evidence from Git history. Here, everything is unknown.",
+      "noteUnreadable": "The Git history could not be read, so everything is unknown.",
+      "noteNoPaths": "No concept names a code path, so everything is unknown."
     },
     "analysis": {
       "healthStale": "stale evidence",
@@ -5749,6 +5760,8 @@
       "compileFailed": "Could not start the agent turn: {reason}",
       "compileWebLimit": "Writing pages needs a coding agent running on this computer, which only the app can start. Reading and editing the pages works here.",
       "compileWebGetApp": "Get the app",
+      "agentMissing": "Connect a coding agent to check page format and compile sources into pages.",
+      "agentMissingDoor": "Connect an agent",
       "offTemplateReason": "Does not fit the wiki template: {code}. Open the page to see what to change.",
       "offTemplateAriaLabel": "How this page differs from the wiki template",
       "offTemplateTitle": "{count, number} to fix · page template",

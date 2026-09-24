@@ -42,8 +42,22 @@ describe("View3dMenu — 보기 고르개", () => {
   it("세 줄이다 — 평면·돔·구름이 한 목록에 있다", () => {
     mount();
     expect(screen.getByTestId("topology-view-3d-choice-flat")).toBeInTheDocument();
-    expect(screen.getByTestId("topology-view-3d-choice-ownership")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-view-3d-choice-strata")).toBeInTheDocument();
     expect(screen.getByTestId("topology-view-3d-choice-coupling")).toBeInTheDocument();
+  });
+
+  /*
+   * The Cone left the picker on 2026-09-25. A reader who had it stored still sees a
+   * chosen row — Strata, the containment view that replaced it — rather than a list
+   * with nothing checked.
+   */
+  it("offers no Cone, and a stored Cone reads as Strata chosen", () => {
+    window.localStorage.setItem("atlas.appearance.view3d", "on");
+    window.localStorage.setItem("atlas.appearance.map-arrangement", "ownership");
+    mount();
+    expect(screen.queryByTestId("topology-view-3d-choice-ownership")).toBeNull();
+    expect(screen.queryByText("원뿔")).toBeNull();
+    expect(screen.getByTestId("topology-view-3d-choice-strata")).toHaveAttribute("aria-checked", "true");
   });
 
   /*
@@ -53,7 +67,7 @@ describe("View3dMenu — 보기 고르개", () => {
    */
   it("눈에 보이는 것으로 부른다 — 화면에 「소유」·「결합」이 없다", () => {
     mount();
-    expect(screen.getByText("원뿔")).toBeInTheDocument();
+    expect(screen.getByText("층")).toBeInTheDocument();
     expect(screen.getByText("뉴런")).toBeInTheDocument();
     expect(screen.queryByText("소유")).toBeNull();
     expect(screen.queryByText("결합")).toBeNull();
@@ -61,7 +75,7 @@ describe("View3dMenu — 보기 고르개", () => {
 
   it("줄마다 무엇이 다른지 한 줄이 붙는다 — 이름만으로는 안 읽힌다", () => {
     mount();
-    for (const id of ["flat", "ownership", "coupling"]) {
+    for (const id of ["flat", "strata", "coupling"]) {
       const row = screen.getByTestId(`topology-view-3d-choice-${id}`);
       // Title plus hint, two lines. One line means the hint is missing.
       expect(row.querySelectorAll("span").length).toBeGreaterThanOrEqual(2);

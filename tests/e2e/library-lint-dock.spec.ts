@@ -226,7 +226,7 @@ test.describe("Check the wiki opens the agent dock", () => {
     const [lintBox, compileBox, fieldBox] = await Promise.all([
       lint.boundingBox(),
       page.getByTestId("library-compile").boundingBox(),
-      page.getByTestId("library-search").boundingBox(),
+      page.getByTestId("library-search-box").boundingBox(),
     ]);
     expect(lintBox!.y, "reading stands above writing").toBeLessThan(compileBox!.y);
     expect(Math.abs(lintBox!.x - compileBox!.x), "the two doors share a left edge").toBeLessThan(1);

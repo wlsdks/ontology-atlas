@@ -20,16 +20,20 @@
 }
 .source span { color: var(--color-text-primary); }
 .source code {
+  display: flex;
   min-width: 0;
-  overflow: hidden;
   margin-left: auto;
   color: var(--color-text-tertiary);
   font-size: var(--text-label);
   line-height: var(--leading-label);
   font-weight: normal;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Where it was read from, printed once: the parent in the quiet ink, the folder's own name in the
+   stronger one. A long parent gives way before the name does, so the part that identifies the
+   folder is the part that never truncates. */
+.source code .sourceName { flex: none; color: var(--color-text-secondary); }
+.source code .sourcePath { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--color-text-quaternary); }
 
 .workbench {
   display: grid;
@@ -105,20 +109,42 @@
 .slot[data-status='absent'] .slotCount { color: var(--color-text-quaternary); }
 .inlineEvidence { display: none; }
 
+/* A column of the panel, not a card floating in it: the divider runs the panel's full body, so
+   the room under a short piece of evidence reads as the column's own space rather than as a hole
+   beside the bands (design review, 2026-09-25). */
 .inspector {
   min-width: 0;
-  margin: .75rem 0 1rem;
-  padding: .25rem 0 0;
+  margin: 0;
+  padding: 1rem 0 1rem 1.25rem;
+  border-left: 1px solid var(--color-divider);
 }
 .inspectorHeading { display: flex; flex-direction: column; gap: .375rem; min-width: 0; padding: 0 0 .875rem; border-bottom: 1px solid var(--color-divider); }
 .inspectorHeading span { color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
 .inspectorHeading strong { color: var(--color-text-primary); font-size: var(--text-title); line-height: var(--leading-title); }
+.inspectorTitle { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; min-width: 0; }
+.inspectorTitle > span { flex: none; color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
+.inspectorTitle > span[data-status='absent'] { color: var(--color-text-quaternary); }
+.inlineEvidence [data-harness-detail] > ul { padding-inline: .5rem; }
 .detailEnter { animation: detailIn var(--motion-base) var(--motion-ease) both; }
 .hint { margin: 0; padding: .625rem 0 0; border-top: 1px solid var(--color-divider); color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
 
 @keyframes connectorIn { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes detailIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes detailFade { from { opacity: 0; } to { opacity: 1; } }
+
+/*
+ * **Rows take the room a tall window has.** At 1512×949 the panel ended with 134px of the window
+ * unused under it, and at 1920×1080 about 260 — the bands' rows kept the 40px a 1280×800 window
+ * needs. Heights are stepped by media query rather than grown with flex: a flex-grown row list
+ * stretches the whole panel to the window and leaves the empty space inside the card instead,
+ * and the stepped values are ones `structure fits a desktop viewport` holds at 1440×900.
+ */
+@media (min-width: 80rem) and (min-height: 58rem) {
+  .slot button { min-height: 3.5rem; }
+}
+@media (min-width: 80rem) and (min-height: 66rem) {
+  .slot button { min-height: 3.75rem; }
+}
 
 @media (max-width: 79.99rem) {
   .workbench { grid-template-columns: minmax(0, 1fr); gap: 0; }

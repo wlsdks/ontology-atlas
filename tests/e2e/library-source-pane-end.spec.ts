@@ -242,6 +242,13 @@ for (const [width, height] of [
         : false;
     });
 
+    /* The pane arrives with a 6px rise (`use-pane-arrival.ts`). A transform moves the
+       blocks but not the scroller, so a read mid-rise put the last block a pixel short of
+       the gutter (31 of 32). The gutter is a rest-state fact: read it once the pane has
+       settled. */
+    await page.waitForFunction(
+      () => document.querySelector('[data-testid="library-pane-body"]')?.getAnimations().length === 0,
+    );
     const measured = (await page.evaluate(PANE_END)) as PaneEnd | null;
     expect(measured, "원본 창을 재지 못했다").not.toBeNull();
     const pane = measured!;

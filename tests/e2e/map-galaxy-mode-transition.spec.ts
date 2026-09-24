@@ -7,7 +7,7 @@ type Camera = { x: number; y: number; scale: number };
 const camera = (page: Page) =>
   page.evaluate(() => window.__atlasMap?.camera() ?? null) as Promise<Camera | null>;
 
-async function choose(page: Page, choice: "flat" | "galaxy" | "ownership") {
+async function choose(page: Page, choice: "flat" | "galaxy" | "strata") {
   await page.locator('[data-testid="topology-view-3d"]').click();
   await page.locator(`[data-testid="topology-view-3d-choice-${choice}"]`).click();
 }
@@ -83,7 +83,7 @@ test("Flat zoom survives a Galaxy round trip and a rapid reversal", async ({ pag
 });
 
 /**
- * **Galaxy → Cone keeps the cone's own fit.** Leaving Galaxy queues the Flat
+ * **Galaxy → Strata keeps the 3D view's own fit** (the Cone this was measured on left on 2026-09-25; the fit path is shared). Leaving Galaxy queues the Flat
  * camera saved on the way in and restores it once the stars have flown home —
  * and when the view chosen on the same switch is 3D, that restore landed on top
  * of the cone's fit. Measured 2026-09-19 at 1512×806, Flat → Galaxy → Cone: the
@@ -91,7 +91,7 @@ test("Flat zoom survives a Galaxy round trip and a rapid reversal", async ({ pag
  * 0.477 instead of its fit 0.68. Flat → Cone, the same cone without the Galaxy
  * detour, is the reference frame.
  */
-test("Galaxy → Cone frames the cone, not the Flat camera saved before Galaxy", async ({ page }) => {
+test("Galaxy → Strata frames the 3D view, not the Flat camera saved before Galaxy", async ({ page }) => {
   test.setTimeout(150_000);
   await page.addInitScript(() => {
     window.localStorage.setItem("atlas.appearance.galaxy", "off");
@@ -129,7 +129,7 @@ test("Galaxy → Cone frames the cone, not the Flat camera saved before Galaxy",
     });
   };
 
-  await choose(page, "ownership");
+  await choose(page, "strata");
   const direct = await coneFrame();
   expect(direct.below, "곧장 들어간 원뿔부터 화면 밖이면 기준이 없다").toBe(0);
 
@@ -137,7 +137,7 @@ test("Galaxy → Cone frames the cone, not the Flat camera saved before Galaxy",
   await waitForFlatMap(page);
   await choose(page, "galaxy");
   await waitForMapStill(page);
-  await choose(page, "ownership");
+  await choose(page, "strata");
   const detour = await coneFrame();
 
   expect(detour.below, "갤럭시를 거쳐 온 원뿔이 화면 아래로 잘렸다").toBe(0);
