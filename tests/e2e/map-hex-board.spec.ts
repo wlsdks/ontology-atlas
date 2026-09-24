@@ -105,6 +105,67 @@ async function settled(page: Page) {
     .toBe(true);
 }
 
+test("hex board writes the address only on a real change: stale-only and 20 foreign address writes stay bounded", async ({ page }) => {
+  test.setTimeout(240_000);
+  const vault = dogfoodEvidenceVault();
+  await page.setViewportSize({ width: 1512, height: 982 });
+  // Count every history write the page makes, from before the app loads, and separately the
+  // writes that name a map view — the app's own. (The framework also re-stamps its router
+  // state once after each foreign write; that is one per foreign write, never a loop.)
+  await page.addInitScript(() => {
+    const w = window as unknown as { __historyWrites: number; __viewWrites: number };
+    w.__historyWrites = 0;
+    w.__viewWrites = 0;
+    for (const name of ["replaceState", "pushState"] as const) {
+      const original = history[name].bind(history);
+      history[name] = (...args: Parameters<History["replaceState"]>) => {
+        w.__historyWrites += 1;
+        if (String(args[2] ?? "").includes("view=")) w.__viewWrites += 1;
+        return original(...args);
+      };
+    }
+  });
+  await openHexBoard(page, vault.files, vault.changes);
+  await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-evidence", "measured", { timeout: 30_000 });
+  const writes = () => page.evaluate(() => (window as unknown as { __historyWrites: number }).__historyWrites);
+  const viewWrites = () => page.evaluate(() => (window as unknown as { __viewWrites: number }).__viewWrites);
+
+  // Stale only is board state, not address state: pressing it twice writes nothing.
+  let before = await writes();
+  await page.getByTestId("hex-board-stale-only").click();
+  await expect(page.getByTestId("hex-board-stale-only")).toHaveAttribute("aria-pressed", "true");
+  await page.waitForTimeout(1_500);
+  await page.getByTestId("hex-board-stale-only").click();
+  await page.waitForTimeout(1_500);
+  expect((await writes()) - before, "stale only wrote the address").toBeLessThanOrEqual(1);
+
+  // Another writer re-writes the address without `view` 20 times, announcing each one the way
+  // the installed app's route verifier does. The board must not answer each with a write.
+  await page.getByTestId("hex-board-stale-only").click();
+  before = await writes();
+  const viewBefore = await viewWrites();
+  await page.evaluate(async () => {
+    const bare = location.pathname;
+    for (let i = 0; i < 20; i += 1) {
+      history.replaceState({}, "", bare);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      window.dispatchEvent(new Event("app:urlchange"));
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  });
+  await page.waitForTimeout(1_500);
+  const total = (await writes()) - before;
+  const answered = (await viewWrites()) - viewBefore;
+  console.log(`[hex history] foreign=20 total writes=${total} view writes=${answered}`);
+  // The view is never written back in answer to someone else's address write (it was 20 before
+  // the fix: one per popstate, the ping-pong that tripped WebKit's limit in the app).
+  expect(answered).toBe(0);
+  // 20 foreign writes plus at most one framework re-stamp each — a bound, not a storm.
+  expect(total).toBeLessThanOrEqual(42);
+  // The board is still there and still in stale-only.
+  await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-stale-only", "true");
+});
+
 for (const viewport of [
   { width: 1512, height: 982 },
   { width: 1280, height: 800 },

@@ -3048,6 +3048,7 @@
   },
   "topology": {
     "hexBoard": {
+      "failed": "육각 판을 그리지 못해 평면 지도로 보여 드려요.",
       "canvasAriaLabel": "육각 판: 역량 하나가 한 칸, 도메인 하나가 한 판이에요. 화살표 키로 이웃 칸으로 옮겨 가요.",
       "listLabel": "육각 판의 칸 목록",
       "staleOnly": "◐ 낡음만 보기 · {count}",

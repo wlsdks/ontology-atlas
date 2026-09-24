@@ -28,6 +28,7 @@ import { FrameMeter } from "@/shared/ui/frame-meter";
 import { OntologyMap, PLAIN_TIER_REVEAL } from "@/widgets/ontology-map";
 import { Compass, HelpCircle, Play } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useState } from "react";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { TopologyTerritoriesSurface } from "./TopologyTerritoriesSurface";
@@ -233,6 +234,8 @@ export function TopologyCanvasSurface({
   } = topologyVaultReadModel;
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
   const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
+  /** The hex board threw: this session falls back to the flat map and says so in one line. */
+  const [hexFailed, setHexFailed] = useState(false);
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug, localGraphProjects, resolvedSelectionSlug } = topologyGraphProjection;
   const { mapRelationCaptions, mapReviewQuestionIds } = topologyAnalysisReview;
   const { handleClose, handleSelect } = topologyNavigationActions;
@@ -440,9 +443,12 @@ export function TopologyCanvasSurface({
                   onDrawnCountChange={handleMapFrameDrawn}
                   reducedMotion={reducedMotion}
                 />
-              ) : hexBoard ? (
+              ) : hexBoard && !hexFailed ? (
                 /* Hex board (owner decision, 2026-09-25): one tile per capability. The same
-                   selection contract as Territories — a click selects, the inspector opens. */
+                   selection contract as Territories — a click selects, the inspector opens.
+                   Its own boundary: a throw in the board falls back to the flat map with a
+                   one-line note, never the whole route or the map-level retry screen. */
+                <ErrorBoundary onError={() => setHexFailed(true)} fallback={() => null}>
                 <TopologyHexBoardSurface
                   nodes={ontologyMapGraph.nodes}
                   edges={ontologyMapGraph.edges}
@@ -462,6 +468,7 @@ export function TopologyCanvasSurface({
                   onDrawnCountChange={handleMapFrameDrawn}
                   reducedMotion={reducedMotion}
                 />
+                </ErrorBoundary>
               ) : (
               <OntologyMap
                 nodes={ontologyMapGraph.nodes}
@@ -595,6 +602,15 @@ export function TopologyCanvasSurface({
                 expand={expand}
               />
               )}
+              {hexBoard && hexFailed ? (
+                <p
+                  role="status"
+                  data-testid="hex-board-failed-note"
+                  className="pointer-events-none absolute left-1/2 top-24 -translate-x-1/2 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-1.5 text-label text-[color:var(--map-panel-text-secondary)]"
+                >
+                  {t("hexBoard.failed")}
+                </p>
+              ) : null}
             </ErrorBoundary>
           ) : null}
           {topologyRenderState.renderCanvas ? (

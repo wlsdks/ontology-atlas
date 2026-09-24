@@ -3048,6 +3048,7 @@
   },
   "topology": {
     "hexBoard": {
+      "failed": "The hex board could not be drawn, so the flat map is shown instead.",
       "canvasAriaLabel": "Hex board: one tile per capability, one region per domain. Arrow keys move to the neighbouring tile.",
       "listLabel": "Tiles on the hex board",
       "staleOnly": "◐ Stale only · {count}",
