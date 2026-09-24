@@ -5487,6 +5487,7 @@
     "toolActivity": "Tool activity",
     "removeQuestion": "Remove “{name}” from the schedule?",
     "removeConfirm": "Remove schedule",
+    "remove": "Remove",
     "changeFailed": "The change could not be saved. Try again.",
     "checked": "Checked {count} documents.",
     "stalePages": "Needs review · {pages}",
@@ -5499,8 +5500,7 @@
     "nextRunAt": "Next · {time}",
     "scheduleCount": "{count, plural, one {# scheduled automation} other {# scheduled automations}}",
     "title": "Automations",
-    "eyebrow": "LOCAL, WHILE ATLAS IS OPEN",
-    "lede": "Schedule recurring reviews, then inspect what each run found.",
+    "lede": "Schedule recurring reviews, then inspect what each run found. They run on this computer while Atlas is open.",
     "tabsAria": "Automation lanes",
     "tabs": {
       "ontology": "Ontology",
@@ -5532,7 +5532,7 @@
     "saving": "Scheduling…",
     "saveFailed": "The schedule could not be saved. Nothing was changed.",
     "state": {
-      "on": "On",
+      "on": "Scheduled",
       "paused": "Paused",
       "running": "Running"
     },
@@ -5563,12 +5563,12 @@
       "count": "{count, plural, =0 {No ontology reviews} one {# ontology review} other {# ontology reviews}}",
       "title": "Ontology refinement",
       "description": "The scheduled ACP pass reads the current graph, source binding, and a bounded improvement area. It leaves the construction decision for the map and the person.",
-      "guard": "Read-only · no ontology writes or meaning finalization",
-      "emptyTitle": "Nothing is reviewing the ontology yet",
+      "guard": "Read-only · never changes the ontology",
+      "facts": { "runs": { "title": "What it does", "body": "The in-app coding agent reads the graph and its source links, then leaves one bounded improvement proposal." }, "when": { "title": "When it runs", "body": "On the cadence you choose, on this computer, while Atlas has this folder open." }, "writes": { "title": "What it may change", "body": "Nothing. You review each proposal and apply it on the map yourself." } },
+      "emptyTitle": "No ontology review is scheduled yet",
       "emptyDescription": "Schedule a read-only pass to find one evidence-backed improvement area at a time. The result waits for review before anything can change.",
-      "preview": { "title": "Schedule workbench", "empty": "Schedules appear here", "name": "Name", "cadence": "Cadence", "next": "Next run", "resultLabel": "Run result", "resultEmpty": "Available here after the first run" },
+      "preview": { "title": "Schedules", "empty": "Schedules appear here", "name": "Name", "cadence": "Cadence", "next": "Next run", "resultLabel": "Run result", "resultEmpty": "Available here after the first run" },
       "defaultName": "Ontology refinement",
-      "eyebrow": "ONTOLOGY REVIEW",
       "sheet": {
         "title": "Schedule an ontology review",
         "description": "Atlas will open one guarded ACP turn at the chosen time, inspect the ontology and code evidence, and leave a review-only packet.",
@@ -5588,10 +5588,11 @@
       "count": "{count, plural, =0 {No document rounds} one {# document round} other {# document rounds}}",
       "title": "Document analysis",
       "description": "Use the Library's existing consistency and service rounds for source refresh, stale-page checks, and bounded wiki drafts.",
-      "guard": "Existing Library scope · ontology writes refused",
-      "emptyTitle": "No document round is scheduled",
+      "guard": "Changes only the approved Library scope · never the ontology",
+      "facts": { "runs": { "title": "What it does", "body": "Checks that sources and wiki pages still match, and pulls changed pages from a connected service." }, "when": { "title": "When it runs", "body": "On the cadence you choose, on this computer, while Atlas has this folder open." }, "writes": { "title": "What it may change", "body": "Only sources and wiki drafts inside the approved Library scope. Never the ontology." } },
+      "emptyTitle": "No document round is scheduled yet",
       "emptyDescription": "Create a consistency or service round here, then open the Library for the full ledger and page review.",
-      "preview": { "title": "Schedule workbench", "empty": "Schedules appear here", "name": "Name", "cadence": "Cadence", "next": "Next run", "resultLabel": "Check history", "resultEmpty": "Review in the Library after the first run" },
+      "preview": { "title": "Schedules", "empty": "Schedules appear here", "name": "Name", "cadence": "Cadence", "next": "Next run", "resultLabel": "Check history", "resultEmpty": "Review in the Library after the first run" },
       "openRounds": "Open Library check history"
     }
   },

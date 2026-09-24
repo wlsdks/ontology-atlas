@@ -1,9 +1,9 @@
 "use client";
 
-import { CalendarClock, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
+import { LibraryBig, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import { useMemo, useState, useSyncExternalStore, useTransition, type ReactNode } from "react";
 
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import type { RoundRecord } from "@/entities/library-round";
@@ -11,9 +11,8 @@ import type { RoundsRunnerValue } from "@/features/library-rounds";
 import { Link, useRouter } from "@/i18n/navigation";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { cn } from "@/shared/lib/cn";
-import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { Button, EmptyState, TabBar, useToast } from "@/shared/ui";
+import { Button, buttonVariants, EmptyState, TabBar, useToast } from "@/shared/ui";
 
 import { PAGE_FRAME_FORM, PAGE_HEADER_ROW } from "@/shared/ui/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
@@ -81,18 +80,29 @@ export function AutomationsPage({
     setOntologySheetOpen(true);
   } : onOpenDocumentSchedule;
 
+  const emptyStage = (title: string, description: string, action: ReactNode) => (
+    <AutomationEmptyWorkbench title={title} description={description} action={action}
+      previewTitle={t(`${lane}.preview.title`)} previewEmpty={t(`${lane}.preview.empty`)}
+      columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.next`)]}
+      resultLabel={t(`${lane}.preview.resultLabel`)} resultEmpty={t(`${lane}.preview.resultEmpty`)}
+      facts={[
+        { title: t(`${lane}.facts.runs.title`), body: t(`${lane}.facts.runs.body`) },
+        { title: t(`${lane}.facts.when.title`), body: t(`${lane}.facts.when.body`) },
+        { title: t(`${lane}.facts.writes.title`), body: t(`${lane}.facts.writes.body`) },
+      ]} />
+  );
+
   return (
     <main id="main" tabIndex={-1} data-testid="automations" data-automations-state={state} data-automations-lane={lane}
       className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
       <div className={`${PAGE_FRAME_FORM} flex min-h-full flex-col gap-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-[var(--page-bottom-breath)]`}>
         <header className={PAGE_HEADER_ROW}>
+          {/* The "runs locally while Atlas is open" fact lives in the lede: as an 11px eyebrow it
+              floated alone at the top right, tied to nothing, as a fourth header text size. */}
           <div className="min-w-0">
             <h1 className="text-display font-[var(--font-weight-signature)]">{t("title")}</h1>
-            <p className="mt-2 max-w-prose text-body-lg text-[color:var(--color-text-tertiary)]">{t("lede")}</p>
+            <p className="mt-2 max-w-prose break-keep text-body-lg text-[color:var(--color-text-tertiary)]">{t("lede")}</p>
           </div>
-          <span className="inline-flex items-center gap-2 text-label text-[color:var(--color-text-tertiary)]">
-            <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("eyebrow")}
-          </span>
         </header>
 
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[color:var(--color-divider)] pb-3">
@@ -108,12 +118,18 @@ export function AutomationsPage({
         </div>
 
         <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col gap-5">
-          {state === "app-required" ? (
-            <EmptyState title={t("appRequiredTitle")} description={t("appRequiredDescription")} icon={<CalendarClock />} tone="solid"
-              action={<Link href="/download/" className={cn(controlClass({ shape: "link", size: "lg", tone: "accent" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("getApp")}</Link>} />
-          ) : state === "no-vault" ? (
-            <EmptyState title={t("openFolderTitle")} description={t("openFolderDescription")} icon={<CalendarClock />} tone="solid"
-              action={<OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" />} />
+          {state === "app-required" || state === "no-vault" ? (
+            // The same stage as an empty lane: the tabs still switch what each lane would do,
+            // and one primary action wins, instead of a one-row notice over a blank screen.
+            <div className="flex pt-6 pb-8">
+              {emptyStage(
+                state === "app-required" ? t("appRequiredTitle") : t("openFolderTitle"),
+                state === "app-required" ? t("appRequiredDescription") : t("openFolderDescription"),
+                state === "app-required"
+                  ? <Link href="/download/" className={cn(buttonVariants({ variant: "primary" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("getApp")}</Link>
+                  : <OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" />,
+              )}
+            </div>
           ) : state === "loading" ? (
             <div role="status" aria-busy="true"><EmptyState title={t("loadingTitle")} skeleton tone="solid" /></div>
           ) : state === "malformed" ? (
@@ -121,26 +137,27 @@ export function AutomationsPage({
               action={<Button variant="outline" onClick={() => void runner?.refresh()} className="atlas-touch-floor atlas-touch-floor-wide">{t("retry")}</Button>} />
           ) : runner ? (
             <>
-              {rounds.length > 0 ? <div data-testid="automations-lane-card" className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="text-title font-[var(--font-weight-strong)]">{t("scheduleCount", { count: rounds.length })}</h2>
-                  <p className="mt-1 flex items-start gap-1.5 text-label text-[color:var(--color-text-tertiary)]">
+              {/* The count is a quiet label, not a heading: at text-title it matched every row name
+                  under it, so the list had no attention winner. */}
+              {rounds.length > 0 ? <div data-testid="automations-lane-card" className="flex min-h-8 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                  <h2 className="text-body font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-secondary)]">{t("scheduleCount", { count: rounds.length })}</h2>
+                  <p className="flex items-center gap-1.5 break-keep text-body text-[color:var(--color-text-tertiary)]">
                     <ShieldCheck size={ICON_SIZE.sm} className="flex-none" aria-hidden />{t(`${lane}.guard`)}
                   </p>
                 </div>
                 {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
-                {lane === "documents" ? <Link href="/library/?tab=rounds" data-testid="automations-open-library-rounds" className={cn(controlClass({ shape: "link", tone: "secondary" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("documents.openRounds")}</Link> : null}
+                {lane === "documents" ? <Link href="/library/?tab=rounds" data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide")}>
+                  <LibraryBig size={ICON_SIZE.sm} aria-hidden />{t("documents.openRounds")}
+                </Link> : null}
               </div> : null}
               {rounds.length === 0 ? (
                 <div className="flex pt-6 pb-8">
-                  <AutomationEmptyWorkbench title={t(`${lane}.emptyTitle`)} description={t(`${lane}.emptyDescription`)} guard={t(`${lane}.guard`)}
-                    previewTitle={t(`${lane}.preview.title`)} previewEmpty={t(`${lane}.preview.empty`)}
-                    columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.next`)]}
-                    resultLabel={t(`${lane}.preview.resultLabel`)} resultEmpty={t(`${lane}.preview.resultEmpty`)}
-                    action={<Button onClick={add} disabled={lanePending} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide"><Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}</Button>} />
+                  {emptyStage(t(`${lane}.emptyTitle`), t(`${lane}.emptyDescription`),
+                    <Button onClick={add} disabled={lanePending} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide"><Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}</Button>)}
                 </div>
               ) : (
-                <ul data-testid="automations-list" className="divide-y divide-[color:var(--color-divider)] border-y border-[color:var(--color-divider)]">
+                <ul data-testid="automations-list" className="flex flex-col gap-2">
                   {rounds.map((round) => <AutomationScheduleRow key={round.id} round={round} runner={runner}
                     expanded={selected?.id === round.id} onToggle={() => setSelectedId(selected?.id === round.id ? null : round.id)} />)}
                 </ul>

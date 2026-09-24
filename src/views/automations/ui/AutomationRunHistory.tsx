@@ -1,17 +1,21 @@
 'use client';
 
+import { FileText } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { RoundPassEntry } from '@/entities/library-round';
 import { Link } from '@/i18n/navigation';
 import { Disclosure } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { automationDate } from './automation-date';
 
 export function AutomationRunHistory({ entries }: { entries: readonly RoundPassEntry[] }) {
   const t = useTranslations('automations');
   const recent = [...entries].reverse();
   return (
     <section data-testid="automations-history" className="space-y-3">
-      <h3 className="text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]">{t('historyTitle')}</h3>
+      {/* A caption, not a heading: at 14px/650 it outweighed the outcomes it labels. */}
+      <h3 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">{t('historyTitle')}</h3>
       {entries.length === 0 ? <p className="text-body text-[color:var(--color-text-tertiary)]">{t('noRuns')}</p> : (
         <div className="space-y-3">
         <ol className="divide-y divide-[color:var(--color-divider)]">
@@ -38,18 +42,20 @@ function RunEntry({ entry, latest = false }: { entry: RoundPassEntry; latest?: b
     .map((path) => path.replace(/\.md$/, '')))];
   return (
             <li data-testid={latest ? 'automations-last-run' : undefined} className="py-3 first:pt-0">
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t(`outcome.${entry.outcome}`)}</span>
-                <time dateTime={entry.endedAt} className="text-body text-[color:var(--color-text-tertiary)]">{new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(entry.endedAt))}</time>
-              </div>
-              <p className="mt-2 break-words text-body-lg text-[color:var(--color-text-secondary)]">{entry.summary || (entry.checked > 0 ? t('checked', { count: entry.checked }) : t('noSummary'))}</p>
+              {/* The row header already states the latest outcome and its time; saying it again
+                  here, in a second date format, doubled the line. Earlier runs keep theirs. */}
+              {latest ? null : <div className="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t(`outcome.${entry.outcome}`)}</span>
+                <time dateTime={entry.endedAt} className="text-body text-[color:var(--color-text-tertiary)]">{automationDate(locale, entry.endedAt)}</time>
+              </div>}
+              <p className={`break-words ${latest ? 'text-body-lg text-[color:var(--color-text-primary)]' : 'text-body text-[color:var(--color-text-secondary)]'}`}>{entry.summary || (entry.checked > 0 ? t('checked', { count: entry.checked }) : t('noSummary'))}</p>
               {entry.stale.length > 0 ? <p className="mt-2 break-words text-body text-[color:var(--color-text-secondary)]">{t('stalePages', { pages: entry.stale.join(', ') })}</p> : null}
               {entry.written.length > 0 ? <p className="mt-2 break-words text-body text-[color:var(--color-text-secondary)]">{t('writtenFiles', { files: entry.written.join(', ') })}</p> : null}
               {pages.length > 0 ? <div className="mt-2 flex flex-wrap gap-2">
                 {pages.map((slug) => <Link key={slug} href={`/docs/?slug=${encodeURIComponent(slug)}`}
                   aria-label={pageText('openPage', { page: slug.replace(/^wiki\//, '') })}
-                  className={controlClass({ shape: 'link', tone: 'secondary', className: 'max-w-full break-all' })}>
-                  {slug.replace(/^wiki\//, '')}
+                  className={controlClass({ shape: 'chip', size: 'lg', tone: 'secondary', hoverInk: 'strong', hoverSurface: 'lift', hoverBorder: 'strong', className: 'max-w-full break-all' })}>
+                  <FileText size={ICON_SIZE.sm} className="flex-none" aria-hidden />{slug.replace(/^wiki\//, '')}
                 </Link>)}
               </div> : null}
               {entry.refused.length > 0 ? <p className="mt-2 text-body text-[color:var(--color-text-secondary)]">{t('blockedActions', { count: entry.refused.length })}</p> : null}

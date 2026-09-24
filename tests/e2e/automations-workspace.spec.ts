@@ -9,7 +9,7 @@ test.describe('Automations workspace', () => {
     await expect(page.getByTestId('app-nav-rail-item-automations')).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('automations-tab-ontology')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[role="tabpanel"]')).toHaveAttribute('id', 'automations-tabpanel-ontology');
-    await expect(page.getByText('자동화는 맥 앱에서 돕니다')).toBeVisible();
+    await expect(page.getByText('자동화는 맥 앱에서만 실행돼요')).toBeVisible();
 
     await page.getByTestId('automations-tab-documents').click();
     await expect(page).toHaveURL(/\/ko\/automations\/\?guides=off&kind=documents$/);
@@ -107,14 +107,14 @@ test('new schedules start fresh after cancellation and save, including rapid reo
   await page.getByTestId('ontology-automation-name').fill('Cancelled ontology draft');
   await page.keyboard.press('Escape');
   await page.getByTestId('automations-new').press('Enter');
-  await expect(page.getByTestId('ontology-automation-name')).toHaveValue('');
+  await expect(page.getByTestId('ontology-automation-name')).toHaveValue('Ontology refinement');
   await page.getByTestId('ontology-automation-name').fill('Saved ontology review');
   await page.getByTestId('ontology-automation-focus').fill('Evidence links');
   await page.getByTestId('ontology-automation-allow').click();
   await expect(page.getByTestId('ontology-automation-sheet')).toHaveCount(0);
   await expect(page.getByTestId('automations-list')).toContainText('Saved ontology review');
   await page.getByTestId('automations-new').click();
-  await expect(page.getByTestId('ontology-automation-name')).toHaveValue('');
+  await expect(page.getByTestId('ontology-automation-name')).toHaveValue('Ontology refinement');
   await expect(page.getByTestId('ontology-automation-focus')).toHaveValue('');
   await page.keyboard.press('Escape');
 });
