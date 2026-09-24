@@ -2578,7 +2578,9 @@ describe('첫 내려받기 — 「켜는 중」만으로는 부족하다 (2026-0
     );
     await screen.findByTestId('acp-starting');
     const preview = screen.getByTestId('acp-starting-suggestion-explain');
-    expect(preview).toBeDisabled();
+    // A preview, not a disabled button: nothing in it can be pressed or focused.
+    expect(preview.tagName).toBe('LI');
+    expect(within(screen.getByTestId('acp-starting-suggestions')).queryAllByRole('button')).toHaveLength(0);
     // The live row is a different element; the preview must not answer for it.
     expect(screen.queryByTestId('acp-chat-suggestion-explain')).toBeNull();
     const composer = screen.getByTestId('acp-chat-composer').querySelector('textarea')!;

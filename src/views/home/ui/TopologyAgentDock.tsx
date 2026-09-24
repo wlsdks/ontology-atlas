@@ -303,6 +303,7 @@ export function TopologyAgentDock({
                   onShowLabelsChange={setShowRelationMeaning}
                   node={selectedOntologyNode ? { ...selectedOntologyNode, title: selectedOntologyNode.display ?? selectedOntologyNode.title } : null}
                   relations={meaningRelations}
+                  reasonsAction={!!agentChatUsesRuntime && relationNoteGaps > 0}
                   onEvidence={openAnalysisEvidence}
                   onSelectRelation={(id) => {
                     const edge = ontologyInsight?.edges.find((item) => item.id === id);

@@ -2,7 +2,10 @@
 
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import { Checkbox, Chip, Disclosure } from '@/shared/ui';
+import { FileText } from 'lucide-react';
+import { Checkbox, Chip, Disclosure, IconButton } from '@/shared/ui';
+import { controlClass } from '@/shared/ui/control-class';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
 
 /**
@@ -15,7 +18,12 @@ import { badgeClass } from '@/shared/ui/badge-class';
 const SECTION_LABEL = 'text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]';
 
 /** Explanatory UI for the normative kinds and relation directions in the Atlas specification. */
-export function MeaningContext({ node, relations, onSelectRelation, onEvidence, showLabels, onShowLabelsChange }: {
+export function MeaningContext({ node, relations, onSelectRelation, onEvidence, showLabels, onShowLabelsChange, reasonsAction = false }: {
+  /**
+   * True when the panel header already offers to write the missing reasons (its "Fill N missing
+   * reasons" action). The group line then stays silent unless only some relations lack one.
+   */
+  reasonsAction?: boolean;
   showLabels?: boolean;
   onShowLabelsChange?: (show: boolean) => void;
   node: { id: string; title: string; kind: string; summary?: string | null } | null;
@@ -58,6 +66,13 @@ export function MeaningContext({ node, relations, onSelectRelation, onEvidence, 
    */
   const missingReasons = relations.filter((relation) => !relation.why).length;
   const mixedReasons = missingReasons > 0 && missingReasons < relations.length;
+  /*
+   * ⚠️ **The count stands once** (round three, 2026-09-25). With every relation unexplained, the
+   * header action said "Fill 6 missing reasons" and this line said "6 connections have no recorded
+   * reason" about 250px lower. The line speaks only when there is no action to say it, or when it
+   * adds something the action cannot: that some, not all, of the listed relations lack a reason.
+   */
+  const reasonLine = missingReasons > 0 && (!reasonsAction || mixedReasons);
   return <div className="flex flex-col gap-4">
     {/*
       ⚠️ **The name belongs to the header, not the body** (2026-09-25). The panel header already
@@ -74,26 +89,34 @@ export function MeaningContext({ node, relations, onSelectRelation, onEvidence, 
     {node || relations.length ? <section className={cn('space-y-3', node && divided)}>
       <div className="space-y-1">
         <p className={SECTION_LABEL}>{t('relationsEyebrow')}{relations.length ? <span className="tabular-nums"> · {relations.length}</span> : null}</p>
-        {missingReasons > 0 ? <p data-testid="meaning-relations-missing-reasons" className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('rationaleMissingGroup', { count: missingReasons })}</p> : null}
+        {reasonLine ? <p data-testid="meaning-relations-missing-reasons" className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('rationaleMissingGroup', { count: missingReasons })}</p> : null}
       </div>
-      {relations.length ? <ul className="flex flex-col gap-2">{relations.map((relation) => <li key={relation.id}><article className="flex flex-col gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
-        {/*
-          Round two (2026-09-25): the tag leads the card as its eyebrow and the actions follow the
-          text from the same start line, at the column's one chip size. With the tag at the left
-          of the action row and md chips pushed to the far right, a 460px card at 1920 carried a
-          hollow band between them, and the column showed two chip heights.
-        */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span data-testid="meaning-relation-type" className={badgeClass({ shape: 'tag', className: 'border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]' })}>{relation.typeLabel}</span>
-          {mixedReasons && !relation.why ? <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('rationaleMissingShort')}</span> : null}
-        </div>
-        <p className="text-body leading-body font-[var(--font-weight-strong)]">{relation.sentence}</p>
-        {relation.why ? <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{relation.why}</p> : null}
-        <div className="flex flex-wrap gap-2 pt-0.5">
-          <Chip size="lg" onClick={() => onSelectRelation(relation.id)}>{t('showConnection')}</Chip>
-          {relation.declaredBy ? <Chip size="lg" onClick={() => onEvidence(relation.declaredBy!)}>{t('declaringDocument')}</Chip> : null}
-        </div>
-      </article></li>)}</ul> : <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('relationGuide')}</p>}
+      {/*
+        ⚠️ **The sentence is the button** (round three, 2026-09-25, 1920 wide). Each relation was a
+        460px card whose tag, sentence and two chips filled the left 55 to 60%, and every card
+        carried the same two chips — twelve look-alike buttons in one column competing with the
+        sentences they served. Now the relations are one list surface: each row is a single
+        pressable target (tag, sentence, reason) that shows the connection on the map, and the
+        declaring document is one quiet icon at the row's end, so the sentence leads and the row's
+        width belongs to it.
+      */}
+      {relations.length ? <ul data-testid="meaning-relations" className="overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] divide-y divide-[color:var(--color-divider)]">{relations.map((relation) => <li key={relation.id} data-testid="meaning-relation" className="flex items-center">
+        <button
+          type="button"
+          data-control="row"
+          aria-label={`${t('showConnection')}: ${relation.sentence}`}
+          onClick={() => onSelectRelation(relation.id)}
+          className={controlClass({ shape: 'row', size: 'md', stacked: true, hoverSurface: 'lift', className: 'min-w-0 flex-1 flex-col items-start gap-1.5 px-[var(--card-pad)] py-3' })}
+        >
+          <span className="flex flex-wrap items-center gap-2">
+            <span data-testid="meaning-relation-type" className={badgeClass({ shape: 'tag', className: 'border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]' })}>{relation.typeLabel}</span>
+            {mixedReasons && !relation.why ? <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('rationaleMissingShort')}</span> : null}
+          </span>
+          <span className="block text-body leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{relation.sentence}</span>
+          {relation.why ? <span className="block text-body leading-body text-[color:var(--color-text-secondary)]">{relation.why}</span> : null}
+        </button>
+        {relation.declaredBy ? <IconButton size="lg" hoverInk="strong" hoverSurface="lift" label={t('declaringDocument')} className="mr-2 shrink-0" onClick={() => onEvidence(relation.declaredBy!)}><FileText size={ICON_SIZE.sm} aria-hidden /></IconButton> : null}
+      </li>)}</ul> : <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('relationGuide')}</p>}
     </section> : null}
     <div className={cn('space-y-3', trailing)}>
       {onShowLabelsChange ? <>

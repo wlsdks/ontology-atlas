@@ -11,7 +11,7 @@ import { cn } from '@/shared/lib/cn';
 import { Checkbox, Chip, Disclosure, EmptyState, IconButton, OntologyMapKindGlyph, Select, TabBar, Textarea, useToast } from '@/shared/ui';
 import { History as HistoryIcon, RotateCcw, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { MeaningTransitionHistory } from './MeaningTransitionHistory';
+import { MeaningTransitionHistory, type MeaningTransitionArchiveState } from './MeaningTransitionHistory';
 
 /**
  * Hairline between groups (owner, 2026-09-06) — **now only where a label does not already
@@ -152,6 +152,7 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
   const [loaded, setLoaded] = useState<{ handle: FileSystemDirectoryHandle; records: AnalysisRecord[]; cursor: string | null; problems: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [readPending, setReadPending] = useState(false);
+  const [decisionArchive, setDecisionArchive] = useState<MeaningTransitionArchiveState>('pending');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -332,7 +333,7 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
       <div className={DIVIDED}>{facts ?? <p>{context.mode === 'architecture' ? t('architectureCriteria') : glossary('ontologyDefinition')}</p>}</div>
     </div> : null}
     {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1" aria-busy={busy || readPending}>
-      <MeaningTransitionHistory handle={context.handle} open={open && tab === 'history'} />
+      <MeaningTransitionHistory handle={context.handle} open={open && tab === 'history'} foldWhenQuiet={!runs.length} onStateChange={setDecisionArchive} />
       {/* One control row: which version, reread, ask again. The two chips that led the tab
           looked like every other chip below them; the version picker is the row's subject. */}
       {/*
@@ -364,21 +365,24 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
       {!context.handle ? <p>{t('openFolder')}</p> : null}
       {context.handle && readPending ? <p role="status">{t('loadingHistory')}</p> : null}
       {/*
-        ⚠️ **The empty archive is the tab's one subject, set in its free well** (round two,
-        2026-09-25). As a left card at the top it left about 55% of the panel bare under it, and
-        its primary said "Run a new analysis" for a scope that had never been analyzed. It now
-        stands centred in the space under the judgment record; its primary is Analyze, the meaning
-        tab's own words; and on the web, where no agent can run, it says so rather than offering a
-        reread alone. The caveat qualifies Analyze, so it stands in the card only when Analyze does.
+        ⚠️ **One empty state, at the top** (round three, 2026-09-25, 1512 wide). The tab said
+        "nothing here" twice: a solid meaning-decision card ("no decision records in this folder"),
+        then about 200px lower a dashed card centred in a 699px well ("nothing analyzed yet") — two
+        messages, two surfaces and a dead band between them. The decision archive now folds away
+        while it is quiet and its fact joins this card: the title names both archives when both
+        are empty, and a line says where decisions can be read when this build cannot read them.
+        The card starts where the free space starts instead of floating in its middle.
       */}
-      {emptyArchive ? <div data-testid="analysis-history-empty" className="flex flex-1 flex-col justify-center pb-12"><EmptyState
+      {emptyArchive ? <div data-testid="analysis-history-empty"><EmptyState
         size="compact"
         align="center"
         icon={<HistoryIcon aria-hidden />}
-        title={<span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t('empty')}</span>}
+        title={<span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t(decisionArchive === 'empty' ? 'emptyWithDecisions' : 'empty')}</span>}
         description={<span className="mx-auto block max-w-[46ch]">
           {t('emptyEffect')}
-          {onRequest ? null : <span className="mt-2 block">{t('agentUnavailable')}</span>}
+          {onRequest
+            ? decisionArchive === 'unavailable' ? <span className="mt-2 block">{t('meaningTransitions.unavailable')}</span> : null
+            : <span className="mt-2 block">{t(decisionArchive === 'unavailable' ? 'agentUnavailableWithDecisions' : 'agentUnavailable')}</span>}
         </span>}
         action={<>
           {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip> : null}

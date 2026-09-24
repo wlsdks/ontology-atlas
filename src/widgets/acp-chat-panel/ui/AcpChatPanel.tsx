@@ -198,10 +198,6 @@ interface SuggestionRowsProps {
   testId: string;
   centered: boolean;
   items: readonly ChatSuggestion[];
-  /** Shown before the session can take them: the shape of the first action, not yet pressable. */
-  disabled?: boolean;
-  /** Per-row test id prefix; the disabled preview must not answer for the live rows. */
-  itemTestIdPrefix?: string;
   labelFor: (suggestion: ChatSuggestion) => string;
   onSelect: (suggestion: ChatSuggestion) => void;
 }
@@ -212,8 +208,6 @@ function SuggestionRows({
   testId,
   centered,
   items,
-  disabled = false,
-  itemTestIdPrefix = 'acp-chat-suggestion',
   labelFor,
   onSelect,
 }: SuggestionRowsProps) {
@@ -235,8 +229,7 @@ function SuggestionRows({
           hoverInk="strong"
           hoverSurface="lift"
           className="rounded-chip bg-[color:var(--color-overlay-1)] px-2.5 py-1.5"
-          data-testid={`${itemTestIdPrefix}-${suggestion.kind}`}
-          disabled={disabled}
+          data-testid={`acp-chat-suggestion-${suggestion.kind}`}
           onClick={() => onSelect(suggestion)}
         >
           <span className="min-w-0 break-keep">
@@ -244,6 +237,37 @@ function SuggestionRows({
           </span>
         </RowButton>
       ))}
+    </div>
+  );
+}
+
+/**
+ * The first asks, previewed while the tool opens — **text, not buttons** (round three,
+ * 2026-09-25, 1512 wide). The preview used to be the live rows disabled: the same surface and,
+ * at 55% opacity, nearly the same ink, so a person saw buttons that did nothing — the "broken
+ * button" risk. It is now a quiet list on a hairline with no surface and no hover, and its
+ * heading shares the list's start line; the rows become buttons only when the session can
+ * take them.
+ */
+function StartingSuggestionPreview({ heading, items, labelFor }: {
+  heading: string;
+  items: readonly ChatSuggestion[];
+  labelFor: (suggestion: ChatSuggestion) => string;
+}) {
+  return (
+    <div className="grid gap-2 border-l border-[color:var(--color-divider)] pl-3 text-left" data-testid="acp-starting-suggestions">
+      <p className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">{heading}</p>
+      <ul className="grid gap-2">
+        {items.map((suggestion) => (
+          <li
+            key={suggestion.kind}
+            data-testid={`acp-starting-suggestion-${suggestion.kind}`}
+            className="break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
+          >
+            {labelFor(suggestion)}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -1642,18 +1666,13 @@ export function AcpChatPanel({
               it can be — and the rows are already where they will be pressed.
             */}
             {suggestions.length > 0 && !download ? (
-              <div className="mt-4 w-full max-w-[34ch] justify-self-stretch text-left">
-                <SuggestionRows
+              <div className="mt-5 w-full max-w-[34ch] justify-self-stretch">
+                <StartingSuggestionPreview
                   heading={t('startingSuggestions')}
-                  testId="acp-starting-suggestions"
-                  centered
-                  disabled
-                  itemTestIdPrefix="acp-starting-suggestion"
                   items={suggestions}
                   labelFor={(suggestion) =>
                     t(`suggest.${suggestion.kind}.label`, suggestion.params)
                   }
-                  onSelect={() => undefined}
                 />
               </div>
             ) : null}

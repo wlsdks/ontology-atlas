@@ -18,7 +18,23 @@ async function textDigest(text: string): Promise<string> {
   return `sha256:${[...hash].map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
 }
 
-export function MeaningTransitionHistory({ handle, open }: { handle: FileSystemDirectoryHandle | null; open: boolean }) {
+/**
+ * What the archive has to say. Everything but `records` and `error` is a quiet state: nothing to
+ * pick, only a sentence about why.
+ */
+export type MeaningTransitionArchiveState = 'no-folder' | 'unavailable' | 'pending' | 'empty' | 'records' | 'error';
+
+export function MeaningTransitionHistory({ handle, open, foldWhenQuiet = false, onStateChange }: {
+  handle: FileSystemDirectoryHandle | null;
+  open: boolean;
+  /**
+   * Draw nothing while the archive is quiet, because the caller already says so in its own empty
+   * state. Round three (2026-09-25): an empty history tab carried two "nothing here" messages on
+   * two surfaces with a dead band between them.
+   */
+  foldWhenQuiet?: boolean;
+  onStateChange?: (state: MeaningTransitionArchiveState) => void;
+}) {
   const t = useTranslations('analysisWorkbench.meaningTransitions');
   const locale = useLocale();
   const latestHandle = useRef(handle);
@@ -93,6 +109,10 @@ export function MeaningTransitionHistory({ handle, open }: { handle: FileSystemD
     return () => { artifactGeneration.current += 1; };
   }, [available, handle, open, rootPath, selected, t]);
 
+  const archiveState: MeaningTransitionArchiveState = !handle ? 'no-folder' : !available ? 'unavailable' : error ? 'error'
+    : records.length ? 'records' : !pending && loaded?.handle === handle ? 'empty' : 'pending';
+  useEffect(() => { onStateChange?.(archiveState); }, [archiveState, onStateChange]);
+
   const selectedArtifacts = artifacts?.record === selected ? artifacts.rows : [];
   const previousLoaded = selected?.schema === 'atlas-meaning-transition/v2' && selected.previous
     ? records.find((record) => record.eventId === selected.previous?.eventId) ?? null : null;
@@ -100,6 +120,7 @@ export function MeaningTransitionHistory({ handle, open }: { handle: FileSystemD
     ? { action: selected.meaningDecision.action, at: selected.meaningDecision.actionAt, task: selected.task.label }
     : selected ? { action: selected.decision.disposition, at: selected.createdAt, task: selected.task.label } : null, [selected]);
 
+  if (foldWhenQuiet && archiveState !== 'records' && archiveState !== 'error') return null;
   return <section aria-labelledby="meaning-transition-history-title" className="space-y-3 rounded-card border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
     <div className="space-y-1">
       <h3 id="meaning-transition-history-title" className="text-body-lg font-[var(--font-weight-strong)]">{t('title')}</h3>
