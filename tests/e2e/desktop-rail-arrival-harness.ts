@@ -91,6 +91,20 @@ export interface DesktopRuntimeOptions {
    * this the command stays unstubbed and rejects, as it always has.
    */
   gitPathChanges?: Record<string, StubPathChange>;
+  /** A longer history than the two default steps, for layouts that only break with a real list. */
+  commits?: readonly unknown[];
+  /** The patch every diff command answers with, for a reader that shows a whole document. */
+  diff?: string;
+  /**
+   * Per-document patches for `git_document_diff`, keyed by vault-relative path. A path not
+   * listed falls back to `diff`. Without it every document read back one document's body.
+   */
+  documentDiffs?: Record<string, string>;
+  /**
+   * Answer a path-scoped `git_history` with only the steps that touched that path, as git
+   * does. Off by default so existing specs keep their one shared history.
+   */
+  scopeHistoryByPath?: boolean;
 }
 
 export async function installDesktopRailRuntime(
@@ -108,6 +122,8 @@ export async function installDesktopRailRuntime(
       commits: unknown[];
       pending: unknown[];
       diff: string;
+      documentDiffs?: Record<string, string>;
+      scopeHistoryByPath?: boolean;
       runtimeResponses?: { fast: unknown[]; probed: unknown[] };
       gitPathChanges?: Record<string, { exists: boolean; isDir: boolean; lastChangedAt: string | null }>;
     }) => {
@@ -145,12 +161,24 @@ export async function installDesktopRailRuntime(
             return slow({ installed: true, version: "git version 2.49.0", path: "/usr/bin/git" });
           case "git_status":
             return slow(status);
-          case "git_history":
-            return slow(commits);
+          case "git_history": {
+            const path = typeof args.path === "string" ? args.path : null;
+            if (!path || !input.scopeHistoryByPath) return slow(commits);
+            return slow(
+              commits.filter((commit) =>
+                ((commit as { files?: { path: string }[] }).files ?? []).some((file) => file.path === path),
+              ),
+            );
+          }
           case "git_diff":
             return slow({ count: pending.length, files: pending, diff, truncated: false });
           case "git_document_diff":
-            return slow({ path: args.relativePath, diff, untracked: false, tooLarge: false });
+            return slow({
+              path: args.relativePath,
+              diff: input.documentDiffs?.[String(args.relativePath)] ?? diff,
+              untracked: false,
+              tooLarge: false,
+            });
           case "git_commit_diff":
             return slow({ count: 1, files: commits[0] ? (commits[0] as { files: unknown[] }).files : [], diff, truncated: false });
           case "git_paths_last_change": {
@@ -254,9 +282,11 @@ export async function installDesktopRailRuntime(
       root: DESKTOP_VAULT_ROOT,
       latency: NATIVE_LATENCY_MS,
       files: options.replaceFixture ? { ...extraFiles } : { ...FIXTURE_VAULT, ...extraFiles },
-      commits: COMMITS,
+      commits: [...(options.commits ?? COMMITS)],
       pending: PENDING,
-      diff: DIFF,
+      diff: options.diff ?? DIFF,
+      documentDiffs: options.documentDiffs,
+      scopeHistoryByPath: options.scopeHistoryByPath,
       runtimeResponses,
       gitPathChanges: options.gitPathChanges,
     },

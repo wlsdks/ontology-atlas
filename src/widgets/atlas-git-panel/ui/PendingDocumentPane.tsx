@@ -236,8 +236,12 @@ export function DocumentChangeReader({
    * file's first line is a comment (`# Serena MCP project cache`), and the prose reader drew
    * it as the document's title. Such a file has no front matter either; its leading `---`,
    * if any, is three hyphens.
+   *
+   * An empty kind is no kind (round four, 2026-09-25): a step's file entry can carry `""`
+   * for a non-concept file, and `!== null` let `config/atlas.json` read as prose in the
+   * document font, labelled "Edited document".
    */
-  const isDocument = kind !== null;
+  const isDocument = Boolean(kind);
   const { frontmatter, body, lines, frontmatterChanged, firstHeadingIndex } = useMemo(() => {
     const all = file?.lines ?? [];
     const split = isDocument ? splitFrontmatter(all) : { frontmatter: [] as Line[], body: [...all] };
@@ -264,13 +268,30 @@ export function DocumentChangeReader({
        */
       tabIndex={0}
       aria-label={label}
-      className="git-fade-in flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+      className="git-fade-in flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
     >
+      {/*
+        One reading measure for the whole reader — header, door, box and body — left-anchored
+        at every width (responsive seat): at 1920 the marked sentence ran ~145 characters
+        across the column; `--measure-doc-column` is the measure the Library's documents read
+        at. The header used to span the column while the text stopped at the measure, so the
+        discard door stood 366px right of the last word it acted on (review 2026-09-25); now
+        the door's right edge is the text's right edge.
+      */}
+      <div className="flex w-full max-w-[var(--measure-doc-column)] flex-col gap-4">
       <header className="flex flex-none flex-col gap-1">
-        {/* The concept's name wins the pane (lead seat): display size, so the largest
-            thing here is the subject, not the metadata box. */}
-        <h2 className="flex items-center gap-2 text-display font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
-          {kind ? <OntologyMapKindGlyph kind={kind} size={16} /> : null}
+        {/* The concept's name wins the pane (lead seat) when the pane is the uncommitted
+            change: display size, so the largest thing here is the subject, not the metadata
+            box. Inside a step the step's own headline holds the display step, and a document
+            is one part of it, so its name steps down to a panel title (review 2026-09-25:
+            two 23px headlines on one screen, and the selection was neither). */}
+        <h2
+          className={cn(
+            "flex items-center gap-2 font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]",
+            source ? "text-title" : "text-display",
+          )}
+        >
+          {kind ? <OntologyMapKindGlyph kind={kind} size={source ? 14 : 16} /> : null}
           <span className="min-w-0 truncate">{label}</span>
         </h2>
         {/* The metadata line and this document's door share one row: the door acts on the
@@ -279,7 +300,9 @@ export function DocumentChangeReader({
         <p className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 font-mono text-caption text-[color:var(--color-text-quaternary)]">
           {/* The path, unless it is the name already shown above it — a file at the folder's
               root would otherwise read its own name twice, at two sizes, in two lines. */}
-          {entry.path === label ? null : <span className="min-w-0 break-all">{entry.path}</span>}
+          {/* Inside a step the file chooser's highlighted row above already prints the path,
+              so the reader does not print it a second time (round three, 2026-09-25). */}
+          {entry.path === label || source ? null : <span className="min-w-0 break-all">{entry.path}</span>}
           <span className="text-[color:var(--color-text-tertiary)]">
             {t(statusKey(entry.status, isDocument))}
           </span>
@@ -298,16 +321,9 @@ export function DocumentChangeReader({
       </header>
 
       {lines.length === 0 ? (
-        <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">{t("diffEmpty")}</p>
+        <p className="text-label leading-prose break-keep text-[color:var(--color-text-quaternary)]">{t("diffEmpty")}</p>
       ) : null}
 
-      {/*
-        One reading measure for the box and the body, left-aligned (responsive seat): at 1920
-        the marked sentence ran ~145 characters across the column; `--measure-doc-column` is
-        the measure the Library's documents read at, and it holds the mono box and the
-        16px prose to one right edge.
-      */}
-      <div className="flex w-full max-w-[var(--measure-doc-column)] flex-col gap-4">
       {/*
         What follows is a fragment, not the document, and that changes the meaning of every
         line below it — so it is said in the reader's own voice above the body, in the same
@@ -328,11 +344,11 @@ export function DocumentChangeReader({
         frontmatterChanged ? (
           <section
             data-testid="atlas-git-doc-frontmatter"
-            className="flex flex-none flex-col rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 font-mono text-caption leading-label"
+            className="flex flex-none flex-col rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] -mx-2 px-2 py-2 font-mono text-caption leading-label"
           >
             <p className="pb-1 text-[color:var(--color-text-quaternary)]">{t("docReaderInfoBox")}</p>
             {frontmatter.map((line, index) => (
-              <p key={index} className={cn("whitespace-pre-wrap break-all px-1 text-[color:var(--color-text-tertiary)]", markClass(line.kind))}>
+              <p key={index} className={cn("whitespace-pre-wrap break-all -mx-1 px-1 text-[color:var(--color-text-tertiary)]", markClass(line.kind))}>
                 <MarkLabel t={t} kind={line.kind} />
                 {line.text}
               </p>
