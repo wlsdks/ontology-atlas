@@ -139,10 +139,16 @@ test.describe("the structural check is the app's own", () => {
     await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki").waitFor({ timeout: 30_000 });
 
-    // Nothing on this screen can start a turn: the check is drawn with its reason, disabled.
-    const lint = page.getByTestId("library-lint");
-    await expect(lint).toBeVisible({ timeout: 25_000 });
-    await expect(lint).toBeDisabled();
+    /*
+     * Nothing on this screen can start a turn. Since 2026-09-25 the two dead doors are one
+     * notice that names what they would do, says why they cannot, and ends in the door to
+     * the agents page — the state with its reason and its way out.
+     */
+    const notice = page.getByTestId("library-agent-missing");
+    await expect(notice).toBeVisible({ timeout: 25_000 });
+    await expect(notice).toContainText("check page format");
+    await expect(notice.getByTestId("library-agent-missing-door")).toHaveAttribute("href", /\/agents/);
+    await expect(page.getByTestId("library-lint")).toHaveCount(0);
 
     /*
      * **This is the installed app, so it must not offer its own download**

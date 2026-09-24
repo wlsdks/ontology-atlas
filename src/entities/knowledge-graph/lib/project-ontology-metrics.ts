@@ -1,5 +1,5 @@
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { countConnectedDocuments } from "@/entities/knowledge-graph";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../model/types";
+import { countConnectedDocuments } from "./ontology-tree/domain-census";
 
 /**
  * The real counts behind the engraved metric strip in the project detail's hero band (domains,

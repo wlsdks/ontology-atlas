@@ -296,7 +296,7 @@ function CellMark({ count, t }: { count: number; t: TranslateFn }) {
 function ToolAttribution({ tools }: { tools: readonly AgentTool[] }) {
   if (tools.length === 0) return null;
   return (
-    <span className="text-caption text-[color:var(--color-text-tertiary)]">
+    <span className="text-label text-[color:var(--color-text-tertiary)]">
       {tools.map((tool) => AGENT_TOOL_LABELS[tool] ?? tool).join(' · ')}
     </span>
   );
@@ -307,7 +307,7 @@ function DeclarationList({ entries, t }: { entries: readonly ScopeDeclaration[];
     <div className="flex flex-col gap-3">
       {groupByOrigin(entries).map(([origin, groups]) => (
         <div key={origin} className="flex flex-col gap-1">
-          <p className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+          <p className="text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
             {t(ORIGIN_LABEL[origin])}
           </p>
           <ul className="flex flex-col gap-1.5">
@@ -319,7 +319,7 @@ function DeclarationList({ entries, t }: { entries: readonly ScopeDeclaration[];
               */
               <li key={group.key} className="flex flex-col gap-0.5">
                 <span className="flex flex-wrap items-baseline gap-x-2">
-                  <span className="break-all font-mono text-caption text-[color:var(--color-text-primary)]">
+                  <span className="break-all font-mono text-label text-[color:var(--color-text-primary)]">
                     {group.label}
                   </span>
                   <ToolAttribution tools={group.tools} />
@@ -327,12 +327,12 @@ function DeclarationList({ entries, t }: { entries: readonly ScopeDeclaration[];
                 {group.entries.map((entry) => (
                   <span key={entry.id} className="flex flex-col">
                     {entry.declaration ? (
-                      <span className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                      <span className="break-all font-mono text-label text-[color:var(--color-text-tertiary)]">
                         {t('coverageDeclaredAs', { declaration: entry.declaration })}
                       </span>
                     ) : null}
                     {entry.namedBy ? (
-                      <span className="break-all font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                      <span className="break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
                         {t('coverageNamedBy', { config: entry.namedBy })}
                       </span>
                     ) : null}
@@ -412,7 +412,7 @@ function CellDetail({
         {/* The domain's own name, because once the header has scrolled away the open detail said
             only "Watched" and nothing said which row it belonged to — and at 390 the row's name is
             truncated, so this is also the only place the full name is recoverable. */}
-        <p className="min-w-0 text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+        <p className="min-w-0 text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
           {t(COLUMN_HEAD[column])} · <span className="normal-case">{area.title}</span>
         </p>
         <button
@@ -465,7 +465,7 @@ function CellDetail({
               {area.capabilities.map((capability) => (
                 <li
                   key={capability.slug}
-                  className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]"
+                  className="break-all font-mono text-label text-[color:var(--color-text-tertiary)]"
                 >
                   {capability.path}
                 </li>
@@ -476,7 +476,7 @@ function CellDetail({
           <DeclarationList entries={entries} t={t} />
         )}
       </div>
-      <p className="mt-3 text-caption text-[color:var(--color-text-quaternary)]">
+      <p className="mt-3 text-label text-[color:var(--color-text-quaternary)]">
         {t(COLUMN_HINT[column])}
       </p>
     </div>
@@ -568,7 +568,7 @@ function DocumentReachBlock({
             </dl>
           </InfoHint>
         </div>
-        <p className="text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+        <p className="text-label tabular-nums text-[color:var(--color-text-quaternary)]">
           {t('reachTotal', { total: reach.total, excluded: reach.excluded.length })}
         </p>
       </div>
@@ -644,7 +644,7 @@ function DocumentReachBlock({
           {reach.unnamedByFolder.map((folder) => (
             <li
               key={folder.folder}
-              className="flex items-baseline justify-between gap-2 font-mono text-caption tabular-nums text-[color:var(--color-text-tertiary)]"
+              className="flex items-baseline justify-between gap-2 font-mono text-label tabular-nums text-[color:var(--color-text-tertiary)]"
             >
               <span className="truncate">{folder.folder}</span>
               <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
@@ -664,12 +664,12 @@ function DocumentReachBlock({
          * than the amber it replaces, and the sentence already says "a floor" in words
          * (design-infoviz, 2026-09-13).
          */
-        <p className="text-caption text-[color:var(--color-text-secondary)]">
+        <p className="text-label text-[color:var(--color-text-secondary)]">
           {t('reachTruncated')}
         </p>
       ) : null}
       {sourceRoot ? (
-        <p className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-label text-[color:var(--color-text-quaternary)]">
           {t('reachSourceRoot', { path: sourceRoot })}
         </p>
       ) : null}
@@ -901,7 +901,7 @@ export function HarnessCoverageView({
           className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)]"
         >
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+            <h2 className="text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
               {t('coverageEverywhereTitle')} ·{' '}
               <span className="normal-case">{t(COLUMN_HEAD[openEverywhere])}</span>
             </h2>
@@ -919,7 +919,7 @@ export function HarnessCoverageView({
               {t('coverageCloseNames')}
             </button>
           </div>
-          <p className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
+          <p className="mt-1 text-label text-[color:var(--color-text-quaternary)]">
             {t('coverageEverywhereBody', { areas: matrix.areas.length })}
           </p>
           <div className="mt-3">
@@ -935,16 +935,22 @@ export function HarnessCoverageView({
         <table className="w-full table-fixed border-collapse text-left">
           <caption className="sr-only">{t('coverageTableCaption')}</caption>
           <colgroup>
-            <col className="w-[55%]" />
-            <col className="w-[15%]" />
-            <col className="w-[15%]" />
-            <col className="w-[15%]" />
+            {/* From `lg` the domain takes 46% and the three answers share the rest. Fixed 144px
+                answer tracks left the domain column 1,350px wide around a purpose line that ended
+                near x 530, so every row had a 900px empty band in its middle and the answers stood
+                crammed at the far edge (design review, 2026-09-25). At the frame's 1600px cap 46%
+                is ~700px — room for a purpose line with no clamp — and the answers sit a readable
+                step apart instead of at the wall. */}
+            <col className="w-[55%] lg:w-[46%]" />
+            <col className="w-[15%] lg:w-[18%]" />
+            <col className="w-[15%] lg:w-[18%]" />
+            <col className="w-[15%] lg:w-[18%]" />
           </colgroup>
           <thead>
             <tr>
               <th
                 scope="col"
-                className="px-3 pb-2 text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]"
+                className="px-3 pb-2 text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]"
               >
                 {t('coverageColumnArea')}
               </th>
@@ -962,7 +968,7 @@ export function HarnessCoverageView({
                     card above, where one 44px target sits in a 200px-wide tile (design-lead and
                     design-responsive, 2026-09-13).
                   */
-                  className="px-3 pb-2 text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]"
+                  className="px-3 pb-2 text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]"
                 >
                   {t(COLUMN_HEAD[column])}
                 </th>
@@ -984,7 +990,7 @@ export function HarnessCoverageView({
                       <span className="min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                         {area.title}
                       </span>
-                      <span className="text-caption tabular-nums text-[color:var(--color-text-tertiary)]">
+                      <span className="text-label tabular-nums text-[color:var(--color-text-tertiary)]">
                         {t('coveragePathCount', { count: area.capabilities.length })}
                       </span>
                     </span>
@@ -1032,15 +1038,18 @@ export function HarnessCoverageView({
                             size: 'md',
                             hoverSurface: 'lift',
                             active: openCell === key,
-                            className: 'h-full items-start px-3 py-3',
+                            className: 'h-full items-start justify-start gap-2 px-3 py-3',
                           })}
                         >
                           <CellMark count={entries.length} t={t} />
+                          {/* Beside the value it opens, not at the far edge of the cell: pushed
+                              right it sat 170–216px from the count and the three chevrons read as
+                              a column of their own (design audit, 2026-09-25). */}
                           <ChevronRight
                             size={ICON_SIZE.sm}
                             aria-hidden
                             className={cn(
-                              'ml-auto mt-0.5 shrink-0 text-[color:var(--color-text-quaternary)] transition-transform',
+                              'mt-0.5 shrink-0 text-[color:var(--color-text-quaternary)] transition-transform',
                               openCell === key && 'rotate-90',
                             )}
                           />
@@ -1081,12 +1090,12 @@ export function HarnessCoverageView({
       */}
       <Disclosure summary={t('coverageProvenance')} summaryTestId="harness-coverage-provenance">
         <div className="mt-2 grid gap-x-8 gap-y-2 lg:grid-cols-2">
-          <p className="text-caption text-[color:var(--color-text-quaternary)]">
+          <p className="text-label text-[color:var(--color-text-quaternary)]">
             {t('coverageRule')}
           </p>
-          <p className="text-caption text-[color:var(--color-text-quaternary)]">{t('reachRule')}</p>
+          <p className="text-label text-[color:var(--color-text-quaternary)]">{t('reachRule')}</p>
           {matrix.unreachedCapabilities.length > 0 ? (
-            <p className="text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+            <p className="text-label tabular-nums text-[color:var(--color-text-quaternary)]">
               {t('coverageUnreached', {
                 count: matrix.unreachedCapabilities.length,
                 paths: matrix.unreachedCapabilities.map((capability) => capability.path).join(' · '),
@@ -1094,7 +1103,7 @@ export function HarnessCoverageView({
             </p>
           ) : null}
           {outsideFolders.length > 0 ? (
-            <p className="text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+            <p className="text-label tabular-nums text-[color:var(--color-text-quaternary)]">
               {t('coverageOutside', {
                 count: matrix.outsideAreas.length,
                 folders: outsideFolders.join(' · '),
@@ -1102,7 +1111,7 @@ export function HarnessCoverageView({
             </p>
           ) : null}
           {pathlessCapabilities > 0 ? (
-            <p className="text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+            <p className="text-label tabular-nums text-[color:var(--color-text-quaternary)]">
               {t('coveragePathless', { count: pathlessCapabilities })}
             </p>
           ) : null}

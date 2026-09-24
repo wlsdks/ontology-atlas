@@ -637,18 +637,18 @@ describe('AiConnectionPanel hierarchy', () => {
   });
 
   it('keeps every trust fact on screen while demoting its weight', () => {
-    // Whether the hierarchy adjustment leaked into deleting information — the
-    // charter line, the three "what goes out" rows and the log file name must all remain.
+    // Whether the hierarchy adjustment leaked into deleting information — where the key
+    // lives, what goes out and when, and the log file name must all remain. Each is said
+    // once (2026-09-25): the record's location lives in the sent log, not in a fourth row.
     renderPanel(makeConnection());
     for (const key of [
-      'settings.ai.principle',
       'settings.ai.scopeTitle',
+      'settings.ai.scopeKeyValue',
       'settings.ai.scopeWhatValue',
       'settings.ai.scopeWhenValue',
-      'settings.ai.scopeLogValue',
       'settings.ai.auditTitle',
     ]) {
-      expect(screen.getAllByText(key).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(key)).toHaveLength(1);
     }
     expect(screen.getByText('.ontology-atlas/llm-audit.jsonl')).toBeInTheDocument();
   });
@@ -657,18 +657,18 @@ describe('AiConnectionPanel hierarchy', () => {
    * 「what do I get if I connect」 comes before 「how do I connect」 — while that
    * sentence sat as a footnote below the list, the footnote was denying an
    * **already-shipped agent** as "coming soon" and invalidating the CTA that sent
-   * people here (`vaultAgentPanel.degraded.noKeyAction`).
+   * people here (`vaultAgentPanel.degraded.noKeyAction`). Since 2026-09-25 it is the
+   * sheet's pane head (`nav.settingsMenu.sectionPurpose.ai`, asserted in
+   * `AppSettingsMenu.test.tsx`), so the panel opens straight on the vendor list and
+   * does not say it a second time.
    */
-  it('연결이 무엇을 여는지를 벤더 목록보다 먼저 말한다', () => {
+  it('연결이 무엇을 여는지는 머리 문장이 말하고, 패널은 되풀이하지 않는다', () => {
     const { container } = renderPanel(makeConnection());
-    const unlocks = screen.getByTestId('ai-what-it-unlocks');
+    expect(screen.queryByTestId('ai-what-it-unlocks')).toBeNull();
+    const view = screen.getByTestId('ai-connection-view');
     const list = container.querySelector('.bg-\\[color\\:var\\(--color-overlay-1\\)\\]');
-    expect(unlocks).toBeInTheDocument();
     expect(list).not.toBeNull();
-    // DOM order is reading order.
-    expect(
-      unlocks.compareDocumentPosition(list as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(view.firstElementChild).toBe(list);
   });
 
   it('출시된 기능을 부정하던 각주는 사라졌다', () => {

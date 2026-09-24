@@ -135,7 +135,16 @@ export function LibraryHomeStrip({
       {clauses.length > 0 ? (
         <p
           data-testid="library-home-strip"
-          className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-label leading-body text-[color:var(--color-text-secondary)]"
+          /*
+           * ⚠️ **At `lg` and up the sentence keeps its own width; the counts beside it give
+           * way instead** (design sweep round 2, 2026-09-25). The first cut let this `<p>`
+           * shrink with the counts, and at 1040 every clause lost its tail — *2 off-templ…*
+           * cut the one number a person acts on. So the sentence does not shrink here, the
+           * plain clauses never truncate, and only the lead clause's file name may, past a
+           * cap no ordinary name reaches. `LibraryGraph`'s counts are the one child that
+           * truncates, and they keep the whole caption in their `title`.
+           */
+          className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-label leading-body text-[color:var(--color-text-secondary)] lg:flex-none lg:flex-nowrap"
         >
           {clauses.map((clause, index) => (
             <span key={clause.kind} className="contents">
@@ -168,6 +177,7 @@ export function LibraryHomeStrip({
                     className: "min-w-0 max-w-full",
                   }),
                   clause !== lead && "max-lg:hidden",
+                  clause.kind === "compile" ? "lg:max-w-[16rem]" : "lg:flex-none",
                 )}
               >
                 <span className="min-w-0 truncate">{clause.text}</span>
@@ -201,7 +211,7 @@ export function LibraryHomeStrip({
         it: the row went 60px to 68 and the conversation chip's right edge measured 489
         against a content edge of 1472. As one group: 60px and 1472/1472.
       */}
-      <span className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-1">
+      <span className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-1 lg:flex-none">
       <span className="flex flex-none items-center gap-1.5 max-lg:hidden">
         {doors.map((door) => {
           const Icon = DOOR_ICON[door.id];

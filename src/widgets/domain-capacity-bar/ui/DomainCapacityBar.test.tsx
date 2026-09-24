@@ -115,7 +115,8 @@ describe("DomainCapacityBar", () => {
     const narrow = tailOf({ capabilityCount: 2, elementCount: 5, total: 7 });
     expect(wide).toBe(narrow);
     expect(wide).toContain("flex-none");
-    expect(wide).toMatch(/w-\[\d+px\]/);
+    // A fixed width on the spacing scale (`w-48`), not a width that follows the words.
+    expect(wide).toMatch(/\bw-\d+\b/);
   });
 
   it("renders all nine current English Storefront tails inside the measured 192px column", () => {
@@ -147,7 +148,7 @@ describe("DomainCapacityBar", () => {
       );
       const breakdown = screen.getByText(text);
       const tail = breakdown.parentElement as HTMLElement;
-      expect(tail).toHaveClass("w-[192px]");
+      expect(tail).toHaveClass("w-48");
       expect(breakdown).toHaveTextContent(text);
       unmount();
     }

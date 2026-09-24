@@ -83,7 +83,7 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
     <div data-testid="evidence-specimen" className="flex min-w-0 flex-col gap-5">
       {/* ── The file, verbatim ─────────────────────────────────────────────── */}
       <div className="min-w-0">
-        <h3 className="font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+        <h3 className="break-keep text-caption font-[var(--font-weight-emphasis)] leading-caption text-[color:var(--color-text-secondary)]">
           {t('specimenFileHeading')}
         </h3>
         <div className="mt-3 min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
@@ -138,7 +138,7 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
          * it states how many were left out. The second half is not optional — showing a subset as
          * if it were the whole file is the same untruth this section exists to disprove.
          */}
-        <p className="mt-2 break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+        <p className="mt-2 break-keep text-caption leading-caption text-[color:var(--color-text-tertiary)]">
           {omitted > 0
             ? t('specimenElided', { shown: frontmatter.length, count: omitted })
             : t('specimenComplete', { shown: frontmatter.length })}
@@ -147,7 +147,7 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
 
       {/* ── The same file, as the agent reads it ───────────────────────────── */}
       <div className="min-w-0 border-t border-[color:var(--color-border-soft)] pt-5">
-        <h3 className="font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+        <h3 className="break-keep text-caption font-[var(--font-weight-emphasis)] leading-caption text-[color:var(--color-text-secondary)]">
           {t('specimenFactsHeading')}
         </h3>
         <dl className="mt-3 grid gap-2">
@@ -160,7 +160,7 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
                   '-mx-1.5 bg-[color:var(--color-overlay-2)] px-1.5',
               )}
             >
-              <dt className="w-[6.5rem] shrink-0 break-keep text-body leading-body text-[color:var(--color-text-quaternary)]">
+              <dt className="w-[6.5rem] shrink-0 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
                 {fact.label}
               </dt>
               <dd

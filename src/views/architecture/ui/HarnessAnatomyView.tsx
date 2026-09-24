@@ -2,10 +2,12 @@
 
 import { useCallback, useId, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { ShieldQuestion, TriangleAlert } from 'lucide-react';
 
 import type { HarnessReport } from '@/entities/agent-files';
 import { CompactCopyButton, InfoHint } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { HarnessStructureDiagram } from './HarnessStructureDiagram';
 import { cn } from '@/shared/lib/cn';
 
@@ -73,9 +75,12 @@ function SlotRow({
   extraHint,
   extraHintLabel,
   bodyHint,
+  hideTitle = false,
 }: {
   slot: AnatomySlot;
   t: TranslateFn;
+  /** The diagram's evidence pane already heads the row with its name and count. */
+  hideTitle?: boolean;
   /** One line a specific slot earns — the permission split and the always-read weight. */
   extra?: string | null;
   /** The hint that line needs when the number is one a reader will want to argue with. */
@@ -94,7 +99,7 @@ function SlotRow({
       data-status={slot.status}
       className="relative border-t border-[color:var(--color-divider)] py-3 first:border-t-0 first:pt-0"
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+      <div className={cn('flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1', hideTitle && 'sr-only')}>
         <h3
           className={cn(
             'min-w-0 break-keep text-body font-[var(--font-weight-emphasis)]',
@@ -113,7 +118,7 @@ function SlotRow({
         <span
           data-testid={`harness-anatomy-count-${slot.id}`}
           className={cn(
-            'shrink-0 text-caption tabular-nums',
+            'shrink-0 text-label tabular-nums',
             absent
               ? 'text-[color:var(--color-text-quaternary)]'
               : 'text-[color:var(--color-text-secondary)]',
@@ -124,8 +129,8 @@ function SlotRow({
             : t(`anatomyUnits.${slot.id}`, { count: slot.count })}
         </span>
       </div>
-      <div className="mt-1 flex max-w-prose flex-wrap items-baseline gap-x-1">
-        <p className="min-w-0 break-keep text-caption text-[color:var(--color-text-tertiary)]">
+      <div className={cn('flex max-w-prose flex-wrap items-baseline gap-x-1', !hideTitle && 'mt-1')}>
+        <p className="min-w-0 break-keep text-label text-[color:var(--color-text-tertiary)]">
           {t(`anatomySlots.${slot.id}.body`)}
         </p>
         {/*
@@ -145,7 +150,7 @@ function SlotRow({
         /* ⚠️ A `div`, not a `p`. `InfoHint` renders its panel as a `div`, and a `div` inside a `p`
            is invalid HTML that React reports as a hydration error — which is exactly what the
            dev overlay's issue counter was showing after this line was added (2026-09-20). */
-        <div className="mt-1 flex flex-wrap items-center gap-x-1 text-caption tabular-nums text-[color:var(--color-text-tertiary)]">
+        <div className="mt-1 flex flex-wrap items-center gap-x-1 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
           <span>{extra}</span>
           {extraHint ? (
             <InfoHint align="left" className="static" panelClassName="max-w-full max-h-[35dvh] overflow-y-auto" label={extraHintLabel ?? t('anatomyAlwaysWeightLabel')}>
@@ -157,7 +162,7 @@ function SlotRow({
       {slot.items.length > 0 ? (
         /* The names are the citation: a reader who doubts the count opens one of them. Monospace,
            because every one of them is a path or a server key that can be typed. */
-        <p className="mt-1.5 break-words font-mono text-caption text-[color:var(--color-text-quaternary)]">
+        <p className="mt-1.5 break-words font-mono text-label text-[color:var(--color-text-quaternary)]">
           {slot.items.join(' · ')}
           {slot.overflow > 0 ? ` · ${t('anatomyMore', { count: slot.overflow })}` : ''}
         </p>
@@ -175,10 +180,10 @@ function SlotRow({
           pasting the path into their editor is the step where they decide.
         */
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-caption text-[color:var(--color-text-quaternary)]">
+          <span className="text-label text-[color:var(--color-text-quaternary)]">
             {t('anatomyFillHere')}
           </span>
-          <code className="min-w-0 break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">
+          <code className="min-w-0 break-all font-mono text-label text-[color:var(--color-text-tertiary)]">
             {slot.fillPath}
           </code>
           <CompactCopyButton
@@ -252,19 +257,15 @@ export function HarnessAnatomyView({
         down (measured 1512×949, 2026-09-20). The name survives as the region's accessible label,
         where it names the landmark without spending a row.
       */}
-      <SegmentedControl ariaLabel={t('structurePresentation')} value={presentation} onChange={setPresentation}
-        options={[{value:'diagram',label:t('diagramView'),testId:'harness-view-diagram'},{value:'text',label:t('textView'),testId:'harness-view-text'}]} className="shrink-0 self-start" />
-
-      {/* Only the work area scrolls. Headers and view switching stay anchored even
-          when evidence expands or the reader enlarges text. No evidence is clipped. */}
-      <div data-testid="harness-structure-scroll" className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pr-1">
-      <div className="relative flex shrink-0 flex-wrap items-baseline gap-x-2">
-        <p className="min-w-0 max-w-prose break-keep text-caption text-[color:var(--color-text-tertiary)]">
-          {t('anatomyCaption')}
-        </p>
-        <InfoHint align="left" className="static" label={t('anatomyProvenanceLabel')} panelClassName="max-w-full max-h-[35dvh] overflow-y-auto">
-          {t('anatomyProvenance')}
-        </InfoHint>
+      {/*
+        The view's controls are one row: how to read it on the left, what to do with it on the
+        right. The counting caption that used to sit between them is the header's working line now,
+        where every other view prints its own, and the handover stopped floating on a line of its
+        own 60px below the switch it belongs beside.
+      */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+        <SegmentedControl ariaLabel={t('structurePresentation')} value={presentation} onChange={setPresentation}
+          options={[{value:'diagram',label:t('diagramView'),testId:'harness-view-diagram'},{value:'text',label:t('textView'),testId:'harness-view-text'}]} className="shrink-0" />
         {/*
           **The half the rows cannot do.** The screen shows what is here and offers the address for
           what is not, and then the person has to retype all of it into whatever agent they use.
@@ -278,17 +279,41 @@ export function HarnessAnatomyView({
           label={copiedId === BRIEF_ID ? t('anatomyBriefCopied') : t('anatomyBrief')}
           ariaLabel={t('anatomyBriefAria')}
           onClick={copyBrief}
-          className="ml-auto"
+          className="min-h-8 border border-[color:var(--color-border-soft)] px-3"
         />
       </div>
 
+      {/* Only the work area scrolls. Headers and view switching stay anchored even
+          when evidence expands or the reader enlarges text. No evidence is clipped. */}
+      <div data-testid="harness-structure-scroll" className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pr-1">
+
       {presentation === 'diagram' ? <>
         <HarnessStructureDiagram slots={anatomy.slots} sourceRoot={sourceRoot} selectedId={selectedSlot} detailId={detailId} onSelect={setSelectedSlot}
-          selectedContent={<ul className="px-3 py-2">
-            {selected ? <SlotRow slot={selected} t={t} copied={copiedId===selected.id} onCopy={copy} /> : null}
+          selectedContent={<ul className="py-2">
+            {selected ? <SlotRow slot={selected} t={t} copied={copiedId===selected.id} onCopy={copy} hideTitle /> : null}
           </ul>} />
-        {anatomy.silentGuards.missing.length > 0 ? <p className={cn('rounded-chip px-3 py-2 text-body',WARNING_TONE)}>{t('anatomySilentGuards',{count:anatomy.silentGuards.missing.length,scripts:anatomy.silentGuards.missing.join(' · ')})}</p> : null}
-        {anatomy.approvalGates.length > 0 ? <p className="text-body text-[color:var(--color-text-tertiary)]">{t('anatomyApprovalGate',{config:anatomy.approvalGates.join(' · ')})}</p> : null}
+        {anatomy.silentGuards.missing.length > 0 || anatomy.approvalGates.length > 0 ? (
+          /*
+            **One stack for what the files cannot settle.** The missing-script warning was an amber
+            bar and the trust note a bare sentence under it, with no surface, icon or tone — two
+            grammars for two facts of the same kind. They share one bordered surface now, each row
+            led by its icon, and only the warning wears amber.
+          */
+          <ul data-testid="harness-anatomy-notes" className="shrink-0 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
+            {anatomy.silentGuards.missing.length > 0 ? (
+              <li data-testid="harness-anatomy-silent" className="flex items-start gap-2.5 border-b border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-[var(--card-pad)] py-2.5 text-body text-[color:var(--color-amber-source-a90)] last:border-b-0">
+                <TriangleAlert size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
+                <span className="min-w-0 break-keep">{t('anatomySilentGuards',{count:anatomy.silentGuards.missing.length,scripts:anatomy.silentGuards.missing.join(' · ')})}</span>
+              </li>
+            ) : null}
+            {anatomy.approvalGates.length > 0 ? (
+              <li data-testid="harness-anatomy-approval" className="flex items-start gap-2.5 px-[var(--card-pad)] py-2.5 text-body text-[color:var(--color-text-secondary)]">
+                <ShieldQuestion size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-text-tertiary)]" />
+                <span className="min-w-0 break-keep">{t('anatomyApprovalGate',{config:anatomy.approvalGates.join(' · ')})}</span>
+              </li>
+            ) : null}
+          </ul>
+        ) : null}
       </> : <>
 
       {/*
@@ -305,10 +330,10 @@ export function HarnessAnatomyView({
               data-testid={`harness-anatomy-band-${band}`}
               className="flex min-w-0 flex-col rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)]"
             >
-              <h2 className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+              <h2 className="text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                 {t(BAND_HEAD[band])}
               </h2>
-              <p className="mt-1 break-keep text-caption text-[color:var(--color-text-tertiary)]">
+              <p className="mt-1 break-keep text-label text-[color:var(--color-text-tertiary)]">
                 {t(BAND_CAPTION[band])}
               </p>
               <ul className="mt-3 flex flex-col">
@@ -369,7 +394,7 @@ export function HarnessAnatomyView({
                   <li
                     data-testid="harness-anatomy-silent"
                     className={cn(
-                      'mt-2 rounded-chip border-t-0 px-2 py-1.5 text-caption',
+                      'mt-2 rounded-chip border-t-0 px-2 py-1.5 text-label',
                       WARNING_TONE,
                     )}
                   >
@@ -385,7 +410,7 @@ export function HarnessAnatomyView({
                      once rather than every hook row carrying a caveat. */
                   <li
                     data-testid="harness-anatomy-approval"
-                    className="mt-1 border-t border-[color:var(--color-divider)] pt-3 text-caption text-[color:var(--color-text-quaternary)]"
+                    className="mt-1 border-t border-[color:var(--color-divider)] pt-3 text-label text-[color:var(--color-text-quaternary)]"
                   >
                     {t('anatomyApprovalGate', { config: anatomy.approvalGates.join(' · ') })}
                   </li>
@@ -396,7 +421,9 @@ export function HarnessAnatomyView({
         })}
       </div>
       </>}
-      {toolSlot ? (
+      {/* The diagram names the loop in its centre card and explains it there; the text reading has
+          no centre, so it keeps this band. */}
+      {toolSlot && presentation === 'text' ? (
         /*
           Outside the grid and quieter than it, because this row is the screen's honesty rather than
           its content: the part of the harness the repository does not own. Dashed, so it is legible
@@ -414,7 +441,7 @@ export function HarnessAnatomyView({
           */}
           <div className="grid gap-x-8 gap-y-2 md:grid-cols-[minmax(0,15rem)_1fr]">
             <div data-testid="harness-anatomy-slot-loop" data-status={toolSlot.status}>
-              <h2 className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+              <h2 className="text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                 {t(BAND_HEAD.tool)}
               </h2>
               <h3 className="mt-1 break-keep text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
@@ -422,19 +449,22 @@ export function HarnessAnatomyView({
               </h3>
             </div>
             <div className="flex flex-col gap-1">
-              <p className="break-keep text-caption text-[color:var(--color-text-tertiary)]">
+              <p className="break-keep text-label text-[color:var(--color-text-tertiary)]">
                 {t(BAND_CAPTION.tool)}
               </p>
-              <p className="break-keep text-caption text-[color:var(--color-text-tertiary)]">
+              <p className="break-keep text-label text-[color:var(--color-text-tertiary)]">
                 {t('anatomySlots.loop.body')}
               </p>
             </div>
           </div>
         </section>
       ) : null}
-      <p className="break-all font-mono text-caption text-[color:var(--color-text-quaternary)]">
-        {t('sourceRoot', { path: sourceRoot })}
-      </p>
+      {presentation === 'text' ? (
+        /* The diagram prints this path in its own header, next to the folder's name. */
+        <p className="break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
+          {t('sourceRoot', { path: sourceRoot })}
+        </p>
+      ) : null}
       </div>
     </section>
   );

@@ -21,6 +21,16 @@ export interface DomainCapacityBarProps {
    * full-width project card), so the title column is the one thing left
    * tunable per call site. Defaults to the insights list's column width. */
   titleWidthClassName?: string;
+  /**
+   * `stacked` (default): the total over its breakdown, right-aligned in the fixed tail column.
+   * `inline`: the total and its breakdown on one line, left-aligned directly after the track, for
+   * a wide card where a right-aligned column left ~185px of dead gutter between the bar's end and
+   * its number (project page at 1512, measured 2026-09-25). Its width is `--capacity-tail-inline`,
+   * which the list sets to its widest tail, so every row's track still ends on one axis and no row
+   * carries a gutter wider than its longest number. Unset, the tail is as wide as its own words.
+   * (A fixed 200px only moved the gutter: ~100px stood between the breakdown and the chevron.)
+   */
+  tail?: "stacked" | "inline";
 }
 
 /**
@@ -90,6 +100,7 @@ export function DomainCapacityBar({
   row,
   labels,
   titleWidthClassName = "sm:w-[220px]",
+  tail = "stacked",
 }: DomainCapacityBarProps) {
   // The denominator is **this row's own sum**, not the list's maximum. So the track is
   // always full and what gets compared between rows is not length but **where the
@@ -141,22 +152,39 @@ export function DomainCapacityBar({
           axis, distorting the comparison value itself by up to 1.2%.
           The 「Connections」 (connections) tab's impact ranking already uses this grammar (fixed
           track plus fixed number column), so its column-width discipline is taken
-          verbatim. 192px fits all nine current English Storefront tails without clipping.
+          verbatim. `w-48` (192px, on the spacing scale) fits all nine current English Storefront tails without clipping.
           `tabular-nums` is applied to both rows so the digit positions do not shift either. */}
-      <span
-        data-testid="domain-capacity-bar-tail"
-        className="w-[192px] flex-none text-right"
-      >
-        <span className="block font-mono text-title tabular-nums text-[color:var(--map-numeral-face)]">
-          {row.total}
-        </span>
+      {tail === "inline" ? (
         <span
-          data-testid="domain-capacity-bar-breakdown"
-          className="block truncate font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]"
+          data-testid="domain-capacity-bar-tail"
+          className="flex w-[var(--capacity-tail-inline,auto)] flex-none items-baseline gap-2.5 whitespace-nowrap"
         >
-          {labels.capabilityUnit} {row.capabilityCount} · {labels.elementUnit} {row.elementCount}
+          <span className="text-title font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--map-numeral-face)]">
+            {row.total}
+          </span>
+          <span
+            data-testid="domain-capacity-bar-breakdown"
+            className="min-w-0 truncate text-label tabular-nums text-[color:var(--color-text-tertiary)]"
+          >
+            {labels.capabilityUnit} {row.capabilityCount} · {labels.elementUnit} {row.elementCount}
+          </span>
         </span>
-      </span>
+      ) : (
+        <span
+          data-testid="domain-capacity-bar-tail"
+          className="w-48 flex-none text-right"
+        >
+          <span className="block font-mono text-title tabular-nums text-[color:var(--map-numeral-face)]">
+            {row.total}
+          </span>
+          <span
+            data-testid="domain-capacity-bar-breakdown"
+            className="block truncate font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]"
+          >
+            {labels.capabilityUnit} {row.capabilityCount} · {labels.elementUnit} {row.elementCount}
+          </span>
+        </span>
+      )}
     </div>
   );
 }
