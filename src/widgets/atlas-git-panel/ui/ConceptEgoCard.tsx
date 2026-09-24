@@ -83,7 +83,7 @@ export function ConceptEgoCard({
         </div>
         {/* The human-written line. It is the first fact a person reads on this card. */}
         {ego.summary ? (
-          <p className="line-clamp-2 text-label leading-prose text-[color:var(--color-text-secondary)]">
+          <p className="line-clamp-2 text-label leading-prose break-keep text-[color:var(--color-text-secondary)]">
             {ego.summary}
           </p>
         ) : null}

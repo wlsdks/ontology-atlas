@@ -80,6 +80,8 @@ export async function installDesktopRailRuntime(
   page: Page,
   extraFiles: Record<string, string> = {},
   runtimeResponses?: { fast: unknown[]; probed: unknown[] },
+  /** A longer history than the two default steps, for layouts that only break with a real list. */
+  commits: readonly unknown[] = COMMITS,
 ): Promise<void> {
   await seedFirstRunSeen(page);
   await page.addInitScript(
@@ -229,7 +231,7 @@ export async function installDesktopRailRuntime(
       root: DESKTOP_VAULT_ROOT,
       latency: NATIVE_LATENCY_MS,
       files: { ...FIXTURE_VAULT, ...extraFiles },
-      commits: COMMITS,
+      commits: [...commits],
       pending: PENDING,
       diff: DIFF,
       runtimeResponses,

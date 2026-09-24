@@ -6,6 +6,7 @@ import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-f
 import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
 import { useRovingRows } from "@/shared/lib/use-roving-rows";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
+import { stepFileNames, stripConventionalPrefix } from "../lib/step-title";
 import { useFormatter, useTranslations } from "next-intl";
 // `History as HistoryIcon` — usability review P0 (2026-07-23): under certain
 // HMR/bundle states the bare `History` identifier resolved to the global DOM
@@ -1265,8 +1266,13 @@ function PageHeader({
             widths. Referencing a ramp token through an arbitrary length raises
             only the font size while the line-height of the step below stays, so a
             ratio nobody chose gets created — which is what happened here (23px
-            text on title's 24px leading, 1.04). */}
-        <h1 className="flex items-center gap-2 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)] sm:text-display">
+            text on title's 24px leading, 1.04).
+
+            2026-09-25 — the display step moved to what the person picked. "Git" is the
+            name of the destination, which the rail already highlights; at 23px it was the
+            same size as the selected document's title and outranked the selected step's
+            14px headline, so the screen had two winners and neither was the selection. */}
+        <h1 className="flex items-center gap-2 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
           <HistoryIcon size={ICON_SIZE.lg} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
         </h1>
@@ -1276,7 +1282,7 @@ function PageHeader({
             needs confirmed is not a product description but "nothing outside my
             folder is touched". */}
         {showScope ? (
-          <p className="flex items-center gap-1.5 text-label leading-prose text-[color:var(--color-text-quaternary)]">
+          <p className="flex items-center gap-1.5 text-label leading-prose break-keep text-[color:var(--color-text-quaternary)]">
             <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
             {t("scopeNotice")}
           </p>
@@ -1616,7 +1622,7 @@ function SetupFrame({
             {title}
           </h1>
           {body ? (
-            <p className="max-w-[34em] text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+            <p className="max-w-[34em] text-body-lg leading-body-lg break-keep text-[color:var(--color-text-secondary)]">
               {body}
             </p>
           ) : null}
@@ -1624,7 +1630,7 @@ function SetupFrame({
         {step ? <ConnectLadder t={t} current={step} /> : null}
         {children}
         {note ? (
-          <p className="flex items-start gap-2 text-label leading-prose text-[color:var(--color-text-quaternary)]">
+          <p className="flex items-start gap-2 text-label leading-prose break-keep text-[color:var(--color-text-quaternary)]">
             <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
             <span>{note}</span>
           </p>
@@ -2023,7 +2029,7 @@ function RemoteResultLine({
       role="status"
       data-testid={error ? `atlas-git-${kind}-error` : `atlas-git-${kind}-notice`}
       className={cn(
-        "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-prose",
+        "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-prose break-keep",
         error
           ? "text-[color:var(--color-danger-text)]"
           : "text-[color:var(--color-text-tertiary)]",
@@ -2070,7 +2076,7 @@ function RemoteSetup({
       data-testid="atlas-git-remote-setup"
       className="git-fade-in flex shrink-0 flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
     >
-      <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
+      <p className="text-label leading-prose break-keep text-[color:var(--color-text-tertiary)]">
         {t("remoteSetupBody")}
       </p>
       <div className="flex flex-wrap items-center gap-2">
@@ -2157,7 +2163,7 @@ function DiscardDock({
           className="git-fade-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
           data-testid="atlas-git-discard-step"
         >
-          <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
+          <p className="text-label leading-prose break-keep text-[color:var(--color-text-secondary)]">
             {status === "deleted"
               ? t("discardConfirmDeleted")
               : t("discardConfirmBody", { added: delta?.added ?? 0, removed: delta?.removed ?? 0 })}
@@ -2296,9 +2302,14 @@ function StepConceptNames({
  * not the value but **where the value sits**.
  *
  * The three columns (time · name · why) are exactly as measured on the mockup.
+ *
+ * Below `xl` the list spans the whole stacked page, and three columns became three
+ * islands: at 1040 the name column ended near x=480 and the why column started near
+ * x=680, with nothing between them (2026-09-25). There the why drops under the name as
+ * a muted second line, so one row reads as one unit and the time keeps its own column.
  */
 const STEP_ROW =
-  "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1.7fr)_minmax(0,1fr)] min-h-[var(--git-row-h)] items-center gap-3 border-b border-l-2 border-b-[color:var(--color-divider)] px-4 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]";
+  "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1fr)] xl:grid-cols-[var(--git-when-w)_minmax(0,1.7fr)_minmax(0,1fr)] min-h-[var(--git-row-h)] items-center gap-x-3 gap-y-0.5 xl:gap-y-3 border-b border-l-2 border-b-[color:var(--color-divider)] px-4 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] max-xl:[&>*:first-child]:row-span-2 max-xl:[&>*:nth-child(3)]:col-start-2";
 
 function StepList({
   t,
@@ -2463,7 +2474,7 @@ function StepList({
       {history.map((commit, index) => {
         const summary = describeSnapshotSubject(commit.subject);
         const human = humanizeStepSubject(t, commit.subject);
-        const headline = human ?? commit.subject;
+        const headline = human ?? stripConventionalPrefix(commit.subject);
         /*
          * The third column is **why**. A subject a person wrote is the why. An automatic
          * subject has none — it is our own `ontology snapshot: …` string — so the column says
@@ -2471,7 +2482,7 @@ function StepList({
          * meant every automatic step on the real screen (the one with a graph, where the name
          * column holds the concept) read `ontology snapshot: ~1 u…` (measured 2026-09-19).
          */
-        const why = human ? t("stepAutoSubject", { summary: human }) : commit.subject;
+        const why = human ? t("stepAutoSubject", { summary: human }) : stripConventionalPrefix(commit.subject);
         const stepConcepts = concepts.get(commit.hash) ?? [];
         /*
          * Two names only when two are all there is. With a third behind them, two slots cut both
@@ -2545,7 +2556,7 @@ function StepList({
                     />
                   </>
                 ) : (
-                  <span className="truncate" title={headline}>{headline}</span>
+                  <span className="truncate" title={commit.subject}>{headline}</span>
                 )}
               </span>
               {/* The third column is **why**. It is not stacked into two lines
@@ -2560,7 +2571,9 @@ function StepList({
                   ? why
                   : names && trail
                     ? `${names} · ${trail}`
-                    : names || trail || " "}
+                    : /* A person's subject with no concept behind it left this column blank; the
+                         files the step touched are the next best reason (review 2026-09-25). */
+                      names || trail || stepFileNames(commit.files, (count) => t("moreSlugs", { count })) || " "}
               </span>
             </button>
           </li>
@@ -3099,7 +3112,7 @@ function DesktopBody({
       >
         <div className="flex flex-col gap-4" data-testid="atlas-git-not-initialized">
           {/* Say what will be created **before** it is pressed. */}
-          <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
+          <p className="text-body leading-body break-keep text-[color:var(--color-text-tertiary)]">
             {t("initWhatHappens")}
           </p>
 
@@ -3179,6 +3192,28 @@ function DesktopBody({
     />
   );
 
+  /*
+   * A step named by what it changed, for the rows of a document's own history. "Edited 2"
+   * or "no concept change" said a count and not a thing (review 2026-09-25): the concepts
+   * the step touched come first, then the documents an automatic subject names, and a
+   * person's own sentence (without its conventional-commit code) last.
+   */
+  const stepTitleOf = (commit: GitCommitInfo): string => {
+    const stepConcepts = concepts.get(commit.hash) ?? [];
+    const more = (count: number) => t("moreSlugs", { count });
+    if (stepConcepts.length > 0) {
+      const names = stepConcepts.slice(0, 2).map((concept) => concept.label).join(", ");
+      return stepConcepts.length > 2 ? `${names} ${more(stepConcepts.length - 2)}` : names;
+    }
+    const summary = describeSnapshotSubject(commit.subject);
+    if (summary.matched) {
+      const names = summary.slugs.map((slug) => slug.split("/").pop() ?? slug).join(", ");
+      if (names) return summary.overflow > 0 ? `${names} ${more(summary.overflow)}` : names;
+      return humanizeStepSubject(t, commit.subject) ?? commit.subject;
+    }
+    return stripConventionalPrefix(commit.subject);
+  };
+
   const dock = (
     <ActionDock
       t={t}
@@ -3248,7 +3283,14 @@ function DesktopBody({
     <div
       data-testid="atlas-git-workbench"
       data-shape="decide"
-      className="git-fade-in flex min-h-0 flex-1 flex-col"
+      /*
+       * Below `xl` the columns stack and the scroll frame above scrolls the page, so the
+       * workbench grows with its content instead of being squeezed into the window
+       * (measured 2026-09-25 at the app floor, 1040x720: a list of eleven steps took 534px
+       * and the stacked reader was left 0px tall, painting below the fold where no click
+       * reached it). Only at `xl`, where each column owns its scroll, is height a budget.
+       */
+      className="git-fade-in flex flex-1 flex-col xl:min-h-0"
     >
       {/*
         Rebuilt to the mockup's structure (2026-08-02). Three things differed when
@@ -3275,7 +3317,9 @@ function DesktopBody({
       {/* Body — down to the floor. The two columns are separated by a divider and scroll independently. */}
       <div
         className={cn(
-          "grid min-h-0 flex-1 grid-cols-1",
+          // `content-start` below `xl`: a short list must not be stretched to the window,
+          // which left a dead band between the dock and the stacked reader.
+          "grid flex-1 grid-cols-1 max-xl:content-start xl:min-h-0",
           showEvidence
             ? "xl:grid-cols-[minmax(0,var(--git-timeline-w))_minmax(0,1fr)]"
             : "mx-auto w-full max-w-[var(--git-single-measure)]",
@@ -3287,7 +3331,7 @@ function DesktopBody({
               repeat what the dock says ("all committed") but states **what the
               current state actually is**. */}
           {!hasChanges ? (
-            <p className="flex-none border-b border-[color:var(--color-divider)] px-4 py-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">
+            <p className="flex-none border-b border-[color:var(--color-divider)] px-4 py-3 text-label leading-prose break-keep text-[color:var(--color-text-tertiary)]">
               {t("noChangesHint")}
             </p>
           ) : null}
@@ -3396,7 +3440,7 @@ function DesktopBody({
                     restoreBusy={restoreBusy}
                     onJumpToCommit={onJumpToCommit}
                     whenOf={whenOf}
-                    headlineOf={(subject) => humanizeStepSubject(t, subject)}
+                    stepTitleOf={stepTitleOf}
                     focusedConceptId={focusedConceptId}
                     setFocusedConceptId={setFocusedConceptId}
                     egoFor={egoFor}

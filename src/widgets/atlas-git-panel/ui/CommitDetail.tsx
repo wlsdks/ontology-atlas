@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useFormatter } from "next-intl";
 import { cn } from "@/shared/lib/cn";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { shortHash, stripConventionalPrefix } from "../lib/step-title";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { controlClass } from "@/shared/ui";
@@ -45,6 +48,9 @@ export interface CommitConcept {
 }
 
 type Lens = "concepts" | "files";
+
+/** Concept names the headline spells out before it counts the rest. */
+const HEADLINE_CONCEPTS = 2;
 
 /**
  * Does this changed file carry that concept? `matchNodeId` builds a node id as
@@ -100,7 +106,7 @@ export function CommitDetail({
   restoreBusy,
   onJumpToCommit,
   whenOf,
-  headlineOf,
+  stepTitleOf,
   focusedConceptId,
   setFocusedConceptId,
   egoFor,
@@ -130,14 +136,44 @@ export function CommitDetail({
   onJumpToCommit: (hash: string) => void;
   /** Relative-time wording in the reader's language. */
   whenOf: (isoTime: string) => string;
-  /** Human wording for an automatic subject, `null` when a person wrote it. */
-  headlineOf: (subject: string) => string | null;
+  /** What another step changed, in words: its concepts, else its documents, else its author's sentence. */
+  stepTitleOf: (commit: GitCommitInfo) => string;
   focusedConceptId: string | null;
   setFocusedConceptId: (id: string) => void;
   egoFor: (nodeId: string) => ConceptEgo | null;
   kindLabel: (kind: string) => string;
 }) {
   const focused = focusedConceptId ?? concepts[0]?.id ?? null;
+  const format = useFormatter();
+  const { state: hashState, copy: copyHash } = useCopyFeedback();
+  const authored = stripConventionalPrefix(subject);
+  const reason = headline ? t("stepAutoSubject", { summary: headline }) : authored;
+  const conceptTitle =
+    concepts.length > 0
+      ? `${concepts
+          .slice(0, HEADLINE_CONCEPTS)
+          .map((concept) => concept.label)
+          .join(", ")}${concepts.length > HEADLINE_CONCEPTS ? ` ${t("moreSlugs", { count: concepts.length - HEADLINE_CONCEPTS })}` : ""}`
+      : null;
+  const title = conceptTitle ?? headline ?? authored;
+  // With a concept title, the author's reason is the second line; without one the reason
+  // already is the title and is not said twice.
+  const byline = conceptTitle ? reason : null;
+  const dateLabel = useMemo(() => {
+    const at = new Date(isoTime);
+    if (Number.isNaN(at.getTime())) return "";
+    const sameYear = at.getFullYear() === new Date().getFullYear();
+    return format.dateTime(at, {
+      ...(sameYear ? {} : { year: "numeric" }),
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      // The reader's own clock: the step happened at their local time, and no global
+      // default is configured for the static export.
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+  }, [format, isoTime]);
 
   /*
    * Concept chips are an **exclusive single selection**: the initial value is
@@ -237,17 +273,57 @@ export function CommitDetail({
       className="git-fade-in flex min-h-0 flex-1 flex-col"
       data-testid="atlas-git-history-detail"
     >
-      {/* Identity — survives either lens. */}
-      <header className="flex flex-none flex-col gap-1 px-5 pt-4 pb-3">
-        <p
+      {/*
+        Identity — survives either lens, and is the pane's one headline (review 2026-09-25).
+        It was a 14px line, the same size as every list row, under a 23px page title and above
+        a 23px file title: the thing the person picked was the smallest heading on screen. The
+        page title stepped down to a destination label, the file title inside a step stepped
+        down to `text-title`, and this line took the display step.
+
+        It names the step the way its list row does — concepts first — so the row and the
+        pane agree on what was picked. The author's words follow as the second line without
+        their conventional-commit code, and the meta line carries a short id to copy and a
+        date in the reader's locale instead of a 40-character hash and an ISO timestamp.
+      */}
+      <header className="flex flex-none flex-col gap-1.5 px-5 pt-5 pb-4">
+        <h2
           data-testid="atlas-git-detail-headline"
-          className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
+          title={subject}
+          className="text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] break-keep"
         >
-          {headline ?? subject}
-        </p>
-        <p className="font-mono text-caption break-all text-[color:var(--color-text-quaternary)]">
-          {headline ? <>{subject} · </> : null}
-          {t("historyItemDetail", { hash, isoTime })} · {relativeTime}
+          {title}
+        </h2>
+        {byline ? (
+          <p
+            data-testid="atlas-git-detail-byline"
+            className="text-body-lg leading-body-lg text-[color:var(--color-text-secondary)] break-keep"
+          >
+            {byline}
+          </p>
+        ) : null}
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-[color:var(--color-text-tertiary)]">
+          <button
+            type="button"
+            data-testid="atlas-git-detail-hash"
+            onClick={() => void copyHash(hash)}
+            aria-label={t("hashCopy", { hash })}
+            title={t("hashCopy", { hash })}
+            className={controlClass({
+              shape: "chip",
+              size: "sm",
+              tone: "secondary",
+              hoverInk: "strong",
+              hoverBorder: "strong",
+              className: "-ml-2 border-transparent font-mono tabular-nums",
+            })}
+          >
+            {hashState === "copied" ? t("webCopied") : shortHash(hash)}
+          </button>
+          <time dateTime={isoTime} className="tabular-nums">
+            {dateLabel}
+          </time>
+          <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+          <span>{relativeTime}</span>
         </p>
       </header>
 
@@ -344,7 +420,7 @@ export function CommitDetail({
                     path={focusedFile.path}
                     currentHash={hash}
                     whenOf={whenOf}
-                    headlineOf={headlineOf}
+                    stepTitleOf={stepTitleOf}
                     onJump={onJumpToCommit}
                   />
                 </div>
@@ -423,7 +499,7 @@ export function CommitDetail({
                   path={activeFile}
                   currentHash={hash}
                   whenOf={whenOf}
-                  headlineOf={headlineOf}
+                  stepTitleOf={stepTitleOf}
                   onJump={onJumpToCommit}
                 />
               </div>
@@ -492,11 +568,11 @@ function RestoreDock({
           className="git-fade-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
           data-testid="atlas-git-restore-step"
         >
-          <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
+          <p className="text-label leading-prose break-keep text-[color:var(--color-text-secondary)]">
             {t("restoreConfirmBody", { path, when })}
           </p>
           {pending && pending.added + pending.removed > 0 ? (
-            <p className="text-label leading-prose text-[color:var(--color-danger-text)]">
+            <p className="text-label leading-prose break-keep text-[color:var(--color-danger-text)]">
               {t("restoreConfirmPending", { added: pending.added, removed: pending.removed })}
             </p>
           ) : null}
@@ -563,7 +639,7 @@ function RestoreDock({
                * start margin puts the label back on that line while the chip keeps
                * its padding to draw a hover border around.
                */
-              className: "-ml-2 self-start border-transparent",
+              className: "-ml-2 border-transparent",
             })}
           >
             {t("restoreAction")}
@@ -576,6 +652,8 @@ function RestoreDock({
 
 /** How many of a document's other steps are read; one more tells whether older ones exist. */
 const DOCUMENT_HISTORY_LIMIT = 12;
+/** Rows a document's history shows before "N more". */
+const DOCUMENT_HISTORY_PREVIEW = 3;
 
 /**
  * The other steps that changed this one document — a meaning's own timeline, read from git
@@ -588,7 +666,7 @@ function DocumentHistory({
   path,
   currentHash,
   whenOf,
-  headlineOf,
+  stepTitleOf,
   onJump,
 }: {
   t: (key: string, values?: Record<string, string | number>) => string;
@@ -596,7 +674,7 @@ function DocumentHistory({
   path: string;
   currentHash: string;
   whenOf: (isoTime: string) => string;
-  headlineOf: (subject: string) => string | null;
+  stepTitleOf: (commit: GitCommitInfo) => string;
   onJump: (hash: string) => void;
 }) {
   const [rows, setRows] = useState<GitCommitInfo[] | null>(null);
@@ -621,9 +699,17 @@ function DocumentHistory({
   }, [vaultPath, path]);
 
   const others = useMemo(() => (rows ?? []).filter((commit) => commit.hash !== currentHash), [rows, currentHash]);
+  /*
+   * Three by default (review 2026-09-25): eleven 28px rows pushed the concept's ego drawing,
+   * the richest part of this pane, below the fold on a 949px window. The rest are one press
+   * away and counted, never silently dropped.
+   */
+  const [expanded, setExpanded] = useState(false);
   if (rows === null) return null;
+  const shown = expanded ? others : others.slice(0, DOCUMENT_HISTORY_PREVIEW);
+  const hidden = others.length - shown.length;
   return (
-    <section className="flex flex-col gap-1.5 pt-3" data-testid="atlas-git-document-history">
+    <section className="flex flex-col gap-1 pt-4" data-testid="atlas-git-document-history">
       <h3 className="flex items-baseline gap-2 text-label text-[color:var(--color-text-tertiary)]">
         {others.length > 0 ? t("docHistoryTitle") : t("docHistoryOnly")}
         {others.length > 0 ? (
@@ -632,7 +718,7 @@ function DocumentHistory({
       </h3>
       {others.length > 0 ? (
         <ul className="flex flex-col">
-          {others.map((commit) => (
+          {shown.map((commit) => (
             <li key={commit.hash}>
               <button
                 type="button"
@@ -645,20 +731,43 @@ function DocumentHistory({
                   tone: "secondary",
                   hoverInk: "strong",
                   hoverSurface: "lift",
-                  className: "grid w-full grid-cols-[6rem_minmax(0,1fr)] items-center gap-3 rounded-none px-0",
+                  /* The time column is the list's own `--git-when-w`, so a step reads with the
+                     same rhythm here as on the left; the old 6rem left a 93px hole before the
+                     name. */
+                  className: "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1fr)] items-center gap-3 rounded-none px-0",
                 })}
               >
                 <span className="truncate text-label tabular-nums text-[color:var(--color-text-tertiary)]">
                   {whenOf(commit.isoTime)}
                 </span>
-                <span className="min-w-0 truncate text-label">{headlineOf(commit.subject) ?? commit.subject}</span>
+                <span className="min-w-0 truncate text-body" title={commit.subject}>
+                  {stepTitleOf(commit)}
+                </span>
               </button>
             </li>
           ))}
         </ul>
       ) : null}
-      {older ? (
-        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">{t("docHistoryOlder")}</p>
+      {hidden > 0 || (expanded && others.length > DOCUMENT_HISTORY_PREVIEW) ? (
+        <button
+          type="button"
+          data-testid="atlas-git-document-history-more"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+          className={controlClass({
+            shape: "chip",
+            size: "sm",
+            tone: "secondary",
+            hoverInk: "strong",
+            hoverBorder: "strong",
+            className: "-ml-2 self-start border-transparent",
+          })}
+        >
+          {expanded ? t("docHistoryLess") : t("docHistoryMore", { count: hidden })}
+        </button>
+      ) : null}
+      {older && (expanded || others.length <= DOCUMENT_HISTORY_PREVIEW) ? (
+        <p className="text-label leading-label text-[color:var(--color-text-quaternary)] break-keep">{t("docHistoryOlder")}</p>
       ) : null}
     </section>
   );
