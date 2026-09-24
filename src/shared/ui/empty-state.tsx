@@ -95,13 +95,23 @@ export function EmptyState({
   const isCenter = align === 'center';
 
   const TitleTag = titleAs;
+  /*
+   * **Only the one-sentence centred card demotes its title** (2026-09-25).
+   *
+   * A centred card with no description *is* one sentence, and that sentence reads as body
+   * text. A centred card with a description has a title and a paragraph under it; demoting
+   * the title there put it at the same 14px tertiary step as the paragraph, so the two
+   * lines read as one grey block with no heading. Two consumers had written their own way
+   * back — a styled span inside the title (project detail) and descendant `[&_h2]` overrides
+   * (architecture) — which is the primitive's job, done twice by hand.
+   */
+  const demoteTitle = isCenter && !description;
   const titleEl = (
     <TitleTag
       className={cn(
         'font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
         size === 'compact' ? 'text-body-lg' : 'text-title',
-        // The one-sentence centred pattern reads as body text, not a heading.
-        isCenter && 'font-normal text-body-lg text-[color:var(--color-text-tertiary)]',
+        demoteTitle && 'font-normal text-body-lg text-[color:var(--color-text-tertiary)]',
       )}
     >
       {title}
@@ -145,6 +155,12 @@ export function EmptyState({
           )
       : null;
 
+  const actionEl = action ? (
+    <div data-empty-action className={cn('mt-4 flex flex-wrap gap-2', isCenter && 'justify-center')}>
+      {action}
+    </div>
+  ) : null;
+
   const textBlock = (
     <div className="min-w-0">
       {titleEl}
@@ -166,21 +182,26 @@ export function EmptyState({
     >
       {skeletonEl ? <div className="mb-4">{skeletonEl}</div> : null}
       {iconEl && !isCenter ? (
+        /*
+         * **The action starts on the text's line, not under the icon** (2026-09-25). The action
+         * row used to close the card at its padding edge, so with a left icon the title and
+         * description began at one x and the button at another — measured on /ko/automations
+         * at 1512: text at x417, the action at x369. The row now lives in the text column.
+         */
         <div className="flex items-start gap-3">
           {iconEl}
-          {textBlock}
+          <div className="min-w-0 flex-1">
+            {textBlock}
+            {actionEl}
+          </div>
         </div>
       ) : (
         <>
           {iconEl && isCenter ? <div className="mb-3 flex justify-center">{iconEl}</div> : null}
           {textBlock}
+          {actionEl}
         </>
       )}
-      {action ? (
-        <div className={cn('mt-4 flex flex-wrap gap-2', isCenter && 'justify-center')}>
-          {action}
-        </div>
-      ) : null}
     </div>
   );
 }

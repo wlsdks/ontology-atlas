@@ -741,6 +741,10 @@ every relation line, 5.23:1), `--color-indigo-brand` (the selection, 4.24:1). Co
 - Signature weight: `510` (Linear's signature)
 - Mono: `JetBrains Mono`
 
+#### Korean breaks between words, from one rule (2026-09-25)
+
+`:root:lang(ko) body { word-break: keep-all; overflow-wrap: break-word; }` in `app/globals.css`, outside every layer. Before it, each screen opted in with its own `break-keep` (274 sites in 76 files) and any element that forgot wrapped mid-word. New code does not add `break-keep` for Korean prose; an element that must break anywhere (a path, a hash) declares `break-all` or `[overflow-wrap:anywhere]` on itself, which wins over inheritance. Gate: `tests/contract/hangul-word-keep.contract.test.ts`.
+
 #### Do not overlay Latin-only decorations on Korean (2026-07-26)
 
 The owner read `What goes out`, `Sent records`, and `It's your choice to commit` with double spaces in the [AI Connection] panel. The i18n string contained only a single space — the gap was not between words but in the **space glyph**.
@@ -2531,9 +2535,9 @@ Tailwind v4 `--radius-*` namespace generates `rounded-<step>`.
 | Unit | Token (Utility) | px | Target |
 |---|---|---|---|
 | micro | `--radius-micro` (`rounded-micro`) | 4 | Micro badge, command tag, kbd — one layer below the chip |
-| chip | `--radius-chip` (`rounded-chip`) | 6 | Chip, badge, small button |
+| chip | `--radius-chip` (`rounded-chip`) | 6 | Chip, badge, `Button` `sm`·`md` (32/40px — the same box family as chips and fields) |
 | card | `--radius-card` (`rounded-card`) | 9 | Card · Input · Medium Surface |
-| panel | `--radius-panel` (`rounded-panel`) | 12 | Panel, Modal, Large Surface |
+| panel | `--radius-panel` (`rounded-panel`) | 12 | Panel, Modal, Large Surface, `Button` `lg` (44px hero CTA) |
 
 | sheet | `--radius-sheet` (`rounded-sheet`) | 18 | Floating sheet/palette — a large temporary surface that floats above the screen and obscures what's below |
 
@@ -2833,6 +2837,7 @@ Chrome surfaces (tiles/chips) must only be created via `ChromeTile` / `ChromeChi
 |---|---|---|
 | `Select` (Dark Listbox) | `src/shared/ui/select.tsx` | Native `<select>` replacement — macOS gray system dropdown adapted to dark app syntax |
 | `EmptyState` | `src/shared/ui/empty-state.tsx` | Empty lists/charts/pages — skeleton placeholders + icon + one-line guidance |
+| `Button` | `src/shared/ui/button.tsx` | Standard action — `primary` · `outline` · `ghost` · `danger` (the confirm step of an irreversible action only, drawn from the danger ramp). Radius and type follow the size: `sm` 32px/`text-body`/chip radius, `md` 40px/`text-body-lg`/chip radius, `lg` 44px/`text-body-lg`/panel radius, so a `Button sm` and a `controlClass` chip `lg` beside it are one control. Gate: `src/shared/ui/button.test.tsx` |
 | `ChromeTile` / `ChromeChip` | `src/shared/ui/chrome-tile.tsx` · `chrome-chip.tsx` | Chrome tiles/chips (see separate "Chrome Syntax" section) |
 | `controlClass()` | `src/shared/ui/control-class.ts` | **Value Layer** — single source of classes for interactive elements (see section below) |
 | `Chip` · `IconButton` · `RowButton` | `src/shared/ui/controls.tsx` | **Action Layer** — defaults to `type="button"` · enforces accessible names · button semantics |
@@ -3287,6 +3292,8 @@ The value is not preference but **the exact derived value from the root face**; 
 
 - **Slots** — `icon` (line-art glyph, muted rounded rect) · `skeleton` (true = default muted 3-line bar, or custom ReactNode) · `title` (single-line plain text) · `description` (next action guidance) · `action` (selection button).
 - **Tone/Alignment** — `tone` dashed (inside lists/cards, signals «filling spot») | solid, `align` left (default) | center (entire page body empty situation).
+- **Title step** (2026-09-25) — only a centred card **without** a description demotes its title to the body step; that card is one sentence. A centred card with a description keeps the heading step (`text-title`, primary ink), so title and paragraph never read as one grey block. Consumers do not restyle the title through `className`.
+- **One start line** (2026-09-25) — with a left icon, the action row sits in the text column (`[data-empty-action]`), so title, description and buttons start on one x. Gate: `src/shared/ui/empty-state.test.tsx`.
 - Empty charts/lists show **filling form (skeleton)** first instead of «long whitespace» — applied to current insight «most needed items» / «hub» empty areas.
 
 ### Control Height Tokens (#13)

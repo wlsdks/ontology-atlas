@@ -5,9 +5,8 @@ import { cn } from '@/shared/lib/cn';
 const buttonVariants = cva(
   [
     'inline-flex items-center justify-center gap-2 whitespace-nowrap',
-    'text-body-lg leading-caption',
+    'leading-caption',
     'font-[var(--font-weight-signature)]',
-    'rounded-panel',
     'border border-transparent',
     'select-none',
     /*
@@ -60,11 +59,35 @@ const buttonVariants = cva(
           'bg-transparent text-[color:var(--color-text-primary)] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-border-soft)] active:shadow-[var(--shadow-control-press)]',
         outline:
           'border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-overlay-2)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-overlay-2)] active:shadow-[inset_0_1px_0_var(--color-overlay-2),var(--shadow-control-press)]',
+        /*
+         * **The one irreversible action in a confirm row** (2026-09-25). A destructive
+         * confirm used to borrow `ghost` or `outline`, so "Remove" and "Cancel" differed only
+         * by order. The hue comes from the existing danger ramp (`a08`/`a12` plane, `a32`/`a50`
+         * rule, `--color-danger-text` ink) — the same four steps the insights copy-failure
+         * state already wears by hand — so the variant adds no value, only a name.
+         * Use it for the confirm step only, never for the button that opens the question.
+         */
+        danger:
+          'border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-danger-text)] hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)] active:bg-[color:var(--color-danger-a12)] active:shadow-[var(--shadow-control-press)]',
       },
+      /*
+       * **Radius and type follow the box, not the component** (2026-09-25).
+       *
+       * Every size used to wear `rounded-panel` (12px) and `text-body-lg` (14px). Three
+       * screen reviews found the same seam independently (Harness toolbar, Insights brief,
+       * Projects top bar): a 32px `Button sm` stood beside a 32px `controlClass` chip `lg`
+       * that wears `rounded-chip` (6px) and `text-body` (12.5px), and the two read as two
+       * products. The radius ramp already said so — `--radius-chip` is "chips, badges,
+       * small buttons" — and 40px fields (`fieldClass`) wear the chip radius too, so `md`
+       * joins them. `lg` (44px) is the gateway's hero CTA and the only size that is a
+       * large surface, so it keeps `rounded-panel`.
+       *
+       * No new value: every class here is an existing ramp step.
+       */
       size: {
-        sm: 'h-8 px-3.5',
-        md: 'h-10 px-4.5',
-        lg: 'h-11 px-6',
+        sm: 'h-8 px-3.5 text-body rounded-chip',
+        md: 'h-10 px-4.5 text-body-lg rounded-chip',
+        lg: 'h-11 px-6 text-body-lg rounded-panel',
       },
     },
     defaultVariants: {

@@ -43,6 +43,26 @@ describe('Button', () => {
     expect(screen.getByRole('button').className).toContain('h-11');
   });
 
+  it('radius and type follow the box: 32/40px wear the chip radius, the 44px hero the panel', () => {
+    // A 32px Button beside a 32px controlClass chip `lg` is one control height, so it wears the
+    // same radius (6px) and the same type step (12.5px) — the seam three screen reviews found.
+    const sm = buttonVariants({ size: 'sm' });
+    expect(sm).toContain('rounded-chip');
+    expect(sm).toContain('text-body ');
+    expect(buttonVariants({ size: 'md' })).toContain('rounded-chip');
+    expect(buttonVariants({ size: 'lg' })).toContain('rounded-panel');
+    for (const size of ['sm', 'md', 'lg'] as const) {
+      expect(buttonVariants({ size }).match(/\brounded-(chip|panel)\b/g)).toHaveLength(1);
+    }
+  });
+
+  it('variant=danger draws the danger ramp on the plane, the rule and the ink', () => {
+    const cls = buttonVariants({ variant: 'danger' });
+    expect(cls).toContain('bg-[color:var(--color-danger-a08)]');
+    expect(cls).toContain('border-[color:var(--color-danger-a32)]');
+    expect(cls).toContain('text-[color:var(--color-danger-text)]');
+  });
+
   it('disabled state has cursor-not-allowed + opacity reduction', () => {
     render(<Button disabled>비활성</Button>);
     const btn = screen.getByRole('button');
@@ -56,6 +76,7 @@ describe('Button', () => {
       buttonVariants({ variant: 'primary' }),
       buttonVariants({ variant: 'ghost' }),
       buttonVariants({ variant: 'outline' }),
+      buttonVariants({ variant: 'danger' }),
     ];
 
     for (const cls of variants) {

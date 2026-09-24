@@ -117,8 +117,13 @@ export function SettingsGroupHeading({
   trailing?: ReactNode;
   id?: string;
 }) {
+  /*
+   * No inset (2026-09-25): the eyebrow starts on the card's own edge. A `px-1` put it 4px inside
+   * the line the page's h1, lede and card border share — measured on /ko/agents?tab=mcp at 1512,
+   * h1 x348 and this label x352 — one column with two start lines.
+   */
   return (
-    <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1">
+    <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1">
       <h3 id={id} className={SETTINGS_SECTION_LABEL}>
         {label}
       </h3>
