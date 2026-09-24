@@ -15,15 +15,22 @@ describe("14-inch map chrome reflows around the agent dock and node inspector", 
     );
   });
 
-  it("Home tells the search lane when the right inspector actually occupies the map", () => {
-    expect(chrome).toContain("rightInspectorReserved={nodePanelMounted}");
-    expect(hint).toContain('data-right-inspector-reserve');
+  // Since 2026-09-24 the reserve belongs to the whole top toolbar, which holds the
+  // search lane and the utility lane in one box, rather than to the search lane alone.
+  it("Home tells the top toolbar when the right inspector actually occupies the map", () => {
+    expect(chrome).toMatch(
+      /data-right-inspector-reserve=\{\s*nodePanelMounted \? "recenter-in-remaining-map" : undefined\s*\}/,
+    );
+    expect(chrome).toContain('data-testid="topology-top-toolbar"');
+    expect(hint).not.toMatch(/\babsolute right-/);
   });
 
   it("wide layout recenters by the panel width and inset, not a screenshot-specific pixel", () => {
-    expect(css).toContain("[data-right-inspector-reserve='recenter-in-remaining-map']");
+    expect(css).toContain(
+      "[data-testid='topology-top-toolbar'][data-right-inspector-reserve='recenter-in-remaining-map']",
+    );
     expect(css).toMatch(
-      /left:\s*calc\(\s*50%\s*-\s*\(var\(--map-panel-width\)\s*\+\s*var\(--topology-node-popover-right-inset\)\)\s*\/\s*2\s*\)/,
+      /right:\s*calc\(\s*var\(--map-panel-width\)\s*\+\s*var\(--topology-node-popover-right-inset\)\s*\+\s*2rem\s*\)/,
     );
   });
 

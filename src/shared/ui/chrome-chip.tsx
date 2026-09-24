@@ -35,9 +35,12 @@ const CHIP_CLASS =
  * and CSS `zoom` multiplies when nested (1.15×1.15≈1.32) — which is exactly the
  * owner report that produced this class: at 1920 the status chips were larger
  * than the sibling tiles. The wrapper owns the scale.
+ *
+ * `min-w-0` lets a status chip shrink below its text in a crowded row: its label
+ * truncates and the tiles beside it keep their size (owner report, 2026-09-24).
  */
 export const CHROME_STATUS_CHIP_CLASS =
-  'topology-chrome-in pointer-events-auto flex h-[var(--chrome-tile-size)] max-w-full items-center gap-1.5 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3.5 text-label tracking-label text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)]';
+  'topology-chrome-in pointer-events-auto flex h-[var(--chrome-tile-size)] min-w-0 max-w-full items-center gap-1.5 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3.5 text-label tracking-label text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)]';
 
 /**
  * **If it cannot be pressed, it must not look pressable.**
