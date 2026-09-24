@@ -65,7 +65,7 @@ export function useTopologyInteractionState({
   /** The focus leash in screen pixels, set at the selection dive (`focusLeashPx`). */
   const focusLeashPxRef = useRef<FocusLeashPx | null>(null);
 
-  const lastTapRef = useRef<{ nodeId: string; at: number; } | null>(null);
+  const lastTapRef = useRef<{ nodeId: string; at: number; x?: number; y?: number; } | null>(null);
   return {
     pointerMachineRef, dragHistoryRef, domeGripRef, camStartAtDownRef, canvasRectRef, focusedSlugRef,
     lastFocusedSlugRef, panelEmphasisNodeIdRef, hoveredNodeIdRef, hoveredEdgeRef, onHoverEdgeRef,

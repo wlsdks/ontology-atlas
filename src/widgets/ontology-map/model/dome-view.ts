@@ -81,37 +81,32 @@ export const DOME_PERIOD_MS = 48000;
  */
 export const DOME_PITCH_DEFAULT = 0.5;
 /**
- * Pole margin for pitch (rad) — at exactly ±π/2 the screen's "up" flips beyond
- * the pole (yaw direction inverts). This margin exists only to prevent that flip.
- */
-const DOME_PITCH_POLE_MARGIN = 0.12;
-/**
- * How far orbit drag may pitch — **all the way to just short of the poles**.
+ * How far orbit drag may pitch — **0.15 to 0.95 rad (8.6°–54.4°), always looking
+ * down on the planes** (2026-09-25, the lit-strata direction).
  *
- * The value inherited from the hero was 0.12–0.72 (6.9°–41.3°), and the owner hit
- * exactly that wall (2026-08-18: *"You can't go from below looking up"* — you can't go from
- * below looking up). This mode's charter is turning the thing every which way, so
- * only walls that really exist are locked:
+ * From 2026-08-18 the range ran to just short of both poles, because the owner
+ * wanted to look up from below. The lit planes changed what an angle costs. A
+ * translucent tier disc is a **floor** you read the level off; seen from below
+ * it is the same disc in the reverse order, so the project sits under the
+ * elements and the fill, the sector bands and the grid all lie. Seen edge-on
+ * (below 0.15) the four discs collapse into one line and the level is gone; above
+ * 0.95 the planes stack into concentric circles and the height that carries the
+ * tier is gone. The clamp keeps the two facts the picture exists for — level and
+ * owning domain — true at every angle a drag can reach.
  *
- * - **±π/2 (poles)**: past this the screen's up flips and yaw drag reverses. The
- *   only real wall, locked by `DOME_PITCH_POLE_MARGIN`. Its feel comes from
- *   `resistDomePitch`'s quarter resistance plus the overshoot cap, which say
- *   "this is the end".
- * - **0° (edge-on)**: the rings degenerate into a single line, but it is an angle
- *   you **pass through** — the only route to looking up from below (pitch<0), so
- *   it is not locked. Depth fog and line width normalise z per frame and hold at
- *   any angle, and labels are on demand (hover, focus, trail) so there is no
- *   overlap explosion.
- * - **±83° (plan / underside view)**: the rings flatten into concentric circles —
- *   the angle where ownership (the bearing) reads best instead of depth. A
- *   different reading, not a degenerate one. Allowed.
+ * Both walls sit well inside the poles, so the screen's up can no longer flip;
+ * the rubber band (`resistDomePitch`) and its overshoot cap give them the same
+ * pressed-and-rebounding feel the pole had. Dissent kept in the decision fragment
+ * "The 3D map drops the Cone": looking from underneath was a real request, and a
+ * reader who wants it has lost it.
  */
-export const DOME_PITCH_MAX = Math.PI / 2 - DOME_PITCH_POLE_MARGIN;
-export const DOME_PITCH_MIN = -DOME_PITCH_MAX;
+export const DOME_PITCH_MAX = 0.95;
+export const DOME_PITCH_MIN = 0.15;
 /**
  * Rubber-band overshoot cap (rad) — the quarter resistance is linear, so a hard
- * pull could still cross the pole; this caps the squash itself. It must stay below
- * `POLE_MARGIN` (0.12) so the screen's up never flips even while pressed.
+ * pull could run far past a wall; this caps the squash itself. Below 0.15 − 0.09
+ * the planes would still be seen from above, so even a pressed wall never shows
+ * them from underneath.
  */
 const DOME_PITCH_OVERSHOOT_CAP = 0.09;
 /**
@@ -766,6 +761,28 @@ export interface DomeModel {
   coords: Map<string, DomeCoord>;
   /** Cone bases (ownership only; empty for the cloud) — see `DomeCircle`. */
   circles: DomeCircle[];
+  /**
+   * Strata only: the bearing sector every domain and capability owns on the planes
+   * under it (`DomeSector`). Empty for every other arrangement.
+   */
+  sectors: DomeSector[];
+}
+
+/**
+ * **One node's sector on the Strata planes** — the arc of bearing `[from, to)`
+ * (radians, the model's own frame) its whole subtree is dealt into.
+ *
+ * `buildStrataTargets` already guarantees that a descendant's bearing never
+ * leaves its ancestor's sector, and that sibling sectors are disjoint. Drawing
+ * the sector is therefore not a decoration laid over the data; it is the one fact
+ * the placement proved, made visible, so "which domain owns this capability"
+ * reads off the floor it stands on (2026-09-25, lit strata).
+ */
+export interface DomeSector {
+  id: string;
+  kind: DomeViewKind;
+  from: number;
+  to: number;
 }
 
 /**
@@ -1132,6 +1149,7 @@ export function buildStrataTargets(
 ): {
   coords: Map<string, DomeCoord>;
   circles: DomeCircle[];
+  sectors: DomeSector[];
 } {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const coords = new Map<string, DomeCoord>();
@@ -1410,7 +1428,20 @@ export function buildStrataTargets(
     const r = kind === "project" ? STRATA_PROJECT_RING_R : DOME_PLANE[kind].r;
     circles.push({ kind, cx: 0, cz: 0, y: DOME_PLANE[kind].y, r, named: true });
   }
-  return { coords, circles };
+
+  /*
+   * The sectors the final walk dealt. Only domains and capabilities carry one:
+   * a project's sector is the whole turn, which says nothing, and an element
+   * has no plane under it to own a band on.
+   */
+  const sectors: DomeSector[] = [];
+  for (const [id, [from, to]] of sectorOf) {
+    const kind = byId.get(id)?.kind;
+    if (kind !== "domain" && kind !== "capability") continue;
+    sectors.push({ id, kind, from, to });
+  }
+  sectors.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return { coords, circles, sectors };
 }
 
 /** Plane order, top to bottom — the containment spine of `docs/ONTOLOGY-ATLAS-SPEC.md` §2. */
@@ -1510,6 +1541,15 @@ const CLOUD_COHESION = 0.07;
 const CLOUD_LOCAL_REPULSION = 0.25;
 /** Rest length of one relation (dome units). */
 const CLOUD_REST_LENGTH = 92;
+/**
+ * Domain cluster centres (2026-09-25). Anchors sit on a sphere of this radius,
+ * about two relation rest lengths out, so neighbouring clusters keep a gap a
+ * relation has to visibly cross; the pulls are weak beside the springs (0.02) and
+ * the repulsion, so they place clusters without flattening what is inside one.
+ */
+const CLOUD_DOMAIN_ANCHOR_RADIUS = 190;
+const CLOUD_DOMAIN_ANCHOR_PULL = 0.08;
+const CLOUD_DOMAIN_MEMBER_PULL = 0.03;
 
 /**
  * **No overlap.**
@@ -1606,6 +1646,45 @@ function createCouplingCloudRelaxer(
   for (let i = 0; i < n; i += 1) {
     const kind = kindOf.get(ids[i]) ?? "element";
     collideR[i] = DOME_NODE_R[kind] * 2.1 * CLOUD_COLLIDE_RADIUS_SCALE;
+  }
+
+  /*
+   * **Domains as cluster centres** (2026-09-25, lit Neural). Relations alone
+   * scattered a domain's capabilities across the cloud, so "whose is this" had no
+   * place to be read from; the approved look puts each domain at the heart of its
+   * own cluster. Each domain is drawn toward a fixed anchor on a sphere (a
+   * Fibonacci lattice, deterministic, in id order), and every node it contains is
+   * drawn gently toward wherever its domain currently is. The pull is an inferred
+   * layout aid over the declared `contains` chain — no edge is invented — and the
+   * relation springs still decide everything inside a cluster.
+   */
+  const parentOf = new Map(nodes.map((node) => [node.id, node.parentId]));
+  const domainIndexOf = new Int32Array(n).fill(-1);
+  const domainIds = ids.filter((id) => kindOf.get(id) === "domain").sort();
+  const domainSlot = new Map(domainIds.map((id, k) => [id, k]));
+  for (let i = 0; i < n; i += 1) {
+    let cursor: string | null = ids[i];
+    for (let hop = 0; cursor !== null && hop < 8; hop += 1) {
+      const slot = domainSlot.get(cursor);
+      if (slot !== undefined) {
+        domainIndexOf[i] = slot;
+        break;
+      }
+      cursor = parentOf.get(cursor) ?? null;
+    }
+  }
+  const domainNodeIndex = domainIds.map((id) => index.get(id)!);
+  const anchorX = new Float64Array(domainIds.length);
+  const anchorY = new Float64Array(domainIds.length);
+  const anchorZ = new Float64Array(domainIds.length);
+  for (let k = 0; k < domainIds.length; k += 1) {
+    // Fibonacci sphere — evenly spread directions for any count, no randomness.
+    const y = domainIds.length === 1 ? 0 : 1 - (2 * (k + 0.5)) / domainIds.length;
+    const ring = Math.sqrt(Math.max(0, 1 - y * y));
+    const theta = k * Math.PI * (3 - Math.sqrt(5));
+    anchorX[k] = Math.cos(theta) * ring * CLOUD_DOMAIN_ANCHOR_RADIUS;
+    anchorY[k] = y * CLOUD_DOMAIN_ANCHOR_RADIUS * 0.7;
+    anchorZ[k] = Math.sin(theta) * ring * CLOUD_DOMAIN_ANCHOR_RADIUS;
   }
 
   const groups = findCouplingGroups(ids, edges);
@@ -1758,6 +1837,23 @@ function createCouplingCloudRelaxer(
       fz[i] += (groupZ[group] / size - pz[i]) * CLOUD_COHESION;
     }
 
+    // Domains to their anchors, members to their domain (see `domainIndexOf`).
+    for (let k = 0; k < domainNodeIndex.length; k += 1) {
+      const d = domainNodeIndex[k];
+      fx[d] += (anchorX[k] - px[d]) * CLOUD_DOMAIN_ANCHOR_PULL;
+      fy[d] += (anchorY[k] - py[d]) * CLOUD_DOMAIN_ANCHOR_PULL;
+      fz[d] += (anchorZ[k] - pz[d]) * CLOUD_DOMAIN_ANCHOR_PULL;
+    }
+    for (let i = 0; i < n; i += 1) {
+      const slot = domainIndexOf[i];
+      if (slot < 0) continue;
+      const d = domainNodeIndex[slot];
+      if (d === i) continue;
+      fx[i] += (px[d] - px[i]) * CLOUD_DOMAIN_MEMBER_PULL;
+      fy[i] += (py[d] - py[i]) * CLOUD_DOMAIN_MEMBER_PULL;
+      fz[i] += (pz[d] - pz[i]) * CLOUD_DOMAIN_MEMBER_PULL;
+    }
+
     // ④ Pull back to the origin, then apply cooling.
     const cool = 1 - iter / iterations;
     let maxStep = 0;
@@ -1899,10 +1995,10 @@ export function beginDomeModelBuild(
    * Strata is its own placement (`buildStrataTargets`); the cone tree is the seed
    * for both the cone itself and the coupling cloud's warm start.
    */
-  const { coords, circles } =
+  const { coords, circles, sectors } =
     arrangement === "strata"
       ? buildStrataTargets(nodes, options?.edges ?? [])
-      : layoutConeTree(nodes);
+      : { ...layoutConeTree(nodes), sectors: [] as DomeSector[] };
 
   /*
    * "Coupling" (coupling) arrangement — relaxes from a **warm start** at the angles the
@@ -1918,6 +2014,7 @@ export function beginDomeModelBuild(
     // The cloud has no cone bases — drawing them would assert a coordinate system
     // relations did not produce. Strata's circles are its four labelled planes.
     circles: arrangement === "coupling" ? [] : circles,
+    sectors,
   };
   if (arrangement === "coupling" && options?.edges && options.edges.length > 0) {
     const relaxer = createCouplingCloudRelaxer(coords, nodes, options.edges);
@@ -2134,8 +2231,13 @@ const DOME_TIER_RISE_MS = 520;
  * The values are multiplied by the assembly ramp's remainder (`1 − ease`), so when
  * the ramp finishes they are exactly 0 — after entry this section might as well not
  * exist.
+ *
+ * **0.45, down from 0.62 (2026-09-25).** The lift is added to the default pitch
+ * (0.5), and the pitch wall is now 0.95 (`DOME_PITCH_MAX`); 0.62 opened on an
+ * angle no drag can reach, which a person then cannot return to. 0.45 starts the
+ * entry exactly on the wall — still the steepest view the planes allow.
  */
-const DOME_ENTRY_PITCH_LIFT = 0.62;
+const DOME_ENTRY_PITCH_LIFT = 0.45;
 const DOME_ENTRY_YAW_SWEEP = 0.45;
 
 /**
@@ -2297,6 +2399,11 @@ export function updateDomeFrame(
     const yawK = runtime.yaw + runtime.lag[kind] + drawYawOffset;
     trig[kind] = [Math.cos(yawK), Math.sin(yawK)];
     ramp[kind] = domeTierRamp(runtime.rampClock, kind);
+    // Kept for `projectDomePlanePoint`, so the lit stage is drawn at exactly the
+    // pose (torsion included) its tier's nodes were.
+    runtime.kindTrig[kind][0] = trig[kind][0];
+    runtime.kindTrig[kind][1] = trig[kind][1];
+    runtime.kindRamp[kind] = ramp[kind];
   }
   // Pass 1 — project, plus this frame's depth range (per-frame fog normalisation is
   // the honest one: the hero's rule), plus **the drawn world bbox** (the anchor for
@@ -2408,6 +2515,8 @@ export function updateDomeFrame(
 
   // Pass 2 — normalise z into 0..1 (u). If every tier is r=0 there is no span → u 0.
   const span = zMax - zMin;
+  runtime.zMin = Number.isFinite(zMin) ? zMin : 0;
+  runtime.zSpan = Number.isFinite(span) && span > 1e-9 ? span : 0;
   // The cloud reads depth more steeply (`CLOUD_DEPTH_GAMMA` doc-block) — the back
   // has to recede into atmosphere faster for the front cluster to read.
   const cloud = model.arrangement === "coupling";
@@ -2442,6 +2551,43 @@ const DOME_KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", 
 
 /** Scratch coordinate for ring sampling — one object per module, never per sample. */
 const ringCoord: DomeCoord = { px: 0, py: 0, pz: 0 };
+
+/** A point on a kind's plane, projected this frame — world 2D plus normalised depth. */
+export interface DomePlaneSample {
+  wx: number;
+  wy: number;
+  /** 0 near … 1 far, on the same scale the nodes' `u` used this frame (clamped). */
+  u: number;
+}
+
+/**
+ * Projects a point **on a kind's plane** at the pose the last `updateDomeFrame`
+ * drew that tier with — its own yaw torsion, the entry sweep, and the same depth
+ * normalisation — and writes it into `out`. The lit Strata stage (tier discs,
+ * polar grid, sector bands) is sampled through this, so the floor a node stands on
+ * can never drift from the node while the structure turns.
+ */
+export function projectDomePlanePoint(
+  runtime: DomeRuntime,
+  kind: DomeViewKind,
+  px: number,
+  pz: number,
+  out: DomePlaneSample,
+): void {
+  const [cy, sy] = runtime.kindTrig[kind];
+  ringCoord.px = px;
+  ringCoord.py = DOME_PLANE[kind].y;
+  ringCoord.pz = pz;
+  const p = projectWithTrig(runtime.model, ringCoord, cy, sy, runtime.drawCosPitch, runtime.drawSinPitch);
+  out.wx = p.wx;
+  out.wy = p.wy;
+  if (runtime.zSpan <= 0) {
+    out.u = 0;
+  } else {
+    const t = (p.z - runtime.zMin) / runtime.zSpan;
+    out.u = t <= 0 ? 0 : t >= 1 ? 1 : t;
+  }
+}
 
 /**
  * Samples for a base of radius `r` — `DOME_RING_SAMPLES` on the domain ring
@@ -2492,6 +2638,10 @@ export function settleDomeRuntimeOffscreen(runtime: DomeRuntime): void {
   runtime.orbiting = false;
   runtime.drag = null;
   runtime.entryArmed = false;
+  // A fly-to belongs to the 3D view it moved; the flat map has nothing to fly back to.
+  runtime.flyRequest = null;
+  runtime.nudgeReturn = null;
+  runtime.flight = null;
   runtime.lag.project = 0;
   runtime.lag.domain = 0;
   runtime.lag.capability = 0;
@@ -2712,6 +2862,29 @@ interface DomePoseTween {
   /** `performance.now()` clock — the same reference as the camera tween. */
   startMs: number;
   durationMs: number;
+  /** `"out"` for the fly-to, so pose and camera decelerate on one curve. Omitted is ease-in-out. */
+  ease?: "out";
+}
+
+/**
+ * **Fly-to** (2026-09-25, lit 3D) — how long a double-click (or Enter) takes to carry a node
+ * to the front and frame its family, and back again on Esc / Home.
+ *
+ * A single click only selects: the reader's viewpoint is theirs, and a selection that
+ * swung the whole structure every time made clicking an act with side effects. Flying is
+ * the explicit second gesture. 800 ms with an ease-out: it moves the instant the gesture
+ * lands and settles onto the node, and it is a touch longer than the 750 ms pose cap
+ * (`DOME_POSE_MS`) because it always pairs a turn with a zoom. The turn takes the short way
+ * (`domeFocusYaw`), so it never exceeds a half-turn. Reduced motion arrives in one frame.
+ */
+export const DOME_FLY_MS = 800;
+
+/** Where a fly-to left from, so Esc / Home can fly back to exactly that view. */
+interface DomeFlight {
+  slug: string;
+  returnYaw: number;
+  returnPitch: number;
+  returnCamera: { tx: number; ty: number; tscale: number };
 }
 
 /**
@@ -2823,6 +2996,34 @@ export interface DomeRuntime {
    * in place. Entries and arrays are reused, so allocations per frame converge to 0.
    */
   rings: DomeRing[];
+  /**
+   * A pending fly-to (`DOME_FLY_MS`): a slug flies to that node, null flies back. Written by
+   * the gesture (double-click, Enter, Esc, Home), consumed by the next dome frame, which
+   * holds the live world and projection.
+   *
+   * `nudge` is the one camera move a click is allowed: when the inspector the click opened
+   * would cover the selected node, the view slides sideways just far enough to clear it —
+   * no zoom, no turn, no flight to return from. A selected node hidden behind its own
+   * inspector would make the click unsafe in a different way.
+   */
+  flyRequest: { slug: string | null; nudge?: true; unnudge?: true } | null;
+  /**
+   * The camera before a click's nudge, and where the nudge left it. A deselect (`unnudge`)
+   * slides back to `before` — but only while the camera target still equals `landed`, so a
+   * view the reader moved since is never taken from them. Measured 2026-09-25 at 1040×720 on
+   * the sample vault: without the return, one nudge left the next concept under the INDEX
+   * panel after the selection had cleared, and a click aimed at it pressed the panel.
+   */
+  nudgeReturn: { before: { tx: number; ty: number; tscale: number }; landed: { tx: number; ty: number; tscale: number } } | null;
+  /** The fly-to in effect and the view it left from; null when no fly-to has moved the view. */
+  flight: DomeFlight | null;
+  /** Per-kind yaw trig of the last drawn frame (torsion included) — read by `projectDomePlanePoint`. */
+  kindTrig: Record<DomeViewKind, [number, number]>;
+  /** Per-kind assembly ramp of the last drawn frame — the lit stage rises with its tier. */
+  kindRamp: Record<DomeViewKind, number>;
+  /** The last frame's depth normalisation (`u = (z − zMin) / zSpan`); zSpan 0 means no depth. */
+  zMin: number;
+  zSpan: number;
   /** Per-node handoff map from the last drawn frame — the reference hit-testing and instrumentation judge against. */
   frame: Map<string, DomeNodeFrame>;
   /**
@@ -2944,6 +3145,13 @@ export function createDomeRuntime(model: DomeModel): DomeRuntime {
     morph: null,
     frame: new Map(),
     rings: [],
+    flyRequest: null,
+    nudgeReturn: null,
+    flight: null,
+    kindTrig: { project: [1, 0], domain: [1, 0], capability: [1, 0], element: [1, 0] },
+    kindRamp: { project: 0, domain: 0, capability: 0, element: 0 },
+    zMin: 0,
+    zSpan: 0,
     drawnBounds: null,
     fitScale: null,
     frameEpoch: 0,

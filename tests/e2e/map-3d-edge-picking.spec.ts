@@ -6,7 +6,7 @@ import { waitForDomeEntered, waitForMapStill } from './settle';
 // paint curved in 3D while both the probe and picking reported the old flat bow.
 test.use({ viewport: { width: 1440, height: 900 }, contextOptions: { reducedMotion: 'reduce' } });
 
-for (const arrangement of ['ownership', 'strata', 'coupling']) {
+for (const arrangement of ['strata', 'coupling']) {
   test(`${arrangement}: visible connection strokes are the curves a pointer selects`, async ({ page }) => {
     await seedFirstRunSeen(page);
     await page.addInitScript((value) => {

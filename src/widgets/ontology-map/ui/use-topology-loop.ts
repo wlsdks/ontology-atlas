@@ -35,6 +35,8 @@ import { useTopologyWorldLifecycle } from "./use-topology-world-lifecycle";
 
 import {
   useCallback,
+  useEffect,
+  useRef,
   type KeyboardEvent as ReactKeyboardEvent,
   type RefObject
 } from "react";
@@ -258,7 +260,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     detailPanelVisible,
     realmTransitionRef,
     focusedSlugRef,
-    domeFocusPendingRef,
   });
   useTopologyAppearanceEffects({
     expandPrefRef,
@@ -284,6 +285,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     annotationRef,
     args,
   });
+  /*
+   * Lit 3D — the evidence states the light is drawn from. A new measurement is a static
+   * state change, so it wakes the idle gate for one more frame the way a selection does.
+   */
+  const domeEvidenceRef = useRef<ReadonlyMap<string, "current" | "stale" | "unknown"> | null>(args.domeEvidence ?? null);
+  useEffect(() => {
+    domeEvidenceRef.current = args.domeEvidence ?? null;
+    lastActiveMsRef.current = performance.now();
+  }, [args.domeEvidence, lastActiveMsRef]);
   useTopologyClusterExpansion({
     prevExpandedParentsRef,
     expandedParents,
@@ -300,6 +310,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     userDrivenCameraRef,
     cameraAngularFreqRef,
     beginCameraTween,
+    domeRuntimeRef,
   });
   useTopologyTrailInputs({
     panelEmphasisNodeIdRef,
@@ -552,7 +563,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     view3dRef,
     realmTransitionRef,
     domeRuntimeRef,
-    domeFocusPendingRef,
     realmDataRef,
     expandedParentsRef,
     cameraTokens,
@@ -887,6 +897,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       domeFitInsetsRef,
       tierLegendPlacementSentRef,
       onTierLegendPlacementChangeRef,
+      domeEvidenceRef,
     },
   });
   const { handlersRef, handlers, wrappedHandlers } = useTopologyInput({
