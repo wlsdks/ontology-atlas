@@ -10,7 +10,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { Chip } from '@/shared/ui/controls';
 import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
 import { useToast } from '@/shared/ui/toast';
-import { SettingsRow } from './settings-primitives';
+import { DETAIL_TOGGLE_CHIP, SettingsRow } from './settings-primitives';
 
 /**
  * "This folder holds": the map, the wiki, or both — read from the files, never stored.
@@ -48,15 +48,18 @@ export function VaultShapeSettings() {
       <span
         data-testid={`app-settings-shape-${id}`}
         data-present="true"
-        className="inline-flex items-center gap-1 text-label text-[color:var(--color-text-secondary)]"
+        className="inline-flex items-center gap-1 text-body text-[color:var(--color-text-secondary)]"
       >
         <Check size={ICON_SIZE.sm} aria-hidden />
         {label}
       </span>
     ) : (
+      // The sheet's one trailing-action grammar: `lg` secondary chip (2026-09-25).
       <Chip
         data-testid={`app-settings-shape-start-${id}`}
-        tone="muted"
+        size="lg"
+        tone="secondary"
+        className={DETAIL_TOGGLE_CHIP}
         onClick={() => void start(id)}
         disabled={busy !== null}
       >
