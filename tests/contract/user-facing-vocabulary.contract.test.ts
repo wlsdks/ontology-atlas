@@ -162,7 +162,13 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
    * What must not happen is their number growing back.
    */
   it('종류 이름을 쉬운 말로 바꿔 부르지 않는다 — 도메인은 a plainer word for domain이 아니다', () => {
-    const SOFTENED_BASELINE = { 영역: 13, 기능: 6 } as const;
+    /*
+     * The softened word for domain went 13 → 14 on 2026-09-24: the owner named a map view with
+     * it (Territories). It is the view's name in the picker, not a word for the domain kind —
+     * the view's own copy still uses the kind's real name wherever it means the kind, and its
+     * accessible labels avoid the word.
+     */
+    const SOFTENED_BASELINE = { 영역: 14, 기능: 6 } as const;
     for (const [softened, cap] of Object.entries(SOFTENED_BASELINE)) {
       const current = hits(softened).length;
       expect(

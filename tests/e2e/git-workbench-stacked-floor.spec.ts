@@ -29,7 +29,7 @@ const STEPS = Array.from({ length: 11 }, (_, i) => ({
 
 test("앱 최소 창(1040x720)에서 쌓인 문서 읽기 칸이 높이를 갖고 눌린다", async ({ page }) => {
   await page.setViewportSize({ width: 1040, height: 720 });
-  await installDesktopRailRuntime(page, {}, undefined, STEPS);
+  await installDesktopRailRuntime(page, {}, undefined, { commits: STEPS });
   await mountDesktopVault(page);
   await page.getByTestId("app-nav-rail-item-git").click();
   await expect(page.getByTestId("atlas-git-history-item")).toHaveCount(10, { timeout: 60_000 });
