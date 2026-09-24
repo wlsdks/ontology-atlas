@@ -1339,12 +1339,14 @@
       "collapseAllLabel": "Collapse all",
       "view3dChoice": {
         "flat": "Flat",
+        "territories": "Territories",
         "galaxy": "Galaxy",
         "strata": "Strata",
         "coupling": "Neural"
       },
       "view3dChoiceHint": {
         "flat": "the ordinary 2D map",
+        "territories": "every capability named, gathered around its domain",
         "galaxy": "the whole map drawn as a sky of stars",
         "strata": "containment, read level by lit level",
         "coupling": "clustered by what relates to what"
@@ -3041,6 +3043,24 @@
     }
   },
   "topology": {
+    "territories": {
+      "canvasAriaLabel": "Territories map: every capability named, gathered around its domain. Use the INDEX list on the left from the keyboard.",
+      "listLabel": "Capabilities on the territories map",
+      "domainStats": "{capabilities, plural, one {# capability} other {# capabilities}} · {elements, plural, one {# element} other {# elements}}",
+      "domainStale": "{stale} stale",
+      "legendCurrent": "Current",
+      "legendStaleShort": "Stale",
+      "legendUnknownShort": "Unknown",
+      "legendStale": "Stale · cited code changed after the document, or is gone",
+      "legendUnknown": "Unknown · evidence not read yet",
+      "legendSize": "Size = elements",
+      "legendRollup": "Number = dependencies between domains",
+      "evidenceMeasured": "From Git: {stale} of {total} capabilities stale",
+      "evidenceReading": "Reading Git history",
+      "evidenceAppOnly": "The desktop app reads evidence from Git · here every state is unknown",
+      "evidenceUnreadable": "Git history could not be read, so every evidence state is unknown",
+      "evidenceNoPaths": "No capability cites a code path, so every evidence state is unknown"
+    },
     "widgetError": {
       "mapTitle": "The map could not be drawn.",
       "panelTitle": "This panel could not be opened.",

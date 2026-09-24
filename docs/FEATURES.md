@@ -430,10 +430,24 @@ had become false).
   bootstrap from found docs, create a node, open Topology INDEX, open Workshop,
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
-- **Four map views, chosen in one picker** — the current-view chip in the top tool
-  lane opens **Flat** (the ordinary 2D map, default), **Galaxy**,
-  **Strata**, and **Neural**. The Cone left the picker on 2026-09-25; a stored
-  Cone choice opens Strata. Galaxy gives every real concept a stable
+- **Five map views, chosen in one picker** — the current-view chip in the top tool
+  lane opens **Flat** (the ordinary 2D map, default), **Territories**, **Galaxy**,
+  **Strata**, and **Neural**. Territories is the flat plane with nothing
+  folded: every capability is drawn and named on open shelves fanning out from its
+  domain's mark, each domain in its own angular territory around the project, with
+  no hull around any of them. A capability's disc grows with its element count;
+  elements are drawn only when their capability is selected. The ring states the
+  evidence with the same rule the analysis brief uses (the app dates cited code
+  against the document in one Git walk): solid is current, amber is stale, broken
+  is unknown, and the web says every state is unknown rather than guess. Each
+  domain's title carries its capability, element and stale counts, and rolled-up
+  strokes with a count join domains whose capabilities depend on each other.
+  Selecting uses the flat map's inspector; the selected capability shows its
+  elements and its own dependency arrows. The view survives in the address as
+  `?view=territories`, pans but never zooms, and past about ten domains or seven
+  shelves per territory draws discs only, naming them on hover and in focus.
+  The Cone left the picker on 2026-09-25; a stored Cone choice opens Strata.
+  Galaxy gives every real concept a stable
   three-arm position: the project forms the core, domains anchor contiguous
   constellations, and their actual descendants form nearby clouds. The overview
   names the project and domains while hiding the default relationship mesh;
