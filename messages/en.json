@@ -1048,7 +1048,7 @@
     "acpUserLabel": "You",
     "acpUserMsg": "The payment feature leans on user auth; if auth goes down, payments go down with it",
     "acpToolCaption": "The agent's Atlas write request · review required before it runs",
-    "acpToolWhy": "user note: the payment feature leans on user auth, so if\n                auth goes down payments go down with it (2026-08-16)",
+    "acpToolWhy": "user note: the payment feature leans on user auth, so if auth goes down payments go down with it (2026-08-16)",
     "acpResultLine": "✓ Approved once · one relation written into a markdown file in your folder",
     "col1Title": "The agent you already use",
     "col1Body": "Claude Agent and Codex both run in the in-app chat. Codex opens in its read-only mode, and a file it changes inside the folder shows up in Git, where you can undo it. Atlas starts the local adapter and its agent connection server (MCP); the agent itself may still talk to its own provider.",

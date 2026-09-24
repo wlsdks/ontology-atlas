@@ -528,7 +528,7 @@ function HeroSection({
                     >
                       <Download size={ICON_SIZE.lg} aria-hidden />
                       {t('heroWindowsCta')}
-                      <span className="font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">
+                      <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">
                         {t('windowsUnsignedShort')}
                       </span>
                     </a>
@@ -670,7 +670,15 @@ function FactsStrip({
   const subject = windowsPrimary && windowsInstaller ? windowsInstaller : primaryAsset;
   const subjectIsWindows = subject !== null && subject === windowsInstaller;
 
-  const facts: { label: string; value: string }[] = [
+  /*
+   * **Mono is for program text only** (2026-09-25). A value that is a hash is set in the mono
+   * face; a value that is words and numbers (the Korean release date, "macOS 12 or later") is
+   * set in the sans face with tabular figures. In the mono face its Hangul fell back glyph by glyph
+   * while the spaces kept the monospace advance, so the date read as spaced-out printout — the
+   * defect `app/globals.css` records for caps labels. The section eyebrows and these labels are
+   * already covered by that rule (`:root:lang(ko) .font-mono.uppercase`).
+   */
+  const facts: { label: string; value: string; code?: boolean }[] = [
     { label: t('factVersionLabel'), value: version },
     {
       label: t('factRequiresLabel'),
@@ -686,6 +694,7 @@ function FactsStrip({
     facts.push({
       label: 'SHA-256',
       value: `${subject.sha256.slice(0, 8)}…${subject.sha256.slice(-8)}`,
+      code: true,
     });
   }
 
@@ -712,6 +721,7 @@ function FactsStrip({
       href: '/changelog' as const,
       external: false,
       testId: 'gateway-facts-changelog',
+      code: false,
     },
     {
       label: t('factSourceLabel'),
@@ -719,6 +729,8 @@ function FactsStrip({
       href: GITHUB_REPO_URL,
       external: true,
       testId: 'gateway-facts-source',
+      // `owner/repo` is a path, so it keeps the mono face; the changelog link is a sentence.
+      code: true,
     },
   ];
 
@@ -746,7 +758,10 @@ function FactsStrip({
               <dt className={FACT_LABEL}>{fact.label}</dt>
               <dd
                 data-token="engraved-numeral"
-                className="mt-1 font-mono text-body leading-body text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+                className={cn(
+                  'mt-1 text-body leading-body tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]',
+                  fact.code && 'font-mono',
+                )}
               >
                 {fact.value}
               </dd>
@@ -764,7 +779,7 @@ function FactsStrip({
                     target="_blank"
                     rel="noreferrer noopener"
                     data-testid={link.testId}
-                    className={FACT_LINK}
+                    className={cn(FACT_LINK, link.code && 'font-mono')}
                   >
                     <span aria-hidden data-external-link-marker>
                       ↗
@@ -772,7 +787,11 @@ function FactsStrip({
                     {link.text}
                   </a>
                 ) : (
-                  <Link href={link.href} data-testid={link.testId} className={FACT_LINK}>
+                  <Link
+                    href={link.href}
+                    data-testid={link.testId}
+                    className={cn(FACT_LINK, link.code && 'font-mono')}
+                  >
                     {link.text}
                   </Link>
                 )}
@@ -795,7 +814,7 @@ const FACT_LINK = controlClass({
   className:
     // `items-start`: the link shape centres its text in a 24px floor, which sat the label 2px
     // below the engraved values beside it (measured 1512). Top-aligned, both share one line box.
-    'touch-hit-expand items-start font-mono text-body leading-body text-[color:var(--color-text-secondary)] underline underline-offset-2',
+    'touch-hit-expand items-start text-body leading-body text-[color:var(--color-text-secondary)] underline underline-offset-2',
 });
 
 // ─── ② Demo — plays itself once visible ─────────────────────────────────────
@@ -850,7 +869,7 @@ function DemoSection() {
       <div
         className={cn(
           PAGE_COLUMN,
-          'min-w-0 min-[90rem]:grid min-[90rem]:grid-cols-[minmax(15rem,1fr)_minmax(0,var(--gateway-stage-max))] min-[90rem]:gap-12',
+          'min-w-0 min-[90rem]:grid min-[90rem]:grid-cols-[minmax(0,1fr)_minmax(0,var(--gateway-stage-max))] min-[90rem]:gap-12',
         )}
       >
         <div data-testid="gateway-demo-head" className="min-w-0 min-[90rem]:self-center min-[90rem]:pb-9">
@@ -1073,7 +1092,7 @@ function AgentSection() {
   const columns = [
     { title: t('col1Title'), body: t('col1Body'), code: t('col1Code') },
     { title: t('col2Title'), body: t('col2Body'), code: t('col2Code') },
-    { title: t('col3Title'), body: t('col3Body'), code: 'git diff docs/ontology/', mono: true },
+    { title: t('col3Title'), body: t('col3Body'), code: 'git diff docs/ontology/', command: true },
   ];
 
   return (
@@ -1082,78 +1101,81 @@ function AgentSection() {
       data-testid="gateway-agents-section"
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
-      <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <SectionIntro eyebrow={t('agentsEyebrow')} title={t('agentsTitle')} sub={t('agentsSub')} />
-
-        {/*
-         * **Scene left, cards right — the evidence section's grid** (2026-09-02). Until now the
-         * scene stood alone at the stage width with a third of the column empty beside it
-         * (measured 1512: a 768px card in an 1112px column), and the three cards ran in a row
-         * beneath. The evidence section already answers this layout: the moving thing on the left
-         * at 11/20, the still facts on the right at 9/20. Using the same split here makes the two
-         * sections one grammar, fills the column, and keeps "one moving thing per section" — the
-         * cards are still, now stacked with a rule between them instead of beside each other.
-         * Below `lg` the cards stack under the scene at full width.
-         */}
-        {/*
-         * **One top line, one bottom line** (2026-09-25). Both columns used to be
-         * `self-center`, so the scene floated at the cards' middle: measured 1512, the first card
-         * title at y≈205 and the scene's top at ≈327, and 160px at 1040 — two columns with no
-         * shared start. Now the scene's frame stretches to the cards' height (its top on the
-         * first title's line, its bottom on the last card's), and the conversation inside it
-         * settles to the frame's floor the way a chat window does (`AcpChatScene`).
-         */}
-        <div className="mt-9 grid min-w-0 gap-10 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] lg:gap-12">
-          <div data-testid="gateway-agent-scene" className="gateway-scroll-stage flex min-w-0 flex-col">
+      {/*
+       * **Head and scene left, cards right** (2026-09-25). The split itself is the evidence
+       * section's grammar (2026-09-02): the moving thing on the left at 11/20, the still facts on
+       * the right at 9/20, one moving thing per section. What changed is where the head stands.
+       * Spanning the column above the split, it left the scene (≈345px) beside cards ≈590px tall,
+       * and every way of reconciling the two moved the gap rather than closing it: centred, the
+       * scene floated with no shared start; stretched, the frame held 230px of empty panel above
+       * its first bubble at 1512. With the head in the scene's track the left column is head +
+       * scene, the same height class as the cards, and both columns start on the eyebrow's line.
+       * This is also the demo section's grammar — its head stands in the track beside its stage.
+       *
+       * The split opens at `xl`. At `lg` (1040) the left track was 326px: the scene's bubble and
+       * record wrapped every few words and the head would have run seven lines. Below `xl` the
+       * head, the scene and the cards stack at the column's full width.
+       */}
+      <div
+        className={cn(
+          PAGE_COLUMN,
+          'grid min-w-0 gap-y-10 xl:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] xl:gap-x-12',
+        )}
+      >
+        <div className="min-w-0">
+          <SectionIntro eyebrow={t('agentsEyebrow')} title={t('agentsTitle')} sub={t('agentsSub')} />
+          <div data-testid="gateway-agent-scene" className="gateway-scroll-stage mt-9 min-w-0">
             <AcpChatScene />
           </div>
-          {/* The three cards are still — one moving thing beside them is enough. */}
-          <div className="grid min-w-0 content-start">
-            {columns.map((column, i) => (
-              <div
-                key={column.title}
-                className={cn(
-                  'min-w-0 py-6 first:pt-0 last:pb-0',
-                  i > 0 && 'border-t border-[color:var(--color-border-soft)]',
-                )}
-              >
-                <h3 className="break-keep text-title font-[var(--font-weight-emphasis)] leading-title text-[color:var(--color-text-primary)]">
-                  {column.title}
-                </h3>
-                <p className="mt-2.5 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-                  {column.body}
-                </p>
-                {/* Wraps only at the `·` between two facts (2026-09-25): at 1040 the column is
-                    266px wide and the Korean "write → review" pair broke inside its last word,
-                    leaving one syllable alone on the second line. Each fact is one unbreakable run and words keep whole. Only the
-                    literal command is set in mono; the two Korean phrase rows were mono too and
-                    read as spaced-out printout, not as the short facts they are. */}
-                {(() => {
-                  const Row = column.mono ? 'code' : 'p';
-                  return (
-                    <Row
-                      className={cn(
-                        'mt-4 flex flex-wrap gap-x-2 break-keep border-l border-[color:var(--color-border-strong)] pl-3 text-body leading-body text-[color:var(--color-text-tertiary)]',
-                        column.mono && 'font-mono',
-                      )}
-                    >
-                      {column.code.split(' · ').map((part, j) => (
-                        <span key={part} className="whitespace-nowrap">
-                          {j > 0 ? (
-                            <span className="mr-2 text-[color:var(--color-text-quaternary)]">·</span>
-                          ) : null}
-                          {part}
-                        </span>
-                      ))}
-                    </Row>
-                  );
-                })()}
-              </div>
-            ))}
-          </div>
+        </div>
+        {/* The three cards are still — one moving thing beside them is enough. */}
+        <div className="grid min-w-0 content-start">
+          {columns.map((column, i) => (
+            <div
+              key={column.title}
+              className={cn(
+                'min-w-0 py-6 first:pt-0 last:pb-0',
+                i > 0 && 'border-t border-[color:var(--color-border-soft)]',
+              )}
+            >
+              <h3 className="break-keep text-title font-[var(--font-weight-emphasis)] leading-title text-[color:var(--color-text-primary)]">
+                {column.title}
+              </h3>
+              <p className="mt-2.5 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+                {column.body}
+              </p>
+              <AgentFactRow text={column.code} command={column.command} />
+            </div>
+          ))}
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * A card's fact row — short facts separated by `·`, or one literal command.
+ *
+ * Wraps only at the `·` between two facts (2026-09-25): at 1040 the Korean "write → review" pair
+ * broke inside its last word, leaving one syllable alone on the second line. Each fact is one
+ * unbreakable run. Only the literal command is set in mono; the Korean phrase rows were mono too
+ * and read as spaced-out printout, not as the short facts they are.
+ */
+function AgentFactRow({ text, command = false }: { text: string; command?: boolean }) {
+  const rowClass =
+    'mt-4 flex flex-wrap gap-x-2 break-keep border-l border-[color:var(--color-border-strong)] pl-3 text-body leading-body text-[color:var(--color-text-tertiary)]';
+  if (command) return <code className={cn(rowClass, 'font-mono')}>{text}</code>;
+  return (
+    <p className={rowClass}>
+      {text.split(' · ').map((part, i) => (
+        // One fixed sentence split at its separators: the position is the identity, and two
+        // equal facts in one row would still get distinct keys.
+        <span key={i} className="whitespace-nowrap">
+          {i > 0 ? <span className="mr-2 text-[color:var(--color-text-quaternary)]">·</span> : null}
+          {part}
+        </span>
+      ))}
+    </p>
   );
 }
 
@@ -1264,7 +1286,7 @@ function ClosingBand({
         <p className={FACT_LABEL}>{t('downloadSectionLabel')}</p>
         <p
           data-token="engraved-numeral"
-          className="mt-2 font-mono text-body leading-body text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+          className="mt-2 text-body leading-body tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
         >
           {versionLine}
         </p>

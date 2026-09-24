@@ -64,13 +64,15 @@ const COLUMN_FROM_PX = 1280;
  * - **The swap is a crossfade.** `useSurfaceSwap` holds the leaving panel for the exit window
  *   under `.gateway-screen-out` while the arriving one plays `.gateway-screen-in`; reduced motion
  *   keeps the same fade on `--motion-fast` (`app/globals.css`).
- * - **The caption and the door stand at the foot of the rail** (2026-09-25). They used to sit
- *   under the picture while the rail stopped at the last name: measured 1512, a 250px list beside
- *   a 613px picture left 320px of empty column under "Git" (584px at 1920). From `xl` the rail is
- *   two rows — the names at the picture's top line, the active screen's sentence and door on its
- *   bottom line — so the column is framed top and bottom. Below `xl` the same block follows the
- *   picture. The captions stack and crossfade exactly as the panels do, so the block's height is
- *   the tallest caption's and a swap moves nothing.
+ * - **The caption and the door stand under the names** (2026-09-25). They used to sit under the
+ *   picture while the rail stopped at the last name: measured 1512, a 250px list beside a 613px
+ *   picture left 320px of empty column under "Git". Standing them at the rail's foot only framed
+ *   that gap (≈230px between "Git" and a caption-step footnote in an 11rem track). So the rail is
+ *   a quarter of the stage instead of a fixed 11rem, and the active screen's sentence follows the
+ *   names directly on the body step, under a rule: the names, then what the chosen one does, then
+ *   its door — one reading order, top down. Below `xl` the same block follows the picture. The
+ *   captions stack and crossfade exactly as the panels do, so the block's height is the tallest
+ *   caption's and a swap moves nothing.
  */
 export function ScreensStage() {
   const t = useTranslations('download.screens');
@@ -98,9 +100,9 @@ export function ScreensStage() {
   return (
     <div
       data-testid="gateway-screens-stage"
-      className="mt-9 grid min-w-0 gap-6 xl:grid-cols-[11rem_minmax(0,1fr)] xl:grid-rows-[auto_minmax(0,1fr)] xl:gap-x-10"
+      className="mt-9 grid min-w-0 gap-y-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] xl:grid-rows-[auto_minmax(0,1fr)] xl:gap-x-10 xl:gap-y-6"
     >
-      <div className="flex min-w-0 items-end xl:col-start-1 xl:row-start-1 xl:flex-col xl:items-stretch xl:gap-0.5">
+      <div className="flex min-w-0 items-end max-xl:mb-3 xl:col-start-1 xl:row-start-1 xl:flex-col xl:items-stretch xl:gap-0.5">
         {/*
          * The map is the first rail entry and the one screen this page shows live, so its row
          * goes back up to it instead of repeating it as a picture. The `↑` is the direction of
@@ -189,12 +191,12 @@ export function ScreensStage() {
         })}
       </div>
 
-      {/* The active screen's sentence and its door — the rail's foot from `xl`, under the picture
-          below it. Sans caption face: these are sentences, and Hangul in the mono face read as
+      {/* The active screen's sentence and its door — under the names from `xl`, under the
+          picture below it. Sans face: these are sentences, and Hangul in the mono face read as
           spaced-out printout (2026-09-25). */}
       <div
         data-testid="gateway-screens-captions"
-        className="grid min-w-0 max-xl:-mt-3 xl:col-start-1 xl:row-start-2 xl:self-end [&>*]:[grid-area:1/1]"
+        className="grid min-w-0 xl:col-start-1 xl:row-start-2 xl:self-start xl:border-t xl:border-[color:var(--color-divider)] xl:pt-5 [&>*]:[grid-area:1/1]"
       >
         {SCREEN_ORDER.map((id) => {
           const name = tRail(id);
@@ -204,13 +206,13 @@ export function ScreensStage() {
               data-state={stateOf(id)}
               inert={id !== active}
               className={cn(
-                'flex min-w-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-3 xl:flex-col xl:items-start xl:justify-end',
+                'flex min-w-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-3 xl:flex-col xl:flex-nowrap xl:items-start xl:justify-start',
                 swapClass(id),
               )}
             >
               <p
                 id={`gateway-screens-caption-${id}`}
-                className="min-w-0 max-w-[var(--measure-doc-column)] break-keep text-caption leading-caption text-[color:var(--color-text-tertiary)]"
+                className="min-w-0 max-w-[var(--measure-doc-column)] break-keep text-body leading-body text-[color:var(--color-text-secondary)]"
               >
                 {t(`caption.${id}`)}
               </p>
