@@ -4259,7 +4259,6 @@
     "restoreDoneOthers": "이 커밋이 바꾼 다른 문서 {count}개는 그대로예요.",
     "restoreFailedSafe": "문서는 바뀌지 않았어요.",
     "restoreAbsentDeleted": "이 걸음은 이 문서를 지웠어요. 되돌릴 내용은 아래 걸음들에 있어요",
-    "restoreConceptDoc": "이 개념의 문서 {path}",
     "docHistoryTitle": "이 문서를 바꾼 다른 커밋",
     "docHistoryOnly": "이 문서를 바꾼 커밋은 이것뿐이에요",
     "docHistoryOlder": "더 오래된 커밋도 있어요. 왼쪽 목록에서 이전 커밋을 더 읽으면 보여요",

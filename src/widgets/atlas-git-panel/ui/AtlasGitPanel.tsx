@@ -1270,10 +1270,11 @@ function PageHeader({
 
             2026-09-25 — the page title keeps the display step every destination's h1 uses:
             dropping it on Git alone made this the one rail destination whose title shrank
-            when you arrived (round-two review). The selection still wins inside the pane —
-            its headline holds the display step there and the document title inside a step
-            steps down to a panel title — so hierarchy is settled in the pane, not by
-            demoting the page's name. */}
+            when you arrived (round-two review). The selection wins inside the pane instead:
+            its headline takes `text-hero`, one ramp step above this title (round three — two
+            23px lines 50px apart had no winner), and the document title inside a step steps
+            down to a panel title. Hierarchy is settled in the pane, not by demoting the
+            page's name. */}
         <h1 className="flex items-center gap-2 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)] sm:text-display">
           <HistoryIcon size={ICON_SIZE.lg} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
@@ -2310,6 +2311,60 @@ function StepConceptNames({
  * x=680, with nothing between them (2026-09-25). There the why drops under the name as
  * a muted second line, so one row reads as one unit and the time keeps its own column.
  */
+/**
+ * The step list's own scroll box, and the reason it is never half empty while older steps
+ * exist.
+ *
+ * The first read asks for one page of ten, about what the column holds at the 14-inch
+ * height. At 1512x949 that left the column blank from y≈555 to the Save dock at y≈845, and
+ * at 1920x1080 from y≈555 to y≈975 (round-three review, 2026-09-25), while the repository
+ * held more steps behind "Show older steps". The box now reads the next page itself while
+ * it still has room for another row and git says older steps exist, so the space is filled
+ * with the history itself — never with a repeated fact. A folder with fewer steps than the
+ * box holds ends on the list's own "first step" line.
+ */
+function StepListScroller({
+  hasMore,
+  busy,
+  onMore,
+  className,
+  children,
+}: {
+  hasMore: boolean;
+  busy: boolean;
+  onMore: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [roomy, setRoomy] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const read = () => {
+      // An unmeasured box (a test DOM, a hidden panel) has no room to fill.
+      if (el.clientHeight < 1) return setRoomy(false);
+      // Room for one more row at the list's own row height.
+      const row = Number.parseFloat(getComputedStyle(el).getPropertyValue("--git-row-h")) || 40;
+      setRoomy(el.scrollHeight - el.clientHeight < row);
+    };
+    read();
+    const observer = new ResizeObserver(read);
+    observer.observe(el);
+    const list = el.firstElementChild;
+    if (list) observer.observe(list);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (roomy && hasMore && !busy) onMore();
+  }, [roomy, hasMore, busy, onMore]);
+  return (
+    <div ref={ref} className={cn("min-h-0 max-xl:overflow-y-auto xl:flex-1 xl:overflow-y-auto", className)}>
+      {children}
+    </div>
+  );
+}
+
 const STEP_ROW =
   "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1fr)] xl:grid-cols-[var(--git-when-w)_minmax(0,1.7fr)_minmax(0,1fr)] min-h-[var(--git-row-h)] items-center gap-x-3 gap-y-0.5 xl:gap-y-3 border-b border-l-2 border-b-[color:var(--color-divider)] px-4 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] max-xl:[&>*:first-child]:row-span-2 max-xl:[&>*:nth-child(3)]:col-start-2";
 
@@ -3344,7 +3399,23 @@ function DesktopBody({
             not win the screen it was picked on. Capped, the list scrolls in place and the
             reader's headline starts inside the first window.
           */}
-          <div className="min-h-0 max-xl:max-h-[var(--git-evidence-stack-max)] max-xl:overflow-y-auto xl:flex-1 xl:overflow-y-auto">
+          <StepListScroller
+            hasMore={historyHasMore}
+            busy={historyMoreBusy}
+            onMore={onMoreHistory}
+            /*
+             * Round three (2026-09-25): with a step picked, the stacked list steps down to
+             * about four rows. At the 460px cap the picked step's headline still started at
+             * y≈650 of a 720px window, so it sat above the fold without winning it. The
+             * picked row is brought into view inside the list (`revealSelectedRow`), and
+             * the rest of the history scrolls in place.
+             */
+            className={
+              selection.kind === "commit"
+                ? "max-xl:max-h-60"
+                : "max-xl:max-h-[var(--git-evidence-stack-max)]"
+            }
+          >
             <StepList
               t={t}
               history={history}
@@ -3361,7 +3432,7 @@ function DesktopBody({
               upstream={upstream}
               onRemoteAction={onRemoteAction}
             />
-          </div>
+          </StepListScroller>
           {dock ? <div className="flex-none px-4 pb-3">{dock}</div> : null}
         </div>
 

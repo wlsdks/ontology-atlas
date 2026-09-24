@@ -4259,7 +4259,6 @@
     "restoreDoneOthers": "The other {count} document(s) this commit changed stay as they are.",
     "restoreFailedSafe": "The document was not changed.",
     "restoreAbsentDeleted": "This step deleted the document, so the content to restore is in the steps below",
-    "restoreConceptDoc": "This concept's document {path}",
     "docHistoryTitle": "Other steps that changed this document",
     "docHistoryOnly": "This is the only step that changed this document",
     "docHistoryOlder": "Older steps exist too. Show older steps in the list on the left to reach them",

@@ -18,6 +18,18 @@ import { EGO_BEARINGS, type ConceptEgo, type EgoBearing } from "../model/build-c
 export const EGO_VIEW_W = 660;
 export const EGO_VIEW_H = 345;
 
+/** The box the drawing is laid out in, in CSS pixels; the default is the pre-measure view. */
+export type EgoView = { w: number; h: number };
+export const DEFAULT_EGO_VIEW: EgoView = { w: EGO_VIEW_W, h: EGO_VIEW_H };
+
+/** Room kept outside the outermost ring for a side label (about 12 Latin characters at 11px). */
+const EGO_LABEL_ROOM_X = 84;
+/** Room kept above and below the outermost ring for a label drawn over or under its node. */
+const EGO_LABEL_ROOM_Y = 30;
+/** How far the rings may stretch or shrink to meet the box, per axis. */
+const EGO_FILL_MAX = 1.9;
+const EGO_FILL_MIN = 0.4;
+
 /** Neighbours visible in one fan. Beyond it, an "and N more" pill. */
 const EGO_FAN_CAP = 7;
 
@@ -142,9 +154,22 @@ function overlapArea(a: Rect, b: Rect): number {
   return w > 0 && h > 0 ? w * h : 0;
 }
 
-function outOfBounds(rect: Rect): number {
-  const inside = overlapArea(rect, { x: 0, y: 0, w: EGO_VIEW_W, h: EGO_VIEW_H });
+function outOfBounds(rect: Rect, view: EgoView): number {
+  const inside = overlapArea(rect, { x: 0, y: 0, w: view.w, h: view.h });
   return rect.w * rect.h - inside;
+}
+
+/**
+ * A label that crosses the box's side edge by less than the node gap is slid back inside.
+ * In a narrow cell (1280, beside the reading table) the best of the four sides can still
+ * lean a fraction of a pixel past the edge, where the SVG would clip its last glyph.
+ */
+function nudgeInside(label: EgoLabel, view: EgoView): EgoLabel {
+  const over = label.rect.x + label.rect.w - view.w;
+  const under = -label.rect.x;
+  const shift = over > 0 && over <= LABEL_GAP ? -over : under > 0 && under <= LABEL_GAP ? under : 0;
+  if (shift === 0) return label;
+  return { ...label, x: label.x + shift, rect: { ...label.rect, x: label.rect.x + shift } };
 }
 
 export function rectsIntersect(a: Rect, b: Rect): boolean {
@@ -162,7 +187,11 @@ function sidesFor(cos: number, sin: number): Side[] {
   return sin > 0 ? ["below", "right", "left", "above"] : ["above", "right", "left", "below"];
 }
 
-export function layoutConceptEgo(ego: ConceptEgo, geometry: EgoGeometry = DEFAULT_EGO_GEOMETRY): EgoLayout | null {
+export function layoutConceptEgo(
+  ego: ConceptEgo,
+  geometry: EgoGeometry = DEFAULT_EGO_GEOMETRY,
+  view: EgoView = DEFAULT_EGO_VIEW,
+): EgoLayout | null {
   const groups = EGO_BEARINGS.map((bearing) => {
     const all = ego.neighbors[bearing];
     const shown = all.slice(0, EGO_FAN_CAP);
@@ -190,9 +219,23 @@ export function layoutConceptEgo(ego: ConceptEgo, geometry: EgoGeometry = DEFAUL
   const usable = 360 - gap * groups.length;
   const ring = Math.max(geometry.ringMin, Math.min(geometry.ringMax, 58 + (slotTotal <= 2 ? 26 : 0) + maxSlots * 11));
   const stagger = slotTotal > 12 ? 36 : slotTotal > 4 ? 22 : 0;
-  const cx = EGO_VIEW_W / 2;
-  const cy = EGO_VIEW_H / 2;
+  const cx = view.w / 2;
+  const cy = view.h / 2;
   const selfRadius = radiusOf(geometry.self, ego.kind);
+  /*
+   * **The drawing fills the box it is given** (round three, 2026-09-25). The fan was sized
+   * for a fixed 660x345 view and the SVG was scaled to fit its cell, so at 1512 the
+   * drawing used about 40% of its box and every 11px label was scaled down to 9-10px. Now
+   * the view is the cell's own pixel size, labels are drawn 1:1, and the rings stretch
+   * on each axis until the outermost node, plus room for its label, meets the box's edge.
+   * The stretch is capped so a two-neighbour concept does not draw spokes across a
+   * 1920 screen, and floored so a narrow cell still keeps its labels apart.
+   */
+  const outer = ring + stagger + (groups.some((g) => g.rest > 0) ? 34 : 0);
+  const fit = (room: number, reach: number) =>
+    Math.min(EGO_FILL_MAX, Math.max(EGO_FILL_MIN, room / Math.max(1, reach)));
+  const sx = fit(view.w / 2 - EGO_LABEL_ROOM_X, outer * geometry.ex);
+  const sy = fit(view.h / 2 - EGO_LABEL_ROOM_Y, outer * geometry.ey);
 
   type Pending = { slot: Omit<Extract<EgoSlot, { type: "node" }>, "label">; text: string; cos: number; sin: number };
   const nodes: Pending[] = [];
@@ -216,8 +259,8 @@ export function layoutConceptEgo(ego: ConceptEgo, geometry: EgoGeometry = DEFAUL
       const angle = ((cursor + gap / 2 + (group.slots === 1 ? span / 2 : span * ratio)) * Math.PI) / 180;
       const isMore = group.rest > 0 && i === group.slots - 1;
       const radius = ring + (i % 2) * stagger + (isMore ? 34 : 0);
-      const x = cx + radius * Math.cos(angle) * geometry.ex;
-      const y = cy + radius * Math.sin(angle) * geometry.ey;
+      const x = cx + radius * Math.cos(angle) * geometry.ex * sx;
+      const y = cy + radius * Math.sin(angle) * geometry.ey * sy;
       const dashed = DASHED.includes(group.bearing);
       if (isMore) {
         const width = 26 + String(group.rest).length * 6;
@@ -261,7 +304,7 @@ export function layoutConceptEgo(ego: ConceptEgo, geometry: EgoGeometry = DEFAUL
     for (const text of texts) {
       for (const side of sidesFor(node.cos, node.sin)) {
         const candidate = labelAt(side, x, y, r, text);
-        let cost = outOfBounds(candidate.rect) * 2;
+        let cost = outOfBounds(candidate.rect, view) * 2;
         for (const rect of placed) cost += overlapArea(candidate.rect, rect) * 4;
         for (const rect of obstacles) if (rect !== own) cost += overlapArea(candidate.rect, rect);
         if (cost < bestCost) {
@@ -272,7 +315,7 @@ export function layoutConceptEgo(ego: ConceptEgo, geometry: EgoGeometry = DEFAUL
       }
       if (bestCost === 0) break;
     }
-    const label = best ?? labelAt(sidesFor(node.cos, node.sin)[0], x, y, r, node.text);
+    const label = nudgeInside(best ?? labelAt(sidesFor(node.cos, node.sin)[0], x, y, r, node.text), view);
     placed.push(label.rect);
     placedNodes.set(`${node.slot.bearing}:${node.slot.index}`, label);
   }

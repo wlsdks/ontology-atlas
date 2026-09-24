@@ -50,11 +50,24 @@ export function ConceptEgoCard({
   if (!ego) return null;
 
   const facts: { label: string; value: string | null; mono?: boolean }[] = [
-    { label: t("egoDomain"), value: ego.domainLabel },
+    // A domain or a project has no owning domain; "Domain: none" on one is a slot nobody
+    // could ever fill, which the rule above says gets no cell.
+    ...(ego.kind === "domain" || ego.kind === "project"
+      ? []
+      : [{ label: t("egoDomain"), value: ego.domainLabel }]),
     ...(ego.projectLabels.length > 0
       ? [{ label: t("egoProject"), value: ego.projectLabels.join(", ") }]
       : []),
-    { label: t("egoDoc"), value: ego.docSlug, mono: true },
+    /*
+     * Nothing said twice (round three, 2026-09-25). A concept without its own agent slug
+     * falls back to its document's slug, so the two cells printed one value under two labels
+     * on the screen's main view. When they agree, one cell carries it, under the name an agent
+     * uses — the fact the second of this product's two users needs. They are two cells only
+     * when they say two different things.
+     */
+    ...(ego.agentSlug && ego.agentSlug === ego.docSlug
+      ? []
+      : [{ label: t("egoDoc"), value: ego.docSlug, mono: true }]),
     { label: t("egoAgentReference"), value: ego.agentSlug, mono: true },
   ];
 
@@ -89,8 +102,15 @@ export function ConceptEgoCard({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(220px,var(--git-ego-facts-w))_minmax(0,1fr)]">
-        <dl className="grid content-start border-b border-[color:var(--color-divider)] lg:border-r lg:border-b-0">
+      {/*
+        Side by side only when the card itself is 48rem or wider (a container query, not the
+        window): at a 1280 window the card is about 610px, and beside the table the drawing
+        got a 328px cell where a dense concept's labels could not stay apart (round three,
+        2026-09-25). There it sits under the table at the card's full width instead.
+      */}
+      <div className="@container/ego">
+      <div className="grid grid-cols-1 @3xl/ego:grid-cols-[minmax(220px,var(--git-ego-facts-w))_minmax(0,1fr)]">
+        <dl className="grid content-start border-b border-[color:var(--color-divider)] @3xl/ego:border-r @3xl/ego:border-b-0">
           {facts.map((fact) => (
             <div
               key={fact.label}
@@ -178,6 +198,7 @@ export function ConceptEgoCard({
             {t("egoEmpty")}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

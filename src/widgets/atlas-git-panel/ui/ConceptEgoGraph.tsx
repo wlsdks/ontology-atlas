@@ -1,14 +1,14 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import type { ConceptEgo, EgoBearing } from "../model/build-concept-ego";
 import {
   DEFAULT_EGO_GEOMETRY,
-  EGO_VIEW_H,
-  EGO_VIEW_W,
+  DEFAULT_EGO_VIEW,
   layoutConceptEgo,
   type EgoGeometry,
+  type EgoView,
 } from "../lib/ego-layout";
 
 /**
@@ -125,22 +125,49 @@ export function ConceptEgoGraph({
   className?: string;
 }) {
   const gradientId = useId();
+  /*
+   * The drawing is laid out in its cell's own pixels (round three, 2026-09-25): a fixed
+   * 660x345 view scaled into the cell left about 60% of a 740x410 box blank and drew the
+   * 11px labels at 9-10px. Until the cell is measured (first paint, tests without a
+   * ResizeObserver) the default view is drawn scaled, exactly as before.
+   */
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState<EgoView | null>(null);
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const read = () => {
+      const { width, height } = el.getBoundingClientRect();
+      if (width < 1 || height < 1) return;
+      const next = { w: Math.round(width), h: Math.round(height) };
+      setView((prev) => (prev && prev.w === next.w && prev.h === next.h ? prev : next));
+    };
+    read();
+    const observer = new ResizeObserver(read);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const box = view ?? DEFAULT_EGO_VIEW;
   const layout = layoutConceptEgo(
     ego,
     readGeometry(typeof document === "undefined" ? null : document.documentElement),
+    box,
   );
   if (!layout) return null;
   const { cx, cy, selfRadius, selfLabel, slots } = layout;
 
   return (
-    <div className={cn("grid min-h-0 place-items-stretch bg-[color:var(--color-canvas)]", className)}>
+    <div
+      ref={boxRef}
+      className={cn("relative min-h-[var(--git-ego-min-h)] bg-[color:var(--color-canvas)]", className)}
+    >
       <svg
         key={ego.id}
-        viewBox={`0 0 ${EGO_VIEW_W} ${EGO_VIEW_H}`}
+        viewBox={`0 0 ${box.w} ${box.h}`}
         role="img"
         aria-label={`${ego.label} · ${bearingLabel("contains")} ${ego.total}`}
         preserveAspectRatio="xMidYMid meet"
-        className="block h-[var(--git-ego-min-h)] w-full"
+        className="absolute inset-0 block size-full"
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -207,7 +234,9 @@ export function ConceptEgoGraph({
                 x={slot.label.x}
                 y={slot.label.y}
                 textAnchor={slot.label.anchor}
-                className="fill-[color:var(--color-text-tertiary)] text-label group-hover/ego:fill-[color:var(--color-text-primary)]"
+                /* Secondary ink (round three): tertiary grey at the drawing's old 0.88 scale read
+                   as a faint afterthought beside the reading table's own names. */
+                className="fill-[color:var(--color-text-secondary)] text-label group-hover/ego:fill-[color:var(--color-text-primary)]"
               >
                 {slot.label.text}
               </text>

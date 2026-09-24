@@ -268,6 +268,35 @@ export function CommitDetail({
     return files.find((file) => fileCarriesNode(file, focused)) ?? null;
   }, [files, focused]);
 
+  /*
+   * One door per document, drawn in one place in both lenses: on the heading of the
+   * document's own history. A step that deleted the document holds no content to put back,
+   * so the door is not drawn — but its absence is said, not left silent: the person would
+   * otherwise read the missing door as a missing feature (installed-app walk, 2026-09-19).
+   */
+  const restoreDoor = (file: GitChangeEntry) =>
+    file.status === "deleted" ? (
+      <p
+        data-testid="atlas-git-restore-absent"
+        className="text-caption leading-label text-[color:var(--color-text-quaternary)]"
+      >
+        {t("restoreAbsentDeleted")}
+      </p>
+    ) : (
+      <RestoreDock
+        // Keyed by document: an armed confirm must not survive a file change and re-aim at
+        // another document (interaction seat, 2026-09-19).
+        key={file.path}
+        t={t}
+        path={file.path}
+        when={relativeTime}
+        pending={pendingDelta.get(file.path) ?? null}
+        others={Math.max(0, files.length - 1)}
+        busy={restoreBusy}
+        onRestore={onRestore}
+      />
+    );
+
   return (
     <div
       className="git-fade-in flex min-h-0 flex-1 flex-col"
@@ -284,12 +313,18 @@ export function CommitDetail({
         pane agree on what was picked. The author's words follow as the second line without
         their conventional-commit code, and the meta line carries a short id to copy and a
         date in the reader's locale instead of a 40-character hash and an ISO timestamp.
+
+        Round three (2026-09-25): the page title went back to the display step every
+        destination's h1 uses, which left two 23px lines 50px apart and no winner. The
+        selection now wins by size, one ramp step above the page title — `text-hero`, the
+        step the Insights brief headline already takes under its own display-size page title
+        (BriefTab.tsx) — at the signature weight, so the larger line does not also shout.
       */}
       <header className="flex flex-none flex-col gap-1.5 px-5 pt-5 pb-4">
         <h2
           data-testid="atlas-git-detail-headline"
           title={subject}
-          className="text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] break-keep"
+          className="text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] break-keep"
         >
           {title}
         </h2>
@@ -393,44 +428,15 @@ export function CommitDetail({
                   ))}
                 </div>
               </div>
-              {focusedFile ? (
-                <div className="px-5 pt-3">
-                  {/* A step that deleted the document holds no content to put back, so the
-                      door is not drawn — but its absence is said, not left silent: the person
-                      is looking at a concept and would otherwise read the missing door as a
-                      missing feature (installed-app walk, 2026-09-19). The document's own
-                      steps below still hold its content. */}
-                  {focusedFile.status === "deleted" ? (
-                    <p
-                      data-testid="atlas-git-restore-absent"
-                      className="text-caption leading-label text-[color:var(--color-text-quaternary)]"
-                    >
-                      {t("restoreAbsentDeleted")}
-                    </p>
-                  ) : null}
-                  {focusedFile.status !== "deleted" ? (
-                  <RestoreDock
-                    t={t}
-                    path={focusedFile.path}
-                    label={t("restoreConceptDoc", { path: focusedFile.path })}
-                    when={relativeTime}
-                    pending={pendingDelta.get(focusedFile.path) ?? null}
-                    others={Math.max(0, files.length - 1)}
-                    busy={restoreBusy}
-                    onRestore={onRestore}
-                  />
-                  ) : null}
-                  <DocumentHistory
-                    t={t}
-                    vaultPath={vaultPath}
-                    path={focusedFile.path}
-                    currentHash={hash}
-                    whenOf={whenOf}
-                    stepTitleOf={stepTitleOf}
-                    onJump={onJumpToCommit}
-                  />
-                </div>
-              ) : null}
+              {/*
+                Card first, then the document's own timeline (round three, 2026-09-25). The
+                card names the concept and where it is written down — once. The line that used
+                to sit above the history ("This concept's document capabilities/checkout.md")
+                printed the same slug the card's two fact cells printed again, three times on
+                the screen's main view; it is gone, and the restore door moved onto the
+                history's own heading, beside the versions it chooses between. The files lens
+                draws the door in exactly the same place.
+              */}
               {focused ? (
                 <Section label={t("egoHeading")} note={t("egoHint")}>
                   <ConceptEgoCard
@@ -440,6 +446,20 @@ export function CommitDetail({
                     onSelect={setFocusedConceptId}
                   />
                 </Section>
+              ) : null}
+              {focusedFile ? (
+                <div className="px-5 pb-4">
+                  <DocumentHistory
+                    t={t}
+                    vaultPath={vaultPath}
+                    path={focusedFile.path}
+                    currentHash={hash}
+                    whenOf={whenOf}
+                    stepTitleOf={stepTitleOf}
+                    onJump={onJumpToCommit}
+                    action={restoreDoor(focusedFile)}
+                  />
+                </div>
               ) : null}
             </>
           ) : (
@@ -482,21 +502,21 @@ export function CommitDetail({
               ))}
             </ul>
 
-            {/* The document's other steps sit between the chooser and the reader. The restore
-                door no longer floats here on its own line (review 2026-09-25: a bare chip
-                between a file row and a history block); it rides in the reader's header,
-                beside the path and counts it acts on, exactly where the uncommitted pane
-                draws its discard door. */}
-            {activeFile ? (
+            {/* The document's other steps sit between the chooser and the reader, and the
+                restore door rides on their heading, as it does in the concepts lens (round
+                three, 2026-09-25). In the reader's header it stood at the measure's right edge,
+                about 320px from the path and counts it was meant to belong to. */}
+            {activeEntry ? (
               <div className="px-5">
                 <DocumentHistory
                   t={t}
                   vaultPath={vaultPath}
-                  path={activeFile}
+                  path={activeEntry.path}
                   currentHash={hash}
                   whenOf={whenOf}
                   stepTitleOf={stepTitleOf}
                   onJump={onJumpToCommit}
+                  action={restoreDoor(activeEntry)}
                 />
               </div>
             ) : null}
@@ -519,23 +539,6 @@ export function CommitDetail({
                   document={activeDocument}
                   fallback={activeFallback}
                   source={hash}
-                  /* A file this commit deleted has no content at this commit to restore; the
-                     door would only open on a refusal, so it is not drawn. The document's own
-                     history above still lists the steps that hold its content. */
-                  action={
-                    activeDocument.entry.status !== "deleted" ? (
-                      <RestoreDock
-                        t={t}
-                        path={activeDocument.entry.path}
-                        label={null}
-                        when={relativeTime}
-                        pending={pendingDelta.get(activeDocument.entry.path) ?? null}
-                        others={Math.max(0, files.length - 1)}
-                        busy={restoreBusy}
-                        onRestore={onRestore}
-                      />
-                    ) : null
-                  }
                 />
               </div>
             ) : null}
@@ -556,7 +559,6 @@ export function CommitDetail({
 function RestoreDock({
   t,
   path,
-  label,
   when,
   pending,
   others,
@@ -565,8 +567,6 @@ function RestoreDock({
 }: {
   t: (key: string, values?: Record<string, string | number>) => string;
   path: string;
-  /** A lead-in naming whose document this is, or `null` when the file list already says. */
-  label: string | null;
   when: string;
   pending: { added: number; removed: number } | null;
   others: number;
@@ -575,7 +575,8 @@ function RestoreDock({
 }) {
   const [confirming, setConfirming] = useState(false);
   return (
-    <div className="flex flex-col gap-2" data-testid="atlas-git-restore-dock">
+    // Armed, the confirm takes the heading row's full width, under the heading it belongs to.
+    <div className={cn("flex min-w-0 flex-col gap-2", confirming && "basis-full")} data-testid="atlas-git-restore-dock">
       {confirming ? (
         <div
           className="git-fade-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
@@ -619,43 +620,30 @@ function RestoreDock({
           </div>
         </div>
       ) : (
-        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          {label ? (
-            <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-              {label}
-            </span>
-          ) : null}
           <button
             type="button"
             data-testid="atlas-git-restore"
             onClick={() => setConfirming(true)}
             /*
-             * The screen's two doors share one grammar. Measured 2026-09-20: this door
-             * resolved to `--color-text-quaternary` (#82828a) and sat between a caption on
-             * the same token and a heading on `--color-text-tertiary` (#8a8f98) — a 3%
-             * luminance spread, so at rest nothing told the only control that writes to
-             * disk apart from the sentences around it. The chip shape carries the
-             * affordance (padding, a border on hover) exactly as the discard door does;
-             * `secondary` carries legibility. Neither adds a colour.
+             * Measured 2026-09-20: in quaternary ink this door read as one more caption, so
+             * it carries `secondary` ink. `md` is 11px on the shared 32px height, and the chip
+             * shape's touch floor still gives a finger 44px (review 2026-09-25).
+             *
+             * Round three (2026-09-25): a transparent border left it a bare word at the end of
+             * a line. It wears the resting border the concept chips above it wear, so the
+             * pane's controls share one grammar, and it is no longer mistaken for text.
              */
             className={controlClass({
-              /*
-               * The discard door's grammar, size and all (review 2026-09-25): `sm` drew 9.5px
-               * type at the ramp's 24px floor, and the two doors that write a document back
-               * to disk were two sizes on one screen. `md` is 11px on the shared 32px height;
-               * the chip shape's touch floor still gives a finger 44px.
-               */
               shape: "chip",
               size: "md",
               tone: "secondary",
               hoverInk: "strong",
               hoverBorder: "strong",
-              className: "border-transparent",
+              className: "self-start border-[color:var(--color-border-soft)]",
             })}
           >
             {t("restoreAction")}
           </button>
-        </p>
       )}
     </div>
   );
@@ -679,6 +667,7 @@ function DocumentHistory({
   whenOf,
   stepTitleOf,
   onJump,
+  action = null,
 }: {
   t: (key: string, values?: Record<string, string | number>) => string;
   vaultPath: string | null;
@@ -687,6 +676,8 @@ function DocumentHistory({
   whenOf: (isoTime: string) => string;
   stepTitleOf: (commit: GitCommitInfo) => string;
   onJump: (hash: string) => void;
+  /** The document's restore door, drawn on the heading beside the versions it chooses between. */
+  action?: React.ReactNode;
 }) {
   const [rows, setRows] = useState<GitCommitInfo[] | null>(null);
   const [older, setOlder] = useState(false);
@@ -716,17 +707,21 @@ function DocumentHistory({
    * away and counted, never silently dropped.
    */
   const [expanded, setExpanded] = useState(false);
-  if (rows === null) return null;
+  // Until the history is read (or where it cannot be, on the web) the door still stands.
+  if (rows === null) return action ? <div className="flex pt-4">{action}</div> : null;
   const shown = expanded ? others : others.slice(0, DOCUMENT_HISTORY_PREVIEW);
   const hidden = others.length - shown.length;
   return (
     <section className="flex flex-col gap-1 pt-4" data-testid="atlas-git-document-history">
-      <h3 className="flex items-baseline gap-2 text-label text-[color:var(--color-text-tertiary)]">
-        {others.length > 0 ? t("docHistoryTitle") : t("docHistoryOnly")}
-        {others.length > 0 ? (
-          <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">{others.length}</b>
-        ) : null}
-      </h3>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h3 className="flex items-baseline gap-2 text-label text-[color:var(--color-text-tertiary)]">
+          {others.length > 0 ? t("docHistoryTitle") : t("docHistoryOnly")}
+          {others.length > 0 ? (
+            <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">{others.length}</b>
+          ) : null}
+        </h3>
+        {action}
+      </div>
       {others.length > 0 ? (
         <ul className="flex flex-col">
           {shown.map((commit, index) => (

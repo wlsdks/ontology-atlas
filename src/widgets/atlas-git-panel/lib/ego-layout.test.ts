@@ -94,6 +94,39 @@ describe("layoutConceptEgo — label placement", () => {
     });
   }
 
+  /*
+   * The drawing is laid out in its cell's own pixels (round three, 2026-09-25): a fixed view
+   * scaled into a 740x410 cell used about 40% of it and drew 11px labels at 9-10px. These are
+   * the cells measured at 1280 (stacked under the table), 1512 and 1920.
+   */
+  const VIEWS = [
+    { w: 609, h: 280 },
+    { w: 468, h: 358 },
+    { w: 737, h: 470 },
+  ];
+  for (const view of VIEWS) {
+    it(`fills a ${view.w}x${view.h} cell without two labels meeting`, () => {
+      for (const counts of CASES) {
+        const layout = layoutConceptEgo(ego(counts), undefined, view)!;
+        const rects: Rect[] = [layout.selfLabel.rect];
+        let reach = 0;
+        for (const slot of layout.slots) {
+          reach = Math.max(reach, Math.abs(slot.x - layout.cx) / (view.w / 2), Math.abs(slot.y - layout.cy) / (view.h / 2));
+          if (slot.type !== "node") continue;
+          rects.push(slot.label.rect);
+          expect(slot.label.rect.x).toBeGreaterThanOrEqual(0);
+          expect(slot.label.rect.x + slot.label.rect.w).toBeLessThanOrEqual(view.w);
+        }
+        for (let i = 0; i < rects.length; i += 1) {
+          for (let j = i + 1; j < rects.length; j += 1) expect(rectsIntersect(rects[i], rects[j])).toBe(false);
+        }
+        // The fan reaches well into the cell on at least one axis rather than huddling in its
+        // middle (the old fixed view reached about 0.3 of a 737px cell).
+        expect(reach).toBeGreaterThan(0.55);
+      }
+    });
+  }
+
   it("keeps every label inside the drawing", () => {
     const layout = layoutConceptEgo(ego({ belongsTo: 1, contains: 6, dependsOn: 2, usedBy: 3 }))!;
     for (const slot of layout.slots) {

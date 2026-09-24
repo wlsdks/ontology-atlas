@@ -57,6 +57,15 @@ test("앱 최소 창(1040x720)에서 쌓인 문서 읽기 칸이 높이를 갖�
   await expect(headline).toBeVisible();
   const headlineTop = await headline.evaluate((el) => el.getBoundingClientRect().top);
   expect(headlineTop, "the selected step's headline starts below the fold").toBeLessThan(720 - 40);
+  // With a step picked the list steps down to about four rows, so the headline sits in the
+  // upper part of the window rather than on its last lines (round three: y≈650 of 720).
+  expect(headlineTop, "the picked step's headline does not win the window").toBeLessThan(720 * 0.65);
+  // One winner: the selection is larger than the page title, not tied with it.
+  const [pageTitle, picked] = await page.evaluate(() => [
+    Number.parseFloat(getComputedStyle(document.querySelector("h1")!).fontSize),
+    Number.parseFloat(getComputedStyle(document.querySelector('[data-testid="atlas-git-detail-headline"]')!).fontSize),
+  ]);
+  expect(picked, "the page title and the selected step tie in size").toBeGreaterThan(pageTitle);
 
   // The list and the reader are one page: no horizontal scroll on the way.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

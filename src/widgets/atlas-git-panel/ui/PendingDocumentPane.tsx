@@ -296,7 +296,9 @@ export function DocumentChangeReader({
         <p className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 font-mono text-caption text-[color:var(--color-text-quaternary)]">
           {/* The path, unless it is the name already shown above it — a file at the folder's
               root would otherwise read its own name twice, at two sizes, in two lines. */}
-          {entry.path === label ? null : <span className="min-w-0 break-all">{entry.path}</span>}
+          {/* Inside a step the file chooser's highlighted row above already prints the path,
+              so the reader does not print it a second time (round three, 2026-09-25). */}
+          {entry.path === label || source ? null : <span className="min-w-0 break-all">{entry.path}</span>}
           <span className="text-[color:var(--color-text-tertiary)]">
             {t(statusKey(entry.status, isDocument))}
           </span>
