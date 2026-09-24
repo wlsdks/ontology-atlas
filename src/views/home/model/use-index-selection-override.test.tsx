@@ -19,6 +19,7 @@ describe('indexSelectionOverrideReducer', () => {
     expect(indexSelectionOverrideReducer(active, { type: 'manual-expand' })).toEqual({
       selectionActive: true,
       manualExpand: true,
+      byTab: true,
     });
   });
 });

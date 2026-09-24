@@ -103,11 +103,11 @@ export function MeaningTransitionHistory({ handle, open }: { handle: FileSystemD
   return <section aria-labelledby="meaning-transition-history-title" className="space-y-3 rounded-card border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
     <div className="space-y-1">
       <h3 id="meaning-transition-history-title" className="text-body-lg font-[var(--font-weight-strong)]">{t('title')}</h3>
-      <p className="text-caption text-[color:var(--color-text-secondary)]">{t('boundary')}</p>
+      <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('boundary')}</p>
     </div>
     {!handle ? <p>{t('openFolder')}</p> : !available ? <p>{t('unavailable')}</p> : null}
     {pending ? <p role="status">{t('loading')}</p> : null}
-    {error ? <p role="alert" className="text-caption text-[color:var(--color-danger-text)]">{error}</p> : null}
+    {error ? <p role="alert" className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{error}</p> : null}
     {available && !pending && loaded?.handle === handle && records.length === 0 && !error ? <p>{t('empty')}</p> : null}
     {records.length ? <div className="space-y-2" aria-label={t('listLabel')}>{records.map((record) => <RowButton key={record.eventId} active={record === selected} aria-pressed={record === selected} className="w-full" onClick={() => setSelectedId(record.eventId)}>
       <span className="min-w-0 flex-1 text-left"><span className="block truncate font-[var(--font-weight-emphasis)]">{record.task.label}</span><span className="block text-caption text-[color:var(--color-text-secondary)]">{new Date(record.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })} · {record.schema === 'atlas-meaning-transition/v2' ? t(`phase.${record.phase}`) : t('legacy')}</span></span>

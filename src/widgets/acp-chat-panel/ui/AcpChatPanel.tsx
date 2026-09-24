@@ -198,6 +198,10 @@ interface SuggestionRowsProps {
   testId: string;
   centered: boolean;
   items: readonly ChatSuggestion[];
+  /** Shown before the session can take them: the shape of the first action, not yet pressable. */
+  disabled?: boolean;
+  /** Per-row test id prefix; the disabled preview must not answer for the live rows. */
+  itemTestIdPrefix?: string;
   labelFor: (suggestion: ChatSuggestion) => string;
   onSelect: (suggestion: ChatSuggestion) => void;
 }
@@ -208,6 +212,8 @@ function SuggestionRows({
   testId,
   centered,
   items,
+  disabled = false,
+  itemTestIdPrefix = 'acp-chat-suggestion',
   labelFor,
   onSelect,
 }: SuggestionRowsProps) {
@@ -229,7 +235,8 @@ function SuggestionRows({
           hoverInk="strong"
           hoverSurface="lift"
           className="rounded-chip bg-[color:var(--color-overlay-1)] px-2.5 py-1.5"
-          data-testid={`acp-chat-suggestion-${suggestion.kind}`}
+          data-testid={`${itemTestIdPrefix}-${suggestion.kind}`}
+          disabled={disabled}
           onClick={() => onSelect(suggestion)}
         >
           <span className="min-w-0 break-keep">
@@ -303,6 +310,7 @@ export function AcpChatPanel({
   presentationIntent = null,
   presentationRequest = null,
   contextLabel = null,
+  composerSubject = null,
   onDraftPresenceChange,
   onPresentationOpenMap,
   onPresentationVisibilityChange,
@@ -446,6 +454,12 @@ export function AcpChatPanel({
   presentationRequest?: string | null;
   /** Immutable origin of the explicitly seated request, such as Analysis · Connections. */
   contextLabel?: string | null;
+  /**
+   * What the dock's header is about, when that is one picked concept. The composer invitation
+   * names it ("Ask about Checkout…") instead of "this folder", which contradicted the header
+   * directly above it. `null` keeps the folder-wide invitation.
+   */
+  composerSubject?: string | null;
   /** Reports only whether unsent bytes exist; the draft itself stays owned by this panel. */
   onDraftPresenceChange?: (present: boolean) => void;
   /** Optional explicit continuation from an in-place presentation to Map. */
@@ -1620,6 +1634,29 @@ export function AcpChatPanel({
                 {t('firstRun.progress', { mb: download.mb })}
               </p>
             ) : null}
+            {/*
+              ⚠️ **The wait previews the first action** (measured 2026-09-25, 1512 and 1920). While
+              the tool opened, the well was a 32px mark and two lines centred in ~900px of empty
+              panel. The same suggestions the empty conversation offers now stand under the status,
+              disabled until the session is ready, so the wait shows what can be asked the moment
+              it can be — and the rows are already where they will be pressed.
+            */}
+            {suggestions.length > 0 && !download ? (
+              <div className="mt-4 w-full max-w-[34ch] justify-self-stretch text-left">
+                <SuggestionRows
+                  heading={t('startingSuggestions')}
+                  testId="acp-starting-suggestions"
+                  centered
+                  disabled
+                  itemTestIdPrefix="acp-starting-suggestion"
+                  items={suggestions}
+                  labelFor={(suggestion) =>
+                    t(`suggest.${suggestion.kind}.label`, suggestion.params)
+                  }
+                  onSelect={() => undefined}
+                />
+              </div>
+            ) : null}
           </div>
         ) : null}
         {events.length === 0 && status !== 'starting' ? (
@@ -2176,7 +2213,7 @@ export function AcpChatPanel({
           <Textarea
             ref={inputRef}
             aria-label={t('composerLabel')}
-            placeholder={composerFocused && draft.length === 0 ? '' : t('composerPlaceholder')}
+            placeholder={composerFocused && draft.length === 0 ? '' : composerSubject ? t('composerPlaceholderSubject', { subject: composerSubject }) : t('composerPlaceholder')}
             frame="bare"
             className="w-full"
             rows={COMPOSER_MIN_ROWS}

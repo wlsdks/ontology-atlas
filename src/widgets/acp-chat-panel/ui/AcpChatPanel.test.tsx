@@ -2565,6 +2565,27 @@ describe('첫 내려받기 — 「켜는 중」만으로는 부족하다 (2026-0
     );
   });
 
+  it('previews the first asks, not yet pressable, while the tool opens, and the composer names the picked concept', async () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        suggestions={[{ kind: 'explain', params: { count: 80 } }]}
+        composerSubject="Checkout"
+      />,
+    );
+    await screen.findByTestId('acp-starting');
+    const preview = screen.getByTestId('acp-starting-suggestion-explain');
+    expect(preview).toBeDisabled();
+    // The live row is a different element; the preview must not answer for it.
+    expect(screen.queryByTestId('acp-chat-suggestion-explain')).toBeNull();
+    const composer = screen.getByTestId('acp-chat-composer').querySelector('textarea')!;
+    expect(composer.getAttribute('placeholder')).toContain('composerPlaceholderSubject');
+    expect(composer.getAttribute('placeholder')).toContain('Checkout');
+  });
+
   it('내려받기가 없는 평범한 시작도 화면 가운데서 기다린다 — 우측 상단 칩 하나로는 부족하다', async () => {
     /*
      * ⚠️ This test used to assert the opposite: *"a start with no download draws nothing extra."*

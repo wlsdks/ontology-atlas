@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { Checkbox, Chip, Disclosure } from '@/shared/ui';
+import { badgeClass } from '@/shared/ui/badge-class';
 
 /**
  * The section label — **sans, not mono caps** (owner, 2026-09-06). The reasoning, and the
@@ -47,31 +48,55 @@ export function MeaningContext({ node, relations, onSelectRelation, onEvidence, 
    * stands above them to be divided from.
    */
   const trailing = node || relations.length ? divided : '';
+  /*
+   * ⚠️ **One fact once** (measured 2026-09-25, 1512 wide). Every relation card carried the same
+   * two-line "no reason was recorded" warning and the same two full-size buttons: six cards said
+   * one fact six times across about 1,056px of scroll, while the header chip already offered to
+   * write the missing reasons. The fact is now one line over the group; each card keeps what is
+   * its own — the sentence, the relation tag, its reason when there is one — and one compact
+   * action row, so cards in the list come out the same height.
+   */
+  const missingReasons = relations.filter((relation) => !relation.why).length;
+  const mixedReasons = missingReasons > 0 && missingReasons < relations.length;
   return <div className="flex flex-col gap-4">
-    {node ? <section className="space-y-2">
-      <p className={SECTION_LABEL}>{kindsLabel(selectedKind)}</p>
-      <h3 className="text-body-lg font-[var(--font-weight-strong)]">{node.title}</h3>
-      <p className="text-caption text-[color:var(--color-text-secondary)]">{glossary(`criteria.${selectedKind}`)}</p>
-      <p className="whitespace-pre-wrap">{node.summary?.trim() || t('definitionMissing')}</p>
-      <Chip size="lg" onClick={() => onEvidence(node.id)}>{t('openDefinition')}</Chip>
+    {/*
+      ⚠️ **The name belongs to the header, not the body** (2026-09-25). The panel header already
+      titles the picked node (its `h2`), and the body repeated the kind and the name as a second
+      headline 180px lower — two title-weight strings for one name in one column. The kind moved
+      into the header's eyebrow line; the body starts with what the node means, then what its kind
+      means, both at reading size rather than the micro caption.
+    */}
+    {node ? <section className="space-y-2" aria-label={node.title}>
+      <p className="whitespace-pre-wrap text-body-lg leading-body-lg">{node.summary?.trim() || t('definitionMissing')}</p>
+      <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{glossary(`criteria.${selectedKind}`)}</p>
+      <div className="pt-1"><Chip size="lg" onClick={() => onEvidence(node.id)}>{t('openDefinition')}</Chip></div>
     </section> : <p>{t('selectNode')}</p>}
     {node || relations.length ? <section className={cn('space-y-3', node && divided)}>
-      <p className={SECTION_LABEL}>{t('relationsEyebrow')}</p>
-      {relations.length ? relations.map((relation) => <article key={relation.id} className="space-y-2 rounded-card border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
-        <p className="font-[var(--font-weight-strong)]">{relation.sentence}</p>
-        <p className="text-caption text-[color:var(--color-text-secondary)]">{relation.typeLabel}</p>
-        <p>{relation.why || t('rationaleMissing')}</p>
-        <div className="flex flex-wrap gap-2"><Chip size="lg" onClick={() => onSelectRelation(relation.id)}>{t('showConnection')}</Chip>{relation.declaredBy ? <Chip size="lg" onClick={() => onEvidence(relation.declaredBy!)}>{t('declaringDocument')}</Chip> : null}</div>
-      </article>) : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('relationGuide')}</p>}
+      <div className="space-y-1">
+        <p className={SECTION_LABEL}>{t('relationsEyebrow')}{relations.length ? <span className="tabular-nums"> · {relations.length}</span> : null}</p>
+        {missingReasons > 0 ? <p data-testid="meaning-relations-missing-reasons" className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('rationaleMissingGroup', { count: missingReasons })}</p> : null}
+      </div>
+      {relations.length ? <ul className="flex flex-col gap-2">{relations.map((relation) => <li key={relation.id}><article className="flex flex-col gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
+        <p className="text-body leading-body font-[var(--font-weight-strong)]">{relation.sentence}</p>
+        {relation.why ? <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{relation.why}</p> : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={badgeClass({ shape: 'tag', className: 'borderborder-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]' })}>{relation.typeLabel}</span>
+          {mixedReasons && !relation.why ? <span className="text-label leading-label text-[color:var(--color-text-quaternary)]">{t('rationaleMissingShort')}</span> : null}
+          <span className="ms-auto flex flex-wrap gap-1.5">
+            <Chip size="md" onClick={() => onSelectRelation(relation.id)}>{t('showConnection')}</Chip>
+            {relation.declaredBy ? <Chip size="md" onClick={() => onEvidence(relation.declaredBy!)}>{t('declaringDocument')}</Chip> : null}
+          </span>
+        </div>
+      </article></li>)}</ul> : <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('relationGuide')}</p>}
     </section> : null}
     <div className={cn('space-y-3', trailing)}>
       {onShowLabelsChange ? <>
         <Checkbox label={t('showRelationMeaning')} checked={showLabels === true} onChange={(event) => onShowLabelsChange(event.target.checked)} />
-        <Disclosure summary={t('captionHelp')}><p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('captionGuide')}</p></Disclosure>
+        <Disclosure summary={t('captionHelp')}><p className="mt-2 text-label leading-label text-[color:var(--color-text-secondary)]">{t('captionGuide')}</p></Disclosure>
       </> : null}
       <Disclosure summary={t('kindCriteria')}>
-        <p className="mt-3 text-caption text-[color:var(--color-text-secondary)]">{glossary('ontologyDefinition')}</p>
-        <dl className="mt-3 space-y-3">{kinds.map((kind) => <div key={kind}><dt className="font-[var(--font-weight-strong)]">{kindsLabel(kind)}</dt><dd className="mt-1 text-caption text-[color:var(--color-text-secondary)]">{glossary(`criteria.${kind}`)}</dd></div>)}</dl>
+        <p className="mt-3 text-body leading-body text-[color:var(--color-text-secondary)]">{glossary('ontologyDefinition')}</p>
+        <dl className="mt-3 space-y-3">{kinds.map((kind) => <div key={kind}><dt className="font-[var(--font-weight-strong)]">{kindsLabel(kind)}</dt><dd className="mt-1 text-body leading-body text-[color:var(--color-text-secondary)]">{glossary(`criteria.${kind}`)}</dd></div>)}</dl>
       </Disclosure>
     </div>
   </div>;

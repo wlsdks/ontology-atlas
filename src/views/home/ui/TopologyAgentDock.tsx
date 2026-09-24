@@ -266,6 +266,7 @@ export function TopologyAgentDock({
                 context={meaningAnalysisContext}
                 capture={analysisCapture}
                 contextLabel={edgePanelModel?.sentence ?? selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? tWorkbench('wholeProject')}
+                contextKind={edgePanelModel ? null : selectedOntologyNode?.kind ?? null}
                 open={acpDockFrameOpen || meaningWorkbenchOpen}
                 requestNonce={agentOpeningRequest?.nonce}
                 sectionRequest={workbenchSectionRequest}
@@ -329,6 +330,8 @@ export function TopologyAgentDock({
                   requestScopeKey={JSON.stringify([gitVaultPath, 'meaning'])}
                   onOpeningRequestSent={(nonce) => setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current)}
                   suggestions={chatSuggestions}
+                  // The composer names what the header names: a picked concept, not "this folder".
+                  composerSubject={edgePanelModel ? null : selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? null}
                   onSuggestionAction={handleChatSuggestionAction}
                   knownSlugs={chatKnownSlugs}
                   knownRelations={chatKnownRelations}
