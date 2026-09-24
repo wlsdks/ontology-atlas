@@ -209,6 +209,7 @@ describe('the destination identity', () => {
      * canvas and then lost the tabs entirely on a repository with no architecture profile, where
      * that view returns its empty state early. One instance, in the shell, above every panel.
      */
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     window.history.replaceState(null, '', '/ko/architecture/?view=architecture');
     mount();
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-embedded', 'true');
@@ -217,6 +218,18 @@ describe('the destination identity', () => {
     // The identity is the shell's, so the blueprint is handed none of it.
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-has-identity', 'false');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  });
+
+  it('offers one harness tab beside the blueprint when no reading can exist', () => {
+    // Structure, coverage and guides draw the same example before a source is connected, so three
+    // tabs there would switch nothing. A link that names coverage still lands on the one tab.
+    state.report = { status: 'no-source' };
+    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+    mount();
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(2);
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'harness-tabpanel-structure');
   });
 });
 

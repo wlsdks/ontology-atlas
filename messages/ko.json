@@ -280,7 +280,8 @@
       "guides": "지침",
       "structure": "구조",
       "coverage": "커버리지",
-      "architecture": "아키텍처"
+      "architecture": "아키텍처",
+      "beforeSource": "하네스"
     },
     "sentence": "이 저장소는 에이전트에게 문서 {documents}개로 말하고, 검사 {checks}개를 걸어두었어요.",
     "checksBreakdown": "훅 스크립트 {hooks}개 · .githooks/ 파일 {gitHooks}개 · package.json 스크립트 {scripts}개",

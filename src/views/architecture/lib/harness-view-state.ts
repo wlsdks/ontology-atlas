@@ -92,8 +92,9 @@ export function resolveAddressView(
  * empty screen is not a pass, it is a measurement that did not happen (2026-09-20).
  *
  * So the installed app arrives on the harness's own structure, which it can read, and the browser
- * arrives on the blueprint, which is built from the bundled profile and answers there. Both keep
- * the same four tabs, and an address that names a view always wins over this.
+ * arrives on the blueprint, which is built from the bundled profile and answers there. An address
+ * that names a view always wins over this; where no reading exists the three harness views share one
+ * tab (`HarnessPage`).
  */
 export function defaultViewForSurface(canReadHarness: boolean): HarnessView {
   return canReadHarness ? DEFAULT_HARNESS_VIEW : 'architecture';

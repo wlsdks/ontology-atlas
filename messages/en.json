@@ -280,7 +280,8 @@
       "guides": "Guides",
       "structure": "Structure",
       "coverage": "Coverage",
-      "architecture": "Architecture"
+      "architecture": "Architecture",
+      "beforeSource": "Harness"
     },
     "sentence": "This repository speaks to agents through {documents, plural, one {# document} other {# documents}} and has {checks, plural, one {# check} other {# checks}} in place.",
     "checksBreakdown": "{hooks, plural, one {# hook script} other {# hook scripts}} · {gitHooks, plural, one {# file under .githooks/} other {# files under .githooks/}} · {scripts, plural, one {# package.json script} other {# package.json scripts}}",
