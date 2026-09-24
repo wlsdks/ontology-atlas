@@ -85,7 +85,7 @@ function breakAtSeparators(text: string): ReactNode {
 /**
  * A sentence with its hint button, where the button never lands alone on a line: the sentence's
  * last word and the button share a `nowrap` span. As a separate flex item the hint wrapped onto a
- * line of its own under "에이전트 눈에서 빼둔 것" and "경로에 따라 붙는 것" (2026-09-25).
+ * line of its own under the "kept out of the agent's view" and "attached by path" rows (2026-09-25).
  */
 function SentenceWithHint({ text, hint }: { text: string; hint: ReactNode }) {
   const cut = text.lastIndexOf(' ');

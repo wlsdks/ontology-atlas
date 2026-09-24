@@ -6,8 +6,8 @@ import { installDesktopBridge } from './rounds-desktop-bridge';
 /**
  * **Placement, overlap and consistency on Harness, Automations and Analysis** (2026-09-25).
  *
- * The owner's question was "위치 이상하지? 버튼 크기도 다르고.. 겹쳐지고?" — is it placed oddly, are the
- * buttons different sizes, does it overlap. Every assertion here is a rect, a computed style or an
+ * The owner's question was whether things are placed oddly, whether the buttons differ in size,
+ * and whether anything overlaps. Every assertion here is a rect, a computed style or an
  * `elementFromPoint` answer, because each of these defects passed an eye that looked at a
  * screenshot: a 34px-wide tooltip, a panel 600px from its button, a confirm 126px from its trigger.
  */
@@ -243,7 +243,7 @@ test.describe('Analysis', () => {
     await expect(overview).toBeVisible({ timeout: 30_000 });
     const field = overview.locator(':scope > div').first();
     const fieldRect = await box(field);
-    /* The reported case: the second row's "Shop Front: 작업 지침" port scrolled to y≈408, where
+    /* The reported case: the second row's Shop Front instructions port scrolled to y≈408, where
        the room below is shorter than the popup and the room above runs to the window's top. */
     const target = overview
       .locator('[data-testid^="harness-domain-"]', { hasText: 'Shop Front' })

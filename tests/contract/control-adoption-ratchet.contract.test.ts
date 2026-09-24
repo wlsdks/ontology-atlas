@@ -1111,7 +1111,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // through `buttonVariants` (a full reload after a render failure), so `a` 8→9.
 // 2026-09-25: Automations' "Get the app" and "Open Library check history" became standard
 // buttons (primary, ghost sm) instead of text links, so `Link` 19→21.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 21, a: 9 };
+// 2026-09-25: the Wiki and Guidance preview footers' three pill links became standard sm
+// buttons, entering the census as `buttonVariants` anchors, so `Link` 21→24.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 24, a: 9 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1185,6 +1187,27 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     claim: 'standard-button',
     proof: 'buttonVariants',
     why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
+  },
+  {
+    file: 'src/views/ontology-insights/ui/tabs/HarnessTab.tsx',
+    count: 2,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The Guidance preview footer (2026-09-25): "Open Harness" as `buttonVariants({ variant: ' +
+      '"primary", size: "sm" })` and "Get the app" as outline sm. They were fully round `pill` ' +
+      'links at 32px beside the Analysis views\' 32px rounded-panel buttons, two shapes for one ' +
+      'kind of panel action. Both navigate, so they stay `<Link>`, and `control-class.ts` does ' +
+      'not replace standard buttons.',
+  },
+  {
+    file: 'src/views/ontology-insights/ui/tabs/LibraryTab.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The Wiki preview footer\'s "Start from the Library" (2026-09-25), the same primary sm ' +
+      'standard button as the Guidance footer beside it, for the same reason.',
   },
   {
     file: 'src/views/automations/ui/AutomationsPage.tsx',
@@ -1336,9 +1359,11 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // has no standard-button anchor shape, so the row is registered like the 404's own.
 // 28 → 30 (2026-09-25): Automations' two navigating actions, registered for the reason their
 // row states — the standard-button shape, at the two tags a navigating button needs.
-const BASELINE_ANCHOR_REGISTERED = 30;
+// 30 → 33 (2026-09-25): the Analysis preview footers' three actions left the `pill` shape for the
+// standard sm button the Analysis views use for panel actions.
+const BASELINE_ANCHOR_REGISTERED = 33;
 
-/** **Only this number may fall.** The current anchor total (30) minus registered (30). */
+/** **Only this number may fall.** The current anchor total (33) minus registered (33). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
