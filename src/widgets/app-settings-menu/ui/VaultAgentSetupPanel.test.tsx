@@ -139,7 +139,7 @@ describe('VaultAgentSetupPanel', () => {
     // council S2, 2026-08-02) — the row stating the number is still directly below
     // it, and that is the single statement.
     expect(screen.queryByText('누락')).toBeNull();
-    expect(screen.getByText('연결 파일 1/2개 준비됨')).toBeInTheDocument();
+    expect(screen.getByText('Claude Code · Codex 연결 파일 1/2개 준비됨')).toBeInTheDocument();
     expect(screen.getByText('· 다음: .mcp.json 만들기')).toBeInTheDocument();
     expect(
       screen.getByText('이 폴더 기준으로 설정돼요 · 다른 코드 폴더에서 열려면 절대경로가 필요해요'),
@@ -300,7 +300,7 @@ describe('VaultAgentSetupPanel', () => {
     // council S2, 2026-08-02) — the row stating the number is still directly below
     // it, and that is the single statement.
     expect(screen.queryByText('누락')).toBeNull();
-    expect(screen.getByText('연결 파일 2/2개 준비됨')).toBeInTheDocument();
+    expect(screen.getByText('Claude Code · Codex 연결 파일 2/2개 준비됨')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: '빠진 연결 파일 만들기' }),
     ).not.toBeInTheDocument();
@@ -450,7 +450,7 @@ describe('VaultAgentSetupPanel', () => {
     // council S2, 2026-08-02) — the row stating the number is still directly below
     // it, and that is the single statement.
     expect(screen.queryByText('누락')).toBeNull();
-    expect(screen.getByText('연결 파일 1/2개 준비됨')).toBeInTheDocument();
+    expect(screen.getByText('Claude Code · Codex 연결 파일 1/2개 준비됨')).toBeInTheDocument();
     expect(
       screen.getByText('· 점검: .codex/config.toml는 Ontology Atlas 연결 설정이 아니에요'),
     ).toBeInTheDocument();
@@ -1400,6 +1400,33 @@ describe('VaultAgentSetupPanel', () => {
       (el) => !saidTheCount.some((other) => other !== el && el.contains(other)),
     );
     expect(owners).toHaveLength(1);
+  });
+
+  it('with no connection file yet, the dialog skips the restart step and does not say "the rest"', () => {
+    renderPanel({
+      agentConfigStatus: {
+        mcpJson: false,
+        mcpJsonValid: false,
+        codexConfig: false,
+        codexConfigValid: false,
+        mcpExample: false,
+        mcpExampleValid: false,
+      },
+    });
+    const dialog = screen.getByTestId('agent-setup-verify-dialog');
+    // Restarting "the tool you just connected" means nothing before anything is connected.
+    expect(within(dialog).queryByTestId('agent-setup-step-2')).toBeNull();
+    expect(within(dialog).getByText(koMessages.docsVault.agentSetup.connectionCheckNone)).toBeInTheDocument();
+    expect(within(dialog).queryByText(koMessages.docsVault.agentSetup.connectionCheckPending)).toBeNull();
+    // The count names whose files it counts, so "0/2" cannot be read against the four tool rows.
+    expect(within(dialog).getByText('Claude Code · Codex 연결 파일 0/2개 준비됨')).toBeInTheDocument();
+  });
+
+  it('once one file exists the restart step returns and the line speaks of the rest', () => {
+    renderPanel();
+    const dialog = screen.getByTestId('agent-setup-verify-dialog');
+    expect(within(dialog).getByTestId('agent-setup-step-2')).toBeInTheDocument();
+    expect(within(dialog).getByText(koMessages.docsVault.agentSetup.connectionCheckPending)).toBeInTheDocument();
   });
 
   it('missing 설정은 생성 버튼이고 이미 유효한 설정은 준비 상태다', () => {

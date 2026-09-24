@@ -12,7 +12,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { cn } from '@/shared/lib/cn';
 import { useArrivalMemory } from '@/shared/lib/route-arrival-memory';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip, Dialog, EmptyState, InfoHint } from '@/shared/ui';
+import { Chip, Dialog, EmptyState, InfoHint, Surface } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
@@ -200,28 +200,36 @@ export function AcpRuntimeSettings({
      * ⚠️ **An empty state, not a settings row** (2026-09-25, design polish). This was one
      * `SettingsRow`: a 110-character caption running as a single 796px line at 11px, and the
      * only way on an 11px text link to MCP. It is the whole content of the tab on the web, so it
-     * takes the page's own empty-state shape: a title that says why, two lines that say what the
-     * app changes, and the two ways on as real buttons. No icon tile: `EmptyState` indents the
-     * text beside it but not the actions, which would give the card two start lines — the app first, because it is the path
-     * this tab is about; MCP second, because it works from here today.
+     * takes the page's own empty-state shape: a title that says why, one line that says what
+     * works from here, and the two ways on as real buttons — the app first, because it is the
+     * path this tab is about; MCP second, because it works from here today. No icon tile:
+     * `EmptyState` indents the text beside it but not the actions, which would give the card two
+     * start lines.
+     *
+     * ⚠️ **What the app changes is the page lede's sentence, not this card's** (round 2). The lede
+     * above already says the Mac app finds the tools and opens them inside Atlas; the caption used
+     * to open with the same fact 160px lower. It now carries only what the lede does not: the way
+     * that works in this browser today.
      */
     return (
       <div data-testid="app-settings-runtimes-web" className="min-w-0">
         <EmptyState
           tone="solid"
           title={t('webLabel')}
-          description={<span className="block max-w-2xl break-keep">{t('webCaption')}</span>}
+          description={<span className="block break-keep">{t('webCaption')}</span>}
           action={
             <>
               <Link
                 href="/download/"
                 data-testid="app-settings-runtimes-get-app"
+                /* The same press as every other web-only empty state (Harness, Automations):
+                   one pill in the accent ink with the touch floor, not a hand-tinted chip that
+                   no tone produces (round 2, 2026-09-25). */
                 className={controlClass({
-                  shape: 'chip',
+                  shape: 'pill',
                   size: 'lg',
-                  tone: 'accentOnTint',
-                  className:
-                    'border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)]',
+                  tone: 'accent',
+                  className: 'atlas-touch-floor atlas-touch-floor-wide',
                 })}
               >
                 {t('webGetApp')}
@@ -238,10 +246,11 @@ export function AcpRuntimeSettings({
                 href={DESTINATION_HREF.mcp}
                 data-testid="app-settings-runtimes-mcp-link"
                 className={controlClass({
-                  shape: 'chip',
+                  shape: 'pill',
                   size: 'lg',
                   tone: 'secondary',
                   hoverInk: 'strong',
+                  className: 'atlas-touch-floor atlas-touch-floor-wide',
                 })}
               >
                 {t('webMcpLink')}
@@ -827,8 +836,16 @@ function RuntimeRow({
       {/* Only when there is a result. The wrapper used to be drawn around a null result, so every
           guarded row carried an empty 10px strip under it: the card's content sat 16px from the
           top and 26px from the bottom (measured 2026-09-25). */}
-      {showDoctor && doctor.result ? (
-        <div className="min-w-0 px-3 pb-2.5">{doctor.result}</div>
+      {/* ⚠️ Through `Surface`, not a bare conditional (round 2, 2026-09-25): the result arrives
+          under a row the person just pressed, and a block that appears in one frame is the hard
+          cut the motion charter forbids. `Surface` brings the ramp's enter/exit and the global
+          reduced-motion cut; the result never returns to null while the row lives (a re-run
+          keeps the previous checks until the new ones land), so the exit window never fades an
+          empty box. */}
+      {showDoctor ? (
+        <Surface open={Boolean(doctor.result)} className="min-w-0 px-3 pb-2.5">
+          {doctor.result}
+        </Surface>
       ) : null}
     </div>
   );

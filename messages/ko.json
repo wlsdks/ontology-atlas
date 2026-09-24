@@ -210,7 +210,7 @@
         "noneReadyCaption": "Claude Agent나 Codex를 설치하면 여기에 나타나요. 설치 방법은 아래 목록에 있어요.",
         "noneReadyCaptionNoList": "Claude Agent나 Codex를 설치하면 여기에 나타나요. 설치한 뒤 「다시 확인」을 누르세요.",
         "webLabel": "브라우저는 이 컴퓨터의 프로그램을 띄울 권한이 없어요",
-        "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구와 Atlas 안에서 바로 대화해요. 직접 띄운 도구를 이 폴더에 붙이는 일은 지금도 MCP 탭의 「이 폴더 내주기」 칸에서 돼요.",
+        "webCaption": "직접 띄운 도구를 이 폴더에 붙이는 일은 지금도 MCP 탭의 「이 폴더 내주기」 칸에서 돼요.",
         "webGetApp": "맥 앱 받기",
         "state": {
           "ready": "준비됨",
@@ -2832,7 +2832,7 @@
       "ready": "준비됨",
       "missing": "누락",
       "rootSummaryBlocked": "실행할 수 있는 서버가 없어요 · 소스 체크아웃으로만 설정할 수 있어요",
-      "statusSummary": "연결 파일 {ready}/{total}개 준비됨",
+      "statusSummary": "{tools} 연결 파일 {ready}/{total}개 준비됨",
       "rootSummaryReady": "이 폴더의 연결 파일은 폴더 자신을 가리키도록 준비됐어요",
       "rootSummaryMissing": "이 폴더 기준으로 설정돼요 · 다른 코드 폴더에서 열려면 절대경로가 필요해요",
       "connectionStatusHeading": "도구별 연결 파일 상태",
@@ -5120,7 +5120,7 @@
     },
     "title": "에이전트",
     "lede": "Atlas가 이 컴퓨터에 이미 있는 코딩 도구를 찾아요.",
-    "ledeWeb": "맥 앱이 이 컴퓨터에 이미 있는 코딩 도구를 찾아요.",
+    "ledeWeb": "맥 앱은 이 컴퓨터에 있는 코딩 도구를 찾아 Atlas 안에서 바로 대화하게 해요.",
     "runtimesHeading": "이 컴퓨터의 도구"
   },
   "nativeErrors": {

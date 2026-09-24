@@ -992,9 +992,15 @@ export function VaultAgentSetupPanel({
             {tc('step3Title')}
           </h2>
           <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+            {/* ⚠️ **The count names whose files it counts** (round 2, 2026-09-25). "0/2" stood
+                in front of an MCP tab listing four tools, so the two numbers disagreed on sight.
+                Atlas reads back only Claude Code's and Codex's files (Cursor and Antigravity are
+                written, never read), so the subtitle says those two names rather than a bare
+                total a reader has to reconcile with the list behind the dialog. */}
             {t('agentSetup.statusSummary', {
               ready: agentSetupReadyCount,
               total: agentSetupFiles.length,
+              tools: agentSetupConnections.map((connection) => connection.label).join(' · '),
             })}
             {nextMissingAgentConfig ? (
               <span className="text-[color:var(--color-amber-source-text-a95)]">

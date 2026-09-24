@@ -656,3 +656,63 @@ describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
     expect(screen.queryByTestId('app-settings-runtime-install')).toBeNull();
   });
 });
+
+describe('runtime rows: marks, columns and the result block (design polish, 2026-09-25)', () => {
+  it('borrows the MCP tab mark when the registry has none for the same product', async () => {
+    bridge.detect.mockResolvedValue([makeRuntime({ id: 'claude-acp', isolated: true, icon: null })]);
+    render(<AcpRuntimeSettings embedded />);
+    const row = await screen.findByTestId('app-settings-runtime-claude-acp');
+
+    const ink = row.querySelector<HTMLElement>('[data-vendor-mark-ink]');
+    expect(ink?.style.maskImage).toContain('/acp-icons/claude-acp.svg');
+    // The MCP tab's verified brand colour comes along with its drawing.
+    expect(ink).toHaveAttribute('data-vendor-mark-ink', 'brand');
+    expect(row.querySelector('[data-vendor-mark="monogram"]')).toBeNull();
+  });
+
+  it('draws initials on the shared plate when no product mark is known', async () => {
+    bridge.detect.mockResolvedValue([
+      { ...makeRuntime({ id: 'gemini', state: 'cli-missing' }), label: 'Gemini CLI' },
+      { ...makeRuntime({ id: 'goose', state: 'cli-missing' }), label: 'Goose' },
+      makeRuntime({ id: 'claude-acp', isolated: true, icon: '/acp-icons/claude-acp.svg' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    fireEvent.click(screen.getByTestId('app-settings-runtimes-others-toggle'));
+
+    const gemini = screen.getByTestId('app-settings-runtime-gemini');
+    const goose = screen.getByTestId('app-settings-runtime-goose');
+    // Two tools starting with G stay two different tiles.
+    expect(gemini.querySelector('[data-vendor-mark="monogram"]')).toHaveTextContent(/^GC$/);
+    expect(goose.querySelector('[data-vendor-mark="monogram"]')).toHaveTextContent(/^G$/);
+    // The letters sit on VendorMark's own empty plate, not a hand-drawn copy of it.
+    const plate = gemini.querySelector('[data-vendor-mark="empty"]');
+    expect(plate).not.toBeNull();
+    expect(plate?.parentElement?.querySelector('[data-vendor-mark="monogram"]')).not.toBeNull();
+  });
+
+  it('gives every state badge the same floor so the badges form one column', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'cursor', state: 'cli-missing' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    fireEvent.click(screen.getByTestId('app-settings-runtimes-others-toggle'));
+
+    for (const id of ['claude-acp', 'cursor']) {
+      const badge = screen.getByTestId(`app-settings-runtime-${id}`).querySelector('[data-runtime-state]');
+      expect(badge).toHaveClass('min-w-18', 'justify-center');
+    }
+  });
+
+  it('offers the Mac app with the same pill the other web-only screens use', () => {
+    bridge.available = false;
+    render(<AcpRuntimeSettings embedded />);
+    const getApp = screen.getByTestId('app-settings-runtimes-get-app');
+    expect(getApp).toHaveAttribute('href', '/download/');
+    expect(getApp).toHaveClass('rounded-full', 'atlas-touch-floor');
+    // No hand tint on top of the tone: the class list carries no indigo fill of its own.
+    expect(getApp.className).not.toMatch(/indigo-a16/);
+  });
+});

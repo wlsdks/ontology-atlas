@@ -339,7 +339,12 @@ const BASELINE_HARD_CUTS = 0;
 // 55 -> 56 (2026-09-24): one in-world companion panel, shared by inventory,
 // skills, map and journals. The desktop bridge opener and nonempty axe audit live
 // in companion-growth.spec.ts; Escape and input scoping are exercised there too.
-const BASELINE_APPEARING_SURFACES = 56;
+// 56 -> 57 (2026-09-25): the agent-doctor result under a runtime row stopped hard-cutting.
+// It was already a conditional block; wrapping it in Surface moved it into this count, so
+// the denominator grows by an existing surface, not a new one. It opens only after the
+// desktop doctor runs a check (native bridge), so it is not an OPENERS entry; its content
+// and states are owned by AgentDoctor.test.tsx.
+const BASELINE_APPEARING_SURFACES = 57;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

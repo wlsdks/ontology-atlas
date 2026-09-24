@@ -154,6 +154,22 @@ export function SettingsGroup({
 
 import { VendorMark } from '@/shared/ui/vendor-mark';
 
+/**
+ * **Initials of the first two words, not the first letter** (2026-09-25, round 2). One letter made
+ * Gemini CLI and Goose the same「G」tile in one list, so the mark no longer told them apart before
+ * the name was read. Two words give「GC」and「G」; a one-word name keeps one letter, so the tile
+ * never invents a second letter the name does not have.
+ */
+function monogramOf(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => Array.from(word)[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
 /** One row = label (plus a one-line description when needed) on the left, current value and control on the right. */
 export function SettingsRow({
   label,
@@ -186,9 +202,9 @@ export function SettingsRow({
    */
   iconInk?: string | null;
   /**
-   * The name whose first letter stands in the mark slot when there is no drawing (2026-09-25).
-   * An empty tile beside a product name read as a broken image; a letter keeps the slot doing
-   * its job, which is to be found before the name is read.
+   * The name whose initials stand in the mark slot when there is no drawing (2026-09-25).
+   * An empty tile beside a product name read as a broken image; letters keep the slot doing
+   * its job, which is to be found before the name is read. See `monogramOf`.
    */
   monogram?: string;
 }) {
@@ -224,21 +240,24 @@ export function SettingsRow({
       data-testid={testId}
     >
       {hasMarkSlot ? (
-        !icon && monogram?.trim() ? (
-          <span
-            aria-hidden
-            data-vendor-mark="monogram"
-            /* The tile is `VendorMark`'s empty plate (same size, radius, edge); only the letter
-               inside is new, so the two stay one object rather than a badge beside a mark. */
-            className="flex size-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)]"
-          >
-            <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-              {Array.from(monogram.trim())[0]?.toUpperCase()}
-            </span>
-          </span>
-        ) : (
+        /*
+         * ⚠️ **The monogram rides on `VendorMark`'s own plate** (2026-09-25, round 2). The first
+         * version drew a look-alike tile by hand here, and it had already drifted (overlay-2 where
+         * the mark's empty plate is overlay-1). Composing keeps one plate: if the mark changes,
+         * the monogram changes with it.
+         */
+        <span className="relative flex shrink-0">
           <VendorMark src={icon ?? null} ink={iconInk ?? null} />
-        )
+          {!icon && monogram ? (
+            <span
+              aria-hidden
+              data-vendor-mark="monogram"
+              className="absolute inset-0 flex items-center justify-center text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]"
+            >
+              {monogramOf(monogram)}
+            </span>
+          ) : null}
+        </span>
       ) : null}
       <div className="min-w-0 flex-1 basis-40">
         <p className="text-body text-[color:var(--color-text-primary)]">{label}</p>

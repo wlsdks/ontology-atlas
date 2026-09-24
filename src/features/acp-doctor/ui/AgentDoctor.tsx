@@ -277,9 +277,15 @@ export function useAgentDoctor(
        * one step down was 11px text in the quaternary ink next to 12.5px — it read as disabled,
        * not as secondary. `lg` puts both on one label size; the chat chip beside it keeps the
        * indigo, so the order of the two is still said, now by colour.
+       *
+       * ⚠️ **One ink step back from the row's optional action** (round 2, 2026-09-25). At
+       * `secondary` the check matched the install link beside it and sat one hue away from the
+       * chat chip, so a ready row read as three peers. `default` (tertiary ink, AA on the panel)
+       * keeps the size and puts the check last in line: open a chat or install first, and the
+       * diagnosis you reach for when those fail after them.
        */
       size="lg"
-      tone="secondary"
+      tone="default"
       hoverInk="strong"
       data-testid="agent-doctor-scan"
       disabled={busy !== null}
@@ -301,7 +307,7 @@ export function useAgentDoctor(
       <Chip
         /* Same row as the scan chip above, so the same step. */
         size="lg"
-        tone="secondary"
+        tone="default"
         hoverInk="strong"
         data-testid="agent-doctor-reset"
         disabled={busy !== null}
