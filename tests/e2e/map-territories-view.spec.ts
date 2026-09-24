@@ -132,6 +132,9 @@ async function readDrawn(page: Page) {
 const overlap = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
+// A Retina display, as the owner reads the app: hairlines must land on whole device pixels.
+test.use({ deviceScaleFactor: 2 });
+
 for (const viewport of [
   { width: 1512, height: 982 },
   { width: 1280, height: 800 },

@@ -75,15 +75,27 @@ function measureText(text: string, role: TerritoryTextRole): number {
 }
 
 /**
- * Stale wears the product's one warning hue (`--color-status-warning`, the same amber the
- * insights brief marks stale with), read from the stylesheet like every map token.
+ * The `--map-territory-*` family, read from the stylesheet like every map token. Stale wears the
+ * product's one warning hue, the same amber the insights brief marks stale with. A missing token
+ * draws nothing rather than guessing a colour.
  */
-function readStaleInks(): TerritoryInks | null {
+function readTerritoryInks(): TerritoryInks | null {
   if (typeof window === "undefined") return null;
   const style = getComputedStyle(document.documentElement);
-  const stale = style.getPropertyValue("--color-status-warning").trim();
-  const staleFill = style.getPropertyValue("--color-amber-source-a12").trim();
-  return stale && staleFill ? { stale, staleFill } : null;
+  const read = (name: string) => style.getPropertyValue(name).trim();
+  const title = read("--map-territory-title");
+  const count = read("--map-territory-count");
+  const stale = read("--map-territory-stale");
+  const staleFill = read("--map-territory-stale-fill");
+  const rimLight = read("--map-territory-rim-light");
+  const rollupAlpha = Number.parseFloat(read("--map-territory-rollup-alpha"));
+  const glowAlpha = Number.parseFloat(read("--map-territory-glow-alpha"));
+  const arrival = read("--map-territory-arrival");
+  const arrivalMs = arrival.endsWith("ms") ? Number.parseFloat(arrival) : Number.parseFloat(arrival) * 1000;
+  if (!title || !count || !stale || !staleFill || !rimLight || !Number.isFinite(rollupAlpha) || !Number.isFinite(glowAlpha) || !Number.isFinite(arrivalMs)) {
+    return null;
+  }
+  return { title, count, stale, staleFill, rimLight, rollupAlpha, glowAlpha, arrivalMs };
 }
 
 function freeAreaOf(canvas: HTMLCanvasElement | null): Rect | null {
@@ -130,6 +142,8 @@ export function OntologyTerritoriesMap({
   const dimRef = useRef({ t: selectedId ? 1 : 0, target: selectedId ? 1 : 0 });
   const animRef = useRef<{ from: { x: number; y: number }; to: { x: number; y: number }; start: number } | null>(null);
   const rafRef = useRef<number | null>(null);
+  /** When the current layout began arriving; null until its first frame. */
+  const arrivalStartRef = useRef<number | null>(null);
   /** The mirror list's screen positions were last written for this camera and layout. */
   const mirrorKeyRef = useRef("");
 
@@ -220,7 +234,7 @@ export function OntologyTerritoriesMap({
     (now: number): boolean => {
       const canvas = canvasRef.current;
       const tokens = readOntologyMapTokensOrNull();
-      const inks = readStaleInks();
+      const inks = readTerritoryInks();
       if (!canvas || !size || !tokens || !inks || !offsetRef.current) return false;
       let again = false;
       const anim = animRef.current;
@@ -231,6 +245,9 @@ export function OntologyTerritoriesMap({
         if (t < 1) again = true;
         else animRef.current = null;
       }
+      arrivalStartRef.current ??= now;
+      const arrivalT = reducedMotion ? 1 : Math.min(1, (now - arrivalStartRef.current) / Math.max(1, inks.arrivalMs));
+      if (arrivalT < 1) again = true;
       const dim = dimRef.current;
       if (dim.t !== dim.target) {
         const step = reducedMotion ? 1 : 16 / DIM_MS;
@@ -249,6 +266,8 @@ export function OntologyTerritoriesMap({
           height: size.h,
           offsetX: offsetRef.current.x,
           offsetY: offsetRef.current.y,
+          dpr,
+          arrivalT,
           selectedId,
           hoverId: hoverRef.current,
           lit,

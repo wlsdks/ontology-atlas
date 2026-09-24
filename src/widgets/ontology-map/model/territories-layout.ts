@@ -202,7 +202,7 @@ export const TERRITORY_GEOMETRY = {
   /** Angular search step along a shelf. */
   searchStep: 0.75 * DEG,
   /** Clearance between any two placed boxes. */
-  pad: 4,
+  pad: 6,
   domainHalf: 20,
   maxShelves: 7,
   denseDomainCount: 10,

@@ -53,33 +53,38 @@ export function TopologyTerritoriesSurface({
     "no-paths": t("evidenceNoPaths"),
   };
 
+  /*
+   * One calm line: the three ring states, the two scales, then what the ring stands on. The
+   * long meaning of each state rides on its title, so the line itself stays short.
+   */
+  const swatch = "inline-block size-2.5 shrink-0 rounded-full";
   const legend = (
     <div
       data-testid="territories-legend"
       data-evidence-availability={evidence.availability}
-      className="pointer-events-none absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px)] right-[calc(var(--map-safe-inset-right)*1px)] flex justify-center"
+      className="pointer-events-none absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px)] right-[calc(var(--map-safe-inset-right)*1px)] flex justify-center px-4"
     >
-      {/* A surface of its own: a drawing taller than the room pans under it, and the key must
-          stay readable over whatever name is passing beneath. */}
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-1.5 text-label text-[color:var(--map-panel-text-secondary)]">
-      <span className="flex items-center gap-1.5">
-        <span aria-hidden className="size-2.5 rounded-full border border-[color:var(--map-node-stroke-capability)]" />
-        {t("legendCurrent")}
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span aria-hidden className="size-2.5 rounded-full border-[1.5px] border-[color:var(--color-status-warning)]" />
-        {t("legendStale")}
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span aria-hidden className="size-2.5 rounded-full border border-dashed border-[color:var(--map-node-stroke-capability)]" />
-        {t("legendUnknown")}
-      </span>
-      <span>{t("legendSize")}</span>
-      <span>{t("legendRollup")}</span>
-      <span data-testid="territories-evidence-note" className="basis-full text-center text-[color:var(--map-panel-text-tertiary)]">
-        {note[evidence.availability]}
-      </span>
-      </div>
+      <p className="flex max-w-full items-center gap-x-3.5 overflow-hidden whitespace-nowrap rounded-chip bg-[color:var(--chrome-surface)] px-3.5 py-1.5 text-label text-[color:var(--map-territory-count)]">
+        <span className="flex items-center gap-1.5">
+          <span aria-hidden className={`${swatch} border border-[color:var(--map-node-stroke-capability)]`} />
+          {t("legendCurrent")}
+        </span>
+        <span className="pointer-events-auto flex items-center gap-1.5" title={t("legendStale")}>
+          <span aria-hidden className={`${swatch} border-[1.5px] border-[color:var(--map-territory-stale)] bg-[color:var(--map-territory-stale-fill)]`} />
+          {t("legendStaleShort")}
+        </span>
+        <span className="pointer-events-auto flex items-center gap-1.5" title={t("legendUnknown")}>
+          <span aria-hidden className={`${swatch} border border-dashed border-[color:var(--map-node-stroke-capability)]`} />
+          {t("legendUnknownShort")}
+        </span>
+        <span aria-hidden className="h-3 w-px shrink-0 bg-[color:var(--map-panel-border)]" />
+        <span>{t("legendSize")}</span>
+        <span>{t("legendRollup")}</span>
+        <span aria-hidden className="h-3 w-px shrink-0 bg-[color:var(--map-panel-border)]" />
+        <span data-testid="territories-evidence-note" className="truncate text-[color:var(--map-territory-title)]">
+          {note[evidence.availability]}
+        </span>
+      </p>
     </div>
   );
 
