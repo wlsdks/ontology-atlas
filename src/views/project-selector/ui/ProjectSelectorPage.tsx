@@ -6,8 +6,11 @@ import { findProjectDocInList } from "@/entities/docs-vault";
 import { getProjectRuntimeDetailHref, getTopologyProjectHref, projectDisplayName, type Project } from "@/entities/project";
 import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault } from "@/entities/vault-session";
 import { Link } from "@/i18n/navigation";
+import { Copy } from "lucide-react";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { OntologyMapKindGlyph } from "@/shared/ui";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { controlClass } from "@/shared/ui/control-class";
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
@@ -188,32 +191,67 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
 
 
 /**
- * The tile that closes the grid: where the next card comes from, in one sentence of fact and effect.
+ * The tile that closes the grid: the second way a project arrives, with its own control.
  *
- * Round one drew the two no-screen paths as raw strings (a CLI invocation and an MCP call
- * signature), truncated mono text with nothing to copy them with, and at 1920 a ~450px gap stood
- * between the sentence and that command column. A person choosing a project needs to know where the
- * next card comes from, not its syntax: the sentence names the header's button and the connected
- * agent. As a band the title and the sentence share one line, so the slot is as tall as what it says.
+ * The header's "New project" is the form. This tile is the other path, a connected agent, and it
+ * carries the one thing that path needs: the request to paste. Round two's tile only restated the
+ * header button in prose ("use New project above, or ask your agent") and stretched to its
+ * neighbour's height, so two lines of text sat over ~110px of empty dashed box. It now draws the
+ * card's own grammar (heading, sentence, a footer row with the control on the card's footer line),
+ * so the equal height is spent the way the card beside it spends it. Round one's raw CLI and MCP
+ * signatures stay out of the product copy; the request inside the clipboard names the tool calls
+ * for the agent, which is the reader that needs them.
+ *
+ * As a band (an even project count, or no project yet) the words and the control share one row.
  */
 function NextProjectTile({ t, description, band = false }: { t: SelectorTranslator; description?: string; band?: boolean }) {
+  const copy = useCopyFeedback();
+  const copyLabel =
+    copy.state === "copied" ? t("nextSlotCopied") : copy.state === "failed" ? t("nextSlotCopyError") : t("nextSlotCopy");
+  const control = (
+    <button
+      type="button"
+      data-testid="project-selector-next-copy"
+      onClick={() => void copy.copy(t("nextSlotPrompt"))}
+      className={controlClass({ shape: "chip", size: "md", tone: "secondary", className: "shrink-0" })}
+    >
+      <Copy size={ICON_SIZE.sm} aria-hidden />
+      <span aria-live="polite">{copyLabel}</span>
+    </button>
+  );
+  const words = (
+    <div className="min-w-0 flex-1">
+      <h2
+        id="project-selector-next-slot-title"
+        className="text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-secondary)]"
+      >
+        {t("nextSlotTitle")}
+      </h2>
+      <p className="mt-2.5 min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]">
+        {description ?? t("nextSlotSub")}
+      </p>
+    </div>
+  );
   return (
     <section
       data-testid="project-selector-next-slot"
       aria-labelledby="project-selector-next-slot-title"
-      className={`flex w-full min-w-0 flex-col gap-2 rounded-card border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] ${
-        band ? "md:flex-row md:items-baseline md:gap-4" : ""
-      }`}
+      className="flex w-full min-w-0 flex-col rounded-card border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)]"
     >
-      <h2
-        id="project-selector-next-slot-title"
-        className="shrink-0 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-secondary)]"
-      >
-        {t("nextSlotTitle")}
-      </h2>
-      <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-        {description ?? t("nextSlotSub")}
-      </p>
+      {band ? (
+        <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-3 p-[var(--card-pad)]">
+          {words}
+          {control}
+        </div>
+      ) : (
+        <>
+          <div className="flex min-w-0 flex-1 p-[var(--card-pad)]">{words}</div>
+          {/* The card's footer line: same divider, same inset, the control where the card's doors stand. */}
+          <div className="flex min-w-0 items-center justify-end border-t border-dashed border-[color:var(--color-divider)] px-[var(--card-pad)] py-3">
+            {control}
+          </div>
+        </>
+      )}
     </section>
   );
 }

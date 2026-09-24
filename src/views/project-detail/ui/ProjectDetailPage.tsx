@@ -698,35 +698,35 @@ export function ProjectDetailPage({
               </Button>
               {canManageProject ? (
                 <ProjectQuickEditPanel project={project} settingsHref={projectFullEditHref} triggerVariant="outline" />
-              ) : (
-                // With no vault chosen (static/dogfood) there was no edit entry point at all and
-                // nothing explaining why — this badge states the reason and the next action in one
-                // line. It is not an action but a typed fact about state.
-                //
-                // 2026-08-07: that "next action" existed **only as words**. The badge said *"open a
-                // folder to edit"* while this screen had zero controls that open a folder (measured
-                // exhaustively) — a dead CTA. The badge keeps stating the state, and the path that
-                // does the job is placed beside it. Not overlaying state and action on one element
-                // preserves the earlier comment's judgement.
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <span
-                    data-testid="project-detail-readonly-badge"
-                    // `flex-none` created horizontal page overflow at 390px (an overflow-sweep
-                    // regression) — when narrow, the badge text wraps instead.
-                    // 2026-09-20: it wore the outline button's own surface — `--color-overlay-1`,
-                    // a border and the chip radius (`button.tsx`, the `outline` variant) — so the row
-                    // drew four boxes of which one could not be pressed, and the difference was a
-                    // border colour. A state fact is drawn as a fact here: the folder census over the
-                    // composition board is engraved text with no box, and so is this.
-                    className="inline-flex min-w-0 items-center gap-1.5 py-1.5 text-label text-[color:var(--color-text-tertiary)]"
-                  >
-                    {t("readOnlyBadge")}
-                  </span>
-                  <OpenVaultCta testId="project-detail-open-vault" />
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
+
+          {/*
+            **The view-only state is a line of its own under the definition** (2026-09-25, round
+            three). It used to ride the action row: a filled button, an outline button, an 11px
+            fact and a label-size folder chip on one line, two control sizes and three weights, so
+            the row read as four equals of different sizes. The row now holds the page's actions at
+            one size, and the state stands where it applies: under the words that could be edited,
+            with the one control that makes them editable, fact and door at one type size.
+
+            With no vault chosen (static/dogfood) there was no edit entry point at all and nothing
+            explaining why, so this states the reason and the next action together. 2026-08-07:
+            that "next action" existed only as words while the screen had zero controls that open a
+            folder, a dead CTA, which is why `OpenVaultCta` stands beside the fact. 2026-09-20: the
+            fact wore the outline button's surface and read as a fourth control; it is engraved text.
+          */}
+          {canManageProject ? null : (
+            <div className="mt-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+              <span
+                data-testid="project-detail-readonly-badge"
+                className="min-w-0 break-keep text-label leading-body text-[color:var(--color-text-tertiary)]"
+              >
+                {t("readOnlyBadge")}
+              </span>
+              <OpenVaultCta testId="project-detail-open-vault" />
+            </div>
+          )}
 
           {/*
             **The figures left the hero on 2026-09-19.** They were five quiet chips here and then the
@@ -811,11 +811,15 @@ export function ProjectDetailPage({
           {/* One folder, one number. `computeCanonicalCensus` is the single rule behind every count
               that says "concept" — the map's INDEX row reads it too. The raw node array counts the
               vault readme as well, so the same folder said 109 here and 108 one click away. */}
+          {/* Concepts only (2026-09-25, round three). It also gave the folder's relations (245)
+              about 100px from the ontology cell's "241 relations among these concepts": two
+              relation counts of different scopes side by side, with nothing saying why they
+              differ. The cell's count is this project's, which is what the page is about. */}
           <span
             data-testid="project-detail-global-census"
             className="ml-auto hidden text-label tabular-nums text-[color:var(--color-text-tertiary)] md:inline"
           >
-            {t("globalCensus", { concepts: folderCensus.conceptCount, relations: folderCensus.relationCount })}
+            {t("globalCensus", { concepts: folderCensus.conceptCount })}
           </span>
         </div>
         <SurfaceCompositionBoard
@@ -825,8 +829,9 @@ export function ProjectDetailPage({
             library: t("surfaceLibrary"),
             harness: t("surfaceHarness"),
           }}
+          // The ontology cell has no door of its own: its door is the map, and the hero's primary
+          // action opens that one block above. Two labels for one address is the said-twice defect.
           openLabels={{
-            ontology: t("surfaceOpenOntology"),
             library: t("surfaceOpenLibrary"),
             harness: t("surfaceOpenHarness"),
           }}
@@ -844,11 +849,17 @@ export function ProjectDetailPage({
           right rail drew cards, so the two columns started on different lines and the grid read as
           crooked — the owner's word for it on 2026-09-19, and the reason a section header was
           already deleted here once. */}
-      <section className="mt-[var(--section-gap)] grid grid-cols-1 items-start gap-[var(--card-gap)] @5xl/project-page:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="flex min-w-0 flex-col gap-[var(--card-gap)]">
+      {/* **The rail stands beside the domain rows only, and the overview spans under both**
+          (2026-09-25, round three). The rail used to face the domain card and the overview stacked,
+          so it ended ~120px (atlas, 1512) to ~470px (storefront) above the left column and left
+          a bare block at the bottom right. Beside the domain rows alone the two tracks share a
+          row, and the rail's last card takes the row's height with its preview as its footer. The
+          overview, a paragraph and its boundary, reads in two tracks of its own across the page.
+          Below `@5xl` the order is the one it always was: domains, overview, rail. */}
+      <section className="mt-[var(--section-gap)] grid grid-cols-1 gap-[var(--card-gap)] @5xl/project-page:grid-cols-[minmax(0,1fr)_400px]">
           <section
             data-testid="project-detail-domains"
-            className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
+            className="min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
           >
             <div className="mb-2.5 flex items-baseline gap-2">
               <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
@@ -909,7 +920,7 @@ export function ProjectDetailPage({
 
           <article
             data-testid="project-detail-body"
-            className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
+            className="min-w-0 @5xl/project-page:order-last @5xl/project-page:col-span-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
           >
             <div className="mb-2.5 flex items-baseline gap-2">
               <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
@@ -953,12 +964,11 @@ export function ProjectDetailPage({
               </div>
             )}
           </article>
-        </div>
 
         {/* The right rail sits **outside the tabs** — it is context valid from any tab, and "connected
             projects" is the first surface of treating project-to-project relations as ontology, so it
             must not be hidden behind a tab. */}
-        <aside data-testid="project-detail-connected" className="flex flex-col gap-[var(--card-gap)]">
+        <aside data-testid="project-detail-connected" className="flex min-w-0 flex-col gap-[var(--card-gap)] @5xl/project-page:row-start-1 @5xl/project-page:col-start-2">
           {connectedProjects.length > 0 || folderHasSeveralProjects ? (
           <section data-testid="project-detail-connected-card" className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             {/* No relation trace mark before this heading. The mark is not broken: it is the
@@ -1042,7 +1052,7 @@ export function ProjectDetailPage({
           </section>
           ) : null}
 
-          <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
+          <section className="flex flex-1 flex-col rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             {/*
               **One place for agents on this page** (2026-09-19). Two copies live here and they do
               different jobs: rewrite this overview, or start an AI reading this project's map. Round
@@ -1061,9 +1071,10 @@ export function ProjectDetailPage({
               data-testid="project-detail-brief-ask"
               data-brief-state={briefIsStructured ? "structured" : "unstructured"}
               data-agent-route={agent.route}
-              className="mt-2"
+              // The card takes the row's height beside the domain rows; the preview is its footer.
+              className="mt-2 flex flex-1 flex-col"
             >
-              <ul className="flex list-none flex-col gap-4 p-0">
+              <ul className="mb-4 flex list-none flex-col gap-4 p-0">
                 <li className="min-w-0">
                   <p className="break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
                     {agent.route === "agent"
@@ -1112,7 +1123,7 @@ export function ProjectDetailPage({
                   </Button>
                 </li>
               </ul>
-              <details className="mt-4 border-t border-[color:var(--color-divider)] pt-3">
+              <details className="mt-auto border-t border-[color:var(--color-divider)] pt-3">
                 <summary className="select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                   {t("handoffHumanCaption")}
                 </summary>

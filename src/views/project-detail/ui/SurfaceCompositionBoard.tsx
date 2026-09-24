@@ -27,7 +27,12 @@ export function SurfaceCompositionBoard({
 }: {
   cells: readonly SurfaceCell[];
   titles: Record<SurfaceCell["id"], string>;
-  openLabels: Record<SurfaceCell["id"], string>;
+  /**
+   * A cell without a label draws no door. The ontology cell's door would be the map, which the
+   * hero's primary action already opens one block above (2026-09-25, round three: "View on the
+   * map" and "Open on the map" stood ~100px apart on one address).
+   */
+  openLabels: Partial<Record<SurfaceCell["id"], string>>;
 }) {
   return (
     <ul
@@ -79,6 +84,7 @@ export function SurfaceCompositionBoard({
               </p>
             ) : null}
           </div>
+          {openLabels[cell.id] ? (
           <Link
             href={cell.href}
             prefetch={false}
@@ -95,6 +101,7 @@ export function SurfaceCompositionBoard({
           >
             {openLabels[cell.id]}
           </Link>
+          ) : null}
         </li>
       ))}
     </ul>

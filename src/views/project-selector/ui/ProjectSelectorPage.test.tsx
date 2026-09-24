@@ -199,6 +199,20 @@ describe("ProjectSelectorPage", () => {
     );
   });
 
+  // Round three (2026-09-25): the tile closing the grid restated the header's button in prose and
+  // had no control of its own. It is the agent path now, and it hands over the request to paste.
+  it("gives the next-project tile its own control instead of pointing at the header button", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    renderPage();
+    const tile = screen.getByTestId("project-selector-next-slot");
+    expect(tile.textContent).not.toContain(enMessages.projectPages.selector.ctaNewProject);
+    within(tile).getByTestId("project-selector-next-copy").click();
+    await vi.waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(enMessages.projectPages.selector.nextSlotPrompt),
+    );
+  });
+
   // Audit finding: the English screen shipped "1 project · 1 domains". A plural at a count of 1 reads as
   // a sentence that was generated automatically.
   it("agrees in number with the count it labels", () => {

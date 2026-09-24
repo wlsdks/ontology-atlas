@@ -92,65 +92,95 @@ export function ProjectBriefSummary({
     return known && sectionNames ? sectionNames[known] : title;
   };
 
-  return (
-    <div data-testid="project-detail-brief-summary" data-section-count={brief.sections.length}>
-      {opening ? (
-        <div className={`${proseClassName} break-keep`} data-testid="project-detail-body-content">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{opening}</ReactMarkdown>
-        </div>
-      ) : null}
-      {boundary.length > 0 && sectionNames ? (
-        <div
-          data-testid="project-detail-brief-boundary"
-          className={`grid gap-x-8 gap-y-5 ${boundary.length === 2 ? "@3xl/project-page:grid-cols-2" : ""} ${opening ? "mt-5" : ""}`}
-        >
-          {boundary.map((entry) => (
-            <section key={entry.key} className="min-w-0">
-              <h3 className="text-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]">
-                {sectionNames[entry.key]}
-              </h3>
-              <ul className="mt-2 flex list-none flex-col gap-2 p-0">
-                {entry.items.map((item, index) => (
-                  <li
-                    key={`${entry.key}-${index}`}
-                    className="relative break-keep pl-3.5 text-body leading-body text-[color:var(--color-text-secondary)] before:absolute before:top-[0.55em] before:left-0 before:h-1 before:w-1 before:rounded-full before:bg-[color:var(--color-text-quaternary)] before:content-[''] [&_a]:text-[color:var(--color-indigo-accent)] [&_code]:font-mono [&_code]:text-label [&_p]:inline"
-                  >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{item}</ReactMarkdown>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
-      ) : null}
-      {brief.sections.length > 0 ? (
-        <div
-          className={`flex flex-wrap items-baseline gap-x-2 gap-y-1.5 ${
-            opening || (boundary.length > 0 && sectionNames) ? "mt-5 border-t border-[color:var(--color-divider)] pt-4" : ""
-          }`}
-        >
-          <span className="text-label text-[color:var(--color-text-quaternary)]">
-            {coversLabel}
-          </span>
-          <ol
-            data-testid="project-detail-brief-sections"
-            className="flex min-w-0 list-none flex-wrap items-baseline gap-x-2 gap-y-1.5 p-0"
-          >
-            {brief.sections.map((section, index) => (
-              <li key={`${index}-${section.title}`} className="flex items-baseline gap-2">
-                {index > 0 ? (
-                  <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
-                    ·
-                  </span>
-                ) : null}
-                <span className="min-w-0 break-keep text-body text-[color:var(--color-text-secondary)]">
-                  {sectionTitle(section.title)}
-                </span>
+  const hasBoundary = boundary.length > 0 && Boolean(sectionNames);
+  const hasContents = brief.sections.length > 0;
+  /*
+   * **Two tracks when the card has the page's width** (2026-09-25, round three). The overview card
+   * spans the page column since the agent card moved beside the domain rows, so the opening
+   * paragraph keeps the reading column on the left and the rest of the summary stands beside it
+   * rather than under it: the boundary bullets when the document states them, otherwise the
+   * contents line. Below `@5xl` of the page column the two tracks stack in the same order.
+   */
+  const twoTracks = Boolean(opening) && (hasBoundary || hasContents);
+  const contentsLine = (withRule: boolean) => (
+    <div
+      className={`flex flex-wrap items-baseline gap-x-2 gap-y-1.5 ${
+        withRule ? "border-t border-[color:var(--color-divider)] pt-4" : ""
+      }`}
+    >
+      <span className="text-label text-[color:var(--color-text-quaternary)]">
+        {coversLabel}
+      </span>
+      <ol
+        data-testid="project-detail-brief-sections"
+        className="flex min-w-0 list-none flex-wrap items-baseline gap-x-2 gap-y-1.5 p-0"
+      >
+        {brief.sections.map((section, index) => (
+          <li key={`${index}-${section.title}`} className="flex items-baseline gap-2">
+            {index > 0 ? (
+              <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
+                ·
+              </span>
+            ) : null}
+            <span className="min-w-0 break-keep text-body text-[color:var(--color-text-secondary)]">
+              {sectionTitle(section.title)}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+  const boundaryGrid = (
+    <div
+      data-testid="project-detail-brief-boundary"
+      // Each column is capped at the reading column's line, so a card spanning the page at 1920
+      // does not run a bullet to ~800px (the bounded measure the prose above it keeps).
+      className={`grid gap-x-8 gap-y-5 ${
+        boundary.length === 2
+          ? "@3xl/project-page:grid-cols-[repeat(2,minmax(0,calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))))]"
+          : "max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))]"
+      }`}
+    >
+      {boundary.map((entry) => (
+        <section key={entry.key} className="min-w-0">
+          <h3 className="text-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]">
+            {sectionNames?.[entry.key]}
+          </h3>
+          <ul className="mt-2 flex list-none flex-col gap-2 p-0">
+            {entry.items.map((item, index) => (
+              <li
+                key={`${entry.key}-${index}`}
+                className="relative break-keep pl-3.5 text-body leading-body text-[color:var(--color-text-secondary)] before:absolute before:top-[0.55em] before:left-0 before:h-1 before:w-1 before:rounded-full before:bg-[color:var(--color-text-quaternary)] before:content-[''] [&_a]:text-[color:var(--color-indigo-accent)] [&_code]:font-mono [&_code]:text-label [&_p]:inline"
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{item}</ReactMarkdown>
               </li>
             ))}
-          </ol>
-        </div>
-      ) : null}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+
+  return (
+    <div data-testid="project-detail-brief-summary" data-section-count={brief.sections.length}>
+      <div
+        className={
+          twoTracks
+            ? "grid gap-x-10 gap-y-5 @5xl/project-page:grid-cols-[minmax(0,calc(var(--measure-doc-column)-2*var(--measure-doc-gutter)))_minmax(0,1fr)]"
+            : "flex flex-col gap-5"
+        }
+      >
+        {opening ? (
+          <div className={`${proseClassName} min-w-0 break-keep`} data-testid="project-detail-body-content">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{opening}</ReactMarkdown>
+          </div>
+        ) : null}
+        {hasBoundary ? boundaryGrid : null}
+        {/* Without boundary bullets the contents line is the second track; with them it closes
+            the card under both tracks. */}
+        {hasContents && !hasBoundary ? contentsLine(false) : null}
+      </div>
+      {hasContents && hasBoundary ? <div className="mt-5">{contentsLine(true)}</div> : null}
     </div>
   );
 }

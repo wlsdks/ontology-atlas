@@ -477,7 +477,7 @@ describe("ProjectDetailPage", () => {
     ]);
   });
 
-  it("names the three Atlas surfaces, each with its own door", () => {
+  it("names the three Atlas surfaces, and the map has one door on the page", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     renderPage();
@@ -485,11 +485,12 @@ describe("ProjectDetailPage", () => {
     const cells = screen.getAllByTestId("project-detail-surface-cell");
     expect(cells.map((cell) => cell.getAttribute("data-surface"))).toEqual(["ontology", "library", "harness"]);
     const doors = screen.getAllByTestId("project-detail-surface-open");
-    expect(doors.map((door) => door.getAttribute("href"))).toEqual([
-      `/topology/?p=${SLUG}`,
-      "/library/",
-      "/architecture/",
-    ]);
+    expect(doors.map((door) => door.getAttribute("href"))).toEqual(["/library/", "/architecture/"]);
+    // The ontology cell's door would be the map, which the hero's primary action already opens.
+    const mapDoors = screen
+      .getAllByRole("link")
+      .filter((link) => link.getAttribute("href") === `/topology/?p=${SLUG}`);
+    expect(mapDoors).toHaveLength(1);
   });
 
   // The Library cell once counted wiki pages out of the chosen sample while counting sources out
@@ -558,8 +559,10 @@ describe("ProjectDetailPage", () => {
     renderPage();
 
     expect(screen.getByTestId("project-detail-global-census")).toHaveTextContent(
-      "Whole folder · 6 concepts · 3 relations",
+      "6 concepts in the whole folder",
     );
+    // The folder's relations are not restated beside the ontology cell's own relation count.
+    expect(screen.getByTestId("project-detail-global-census")).not.toHaveTextContent(/relation/i);
   });
 
   // Only the ontology half of the board is this project's; sources and wiki pages count the folder.
