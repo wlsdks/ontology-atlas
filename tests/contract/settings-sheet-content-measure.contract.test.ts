@@ -46,6 +46,10 @@ const PANEL = readFileSync(
   path.join(ROOT, 'src/widgets/app-settings-menu/ui/AiConnectionPanel.tsx'),
   'utf8',
 );
+const PRIMITIVES = readFileSync(
+  path.join(ROOT, 'src/widgets/app-settings-menu/ui/settings-primitives.tsx'),
+  'utf8',
+);
 const CSS = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
 
 /** The sheet's own fixed width. */
@@ -104,9 +108,12 @@ describe('설정 시트 — 얼굴이 달라도 행의 폭은 하나다', () => 
     expect(tokenPx('--git-setup-measure')).toBeLessThan(tokenPx('--settings-content-measure'));
     // The place where the "connect just one…" line ran across 846px, far past the prose
     // measure (`--measure-prose`, `60ch` since 2026-09-11). Prose blocks come back inside it.
+    // Since 2026-09-25 that sentence is the API Key pane's head, so the prose cap lives on
+    // the one head every pane opens with (`SettingsPaneHead`), and the panel keeps none.
+    const head = PRIMITIVES.slice(PRIMITIVES.indexOf('export function SettingsPaneHead'));
     expect(
-      (PANEL.match(/max-w-\[var\(--git-setup-measure\)\]/g) ?? []).length,
-      '산문 블록(신뢰 고지 · 「무엇이 열리나」)이 산문 measure 를 안 쓴다',
-    ).toBeGreaterThanOrEqual(2);
+      (head.slice(0, head.indexOf('\n}\n')).match(/max-w-\[var\(--git-setup-measure\)\]/g) ?? []).length,
+      '창 머리 문장(「무엇이 열리나」가 된 자리)이 산문 measure 를 안 쓴다',
+    ).toBe(1);
   });
 });

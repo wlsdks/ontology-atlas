@@ -62,7 +62,7 @@ export function ArchitectureEvidenceRail({
         aria-controls="architecture-evidence-dock"
         data-testid="architecture-evidence-rail"
         onClick={onToggle}
-        className="relative w-full min-w-0 justify-start overflow-hidden rounded-none"
+        className="relative min-h-10 w-full min-w-0 justify-start overflow-hidden rounded-none py-2"
       >
         <span className="architecture-evidence-rail-segment relative flex min-w-0 flex-1 items-center gap-2">
           <GitCompareArrows

@@ -95,7 +95,7 @@ describe("관문 무대 폭 — --gateway-stage-max 의 불변식", () => {
   /*
    * [2026-09-02] The agent scene left the stage: it now shares the evidence section's 11/20
    * grid with the three cards stacked beside it (`DownloadPage.tsx`, agents section), so the
-   * demo is the page's one centred stage and the token's one consumer. The e2e grid spec holds
+   * demo is the token's one consumer (standing beside its head from 90rem since 2026-09-25). The e2e grid spec holds
    * the scene to the evidence map frame's width instead.
    */
   it("(d) 무대 폭의 진실원은 토큰 하나다 — 소비 1곳 + 로컬 48rem 0곳", () => {

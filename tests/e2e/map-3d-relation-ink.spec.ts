@@ -87,13 +87,12 @@ import { seedFirstRunSeen } from "./first-run-seed";
 const RATIOS = [2, 1] as const;
 
 /**
- * The three 3D arrangements, with the resting-ink floor each has to hold. One set
+ * The two 3D arrangements, with the resting-ink floor each has to hold. One set
  * of floors for both ratios — the point of the width floor is that a resting line
  * reads the same whatever screen it is drawn on, so a gate that asked less of one
  * ratio would be conceding the thing being fixed.
  */
 const ARRANGEMENTS = [
-  { key: "ownership", name: "Cone", containsFloor: 1.9, dependsFloor: 1.4 },
   { key: "strata", name: "Strata", containsFloor: 1.9, dependsFloor: 1.4 },
   { key: "coupling", name: "Neural", containsFloor: 1.9, dependsFloor: 1.4 },
 ] as const;

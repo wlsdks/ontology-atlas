@@ -96,6 +96,43 @@ export const RESET_LINK_INK = 'justify-self-start hover:text-[color:var(--color-
 export const SETTINGS_SECTION_LABEL =
   'font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]';
 
+/**
+ * The head every pane opens with — the section's name on the title step and one finished
+ * sentence saying what the pane decides (2026-09-25).
+ *
+ * It overturns "the section title is not repeated" (2026-07-29) and steps the nav down from
+ * 14px: the record, with its dissent and falsifier, is
+ * `docs/records/decisions/2026-09-25-settings-pane-head-ac02840d-c96d-45d0-83d4-8ebf11daa06c.md`.
+ * Type descends pane head (16) → row title (12.5) → caption (11).
+ *
+ * The head's text stands on the row labels' start line: the rows sit inside a group whose
+ * 1px border and `px-3` put their text 13px in, so the head carries the same transparent
+ * border and inset (it hung 9px left at `px-1`). No bottom padding: the pane's grid gap
+ * already separates it from the first group, and the Screen pane has to fit 672. The
+ * sentence is prose, so it keeps the prose measure (520), not the row measure, and is
+ * balanced: `text-pretty` still left a two-word last line on the API Key sentence.
+ */
+export function SettingsPaneHead({
+  title,
+  description,
+  testId,
+}: {
+  title: string;
+  description: string;
+  testId?: string;
+}) {
+  return (
+    <header className="grid min-w-0 gap-1 border-x border-transparent px-3" data-testid={testId}>
+      <h3 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+        {title}
+      </h3>
+      <p className="max-w-[var(--git-setup-measure)] break-keep text-body leading-body text-balance text-[color:var(--color-text-tertiary)]">
+        {description}
+      </p>
+    </header>
+  );
+}
+
 /** Group header plus row container — the skeleton of the Toss-style "group header + immediately operable rows" grammar. */
 /**
  * A group of settings rows. `label` is **optional**: where the LNB already names
@@ -329,9 +366,11 @@ export function Choice<T extends string | boolean>({
   return (
     <div className="flex min-h-11 flex-col items-stretch gap-3 px-1 py-2 sm:flex-row sm:items-center">
       <span className="shrink-0 text-body text-[color:var(--color-text-primary)] sm:w-28">{label}</span>
+      {/* The joined `well` track, the same one-of-N grammar the Screen pane's switches use
+          (2026-09-25). Detached chips made the Expand pane read as a second control family
+          for the same kind of choice. */}
       <SegmentedControl
         ariaLabel={label}
-        variant="chips"
         value={value}
         onChange={onChange}
         options={options.map((option) => ({

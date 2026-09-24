@@ -45,8 +45,21 @@ import { HeroTypewriter } from './HeroTypewriter';
  * language must match — the discipline meant to avoid adaptation was instead making one screen say
  * one sentence in two languages.
  */
-function toolCallLine(why: string): string {
-  return `add_relation | "${why}"`;
+const TOOL_NAME = 'add_relation';
+
+/**
+ * [Revised 2026-09-25] **The call is a record of two fields, not one typed line.** It was
+ * `add_relation | "…"` in one `<pre>`, and the locale strings carried a hard line break plus a
+ * 16-space hanging indent to fake the payload's column. Any width but the one it was tuned at
+ * broke it: measured at 1040 the first line ended mid-clause, the indented half-line followed,
+ * and the rest came back to column 0. Now the name is its own line and `why` is a key beside a value
+ * that wraps as a sentence in a real grid column, so the payload's left edge is one line at every
+ * width. Only the name and the key are mono — they are program text; the value is the person's
+ * sentence, and Hangul in the mono face is drawn with monospace word gaps (`app/globals.css`,
+ * the caps-label note).
+ */
+function quoted(why: string): string {
+  return `"${why}"`;
 }
 
 /**
@@ -143,16 +156,19 @@ export function AcpChatScene() {
       data-testid="gateway-agent-chat"
       className="min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] text-left"
     >
-      <div className="border-b border-[color:var(--color-border-soft)] px-6 py-3.5 font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+      <div className="flex items-center gap-2 border-b border-[color:var(--color-border-soft)] px-6 py-3.5 text-caption leading-caption text-[color:var(--color-text-tertiary)]">
         {t('acpSceneTab')}
       </div>
 
-      {/* Reserve the height so arriving lines do not push the section below (the terminal-era contract). */}
+      {/* Reserve the height so arriving lines do not push the section below (the terminal-era
+          contract). The frame is as tall as its conversation (2026-09-25): stretched to the cards
+          beside it with the lines settled to its floor, it held 230px of empty panel above the
+          first bubble at 1512, a void moved inside the border where it read as half-loaded. */}
       <div className="grid min-h-[17rem] content-start gap-5 px-6 pb-6 pt-5">
         {/* ① The person's sentence — the user input of the measured session, verbatim. */}
         <div className={cn('gateway-term-line', shown >= 1 && 'is-on', 'flex min-w-0 justify-end')}>
           <div className="min-w-0 max-w-[34rem]">
-            <p className="text-right font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
+            <p className="text-right text-caption leading-caption text-[color:var(--color-text-tertiary)]">
               {t('acpUserLabel')}
             </p>
             <p className="mt-1.5 break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">
@@ -163,23 +179,29 @@ export function AcpChatScene() {
 
         {/* ② The agent's tool call — the name verbatim, the `why` in the screen's language. */}
         <div className={cn('gateway-term-line', shown >= 2 && 'is-on', 'min-w-0')}>
-          <p className="break-keep font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
+          <p className="break-keep text-caption leading-caption text-[color:var(--color-text-tertiary)]">
             {t('acpToolCaption')}
           </p>
           {/*
-           * The typewriter's characters are aria-hidden (its own contract), so the record's
-           * accessible text is a visually-hidden plain copy beside it. Not `aria-label` on the
-           * `<pre>` — a generic element may not carry a name (the a11y ratchet rejected exactly
-           * that in CI, `aria-prohibited-attr`, 2026-08-23).
+           * The typewriter's characters are aria-hidden (its own contract), so the value's
+           * accessible text is a visually-hidden plain copy beside it. Not `aria-label` on a
+           * generic element — it may not carry a name (the a11y ratchet rejected exactly that in
+           * CI, `aria-prohibited-attr`, 2026-08-23).
            */}
-          <pre className="mt-1.5 overflow-x-auto rounded-panel border border-[color:var(--color-border-soft)] px-4 py-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]">
-            <span className="sr-only">{toolCallLine(t('acpToolWhy'))}</span>
-            <HeroTypewriter
-              lines={[{ text: toolCallLine(t('acpToolWhy')) }]}
-              start={shown >= 2}
-              budgetMs={TOOL_TYPING_BUDGET_MS}
-            />
-          </pre>
+          <div className="mt-1.5 min-w-0 rounded-panel border border-[color:var(--color-border-soft)] p-[var(--card-pad)] text-body leading-body">
+            <p className="font-mono text-[color:var(--color-text-secondary)]">{TOOL_NAME}</p>
+            <p className="mt-1 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-3">
+              <span className="font-mono text-[color:var(--color-text-tertiary)]">why</span>
+              <span className="min-w-0 break-keep text-[color:var(--color-text-secondary)]">
+                <span className="sr-only">{quoted(t('acpToolWhy'))}</span>
+                <HeroTypewriter
+                  lines={[{ text: quoted(t('acpToolWhy')) }]}
+                  start={shown >= 2}
+                  budgetMs={TOOL_TYPING_BUDGET_MS}
+                />
+              </span>
+            </p>
+          </div>
         </div>
 
         {/* ③ What remains — one line of vault frontmatter, which git sees. */}
@@ -187,7 +209,7 @@ export function AcpChatScene() {
           className={cn(
             'gateway-term-line',
             shown >= 3 && 'is-on',
-            'min-w-0 break-keep font-mono text-body leading-body text-[color:var(--color-indigo-accent)]',
+            'min-w-0 break-keep text-body leading-body text-[color:var(--color-indigo-accent)]',
           )}
         >
           {t('acpResultLine')}

@@ -1109,7 +1109,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // 2026-09-25: the two 404 files and the error boundary became one shared terminal-state view.
 // The 404's two `<Link>`s moved with it, and the error screen's home became a plain `<a>`
 // through `buttonVariants` (a full reload after a render failure), so `a` 8→9.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 19, a: 9 };
+// 2026-09-25: Automations' "Get the app" and "Open Library check history" became standard
+// buttons (primary, ghost sm) instead of text links, so `Link` 19→21.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 21, a: 9 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1183,6 +1185,20 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     claim: 'standard-button',
     proof: 'buttonVariants',
     why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
+  },
+  {
+    file: 'src/views/automations/ui/AutomationsPage.tsx',
+    count: 2,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'Two navigating actions on Automations (2026-09-25). "Get the app" is the app-required ' +
+      "stage's one primary action and must match the empty lane's `<Button>` primary " +
+      "(`buttonVariants({ variant: \"primary\" })`); \"Open Library check history\" sits in the " +
+      "lane header beside the outline `<Button>` CTA as `buttonVariants({ variant: \"ghost\", " +
+      'size: "sm" })`. As 11-12.5px `shape: "link"` text they read as captions, not actions. ' +
+      'Both are `<Link>` because they navigate, and `control-class.ts` does not replace ' +
+      'standard buttons.',
   },
   {
     file: 'src/views/library/ui/parts/AgentDoor.tsx',
@@ -1318,9 +1334,11 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // 27 → 28 (2026-09-25): the render-error screen's "home" moved off a hand-built pill onto the
 // standard button beside its `<Button>` retry, so its dead ends match the 404's. The value layer
 // has no standard-button anchor shape, so the row is registered like the 404's own.
-const BASELINE_ANCHOR_REGISTERED = 28;
+// 28 → 30 (2026-09-25): Automations' two navigating actions, registered for the reason their
+// row states — the standard-button shape, at the two tags a navigating button needs.
+const BASELINE_ANCHOR_REGISTERED = 30;
 
-/** **Only this number may fall.** The current anchor total (28) minus registered (28). */
+/** **Only this number may fall.** The current anchor total (30) minus registered (30). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

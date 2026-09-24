@@ -206,8 +206,10 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
     for (const file of ROOT_SHEET_FILES) {
       const source = sourceWithoutComments(file);
       expect(source.length, `${file} 을 못 읽었다`).toBeGreaterThan(200);
+      // A pane whose every line comes from the shared primitives (Footprint since its intro
+      // moved to the pane head, 2026-09-25) still sits on the ramp through them.
       expect(source, `${file} 이 타입 램프를 안 쓴다 — 목록이 낡았다`).toMatch(
-        /text-(body|label|title|body-lg)/,
+        /text-(body|label|title|body-lg)|from '\.\/settings-primitives'/,
       );
     }
   });
@@ -315,8 +317,8 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
    * The locked-scale contract limits its own reach to **workbench chrome**
    * (`design.md`) — the same logic that excluded the gateway chrome (`GatewayNav`)
    * applies here. So the value is drawn from inside this sheet: **the same padding**
-   * as the right pane's `SettingsRow` (`px-3 py-2`), one step above the right-hand
-   * row label (`text-body-lg`). No new token is created — with a single consumer, a
+   * as the right pane's `SettingsRow` (`px-3 py-2`), on the row label's step
+   * (`text-body`, since 2026-09-25). No new token is created — with a single consumer, a
    * variable adds a second thing to reference and blurs where the spec lives (the
    * discipline left by that same passage).
    */
@@ -362,15 +364,26 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
 
     // Inset — must equal the `px-3 py-2` used by the right pane's row (`SettingsRow`).
     expect(lnb, "LNB 인셋이 크롬 치수(px-2.5 py-1.5)로 되돌아갔다").toMatch(/\bpx-3 py-2\b/);
-    // Type — one step above the right pane's `text-body`.
-    expect(lnb, "LNB 글자가 한 단 내려갔다").toMatch(/\btext-body-lg\b/);
+    /*
+     * Type — the row label's own step (`text-body`) since 2026-09-25. It was one step above
+     * (`text-body-lg`) as the sheet's attention winner, which made the index louder than every
+     * setting it leads to. The winner is now each pane's head on the title step, checked below,
+     * so type descends pane head → row title → caption and the nav stays a quiet index.
+     */
+    expect(lnb, "LNB 글자가 행 제목 단(text-body)이 아니다").toMatch(/\btext-body\b(?!-)/);
+    expect(lnb, "LNB 가 다시 칸 제목보다 커졌다").not.toMatch(/\btext-body-lg\b/);
+    const primitives = sourceWithoutComments("settings-primitives.tsx");
+    const head = primitives.slice(primitives.indexOf("export function SettingsPaneHead"));
+    expect(head.length, "SettingsPaneHead 가 없다 — 칸마다 머리가 하나라는 규격이 사라졌다").toBeGreaterThan(40);
+    expect(head.slice(0, 900), "칸 머리가 제목 단(text-title)을 잃었다").toMatch(/\btext-title\b/);
+    expect(menu, "설정 시트가 칸 머리를 그리지 않는다").toMatch(/<SettingsPaneHead\b/);
     // Radius — the card family, not chrome's chip.
     expect(lnb, "LNB 반경이 칩으로 되돌아갔다").toMatch(/\brounded-(?:lg|card)\b/);
   });
 
   it("LNB 아이콘이 글자보다 크다 — 훑기 채널로 선다", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
-    // At 14px it equals the text (text-body-lg = 14px) and the scanning channel disappears.
+    // At the text's own size the icon matches it and the scanning channel disappears.
     expect(menu).toMatch(/<Icon size=\{16\}/);
   });
 

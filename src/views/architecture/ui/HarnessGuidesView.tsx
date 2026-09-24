@@ -49,6 +49,15 @@ const WARNING_BADGE =
  *    stamps every file with the moment it arrived.
  */
 
+/**
+ * Only a difference wears a tag in the pair column. "Same content" is plain text and "not
+ * applicable" is the dash the changed column already uses for no value: outlining every row made
+ * four identical "not applicable" tags the column's loudest ink, and the one finding beat them by a
+ * single step (design review, 2026-09-25).
+ */
+const PAIR_DRIFT_BADGE =
+  'border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-secondary)]';
+
 type TranslateFn = ReturnType<typeof useTranslations<'harness'>>;
 
 /** A rendered row: one guide path, or one directory's worth of them. */
@@ -151,7 +160,7 @@ function ToolsCell({ row, t }: { row: GuideRow; t: TranslateFn }) {
               {AGENT_TOOL_LABELS[tool] ?? tool}
             </span>
             {condition ? (
-              <span className="text-caption text-[color:var(--color-text-quaternary)]">
+              <span className="text-label text-[color:var(--color-text-quaternary)]">
                 {condition}
               </span>
             ) : null}
@@ -174,7 +183,7 @@ function ToolsCell({ row, t }: { row: GuideRow; t: TranslateFn }) {
                   shape: 'link',
                   hoverInk: 'secondary',
                   className:
-                    'text-caption text-[color:var(--color-text-quaternary)] underline decoration-dotted underline-offset-2',
+                    'text-label text-[color:var(--color-text-quaternary)] underline decoration-dotted underline-offset-2',
                 })}
               >
                 ↗{t('toolsSource')}
@@ -182,7 +191,7 @@ function ToolsCell({ row, t }: { row: GuideRow; t: TranslateFn }) {
             ) : (
               <span
                 title={t('toolsUncitedHint')}
-                className={badgeClass({ shape: 'micro', className: WARNING_BADGE })}
+                className={badgeClass({ shape: 'tag', className: WARNING_BADGE })}
               >
                 {t('toolsUncited')}
               </span>
@@ -217,42 +226,59 @@ function SizeCell({
         <span className="text-body tabular-nums text-[color:var(--color-text-secondary)]">
           {formatBytes(row.bytes)}
         </span>
-        <span className="text-caption text-[color:var(--color-text-quaternary)]">
+        <span className="text-label text-[color:var(--color-text-quaternary)]">
           {t('capNone')}
         </span>
       </div>
     );
   }
   const ratio = Math.min(1, cap.worstCaseBytes / cap.capBytes);
+  const percentValue = Math.round(ratio * 100);
+  /* "0%" for 157 B of 32 KB would read as "empty"; under one percent says what is true. */
+  const percent = percentValue < 1 && cap.worstCaseBytes > 0 ? '<1' : String(percentValue);
   const over = cap.status === 'drift';
+  /*
+    Value over caption, the same two lines every other row prints, so the table keeps one row
+    height. The bar used to stand in for the value and at 157 B of 32 KB it was an empty 2px track
+    that said nothing; it now draws only once the merge is large enough to show (5%), and the
+    caption carries the percent in words either way.
+  */
   return (
-    <div className="flex flex-col gap-1" title={t('capMerged')}>
-      <div
-        className="h-1.5 w-full max-w-[140px] overflow-hidden rounded-micro bg-[color:var(--color-overlay-2)]"
-        role="img"
-        aria-label={t('capMergedValue', {
-          used: formatBytes(cap.worstCaseBytes),
-          cap: formatBytes(cap.capBytes),
-        })}
-      >
-        <div
-          className={cn(
-            'h-full rounded-micro',
-            over
-              ? 'bg-[color:var(--color-amber-source-a90)]'
-              : 'bg-[color:var(--color-indigo-a60)]',
-          )}
-          style={{ width: `${Math.round(ratio * 100)}%` }}
-        />
-      </div>
-      <span className="text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-        {t('capMergedValue', {
-          used: formatBytes(cap.worstCaseBytes),
-          cap: formatBytes(cap.capBytes),
-        })}
+    <div className="flex flex-col gap-0.5" title={t('capMerged')}>
+      <span className="text-body tabular-nums text-[color:var(--color-text-secondary)]">
+        {formatBytes(cap.worstCaseBytes)}
       </span>
-      {over ? (
-        <span className="text-caption text-[color:var(--color-amber-source-a90)]">{t('capOver')}</span>
+      <span
+        className={cn(
+          'text-label tabular-nums',
+          over
+            ? 'text-[color:var(--color-amber-source-a90)]'
+            : 'text-[color:var(--color-text-quaternary)]',
+        )}
+      >
+        {over
+          ? `${t('capOver')} · ${t('capMergedShare', { percent, cap: formatBytes(cap.capBytes) })}`
+          : t('capMergedShare', { percent, cap: formatBytes(cap.capBytes) })}
+      </span>
+      {ratio >= 0.05 ? (
+        <div
+          className="mt-0.5 h-1 w-full max-w-[140px] overflow-hidden rounded-micro bg-[color:var(--color-overlay-2)]"
+          role="img"
+          aria-label={t('capMergedValue', {
+            used: formatBytes(cap.worstCaseBytes),
+            cap: formatBytes(cap.capBytes),
+          })}
+        >
+          <div
+            className={cn(
+              'h-full rounded-micro',
+              over
+                ? 'bg-[color:var(--color-amber-source-a90)]'
+                : 'bg-[color:var(--color-indigo-a60)]',
+            )}
+            style={{ width: `${percentValue}%` }}
+          />
+        </div>
       ) : null}
     </div>
   );
@@ -274,7 +300,7 @@ function HookGroup({ group, t }: { group: HookConfigFacts; t: TranslateFn }) {
           <span
             title={t('hookApprovalGateHint')}
             data-testid="harness-hook-approval-gate"
-            className={badgeClass({ shape: 'micro', className: WARNING_BADGE })}
+            className={badgeClass({ shape: 'tag', className: WARNING_BADGE })}
           >
             {t('hookApprovalGate')}
           </span>
@@ -289,7 +315,7 @@ function HookGroup({ group, t }: { group: HookConfigFacts; t: TranslateFn }) {
             <span className="font-mono text-body text-[color:var(--color-text-secondary)]">
               {hook.ref.path ?? hook.ref.command}
             </span>
-            <span className="text-caption text-[color:var(--color-text-quaternary)]">
+            <span className="text-label text-[color:var(--color-text-quaternary)]">
               {hook.events}
             </span>
             <span
@@ -302,7 +328,7 @@ function HookGroup({ group, t }: { group: HookConfigFacts; t: TranslateFn }) {
               )}
               data-harness-hook-status={hook.status}
               className={badgeClass({
-                shape: 'micro',
+                shape: 'tag',
                 className: cn(
                   hook.status === 'missing'
                     ? WARNING_BADGE
@@ -391,7 +417,7 @@ function DriftList({
                 >
                   {[left, right].map((path) => (
                     <div key={path} className="min-w-0">
-                      <p className="font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                      <p className="font-mono text-label text-[color:var(--color-text-tertiary)]">
                         {path}
                       </p>
                       {/* Reachable and named: a bare `<pre>` is not in the tab order in a
@@ -401,7 +427,7 @@ function DriftList({
                         tabIndex={0}
                         role="group"
                         aria-label={path}
-                        className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] p-2 font-mono text-caption text-[color:var(--color-text-secondary)]"
+                        className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] p-2 font-mono text-label text-[color:var(--color-text-secondary)]"
                       >
                         {contentByPath.get(path) ?? ''}
                       </pre>
@@ -438,7 +464,10 @@ export function HarnessGuidesView({
   return (
     <div className="flex flex-col gap-4" data-testid="harness-guides">
       <header>
-        <h2 className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+        {/* A section head, on the same step as the two below it. At `text-title` it stood 30px
+            under the census sentence at the same size, and the screen had two headlines; the
+            thesis above is the one step over body here (design review, 2026-09-25). */}
+        <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
           {t('guidesTitle')}
         </h2>
         <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
@@ -464,7 +493,7 @@ export function HarnessGuidesView({
                      name, and the hint panel inside it is a 137-character paragraph. The label is
                      the column's name; the hint stays reachable on its own button. */
                   aria-label={t(key)}
-                  className="pb-2 pr-4 text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-label)] text-[color:var(--color-text-quaternary)]"
+                  className="whitespace-nowrap pb-2 pr-4 text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-label)] text-[color:var(--color-text-quaternary)]"
                 >
                   <span className="inline-flex items-center gap-1">
                     {t(key)}
@@ -479,14 +508,14 @@ export function HarnessGuidesView({
               <tr
                 key={row.key}
                 data-testid={`harness-guide-row-${row.ruleId}`}
-                className="border-b border-[color:var(--color-overlay-1)] align-top"
+                className="h-14 border-b border-[color:var(--color-overlay-1)] align-top"
               >
                 <td className="py-2 pr-4">
                   <span className="font-mono text-body text-[color:var(--color-text-primary)]">
                     {row.label}
                   </span>
                   {row.fileCount > 1 ? (
-                    <span className="ml-2 text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                    <span className="ml-2 text-label tabular-nums text-[color:var(--color-text-quaternary)]">
                       {t('fileCount', { count: row.fileCount })}
                     </span>
                   ) : null}
@@ -506,23 +535,27 @@ export function HarnessGuidesView({
                     in the browser, 2026-09-13).
                   */}
                   {row.declaredPair === null ? (
-                    <span className="text-caption text-[color:var(--color-text-quaternary)]">
-                      {t('pairNotApplicable')}
+                    <span
+                      title={t('pairNotApplicable')}
+                      className="text-body text-[color:var(--color-text-quaternary)]"
+                    >
+                      <span aria-hidden>—</span>
+                      <span className="sr-only">{t('pairNotApplicable')}</span>
                     </span>
                   ) : row.pairDrift.length > 0 ? (
-                    <span className={badgeClass({ shape: 'micro', className: 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)]' })}>
+                    <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
                       {t('driftTitle', { count: row.pairDrift.length })}
                     </span>
                   ) : (
                     <span
-                      className="text-caption text-[color:var(--color-text-tertiary)]"
+                      className="whitespace-nowrap text-label text-[color:var(--color-text-tertiary)]"
                       title={row.declaredPair}
                     >
                       {t('pairMatchesTwin')}
                     </span>
                   )}
                 </td>
-                <td className="py-2 pr-4 text-body tabular-nums text-[color:var(--color-text-tertiary)]">
+                <td className="whitespace-nowrap py-2 pr-4 text-body tabular-nums text-[color:var(--color-text-tertiary)]">
                   {formatWhen(row.lastModified, locale)}
                 </td>
               </tr>
@@ -533,7 +566,7 @@ export function HarnessGuidesView({
 
       {/* Never a bare zero: what is true is that the declared pairs match and nothing
           else was compared, and both halves of that are said together. */}
-      <p className="text-caption text-[color:var(--color-text-quaternary)]">
+      <p className="text-label text-[color:var(--color-text-quaternary)]">
         {t('pairCompared', { count: comparedPairs })} · {t('pairNotMeasured')} ·{' '}
         {t('reviewedOn', { date: CITATIONS_REVIEWED })}
       </p>

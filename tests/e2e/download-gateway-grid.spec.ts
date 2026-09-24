@@ -54,7 +54,7 @@ import { waitForAnimationsDone, waitForBoxStill, waitFrames } from "./settle";
  * 6. Zero horizontal overflow at 320px (both ko and en).
  * 7. **Stage width follows the token** (wide-width revision 2026-08-19) — the demo
  *    stage's rendered width equals the computed value of `--gateway-stage-max`, it
- *    is centred within the column, and the agent scene takes the same width. The
+ *    closes the column on the right while its head starts at the origin. The
  *    resize test also measures whether the stage width **actually moved** with the
  *    viewport — watching for a recurrence of the defect in the owner's 2560
  *    screenshot, where the stage was pinned at 30% of the viewport and the screen
@@ -187,28 +187,35 @@ async function measure(page: import("@playwright/test").Page) {
         const mapFrame = laidOut('[data-testid="download-stage-map-frame"]');
         if (!demo) return null;
         const demoRect = demo.getBoundingClientRect();
-        const colRect = demo.parentElement!.getBoundingClientRect();
+        // The track the stage stands in, and the section's column around it (2026-09-25: from
+        // 90rem the head takes a track beside the stage, so the two are no longer one box).
+        const trackRect = demo.parentElement!.getBoundingClientRect();
+        const colRect = document
+          .querySelector('[data-testid="gateway-demo-section"] > div')!
+          .getBoundingClientRect();
         return {
           maxWidthPx: Number.parseFloat(getComputedStyle(demo).maxWidth),
           demoW: Math.round(demoRect.width),
           demoLeft: Math.round(demoRect.left),
+          demoRight: Math.round(demoRect.right),
+          trackW: Math.round(trackRect.width),
           colLeft: Math.round(colRect.left),
+          colRight: Math.round(colRect.right),
           colW: Math.round(colRect.width),
           agentW: agent ? Math.round(agent.getBoundingClientRect().width) : null,
           mapW: mapFrame ? Math.round(mapFrame.getBoundingClientRect().width) : null,
           /*
-           * The head's **text** centre, not the element's. The `h2` fills the column whichever
-           * way its text is aligned, so its box centre is the column centre either way and would
-           * agree with a centred stage even when the text is hard left — which is the exact
-           * mismatch this is here to catch. A Range over the text node measures where the ink is.
+           * Where the head's **ink** starts, not its box. The `h2` box fills its track whichever
+           * way the text is aligned, so a box edge would agree with the column even while the
+           * text is centred — the exact mismatch this is here to catch. A Range over the text
+           * measures where the ink is.
            */
-          headInkMid: (() => {
+          headInkLeft: (() => {
             const head = document.querySelector('[data-testid="gateway-demo-section"] h2');
             if (!head || !head.firstChild) return null;
             const range = document.createRange();
             range.selectNodeContents(head);
-            const r = range.getBoundingClientRect();
-            return Math.round(r.left + r.width / 2);
+            return Math.round(range.getBoundingClientRect().left);
           })(),
         };
       })(),
@@ -289,43 +296,40 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
    * 2560 screenshot: the stage was pinned at 768px, floating at 30% of the viewport
    * and leaving the screen looking empty).
    *
-   * Rendered width = the token's computed value (or the column, if narrower);
-   * centred within the column; the same width as the agent scene. Values are read
+   * Rendered width = the token's computed value (or its track, if narrower);
+   * the head at the origin and the stage on the column's right edge. Values are read
    * from what the browser computed — copying numbers here would make this file a
    * second source of truth (the rule at the top).
    */
   expect(m.stage, `${label}: 무대를 못 읽었다`).not.toBeNull();
   const stage = m.stage!;
   expect(Number.isFinite(stage.maxWidthPx), `${label}: 무대 상한 토큰을 못 읽었다`).toBe(true);
-  const expectedStageW = Math.round(Math.min(stage.maxWidthPx, stage.colW));
+  const expectedStageW = Math.round(Math.min(stage.maxWidthPx, stage.trackW));
   expect(
     Math.abs(stage.demoW - expectedStageW),
     `${label}: 시연 무대 폭(${stage.demoW})이 토큰 계산값(${expectedStageW})과 다르다`,
   ).toBeLessThanOrEqual(1);
   /*
-   * **The demo section is one axis: the stage is centred, and so is its heading** (2026-08-23).
+   * **The demo section starts at the origin and closes the column** (2026-09-25).
    *
-   * The first half of this — "the stage is centred" — is what this file asserted from the start,
-   * and it was green the whole time the section was visibly wrong. The stage sat centred under a
-   * hard-left heading, so the section ran two axes; measured at 1920, the ink of the head began at
-   * x=200 while the video began at 569. **A half-checked axis is what let that ship.**
-   *
-   * So the assertion is now the relation, not one side of it: whatever axis the section uses, the
-   * heading's ink and the stage must share it. That stays true if the section is ever moved back
-   * to the left, which the previous wording of this test would not have.
+   * Until this date the section was the page's one centred block — head and stage on the column's
+   * centre line, asserted here as a shared axis (2026-08-23). Measured at 1512 that made the page
+   * run two alignment grammars: every other section's text began at x=200 and this head's ink at
+   * ≈508. From 90rem the head now stands in a track beside the stage, so the relation to hold is
+   * the page's own: the head's ink starts where the column starts, and the stage — keeping its
+   * token width — ends where the column ends. Either half alone would pass a centred section or
+   * a stage floating mid-column; together they are the one layout.
    */
-  const stageMid = stage.demoLeft + stage.demoW / 2;
-  const colMid = stage.colLeft + stage.colW / 2;
+  expect(stage.headInkLeft, `${label}: 절 제목의 글자를 못 읽었다 — 이 시험이 헛돈다`).not.toBeNull();
   expect(
-    Math.abs(stageMid - colMid),
-    `${label}: 시연 무대가 컬럼 가운데에 서지 않았다`,
+    Math.abs(stage.headInkLeft! - stage.colLeft),
+    `${label}: 시연 절 제목(${stage.headInkLeft})이 원점(${stage.colLeft})에서 시작하지 않는다 — ` +
+      "한 페이지에 정렬 문법이 둘이면 눈에는 기둥이 끊겨 보인다",
   ).toBeLessThanOrEqual(1);
-  expect(stage.headInkMid, `${label}: 절 제목의 글자를 못 읽었다 — 이 시험이 헛돈다`).not.toBeNull();
   expect(
-    Math.abs(stage.headInkMid! - stageMid),
-    `${label}: 절 제목(${stage.headInkMid})과 시연 무대(${Math.round(stageMid)})의 축이 다르다 — ` +
-      "한 절에 격자가 둘이면 눈에는 기둥이 끊겨 보인다",
-  ).toBeLessThanOrEqual(2);
+    Math.abs(stage.demoRight - stage.colRight),
+    `${label}: 시연 무대의 오른쪽(${stage.demoRight})이 컬럼 끝(${stage.colRight})에 닿지 않는다 — 비어 있는 오른쪽이 돌아왔다`,
+  ).toBeLessThanOrEqual(1);
   /*
    * **The map frame is the column** (2026-09-08). Until then the map stood in an 11/20 column
    * beside the file and the agent scene was held to that same width ("two sections, one grid",

@@ -92,6 +92,47 @@ test.describe("download hero — the typing echo", () => {
     }
   });
 
+  /**
+   * **The headline lands inside its budget on wall-clock time** (2026-09-25). The typewriter used
+   * to add one character per timer callback, so every late callback delayed the rest of the
+   * sentence: sampled at 1512 the 31-character Korean headline finished 3.7s after arrival and
+   * at 1920 5.0s — still typing through the first read. The sampler lives inside the page (a rAF
+   * loop installed before any app script) because a sampler driven from the runner spends the
+   * very budget it measures (the note in the test above).
+   */
+  test("the headline finishes typing within its budget of the first character", async ({ page }) => {
+    await page.addInitScript(() => {
+      const w = window as unknown as { __typing?: { first: number | null; done: number | null } };
+      w.__typing = { first: null, done: null };
+      const tick = () => {
+        const chars = document.querySelectorAll('[data-testid="gateway-hero"] h1 .gateway-type-ch');
+        const on = document.querySelectorAll('[data-testid="gateway-hero"] h1 .gateway-type-ch.is-on').length;
+        const now = performance.now();
+        if (on > 0 && w.__typing!.first === null) w.__typing!.first = now;
+        if (chars.length > 0 && on === chars.length) {
+          w.__typing!.done = now;
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await seedFirstRunSeen(page);
+    await page.goto("/ko/download/?guides=off", { waitUntil: "load" });
+    await page.waitForFunction(
+      () => (window as unknown as { __typing: { done: number | null } }).__typing.done !== null,
+      undefined,
+      { timeout: 15_000 },
+    );
+    const typing = await page.evaluate(
+      () => (window as unknown as { __typing: { first: number; done: number } }).__typing,
+    );
+    // The budget is 1800ms and the Korean sentence types in ~1.2s at the resting cadence; 1600
+    // leaves one late frame of room without letting a tick-counted run (3–5s) pass.
+    expect(typing.done - typing.first, "the headline took too long to finish typing").toBeLessThanOrEqual(1600);
+  });
+
   test("under reduced motion the sentence and the object are complete from the first frame", async ({ page }) => {
     await openHero(page, "reduce");
     // "Complete from the first frame" is measured as: the count is never partial. The first

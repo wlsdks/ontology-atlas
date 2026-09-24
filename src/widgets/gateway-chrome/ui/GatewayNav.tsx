@@ -159,7 +159,7 @@ export function GatewayNav() {
             rel="noreferrer noopener"
             data-testid="gateway-github-link"
             aria-label={tNav('githubLabel')}
-            className={controlClass({ hoverInk: 'strong', shape: 'icon', size: 'lg', tone: 'muted' })}
+            className={GATEWAY_ICON_LINK}
           >
             <GithubMark size={15} aria-hidden />
           </a>
@@ -180,7 +180,7 @@ export function GatewayNav() {
               rel="noreferrer noopener"
               data-testid="gateway-x-link"
               aria-label={tNav('xLabel')}
-              className={controlClass({ hoverInk: 'strong', shape: 'icon', size: 'lg', tone: 'muted' })}
+              className={GATEWAY_ICON_LINK}
             >
               <XMark size={14} aria-hidden />
             </a>
@@ -195,7 +195,7 @@ export function GatewayNav() {
               data-testid="gateway-x-placeholder"
               aria-disabled="true"
               title={tNav('xPending')}
-              className="inline-flex size-8 cursor-not-allowed items-center justify-center rounded-chip text-[color:var(--color-text-quaternary)]"
+              className="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-chip text-[color:var(--color-text-quaternary)]"
             >
               <XMark size={15} aria-hidden />
               <span className="sr-only">{tNav('xPending')}</span>
@@ -245,6 +245,21 @@ export function GatewayNav() {
  * until hover gives them that surface. It is how «you are here» is said within
  * neutrals, and it opens no new colour (`design.md` — one indigo).
  */
+/**
+ * The repository and X marks — **the icon-button shape, 32×32** (2026-09-25). They were `link`
+ * shapes around a bare 15px glyph, so their boxes measured 15×24 and 14×24: under the 24px floor
+ * across, and a third height in a row whose chips and locale switch stand at 32. The icon shape at
+ * `lg` is the same 32px square, the same chip radius and a hover surface, so the right group reads
+ * as one row of controls.
+ */
+const GATEWAY_ICON_LINK = controlClass({
+  shape: 'icon',
+  size: 'lg',
+  tone: 'muted',
+  hoverInk: 'strong',
+  hoverSurface: 'lift',
+});
+
 function GatewayNavLink({
   href,
   active,

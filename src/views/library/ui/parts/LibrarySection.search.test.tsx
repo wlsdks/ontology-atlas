@@ -423,9 +423,10 @@ describe("the off-template foot counts what the list shows", () => {
       verdicts: new Map([["wiki/sash", verdict(["missing-field:summary"])], ["wiki/lintel", verdict([])]]),
     });
 
-  it("says one page at rest, and nothing once the search hides that page", async () => {
+  it("says nothing at rest, and nothing once the search hides that page", async () => {
     mountTwo();
-    expect(screen.getByTestId("library-off-template-count")).toHaveTextContent("1 page");
+    /* At rest the header strip and the card's own status line already carry it (2026-09-25). */
+    expect(screen.queryByTestId("library-off-template-count")).toBeNull();
     fireEvent.change(screen.getByTestId("library-search"), { target: { value: "Lintel" } });
     await waitFor(() => {
       expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");

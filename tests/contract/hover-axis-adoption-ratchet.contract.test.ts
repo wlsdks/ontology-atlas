@@ -99,8 +99,10 @@ const ROOT = process.cwd();
  *
  * 292 → 290 (2026-09-25): the root error screen's hand-built pills (indigo hover border and
  * fill) became the standard `Button` and `buttonVariants` outline.
+ * 290 → 289 (2026-09-25): the settings sheet's row actions moved onto one chip grammar and
+ * the shared `DETAIL_TOGGLE_CHIP` ink, a net one fewer hand-written hover declaration.
  */
-const CEILING = 290;
+const CEILING = 289;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
