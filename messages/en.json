@@ -1340,15 +1340,13 @@
       "view3dChoice": {
         "flat": "Flat",
         "galaxy": "Galaxy",
-        "ownership": "Cone",
         "strata": "Strata",
         "coupling": "Neural"
       },
       "view3dChoiceHint": {
         "flat": "the ordinary 2D map",
         "galaxy": "the whole map drawn as a sky of stars",
-        "ownership": "stacked in tiers, the way things are contained",
-        "strata": "the same containment, read level by level",
+        "strata": "containment, read level by lit level",
         "coupling": "clustered by what relates to what"
       },
       "mapViewAriaLabel": "Map view",
@@ -3173,6 +3171,18 @@
     "explanationEdit": {
       "saved": "Explanation saved",
       "error": "Could not save the explanation."
+    },
+    "light3d": {
+      "legendLabel": "3D map key",
+      "kindsHeading": "Kinds",
+      "evidenceHeading": "Evidence",
+      "current": "Current {count, number}",
+      "stale": "Stale {count, number}",
+      "unknown": "Unknown {count, number}",
+      "noteReading": "Reading the Git history. Until it is read, everything is unknown.",
+      "noteAppOnly": "The app measures evidence from Git history. Here, everything is unknown.",
+      "noteUnreadable": "The Git history could not be read, so everything is unknown.",
+      "noteNoPaths": "No concept names a code path, so everything is unknown."
     },
     "analysis": {
       "healthStale": "stale evidence",

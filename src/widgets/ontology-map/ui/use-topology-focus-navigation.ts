@@ -11,6 +11,7 @@ import {
   type Rect
 } from "../interaction/free-area";
 import {
+  commitDomeEntrySweep,
   type DomeRuntime
 } from "../model/dome-view";
 import { galaxyInspectionTarget } from "../model/galaxy-inspection-camera";
@@ -48,7 +49,6 @@ interface Dependencies {
   view3dRef: RefObject<boolean>;
   realmTransitionRef: RefObject<RealmTransitionState>;
   domeRuntimeRef: RefObject<DomeRuntime | null>;
-  domeFocusPendingRef: RefObject<{ slug: string | null; } | null>;
   realmDataRef: RefObject<RealmRuntimeData | null>;
   expandedParentsRef: RefObject<ReadonlySet<string>>;
   cameraTokens: <T extends { safeInsetLeft: number; safeInsetRight: number; }>(tokens: T) => T;
@@ -81,7 +81,6 @@ export function useTopologyFocusNavigation({
   view3dRef,
   realmTransitionRef,
   domeRuntimeRef,
-  domeFocusPendingRef,
   realmDataRef,
   expandedParentsRef,
   cameraTokens,
@@ -207,8 +206,21 @@ export function useTopologyFocusNavigation({
     // fails silently (measured 2026-08-18: selecting in 3D never moved the
     // camera scale once). Record a ticket instead, and let the loop's dome step
     // set up the yaw reframe and camera tween together against the live world.
+    /*
+     * **In 3D a click only selects** (2026-09-25, lit 3D). The camera and the pose stay where
+     * the reader put them; flying to a node is its own gesture — a double-click or Enter,
+     * consumed by the dome frame (`DOME_FLY_MS`). A selection still stops the attention
+     * spin ("stop it turning after I click"), so nothing slides out from under a focus.
+     * A deselect does not fly back either: Esc and Home do, and a click on empty space is a
+     * click.
+     */
     if (view3dRef.current && realmTransitionRef.current.phase === "idle" && domeRuntimeRef.current !== null) {
-      domeFocusPendingRef.current = { slug: focusedSlug };
+      const dome = domeRuntimeRef.current;
+      if (focusedSlug !== null) {
+        dome.spinArmed = false;
+        commitDomeEntrySweep(dome);
+      }
+      lastActiveMsRef.current = performance.now();
       return;
     }
 
@@ -306,6 +318,6 @@ export function useTopologyFocusNavigation({
       beginCameraTween(finalTarget);
     });
     return () => cancelAnimationFrame(raf);
-  }, [focusedSlug, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, galaxyRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, galaxyInspectionCameraRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, domeFocusPendingRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef]);
+  }, [focusedSlug, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, galaxyRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, galaxyInspectionCameraRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef]);
 
 }

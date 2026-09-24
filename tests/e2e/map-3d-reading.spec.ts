@@ -19,11 +19,15 @@ test('Neural detail has a visible return path and fitting never paints overlappi
   const target = await page.evaluate(() => {
     type Node = { id: string; kind: string; x: number; y: number; radius: number; hidden: boolean };
     const nodes = (window as unknown as { __atlasMap: { nodes(): Node[] } }).__atlasMap.nodes().filter(node => !node.hidden);
-    return nodes.find(node => node.kind === 'domain' && node.x > 360 && node.x < innerWidth - 150 && node.y > 150 && node.y < innerHeight - 100 &&
+    return nodes.find(node => node.kind === 'domain' && node.x > 360 && node.x < innerWidth - 480 && node.y > 150 && node.y < innerHeight - 100 &&
       !nodes.some(other => other.id !== node.id && Math.hypot(other.x - node.x, other.y - node.y) < other.radius + node.radius + 4));
   });
   expect(target, 'an isolated domain is required to exercise real selection').toBeTruthy();
-  await page.mouse.click(rect.x + target!.x, rect.y + target!.y);
+  // A double-click: since 2026-09-25 a single click in 3D only selects, and the return
+  // transition below needs a view that was actually moved — the fly-to moves it. The target
+  // stays left of where the inspector docks: the first click opens it, and a second click
+  // landing on the panel is a click on the panel.
+  await page.mouse.dblclick(rect.x + target!.x, rect.y + target!.y);
   const panel = page.getByTestId('map-detail-panel');
   await expect(panel).toBeVisible();
   await waitForMapStill(page);
@@ -78,47 +82,47 @@ test('Neural detail has a visible return path and fitting never paints overlappi
   expect(result.overlaps).toEqual([]);
 });
 
-test('reduced motion fades Neural cell light without moving its settled curves', async ({ page }) => {
+/**
+ * **Reduced motion keeps the lit Neural map still** (retargeted 2026-09-25).
+ *
+ * Until the lit 3D direction this watched Neural's indigo cell bloom fade in on the switch
+ * from the Cone. The Cone is gone and both 3D views wear the same evidence light, so a
+ * switch no longer changes the light at all; what reduced motion still owes is stillness.
+ * Switched into Neural under reduced motion, the settled curves must not travel from frame
+ * to frame (no spin, no particle, no morph), and a session with no Git walk must not claim
+ * a single current light.
+ */
+test('reduced motion keeps the lit Neural map still, and claims no light it did not measure', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await seedFirstRunSeen(page);
   await page.addInitScript(() => {
     localStorage.setItem('atlas.appearance.view3d', 'on');
-    localStorage.setItem('atlas.appearance.map-arrangement', 'ownership');
-    const host = window as unknown as { neuralLightFrames: { alpha: number; curves: string }[]; recordNeuralLight: boolean; __atlasMap: { edges(): unknown[] } };
-    host.neuralLightFrames = [];
-    host.recordNeuralLight = false;
-    const proto = CanvasRenderingContext2D.prototype;
-    const draw = proto.drawImage;
-    const fill = proto.fillRect;
-    let sampled = false;
-    proto.fillRect = function (x, y, width, height) {
-      if (this.canvas.dataset.testid === 'ontology-map-canvas' && x === 0 && y === 0 && width > 100 && height > 100) sampled = false;
-      fill.call(this, x, y, width, height);
-    };
-    proto.drawImage = function (image: CanvasImageSource, ...args: number[]) {
-      if (host.recordNeuralLight && !sampled && this.canvas.dataset.testid === 'ontology-map-canvas' && image instanceof HTMLCanvasElement && image.width < 128 && args.length === 4) {
-        sampled = true;
-        host.neuralLightFrames.push({ alpha: this.globalAlpha, curves: JSON.stringify(host.__atlasMap.edges()) });
-      }
-      Reflect.apply(draw, this, [image, ...args]);
-    };
+    localStorage.setItem('atlas.appearance.map-arrangement', 'strata');
   });
   await page.goto('/en/topology/?synth=31&e2e=1&guides=off');
   await waitForDomeEntered(page);
   await waitForMapStill(page);
   await page.getByTestId('topology-view-3d').click();
-  await page.evaluate(() => { (window as unknown as { recordNeuralLight: boolean }).recordNeuralLight = true; });
   await page.getByTestId('topology-view-3d-choice-coupling').click();
-  await expect.poll(() => page.evaluate(() => {
-    const frames = (window as unknown as { neuralLightFrames: { alpha: number }[] }).neuralLightFrames;
-    const tail = frames.slice(-3);
-    return tail.length === 3 && tail[0].alpha > 0.05 && tail.every(frame => Math.abs(frame.alpha - tail[0].alpha) < 0.001);
-  })).toBe(true);
-  const frames = await page.evaluate(() => (window as unknown as { neuralLightFrames: { alpha: number; curves: string }[] }).neuralLightFrames);
-  const settledAlpha = frames.at(-1)!.alpha;
-  const fading = frames.filter(frame => frame.alpha > settledAlpha * 0.05 && frame.alpha < settledAlpha * 0.95);
-  expect(new Set(fading.map(frame => frame.alpha.toFixed(3))).size, 'cell light cut instead of fading').toBeGreaterThan(2);
-  expect(new Set(fading.map(frame => frame.curves)).size, 'reduced-motion curves travelled during the light fade').toBe(1);
-  console.log(`[Neural reduced motion] ${fading.length} fading frames, stationary projected curves`);
+  await waitForDomeEntered(page);
+  await waitForMapStill(page);
+  const samples = await page.evaluate(async () => {
+    type Probe = {
+      edges(): unknown[];
+      dome(): { light: { current: number; stale: number; unknown: number } } | null;
+    };
+    const probe = (window as unknown as { __atlasMap: Probe }).__atlasMap;
+    const out: { curves: string; light: { current: number; stale: number; unknown: number } }[] = [];
+    for (let i = 0; i < 20; i += 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      out.push({ curves: JSON.stringify(probe.edges()), light: probe.dome()!.light });
+    }
+    return out;
+  });
+  expect(new Set(samples.map((s) => s.curves)).size, 'reduced-motion curves travelled').toBe(1);
+  const light = samples.at(-1)!.light;
+  expect(light.unknown, 'no node was drawn with a light').toBeGreaterThan(0);
+  expect(light.current, 'a web session with no Git walk lit a node as current').toBe(0);
+  expect(light.stale).toBe(0);
 });

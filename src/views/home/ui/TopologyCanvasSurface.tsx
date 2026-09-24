@@ -30,6 +30,8 @@ import { Compass, HelpCircle, Play } from "lucide-react";
 import dynamic from "next/dynamic";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
+import { TopologyLightLegend } from "./TopologyLightLegend";
+import { useMapEvidenceStates } from "../model/use-map-evidence-states";
 const VaultStartSteps = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.VaultStartSteps),
   { ssr: false },
@@ -124,6 +126,7 @@ interface TopologyCanvasSurfaceProps {
     | "setRecentNeedsVaultOpen"
     | "needsVaultReason"
     | "setNeedsVaultReason"
+    | "ontologyInsight"
   >;
   acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpRuntime">;
   topologyAuthoring: Pick<
@@ -223,8 +226,15 @@ export function TopologyCanvasSurface({
   const { acpRuntime } = acpRuntimeController;
   const {
     vault, deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, changedSlugs,
-    recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason
+    recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason, ontologyInsight
   } = topologyVaultReadModel;
+  /*
+   * Lit 3D (2026-09-25): the evidence states the light is drawn from — the same rule and the
+   * same Git walk the insights brief uses. Walked only while 3D is on; no other view here
+   * reads it.
+   */
+  const view3dOn = topologyPreferences.view3d;
+  const mapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3dOn });
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
   const { t, tTopologyKeyboardWalk, galaxy, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug, localGraphProjects, resolvedSelectionSlug } = topologyGraphProjection;
@@ -535,6 +545,14 @@ export function TopologyCanvasSurface({
                 view3d={view3d}
                 galaxy={galaxy}
                 mapArrangement={mapArrangement}
+                domeEvidence={mapEvidence.availability === "measured" ? mapEvidence.states : null}
+                domeLightLegend={
+                  <TopologyLightLegend
+                    evidence={mapEvidence}
+                    nodeIds={ontologyMapGraph.nodes.map((node) => node.id)}
+                    kindLabels={domeTierLabels}
+                  />
+                }
                 // The "the viewport changed" event for the 3D selection reframe: true
                 // while the detail panel actually covers the screen, false once its
                 // exit animation ends. On each flip the dome reframes smoothly against
