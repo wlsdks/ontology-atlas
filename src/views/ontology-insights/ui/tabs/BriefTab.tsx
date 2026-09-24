@@ -115,11 +115,16 @@ export function BriefTab({
   const [seenMarked, setSeenMarked] = useState(brief.canUndoSeen);
   return (
     <section data-testid="brief-tab" className="flex flex-col gap-[var(--section-gap)]">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <div className="min-w-0">
+      <div className="flex min-w-0 flex-col">
           <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             {brief.anchor.isDefaultWindow ? t('sinceDefault') : t('sinceSeen', { days: brief.sinceDays })}
           </p>
+        {/*
+          * **The visit mark sits on the headline's row.** Bottom-aligned to the gloss at the far
+          * right it stood ~780px from the sentence it acts on and read as an orphan at 1512 and
+          * 1920 (design sweep, 2026-09-25). On the headline's row it is that sentence's control.
+          */}
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           {/*
             * **The line this screen exists for has to win.** It wore the same step as the page
             * title 144px above it, same size and same weight, so the title read first and did no
@@ -128,11 +133,9 @@ export function BriefTab({
             * screens use that step for their h1 and two go larger, so shrinking this one alone
             * would trade an attention problem for an inconsistency across the product.
             */}
-          <h2 className="mt-1 text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]" data-testid="brief-headline">
+          <h2 className="min-w-0 text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]" data-testid="brief-headline">
             {t('headline', { stale: totals.stale, unknown: totals.unknown })}
           </h2>
-          <p className="mt-2 text-body text-[color:var(--color-text-tertiary)]">{t('sinceGloss')}</p>
-        </div>
         <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
           <p
             role="status"
@@ -173,6 +176,8 @@ export function BriefTab({
             {t('markSeen')}
           </Button>
         </div>
+        </div>
+        <p className="mt-2 text-body text-[color:var(--color-text-tertiary)]">{t('sinceGloss')}</p>
       </div>
       {/*
         * **One band of counts, one list of lines** (owner's direction C, 2026-09-23). Four equal
@@ -212,6 +217,13 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
       {cores.map((core) => {
         const [c1, c2, c3] = COLUMNS[core.core];
         const measured = core.availability === 'measured';
+        /*
+         * "No repository" is said once, as a line in the list below with its connect action.
+         * The band printed it again in two cells (design sweep, 2026-09-25: four times on one
+         * screen), so a cell that cannot split its count for that reason wears the same
+         * hollow-ring "unknown" mark the list uses, with the reason kept for assistive tech.
+         */
+        const noSource = core.availability === 'no-source';
         const unit = t(`unit.${core.core}`);
         return (
           <div
@@ -232,6 +244,8 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
             <span className="flex min-h-[var(--leading-title)] items-baseline gap-1.5">
               {core.headline != null ? (
                 <BandNumber value={core.headline} unit={unit} />
+              ) : noSource ? (
+                <UnknownMark label={t(`bandState.${core.availability}`)} testId={`brief-core-state-${core.core}`} word={t('col.unknown')} />
               ) : (
                 <span className="text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-state-${core.core}`}>
                   {t(`bandState.${core.availability}`)}
@@ -244,6 +258,8 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
                 <CensusSubStat label={t(`col.${c2}`)} value={core.stale ?? 0} tone={core.stale ? 'warning' : 'numeral'} />
                 <CensusSubStat label={t(`col.${c3}`)} value={core.unknown ?? 0} />
               </div>
+            ) : core.headline != null && noSource ? (
+              <UnknownMark label={t(`bandState.${core.availability}`)} testId={`brief-core-state-${core.core}`} word={t('col.unknown')} small />
             ) : core.headline != null ? (
               <span className="text-label text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-state-${core.core}`}>
                 {t(`bandState.${core.availability}`)}
@@ -254,6 +270,17 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
       })}
       </div>
     </div>
+  );
+}
+
+/** The band's "unknown" mark: the list's hollow ring and one word, the reason read aloud. */
+function UnknownMark({ label, word, testId, small = false }: { label: string; word: string; testId: string; small?: boolean }) {
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 text-[color:var(--color-text-tertiary)]', small ? 'text-label' : 'text-body')} data-testid={testId}>
+      <span aria-hidden="true" className="size-2 shrink-0 rounded-full border border-[color:var(--color-text-tertiary)]" />
+      <span aria-hidden="true">{word}</span>
+      <span className="sr-only">{label}</span>
+    </span>
   );
 }
 
@@ -288,19 +315,48 @@ function BriefLineList({
   const t = useTranslations('ontologyPages.insights.brief');
   const appRow = rows.some((row) => row.kind === 'app-only');
   const leaving = useLeavingRows(rows);
+  /*
+   * ⚠️ **One missing repository is one line.** The concepts core and the guides core each
+   * wrote their own "no code repository is connected" row, so the same fact and the same fix
+   * stood twice in one list (design sweep, 2026-09-25). When both cores are stopped by it,
+   * the first row speaks for both, names both cores, and carries the one connect action.
+   */
+  const noSourceCores = rows.flatMap((row) => (row.kind === 'status' && row.status === 'no-source' ? [row.core] : []));
+  const sharedNoSource = noSourceCores.length > 1;
+  /*
+   * The core column names a run once. Four "Concepts" labels down one column read as four
+   * separate headings for one subject; the run's later rows keep the name for a screen
+   * reader and leave the column blank to the eye, so the sentence line stays where it was.
+   */
+  const listed = withLeaving(rows, leaving);
+  const repeatedAt = coreRuns(listed, sharedNoSource);
   return (
     <ol
       data-testid="brief-lines"
       className="flex flex-col divide-y divide-[color:var(--color-divider)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-[var(--card-pad)]"
     >
-      {withLeaving(rows, leaving).map(({ row, leaving: isLeaving }) => {
+      {listed.map(({ row, leaving: isLeaving }, index) => {
         if (isLeaving) {
           return <LeavingRow key={`leaving-${rowKey(row)}`} label={leavingLabel(row, t)} />;
+        }
+        if (row.kind === 'status' && row.status === 'no-source' && sharedNoSource) {
+          if (row.core !== noSourceCores[0]) return null;
+          return (
+            <li key="status-no-source" className={ROW} data-testid={`brief-core-no-source-${row.core}`} data-brief-core={noSourceCores.join(' ')}>
+              <span aria-hidden="true" className={MARK_SLOT} />
+              <span className={CORE_LABEL}>{noSourceCores.map((key) => t(`core.${key}`)).join(t('coreJoin'))}</span>
+              <span className="min-w-0 flex-1 break-keep text-[color:var(--color-text-tertiary)]">{t('noSourceShared')}</span>
+              <DestinationLink href={CORE_NEXT_HREF.ontology} className={LINE_LINK} onOpenTab={onOpenTab}>
+                {t('emptyAction.ontology')}
+              </DestinationLink>
+            </li>
+          );
         }
         if (row.kind === 'line') {
           return (
             <BriefLineRow
               key={row.line.id}
+              repeatCore={repeatedAt[index] ?? false}
               line={row.line}
               core={row.core}
               availability={row.availability}
@@ -322,12 +378,13 @@ function BriefLineList({
                   ? t(row.core === 'ontology' ? 'evidenceNoSource' : 'noSource')
                   : t(row.core === 'ontology' && row.status === 'unreadable' ? 'evidenceUnreadable' : row.status);
           const door = row.status === 'no-data' || row.status === 'no-source';
+          const repeated = repeatedAt[index] ?? false;
           return (
             <li key={`status-${row.core}`} className={ROW} data-testid={`brief-core-${row.status === 'quiet' ? 'quiet' : row.status === 'no-data' ? 'empty' : row.status}-${row.core}`} data-brief-core={row.core}>
               {/* A status row counts nothing, so it wears no state mark: the dash means "happened"
                   and a row saying "nothing here yet" is not an event (design-infoviz, 2026-09-23). */}
               <span aria-hidden="true" className={MARK_SLOT} />
-              <span className={CORE_LABEL}>{t(`core.${row.core}`)}</span>
+              <CoreLabel name={t(`core.${row.core}`)} repeated={repeated} />
               <span className="min-w-0 flex-1 break-keep text-[color:var(--color-text-tertiary)]">{sentence}</span>
               {door ? (
                 <DestinationLink href={CORE_NEXT_HREF[row.core]} className={LINE_LINK} onOpenTab={onOpenTab}>
@@ -350,6 +407,21 @@ function BriefLineList({
       })}
     </ol>
   );
+}
+
+/**
+ * Whether each listed row repeats the core name of the row drawn above it. Leaving rows, the
+ * app row and the shared no-source row all break a run, since each names its own cores.
+ */
+function coreRuns(listed: ReadonlyArray<{ row: BriefRow; leaving: boolean }>, sharedNoSource: boolean): boolean[] {
+  const out: boolean[] = [];
+  let previous: string | null = null;
+  for (const { row, leaving } of listed) {
+    const own = !leaving && (row.kind === 'line' || (row.kind === 'status' && !(sharedNoSource && row.status === 'no-source'))) ? row.core : null;
+    out.push(own !== null && own === previous);
+    previous = own;
+  }
+  return out;
 }
 
 function rowKey(row: BriefRow): string {
@@ -444,6 +516,14 @@ function LeavingRow({ label }: { label: { core: string; sentence: string } }) {
 const ROW = 'flex flex-wrap items-start gap-x-3 gap-y-1 py-3 text-body sm:flex-nowrap';
 /** A fixed column so every sentence starts on one line down the list, whatever the core's name. */
 const CORE_LABEL = 'shrink-0 break-keep text-label leading-body text-[color:var(--color-text-tertiary)] sm:w-24';
+/** The core column's cell; a repeated name stays for a screen reader and leaves the column blank. */
+function CoreLabel({ name, repeated }: { name: string; repeated: boolean }) {
+  return (
+    <span className={CORE_LABEL}>
+      {repeated ? <span className="sr-only">{name}</span> : name}
+    </span>
+  );
+}
 /** A fixed slot for the state mark, so a ring, a dot and a dash all leave the sentence on one line. */
 const MARK_SLOT = 'flex w-2.5 shrink-0 justify-center';
 
@@ -553,7 +633,7 @@ function DestinationLink({
  * rests on. A count whose only destination is another screen counting something else is
  * the falsifier this decision wrote down for itself (PO evidence seat, 2026-09-19).
  */
-function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs, onAskAgent, onOpenTab }: { line: BriefLine; core: BriefCore['core']; availability: BriefCore['availability']; appRowPresent: boolean; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
+function BriefLineRow({ line, core, repeatCore = false, availability, appRowPresent, details, nowMs, onAskAgent, onOpenTab }: { line: BriefLine; repeatCore?: boolean; core: BriefCore['core']; availability: BriefCore['availability']; appRowPresent: boolean; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
   const [open, setOpen] = useState(false);
   const detailId = useId();
   const t = useTranslations('ontologyPages.insights.brief');
@@ -572,7 +652,7 @@ function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs,
     <li className="py-3 text-body text-[color:var(--color-text-primary)]" data-brief-line={line.id} data-brief-state={line.state} data-brief-core={core}>
       <div className="flex flex-wrap items-start gap-x-3 gap-y-1 sm:flex-nowrap">
         <span aria-hidden="true" className={MARK_SLOT}><span className={STATE_MARK[line.state]} /></span>
-        <span className={CORE_LABEL}>{t(`core.${core}`)}</span>
+        <CoreLabel name={t(`core.${core}`)} repeated={repeatCore} />
         {shown.length > 0 ? (
           <div className="min-w-0 flex-1">
             <button
@@ -640,6 +720,17 @@ function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs,
   );
 }
 
+/** Rows grouped by kind, in the order each kind's newest row appears; rows keep their order. */
+function sinceGroups(rows: readonly SinceRow[]): Array<{ kind: SinceRow['kind']; rows: SinceRow[] }> {
+  const groups = new Map<SinceRow['kind'], SinceRow[]>();
+  for (const row of rows) {
+    const list = groups.get(row.kind);
+    if (list) list.push(row);
+    else groups.set(row.kind, [row]);
+  }
+  return [...groups].map(([kind, list]) => ({ kind, rows: list }));
+}
+
 /**
  * The cards count; this names. Everything that happened after the anchor, newest first,
  * from the dates the folder already carries — no list is invented and none is copied.
@@ -653,12 +744,23 @@ function BriefSinceList({ rows, total, nowMs }: { rows: readonly SinceRow[]; tot
       <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
         {t('sinceTitle', { count: total })}
       </h3>
-      <ol className="mt-3 flex flex-col divide-y divide-[color:var(--color-divider)]">
-        {rows.map((row, index) => (
+      {/*
+        * **Grouped by kind, the kind named once.** Every row used to open with its kind
+        * ("Concept doc …" twelve times down the list), so the eye read the same two words before
+        * each name (design sweep, 2026-09-25). A group keeps its rows newest first and the
+        * groups keep the order their newest row set.
+        */}
+      {sinceGroups(rows).map((group) => (
+      <div key={group.kind} className="mt-3" data-since-group={group.kind}>
+      <p className="text-label text-[color:var(--color-text-tertiary)]">
+        {t(`since.${group.kind}`)}
+        <span className="ml-1.5 font-mono tabular-nums text-[color:var(--color-text-quaternary)]">{group.rows.length}</span>
+      </p>
+      <ol className="mt-1 flex flex-col divide-y divide-[color:var(--color-divider)]">
+        {group.rows.map((row, index) => (
           <li key={`${row.core}-${row.at}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-3 text-body sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:py-2" data-since-core={row.core}>
             <span className="col-span-2 min-h-10 min-w-0 line-clamp-2 break-words text-[color:var(--color-text-primary)] sm:col-span-1 sm:min-h-0 sm:line-clamp-1" title={row.label}>
-              <span className="text-[color:var(--color-text-tertiary)]">{t(`since.${row.kind}`)}</span>
-              {' '}
+              <span className="sr-only">{t(`since.${row.kind}`)} </span>
               {row.label}
             </span>
             <time dateTime={row.at} className="font-mono tabular-nums text-label text-[color:var(--color-text-tertiary)]">
@@ -674,6 +776,8 @@ function BriefSinceList({ rows, total, nowMs }: { rows: readonly SinceRow[]; tot
           </li>
         ))}
       </ol>
+      </div>
+      ))}
       <HiddenCountLine
         total={total}
         shown={rows.length}

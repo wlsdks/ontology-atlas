@@ -122,15 +122,16 @@ describe("OverviewTab — 도메인 용량", () => {
   /**
    * **The wrapping link does not change the row's dimensions.** The six rows of this card must share
    * one height for boundary positions to be compared side by side (dimensional regularity). The
-   * value layer's `row` carries a vertical inset (`py-1.5`) and a flex layout (`flex w-full`), and
-   * since the bar inside already has its own layout, both must be emptied — this assertion stops
-   * those three values reappearing in the merged result. jsdom does not compute layout, so what is
+   * value layer's `row` carries a vertical inset (`py-1.5`) and a flex layout (`flex w-full`); the
+   * layout must be emptied because the bar inside has its own, and the inset is replaced by the
+   * board's one list inset (`py-3`, `insights-list.ts`) so every row carries the same one — this
+   * assertion stops the value layer's values reappearing in the merged result. jsdom does not compute layout, so what is
    * measured is the classes, and that is all this layer can measure deterministically.
    */
-  it("링크가 행 높이를 늘리지 않는다 — 세로 인셋 0 · 배치는 막대의 것", () => {
+  it("링크가 행마다 같은 목록 인셋을 쓴다 — 배치는 막대의 것", () => {
     render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
     const classes = screen.getByTestId("insights-domain-row-link").className.split(/\s+/);
-    expect(classes).toContain("py-0");
+    expect(classes).toContain("py-3");
     expect(classes).toContain("block");
     expect(classes).toContain("w-auto");
     expect(classes).not.toContain("py-1.5");

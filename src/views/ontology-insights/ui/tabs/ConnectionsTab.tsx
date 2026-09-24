@@ -21,6 +21,7 @@ import {
   type ImpactRankingLink,
 } from "./ImpactRankingCard";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { INSIGHTS_LIST, INSIGHTS_LIST_ROW } from "../parts/insights-list";
 import { controlClass } from '@/shared/ui/control-class';
 
 export interface ConnectionHubRow {
@@ -165,17 +166,17 @@ export function ConnectionsTab({
                 );
               })}
             </div>
-            {/* Relation types are only 3–4 rows, so the hub card beside it (6 rows) sets the grid
-                height — the leftover vertical space is distributed evenly between rows so the bottom
-                of the card does not look empty (the same treatment as the kind distribution card). */}
-            <div className="mt-2 flex flex-1 flex-col justify-evenly">
+            {/* Rows stack at the board's list rhythm (`insights-list.ts`). Spreading three rows
+                over the height the six hub rows set put them 57-64px apart, a different "list"
+                from the card beside it; the leftover height now sits above the caption line. */}
+            <div className={`mt-2 mb-2.5 ${INSIGHTS_LIST}`}>
               {edgeTypeRows.map((row, i) => {
                 const width = edgeMax > 0 ? Math.max(2, Math.round((row.count / edgeMax) * 100)) : 0;
                 const pct = totalEdges > 0 ? Math.round((row.count / totalEdges) * 100) : 0;
                 return (
                   <div
                     key={row.type}
-                    className="flex items-center gap-3 border-t border-[color:var(--color-divider)] py-2.5 first:border-t-0"
+                    className={`flex items-center gap-3 ${INSIGHTS_LIST_ROW}`}
                   >
                     <OntologyMapTraceMark containment={isContainmentRelation(row.type)} />
                     <span className="w-[var(--insights-row-label-w)] flex-none truncate font-mono text-body text-[color:var(--color-text-primary)]">
@@ -196,7 +197,7 @@ export function ConnectionsTab({
             </div>
           </>
         )}
-        <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+        <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
           {labels.relationTypesCaption}
         </p>
       </section>
@@ -208,7 +209,7 @@ export function ConnectionsTab({
         {/* The hub total is already stated by the truncation copy below ("top 6 / 289 total") — the
             same figure is not printed twice in one card. */}
         <CardHead label={labels.hubsTitle} />
-        <div className="mt-2 flex flex-1 flex-col justify-start">
+        <div className={`mt-2 mb-2.5 ${INSIGHTS_LIST}`}>
           {hubs.length === 0 ? (
             <EmptyState
               size="compact"
@@ -227,7 +228,13 @@ export function ConnectionsTab({
                   href={hubLink.href(hub.id)}
                   aria-label={hubLink.ariaLabel(hub.title)}
                   data-testid="insights-hub-row-link"
-                  className={controlClass({ shape: "chip", className: "-mx-1.5 flex gap-3 border-t border-[color:var(--color-divider)] px-1.5 py-2.5 first:border-t-0 hover:bg-[color:var(--color-overlay-1)]" })}
+                  /*
+                   * A bare divider row, like the relation-type card beside it. The `chip` shape
+                   * drew a border box per row inside the bordered card (three nested borders, and
+                   * the glyph 8px left of the title's start line); `row` has no border, and the
+                   * -mx/px pair lets only the hover surface pass the card inset.
+                   */
+                  className={controlClass({ shape: "row", size: "md", hoverSurface: "lift", className: `-mx-1.5 w-auto gap-3 px-1.5 ${INSIGHTS_LIST_ROW}` })}
                 >
                   <OntologyMapKindGlyph kind={hub.kind} size={16} className="flex-none" />
                   <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-primary)]">
@@ -258,7 +265,7 @@ export function ConnectionsTab({
         </div>
         {/* The truncation copy is appended to the footnote to keep it one line — an optional slot
             that shifts the card height would give two cards in the same grid different anatomies. */}
-        <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+        <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
           {hubTotalCount > hubs.length ? `${labels.hubTruncated(hubs.length, hubTotalCount)} · ` : ""}
           {labels.hubDegreeCaption}
         </p>

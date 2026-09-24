@@ -133,11 +133,60 @@ export function FlowTab({
   const previous = versions?.[1] ?? null;
   const changes = latest && previous ? flowHeadingChanges(latest.answer, previous.answer) : [];
 
+  const actionBlock = agentChecking ? (
+    <p role="status" className="text-label text-[color:var(--color-text-tertiary)]">
+      {labels.checking}
+    </p>
+  ) : pressable ? (
+    <div className="flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        className={controlClass({ shape: "chip", tone: "accent" })}
+        data-testid="flow-prefill"
+        onClick={() => onPrefill?.(request)}
+      >
+        {latest ? labels.rewrite : labels.action}
+      </button>
+      <span className="text-label text-[color:var(--color-text-tertiary)]">{labels.actionHint}</span>
+    </div>
+  ) : (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+        {labels.unavailableTitle}
+      </p>
+      <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">
+        {labels.unavailableBody}
+      </p>
+    </div>
+  );
+
+  const copyButton = (
+    <button
+      type="button"
+      className={controlClass({ shape: "chip", size: "sm" })}
+      data-testid="flow-copy"
+      onClick={copyRequest}
+    >
+      {copied ? labels.copied : labels.copy}
+    </button>
+  );
+
+  const requestFold = (
+    <Disclosure summary={labels.requestLabel} summaryTestId="flow-request-open">
+      <div className="mt-2 flex flex-col gap-2">
+        <div className="flex justify-end">{copyButton}</div>
+        <pre className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 text-label leading-prose text-[color:var(--color-text-secondary)]">
+          {request}
+        </pre>
+      </div>
+    </Disclosure>
+  );
+
   return (
     <section className="flex flex-col gap-4" data-testid="flow-tab">
       <div className="flex flex-col gap-2">
         <InsightsSectionTitle level={2}>{labels.title}</InsightsSectionTitle>
-        <p className="max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{labels.lead}</p>
+        <p className="text-body text-[color:var(--color-text-secondary)]">{labels.lead}</p>
       </div>
 
       {/*
@@ -179,57 +228,40 @@ export function FlowTab({
             <p className="text-label text-[color:var(--color-text-quaternary)]">{labels.versionsLabel(versions.length)}</p>
           ) : null}
         </article>
-      ) : (
-        <div className="flex flex-col gap-1.5 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]" data-testid="flow-no-version">
-          <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{labels.noVersionTitle}</p>
-          <p className="max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{labels.noVersionBody}</p>
-        </div>
-      )}
+      ) : null}
 
-      {agentChecking ? (
-        <p role="status" className="text-label text-[color:var(--color-text-tertiary)]">
-          {labels.checking}
-        </p>
-      ) : pressable ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            className={controlClass({ shape: "chip", tone: "accent" })}
-            data-testid="flow-prefill"
-            onClick={() => onPrefill?.(request)}
-          >
-            {latest ? labels.rewrite : labels.action}
-          </button>
-          <span className="text-label text-[color:var(--color-text-tertiary)]">{labels.actionHint}</span>
-        </div>
+      {latest ? (
+        <>
+          {actionBlock}
+          {requestFold}
+        </>
       ) : (
-        <div className="flex flex-col gap-1.5">
-          <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-            {labels.unavailableTitle}
-          </p>
-          <p className="max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">
-            {labels.unavailableBody}
-          </p>
-        </div>
-      )}
-
-      <Disclosure summary={labels.requestLabel} summaryTestId="flow-request-open">
-        <div className="mt-2 flex flex-col gap-2">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              className={controlClass({ shape: "chip", size: "sm" })}
-              data-testid="flow-copy"
-              onClick={copyRequest}
-            >
-              {copied ? labels.copied : labels.copy}
-            </button>
+        /*
+         * ⚠️ **Before the first writing, the request is the tab's only real object.** Three
+         * 62ch paragraphs stacked down a 1368px column left two thirds of the band empty
+         * (1512x949, 2026-09-25), with the one thing worth checking folded away at the foot.
+         * With nothing written yet, the two halves of the decision sit side by side: what
+         * would appear here and how to start it, and the exact text the agent would receive.
+         */
+        <div className="grid grid-cols-1 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-2">
+          <div className="flex flex-col gap-4 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]" data-testid="flow-no-version">
+            <div className="flex flex-col gap-1.5">
+              <p className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{labels.noVersionTitle}</p>
+              <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{labels.noVersionBody}</p>
+            </div>
+            <div className="mt-auto border-t border-[color:var(--color-divider)] pt-4">{actionBlock}</div>
           </div>
-          <pre className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 text-label leading-prose text-[color:var(--color-text-secondary)]">
-            {request}
-          </pre>
+          <section aria-label={labels.requestLabel} className="flex min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-body text-[color:var(--color-text-secondary)]">{labels.requestLabel}</h3>
+              {copyButton}
+            </div>
+            <pre className="max-h-64 min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 text-label leading-prose text-[color:var(--color-text-secondary)]">
+              {request}
+            </pre>
+          </section>
         </div>
-      </Disclosure>
+      )}
     </section>
   );
 }

@@ -10,6 +10,7 @@ import { controlClass } from "@/shared/ui/control-class";
 import { RecentNodeRow } from "@/widgets/recent-node-row";
 import type { DomainFreshnessRow, RecentUpdateRow } from "../../lib/freshness";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { INSIGHTS_LIST, INSIGHTS_LIST_ROW } from "../parts/insights-list";
 
 const LEVEL_BACKGROUND: Record<0 | 1 | 2 | 3, string> = {
   0: "var(--color-overlay-1)",
@@ -106,10 +107,12 @@ export function FreshnessTab({
    * supported. Order was the only demotion signal on the tab, and order alone loses to mass
    * (design-interaction).
    *
-   * So the panel chrome now belongs to the figure alone: exactly one bordered, filled object
-   * exists on this tab, and these two sit under a divider with a heading one step down. The
-   * accessible outline then says what the eye does — `h2` with two `h3` under it, rather
-   * than three siblings claiming to be peers.
+   * So the panel chrome went to the figure alone, and these two sat under a bare divider.
+   * That traded one defect for another (2026-09-25 design sweep): without a surface their
+   * text started 17px left of every other card's text line and the recent list ran to the
+   * panels' outer edge, so the tab had two start lines. They are panels again, and the
+   * demotion is carried by what the figure has and they do not — its full-width row and
+   * its place first — while the outline still says `h2` with two `h3` under it.
    *
    * The competing prescription was to promote this card's twelve-week strip into the
    * protagonist frame. It was not taken: that strip is derived from file update dates, and
@@ -119,13 +122,19 @@ export function FreshnessTab({
    */
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-2">
+    /*
+     * ⚠️ **Stacked, not paired.** Side by side, three domain strips stood beside twelve recent
+     * rows and the strip card was ~60% empty at 1920 (2026-09-25). The heat strip is a wide
+     * instrument anyway, so it takes the full row; the recent list takes the next one and lays
+     * its rows out in two columns from 960, which is what fills the width instead of a gap.
+     */
+    <div className="flex min-h-0 flex-col gap-[var(--card-gap)]">
       <section
         aria-label={labels.domainFreshnessTitle}
-        className="flex min-h-0 min-w-0 flex-col border-t border-[color:var(--color-divider)] pt-[var(--card-pad)]"
+        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div className="flex items-baseline gap-2">
-          <InsightsSectionTitle level={3} className="text-body font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-secondary)]">
+          <InsightsSectionTitle level={3} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
             {labels.domainFreshnessTitle}
           </InsightsSectionTitle>
           <span className="ml-auto font-mono text-label text-[color:var(--color-text-quaternary)]">{labels.windowCaption}</span>
@@ -147,7 +156,8 @@ export function FreshnessTab({
             </Link>
           </div>
         ) : (
-          <div className="mt-3.5 flex flex-1 flex-col justify-evenly gap-1.5">
+          <div className="mt-2 mb-2.5 flex flex-col">
+            <div className={INSIGHTS_LIST}>
             {domainRows.map((row) => (
               // Row hover highlight — it aids the 700px horizontal scan (label → 12 cells → date)
               // using the same -mx/px offset pattern as the existing hub and recently-updated rows,
@@ -155,7 +165,7 @@ export function FreshnessTab({
               <div
                 key={row.domainId}
                 data-testid="insights-freshness-domain-row"
-                className="-mx-1.5 flex items-center gap-2 rounded-chip px-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                className={`-mx-1.5 flex items-center gap-2 rounded-chip px-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)] ${INSIGHTS_LIST_ROW}`}
               >
                 <span
                   className={
@@ -198,7 +208,8 @@ export function FreshnessTab({
                 </span>
               </div>
             ))}
-            <div className="flex items-center gap-2 text-caption text-[color:var(--color-text-quaternary)]">
+            </div>
+            <div className="mt-1.5 flex items-center gap-2 text-caption text-[color:var(--color-text-quaternary)]">
               <span className="w-[var(--insights-row-label-w)] flex-none" aria-hidden />
               <span className="flex flex-1 items-center justify-between">
                 <span>{labels.axisStart}</span>
@@ -208,7 +219,7 @@ export function FreshnessTab({
             </div>
           </div>
         )}
-        <div className="mt-2.5 flex items-center justify-end gap-1.5 border-t border-[color:var(--color-divider)] pt-2.5 text-caption text-[color:var(--color-text-quaternary)]">
+        <div className="mt-auto flex items-center justify-end gap-1.5 border-t border-[color:var(--color-divider)] pt-2.5 text-caption text-[color:var(--color-text-quaternary)]">
           <span>{labels.older}</span>
           {([0, 1, 2, 3] as const).map((level) => (
             <i key={level} className="h-2.5 w-2.5 flex-none rounded-micro" style={{ backgroundColor: LEVEL_BACKGROUND[level] }} />
@@ -228,18 +239,23 @@ export function FreshnessTab({
 
       <section
         aria-label={labels.recentUpdatesTitle}
-        className="flex min-h-0 min-w-0 flex-col border-t border-[color:var(--color-divider)] pt-[var(--card-pad)]"
+        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div className="flex items-baseline gap-2">
-          <InsightsSectionTitle level={3} className="text-body font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-secondary)]">
+          <InsightsSectionTitle level={3} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
             {labels.recentUpdatesTitle}
           </InsightsSectionTitle>
         </div>
-        <div className="mt-2 flex flex-1 flex-col">
+        <div className="mt-2 mb-2.5 flex flex-col">
           {recent.length === 0 ? (
             <p className="py-2 text-body text-[color:var(--color-text-quaternary)]">{labels.noRecentUpdates}</p>
           ) : (
-            recent.map((row) => (
+            <div
+              data-testid="insights-recent-rows"
+              // The second column's first row drops its divider as the first column's does.
+              className="grid grid-cols-1 @min-[960px]/insights:grid-cols-2 @min-[960px]/insights:gap-x-[var(--card-gap)] @min-[960px]/insights:[&>*:nth-child(2)]:border-t-0"
+            >
+            {recent.map((row) => (
               <RecentNodeRow
                 key={row.nodeId}
                 kind={row.kind}
@@ -253,7 +269,8 @@ export function FreshnessTab({
                 ariaLabel={recentLink.ariaLabel(row.title)}
                 testId="insights-freshness-row-link"
               />
-            ))
+            ))}
+            </div>
           )}
           <HiddenCountLine
             data-testid="insights-recent-hidden"
@@ -338,7 +355,7 @@ export function FreshnessTab({
             ) : null}
           </div>
         ) : null}
-        <div className="mt-2.5 flex items-center justify-between border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+        <div className="mt-auto flex items-center justify-between border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
           <span>{labels.staleCountLabel}</span>
           <span className="font-mono text-body tabular-nums text-[color:var(--map-numeral-face)]">{staleCount}</span>
         </div>

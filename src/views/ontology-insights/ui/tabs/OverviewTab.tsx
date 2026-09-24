@@ -6,6 +6,7 @@ import { DomainCapacityBar, DomainCapacityLegend } from "@/widgets/domain-capaci
 import { InsightsBar } from "../parts/InsightsBar";
 import type { DomainCapacityRow } from "../../lib/domain-capacity";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { INSIGHTS_LIST, INSIGHTS_LIST_ROW } from "../parts/insights-list";
 
 export interface OverviewTabLabels {
   kindCensusTitle: string;
@@ -49,8 +50,9 @@ export interface OverviewTabProps {
 
 /**
  * The "composition" tab — the kind distribution (a coloured stacked bar plus glyph and large
- * meters) and domain capacity (a two-segment capability/element stacked meter). Card gap 20px, and
- * cards fill the height with `flex:1` (no empty bands).
+ * meters) and domain capacity (a two-segment capability/element stacked meter). The two cards are
+ * sized by their content and share one height as grid peers; rows stack at the board's list
+ * rhythm (`insights-list.ts`) and each caption sits on the shared bottom line.
  *
  * **The census instruments left this tab on 2026-09-06.** Concepts, relations and health now sit
  * in the board's four-tile strip above the tab bar (`InsightsCensusStrip`), where they are the
@@ -102,16 +104,16 @@ export function OverviewTab({
             })}
           </div>
           {/*
-            * Rows pack from the top at the domain card's row pitch (48px) instead of spreading
-            * evenly. Four kinds stretched to the domain card's nine rows stood about 100px apart at
+            * Rows pack from the top at the board's list rhythm (`insights-list.ts`) instead of
+            * spreading evenly. Four kinds stretched to the domain card's nine rows stood about 100px apart at
             * 1512x900, so the card read as four islands; packed, a row here sits level with a row
             * beside it (design sweep, 2026-09-23).
             */}
-          <div className="mt-3 flex flex-col">
+          <div className={`mt-2 mb-2.5 ${INSIGHTS_LIST}`}>
             {kindRows.map((row, i) => {
               const width = kindMax > 0 ? Math.max(2, Math.round((row.count / kindMax) * 100)) : 0;
               return (
-                <div key={row.kind} className="flex min-h-12 items-center gap-3">
+                <div key={row.kind} className={`flex items-center gap-3 ${INSIGHTS_LIST_ROW}`}>
                   <span className="flex w-[var(--insights-row-label-w)] flex-none items-center gap-2 text-body-lg text-[color:var(--color-text-secondary)]">
                     <OntologyMapKindGlyph kind={row.kind} size={16} />
                     {kindLabel(row.kind)}
@@ -126,7 +128,9 @@ export function OverviewTab({
               );
             })}
           </div>
-          <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+          {/* `mt-auto`: the two cards in this row share one height, so their captions share
+              one bottom line instead of one of them floating mid-card. */}
+          <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
             {labels.kindGlyphCaption}
           </p>
         </section>
@@ -159,12 +163,14 @@ export function OverviewTab({
               </Link>
             </div>
           ) : (
-            <div className="mt-3.5 flex min-h-0 flex-1 flex-col">
+            <div className="mt-3.5 mb-2.5 flex min-h-0 flex-col">
               {/* The key to the bar's two pieces appears once per card — repeating it per row is noise. */}
               <DomainCapacityLegend
                 labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
               />
-              <div className="mt-2.5 flex flex-1 flex-col justify-evenly gap-1">
+              {/* Rows stack at the board's list rhythm rather than spreading to fill the card:
+                  three domains stood ~79px apart for 8px bars when they were spread evenly. */}
+              <div className={`mt-1 ${INSIGHTS_LIST}`}>
                 {/*
                  * **The row is the door to the map** (census 2026-08-12: this tab had zero
                  * pressable controls). **The consumer wraps the link** — the bar component is
@@ -175,7 +181,7 @@ export function OverviewTab({
                  * What the wrapping link adds is only **hit area, hover, focus ring, and a finger
                  * floor**; it does not move the row's layout by one pixel: `block`/`w-auto` empty
                  * out the value layer's flex row layout (the bar inside already has its own), and
-                 * `py-0` returns the vertical inset to zero so **the row height is unchanged**
+                 * `py-3` is the board's list inset, the same on every row, so **all rows share one height**
                  * (dimensional regularity — six rows must share one height for boundary positions
                  * to be compared side by side). Horizontally it matches the hub rows'
                  * `-mx-1.5 px-1.5`, so only the hover surface extends 6px past the card inset while
@@ -190,7 +196,7 @@ export function OverviewTab({
                     className={controlClass({ hoverSurface: 'lift',
                       shape: "row",
                       size: "sm",
-                      className: "-mx-1.5 block w-auto px-1.5 py-0",
+                      className: "-mx-1.5 block w-auto px-1.5 py-3",
                     })}
                   >
                     <DomainCapacityBar
@@ -207,7 +213,7 @@ export function OverviewTab({
               prose explaining a picture that is not there is noise, not information. It is attached
               only when there are rows. */}
           {domainRows.length > 0 ? (
-            <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+            <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
               {labels.domainCapacityCaption}
             </p>
           ) : null}

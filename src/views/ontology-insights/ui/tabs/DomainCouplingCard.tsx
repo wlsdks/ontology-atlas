@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Link } from "@/i18n/navigation";
 import { OntologyMapKindGlyph } from "@/shared/ui";
 import { relationTypeIndigo } from "../../lib/relation-type-tone";
@@ -8,6 +8,7 @@ import type {
   DomainCouplingPairRow,
 } from "../../lib/domain-coupling-rows";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { INSIGHTS_LIST, INSIGHTS_LIST_ROW } from "../parts/insights-list";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
 import { controlClass } from '@/shared/ui/control-class';
 
@@ -161,23 +162,29 @@ export function DomainCouplingCard({
             The empty state's guidance sits **centred** in that reserved space. Pinned to the top
             it left 58px below (measured 2026-07-26) and read as a dead gap between two captions
             rather than a reserved slot. */}
+        {/*
+          * **One caption row, and the selection replaces it.** Two grey paragraphs sat under the
+          * grid, one of them centred in a reserved 76px slot, and the card read as a matrix with
+          * a footnote block under it (1512x949: 84px of dead card below them). How to read the
+          * grid and how to open a cell are one sentence pair now; picking a cell puts the pair's
+          * connections in the same slot, and the slot keeps its floor so the card does not jump.
+          */}
         <div
           data-testid="domain-coupling-selection"
-          className="mt-2.5 flex min-h-[76px] flex-col justify-center border-t border-[color:var(--color-divider)] pt-2.5"
+          className="mt-auto flex min-h-[76px] flex-col justify-start border-t border-[color:var(--color-divider)] pt-2.5"
         >
           {selected ? (
             <SelectedPairDetail pair={selected} edgeTypeLabel={edgeTypeLabel} nodeLink={nodeLink} />
           ) : (
-            <p className="text-label text-[color:var(--color-text-quaternary)]">{labels.gridSelectHint}</p>
+            <p className="text-label leading-body text-[color:var(--color-text-quaternary)]">
+              {grid.totalDomainCount > grid.domains.length
+                ? `${labels.gridTruncated(grid.domains.length, grid.totalDomainCount)} · `
+                : ""}
+              {grid.hiddenCrossEdgeCount > 0 ? `${labels.gridHiddenCross(grid.hiddenCrossEdgeCount)} · ` : ""}
+              {labels.gridCaption} {labels.gridSelectHint}
+            </p>
           )}
         </div>
-        <p className="mt-2.5 text-label text-[color:var(--color-text-quaternary)]">
-          {grid.totalDomainCount > grid.domains.length
-            ? `${labels.gridTruncated(grid.domains.length, grid.totalDomainCount)} · `
-            : ""}
-          {grid.hiddenCrossEdgeCount > 0 ? `${labels.gridHiddenCross(grid.hiddenCrossEdgeCount)} · ` : ""}
-          {labels.gridCaption}
-        </p>
       </section>
 
       <section
@@ -185,7 +192,7 @@ export function DomainCouplingCard({
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <CardHead label={labels.boundaryTitle} unit={labels.boundaryCountUnit} count={domainCount} />
-        <div className="mt-3 flex flex-1 flex-col justify-evenly gap-2.5">
+        <div className={`mt-2 mb-2.5 ${INSIGHTS_LIST}`}>
           {boundaries.map((row) => {
             // The bar is the cross share itself (0–100%). No max-value normalization, because the
             // share is already on a 0–100 scale — dividing again by the list's maximum would
@@ -193,7 +200,7 @@ export function DomainCouplingCard({
             const crossPct = Math.round(row.crossRatio * 100);
             const width = crossPct > 0 ? Math.max(2, crossPct) : 0;
             return (
-              <div key={row.id} className="flex flex-col gap-1">
+              <div key={row.id} className={`flex flex-col justify-center gap-1.5 ${INSIGHTS_LIST_ROW}`}>
                 <div className="flex items-center gap-2 text-body text-[color:var(--color-text-secondary)]">
                   <OntologyMapKindGlyph kind="domain" size={14} className="flex-none" />
                   <span className="min-w-0 flex-1 truncate">{row.title}</span>
@@ -214,7 +221,7 @@ export function DomainCouplingCard({
             );
           })}
         </div>
-        <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+        <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
           {boundaryTotalCount > boundaries.length
             ? `${labels.gridTruncated(boundaries.length, boundaryTotalCount)} · `
             : ""}
@@ -280,19 +287,30 @@ function CouplingGrid({
   // The name column is capped at 14rem. Left as `1fr` it eats the whole card width, putting
   // hundreds of px between the name and the cells so reading one row drags the eye across the screen.
   //
-  // The cell size has two steps (`--coupling-cell`). Narrow screens stay at 28px to prevent
-  // horizontal overflow, and from lg it grows to 44px so the card is filled by the grid —
+  // The cell size once had two steps (`--coupling-cell`): 28px on narrow screens to prevent
+  // horizontal overflow, 44px from lg so the card is filled by the grid —
   // measured 2026-07-26, a 404×197 grid sat inside a 735px card leaving 45% of the right side
   // empty, and that gap made the screen read as unfinished. What grew is data ink, not
   // whitespace (the digits move up one ramp step, 11px → 12.5px).
+  //
+  // ⚠️ **The cell is sized by the card, not by a breakpoint** (2026-09-25). Two fixed steps
+  // (28 / 44px) left three domains as a 180px block in a 510px card, with 84px of dead card under
+  // it at 1512 and 215px at 1920. The cell now takes the card's inline size shared out over the
+  // columns, clamped to 28-64px: few domains draw large, countable cells that fill the card, and
+  // six still fit a phone without horizontal scroll. The name column gives up the 4rem it
+  // reserved beyond its measured need (10rem) before a cell shrinks.
+  const n = Math.max(1, grid.domains.length);
   const template = `minmax(0,14rem) repeat(${grid.domains.length}, var(--coupling-cell))`;
+  const cell = `clamp(1.75rem, calc((100cqw - 10rem - ${n * 2}px) / ${n}), 4rem)`;
 
   return (
+    <div className="@container/coupling mt-2.5 w-full min-w-0">
     <div
       role="grid"
       aria-label={labels.title}
       data-testid="domain-coupling-grid"
-      className="mt-2.5 flex w-fit max-w-full flex-col gap-0.5 [--coupling-cell:1.75rem] lg:[--coupling-cell:2.75rem]"
+      className="flex w-fit max-w-full flex-col gap-0.5"
+      style={{ "--coupling-cell": cell } as CSSProperties}
     >
       <div role="row" className="grid items-center gap-0.5" style={{ gridTemplateColumns: template }}>
         {/* The empty header above the name column. `sr-only` is absolute and drops out of the grid
@@ -403,6 +421,7 @@ function CouplingGrid({
           })}
         </div>
       ))}
+    </div>
     </div>
   );
 }
