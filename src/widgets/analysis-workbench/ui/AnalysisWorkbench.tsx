@@ -9,7 +9,7 @@ import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compar
 import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
 import { Checkbox, Chip, Disclosure, EmptyState, IconButton, OntologyMapKindGlyph, Select, TabBar, Textarea, useToast } from '@/shared/ui';
-import { RotateCcw, X } from 'lucide-react';
+import { History as HistoryIcon, RotateCcw, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { MeaningTransitionHistory } from './MeaningTransitionHistory';
 
@@ -168,6 +168,7 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
     && record.mode === context.mode && record.scope.projectSlug === context.scope.projectSlug
     && record.scope.profileSlug === context.scope.profileSlug), [records, context.mode, context.scope.projectSlug, context.scope.profileSlug]);
   const selected = runs.find((run) => run.id === selectedId) ?? runs[0] ?? null;
+  const emptyArchive = !runs.length && Boolean(context.handle) && loaded?.handle === context.handle && !readPending && !error;
   const saved = saveState?.handle === context.handle ? saveState : null;
   /*
    * **A saved analysis is news, not furniture** (owner, 2026-09-06). The report used to
@@ -362,18 +363,32 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
       </div> : null}
       {!context.handle ? <p>{t('openFolder')}</p> : null}
       {context.handle && readPending ? <p role="status">{t('loadingHistory')}</p> : null}
-      {!runs.length && context.handle && loaded?.handle === context.handle && !readPending && !error ? <EmptyState
+      {/*
+        ⚠️ **The empty archive is the tab's one subject, set in its free well** (round two,
+        2026-09-25). As a left card at the top it left about 55% of the panel bare under it, and
+        its primary said "Run a new analysis" for a scope that had never been analyzed. It now
+        stands centred in the space under the judgment record; its primary is Analyze, the meaning
+        tab's own words; and on the web, where no agent can run, it says so rather than offering a
+        reread alone. The caveat qualifies Analyze, so it stands in the card only when Analyze does.
+      */}
+      {emptyArchive ? <div data-testid="analysis-history-empty" className="flex flex-1 flex-col justify-center pb-12"><EmptyState
         size="compact"
-        title={t('empty')}
-        description={t('emptyEffect')}
+        align="center"
+        icon={<HistoryIcon aria-hidden />}
+        title={<span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t('empty')}</span>}
+        description={<span className="mx-auto block max-w-[46ch]">
+          {t('emptyEffect')}
+          {onRequest ? null : <span className="mt-2 block">{t('agentUnavailable')}</span>}
+        </span>}
         action={<>
-          {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('reanalyze')}</Chip> : null}
+          {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip> : null}
           <Chip size="lg" onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden />{t('refresh')}</Chip>
+          {onRequest ? <p className="basis-full pt-1 text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
         </>}
-      /> : null}
+      /></div> : null}
       {/* The caveat stands once, beside the action it qualifies — it used to close the tab as a
           footer, repeating the meaning tab's copy at the far end of the scroll. */}
-      {context.handle && (runs.length || loaded?.handle === context.handle) ? <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
+      {runs.length ? <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
       {selected ? <>
         {selected === runs[0] && earlierQuestions.length ? <Disclosure summary={t('earlierQuestions', { count: earlierQuestions.length })}>
           <p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('earlierQuestionsNote')}</p>

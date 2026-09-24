@@ -58,14 +58,4 @@ describe("resolveContextualIndexState", () => {
       }),
     ).toBe("expanded");
   });
-
-  it("folds INDEX on a crowded window even when the node was picked from INDEX", () => {
-    const pickedFromIndex = { ...resting, selectionActive: true, selectionManualExpand: true };
-    expect(resolveContextualIndexState({ ...pickedFromIndex, selectionCrowded: true })).toBe("collapsed");
-    expect(resolveContextualIndexState(pickedFromIndex)).toBe("expanded");
-    // Pressing the folded tab during the selection is an explicit ask, and wins.
-    expect(
-      resolveContextualIndexState({ ...pickedFromIndex, selectionCrowded: true, selectionManualExpandByTab: true }),
-    ).toBe("expanded");
-  });
 });

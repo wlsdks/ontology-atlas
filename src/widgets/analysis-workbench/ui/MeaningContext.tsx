@@ -77,15 +77,21 @@ export function MeaningContext({ node, relations, onSelectRelation, onEvidence, 
         {missingReasons > 0 ? <p data-testid="meaning-relations-missing-reasons" className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('rationaleMissingGroup', { count: missingReasons })}</p> : null}
       </div>
       {relations.length ? <ul className="flex flex-col gap-2">{relations.map((relation) => <li key={relation.id}><article className="flex flex-col gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
+        {/*
+          Round two (2026-09-25): the tag leads the card as its eyebrow and the actions follow the
+          text from the same start line, at the column's one chip size. With the tag at the left
+          of the action row and md chips pushed to the far right, a 460px card at 1920 carried a
+          hollow band between them, and the column showed two chip heights.
+        */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span data-testid="meaning-relation-type" className={badgeClass({ shape: 'tag', className: 'border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]' })}>{relation.typeLabel}</span>
+          {mixedReasons && !relation.why ? <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('rationaleMissingShort')}</span> : null}
+        </div>
         <p className="text-body leading-body font-[var(--font-weight-strong)]">{relation.sentence}</p>
         {relation.why ? <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{relation.why}</p> : null}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={badgeClass({ shape: 'tag', className: 'borderborder-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]' })}>{relation.typeLabel}</span>
-          {mixedReasons && !relation.why ? <span className="text-label leading-label text-[color:var(--color-text-quaternary)]">{t('rationaleMissingShort')}</span> : null}
-          <span className="ms-auto flex flex-wrap gap-1.5">
-            <Chip size="md" onClick={() => onSelectRelation(relation.id)}>{t('showConnection')}</Chip>
-            {relation.declaredBy ? <Chip size="md" onClick={() => onEvidence(relation.declaredBy!)}>{t('declaringDocument')}</Chip> : null}
-          </span>
+        <div className="flex flex-wrap gap-2 pt-0.5">
+          <Chip size="lg" onClick={() => onSelectRelation(relation.id)}>{t('showConnection')}</Chip>
+          {relation.declaredBy ? <Chip size="lg" onClick={() => onEvidence(relation.declaredBy!)}>{t('declaringDocument')}</Chip> : null}
         </div>
       </article></li>)}</ul> : <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('relationGuide')}</p>}
     </section> : null}

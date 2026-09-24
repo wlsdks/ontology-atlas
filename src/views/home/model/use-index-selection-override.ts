@@ -5,11 +5,6 @@ import { useCallback, useReducer } from 'react';
 export interface IndexSelectionOverrideState {
   selectionActive: boolean;
   manualExpand: boolean;
-  /**
-   * The expansion came from the person pressing the folded tab during this selection, not from
-   * picking the row in INDEX. On a crowded window only this one outranks the automatic fold.
-   */
-  byTab: boolean;
 }
 
 export type IndexSelectionOverrideAction =
@@ -20,7 +15,6 @@ export type IndexSelectionOverrideAction =
 export const INITIAL_INDEX_SELECTION_OVERRIDE: IndexSelectionOverrideState = {
   selectionActive: false,
   manualExpand: false,
-  byTab: false,
 };
 
 /**
@@ -33,14 +27,14 @@ export function indexSelectionOverrideReducer(
   action: IndexSelectionOverrideAction,
 ): IndexSelectionOverrideState {
   if (action.type === 'begin-expanded-selection') {
-    return { selectionActive: true, manualExpand: true, byTab: false };
+    return { selectionActive: true, manualExpand: true };
   }
   if (action.type === 'selection-session') {
     if (action.active === state.selectionActive && !state.manualExpand) return state;
-    return { selectionActive: action.active, manualExpand: false, byTab: false };
+    return { selectionActive: action.active, manualExpand: false };
   }
-  if (!state.selectionActive || (state.manualExpand && state.byTab)) return state;
-  return { ...state, manualExpand: true, byTab: true };
+  if (!state.selectionActive || state.manualExpand) return state;
+  return { ...state, manualExpand: true };
 }
 
 /**
@@ -50,8 +44,6 @@ export function indexSelectionOverrideReducer(
  */
 export function useIndexSelectionOverride(selectionActive: boolean): {
   manualExpand: boolean;
-  /** `manualExpand`, counted only when the folded tab was pressed during this selection. */
-  manualExpandByTab: boolean;
   markManualExpand: () => void;
   beginExpandedSelection: () => void;
 } {
@@ -72,7 +64,6 @@ export function useIndexSelectionOverride(selectionActive: boolean): {
 
   return {
     manualExpand: selectionActive && state.selectionActive ? state.manualExpand : false,
-    manualExpandByTab: selectionActive && state.selectionActive ? state.manualExpand && state.byTab : false,
     markManualExpand,
     beginExpandedSelection,
   };

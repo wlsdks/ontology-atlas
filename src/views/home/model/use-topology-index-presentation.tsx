@@ -8,8 +8,7 @@ import { readFirstRunStarterDismissed, writeFirstRunStarterDismissed } from "@/f
 import { useSurfaceSwap } from "@/shared/lib/use-presence";
 import { VAULT_START_STEPS_DISMISSED_KEY } from "@/widgets/topology-controls";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { INDEX_SELECTION_CROWDED_BELOW_PX, resolveContextualIndexState } from "../lib/resolve-contextual-index-state";
-import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
+import { resolveContextualIndexState } from "../lib/resolve-contextual-index-state";
 import { useIndexSelectionOverride } from "./use-index-selection-override";
 
 interface Options {
@@ -49,7 +48,6 @@ export function useTopologyIndexPresentation({
   const topologySelectionActive = Boolean(v2DatasheetModel) && !nodePopoverDismissed;
   const {
     manualExpand: indexManualExpandDuringSelection,
-    manualExpandByTab: indexManualExpandByTabDuringSelection,
     markManualExpand: markIndexManualExpandDuringSelection,
     beginExpandedSelection: beginExpandedIndexSelection,
   } = useIndexSelectionOverride(topologySelectionActive);
@@ -144,13 +142,6 @@ export function useTopologyIndexPresentation({
   const startStepsVisible =
     canCreateNode && !startStepsDismissed && !agentDockRequestedOpen;
 
-  /*
-   * Desktop widths where INDEX, the node panel and the map do not fit together. Below `lg` the
-   * node sheet already paints over INDEX (`indexDemotedByNodeSheet`) and the list must still be
-   * there when the sheet closes, so the phone and tablet flow is left alone.
-   */
-  const belowCrowded = useViewportBelow(INDEX_SELECTION_CROWDED_BELOW_PX);
-  const belowLg = useViewportBelow(LG_BREAKPOINT_PX);
   const renderedIndexState = resolveContextualIndexState({
     baseState: baseRenderedIndexState,
     meaningEditorOpen: Boolean(meaningEditorIntent),
@@ -160,8 +151,6 @@ export function useTopologyIndexPresentation({
     // requested INDEX context stays visible beside the selected node.
     selectionManualExpand:
       indexManualExpandDuringSelection || indexState === "expanded",
-    selectionCrowded: belowCrowded && !belowLg,
-    selectionManualExpandByTab: indexManualExpandByTabDuringSelection,
     graphEmpty: topologyGraphEmpty,
     emptyManualExpand: indexManualExpandWhileEmpty,
     agentDockOpen: agentDockRequestedOpen,

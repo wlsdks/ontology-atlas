@@ -4869,7 +4869,7 @@
     "close": "Close conversation",
     "composerPlaceholder": "Ask about this folder, or give it a task",
     "composerPlaceholderSubject": "Ask about {subject}, or give it a task",
-    "startingSuggestions": "Ready to ask as soon as it opens",
+    "startingSuggestions": "Good first requests",
     "composerHint": "Enter to send · ⇧Enter for a new line",
     "history": "Past chats",
     "newChat": "New chat",
