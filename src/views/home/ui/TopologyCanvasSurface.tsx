@@ -763,7 +763,7 @@ export function TopologyCanvasSurface({
         {/* Filter context: shown when fewer nodes are visible than exist, so the
                   local graph or a category filter having reduced them is explained. */}
         {topologyVisibleCount !== null && topologyVisibleCount < localGraphProjects.length ? (
-          <div className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] md:left-[228px] xl:left-[236px]">
+          <div data-toast-wall="bottom" className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] md:left-[228px] xl:left-[236px]">
             filter · {topologyVisibleCount} / {localGraphProjects.length}
           </div>
         ) : null}
@@ -791,6 +791,8 @@ export function TopologyCanvasSurface({
         <div
           ref={readoutStackRef}
           data-testid="topology-readout-stack"
+          // A toast stands above this reading, not on it (`src/shared/ui/toast-walls.ts`).
+          data-toast-wall="bottom"
           className={cn(
             "pointer-events-none absolute bottom-[var(--topology-relation-legend-bottom-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none",
             readoutStepsAside ? "opacity-0" : "opacity-100",

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Bell } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
 
 import { Link } from '@/i18n/navigation';
 import { getTopologyFocusHref } from '@/entities/project';
@@ -12,7 +11,6 @@ import { controlClass } from '@/shared/ui/control-class';
 import { Surface } from '@/shared/ui/surface';
 import { cn } from '@/shared/lib/cn';
 import { elapsedParts } from '@/shared/lib/elapsed';
-import { MOTION } from '@/shared/motion';
 import { AgentInboxPanel, MarkAllReadDoor } from './AgentInboxPanel';
 import { AgentWorkFact } from './AgentWorkFact';
 import { deriveBellInbox } from '../model/bell-inbox';
@@ -35,6 +33,8 @@ import type { AgentLiveWorkInput } from '../model/agent-work-projection';
 export function AgentActivityChip({
   suppressed = false,
   liveWork = null,
+  conversationOpen = false,
+  compact = false,
   onOpenChange,
   onOpenNode,
   onOpenConversation,
@@ -42,6 +42,21 @@ export function AgentActivityChip({
   suppressed?: boolean;
   /** The current state the in-app ACP on the right already knows. Updates the same chip before file polling. */
   liveWork?: AgentLiveWorkInput | null;
+  /**
+   * The conversation panel is open beside the map.
+   *
+   * That panel already streams the in-app turn — its step, its tools, its words — so the
+   * toolbar saying the same thing again is the same fact in two places (2026-09-19,
+   * "nothing said twice"; owner, 2026-09-24, on exactly this pair). While it is open, an
+   * **in-app** turn's status leaves the toolbar. Work the panel does not show — another
+   * agent's heartbeat, a recent write on disk — still speaks here.
+   */
+  conversationOpen?: boolean;
+  /**
+   * The lane is in its icon-first state (a docked panel beside it, or a focus). The
+   * status then folds to its dot and elapsed time, like every other chip in the row.
+   */
+  compact?: boolean;
   /**
    * Reports when the notification box opens and closes.
    *
@@ -73,7 +88,6 @@ export function AgentActivityChip({
   const t = useTranslations('agentActivity');
   const format = useFormatter();
   const feed = useAgentActivityFeed(liveWork);
-  const reducedMotion = useReducedMotion();
   /*
    * Derived here rather than inside the panel: the bell's own badge has to know whether
    * anything waits on the person **before** the panel is ever opened.
@@ -163,7 +177,7 @@ export function AgentActivityChip({
 
   const showBell =
     (feed.notificationsEnabled && feed.notifications.length > 0) || feed.workReceipts.length > 0;
-  const showStatus = feed.showStatus;
+  const showStatus = feed.showStatus && !(liveWork !== null && conversationOpen);
   // While the stack has receded (during a datasheet investigation) it **unmounts** — the stack
   // disappears by `opacity-0` alone, so leaving it makes an invisible but clickable, focusable control.
   if (suppressed) return null;
@@ -222,154 +236,146 @@ export function AgentActivityChip({
       data-testid="agent-activity-chip"
       data-work-mode={feed.work.mode}
     >
-      {showStatus ? (
-        <motion.div
-          layout={!reducedMotion}
-          transition={MOTION.base}
-          className={cn(
-            CHROME_STATUS_CHIP_CLASS,
-            'absolute right-0 top-[calc(100%+8px)] w-max min-w-0 max-w-[min(var(--git-setup-measure),calc(100vw-var(--chrome-inset)*2))]',
-          )}
-          data-agent-activity-status-slot="utility-row-below"
-          data-writing={feed.writing ? 'true' : 'false'}
-        >
-          <motion.button
-            layout={reducedMotion ? false : 'position'}
-            transition={MOTION.base}
-            ref={statusRef}
-            type="button"
-            aria-haspopup="true"
-            aria-expanded={openSurface === 'status'}
-            aria-label={t('statusAria', { status: statusLabel })}
-            data-testid="agent-activity-status-trigger"
-            onClick={() => openPanel('status')}
-            className={controlClass({
-              shape: 'link',
-              hoverInk: 'strong',
-              className: 'min-w-0 gap-1.5 text-left text-inherit',
-            })}
-          >
-            <span
-              aria-hidden
-              data-testid="agent-activity-dot"
-              className={cn(
-                'inline-block size-1.5 shrink-0 rounded-full',
-                feed.writing
-                  ? 'bg-[color:var(--color-indigo-accent)]'
-                  : 'bg-[color:var(--color-text-quaternary)]',
-              )}
-            />
-            <span
-              data-testid="agent-activity-status"
-              className="flex min-w-0 items-baseline gap-1.5 text-[color:var(--color-text-primary)]"
-            >
-              <AgentWorkFact text={feed.work.mode === 'live' ? liveLabel : statusLabel} />
-              {feed.work.mode === 'live' && elapsed ? (
-                <span className="shrink-0 font-mono tabular-nums text-[color:var(--color-text-tertiary)]">
-                  · {elapsed}
-                </span>
-              ) : null}
-            </span>
-          </motion.button>
-          {feed.lastNode ? (
-            <motion.span
-              layout={reducedMotion ? false : 'position'}
-              transition={MOTION.base}
-              className="flex min-w-0 items-center gap-1.5 max-md:hidden"
-            >
-              <span aria-hidden className="shrink-0 text-[color:var(--color-text-quaternary)]">
-                ·
-              </span>
-              {onOpenNode ? (
-                <button
-                  type="button"
-                  onClick={() => onOpenNode(feed.lastNode!.slug)}
-                  data-testid="agent-activity-target"
-                  aria-label={t('openOnMap', { name: feed.lastNode.name })}
-                  className={controlClass({
-                    shape: 'link',
-                    tone: 'accent',
-                    hoverInk: 'strong',
-                    className:
-                      'min-w-0 max-w-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
-                  })}
-                >
-                  <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
-                    {targetPrefix}:
-                  </span>
-                  <AgentWorkFact text={feed.lastNode.name} />
-                </button>
-              ) : (
-                <Link
-                  href={getTopologyFocusHref(feed.lastNode.slug)}
-                  data-testid="agent-activity-target"
-                  aria-label={t('openOnMap', { name: feed.lastNode.name })}
-                  className={controlClass({
-                    shape: 'link',
-                    tone: 'accent',
-                    hoverInk: 'strong',
-                    className:
-                      'min-w-0 max-w-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
-                  })}
-                >
-                  <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
-                    {targetPrefix}:
-                  </span>
-                  <AgentWorkFact text={feed.lastNode.name} />
-                </Link>
-              )}
-            </motion.span>
-          ) : null}
-        </motion.div>
-      ) : null}
+      {/*
+        **The status is a segment of the activity control, not a box under it** (owner,
+        2026-09-24: *"the toast at the top — the design is poor, the colour too, and the
+        position"*, pointing at this line during an in-app turn). It used to hang 8px under
+        the toolbar's right end, `absolute`, attached to nothing: measured at 1040 it lay
+        across the search lane's second row (832–918 × 74–98 over 804–1016 × 76–112), and
+        at 1512 with the meaning panel open a toast covered it. Now it is the left half of
+        one control whose right half is the bell, in the toolbar row itself, so it can
+        neither float over the map nor collide with a lane it does not belong to.
 
-      {showBell ? (
-        <ChromeChip
-          ref={bellRef}
-          compact
-          active={openSurface === 'notifications'}
-          onClick={() => openPanel('bell')}
-          aria-haspopup="true"
-          aria-expanded={openSurface === 'notifications'}
-          aria-label={
-            todoCount > 0
-              ? t('bellTodoAria', { count: todoCount })
-              : inbox.unreadResults > 0
-                ? t('bellUnreadAria', { count: inbox.unreadResults })
-                : t('bellAria')
-          }
-          data-testid="agent-activity-bell"
-          data-agent-activity-bell-slot="utility-row-end"
-          /*
-           * The bell carries its own state, not just a badge beside it. Reported
-           * 2026-08-24: with the count sitting in a 16px badge, a bell holding nine
-           * unread receipts and an empty bell read the same at a glance. Filling the
-           * glyph and lifting it to primary ink changes the **shape and weight** of
-           * the mark, so "there is something here" survives a squint and does not
-           * depend on noticing a small badge -- or on colour alone.
-           */
-          className={cn(
-            'relative shrink-0 overflow-visible',
-            badgeCount > 0 && 'text-[color:var(--color-text-primary)]',
-          )}
-          icon={<Bell aria-hidden fill={badgeCount > 0 ? 'currentColor' : 'none'} />}
-          badge={
-            badgeCount > 0 ? (
+        The node it names moved into the status view this segment opens: the map already
+        rings that node, and the row's width is what the lane cannot spare.
+      */}
+      {showStatus || showBell ? (
+        <div
+          className="flex shrink-0 items-center"
+          data-testid="agent-activity-dock"
+          data-agent-activity-status-slot={showStatus ? 'utility-row-segment' : undefined}
+        >
+          {showStatus ? (
+            <button
+              ref={statusRef}
+              type="button"
+              aria-haspopup="true"
+              aria-expanded={openSurface === 'status'}
+              aria-label={t('statusAria', { status: statusLabel })}
+              title={statusLabel}
+              data-testid="agent-activity-status-trigger"
+              data-writing={feed.writing ? 'true' : 'false'}
+              data-status-fold={compact ? 'compact' : 'labelled'}
+              onClick={() => openPanel('status')}
+              className={controlClass({
+                shape: 'chip',
+                size: 'md',
+                hoverInk: 'strong',
+                hoverSurface: 'lift',
+                hoverBorder: 'strong',
+                // The row's status-chip geometry (one source with the realm and return
+                // chips) over the shared control's focus and hover axes — the same lift
+                // and border `ChromeChip` gives the bell beside it.
+                className: cn(
+                  CHROME_STATUS_CHIP_CLASS,
+                  'min-w-0',
+                  openSurface === 'status' &&
+                    'border-[color:var(--chrome-active-border)] bg-[color:var(--chrome-active-surface)] text-[color:var(--color-text-primary)]',
+                  // Joined to the bell: one outline; the bell's own left border is the seam.
+                  showBell && 'rounded-r-none border-r-0',
+                  // With nothing but the dot left to show, the segment is a tile.
+                  compact && !elapsed && 'w-[var(--chrome-tile-size)] justify-center px-0',
+                  !compact &&
+                    !elapsed &&
+                    'max-xl:w-[var(--chrome-tile-size)] max-xl:justify-center max-xl:px-0',
+                ),
+              })}
+            >
               <span
-                data-testid="agent-activity-unread"
-                data-badge-grade={todoCount > 0 ? 'waiting' : 'unread'}
+                aria-hidden
+                data-testid="agent-activity-dot"
                 className={cn(
-                  'absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono text-caption tabular-nums',
-                  todoCount > 0
-                    ? 'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)]'
-                    : 'bg-[color:var(--color-indigo-a32)] text-[color:var(--color-indigo-text-soft)]',
+                  'inline-block size-1.5 shrink-0 rounded-full',
+                  feed.writing
+                    ? 'bg-[color:var(--color-indigo-accent)]'
+                    : 'bg-[color:var(--color-text-quaternary)]',
+                )}
+              />
+              {/*
+                Who and which step. Folded to the screen reader where the lane is compact
+                (a docked panel beside it) or narrower than `xl`; the button's
+                `aria-label` and `title` keep the whole sentence.
+              */}
+              <span
+                data-testid="agent-activity-status"
+                className={cn(
+                  'flex min-w-0 max-w-48 items-baseline text-[color:var(--color-text-primary)]',
+                  compact ? 'sr-only' : 'max-xl:sr-only',
                 )}
               >
-                {badgeCount > 99 ? '99+' : badgeCount}
+                <AgentWorkFact text={feed.work.mode === 'live' ? liveLabel : statusLabel} />
               </span>
-            ) : null
-          }
-        />
+              {feed.work.mode === 'live' && elapsed ? (
+                <span
+                  data-testid="agent-activity-elapsed"
+                  className="shrink-0 font-mono tabular-nums text-[color:var(--color-text-tertiary)]"
+                >
+                  {elapsed}
+                </span>
+              ) : null}
+            </button>
+          ) : null}
+
+          {showBell ? (
+            <ChromeChip
+              ref={bellRef}
+              compact
+              active={openSurface === 'notifications'}
+              onClick={() => openPanel('bell')}
+              aria-haspopup="true"
+              aria-expanded={openSurface === 'notifications'}
+              aria-label={
+                todoCount > 0
+                  ? t('bellTodoAria', { count: todoCount })
+                  : inbox.unreadResults > 0
+                    ? t('bellUnreadAria', { count: inbox.unreadResults })
+                    : t('bellAria')
+              }
+              data-testid="agent-activity-bell"
+              data-agent-activity-bell-slot="utility-row-end"
+              /*
+               * The bell carries its own state, not just a badge beside it. Reported
+               * 2026-08-24: with the count sitting in a 16px badge, a bell holding nine
+               * unread receipts and an empty bell read the same at a glance. Filling the
+               * glyph and lifting it to primary ink changes the **shape and weight** of
+               * the mark, so "there is something here" survives a squint and does not
+               * depend on noticing a small badge -- or on colour alone.
+               */
+              className={cn(
+                'relative shrink-0 overflow-visible',
+                showStatus && 'rounded-l-none',
+                badgeCount > 0 && 'text-[color:var(--color-text-primary)]',
+              )}
+              icon={<Bell aria-hidden fill={badgeCount > 0 ? 'currentColor' : 'none'} />}
+              badge={
+                badgeCount > 0 ? (
+                  <span
+                    data-testid="agent-activity-unread"
+                    data-badge-grade={todoCount > 0 ? 'waiting' : 'unread'}
+                    className={cn(
+                      'absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono text-caption tabular-nums',
+                      todoCount > 0
+                        ? 'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)]'
+                        : 'bg-[color:var(--color-indigo-a32)] text-[color:var(--color-indigo-text-soft)]',
+                    )}
+                  >
+                    {badgeCount > 99 ? '99+' : badgeCount}
+                  </span>
+                ) : null
+              }
+            />
+          ) : null}
+        </div>
       ) : null}
 
       <Surface
@@ -399,9 +405,8 @@ export function AgentActivityChip({
            * header or the footer.
            */
           'absolute z-30 flex max-h-[calc(100dvh-var(--chrome-inset)-var(--chrome-tile-size)-60px-var(--map-panel-bottom-reserve))] w-[var(--map-panel-width)] flex-col overflow-hidden whitespace-normal rounded-[var(--map-panel-radius)] border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]',
-          openSurface === 'status' || showStatus
-            ? 'top-[calc(100%+52px)]'
-            : 'top-[calc(100%+8px)]',
+          // The status now stands in the row itself, so both views hang from the row.
+          'top-[calc(100%+8px)]',
         )}
       >
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
@@ -453,12 +458,15 @@ export function AgentActivityChip({
             <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1 text-caption leading-label">
               {feed.lastNode ? (
                 <>
-                  <dt className="text-[color:var(--color-text-quaternary)]">{t('targetLabel')}</dt>
+                  {/* The prefix the toolbar row used to carry: "current" only while live. */}
+                  <dt className="text-[color:var(--color-text-quaternary)]">{targetPrefix}</dt>
                   <dd className="min-w-0">
                     {onOpenNode ? (
                       <button
                         type="button"
                         onClick={() => onOpenNode(feed.lastNode!.slug)}
+                        data-testid="agent-activity-target"
+                        aria-label={t('openOnMap', { name: feed.lastNode.name })}
                         className={controlClass({
                           shape: 'link',
                           tone: 'accent',
@@ -471,6 +479,8 @@ export function AgentActivityChip({
                     ) : (
                       <Link
                         href={getTopologyFocusHref(feed.lastNode.slug)}
+                        data-testid="agent-activity-target"
+                        aria-label={t('openOnMap', { name: feed.lastNode.name })}
                         className={controlClass({
                           shape: 'link',
                           tone: 'accent',

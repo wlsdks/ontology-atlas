@@ -5130,15 +5130,20 @@ body *::-webkit-scrollbar {
   }
 }
 
-/* The toaster is top-centred on the **viewport** (owner, 2026-09-07). It used to centre
-   over the map area, shifted left by half the agent dock's width, and on the Library the
-   result stood over the index column, far from where the eye was. A toast is transient
-   and drawn above every dock, so the screen's own centre is the one place a person finds
-   it whatever pane is open. sonner injects its own stylesheet at runtime, after ours,
-   with the same `[data-sonner-toaster][data-x-position]` selector, so the `html` prefix
-   is what makes this rule win. */
+/* The toaster is bottom-centred in the **free lane** (owner, 2026-09-24): the space
+   between the innermost wall a screen declares on each side (`data-toast-wall` — the nav
+   rail, the map's INDEX stack, the map's docked panel), published while a toast stands
+   by `src/shared/ui/toast-walls.ts`. With no walls both variables are 0 and this is the
+   viewport's centre, the 2026-09-07 rule. It replaces top-centred on the viewport, which
+   stood over INDEX at 1040 and over an open dock below 1480. `%` rather than `vw`: the
+   toaster is fixed, so `100%` is the viewport less any scrollbar. sonner injects its own
+   stylesheet at runtime, after ours, with the same `[data-sonner-toaster][data-x-position]`
+   selector, so the `html` prefix is what makes this rule win. */
 html [data-sonner-toaster][data-x-position='center'] {
-  left: 50%;
+  left: calc(
+    var(--app-toast-left-wall, 0px) +
+      (100% - var(--app-toast-left-wall, 0px) - var(--app-toast-right-wall, 0px)) / 2
+  );
   transform: translateX(-50%);
 }
 

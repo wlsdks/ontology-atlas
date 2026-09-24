@@ -764,7 +764,7 @@ export function TopologyCommandChrome({
                       }}
                     />
                   </div>
-                  {/* Work status is anchored below this row, and only the notification bell stands as the
+                  {/* Work status is the left segment of the bell's control, and the bell stands as the
                         last square tile of this row. The same component owns both feeds and
                         outside click/Escape to avoid duplicating polling/read state. */}
                   <CompanionHome compact />
@@ -780,6 +780,8 @@ export function TopologyCommandChrome({
                       (Boolean(v2DatasheetModel) || selectedEdgeOwnsRightRail) && !activityInboxOpen
                     }
                     liveWork={acpLiveWork}
+                    conversationOpen={agentDockOpen}
+                    compact={topologyUtilityChromeCompact}
                     onOpenChange={setActivityInboxOpen}
                     onOpenNode={handleSelect}
                     onOpenConversation={openVaultAgent}
