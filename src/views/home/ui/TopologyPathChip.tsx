@@ -21,6 +21,12 @@ export interface TopologyPathChipProps {
   onCopyPacket: () => void;
   clearAriaLabel: string;
   onClear: () => void;
+  /**
+   * The row is crowded (an agent dock or review panel narrows the map): the copy
+   * action keeps its glyph, tooltip and accessible name but drops its words, so the
+   * path itself keeps the room to be read.
+   */
+  compact?: boolean;
 }
 
 /**
@@ -41,6 +47,7 @@ export function TopologyPathChip({
   onCopyPacket,
   clearAriaLabel,
   onClear,
+  compact = false,
 }: TopologyPathChipProps) {
   return (
     <div
@@ -49,7 +56,7 @@ export function TopologyPathChip({
       className={CHROME_STATUS_CHIP_CLASS}
     >
       <Route size={ICON_SIZE.md} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
-      <span data-testid="topology-path-chip-label" className="min-w-0 truncate">
+      <span data-testid="topology-path-chip-label" title={label} className="min-w-0 truncate">
         {label}
       </span>
       {resolved ? (
@@ -59,6 +66,7 @@ export function TopologyPathChip({
           label={copyPacketLabel}
           ariaLabel={copyPacketCopied ? copyPacketCopiedAriaLabel : copyPacketAriaLabel}
           onClick={onCopyPacket}
+          iconOnly={compact}
           className="min-h-0 shrink-0 py-0"
         />
       ) : null}
