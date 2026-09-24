@@ -108,10 +108,12 @@ stay 64px and 16px. Unzoomed loading surfaces and portals keep their native size
 The owner’s 2026-09-24 request establishes a separate playful fox inside
 “Memories together.” It does not replace the Atlas application mark or the
 verified-work mascot in map chrome. The home and expedition use original generated
-pixel environments, a sixteen-pose fox atlas, item icons, and a three-family monster atlas under
+pixel environments, a sixteen-pose fox atlas, a separate eight-frame walking atlas, item icons, six environment atlases containing 36 scenes, and six creature atlases containing 108 species under
 `public/brand/companion-*.webp`. Their raster palettes belong only to this optional
 game scene; application controls retain their existing tokens. Generation receipts and
-asset hashes are in `public/brand/companion-assets.json`.
+asset hashes are in `public/brand/companion-assets.json`. The expansion prompt set is in
+`public/brand/companion-adventure-prompts.json`. Per-creature alpha bounds are measured
+in code; generated RGBA pixels remain unchanged.
 
 This bounded game permits ambient life and fictional combat. Its explicit activity
 labels, hidden-surface suspension, and reduced-motion equivalent do

@@ -37,3 +37,13 @@ it('a skill accepted during an attack has a fresh event identity without inventi
 it('returning and departing cannot move the replay boundary backwards with the wall clock',()=>{
  const saved=start();const returned=actCompanionGame(saved,{type:'return'},1);const departed=actCompanionGame(returned,{type:'depart',area},1);expect(departed.lastAt).toBe(saved.lastAt);expect(advanceCompanionGame(departed,saved.lastAt)).toBe(departed);
 });
+it('banks a guardian clear exactly once when leaving during its loot animation',()=>{
+ const before={...start(),encounter:14,enemyHp:1};
+ const defeated=actCompanionGame(before,{type:'skill'},1000);expect(defeated.phase).toBe('loot');
+ const automatic=advanceCompanionGame({...defeated,run:{...defeated.run,repeat:false}},1000+TURN_MS);
+ for(const action of [{type:'return'} as const,{type:'depart',area} as const]){
+  const left=actCompanionGame(defeated,action,1000);
+  expect(left.run.clears).toBe(1);expect(left.gold).toBe(automatic.gold);expect(left.xp).toBe(automatic.xp);
+  const again=actCompanionGame(left,{type:'return'},1000);expect(again.run.clears).toBe(1);expect(again.gold).toBe(left.gold);
+ }
+});

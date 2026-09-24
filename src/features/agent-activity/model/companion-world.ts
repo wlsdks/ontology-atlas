@@ -1,6 +1,8 @@
 export type WorldPoint={x:number;y:number};
-export type WorldInteraction='study'|'skills'|'rest'|'inventory'|'growth';
+export type WorldInteraction='study'|'skills'|'rest'|'inventory'|'growth'|'expedition';
 export const WORLD_WIDTH=1000;
+export const WALK_SPEED=84;
+export const WALK_FRAME_DISTANCE=7;
 export const WORLD_HEIGHT=2000/3;
 export const WORLD_SPOTS:ReadonlyArray<{id:WorldInteraction;point:WorldPoint;anchor:WorldPoint}>=[
  {id:'study',point:{x:820,y:480},anchor:{x:845,y:370}},
@@ -8,6 +10,7 @@ export const WORLD_SPOTS:ReadonlyArray<{id:WorldInteraction;point:WorldPoint;anc
  {id:'rest',point:{x:200,y:465},anchor:{x:170,y:380}},
  {id:'inventory',point:{x:190,y:560},anchor:{x:110,y:550}},
  {id:'growth',point:{x:500,y:535},anchor:{x:505,y:360}},
+ {id:'expedition',point:{x:880,y:555},anchor:{x:880,y:510}},
 ];
 const obstacles=[{left:40,right:285,top:275,bottom:435},{left:740,right:980,top:230,bottom:450},{left:35,right:155,top:505,bottom:630}];
 const clamp=(v:number,min:number,max:number)=>Math.max(min,Math.min(max,v));

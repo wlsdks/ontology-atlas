@@ -59,9 +59,10 @@ The optional companion is a device-local pixel mini-game powered by your project
 Recorded ontology concepts, resolved relations, implementation links, wiki pages,
 and written detail contribute to character levels and skills as the folder updates.
 Move with WASD, interact with E, and open inventory (I), skills (K), the expedition
-map (M), or your journal (J) over the persistent world. The fox studies, rests,
-and fights through five-floor expeditions with three-way blessing choices, an active
-dodge, and a final guardian. Optional auto retry continues while away, with at most
+map (M), your journal (J), or the creature field guide (N) over the persistent world. The fox studies, rests,
+and travels through 36 destinations across six fictional regions, meeting 108 original
+creatures. Five-floor expeditions offer three-way blessings, an active dodge,
+and a final guardian. Project and reading XP unlock destinations; combat XP does not. Optional auto retry continues while away, with at most
 four hours of catch-up. A camp constellation shows the records you have built.
 Original personal memories remain intact. Game progress does not judge correctness,
 accepted meaning, coding hours, or real agent-work status.

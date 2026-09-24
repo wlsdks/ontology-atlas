@@ -32,6 +32,84 @@
       "generation": "exec-64b91cdf-5e1c-4fd2-8dec-a476b4a93f25",
       "description": "Original nine-item atlas",
       "sha256": "d69a6bc5483c7b7b4bcd1c87845d17efe2d4ccceea7d34289bb1a395fdc886dc"
+    },
+    {
+      "file": "companion-fox-walk.webp",
+      "generation": "exec-da067576-f38c-4bb9-9a39-fe8fc14c1c69",
+      "description": "Original eight-frame grounded walk cycle for the existing fox",
+      "sha256": "9444076e0b8507b8960aaaa19b9b4465af48e91df01558b0aace12692519ed97"
+    },
+    {
+      "file": "companion-grove-monsters.webp",
+      "generation": "exec-6800e83b-2aee-49ed-ae4e-df400cdc4fb1",
+      "description": "18 original grove creatures, six columns by three rows",
+      "sha256": "d2222439e490ead3a39dd4cadf298427ff3b2890f020d55b50021e88d9c08035"
+    },
+    {
+      "file": "companion-foundry-monsters.webp",
+      "generation": "exec-e589b9fe-d62f-4b21-9253-c7dfccd7be2d",
+      "description": "18 original foundry creatures, six columns by three rows",
+      "sha256": "779161e0e4ea1c95dfba8cef3ef5479873a83a01bb2f2fb4405b527a913a01af"
+    },
+    {
+      "file": "companion-marsh-monsters.webp",
+      "generation": "exec-654c0962-08b5-4994-8fb2-6794c2f16f7c",
+      "description": "18 original marsh creatures, six columns by three rows",
+      "sha256": "10e9409a3e3527f415579c39a5650310a2889ffb026415cb5b972905940dd123"
+    },
+    {
+      "file": "companion-frost-monsters.webp",
+      "generation": "exec-80a1ab20-9476-4e58-b582-4bfba34c7023",
+      "description": "18 original frost creatures, six columns by three rows",
+      "sha256": "45f80180e6e7f280c938d12a4cf7ad19ad7ae8882ee0353dde4f6cde5d37ebc2"
+    },
+    {
+      "file": "companion-ember-monsters.webp",
+      "generation": "exec-6ce9ee22-ce30-4285-a717-4237116b2258",
+      "description": "18 original ember creatures, six columns by three rows",
+      "sha256": "6e3a5b36ec81e3cf201716a2ea00af0e1cbb6d015aaf5b8c4d83d00346b68dba"
+    },
+    {
+      "file": "companion-astral-monsters.webp",
+      "generation": "exec-ba6e06fe-7a62-4cb3-a569-b449c3f4e811",
+      "description": "18 original astral creatures, six columns by three rows",
+      "sha256": "26cfdac3144f7a0876e3034f5711e5f5c4c1900bed7cd515d7014a3518ca540a"
+    },
+    {
+      "file": "companion-grove-maps.webp",
+      "generation": "exec-a9e9b449-5957-42ee-adf1-79afd924a69a",
+      "description": "Six original grove adventure scenes, three columns by two rows",
+      "sha256": "a4e1cb9e7d47cb543df4ecb2300061cf75b769b1c30f739742d4cd29cd90e5ef"
+    },
+    {
+      "file": "companion-foundry-maps.webp",
+      "generation": "exec-04bfa7ba-f732-41e7-bbe3-1897f6920c98",
+      "description": "Six original foundry adventure scenes, three columns by two rows",
+      "sha256": "7aa87d2e732c86d1c78cfb4d9f91e6f41c50fb1589e36b1378aae3d28bfe1a1c"
+    },
+    {
+      "file": "companion-marsh-maps.webp",
+      "generation": "exec-76a4b683-2b9f-438b-aed7-314959214b1e",
+      "description": "Six original marsh adventure scenes, three columns by two rows",
+      "sha256": "8e612e9808f93d0ff258d7ca5e00a1d0abaefa6eb772996eb888c2474d7eb060"
+    },
+    {
+      "file": "companion-frost-maps.webp",
+      "generation": "exec-c2f6f8ed-863b-4a14-af02-596f1d8e4c31",
+      "description": "Six original frost adventure scenes, three columns by two rows",
+      "sha256": "1392f8e86785a5fecccd0e75841413d7e6d44d61ad271b125c6ee0e2e33dd92d"
+    },
+    {
+      "file": "companion-ember-maps.webp",
+      "generation": "exec-57fc2dd2-a188-41ec-a956-b6d86be50655",
+      "description": "Six original ember adventure scenes, three columns by two rows",
+      "sha256": "c5ae129919965478456283ee16570edd9ef4cd76ce7abbf113ce04002ff259ba"
+    },
+    {
+      "file": "companion-astral-maps.webp",
+      "generation": "exec-12fd1226-d13c-4740-8410-c282aa922f13",
+      "description": "Six original astral adventure scenes, three columns by two rows",
+      "sha256": "407bbf9d57ed5e83d46262361fc654c4c3aca757a44164f81fc836fb13b23870"
     }
   ]
 }

@@ -49,3 +49,14 @@ it('preserves a corrupt save until the explicit adventure reset recovers it',()=
  expect(h.result.current.unreadable).toBe(true);expect(localStorage.getItem(GAME_PREFIX+'project')).toBe('unreadable');
  act(()=>expect(h.result.current.reset()).toBe(true));expect(h.result.current.unreadable).toBe(false);expect(h.result.current.game.knowledge).toBe(5);
 });
+it('keeps a pending guardian clear retryable after a failed return save',()=>{
+ const started=actCompanionGame({...newCompanionGame(61000),knowledge:800},{type:'depart',area},61000);
+ const defeated=actCompanionGame({...started,encounter:14,enemyHp:1},{type:'skill'},61000);
+ const raw=JSON.stringify(defeated);localStorage.setItem(GAME_PREFIX+'project',raw);
+ const h=renderHook(()=>useCompanionGame('project',800,false,'area'));
+ const fail=vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw Error('quota');});
+ act(()=>expect(h.result.current.act({type:'return'})).toBe(false));expect(localStorage.getItem(GAME_PREFIX+'project')).toBe(raw);
+ fail.mockRestore();act(()=>expect(h.result.current.act({type:'return'})).toBe(true));const saved=h.result.current.game;
+ expect(saved.run.clears).toBe(1);expect(saved.gold).toBe(defeated.gold+30);
+ act(()=>h.result.current.act({type:'return'}));expect(h.result.current.game.gold).toBe(saved.gold);expect(h.result.current.game.run.clears).toBe(1);
+});

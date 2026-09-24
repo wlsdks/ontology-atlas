@@ -6872,7 +6872,7 @@
       "gear": "Equipment",
       "bestiary": "Bestiary",
       "noAreas": "Your ontology domains become regions. Open a folder containing domains to explore.",
-      "locked": "Project and reading {current}/{xp} XP · {remaining} more needed",
+      "locked": "Project + reading {current}/{xp} XP · Need {remaining} more",
       "departHint": "Difficulty {difficulty} · depart",
       "upgrade": {
         "sword": "Knowledge blade",
@@ -6923,9 +6923,9 @@
       "closePanel": "Close panel (Esc)",
       "potion": "Potion {count}",
       "journalSections": "Journal sections",
-      "knowledgeBook": "Adventure log",
+      "knowledgeBook": "Reading log",
       "personalBook": "Shared memories",
-      "controls": "WASD / arrows to move · Click the ground to walk · E interact · I inventory · K skills · M map · J journal · Q knowledge wave · 1 potion · R rest · Esc close panel · B blessings · Space dodge",
+      "controls": "WASD / arrows to move · Click the ground to walk · E interact · I inventory · K skills · M map · J journal · Q knowledge wave · 1 potion · R rest · Esc close panel · B blessings · Space dodge · N Creature field guide",
       "panel": {
         "inventory": "Traveler’s inventory",
         "skills": "Starlight skills",
@@ -6933,7 +6933,8 @@
         "study": "The study desk",
         "journal": "Travel journal",
         "help": "Traveler’s guide",
-        "blessings": "Expedition blessings"
+        "blessings": "Expedition blessings",
+        "bestiary": "Creature field guide"
       },
       "move": {
         "ArrowUp": "Move up",
@@ -6946,11 +6947,29 @@
         "skills": "Library",
         "rest": "Rest",
         "inventory": "Bag",
-        "growth": "Archive constellation"
+        "growth": "Archive constellation",
+        "expedition": "Adventure portal"
       },
       "projectBook": "Project",
       "projectReward": "Your project records became strength · +{xp} XP",
-      "dodged": "Dodge"
+      "dodged": "Dodge",
+      "shortcut": {
+        "interact": "Inspect",
+        "blessings": "Boons",
+        "inventory": "Bag",
+        "skills": "Skills",
+        "map": "Map",
+        "journal": "Journal",
+        "back": "Back"
+      },
+      "target": {
+        "study": "Study",
+        "skills": "Train",
+        "rest": "Rest",
+        "inventory": "Chest",
+        "growth": "Growth",
+        "expedition": "Travel"
+      }
     },
     "inventory": {
       "bag": "Belongings",
@@ -6965,7 +6984,8 @@
         "library": "Archive spellbook",
         "potion": "Healing potion",
         "cards": "Knowledge cards",
-        "relic": "Forest relic"
+        "relic": "Forest relic",
+        "bestiary": "Creature field guide"
       },
       "description": {
         "sword": "Each upgrade adds 2 attack. Spend gold earned from monsters.",
@@ -6973,9 +6993,11 @@
         "library": "Each upgrade adds 1 XP per defeated monster.",
         "potion": "Restores 20 HP. The recovery skill increases its effect.",
         "cards": "Real concepts in this folder. Read them together and keep discoveries at the desk.",
-        "relic": "A keepsake from defeating a guardian, every tenth encounter."
+        "relic": "A keepsake from defeating a guardian, every tenth encounter.",
+        "bestiary": "Discover 108 creatures, their behavior, and your defeats. Prepare for the next journey."
       },
-      "chest": "Open supply chests · {count}"
+      "chest": "Open supply chests · {count}",
+      "readBestiary": "Open field guide (N)"
     },
     "skills": {
       "points": "Available skill points: {count}",
@@ -7058,6 +7080,44 @@
       "cleared": "Last expedition: guardian cleared! Rewards kept. M plans your next run.",
       "defeated": "Last expedition: defeated, rewards kept. M prepares another run.",
       "waveLabel": "Knowledge wave ×{multiplier}"
+    },
+    "adventure": {
+      "atlas": "36 destinations · 108 creatures",
+      "regions": "Adventure regions",
+      "route": "Threat {difficulty} · Clears {clears}",
+      "guardian": "Guardian",
+      "ready": "Project + reading {current} / {required} XP · Ready",
+      "bestiary": "Creature field guide",
+      "discovered": "Discovered {count}/{total}",
+      "unknownNumber": "Unknown creature {number}",
+      "unknown": "Undiscovered",
+      "findIn": "Explore {region} to encounter this creature.",
+      "defeated": "Defeated {count} times",
+      "fiction": "Original game creatures; never ontology evidence.",
+      "effect": {
+        "calm": "Quiet trail · Standard encounters and rewards.",
+        "bounty": "Supply route · +3 G per victory.",
+        "vital": "Restorative ground · +3 HP after each victory.",
+        "fortified": "Ancient walls · Enemies have 25% more health.",
+        "insight": "Archive fragments · +4 adventure XP per victory.",
+        "elite": "Guardian approach · Enemies deal 20% more damage."
+      },
+      "trait": {
+        "armored": "Armor: takes 20% less damage. Strengthen your blade.",
+        "fierce": "Fierce: attacks deal 30% more damage. Time a dodge.",
+        "mender": "Regeneration: heals before each regular strike. Burst with Q.",
+        "siphon": "Siphon: restores half the damage it deals. Dodge to deny healing.",
+        "swarm": "Swarm: attacks twice for reduced damage; armor blocks each hit.",
+        "arcane": "Arcane shell: takes 30% less wave damage. Regular attacks remain effective."
+      },
+      "traitName": {
+        "armored": "Armored",
+        "fierce": "Fierce",
+        "mender": "Regenerating",
+        "siphon": "Siphoning",
+        "swarm": "Double strike",
+        "arcane": "Wave resistant"
+      }
     }
   }
 }

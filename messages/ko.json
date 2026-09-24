@@ -6872,7 +6872,7 @@
       "gear": "장비",
       "bestiary": "몬스터 도감",
       "noAreas": "온톨로지의 도메인이 탐험 지역이 돼요. 도메인이 있는 내 폴더를 열어 주세요.",
-      "locked": "구축·읽기 {current}/{xp} XP · {remaining} 더 필요",
+      "locked": "구축 + 읽기 {current}/{xp} XP · {remaining} XP 더 필요",
       "departHint": "난이도 {difficulty} · 눌러서 출정",
       "upgrade": {
         "sword": "지식의 검",
@@ -6923,9 +6923,9 @@
       "closePanel": "창 닫기 (Esc)",
       "potion": "물약 {count}",
       "journalSections": "기록 종류",
-      "knowledgeBook": "모험 기록",
+      "knowledgeBook": "읽기 기록",
       "personalBook": "함께한 기억",
-      "controls": "WASD / 방향키로 이동 · 바닥 클릭으로 걷기 · E 상호작용 · I 가방 · K 스킬 · M 지도 · J 기록 · Q 지식 파동 · 1 물약 · R 휴식 · Esc 창 닫기 · B 축복 · Space 회피",
+      "controls": "WASD / 방향키로 이동 · 바닥 클릭으로 걷기 · E 상호작용 · I 가방 · K 스킬 · M 지도 · J 기록 · Q 지식 파동 · 1 물약 · R 휴식 · Esc 창 닫기 · B 축복 · Space 회피 · N 몬스터 도감",
       "panel": {
         "inventory": "여행자의 가방",
         "skills": "별빛의 기술",
@@ -6933,7 +6933,8 @@
         "study": "지식의 책상",
         "journal": "여행 일지",
         "help": "여행 안내",
-        "blessings": "원정의 축복"
+        "blessings": "원정의 축복",
+        "bestiary": "몬스터 도감"
       },
       "move": {
         "ArrowUp": "위로 이동",
@@ -6946,11 +6947,29 @@
         "skills": "서재",
         "rest": "휴식",
         "inventory": "가방",
-        "growth": "기록의 별자리"
+        "growth": "기록의 별자리",
+        "expedition": "모험 포털"
       },
       "projectBook": "구축 기록",
       "projectReward": "쌓아 온 기록이 힘이 되었어요 · +{xp} XP",
-      "dodged": "회피"
+      "dodged": "회피",
+      "shortcut": {
+        "interact": "살피기",
+        "blessings": "축복",
+        "inventory": "가방",
+        "skills": "스킬",
+        "map": "지도",
+        "journal": "기록",
+        "back": "닫기"
+      },
+      "target": {
+        "study": "공부",
+        "skills": "수련",
+        "rest": "쉬기",
+        "inventory": "상자",
+        "growth": "성장",
+        "expedition": "모험"
+      }
     },
     "inventory": {
       "bag": "소지품",
@@ -6965,7 +6984,8 @@
         "library": "기록의 마법서",
         "potion": "회복 물약",
         "cards": "지식 카드",
-        "relic": "숲의 유물"
+        "relic": "숲의 유물",
+        "bestiary": "몬스터 도감"
       },
       "description": {
         "sword": "강화할 때마다 공격력 +2. 몬스터를 처치해 얻은 골드로 강화합니다.",
@@ -6973,9 +6993,11 @@
         "library": "강화할 때마다 처치 경험치 +1. 발견을 모험의 힘으로 바꾸는 책입니다.",
         "potion": "체력 20 회복. 회복 스킬을 익히면 효과가 늘어납니다.",
         "cards": "이 폴더의 실제 개념들입니다. 책상에서 함께 읽고 발견을 기록할 수 있습니다.",
-        "relic": "열 번째 몬스터인 수호자를 물리치면 얻는 기념품입니다."
+        "relic": "열 번째 몬스터인 수호자를 물리치면 얻는 기념품입니다.",
+        "bestiary": "만난 생물 108종의 특징과 처치 기록. 다음 모험을 준비해 보세요."
       },
-      "chest": "보급 상자 열기 · {count}"
+      "chest": "보급 상자 열기 · {count}",
+      "readBestiary": "도감 펼치기 (N)"
     },
     "skills": {
       "points": "사용할 스킬 포인트 {count}",
@@ -7058,6 +7080,44 @@
       "cleared": "지난 원정 · 수호자 격파! 보상을 간직했어요. M으로 다음 원정을 정해요.",
       "defeated": "지난 원정 · 패배했지만 모은 보상은 남아요. M으로 다시 준비해요.",
       "waveLabel": "지식 파동 ×{multiplier}"
+    },
+    "adventure": {
+      "atlas": "36개 모험지 · 108종 몬스터",
+      "regions": "모험 지역",
+      "route": "위험도 {difficulty} · 완주 {clears}회",
+      "guardian": "수호자",
+      "ready": "구축 + 읽기 {current} / {required} XP · 출발 가능",
+      "bestiary": "몬스터 도감",
+      "discovered": "발견 {count}/{total}",
+      "unknownNumber": "미발견 몬스터 {number}",
+      "unknown": "아직 만나지 못했어요",
+      "findIn": "{region}에서 만날 수 있어요.",
+      "defeated": "처치 {count}회",
+      "fiction": "게임 속 창작 생물이며 온톨로지 근거가 아닙니다.",
+      "effect": {
+        "calm": "고요한 길 · 기본 전투와 보상.",
+        "bounty": "보급로 · 승리할 때마다 골드 +3.",
+        "vital": "회복의 땅 · 승리 후 체력 +3 회복.",
+        "fortified": "오래된 성벽 · 적의 최대 체력 25% 증가.",
+        "insight": "서고의 파편 · 승리할 때마다 모험 경험치 +4.",
+        "elite": "수호자의 길 · 적의 공격 피해 20% 증가."
+      },
+      "trait": {
+        "armored": "갑옷: 받는 피해가 20% 감소해요. 검을 강화해 보세요.",
+        "fierce": "맹공: 공격 피해가 30% 커요. 회피 타이밍을 노려보세요.",
+        "mender": "재생: 일반 공격을 받기 전에 회복해요. Q로 한 번에 공격해 보세요.",
+        "siphon": "흡수: 입힌 피해의 절반을 회복해요. 회피하면 회복도 막아요.",
+        "swarm": "연타: 약한 공격을 두 번 해요. 방어구가 각각의 공격을 막아요.",
+        "arcane": "비전 껍질: 지식 파동 피해가 30% 줄어요. 일반 공격이 유리해요."
+      },
+      "traitName": {
+        "armored": "갑옷",
+        "fierce": "맹공",
+        "mender": "재생",
+        "siphon": "흡수",
+        "swarm": "연타",
+        "arcane": "파동 저항"
+      }
     }
   }
 }
