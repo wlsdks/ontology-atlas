@@ -36,13 +36,20 @@ export function GatewayNav() {
    * chrome, the same name would live in two places and only one would change. The
    * address is the source of truth.
    */
+  /*
+   * The crumb names only the three routes this chrome belongs to. The 404 wears this chrome
+   * too (2026-09-25), and a fallback of "download" there claimed a lost visitor was on the
+   * download page.
+   */
   const crumb = atRoot
     ? null
     : path.startsWith('/guide')
       ? tNav('guide')
       : path.startsWith('/changelog')
         ? tNav('changelog')
-        : t('downloadSectionLabel');
+        : path.startsWith('/download')
+          ? t('downloadSectionLabel')
+          : null;
 
   const xHref = xProfileUrl();
 
@@ -130,6 +137,17 @@ export function GatewayNav() {
           </span>
 
           {/*
+           * The two marks are one group: 32px square targets (`shape: 'icon'`, the row's chip
+           * height) 4px apart. As bare `link` shapes they were 15×24 and 14×24, under the 24px
+           * WCAG 2.2 target minimum across, and read as loose glyphs (measured 2026-09-25).
+           *
+           * Under a coarse pointer the `icon` shape's `touch-hit-expand` grows each hit area to
+           * 44px, 6px past each edge. At 4px apart the two invisible areas overlapped by 8px, the
+           * overlap `touch-hit-expand` was rejected for elsewhere, so the gap opens to 12px there
+           * and the two areas meet without overlapping. Fine pointers keep the tight pair.
+           */}
+          <span className="flex items-center gap-1 pointer-coarse:gap-3">
+          {/*
            * The repository (2026-09-02). The eyebrow on `/download` says "open source" and the
            * chrome offered no way to the source — the only github.com links on the page were the
            * release files. Same shape and tone as the X mark beside it: one row, one kind of
@@ -141,7 +159,7 @@ export function GatewayNav() {
             rel="noreferrer noopener"
             data-testid="gateway-github-link"
             aria-label={tNav('githubLabel')}
-            className={controlClass({ hoverInk: 'strong', shape: "link", tone: "muted", className: "touch-hit-expand" })}
+            className={GATEWAY_ICON_LINK}
           >
             <GithubMark size={15} aria-hidden />
           </a>
@@ -162,7 +180,7 @@ export function GatewayNav() {
               rel="noreferrer noopener"
               data-testid="gateway-x-link"
               aria-label={tNav('xLabel')}
-              className={controlClass({ hoverInk: 'strong', shape: "link", tone: "muted", className: "touch-hit-expand" })}
+              className={GATEWAY_ICON_LINK}
             >
               <XMark size={14} aria-hidden />
             </a>
@@ -177,12 +195,13 @@ export function GatewayNav() {
               data-testid="gateway-x-placeholder"
               aria-disabled="true"
               title={tNav('xPending')}
-              className="inline-flex h-8 cursor-not-allowed items-center rounded-chip px-2 text-[color:var(--color-text-quaternary)]"
+              className="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-chip text-[color:var(--color-text-quaternary)]"
             >
               <XMark size={15} aria-hidden />
               <span className="sr-only">{tNav('xPending')}</span>
             </span>
           )}
+          </span>
 
           {/*
            * ⚠️ **There is no "back to the map"** (2026-07-31, owner: *"this is a promotional
@@ -226,6 +245,21 @@ export function GatewayNav() {
  * until hover gives them that surface. It is how «you are here» is said within
  * neutrals, and it opens no new colour (`design.md` — one indigo).
  */
+/**
+ * The repository and X marks — **the icon-button shape, 32×32** (2026-09-25). They were `link`
+ * shapes around a bare 15px glyph, so their boxes measured 15×24 and 14×24: under the 24px floor
+ * across, and a third height in a row whose chips and locale switch stand at 32. The icon shape at
+ * `lg` is the same 32px square, the same chip radius and a hover surface, so the right group reads
+ * as one row of controls.
+ */
+const GATEWAY_ICON_LINK = controlClass({
+  shape: 'icon',
+  size: 'lg',
+  tone: 'muted',
+  hoverInk: 'strong',
+  hoverSurface: 'lift',
+});
+
 function GatewayNavLink({
   href,
   active,

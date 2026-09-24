@@ -12,6 +12,8 @@ import { spineFreshness, type SpineFreshness } from "../../lib/spine-shape";
 import type { LibraryUiModel } from "@/features/library";
 import { isWikiFolderCode } from "@/features/library";
 import { writerLabel } from "../../lib/writer-label";
+import { BookText } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 /** A spine before it is measured: a one-line title over its caption, with the row's inset. */
 const SHELF_ROW_ESTIMATE_PX = 52;
@@ -269,7 +271,7 @@ export function LibraryShelf({
                      `hover:text-*` — the same rule that keeps 303 other hovers countable. */
                   hoverInk: "strong",
                   className: cn(
-                    "group relative min-h-0 items-start justify-start overflow-hidden border px-3 py-2.5 text-left",
+                    "group relative min-h-0 items-start justify-start overflow-hidden border px-2.5 py-2.5 text-left",
                     "transition-[box-shadow,background-color,border-color,color]",
                     "hover:shadow-[var(--shadow-control-press)]",
                     active
@@ -313,7 +315,17 @@ export function LibraryShelf({
                   text floor. A spine truncates in the middle of a long name, so the whole
                   title is in the accessible name above.
                 */}
-                <span className="relative flex min-w-0 flex-1 flex-col gap-0.5">
+                {/*
+                  **The index's glyph slot, on both lines** (design sweep, 2026-09-25). The
+                  book glyph stands in the slot every door and source row uses, so a card's
+                  title starts on the column's one text line; the attention dot takes the
+                  same slot on the status line, under the glyph, so the words of both lines
+                  start together whether or not the dot is drawn.
+                */}
+                <span className="relative grid min-w-0 flex-1 grid-cols-[1rem_minmax(0,1fr)] gap-x-1.5 gap-y-0.5">
+                  <span className="flex h-[var(--leading-body)] items-center justify-center">
+                    <BookText size={ICON_SIZE.sm} aria-hidden className="opacity-60" />
+                  </span>
                   <span className="line-clamp-2 break-keep text-body leading-body">
                     {page.title}
                   </span>
@@ -321,16 +333,18 @@ export function LibraryShelf({
                     className={
                       folded && folded.caption === captionOf(freshness, ownProblem) && !answerVersion
                         ? "sr-only"
-                        : "flex min-w-0 items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]"
+                        : "col-span-2 grid min-w-0 grid-cols-subgrid items-center text-label leading-label text-[color:var(--color-text-tertiary)]"
                     }
                   >
-                    {needsAttention && !(folded && folded.caption === captionOf(freshness, ownProblem)) ? (
-                      <span
-                        aria-hidden
-                        data-testid="library-spine-attention-dot"
-                        className="size-1.5 flex-none rounded-full bg-[color:var(--color-amber-source-a90)]"
-                      />
-                    ) : null}
+                    <span className="flex items-center justify-center">
+                      {needsAttention && !(folded && folded.caption === captionOf(freshness, ownProblem)) ? (
+                        <span
+                          aria-hidden
+                          data-testid="library-spine-attention-dot"
+                          className="size-1.5 flex-none rounded-full bg-[color:var(--color-amber-source-a90)]"
+                        />
+                      ) : null}
+                    </span>
                     <span className="min-w-0 truncate">
                       {answerVersion
                         ? `${t(`answers.version.${answerVersion}`)} · `
@@ -359,7 +373,7 @@ export function LibraryShelf({
         aria-hidden
         data-testid="library-shelf-board"
         className={cn(
-          "mx-2 h-px transition-colors",
+          "mx-3 h-px transition-colors",
           compiling ? "bg-[color:var(--color-indigo-a40)]" : "bg-[color:var(--color-border-strong)]",
         )}
       />
@@ -372,7 +386,7 @@ export function LibraryShelf({
           {t("shelf.compiling")}
         </p>
       ) : null}
-      {trailing ? <div className="px-1 pt-1.5">{trailing}</div> : null}
+      {trailing ? <div className="px-3 pt-2">{trailing}</div> : null}
     </div>
   );
 }

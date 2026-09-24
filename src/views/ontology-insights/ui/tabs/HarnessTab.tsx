@@ -18,12 +18,12 @@ export function HarnessTab({ detail }: { detail: InsightsBrief['harnessDetail'] 
             <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t(`availability.${detail.availability}.title`)}</p>
             <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t(`availability.${detail.availability}.description`)}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <Link href="/architecture/?view=guides" data-testid="preview-primary-action" className={controlClass({ shape: 'pill', size: 'lg', tone: 'accent', className: 'atlas-touch-floor atlas-touch-floor-wide' })}>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/architecture/?view=guides" data-testid="preview-primary-action" className={controlClass({ shape: 'pill', size: 'lg', tone: 'onAccent', className: 'atlas-touch-floor atlas-touch-floor-wide' })}>
               {t('preview.openHarness')}
             </Link>
             {detail.availability === 'app-only' ? (
-              <Link href="/download/" className={controlClass({ shape: 'link', size: 'lg', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide text-[color:var(--color-text-tertiary)]' })}>
+              <Link href="/download/" className={controlClass({ shape: 'pill', size: 'lg', tone: 'secondary', hoverInk: 'strong', hoverSurface: 'lift', hoverBorder: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide' })}>
                 {t('getApp')}
               </Link>
             ) : null}

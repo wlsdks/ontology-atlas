@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { PackageOpen, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -38,6 +38,27 @@ interface PreviewSource {
 }
 
 type InlineText = { kind: "done" | "error"; text: string } | null;
+
+/**
+ * What a host needs to draw the trigger in its own row grammar (2026-09-25, the settings
+ * Workspace pane). The module keeps the pick, the preview dialog and every state; the host
+ * only chooses how the one button and its status line look.
+ */
+export interface BlockImportTrigger {
+  /** The row's name — what this does. */
+  label: string;
+  /** One sentence under the name while there is no status to report. */
+  caption: string;
+  /** The button's verb. */
+  action: string;
+  /** Why the button is disabled, or its longer description when it is not. */
+  title: string;
+  disabled: boolean;
+  onPick: () => void;
+  /** The last pick's outcome (no files, unreadable, imported N), shown in place of the caption. */
+  status: string | null;
+  statusKind: "done" | "error" | null;
+}
 
 interface ImportUiState {
   preview: PreviewSource | null;
@@ -87,7 +108,12 @@ function importUiReducer(state: ImportUiState, action: ImportUiAction): ImportUi
  * feature exists. It now stays in the same place, disabled with a hint that opening your
  * own folder enables it — the same grammar as `RealmBlockExportAction`'s degradation.
  */
-export function BlockImportModule() {
+export function BlockImportModule({
+  renderTrigger,
+}: {
+  /** Draw the trigger in the host's own row grammar; without it the module draws its chip. */
+  renderTrigger?: (trigger: BlockImportTrigger) => ReactNode;
+} = {}) {
   const t = useTranslations("ontologyBlocks");
   const { status, manifest, createDoc, deleteDoc } = useLocalVault();
   const [{ preview, inlineText }, dispatchImportUi] = useReducer(importUiReducer, {
@@ -257,6 +283,12 @@ export function BlockImportModule() {
     }
   };
 
+  const triggerTitle = !vaultLoaded
+    ? t("vaultRequiredHint")
+    : supported
+      ? t("importAria")
+      : t("exportUnsupportedHint");
+
   const newEntries = plan?.entries.filter((e) => e.status === "new") ?? [];
   const conflictEntries =
     plan?.entries.filter(
@@ -265,18 +297,25 @@ export function BlockImportModule() {
 
   return (
     <>
+      {renderTrigger ? (
+        renderTrigger({
+          label: t("importAction"),
+          caption: t("importCaption"),
+          action: t("importPick"),
+          title: triggerTitle,
+          disabled: !vaultLoaded || !supported,
+          onPick: () => void pickBlockFolder(),
+          status: inlineText?.text ?? null,
+          statusKind: inlineText?.kind ?? null,
+        })
+      ) : (
+      <>
         {/* The same quiet row grammar as the "documents not on the map" row — no permanent button noise. */}
       <button
         type="button"
         onClick={() => void pickBlockFolder()}
         disabled={!vaultLoaded || !supported}
-        title={
-          !vaultLoaded
-            ? t("vaultRequiredHint")
-            : supported
-              ? t("importAria")
-              : t("exportUnsupportedHint")
-        }
+        title={triggerTitle}
         data-testid="block-import-open"
         className={controlClass({
           shape: "chip",
@@ -305,6 +344,9 @@ export function BlockImportModule() {
           </span>
         ) : null}
       </button>
+
+      </>
+      )}
 
       <AnimatePresence>
         {open && plan && preview ? (

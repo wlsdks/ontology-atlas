@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readLedgerSource } from '../../../../scripts/lib/record-ledgers.mjs';
 import {
   extractEntries,
+  separateCategoryLines,
   normalizeHeadingKey,
   readVaultDoc,
   readVaultDocOmittedSections,
@@ -116,7 +117,39 @@ describe('trimToRecentSections', () => {
  * **rendered** text. Three headings containing backticks had their anchors silently broken — a failure
  * invisible until someone clicks, so it is caught here.
  */
+describe('separateCategoryLines', () => {
+  it('puts a blank line between consecutive category lines so they stop folding into one paragraph', () => {
+    const out = separateCategoryLines('## 2026-09-01 · v1.0.0: x\n\n**Added**: a.\n**Fixed**: b.\n');
+    expect(out).toContain('**Added**: a.\n\n**Fixed**: b.');
+  });
+
+  it('leaves fenced blocks untouched', () => {
+    const src = '```md\n**Added**: a.\n**Fixed**: b.\n```';
+    expect(separateCategoryLines(src)).toBe(src);
+  });
+
+  /**
+   * The rendered changelog must never be one wall paragraph again (2026-09-25: 9,997
+   * characters and 99 ".;" seams in one entry). Measured on the bundled body the gateway
+   * actually draws, after the same normalisation the page applies.
+   */
+  it('keeps every bundled changelog paragraph short and free of ".;" seams', () => {
+    const body = separateCategoryLines(readVaultDoc('CHANGELOG') ?? '');
+    const paragraphs = body.split(/\n\s*\n/).filter((block) => !/^\s*(#|>|- |```)/.test(block));
+    expect(paragraphs.length).toBeGreaterThan(10);
+    const longest = Math.max(...paragraphs.map((block) => block.length));
+    expect(longest, 'a changelog paragraph grew into a wall of text').toBeLessThanOrEqual(900);
+    expect(body.includes('.;'), 'facts are glued with ";" again').toBe(false);
+  });
+});
+
 describe('extractEntries', () => {
+  it('strips a middle-dot separator so no title starts with it', () => {
+    const [entry] = extractEntries('## 2026-09-24 · v1.2.5: the map remembers its camera\nbody');
+    expect(entry?.date).toBe('2026-09-24');
+    expect(entry?.title).toBe('v1.2.5: the map remembers its camera');
+  });
+
   it('날짜와 제목을 갈라 낸다', () => {
     const [entry] = extractEntries('## 2026-07-31 — 무언가 바뀌었다\n본문');
     expect(entry?.date).toBe('2026-07-31');

@@ -4,6 +4,8 @@ import { JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import { SITE_URL } from '@/shared/config';
 import { withBasePath } from '@/shared/lib/base-path';
+import { StandaloneMessagesProvider } from '@/views/terminal-state';
+import { ROUTE_ERROR_PICK, pickStandaloneMessages } from '@/i18n/standalone-messages';
 import './globals.css';
 
 // Owner report (2026-07-23): only Inter's latin subset loaded, so Korean fell back to the system
@@ -135,7 +137,12 @@ export default function RootLayout({
             },
           }}
         />
-        {children}
+        {/* The root error boundary replaces the locale layout, so its copy (about 0.6 KB, both
+            locales) is handed down from here as props. A client import of the message files
+            shipped all 836 KB of them in every page's JavaScript. */}
+        <StandaloneMessagesProvider messages={pickStandaloneMessages(ROUTE_ERROR_PICK)}>
+          {children}
+        </StandaloneMessagesProvider>
       </body>
     </html>
   );

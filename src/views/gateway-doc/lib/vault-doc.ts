@@ -92,6 +92,32 @@ export function trimToRecentSections(markdown: string, limit: number): TrimmedDo
   };
 }
 
+const CATEGORY_LINE = /^\*\*(?:Added|Changed|Fixed|Removed)\*\*/;
+
+/**
+ * Gives every changelog category line its own paragraph.
+ *
+ * The frozen changelog template writes `**Added**: …` and `**Fixed**: …` on consecutive lines
+ * with no blank line between them, and Markdown folds consecutive lines into one paragraph, so
+ * "Fixed" started mid-line inside the "Added" sentence (measured 2026-09-25 on /ko/changelog).
+ * The ledger now renders fragment categories as a label plus a list with blank lines; this
+ * covers the frozen entries, which cannot be rewritten. Fenced blocks are left alone.
+ */
+export function separateCategoryLines(markdown: string): string {
+  const lines = markdown.split('\n');
+  const out: string[] = [];
+  let inFence = false;
+  for (const line of lines) {
+    if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
+    const previous = out.at(-1);
+    if (!inFence && CATEGORY_LINE.test(line) && previous !== undefined && previous.trim() !== '') {
+      out.push('');
+    }
+    out.push(line);
+  }
+  return out.join('\n');
+}
+
 export interface DocEntry {
   /** Anchor id — shared by the sidebar link and the body heading. */
   id: string;
@@ -131,7 +157,9 @@ export function extractEntries(markdown: string): DocEntry[] {
     if (!match) continue;
 
     const heading = match[1]!.trim();
-    const dateMatch = /^(\d{4}-\d{2}-\d{2})\s*[—–-]?\s*(.*)$/.exec(heading);
+    // The ledger writes `## YYYY-MM-DD · vX.Y.Z: …`, so the middle dot is a separator too —
+    // stripping only dashes left every sidebar title starting with an orphaned "· ".
+    const dateMatch = /^(\d{4}-\d{2}-\d{2})\s*[—–·-]?\s*(.*)$/.exec(heading);
     const date = dateMatch ? dateMatch[1]! : null;
     const title = dateMatch && dateMatch[2] ? dateMatch[2]! : heading;
 

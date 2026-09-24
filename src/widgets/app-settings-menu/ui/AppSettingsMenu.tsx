@@ -11,8 +11,8 @@ import {
   Expand,
   Sparkles,
   HardDrive,
+  KeyRound,
   Layers,
-  MessageSquare,
   Monitor,
   Plug,
   Settings,
@@ -47,7 +47,13 @@ import { AccentPicker, CanvasBackgroundPicker, GlyphSetPicker } from './Appearan
 import { FootprintSettings } from './FootprintSettings';
 import { ExpandSettings } from './ExpandSettings';
 import { AgentActivitySettings } from './AgentActivitySettings';
-import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
+import {
+  DETAIL_TOGGLE_CHIP,
+  SegmentSwitch,
+  SettingsGroup,
+  SettingsPaneHead,
+  SettingsRow,
+} from './settings-primitives';
 import { VaultShapeSettings } from './VaultShapeSettings';
 import { WikiWriteModeSettings } from './WikiWriteModeSettings';
 import { useFrameMeter, writeFrameMeter } from '@/shared/lib/appearance-preferences';
@@ -143,10 +149,11 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  * - `px-3 py-2` — **the same padding** as the right pane's `SettingsRow`. Equal
  *   vertical inset derives a height of 36px, and equal horizontal inset puts the
  *   left list's and the right rows' text on the same rhythm.
- * - `text-body-lg` (14px) — this list is **what you choose from first** when the
- *   sheet opens (the attention winner). It has to be one step above the right
- *   rows' labels (12.5px) so "where do I go" and "what do I change" do not
- *   compete at equal weight.
+ * - `text-body` (12.5px) since 2026-09-25. It was `text-body-lg` (14px) as the
+ *   sheet's attention winner, which made the index louder than every setting it
+ *   leads to (rows 12.5, captions 11) and as loud as the sheet title. The winner
+ *   is now each pane's own head (`SettingsPaneHead`, 16px); the nav is the quiet
+ *   index beside it.
  * - 16px icons — at 14px they matched the text (14px) and never became a
  *   scanning channel.
  */
@@ -236,12 +243,12 @@ const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
   // (Layers), footprints, drive or bot (icons are a scanning channel, see above).
   expand: Expand,
   footprint: Sparkles,
-  // A bell — the only «ringing» silhouette in this list. It cannot be confused
-  // with the speech bubble (ai): a bubble means «I speak to it», a bell means «the
-  // app calls me», and their outlines separate as rectangle versus triangle.
+  // A bell — the only «ringing» silhouette in this list.
   notify: Bell,
   workspace: HardDrive,
-  ai: MessageSquare,
+  // A key, because the pane holds API keys (2026-09-25). It wore a speech bubble, the
+  // same glyph as the agent chat affordance, from when the pane was the in-app chat.
+  ai: KeyRound,
 };
 /**
  * Hover for an LNB row — **written in one place only** (2026-08-21).
@@ -800,7 +807,7 @@ export function AppSettingsMenu({
                           shape: 'row',
                           size: 'md',
                           tone: 'muted',
-                          className: `w-auto shrink-0 whitespace-nowrap gap-2.5 rounded-card px-3 py-2 text-body-lg sm:w-full ${SETTINGS_NAV_ROW_HOVER}`,
+                          className: `w-auto shrink-0 whitespace-nowrap gap-2.5 rounded-card px-3 py-2 text-body sm:w-full ${SETTINGS_NAV_ROW_HOVER}`,
                         })}
                       >
                         {/* The destination's own rail icon, so the row and the tile agree. */}
@@ -831,7 +838,7 @@ export function AppSettingsMenu({
                             shape: 'row',
                             size: 'md',
                             tone: active ? 'accentOnTint' : 'muted',
-                            className: `w-auto shrink-0 whitespace-nowrap gap-2.5 rounded-card px-3 py-2 text-body-lg sm:w-full ${
+                            className: `w-auto shrink-0 whitespace-nowrap gap-2.5 rounded-card px-3 py-2 text-body sm:w-full ${
                               active
                                 ? 'bg-[color:var(--color-indigo-line-a13)]'
                                 : SETTINGS_NAV_ROW_HOVER
@@ -858,9 +865,13 @@ export function AppSettingsMenu({
                 }}
                 data-testid={`app-settings-pane-${section}`}
               >
+                <SettingsPaneHead
+                  testId="app-settings-pane-head"
+                  title={t(`section.${section}`)}
+                  description={t(`sectionPurpose.${section}`)}
+                />
                 {section === 'screen' ? (
                   <>
-                  {/* The section title is not repeated — the left list already names this pane. */}
                   <SettingsGroup>
                 <SettingsRow
                   label={t('languageTitle')}
@@ -923,48 +934,51 @@ export function AppSettingsMenu({
                     the no-transient-stacking contract. */}
                 {/*
                   Auto-display switch — it does not delete the guide. Off simply means
-                  it does not appear by itself; "View Again" below and the map's compass
+                  it does not appear by itself; "View Again" beside it and the map's compass
                   tile still open it. Owner: *"It only needs to show the first time, or when clicked"*
                   (it only needs to show the first time, or when clicked).
                 */}
+                {/*
+                  One row for the guide (2026-09-25): whether it opens by itself, and the
+                  button that opens it now. They were two rows, and the first one's caption
+                  pointed at the second ("the Replay button below"); with the pane head the
+                  Screen pane no longer fitted the 672 sheet. The replay chip is the row's
+                  trailing action and stays outside the switch's reach: turning
+                  auto-display off never hides the way back.
+                */}
                 <SettingsRow
                   testId="app-settings-guide-auto-start"
-                  label={t('guideAutoStartLabel')}
+                  label={t('replayGuideLabel')}
                   caption={t('guideAutoStartCaption')}
                   control={
-                    <SegmentSwitch
-                      ariaLabel={t('guideAutoStartLabel')}
-                      testId="app-settings-guide-auto-start-switch"
-                      value={guideAutoStart}
-                      onChange={writeGuideAutoStart}
-                      options={[
-                        { value: true, label: t('guideAutoStartOn') },
-                        { value: false, label: t('guideAutoStartOff') },
-                      ]}
-                    />
+                    <>
+                      <SegmentSwitch
+                        ariaLabel={t('guideAutoStartLabel')}
+                        testId="app-settings-guide-auto-start-switch"
+                        value={guideAutoStart}
+                        onChange={writeGuideAutoStart}
+                        options={[
+                          { value: true, label: t('guideAutoStartOn') },
+                          { value: false, label: t('guideAutoStartOff') },
+                        ]}
+                      />
+                      {replayGuide ? (
+                        <Chip
+                          size="lg"
+                          tone="secondary"
+                          data-testid="app-settings-replay-guide-button"
+                          onClick={() => {
+                            closePanel(false);
+                            replayGuide();
+                          }}
+                          className={DETAIL_TOGGLE_CHIP}
+                        >
+                          {t('replayGuideAction')}
+                        </Chip>
+                      ) : null}
+                    </>
                   }
                 />
-                {replayGuide ? (
-                  <SettingsRow
-                    testId="app-settings-replay-guide"
-                    label={t('replayGuideLabel')}
-                    caption={t('replayGuideCaption')}
-                    control={
-                      <Chip
-                        size="lg"
-                        tone="secondary"
-                        data-testid="app-settings-replay-guide-button"
-                        onClick={() => {
-                          closePanel(false);
-                          replayGuide();
-                        }}
-                        className="border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-                      >
-                        {t('replayGuideAction')}
-                      </Chip>
-                    }
-                  />
-                ) : null}
                   </SettingsGroup>
                   </>
                 ) : section === 'notify' ? (
@@ -1134,32 +1148,36 @@ export function AppSettingsMenu({
                 {vaultRootPath ? (
                   <SettingsRow
                     testId="app-settings-vault-path"
-                    label={tPicker('copyPathTooltip')}
+                    /* The row names the value and the buttons name the act (2026-09-25): the
+                       title and its button both read "copy ontology folder path", and Finder
+                       wore the accent that belongs to the pane's one primary act (change). */
+                    label={t('workspacePathLabel')}
                     caption={vaultRootPath}
                     control={
                       <>
                         <Chip
                           size="lg"
+                          tone="secondary"
                           data-testid="app-settings-copy-vault-path"
                           onClick={() => void copy(vaultRootPath)}
                           aria-label={tPicker('copyPathAriaLabel', { path: vaultRootPath })}
-                          className="shrink-0 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+                          className={DETAIL_TOGGLE_CHIP}
                         >
                           {copyState === 'copied'
                             ? tPicker('copyPathCopied')
                             : copyState === 'failed'
                               ? tPicker('copyPathFailed')
-                              : tPicker('copyPathTooltip')}
+                              : t('workspacePathCopy')}
                         </Chip>
                         <Chip
                           size="lg"
-                          tone="accentOnTint"
+                          tone="secondary"
                           data-testid="app-settings-reveal-vault-path"
                           onClick={() => void openTauriVaultInFinder(vaultRootPath)}
                           aria-label={tPicker('revealPathAriaLabel', { path: vaultRootPath })}
-                          className={INDIGO_ACTION_CHIP}
+                          className={DETAIL_TOGGLE_CHIP}
                         >
-                          {tPicker('revealPathLabel')}
+                          {t('workspacePathReveal')}
                         </Chip>
                       </>
                     }
@@ -1222,40 +1240,60 @@ export function AppSettingsMenu({
                   className={controlClass({ shape: "row", stacked: true, className: "min-h-12 justify-between gap-3 px-3 py-2 hover:bg-[color:var(--color-overlay-2)]" })}
                 >
                   <span className="min-w-0">
-                    <span className="block text-body text-[color:var(--color-text-secondary)]">
+                    <span className="block text-body text-[color:var(--color-text-primary)]">
                       {t('vaultTitle')}
                     </span>
-                    <span className="mt-0.5 block break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+                    <span className="mt-0.5 block break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
                       {vaultBody}
                     </span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-1 text-body text-[color:var(--color-indigo-accent)]">
+                  {/* The whole row is the link, so its trailing mark is the row-link grammar the
+                      nav's MCP row uses: a quiet word and a chevron, no box. A chip-shaped span
+                      inside a link read as a second target that was not its own button. */}
+                  <span className="flex shrink-0 items-center gap-1 text-body text-[color:var(--color-text-tertiary)]">
                     {vaultCta}
-                    <ChevronRight size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+                    <ChevronRight size={ICON_SIZE.sm} aria-hidden />
                   </span>
                 </Link>
-                  </SettingsGroup>
                     {/*
                       "Import nodes from another folder"
                       — moved here from the bottom of INDEX (2026-08-02, owner:
-                      *"What is this?
-                      why is this text here? is it unnecessary?"*
-                      (what is this?
-                      why is this text here? is it unnecessary?).
+                      *"What is this? why is this text here? is it unnecessary?"*).
 
                       Why here: this job is about **what comes into this folder**, and
                       that is this section's subject. It does not belong as a permanent
                       button on a screen for reading the map — it gets used once or
                       twice in a lifetime.
 
-                      The name changed too. "Block" in the old "Import Block" is
-                      defined nowhere in this app, so a first-time reader had no way to
-                      know what the button opens.
-
-                      The module is self-contained and renders itself only while a
-                      vault is loaded.
+                      It is the group's last row (2026-09-25) rather than a dim bordered
+                      chip under the card: the pane ended on its lowest-quality element,
+                      11px quaternary ink in a box of its own. The module still owns the
+                      pick, the preview and its states; this pane only draws the row.
                     */}
-                    <BlockImportModule />
+                    <BlockImportModule
+                      renderTrigger={(trigger) => (
+                        <SettingsRow
+                          testId="app-settings-block-import"
+                          label={trigger.label}
+                          caption={trigger.status ?? trigger.caption}
+                          captionTone={trigger.statusKind === 'error' ? 'danger' : 'neutral'}
+                          control={
+                            <Chip
+                              size="lg"
+                              tone="secondary"
+                              data-testid="block-import-open"
+                              onClick={trigger.onPick}
+                              disabled={trigger.disabled}
+                              title={trigger.title}
+                              className={DETAIL_TOGGLE_CHIP}
+                            >
+                              {trigger.action}
+                            </Chip>
+                          }
+                        />
+                      )}
+                    />
+                  </SettingsGroup>
                     </>
 
                 ) : section === 'update' ? (

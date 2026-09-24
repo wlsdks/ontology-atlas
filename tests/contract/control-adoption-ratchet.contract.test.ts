@@ -1106,9 +1106,14 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // button-styled Link to Map. The destination count and the verified registration both fall by one.
 // 2026-09-11 (slice U2): the Library's blocked steps gained a door to `/agents` —
 // `AgentDoor` is one `<Link>` through `buttonVariants`, so `Link` 18→19.
+// 2026-09-25: the two 404 files and the error boundary became one shared terminal-state view.
+// The 404's two `<Link>`s moved with it, and the error screen's home became a plain `<a>`
+// through `buttonVariants` (a full reload after a render failure), so `a` 8→9.
+// 2026-09-25: Automations' "Get the app" and "Open Library check history" became standard
+// buttons (primary, ghost sm) instead of text links, so `Link` 19→21.
 // 2026-09-25: Check history's first-run door to Automations is one `<Link>` through
-// `buttonVariants`, so `Link` 19→20.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 20, a: 8 };
+// `buttonVariants`, so `Link` 21→22.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 22, a: 9 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1184,6 +1189,20 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
   },
   {
+    file: 'src/views/automations/ui/AutomationsPage.tsx',
+    count: 2,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'Two navigating actions on Automations (2026-09-25). "Get the app" is the app-required ' +
+      "stage's one primary action and must match the empty lane's `<Button>` primary " +
+      "(`buttonVariants({ variant: \"primary\" })`); \"Open Library check history\" sits in the " +
+      "lane header beside the outline `<Button>` CTA as `buttonVariants({ variant: \"ghost\", " +
+      'size: "sm" })`. As 11-12.5px `shape: "link"` text they read as captions, not actions. ' +
+      'Both are `<Link>` because they navigate, and `control-class.ts` does not replace ' +
+      'standard buttons.',
+  },
+  {
     file: 'src/views/library/ui/parts/AgentDoor.tsx',
     count: 1,
     claim: 'standard-button',
@@ -1209,18 +1228,23 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
       'The value layer yields the standard button, so `controlClass` cannot make it.',
   },
   {
-    file: 'app/[locale]/not-found.tsx',
-    count: 1,
+    file: 'src/views/terminal-state/ui/NotFoundScreen.tsx',
+    count: 2,
     claim: 'standard-button',
     proof: 'buttonVariants',
-    why: '2026-08-04 버튼 라운드가 손 `rounded-full` 방언에서 정규화한 그 자리. `cn` 병합까지 되어 있다.',
+    why:
+      'The 404 exits (both not-found files render this one view since 2026-09-25): home is a ' +
+      '`<Link>` through `cn(buttonVariants(...))` as primary on the web and outline in the app, ' +
+      'beside `<Button>` siblings. Same normalization as the 2026-08-04 button round.',
   },
   {
-    file: 'app/not-found.tsx',
+    file: 'src/views/terminal-state/ui/RouteErrorScreen.tsx',
     count: 1,
     claim: 'standard-button',
     proof: 'buttonVariants',
-    why: '같음(루트 404).',
+    why:
+      'The error screen\'s "home" beside the `<Button>` retry. A plain `<a>` on purpose: a full ' +
+      'navigation is the reset after a render failure, and the screen sits outside the locale router.',
   },
   {
     file: 'src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx',
@@ -1321,10 +1345,15 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // 26 → 27 (2026-09-11, slice U2): `AgentDoor`, the one control that follows each of the
 // Library's agent-availability sentences. Registered rather than moved, for the reason its
 // row states — it is the standard-button shape the value layer itself yields.
-// 27 → 28 (2026-09-25): Check history's first-run door, the standard-button shape again.
-const BASELINE_ANCHOR_REGISTERED = 28;
+// 27 → 28 (2026-09-25): the render-error screen's "home" moved off a hand-built pill onto the
+// standard button beside its `<Button>` retry, so its dead ends match the 404's. The value layer
+// has no standard-button anchor shape, so the row is registered like the 404's own.
+// 28 → 30 (2026-09-25): Automations' two navigating actions, registered for the reason their
+// row states — the standard-button shape, at the two tags a navigating button needs.
+// 30 → 31 (2026-09-25): Check history's first-run door, the standard-button shape again.
+const BASELINE_ANCHOR_REGISTERED = 31;
 
-/** **Only this number may fall.** The current anchor total (28) minus registered (28). */
+/** **Only this number may fall.** The current anchor total (31) minus registered (31). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

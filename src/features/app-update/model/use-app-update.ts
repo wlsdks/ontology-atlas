@@ -11,6 +11,23 @@ import {
 } from './update-state';
 
 /**
+ * What the updater remembers on this computer: when it last reached the release feed, and the
+ * one build someone said "Later" to. Read-only, for the settings pane to state as facts; a store
+ * that cannot be read answers "nothing remembered", the same fallback the checker uses.
+ */
+export function readUpdateMemory(): { lastCheckedAt: number | null; dismissedVersion: string | null } {
+  try {
+    const last = Number(window.localStorage.getItem(LAST_CHECK_KEY));
+    return {
+      lastCheckedAt: Number.isFinite(last) && last > 0 ? last : null,
+      dismissedVersion: window.localStorage.getItem(DISMISSED_VERSION_KEY) || null,
+    };
+  } catch {
+    return { lastCheckedAt: null, dismissedVersion: null };
+  }
+}
+
+/**
  * The updater's runtime wiring.
  *
  * Every judgement is made by the pure functions in `update-state.ts`; this only connects them to the
