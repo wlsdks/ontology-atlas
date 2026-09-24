@@ -38,7 +38,7 @@ test.describe("Library rounds", () => {
     await expect(since).toContainText("1 page went stale");
     await expect(since).toContainText("1 redraft waits for you");
     await expect(since).toContainText("1 request was refused");
-    await expect(since).toContainText("3 passes held");
+    await expect(since).toContainText("3 passes with no change");
     // The chip names the page the way the person named it, not the file it lives in.
     await expect(since.getByRole("button", { name: "Open Design system in Wiki" })).toBeVisible();
 
@@ -54,10 +54,12 @@ test.describe("Library rounds", () => {
     const cardHeight = await ledger.locator("[data-outcome='redrafted']").first().evaluate((el) => el.getBoundingClientRect().height);
     expect(cardHeight).toBeGreaterThan(heldHeight * 2);
 
-    // Selecting a round filters the axis; its schedule is managed in Automations.
+    // Selecting a round filters the axis; its schedule is managed in Automations, through the
+    // index column's one door — the stage does not add a second link to the same place.
     await page.getByTestId("library-round-r-confluence").click();
     await expect(page.getByTestId("library-rounds-run-now")).toHaveCount(0);
-    await expect(page.getByTestId("library-rounds-manage-automations")).toBeVisible();
+    await expect(page.getByTestId("library-rounds-new")).toBeVisible();
+    await expect(page.getByTestId("library-rounds-manage-automations")).toHaveCount(0);
     await expect(ledger.locator("[data-outcome='held']")).toHaveCount(0);
     await expect(ledger.locator("[data-outcome='redrafted']")).toHaveCount(1);
   });
@@ -68,6 +70,8 @@ test.describe("Library rounds", () => {
     await openRounds(page);
 
     await expect(page.getByTestId("library-rounds")).toHaveAttribute("data-rounds-state", "empty");
+    // Before the first round there is no index column: the stage holds the one door.
+    await expect(page.getByTestId("library-rounds-index")).toHaveCount(0);
     await openNewDocumentSchedule(page);
     const sheet = page.getByTestId("library-rounds-sheet");
     await expect(sheet).toBeVisible();

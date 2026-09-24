@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { LibraryConstellations, LibraryPage, LibraryRounds, useLibraryRounds } from '@/views/library';
 import { useLocalVault } from '@/entities/vault-session';
@@ -47,6 +47,31 @@ export function LibraryWorkspace() {
    * for a 28px field.
    */
   const [toolsHost, setToolsHost] = useState<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const previousTab = useRef(tab);
+  /*
+   * **Sources and Wiki cross-fade too** (2026-09-25, round two). They share one view, so the
+   * key below keeps the panel mounted between them and its CSS enter never replays: the one
+   * tab pair that switched with a hard cut. Remounting would drop the view's selection and
+   * scroll, so the same arrival is played on the mounted panel instead. Opacity only, which
+   * is also the reduced-motion form of the other tabs' enter, and no transform, so no fixed
+   * popover inside the panel changes its containing block. Before paint, so the new list
+   * never shows a full-opacity first frame.
+   */
+  useLayoutEffect(() => {
+    const from = previousTab.current;
+    previousTab.current = tab;
+    const panel = panelRef.current;
+    const segmentSwitch = from !== tab && (from === 'sources' || from === 'wiki') && (tab === 'sources' || tab === 'wiki');
+    if (!segmentSwitch || !panel || typeof panel.animate !== 'function') return;
+    const style = getComputedStyle(panel);
+    // The browser hands the token back normalised (`.18s`, not `180ms`), so read the unit.
+    const raw = style.getPropertyValue('--motion-base').trim();
+    const duration = (Number.parseFloat(raw) || 0) * (raw.endsWith('ms') ? 1 : 1000);
+    if (duration <= 0) return;
+    const easing = style.getPropertyValue('--motion-ease').trim() || undefined;
+    panel.animate([{ opacity: 0 }, { opacity: 1 }], { duration, easing });
+  }, [tab]);
 
   const selectTab = useCallback((next: LibraryTab) => {
     if (next === tab) return;
@@ -127,6 +152,7 @@ export function LibraryWorkspace() {
         id={'library-workspace-tabpanel-' + tab}
         role="tabpanel"
         aria-labelledby={'library-workspace-tab-' + tab}
+        ref={panelRef}
         data-testid="library-workspace-panel"
         className={`flex min-h-0 flex-1 ${styles.panel}`}
       >

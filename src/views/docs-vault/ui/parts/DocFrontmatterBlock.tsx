@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Check, ChevronRight, Clipboard, Pencil } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { useTranslations } from "next-intl";
 import { buildNewNodeDoc, isWikiPage, type VaultDoc } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
@@ -35,7 +36,7 @@ import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
  * Collapsed by default (`<details open={false}>`) — on long documents this block
  * used to push the H1 below the first screen. Frontmatter is the graph source, so
  * it is never deleted or hidden from the DOM, only collapsed; the summary line
- * still surfaces `kind` / `slug` / field count so the reader knows what is inside
+ * still surfaces the kind and the field count so the reader knows what is inside
  * before expanding. The caller mounts this with `key={doc.slug}`, so switching
  * documents remounts it and resets the collapse state — no cross-document memory,
  * no URL or session pollution.
@@ -390,7 +391,6 @@ export function DocFrontmatterBlock({
     return null;
   }
 
-  const slugValue = formatValue(doc.frontmatter?.slug) ?? doc.slug;
   // It must be fixable even when kind is empty — a diagnosis with no way to act on it is a
   // dead end.
   const canQuickPatch =
@@ -616,27 +616,28 @@ export function DocFrontmatterBlock({
         <summary
           data-testid="doc-frontmatter-summary"
           aria-label={open ? t("collapseAria") : t("expandAria")}
-          className="flex list-none items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+          className="flex list-none items-center gap-2 font-sans text-body leading-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
         >
           <ChevronRight
             size={ICON_SIZE.sm}
             aria-hidden
             className="flex-none text-[color:var(--color-text-quaternary)] transition-transform group-open:rotate-90"
           />
-          <span aria-hidden>---</span>
+          {/*
+            **The collapsed line is read, not parsed** (2026-09-25). It used to be a line of YAML,
+            `--- kind: capability slug: capabilities/cart-pricing`, in the mono face: the slug
+            repeated the path the document header shows 80px above it, and the kind was the
+            schema word rather than the one the tree and the map use. It now says what the node
+            is, with the map's own glyph, and how many fields sit behind the chevron. The YAML
+            itself is still one press away, in mono, where it is literally what the file holds.
+          */}
           {kindValue ? (
-            <>
-              <span className="text-[color:var(--color-text-quaternary)]">kind:</span>
-              <span className="font-[var(--font-weight-emphasis)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
-                {kindValue}
-              </span>
-            </>
+            <span data-testid="doc-frontmatter-summary-kind" data-kind={kindValue} className="inline-flex min-w-0 items-center gap-1.5 text-[color:var(--color-text-secondary)]">
+              <OntologyMapKindGlyph kind={kindValue} size={12} className="flex-none" />
+              <span className="truncate font-[var(--font-weight-emphasis)]">{kindLabel(kindValue)}</span>
+            </span>
           ) : null}
-          <span className="min-w-0 truncate text-[color:var(--color-text-quaternary)]">
-            slug: <span className="text-[color:var(--color-text-secondary)]">{slugValue}</span>
-          </span>
-          {/* A count in a Korean sentence, not a key: the summary's mono voice stops at the keys. */}
-          <span className="ml-auto flex-none font-sans text-label text-[color:var(--color-text-quaternary)]">
+          <span className="ml-auto flex-none text-label leading-label text-[color:var(--color-text-tertiary)]">
             {t("collapsedSummary", { count: fields.length })}
           </span>
         </summary>

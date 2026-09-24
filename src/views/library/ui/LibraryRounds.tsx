@@ -14,14 +14,13 @@ import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_FRAME_FORM } from "@/shared/ui/page-frame";
-import { Button, EmptyState, InfoHint, RowButton } from "@/shared/ui";
+import { Button, EmptyState, InfoHint, RowButton, buttonVariants } from "@/shared/ui";
 
 import { useLibraryRounds } from "../lib/library-rounds-context";
 import { capitalize } from "../lib/round-presentation";
 import { lastOutcome, lastPass, nextRound, sinceSpan, summarizeSince } from "../lib/round-presentation";
 import { RoundsLedger } from "./parts/RoundsLedger";
 import { SinceYouLeft } from "./parts/SinceYouLeft";
-import { EmptyShape } from "./parts/EmptyShape";
 import { RoundsHistoryEmpty } from "./parts/RoundsHistoryEmpty";
 
 /**
@@ -220,7 +219,12 @@ export function LibraryRounds() {
       data-rounds-running={running ? running.phase : undefined}
       className="topology-ui-scale relative flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)] max-lg:flex-col"
     >
-      <aside
+      {/*
+        No index column before the first round (2026-09-25, round two). It could only draw an
+        empty list beside a stage that drew another, and its corner link was the page's one
+        door. Work scope drops its column in the same state; the stage below carries the door.
+      */}
+      {rounds.length > 0 ? <aside
         data-testid="library-rounds-index"
         aria-label={t("indexAria")}
         className="flex w-full min-w-0 min-h-0 flex-col overflow-hidden bg-[color:var(--color-panel)] max-lg:max-h-[40vh] max-lg:border-b max-lg:border-[color:var(--color-border-soft)] lg:w-[var(--docs-list-width)] lg:flex-none lg:border-r lg:border-[color:var(--color-border-soft)]"
@@ -237,21 +241,19 @@ export function LibraryRounds() {
         {/*
           One row: the door and its help. The help glyph used to stand alone on a row above the
           link (2026-09-25), a 24px control with nothing beside it. The door is the column's one
-          control and this screen's one way to Automations; with no rounds yet it takes the
-          accent, because it is then the only next step there is.
+          control and this screen's one way to Automations; the stage header no longer repeats
+          it when a round is selected.
         */}
         <div className="flex flex-none items-center gap-1 border-b border-[color:var(--color-overlay-2)] px-3 py-2.5">
           <h2 className="sr-only">{t("indexHeader", { count: rounds.length })}</h2>
           {/* Schedule changes live in Automations; this door keeps results and controls distinct. */}
           <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-new"
-            className={cn(controlClass({ shape: "link", size: "md", tone: rounds.length === 0 ? "accent" : "secondary" }), "min-w-0 flex-1 justify-start atlas-touch-floor")}>
+            className={cn(controlClass({ shape: "link", size: "md", tone: "secondary" }), "min-w-0 flex-1 justify-start atlas-touch-floor")}>
             <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}
           </Link>
           <InfoHint label={t("lede")} align="left">{t("lede")}</InfoHint>
         </div>
         <ul className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-1 pb-3 pt-2" data-testid="library-rounds-list">
-          {rounds.length === 0 ? <li aria-hidden className="px-2 pt-3"><EmptyShape icon={<Clock3 size={ICON_SIZE.sm} aria-hidden />}
-            columns={[t("shape.name"), t("shape.cadence"), t("shape.next")]} ghostRows={2} /></li> : null}
           {rounds.map((round) => {
             const word = outcomeWord(round);
             const isRunning = running?.roundId === round.id;
@@ -291,7 +293,7 @@ export function LibraryRounds() {
             );
           })}
         </ul>
-      </aside>
+      </aside> : null}
 
       <section data-testid="library-rounds-stage" className="atlas-scroll-quiet min-h-0 min-w-0 flex-1 overflow-y-auto">
         {/*
@@ -307,7 +309,7 @@ export function LibraryRounds() {
             its description. The status line used to be the head, at body size, and the largest
             text on the screen was the empty state's own headline below it.
           */}
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <header className="min-w-0">
             <div className="min-w-0">
               <p className="text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
                 {t("eyebrow")}
@@ -323,15 +325,18 @@ export function LibraryRounds() {
               </p>
               <p className="mt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]">{t("limit")}</p>
             </div>
-            {selected ? <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-manage-automations"
-              className={cn(controlClass({ shape: "link", size: "md", tone: "secondary" }), "shrink-0 atlas-touch-floor")}>
-              <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}</Link> : null}
           </header>
 
           {rounds.length === 0 ? (
-            <RoundsHistoryEmpty title={t("ledger.title")} description={t("emptyDescription")}
-              columns={[t("historyShape.run"), t("historyShape.outcome"), t("historyShape.review")]}
-              aria={t("ledger.aria")} />
+            <RoundsHistoryEmpty title={t("emptyTitle")} description={t("emptyDescription")}
+              kindsLabel={t("emptyKinds")}
+              kinds={[
+                { id: "consistency", name: t("kind.consistency"), body: t("kind.consistencyBody") },
+                { id: "service", name: t("kind.service"), body: t("kind.serviceBody") },
+              ]}
+              action={<Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-new"
+                className={cn(buttonVariants(), "atlas-touch-floor atlas-touch-floor-wide")}>
+                <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("emptyAction")}</Link>} />
           ) : (
             <>
               <SinceYouLeft span={span} summary={summary} locale={locale} onOpenPage={openPage} titleFor={titleFor} />

@@ -6352,17 +6352,10 @@
       "malformedTitle": "The rounds file needs attention",
       "malformedDescription": "Atlas could not read .ontology-atlas/rounds.json and left it unchanged. Fix or remove it, then read again.",
       "retry": "Read again",
-      "shape": {
-        "name": "Name",
-        "cadence": "Cadence",
-        "next": "Next run"
-      },
-      "emptyDescription": "Schedule a document check in Automations. Each pass then leaves its result and the pages it changed here, newest first.",
-      "historyShape": {
-        "run": "Run",
-        "outcome": "Outcome",
-        "review": "Review"
-      },
+      "emptyTitle": "Schedule the first document check",
+      "emptyDescription": "Each time a scheduled check runs, its result and the pages it changed land here, newest first. Open a changed page from here to review it.",
+      "emptyAction": "Schedule in Automations",
+      "emptyKinds": "Checks you can schedule",
       "kind": {
         "consistency": "Pages still match their sources",
         "consistencyBody": "Hashes every cited source on this Mac and runs the page check. No agent turn.",
@@ -6391,7 +6384,7 @@
         "running": "Running"
       },
       "outcome": {
-        "held": "held",
+        "held": "no change",
         "reviewed": "reviewed",
         "stale": "{count, plural, one {# stale} other {# stale}}",
         "redrafted": "{count, plural, one {# redrafted} other {# redrafted}}",
@@ -6424,7 +6417,7 @@
         "noPasses": "No pass ran in this span.",
         "stale": "{count, plural, one {# page} other {# pages}} went stale",
         "redrafted": "{count, plural, one {# redraft waits} other {# redrafts wait}} for you",
-        "held": "{count, plural, one {# pass} other {# passes}} held",
+        "held": "{count, plural, one {# pass} other {# passes}} with no change",
         "refused": "{count, plural, one {# request was} other {# requests were}} refused",
         "failed": "{count, plural, one {# pass} other {# passes}} did not finish",
         "asleep": "asleep {from} → {to}",
@@ -6441,14 +6434,14 @@
         "agentTurn": "1 agent turn",
         "noAgentTurn": "no agent turn",
         "manual": "run by hand",
-        "catchUp": "catch-up",
+        "catchUp": "missed run made up",
         "wrote": "wrote",
         "refused": "refused",
         "called": "called",
         "asleep": "Asleep",
         "duration": "{seconds} s",
         "durationMinutes": "{minutes, number} min",
-        "heldLine": "{name} · {checked} · held",
+        "heldLine": "{name} · {checked} · no change",
         "noAgent": "No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again.",
         "runningNow": "{name} · {phase} · {seconds, number} s",
         "phaseChecking": "Checking documents",
