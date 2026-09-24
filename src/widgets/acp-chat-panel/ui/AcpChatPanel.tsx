@@ -91,6 +91,7 @@ import { AcpPresentationPanel } from './AcpPresentationPanel';
 import { groupEvents } from './group-events';
 import { splitAppRequest } from './request-parts';
 import { isVaultTool, labelWithoutRepeatedPath, toolLabel } from './tool-label';
+import { composerStatusLive, workingShimmer } from './working-ink';
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useMeaningTransitionCapture } from '../model/use-meaning-transition-capture';
 
@@ -2372,8 +2373,18 @@ export function AcpChatPanel({
               */
               className="flex shrink-0 items-center gap-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
             >
-              {t(`status.${footerStatus}`)}
-              {turnElapsedLabel ? <span data-testid="acp-turn-elapsed" className="tabular-nums">· {turnElapsedLabel}</span> : null}
+              {/*
+                The same sweep as a running tool row, over the word and its clock together, so
+                the one place a person glances while waiting says "still working" by moving.
+                Not while the turn waits on the person, and not once it has gone silent.
+              */}
+              <span
+                data-testid="acp-status-words"
+                className={cn('flex items-center gap-1', workingShimmer(composerStatusLive(footerStatus, turnSilent)))}
+              >
+                {t(`status.${footerStatus}`)}
+                {turnElapsedLabel ? <span data-testid="acp-turn-elapsed" className="tabular-nums">· {turnElapsedLabel}</span> : null}
+              </span>
             </span>
             <TooltipProvider delayDuration={200}>
               {/*
@@ -2690,7 +2701,13 @@ function WorkGroup({
               : 'bg-[color:var(--color-text-quaternary)]',
           )}
         />
-        {t(active ? 'workGroupActive' : 'workGroup', { count: events.length })}
+        {/*
+          Its own span because the sweep paints through the text: on the button it would clip
+          the chevron, whose stroke is the same `currentColor` the band replaces.
+        */}
+        <span className={workingShimmer(active)}>
+          {t(active ? 'workGroupActive' : 'workGroup', { count: events.length })}
+        </span>
       </button>
       <div
         ref={boxRef}
@@ -3201,9 +3218,15 @@ function TranscriptEntry({
           get it back. Our own labels are short sentences that never reach the cap, so the
           share only ever bites on a foreign name, which is exactly the case that needed it.
         */}
+        {/*
+          **Running words sweep; finished words sit still** (owner, 2026-09-24: "while it works I
+          cannot tell whether it is doing anything"). The band crosses the label and the
+          present-tense outcome word only — never the node names, whose dotted underline is a
+          different promise — and it is gone the frame the call lands (`working-ink.ts`).
+        */}
         <span
           data-tool-label-text
-          className="min-w-0 max-w-[45%] shrink truncate"
+          className={cn('min-w-0 max-w-[45%] shrink truncate', workingShimmer(running))}
         >
           {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
         </span>
@@ -3266,6 +3289,7 @@ function TranscriptEntry({
           className={cn(
             'ml-auto shrink-0 tabular-nums',
             broke && 'font-[var(--font-weight-emphasis)]',
+            workingShimmer(running),
           )}
         >
           {outcome.kind === 'count' ? (

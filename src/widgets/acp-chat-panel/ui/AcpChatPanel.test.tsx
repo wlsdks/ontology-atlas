@@ -444,6 +444,27 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     expect(screen.getByText('어디부터').tagName).toBe('STRONG');
   });
 
+  it('an active work group sweeps its title, and a finished one does not', async () => {
+    await bootSession();
+    await startUserTurn('go');
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: { update: { sessionUpdate: 'agent_thought_chunk', content: { text: 'planning' } } },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="work-group"]')).toHaveAttribute('data-work-active', 'true'),
+    );
+    const title = () => screen.getByTestId('acp-chat-work-group').querySelector('.acp-working-shimmer');
+    expect(title()).toHaveTextContent('workGroupActive');
+
+    act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="work-group"]')).toHaveAttribute('data-work-active', 'false'),
+    );
+    expect(title()).toBeNull();
+  });
+
   it('a tool line appears once the call is made, and its status only changes when told', async () => {
     await bootSession();
     emit({
@@ -667,6 +688,57 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     await waitFor(() =>
       expect(document.querySelector('[data-acp-entry="tool"] [data-tool-running]')).toBeNull(),
     );
+  });
+
+  /**
+   * Owner, 2026-09-24: while the agent worked, a running row looked exactly like a finished
+   * one. A running call's words carry the sweep; the same row, landed, carries none.
+   */
+  it('sweeps the words of a running call and stills them once it lands', async () => {
+    await bootSession();
+    await startUserTurn('go');
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-sweep',
+          title: 'mcp__atlas-vault__list_concepts',
+          kind: 'read',
+          status: 'in_progress',
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"] [data-tool-running]')).toBeInTheDocument(),
+    );
+    const row = () => document.querySelector('[data-acp-entry="tool"]')!;
+    expect(row().querySelector('[data-tool-label-text]')).toHaveClass('acp-working-shimmer');
+    expect(screen.getByTestId('acp-chat-tool-outcome')).toHaveClass('acp-working-shimmer');
+    // The composer's status is the same live state, said in the same way.
+    expect(screen.getByTestId('acp-status-words')).toHaveClass('acp-working-shimmer');
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'tc-sweep',
+          status: 'completed',
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 3 }) }],
+        },
+      },
+    });
+    await waitFor(() => expect(row()).toHaveAttribute('data-tool-outcome', '3'));
+    expect(row().querySelectorAll('.acp-working-shimmer')).toHaveLength(0);
+
+    act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+    expect(screen.getByTestId('acp-status-words')).not.toHaveClass('acp-working-shimmer');
   });
 
   /**
