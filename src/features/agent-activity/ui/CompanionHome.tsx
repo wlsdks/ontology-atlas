@@ -33,7 +33,7 @@ export function CompanionHome({ compact = false }: { compact?: boolean }) {
   const targets = useMemo(() => open && docs ? growthTargets(docs, locale) : [], [open, docs, locale]);
   const store = useCompanionGrowth(project);
   const progress = growthProgress(store.growth);
-  const projectDoc = docs?.find(doc => doc.frontmatter.kind === 'project');
+  const projectDoc = useMemo(() => open ? docs?.find(doc => doc.frontmatter.kind === 'project') : undefined, [open, docs]);
   const projectDisplay = projectDoc?.frontmatter[`display_${locale}`];
   const projectName = typeof projectDisplay === 'string' ? projectDisplay : projectDoc?.title ?? vault.handle?.name ?? '';
   const latest = journal.journal.memories[0];
