@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-24",
+  "decision": "Keep the owner-selected companion RPG separate from ontology quality while connecting it to real concept exploration",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "orient",
+  "changes": [
+    "positioning"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "positioning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-wedge"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-24",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "c718f125-342e-4266-8ab7-f4fdcee4a19b",
+  "recordedAt": "2026-09-24T04:00:01.249Z"
+}

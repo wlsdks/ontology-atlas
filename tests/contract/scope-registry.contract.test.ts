@@ -54,6 +54,7 @@ const EXACT_SCOPE_PROVIDERS = [
   "vaultIdentityScope",
   "useVaultIdentityScope",
   "setChangeBaselineScope",
+  "growthProjectKey", // Optional game: one unique project UID, including renamed folder copies.
 ] as const;
 
 /**
@@ -144,6 +145,8 @@ interface StorageEntry {
 }
 
 const STORAGE_KEY_REGISTRY: StorageEntry[] = [
+  { key: "ontology-atlas:companion-game:v1:", kind: "storage", scope: "vault-scoped", scopedBy: "growthProjectKey", file: "src/features/agent-activity/model/companion-game.ts", provenBy: "src/features/agent-activity/model/use-companion-game.test.tsx", note: "Game power and rewards use the unique project UID; copies of the same project intentionally share progress." },
+  { key: "ontology-atlas:companion-growth:v1:", kind: "storage", scope: "vault-scoped", scopedBy: "growthProjectKey", file: "src/features/agent-activity/model/companion-growth.ts", provenBy: "src/features/agent-activity/model/use-companion-growth.test.tsx", note: "Personal reading rewards use the unique project UID; ambiguous or missing identity cannot earn." },
   { key: "ontology-atlas:companion-journal:v1", kind: "storage", scope: "global", file: "src/features/agent-activity/model/companion-journal.ts", provenBy: "src/features/agent-activity/model/use-companion-journal.test.tsx", note: "Device-local personal reflections, deliberately independent of vault truth; explicit reset only." },
   // ── State about the app itself (vault-independent) ───────────────────────
   { key: "app-update:dismissed-version", kind: "storage", scope: "global", note: "무시한 업데이트 버전" },

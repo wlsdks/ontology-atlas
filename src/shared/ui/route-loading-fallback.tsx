@@ -26,11 +26,12 @@ import { BrandWaitingMark } from './brand-waiting-mark';
  * `data-route-loading` marks this temporary `#main` so `RouteFocusManager` does not mistake
  * it for the destination and send focus into it.
  */
-export function RouteLoadingFallback() {
+export function RouteLoadingFallback({embedded=false}:{embedded?:boolean}={}) {
+  const Container=embedded?'div':'main';
   const t = useTranslations('nav');
   return (
-    <main
-      id="main"
+    <Container
+      id={embedded?undefined:"main"}
       tabIndex={-1}
       data-route-loading="true"
       data-testid="route-loading-fallback"
@@ -45,6 +46,6 @@ export function RouteLoadingFallback() {
         <BrandWaitingMark active initialVisibility="visible" />
         <p>{t('surfaceLoading')}</p>
       </div>
-    </main>
+    </Container>
   );
 }
