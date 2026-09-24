@@ -1,7 +1,11 @@
 import { compactOntologyDescription } from "@/shared/lib/ontology-description";
 
-/** The maximum length of the hero's one-line definition — the bound that fits within two lines. */
-const TAGLINE_MAX_CHARS = 160;
+/**
+ * The maximum length of the hero's definition — one whole first sentence. 160 closed the flagship's
+ * 264-character definition on "…and what..." mid-clause (measured 2026-09-25); the hero's text column
+ * is wide enough for 320 in three lines at 1512, so the bound is the excerpt's own length.
+ */
+const TAGLINE_MAX_CHARS = 320;
 
 export interface ProjectTaglineSource {
   /** frontmatter `description:` — the one-line definition a person wrote themselves. */

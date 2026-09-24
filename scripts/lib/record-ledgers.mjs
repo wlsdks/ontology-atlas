@@ -183,7 +183,15 @@ function changelog(root, legacy) {
   }
   const renderFacts = (facts) => CHANGE_CATEGORIES.flatMap((category) => {
     const rows = facts.filter((f) => f.meta.category === category).sort((a, b) => a.meta.id.localeCompare(b.meta.id));
-    return rows.length ? [`**${category}**: ${rows.map((r) => r.body).join('; ')}`] : [];
+    /*
+     * One bullet per fact under a bold category label, with a blank line between
+     * categories. Joining facts with "; " on one line made every release a single
+     * paragraph (measured 2026-09-25: 9,997 characters, 99 ".;" seams on /ko/changelog),
+     * and category lines without a blank line between them folded into that same
+     * paragraph, so "Fixed" started mid-line. The frozen ledger keeps its one-line
+     * template; this is the rendering of fragments only.
+     */
+    return rows.length ? [`**${category}**\n\n${rows.map((r) => `- ${r.body}`).join('\n')}`] : [];
   }).join('\n\n');
   const unassigned = changes.filter((item) => !assigned.has(item.meta.id));
   const sections = [];

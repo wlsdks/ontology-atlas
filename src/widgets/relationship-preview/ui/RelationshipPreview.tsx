@@ -111,7 +111,8 @@ export function RelationshipPreview({ title, description, exampleLabel, pauseLab
     <div ref={ref} data-motion={environmentActive && !userPaused ? 'running' : 'paused'} data-selected={selected ?? 'none'} className={cn(styles.preview, 'relative isolate rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]')}>
       <header className="relative z-10 flex flex-wrap items-start justify-between gap-4 px-5 pt-5 sm:px-8 sm:pt-7">
         <div className="min-w-0 max-w-prose">
-          <h3 className="text-display font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{title}</h3>
+          {/* One step under the page's display title, so the page keeps the only headline. */}
+          <h3 className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{title}</h3>
           <p className="mt-2 break-keep text-body-lg text-[color:var(--color-text-secondary)]">{description}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -155,7 +156,8 @@ export function RelationshipPreview({ title, description, exampleLabel, pauseLab
         <RowDisclosure open={Boolean(item)} id={id}>
           <p className="max-w-prose break-keep pb-4 text-body-lg text-[color:var(--color-text-primary)]">{item?.explanation}</p>
         </RowDisclosure>
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[color:var(--color-divider)] pt-5">{footer}</div>
+        {/* Copy, then the next step under it on the same start line, not pushed to the far edge. */}
+        <div className="flex flex-col items-start gap-4 border-t border-[color:var(--color-divider)] pt-5">{footer}</div>
       </div>
     </div>
   );

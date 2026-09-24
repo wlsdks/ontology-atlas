@@ -1,7 +1,7 @@
 import { countWikiPages, type VaultDoc, type VaultManifest } from "@/entities/docs-vault";
 
 import type { DomainCompositionRow } from "./domain-composition";
-import type { ProjectOntologyMetrics } from "./project-ontology-metrics";
+import type { ProjectOntologyMetrics } from "@/entities/knowledge-graph";
 
 /**
  * What this project has built on each of Atlas's own surfaces — the project page's first answer.

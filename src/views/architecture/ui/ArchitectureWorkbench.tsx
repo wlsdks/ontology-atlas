@@ -38,6 +38,7 @@ import { ArchitectureFlow } from './ArchitectureFlow';
 import { ArchitectureEvidencePlane } from './ArchitectureEvidencePlane';
 import { ArchitectureEvidenceRail } from './ArchitectureEvidenceRail';
 import { ArchitectureRules } from './ArchitectureRules';
+import { HARNESS_GUTTER_LEFT, HARNESS_GUTTER_X } from './harness-frame';
 import { buildArchitectureGraph } from '../model/graph-layout';
 
 /**
@@ -718,8 +719,20 @@ export function ArchitectureWorkbench({
           opposite, giving the canvas the full width and opening the inspector over or beside it
           rather than standing a column permanently in its way.
         */}
+        {/* Embedded, the gutter is the Harness shell's own, so the toolbar starts on the `h1`'s
+            line and ends on the tab rail's; at `px-8` it sat 8px left of the title under one
+            header (design audit, 2026-09-25). Above the page cap that gutter grows to keep the
+            frame's 1600px column (`harness-frame.ts`); with a dock open the right edge meets the
+            dock, so only the start line pays the cap there. */}
         <div
-          className="min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 md:px-8 lg:col-start-1 lg:col-end-3 xl:col-start-1 xl:col-end-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:border-b-0 xl:pb-3 xl:pt-3"
+          className={cn(
+            'min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 lg:col-start-1 lg:col-end-3 xl:col-start-1 xl:col-end-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:border-b-0 xl:pb-3 xl:pt-3',
+            !embedded
+              ? 'md:px-8'
+              : inspectorOpen || evidenceOpen
+                ? cn(HARNESS_GUTTER_LEFT, 'pr-5 md:pr-10')
+                : HARNESS_GUTTER_X,
+          )}
           data-testid="architecture-flow-panel"
         >
           {/*
@@ -840,7 +853,7 @@ export function ArchitectureWorkbench({
                 */}
                 <Button
                   variant="primary"
-                  size="lg"
+                  size="md"
                   className="atlas-touch-floor rounded-r-none"
                   disabled={agentRoute === 'checking' || copyState === 'pending'}
                   data-testid="architecture-agent-action"
@@ -873,7 +886,7 @@ export function ArchitectureWorkbench({
                 <Button
                   ref={taskMenuTriggerRef}
                   variant="outline"
-                  size="lg"
+                  size="md"
                   className="atlas-touch-floor -ml-px min-w-9 rounded-l-none px-2"
                   disabled={agentRoute === 'checking'}
                   aria-haspopup="menu"
@@ -950,7 +963,7 @@ export function ArchitectureWorkbench({
               </span>
               <Button
                 variant="outline"
-                size="lg"
+                size="md"
                 className="atlas-touch-floor hidden shrink-0 xl:inline-flex"
                 onClick={(event) =>
                   inspector === 'rules'

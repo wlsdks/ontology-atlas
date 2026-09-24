@@ -201,7 +201,8 @@ test.describe("on a phone", () => {
       });
     });
 
-    expect(measured.length, "one door per surface").toBe(3);
+    // Library and Harness: the ontology cell's door is the map, which the hero's primary opens.
+    expect(measured.length, "one door per surface other than the map").toBe(2);
     for (const door of measured) {
       // The visible box stays small; only the reach grows.
       expect(door.visible, `${door.label} box: ${JSON.stringify(door)}`).toBeLessThan(32);

@@ -49,8 +49,10 @@ describe('record ledgers', () => {
     writeFileSync(path.join(root, `docs/records/changes/2026-02-02-b-${b}.md`), `---\nid: ${b}\ndate: 2026-02-02\ncategory: Fixed\n---\nfixed B\n`);
     writeFileSync(path.join(root, 'docs/records/releases/v1.1.0.md'), `---\nversion: v1.1.0\ndate: 2026-02-03\ntitle: release\n---\n- ${a}\n`);
     const result = readLedgerSource('docs/CHANGELOG.md', { root });
-    assert.match(result.content, /Unreleased[\s\S]*Fixed.*fixed B/);
-    assert.match(result.content, /v1\.1\.0: release[\s\S]*Added.*new A/);
+    assert.match(result.content, /Unreleased[\s\S]*\*\*Fixed\*\*\n\n- fixed B\n/);
+    assert.match(result.content, /v1\.1\.0: release[\s\S]*\*\*Added\*\*\n\n- new A/);
+    // One fact per bullet, never glued with "; " into one paragraph (the 9,997-character changelog paragraph, 2026-09-25).
+    assert.doesNotMatch(result.content.split('## 2026-01-01')[0], /\.; |\*\*(?:Added|Changed|Fixed|Removed)\*\*: /);
     assert.ok(result.inputs.some((p) => p.endsWith(`${b}.md`)));
   });
   it('rejects a frozen legacy edit and fragments without policy', () => {
@@ -133,7 +135,7 @@ describe('record ledgers', () => {
 
     const changelog = readLedgerSource('docs/CHANGELOG.md', { root }).content;
     assert.match(changelog, /v1\.1\.0: a release cut on a Windows checkout/);
-    assert.match(changelog, /\*\*Added\*\*: a fact written on a Windows checkout/);
+    assert.match(changelog, /\*\*Added\*\*\n\n- a fact written on a Windows checkout/);
     assert.ok(!changelog.includes('\r'), 'the composed changelog must carry one canonical line ending');
 
     const decisions = readLedgerSource('docs/DECISIONS.md', { root }).content;

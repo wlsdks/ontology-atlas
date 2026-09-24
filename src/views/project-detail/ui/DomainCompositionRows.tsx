@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getTopologyFocusHref } from "@/entities/project";
@@ -63,6 +63,8 @@ interface Props {
  * button.
  */
 export function DomainCompositionRows({ domains, labels }: Props) {
+  const listRef = useRef<HTMLUListElement>(null);
+  useTailColumnWidth(listRef, domains, labels);
   return (
     <div className="flex flex-col">
       {/* The key to the bar's two segments appears once per group — repeating it per row is noise. */}
@@ -70,7 +72,7 @@ export function DomainCompositionRows({ domains, labels }: Props) {
         labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
         className="mb-1.5"
       />
-      <ul data-testid="project-detail-domain-rows" className="flex flex-col">
+      <ul ref={listRef} data-testid="project-detail-domain-rows" className="flex flex-col">
         {domains.map((domain) => (
           <DomainRow key={domain.id} domain={domain} labels={labels} />
         ))}
@@ -79,15 +81,56 @@ export function DomainCompositionRows({ domains, labels }: Props) {
         The footnote is **one paragraph**. How to read the bar and "the hero chip sum ≠ the row sum" are
         the same kind of annotation needed to read this list, so splitting them into two paragraphs
         doubles the quiet grey block competing with the list's last row.
+        The rule spans the list; the words keep the reading column's line (round four: across a
+        page-wide card at 1920 they ran as one ~950px caption).
       */}
-      <p
-        data-testid="project-detail-domain-overlap-note"
-        className="mt-2.5 break-keep border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-label text-[color:var(--color-text-quaternary)]"
-      >
-        {labels.legendCaption} {labels.overlapNote}
-      </p>
+      <div className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5">
+        <p
+          data-testid="project-detail-domain-overlap-note"
+          className="max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-pretty text-label leading-label text-[color:var(--color-text-quaternary)]"
+        >
+          {labels.legendCaption} {labels.overlapNote}
+        </p>
+      </div>
     </div>
   );
+}
+
+/**
+ * **The tail column is as wide as the widest tail in this list** (2026-09-25, round two).
+ *
+ * Every row's track has to end on one axis, so the number column cannot follow each row's own
+ * words (the 11.4px staircase `DomainCapacityBar` documents). A fixed 200px held the axis but set
+ * the column by guess: at 1512 about 100px of bare card stood between the widest breakdown and the
+ * row's chevron. The list measures its tails at their own width once the fonts are in and pins
+ * `--capacity-tail-inline` to the widest, so the track takes everything the words do not need.
+ */
+function useTailColumnWidth(
+  listRef: RefObject<HTMLUListElement | null>,
+  domains: DomainCompositionRow[],
+  labels: DomainCompositionRowsLabels,
+) {
+  const { capabilityUnit, elementUnit } = labels;
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    let cancelled = false;
+    const measure = () => {
+      if (cancelled) return;
+      list.style.removeProperty("--capacity-tail-inline");
+      let widest = 0;
+      list.querySelectorAll<HTMLElement>('[data-testid="domain-capacity-bar-tail"]').forEach((tail) => {
+        widest = Math.max(widest, tail.getBoundingClientRect().width);
+      });
+      if (widest > 0) list.style.setProperty("--capacity-tail-inline", `${Math.ceil(widest)}px`);
+    };
+    measure();
+    // A webfont that arrives after the first paint changes every tail's width.
+    void document.fonts?.ready.then(measure);
+    return () => {
+      cancelled = true;
+    };
+  }, [listRef, domains, capabilityUnit, elementUnit]);
 }
 
 function DomainRow({
@@ -126,13 +169,14 @@ function DomainRow({
           shape: "row",
           size: "sm",
           className:
-            "-mx-1.5 w-[calc(100%+0.75rem)] gap-2 px-1.5 py-0 hover:bg-[color:var(--color-overlay-1)]",
+            "-mx-1.5 w-[calc(100%+0.75rem)] gap-2 px-1.5 py-1.5 hover:bg-[color:var(--color-overlay-1)]",
         })}
       >
         <span className="min-w-0 flex-1">
           <DomainCapacityBar
             row={domain}
             labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
+            tail="inline"
           />
         </span>
         {/*

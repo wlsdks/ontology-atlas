@@ -102,11 +102,13 @@ async function measureGuidanceGeometry(
     const domainElements = [...document.querySelectorAll<HTMLElement>('[data-testid^="harness-domain-"]')];
     const intersects = (a: DOMRect, b: DOMRect) => Math.min(a.right, b.right) > Math.max(a.left, b.left) && Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
     const geometry = domainElements.map((domain) => {
-      const title = domain.querySelector('h4')!;
+      const title = domain.querySelector<HTMLElement>('[data-domain-heading]')!;
       const titleRange = document.createRange();
       titleRange.selectNodeContents(title);
-      const titleRect = titleRange.getBoundingClientRect();
       const titleBox = title.getBoundingClientRect();
+      // The purpose line is clamped; its hidden lines still report range rects below the box.
+      const rangeRect = titleRange.getBoundingClientRect();
+      const titleRect = new DOMRect(rangeRect.left, rangeRect.top, rangeRect.width, Math.min(rangeRect.bottom, titleBox.bottom) - rangeRect.top);
       const roles = [...domain.querySelectorAll<HTMLElement>('[data-role]')].map((role) => {
         const rect = role.getBoundingClientRect();
         return { role: role.dataset.role, height: rect.height, intersectsTitle: intersects(rect, titleRect) };
@@ -291,14 +293,16 @@ test.describe("하네스 탭", () => {
     const overview = page.getByTestId('harness-coverage-overview');
     await expect(overview).toBeVisible();
     const gaps = await overview.locator('[data-testid^="harness-domain-"]').evaluateAll((domains) => domains.flatMap((domain) => {
-      const heading = domain.querySelector('h4')!.getBoundingClientRect();
+      const heading = domain.querySelector<HTMLElement>('[data-domain-heading]')!.getBoundingClientRect();
       const textRects: DOMRect[] = [];
       const walker = document.createTreeWalker(domain, NodeFilter.SHOW_TEXT);
       for (let node = walker.nextNode(); node; node = walker.nextNode()) {
         if (!node.textContent?.trim()) continue;
         const range = document.createRange();
         range.selectNodeContents(node);
-        textRects.push(...range.getClientRects());
+        // Only painted lines: a clamped purpose keeps rects for the lines it hides below its box.
+        const box = node.parentElement!.getBoundingClientRect();
+        textRects.push(...[...range.getClientRects()].filter((rect) => rect.top < box.bottom - 0.5));
       }
       return [...domain.querySelectorAll<SVGPathElement>('[data-role-connection]')].map((connection) => {
         const role = domain.querySelector<HTMLElement>(`[data-role="${connection.dataset.roleConnection}"]`)!;
@@ -747,11 +751,13 @@ test.describe("하네스 탭", () => {
       expect(observedColumns).toBe(sample.columns);
 
       const geometry = await overview.locator('[data-testid^="harness-domain-"]').evaluateAll((domains) => domains.map((domain) => {
-        const title = domain.querySelector('h4')!;
+        const title = domain.querySelector<HTMLElement>('[data-domain-heading]')!;
         const titleRange = document.createRange();
         titleRange.selectNodeContents(title);
-        const titleRect = titleRange.getBoundingClientRect();
         const titleBox = title.getBoundingClientRect();
+        // The purpose line is clamped; its hidden lines still report range rects below the box.
+        const rangeRect = titleRange.getBoundingClientRect();
+        const titleRect = new DOMRect(rangeRect.left, rangeRect.top, rangeRect.width, Math.min(rangeRect.bottom, titleBox.bottom) - rangeRect.top);
         const domainRect = domain.getBoundingClientRect();
         const domainStyle = getComputedStyle(domain);
         const intersects = (a: DOMRect, b: DOMRect) => Math.min(a.right, b.right) > Math.max(a.left, b.left) && Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
@@ -1007,6 +1013,11 @@ test.describe("하네스 탭", () => {
     await expect(nodes).toHaveCount(13);
     await nodes.first().focus();
     for(const node of await nodes.all()){
+      /* The loop card's own hint button sits between the told and gated bands in reading order;
+         it is a real stop, so the walk steps over it rather than pretending it is not there. */
+      for (let guard = 0; guard < 2 && !(await node.evaluate((el) => el === document.activeElement)); guard += 1) {
+        await page.keyboard.press('Tab');
+      }
       await expect(node).toBeFocused();
       await expect.poll(()=>node.evaluate(el=>{
         const box=el.getBoundingClientRect();const bar=document.querySelector('[data-tabbar="primary"]')?.getBoundingClientRect();

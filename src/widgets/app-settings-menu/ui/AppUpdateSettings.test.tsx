@@ -23,8 +23,14 @@ const checkNow = vi.fn();
 let contextValue: AppUpdateValue | null = null;
 let desktop = true;
 
+let memory: { lastCheckedAt: number | null; dismissedVersion: string | null } = {
+  lastCheckedAt: null,
+  dismissedVersion: null,
+};
+
 vi.mock('@/features/app-update', () => ({
   useAppUpdateContext: () => contextValue,
+  readUpdateMemory: () => memory,
 }));
 
 vi.mock('@/shared/lib/desktop-shell', () => ({
@@ -48,9 +54,25 @@ beforeEach(() => {
   checkNow.mockReset();
   desktop = true;
   contextValue = null;
+  memory = { lastCheckedAt: null, dismissedVersion: null };
 });
 
 describe('업데이트 확인 절', () => {
+  it('자동 확인이 기억하는 것만 사실로 말한다 — 확인한 적 없음과 미뤄 둔 판', () => {
+    renderAt({ kind: 'idle' });
+    const auto = screen.getByTestId('app-settings-update-auto');
+    expect(auto).toHaveTextContent(ko.nav.settingsMenu.appUpdate.autoNever);
+    expect(auto.textContent).not.toContain('「나중에」');
+  });
+
+  it('미뤄 둔 판이 있으면 그 판을 대고, 확인이 다시 보여 준다고 말한다', () => {
+    memory = { lastCheckedAt: Date.UTC(2026, 8, 25, 5, 3), dismissedVersion: '1.2.7' };
+    renderAt({ kind: 'idle' });
+    const auto = screen.getByTestId('app-settings-update-auto');
+    expect(auto.textContent).not.toContain(ko.nav.settingsMenu.appUpdate.autoNever);
+    expect(auto).toHaveTextContent('1.2.7');
+  });
+
   it('버튼이 실제로 확인을 시작한다 — 이 배선이 없던 것이 결함이었다', () => {
     renderAt({ kind: 'idle' });
     fireEvent.click(screen.getByTestId('app-settings-update-check'));
