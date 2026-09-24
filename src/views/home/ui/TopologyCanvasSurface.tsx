@@ -30,6 +30,7 @@ import { Compass, HelpCircle, Play } from "lucide-react";
 import dynamic from "next/dynamic";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
+import { TopologyTerritoriesSurface } from "./TopologyTerritoriesSurface";
 const VaultStartSteps = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.VaultStartSteps),
   { ssr: false },
@@ -103,6 +104,8 @@ interface TopologyCanvasSurfaceProps {
     | "t"
     | "tTopologyKeyboardWalk"
     | "galaxy"
+    | "territories"
+    | "reducedMotion"
     | "audiencePlain"
     | "glyphSet"
     | "canvasBackground"
@@ -124,6 +127,7 @@ interface TopologyCanvasSurfaceProps {
     | "setRecentNeedsVaultOpen"
     | "needsVaultReason"
     | "setNeedsVaultReason"
+    | "ontologyInsight"
   >;
   acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpRuntime">;
   topologyAuthoring: Pick<
@@ -223,10 +227,10 @@ export function TopologyCanvasSurface({
   const { acpRuntime } = acpRuntimeController;
   const {
     vault, deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, changedSlugs,
-    recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason
+    recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason, ontologyInsight
   } = topologyVaultReadModel;
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
-  const { t, tTopologyKeyboardWalk, galaxy, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
+  const { t, tTopologyKeyboardWalk, galaxy, territories, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug, localGraphProjects, resolvedSelectionSlug } = topologyGraphProjection;
   const { mapRelationCaptions, mapReviewQuestionIds } = topologyAnalysisReview;
   const { handleClose, handleSelect } = topologyNavigationActions;
@@ -412,6 +416,29 @@ export function TopologyCanvasSurface({
                 />
               )}
             >
+              {territories ? (
+                /* Territories (owner decision, 2026-09-24): the flat plane with nothing
+                   folded. It shares the selection contract — a click selects through the
+                   same handler, so the same inspector opens — and owns its own canvas. */
+                <TopologyTerritoriesSurface
+                  nodes={ontologyMapGraph.nodes}
+                  edges={ontologyMapGraph.edges}
+                  insightNodes={ontologyInsight?.nodes}
+                  selectedId={canvasSelectedSlug}
+                  onSelect={(slug) => {
+                    setMeaningEditorState(null);
+                    setSelectedEdge(null);
+                    handleSelect(slug);
+                  }}
+                  onPaneClick={() => {
+                    setMeaningEditorState(null);
+                    setSelectedEdge(null);
+                    handleClose();
+                  }}
+                  onDrawnCountChange={handleMapFrameDrawn}
+                  reducedMotion={reducedMotion}
+                />
+              ) : (
               <OntologyMap
                 nodes={ontologyMapGraph.nodes}
                 edges={ontologyMapGraph.edges}
@@ -543,6 +570,7 @@ export function TopologyCanvasSurface({
                 footprint={footprint}
                 expand={expand}
               />
+              )}
             </ErrorBoundary>
           ) : null}
           {topologyRenderState.renderCanvas ? (
