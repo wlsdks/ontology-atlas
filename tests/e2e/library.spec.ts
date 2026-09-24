@@ -215,9 +215,9 @@ test.describe("the Library destination", () => {
     await expect(sources.getByRole("button")).toHaveCount(2);
     await expect(sources).toContainText("quarter-plan.pdf");
     await expect(sources).toContainText("budget.xlsx");
-    // Format and size come from the listing; the file is never opened to produce them.
-    await expect(sources).toContainText("PDF");
-    await expect(sources).toContainText("XLSX");
+    // Format comes from the listing, and a name that already ends in it is not followed by
+    // a second copy of it (design sweep round 2, 2026-09-25): the extension is the format.
+    await expect(sources.getByTestId("library-source-format")).toHaveCount(0);
 
     // The one invariant the whole library rests on: a raw source is not a document. It is
     // measured across the Library tabs: only ontology documents belong in this tree.
@@ -349,7 +349,8 @@ test.describe("the Library destination", () => {
     await expect(handover).toHaveAttribute("aria-label", /section-order/);
     await expect(handover.getByTestId("library-spine-attention-dot")).toBeAttached();
     await expect(handover).toContainText("off-template");
-    await expect(page.getByTestId("library-off-template-count")).toBeVisible();
+    // The card says it; the header strip counts it; no third copy under the shelf (2026-09-25).
+    await expect(page.getByTestId("library-off-template-count")).toHaveCount(0);
 
     /*
      * A search is an answer to a question, so the rows come back — and with them the pill
@@ -386,7 +387,9 @@ test.describe("the Library destination", () => {
     await expect(summary).toBeVisible();
     await expect(summary).toContainText("quarter-plan.pdf");
     await expect(summary).toContainText("sources/quarter-plan.pdf");
-    await expect(summary).toContainText("PDF");
+    // The format is the extension the headline already ends in, so the pane does not
+    // print it a second time as a fact row (2026-09-25).
+    await expect(summary.locator('[data-fact="format"]')).toHaveCount(0);
     /*
      * **Which page cites it, and whether that page still describes these bytes.**
      *
