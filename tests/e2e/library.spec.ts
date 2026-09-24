@@ -387,7 +387,9 @@ test.describe("the Library destination", () => {
     await expect(summary).toBeVisible();
     await expect(summary).toContainText("quarter-plan.pdf");
     await expect(summary).toContainText("sources/quarter-plan.pdf");
-    await expect(summary).toContainText("PDF");
+    // The format is the extension the headline already ends in, so the pane does not
+    // print it a second time as a fact row (2026-09-25).
+    await expect(summary.locator('[data-fact="format"]')).toHaveCount(0);
     /*
      * **Which page cites it, and whether that page still describes these bytes.**
      *

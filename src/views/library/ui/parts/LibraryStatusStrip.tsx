@@ -1,6 +1,9 @@
 "use client";
 
+import type { RefObject } from "react";
 import type { useTranslations } from "next-intl";
+
+import { controlClass } from "@/shared/ui/control-class";
 
 import { libraryDanglingLinkCount, libraryOffTemplateCount, selectCompileTargets } from "@/features/library";
 import { libraryStepStates } from "../../lib/stage-steps";
@@ -27,6 +30,9 @@ import type { LibraryUiModel } from "@/features/library";
 export function LibraryStatusStrip({
   model,
   indexShowsSourceStates = false,
+  onCompileNext,
+  compileAnchorRef,
+  compileOpen,
   t,
 }: {
   model: LibraryUiModel;
@@ -36,6 +42,11 @@ export function LibraryStatusStrip({
    * the screen rather than twice, 300px apart (design sweep, 2026-09-25).
    */
   indexShowsSourceStates?: boolean;
+  /** Opens the Compile popover, the home clause's own press; absent, the clause is text. */
+  onCompileNext?: () => void;
+  /** Where that popover hangs while this strip, not the home's, is on screen. */
+  compileAnchorRef?: RefObject<HTMLButtonElement | null>;
+  compileOpen?: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   const states = libraryStepStates(model);
@@ -112,6 +123,48 @@ export function LibraryStatusStrip({
   if (offTemplate > 0) parts.push(t("stage.statusOffTemplate", { count: offTemplate }));
   if (unlinked > 0) parts.push(t("stage.statusUnlinked", { count: unlinked }));
   if (parts.length === 0) return null;
+
+  /*
+   * ⚠️ **The next file is a press here too** (2026-09-25). The home strip draws
+   * *Compile next: chargeback-runbook.md* as an accent link that opens the Compile
+   * popover; this strip printed the same words as plain text, so one fact wore two
+   * grammars a press apart and a person could not tell whether either was pressable. With
+   * `onCompileNext` the clause is the home's link, with the home's popover behind it.
+   */
+  if (compileTarget && onCompileNext) {
+    const rest = parts.slice(1);
+    return (
+      <p
+        data-testid="library-status-strip"
+        className="flex min-w-0 items-center gap-x-1.5 text-label leading-body text-[color:var(--color-text-secondary)]"
+      >
+        <button
+          type="button"
+          ref={compileAnchorRef}
+          onClick={onCompileNext}
+          data-testid="library-status-compile"
+          aria-expanded={compileOpen}
+          className={controlClass({
+            shape: "link",
+            tone: "accent",
+            hoverInk: "strong",
+            active: compileOpen === true,
+            className: "min-w-0 max-w-full",
+          })}
+        >
+          <span className="min-w-0 truncate">{parts[0]}</span>
+        </button>
+        {rest.length > 0 ? (
+          <>
+            <span aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]">
+              ·
+            </span>
+            <span className="min-w-0 truncate">{rest.join(" · ")}</span>
+          </>
+        ) : null}
+      </p>
+    );
+  }
 
   return (
     <p

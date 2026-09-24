@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import ko from "../../../../../messages/ko.json";
 import type { LibraryUiModel } from "@/features/library";
@@ -198,5 +198,35 @@ describe("LibraryStatusStrip — the next step names its file", () => {
 
   it("keeps the count when the index shows the wiki", () => {
     expect(withSources(false)).toContain("정리 전 2개");
+  });
+});
+
+/**
+ * **One fact, one grammar** (2026-09-25). The home draws the next file as an accent link
+ * that opens the Compile popover; the reader's strip printed the same words as text.
+ */
+describe("LibraryStatusStrip — the next file is the home's press", () => {
+  it("draws the clause as a button that runs the same press, and keeps the rest as text", () => {
+    const value = {
+      ...model({ "wiki/a": ["section-order"] }, { needsCompileCount: 1, notCompiledCount: 1 }),
+      sources: [{ path: "sources/chargeback-runbook.md", state: "not-compiled" }],
+    } as unknown as LibraryUiModel;
+    const onCompileNext = vi.fn();
+    function Strip() {
+      const t = useTranslations("library");
+      return <LibraryStatusStrip model={value} indexShowsSourceStates onCompileNext={onCompileNext} compileOpen={false} t={t} />;
+    }
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <Strip />
+      </NextIntlClientProvider>,
+    );
+    const press = screen.getByTestId("library-status-compile");
+    expect(press.tagName).toBe("BUTTON");
+    expect(press.textContent).toBe("정리 다음: chargeback-runbook.md");
+    expect(press.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(press);
+    expect(onCompileNext).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("library-status-strip").textContent).toContain("서식 벗어남 1개");
   });
 });

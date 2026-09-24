@@ -667,6 +667,14 @@ export function LibrarySection({
          * about to press moved as they typed (design-interaction, council 2026-09-11). One
          * line is reserved at rest instead, through the same `--leading-caption` this text
          * is set in, and the list never moves.
+         *
+         * ⚠️ **The reserve is the gap, not an addition to it** (2026-09-25). At rest the
+         * empty line sat on top of the head's `pb-2` and the section's `pt-3`: 38px of
+         * blank between the field and the first card at 1512, wider than any other gap in
+         * the column, and it read as a missing element. Where the field is hosted in the
+         * head, the head drops its bottom padding and the section opens on `pt-1.5`, so
+         * the reserved line plus that step is the whole gap (24px), and a caption, when
+         * there is one, stands in it with 6px below.
          */}
         <p
           data-testid="library-search-matches"
@@ -726,7 +734,7 @@ export function LibrarySection({
     return (
       /* No `min-h-0` and no overflow: the column above owns the one scroller, and a
          section that could shrink is a section that can cut a row in half. */
-      <section data-testid="library-sources" className="flex flex-col pb-1 pt-3">
+      <section data-testid="library-sources" className={cn("flex flex-col pb-1", searchHost ? "pt-1.5" : "pt-3")}>
         {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
         <SectionActions>
           <Tooltip content={t("sources.addTooltip")}>
@@ -1169,7 +1177,7 @@ export function LibrarySection({
   ) : null;
 
   return (
-    <section data-testid="library-wiki" className="flex flex-col pb-1 pt-3">
+    <section data-testid="library-wiki" className={cn("flex flex-col pb-1", searchHost ? "pt-1.5" : "pt-3")}>
       {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
       {agentNotice ? (
         /*

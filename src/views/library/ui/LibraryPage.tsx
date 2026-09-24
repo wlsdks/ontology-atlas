@@ -2534,7 +2534,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           tooltip: measured at 280px it was three lines of a sentence read once, and it was
           the ~60px this switch now stands in.
         */}
-        <div className={segment && toolsHost ? "flex-none px-3 pb-2 pt-3" : "flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4"}>
+        <div className={segment && toolsHost ? "flex-none px-3 pt-3" : "flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4"}>
           {segment && toolsHost ? (
             createPortal(
               <LibraryHeader
@@ -2791,7 +2791,17 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               >
                 {t(localReviewVisible ? "localCompile.back" : "graph.readerClose")}
               </button>
-              <div className="min-w-0 flex-1"><LibraryStatusStrip model={model} indexShowsSourceStates={indexSegment === "sources" && !indexCollapsed} t={t} /></div>
+              <div className="min-w-0 flex-1"><LibraryStatusStrip
+                model={model}
+                indexShowsSourceStates={indexSegment === "sources" && !indexCollapsed}
+                onCompileNext={localReviewVisible ? undefined : () => {
+                  setStaleLit(false);
+                  setHomeSurface((current) => (current === "compile" ? null : "compile"));
+                }}
+                compileAnchorRef={compileClauseRef}
+                compileOpen={homeSurface === "compile"}
+                t={t}
+              /></div>
               <span className="flex shrink-0 items-center gap-2">
                 {answerRefresh.proposal ? <Button className="atlas-touch-floor" size="sm" variant="outline" data-testid="answer-review-open" onClick={() => setAnswerComparisonOpen(true)}>{t('answers.reviewDraft')}</Button> : null}
                 {conversationDoor}
@@ -3098,6 +3108,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                 compileNote={compileBlocked ?? compileTransfer}
                 compileBlocked={compileBlocked !== null}
                 agentDoor={agentDoor}
+                indexShowsState={indexSegment === "sources" && !indexCollapsed}
                 busy={busy}
                 t={t}
               />
