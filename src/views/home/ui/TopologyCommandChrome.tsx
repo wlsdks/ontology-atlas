@@ -15,7 +15,6 @@ import { SavedConstellationsControl } from "@/widgets/saved-constellations";
 import { SearchHint } from "@/widgets/search-hint";
 import { CalendarClock, FolderOpen, History as HistoryIcon, MessageCircle, ScanSearch } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
 import { canCopyTopologyPathPacket } from "../lib/topology-path-chip-state";
 import type { useHomeWorkbenchController } from "../model/use-home-workbench-controller";
 import type { useTopologyAgentActivity } from "../model/use-topology-agent-activity";
@@ -32,7 +31,6 @@ import type { useTopologyPreferences } from "../model/use-topology-preferences";
 import type { useTopologyRouteControls } from "../model/use-topology-route-controls";
 import type { useTopologySceneControls } from "../model/use-topology-scene-controls";
 import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
-import { useTopologyToolbarStatusReserve } from "../model/use-topology-toolbar-status-reserve";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyPathChip } from "./TopologyPathChip";
 import { TopologyRealmChip } from "./TopologyRealmChip";
@@ -154,8 +152,6 @@ export function TopologyCommandChrome({
   const { handleSelect, handleReplayPastWalk } = topologyNavigationActions;
   const { meaningWorkbenchOpen, toggleMeaningWorkbench } = homeWorkbenchController;
   const { acpLiveWork } = topologyAgentActivity;
-  const [topToolbar, setTopToolbar] = useState<HTMLDivElement | null>(null);
-  useTopologyToolbarStatusReserve(topToolbar);
 
   return (<>
     <div className="pointer-events-none absolute left-4 top-[22px] z-10 -translate-y-1/2 md:hidden">
@@ -281,15 +277,14 @@ export function TopologyCommandChrome({
               renderedIndexState === "expanded"
                 ? "left-4 md:left-[calc(var(--topology-index-width)+var(--topology-index-inset)*2)]"
                 : "left-4 md:left-6 xl:left-8",
-              // The agent activity status row hangs 8px under the bell. When the search
-              // lane is the next line down it shares that line with the status row, so
-              // the line starts at the same 8px and `useTopologyToolbarStatusReserve`
-              // keeps the lane left of it. The map's right rail begins at 140px: a
-              // third line would land on it.
-              "has-[[data-agent-activity-status-slot]]:gap-y-2",
+              // The agent activity status is a segment of the bell inside the utility
+              // row (2026-09-24), so it takes part in this box's own wrap and needs no
+              // second-line reserve. The reserve that measured a caption hanging under
+              // the bell and hid it when the lane did not fit is gone: once the status
+              // joined the row, hiding it shrank the row, which let the lane fit, which
+              // showed it again, and the row never settled.
               activityInboxOpen ? "z-30" : "z-20",
             )}
-            ref={setTopToolbar}
             data-testid="topology-top-toolbar"
             data-agent-dock-adjacent-rail="true"
             data-right-inspector-reserve={
@@ -821,7 +816,7 @@ export function TopologyCommandChrome({
                       }}
                     />
                   </div>
-                  {/* Work status is anchored below this row, and only the notification bell stands as the
+                  {/* Work status is the left segment of the bell's control, and the bell stands as the
                         last square tile of this row. The same component owns both feeds and
                         outside click/Escape to avoid duplicating polling/read state. */}
                   <CompanionHome compact />
@@ -837,6 +832,8 @@ export function TopologyCommandChrome({
                       (Boolean(v2DatasheetModel) || selectedEdgeOwnsRightRail) && !activityInboxOpen
                     }
                     liveWork={acpLiveWork}
+                    conversationOpen={agentDockOpen}
+                    compact={topologyUtilityChromeCompact}
                     onOpenChange={setActivityInboxOpen}
                     onOpenNode={handleSelect}
                     onOpenConversation={openVaultAgent}

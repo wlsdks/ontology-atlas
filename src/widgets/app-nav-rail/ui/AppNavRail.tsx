@@ -299,6 +299,8 @@ export function AppNavRail({
     <aside
       aria-label={t("ariaLabel")}
       data-testid="app-nav-rail"
+      // A wall the toaster centres inside rather than across (`src/shared/ui/toast-walls.ts`).
+      data-toast-wall="left"
       data-hidden={hidden ? "true" : "false"}
       className={cn(
         /*

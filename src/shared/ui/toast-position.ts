@@ -1,21 +1,18 @@
 /**
  * Where the toaster stands.
  *
- * Top-centred is the **default** and the map's own answer (owner, 2026-09-06): the
- * bottom-right corner was behind the agent dock and outside the person's attention,
- * while the map's toolbar at the top centre is where the eye already goes.
- * `ToastProvider` reads `--app-toast-top-offset` (default 16px, the plain edge gap); the
- * map plants this value while mounted so the box clears its toolbar. The toaster is
- * centred on the viewport (owner, 2026-09-07); it no longer shifts left by half of the
- * agent dock's width, which on the Library had stood it over the index column.
+ * **The bottom of the free lane is the default** (owner, 2026-09-24). The toaster is
+ * centred between the walls a screen declares with `data-toast-wall` (`toast-walls.ts`)
+ * and stands 16px above the floor. It replaces two earlier answers: under the map's
+ * toolbar, top-centred (2026-09-06), and centred on the viewport (2026-09-07). Measured
+ * on 2026-09-24 the top-centred box lay over INDEX at 1040, over an open dock at 1040
+ * and over the agent status line at 1512; the bottom of the lane had nothing standing
+ * in it at 1040, 1512 or 1920, panel open or closed.
  *
- * A surface whose chrome makes that the wrong corner claims another one with
+ * A surface whose notices are about one pane claims that pane's corner instead with
  * `useToastAnchor` and plants the edges below — the Library is the one that does
  * (owner, 2026-09-12).
- *
- * 24px chrome inset + 36px toolbar tile + 12px breathing room.
  */
-export const TOAST_TOP_OFFSET_UNDER_MAP_TOOLBAR_PX = 72;
 
 /**
  * **The Library's toast stands in the corner of the pane it is about, not over its head.**

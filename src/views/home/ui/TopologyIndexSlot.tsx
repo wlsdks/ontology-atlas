@@ -104,6 +104,8 @@ export function TopologyIndexSlot({
             indexDemotedByNodeSheet ? "pointer-events-none" : ""
             }`}
           data-index-demoted-by-node-sheet={indexDemotedByNodeSheet || undefined}
+          // The toaster centres in the free map right of INDEX, never over it.
+          data-toast-wall={frame.exiting ? undefined : "left"}
           aria-hidden={frame.exiting || undefined}
           inert={frame.exiting || indexDemotedByNodeSheet || undefined}
           style={{

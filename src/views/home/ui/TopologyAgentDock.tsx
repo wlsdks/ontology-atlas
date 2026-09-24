@@ -234,6 +234,8 @@ export function TopologyAgentDock({
              * viewport-width branch left, the `xl:` goes too.
              */
             data-agent-dock-surface="inset"
+            // The toaster centres in the map left of this panel, never over it.
+            data-toast-wall="right"
             style={{ width: reviewUsesSheet ? 'calc(100% - var(--chrome-inset) * 2)' : `calc(${chatWidth.width}px - var(--chrome-inset))` }}
             /*
              * The fixed-width content is pinned right and only the outer frame animates
