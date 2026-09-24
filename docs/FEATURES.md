@@ -243,7 +243,7 @@ The incorrect guidance branch recommending macOS installation on the web has bee
 whole static session regardless of whether the starter module was dismissed. The
 readout names **what is on the canvas right now** ("125 concepts · 9 domains")
 and adds the zoom tier and its hint only while zooming still has something to
-reveal — in the Cone view every concept is already drawn, so it says the count
+reveal — in the 3D views every concept is already drawn, so it says the count
 and stops (2026-09-05; it used to open with the project count, which is 1 in
 every vault anyone has opened, and then tell the reader to zoom in and reveal
 125 dots that were already there). The former
@@ -431,9 +431,23 @@ had become false).
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
 - **Five map views, chosen in one picker** — the current-view chip in the top tool
-  lane opens **Flat** (the ordinary 2D map, default), **Galaxy**,
-  **Cone**, **Strata**, and **Neural**. Cone and Strata both draw containment and answer
-  different questions with it. Galaxy gives every real concept a stable
+  lane opens **Flat** (the ordinary 2D map, default), **Territories**, **Galaxy**,
+  **Strata**, and **Neural**. Territories is the flat plane with nothing
+  folded: every capability is drawn and named on open shelves fanning out from its
+  domain's mark, each domain in its own angular territory around the project, with
+  no hull around any of them. A capability's disc grows with its element count;
+  elements are drawn only when their capability is selected. The ring states the
+  evidence with the same rule the analysis brief uses (the app dates cited code
+  against the document in one Git walk): solid is current, amber is stale, broken
+  is unknown, and the web says every state is unknown rather than guess. Each
+  domain's title carries its capability, element and stale counts, and rolled-up
+  strokes with a count join domains whose capabilities depend on each other.
+  Selecting uses the flat map's inspector; the selected capability shows its
+  elements and its own dependency arrows. The view survives in the address as
+  `?view=territories`, pans but never zooms, and past about ten domains or seven
+  shelves per territory draws discs only, naming them on hover and in focus.
+  The Cone left the picker on 2026-09-25; a stored Cone choice opens Strata.
+  Galaxy gives every real concept a stable
   three-arm position: the project forms the core, domains anchor contiguous
   constellations, and their actual descendants form nearby clouds. The overview
   names the project and domains while hiding the default relationship mesh;
@@ -458,11 +472,9 @@ had become false).
   star in the free canvas beside the inspector. It never zooms out a view the
   person already brought closer; closing restores the pre-selection camera unless
   the person navigated meanwhile, and selecting another concept retains that
-  original return. Cone makes a
-  parent the apex of its own cone, so a
-  subtree is a bump you can point at and rotate to the front; **Strata** (2026-09-06)
+  original return. **Strata** (2026-09-06, the default 3D view since 2026-09-25)
   lays the four kinds out as stacked planes — project on top, then domain,
-  capability, element — each drawn as one hairline ellipse, so
+  capability, element — each drawn as a lit translucent floor, so
   "which level is this on" is a glance rather than an inference. The four names
   sit on a **legend rail** at the canvas's right edge (2026-09-06), below the
   utility tiles: one row per plane, each row aligned to that plane's projected
@@ -482,14 +494,31 @@ had become false).
   lets relations decide all three coordinates. Switching between any two runs the
   same continuous morph — nodes travel, they do not cut — and the choice is
   remembered. Measured on the sample vault (2026-09-06): Strata leaves 2
-  overlapping node pairs at 1512x982 against the Cone's 4, and none of them are
-  same-tier. Geometry: `buildStrataTargets` and `layoutConeTree` in
-  `src/widgets/ontology-map/model/dome-view.ts`; gates:
-  `tests/e2e/map-3d-strata-drawing.spec.ts` and `map-3d-cone-drawing.spec.ts`.
+  overlapping node pairs at 1512x982, and none of them are same-tier. Geometry:
+  `buildStrataTargets` in `src/widgets/ontology-map/model/dome-view.ts`; gates:
+  `tests/e2e/map-3d-strata-drawing.spec.ts` and
+  `tests/contract/strata-fit-fill.contract.test.ts`.
+- **The lit 3D map** (2026-09-25) — Strata and Neural are drawn as light in the
+  canvas-2D engine. Each Strata plane is a translucent floor in its kind's colour
+  with a faint polar grid, and every domain owns a band of the capability and
+  element floors, the same sector its descendants' bearings never leave. Nodes
+  emit a halo in their kind colour, and **evidence is the light**: a current
+  concept emits fully, a stale one keeps a dimmer core and wears a 1 px amber
+  ring, and an unknown one emits nothing and wears a dashed ring. The states come
+  from the rule the analysis brief and the MCP server use (one Git walk in the
+  app); the web has no Git walk, so everything there is unknown and the legend
+  (bottom left: kinds and evidence counts) says so. Neural gathers its clusters
+  around the domains. **A click only selects**; a double-click or Enter flies the
+  node to the front in 800 ms and frames its family, and Esc or Home flies back
+  to the view it left. A focus lights one subtree, apex to leaves, and sinks the
+  rest into a deeper fog (down to 0.28 at the back); particles run only along
+  that subtree's dependency edges. Pitch stays between 0.15 and 0.95 rad, so the
+  floors are always seen from above. Reduced motion: no spin, no particles, the
+  fly-to arrives at once. Gate: `tests/e2e/map-3d-lit-strata.spec.ts`.
 - **Neural composition and readable 3D connections** — Neural uses deterministic
   relation communities as a layout aid, with tighter local groups, lit cell bodies,
   and shallow connection arcs. Group proximity is inferred layout, not a new domain
-  or an accepted relation. Cone and Strata keep containment straight; other 3D
+  or an accepted relation. Strata keeps containment straight; other 3D
   relations have bounded curves whose paint, pointer hit test, and measurement
   share the same live endpoints. Reciprocal facts take opposite arcs. Labels are
   larger in 3D; after closing the detail panel, Fit Map remains available to
@@ -500,7 +529,7 @@ had become false).
   cursor, and the small pressable ring around a dot no longer competes with a
   painted disc. Before, a near, larger concept could answer for a smaller one
   drawn beside it: measured on the sample vault by pointing at each drawn centre
-  in turn, 4 of 125 answered wrongly in Cone at 1512x982 and 12 of 125 at
+  in turn, 4 of 125 answered wrongly in the Cone at 1512x982 and 12 of 125 at
   834x1112. Gates: the "drawn centre" cases in both 3D drawing specs.
 - **Relations stay visible at rest in 3D, on any screen** (2026-09-06, extended
   2026-09-07) — depth still fades a line towards the back, but its ink now stops

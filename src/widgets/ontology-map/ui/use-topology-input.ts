@@ -75,7 +75,7 @@ interface Dependencies {
   hoveredEdgeRef: RefObject<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; } | null>;
   selectedEdgeRef: RefObject<{ sourceId: string; targetId: string; relationType?: string; } | null>;
   clusterChipsRef: RefObject<readonly ClusterChip[]>;
-  lastTapRef: RefObject<{ nodeId: string; at: number; } | null>;
+  lastTapRef: RefObject<{ nodeId: string; at: number; x?: number; y?: number; } | null>;
   expandPrefRef: RefObject<ExpandPreference>;
   clusterBarLabelsRef: RefObject<ClusterBarLabels | null>;
   clusteredIdsRef: RefObject<ReadonlySet<string>>;
@@ -406,6 +406,34 @@ export function useTopologyInput({
    */
   const handleKeyDown = useCallback((e: ReactKeyboardEvent<HTMLCanvasElement>) => {
     /*
+     * 3D fly-to keys (2026-09-25) — the keyboard twin of the double-click. Enter flies to the
+     * selected node; Home flies back to where the first fly-to left from (or frames the whole
+     * structure); Esc flies back too when a fly-to is in effect, and still reaches whatever
+     * else Esc does (the selection clears as before), so it is not consumed here.
+     */
+    {
+      const dome = domeRuntimeRef.current;
+      if (dome !== null && dome.active && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const focused = focusedSlugRef.current;
+        if (e.key === "Enter" && focused !== null) {
+          e.preventDefault();
+          dome.flyRequest = { slug: focused };
+          lastActiveMsRef.current = performance.now();
+          return;
+        }
+        if (e.key === "Home") {
+          e.preventDefault();
+          dome.flyRequest = { slug: null };
+          lastActiveMsRef.current = performance.now();
+          return;
+        }
+        if (e.key === "Escape" && dome.flight !== null) {
+          dome.flyRequest = { slug: null };
+          lastActiveMsRef.current = performance.now();
+        }
+      }
+    }
+    /*
      * Keyboard zoom and fit (`interaction/keyboard-zoom.ts`): `+`/`-` step the
      * camera about the viewport centre on the same tween the fit uses, `0` is
      * the toolbar fit itself. Modifier combinations fall through to the browser.
@@ -575,7 +603,7 @@ export function useTopologyInput({
         beginCameraTween(cameraTarget);
       }
     }
-  }, [worldRef, cameraRef, clusteredIdsRef, focusedSlugRef, onSelect, viewportRef, canvasRef, cameraTargetRef, overviewScaleRef, domeRuntimeRef, userDrivenCameraRef, cameraGestureRevisionRef, dampingRef, cameraAngularFreqRef, beginCameraTween, runOverviewFit, announceDeadEnd]);
+  }, [worldRef, cameraRef, clusteredIdsRef, focusedSlugRef, onSelect, viewportRef, canvasRef, cameraTargetRef, overviewScaleRef, domeRuntimeRef, lastActiveMsRef, userDrivenCameraRef, cameraGestureRevisionRef, dampingRef, cameraAngularFreqRef, beginCameraTween, runOverviewFit, announceDeadEnd]);
 
   const wrappedHandlers = useMemo(
     () => ({

@@ -282,7 +282,7 @@ export function useFrameMeter(): boolean {
  * Owner request, 2026-08-18: "Put our actual map into a 3D dome that still zooms
  * and can be moved around freely." (put our actual map into a 3D dome that still zooms
  * and can be moved around freely). The toolbar picker now presents one flat view
- * (the default) plus the Cone and Cloud 3D arrangements in one place. There is no
+ * (the default) plus the Strata and Neural 3D arrangements in one place. There is no
  * duplicate switch in the settings sheet.
  *
  * **Off by default on a measurement, not a preference.** The same data in the
@@ -345,46 +345,79 @@ export function useGalaxy(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+/* ── Territories (2D map, nothing folded) ───────────────────────────────── */
+
+/**
+ * Whether the flat map is drawn as **Territories** — every capability named, gathered in its
+ * domain's own slice of the plane, with no expansion step (owner decision, 2026-09-24).
+ *
+ * It sits beside `galaxy` for the same reason Galaxy sits beside `view3d`: to a reader it is
+ * one more answer to "how does the map look", chosen in the same picker. The three flags are
+ * written together by that picker so at most one of them is on. The home route mirrors this
+ * flag into `?view=territories`, so a link can open the view and a reload keeps it.
+ */
+const TERRITORIES_KEY = "atlas.appearance.territories";
+
+const DEFAULT_TERRITORIES = false;
+
+function readTerritories(): boolean {
+  return readOnOff(TERRITORIES_KEY, DEFAULT_TERRITORIES);
+}
+
+export function writeTerritories(value: boolean): void {
+  writeOnOff(TERRITORIES_KEY, value);
+}
+
+export function useTerritories(): boolean {
+  const getSnapshot = useCallback(() => readTerritories(), []);
+  const getServerSnapshot = useCallback(() => DEFAULT_TERRITORIES, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 /* ── Arrangement (3D map) ───────────────────────────────────────────────── */
 
 /**
  * Which structural question decides a node's **position** in 3D. This is a
  * question, not a style, and the picker names the resulting visible
- * arrangements Cone and Cloud (the cone tree replaced the dome on 2026-09-02):
+ * arrangements Strata and Neural:
  *
- * - `ownership` (default) — *who contains what.* Every parent is the apex of
- *   its own cone and its children rest on a circle directly under it, so
- *   ownership is readable as shape.
+ * - `strata` (default since 2026-09-25) — *who contains what, read by level.*
+ *   Four stacked, lit planes, one per kind, and every domain owns one sector of
+ *   the planes under it, so "which level" and "which domain" are both a glance.
+ *   `buildStrataTargets` in `src/widgets/ontology-map/model/dome-view.ts` is
+ *   the geometry.
  * - `coupling` — *what attaches to what.* Every relation contributes to a free,
- *   deterministic 3D force cloud. It releases the kind tiers so dependencies
- *   can decide height as well as bearing; keeping the tiers produced only a
- *   distorted Dome and was explicitly reverted. Geometry and determinism live
- *   in `src/widgets/ontology-map/model/dome-view.ts`; decision 84 records the
- *   rejected tier-constrained hybrid.
+ *   deterministic 3D force cloud gathered around the domains. It releases the
+ *   kind tiers so dependencies can decide height as well as bearing; keeping
+ *   the tiers produced only a distorted Dome and was explicitly reverted.
+ *   Decision 84 records the rejected tier-constrained hybrid.
  *
- * - `strata` (2026-09-06) — *who contains what, read by level.* The same
- *   containment fact as `ownership`, drawn as four stacked labelled planes
- *   instead of nested cones, so "which level is this on" is a glance rather than
- *   an inference. It is the one structure the three.js probe of that day found
- *   clearly better than the cone at tier legibility, and porting it needed no
- *   renderer: `buildStrataTargets` in
- *   `src/widgets/ontology-map/model/dome-view.ts` is pure geometry.
+ * **Why `strata` breaks the "key is the question" habit.** It joined the Cone
+ * (`ownership`), which asked the same containment question with another shape,
+ * so a question-shaped key would have collided. The shape's name stayed the
+ * honest key after the Cone left.
  *
- * **Why `strata` breaks the "key is the question" habit.** `ownership` and
- * `coupling` are named for what they ask because they ask different things.
- * Strata asks the same question as `ownership` and answers it with a different
- * shape, so a question-shaped key would collide. The shape's name is the honest
- * key.
+ * **The Cone is retired (2026-09-25).** The approved 3D direction keeps Strata
+ * as the one containment view. A stored `ownership` (or a hand-written `cone`)
+ * opens Strata, so a returning reader who had the Cone lands on the view that
+ * replaced it rather than on a silent fallback. Ledger: the decision fragment
+ * "The 3D map drops the Cone" under `docs/records/decisions/`.
  *
  * **Why this shares one picker with Flat.** Splitting 3D on/off from its
  * arrangement makes the current view depend on two controls. The toolbar's one
- * four-row picker states the whole view choice without duplicating it in settings.
+ * picker states the whole view choice without duplicating it in settings.
  */
-export type MapArrangement = "ownership" | "coupling" | "strata";
+export type MapArrangement = "strata" | "coupling";
 
-const MAP_ARRANGEMENTS: readonly MapArrangement[] = ["ownership", "coupling", "strata"];
+const MAP_ARRANGEMENTS: readonly MapArrangement[] = ["strata", "coupling"];
 
-export const DEFAULT_MAP_ARRANGEMENT: MapArrangement = "ownership";
+/** Stored values from before the Cone was retired, and the view each opens now. */
+const LEGACY_MAP_ARRANGEMENTS: Readonly<Record<string, MapArrangement>> = {
+  ownership: "strata",
+  cone: "strata",
+};
+
+export const DEFAULT_MAP_ARRANGEMENT: MapArrangement = "strata";
 
 const MAP_ARRANGEMENT_KEY = "atlas.appearance.map-arrangement";
 
@@ -392,11 +425,19 @@ function isMapArrangement(value: string | null): value is MapArrangement {
   return value !== null && (MAP_ARRANGEMENTS as readonly string[]).includes(value);
 }
 
+/** A stored arrangement, current or legacy, as the arrangement it opens today. */
+export function resolveStoredMapArrangement(saved: string | null): MapArrangement {
+  if (isMapArrangement(saved)) return saved;
+  if (saved !== null && Object.prototype.hasOwnProperty.call(LEGACY_MAP_ARRANGEMENTS, saved)) {
+    return LEGACY_MAP_ARRANGEMENTS[saved];
+  }
+  return DEFAULT_MAP_ARRANGEMENT;
+}
+
 function readMapArrangement(): MapArrangement {
   if (typeof window === "undefined") return DEFAULT_MAP_ARRANGEMENT;
   try {
-    const saved = window.localStorage.getItem(MAP_ARRANGEMENT_KEY);
-    return isMapArrangement(saved) ? saved : DEFAULT_MAP_ARRANGEMENT;
+    return resolveStoredMapArrangement(window.localStorage.getItem(MAP_ARRANGEMENT_KEY));
   } catch {
     return DEFAULT_MAP_ARRANGEMENT;
   }

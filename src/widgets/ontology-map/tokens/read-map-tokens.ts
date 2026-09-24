@@ -42,6 +42,17 @@ export interface OntologyMapTokens {
   amberHub: string;
   /** Teal reserved for the "recent changes" lens — it has to be distinct from the hub amber (owner call, 2026-08-02). */
   recentChange: string;
+  /**
+   * The lit 3D map's kind light (2026-09-25) — the product's kind ramp triples
+   * (`--color-kind-*-rgb`, "r g b"), the same four hues the kind chips and the
+   * legend wear, so a node's light and its chip can never disagree about its kind.
+   */
+  kindRgbProject: string;
+  kindRgbDomain: string;
+  kindRgbCapability: string;
+  kindRgbElement: string;
+  /** The product's one warning hue — a stale node's evidence ring (the same ink Territories uses). */
+  statusWarning: string;
   numeralShadow: string;
   numeralFace: string;
   /** Cluster chip rest border — chrome is darker than content (the bottom step of the ramp). */
@@ -344,6 +355,11 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "indigoBright", cssVar: "--map-indigo-bright", kind: "color" },
   { key: "amberHub", cssVar: "--map-amber-hub", kind: "color" },
   { key: "recentChange", cssVar: "--map-recent-change", kind: "color" },
+  { key: "kindRgbProject", cssVar: "--color-kind-project-rgb", kind: "color" },
+  { key: "kindRgbDomain", cssVar: "--color-kind-domain-rgb", kind: "color" },
+  { key: "kindRgbCapability", cssVar: "--color-kind-capability-rgb", kind: "color" },
+  { key: "kindRgbElement", cssVar: "--color-kind-element-rgb", kind: "color" },
+  { key: "statusWarning", cssVar: "--color-status-warning", kind: "color" },
   { key: "numeralShadow", cssVar: "--map-numeral-shadow", kind: "color" },
   { key: "numeralFace", cssVar: "--map-numeral-face", kind: "color" },
   { key: "clusterChipBorderRest", cssVar: "--map-cluster-chip-border-rest", kind: "color" },
