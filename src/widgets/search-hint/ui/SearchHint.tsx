@@ -16,6 +16,8 @@ interface Props {
   onToggleExpandAll?: () => void;
   allExpanded?: boolean;
   density?: 'default' | 'compact-focus';
+  /** Reuse the narrow-screen row when the centred lane cannot clear the utility group. */
+  belowUtilityRow?: boolean;
   /**
    * In selected-node focus, the popover takes input priority. At 1024px measured,
    * the 308px toolbar dropped to the second column from the right and overlapped
@@ -100,6 +102,7 @@ export function SearchHint({
   onToggleExpandAll,
   allExpanded = false,
   density = 'default',
+  belowUtilityRow = false,
   phoneFocusSuppressed = false,
   phoneSheetSuppressed = false,
   rightInspectorReserved = false,
@@ -136,7 +139,8 @@ export function SearchHint({
       // at 1024px. Placed on the second column from the right (top 76px) below xl,
       // and returns to center from 1280.
       className={cn(
-        "topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 transition-[left] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-6 xl:left-1/2 xl:right-auto xl:top-8 xl:-translate-x-1/2",
+        "topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 transition-[left] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-6 xl:left-1/2 xl:right-auto xl:-translate-x-1/2",
+        belowUtilityRow ? "xl:top-[4.75rem]" : "xl:top-8",
         // When both downgrades happen simultaneously, the stricter focus (<lg) wins —
         // applying both classes causes md:block to revive hidden at md, creating a conflict.
         phoneFocusSuppressed
