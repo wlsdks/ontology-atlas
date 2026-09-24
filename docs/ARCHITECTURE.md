@@ -698,9 +698,12 @@ rather than guess, leaving the folder screen to own the launch. Decision:
 
 The optional companion home/journal is owned by `features/agent-activity` and
 mounted in `FirstRunPage` and the topology utility lane. Its versioned localStorage
-record contains only explicitly authored personal reflections and cosmetic keepsakes;
-it is not a second ontology store, receives no automatic agent-write or approval
-signals, and never writes vault frontmatter. The existing verified mascot pose
+records separately retain personal reflections, explicit reading activity, project-construction
+high-water counts, and fictional game progress. The lazy-loaded game reads the current
+manifest, never writes vault frontmatter, and receives no meaning-acceptance signal.
+Its finite catalog owns 36 fictional map IDs and 108 species IDs independently of
+canonical UIDs. Discovery and map-clear fields safely default for existing saves;
+removed destinations return to camp without resetting accumulated progress. The existing verified mascot pose
 machine is mounted inline beside work status instead of as an AppShell map overlay.
 
 **One piece of code decides which nav item is active; each screen size shows a
