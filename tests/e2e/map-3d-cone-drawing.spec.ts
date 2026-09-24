@@ -321,10 +321,15 @@ async function coneDrawnNodes(page: Page): Promise<ConeDrawnNode[]> {
   );
 }
 
-/** A true ground point: outside every drawn disc's 40 px reserve and every clickable relation. */
+/**
+ * A true ground point: outside every drawn disc's 40 px reserve and every clickable
+ * relation, and reaching the canvas rather than the chrome floating over it (the
+ * toolbar's search lane has held the free map's left edge since 2026-09-24).
+ */
 async function coneEmptyPoint(page: Page): Promise<{ x: number; y: number }> {
   return page.evaluate(() => {
-    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const canvasEl = document.querySelector<HTMLElement>('[data-testid="ontology-map-canvas"]')!;
+    const canvas = canvasEl.getBoundingClientRect();
     const probe = (
       window as unknown as {
         __atlasMap: {
@@ -338,7 +343,8 @@ async function coneEmptyPoint(page: Page): Promise<{ x: number; y: number }> {
       for (let x = 360; x < canvas.width - 60; x += 20) {
         if (
           nodes.every((n) => Math.hypot(n.x - x, n.y - y) > n.radius + 40) &&
-          probe.edgeAt(x, y) === null
+          probe.edgeAt(x, y) === null &&
+          document.elementFromPoint(canvas.x + x, canvas.y + y) === canvasEl
         ) {
           return { x, y };
         }

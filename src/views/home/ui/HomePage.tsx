@@ -687,7 +687,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               pastTrailNotice={pastTrailNotice}
               handleDeletePastWalk={handleDeletePastWalk}
               handleClearPastWalks={handleClearPastWalks}
-              router={router}
               agentDockTouchedRef={agentDockTouchedRef}
               sampleModeSettled={sampleModeSettled}
               requestVaultOpen={requestVaultOpen}

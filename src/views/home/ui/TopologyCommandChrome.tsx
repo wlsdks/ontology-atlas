@@ -1,9 +1,7 @@
 import { buildOntologyInsightsReturnHref } from "@/entities/knowledge-graph";
 import { AgentActivityChip, CompanionHome } from "@/features/agent-activity";
 import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
-import type { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
-import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { writeGalaxy, writeView3d } from "@/shared/lib/appearance-preferences";
 import { withBasePath } from "@/shared/lib/base-path";
 import { cn } from "@/shared/lib/cn";
@@ -13,7 +11,7 @@ import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip, Tooltip } from "@/shared/ui";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { SavedConstellationsControl } from "@/widgets/saved-constellations";
 import { SearchHint } from "@/widgets/search-hint";
-import { CalendarClock, FolderOpen, History as HistoryIcon, MessageCircle, ScanSearch } from "lucide-react";
+import { FolderOpen, History as HistoryIcon, MessageCircle, ScanSearch } from "lucide-react";
 import Image from "next/image";
 import { canCopyTopologyPathPacket } from "../lib/topology-path-chip-state";
 import type { useHomeWorkbenchController } from "../model/use-home-workbench-controller";
@@ -59,7 +57,6 @@ interface TopologyCommandChromeProps {
   pastTrailNotice: string | null;
   handleDeletePastWalk: (walkId: string) => void;
   handleClearPastWalks: () => void;
-  router: ReturnType<typeof useRouter>;
   agentDockTouchedRef: React.RefObject<boolean>;
   sampleModeSettled: boolean;
   requestVaultOpen: () => void;
@@ -83,7 +80,6 @@ interface TopologyCommandChromeProps {
     ReturnType<typeof useTopologyVaultReadModel>,
     | "vault"
     | "llmBridgeAvailable"
-    | "gitVaultPath"
     | "tAgent"
     | "spotlightOn"
     | "recentChanges"
@@ -123,7 +119,7 @@ export function TopologyCommandChrome({
   expandAllActive, insightsReturnTab, insightsReturnReviewId, analysisMode, footprintTrailEntries,
   footprintTrailStepCaptions, footprintPacketCopied, copyFootprintPacket, clearFootprintTrail,
   handleFootprintLens, handleFootprintBrush, pastWalkRows, pastTrailNotice, handleDeletePastWalk,
-  handleClearPastWalks, router, agentDockTouchedRef, sampleModeSettled, requestVaultOpen, v2DatasheetModel,
+  handleClearPastWalks, agentDockTouchedRef, sampleModeSettled, requestVaultOpen, v2DatasheetModel,
   topologyPreferences, topologyInspectorState, topologyAuthoring, topologyCanvasFocus,
   topologyVaultReadModel, topologyGraphProjection, topologyAgentOrchestration, topologySceneControls,
   topologyRouteControls, topologyNavigationActions, homeWorkbenchController, topologyAgentActivity,
@@ -142,7 +138,7 @@ export function TopologyCommandChrome({
   const { createNodeOpen, setSelectedEdge } = topologyAuthoring;
   const { selectedRelationActive, setSelectedRelationActive } = topologyCanvasFocus;
   const {
-    vault, llmBridgeAvailable, gitVaultPath, tAgent, spotlightOn, recentChanges, handleToggleSpotlight,
+    vault, llmBridgeAvailable, tAgent, spotlightOn, recentChanges, handleToggleSpotlight,
     spotlightNeedsVault, ontologyChangeset
   } = topologyVaultReadModel;
   const { canvasSelectedSlug, resolvedRealmSlug, realmTitle } = topologyGraphProjection;
@@ -257,8 +253,8 @@ export function TopologyCommandChrome({
              * Both lanes are now items of this one flex box. Below `xl` they stack
              * at the right (utility on top, search 16px under it, the rhythm the two
              * absolute boxes used to fake). From `xl` they share one row while both
-             * fit at their natural width: the utility lane holds the right edge and
-             * the search lane is centred in what is left of the map. When they do not
+             * fit at their natural width: the search lane holds the left edge and the
+             * utility lane the right, so the row spans the free map. When they do not
              * fit, `flex-wrap-reverse` puts the search lane on its own line under the
              * utility lane, where it has the whole width and its status chips
              * truncate before any tile gives up its box. Measured at 1280 with the
@@ -295,10 +291,14 @@ export function TopologyCommandChrome({
             }
           >
           <SearchHint
-            // `ml-auto` on both lanes splits the free space of a shared line into the
-            // gap before this lane and the gap after it, which centres it in the map
-            // left of the utility lane; with no utility lane it centres in the box.
-            className={inspectorOwnsRightRail ? "xl:mx-auto" : "xl:ml-auto"}
+            // No auto margin: from `xl` this lane holds the box's left edge, which is
+            // the free map's left edge (INDEX's right edge plus one inset, or one inset
+            // past the collapsed tab), and the utility lane's `ml-auto` holds the right.
+            // Centred in what the utility lane left over, both lanes sat in the map's
+            // right half with INDEX open (owner report, 2026-09-24: search at 647-859
+            // and utility at 1110-1480 over a free map of 388-1512). It stays at the
+            // left while the node inspector owns the right rail, so selecting a node
+            // does not move it. Gate: tests/e2e/map-toolbar-balance.spec.ts
             density={topologyUtilityChromeCompact || searchLaneCrowded ? "compact-focus" : "default"}
             phoneFocusSuppressed={selectedNodeFocusActive}
             constellationControl={(
@@ -523,16 +523,6 @@ export function TopologyCommandChrome({
                     data-testid="topology-meaning-workbench-toggle"
                     onClick={toggleMeaningWorkbench}
                   >{tWorkbench('meaningTitle')}</ChromeChip>
-                  {gitVaultPath && llmBridgeAvailable ? (
-                    <ChromeChip
-                      icon={<CalendarClock />}
-                      aria-label={t('controls.automationsAriaLabel')}
-                      title={t('controls.automationsTooltip')}
-                      data-testid="topology-automations-toggle"
-                      compact={topologyUtilityChromeCompact}
-                      onClick={() => router.push(`${DESTINATION_HREF.automations}?kind=ontology`)}
-                    >{t('controls.automationsLabel')}</ChromeChip>
-                  ) : null}
                   {/* 「Agent」 — This button's spot is the moment you go from viewing a map to saying "fix this."
                         It uses the same chip spec as the existing utility lane without creating a rail destination or new route (zero surface addition).
                         The name is defined in **only one place**: `vaultAgentPanel.title` —
