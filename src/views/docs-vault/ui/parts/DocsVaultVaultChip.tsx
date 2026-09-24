@@ -84,10 +84,11 @@ export function DocsVaultVaultChip({
         ) : (
           <HardDrive size={ICON_SIZE.sm} aria-hidden className="flex-none" />
         )}
-        {/* Mono on the folder name only, the machine string (DESIGN-SYSTEM "font-mono sentence").
-            The whole chip was mono, so the Korean document count beside it set Korean in a Latin-only face and
-            the chip read as a different family from the sans chips around it (2026-09-25). */}
-        <span className="hidden min-w-0 truncate font-mono text-[color:var(--color-text-secondary)] sm:inline">
+        {/* One face for the whole chip (2026-09-25, round four). The folder's name is the name
+            the person gave their work, not a path: the rail's vault label draws it in the sans
+            face, and a mono name beside a sans count read as two families in one control. Paths
+            keep mono where they appear (the editor head); DESIGN-SYSTEM "Machine strings". */}
+        <span className="hidden min-w-0 truncate text-[color:var(--color-text-secondary)] sm:inline">
           {label}
         </span>
         <span className="flex-none tabular-nums text-[color:var(--color-text-secondary)]">

@@ -6322,9 +6322,19 @@
       "errorDescription": "Atlas could not read the saved collection file. It was left unchanged.",
       "retry": "Read again",
       "emptyTitle": "No collection yet",
-      "emptyDescription": "Switch the map to its Galaxy view, pick a few concepts and give them a name and a purpose; that set is kept here so you can return to the same scope. “Pick on the map” takes you there.",
+      "emptyDescription": "A saved set stays inside this folder, so it is there again whenever the folder is reopened.",
       "startingSource": "Concepts available in this ontology",
-      "startingNoConcepts": "Add concepts to the map first to see them here.",
+      "startingNoConcepts": "The map has no concepts yet.",
+      "addConcepts": "Add concepts on the map",
+      "stepsLabel": "How a collection is made",
+      "step": {
+        "pick": "Pick",
+        "pickBody": "Pick only the concepts one piece of work needs, on the map.",
+        "name": "Name",
+        "nameBody": "Give the set a name, and the reason you kept it together, so it still reads later.",
+        "return": "Return",
+        "returnBody": "Unfold it here for its concepts, or open it on the map to see only that scope."
+      },
       "startingMore": "{count, number} more · see them all on the map",
       "memberCount": "{count, plural, one {# concept} other {# concepts}}",
       "referenceCount": "{count, plural, one {# reference} other {# references}}",
@@ -6555,6 +6565,7 @@
         "valueHours": "every {count, number} hours"
       },
       "index": {
+        "title": "Scheduled checks",
         "subtitle": "{cadence} · {places}"
       }
     }

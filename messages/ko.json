@@ -6322,9 +6322,19 @@
       "errorDescription": "저장한 작업 범위 파일을 읽지 못했어요. 기존 파일은 바꾸지 않았어요.",
       "retry": "다시 읽기",
       "emptyTitle": "아직 남긴 작업 범위가 없어요",
-      "emptyDescription": "지도를 갤럭시 보기로 바꾸고 개념 몇 개를 골라 이름과 목적을 붙이면, 그 묶음이 여기에 남아 같은 범위로 다시 돌아갈 수 있어요. 「지도에서 고르기」가 그 자리로 데려가요.",
+      "emptyDescription": "저장한 묶음은 이 폴더 안에 남아, 폴더를 다시 열면 그대로 있어요.",
       "startingSource": "이 온톨로지에서 고를 수 있는 개념",
-      "startingNoConcepts": "지도의 개념을 먼저 추가하면 여기에서 볼 수 있어요.",
+      "startingNoConcepts": "아직 지도에 개념이 없어요.",
+      "addConcepts": "지도에서 개념 추가하기",
+      "stepsLabel": "작업 범위를 남기는 순서",
+      "step": {
+        "pick": "고르기",
+        "pickBody": "지도에서 한 가지 일에 필요한 개념만 골라요.",
+        "name": "이름 붙이기",
+        "nameBody": "나중에 봐도 알 수 있게 이름과, 함께 모아 둔 이유를 적어요.",
+        "return": "다시 펼치기",
+        "returnBody": "여기서 펼치면 개념 목록이, 지도에서 열면 그 범위만 보여요."
+      },
       "startingMore": "외 {count, number}개 · 지도에서 모두 보기",
       "memberCount": "개념 {count, number}개",
       "referenceCount": "참고 자료 {count, number}개",
@@ -6555,6 +6565,7 @@
         "valueHours": "{count, number}시간마다"
       },
       "index": {
+        "title": "예약한 점검",
         "subtitle": "{cadence} · {places}"
       }
     }

@@ -44,15 +44,15 @@ test.describe("Library rounds", () => {
     // The sleep gap is the ledger's row; the card above it does not say it again.
     await expect(since).not.toContainText("asleep");
 
-    // The help card is wider than the index column. Reaching its glyph must not scroll the
-    // column sideways (it hid every round's name when the column clipped its overflow).
+    // The rounds are a section of the page's one centred frame, not a column beside it: the
+    // headline starts where Work scope's does, and the section sits above the ledger it filters.
     const index = page.getByTestId("library-rounds-index");
-    const help = index.getByRole("button", { name: /Automations/ }).first();
-    await help.hover();
-    // The column scrolled as the card finished arriving, so read it once the card is shown.
-    const card = page.locator(`[id="${await help.getAttribute("aria-describedby")}"]`);
-    await expect(card).toHaveCSS("opacity", "1");
-    expect(await index.evaluate((el) => el.scrollLeft)).toBe(0);
+    await expect(index).toContainText("Scheduled checks");
+    const headline = await page.locator("#main h1").boundingBox();
+    const indexBox = await index.boundingBox();
+    const ledgerBox = await page.getByTestId("library-rounds-ledger").boundingBox();
+    expect(indexBox && headline && Math.abs(indexBox.x - headline.x)).toBeLessThanOrEqual(1);
+    expect(indexBox && ledgerBox && indexBox.y < ledgerBox.y).toBe(true);
 
     const ledger = page.getByTestId("library-rounds-ledger");
     await expect(ledger.locator("[data-outcome='held']")).toHaveCount(3);
@@ -67,7 +67,7 @@ test.describe("Library rounds", () => {
     expect(cardHeight).toBeGreaterThan(heldHeight * 2);
 
     // Selecting a round filters the axis; its schedule is managed in Automations, through the
-    // index column's one door — the stage does not add a second link to the same place.
+    // rounds section's one door — the stage does not add a second link to the same place.
     await page.getByTestId("library-round-r-confluence").click();
     await expect(page.getByTestId("library-rounds-run-now")).toHaveCount(0);
     await expect(page.getByTestId("library-rounds-new")).toBeVisible();
@@ -82,7 +82,7 @@ test.describe("Library rounds", () => {
     await openRounds(page);
 
     await expect(page.getByTestId("library-rounds")).toHaveAttribute("data-rounds-state", "empty");
-    // Before the first round there is no index column: the stage holds the one door.
+    // Before the first round there is no rounds section: the empty sheet holds the one door.
     await expect(page.getByTestId("library-rounds-index")).toHaveCount(0);
     await openNewDocumentSchedule(page);
     const sheet = page.getByTestId("library-rounds-sheet");

@@ -23,3 +23,22 @@
 @keyframes sourceIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 63.99rem) { .layout { grid-template-columns: minmax(0,1fr); gap: 2rem; } .intro { max-width: 38rem; } }
 @media (prefers-reduced-motion: reduce) { .source { animation: none; } }
+
+/*
+ * The band under both columns (round four, shared). Check history's first sheet draws it as
+ * the legend of the filled screen; Work scope draws it as the three steps a scope is made in.
+ * One definition here, so the two empty tabs are one sheet: the same ruled head, the same
+ * columns, the same type steps. `--band-columns` is the number of items the caller passes;
+ * `--band-columns-narrow` is how many fit a row under 1280 (four outcome words go two by two,
+ * three steps stay one row).
+ */
+.stack { display: flex; flex-direction: column; gap: 2.5rem; }
+.band { min-width: 0; border-top: 1px solid var(--color-border-strong); }
+.bandHead { padding: .75rem .5rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); font-weight: inherit; }
+.bandList { display: grid; grid-template-columns: repeat(var(--band-columns, 3), minmax(0, 1fr)); gap: 1.25rem clamp(1.25rem, 2.5vw, 2.5rem); margin: 0; padding: .75rem .5rem 0; border-top: 1px solid var(--color-divider); list-style: none; }
+.bandList li { display: flex; min-width: 0; flex-direction: column; gap: .375rem; }
+.bandName { display: inline-flex; align-items: center; gap: .5rem; color: var(--color-text-primary); font-size: var(--text-body); line-height: var(--leading-body); font-weight: var(--font-weight-emphasis); }
+.bandBody { color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); word-break: keep-all; }
+.stepNumber { flex: none; min-width: .5rem; color: var(--color-indigo-text-soft); font-variant-numeric: tabular-nums; }
+@media (max-width: 79.99rem) { .bandList { grid-template-columns: repeat(var(--band-columns-narrow, var(--band-columns, 3)), minmax(0, 1fr)); } }
+@media (max-width: 39.99rem) { .bandList { grid-template-columns: minmax(0, 1fr); } }

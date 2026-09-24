@@ -1,5 +1,5 @@
 import { CalendarClock, FileCheck2, RefreshCw } from "lucide-react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
@@ -35,7 +35,7 @@ export function RoundsHistoryEmpty({ title, description, action, kindsLabel, kin
   signalsLabel: string;
   signals: readonly { tone: RoundSignalTone; name: string; body: string }[];
 }) {
-  return <section className={styles.stack} data-testid="library-rounds-empty-ledger">
+  return <section className={frame.stack} data-testid="library-rounds-empty-ledger">
     <div className={frame.layout}>
       <div className={frame.intro}>
         <CalendarClock size={ICON_SIZE.lg} className={frame.icon} aria-hidden />
@@ -58,12 +58,12 @@ export function RoundsHistoryEmpty({ title, description, action, kindsLabel, kin
         </ul>
       </div>
     </div>
-    <div className={styles.signals} data-testid="library-rounds-empty-signals">
-      <h3 className={styles.signalsHead}>{signalsLabel}</h3>
-      <ul className={styles.signalList}>
+    <div className={frame.band} data-testid="library-rounds-empty-signals">
+      <h3 className={frame.bandHead}>{signalsLabel}</h3>
+      <ul className={frame.bandList} style={{ '--band-columns': signals.length, '--band-columns-narrow': 2 } as CSSProperties}>
         {signals.map(signal => <li key={signal.tone} data-signal={signal.tone}>
-          <span className={styles.signalName}><span aria-hidden className={styles.dot} data-tone={signal.tone} />{signal.name}</span>
-          <span className={styles.signalBody}>{signal.body}</span>
+          <span className={frame.bandName}><span aria-hidden className={styles.dot} data-tone={signal.tone} />{signal.name}</span>
+          <span className={frame.bandBody}>{signal.body}</span>
         </li>)}
       </ul>
     </div>
