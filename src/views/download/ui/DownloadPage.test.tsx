@@ -626,6 +626,8 @@ describe('DownloadPage', () => {
 
     const harness = screen.getByTestId('gateway-architecture-section');
     expect(harness).toHaveAttribute('data-state', 'active');
+    // The picture is the page's own language — this render is English.
+    expect(harness.querySelector('img')?.getAttribute('src')).toMatch(/\/gateway\/harness\.en\.png$/);
     expect(harness.querySelector('a')).toHaveAttribute('href', '/architecture');
 
     fireEvent.click(screen.getByTestId('gateway-screens-tab-git'));

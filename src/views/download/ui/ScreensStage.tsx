@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { DESTINATION_IDS } from '@/shared/config/destinations';
 import { cn } from '@/shared/lib/cn';
@@ -10,6 +10,7 @@ import { useViewportBelow } from '@/shared/lib/use-viewport-below';
 import { controlClass } from '@/shared/ui/control-class';
 import { TabBar } from '@/shared/ui/tab-bar';
 
+import { type GatewayScreenFile, gatewayScreenSrc } from '../model/gateway-screens';
 import { SurfaceCapture, type SurfaceHref } from './SurfaceCapture';
 
 /**
@@ -21,13 +22,13 @@ import { SurfaceCapture, type SurfaceHref } from './SurfaceCapture';
 const CAPTURED = ['architecture', 'library', 'automations', 'insights', 'projects', 'git'] as const;
 type CapturedId = (typeof CAPTURED)[number];
 
-const SCREENS: Record<CapturedId, { src: string; href: SurfaceHref }> = {
-  architecture: { src: '/gateway/harness.png', href: '/architecture' },
-  library: { src: '/gateway/library.png', href: '/library' },
-  automations: { src: '/gateway/automations.png', href: '/automations' },
-  insights: { src: '/gateway/insights.png', href: '/ontology/insights' },
-  projects: { src: '/gateway/projects.png', href: '/projects' },
-  git: { src: '/gateway/git.png', href: '/git' },
+const SCREENS: Record<CapturedId, { file: GatewayScreenFile; href: SurfaceHref }> = {
+  architecture: { file: 'harness', href: '/architecture' },
+  library: { file: 'library', href: '/library' },
+  automations: { file: 'automations', href: '/automations' },
+  insights: { file: 'insights', href: '/ontology/insights' },
+  projects: { file: 'projects', href: '/projects' },
+  git: { file: 'git', href: '/git' },
 };
 
 /** The rail's order with the two rows that are not pictures taken out. */
@@ -66,6 +67,7 @@ const COLUMN_FROM_PX = 1280;
 export function ScreensStage() {
   const t = useTranslations('download.screens');
   const tRail = useTranslations('navRail');
+  const locale = useLocale();
   const [active, setActive] = useState<CapturedId>(SCREEN_ORDER[0]!);
   /** No entrance on the first paint — the stage's arrival is the section's scroll entrance. */
   const [swapped, setSwapped] = useState(false);
@@ -159,7 +161,7 @@ export function ScreensStage() {
             >
               <SurfaceCapture
                 testId={`gateway-${id}-capture`}
-                src={SCREENS[id].src}
+                src={gatewayScreenSrc(SCREENS[id].file, locale)}
                 width={CAPTURE_WIDTH}
                 height={CAPTURE_HEIGHT}
                 alt={t('alt', { name })}

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Captures the six app screens the gateway's screens stage shows (`public/gateway/*.png`).
+ * Captures the six app screens the gateway's screens stage shows, once per locale
+ * (`public/gateway/<screen>.<locale>.png`, Korean and English in one run).
  *
  * Why a script and not a hand-taken screenshot: these screens only exist inside the desktop app
  * (a native folder root, Git, a project source), and the gateway promises that each picture is a
@@ -17,13 +18,14 @@
  * Nothing is written to disk except the PNGs. Every path the app sees is under the fake root
  * `/work/ontology-atlas`, so no private path of the machine that shot them reaches a picture.
  *
- * The pictures are 1336×860 CSS pixels at device scale 2 (2672×1720), dark, English.
+ * The pictures are 1336×860 CSS pixels at device scale 2 (2672×1720), dark, and in the page's
+ * own language: the Korean set is shot on `/ko/...` with Korean page titles and automation name.
  *
  * Usage (against a static export — the dev server's compile waits make captures flaky):
  *
  *   pnpm build
  *   node scripts/serve-static-export.mjs --port=3198 &
- *   pnpm gateway:capture -- --base-url=http://127.0.0.1:3198 [--only=library,git] [--out=public/gateway]
+ *   pnpm gateway:capture -- --base-url=http://127.0.0.1:3198 [--only=library,git] [--locales=ko,en] [--out=public/gateway]
  *
  * Re-shoot after any change to one of the six screens; inspect every picture before committing.
  */
@@ -140,7 +142,20 @@ const PAGES = [
   },
 ];
 
-function wikiPage(page) {
+/**
+ * The Korean set's page titles and automation name are Korean, the way a Korean user's own folder
+ * would read. Source file names and the fact lines stay as they are — they are file contents. The
+ * Korean words live in a fixture because script sources print English only.
+ */
+const KO = JSON.parse(
+  readFileSync(path.join(REPO, "scripts/fixtures/gateway-capture-ko.json"), "utf8"),
+);
+const TITLES_KO = KO.titles;
+const fill = (template, values) =>
+  template.replace(/\{(\w+)\}/g, (_, key) => String(values[key]));
+
+function wikiPage(page, locale) {
+  const title = locale === "ko" ? TITLES_KO[page.slug] : page.title;
   const cited = page.cites.map((index) => SOURCE_NAMES[index]);
   // A fact must cite a source to fit the template; a line that only names a concept on the map
   // belongs in the summary.
@@ -148,7 +163,7 @@ function wikiPage(page) {
   const mentions = page.facts.filter((line) => !line.includes("[[src:"));
   return [
     "---",
-    `title: ${page.title}`,
+    `title: ${title}`,
     "created_by: agent:claude",
     "compiled_at: 2026-09-23T09:00:00Z",
     "sources:",
@@ -156,13 +171,15 @@ function wikiPage(page) {
     "source_hash:",
     ...cited.map((name) => `  ${name}: ${page.stale ? "0".repeat(64) : sha256(SOURCES[name])}`),
     "status: draft",
-    `summary: ${page.title}.`,
+    `summary: ${title}.`,
     "---",
     "",
     "## Summary",
     "",
     [
-      `${page.title}, compiled from ${cited.length === 1 ? "one source" : `${cited.length} sources`}.`,
+      locale === "ko"
+        ? fill(KO.summary, { count: cited.length, title })
+        : `${title}, compiled from ${cited.length === 1 ? "one source" : `${cited.length} sources`}.`,
       ...mentions,
     ].join(" "),
     "",
@@ -184,7 +201,9 @@ function wikiPage(page) {
  * it has already run. The dates follow the clock of the day the pictures are taken, so the next
  * run is always tomorrow morning and the screen never starts a pass of its own while shooting.
  */
-function automationFiles() {
+function automationFiles(locale) {
+  const ko = locale === "ko";
+  const roundName = ko ? KO.roundName : "Library sources check";
   const day = 86_400_000;
   const at = (offsetDays, hour, minute = 0) => {
     const date = new Date(Date.now() + offsetDays * day);
@@ -197,7 +216,7 @@ function automationFiles() {
     rounds: [
       {
         id: "round-library-check",
-        name: "Library sources check",
+        name: roundName,
         kind: "consistency",
         cadence: { daily: "09:00", weekdaysOnly: true },
         enabled: true,
@@ -213,7 +232,7 @@ function automationFiles() {
     v: 1,
     id: `pass-${offsetDays}`,
     roundId: "round-library-check",
-    roundName: "Library sources check",
+    roundName,
     kind: "consistency",
     startedAt: at(offsetDays, 9),
     endedAt: at(offsetDays, 9, 1),
@@ -229,8 +248,8 @@ function automationFiles() {
     trigger: "clock",
   });
   const ledger = [
-    pass(-1, "held", [], `${PAGES.length} pages checked; every source still matches.`),
-    pass(0, "stale", [`wiki/${stalePage.slug}.md`], `${PAGES.length} pages checked; 1 page's source changed.`),
+    pass(-1, "held", [], ko ? fill(KO.passHeld, { count: PAGES.length }) : `${PAGES.length} pages checked; every source still matches.`),
+    pass(0, "stale", [`wiki/${stalePage.slug}.md`], ko ? fill(KO.passStale, { count: PAGES.length }) : `${PAGES.length} pages checked; 1 page's source changed.`),
   ];
   return {
     ".ontology-atlas/rounds.json": rounds,
@@ -238,10 +257,10 @@ function automationFiles() {
   };
 }
 
-function buildOverlay() {
+function buildOverlay(locale) {
   const overlay = new Map();
   for (const [name, text] of Object.entries(SOURCES)) overlay.set(name, text);
-  for (const page of PAGES) overlay.set(`wiki/${page.slug}.md`, wikiPage(page));
+  for (const page of PAGES) overlay.set(`wiki/${page.slug}.md`, wikiPage(page, locale));
   overlay.set(
     ".ontology-atlas/project-sources.json",
     `${JSON.stringify(
@@ -261,7 +280,7 @@ function buildOverlay() {
       2,
     )}\n`,
   );
-  for (const [name, text] of Object.entries(automationFiles())) {
+  for (const [name, text] of Object.entries(automationFiles(locale))) {
     overlay.set(name, typeof text === "string" ? text : `${JSON.stringify(text, null, 2)}\n`);
   }
   return overlay;
@@ -507,47 +526,47 @@ function makeBridge(overlay, unstubbed) {
 const SCREENS = [
   {
     name: "library",
-    route: "/en/library/",
+    route: "/library/",
     async prepare(page) {
-      await page.getByRole("tab", { name: /^Wiki/ }).first().click().catch(() => {});
+      await page.getByTestId("library-workspace-wiki").click().catch(() => {});
       await page.waitForTimeout(2500);
     },
   },
   {
     name: "harness",
-    route: "/en/architecture/?view=structure",
+    route: "/architecture/?view=structure",
     async prepare(page) {
       await page.waitForTimeout(6000);
     },
   },
   {
     name: "insights",
-    route: "/en/ontology/insights/",
+    route: "/ontology/insights/",
     async prepare(page) {
       await page.waitForTimeout(3000);
     },
   },
   {
     name: "projects",
-    route: "/en/project/ontology-atlas/",
+    route: "/project/ontology-atlas/",
     async prepare(page) {
       await page.waitForTimeout(3000);
     },
   },
   {
     name: "git",
-    route: "/en/git/",
+    route: "/git/",
     async prepare(page) {
       await page.waitForTimeout(3000);
     },
   },
   {
     name: "automations",
-    route: "/en/automations/",
+    route: "/automations/",
     async prepare(page) {
       // The saved check is a documents automation: it compares the Library's pages with
       // their sources and needs no agent.
-      await page.getByRole("tab", { name: /^Documents/ }).click();
+      await page.getByTestId("automations-tab-documents").click();
       await page.waitForTimeout(3000);
     },
   },
@@ -581,38 +600,46 @@ async function installRuntime(context, bridge) {
   });
 }
 
+/** Both sets, in one run: the gateway serves `<file>.<locale>.png` to each page. */
+const LOCALES = args.locales ? args.locales.split(",") : ["ko", "en"];
+const BROWSER_LOCALE = { ko: "ko-KR", en: "en-US" };
+
 async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
-  const overlay = buildOverlay();
   const unstubbed = new Set();
   const browser = await chromium.launch();
-  const context = await browser.newContext({
-    viewport: VIEWPORT,
-    deviceScaleFactor: 2,
-    colorScheme: "dark",
-    locale: "en-US",
-    reducedMotion: "reduce",
-  });
-  await installRuntime(context, makeBridge(overlay, unstubbed));
-  const page = await context.newPage();
-  if (VERBOSE) page.on("console", (message) => console.log(`[page] ${message.text()}`));
 
-  // Open the folder once through the app's own chooser, the way a person does.
-  await page.goto(`${BASE_URL}/en/?guides=off`);
-  await page.waitForLoadState("networkidle");
-  await page.getByTestId("first-run-open").click();
-  await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
+  for (const locale of LOCALES) {
+    // A fresh context per locale: its own storage, its own overlay, its own opened folder.
+    const context = await browser.newContext({
+      viewport: VIEWPORT,
+      deviceScaleFactor: 2,
+      colorScheme: "dark",
+      locale: BROWSER_LOCALE[locale] ?? locale,
+      reducedMotion: "reduce",
+    });
+    await installRuntime(context, makeBridge(buildOverlay(locale), unstubbed));
+    const page = await context.newPage();
+    if (VERBOSE) page.on("console", (message) => console.log(`[page] ${message.text()}`));
 
-  for (const screen of SCREENS) {
-    if (ONLY && !ONLY.has(screen.name)) continue;
-    await page.goto(`${BASE_URL}${screen.route}`);
+    // Open the folder once through the app's own chooser, the way a person does.
+    await page.goto(`${BASE_URL}/${locale}/?guides=off`);
     await page.waitForLoadState("networkidle");
-    await screen.prepare(page);
-    // The pointer rests off the picture so no hover state is captured.
-    await page.mouse.move(VIEWPORT.width - 2, VIEWPORT.height - 2);
-    const file = path.join(OUT_DIR, `${screen.name}.png`);
-    await page.screenshot({ path: file });
-    console.log(`captured ${path.relative(REPO, file)}`);
+    await page.getByTestId("first-run-open").click();
+    await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
+
+    for (const screen of SCREENS) {
+      if (ONLY && !ONLY.has(screen.name)) continue;
+      await page.goto(`${BASE_URL}/${locale}${screen.route}`);
+      await page.waitForLoadState("networkidle");
+      await screen.prepare(page);
+      // The pointer rests off the picture so no hover state is captured.
+      await page.mouse.move(VIEWPORT.width - 2, VIEWPORT.height - 2);
+      const file = path.join(OUT_DIR, `${screen.name}.${locale}.png`);
+      await page.screenshot({ path: file });
+      console.log(`captured ${path.relative(REPO, file)}`);
+    }
+    await context.close();
   }
 
   await browser.close();

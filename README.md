@@ -696,7 +696,7 @@ because outside the lander neither waits for the landing already in flight.
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision record to cite or overturn, and whether this change owes one |
 | `pnpm harness:report` · `pnpm harness:outcomes` | What the agent hooks caught, and whether that lane still earns its place |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Land a pull request, and who is landing right now |
-| `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the six app screens the download page shows (`public/gateway/`) from a served `pnpm build`, against this repository's own ontology |
+| `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the six app screens the download page shows, Korean and English (`public/gateway/<screen>.<locale>.png`), from a served `pnpm build`, against this repository's own ontology |
 
 For independent backlog-record additions, opt into earlier CI feedback with
 `pnpm pr:land <n> --parallel-ci`. Final merge and validation of newer main remain
