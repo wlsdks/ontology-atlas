@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const bridge = vi.hoisted(() => ({
@@ -714,5 +714,45 @@ describe('runtime rows: marks, columns and the result block (design polish, 2026
     expect(getApp).toHaveClass('rounded-full', 'atlas-touch-floor');
     // No hand tint on top of the tone: the class list carries no indigo fill of its own.
     expect(getApp.className).not.toMatch(/indigo-a16/);
+  });
+
+  it('keeps one winner on the web card: the app is a pill, MCP steps back to a link', () => {
+    bridge.available = false;
+    render(<AcpRuntimeSettings embedded />);
+    const mcp = screen.getByTestId('app-settings-runtimes-mcp-link');
+    expect(mcp).not.toHaveClass('rounded-full');
+    expect(mcp).not.toHaveClass('border');
+  });
+});
+
+describe('the other-tools shelf (round 3, 2026-09-25)', () => {
+  it('names every other tool on the page as a tile, without its row controls', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'cursor', state: 'cli-missing', website: 'https://example.com' }),
+      makeRuntime({ id: 'gemini', state: 'cli-missing', website: 'https://example.com' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    const shelf = screen.getByTestId('app-settings-runtimes-others-shelf');
+    expect(within(shelf).getByTestId('app-settings-runtimes-tile-cursor')).toBeInTheDocument();
+    expect(within(shelf).getByTestId('app-settings-runtimes-tile-gemini')).toBeInTheDocument();
+    // Setting a tool up still happens in the dialog: no install link or badge row on the page.
+    expect(within(shelf).queryByTestId('app-settings-runtime-install')).toBeNull();
+    expect(screen.queryByTestId('app-settings-runtime-cursor')).toBeNull();
+  });
+
+  it('a tile opens the dialog already searched to that tool', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'cursor', state: 'cli-missing' }),
+      makeRuntime({ id: 'gemini', state: 'cli-missing' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    fireEvent.click(await screen.findByTestId('app-settings-runtimes-tile-cursor'));
+    expect(screen.getByTestId('app-settings-runtimes-others-dialog')).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-runtimes-others-search')).toHaveValue('cursor');
+    expect(screen.getByTestId('app-settings-runtime-cursor')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-settings-runtime-gemini')).toBeNull();
   });
 });

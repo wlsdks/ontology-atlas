@@ -185,7 +185,7 @@ import { describe, expect, it } from 'vitest';
  *
  * | Category | Count | What's missing / Why outside? |
  * |---|---:|---|
- * | **[Registration] `standard-button`** | 11 | Shape yielded by value layer. DownloadPage 7 · AgentClientButtons 1 · Architecture empty-state exit 1 · Two 404 files 2. |
+ * | **[Registration] `standard-button`** | 10 | Shape yielded by value layer. DownloadPage 7 · Architecture empty-state exit 1 · Two 404 files 2. |
  * | **[Registration] `chrome-token`** | 3 | AtlasGitPanel 2(`--git-setup-action-height`) · TopologyReviewLink 1(`--chrome-tile-size`). Both have multiple declarations, passing token check. |
  * | **[Registration] `no-spec`** | 3 | MacosDownloadLink(passthrough) · PublicQuickActions 2(`inline-flex` wrapper). |
  * | **[Registration] `value-layer-peer`** | 1 | `<Link>` branch of `ChromeTile`. |
@@ -1106,7 +1106,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // button-styled Link to Map. The destination count and the verified registration both fall by one.
 // 2026-09-11 (slice U2): the Library's blocked steps gained a door to `/agents` —
 // `AgentDoor` is one `<Link>` through `buttonVariants`, so `Link` 18→19.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 19, a: 8 };
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 19, a: 7 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1173,13 +1173,6 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     conditional:
       '⚠️ 이 중 둘은 `className` 이 프리미티브의 반경·인셋을 덮는다(`rounded-chip px-4 sm:px-6`). ' +
       '그건 이 게이트가 아니라 다음 디자인 라운드의 일이다 — 등재가 그 결함을 승인하지는 않는다.',
-  },
-  {
-    file: 'src/features/docs-vault-local/ui/AgentClientButtons.tsx',
-    count: 1,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
   },
   {
     file: 'src/views/library/ui/parts/AgentDoor.tsx',
@@ -1307,7 +1300,7 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // 26 → 27 (2026-09-11, slice U2): `AgentDoor`, the one control that follows each of the
 // Library's agent-availability sentences. Registered rather than moved, for the reason its
 // row states — it is the standard-button shape the value layer itself yields.
-const BASELINE_ANCHOR_REGISTERED = 27;
+const BASELINE_ANCHOR_REGISTERED = 26;
 
 /** **Only this number may fall.** The current anchor total (28) minus registered (28). */
 const BASELINE_ANCHOR_DEBT = 0;

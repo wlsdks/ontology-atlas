@@ -170,6 +170,40 @@ function monogramOf(name: string): string {
     .join('');
 }
 
+/**
+ * A product's mark in its 32px plate, or its initials on the same plate when there is no drawing.
+ *
+ * ⚠️ **The monogram rides on `VendorMark`'s own plate** (2026-09-25, round 2). The first version
+ * drew a look-alike tile by hand, and it had already drifted (overlay-2 where the mark's empty
+ * plate is overlay-1). Composing keeps one plate: if the mark changes, the monogram changes with
+ * it. Exported on its own (round 3) because the other-tools shelf on the agents tab draws the same
+ * product marks outside a row, and a second copy would be the drift this comment records.
+ */
+export function ProductMark({
+  icon,
+  ink,
+  monogram,
+}: {
+  icon?: string | null;
+  ink?: string | null;
+  monogram?: string;
+}) {
+  return (
+    <span className="relative flex shrink-0">
+      <VendorMark src={icon ?? null} ink={ink ?? null} />
+      {!icon && monogram ? (
+        <span
+          aria-hidden
+          data-vendor-mark="monogram"
+          className="absolute inset-0 flex items-center justify-center text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]"
+        >
+          {monogramOf(monogram)}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 /** One row = label (plus a one-line description when needed) on the left, current value and control on the right. */
 export function SettingsRow({
   label,
@@ -239,26 +273,7 @@ export function SettingsRow({
       )}
       data-testid={testId}
     >
-      {hasMarkSlot ? (
-        /*
-         * ⚠️ **The monogram rides on `VendorMark`'s own plate** (2026-09-25, round 2). The first
-         * version drew a look-alike tile by hand here, and it had already drifted (overlay-2 where
-         * the mark's empty plate is overlay-1). Composing keeps one plate: if the mark changes,
-         * the monogram changes with it.
-         */
-        <span className="relative flex shrink-0">
-          <VendorMark src={icon ?? null} ink={iconInk ?? null} />
-          {!icon && monogram ? (
-            <span
-              aria-hidden
-              data-vendor-mark="monogram"
-              className="absolute inset-0 flex items-center justify-center text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]"
-            >
-              {monogramOf(monogram)}
-            </span>
-          ) : null}
-        </span>
-      ) : null}
+      {hasMarkSlot ? <ProductMark icon={icon} ink={iconInk} monogram={monogram} /> : null}
       <div className="min-w-0 flex-1 basis-40">
         <p className="text-body text-[color:var(--color-text-primary)]">{label}</p>
         {caption ? (

@@ -8,8 +8,6 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 
-import { badgeClass } from '@/shared/ui/badge-class';
-import { cn } from '@/shared/lib/cn';
 import { useArrivalMemory } from '@/shared/lib/route-arrival-memory';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip, Dialog, EmptyState, InfoHint, Surface } from '@/shared/ui';
@@ -18,9 +16,16 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
 import { isGuardedRuntime } from '@/features/acp-session';
 import { AGENT_CLIENTS } from '@/entities/vault-session';
+import { RowStateBadge } from '@/features/docs-vault-local';
 import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
 
-import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primitives';
+import {
+  DETAIL_TOGGLE_CHIP,
+  ProductMark,
+  SettingsGroup,
+  SettingsGroupHeading,
+  SettingsRow,
+} from './settings-primitives';
 
 /**
  * 「Runners」 (runners) — the coding agents this machine can invoke.
@@ -87,19 +92,13 @@ import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primi
  * shouting beside the indigo action it should have been deferring to. The charter's own spelling of
  * a signal is *"one solid dot and three translucent surface/edge/text steps"*, and the dot is the
  * half that carries the meaning here. So the emerald stays — same tokens, no new hue — and moves
- * from the fill to the dot, while the label joins the row's neutral voice.
+ * from the fill to the dot, while the label joins the row's neutral voice. The badge itself is
+ * `RowStateBadge` (round 3), shared with the MCP tab's rows so 「Ready」 is one shape on both tabs.
  *
  * `CommitDetail` keeps the filled pill on purpose. There the status **is** the subject of the line;
  * here it trails two controls, and the same treatment in the two places would be the divergence, not
  * the fix.
  */
-const READY_INK =
-  'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-secondary)]';
-
-const NOT_READY_INK =
-  'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]';
-
-
 export function AcpRuntimeSettings({
   embedded = false,
   onOpenChat = requestAgentChat,
@@ -144,8 +143,13 @@ export function AcpRuntimeSettings({
    * short list there is nothing to bury.
    */
   const [othersOpen, setOthersOpen] = useState(false);
-  /** What the person is typing in the other-tools dialog. Reset every time it opens. */
+  /** What the person is typing in the other-tools dialog. Set every time it opens. */
   const [othersQuery, setOthersQuery] = useState('');
+  /** The search chip opens it empty; a shelf tile opens it already searched to that tool. */
+  const openOthers = (query: string) => {
+    setOthersQuery(query);
+    setOthersOpen(true);
+  };
 
   /**
    * Re-scan from the button — it is a response to a press, so it shows "searching".
@@ -242,15 +246,18 @@ export function AcpRuntimeSettings({
                * instead of a name — the same rule that forbids a degradation card from stating
                * a reason with nowhere to go.
                */}
+              {/* ⚠️ **One winner** (round 3, 2026-09-25). As a second pill at the same 32px this
+                  carried nearly the weight of 「get the Mac app」, and on a tab whose only job in a
+                  browser is to send the person to the app there was no clear first press. It
+                  steps back to a link: still a real way on, no longer a peer of the app. */}
               <Link
                 href={DESTINATION_HREF.mcp}
                 data-testid="app-settings-runtimes-mcp-link"
                 className={controlClass({
-                  shape: 'pill',
+                  shape: 'link',
                   size: 'lg',
-                  tone: 'secondary',
+                  tone: 'default',
                   hoverInk: 'strong',
-                  className: 'atlas-touch-floor atlas-touch-floor-wide',
                 })}
               >
                 {t('webMcpLink')}
@@ -466,27 +473,88 @@ export function AcpRuntimeSettings({
              * a quiet control to reach the only answer on the screen (walkthrough, 2026-08-20 —
              * the same reasoning that used to auto-expand the fold).
              */
-            <div className="grid min-w-0 gap-1.5">
-              <Chip
-                size="lg"
-                tone={ready.length === 0 ? 'accentOnTint' : 'secondary'}
-                data-testid="app-settings-runtimes-others-toggle"
-                aria-haspopup="dialog"
-                onClick={() => {
-                  setOthersQuery('');
-                  setOthersOpen(true);
-                }}
-                className={
-                  ready.length === 0
-                    ? `${DETAIL_TOGGLE_CHIP} border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]`
-                    : DETAIL_TOGGLE_CHIP
+            <section
+              className="min-w-0"
+              aria-labelledby="app-settings-runtimes-others-heading"
+              data-testid="app-settings-runtimes-others"
+            >
+              <SettingsGroupHeading
+                id="app-settings-runtimes-others-heading"
+                label={t('othersDialogTitle', { count: others.length })}
+                trailing={
+                  <Chip
+                    size="lg"
+                    tone={ready.length === 0 ? 'accentOnTint' : 'secondary'}
+                    data-testid="app-settings-runtimes-others-toggle"
+                    aria-haspopup="dialog"
+                    onClick={() => openOthers('')}
+                    className={
+                      ready.length === 0
+                        ? `${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]`
+                        : `${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`
+                    }
+                  >
+                    <Search size={ICON_SIZE.md} aria-hidden />
+                    {t('othersSearchLabel')}
+                  </Chip>
                 }
+              />
+              {/*
+                ── The shelf (round 3, 2026-09-25) ─────────────────────────────────────────────
+                The rest used to be one chip, 「show the other N」, and the destination's primary
+                tab ended 600px above the window's bottom edge at 1512×949: one row, a chip, and a
+                canvas with nothing on it. What that canvas can honestly hold is the fact the chip
+                hid — **which other tools Atlas knows, and what state each is in** — so the names
+                stand here as a compact shelf of marks: four across, one line of state under each
+                name, no controls. A tile opens the same dialog, already searched to that tool,
+                where its install guide and check live.
+
+                ⚠️ **What this keeps from the 2026-09-07 owner call.** The complaint there was a
+                fold of 36 full rows poured onto the page, with no search. Setting a tool up still
+                happens in the window with a search; the page shows only a scannable index of
+                names (nine lines at 36 tools, not 36 rows). Falsifier: if a walkthrough shows a
+                person reading the shelf instead of reaching the ready tools above it, the shelf
+                goes back behind the chip.
+              */}
+              <ul
+                data-testid="app-settings-runtimes-others-shelf"
+                className="mt-1.5 grid min-w-0 grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4"
               >
-                <Search size={ICON_SIZE.md} aria-hidden />
-                {ready.length === 0
-                  ? t('othersHeadingEmpty', { count: others.length })
-                  : t('othersHeading', { count: others.length })}
-              </Chip>
+                {others.map((runtime) => {
+                  const mark = runtimeMark(runtime);
+                  return (
+                    <li key={runtime.id} className="min-w-0">
+                      <button
+                        type="button"
+                        data-testid={`app-settings-runtimes-tile-${runtime.id}`}
+                        aria-haspopup="dialog"
+                        aria-label={t('othersTileLabel', {
+                          name: runtime.label,
+                          state: t(`state.${runtime.state}`),
+                        })}
+                        onClick={() => openOthers(runtime.label)}
+                        className={controlClass({
+                          shape: 'card',
+                          size: 'md',
+                          tone: 'secondary',
+                          hoverInk: 'strong',
+                          hoverBorder: 'strong',
+                          className:
+                            'w-full gap-2.5 bg-[color:var(--color-overlay-1)] py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+                        })}
+                      >
+                        <ProductMark icon={mark.icon} ink={mark.ink} monogram={runtime.label} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-body">{runtime.label}</span>
+                          <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
+                            {t(`state.${runtime.state}`)}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
               <OtherRuntimesDialog
                 open={othersOpen}
                 onClose={() => setOthersOpen(false)}
@@ -496,7 +564,7 @@ export function AcpRuntimeSettings({
                 onOpenChat={onOpenChat}
                 onRuntimesChanged={() => void refresh()}
               />
-            </div>
+            </section>
           ) : null}
         </>
       )}
@@ -803,33 +871,11 @@ function RuntimeRow({
               </a>
             ) : null}
             {showDoctor ? doctor.scanButton : null}
-            <span
-              data-runtime-state={runtime.state}
-              /*
-               * A state, not a control — so it keeps a badge shape rather than growing into a
-               * button. But `micro` puts it on the caption ramp, and beside a row of 32px chips the
-               * one thing stating whether the tool actually works was the smallest text there.
-               * `tag` moves it one step onto the label ramp without pretending it is pressable.
-               */
-              className={badgeClass({
-                shape: 'tag',
-                /* A fixed floor with the word centred, so the badges form one column down the
-                   list instead of ending wherever their word does (62px vs 53px, 2026-09-25). */
-                className: cn(
-                  'inline-flex min-w-18 items-center justify-center gap-1.5 py-0.5',
-                  isReady ? READY_INK : NOT_READY_INK,
-                ),
-              })}
-            >
-              {isReady ? (
-                <span
-                  aria-hidden
-                  data-testid="app-settings-runtime-ready-dot"
-                  className="size-1.5 shrink-0 rounded-full bg-[color:var(--color-status-success)]"
-                />
-              ) : null}
+            {/* A state, not a control — so it keeps a badge shape rather than growing into a
+                button, on the label ramp beside the row's 32px chips. */}
+            <RowStateBadge ready={isReady} data-runtime-state={runtime.state}>
               {t(`state.${runtime.state}`)}
-            </span>
+            </RowStateBadge>
           </span>
         }
       />
