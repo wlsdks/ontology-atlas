@@ -91,6 +91,7 @@ import { AcpPresentationPanel } from './AcpPresentationPanel';
 import { groupEvents } from './group-events';
 import { splitAppRequest } from './request-parts';
 import { isVaultTool, labelWithoutRepeatedPath, toolLabel } from './tool-label';
+import { composerStatusLive, toolRowPhase, workingShimmer } from './working-ink';
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useMeaningTransitionCapture } from '../model/use-meaning-transition-capture';
 
@@ -1503,6 +1504,12 @@ export function AcpChatPanel({
     }
     return ids;
   }, [events, lastUserEventIndex, status]);
+  /**
+   * The one call the agent cannot continue until the person answers. Its row stops sweeping and
+   * says it waits on them, the same still state the composer's 「waiting for you」 already takes:
+   * a band moving over it would claim the agent is working when the work is in the person's hands.
+   */
+  const awaitingToolId = status === 'thinking' ? pending?.request.toolCallId ?? null : null;
   return (
     <section
       ref={panelRef}
@@ -1693,6 +1700,7 @@ export function AcpChatPanel({
                     onHoverSlug={onHoverSlug}
                     noticeActions={noticeActions}
                     liveToolIds={liveToolIds}
+                    awaitingToolId={awaitingToolId}
                   />
                 ))}
               </div>
@@ -1706,6 +1714,7 @@ export function AcpChatPanel({
                 knownSlugs={knownSlugs}
                 onHoverSlug={onHoverSlug}
                 liveToolIds={liveToolIds}
+                awaitingToolId={awaitingToolId}
               />
             );
           /*
@@ -1737,6 +1746,7 @@ export function AcpChatPanel({
                  */
                 streaming={busy && index === transcriptItems.length - 1}
                 liveToolIds={liveToolIds}
+                awaitingToolId={awaitingToolId}
               />
             </div>
           );
@@ -2372,8 +2382,18 @@ export function AcpChatPanel({
               */
               className="flex shrink-0 items-center gap-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
             >
-              {t(`status.${footerStatus}`)}
-              {turnElapsedLabel ? <span data-testid="acp-turn-elapsed" className="tabular-nums">· {turnElapsedLabel}</span> : null}
+              {/*
+                The same sweep as a running tool row, over the word and its clock together, so
+                the one place a person glances while waiting says "still working" by moving.
+                Not while the turn waits on the person, and not once it has gone silent.
+              */}
+              <span
+                data-testid="acp-status-words"
+                className={cn('flex items-center gap-1', workingShimmer(composerStatusLive(footerStatus, turnSilent)))}
+              >
+                {t(`status.${footerStatus}`)}
+                {turnElapsedLabel ? <span data-testid="acp-turn-elapsed" className="tabular-nums">· {turnElapsedLabel}</span> : null}
+              </span>
             </span>
             <TooltipProvider delayDuration={200}>
               {/*
@@ -2636,6 +2656,7 @@ function WorkGroup({
   knownSlugs,
   onHoverSlug,
   liveToolIds,
+  awaitingToolId,
 }: {
   events: Extract<AcpEvent, { kind: 'thought' | 'tool' }>[];
   active: boolean;
@@ -2643,6 +2664,8 @@ function WorkGroup({
   onHoverSlug?: (slug: string | null) => void;
   /** The tool calls still running; see `TranscriptEntry`. */
   liveToolIds: ReadonlySet<string>;
+  /** The call waiting on the person's permission; see `TranscriptEntry`. */
+  awaitingToolId: string | null;
 }) {
   const t = useTranslations('acpChat');
   const [open, setOpen] = useState(false);
@@ -2690,7 +2713,13 @@ function WorkGroup({
               : 'bg-[color:var(--color-text-quaternary)]',
           )}
         />
-        {t(active ? 'workGroupActive' : 'workGroup', { count: events.length })}
+        {/*
+          Its own span because the sweep paints through the text: on the button it would clip
+          the chevron, whose stroke is the same `currentColor` the band replaces.
+        */}
+        <span className={workingShimmer(active)}>
+          {t(active ? 'workGroupActive' : 'workGroup', { count: events.length })}
+        </span>
       </button>
       <div
         ref={boxRef}
@@ -2708,6 +2737,7 @@ function WorkGroup({
                 knownSlugs={knownSlugs}
                 onHoverSlug={onHoverSlug}
                 liveToolIds={liveToolIds}
+                awaitingToolId={awaitingToolId}
               />
             ))}
           </div>
@@ -2955,6 +2985,7 @@ function TranscriptEntry({
   repeat = 1,
   fold = null,
   liveToolIds,
+  awaitingToolId,
 }: {
   event: AcpEvent;
   knownSlugs?: ReadonlySet<string>;
@@ -2965,6 +2996,11 @@ function TranscriptEntry({
    * knows whether an open call is still open or was simply abandoned there.
    */
   liveToolIds: ReadonlySet<string>;
+  /**
+   * The call blocked on the person's permission answer, if any. Required for the same reason as
+   * `liveToolIds`: only the panel holds the pending request.
+   */
+  awaitingToolId: string | null;
   /** The two doors an `auto-allowed` notice may carry; see `AcpChatPanelProps.noticeActions`. */
   noticeActions?: { openPage: (path: string) => void; askNext: () => void } | null;
   /** Is this the bubble the agent is still writing into? Only that one reveals gradually. */
@@ -3127,6 +3163,7 @@ function TranscriptEntry({
       liveToolIds.has(event.id),
     );
     const running = outcome.kind === 'status' && outcome.status === 'running';
+    const phase = toolRowPhase(running, event.id === awaitingToolId);
     const broke =
       outcome.kind === 'status' && (outcome.status === 'failed' || outcome.status === 'cancelled');
     const toolTargets = knownSlugs ? readToolTargets(event.rawInput, knownSlugs) : [];
@@ -3152,6 +3189,7 @@ function TranscriptEntry({
         data-tool-label={label.kind}
         data-tool-outcome={outcome.kind === 'count' ? String(outcome.count) : outcome.status}
         data-tool-repeat={repeat > 1 ? repeat : undefined}
+        data-tool-phase={phase}
         /*
          * ⚠️ **Tertiary, not quaternary** (2026-09-05). This row used to be the weakest ink
          * in the app because it lived folded inside a disclosure nobody opened. Standing in
@@ -3201,9 +3239,15 @@ function TranscriptEntry({
           get it back. Our own labels are short sentences that never reach the cap, so the
           share only ever bites on a foreign name, which is exactly the case that needed it.
         */}
+        {/*
+          **Running words sweep; finished words sit still** (owner, 2026-09-24: "while it works I
+          cannot tell whether it is doing anything"). The band crosses the label and the
+          present-tense outcome word only — never the node names, whose dotted underline is a
+          different promise — and it is gone the frame the call lands (`working-ink.ts`).
+        */}
         <span
           data-tool-label-text
-          className="min-w-0 max-w-[45%] shrink truncate"
+          className={cn('min-w-0 max-w-[45%] shrink truncate', workingShimmer(phase === 'running'))}
         >
           {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
         </span>
@@ -3266,6 +3310,7 @@ function TranscriptEntry({
           className={cn(
             'ml-auto shrink-0 tabular-nums',
             broke && 'font-[var(--font-weight-emphasis)]',
+            workingShimmer(phase === 'running'),
           )}
         >
           {outcome.kind === 'count' ? (
@@ -3291,6 +3336,9 @@ function TranscriptEntry({
                 {t('toolOutcome.foundUnit')}
               </>
             )
+          ) : phase === 'awaiting' ? (
+            // The composer's own word for the same state, so the row and the footer agree.
+            t('status.awaiting')
           ) : (
             t(`toolOutcome.${outcome.status}`)
           )}
