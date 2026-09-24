@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useEffectEvent, useMemo, useRef, useState, useId } from 'react';
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useId } from 'react';
 import { useTranslations } from 'next-intl';
-import { MessageCircle, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
+import { CircleAlert, MessageCircle, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
 import {
   resolveConstellationCandidate,
   constellationMemberDrafts,
@@ -19,6 +19,7 @@ import { Button, Checkbox, Dialog, IconButton, RowButton, Surface, Textarea, Too
 import { Input } from '@/shared/ui/input';
 import { ChromeChip } from '@/shared/ui/chrome-chip';
 import { cn } from '@/shared/lib/cn';
+import { placeAnchoredPopover } from '@/shared/lib/anchored-popover';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 interface Props {
@@ -34,6 +35,47 @@ interface Props {
 }
 
 const TITLE_ID = 'saved-constellation-editor-title';
+
+/** The popover's preferred width (it shrinks to a narrower free map). */
+const LIST_WIDTH = 320;
+/** Trigger bottom to popover top, the chrome's one small step. */
+const LIST_GAP = 8;
+
+interface ListPlacement {
+  left: number;
+  top: number;
+  width: number;
+  originX: number;
+}
+
+/**
+ * Places the list under its trigger, inside the nearest `[data-popover-boundary]` ancestor
+ * (on the map, the toolbar box, which already reserves INDEX, the node inspector and the
+ * agent dock), falling back to the viewport. Coordinates come back in the root's own space,
+ * so the `topology-ui-scale` zoom on the toolbar is divided out once.
+ */
+function measureListPlacement(root: HTMLElement, trigger: HTMLElement): ListPlacement {
+  const rootRect = root.getBoundingClientRect();
+  const triggerRect = trigger.getBoundingClientRect();
+  const boundaryElement = root.closest<HTMLElement>('[data-popover-boundary]');
+  const boundary = boundaryElement
+    ? boundaryElement.getBoundingClientRect()
+    : { left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight };
+  const scale = root.offsetWidth > 0 ? rootRect.width / root.offsetWidth : 1;
+  const placed = placeAnchoredPopover({
+    trigger: triggerRect,
+    boundary,
+    width: LIST_WIDTH * scale,
+    inset: boundaryElement ? 0 : 16,
+    gap: LIST_GAP * scale,
+  });
+  return {
+    left: (placed.left - rootRect.left) / scale,
+    top: (placed.top - rootRect.top) / scale,
+    width: placed.width / scale,
+    originX: placed.originX / scale,
+  };
+}
 
 type ConflictReview =
   | { stage: 'needs-review' | 'loading' | 'reload-error' }
@@ -131,6 +173,8 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
   const store = useSavedConstellations(handle);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [listOpen, setListOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const [listPlacement, setListPlacement] = useState<ListPlacement | null>(null);
   /*
    * A disclosure, not a dialog. The chip used to claim `aria-haspopup="dialog"`
    * while what opened was an unnamed `div`: measured 2026-09-20, zero elements
@@ -174,6 +218,28 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
     };
   }, [listOpen]);
 
+  /*
+   * Measured before paint on every open, and again whenever the boundary or the viewport
+   * changes size while it is open (INDEX folding, the inspector arriving, a window resize).
+   */
+  useLayoutEffect(() => {
+    if (!listOpen) return;
+    const root = rootRef.current;
+    const trigger = triggerRef.current;
+    if (!root || !trigger) return;
+    const place = () => setListPlacement(measureListPlacement(root, trigger));
+    place();
+    const boundary = root.closest<HTMLElement>('[data-popover-boundary]');
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(place);
+    if (boundary) observer?.observe(boundary);
+    observer?.observe(trigger);
+    window.addEventListener('resize', place);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', place);
+    };
+  }, [listOpen]);
+
   const candidateByMapId = useMemo(() => new Map(candidates.map((candidate) => [candidate.mapId, candidate])), [candidates]);
   const selectedMembers = useMemo(
     () => resolvedDraftCandidates(memberDrafts, candidates),
@@ -202,6 +268,14 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
       `${candidate.label} ${candidate.mapId} ${candidate.lastKnownPath} ${candidate.kind}`.toLocaleLowerCase().includes(needle),
     );
   }, [candidates, query]);
+  const createBlockedReason =
+    store.status === 'loading'
+      ? t('loading')
+      : store.status === 'saving'
+        ? t('saving')
+        : candidates.length === 0
+          ? t('createNeedsConcepts')
+          : null;
   const activeConstellation = store.constellations.find((saved) => saved.folder.id === activeId) ?? null;
   const requestedConstellationMissing =
     Boolean(intent && intent !== 'new' && store.status === 'ready') &&
@@ -358,6 +432,7 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
       ) : null}
       <Tooltip content={t('openTooltip')}>
         <ChromeChip
+          ref={triggerRef}
           type="button"
           compact
           icon={<Sparkles size={ICON_SIZE.lg} />}
@@ -376,18 +451,52 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
         as="section"
         id={listId}
         aria-labelledby={listHeadingId}
-        origin="top right"
-        className="fixed right-[var(--chrome-inset)] top-[calc(4.75rem+var(--chrome-tile-size)+0.5rem)] z-40 w-[min(20rem,calc(100vw-var(--chrome-inset)*2))] overflow-hidden rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-2)] [--topology-motion-panel-duration:var(--motion-fast)] md:absolute md:right-0 md:top-[calc(100%+0.5rem)] md:w-80"
+        /*
+         * Hangs from its trigger and stays in the free map (owner report, 2026-09-25): it
+         * used to be pinned to the trigger's right edge at a fixed 320px, which from `xl`,
+         * where this lane holds the free map's left edge, ran it over the INDEX panel and
+         * the collapsed INDEX tab. `measureListPlacement` aligns it to the trigger and
+         * clamps it inside the toolbar box. Gate: tests/e2e/map-constellation-popover-bounds.spec.ts
+         */
+        origin={listPlacement ? `${listPlacement.originX}px top` : 'top left'}
+        style={listPlacement ? { left: listPlacement.left, top: listPlacement.top, width: listPlacement.width } : undefined}
+        data-testid="saved-constellations-list"
+        className={cn(
+          'absolute z-40 overflow-hidden rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-2)] [--topology-motion-panel-duration:var(--motion-fast)]',
+          // Until the first measurement lands (it does before paint) keep the old hang.
+          listPlacement ? null : 'left-0 top-[calc(100%+0.5rem)] w-80',
+        )}
       >
         <div className="flex items-start justify-between gap-3 border-b border-[color:var(--color-divider)] px-4 py-3">
           <div>
             <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">{t('eyebrow')}</p>
             <h2 id={listHeadingId} className="mt-1 text-title text-[color:var(--color-text-primary)]">{t('listTitle')}</h2>
           </div>
-          <Button size="sm" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => openEditor(null)} disabled={store.status !== 'ready' || candidates.length === 0}>
-            <Plus size={ICON_SIZE.sm} aria-hidden="true" />
-            {t('create')}
-          </Button>
+          {/*
+           * One action per state, one control grammar (owner report, 2026-09-25): the
+           * header's primary and the body's recovery action are the same `Button` size
+           * and radius. Where saving is impossible (no writable folder, a failed read) the
+           * body already names why and carries the only action, so the header offers no
+           * dimmed primary to puzzle over. Where it is only waiting (reading, saving, an
+           * empty map) the button stays and says why it cannot be pressed yet.
+           */}
+          {store.status === 'ready' || store.status === 'saving' || store.status === 'loading' ? (
+            createBlockedReason ? (
+              <Tooltip content={createBlockedReason}>
+                <span className="inline-flex rounded-panel" tabIndex={0} role="note" aria-label={createBlockedReason} data-testid="saved-constellations-create-blocked">
+                  <Button size="sm" className="atlas-touch-floor atlas-touch-floor-wide" disabled aria-hidden="true" tabIndex={-1}>
+                    <Plus size={ICON_SIZE.sm} aria-hidden="true" />
+                    {t('create')}
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : (
+              <Button size="sm" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => openEditor(null)} data-testid="saved-constellations-create">
+                <Plus size={ICON_SIZE.sm} aria-hidden="true" />
+                {t('create')}
+              </Button>
+            )
+          ) : null}
         </div>
         <div className="max-h-[min(420px,60vh)] overflow-y-auto p-2" role="list">
           {requestedConstellationMissing ? (
@@ -398,9 +507,16 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
           ) : store.status === 'unavailable' ? (
             <p className="px-2 py-6 text-center text-body text-[color:var(--color-text-tertiary)]">{t('readOnly')}</p>
           ) : store.status === 'corrupt' || store.status === 'unsupported' || store.status === 'error' ? (
-            <div className="space-y-3 px-2 py-4">
-              <p role="alert" className="text-body text-[color:var(--color-status-danger)]">{t('loadError')}</p>
-              <Button variant="outline" size="sm" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => void store.reload()}>{t('reload')}</Button>
+            <div
+              role="alert"
+              data-testid="saved-constellations-load-error"
+              className="m-2 flex items-start gap-2.5 rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] p-[var(--card-pad)]"
+            >
+              <CircleAlert size={ICON_SIZE.md} aria-hidden="true" className="mt-0.5 shrink-0 text-[color:var(--color-danger-text-strong)]" />
+              <div className="min-w-0 flex-1 space-y-3">
+                <p className="break-keep text-body text-[color:var(--color-text-primary)]">{t('loadError')}</p>
+                <Button variant="outline" size="sm" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => void store.reload()}>{t('reload')}</Button>
+              </div>
             </div>
           ) : store.constellations.length === 0 ? (
             <div className="px-3 py-8 text-center">

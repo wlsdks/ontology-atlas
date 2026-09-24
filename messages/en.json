@@ -6713,6 +6713,7 @@
     "eyebrow": "MY CONSTELLATIONS",
     "listTitle": "Saved scopes",
     "create": "Create",
+    "createNeedsConcepts": "Add a concept to the map first. A constellation is made of concepts.",
     "loading": "Reading this ontology folder's saved constellations…",
     "readOnly": "Open your own ontology folder to save a constellation.",
     "loadError": "Saved constellations could not be read. The existing file was left unchanged.",

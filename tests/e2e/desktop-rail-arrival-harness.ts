@@ -191,6 +191,19 @@ export async function installDesktopRailRuntime(
             if (!(path in files)) return Promise.reject(new Error(`missing ${path}`));
             return slow({ bytes: [...new TextEncoder().encode(files[path])], lastModified: mtime });
           }
+          // The native answer for a vault that never saved a constellation is `null`
+          // (`read_library_collections` returns `Ok(None)` for an absent sidecar or file).
+          // Left unstubbed it rejected, and every capture through this harness showed the
+          // map's constellation popover in its read-failure state.
+          case "read_library_collections":
+            return slow(files[".ontology-atlas/library-collections.json"] ?? null);
+          case "write_library_collections": {
+            const key = ".ontology-atlas/library-collections.json";
+            const current = files[key] ?? null;
+            if (current !== (args.expectedContent ?? null)) return slow({ written: false, currentContent: current });
+            files[key] = String(args.content);
+            return slow({ written: true, currentContent: files[key] });
+          }
           case "vault_fingerprint":
             return slow(`fixture-${Object.keys(files).length}`);
           case "hash_vault_files":
