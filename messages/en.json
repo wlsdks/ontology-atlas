@@ -1372,6 +1372,7 @@
       "view3dChoice": {
         "flat": "Flat",
         "territories": "Territories",
+        "hex": "Hex board",
         "galaxy": "Galaxy",
         "strata": "Strata",
         "coupling": "Neural"
@@ -1379,6 +1380,7 @@
       "view3dChoiceHint": {
         "flat": "the ordinary 2D map",
         "territories": "every capability named, gathered around its domain",
+        "hex": "one tile per capability, one region per domain",
         "galaxy": "the whole map drawn as a sky of stars",
         "strata": "containment, read level by lit level",
         "coupling": "clustered by what relates to what"
@@ -3095,6 +3097,36 @@
     }
   },
   "topology": {
+    "hexBoard": {
+      "failed": "The hex board could not be drawn, so the flat map is shown instead.",
+      "canvasAriaLabel": "Hex board: one tile per capability, one region per domain. Arrow keys move to the neighbouring tile.",
+      "listLabel": "Tiles on the hex board",
+      "staleOnly": "◐ Stale only · {count}",
+      "staleOnlyUnmeasured": "◐ Stale only · unknown",
+      "regionsOnly": "⬡ Region names only",
+      "widened": "The board widened: one domain outgrew its region, so every tile was placed again.",
+      "tooltipStale": "◐ stale",
+      "tooltipFacts": "needs {needs} · used by {users} · elements {elements}",
+      "domainMeta": "{capabilities} caps · {elements} el.",
+      "domainStale": "◐ {count} stale",
+      "domainStaleNone": "0 stale",
+      "projectMeta": "{count} docs",
+      "plateSub": "{capabilities}",
+      "plateSubStale": "{capabilities} · ◐ {stale}",
+      "legendBrightness": "brightness = elements",
+      "legendPips": "dots = elements · gold = stale element",
+      "legendStale": "stale",
+      "legendUnknown": "unknown",
+      "legendCanals": "reliance between regions · number = relations",
+      "legendNeeds": "needs",
+      "legendUsers": "used by",
+      "legendKeys": "neighbouring tile",
+      "evidenceMeasured": "Evidence read from Git history: {stale} stale of {total} capabilities",
+      "evidenceReading": "Reading evidence from Git history",
+      "evidenceAppOnly": "The desktop app reads evidence from Git history. Here every state is unknown",
+      "evidenceUnreadable": "Git history could not be read, so evidence is unknown",
+      "evidenceNoPaths": "No capability cites a code path, so evidence is unknown"
+    },
     "territories": {
       "canvasAriaLabel": "Territories map: every capability named, gathered around its domain. Use the INDEX list on the left from the keyboard.",
       "listLabel": "Capabilities on the territories map",

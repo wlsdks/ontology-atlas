@@ -22,10 +22,13 @@ export interface MapEvidence {
   availability: MapEvidenceAvailability;
   /** node id → state. Absent ids are `unknown`. */
   states: ReadonlyMap<string, MapEvidenceState>;
+  /** Stale node id → the cited path that moved (or is gone), for a view that names it. */
+  movedPaths: ReadonlyMap<string, string>;
 }
 
 const EMPTY_DOCS: readonly VaultDoc[] = [];
 const NO_STATES: ReadonlyMap<string, MapEvidenceState> = new Map();
+const NO_PATHS: ReadonlyMap<string, string> = new Map();
 
 /**
  * The map's evidence states, from the same rule and the same Git walk the insights brief uses
@@ -85,15 +88,20 @@ export function useMapEvidenceStates({
   }, [enabled, nativeRootPath, bridge, noPaths, key, concepts]);
 
   return useMemo<MapEvidence>(() => {
-    if (!bridge || !nativeRootPath) return { availability: 'app-only', states: NO_STATES };
-    if (noPaths) return { availability: 'no-paths', states: NO_STATES };
-    if (!walk || walk.key !== key) return { availability: 'reading', states: NO_STATES };
-    if (!walk.changes) return { availability: 'unreadable', states: NO_STATES };
+    if (!bridge || !nativeRootPath) return { availability: 'app-only', states: NO_STATES, movedPaths: NO_PATHS };
+    if (noPaths) return { availability: 'no-paths', states: NO_STATES, movedPaths: NO_PATHS };
+    if (!walk || walk.key !== key) return { availability: 'reading', states: NO_STATES, movedPaths: NO_PATHS };
+    if (!walk.changes) return { availability: 'unreadable', states: NO_STATES, movedPaths: NO_PATHS };
     const resolved = resolveEvidenceStates(concepts, walk.changes);
     const states = new Map<string, MapEvidenceState>();
     for (const id of resolved.current) states.set(id, 'current');
     for (const id of resolved.stale) states.set(id, 'stale');
     for (const id of resolved.missing) states.set(id, 'stale');
-    return { availability: 'measured', states };
+    const movedPaths = new Map<string, string>();
+    for (const row of resolved.rows) {
+      const path = row.moved[0]?.path ?? row.gone[0];
+      if (path && states.get(row.id) === 'stale') movedPaths.set(row.id, path);
+    }
+    return { availability: 'measured', states, movedPaths };
   }, [bridge, nativeRootPath, noPaths, walk, key, concepts]);
 }

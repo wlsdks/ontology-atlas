@@ -1372,6 +1372,7 @@
       "view3dChoice": {
         "flat": "평면",
         "territories": "영역",
+        "hex": "육각",
         "galaxy": "갤럭시",
         "strata": "층",
         "coupling": "뉴런"
@@ -1379,6 +1380,7 @@
       "view3dChoiceHint": {
         "flat": "보통의 2D 지도",
         "territories": "도메인마다 모든 역량을 이름과 함께 펼친 모양",
+        "hex": "역량 하나가 한 칸, 도메인 하나가 한 판인 육각 판",
         "galaxy": "별자리처럼 온 지도를 하늘로 보는 모양",
         "strata": "담김 구조를 빛나는 층으로 나눠 읽는 모양",
         "coupling": "관계가 가까운 것끼리 모인 모양"
@@ -3095,6 +3097,36 @@
     }
   },
   "topology": {
+    "hexBoard": {
+      "failed": "육각 판을 그리지 못해 평면 지도로 보여 드려요.",
+      "canvasAriaLabel": "육각 판: 역량 하나가 한 칸, 도메인 하나가 한 판이에요. 화살표 키로 이웃 칸으로 옮겨 가요.",
+      "listLabel": "육각 판의 칸 목록",
+      "staleOnly": "◐ 낡음만 보기 · {count}",
+      "staleOnlyUnmeasured": "◐ 낡음만 보기 · 모름",
+      "regionsOnly": "⬡ 판 이름만",
+      "widened": "판이 넓어졌어요. 한 도메인이 자기 판을 넘어서서 모든 칸을 새로 놓았어요.",
+      "tooltipStale": "◐ 낡음",
+      "tooltipFacts": "필요 {needs} · 사용 {users} · 요소 {elements}",
+      "domainMeta": "역량 {capabilities} · 요소 {elements}",
+      "domainStale": "◐ 낡음 {count}",
+      "domainStaleNone": "낡음 0",
+      "projectMeta": "{count} 문서",
+      "plateSub": "{capabilities}",
+      "plateSubStale": "{capabilities} · ◐ {stale}",
+      "legendBrightness": "밝기 = 요소 수",
+      "legendPips": "점 = 요소 · 금색 = 낡은 요소",
+      "legendStale": "낡음",
+      "legendUnknown": "모름",
+      "legendCanals": "판 사이 기댐 · 숫자 = 관계 수",
+      "legendNeeds": "필요한 곳",
+      "legendUsers": "사용하는 곳",
+      "legendKeys": "이웃 칸",
+      "evidenceMeasured": "근거 상태는 Git 기록으로 읽었어요: 낡음 {stale} / 역량 {total}",
+      "evidenceReading": "근거 상태를 Git 기록에서 읽는 중이에요",
+      "evidenceAppOnly": "근거 상태는 데스크톱 앱이 Git 기록으로 읽어요. 여기서는 모두 모름이에요",
+      "evidenceUnreadable": "Git 기록을 읽지 못해서 근거 상태는 모름이에요",
+      "evidenceNoPaths": "역량 문서에 인용한 코드 경로가 없어서 근거 상태는 모름이에요"
+    },
     "territories": {
       "canvasAriaLabel": "도메인별 역량 지도: 도메인마다 모든 역량을 이름과 함께 펼쳐 보여요. 키보드로는 왼쪽 INDEX 목록을 쓰세요.",
       "listLabel": "도메인별 역량 목록",
