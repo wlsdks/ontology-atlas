@@ -2934,6 +2934,19 @@ mod library_collections_write_tests {
         path
     }
 
+    /// A vault that never saved a constellation is the empty state, not a read failure:
+    /// neither a missing `.ontology-atlas` folder nor a folder without the file may error.
+    #[test]
+    fn read_answers_absent_for_a_vault_that_never_saved_collections() {
+        let root = vault("absent");
+        let root_path = root.to_string_lossy().to_string();
+        assert_eq!(read_library_collections(root_path.clone()).unwrap(), None);
+        std::fs::create_dir(root.join(".ontology-atlas")).unwrap();
+        std::fs::write(root.join(".ontology-atlas/activity.jsonl"), "{}\n").unwrap();
+        assert_eq!(read_library_collections(root_path).unwrap(), None);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn compare_before_save_preserves_newer_content() {
         let root = vault("conflict");
