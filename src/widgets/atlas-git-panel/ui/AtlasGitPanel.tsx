@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Fragment, useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
 import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
@@ -2224,6 +2224,69 @@ function DiscardDock({
 const STEP_CONCEPT_SLOTS = 2;
 
 /**
+ * A step's concept names, as many as fit whole.
+ *
+ * Two slots only when two concepts are all there is, and only while both names fit: with a
+ * third behind them, or with two long names, the pair was cut to a few characters each
+ * ("Agent … Agent…", "Atlas's own … · Saved const…" in the Korean UI, installed app on this
+ * repository's own vault, 2026-09-24) and neither could be read. Then the row shows one whole
+ * name and counts the rest. Whether two fit is measured on the painted row, not guessed from
+ * the characters, because the column's width follows the window; a wider column tries the
+ * pair again.
+ */
+function StepConceptNames({
+  concepts,
+  more,
+}: {
+  concepts: readonly { id: string; label: string; kind: string }[];
+  more: (count: number) => string;
+}) {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
+  const lastWidth = useRef(0);
+  const pair = concepts.length === STEP_CONCEPT_SLOTS;
+  useLayoutEffect(() => {
+    if (!pair || collapsed || !ref.current) return;
+    const cut = [...ref.current.querySelectorAll<HTMLElement>("[data-step-concept-name]")].some(
+      (name) => name.scrollWidth > name.clientWidth + 1,
+    );
+    // A truncation is only knowable after layout; switching before paint keeps the cut pair
+    // from ever showing.
+    if (cut) setCollapsed(true);
+  }, [pair, collapsed, concepts]);
+  useEffect(() => {
+    const node = ref.current;
+    if (!pair || !node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = Math.round(entry.contentRect.width);
+      if (lastWidth.current && width > lastWidth.current + 8) setCollapsed(false);
+      lastWidth.current = width;
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [pair]);
+  const slots = concepts.length > STEP_CONCEPT_SLOTS || collapsed ? 1 : STEP_CONCEPT_SLOTS;
+  return (
+    <span ref={ref} className="flex min-w-0 flex-1 items-center gap-2.5">
+      {concepts.slice(0, slots).map((concept) => (
+        <span key={concept.id} className="inline-flex min-w-0 shrink items-center gap-1.5">
+          <OntologyMapKindGlyph kind={concept.kind} size={12} />
+          <span className="truncate" title={concept.label} data-step-concept-name="">{concept.label}</span>
+        </span>
+      ))}
+      {concepts.length > slots ? (
+        <span
+          className="shrink-0 text-label font-normal text-[color:var(--color-text-quaternary)]"
+          title={concepts.slice(slots).map((concept) => concept.label).join(", ")}
+        >
+          {more(concepts.length - slots)}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+/**
  * One list row's grammar — **a row in a full-width table**, not a card.
  *
  * It used to be a `rounded-chip` card with a 2px indigo bar on its left, which is
@@ -2416,7 +2479,6 @@ function StepList({
          * this repo's own vault, 2026-09-24) and the pair could not be told apart; one whole name and the count
          * keep the row's height and say something.
          */
-        const slots = stepConcepts.length > STEP_CONCEPT_SLOTS ? 1 : STEP_CONCEPT_SLOTS;
         const names = summary.slugs.join(", ");
         const trail = summary.overflow > 0 ? t("moreSlugs", { count: summary.overflow }) : "";
         const expanded = selection.kind === "commit" && selection.hash === commit.hash;
@@ -2477,20 +2539,10 @@ function StepList({
                       ellipsis, on eight of the eleven rows on screen. Four characters is not a
                       name, and there was nothing to hover.
                     */}
-                    {stepConcepts.slice(0, slots).map((concept) => (
-                      <span key={concept.id} className="inline-flex min-w-0 shrink items-center gap-1.5">
-                        <OntologyMapKindGlyph kind={concept.kind} size={12} />
-                        <span className="truncate" title={concept.label}>{concept.label}</span>
-                      </span>
-                    ))}
-                    {stepConcepts.length > slots ? (
-                      <span
-                        className="shrink-0 text-label font-normal text-[color:var(--color-text-quaternary)]"
-                        title={stepConcepts.slice(slots).map((concept) => concept.label).join(", ")}
-                      >
-                        {t("moreSlugs", { count: stepConcepts.length - slots })}
-                      </span>
-                    ) : null}
+                    <StepConceptNames
+                      concepts={stepConcepts}
+                      more={(count) => t("moreSlugs", { count })}
+                    />
                   </>
                 ) : (
                   <span className="truncate" title={headline}>{headline}</span>
