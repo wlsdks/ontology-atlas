@@ -543,7 +543,18 @@ const SCREENS = [
     name: "insights",
     route: "/ontology/insights/",
     async prepare(page) {
-      await page.waitForTimeout(3000);
+      // The brief's four cores settle on their own clocks — the guidance core scans the whole
+      // project source — and a cell still `reading` prints a loading word. Wait for all four to
+      // have an answer, not for a fixed time.
+      await page.waitForFunction(
+        () => {
+          const cells = [...document.querySelectorAll("[data-brief-availability]")];
+          return cells.length >= 4 && cells.every((cell) => cell.getAttribute("data-brief-availability") !== "reading");
+        },
+        undefined,
+        { timeout: 180_000, polling: 250 },
+      );
+      await page.waitForTimeout(300);
     },
   },
   {
