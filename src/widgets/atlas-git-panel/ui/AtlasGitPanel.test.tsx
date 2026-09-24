@@ -1819,7 +1819,7 @@ describe("AtlasGitPanel — 문서 하나의 이력", () => {
     const rows = screen.getAllByTestId("atlas-git-document-step");
     expect(rows).toHaveLength(1);
     // The author's sentence, without its conventional-commit code.
-    expect(rows[0]).toHaveTextContent("step 25");
+    expect(rows[0]).toHaveTextContent("Step 25");
     expect(rows[0]).not.toHaveTextContent("docs:");
     // Scoped read: git was asked for this document's path.
     const scoped = tauriApiMock.invoke.mock.calls.filter(
@@ -1834,11 +1834,11 @@ describe("AtlasGitPanel — 문서 하나의 이력", () => {
         const selected = screen
           .getAllByTestId("atlas-git-history-item")
           .find((row) => row.getAttribute("aria-expanded") === "true");
-        expect(selected).toHaveTextContent("step 25");
+        expect(selected).toHaveTextContent("Step 25");
       },
       { timeout: 4000 },
     );
-    expect(screen.getByTestId("atlas-git-detail-headline")).toHaveTextContent(/^step 25$/);
+    expect(screen.getByTestId("atlas-git-detail-headline")).toHaveTextContent(/^Step 25$/);
   });
 
   it("그 문서의 다른 커밋은 셋까지 보이고, 나머지는 세어서 한 번에 펼친다", async () => {

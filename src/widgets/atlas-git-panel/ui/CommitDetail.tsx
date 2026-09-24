@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useFormatter } from "next-intl";
 import { cn } from "@/shared/lib/cn";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -309,12 +309,14 @@ export function CommitDetail({
             aria-label={t("hashCopy", { hash })}
             title={t("hashCopy", { hash })}
             className={controlClass({
+              // `md`, the size of every other door in this pane; `-ml-2.5` cancels its
+              // inline padding so the id starts on the headline's line.
               shape: "chip",
-              size: "sm",
+              size: "md",
               tone: "secondary",
               hoverInk: "strong",
               hoverBorder: "strong",
-              className: "-ml-2 border-transparent font-mono tabular-nums",
+              className: "-ml-2.5 border-transparent font-mono tabular-nums",
             })}
           >
             {hashState === "copied" ? t("webCopied") : shortHash(hash)}
@@ -342,6 +344,10 @@ export function CommitDetail({
             type="button"
             data-testid={`atlas-git-lens-${id}`}
             aria-selected={lens === id}
+            /* A lens with nothing in it is a count, not a place to go (review 2026-09-25:
+               "Concepts changed 0" stayed pressable and opened onto one empty sentence).
+               It stays in the strip, so the zero is still said, but it cannot be chosen. */
+            disabled={(id === "concepts" ? concepts.length : files.length) === 0}
             onClick={() => setLens(id)}
             className={controlClass({ shape: "segment", size: "md", tone: "muted", className: "-mb-px min-h-9 gap-1.5 rounded-none border-b-2 border-transparent px-2.5 hover:text-[color:var(--color-text-primary)] aria-selected:border-[color:var(--color-indigo-brand)] aria-selected:font-[var(--font-weight-signature)] aria-selected:text-[color:var(--color-text-primary)]" })}
           >
@@ -476,23 +482,13 @@ export function CommitDetail({
               ))}
             </ul>
 
-            {/* A file this commit deleted has no content at this commit to restore; the door
-                would only open on a refusal, so it is not drawn. The document's own history
-                still lists the steps that hold its content. */}
+            {/* The document's other steps sit between the chooser and the reader. The restore
+                door no longer floats here on its own line (review 2026-09-25: a bare chip
+                between a file row and a history block); it rides in the reader's header,
+                beside the path and counts it acts on, exactly where the uncommitted pane
+                draws its discard door. */}
             {activeFile ? (
-              <div className="px-5 pt-3">
-                {files.find((file) => file.path === activeFile)?.status !== "deleted" ? (
-                <RestoreDock
-                  t={t}
-                  path={activeFile}
-                  label={null}
-                  when={relativeTime}
-                  pending={pendingDelta.get(activeFile) ?? null}
-                  others={Math.max(0, files.length - 1)}
-                  busy={restoreBusy}
-                  onRestore={onRestore}
-                />
-                ) : null}
+              <div className="px-5">
                 <DocumentHistory
                   t={t}
                   vaultPath={vaultPath}
@@ -523,6 +519,23 @@ export function CommitDetail({
                   document={activeDocument}
                   fallback={activeFallback}
                   source={hash}
+                  /* A file this commit deleted has no content at this commit to restore; the
+                     door would only open on a refusal, so it is not drawn. The document's own
+                     history above still lists the steps that hold its content. */
+                  action={
+                    activeDocument.entry.status !== "deleted" ? (
+                      <RestoreDock
+                        t={t}
+                        path={activeDocument.entry.path}
+                        label={null}
+                        when={relativeTime}
+                        pending={pendingDelta.get(activeDocument.entry.path) ?? null}
+                        others={Math.max(0, files.length - 1)}
+                        busy={restoreBusy}
+                        onRestore={onRestore}
+                      />
+                    ) : null
+                  }
                 />
               </div>
             ) : null}
@@ -626,20 +639,18 @@ function RestoreDock({
              * `secondary` carries legibility. Neither adds a colour.
              */
             className={controlClass({
+              /*
+               * The discard door's grammar, size and all (review 2026-09-25): `sm` drew 9.5px
+               * type at the ramp's 24px floor, and the two doors that write a document back
+               * to disk were two sizes on one screen. `md` is 11px on the shared 32px height;
+               * the chip shape's touch floor still gives a finger 44px.
+               */
               shape: "chip",
-              size: "sm",
+              size: "md",
               tone: "secondary",
               hoverInk: "strong",
               hoverBorder: "strong",
-              /*
-               * The chip's own `px-2` would start this label 9px right of everything
-               * else in the column — the section heading, the timeline rows and the
-               * document name all begin on one line, and a control that breaks it
-               * reads as an indent rather than as an affordance. The negative inline
-               * start margin puts the label back on that line while the chip keeps
-               * its padding to draw a hover border around.
-               */
-              className: "-ml-2 border-transparent",
+              className: "border-transparent",
             })}
           >
             {t("restoreAction")}
@@ -718,8 +729,20 @@ function DocumentHistory({
       </h3>
       {others.length > 0 ? (
         <ul className="flex flex-col">
-          {shown.map((commit) => (
-            <li key={commit.hash}>
+          {shown.map((commit, index) => (
+            <li
+              key={commit.hash}
+              /* "Show N more" was a hard cut (review 2026-09-25). The rows it adds arrive on
+                 the screen's one arrival curve, staggered and capped at eight like the step
+                 list; under reduced motion they crossfade together with no stagger. The first
+                 three rows were already there and do not replay. */
+              className={index >= DOCUMENT_HISTORY_PREVIEW ? "git-fade-in" : undefined}
+              style={
+                index >= DOCUMENT_HISTORY_PREVIEW
+                  ? ({ ["--git-row-index" as string]: Math.min(index - DOCUMENT_HISTORY_PREVIEW, 7) } as CSSProperties)
+                  : undefined
+              }
+            >
               <button
                 type="button"
                 data-testid="atlas-git-document-step"
@@ -756,11 +779,11 @@ function DocumentHistory({
           onClick={() => setExpanded((value) => !value)}
           className={controlClass({
             shape: "chip",
-            size: "sm",
+            size: "md",
             tone: "secondary",
             hoverInk: "strong",
             hoverBorder: "strong",
-            className: "-ml-2 self-start border-transparent",
+            className: "-ml-2.5 self-start border-transparent",
           })}
         >
           {expanded ? t("docHistoryLess") : t("docHistoryMore", { count: hidden })}

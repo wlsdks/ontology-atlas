@@ -49,6 +49,15 @@ test("앱 최소 창(1040x720)에서 쌓인 문서 읽기 칸이 높이를 갖�
   expect(hit.onTop, `a change chip is covered by ${hit.topId}`).toBe(true);
   await chip.click({ timeout: 5_000 });
 
+  // The step just picked wins the window it was picked in: its headline starts above the fold
+  // without scrolling the page (round-two review: an uncapped list pushed it below 720).
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByTestId("atlas-git-history-item").first().click();
+  const headline = page.getByTestId("atlas-git-detail-headline");
+  await expect(headline).toBeVisible();
+  const headlineTop = await headline.evaluate((el) => el.getBoundingClientRect().top);
+  expect(headlineTop, "the selected step's headline starts below the fold").toBeLessThan(720 - 40);
+
   // The list and the reader are one page: no horizontal scroll on the way.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);

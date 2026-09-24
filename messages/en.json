@@ -4225,7 +4225,7 @@
     "dockNoRemote": "Still only on this machine: connect a remote repository to read it elsewhere and keep a backup.",
     "dockConnectRemote": "Connect a remote",
     "sectionUnpushed": "Not pushed yet · {count}",
-    "sectionSynced": "Already on {upstream}",
+    "sectionSynced": "Pushed to {upstream}",
     "remoteOnlyWhen": "remote",
     "remoteOnlyTitle": "{count} step(s) only on the remote",
     "remoteOnlyHint": "Click to pull them in",

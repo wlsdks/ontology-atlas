@@ -93,6 +93,8 @@ export interface DesktopRuntimeOptions {
   gitPathChanges?: Record<string, StubPathChange>;
   /** A longer history than the two default steps, for layouts that only break with a real list. */
   commits?: readonly unknown[];
+  /** The patch every diff command answers with, for a reader that shows a whole document. */
+  diff?: string;
 }
 
 export async function installDesktopRailRuntime(
@@ -258,7 +260,7 @@ export async function installDesktopRailRuntime(
       files: options.replaceFixture ? { ...extraFiles } : { ...FIXTURE_VAULT, ...extraFiles },
       commits: [...(options.commits ?? COMMITS)],
       pending: PENDING,
-      diff: DIFF,
+      diff: options.diff ?? DIFF,
       runtimeResponses,
       gitPathChanges: options.gitPathChanges,
     },

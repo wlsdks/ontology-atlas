@@ -13,7 +13,20 @@ const CONVENTIONAL_PREFIX =
 
 export function stripConventionalPrefix(subject: string): string {
   const match = CONVENTIONAL_PREFIX.exec(subject.trim());
-  return match ? match[1] : subject;
+  return match ? capitalizeFirst(match[1]) : subject;
+}
+
+/**
+ * The convention writes the sentence after the code in lower case (`feat: record …`), because
+ * the code opened the line. With the code gone the sentence opens the headline and the row,
+ * and a lower-case start read as a clipped string rather than a title (review 2026-09-25).
+ * Only a subject whose prefix was stripped is touched; a sentence written without the code
+ * keeps its author's casing. Scripts without case (Hangul, Han) are left as they are.
+ */
+function capitalizeFirst(sentence: string): string {
+  const first = sentence.charAt(0);
+  const upper = first.toLocaleUpperCase("en");
+  return upper === first ? sentence : upper + sentence.slice(1);
 }
 
 /** The first few files a step touched, by name — the row's reason when no concept matched. */

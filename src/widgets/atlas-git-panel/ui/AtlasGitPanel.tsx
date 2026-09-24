@@ -1268,11 +1268,13 @@ function PageHeader({
             ratio nobody chose gets created — which is what happened here (23px
             text on title's 24px leading, 1.04).
 
-            2026-09-25 — the display step moved to what the person picked. "Git" is the
-            name of the destination, which the rail already highlights; at 23px it was the
-            same size as the selected document's title and outranked the selected step's
-            14px headline, so the screen had two winners and neither was the selection. */}
-        <h1 className="flex items-center gap-2 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+            2026-09-25 — the page title keeps the display step every destination's h1 uses:
+            dropping it on Git alone made this the one rail destination whose title shrank
+            when you arrived (round-two review). The selection still wins inside the pane —
+            its headline holds the display step there and the document title inside a step
+            steps down to a panel title — so hierarchy is settled in the pane, not by
+            demoting the page's name. */}
+        <h1 className="flex items-center gap-2 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)] sm:text-display">
           <HistoryIcon size={ICON_SIZE.lg} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
         </h1>
@@ -3335,7 +3337,14 @@ function DesktopBody({
               {t("noChangesHint")}
             </p>
           ) : null}
-          <div className="min-h-0 xl:flex-1 xl:overflow-y-auto">
+          {/*
+            Below `xl` the list carries the same cap the stacked reader does (round-two review
+            at the app floor, 1040x720): uncapped, eleven two-line steps filled the window and
+            the headline of the step just picked painted below the fold, so the selection did
+            not win the screen it was picked on. Capped, the list scrolls in place and the
+            reader's headline starts inside the first window.
+          */}
+          <div className="min-h-0 max-xl:max-h-[var(--git-evidence-stack-max)] max-xl:overflow-y-auto xl:flex-1 xl:overflow-y-auto">
             <StepList
               t={t}
               history={history}
