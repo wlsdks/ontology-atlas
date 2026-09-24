@@ -101,7 +101,7 @@ describe('Automations manager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByTestId('ontology-automation-sheet')).not.toBeInTheDocument());
     fireEvent.click(screen.getByTestId('automations-new'));
-    expect(screen.getByTestId('ontology-automation-name')).toHaveValue('');
+    expect(screen.getByTestId('ontology-automation-name')).toHaveValue(en.automations.ontology.defaultName);
     expect(screen.getByTestId('ontology-automation-focus')).toHaveValue('');
     expect(screen.getByRole('radio', { name: 'Every 6 hours' })).toHaveAttribute('aria-checked', 'true');
   });
@@ -137,7 +137,9 @@ describe('Automations manager', () => {
     };
     renderPage(runner({ rounds: [round], state: { v: 1, rounds: [round] }, ledger: [entry] }));
 
-    expect(screen.getByTestId('automations-last-run')).toHaveTextContent(en.automations.outcome.reviewed);
+    // The row header states the latest outcome; the expanded report leads with its summary.
+    expect(screen.getByTestId('automation-ontology-1')).toHaveTextContent(en.automations.outcome.reviewed);
+    expect(screen.getByTestId('automations-last-run')).not.toHaveTextContent(en.automations.outcome.reviewed);
     expect(screen.getByTestId('automations-last-run')).toHaveTextContent('one source binding gap');
     fireEvent.click(screen.getByRole('button', { name: 'Tool activity' }));
     expect(screen.getByTestId('automations-last-run')).toHaveTextContent('query_ontology');

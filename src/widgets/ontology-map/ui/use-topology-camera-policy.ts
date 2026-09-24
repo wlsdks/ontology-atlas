@@ -180,7 +180,7 @@ export function useTopologyCameraPolicy({
    * only), so listing it in the programmatic-move effects' deps never re-fires
    * them.
    */
-  const beginCameraTween = useCallback((target: CameraTarget, durationOverrideMs?: number) => {
+  const beginCameraTween = useCallback((target: CameraTarget, durationOverrideMs?: number, ease?: "out") => {
     if (reducedMotionRef.current) {
       cameraTweenRef.current = null;
       return;
@@ -188,7 +188,7 @@ export function useTopologyCameraPolicy({
     const cam = cameraRef.current;
     const start: CameraKeyframe = { x: cam.x.value, y: cam.y.value, scale: cam.scale.value };
     const tgt: CameraKeyframe = { x: target.tx, y: target.ty, scale: target.tscale };
-    cameraTweenRef.current = { start, target: tgt, startMs: performance.now(), durationMs: durationOverrideMs ?? cameraTransitionDurationMs(start, tgt) };
+    cameraTweenRef.current = { start, target: tgt, startMs: performance.now(), durationMs: durationOverrideMs ?? cameraTransitionDurationMs(start, tgt), ease };
   }, [cameraRef, cameraTweenRef, reducedMotionRef]);
   return { cameraTokens, domeFitTarget, beginCameraTween };
 }

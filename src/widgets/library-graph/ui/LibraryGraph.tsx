@@ -527,12 +527,20 @@ export function LibraryGraph({
       aria-label={t("graph.title")}
       className="flex min-h-0 flex-1 flex-col px-5 py-2 sm:px-6 md:px-10"
     >
-      <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1">
+      <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1 lg:flex-nowrap">
         {/* The counts are the caption of the picture, and now its only title: with the
             canvas always drawn there is no disclosure left to name. */}
+        {/*
+          ⚠️ **At `lg` and up the row does not wrap; the counts give way first** (design
+          sweep, 2026-09-25). At 1040 the counts plus the clauses filled the line and the
+          guide and questions doors dropped to a second 40px row taken from the canvas. The
+          counts are the one child that truncates cleanly, so they shrink first and keep the
+          whole sentence in their `title`; below `lg` the row still wraps as before.
+        */}
         <p
           data-testid="library-graph-counts"
-          className="min-w-0 truncate text-label leading-body text-[color:var(--color-text-tertiary)]"
+          title={caption}
+          className="min-w-0 truncate text-label leading-body text-[color:var(--color-text-tertiary)] lg:shrink-[20]"
         >
           {caption}
         </p>
@@ -762,10 +770,12 @@ export function LibraryGraph({
             owner saw. Both sentences are laid in one grid cell so the taller of them sets
             the height and the visible one never changes it. */}
         {/* A teaching line keeps a reading measure: at 1920 it ran ~1,600px in one line of
-            11px text (2026-09-19). Bounded from `2xl` only, because at 1512 the bound would
-            wrap it to more lines and take that height from the canvas above, which is the
-            width the owner works at; a wide monitor has the height to spare. */}
-        <div className={cn("mt-1.5 grid 2xl:max-w-[var(--measure-doc-column)]", captionQuiet && "max-lg:mt-0")}>
+            11px text (2026-09-19). It was bounded from `2xl` only, to keep a second line's
+            height for the canvas at 1512; but the picture keeps its fixed scale (owner,
+            "too big and ugly" at 1920) and fills about a fifth of that canvas, so the
+            line was spending nothing it saved and ran 1,070px under the fullscreen door
+            while 1920 wrapped at 690 (review, 2026-09-25). One cap at every width. */}
+        <div className={cn("mt-1.5 grid max-w-[var(--measure-doc-column)]", captionQuiet && "max-lg:mt-0")}>
           {/*
             ⚠️ **Both states' sentences size the row, not the current one.** The sizer used
             to print the sentence of the state it was in, so the row was the *rest* legend's

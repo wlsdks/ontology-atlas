@@ -256,14 +256,20 @@ export interface UseTopologyLoopArgs {
    */
   canvasBackground?: CanvasBackground;
   /**
-   * 3D view (2026-08-18, opt-in) — relays the map into the ownership Cone tree or
-   * relation-driven Cloud (`model/dome-view.ts`). Draw, hit-testing, DOM anchors,
-   * and the inspection hook all read the same frame map. Omitted keeps 2D.
+   * 3D view (2026-08-18, opt-in) — relays the map into lit Strata or the
+   * relation-driven Neural cloud (`model/dome-view.ts`). Draw, hit-testing, DOM
+   * anchors, and the inspection hook all read the same frame map. Omitted keeps 2D.
    */
   view3d?: boolean;
   galaxy?: boolean;
-  /** Which 3D structure is drawn — ownership Cone tree or coupling Cloud. */
+  /** Which 3D structure is drawn — Strata or the coupling (Neural) cloud. */
   mapArrangement?: MapArrangement;
+  /**
+   * Lit 3D (2026-09-25) — node id → evidence state, from the product's one evidence rule
+   * (`shared/lib/evidence-states.ts`). An absent id is unknown; null means nothing was
+   * measured, so every node is unknown. It decides how much each node emits.
+   */
+  domeEvidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
   /** 3D reframe input: is the detail panel covering the viewport (`OntologyMap` JSDoc). */
   detailPanelVisible?: boolean;
   /** Footprint appearance settings. Omitted or `null` draws no footprints. */

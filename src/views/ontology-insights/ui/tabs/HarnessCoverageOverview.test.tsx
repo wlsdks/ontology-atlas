@@ -96,7 +96,7 @@ afterEach(() => {
 });
 
 describe('HarnessCoverageOverview measured slice', () => {
-  it('draws every domain with stable role marks and no connector for a zero', () => {
+  it('draws every domain with stable role marks and a dashed empty connector for a zero', () => {
     mount();
     expect(screen.getByText('지침 파일 102개 · 검사 항목 87개.')).toBeInTheDocument();
     expect(screen.getByText(/도표의 숫자는 도메인에 귀속된 경로 한정 선언 수/)).toBeInTheDocument();
@@ -107,6 +107,8 @@ describe('HarnessCoverageOverview measured slice', () => {
     expect(guidance.querySelector('[data-role="gated"]')).toHaveAttribute('data-state', 'empty');
     expect(guidance.querySelector('[data-role-connection="told"]')).not.toBeNull();
     expect(guidance.querySelector('[data-role-connection="gated"]')).toBeNull();
+    // A zero branch is still drawn, marked empty, so the tree reads as "nothing declared" rather than broken.
+    expect(guidance.querySelector('[data-role-connection-empty="gated"]')).toHaveAttribute('data-empty');
     expect(guidance.querySelector('[data-role="gated"]')).toHaveTextContent('훅');
     expect(guidance.querySelector('[data-role="watched"]')).toHaveTextContent('검사·워크플로');
   });

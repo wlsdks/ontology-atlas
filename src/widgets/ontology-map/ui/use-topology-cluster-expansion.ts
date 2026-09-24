@@ -6,6 +6,7 @@ import {
   type RefObject
 } from "react";
 import type { CameraTarget } from "../engine/camera";
+import type { DomeRuntime } from "../model/dome-view";
 import { rankEgoNeighborsByDOI } from "../model/focus-state";
 import { computeClusterFitTarget } from "./topology-camera-math";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
@@ -27,6 +28,7 @@ interface Dependencies {
   userDrivenCameraRef: RefObject<boolean>;
   cameraAngularFreqRef: RefObject<number | null>;
   beginCameraTween: (target: CameraTarget, durationOverrideMs?: number) => void;
+  domeRuntimeRef: RefObject<DomeRuntime | null>;
 }
 
 /** Apply expansion changes to the visibility and appearance clocks. */
@@ -46,6 +48,7 @@ export function useTopologyClusterExpansion({
   userDrivenCameraRef,
   cameraAngularFreqRef,
   beginCameraTween,
+  domeRuntimeRef,
 }: Dependencies) {
 
   useEffect(() => {
@@ -69,6 +72,14 @@ export function useTopologyClusterExpansion({
       }
     }
     if (newlyExpanded === null) return;
+    /*
+     * 3D draws every node (no cluster is ever folded there) and frames with its own
+     * projection, so a dive computed from 2D coordinates would aim at nothing. Until
+     * 2026-09-25 the 3D selection reframe overwrote it on the next frame; a click in 3D now
+     * only selects, so the dive has to stand down itself — a selection opening its
+     * ancestors must not move the 3D view.
+     */
+    if (domeRuntimeRef.current?.active) return;
     const tokens = readOntologyMapTokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -119,6 +130,6 @@ export function useTopologyClusterExpansion({
     // with once the tween ends or is interrupted.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(target);
-  }, [expandedParents, beginCameraTween, cameraTokens, prevExpandedParentsRef, expandedParentsRef, lastActiveMsRef, worldRef, viewportRef, hasInitializedRef, overviewScaleRef, expandPrefRef, dampingRef, cameraTargetRef, userDrivenCameraRef, cameraAngularFreqRef]);
+  }, [expandedParents, beginCameraTween, cameraTokens, domeRuntimeRef, prevExpandedParentsRef, expandedParentsRef, lastActiveMsRef, worldRef, viewportRef, hasInitializedRef, overviewScaleRef, expandPrefRef, dampingRef, cameraTargetRef, userDrivenCameraRef, cameraAngularFreqRef]);
 
 }

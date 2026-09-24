@@ -730,23 +730,32 @@ function FactsStrip({
 
   return (
     <div className={cn('gateway-rise gateway-t400', heroIn && 'is-in', 'w-full', className)}>
-      {/* **One row where it fits, shared tracks where it does not** (2026-09-25). From 94.5rem
-          (1512) the facts and the destination pair stand on one rule, the pair on the column's
-          right edge. Narrower, the strip used to wrap as flex and the pair was pushed right:
-          measured at 1040 its first label started at x=505, a line nothing above it used. Below
-          that the strip is a grid instead (three tracks from `lg`; at 1440 the English row
-          wrapped its pair onto a right-pushed orphan line), and the two groups dissolve into it
-          (`display: contents`), so every wrapped item lands on a track the row above it
-          started. */}
+      {/* Two flex items on one rule: the facts list and the destination pair. The pair is one
+          item so it moves as a unit — measured at 834 with the links loose in the list, the
+          push-right left one link alone on a third row. When all six fit on one line, the pair
+          sits on the column's right edge.
+
+          **When they do not fit, the strip is one grid** (2026-09-25). The pair used to wrap
+          whole beneath the facts and keep its push-right, so at 1040 and 1280 the second row
+          started mid-column on a grid of its own: two rows sharing no start line. Below the
+          one-line width the facts and the pair are subgrids of one `max-content` grid, so the
+          two links fall into the facts' first two columns and every row starts at the column's
+          left edge. The switch is a container query on the strip, because the column, not the
+          window, decides whether six items fit.
+
+          One column gap in every layout (`gap-x-12`), and the four-column step waits for the
+          width four columns need: 167 + 173 + 53 + 128 of max-content plus three 48px gaps is
+          665px, so it switches at 42rem (672). It switched at 38rem (608) while the tablet column
+          was 624 wide, which pushed the SHA-256 value 16px past the strip at 1024. */}
       <div
         data-testid="gateway-facts"
         className={cn(
           PAGE_COLUMN,
-          'grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-x-8 gap-y-4 border-t border-[color:var(--color-border-soft)] py-5 lg:grid-cols-3',
-          'min-[94.5rem]:flex min-[94.5rem]:flex-wrap min-[94.5rem]:gap-x-12',
+          '@container/gateway-facts border-t border-[color:var(--color-border-soft)] py-5',
         )}
       >
-        <dl className="contents min-[94.5rem]:flex min-[94.5rem]:min-w-0 min-[94.5rem]:flex-wrap min-[94.5rem]:gap-x-12 min-[94.5rem]:gap-y-4">
+        <div className="grid grid-cols-1 gap-x-12 gap-y-4 @min-[21rem]/gateway-facts:grid-cols-2 @min-[42rem]/gateway-facts:grid-cols-[repeat(4,max-content)] @min-[66rem]/gateway-facts:flex">
+        <dl className="col-span-full grid min-w-0 grid-cols-subgrid gap-y-4 @min-[66rem]/gateway-facts:flex @min-[66rem]/gateway-facts:gap-x-12">
           {facts.map((fact) => (
             <div key={fact.label} className="min-w-0">
               <dt className={FACT_LABEL}>{fact.label}</dt>
@@ -762,7 +771,7 @@ function FactsStrip({
             </div>
           ))}
         </dl>
-        <div className="contents min-[94.5rem]:ml-auto min-[94.5rem]:flex min-[94.5rem]:min-w-0 min-[94.5rem]:flex-wrap min-[94.5rem]:gap-x-12 min-[94.5rem]:gap-y-4">
+        <div className="col-span-full grid min-w-0 grid-cols-subgrid gap-y-4 @min-[66rem]/gateway-facts:ml-auto @min-[66rem]/gateway-facts:flex @min-[66rem]/gateway-facts:gap-x-12">
           {links.map((link) => (
             <div key={link.label} className="min-w-0">
               <span className={cn(FACT_LABEL, 'block')}>{link.label}</span>
@@ -792,6 +801,7 @@ function FactsStrip({
               </span>
             </div>
           ))}
+        </div>
         </div>
       </div>
     </div>
