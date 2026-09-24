@@ -403,11 +403,15 @@ export function useTopologyAgentOrchestration({
       // handed to a panel that is not mounted is a request nobody receives.
       pendingAgentChatPromptRef.current = prompt;
       setPendingAgentChatRuntimeId(target);
+      return true;
     };
     const queued = consumeQueuedAgentChatIntent();
     if (queued) window.queueMicrotask(() => accept(queued.runtimeId, queued.prompt));
-    return subscribeAgentChatIntent(accept);
-  }, [acpRuntime?.id, pendingAgentChatPromptRef, requestedAcpRuntimeRef, setAcpRuntimeId, setPendingAgentChatRuntimeId]);
+    return subscribeAgentChatIntent((runtimeId,prompt)=>{
+      if(runtimeId===null&&!agentChatUsesRuntime)return false;
+      return accept(runtimeId,prompt);
+    });
+  }, [acpRuntime?.id, agentChatUsesRuntime, pendingAgentChatPromptRef, requestedAcpRuntimeRef, setAcpRuntimeId, setPendingAgentChatRuntimeId]);
 
   useEffect(() => {
     if (

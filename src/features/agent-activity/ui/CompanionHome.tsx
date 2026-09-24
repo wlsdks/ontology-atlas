@@ -4,6 +4,7 @@ import { lazy, Suspense, useId, useMemo, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useDataSourceMode, useLocalVault } from '@/entities/vault-session';
+import {getTauriVaultRootPath} from '@/shared/lib/tauri-vault-fs';
 import { withBasePath } from '@/shared/lib/base-path';
 import { ChromeTile, Dialog, RouteLoadingFallback, RowButton } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -71,7 +72,7 @@ export function CompanionHome({ compact = false }: { compact?: boolean }) {
     <Dialog open={open} onClose={close} labelledBy={`${id}-title`} initialFocus="first" size="viewport" testId="companion-journal" className={`my-[var(--chrome-inset)] flex h-[min(var(--dialog-max-h),calc(100dvh-var(--chrome-inset)*2))] max-w-[calc(var(--dialog-w-md)*2)] flex-col overflow-hidden p-0 ${styles.homeDialog}`}>
       <h2 id={`${id}-title`} className="sr-only">{t('title')}</h2>
       <Suspense fallback={<RouteLoadingFallback embedded/>}>
-      {open ? <CompanionGrowth key={project ?? 'none'} growth={store.growth} targets={targets} docs={docs ?? []} manifest={vault.manifest} projectKey={project} active={open} projectName={projectName} available={project !== null} unreadable={store.unreadable} failed={store.failed} record={store.record} reset={store.reset} revise={store.revise} close={close} openFolder={() => {close();void vault.open();}} draft={growthDraft.project===project?growthDraft.draft:{selectedUid:null,note:'',reflection:'learned'}} onDraft={draft=>setGrowthDraft({project,draft})} memoryDraft={memoryDraft} onMemoryDraft={setMemoryDraft}/> : null}
+      {open ? <CompanionGrowth key={project ?? 'none'} growth={store.growth} targets={targets} docs={docs ?? []} manifest={vault.manifest} questLoaded={mode==='local'&&vault.status==='loaded'} receipts={vault.acpWorkReceipts??[]} vaultRoot={vault.handle?getTauriVaultRootPath(vault.handle)??null:null} projectKey={project} active={open} projectName={projectName} available={project !== null} unreadable={store.unreadable} failed={store.failed} record={store.record} reset={store.reset} revise={store.revise} close={close} openFolder={() => {close();void vault.open();}} draft={growthDraft.project===project?growthDraft.draft:{selectedUid:null,note:'',reflection:'learned'}} onDraft={draft=>setGrowthDraft({project,draft})} memoryDraft={memoryDraft} onMemoryDraft={setMemoryDraft}/> : null}
       </Suspense>
     </Dialog>
   </>;

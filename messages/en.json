@@ -6925,7 +6925,7 @@
       "journalSections": "Journal sections",
       "knowledgeBook": "Reading log",
       "personalBook": "Shared memories",
-      "controls": "WASD / arrows to move · Click the ground to walk · E interact · I inventory · K skills · M map · J journal · Q knowledge wave · 1 potion · R rest · Esc close panel · B blessings · Space dodge · N Creature field guide",
+      "controls": "WASD / arrows to move · Click the ground to walk · E interact · I inventory · K skills · M map · J journal · Q knowledge wave · 1 potion · R rest · Esc close panel · B blessings · Space dodge · N Creature field guide · L Quests",
       "panel": {
         "inventory": "Traveler’s inventory",
         "skills": "Starlight skills",
@@ -6934,7 +6934,8 @@
         "journal": "Travel journal",
         "help": "Traveler’s guide",
         "blessings": "Expedition blessings",
-        "bestiary": "Creature field guide"
+        "bestiary": "Creature field guide",
+        "quests": "Traveler’s quests"
       },
       "move": {
         "ArrowUp": "Move up",
@@ -6985,7 +6986,8 @@
         "potion": "Healing potion",
         "cards": "Knowledge cards",
         "relic": "Forest relic",
-        "bestiary": "Creature field guide"
+        "bestiary": "Creature field guide",
+        "quests": "Quest journal"
       },
       "description": {
         "sword": "Each upgrade adds 2 attack. Spend gold earned from monsters.",
@@ -6993,11 +6995,13 @@
         "library": "Each upgrade adds 1 XP per defeated monster.",
         "potion": "Restores 20 HP. The recovery skill increases its effect.",
         "cards": "Real concepts in this folder. Read them together and keep discoveries at the desk.",
-        "relic": "A keepsake from defeating a guardian, every tenth encounter.",
-        "bestiary": "Discover 108 creatures, their behavior, and your defeats. Prepare for the next journey."
+        "relic": "Relics earned from guardians and quests. Used to enhance personal equipment beyond +5.",
+        "bestiary": "Discover 108 creatures, their behavior, and your defeats. Prepare for the next journey.",
+        "quests": "Claim guardian relics from recorded construction, reading, and companion work to grow your equipment."
       },
       "chest": "Open supply chests · {count}",
-      "readBestiary": "Open field guide (N)"
+      "readBestiary": "Open field guide (N)",
+      "readQuests": "Open quests (L)"
     },
     "skills": {
       "points": "Available skill points: {count}",
@@ -7118,6 +7122,115 @@
         "swarm": "Double strike",
         "arcane": "Wave resistant"
       }
+    },
+    "journey": {
+      "title": "Expedition plan",
+      "run": "Expedition {number}",
+      "floors": "Floor history",
+      "floor": "Floor {floor}",
+      "entrance": "Entrance",
+      "unreached": "Ahead",
+      "legacy": "Earlier progress",
+      "current": "This floor: {path}",
+      "standard": "Standard encounter",
+      "restored": "Recovered {hp} HP",
+      "choose": "Choose the next path",
+      "applies": "Floor {floor}: {path}",
+      "nextRun": "Next expedition, floor 2: {path}",
+      "persists": "Changes apply at floor entry, never immediately. Your preference carries into automatic retries.",
+      "name": {
+        "camp": "Rest stop",
+        "cache": "Supply trail",
+        "elite": "Elite hunt"
+      },
+      "effect": {
+        "camp": "Recover up to {hp}% HP on entry; −{gold} G per victory.",
+        "cache": "Enemy HP +{health}%; +{gold} G per victory.",
+        "elite": "Enemy HP +{health}%, damage +{damage}%; +{gold} G / +{xp} XP per victory."
+      },
+      "open": "Expedition plan (M), floor {floor} of 5",
+      "progress": "Floor {floor} / 5"
+    },
+    "quests": {
+      "title": "Traveler’s quests",
+      "forge": "Forge up to +{limit} · {count} claimed",
+      "pages": "Quest pages",
+      "name": {
+        "roots": "First roots",
+        "links": "Linked ideas",
+        "traces": "Source trail",
+        "builder": "Growing atlas",
+        "weaver": "Connected world",
+        "archive": "Wiki keeper",
+        "explorer": "First reading",
+        "reflection": "Honest reflection",
+        "scholar": "Thoughtful explorer",
+        "partner": "Working together",
+        "workshop": "Workshop partner",
+        "companions": "Steady collaboration"
+      },
+      "requirement": {
+        "concepts": "Record {goal} ontology concepts in the current folder",
+        "relations": "Record {goal} resolved connections in the current map",
+        "implementation": "Record implementation paths on {goal} concepts",
+        "wiki": "Build {goal} wiki pages",
+        "explored": "Explore {goal} knowledge cards",
+        "reflected": "Record discoveries, corrections, or uncertainty on {goal} distinct concepts",
+        "acp": "Inspect {goal} concepts with confirmed body saves through Agent Client Protocol (ACP)"
+      },
+      "claimed": "Claimed",
+      "progress": "Current {current} / {goal}",
+      "past": "Observed {count} when claimed",
+      "reward": "Guardian relics ×{count}",
+      "claim": "Claim reward",
+      "study": "Go to knowledge cards",
+      "openEvidence": "Current source: {title}",
+      "unavailable": "No current source is available. Earned rewards remain.",
+      "acp": {
+        "verified": "Completed writes and their current concepts are available in this folder.",
+        "pending": "ACP work is still pending.",
+        "unavailable": "No verifiable completion record is available for this folder. Older history may no longer be retained.",
+        "failed": "The last work did not complete. No reward was added.",
+        "rejected": "The request was declined and did not run. Ordinary quests remain available."
+      },
+      "boundary": "Game rewards record activity, not correctness or meaning acceptance.",
+      "alternative": "Six ordinary quests unlock every forge tier without ACP.",
+      "received": "{name} · Relics received",
+      "prepare": "Prepare ACP assistance",
+      "sendTitle": "Send this request to the agent",
+      "send": "Send this request to ACP",
+      "cancel": "Go back",
+      "request": "Read the existing ontology and evidence in the current Atlas folder, then propose genuinely needed body improvements. If evidence is insufficient, preserve uncertainty and do not write. Do not create arbitrary documents or approvals for quest rewards. Any actual write must follow the existing approval process.",
+      "notice": "Quests · {count} rewards ready",
+      "helpUnavailable": "No available ACP agent accepted the request. Nothing was sent.",
+      "agents": "Check agent connection",
+      "list": "Quest ledger",
+      "listProgress": "{current} / {goal}"
+    },
+    "forge": {
+      "title": "Personal equipment forge",
+      "rank": {
+        "0": "Traveler gear",
+        "1": "Inscribed gear",
+        "2": "Guardian gear",
+        "3": "Radiant gear",
+        "4": "Astral gear"
+      },
+      "level": "+{level}",
+      "preview": {
+        "sword": "Attack {before} → {after}",
+        "armor": "Max HP {before} → {after}",
+        "library": "Victory XP bonus +{before} → +{after}"
+      },
+      "milestone": "Bonus equipment effect every +5",
+      "gate": "Claim {count}/{needed} quests for the next enhancement. Previously earned equipment remains.",
+      "quests": "Unlock tiers through quests",
+      "cost": "Enhance · {gold} G + {relics, plural, one {# relic} other {# relics}}",
+      "max": "Maximum tier",
+      "materials": "Relics {count}/{needed} · Earned from quests and guardians",
+      "guarantee": "Guaranteed success · No destruction",
+      "success": "Enhanced · +{level}",
+      "waveTier": "New tier · Wave ×{before} → ×{after}"
     }
   }
 }

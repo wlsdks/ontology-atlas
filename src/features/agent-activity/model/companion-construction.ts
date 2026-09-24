@@ -16,14 +16,17 @@ export function constructionHighWater(prior:ConstructionCounts,current:Construct
  return Object.fromEntries(Object.keys(prior).map(key=>[key,Math.max(prior[key as keyof ConstructionCounts],current[key as keyof ConstructionCounts])])) as ConstructionCounts;
 }
 /** Reuses the renderer's relation resolver and Library's wiki classification. Runs only on an open game and a new manifest. */
-export function observeConstruction(manifest:VaultManifest):ConstructionCounts{
+export function observeCompanionProject(manifest:VaultManifest){
  const targets=growthTargets(manifest.docs,'en');const slugs=new Set(targets.map(target=>target.slug));
  const concepts=manifest.docs.filter(doc=>slugs.has(doc.slug));
  const derivation=deriveOntologyFromVault(manifest);
  const nodes=new Map(derivation.nodes.filter(node=>node.hasOwnDocument&&slugs.has(node.sourceSlug)).map(node=>[node.id,node]));
- const edges=new Set(derivation.edges.filter(edge=>nodes.has(edge.from)&&nodes.has(edge.to)).map(edge=>edge.id));
+ const connected=derivation.edges.filter(edge=>nodes.has(edge.from)&&nodes.has(edge.to));
+ const edges=new Set(connected.map(edge=>edge.id));
  const wikiSlugs=new Set(selectWikiPages(manifest.docs).map(page=>page.slug));
  const wiki=manifest.docs.filter(doc=>wikiSlugs.has(doc.slug));
  const detail=[...concepts,...wiki].reduce((sum,doc)=>sum+Math.min(10,Math.floor(Math.max(0,doc.wordCount??0)/40)),0);
- return {concepts:Math.min(100000,targets.length),relations:Math.min(100000,edges.size),implementation:concepts.filter(doc=>typeof doc.frontmatter.path==='string'&&doc.frontmatter.path.trim()).length,wiki:Math.min(100000,wikiSlugs.size),detail:Math.min(100000,detail)};
+ return {relationSlug:connected[0]?nodes.get(connected[0].from)?.sourceSlug??null:null,counts:{concepts:Math.min(100000,targets.length),relations:Math.min(100000,edges.size),implementation:concepts.filter(doc=>typeof doc.frontmatter.path==='string'&&doc.frontmatter.path.trim()).length,wiki:Math.min(100000,wikiSlugs.size),detail:Math.min(100000,detail)}};
 }
+
+export const observeConstruction=(manifest:VaultManifest):ConstructionCounts=>observeCompanionProject(manifest).counts;

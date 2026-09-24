@@ -6925,7 +6925,7 @@
       "journalSections": "기록 종류",
       "knowledgeBook": "읽기 기록",
       "personalBook": "함께한 기억",
-      "controls": "WASD / 방향키로 이동 · 바닥 클릭으로 걷기 · E 상호작용 · I 가방 · K 스킬 · M 지도 · J 기록 · Q 지식 파동 · 1 물약 · R 휴식 · Esc 창 닫기 · B 축복 · Space 회피 · N 몬스터 도감",
+      "controls": "WASD / 방향키로 이동 · 바닥 클릭으로 걷기 · E 상호작용 · I 가방 · K 스킬 · M 지도 · J 기록 · Q 지식 파동 · 1 물약 · R 휴식 · Esc 창 닫기 · B 축복 · Space 회피 · N 몬스터 도감 · L 의뢰",
       "panel": {
         "inventory": "여행자의 가방",
         "skills": "별빛의 기술",
@@ -6934,7 +6934,8 @@
         "journal": "여행 일지",
         "help": "여행 안내",
         "blessings": "원정의 축복",
-        "bestiary": "몬스터 도감"
+        "bestiary": "몬스터 도감",
+        "quests": "여행자의 의뢰"
       },
       "move": {
         "ArrowUp": "위로 이동",
@@ -6985,7 +6986,8 @@
         "potion": "회복 물약",
         "cards": "지식 카드",
         "relic": "숲의 유물",
-        "bestiary": "몬스터 도감"
+        "bestiary": "몬스터 도감",
+        "quests": "의뢰 수첩"
       },
       "description": {
         "sword": "강화할 때마다 공격력 +2. 몬스터를 처치해 얻은 골드로 강화합니다.",
@@ -6993,11 +6995,13 @@
         "library": "강화할 때마다 처치 경험치 +1. 발견을 모험의 힘으로 바꾸는 책입니다.",
         "potion": "체력 20 회복. 회복 스킬을 익히면 효과가 늘어납니다.",
         "cards": "이 폴더의 실제 개념들입니다. 책상에서 함께 읽고 발견을 기록할 수 있습니다.",
-        "relic": "열 번째 몬스터인 수호자를 물리치면 얻는 기념품입니다.",
-        "bestiary": "만난 생물 108종의 특징과 처치 기록. 다음 모험을 준비해 보세요."
+        "relic": "수호자 전투와 의뢰에서 얻은 유물. +5 이상의 전용 장비 강화에 사용해요.",
+        "bestiary": "만난 생물 108종의 특징과 처치 기록. 다음 모험을 준비해 보세요.",
+        "quests": "구축·읽기·동료의 작업을 확인하고 유물을 받아 전용 장비를 성장시켜요."
       },
       "chest": "보급 상자 열기 · {count}",
-      "readBestiary": "도감 펼치기 (N)"
+      "readBestiary": "도감 펼치기 (N)",
+      "readQuests": "의뢰 펼치기 (L)"
     },
     "skills": {
       "points": "사용할 스킬 포인트 {count}",
@@ -7118,6 +7122,115 @@
         "swarm": "연타",
         "arcane": "파동 저항"
       }
+    },
+    "journey": {
+      "title": "원정 계획",
+      "run": "원정 {number}회차",
+      "floors": "층별 여정",
+      "floor": "{floor}층",
+      "entrance": "출발",
+      "unreached": "앞으로",
+      "legacy": "이전 진행",
+      "current": "현재 층: {path}",
+      "standard": "기본 전투",
+      "restored": "체력 {hp} 회복",
+      "choose": "다음 길 고르기",
+      "applies": "{floor}층부터: {path}",
+      "nextRun": "다음 원정 2층부터: {path}",
+      "persists": "층에 들어갈 때 적용돼요. 자동 재도전에도 선택을 유지하며, 지금 체력이나 보상은 바뀌지 않아요.",
+      "name": {
+        "camp": "쉼터",
+        "cache": "보급로",
+        "elite": "정예 사냥"
+      },
+      "effect": {
+        "camp": "진입 시 체력 최대 {hp}% 회복 · 승리 골드 −{gold}",
+        "cache": "적 체력 +{health}% · 승리 골드 +{gold}",
+        "elite": "적 체력 +{health}%, 피해 +{damage}% · 승리 골드 +{gold} / 경험치 +{xp}"
+      },
+      "open": "원정 계획 (M), 5층 중 {floor}층",
+      "progress": "{floor} / 5층"
+    },
+    "quests": {
+      "title": "여행자의 의뢰",
+      "forge": "강화 +{limit}까지 · 수령한 의뢰 {count}개",
+      "pages": "의뢰 넘기기",
+      "name": {
+        "roots": "첫 뿌리",
+        "links": "이어진 생각",
+        "traces": "구현의 발자취",
+        "builder": "자라는 지도",
+        "weaver": "연결된 세계",
+        "archive": "위키 수호자",
+        "explorer": "첫 탐독",
+        "reflection": "솔직한 발견",
+        "scholar": "깊어진 탐구",
+        "partner": "동료와 함께",
+        "workshop": "함께 쌓는 공방",
+        "companions": "꾸준한 협업"
+      },
+      "requirement": {
+        "concepts": "현재 폴더에 온톨로지 개념 {goal}개 기록하기",
+        "relations": "현재 지도에 연결된 관계 {goal}개 기록하기",
+        "implementation": "구현 경로를 기록한 개념 {goal}개 모으기",
+        "wiki": "위키 페이지 {goal}개 쌓기",
+        "explored": "지식 카드 {goal}개 살펴보기",
+        "reflected": "서로 다른 개념에 발견·수정·불확실성을 {goal}개 남기기",
+        "acp": "에이전트 대화(ACP)에서 본문 저장 완료가 확인된 개념 {goal}개 살펴보기"
+      },
+      "claimed": "수령 완료",
+      "progress": "현재 {current} / {goal}",
+      "past": "수령 당시 {count}개 확인",
+      "reward": "수호자의 유물 ×{count}",
+      "claim": "보상 받기",
+      "study": "지식 카드로 가기",
+      "openEvidence": "현재 자료: {title}",
+      "unavailable": "지금 확인할 자료가 없어요. 받은 보상은 유지됩니다.",
+      "acp": {
+        "verified": "현재 폴더의 저장 완료 기록과 대상 개념을 확인했어요.",
+        "pending": "ACP 작업이 아직 진행 중이에요.",
+        "unavailable": "이 폴더에서 확인할 수 있는 완료 기록이 없어요. 오래된 기록은 남아 있지 않을 수도 있어요.",
+        "failed": "최근 작업은 완료되지 않았어요. 보상은 추가되지 않았습니다.",
+        "rejected": "요청을 거절했고 실행되지 않았어요. 일반 의뢰로 계속 진행할 수 있어요."
+      },
+      "boundary": "활동 기록을 위한 게임 보상이며 정확도·의미 승인 평가가 아닙니다.",
+      "alternative": "ACP 없이도 일반 의뢰 6개로 모든 강화 단계가 열려요.",
+      "received": "{name} · 유물을 받았어요",
+      "prepare": "ACP 도움 요청 준비",
+      "sendTitle": "이 요청을 에이전트에 보냅니다",
+      "send": "이 요청을 ACP에 보내기",
+      "cancel": "돌아가기",
+      "request": "현재 Atlas 폴더의 기존 온톨로지와 근거 자료를 읽고, 실제로 필요한 본문 개선 후보를 제안해 주세요. 근거가 부족하면 불확실성을 남기고 쓰지 마세요. 의뢰 보상을 위한 임의 문서나 승인은 만들지 마세요. 실제 쓰기는 기존 승인 절차를 따르세요.",
+      "notice": "의뢰 · 보상 대기 {count}",
+      "helpUnavailable": "지금 연결할 수 있는 ACP 에이전트가 없어 요청을 보내지 않았어요.",
+      "agents": "에이전트 연결 확인",
+      "list": "의뢰 목록",
+      "listProgress": "{current} / {goal}"
+    },
+    "forge": {
+      "title": "전용 장비 강화",
+      "rank": {
+        "0": "여행자의 장비",
+        "1": "각인 장비",
+        "2": "수호 장비",
+        "3": "광휘 장비",
+        "4": "별의 장비"
+      },
+      "level": "+{level}",
+      "preview": {
+        "sword": "공격력 {before} → {after}",
+        "armor": "최대 체력 {before} → {after}",
+        "library": "승리 경험치 보너스 +{before} → +{after}"
+      },
+      "milestone": "+5마다 전용 장비 효과가 추가돼요.",
+      "gate": "다음 강화에는 의뢰 {count}/{needed}개 수령이 필요해요. 이미 얻은 장비는 유지됩니다.",
+      "quests": "의뢰로 강화 단계 열기",
+      "cost": "강화 · {gold} G + 유물 {relics}",
+      "max": "최고 단계",
+      "materials": "유물 {count}/{needed}개 · 의뢰와 수호자 전투에서 획득",
+      "guarantee": "확정 성공 · 파괴 없음",
+      "success": "강화 성공 · +{level}",
+      "waveTier": "새 단계 · 파동 ×{before} → ×{after}"
     }
   }
 }

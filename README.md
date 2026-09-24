@@ -59,13 +59,19 @@ The optional companion is a device-local pixel mini-game powered by your project
 Recorded ontology concepts, resolved relations, implementation links, wiki pages,
 and written detail contribute to character levels and skills as the folder updates.
 Move with WASD, interact with E, and open inventory (I), skills (K), the expedition
-map (M), your journal (J), or the creature field guide (N) over the persistent world. The fox studies, rests,
+map (M), your journal (J), quests (L), or the creature field guide (N) over the persistent world. The fox studies, rests,
 and travels through 36 destinations across six fictional regions, meeting 108 original
 creatures. Five-floor expeditions offer three-way blessings, an active dodge,
-and a final guardian. Project and reading XP unlock destinations; combat XP does not. Optional auto retry continues while away, with at most
+and a final guardian. Plan a rest, supply, or elite path for the next floor. Twelve
+one-time quests reward recorded project work with materials for guaranteed personal
+equipment enhancement. Ordinary activities can unlock every forge tier; verified
+ACP work offers optional quests with explicit assistance requests. Quest completion
+records activity, never meaning acceptance. Project and reading XP unlock
+destinations; combat XP does not. Optional auto retry continues while away, with at most
 four hours of catch-up. A camp constellation shows the records you have built.
 Original personal memories remain intact. Game progress does not judge correctness,
-accepted meaning, coding hours, or real agent-work status.
+accepted meaning, or coding hours. ACP quest evidence uses current correlated write
+receipts; it does not infer live agent status.
 
 ## In 30 seconds
 
