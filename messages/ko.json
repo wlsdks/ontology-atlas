@@ -5037,6 +5037,14 @@
       "explain": {
         "label": "지도만 보고 이 폴더가 무엇을 하는지 설명해 줘",
         "prompt": "지도에 있는 {count}개 노드와 그 관계만 보고, 이 폴더가 무엇을 하는 물건인지 처음 보는 사람에게 설명해 줘. 지도에 없는 것은 지어내지 말고, 설명이 막히는 자리가 있으면 그게 지도의 구멍이니 짚어 줘."
+      },
+      "explainSubject": {
+        "label": "「{subject}」의 역할을 기록과 관계로 설명해 줘",
+        "prompt": "get_concept와 find_neighbors로 「{subject}」({slug})를 읽고, 무슨 일을 하는지, 어디에 속하는지, 무엇에 기대는지 설명해 줘. 폴더에 적힌 것만 쓰고, 기록이 없는 자리는 추측하지 말고 없다고 말해 줘."
+      },
+      "subjectImpact": {
+        "label": "「{subject}」에 변경이 생기면 영향받는 곳을 찾아 줘",
+        "prompt": "「{subject}」({slug})에서 출발해 find_backlinks와 find_neighbors로, 이게 바뀌면 영향이 가는 개념을 그 영향을 잇는 관계와 함께 나열해 줘. 아무것도 쓰지 말고, 마지막에 가장 먼저 확인할 한 곳과 그 이유를 말해 줘."
       }
     },
     "modeName": {

@@ -34,7 +34,11 @@ type SuggestionKind =
   /** A capability has neither canonical `path:` nor a resolved `elements:` implementation relation */
   | 'evidence'
   /** The one that is always there — have it explain this folder from the map alone */
-  | 'explain';
+  | 'explain'
+  /** A concept is picked — explain that concept from its own record and relations */
+  | 'explainSubject'
+  /** A concept is picked — name what a change to it would reach */
+  | 'subjectImpact';
 
 export interface ChatSuggestion {
   kind: SuggestionKind;
@@ -65,6 +69,21 @@ function displayName(input: SuggestionInput, slug: string): string {
   if (recorded) return recorded;
   const tail = slug.replace(/^ontology\//, '').split('/').at(-1) ?? slug;
   return tail.replaceAll('-', ' ');
+}
+
+/**
+ * The asks for **one picked concept** (round four, 2026-09-25). With a node picked, the dock's
+ * header and the composer name that node ("Ask about Checkout…"), while the list above offered
+ * folder-wide repairs about other documents — the screen named one subject and suggested others.
+ * A picked concept now gets asks about itself; the folder-wide list returns when nothing is
+ * picked. Both still come from the vault: the slug is the picked record, not an example sentence.
+ */
+export function subjectSuggestions(subject: { slug: string; label: string }): ChatSuggestion[] {
+  const params = { slug: subject.slug, subject: subject.label };
+  return [
+    { kind: 'explainSubject', params },
+    { kind: 'subjectImpact', params },
+  ];
 }
 
 export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {

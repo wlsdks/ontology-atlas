@@ -5037,6 +5037,14 @@
       "explain": {
         "label": "Explain what this folder does from the map alone",
         "prompt": "Using only the {count} nodes on the map and their relations, explain to a newcomer what this folder is. Invent nothing that is not on the map, and point out any place the explanation stalls, because that is a hole in the map."
+      },
+      "explainSubject": {
+        "label": "Explain what “{subject}” does from its record and relations",
+        "prompt": "Read “{subject}” ({slug}) with get_concept and find_neighbors, then explain what it does, what it belongs to and what it relies on. Use only what the folder records; where the record is silent, say so rather than guessing."
+      },
+      "subjectImpact": {
+        "label": "Find what a change to “{subject}” would reach",
+        "prompt": "Starting from “{subject}” ({slug}), use find_backlinks and find_neighbors to list the concepts a change to it would reach, each with the relation that carries it. Write nothing; end with the one place you would check first and why."
       }
     },
     "modeName": {

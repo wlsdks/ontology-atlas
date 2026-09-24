@@ -59,7 +59,7 @@ function InlineAlert({ children }: { children: ReactNode }) {
   return <p role="alert" className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{children}</p>;
 }
 
-export function AnalysisWorkbench({ context, contextLabel, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
+export function AnalysisWorkbench({ context, contextLabel, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, onFitContentChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
   context: AnalysisCaptureContext;
   contextLabel: string;
   /**
@@ -70,6 +70,11 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
   open: boolean;
   requestNonce?: number;
   sectionRequest?: { tab: Tab; nonce: number };
+  /**
+   * True while the open view is only a short designed state — today the empty history archive —
+   * so the host surface can end under it instead of leaving a bare column below.
+   */
+  onFitContentChange?: (fits: boolean) => void;
   onSectionChange?: (tab: Tab) => void;
   initialTab?: Tab;
   facts?: ReactNode;
@@ -171,6 +176,9 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
   const selected = runs.find((run) => run.id === selectedId) ?? runs[0] ?? null;
   const emptyArchive = !runs.length && Boolean(context.handle) && loaded?.handle === context.handle && !readPending && !error;
   const saved = saveState?.handle === context.handle ? saveState : null;
+  const fitsContent = open && tab === 'history' && emptyArchive;
+  useEffect(() => { onFitContentChange?.(fitsContent); }, [fitsContent, onFitContentChange]);
+  useEffect(() => () => onFitContentChange?.(false), [onFitContentChange]);
   /*
    * **A saved analysis is news, not furniture** (owner, 2026-09-06). The report used to
    * stand at the foot of the panel for as long as the record stayed selected, taking a
@@ -357,7 +365,7 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
         analysis leaves behind, and Analyze as its one action. The version row appears only when
         there are versions to pick, primary first, and the reread control says what it does.
       */}
-      {runs.length ? <div className="flex flex-wrap items-center gap-2">
+      {runs.length ? <div className="agent-panel-stage-swap flex flex-wrap items-center gap-2">
         <Select size="md" ariaLabel={t('version')} value={selected?.id ?? ''} onChange={setSelectedId} className="min-w-0 flex-1 basis-48" options={runs.map((run, index) => ({ value: run.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(run.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`, description: `${run.id.slice(0, 8)} · ${run.request.text.slice(0, 80)}` }))} />
         {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('reanalyze')}</Chip> : null}
         {context.handle ? <Chip size="lg" onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden />{t('refresh')}</Chip> : null}
@@ -373,7 +381,7 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
         are empty, and a line says where decisions can be read when this build cannot read them.
         The card starts where the free space starts instead of floating in its middle.
       */}
-      {emptyArchive ? <div data-testid="analysis-history-empty"><EmptyState
+      {emptyArchive ? <div data-testid="analysis-history-empty" className="agent-panel-stage-swap"><EmptyState
         size="compact"
         align="center"
         icon={<HistoryIcon aria-hidden />}
@@ -387,7 +395,7 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
         action={<>
           {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip> : null}
           <Chip size="lg" onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden />{t('refresh')}</Chip>
-          {onRequest ? <p className="basis-full pt-1 text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
+          {onRequest ? <p className="basis-full text-balance pt-1 text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
         </>}
       /></div> : null}
       {/* The caveat stands once, beside the action it qualifies — it used to close the tab as a

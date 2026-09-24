@@ -15,6 +15,8 @@ import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { AcpChatPanel, AcpChatResizeHandle } from "@/widgets/acp-chat-panel";
 import { AnalysisWorkbench, MeaningContext } from "@/widgets/analysis-workbench";
 import dynamic from "next/dynamic";
+import { useMemo, useState } from "react";
+import { subjectSuggestions } from "@/features/acp-session";
 import { resolveAnalysisFindingTarget } from '../model/analysis-finding-target';
 const VaultAgentPanel = dynamic(
   () => import("@/widgets/vault-agent-panel").then((m) => m.VaultAgentPanel),
@@ -126,6 +128,15 @@ export function TopologyAgentDock({
     meaningRelations, captureTaskBaseline
   } = topologyAnalysisReview;
   const { edgePanelModel, selectedEdge, setAcpRelationPreview } = topologyAuthoring;
+  // One subject for the header, the composer and the asks above it: a picked concept, or the folder.
+  const composerSubject = edgePanelModel ? null : selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? null;
+  const subjectRef = selectedOntologyNode ? resolveNodeAgentTarget(selectedOntologyNode).ref ?? selectedOntologyNode.id : null;
+  const dockSuggestions = useMemo(
+    () => composerSubject && subjectRef ? subjectSuggestions({ slug: subjectRef, label: composerSubject }) : chatSuggestions,
+    [chatSuggestions, composerSubject, subjectRef],
+  );
+  // The history tab with nothing in it asks the surface to end under its card (see AnalysisWorkbench).
+  const [workbenchFitsContent, setWorkbenchFitsContent] = useState(false);
   const { chatKnownSlugs, chatKnownRelations, handleChatHoverSlug } = topologyCanvasFocus;
 
   return (<>
@@ -236,7 +247,18 @@ export function TopologyAgentDock({
             data-agent-dock-surface="inset"
             // The toaster centres in the map left of this panel, never over it.
             data-toast-wall="right"
-            style={{ width: reviewUsesSheet ? 'calc(100% - var(--chrome-inset) * 2)' : `calc(${chatWidth.width}px - var(--chrome-inset))` }}
+            style={{
+              width: reviewUsesSheet ? 'calc(100% - var(--chrome-inset) * 2)' : `calc(${chatWidth.width}px - var(--chrome-inset))`,
+              /*
+               * ⚠️ **An empty archive ends under its card** (round four, 2026-09-25, 1512 wide).
+               * The history tab with nothing saved drew a 272px card on a 920px surface — two
+               * thirds of the dock bare panel — while INDEX and the realm ledger beside the same
+               * map already end under their content (`max-h-full`). Only that quiet state lets go
+               * of the bottom inset; every other view keeps the full column, because the
+               * conversation's composer and a long meaning read belong at the floor.
+               */
+              ...(workbenchFitsContent ? { bottom: 'auto', maxHeight: 'calc(100% - var(--chrome-inset))' } : null),
+            }}
             /*
              * The fixed-width content is pinned right and only the outer frame animates
              * from 0 to the stored width. Animating the content width every frame would
@@ -272,6 +294,7 @@ export function TopologyAgentDock({
                 sectionRequest={workbenchSectionRequest}
                 relationNoteGaps={relationNoteGaps}
                 onSectionChange={handleWorkbenchSectionChange}
+                onFitContentChange={setWorkbenchFitsContent}
                 initialTab={meaningWorkbenchOpen ? 'meaning' : 'conversation'}
                 onClose={() => { setMeaningWorkbenchOpen(false); closeVaultAgent(); }}
                 onEvidence={openAnalysisEvidence}
@@ -330,9 +353,9 @@ export function TopologyAgentDock({
                   openingRequest={agentOpeningRequest}
                   requestScopeKey={JSON.stringify([gitVaultPath, 'meaning'])}
                   onOpeningRequestSent={(nonce) => setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current)}
-                  suggestions={chatSuggestions}
+                  suggestions={dockSuggestions}
                   // The composer names what the header names: a picked concept, not "this folder".
-                  composerSubject={edgePanelModel ? null : selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? null}
+                  composerSubject={composerSubject}
                   onSuggestionAction={handleChatSuggestionAction}
                   knownSlugs={chatKnownSlugs}
                   knownRelations={chatKnownRelations}
