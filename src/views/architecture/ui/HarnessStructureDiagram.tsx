@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useSyncExternalStore, type ReactNode } from 'react';
 import { RowDisclosure } from '@/shared/ui/row-disclosure';
 import { controlClass } from '@/shared/ui/control-class';
+import { InfoHint } from '@/shared/ui/info-hint';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { AnatomyBand, AnatomySlot } from '../model/harness-anatomy';
 import styles from './harness-structure-diagram.module.css';
@@ -37,6 +38,7 @@ export function HarnessStructureDiagram({ slots, sourceRoot, selectedId, detailI
   const stacked = useSyncExternalStore(subscribeToLayout, getStackedLayout, getServerLayout);
   const name = sourceRoot.split(/[\\/]/).filter(Boolean).at(-1) ?? sourceRoot;
   const selected = slots.find(slot => slot.id === selectedId);
+  const loopSlot = slots.find(slot => slot.band === 'tool');
   const selectSlot = (id: string, button: HTMLButtonElement) => {
     onSelect(id);
     if (!stacked) return;
@@ -74,15 +76,24 @@ export function HarnessStructureDiagram({ slots, sourceRoot, selectedId, detailI
     </section>;
   };
   return <div data-testid="harness-structure-diagram" className={styles.diagram} data-active-band={selected?.band ?? 'tool'}>
-    <div className={styles.source}><FolderCode size={ICON_SIZE.md} aria-hidden /><span>{t('diagramRoot')}</span><code title={sourceRoot}>{name}</code></div>
+    <div className={styles.source}><FolderCode size={ICON_SIZE.md} aria-hidden /><span>{t('diagramRoot')}</span><code title={sourceRoot}><span className={styles.sourceName}>{name}</span>{sourceRoot !== name ? <span className={styles.sourcePath}>{sourceRoot}</span> : null}</code></div>
     <div className={styles.workbench}>
       <div className={styles.flow}>
         {band('tells')}
         <span className={styles.connector} aria-hidden><ArrowRight size={ICON_SIZE.md} /></span>
         <div className={styles.center}>
-          <div className={styles.core}>
+          {/* The one place the agent loop is named. Its explanation used to be repeated in a
+              dashed band under the whole panel, title and all; it lives behind this card's own
+              hint now, so the diagram says it once, where the loop sits. */}
+          <div className={styles.core} data-testid="harness-anatomy-band-tool">
             <CircleHelp size={ICON_SIZE.lg} aria-hidden />
-            <span><strong className="font-[var(--font-weight-emphasis)]">{t('anatomySlots.loop.title')}</strong><small>{t('anatomyToolBand')}</small></span>
+            <span data-testid="harness-anatomy-slot-loop" data-status={loopSlot?.status ?? 'tool-owned'}><strong className="font-[var(--font-weight-emphasis)]">{t('anatomySlots.loop.title')}</strong><small>{t('anatomyToolBand')}</small></span>
+            <InfoHint align="center" className="ml-auto" label={t('anatomyToolBand')} panelClassName="max-w-full max-h-[35dvh] overflow-y-auto">
+              <span className="flex flex-col gap-2">
+                <span>{t('anatomyToolCaption')}</span>
+                <span>{t('anatomySlots.loop.body')}</span>
+              </span>
+            </InfoHint>
           </div>
           {band('gates')}
         </div>
@@ -90,7 +101,9 @@ export function HarnessStructureDiagram({ slots, sourceRoot, selectedId, detailI
         {band('watches')}
       </div>
       <section className={styles.inspector} aria-label={t('diagramEvidence')} data-selected={selectedId !== null}>
-        <div className={styles.inspectorHeading}><span>{t('diagramEvidence')}</span><strong className="font-[var(--font-weight-emphasis)]">{selected ? t(`anatomySlots.${selected.id}.title`) : t('diagramSelectPart')}</strong></div>
+        {/* One name for the selection: the header carries it with its count, and the evidence
+            below starts at the row's sentence instead of printing the same title a second time. */}
+        <div className={styles.inspectorHeading}><span>{t('diagramEvidence')}</span><div className={styles.inspectorTitle}><strong className="font-[var(--font-weight-emphasis)]">{selected ? t(`anatomySlots.${selected.id}.title`) : t('diagramSelectPart')}</strong>{selected ? <span data-status={selected.status}>{selected.status === 'absent' ? t('anatomyAbsent') : t(`anatomyUnits.${selected.id}`, { count: selected.count })}</span> : null}</div></div>
         <RowDisclosure open={!stacked && selectedId !== null} id={detailId}>{!stacked && selectedId ? <div key={selectedId} data-harness-detail className={styles.detailEnter}>{selectedContent}</div> : null}</RowDisclosure>
       </section>
     </div>

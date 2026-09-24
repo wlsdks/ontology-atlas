@@ -30,6 +30,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* The folder's name, then where it was read from: the footer line that used to print the path
+   stood outside every surface, so the path joins the panel header it describes. */
+.source code .sourceName { color: var(--color-text-secondary); }
+.source code .sourcePath { margin-left: .625rem; color: var(--color-text-quaternary); }
 
 .workbench {
   display: grid;
@@ -113,6 +117,9 @@
 .inspectorHeading { display: flex; flex-direction: column; gap: .375rem; min-width: 0; padding: 0 0 .875rem; border-bottom: 1px solid var(--color-divider); }
 .inspectorHeading span { color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
 .inspectorHeading strong { color: var(--color-text-primary); font-size: var(--text-title); line-height: var(--leading-title); }
+.inspectorTitle { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; min-width: 0; }
+.inspectorTitle > span { flex: none; color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
+.inspectorTitle > span[data-status='absent'] { color: var(--color-text-quaternary); }
 .detailEnter { animation: detailIn var(--motion-base) var(--motion-ease) both; }
 .hint { margin: 0; padding: .625rem 0 0; border-top: 1px solid var(--color-divider); color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
 

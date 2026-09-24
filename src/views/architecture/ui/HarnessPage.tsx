@@ -12,10 +12,10 @@ import {
 } from '@/entities/vault-session';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { Chip, EmptyState, InfoHint, Surface, TabBar } from '@/shared/ui';
+import { controlClass } from '@/shared/ui/control-class';
 import { PAGE_TOP_PAD } from '@/shared/ui/page-frame';
 import { GuidanceRelationshipPreview } from '@/widgets/relationship-preview';
 import { Link } from '@/i18n/navigation';
-import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
 
 import {
@@ -29,6 +29,7 @@ import {
 import { deriveCoverageAreas } from '@/features/harness-report';
 import { useHarnessReport } from '@/features/harness-report';
 import { ArchitecturePage } from './ArchitecturePage';
+import { buildHarnessAnatomy } from '../model/harness-anatomy';
 import { HarnessAnatomyView } from './HarnessAnatomyView';
 import { HarnessCoverageView } from './HarnessCoverageView';
 import { HarnessGuidesView } from './HarnessGuidesView';
@@ -284,7 +285,7 @@ function HarnessPageInner() {
       items={
         harnessUnavailable
           ? [
-              { key: 'structure', label: t('views.beforeSource') },
+              { key: 'structure', label: t('views.structure') },
               { key: 'architecture', label: t('views.architecture') },
             ]
           : HARNESS_VIEW_ORDER.map((id) => ({ key: id, label: t(`views.${id}`) }))
@@ -300,17 +301,26 @@ function HarnessPageInner() {
    * 2026-09-14, on the installed app). The panel's own `z-30` cannot fix that: it orders the panel
    * against its siblings inside this element, never against the element that follows it.
    */
+  const structureCount = useMemo(() => {
+    if (!report) return null;
+    const places = buildHarnessAnatomy(report).slots.filter((slot) => slot.band !== 'tool');
+    return {
+      total: places.length,
+      filled: places.filter((slot) => slot.status === 'present').length,
+    };
+  }, [report]);
+
   const sentence = report ? (
     <div data-testid="harness-sentence" className="architecture-result-arrive relative z-10">
       {/*
-        ⚠️ **Demoted, so the finding can win.** This sentence and the coverage headline shared one
-        token — `text-title` · emphasis · primary — 58px apart, and measured as ink-by-contrast the
-        census was 2.5× the finding's mass: a reader met "N checks in place" before "no check names
-        N domains" and read the reassuring one first. It is context, not the thesis, so it takes the
-        subtitle step and leaves exactly one `text-title` line on the screen (design-lead,
-        2026-09-13).
+        ⚠️ **The thesis takes the one step above body, at regular weight.** It was demoted to body
+        size in 2026-09-13 so it would not share `text-title` · emphasis with a coverage headline;
+        that headline is now the three column cards, and at 12.5px the sentence the screen is about
+        measured smaller than the 14px subtitle above it (design audit, 2026-09-25). So the eyebrow
+        drops to body and this rises to `text-title` without the emphasis weight — one step above
+        everything around it, and still lighter than the cards' display numerals below.
       */}
-      <div className="flex max-w-prose flex-wrap items-center gap-x-1 break-keep text-body text-[color:var(--color-text-secondary)]">
+      <div className="flex max-w-prose flex-wrap items-center gap-x-1 break-keep text-title text-[color:var(--color-text-primary)]">
         <span className="tabular-nums">
           {t('sentence', {
             documents: report.guideDocumentCount,
@@ -319,17 +329,53 @@ function HarnessPageInner() {
         </span>
         {/* `left`: this hint sits at the start of the lead paragraph, so a right-anchored panel
             ran 84.9% off the left edge at 390 (design-responsive, 2026-09-13). */}
-        <InfoHint align="left" label={t('checksBreakdownLabel')}>
+        {/* `static`, so the panel anchors to the sentence block rather than to the button: at the
+            title step the sentence runs long enough to put the button near the right edge at 768,
+            and a panel hung from it ran 29px off-screen. */}
+        <InfoHint
+          align="left"
+          className="static"
+          panelClassName="max-w-full max-h-[35dvh] overflow-y-auto"
+          label={t('checksBreakdownLabel')}
+        >
           {t('checksHint')}
         </InfoHint>
       </div>
-      <p className="mt-1 text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+      <p className="mt-1 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
         {t('checksBreakdown', {
           hooks: report.checks.wiredHooks,
           gitHooks: report.checks.gitHooks,
           scripts: report.checks.scripts.length,
         })}
       </p>
+    </div>
+  ) : null;
+
+  /*
+   * **The structure view's thesis, in the structure view's own unit.** The census above counts
+   * declarations and a mirrored guard twice, so it cannot stand over the bands (see below). What
+   * the bands can say in one sentence is how many of the harness's places this repository fills —
+   * the same present/absent split every row below prints — so every data view opens on the same
+   * three-step block: eyebrow, thesis, and the rule it was counted by.
+   */
+  const structureSentence = structureCount ? (
+    <div data-testid="harness-structure-sentence" className="architecture-result-arrive relative z-10">
+      <p className="max-w-prose break-keep text-title tabular-nums text-[color:var(--color-text-primary)]">
+        {t('structureSentence', structureCount)}
+      </p>
+      {/* Inline flow rather than flex: as a flex item the two-line caption took the whole
+          measure and pushed its hint onto a third line of its own. */}
+      <div className="mt-1 max-w-prose break-keep text-label text-[color:var(--color-text-tertiary)]">
+        <span>{t('anatomyCaption')} </span>
+        <InfoHint
+          align="left"
+          className="static align-middle"
+          label={t('anatomyProvenanceLabel')}
+          panelClassName="max-w-full max-h-[35dvh] overflow-y-auto"
+        >
+          {t('anatomyProvenance')}
+        </InfoHint>
+      </div>
     </div>
   ) : null;
 
@@ -403,7 +449,7 @@ function HarnessPageInner() {
           className={cn('min-h-0 flex-1 px-5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] pt-4 md:px-10 lg:pb-[var(--page-bottom-breath)] max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
             view === 'structure' && reportState.status === 'ready' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto')}
         >
-          <div className={cn('mx-auto w-full max-w-[var(--page-max)]', view === 'structure' && reportState.status === 'ready' && 'flex min-h-0 flex-1 flex-col')}>
+          <div className={cn('w-full', view === 'structure' && reportState.status === 'ready' && 'flex min-h-0 flex-1 flex-col')}>
             {/*
               ⚠️ **One lead, not four stacked lines.** The owner read the header as four things of
               descending size with nothing grouping them: the name, the explainer, the census
@@ -415,7 +461,7 @@ function HarnessPageInner() {
               question instead of only for Watched.
             */}
             <div className="mb-3 flex shrink-0 flex-col gap-1">
-              <p className="max-w-prose text-body-lg text-[color:var(--color-text-tertiary)]">
+              <p className="max-w-prose text-body text-[color:var(--color-text-tertiary)]">
                 {t('explainer')}
               </p>
               {/*
@@ -431,7 +477,7 @@ function HarnessPageInner() {
                 It stays on the coverage and guides views, where the matrix and the table use the
                 same counting rule it does.
               */}
-              {view === 'structure' ? null : sentence}
+              {view === 'structure' ? structureSentence : sentence}
             </div>
             {reportState.status === 'ready' ? (
               <div className={cn('architecture-result-arrive', view === 'structure' && 'flex min-h-0 flex-1 flex-col')}>
@@ -454,7 +500,7 @@ function HarnessPageInner() {
                     <HarnessGuidesView report={reportState.report} locale={locale} />
                     {/* The coverage view prints the read path inside its own closing line; the
                         guides view has no such line, so it keeps this one. */}
-                    <p className="mt-6 font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                    <p className="mt-6 font-mono text-label text-[color:var(--color-text-quaternary)]">
                       {t('sourceRoot', { path: reportState.sourceRoot })}
                     </p>
                   </>
@@ -495,8 +541,11 @@ function HarnessPageInner() {
                 <div className="min-w-0 max-w-prose">
                   <p className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('noSource')}</p>
                   <p className="mt-2 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('noSourceBody')}</p>
+                  {/* Under the sentence it answers, on that sentence's start line: a pill at the
+                      far edge of the card stood ~900px from its reason and read as a stray
+                      control (design audit, 2026-09-25). */}
+                  <Link href="/projects/" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide mt-4'})}>{t('connectSourceAction')}</Link>
                 </div>
-                <Link href="/projects/" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide'})}>{t('connectSourceAction')}</Link>
               </>} />
             ) : reportState.status === 'failed' ? (
               /* A dead end with no way out was the one irreversible state on a read-only screen. */
@@ -516,8 +565,8 @@ function HarnessPageInner() {
                 <div className="min-w-0 max-w-prose">
                   <p className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('browserOnly')}</p>
                   <p className="mt-2 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('browserOnlyBody')}</p>
+                  <Link href="/download/" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide mt-4'})}>{t('browserAction')}</Link>
                 </div>
-                <Link href="/download/" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide'})}>{t('browserAction')}</Link>
               </>} />
             )}
           </div>

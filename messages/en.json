@@ -280,10 +280,10 @@
       "guides": "Guides",
       "structure": "Structure",
       "coverage": "Coverage",
-      "architecture": "Architecture",
-      "beforeSource": "Harness"
+      "architecture": "Architecture"
     },
     "sentence": "This repository speaks to agents through {documents, plural, one {# document} other {# documents}} and has {checks, plural, one {# check} other {# checks}} in place.",
+    "structureSentence": "This repository fills {filled} of the {total} places a harness has.",
     "checksBreakdown": "{hooks, plural, one {# hook script} other {# hook scripts}} · {gitHooks, plural, one {# file under .githooks/} other {# files under .githooks/}} · {scripts, plural, one {# package.json script} other {# package.json scripts}}",
     "checksHint": "\"Checks\" counts declarations, not distinct guards: a hook mirrored for Claude Code and for Codex is two scripts for one guard, .githooks/ holds helper modules beside its hooks, and the script list includes watch mode and the lanes a single run re-runs. What it counts is hook scripts a config names that exist on disk, files under .githooks/, and package.json lint, typecheck and test scripts. Whether any of them runs, or has ever caught anything, is not something we can know from files.",
     "retry": "Read it again",
@@ -307,6 +307,7 @@
     "capNone": "No cap",
     "capMerged": "Codex reads the root AGENTS.md merged with the nested AGENTS.md on the working path, and silently truncates the merge past the cap. The bar measures the merged length.",
     "capMergedValue": "{used} / {cap} (merged)",
+    "capMergedShare": "{percent}% of the {cap} cap, merged",
     "capOver": "Over the cap",
     "pairCompared": "{count, plural, one {# reference pair compared} other {# reference pairs compared}}",
     "pairMatchesTwin": "Same content",
@@ -604,6 +605,7 @@
     },
     "reachAria": "{role}: may depend on {targets}",
     "reachNone": "depends on no other role",
+    "roleMayDependOn": "May depend on {targets}",
     "ladderDirection": "An arrow points the way a dependency runs: one role's code using another role's code.",
     "reachInline": "may depend on {targets}",
     "legendDependency": "reviewed concept dependency",

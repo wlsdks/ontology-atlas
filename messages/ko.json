@@ -280,10 +280,10 @@
       "guides": "지침",
       "structure": "구조",
       "coverage": "커버리지",
-      "architecture": "아키텍처",
-      "beforeSource": "하네스"
+      "architecture": "아키텍처"
     },
     "sentence": "이 저장소는 에이전트에게 문서 {documents}개로 말하고, 검사 {checks}개를 걸어두었어요.",
+    "structureSentence": "이 저장소는 하네스 자리 {total}곳 중 {filled}곳을 채워 두었어요.",
     "checksBreakdown": "훅 스크립트 {hooks}개 · .githooks/ 파일 {gitHooks}개 · package.json 스크립트 {scripts}개",
     "checksHint": "「검사」는 서로 다른 보호 장치가 아니라 선언을 세요. Claude Code 용과 Codex 용으로 미러링된 훅은 보호 장치 하나에 스크립트 둘이고, .githooks/에는 훅 옆에 도우미 모듈도 있으며, 스크립트 목록에는 감시 모드와 한 번의 실행이 다시 도는 레인도 들어 있어요. 세는 대상은 설정이 이름을 부른 훅 스크립트 중 실제로 파일이 있는 것, .githooks/ 안의 파일, package.json의 lint·typecheck·test 스크립트예요. 실제로 도는지, 무언가를 잡아낸 적이 있는지는 여기서 알 수 없어요.",
     "retry": "다시 읽기",
@@ -307,6 +307,7 @@
     "capNone": "한도 없음",
     "capMerged": "Codex는 루트 AGENTS.md와 작업 경로의 중첩 AGENTS.md를 합쳐서 읽고, 합친 길이가 한도를 넘으면 조용히 잘라내요. 막대는 합친 길이예요.",
     "capMergedValue": "{used} / {cap} (합친 길이)",
+    "capMergedShare": "한도 {cap}의 {percent}% · 합친 길이",
     "capOver": "한도 초과",
     "pairCompared": "참고용 {count}쌍 비교",
     "pairMatchesTwin": "내용 같음",
@@ -604,6 +605,7 @@
     },
     "reachAria": "{role}: {targets}에 의존할 수 있어요",
     "reachNone": "아무 역할에도 의존하지 않아요",
+    "roleMayDependOn": "{targets}에 의존할 수 있어요",
     "ladderDirection": "화살표는 의존 방향이에요. 의존은 한 역할의 코드가 다른 역할의 코드를 가져다 쓰는 것이에요.",
     "reachInline": "{targets}에 의존 가능",
     "legendDependency": "리뷰된 개념 의존",

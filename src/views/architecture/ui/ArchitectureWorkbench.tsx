@@ -718,8 +718,14 @@ export function ArchitectureWorkbench({
           opposite, giving the canvas the full width and opening the inspector over or beside it
           rather than standing a column permanently in its way.
         */}
+        {/* Embedded, the gutter is the Harness shell's own (`md:px-10`), so the toolbar starts on
+            the `h1`'s line and ends on the tab rail's; at `px-8` it sat 8px left of the title
+            under one header (design audit, 2026-09-25). */}
         <div
-          className="min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 md:px-8 lg:col-start-1 lg:col-end-3 xl:col-start-1 xl:col-end-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:border-b-0 xl:pb-3 xl:pt-3"
+          className={cn(
+            'min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 lg:col-start-1 lg:col-end-3 xl:col-start-1 xl:col-end-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:border-b-0 xl:pb-3 xl:pt-3',
+            embedded ? 'md:px-10' : 'md:px-8',
+          )}
           data-testid="architecture-flow-panel"
         >
           {/*
@@ -840,7 +846,7 @@ export function ArchitectureWorkbench({
                 */}
                 <Button
                   variant="primary"
-                  size="lg"
+                  size="md"
                   className="atlas-touch-floor rounded-r-none"
                   disabled={agentRoute === 'checking' || copyState === 'pending'}
                   data-testid="architecture-agent-action"
@@ -873,7 +879,7 @@ export function ArchitectureWorkbench({
                 <Button
                   ref={taskMenuTriggerRef}
                   variant="outline"
-                  size="lg"
+                  size="md"
                   className="atlas-touch-floor -ml-px min-w-9 rounded-l-none px-2"
                   disabled={agentRoute === 'checking'}
                   aria-haspopup="menu"
@@ -950,7 +956,7 @@ export function ArchitectureWorkbench({
               </span>
               <Button
                 variant="outline"
-                size="lg"
+                size="md"
                 className="atlas-touch-floor hidden shrink-0 xl:inline-flex"
                 onClick={(event) =>
                   inspector === 'rules'
@@ -1437,6 +1443,47 @@ export function ArchitectureWorkbench({
               );
             })}
           </div>
+          {/*
+            **What the rules say, role by role.** The dock ended at the scope card and its lower 40%
+            was blank (1512×949, 2026-09-25), while the rules it is named for existed only as
+            arrows on the canvas beside it. Each role here carries the one line the profile allows
+            it — the same permitted edges the ladder draws, in the ladder's order — so the dock is
+            readable without tracing strokes.
+          */}
+          {rulesGraph && selected.roles.length > 0 ? (
+            <section data-testid="architecture-rules-roles" className="mt-6">
+              <h2 className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
+                {t('railRoles', { count: selected.roles.length })}
+              </h2>
+              <ol className="mt-3 flex flex-col">
+                {selected.roles.map((role, index) => {
+                  const targets = rulesGraph.edges
+                    .filter((edge) => edge.kind === 'permitted' && edge.from === role.id)
+                    .map((edge) => roleLabel(edge.to));
+                  return (
+                    <li
+                      key={role.id}
+                      className="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-2 border-t border-[color:var(--color-divider)] py-2 first:border-t-0 first:pt-0"
+                    >
+                      <span className="pt-px font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                          {roleLabel(role.id)}
+                        </span>
+                        <span className="mt-0.5 block break-keep text-label text-[color:var(--color-text-tertiary)] first-letter:uppercase">
+                          {targets.length > 0
+                            ? t('roleMayDependOn', { targets: targets.join(' · ') })
+                            : t('reachNone')}
+                        </span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ) : null}
         </aside>
 
         </div>
