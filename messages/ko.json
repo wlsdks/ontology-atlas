@@ -5765,6 +5765,7 @@
       "compileWebLimit": "문서를 쓰려면 이 컴퓨터에서 도는 코딩 에이전트가 필요하고, 그건 앱만 띄울 수 있어요. 문서를 읽고 고치는 일은 여기서도 돼요.",
       "compileWebGetApp": "앱 받기",
       "agentMissing": "코딩 에이전트를 연결하면 서식 확인과 원문 정리를 맡길 수 있어요.",
+      "agentMissingDoor": "에이전트 연결하기",
       "offTemplateReason": "위키 서식에 맞지 않아요: {code}. 문서를 열면 무엇을 고칠지 볼 수 있어요.",
       "offTemplateAriaLabel": "이 문서가 위키 서식과 다른 점",
       "offTemplateTitle": "고칠 곳 {count, number}개 · 서식",

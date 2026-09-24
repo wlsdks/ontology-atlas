@@ -22,12 +22,13 @@ export function StateBadge({
   children,
   testId,
 }: {
-  /**
-   * `quiet` is a claim nothing has measured yet (a source `checking`): the neutral badge's
-   * geometry and ink with a dashed edge, so it lines up with the other states in a column
-   * while still reading as unsettled rather than as a verdict (design sweep, 2026-09-25).
+  /*
+   * ⚠️ **No third, dashed `quiet` tone** (design sweep round 2, 2026-09-25). It was added
+   * for a source still `checking`, and at 1x on the captures its dashed edge could not be
+   * told from the solid one — a variant nobody could see. `checking` wears `neutral`, and
+   * the word tells it from `not compiled`, which is the fact rather than a texture.
    */
-  tone: "neutral" | "warning" | "quiet";
+  tone: "neutral" | "warning";
   children: ReactNode;
   testId?: string;
 }) {
@@ -40,9 +41,7 @@ export function StateBadge({
           "flex-none border",
           tone === "warning"
             ? "border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]"
-            : tone === "quiet"
-              ? "border-dashed border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]"
-              : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]",
+            : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]",
         ),
       })}
     >

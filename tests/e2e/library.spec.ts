@@ -215,9 +215,9 @@ test.describe("the Library destination", () => {
     await expect(sources.getByRole("button")).toHaveCount(2);
     await expect(sources).toContainText("quarter-plan.pdf");
     await expect(sources).toContainText("budget.xlsx");
-    // Format and size come from the listing; the file is never opened to produce them.
-    await expect(sources).toContainText("PDF");
-    await expect(sources).toContainText("XLSX");
+    // Format comes from the listing, and a name that already ends in it is not followed by
+    // a second copy of it (design sweep round 2, 2026-09-25): the extension is the format.
+    await expect(sources.getByTestId("library-source-format")).toHaveCount(0);
 
     // The one invariant the whole library rests on: a raw source is not a document. It is
     // measured across the Library tabs: only ontology documents belong in this tree.

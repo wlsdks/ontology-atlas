@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import type { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
-import { BookText, Check, CloudDownload, FilePlus2, FileText, PencilLine, Search, Sparkles, Stethoscope } from "lucide-react";
+import { BookText, Check, CloudDownload, FilePlus2, FileText, ListFilter, PencilLine, Search, Sparkles, Stethoscope } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
 import { humanPageSlug } from "@/features/library";
@@ -330,6 +330,14 @@ const SECTION_ACTIONS_NOTE_ID = "library-actions-blocked";
  */
 const INDEX_LIST_INSET = "px-3";
 const INDEX_ROW_INSET = "gap-1.5 border border-transparent px-2.5 py-1.5";
+/**
+ * **A caption with no glyph of its own still starts on the text line** (design sweep round
+ * 2, 2026-09-25). The captions under the search field and above the source list stood on
+ * the box edge at 76 — a second text line beside the rows' 109. They take a control's
+ * transparent edge, pad and gap, and lead with an empty `IndexGlyph`, so their words land
+ * where a row's do and the two are built from the same steps.
+ */
+const INDEX_TEXT_LINE = "flex gap-1.5 border-x border-transparent px-2.5";
 
 /**
  * **The column's button group fills the column** (owner, 2026-09-12: *"why is the
@@ -625,15 +633,32 @@ export function LibrarySection({
   const searchField =
     model.sources.length + model.wikiPages.length > 0 ? (
       <div className={searchHost ? "flex min-w-0 flex-1 flex-col gap-1" : "flex flex-none flex-col gap-1 px-3 pb-2"}>
-        <Input
-          data-testid="library-search"
-          size="sm"
-          type="search"
-          aria-label={t("search.placeholder")}
-          placeholder={t("search.placeholder")}
-          value={query}
-          onChange={(event) => changeQuery(event.target.value)}
-        />
+        {/*
+          ⚠️ **The field's words start on the column's text line** (design sweep round 2,
+          2026-09-25). A boxed `sm` field puts its placeholder 9px inside its edge — 85 at
+          1512 — while every door, row and card starts its words at 109, after the column's
+          one glyph slot. So the box is drawn here, with the chips' edge, inset and slot, and
+          the field inside it is `bare` (the `DocsQuickDrawer` search is the same shape). The
+          slot holds a filter mark, not a magnifier: this field narrows the list below, and
+          the magnifier already belongs to the *Find documents* door. A `div`, not a
+          `label`: the field keeps its own `aria-label`, and the box draws no form control
+          of its own (`control-adoption-ratchet`).
+        */}
+        <div data-testid="library-search-box" className="atlas-touch-floor flex h-7 min-w-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 transition-colors focus-within:border-[color:var(--color-indigo-a46)]">
+          <IndexGlyph>
+            <ListFilter size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+          </IndexGlyph>
+          <Input
+            data-testid="library-search"
+            frame="bare"
+            className="min-w-0 flex-1"
+            type="search"
+            aria-label={t("search.placeholder")}
+            placeholder={t("search.placeholder")}
+            value={query}
+            onChange={(event) => changeQuery(event.target.value)}
+          />
+        </div>
         {/*
          * ⚠️ **The line is always here, even when it says nothing.** It used to appear on
          * the first keystroke, and appearing is a layout event: measured on the day-one
@@ -650,8 +675,9 @@ export function LibrarySection({
           /* Polite, not assertive: the count settling as files land is progress a
              screen reader should hear once it has, not on every published file. */
           aria-live="polite"
-          className="min-h-[var(--leading-caption)] text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+          className={`min-h-[var(--leading-caption)] text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all] ${INDEX_TEXT_LINE}`}
         >
+          <IndexGlyph />
           {!needle ? null : search.phase === "reading" ? (
             /*
              * ⚠️ **The reading sentence waits, and its counter is not announced.**
@@ -687,8 +713,9 @@ export function LibrarySection({
         {needle && search.capped ? (
           <p
             data-testid="library-search-capped"
-            className="text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+            className={`text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all] ${INDEX_TEXT_LINE}`}
           >
+            <IndexGlyph />
             {t("search.capped", { count: search.plannedCount })}
           </p>
         ) : null}
@@ -750,8 +777,11 @@ export function LibrarySection({
                 data-testid="library-source-states"
                 data-folded-state={foldedState ?? undefined}
                 aria-label={t("sources.statesAria")}
-                className={`flex flex-wrap items-center gap-x-2 gap-y-1 pb-2 pt-1 text-caption text-[color:var(--color-text-quaternary)] ${INDEX_LIST_INSET}`}
+                className={`pb-2 pt-1 text-caption text-[color:var(--color-text-quaternary)] ${INDEX_LIST_INSET}`}
               >
+                <span className={`items-center ${INDEX_TEXT_LINE}`}>
+                <IndexGlyph />
+                <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                 {stateCounts.map(({ state, count }) =>
                   state === foldedState ? (
                     <StateBadge
@@ -767,6 +797,8 @@ export function LibrarySection({
                     </span>
                   ),
                 )}
+                </span>
+                </span>
               </p>
             ) : null}
             <ul
@@ -813,13 +845,28 @@ export function LibrarySection({
                           the sidebar keeps one left edge from top to bottom. */}
                       <IndexGlyph><FileText size={ICON_SIZE.sm} className="opacity-60" aria-hidden /></IndexGlyph>
                       <span className="min-w-0 flex-1 truncate">{row.name}</span>
-                      {/* Format is the fact a directory listing already holds, and the reason
-                          the row can exist without opening the file. The size moved into the
-                          row's `title` on 2026-09-25: at 280px, "MD · 781 B" plus a badge took
-                          ~115px and every longer name truncated even at 1920. */}
-                      <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                        {row.format ? row.format.toUpperCase() : t("sources.noFormat")}
-                      </span>
+                      {/*
+                        Format is the fact a directory listing already holds, and the reason
+                        the row can exist without opening the file. The size moved into the
+                        row's `title` on 2026-09-25: at 280px, "MD · 781 B" plus a badge took
+                        ~115px and every longer name truncated even at 1920.
+
+                        ⚠️ **The tag is drawn only when the name does not already say it**
+                        (design sweep round 2, 2026-09-25). `row.format` is the name's own
+                        extension, so `merchant-onboarding.html  HTML` said one fact twice
+                        and the second copy cost the first its tail: the name truncated at
+                        1512 and 1920 while the tag beside it repeated the part that was cut.
+                        A name with no extension still gets the word, because there the
+                        tag is the only place the fact is written.
+                      */}
+                      {row.format && row.name.toLowerCase().endsWith(`.${row.format.toLowerCase()}`) ? null : (
+                        <span
+                          data-testid="library-source-format"
+                          className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]"
+                        >
+                          {row.format ? row.format.toUpperCase() : t("sources.noFormat")}
+                        </span>
+                      )}
                       {row.state === "compiled" ? (
                         /*
                          * A check, not a pill. The word is still announced — the glyph is
@@ -835,10 +882,11 @@ export function LibrarySection({
                           <span className="sr-only">{stateLabel}</span>
                         </span>
                       ) : row.state === "checking" ? (
-                        /* The same badge geometry as every other unfinished state, in the
-                           quietest tone: a column of four rows used to show a 41×20 box and a
-                           27×14 bare word with two left edges (design sweep, 2026-09-25). */
-                        <StateBadge tone="quiet" testId="library-source-state-checking">
+                        /* The same badge as every other unfinished state: a column of four
+                           rows used to show a 41×20 box and a 27×14 bare word with two left
+                           edges (design sweep, 2026-09-25). Its word, not a texture, tells
+                           it from `not compiled` (see `StateBadge`). */
+                        <StateBadge tone="neutral" testId="library-source-state-checking">
                           {stateLabel}
                         </StateBadge>
                       ) : row.state === foldedState ? (
@@ -1135,20 +1183,30 @@ export function LibrarySection({
          * door. While the runtimes are still being detected the doors stay drawn, because
          * nothing is missing yet.
          */
+        /*
+         * ⚠️ **One box edge, one text line, and not the loudest thing in the column**
+         * (design sweep round 2, 2026-09-25). The door used to be a full-width white-ink
+         * outline button inside this card's padding: its box stood at 87 while every other
+         * box in the column stood at 76, and it out-shouted the selected page card. Now the
+         * card is the only box, its sentence and its door both start on the column's text
+         * line after the glyph slot, and the door is the accent link a pressable fact wears.
+         */
         <div
           data-testid="library-agent-missing"
-          className="mx-3 mb-2 flex flex-col gap-2.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-3"
+          className="mx-3 mb-2 grid grid-cols-[1rem_minmax(0,1fr)] gap-x-1.5 gap-y-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2.5"
         >
+          <span className="flex h-[var(--leading-label)] items-center justify-center">
+            <Sparkles size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
+          </span>
           <p
             id={SECTION_ACTIONS_NOTE_ID}
-            className="flex items-start gap-1.5 text-label leading-label text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+            className="min-w-0 text-label leading-label text-[color:var(--color-text-secondary)] [word-break:keep-all]"
           >
-            <IndexGlyph>
-              <Sparkles size={ICON_SIZE.sm} aria-hidden className="mt-[3px] text-[color:var(--color-indigo-accent)]" />
-            </IndexGlyph>
-            <span className="min-w-0">{t("wiki.agentMissing")}</span>
+            {t("wiki.agentMissing")}
           </p>
-          <AgentDoor testId="library-agent-missing-door" fill />
+          <span className="col-start-2 flex min-w-0">
+            <AgentDoor testId="library-agent-missing-door" variant="link" label={t("wiki.agentMissingDoor")} />
+          </span>
         </div>
       ) : null}
       <SectionActions>

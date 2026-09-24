@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { buttonVariants } from "@/shared/ui";
+import { controlClass } from "@/shared/ui/control-class";
 
 /**
  * **The way to the thing the sentence just named.**
@@ -48,18 +49,49 @@ import { buttonVariants } from "@/shared/ui";
  * notice (2026-09-25) is the fourth: it replaces the two dead Check and Compile doors in
  * the installed app once detection has found no runtime, and ends in this door.
  *
+ * ## The fourth site is a sentence's last line, so it wears a link and says its press
+ *
+ * The first cut drew the notice's door as this full-width outline button, and in a 255px
+ * index column it became the strongest box there, stronger than the selected page card,
+ * pulling the eye to a side door (design sweep round 2, 2026-09-25). Inside its padding it
+ * also stood 11px in from every other box edge in the column. So that one site asks for
+ * `variant="link"`: the accent link grammar the header strip's `Compile next` clause
+ * already uses for a pressable fact, on the notice's own text line. And a link has no box
+ * to read as the rail tile's twin, so the reason for the bare noun below does not carry
+ * over: that site names its press (`wiki.agentMissingDoor`, *Connect an agent*). The
+ * other sites keep the outline button and the rail's word.
+ *
  * It is absent on the web, where the missing thing is the app itself and the existing
  * degradation card to `/download/` is the honest door.
  */
 export function AgentDoor({
   testId,
-  fill = false,
+  variant = "button",
+  label,
 }: {
   testId?: string;
-  /** Take the width of the block it closes — the index column's no-agent notice (2026-09-25). */
-  fill?: boolean;
+  /** `link` for a door that ends a sentence rather than standing beside a refused press. */
+  variant?: "button" | "link";
+  /** The words, where they are not the rail's: only the link variant names its press. */
+  label?: string;
 }) {
   const nav = useTranslations("navRail");
+  if (variant === "link") {
+    return (
+      <Link
+        href={DESTINATION_HREF.agents}
+        data-testid={testId ?? "library-agent-door"}
+        className={controlClass({
+          shape: "link",
+          tone: "accent",
+          hoverInk: "strong",
+          className: "atlas-touch-floor max-w-full self-start",
+        })}
+      >
+        <span className="min-w-0 truncate">{label ?? nav("agents")}</span>
+      </Link>
+    );
+  }
   return (
     <Link
       href={DESTINATION_HREF.agents}
@@ -69,7 +101,7 @@ export function AgentDoor({
        * out of a refusal is not the strongest box on the screen. `sm` matches the Ask
        * button it sits near in step three.
        */
-      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "atlas-touch-floor max-w-full", fill && "w-full")}
+      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "atlas-touch-floor max-w-full")}
     >
       {nav("agents")}
     </Link>
