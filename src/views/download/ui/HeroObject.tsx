@@ -147,11 +147,15 @@ export function HeroObject({
       // smaller plane (600 measured 746px wide, 740 the width below; 1180 keeps the narrow
       // plinth's plane under the facts strip — 980 measured its top row behind the links).
       // On a phone the plane keeps three tiers and is drawn larger for them (2026-09-03).
-      fitPx: wide ? 740 : phone ? 820 : 1180,
+      // Wide is 620 since 2026-09-25: the hero stopped claiming the whole fold, so min(W, H) is
+      // the hero's own height (529 at 1512), and 740 drew a plane a third of the copy's height.
+      fitPx: wide ? 620 : phone ? 820 : 1180,
       echo: true,
       onHover: setHover,
       form: 'plane',
-      anchor: wide ? { x: 0.72, y: 0.6 } : { x: 0.5, bottomPx: 176 },
+      // Wide centres on the copy (0.5): at 0.6 in the shorter hero the plane's near rim crossed
+      // the facts strip's rule.
+      anchor: wide ? { x: 0.72, y: 0.5 } : { x: 0.5, bottomPx: 176 },
       dim: wide ? 0.55 : 0.7,
       tilt: true,
       // The scroll camera runs only at the split width (council, 2026-09-02): below it the plane

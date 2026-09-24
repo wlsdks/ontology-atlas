@@ -180,15 +180,36 @@ export function HeroTypewriter({
     onProgress?.(typed, total);
   }, [onProgress, typed, total]);
 
+  /*
+   * **The count follows the wall clock, not the number of ticks delivered** (2026-09-25). The
+   * interval used to add one character per callback at the full step, so every late callback made
+   * the rest of the sentence later: while the hero stage mounts, a headless 1920 run delivered the
+   * 38ms ticks at ~57ms and the 31-character Korean headline took 1.77s to type instead of 1.18s,
+   * still unfinished at the moment it is read. Now the timer polls at half the step and each tick
+   * shows one more character only when the elapsed time has earned it, so a late tick is followed
+   * by an early one instead of pushing the whole sentence back.
+   *
+   * Still **one character per tick**, never a burst: the hero object lights its dots from this
+   * count a render later (`HeroObject`), and a burst leaves it visibly behind its cause; several
+   * characters landing at once also stack their weight landings and widen the line while it types
+   * (`download-gateway-grid.spec.ts`, "does not wander"). Both were measured when a catch-up of two
+   * per tick was tried. `Date.now()` rather than `performance.now()` because it is the clock the
+   * tests' fake timers drive.
+   */
   useEffect(() => {
     if (!start || reduced) return;
     const step = typingStepMs(total, budgetMs);
-    let n = 0;
+    const startedAt = Date.now();
+    let shown = 0;
     const id = window.setInterval(() => {
-      n += 1;
-      setTypedState(n);
-      if (n >= total) window.clearInterval(id);
-    }, step);
+      // Rounded, not floored: the clock is whole milliseconds and the step is not, so the nth
+      // step lands a fraction short of n steps and a floor would show one character fewer.
+      const earned = Math.min(total, Math.round((Date.now() - startedAt) / step));
+      if (earned <= shown) return;
+      shown += 1;
+      setTypedState(shown);
+      if (shown >= total) window.clearInterval(id);
+    }, step / 2);
     return () => window.clearInterval(id);
   }, [start, reduced, total, budgetMs]);
 

@@ -11,6 +11,7 @@ import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
+import { availableDemoClips } from '../model/demo-clips';
 import { HeroTypewriter, heroSentence } from './HeroTypewriter';
 import { EvidenceSpecimen, type EvidenceDemoKey } from './EvidenceSpecimen';
 import { CountUp } from './CountUp';
@@ -270,28 +271,19 @@ export function DownloadPage() {
  * notation in both locales, while their words come from the locale catalog so the Korean page
  * does not introduce an English label before each Korean sentence.
  *
- * With `still` it renders without the entrance choreography — the install section's stillness
- * was its consumer.
+ * [Retired 2026-09-25] The `centered` variant. The demo section was the page's one centred
+ * block, so the page ran two alignment grammars (measured 1512: its head's ink at x≈508–930
+ * while every other section's text began at the origin, x=200). Every head now starts at the
+ * origin; the demo answers its narrower stage by standing the head beside it (`DemoSection`).
  */
 function SectionIntro({
   eyebrow,
   title,
   sub,
-  centered = false,
 }: {
   eyebrow: string;
   title: string;
   sub?: string;
-  /**
-   * Centre the head on the same axis as the section's content.
-   *
-   * ⚠️ **This is a property of the section, not a preference of the head.** The demo section is
-   * the page's one *stage* — a single object narrower than the column, with a caption — so it is
-   * centred, and its head has to be centred with it or the section runs two axes. Every other
-   * section fills its column and stays left. The 2026-08-23 defect was exactly this half-applied:
-   * the stage was centred and its head was not (`docs/DECISIONS.md` 2026-08-23).
-   */
-  centered?: boolean;
 }) {
   /*
    * A section head is still. Until 2026-08-30 its three lines rose on the scroll timeline and
@@ -302,31 +294,16 @@ function SectionIntro({
    */
   return (
     <>
-      <p
-        className={cn(
-          'flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]',
-          centered && 'justify-center',
-        )}
-      >
+      <p className="flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
         {/* A static dot — a signal is a state, and there is no state here, so it does not blink. */}
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
         {eyebrow}
       </p>
-      <h2
-        className={cn(
-          'mt-4 break-keep text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]',
-          centered && 'text-center',
-        )}
-      >
+      <h2 className="mt-4 break-keep text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
         {title}
       </h2>
       {sub ? (
-        <p
-          className={cn(
-            'mt-3 max-w-[40rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]',
-            centered && 'mx-auto text-center',
-          )}
-        >
+        <p className="mt-3 max-w-[40rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]">
           {sub}
         </p>
       ) : null}
@@ -423,16 +400,17 @@ function HeroSection({
   ];
 
   return (
-    /* **The first screen is the hero's** (2026-09-02). Measured at 1512×982 the facts strip ended
-       at 754 and 150px of nothing followed before the fold; at 1920×1080 the gap was wider. At the
-       split width the section now claims the viewport below the chrome (`min-h`, so a short
-       window never clips) and the split band takes the slack, which centres the decision block
-       and the object in the room that was empty. The strip stays the hero's bottom rule and now
-       sits on the fold. Below `xl` the object stacks under the type and the hero is taller than
-       any viewport, so nothing changes there. */
+    /* **The hero is as tall as what it says** (2026-09-25). From 2026-09-02 it claimed the
+       viewport below the chrome at the split width, so the facts strip stood on the fold. The
+       copy is ≈440px tall and the fold 884px (1512×949), so that claim was ≈440px of slack with
+       nowhere good to go: under the CTAs it was a 370px empty lower-left column, and split above
+       and below the copy it was a 250px empty band under the chrome (h1 at y=347; 391 at 1920).
+       Every placement moved the void. Now the hero ends at the strip and the section rhythm
+       follows, so the fold holds the headline, the decision, the strip and the start of the demo
+       — the next thing to look at, instead of nothing. */
     <section
       data-testid="gateway-hero"
-      className={cn(PAGE_GUTTER, 'relative flex w-full flex-col min-[90rem]:min-h-[calc(100svh-4rem)]')}
+      className={cn(PAGE_GUTTER, 'relative flex w-full flex-col')}
     >
       {/* The monument measure — the headline uses the full column as its measure. `@container`
           declares that measure and `--text-monument` (4.8cqw) sizes against it, so both sentences
@@ -546,7 +524,7 @@ function HeroSection({
                     >
                       <Download size={ICON_SIZE.lg} aria-hidden />
                       {t('heroWindowsCta')}
-                      <span className="font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">
+                      <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">
                         {t('windowsUnsignedShort')}
                       </span>
                     </a>
@@ -577,6 +555,7 @@ function HeroSection({
           </div>
 
           <p
+            data-testid="gateway-hero-trust"
             className={cn(
               rise('gateway-t400'),
               'mt-5 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]',
@@ -591,10 +570,8 @@ function HeroSection({
 
       </div>
 
-      {/* `mt-auto`: at the split width the strip sits on the fold, and the room between the
-          decision block and the strip is the dome's. */}
       <FactsStrip
-        className="relative z-[1] mt-auto"
+        className="relative z-[1]"
         published={published}
         primaryAsset={primaryAsset}
         windowsAsset={windowsInstaller}
@@ -687,7 +664,15 @@ function FactsStrip({
   const subject = windowsPrimary && windowsInstaller ? windowsInstaller : primaryAsset;
   const subjectIsWindows = subject !== null && subject === windowsInstaller;
 
-  const facts: { label: string; value: string }[] = [
+  /*
+   * **Mono is for program text only** (2026-09-25). A value that is a hash is set in the mono
+   * face; a value that is words and numbers (the Korean release date, "macOS 12 or later") is
+   * set in the sans face with tabular figures. In the mono face its Hangul fell back glyph by glyph
+   * while the spaces kept the monospace advance, so the date read as spaced-out printout — the
+   * defect `app/globals.css` records for caps labels. The section eyebrows and these labels are
+   * already covered by that rule (`:root:lang(ko) .font-mono.uppercase`).
+   */
+  const facts: { label: string; value: string; code?: boolean }[] = [
     { label: t('factVersionLabel'), value: version },
     {
       label: t('factRequiresLabel'),
@@ -703,6 +688,7 @@ function FactsStrip({
     facts.push({
       label: 'SHA-256',
       value: `${subject.sha256.slice(0, 8)}…${subject.sha256.slice(-8)}`,
+      code: true,
     });
   }
 
@@ -729,6 +715,7 @@ function FactsStrip({
       href: '/changelog' as const,
       external: false,
       testId: 'gateway-facts-changelog',
+      code: false,
     },
     {
       label: t('factSourceLabel'),
@@ -736,6 +723,8 @@ function FactsStrip({
       href: GITHUB_REPO_URL,
       external: true,
       testId: 'gateway-facts-source',
+      // `owner/repo` is a path, so it keeps the mono face; the changelog link is a sentence.
+      code: true,
     },
   ];
 
@@ -772,7 +761,10 @@ function FactsStrip({
               <dt className={FACT_LABEL}>{fact.label}</dt>
               <dd
                 data-token="engraved-numeral"
-                className="mt-1 font-mono text-body leading-body text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+                className={cn(
+                  'mt-1 text-body leading-body tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]',
+                  fact.code && 'font-mono',
+                )}
               >
                 {fact.value}
               </dd>
@@ -790,7 +782,7 @@ function FactsStrip({
                     target="_blank"
                     rel="noreferrer noopener"
                     data-testid={link.testId}
-                    className={FACT_LINK}
+                    className={cn(FACT_LINK, link.code && 'font-mono')}
                   >
                     <span aria-hidden data-external-link-marker>
                       ↗
@@ -798,7 +790,11 @@ function FactsStrip({
                     {link.text}
                   </a>
                 ) : (
-                  <Link href={link.href} data-testid={link.testId} className={FACT_LINK}>
+                  <Link
+                    href={link.href}
+                    data-testid={link.testId}
+                    className={cn(FACT_LINK, link.code && 'font-mono')}
+                  >
                     {link.text}
                   </Link>
                 )}
@@ -822,7 +818,7 @@ const FACT_LINK = controlClass({
   className:
     // `items-start`: the link shape centres its text in a 24px floor, which sat the label 2px
     // below the engraved values beside it (measured 1512). Top-aligned, both share one line box.
-    'touch-hit-expand items-start font-mono text-body leading-body text-[color:var(--color-text-secondary)] underline underline-offset-2',
+    'touch-hit-expand items-start text-body leading-body text-[color:var(--color-text-secondary)] underline underline-offset-2',
 });
 
 // ─── ② Demo — plays itself once visible ─────────────────────────────────────
@@ -843,10 +839,7 @@ function ScreensSection() {
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <SectionIntro eyebrow={t('eyebrow')} title={t('title')} sub={t('sub')} />
-        <div className="gateway-scroll-stage">
-          <ScreensStage />
-        </div>
+        <ScreensStage intro={<SectionIntro eyebrow={t('eyebrow')} title={t('title')} sub={t('sub')} />} />
       </div>
     </section>
   );
@@ -854,6 +847,8 @@ function ScreensSection() {
 
 function DemoSection() {
   const t = useTranslations('download');
+  /** The request belongs to the take — with no clip attached there is no take to quote. */
+  const hasClip = availableDemoClips().length > 0;
 
   return (
     <section
@@ -861,18 +856,65 @@ function DemoSection() {
       data-testid="gateway-demo-section"
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
-      <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <SectionIntro
-          eyebrow={t('demoEyebrow')}
-          title={t('demoTitle')}
-          sub={t('demoSub')}
-          centered
-        />
-        <div className="gateway-scroll-stage mt-9">
+      {/*
+       * **Head beside the stage from the split width** (2026-09-25). The demo is the page's one
+       * stage narrower than the column (`--gateway-stage-max`), and until now it answered that
+       * by centring the whole section — the page's one second axis (measured 1512: the head's
+       * ink at x≈508–930, the stage at 372–1140, every other section at 200). Left-aligned in
+       * the same stacked layout, the right 30% of the column would stand empty instead. So from
+       * 90rem the head takes the column's left track and the stage its right one: the head's text
+       * starts at the origin like every other section's, the stage ends on the column's right
+       * edge, and the stage keeps its approved width. Narrower, the head stacks above a stage
+       * that starts at the origin too. The head sits on the video's vertical centre (`pb-9`
+       * discounts the caption under the video), and under its lede it quotes the request the
+       * take was filmed on (`DemoPrompt`): the head alone was a third of the stage's height at
+       * 1920, with ≈170px of empty track above it and ≈200px below.
+       */}
+      <div
+        className={cn(
+          PAGE_COLUMN,
+          'min-w-0 min-[90rem]:grid min-[90rem]:grid-cols-[minmax(0,1fr)_minmax(0,var(--gateway-stage-max))] min-[90rem]:gap-12',
+        )}
+      >
+        <div data-testid="gateway-demo-head" className="min-w-0 min-[90rem]:self-center min-[90rem]:pb-9">
+          <SectionIntro eyebrow={t('demoEyebrow')} title={t('demoTitle')} sub={t('demoSub')} />
+          {hasClip ? <DemoPrompt text={t('demoAgentPrompt')} label={t('demoPromptLabel')} /> : null}
+        </div>
+        <div className="gateway-scroll-stage mt-9 min-w-0 min-[90rem]:mt-0">
           <DemoStage />
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * **The request the take was filmed on, verbatim** (2026-09-25). The shoot sends the locale's
+ * `download.demoAgentPrompt` word for word (`docs/DEMO-SCENARIO.md` §3), and until now the page
+ * never showed it: a visitor watched Codex answer a question they could not read. At the split
+ * width it also closes the head's track — beside a 768px stage at 1920 the head was a third of
+ * the video's height, with ≈170px of empty track above it and ≈200px below. It wears the chat
+ * scene's user bubble (label over a bordered bubble), because it is the same thing: what a person
+ * typed to an agent. Tool names and slugs keep the mono face; the sentence around them does not.
+ */
+function DemoPrompt({ text, label }: { text: string; label: string }) {
+  return (
+    <figure data-testid="gateway-demo-prompt" className="mt-7 min-w-0 max-w-[40rem]">
+      <figcaption className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">
+        {label}
+      </figcaption>
+      <blockquote className="mt-1.5 break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 text-body leading-body text-[color:var(--color-text-secondary)]">
+        {text.split('`').map((part, i) =>
+          i % 2 === 1 ? (
+            <code key={i} className="break-words font-mono text-[color:var(--color-text-primary)] sm:whitespace-nowrap">
+              {part}
+            </code>
+          ) : (
+            part
+          ),
+        )}
+      </blockquote>
+    </figure>
   );
 }
 
@@ -1026,12 +1068,15 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
           data-testid="download-portrait-caption"
           className={cn('gateway-map-after', captionIn && 'is-in', 'pointer-events-none mt-5')}
         >
-          <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-            <span>docs/ontology</span>
-            <span aria-hidden>·</span>
+          {/* Mono only for the data — the path and the census — and the sans caption face for
+              the two sentences beside them (2026-09-25): Hangul set in the mono face falls back
+              with visibly spaced glyphs and reads as a printout, not a sentence. */}
+          <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-caption leading-caption text-[color:var(--color-text-tertiary)]">
+            <span className="font-mono text-[color:var(--color-text-quaternary)]">docs/ontology</span>
+            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
             <span
               data-token="engraved-numeral"
-              className="text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+              className="font-mono text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
             >
               {t.rich('portraitCensus', {
                 concepts: graph.nodes.length,
@@ -1042,11 +1087,11 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
                 r: () => <CountUp value={graph.edges.length} />,
               })}
             </span>
-            <span aria-hidden>·</span>
-            <span className="min-w-0 break-keep text-[color:var(--color-text-tertiary)]">
+            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+            <span className="min-w-0 break-keep text-[color:var(--color-text-secondary)]">
               {t('portraitHint')}
             </span>
-            <span aria-hidden>·</span>
+            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
             <span className="min-w-0 break-keep">{t('portraitScope')}</span>
           </span>
         </p>
@@ -1082,7 +1127,7 @@ function AgentSection() {
   const columns = [
     { title: t('col1Title'), body: t('col1Body'), code: t('col1Code') },
     { title: t('col2Title'), body: t('col2Body'), code: t('col2Code') },
-    { title: t('col3Title'), body: t('col3Body'), code: 'git diff docs/ontology/' },
+    { title: t('col3Title'), body: t('col3Body'), code: 'git diff docs/ontology/', command: true },
   ];
 
   return (
@@ -1091,48 +1136,82 @@ function AgentSection() {
       data-testid="gateway-agents-section"
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
-      <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <SectionIntro eyebrow={t('agentsEyebrow')} title={t('agentsTitle')} sub={t('agentsSub')} />
-
-        {/*
-         * **Scene left, cards right — the evidence section's grid** (2026-09-02). Until now the
-         * scene stood alone at the stage width with a third of the column empty beside it
-         * (measured 1512: a 768px card in an 1112px column), and the three cards ran in a row
-         * beneath. The evidence section already answers this layout: the moving thing on the left
-         * at 11/20, the still facts on the right at 9/20. Using the same split here makes the two
-         * sections one grammar, fills the column, and keeps "one moving thing per section" — the
-         * cards are still, now stacked with a rule between them instead of beside each other.
-         * Below `lg` the cards stack under the scene at full width.
-         */}
-        <div className="mt-9 grid min-w-0 gap-10 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] lg:gap-12">
-          <div data-testid="gateway-agent-scene" className="gateway-scroll-stage min-w-0 lg:self-center">
+      {/*
+       * **Head and scene left, cards right** (2026-09-25). The split itself is the evidence
+       * section's grammar (2026-09-02): the moving thing on the left at 11/20, the still facts on
+       * the right at 9/20, one moving thing per section. What changed is where the head stands.
+       * Spanning the column above the split, it left the scene (≈345px) beside cards ≈590px tall,
+       * and every way of reconciling the two moved the gap rather than closing it: centred, the
+       * scene floated with no shared start; stretched, the frame held 230px of empty panel above
+       * its first bubble at 1512. With the head in the scene's track the left column is head +
+       * scene, the same height class as the cards, and both columns start on the eyebrow's line.
+       * This is also the demo section's grammar — its head stands in the track beside its stage.
+       *
+       * The split opens at 90rem, the hero's split width. At `lg` (1040) the left track was 326px
+       * and at `xl` (1280) 458px: the user bubble left its last words alone on a second line and
+       * the record's `why` broke mid-clause. Below 90rem the head, the scene and the cards stack
+       * at the column's full width.
+       */}
+      <div
+        className={cn(
+          PAGE_COLUMN,
+          'grid min-w-0 gap-y-10 min-[90rem]:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] min-[90rem]:gap-x-12',
+        )}
+      >
+        <div className="min-w-0">
+          <SectionIntro eyebrow={t('agentsEyebrow')} title={t('agentsTitle')} sub={t('agentsSub')} />
+          <div data-testid="gateway-agent-scene" className="gateway-scroll-stage mt-9 min-w-0">
             <AcpChatScene />
           </div>
-          {/* The three cards are still — one moving thing beside them is enough. */}
-          <div className="grid min-w-0 content-start lg:self-center">
-            {columns.map((column, i) => (
-              <div
-                key={column.title}
-                className={cn(
-                  'min-w-0 py-6 first:pt-0 last:pb-0',
-                  i > 0 && 'border-t border-[color:var(--color-border-soft)]',
-                )}
-              >
-                <h3 className="break-keep text-title font-[var(--font-weight-emphasis)] leading-title text-[color:var(--color-text-primary)]">
-                  {column.title}
-                </h3>
-                <p className="mt-2.5 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-                  {column.body}
-                </p>
-                <code className="mt-4 block border-l border-[color:var(--color-border-strong)] pl-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]">
-                  {column.code}
-                </code>
-              </div>
-            ))}
-          </div>
+        </div>
+        {/* The three cards are still — one moving thing beside them is enough. */}
+        <div className="grid min-w-0 content-start">
+          {columns.map((column, i) => (
+            <div
+              key={column.title}
+              className={cn(
+                'min-w-0 py-6 first:pt-0 last:pb-0',
+                i > 0 && 'border-t border-[color:var(--color-border-soft)]',
+              )}
+            >
+              <h3 className="break-keep text-title font-[var(--font-weight-emphasis)] leading-title text-[color:var(--color-text-primary)]">
+                {column.title}
+              </h3>
+              <p className="mt-2.5 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+                {column.body}
+              </p>
+              <AgentFactRow text={column.code} command={column.command} />
+            </div>
+          ))}
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * A card's fact row — short facts separated by `·`, or one literal command.
+ *
+ * Wraps only at the `·` between two facts (2026-09-25): at 1040 the Korean "write → review" pair
+ * broke inside its last word, leaving one syllable alone on the second line. Each fact is one
+ * unbreakable run. Only the literal command is set in mono; the Korean phrase rows were mono too
+ * and read as spaced-out printout, not as the short facts they are.
+ */
+function AgentFactRow({ text, command = false }: { text: string; command?: boolean }) {
+  const rowClass =
+    'mt-4 flex flex-wrap gap-x-2 break-keep border-l border-[color:var(--color-border-strong)] pl-3 text-body leading-body text-[color:var(--color-text-tertiary)]';
+  if (command) return <code className={cn(rowClass, 'font-mono')}>{text}</code>;
+  return (
+    <p className={rowClass}>
+      {text.split(' · ').map((part, i) => (
+        // One fixed sentence split at its separators: the position is the identity, and two
+        // equal facts in one row would still get distinct keys.
+        <span key={i} className="whitespace-nowrap">
+          {i > 0 ? <span className="mr-2 text-[color:var(--color-text-quaternary)]">·</span> : null}
+          {part}
+        </span>
+      ))}
+    </p>
   );
 }
 
@@ -1243,7 +1322,7 @@ function ClosingBand({
         <p className={FACT_LABEL}>{t('downloadSectionLabel')}</p>
         <p
           data-token="engraved-numeral"
-          className="mt-2 font-mono text-body leading-body text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+          className="mt-2 text-body leading-body tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
         >
           {versionLine}
         </p>

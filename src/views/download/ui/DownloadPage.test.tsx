@@ -628,23 +628,24 @@ describe('DownloadPage', () => {
     expect(harness).toHaveAttribute('data-state', 'active');
     // The picture is the page's own language — this render is English.
     expect(harness.querySelector('img')?.getAttribute('src')).toMatch(/\/gateway\/harness\.en\.png$/);
-    expect(harness.querySelector('a')).toHaveAttribute('href', '/architecture');
+    // The door stands at the rail's foot (2026-09-25), one per screen, following the active tab.
+    const door = (id: string) => screen.getByTestId(`gateway-${id}-door`);
+    expect(door('architecture')).toHaveAttribute('href', '/architecture');
+    expect(door('architecture').parentElement).toHaveAttribute('data-state', 'active');
 
     fireEvent.click(screen.getByTestId('gateway-screens-tab-git'));
     const git = screen.getByTestId('gateway-git-section');
     expect(git).toHaveAttribute('data-state', 'active');
-    expect(git.querySelector('a')).toHaveAttribute('href', '/git');
-    expect(git).toHaveTextContent('Open Git');
+    expect(door('git')).toHaveAttribute('href', '/git');
+    expect(door('git')).toHaveTextContent('Open Git');
+    expect(door('git').parentElement).toHaveAttribute('data-state', 'active');
     expect(harness).toHaveAttribute('data-state', 'leaving');
 
     // The keyboard walks the same list.
     const gitTab = screen.getByTestId('gateway-screens-tab-git');
     fireEvent.keyDown(gitTab, { key: 'Home' });
     expect(harness).toHaveAttribute('data-state', 'active');
-    expect(screen.getByTestId('gateway-library-section').querySelector('a')).toHaveAttribute(
-      'href',
-      '/library',
-    );
+    expect(door('library')).toHaveAttribute('href', '/library');
   });
 
   /**
@@ -747,6 +748,19 @@ describe('DownloadPage', () => {
 
     const note = screen.getByTestId('demo-provisional-note');
     expect(note).toHaveTextContent(new RegExp(`${DEMO_CLIPS[0].seconds}s`, 'i'));
+  });
+
+  it('quotes the request the take was filmed on, word for word, with its tool names as code', () => {
+    renderDownloadPage();
+
+    // The shoot sends `download.demoAgentPrompt` verbatim (docs/DEMO-SCENARIO.md §3), so the page
+    // quotes that message and nothing else — the backticks become code, not characters.
+    const prompt = screen.getByTestId('gateway-demo-prompt');
+    const sentence = enMessages.download.demoAgentPrompt;
+    expect(prompt.querySelector('blockquote')!.textContent).toBe(sentence.replaceAll('`', ''));
+    const codes = [...prompt.querySelectorAll('code')].map((node) => node.textContent);
+    expect(codes).toEqual([...sentence.matchAll(/`([^`]+)`/g)].map((match) => match[1]));
+    expect(codes).toContain('find_path');
   });
 
   // ─── One screen, one version (regression 2026-07-28) ──────────────────────
