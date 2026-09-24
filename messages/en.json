@@ -4920,6 +4920,8 @@
     },
     "close": "Close conversation",
     "composerPlaceholder": "Ask about this folder, or give it a task",
+    "composerPlaceholderSubject": "Ask about {subject}, or give it a task",
+    "startingSuggestions": "Good first requests",
     "composerHint": "Enter to send · ⇧Enter for a new line",
     "history": "Past chats",
     "newChat": "New chat",
@@ -5077,6 +5079,14 @@
       "explain": {
         "label": "Explain what this folder does from the map alone",
         "prompt": "Using only the {count} nodes on the map and their relations, explain to a newcomer what this folder is. Invent nothing that is not on the map, and point out any place the explanation stalls, because that is a hole in the map."
+      },
+      "explainSubject": {
+        "label": "Explain what “{subject}” does from its record and relations",
+        "prompt": "Read “{subject}” ({slug}) with get_concept and find_neighbors, then explain what it does, what it belongs to and what it relies on. Use only what the folder records; where the record is silent, say so rather than guessing."
+      },
+      "subjectImpact": {
+        "label": "Find what a change to “{subject}” would reach",
+        "prompt": "Starting from “{subject}” ({slug}), use find_backlinks and find_neighbors to list the concepts a change to it would reach, each with the relation that carries it. Write nothing; end with the one place you would check first and why."
       }
     },
     "modeName": {
@@ -5267,12 +5277,15 @@
     "architectureCriteria": "Judge maintainability through responsibilities, dependency rules, observed violations, unknown coverage, and the evidence for each proposed improvement. A percentage without a calibrated scale is not a measurement.",
     "analyze": "Analyze with AI",
     "agentUnavailable": "Connect a supported agent in the installed app to run an analysis. Existing Markdown records remain readable here.",
+    "agentUnavailableWithDecisions": "Connect a supported agent in the installed app to run an analysis and read meaning decisions. Existing Markdown analysis records remain readable here.",
     "refresh": "Refresh history",
     "reanalyze": "Run a new analysis",
     "openFolder": "Open your ontology folder to read its analysis history.",
     "version": "Analysis version",
     "latest": "Latest",
-    "empty": "No analysis is available in the loaded records for this scope.",
+    "empty": "Nothing in this scope has been analyzed yet.",
+    "emptyEffect": "An analysis leaves the questions the agent raises as a Markdown record in this folder, and marks them on the map for you to review one by one.",
+    "emptyWithDecisions": "Nothing in this scope has been analyzed yet, and no meaning decisions are archived.",
     "wholeProject": "Whole ontology",
     "grounded": "Evidence captured · AI hypothesis",
     "unverified": "Unverified analysis",
@@ -5299,7 +5312,8 @@
     "kindCriteria": "What belongs in each kind?",
     "relations": "What these connections mean",
     "relationGuide": "Read from the named subject to its target. The relationship type states the claim; the recorded reason explains why it belongs here.",
-    "rationaleMissing": "No reason for this connection is recorded. Ask the agent to investigate before accepting an interpretation.",
+    "rationaleMissingGroup": "{count, plural, one {# connection has no recorded reason.} other {# connections have no recorded reason.}} Ask the agent to investigate before accepting an interpretation.",
+    "rationaleMissingShort": "No reason",
     "showConnection": "Show this connection",
     "declaringDocument": "Read declaring document",
     "selectNode": "Select a concept or connection on the map to inspect its meaning.",

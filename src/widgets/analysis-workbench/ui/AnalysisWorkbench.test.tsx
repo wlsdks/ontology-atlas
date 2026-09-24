@@ -75,6 +75,15 @@ describe('analysis context workbench', () => {
     await screen.findByText(messages.analysisWorkbench.loadingHistory);
     expect(screen.getByText('Current answer.')).toBeVisible();
   });
+  it('says an empty history once: the quiet decision archive folds into the one empty card', async () => {
+    archive.read.mockResolvedValue({ records: [], problems: [], nextCursor: null, totalFiles: 0, scanned: 0 });
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
+    const empty = await screen.findByTestId('analysis-history-empty');
+    expect(screen.queryByRole('heading', { name: messages.analysisWorkbench.meaningTransitions.title })).not.toBeInTheDocument();
+    // This build cannot read decisions and runs no agent: one line says where both work.
+    expect(empty).toHaveTextContent(messages.analysisWorkbench.agentUnavailableWithDecisions);
+    expect(screen.queryByText(messages.analysisWorkbench.meaningTransitions.unavailable)).not.toBeInTheDocument();
+  });
   it('does not offer an inert refresh or loaded-empty claim before a folder is attached', () => {
     render(wrapper(<AnalysisWorkbench context={{ ...context, handle: null }} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
     expect(screen.getByText(messages.analysisWorkbench.openFolder)).toBeVisible();

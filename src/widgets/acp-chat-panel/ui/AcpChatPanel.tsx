@@ -241,6 +241,43 @@ function SuggestionRows({
   );
 }
 
+/**
+ * The first asks, previewed while the tool opens — **text, not buttons** (round three,
+ * 2026-09-25, 1512 wide). The preview used to be the live rows disabled: the same surface and,
+ * at 55% opacity, nearly the same ink, so a person saw buttons that did nothing — the "broken
+ * button" risk. It is a quiet list with no surface and no hover; the rows become buttons only
+ * when the session can take them.
+ *
+ * ⚠️ **Centred on the column the wait already uses** (round four, 2026-09-25). A left-ruled list
+ * capped at 34ch gave the one centred column a second start line (x=1123 against a centred mark
+ * at 1512), and `break-keep` inside that cap left the closing syllable alone on a line in the first
+ * request at every width. The list now shares the status's centre and the column's full measure,
+ * a hairline above it says where the status ends and the preview begins, and `text-balance`
+ * evens the lines of a long request instead of stranding its last word.
+ */
+function StartingSuggestionPreview({ heading, items, labelFor }: {
+  heading: string;
+  items: readonly ChatSuggestion[];
+  labelFor: (suggestion: ChatSuggestion) => string;
+}) {
+  return (
+    <div className="grid w-full gap-2 border-t border-[color:var(--color-divider)] pt-4 text-center" data-testid="acp-starting-suggestions">
+      <p className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">{heading}</p>
+      <ul className="grid gap-2">
+        {items.map((suggestion) => (
+          <li
+            key={suggestion.kind}
+            data-testid={`acp-starting-suggestion-${suggestion.kind}`}
+            className="break-keep text-balance text-label leading-label text-[color:var(--color-text-tertiary)]"
+          >
+            {labelFor(suggestion)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /** A single ACP relation proposal that can be drawn on the map. Home resolves the vault slug into a real node id. */
 export interface AcpOntologyRelationPreview {
   sourceSlug: string;
@@ -303,6 +340,7 @@ export function AcpChatPanel({
   presentationIntent = null,
   presentationRequest = null,
   contextLabel = null,
+  composerSubject = null,
   onDraftPresenceChange,
   onPresentationOpenMap,
   onPresentationVisibilityChange,
@@ -446,6 +484,12 @@ export function AcpChatPanel({
   presentationRequest?: string | null;
   /** Immutable origin of the explicitly seated request, such as Analysis · Connections. */
   contextLabel?: string | null;
+  /**
+   * What the dock's header is about, when that is one picked concept. The composer invitation
+   * names it ("Ask about Checkout…") instead of "this folder", which contradicted the header
+   * directly above it. `null` keeps the folder-wide invitation.
+   */
+  composerSubject?: string | null;
   /** Reports only whether unsent bytes exist; the draft itself stays owned by this panel. */
   onDraftPresenceChange?: (present: boolean) => void;
   /** Optional explicit continuation from an in-place presentation to Map. */
@@ -1594,11 +1638,17 @@ export function AcpChatPanel({
            * place, centred where the answer will appear, and the download detail folds into it
            * rather than being the only reason it exists.
            */
+          /*
+           * Enter and exit are one crossfade (round four, 2026-09-25): the wait, and the empty
+           * conversation that replaces it in the same well, each arrive through
+           * `.agent-panel-stage-swap` — opacity only, so reduced motion keeps the fade at
+           * `--motion-fast` (group ① in globals.css) rather than a hard cut.
+           */
           <div
             data-testid="acp-starting"
             role="status"
             aria-live="polite"
-            className="m-auto grid max-w-[38ch] justify-items-center gap-2 text-center"
+            className="agent-panel-stage-swap m-auto grid w-full max-w-[40ch] justify-items-center gap-2 text-center"
           >
             <BrandWaitingMark active />
             <p className="break-keep text-body leading-prose text-[color:var(--color-text-secondary)]">
@@ -1620,11 +1670,29 @@ export function AcpChatPanel({
                 {t('firstRun.progress', { mb: download.mb })}
               </p>
             ) : null}
+            {/*
+              ⚠️ **The wait previews the first action** (measured 2026-09-25, 1512 and 1920). While
+              the tool opened, the well was a 32px mark and two lines centred in ~900px of empty
+              panel. The same suggestions the empty conversation offers now stand under the status,
+              disabled until the session is ready, so the wait shows what can be asked the moment
+              it can be — and the rows are already where they will be pressed.
+            */}
+            {suggestions.length > 0 && !download ? (
+              <div className="agent-panel-stage-swap mt-5 w-full justify-self-stretch">
+                <StartingSuggestionPreview
+                  heading={t('startingSuggestions')}
+                  items={suggestions}
+                  labelFor={(suggestion) =>
+                    t(`suggest.${suggestion.kind}.label`, suggestion.params)
+                  }
+                />
+              </div>
+            ) : null}
           </div>
         ) : null}
         {events.length === 0 && status !== 'starting' ? (
           // Place the empty conversation guide **in the center of where records will accumulate**. If placed at the top, it reads like the first speech bubble, and the actual place where the conversation starts appears empty.
-          <div className="m-auto grid max-w-[34ch] gap-3">
+          <div className="agent-panel-stage-swap m-auto grid max-w-[34ch] gap-3">
             {/*
              * **The invitation matches what is actually in the box** (2026-09-20).
              *
@@ -2176,7 +2244,7 @@ export function AcpChatPanel({
           <Textarea
             ref={inputRef}
             aria-label={t('composerLabel')}
-            placeholder={composerFocused && draft.length === 0 ? '' : t('composerPlaceholder')}
+            placeholder={composerFocused && draft.length === 0 ? '' : composerSubject ? t('composerPlaceholderSubject', { subject: composerSubject }) : t('composerPlaceholder')}
             frame="bare"
             className="w-full"
             rows={COMPOSER_MIN_ROWS}
