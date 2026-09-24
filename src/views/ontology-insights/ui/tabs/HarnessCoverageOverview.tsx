@@ -230,12 +230,24 @@ export function HarnessCoverageOverview({
         aria-controls={narrow ? 'harness-role-evidence-dialog-content' : 'harness-role-evidence-popup'}
         data-guidance-evidence-action={key}
         onClick={(event) => select(selection, event.currentTarget)}
-        className={controlClass({ shape: 'chip', size: 'sm', active: isSelected, hoverSurface: 'lift' })}
+        className={controlClass({ shape: 'chip', size: 'md', active: isSelected, hoverSurface: 'lift' })}
       >
         <span>{label}</span><span className="font-mono tabular-nums">{count}</span>
       </button>
     );
   };
+
+  /*
+   * How many domains each role reaches at all. The column that reaches the fewest is the one
+   * thing on this screen worth reading first, so it alone is drawn in the warning ink; the
+   * others stay quiet. It states coverage as a count, not a verdict.
+   */
+  const covered = (['told', 'gated', 'watched'] as const).map((column) => ({
+    column,
+    count: evidence.areas.filter((area) => area.roles[column].declarations.length > 0).length,
+  }));
+  const weakest = covered.reduce((low, entry) => (entry.count < low.count ? entry : low), covered[0]!);
+  const weakestColumn = evidence.areas.length > 0 && weakest.count < evidence.areas.length ? weakest.column : null;
 
   const evidenceContent = presented?.kind === 'domain' && presentedArea ? (
     <RoleEvidence
@@ -264,14 +276,23 @@ export function HarnessCoverageOverview({
       <div ref={fieldRef} className={styles.field} data-domain-count={evidence.areas.length} tabIndex={-1} aria-label={t('fieldLabel')}>
         <div data-guidance-overview-header className="flex flex-wrap items-start justify-between gap-x-5 gap-y-2">
           <div>
-            <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+            <h3 className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('title', { count: evidence.areas.length })}
             </h3>
-            <p className="mt-1 text-label text-[color:var(--color-text-quaternary)]">
-              {t('inventoryCaption', { guides: guideFiles, checks })}
+            <p data-guidance-coverage className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-body text-[color:var(--color-text-tertiary)]">
+              {covered.map(({ column, count }) => (
+                <span
+                  key={column}
+                  data-coverage-role={column}
+                  data-weakest={column === weakestColumn ? 'true' : undefined}
+                  className={column === weakestColumn ? 'font-[var(--font-weight-emphasis)] text-[color:var(--color-status-warning)]' : undefined}
+                >
+                  {t('coverage', { role: t(`role.${column}`), covered: count, total: evidence.areas.length })}
+                </span>
+              ))}
             </p>
-            <p className="mt-1 text-label text-[color:var(--color-text-quaternary)]">
-              {t('diagramCaption')}
+            <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">
+              <span>{t('inventoryCaption', { guides: guideFiles, checks })}</span> <span>{t('diagramCaption')}</span>
             </p>
           </div>
           <SegmentedControl
@@ -286,20 +307,20 @@ export function HarnessCoverageOverview({
             testId="guidance-mode"
           />
         </div>
-        <div className="flex flex-wrap gap-2" data-testid="guidance-collection-actions">
+        <div className={`flex flex-wrap items-center gap-2 ${styles.collectionStrip}`} data-testid="guidance-collection-actions">
           {(['told', 'gated', 'watched'] as const).map((column) => evidenceAction({ kind: 'separate', column }, t('collection.separate.action', { role: t(`role.${column}`) }), evidence.everywhere[column].length))}
           {evidenceAction({ kind: 'outside' }, t('collection.outside.action'), evidence.outsideAreas.length)}
           {evidenceAction({ kind: 'unreached' }, t('collection.unreached.action'), evidence.unreachedCapabilities.length)}
           {evidenceAction({ kind: 'findings' }, t('collection.findings.action'), drift.length)}
-          <Link href="/architecture/?view=guides" className={controlClass({ shape: 'link', size: 'sm', className: 'text-[color:var(--color-indigo-text-strong)]' })}>{t('findingSummary', { count: drift.length })}</Link>
+          <Link href="/architecture/?view=guides" className={controlClass({ shape: 'link', size: 'md', className: 'px-1 text-[color:var(--color-indigo-text-strong)]' })}>{t('findingSummary')}</Link>
         </div>
         {mode === 'diagram' ? (
           <div className={styles.domainGrid} data-guidance-domain-grid>
-            {evidence.areas.map((area) => <DomainGroup key={area.slug} area={area} selected={selected} triggerRefs={triggerRefs} controlsId={narrow ? 'harness-role-evidence-dialog-content' : 'harness-role-evidence-popup'} onSelect={select} />)}
+            {evidence.areas.map((area) => <DomainGroup key={area.slug} area={area} selected={selected} triggerRefs={triggerRefs} controlsId={narrow ? 'harness-role-evidence-dialog-content' : 'harness-role-evidence-popup'} weakestColumn={weakestColumn} onSelect={select} />)}
           </div>
         ) : (
           <div className={styles.textList} data-testid="guidance-text-list">
-            {evidence.areas.map((area) => <TextDomainRow key={area.slug} area={area} selected={selected} triggerRefs={triggerRefs} controlsId={narrow ? 'harness-role-evidence-dialog-content' : 'harness-role-evidence-popup'} onSelect={select} />)}
+            {evidence.areas.map((area) => <TextDomainRow key={area.slug} area={area} selected={selected} triggerRefs={triggerRefs} controlsId={narrow ? 'harness-role-evidence-dialog-content' : 'harness-role-evidence-popup'} weakestColumn={weakestColumn} onSelect={select} />)}
           </div>
         )}
       </div>
@@ -342,125 +363,146 @@ export function HarnessCoverageOverview({
   );
 }
 
-function DomainGroup({
-  area,
-  selected,
-  triggerRefs,
-  controlsId,
-  onSelect,
-}: {
+interface RoleChipProps {
   area: Area;
+  column: CoverageColumn;
   selected: Selection | null;
   triggerRefs: MutableRefObject<Map<string, HTMLButtonElement>>;
   controlsId: string;
+  weakestColumn: CoverageColumn | null;
   onSelect: (selection: Selection, trigger: HTMLButtonElement) => void;
-}) {
+}
+
+/*
+ * One chip grammar for both reading modes: mark, role, count, at the chip's own width. An empty
+ * role in the column that reaches the fewest domains wears the same warning ink as that column's
+ * coverage line in the header, so the header's one highlighted gap points at the places it counts.
+ */
+function RoleChip({ area, column, selected, triggerRefs, controlsId, weakestColumn, onSelect }: RoleChipProps) {
   const t = useTranslations('ontologyPages.insights.harnessTab.visual');
+  const selection: Selection = { kind: 'domain', areaSlug: area.slug, column };
+  const key = selectionKey(selection);
+  const count = area.roles[column].declarations.length;
+  const isSelected = selected ? selectionKey(selected) === key : false;
+  return (
+    <button
+      ref={(node) => { if (node) triggerRefs.current.set(key, node); else triggerRefs.current.delete(key); }}
+      type="button"
+      data-role={column}
+      data-state={count === 0 ? 'empty' : 'filled'}
+      data-weakest={count === 0 && column === weakestColumn ? 'true' : undefined}
+      aria-expanded={isSelected}
+      aria-haspopup="dialog"
+      aria-controls={controlsId}
+      aria-label={count === 0
+        ? t('emptyRoleLabel', { domain: area.title, role: t(`role.${column}`) })
+        : t('filledRoleLabel', { domain: area.title, role: t(`role.${column}`), count })}
+      onClick={(event) => onSelect(selection, event.currentTarget)}
+      className={controlClass({
+        shape: 'chip',
+        size: 'md',
+        active: isSelected,
+        hoverSurface: 'lift',
+        className: styles.role,
+      })}
+    >
+      <span className={styles.roleMark} aria-hidden />
+      <span>{t(`role.${column}`)}</span>
+      <span className={`font-mono tabular-nums ${styles.roleCount}`}>{count}</span>
+    </button>
+  );
+}
+
+type RowProps = Omit<RoleChipProps, 'column'>;
+
+/*
+ * The tree grows with its grid cell: the two stems take whatever height the row gives the domain,
+ * up to a cap, so the domains fill the field instead of floating in it. The fork sits just above
+ * the two lower chips, which keeps the drawing a tree however tall the stems get.
+ *
+ * The stem under the name is shared by both branches and is drawn exactly once. The stroke is
+ * translucent, so two paths laid over one stem measured brighter (blue 142) than one path (89) and
+ * a dashed "none" branch laid over a solid one showed dashes through it. Each branch therefore
+ * keeps its full heading-to-chip geometry (the attachment checks walk it), but only one of them
+ * paints the shared stem: a declared branch whose sibling already paints it skips that length
+ * with its dash array, and an empty branch starts at the fork.
+ */
+function DomainGroup(props: RowProps) {
+  const { area } = props;
   const domainRef = useRef<HTMLElement | null>(null);
-  const [connectionWidth, setConnectionWidth] = useState(100);
+  const topRef = useRef<SVGSVGElement | null>(null);
+  const lowerRef = useRef<SVGSVGElement | null>(null);
+  const [size, setSize] = useState({ width: 100, top: 12, lower: 14 });
   useLayoutEffect(() => {
     const domain = domainRef.current;
     if (!domain) return;
-    const measure = () => setConnectionWidth(domain.getBoundingClientRect().width || 100);
+    const measure = () => {
+      const next = {
+        width: domain.getBoundingClientRect().width || 100,
+        top: topRef.current?.getBoundingClientRect().height || 12,
+        lower: lowerRef.current?.getBoundingClientRect().height || 14,
+      };
+      setSize((current) => current.width === next.width && current.top === next.top && current.lower === next.lower ? current : next);
+    };
     measure();
+    /* The stems can change height while the domain keeps its size (a web font swapping in rewraps
+       the name), so each stem is observed on its own, not only the domain around them. */
     const observer = new ResizeObserver(measure);
     observer.observe(domain);
+    if (topRef.current) observer.observe(topRef.current);
+    if (lowerRef.current) observer.observe(lowerRef.current);
     return () => observer.disconnect();
   }, []);
-  const roleButton = (column: CoverageColumn) => {
-    const selection: Selection = { kind: 'domain', areaSlug: area.slug, column };
-    const key = selectionKey(selection);
-    const count = area.roles[column].declarations.length;
-    const isSelected = selected ? selectionKey(selected) === key : false;
-    return (
-      <button
-        ref={(node) => { if (node) triggerRefs.current.set(key, node); else triggerRefs.current.delete(key); }}
-        type="button"
-        data-role={column}
-        data-state={count === 0 ? 'empty' : 'filled'}
-        aria-expanded={isSelected}
-        aria-haspopup="dialog"
-        aria-controls={controlsId}
-        aria-label={count === 0
-          ? t('emptyRoleLabel', { domain: area.title, role: t(`role.${column}`) })
-          : t('filledRoleLabel', { domain: area.title, role: t(`role.${column}`), count })}
-        onClick={(event) => onSelect(selection, event.currentTarget)}
-        className={controlClass({
-          shape: 'chip',
-          size: 'sm',
-          active: isSelected,
-          hoverSurface: 'lift',
-          className: styles.role,
-        })}
-      >
-        <span className={styles.roleMark} aria-hidden />
-        <span>{t(`role.${column}`)}</span>
-        <span className="font-mono tabular-nums">{count}</span>
-      </button>
-    );
-  };
   const told = area.roles.told.declarations.length > 0;
   const gated = area.roles.gated.declarations.length > 0;
   const watched = area.roles.watched.declarations.length > 0;
+  const { width, top, lower } = size;
   const lowerGap = 10;
-  const gatedX = (connectionWidth - lowerGap) / 4;
-  const watchedX = connectionWidth - gatedX;
+  const gatedX = (width - lowerGap) / 4;
+  const watchedX = width - gatedX;
+  const center = width / 2;
+  const fork = Math.max(0, lower - 7);
+  const topPath = `M ${center} 0 V ${top}`;
+  const gatedPath = `M ${center} 0 V ${fork} H ${gatedX} V ${lower}`;
+  const watchedPath = `M ${center} 0 V ${fork} H ${watchedX} V ${lower}`;
+  const fromFork = (x: number) => `M ${center} ${fork} H ${x} V ${lower}`;
+  // Gated paints the shared stem when it is declared, or when neither branch is (then dashed).
+  const gatedPaintsStem = gated || !watched;
   return (
     <section ref={domainRef} className={styles.domain} aria-label={area.title} data-testid={`harness-domain-${area.slug}`}>
-      <div className={styles.topRole}>{roleButton('told')}</div>
-      <svg className={styles.topConnection} viewBox={`0 0 ${connectionWidth} 12`} preserveAspectRatio="none" aria-hidden>
-        {told ? <path data-role-connection="told" d={`M ${connectionWidth / 2} 0 V 12`} /> : null}
+      <div className={styles.topRole}><RoleChip {...props} column="told" /></div>
+      <svg ref={topRef} className={styles.topConnection} viewBox={`0 0 ${width} ${top}`} preserveAspectRatio="none" aria-hidden>
+        {told ? <path data-role-connection="told" d={topPath} /> : <path data-role-connection-empty="told" data-empty d={topPath} />}
       </svg>
-      <h4 className={styles.domainName} data-domain-heading>{area.title}</h4>
-      <svg className={styles.lowerConnections} viewBox={`0 0 ${connectionWidth} 14`} preserveAspectRatio="none" aria-hidden>
-        {gated ? <path data-role-connection="gated" d={`M ${connectionWidth / 2} 0 V 7 H ${gatedX} V 14`} /> : null}
-        {watched ? <path data-role-connection="watched" d={`M ${connectionWidth / 2} 0 V 7 H ${watchedX} V 14`} /> : null}
+      <div className={styles.domainHeading} data-domain-heading>
+        <h4 className={styles.domainName}>{area.title}</h4>
+        {/* What the domain is for is what makes a zero readable: "this area does X and nothing
+            checks it", not "a file is absent". It also gives each tree a body instead of a bare
+            stretched stem. The full sentence stays in the text reading. */}
+        {area.purpose ? <p className={styles.domainPurpose} title={area.purpose}>{area.purpose}</p> : null}
+      </div>
+      <svg ref={lowerRef} className={styles.lowerConnections} viewBox={`0 0 ${width} ${lower}`} preserveAspectRatio="none" aria-hidden>
+        {gated
+          ? <path data-role-connection="gated" d={gatedPath} />
+          : <path data-role-connection-empty="gated" data-empty d={gatedPaintsStem ? gatedPath : fromFork(gatedX)} />}
+        {watched
+          ? <path data-role-connection="watched" d={watchedPath} style={gated ? { strokeDasharray: `0 ${fork} ${width + lower}` } : undefined} />
+          : <path data-role-connection-empty="watched" data-empty d={fromFork(watchedX)} />}
       </svg>
-      <div className={styles.lowerRoles}>{roleButton('gated')}{roleButton('watched')}</div>
+      <div className={styles.lowerRoles}><RoleChip {...props} column="gated" /><RoleChip {...props} column="watched" /></div>
     </section>
   );
 }
 
-function TextDomainRow(props: {
-  area: Area;
-  selected: Selection | null;
-  triggerRefs: MutableRefObject<Map<string, HTMLButtonElement>>;
-  controlsId: string;
-  onSelect: (selection: Selection, trigger: HTMLButtonElement) => void;
-}) {
-  const { area, selected, triggerRefs, controlsId, onSelect } = props;
-  const t = useTranslations('ontologyPages.insights.harnessTab.visual');
+function TextDomainRow(props: RowProps) {
+  const { area } = props;
   return (
     <section className={styles.textRow} data-testid={`harness-text-domain-${area.slug}`}>
       <div className="min-w-0">
         <h4 className="break-words text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{area.title}</h4>
         <p className="mt-1 break-words text-label text-[color:var(--color-text-tertiary)]">{area.purpose}</p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {(['told', 'gated', 'watched'] as const).map((column) => {
-          const selection: Selection = { kind: 'domain', areaSlug: area.slug, column };
-          const key = selectionKey(selection);
-          const count = area.roles[column].declarations.length;
-          const isSelected = selected ? selectionKey(selected) === key : false;
-          return (
-            <button
-              key={column}
-              ref={(node) => { if (node) triggerRefs.current.set(key, node); else triggerRefs.current.delete(key); }}
-              type="button"
-              data-role={column}
-              data-state={count === 0 ? 'empty' : 'filled'}
-              aria-expanded={isSelected}
-              aria-haspopup="dialog"
-              aria-controls={controlsId}
-              aria-label={count === 0 ? t('emptyRoleLabel', { domain: area.title, role: t(`role.${column}`) }) : t('filledRoleLabel', { domain: area.title, role: t(`role.${column}`), count })}
-              onClick={(event) => onSelect(selection, event.currentTarget)}
-              className={controlClass({ shape: 'chip', size: 'sm', active: isSelected, hoverSurface: 'lift' })}
-            >
-              <span>{t(`role.${column}`)}</span><span className="font-mono tabular-nums">{count}</span>
-            </button>
-          );
-        })}
-      </div>
+      {(['told', 'gated', 'watched'] as const).map((column) => <RoleChip key={column} {...props} column={column} />)}
     </section>
   );
 }

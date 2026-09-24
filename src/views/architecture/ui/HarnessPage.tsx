@@ -544,12 +544,12 @@ function HarnessPageInner() {
             ) : reportState.status === 'no-source' ? (
               <GuidanceRelationshipPreview footer={<>
                 <div className="min-w-0 max-w-prose">
-                  <p className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('noSource')}</p>
-                  <p className="mt-2 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('noSourceBody')}</p>
+                  <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('noSource')}</p>
+                  <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('noSourceBody')}</p>
                   {/* Under the sentence it answers, on that sentence's start line: a pill at the
                       far edge of the card stood ~900px from its reason and read as a stray
                       control (design audit, 2026-09-25). */}
-                  <Link href="/projects/" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide mt-4'})}>{t('connectSourceAction')}</Link>
+                  <Link href="/projects/" className={controlClass({shape:'pill',size:'lg',tone:'onAccent',className:'atlas-touch-floor atlas-touch-floor-wide mt-4'})}>{t('connectSourceAction')}</Link>
                 </div>
               </>} />
             ) : reportState.status === 'failed' ? (
@@ -568,9 +568,9 @@ function HarnessPageInner() {
                  and call it the harness. */
               <GuidanceRelationshipPreview footer={<>
                 <div className="min-w-0 max-w-prose">
-                  <p className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('browserOnly')}</p>
-                  <p className="mt-2 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('browserOnlyBody')}</p>
-                  <Link href="/download/" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide mt-4'})}>{t('browserAction')}</Link>
+                  <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('browserOnly')}</p>
+                  <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('browserOnlyBody')}</p>
+                  <Link href="/download/" className={controlClass({shape:'pill',size:'lg',tone:'onAccent',className:'atlas-touch-floor atlas-touch-floor-wide mt-4'})}>{t('browserAction')}</Link>
                 </div>
               </>} />
             )}

@@ -2179,8 +2179,10 @@
       "coreAriaLabel": "What to look at",
       "libraryTab": {
         "empty": "This folder holds no sources and no wiki pages yet. Add a source in the library and they are counted here.",
-        "open": "Open the library",
+        "view": "View in the library",
+        "findingCount": "{count, plural, one {# finding} other {# findings}}",
         "more": "{count, number} more",
+        "end": "That is everything the wiki analysis found. When a source changes or a pass runs, its results join the list above.",
         "stale": {
           "title": "{count, number} pages whose source changed",
           "caption": "A cited source changed. Review the affected content and update the page if needed.",
@@ -2194,7 +2196,9 @@
         "check": {
           "title": "{count, number} findings in the format check",
           "caption": "{pages, number} pages checked · {unmeasured, number} not read yet",
-          "none": "Nothing was flagged."
+          "none": "Nothing was flagged.",
+          "blocking": "{count, number} to fix",
+          "advisory": "{count, number} advisory"
         },
         "rounds": {
           "title": "{count, number} unattended passes",
@@ -2303,7 +2307,8 @@
           },
           "inventoryCaption": "{guides, number} guide files · {checks, number} check items.",
           "diagramCaption": "Diagram numbers count scoped declarations attributed to each domain; they do not show execution results.",
-          "findingSummary": "{count, number} findings in Harness",
+          "findingSummary": "Open in Harness",
+          "coverage": "{role} in {covered, number} of {total, number}",
           "role": {
             "told": "Instructions",
             "gated": "Hooks",

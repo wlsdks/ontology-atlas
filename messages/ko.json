@@ -2179,8 +2179,10 @@
       "coreAriaLabel": "분석에서 볼 것",
       "libraryTab": {
         "empty": "이 폴더엔 아직 원문도 위키 페이지도 없어요. 자료실에서 원문을 넣으면 여기서 세요.",
-        "open": "자료실 열기",
+        "view": "자료실에서 보기",
+        "findingCount": "{count, number}건",
         "more": "{count, number}개 더",
+        "end": "위키 분석은 여기까지예요. 원문이 바뀌거나 자동 점검이 돌면 그 결과가 이 위에 더해져요.",
         "stale": {
           "title": "원문이 바뀐 페이지 {count, number}개",
           "caption": "인용한 원문이 바뀌었어요. 영향을 받은 내용을 확인하고 필요하면 페이지를 고쳐 주세요.",
@@ -2194,7 +2196,9 @@
         "check": {
           "title": "서식 점검에서 걸린 것 {count, number}건",
           "caption": "페이지 {pages, number}개 검사 · 아직 못 읽은 페이지 {unmeasured, number}개",
-          "none": "걸린 것이 없어요."
+          "none": "걸린 것이 없어요.",
+          "blocking": "고칠 것 {count, number}건",
+          "advisory": "참고 {count, number}건"
         },
         "rounds": {
           "title": "자동 점검 회차 {count, number}회",
@@ -2303,7 +2307,8 @@
           },
           "inventoryCaption": "지침 파일 {guides, number}개 · 검사 항목 {checks, number}개.",
           "diagramCaption": "도표의 숫자는 도메인에 귀속된 경로 한정 선언 수예요. 실행 결과를 뜻하지 않아요.",
-          "findingSummary": "하네스에서 점검 항목 {count, number}건 보기",
+          "findingSummary": "하네스에서 보기",
+          "coverage": "{role} {covered, number}/{total, number}곳",
           "role": {
             "told": "작업 지침",
             "gated": "훅",
