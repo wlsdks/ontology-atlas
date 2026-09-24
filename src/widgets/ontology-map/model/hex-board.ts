@@ -38,7 +38,7 @@ import {
 
 /* ── input ──────────────────────────────────────────────────────────────── */
 
-export type HexTileKind = "project" | "domain" | "capability";
+type HexTileKind = "project" | "domain" | "capability";
 
 /** Which text a width is asked for, so the renderer answers with its real fonts. */
 export type HexTextRole = "capability" | "capabilityStrong" | "domain" | "meta" | "project" | "mono" | "plate" | "plateMeta";
@@ -88,7 +88,7 @@ export interface HexTile {
   ring: number;
 }
 
-export interface HexRegion {
+interface HexRegion {
   domainId: string;
   seed: Axial;
   /** Every occupied cell of the region: its title tile first, then its capabilities. */
@@ -97,12 +97,12 @@ export interface HexRegion {
   elementCount: number;
 }
 
-export interface HexDependency {
+interface HexDependency {
   from: string;
   to: string;
 }
 
-export interface HexCanal {
+interface HexCanal {
   fromDomain: string;
   toDomain: string;
   /** Relations counted in both directions when the canal is two-way. */
@@ -513,7 +513,7 @@ export function computeHexBoard(
 /* ── cell size, gutters, bands ──────────────────────────────────────────── */
 
 /** Largest cell size at rest (spec §1). */
-export const HEX_MAX_FIT_RADIUS = 60;
+const HEX_MAX_FIT_RADIUS = 60;
 /** The zoom clamp (spec §6). */
 export const HEX_MIN_RADIUS = 8;
 export const HEX_MAX_RADIUS = 96;
@@ -556,7 +556,7 @@ export interface HexTextLine {
 }
 
 /** Word-boundary wrap at `maxW`; a single word longer than `maxW` stays whole (and then fails the fit). */
-export function wrapWords(text: string, role: HexTextRole, maxW: number, measure: HexMeasure): string[] {
+function wrapWords(text: string, role: HexTextRole, maxW: number, measure: HexMeasure): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let cur = "";
@@ -625,7 +625,7 @@ export function hexTileLines(
     const lines = wrapWords(tile.name, "domain", 1.25 * R, measure);
     const two = lines.length > 1;
     // Two title lines sit 2 px higher than the spec's −17/−1 so the counts line lands where the
-    // face is still wide enough for "역량 11 · 요소 16" at the 1280 fit.
+    // face is still wide enough for the counts line ("11 capabilities · 16 elements") at 1280.
     // With no counts to carry (the band below the counts' own fit), the name sits centred,
     // where the face is widest.
     const bare = !extras.meta && !extras.stale;

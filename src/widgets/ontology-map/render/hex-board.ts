@@ -83,7 +83,7 @@ export interface HexDrawState {
   staleFiles: ReadonlyMap<string, string>;
   /** Stale capabilities per domain; null when evidence is not measured. */
   staleByDomain: ReadonlyMap<string, number> | null;
-  /** Domain title lines ("역량 n · 요소 n", "◐ 낡음 n") and the project's count line. */
+  /** Domain title lines (the counts line and the stale line) and the project's count line. */
   domainMeta: ReadonlyMap<string, { meta: string; stale: string | null }>;
   projectMeta: string | null;
   /** Region nameplate words for the far band: name plus "caps · ◐ stale". */
@@ -137,7 +137,7 @@ function parseHex(hex: string): [number, number, number] | null {
 }
 
 /** Mix a hex token toward white (`to` 255) or black (`to` 0) by `t`. */
-export function mixHex(hex: string, t: number, to: 0 | 255): string {
+function mixHex(hex: string, t: number, to: 0 | 255): string {
   const rgb = parseHex(hex);
   if (!rgb) return hex;
   const c = rgb.map((v) => Math.round(v * (1 - t) + to * t));
@@ -222,7 +222,7 @@ function easeArrive(t: number): number {
 }
 
 /** Arrival timing (spec §8). */
-export const HEX_ARRIVAL = { tileMs: 220, ringStaggerMs: 28, routesMs: 160 } as const;
+const HEX_ARRIVAL = { tileMs: 220, ringStaggerMs: 28, routesMs: 160 } as const;
 
 export function hexArrivalDuration(maxRing: number, reduced: boolean): number {
   if (reduced) return 0;
@@ -240,7 +240,7 @@ function arrivalOf(ring: number, ms: number | null, reduced: boolean): { a: numb
 /* ── text ───────────────────────────────────────────────────────────────── */
 
 /** The lines a tile shows in the names band — the same call the tests and the mirror use. */
-export function hexLinesFor(
+function hexLinesFor(
   tile: HexTile,
   R: number,
   measure: HexMeasure,

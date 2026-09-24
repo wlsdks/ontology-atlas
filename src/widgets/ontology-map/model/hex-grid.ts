@@ -93,12 +93,6 @@ export function hexSpiral(count: number): Axial[] {
   return out.slice(0, count);
 }
 
-/** Corner `i` of a cell of circumradius `radius` centred on `(x, y)`. */
-export function hexCorner(x: number, y: number, radius: number, i: number): { x: number; y: number } {
-  const a = (i * Math.PI) / 3;
-  return { x: x + radius * Math.cos(a), y: y + radius * Math.sin(a) };
-}
-
 /** Rings needed to hold `n` cells round a centre that is itself taken. */
 export function ringsFor(n: number): number {
   let k = 0;

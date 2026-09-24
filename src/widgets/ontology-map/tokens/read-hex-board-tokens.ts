@@ -90,7 +90,7 @@ const VARS = {
   ground: "--map-canvas-bg-near",
 } as const;
 
-export class HexBoardTokenError extends Error {
+class HexBoardTokenError extends Error {
   constructor(readonly missing: readonly string[]) {
     super(`Hex board token drift: missing/empty ${missing.join(", ")}`);
     this.name = "HexBoardTokenError";
@@ -98,7 +98,7 @@ export class HexBoardTokenError extends Error {
 }
 
 /** Resolve every token from a `getPropertyValue`; throws when any is empty. */
-export function resolveHexBoardTokens(get: (cssVar: string) => string): HexBoardTokens {
+function resolveHexBoardTokens(get: (cssVar: string) => string): HexBoardTokens {
   const missing: string[] = [];
   const one = (v: string) => {
     const raw = get(v).trim();
