@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { composerStatusLive, WORKING_SHIMMER_CLASS, workingShimmer } from './working-ink';
+import { composerStatusLive, toolRowPhase, WORKING_SHIMMER_CLASS, workingShimmer } from './working-ink';
 
 describe('working ink', () => {
   it('gives the shimmer only to work still in flight', () => {
@@ -17,5 +17,13 @@ describe('working ink', () => {
     for (const settled of ['ready', 'starting', 'error', 'closed']) {
       expect(composerStatusLive(settled, false)).toBe(false);
     }
+  });
+
+  it('stills a call that waits on the person, and only a call still open can wait', () => {
+    expect(toolRowPhase(true, false)).toBe('running');
+    expect(toolRowPhase(true, true)).toBe('awaiting');
+    expect(toolRowPhase(false, true)).toBe('settled');
+    expect(toolRowPhase(false, false)).toBe('settled');
+    expect(workingShimmer(toolRowPhase(true, true) === 'running')).toBeUndefined();
   });
 });

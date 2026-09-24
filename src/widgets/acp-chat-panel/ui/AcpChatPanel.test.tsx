@@ -444,6 +444,35 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     expect(screen.getByText('어디부터').tagName).toBe('STRONG');
   });
 
+  it('a call waiting on the person stays still and says so, while a running one sweeps', async () => {
+    bridge.verdict = 'allow-inside-vault';
+    await bootSession();
+    await startUserTurn('go');
+    for (const [toolCallId, title, kind] of [
+      ['tc-run', 'mcp__atlas-vault__list_concepts', 'read'],
+      ['tc1', 'Write /vault/notes.md', 'edit'],
+    ]) {
+      emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: { update: { sessionUpdate: 'tool_call', toolCallId, title, kind, status: 'pending' } },
+      });
+    }
+    emit(permissionRequest('/vault/notes.md', 77, 'edit'));
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+
+    const rows = [...document.querySelectorAll<HTMLElement>('[data-acp-entry="tool"]')];
+    const waiting = rows.find((row) => row.getAttribute('data-tool-phase') === 'awaiting');
+    const running = rows.find((row) => row.getAttribute('data-tool-phase') === 'running');
+    expect(waiting).toBeDefined();
+    expect(running).toBeDefined();
+    expect(waiting!.querySelectorAll('.acp-working-shimmer')).toHaveLength(0);
+    expect(waiting!.querySelector('[data-testid="acp-chat-tool-outcome"]')).toHaveTextContent('status.awaiting');
+    expect(running!.querySelector('[data-tool-label-text]')).toHaveClass('acp-working-shimmer');
+    // The composer agrees: waiting on the person, not working.
+    expect(screen.getByTestId('acp-status-words')).not.toHaveClass('acp-working-shimmer');
+  });
+
   it('an active work group sweeps its title, and a finished one does not', async () => {
     await bootSession();
     await startUserTurn('go');

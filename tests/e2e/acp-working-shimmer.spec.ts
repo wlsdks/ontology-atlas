@@ -74,6 +74,18 @@ test('a running call and the thinking status sweep, and the call stills once it 
   expect(landed!.animationName).toBe('none');
   expect(landed!.backgroundImage).toBe('none');
   expect(landed!.running).toBe(false);
+
+  // The harness's next call is a write that stops on a permission request. It is still open, but
+  // the work is in the person's hands: no sweep, and it says it waits on them like the composer.
+  const WAITING = '[data-acp-entry="tool"][data-tool-phase="awaiting"]';
+  await expect(page.locator(WAITING)).toBeVisible();
+  await expect(page.locator(`${WAITING} [data-testid="acp-chat-tool-outcome"]`)).toHaveText('Waiting for you');
+  for (const selector of [`${WAITING} [data-tool-label-text]`, `${WAITING} [data-testid="acp-chat-tool-outcome"]`, STATUS]) {
+    const waiting = await ink(page, selector);
+    expect(waiting!.animationName, selector).toBe('none');
+    expect(waiting!.running, selector).toBe(false);
+    expect(waiting!.backgroundImage, selector).toBe('none');
+  }
 });
 
 test('reduced motion keeps the running words still and plainly legible', async ({ page }) => {

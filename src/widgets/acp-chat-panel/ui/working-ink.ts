@@ -28,3 +28,18 @@ export function workingShimmer(live: boolean): string | undefined {
 export function composerStatusLive(footerStatus: string, silent: boolean): boolean {
   return footerStatus === 'thinking' && !silent;
 }
+
+/**
+ * What a tool row is doing right now.
+ *
+ * `running` sweeps. `awaiting` is a call the agent opened and cannot continue until the person
+ * answers its permission request: it is still open, but the work is in the person's hands, so it
+ * is still and says so — the same state the composer shows as 「waiting for you」. `settled` is
+ * every row whose call has landed or was abandoned.
+ */
+export type ToolRowPhase = 'running' | 'awaiting' | 'settled';
+
+export function toolRowPhase(running: boolean, awaitingPermission: boolean): ToolRowPhase {
+  if (!running) return 'settled';
+  return awaitingPermission ? 'awaiting' : 'running';
+}
