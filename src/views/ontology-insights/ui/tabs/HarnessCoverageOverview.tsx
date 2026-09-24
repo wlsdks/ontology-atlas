@@ -316,11 +316,11 @@ export function HarnessCoverageOverview({
         </div>
         {mode === 'diagram' ? (
           <div className={styles.domainGrid} data-guidance-domain-grid>
-            {evidence.areas.map((area) => <DomainGroup key={area.slug} area={area} selected={selected} triggerRefs={triggerRefs} controlsId={narrow ? 'harness-role-evidence-dialog-content' : 'harness-role-evidence-popup'} onSelect={select} />)}
+            {evidence.areas.map((area) => <DomainGroup key={area.slug} area={area} selected={selected} triggerRefs={triggerRefs} controlsId={narrow ? 'harness-role-evidence-dialog-content' : 'harness-role-evidence-popup'} weakestColumn={weakestColumn} onSelect={select} />)}
           </div>
         ) : (
           <div className={styles.textList} data-testid="guidance-text-list">
-            {evidence.areas.map((area) => <TextDomainRow key={area.slug} area={area} selected={selected} triggerRefs={triggerRefs} controlsId={narrow ? 'harness-role-evidence-dialog-content' : 'harness-role-evidence-popup'} onSelect={select} />)}
+            {evidence.areas.map((area) => <TextDomainRow key={area.slug} area={area} selected={selected} triggerRefs={triggerRefs} controlsId={narrow ? 'harness-role-evidence-dialog-content' : 'harness-role-evidence-popup'} weakestColumn={weakestColumn} onSelect={select} />)}
           </div>
         )}
       </div>
@@ -363,125 +363,124 @@ export function HarnessCoverageOverview({
   );
 }
 
-function DomainGroup({
-  area,
-  selected,
-  triggerRefs,
-  controlsId,
-  onSelect,
-}: {
+interface RoleChipProps {
   area: Area;
+  column: CoverageColumn;
   selected: Selection | null;
   triggerRefs: MutableRefObject<Map<string, HTMLButtonElement>>;
   controlsId: string;
+  weakestColumn: CoverageColumn | null;
   onSelect: (selection: Selection, trigger: HTMLButtonElement) => void;
-}) {
+}
+
+/*
+ * One chip grammar for both reading modes: mark, role, count, at the chip's own width. An empty
+ * role in the column that reaches the fewest domains wears the same warning ink as that column's
+ * coverage line in the header, so the header's one highlighted gap points at the places it counts.
+ */
+function RoleChip({ area, column, selected, triggerRefs, controlsId, weakestColumn, onSelect }: RoleChipProps) {
   const t = useTranslations('ontologyPages.insights.harnessTab.visual');
+  const selection: Selection = { kind: 'domain', areaSlug: area.slug, column };
+  const key = selectionKey(selection);
+  const count = area.roles[column].declarations.length;
+  const isSelected = selected ? selectionKey(selected) === key : false;
+  return (
+    <button
+      ref={(node) => { if (node) triggerRefs.current.set(key, node); else triggerRefs.current.delete(key); }}
+      type="button"
+      data-role={column}
+      data-state={count === 0 ? 'empty' : 'filled'}
+      data-weakest={count === 0 && column === weakestColumn ? 'true' : undefined}
+      aria-expanded={isSelected}
+      aria-haspopup="dialog"
+      aria-controls={controlsId}
+      aria-label={count === 0
+        ? t('emptyRoleLabel', { domain: area.title, role: t(`role.${column}`) })
+        : t('filledRoleLabel', { domain: area.title, role: t(`role.${column}`), count })}
+      onClick={(event) => onSelect(selection, event.currentTarget)}
+      className={controlClass({
+        shape: 'chip',
+        size: 'md',
+        active: isSelected,
+        hoverSurface: 'lift',
+        className: styles.role,
+      })}
+    >
+      <span className={styles.roleMark} aria-hidden />
+      <span>{t(`role.${column}`)}</span>
+      <span className={`font-mono tabular-nums ${styles.roleCount}`}>{count}</span>
+    </button>
+  );
+}
+
+type RowProps = Omit<RoleChipProps, 'column'>;
+
+/*
+ * The tree grows with its grid cell: the two stems take whatever height the row gives the domain,
+ * so the domains fill the field instead of floating in it. The fork sits just above the two lower
+ * chips, which keeps the drawing a tree however tall the stems get.
+ */
+function DomainGroup(props: RowProps) {
+  const { area } = props;
   const domainRef = useRef<HTMLElement | null>(null);
-  const [connectionWidth, setConnectionWidth] = useState(100);
+  const topRef = useRef<SVGSVGElement | null>(null);
+  const lowerRef = useRef<SVGSVGElement | null>(null);
+  const [size, setSize] = useState({ width: 100, top: 12, lower: 14 });
   useLayoutEffect(() => {
     const domain = domainRef.current;
     if (!domain) return;
-    const measure = () => setConnectionWidth(domain.getBoundingClientRect().width || 100);
+    const measure = () => {
+      const next = {
+        width: domain.getBoundingClientRect().width || 100,
+        top: topRef.current?.getBoundingClientRect().height || 12,
+        lower: lowerRef.current?.getBoundingClientRect().height || 14,
+      };
+      setSize((current) => current.width === next.width && current.top === next.top && current.lower === next.lower ? current : next);
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(domain);
     return () => observer.disconnect();
   }, []);
-  const roleButton = (column: CoverageColumn) => {
-    const selection: Selection = { kind: 'domain', areaSlug: area.slug, column };
-    const key = selectionKey(selection);
-    const count = area.roles[column].declarations.length;
-    const isSelected = selected ? selectionKey(selected) === key : false;
-    return (
-      <button
-        ref={(node) => { if (node) triggerRefs.current.set(key, node); else triggerRefs.current.delete(key); }}
-        type="button"
-        data-role={column}
-        data-state={count === 0 ? 'empty' : 'filled'}
-        aria-expanded={isSelected}
-        aria-haspopup="dialog"
-        aria-controls={controlsId}
-        aria-label={count === 0
-          ? t('emptyRoleLabel', { domain: area.title, role: t(`role.${column}`) })
-          : t('filledRoleLabel', { domain: area.title, role: t(`role.${column}`), count })}
-        onClick={(event) => onSelect(selection, event.currentTarget)}
-        className={controlClass({
-          shape: 'chip',
-          size: 'md',
-          active: isSelected,
-          hoverSurface: 'lift',
-          className: styles.role,
-        })}
-      >
-        <span className={styles.roleMark} aria-hidden />
-        <span>{t(`role.${column}`)}</span>
-        <span className="font-mono tabular-nums">{count}</span>
-      </button>
-    );
-  };
   const told = area.roles.told.declarations.length > 0;
   const gated = area.roles.gated.declarations.length > 0;
   const watched = area.roles.watched.declarations.length > 0;
+  const { width, top, lower } = size;
   const lowerGap = 10;
-  const gatedX = (connectionWidth - lowerGap) / 4;
-  const watchedX = connectionWidth - gatedX;
+  const gatedX = (width - lowerGap) / 4;
+  const watchedX = width - gatedX;
+  const fork = Math.max(0, lower - 7);
+  const topPath = `M ${width / 2} 0 V ${top}`;
+  const gatedPath = `M ${width / 2} 0 V ${fork} H ${gatedX} V ${lower}`;
+  const watchedPath = `M ${width / 2} 0 V ${fork} H ${watchedX} V ${lower}`;
   return (
     <section ref={domainRef} className={styles.domain} aria-label={area.title} data-testid={`harness-domain-${area.slug}`}>
-      <div className={styles.topRole}>{roleButton('told')}</div>
-      <svg className={styles.topConnection} viewBox={`0 0 ${connectionWidth} 12`} preserveAspectRatio="none" aria-hidden>
-        {told ? <path data-role-connection="told" d={`M ${connectionWidth / 2} 0 V 12`} /> : <path data-role-connection-empty="told" data-empty d={`M ${connectionWidth / 2} 0 V 12`} />}
+      <div className={styles.topRole}><RoleChip {...props} column="told" /></div>
+      <svg ref={topRef} className={styles.topConnection} viewBox={`0 0 ${width} ${top}`} preserveAspectRatio="none" aria-hidden>
+        {told ? <path data-role-connection="told" d={topPath} /> : <path data-role-connection-empty="told" data-empty d={topPath} />}
       </svg>
       <h4 className={styles.domainName} data-domain-heading>{area.title}</h4>
-      <svg className={styles.lowerConnections} viewBox={`0 0 ${connectionWidth} 14`} preserveAspectRatio="none" aria-hidden>
-        {gated ? <path data-role-connection="gated" d={`M ${connectionWidth / 2} 0 V 7 H ${gatedX} V 14`} /> : <path data-role-connection-empty="gated" data-empty d={`M ${connectionWidth / 2} 0 V 7 H ${gatedX} V 14`} />}
-        {watched ? <path data-role-connection="watched" d={`M ${connectionWidth / 2} 0 V 7 H ${watchedX} V 14`} /> : <path data-role-connection-empty="watched" data-empty d={`M ${connectionWidth / 2} 0 V 7 H ${watchedX} V 14`} />}
+      <svg ref={lowerRef} className={styles.lowerConnections} viewBox={`0 0 ${width} ${lower}`} preserveAspectRatio="none" aria-hidden>
+        {/* The two branches share the stem under the name. When one branch is declared, the empty
+            one starts at the fork, so the shared stem is drawn once, solid, and a translucent
+            solid stroke never shows dashes through it. */}
+        {gated ? <path data-role-connection="gated" d={gatedPath} /> : <path data-role-connection-empty="gated" data-empty d={watched ? `M ${width / 2} ${fork} H ${gatedX} V ${lower}` : gatedPath} />}
+        {watched ? <path data-role-connection="watched" d={watchedPath} /> : <path data-role-connection-empty="watched" data-empty d={gated ? `M ${width / 2} ${fork} H ${watchedX} V ${lower}` : watchedPath} />}
       </svg>
-      <div className={styles.lowerRoles}>{roleButton('gated')}{roleButton('watched')}</div>
+      <div className={styles.lowerRoles}><RoleChip {...props} column="gated" /><RoleChip {...props} column="watched" /></div>
     </section>
   );
 }
 
-function TextDomainRow(props: {
-  area: Area;
-  selected: Selection | null;
-  triggerRefs: MutableRefObject<Map<string, HTMLButtonElement>>;
-  controlsId: string;
-  onSelect: (selection: Selection, trigger: HTMLButtonElement) => void;
-}) {
-  const { area, selected, triggerRefs, controlsId, onSelect } = props;
-  const t = useTranslations('ontologyPages.insights.harnessTab.visual');
+function TextDomainRow(props: RowProps) {
+  const { area } = props;
   return (
     <section className={styles.textRow} data-testid={`harness-text-domain-${area.slug}`}>
       <div className="min-w-0">
         <h4 className="break-words text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{area.title}</h4>
         <p className="mt-1 break-words text-label text-[color:var(--color-text-tertiary)]">{area.purpose}</p>
       </div>
-      <div className="contents">
-        {(['told', 'gated', 'watched'] as const).map((column) => {
-          const selection: Selection = { kind: 'domain', areaSlug: area.slug, column };
-          const key = selectionKey(selection);
-          const count = area.roles[column].declarations.length;
-          const isSelected = selected ? selectionKey(selected) === key : false;
-          return (
-            <button
-              key={column}
-              ref={(node) => { if (node) triggerRefs.current.set(key, node); else triggerRefs.current.delete(key); }}
-              type="button"
-              data-role={column}
-              data-state={count === 0 ? 'empty' : 'filled'}
-              aria-expanded={isSelected}
-              aria-haspopup="dialog"
-              aria-controls={controlsId}
-              aria-label={count === 0 ? t('emptyRoleLabel', { domain: area.title, role: t(`role.${column}`) }) : t('filledRoleLabel', { domain: area.title, role: t(`role.${column}`), count })}
-              onClick={(event) => onSelect(selection, event.currentTarget)}
-              className={controlClass({ shape: 'chip', size: 'md', active: isSelected, hoverSurface: 'lift', className: styles.textRole })}
-            >
-              <span className="min-w-0 break-keep">{t(`role.${column}`)}</span><span className={count === 0 ? 'font-mono tabular-nums text-[color:var(--color-text-quaternary)]' : 'font-mono tabular-nums text-[color:var(--color-text-primary)]'}>{count}</span>
-            </button>
-          );
-        })}
-      </div>
+      {(['told', 'gated', 'watched'] as const).map((column) => <RoleChip key={column} {...props} column={column} />)}
     </section>
   );
 }

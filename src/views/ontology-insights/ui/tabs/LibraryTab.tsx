@@ -39,6 +39,8 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
   }
   const blocking = detail.findings.filter((finding) => !finding.advisory);
   const advisory = detail.findings.filter((finding) => finding.advisory);
+  const blockingTotal = blocking.reduce((sum, finding) => sum + finding.count, 0);
+  const advisoryTotal = advisory.reduce((sum, finding) => sum + finding.count, 0);
   const shownFindings = [...blocking, ...advisory].slice(0, ROWS);
   const shownBlocking = shownFindings.filter((finding) => !finding.advisory);
   const shownAdvisory = shownFindings.filter((finding) => finding.advisory);
@@ -61,20 +63,24 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
     {
       key: 'check',
       size: detail.findings.length,
-      title: t('check.title', { count: blocking.reduce((sum, finding) => sum + finding.count, 0) }),
+      title: t('check.title', { count: blockingTotal + advisoryTotal }),
       none: t('check.none'),
       caption: t('check.caption', { pages: detail.pageCount, unmeasured: detail.unmeasured }),
       href: '/library/?tab=wiki',
-      body: (
-        <>
-          {shownBlocking.map(findingRow)}
-          {shownAdvisory.length > 0 ? (
-            <li data-library-advisory-label className="pt-4 pb-1 text-label text-[color:var(--color-text-tertiary)]">
-              {t('check.advisory', { count: advisory.reduce((sum, finding) => sum + finding.count, 0) })}
-            </li>
-          ) : null}
-          {shownAdvisory.map(findingRow)}
-        </>
+      /*
+       * Findings to fix and advisory findings are two groups, each under its own heading. From
+       * 1280 they stand side by side, so the card's width holds two short lists instead of one
+       * list whose rows stop a third of the way across.
+       */
+      body: shownBlocking.length > 0 && shownAdvisory.length > 0 ? (
+        <div className="grid grid-cols-1 gap-x-10 gap-y-5 xl:grid-cols-2">
+          <FindingGroup marker="blocking" label={t('check.blocking', { count: blockingTotal })}>{shownBlocking.map(findingRow)}</FindingGroup>
+          <FindingGroup marker="advisory" label={t('check.advisory', { count: advisoryTotal })}>{shownAdvisory.map(findingRow)}</FindingGroup>
+        </div>
+      ) : shownAdvisory.length > 0 ? (
+        <FindingGroup marker="advisory" label={t('check.advisory', { count: advisoryTotal })}>{shownAdvisory.map(findingRow)}</FindingGroup>
+      ) : (
+        <RowList>{shownBlocking.map(findingRow)}</RowList>
       ),
     },
     {
@@ -84,9 +90,9 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
       none: t('stale.none'),
       caption: t('stale.caption'),
       href: '/library/?tab=wiki',
-      body: detail.stalePages.slice(0, ROWS).map((row) => (
+      body: <RowList>{detail.stalePages.slice(0, ROWS).map((row) => (
         <Row key={row.slug} name={row.slug.replace(/^wiki\//, '')} detail={row.sources.join(', ')} />
-      )),
+      ))}</RowList>,
     },
     {
       key: 'unwritten',
@@ -95,7 +101,7 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
       none: t('unwritten.none'),
       caption: t('unwritten.caption'),
       href: '/library/?tab=sources',
-      body: detail.unwrittenSources.slice(0, ROWS).map((path) => <Row key={path} name={path.replace(/^sources\//, '')} detail="" />),
+      body: <RowList>{detail.unwrittenSources.slice(0, ROWS).map((path) => <Row key={path} name={path.replace(/^sources\//, '')} detail="" />)}</RowList>,
     },
     {
       key: 'rounds',
@@ -106,21 +112,31 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
       href: '/library/?tab=rounds',
       // The ledger lists every pass it kept; nothing is cut, so there is no remainder line.
       shownOverride: detail.passes.length,
-      body: detail.passes.map((pass) => (
+      body: <RowList>{detail.passes.map((pass) => (
         <Row
           key={`${pass.endedAt}-${pass.outcome}`}
           name={t(`outcome.${pass.outcome}` as never, { defaultValue: pass.outcome } as never)}
           detail={`${format.relativeTime(new Date(pass.endedAt), nowMs)} · ${pass.summary}`}
         />
-      )),
+      ))}</RowList>,
     },
   ];
   const filled = cards.filter((card) => card.size > 0);
   const clear = cards.filter((card) => card.size === 0);
+  const beside = filled.length > 0 && clear.length > 0;
+  /*
+   * From 1280 the quiet statuses stand beside the cards instead of under them: the lead card keeps
+   * a bounded row length (a count used to sit ~1450px from its name) and the tab reads as one
+   * block, what to act on and what is clear, with both columns starting on the same line.
+   */
   return (
-    <section data-testid="library-tab" className="flex flex-col gap-[var(--card-gap)]">
+    <section
+      data-testid="library-tab"
+      data-library-layout={beside ? 'beside' : 'stacked'}
+      className={cn('grid grid-cols-1 gap-[var(--card-gap)]', beside && 'xl:grid-cols-[minmax(0,1fr)_20rem]')}
+    >
       {filled.length > 0 ? (
-        <div className="grid grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-2">
+        <div className="grid grid-cols-1 content-start gap-[var(--card-gap)] lg:grid-cols-2">
           {filled.map((card, index) => (
             <Card
               key={card.key}
@@ -135,11 +151,11 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
       ) : null}
       {clear.length > 0 ? (
         <div data-library-clear className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-          <ul className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <ul className={cn('flex flex-wrap gap-x-6 gap-y-2', beside && 'xl:flex-col xl:gap-3')}>
             {clear.map((card) => (
-              <li key={card.key} data-library-clear-item={card.key} className="flex items-center gap-2 text-body tabular-nums text-[color:var(--color-text-secondary)]">
-                <span aria-hidden className="h-1.5 w-1.5 flex-none rounded-full bg-[color:var(--color-text-quaternary)]" />
-                {card.none}
+              <li key={card.key} data-library-clear-item={card.key} className="flex items-baseline gap-2 break-keep text-body tabular-nums text-[color:var(--color-text-secondary)]">
+                <span aria-hidden className="h-1.5 w-1.5 flex-none translate-y-[-0.15em] rounded-full bg-[color:var(--color-text-quaternary)]" />
+                <span className="min-w-0">{card.none}</span>
               </li>
             ))}
           </ul>
@@ -220,7 +236,7 @@ function Card({ card, lead, wide, footer }: { card: LibraryCard; lead: boolean; 
     >
       <h3 className="text-body-lg font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-primary)]">{card.title}</h3>
       <p className="mt-1 break-keep text-label text-[color:var(--color-text-tertiary)]">{card.caption}</p>
-      <ul className="mt-3 flex flex-col divide-y divide-[color:var(--color-divider)]">{card.body}</ul>
+      <div className="mt-3">{card.body}</div>
       <div className="mt-auto pt-3">{footer}</div>
     </div>
   );
@@ -239,25 +255,43 @@ function CardFooter({ card, label, more }: { card: LibraryCard; label: string; m
     : link;
 }
 
+/*
+ * A group's heading is its own element above its own list; as a list item it took the list's
+ * dividers and read as an empty row.
+ */
+function FindingGroup({ marker, label, children }: { marker: 'blocking' | 'advisory'; label: string; children: React.ReactNode }) {
+  return (
+    <div data-library-finding-group={marker} className="min-w-0">
+      <h4 data-library-advisory-label={marker === 'advisory' ? '' : undefined} className="text-label font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-tertiary)]">{label}</h4>
+      <RowList className="mt-1">{children}</RowList>
+    </div>
+  );
+}
+
+function RowList({ className, children }: { className?: string; children: React.ReactNode }) {
+  return <ul className={cn('flex flex-col divide-y divide-[color:var(--color-divider)]', className)}>{children}</ul>;
+}
+
+/** The count sits beside the name it counts, so a wide card never sends the eye across the row. */
 function Row({ name, detail, count, tone }: { name: string; detail: string; count?: string; tone?: 'blocking' | 'advisory' }) {
   return (
-    <li data-library-row={tone} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 py-2.5">
-      <span className="min-w-0">
-        <span className={cn('block break-words text-body', tone === 'advisory' ? 'text-[color:var(--color-text-secondary)]' : 'text-[color:var(--color-text-primary)]')}>{name}</span>
-        {detail ? <span className="mt-0.5 block break-all text-label text-[color:var(--color-text-tertiary)]">{detail}</span> : null}
+    <li data-library-row={tone} className="min-w-0 py-2.5">
+      <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <span className={cn('min-w-0 break-words text-body', tone === 'advisory' ? 'text-[color:var(--color-text-secondary)]' : 'text-[color:var(--color-text-primary)]')}>{name}</span>
+        {count ? (
+          <span
+            className={badgeClass({
+              shape: 'tag',
+              className: cn('inline-flex min-h-6 items-center border font-mono tabular-nums', tone === 'blocking'
+                ? 'border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a08)] text-[color:var(--color-status-warning)]'
+                : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)]'),
+            })}
+          >
+            {count}
+          </span>
+        ) : null}
       </span>
-      {count ? (
-        <span
-          className={badgeClass({
-            shape: 'tag',
-            className: cn('inline-flex min-h-6 items-center border font-mono tabular-nums', tone === 'blocking'
-              ? 'border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a08)] text-[color:var(--color-status-warning)]'
-              : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)]'),
-          })}
-        >
-          {count}
-        </span>
-      ) : null}
+      {detail ? <span className="mt-0.5 block break-all text-label text-[color:var(--color-text-tertiary)]">{detail}</span> : null}
     </li>
   );
 }

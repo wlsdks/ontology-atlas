@@ -2180,6 +2180,7 @@
           "title": "{count, number} findings in the format check",
           "caption": "{pages, number} pages checked · {unmeasured, number} not read yet",
           "none": "Nothing was flagged.",
+          "blocking": "{count, number} to fix",
           "advisory": "{count, number} advisory"
         },
         "rounds": {

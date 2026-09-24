@@ -493,10 +493,10 @@ function HarnessPageInner() {
             ) : reportState.status === 'no-source' ? (
               <GuidanceRelationshipPreview footer={<>
                 <div className="min-w-0 max-w-prose">
-                  <p className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('noSource')}</p>
-                  <p className="mt-2 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('noSourceBody')}</p>
+                  <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('noSource')}</p>
+                  <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('noSourceBody')}</p>
                 </div>
-                <Link href="/projects/" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide'})}>{t('connectSourceAction')}</Link>
+                <Link href="/projects/" className={controlClass({shape:'pill',size:'lg',tone:'onAccent',className:'atlas-touch-floor atlas-touch-floor-wide'})}>{t('connectSourceAction')}</Link>
               </>} />
             ) : reportState.status === 'failed' ? (
               /* A dead end with no way out was the one irreversible state on a read-only screen. */
@@ -514,10 +514,10 @@ function HarnessPageInner() {
                  and call it the harness. */
               <GuidanceRelationshipPreview footer={<>
                 <div className="min-w-0 max-w-prose">
-                  <p className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('browserOnly')}</p>
-                  <p className="mt-2 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('browserOnlyBody')}</p>
+                  <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('browserOnly')}</p>
+                  <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('browserOnlyBody')}</p>
                 </div>
-                <Link href="/download/" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide'})}>{t('browserAction')}</Link>
+                <Link href="/download/" className={controlClass({shape:'pill',size:'lg',tone:'onAccent',className:'atlas-touch-floor atlas-touch-floor-wide'})}>{t('browserAction')}</Link>
               </>} />
             )}
           </div>

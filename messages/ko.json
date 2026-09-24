@@ -2180,6 +2180,7 @@
           "title": "서식 점검에서 걸린 것 {count, number}건",
           "caption": "페이지 {pages, number}개 검사 · 아직 못 읽은 페이지 {unmeasured, number}개",
           "none": "걸린 것이 없어요.",
+          "blocking": "고칠 것 {count, number}건",
           "advisory": "참고 {count, number}건"
         },
         "rounds": {
