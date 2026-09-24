@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { controlClass } from "@/shared/ui/control-class";
-import { Disclosure } from "@/shared/ui";
+import { Button, Disclosure } from "@/shared/ui";
+import { CopyAgentTextButton } from "../parts/CopyAgentTextButton";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 import { flowHeadingChanges, type FlowVersion } from "../../lib/flow-history";
 
@@ -105,8 +104,6 @@ export function FlowTab({
   agentChecking = false,
   onPrefill,
 }: FlowTabProps) {
-  const [copied, setCopied] = useState(false);
-
   if (!hasGraph) {
     return (
       <section className="flex flex-col gap-3" data-testid="flow-tab">
@@ -117,17 +114,6 @@ export function FlowTab({
   }
 
   const pressable = canLaunchAgent && hasOwnFolder && Boolean(onPrefill);
-
-  async function copyRequest() {
-    try {
-      await navigator.clipboard.writeText(request);
-      setCopied(true);
-    } catch {
-      // A denied clipboard is not an error worth a banner; the text is on screen
-      // and selectable, which is the fallback the person already has.
-      setCopied(false);
-    }
-  }
 
   const latest = versions?.[0] ?? null;
   const previous = versions?.[1] ?? null;
@@ -192,14 +178,16 @@ export function FlowTab({
         </p>
       ) : pressable ? (
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            className={controlClass({ shape: "chip", tone: "accent" })}
+          {/* The insights views' panel action: `Button` sm, the 32px rounded-panel control. */}
+          <Button
+            variant="primary"
+            size="sm"
+            className="atlas-touch-floor"
             data-testid="flow-prefill"
             onClick={() => onPrefill?.(request)}
           >
             {latest ? labels.rewrite : labels.action}
-          </button>
+          </Button>
           <span className="text-label text-[color:var(--color-text-tertiary)]">{labels.actionHint}</span>
         </div>
       ) : (
@@ -215,15 +203,16 @@ export function FlowTab({
 
       <Disclosure summary={labels.requestLabel} summaryTestId="flow-request-open">
         <div className="mt-2 flex flex-col gap-2">
+          {/* The footer's copy grammar, so one panel copies one way: it was a 24px chip at 9.5px
+              beside the footer's 32px "copy next action" (2026-09-25). */}
           <div className="flex justify-end">
-            <button
-              type="button"
-              className={controlClass({ shape: "chip", size: "sm" })}
-              data-testid="flow-copy"
-              onClick={copyRequest}
-            >
-              {copied ? labels.copied : labels.copy}
-            </button>
+            <CopyAgentTextButton
+              label={labels.copy}
+              copiedLabel={labels.copied}
+              text={request}
+              compact
+              testId="flow-copy"
+            />
           </div>
           <pre className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 text-label leading-prose text-[color:var(--color-text-secondary)]">
             {request}

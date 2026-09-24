@@ -604,6 +604,7 @@
     "copyingHandoff": "Copying…",
     "copiedHandoff": "Copied. Paste it into your agent",
     "copyHandoffError": "Could not copy. Try again",
+    "copiedShort": "Copied",
     "noProfiles": "This codebase's structure has not been recorded yet",
     "noProfilesBody": "A connected agent reads the folders and the real imports and proposes a draft architecture profile. There is nothing to write by hand: review the draft, and accepting it saves one file in your ontology folder.",
     "roleLabels": {

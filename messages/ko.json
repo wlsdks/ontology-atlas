@@ -604,6 +604,7 @@
     "copyingHandoff": "복사하는 중…",
     "copiedHandoff": "복사했어요. 쓰시는 에이전트에 붙여 넣으세요",
     "copyHandoffError": "복사하지 못했어요. 다시 시도",
+    "copiedShort": "복사했어요",
     "noProfiles": "이 코드베이스의 구조가 아직 기록되지 않았어요",
     "noProfilesBody": "연결된 에이전트가 폴더와 실제 import를 읽어 아키텍처 프로필 초안을 제안해요. 손으로 적을 것은 없어요. 제안된 초안을 확인하고 승인하면 온톨로지 폴더에 파일 하나로 저장돼요.",
     "roleLabels": {
@@ -1939,7 +1940,7 @@
       "domainCouplingGridSelectHint": "칸을 누르면 그 두 도메인을 실제로 잇고 있는 연결을 보여드려요.",
       "domainCouplingGridTruncated": "상위 {shown} / 전체 {total} 도메인",
       "domainCouplingGridHiddenCross": "격자 밖 교차 {count}건",
-      "domainCouplingGridCellAria": "{from}에서 {to}로 나가는 교차 {count}건",
+      "domainCouplingGridCellAria": "{from}에서 {to} 쪽으로 나가는 교차 {count}건",
       "domainCouplingGridSelfAria": "{domain} 안쪽 연결 {count}건",
       "domainCouplingBoundaryTitle": "교차 연결 비율",
       "domainCouplingSelfLabel": "안쪽",

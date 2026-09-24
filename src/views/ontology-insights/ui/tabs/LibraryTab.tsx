@@ -5,6 +5,7 @@ import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
+import { buttonVariants } from '@/shared/ui';
 import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
 import { RelationshipPreview } from '@/widgets/relationship-preview';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
@@ -196,7 +197,7 @@ function WikiAnalysisPreview() {
       description:id==='source'?`${t('exampleLabel')} ${t('sourceExcerpt')}`:id==='page'?`${t('pageEyebrow')}: ${t('pageExampleTitle')}. ${t('pageExampleBody')} ${t('stages.page.citation')}`:t('stages.check.example'),
     }))}
     footer={<><div className="min-w-0 max-w-prose"><p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('emptyTitle')}</p><p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('emptyDescription')}</p></div>
-      <Link href="/library/" data-testid="preview-primary-action" className={controlClass({shape:'pill',size:'lg',tone:'onAccent',className:'atlas-touch-floor atlas-touch-floor-wide shrink-0'})}>{t('openLibrary')}</Link></>} />;
+      <Link href="/library/" data-testid="preview-primary-action" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor shrink-0')}>{t('openLibrary')}</Link></>} />;
 }
 
 function StagePreview({ kind }: { kind: 'source' | 'page' | 'check' }) {

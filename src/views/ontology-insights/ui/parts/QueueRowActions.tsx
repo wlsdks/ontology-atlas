@@ -142,13 +142,17 @@ export function RowActionMenu({
    *
    * `row` carries `w-full`, but this menu is already `flex-col` (i.e. stretch), so the width is
    * unchanged.
+   *
+   * ⚠️ **One line per item, one height.** In a 160px menu the handoff item wrapped to two lines,
+   * so the two items stood 28 and 44px tall (2026-09-25). The menu now sizes to its longest item
+   * (`w-max`, at least 16rem) and every item is one 32px line.
    */
   const menuItemClass = controlClass({
     shape: "row",
-    size: "sm",
+    size: "md",
     tone: "secondary",
     className:
-      "hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]",
+      "whitespace-nowrap hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]",
   });
 
   return (
@@ -171,7 +175,7 @@ export function RowActionMenu({
         origin="top right"
         role="menu"
         data-testid="do-next-row-menu-popover"
-        className="absolute right-0 z-20 mt-1 flex min-w-[10rem] flex-col gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
+        className="absolute right-0 z-20 mt-1 flex w-max min-w-[16rem] max-w-[calc(100vw-2rem)] flex-col gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
       >
           {sourceHref ? (
             <Link

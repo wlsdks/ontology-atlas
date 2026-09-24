@@ -11,7 +11,8 @@ import {
   VaultSourceHydrationBoundary,
 } from '@/entities/vault-session';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
-import { Chip, EmptyState, InfoHint, Surface, TabBar } from '@/shared/ui';
+import { Chip, EmptyState, Surface, TabBar } from '@/shared/ui';
+import { PlacedInfoHint } from './PlacedInfoHint';
 import { controlClass } from '@/shared/ui/control-class';
 import { PAGE_TOP_PAD } from '@/shared/ui/page-frame';
 import { GuidanceRelationshipPreview } from '@/widgets/relationship-preview';
@@ -328,19 +329,13 @@ function HarnessPageInner() {
             checks: report.checks.total,
           })}
         </span>
-        {/* `left`: this hint sits at the start of the lead paragraph, so a right-anchored panel
-            ran 84.9% off the left edge at 390 (design-responsive, 2026-09-13). */}
-        {/* `static`, so the panel anchors to the sentence block rather than to the button: at the
-            title step the sentence runs long enough to put the button near the right edge at 768,
-            and a panel hung from it ran 29px off-screen. */}
-        <InfoHint
-          align="left"
-          className="static"
-          panelClassName="max-w-full max-h-[35dvh] overflow-y-auto"
-          label={t('checksBreakdownLabel')}
-        >
+        {/* Hangs from its own button and flips to the edge that fits: a right-anchored panel ran
+            84.9% off the left edge at 390, a left-anchored one 29px off the right at 768, and the
+            `static` anchor that avoided both opened 603px away from the button at 1512
+            (2026-09-13, 2026-09-25). */}
+        <PlacedInfoHint preferred="left" label={t('checksBreakdownLabel')}>
           {t('checksHint')}
-        </InfoHint>
+        </PlacedInfoHint>
       </div>
       <p className="mt-1 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
         {t('checksBreakdown', {
@@ -371,14 +366,9 @@ function HarnessPageInner() {
           widths, and the one place this view says what its numbers are not. */}
       <div className="mt-1 break-keep text-label text-[color:var(--color-text-tertiary)]">
         <span>{t('anatomyCaption')} </span>
-        <InfoHint
-          align="left"
-          className="static align-middle"
-          label={t('anatomyProvenanceLabel')}
-          panelClassName="max-w-full max-h-[35dvh] overflow-y-auto"
-        >
+        <PlacedInfoHint preferred="left" className="align-middle" label={t('anatomyProvenanceLabel')}>
           {t('anatomyProvenance')}
-        </InfoHint>
+        </PlacedInfoHint>
       </div>
     </div>
   ) : null;
