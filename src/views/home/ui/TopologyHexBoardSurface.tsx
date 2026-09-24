@@ -4,34 +4,8 @@ import { useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { OntologyHexBoardMap, type HexBoardLabels, type HexPlacementRecord, type OntologyMapEdge, type OntologyMapNode } from "@/widgets/ontology-map";
+import { readHexPlacement, writeHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates, type MapEvidenceAvailability } from "../model/use-map-evidence-states";
-
-/**
- * Where a vault's hex board placement is kept. It is view state, like the map's other
- * appearance preferences — never meaning: the vault's Markdown stays the one canonical store,
- * and losing this key only means the next board is laid out afresh (in the same order).
- */
-const PLACEMENT_PREFIX = "atlas.map.hex-board.v1:";
-
-function readPlacement(vaultKey: string): HexPlacementRecord | null {
-  try {
-    const raw = window.localStorage.getItem(PLACEMENT_PREFIX + vaultKey);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as HexPlacementRecord;
-    return parsed && parsed.version === 1 && parsed.seeds && parsed.cells ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function writePlacement(vaultKey: string, record: HexPlacementRecord) {
-  try {
-    const next = JSON.stringify(record);
-    if (window.localStorage.getItem(PLACEMENT_PREFIX + vaultKey) !== next) window.localStorage.setItem(PLACEMENT_PREFIX + vaultKey, next);
-  } catch {
-    // A private window or a full store: the board still draws, it just is not remembered.
-  }
-}
 
 /** A flat-top hexagon for the legend swatches (16 × 14). */
 const HEX_SWATCH = "15,7 11.5,13 4.5,13 1,7 4.5,1 11.5,1";
@@ -66,8 +40,8 @@ export function TopologyHexBoardSurface({
   const t = useTranslations("topology.hexBoard");
   const evidence = useMapEvidenceStates({ nodes: insightNodes, enabled: true });
   const measured = evidence.availability === "measured";
-  const placement = useMemo(() => (typeof window === "undefined" ? null : readPlacement(vaultKey)), [vaultKey]);
-  const onPlacement = useCallback((record: HexPlacementRecord) => writePlacement(vaultKey, record), [vaultKey]);
+  const placement = useMemo(() => (typeof window === "undefined" ? null : readHexPlacement(vaultKey)), [vaultKey]);
+  const onPlacement = useCallback((record: HexPlacementRecord) => writeHexPlacement(vaultKey, record), [vaultKey]);
   const staleFiles = useMemo(() => {
     const m = new Map<string, string>();
     for (const [id, path] of evidence.movedPaths) m.set(id, path.split("/").pop() ?? path);
