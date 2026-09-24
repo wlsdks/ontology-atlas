@@ -1081,6 +1081,45 @@ describe("AtlasGitPanel — 걸음의 주어는 개념이다", () => {
     expect(step).toHaveTextContent("외 2건");
   });
 
+  it("두 이름이 칸에 다 안 들어가면 하나를 온전히 두고 하나를 센다", async () => {
+    const node = (id: string, display: string) => ({
+      ...GRAPH.nodes[0],
+      id: `capability:${id}`,
+      display,
+      evidenceIds: [`capabilities/${id}`],
+      agentSlug: `capabilities/${id}`,
+    });
+    const file = (id: string) => ({ path: `docs/capabilities/${id}.md`, status: "modified", kind: "capability", slug: `capabilities/${id}`, renamedFrom: null });
+    // jsdom lays nothing out, so the painted width is stood in for: a name longer than eight
+    // characters overflows its box, the way the pair below did in the installed app.
+    const scroll = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollWidth");
+    const client = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientWidth");
+    Object.defineProperty(HTMLElement.prototype, "scrollWidth", { configurable: true, get() { return (this as HTMLElement).hasAttribute("data-step-concept-name") ? ((this as HTMLElement).textContent ?? "").length * 10 : 0; } });
+    Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, get() { return (this as HTMLElement).hasAttribute("data-step-concept-name") ? 80 : 0; } });
+    const restore = () => {
+      if (scroll) Object.defineProperty(HTMLElement.prototype, "scrollWidth", scroll);
+      if (client) Object.defineProperty(HTMLElement.prototype, "clientWidth", client);
+    };
+    const long = { nodes: [node("a", "아틀라스 자기 볼트"), node("b", "저장된 별자리 목록")], edges: [] } as unknown as typeof GRAPH;
+    installDesktopGit({ history: [{ ...HISTORY_WITH_FILES[0], files: [file("a"), file("b")] }] });
+    const view = renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={long} />);
+    await screen.findByTestId("atlas-git-steps");
+    let step = screen.getByTestId("atlas-git-history-item");
+    expect(step).toHaveTextContent("아틀라스 자기 볼트");
+    expect(step).not.toHaveTextContent("저장된 별자리 목록");
+    expect(step).toHaveTextContent("외 1건");
+    view.unmount();
+
+    // Two short names still both stand.
+    const short = { nodes: [node("a", "동료의 추억"), node("b", "사람의 작업대")], edges: [] } as unknown as typeof GRAPH;
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={short} />);
+    await screen.findByTestId("atlas-git-steps");
+    step = screen.getByTestId("atlas-git-history-item");
+    expect(step).toHaveTextContent("동료의 추억");
+    expect(step).toHaveTextContent("사람의 작업대");
+    restore();
+  });
+
   it("볼트의 개념이 아닌 파일만 건드린 걸음은 개념을 지어내지 않는다", async () => {
     installDesktopGit({
       history: [
