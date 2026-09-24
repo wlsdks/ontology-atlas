@@ -206,7 +206,17 @@ function HarnessPageInner() {
   const canReadHarness = surfaceHasBridge && !harnessUnavailable;
   const addressView = resolveAddressView(searchParams, canReadHarness);
   /* A press wins over the address until the next history move; see `setView`. */
-  const view = viewOverride ?? addressView;
+  const requestedView = viewOverride ?? addressView;
+  /*
+   * ⚠️ **Before a reading exists, the three harness tabs are one tab.** Structure, coverage and
+   * guides all draw the same example and the same connect door when no source can be read, so
+   * three tabs that switch nothing told a person there were three things to see here (owner chose
+   * this, 2026-09-24). They collapse into one tab beside the blueprint, which does answer from the
+   * vault, and all three return the moment a reading arrives. A `?view=coverage` link still lands
+   * on that one tab rather than on a view that cannot draw.
+   */
+  const view: HarnessView =
+    harnessUnavailable && requestedView !== 'architecture' ? 'structure' : requestedView;
 
   const setView = useCallback(
     (next: HarnessView) => {
@@ -271,7 +281,14 @@ function HarnessPageInner() {
       idPrefix="harness"
       activeKey={view}
       onSelect={(key) => setView(parseHarnessView(key))}
-      items={HARNESS_VIEW_ORDER.map((id) => ({ key: id, label: t(`views.${id}`) }))}
+      items={
+        harnessUnavailable
+          ? [
+              { key: 'structure', label: t('views.beforeSource') },
+              { key: 'architecture', label: t('views.architecture') },
+            ]
+          : HARNESS_VIEW_ORDER.map((id) => ({ key: id, label: t(`views.${id}`) }))
+      }
     />
   );
 
