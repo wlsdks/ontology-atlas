@@ -516,9 +516,9 @@ export function createLibrarySimulation({
   /** Measurement-only override; see {@link LibrarySimulation.exactMaxOrder}. */
   exactMaxOrder?: number;
   /**
-   * False only for the footprint pass `composeLibraryGroups` runs on one group at a time:
-   * a single group has nothing to compose, and saying so explicitly is what keeps the
-   * recursion one level deep by construction rather than by argument.
+   * Measure settled force footprints before packing. Fixed pictures replace those
+   * positions immediately, so they skip the prepass. The footprint pass itself also
+   * passes false, keeping recursion one level deep; lightweight grouping still runs.
    */
   compose?: boolean;
 }): LibrarySimulation {
@@ -1439,6 +1439,7 @@ export function resizeLibrarySimulation(
 export function syncLibrarySimulation(
   sim: LibrarySimulation,
   graph: LibraryGraph,
+  { compose = true }: { compose?: boolean } = {},
 ): { entered: string[]; removed: Array<{ id: string; x: number; y: number }> } {
   const wanted = new Set(graph.nodes.map((node) => node.id));
   const removed: Array<{ id: string; x: number; y: number }> = [];
@@ -1510,7 +1511,7 @@ export function syncLibrarySimulation(
   // as loose, so the composition is re-derived from the new relations rather than carried
   // over. Marks already on the canvas keep their positions; `composeLibraryGroups` only
   // seeds the ones that have not arrived.
-  composeLibraryGroups(sim, graph);
+  composeLibraryGroups(sim, compose ? graph : null);
   if (entered.length > 0 || removed.length > 0) reheatLibrarySimulation(sim);
   return { entered, removed };
 }

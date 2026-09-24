@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-24",
+  "decision": "Prepare force footprints only when Library renders the force picture",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "orient",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-24",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "4061b2b6-e465-4ed6-901b-3c109680e614",
+  "recordedAt": "2026-09-24T00:20:44.628Z"
+}

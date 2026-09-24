@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import type { LibraryGraph, LibraryGraphEdge, LibraryGraphNode } from "./build-library-graph";
 import {
+  applyLibraryFlowLayout,
+  applyLibraryIslandsLayout,
   createLibrarySimulation,
   hasPinnedNode,
   isLibrarySimulationRunning,
@@ -97,6 +99,50 @@ function denseFolder(): LibraryGraph {
 }
 
 const BOX = { width: 1046, height: 620 };
+
+describe("fixed-layout simulation preparation", () => {
+  it.each(["flow", "islands"] as const)("keeps %s geometry and arrivals identical without the discarded force prepass", (picture) => {
+    const graph = looseFolder();
+    const legacy = createLibrarySimulation({ graph, box: BOX });
+    const fixed = createLibrarySimulation({ graph, box: BOX, compose: false });
+    const lay = (sim: typeof fixed, next: LibraryGraph) => picture === "flow"
+      ? applyLibraryFlowLayout(sim, next, BOX)
+      : applyLibraryIslandsLayout(sim, next, BOX, { unsorted: "Unsorted", unread: "Unread" });
+    const drawnState = (sim: typeof fixed) => sim.nodes.map(({ id, x, y, vx, vy, radius, fx, fy, entered }) =>
+      ({ id, x, y, vx, vy, radius, fx, fy, entered }));
+    expect(lay(fixed, graph)).toEqual(lay(legacy, graph));
+    expect(drawnState(fixed)).toEqual(drawnState(legacy));
+    expect(isLibrarySimulationRunning(fixed)).toBe(false);
+
+    // A new page bridges the two masses; one uncited source disappears.
+    const added: LibraryGraphNode = { id: "page:wiki/new", kind: "page", label: "New", ref: "wiki/new", href: null };
+    const nodes = [...graph.nodes.filter((node) => node.id !== "source:sources/interview-notes.txt"), added];
+    const edges: LibraryGraphEdge[] = [...graph.edges, ...["sources/quarter-plan.pdf", "sources/release-dates.csv"].map((path) => ({
+      id: `new:${path}`, source: added.id, target: `source:${path}`, relation: "cites" as const, certainty: "current" as const,
+    }))];
+    const next: LibraryGraph = { nodes, edges, counts: { sources: 6, pages: 5, concepts: 0, cites: edges.length, mentions: 0 } };
+    expect(syncLibrarySimulation(fixed, next, { compose: false })).toEqual(syncLibrarySimulation(legacy, next));
+    expect(lay(fixed, next)).toEqual(lay(legacy, next));
+    expect(drawnState(fixed)).toEqual(drawnState(legacy));
+    expect(isLibrarySimulationRunning(fixed)).toBe(false);
+
+    // Force must recover its own groups/cells on demand from either position store.
+    syncLibrarySimulation(fixed, next);
+    syncLibrarySimulation(legacy, next);
+    expect(fixed.cells).toEqual(legacy.cells);
+    expect(fixed.groupNodes).toEqual(legacy.groupNodes);
+    reheatLibrarySimulation(fixed);
+    reheatLibrarySimulation(legacy);
+    settleLibrarySimulation(fixed);
+    settleLibrarySimulation(legacy);
+    expect(drawnState(fixed)).toEqual(drawnState(legacy));
+
+    const empty: LibraryGraph = { nodes: [], edges: [], counts: { sources: 0, pages: 0, concepts: 0, cites: 0, mentions: 0 } };
+    expect(syncLibrarySimulation(fixed, empty, { compose: false })).toEqual(syncLibrarySimulation(legacy, empty));
+    // The widget renders its empty state instead of a canvas/layout for this graph.
+    expect(drawnState(fixed)).toEqual([]);
+  });
+});
 
 /**
  * **The seeded folder that produced the scattered picture**, in its measured shape: seven
