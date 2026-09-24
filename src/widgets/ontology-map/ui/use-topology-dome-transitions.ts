@@ -29,7 +29,6 @@ interface Dependencies {
   detailPanelVisible: boolean;
   realmTransitionRef: RefObject<RealmTransitionState>;
   focusedSlugRef: RefObject<string | null>;
-  domeFocusPendingRef: RefObject<{ slug: string | null; } | null>;
 }
 
 /** Translate mode, arrangement, and inspector changes into deferred dome camera intents. */
@@ -48,7 +47,6 @@ export function useTopologyDomeTransitions({
   detailPanelVisible,
   realmTransitionRef,
   focusedSlugRef,
-  domeFocusPendingRef,
 }: Dependencies) {
 
   /*
@@ -127,11 +125,19 @@ export function useTopologyDomeTransitions({
     if (lastDetailPanelVisibleRef.current === detailPanelVisible) return;
     lastDetailPanelVisibleRef.current = detailPanelVisible;
     if (!view3dRef.current || realmTransitionRef.current.phase !== "idle") return;
-    if (domeRuntimeRef.current === null) return;
+    const dome = domeRuntimeRef.current;
+    if (dome === null) return;
     const slug = focusedSlugRef.current;
     if (slug === null) return;
-    domeFocusPendingRef.current = { slug };
+    /*
+     * Since 2026-09-25 a click only selects in 3D, and the panel a click opens must not
+     * reframe the view by the back door: no zoom, no turn. A node a fly-to framed is re-flown
+     * against the new free area (its return view kept); any other selected node gets only
+     * the nudge — a sideways slide, and only when the panel would cover it (measured on the
+     * sample vault in Neural at 1440: a domain near the right edge sat under its own panel).
+     */
+    dome.flyRequest = dome.flight !== null && dome.flight.slug === slug ? { slug } : { slug, nudge: true };
     lastActiveMsRef.current = performance.now();
-  }, [detailPanelVisible, domeFocusPendingRef, domeRuntimeRef, focusedSlugRef, lastActiveMsRef, realmTransitionRef, view3dRef]);
+  }, [detailPanelVisible, domeRuntimeRef, focusedSlugRef, lastActiveMsRef, realmTransitionRef, view3dRef]);
 
 }

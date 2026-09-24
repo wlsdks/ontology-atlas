@@ -322,7 +322,18 @@ export function useTopologyCameraNavigation({
       // The DOM owns its final bbox in its own projection step. Do not restart that
       // step every frame for width; only hand off the debt once upon settling.
       if (motion === "tracking") return false;
-      domeFocusPendingRef.current = { slug: mode === "dome-focus" ? focused : null };
+      if (mode === "dome-focus") {
+        /*
+         * A selection alone never moved the 3D view (a click only selects), so a new
+         * viewport only re-checks the nudge (the node must not end up under a panel) — unless
+         * a fly-to framed this node, which is re-flown against the new size (return view kept).
+         */
+        if (dome === null || focused === null) return false;
+        dome.flyRequest = dome.flight !== null && dome.flight.slug === focused ? { slug: focused } : { slug: focused, nudge: true };
+        lastActiveMsRef.current = performance.now();
+        return true;
+      }
+      domeFocusPendingRef.current = { slug: null };
       lastActiveMsRef.current = performance.now();
       return true;
     }

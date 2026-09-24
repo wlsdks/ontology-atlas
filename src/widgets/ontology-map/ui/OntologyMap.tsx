@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { HoverAvoidRect } from "./topology-pointer-handlers";
 import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
@@ -361,20 +361,30 @@ export interface OntologyMapProps {
    */
   canvasBackground?: CanvasBackground;
   /**
-   * 3D view (2026-08-18, opt-in) — ownership becomes the Cone tree and
-   * coupling becomes the relation-driven Cloud (`model/dome-view.ts`). The top
-   * toolbar's 3D picker turns it on; omitted is false (2D, the default).
+   * 3D view (2026-08-18, opt-in) — the lit Strata planes or the relation-driven
+   * Neural cloud (`model/dome-view.ts`). The top toolbar's view picker turns it on;
+   * omitted is false (2D, the default).
    */
   view3d?: boolean;
   /** The flat map drawn as a sky. One of the two flat views; never combined with `view3d`. */
   galaxy?: boolean;
   /**
-   * Which structural question places nodes in 3D — `ownership` uses containment
-   * tiers in the Dome (default); `coupling` lets relations determine all three
-   * Cloud axes. The rationale and geometry live in `model/dome-view.ts`. Ignored
+   * Which structural question places nodes in 3D — `strata` stacks the containment
+   * tiers as lit planes (default); `coupling` lets relations determine all three
+   * Neural axes. The rationale and geometry live in `model/dome-view.ts`. Ignored
    * in 2D.
    */
   mapArrangement?: MapArrangement;
+  /**
+   * Lit 3D (2026-09-25) — node id → evidence state from the product's one rule. It sets how
+   * much light each node emits; an absent id, or null, is unknown and emits none.
+   */
+  domeEvidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
+  /**
+   * The lit 3D map's legend — kinds and evidence, composed by the page in its own words and
+   * shown only while 3D is on. The widget places it; it owns no copy.
+   */
+  domeLightLegend?: ReactNode;
   /**
    * 3D reframing input (2026-08-18, second pass) — whether the node detail panel is
    * actually covering the screen. To the dome camera, that panel opening or closing
@@ -601,6 +611,7 @@ export function OntologyMap(props: OntologyMapProps) {
       view3d,
       galaxy,
       mapArrangement,
+      domeEvidence: props.domeEvidence ?? null,
       detailPanelVisible,
       footprint,
       expand,
@@ -758,6 +769,7 @@ export function OntologyMap(props: OntologyMapProps) {
           ) : null}
         </button>
       ) : null}
+      {view3d && props.domeLightLegend ? props.domeLightLegend : null}
       {tierLegendActive && !detailPanelVisible ? (
         <OntologyMapTierLegend
           anchors={tierAnchors!}

@@ -48,6 +48,18 @@ export interface CameraTween {
   /** `performance.now()`-compatible start timestamp (same clock as the rAF `now`). */
   startMs: number;
   durationMs: number;
+  /**
+   * `"out"` decelerates only — the 3D fly-to (2026-09-25), which starts moving the instant
+   * the double-click lands and settles onto the node. Omitted is the ease-in-out every
+   * other programmatic move uses.
+   */
+  ease?: "out";
+}
+
+/** Cubic ease-out on `[0,1]` — full speed at the start, zero slope on arrival. */
+export function easeOutCubic(t: number): number {
+  const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
+  return 1 - Math.pow(1 - c, 3);
 }
 
 /**
@@ -218,9 +230,11 @@ export function easeCameraKeyframe(
    * break.
    */
   viewportWidthPx?: number,
+  /** The curve — see `CameraTween.ease`. */
+  ease?: "out",
 ): CameraKeyframe {
   const p = durationMs <= 0 ? 1 : elapsedMs / durationMs;
-  const e = easeInOutCubic(p);
+  const e = ease === "out" ? easeOutCubic(p) : easeInOutCubic(p);
   if (viewportWidthPx !== undefined && viewportWidthPx > 0) {
     // Pin the endpoints exactly: if rounding in the path maths leaves the arrival
     // a few world units off, that drift hardens into the anchor for the next gesture.
