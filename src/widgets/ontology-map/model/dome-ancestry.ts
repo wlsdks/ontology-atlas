@@ -51,3 +51,40 @@ export function collectDomeAncestry(
     child = parent;
   }
 }
+
+/**
+ * **The lit subtree** (2026-09-25, lit strata) — adds everything the focused node contains,
+ * at any depth, to `nodeIds`, and each of those `contains` links to `edgeKeys`, without
+ * clearing either: the caller has just filled them with the ancestry, and the two together
+ * are the one family line a focus lights, apex to leaves.
+ *
+ * The approved look lights **one subtree** under a focus while the rest of the structure
+ * sinks into the fog; the ancestry alone lit the way up and left what a domain holds as dark
+ * as everything else. Same grammar as the ancestry: the members join the neighbour set, the
+ * links take the ego edge state. Cycle-safe and bounded by the node count; returns how many
+ * descendants were added.
+ */
+export function collectDomeSubtree(
+  focusedId: string,
+  childrenOf: (id: string) => readonly string[] | undefined,
+  nodeIds: Set<string>,
+  edgeKeys: Set<string>,
+): number {
+  let added = 0;
+  const stack = [focusedId];
+  const seen = new Set<string>([focusedId]);
+  while (stack.length > 0) {
+    const parent = stack.pop()!;
+    for (const child of childrenOf(parent) ?? []) {
+      if (seen.has(child)) continue;
+      seen.add(child);
+      if (!nodeIds.has(child)) {
+        nodeIds.add(child);
+        added += 1;
+      }
+      edgeKeys.add(domeAncestryEdgeKey(parent, child));
+      stack.push(child);
+    }
+  }
+  return added;
+}
