@@ -145,7 +145,7 @@ export function HeroMacMenu({
             setOpen(true);
           }
         }}
-        className="min-w-0 whitespace-normal rounded-chip px-6 text-left sm:whitespace-nowrap"
+        className="min-w-0 whitespace-normal text-left sm:whitespace-nowrap"
       >
         <Download size={ICON_SIZE.lg} aria-hidden />
         {t('heroMacCta')}

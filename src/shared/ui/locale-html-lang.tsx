@@ -3,10 +3,10 @@
 import { useEffect } from 'react';
 
 /**
- * Updates `<html lang="...">` to match the active locale on the client.
- * The root `app/layout.tsx` ships `lang="en"` by default for static-export
- * SEO; this component switches it to "ko" when the user lands on a `/ko/*`
- * route. No-op during SSG since useEffect only runs in the browser.
+ * Keeps `<html lang="...">` equal to the active locale on client-side navigation.
+ * The root `app/layout.tsx` ships `lang="en"` in the static HTML; the inline boot
+ * script (`accent-boot-script.tsx`, `LANG_BOOT`) already corrects it from the path
+ * before the first paint. This effect covers a locale switch without a reload.
  */
 export function LocaleHtmlLang({ locale }: { locale: string }) {
   useEffect(() => {

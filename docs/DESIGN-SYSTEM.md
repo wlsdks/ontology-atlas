@@ -744,6 +744,10 @@ every relation line, 5.23:1), `--color-indigo-brand` (the selection, 4.24:1). Co
 - Signature weight: `510` (Linear's signature)
 - Mono: `JetBrains Mono`
 
+#### Korean breaks between words, from one rule (2026-09-25)
+
+`:root:lang(ko) body { word-break: keep-all; overflow-wrap: break-word; }` in `app/globals.css`, outside every layer. Before it, each screen opted in with its own `break-keep` or `[word-break:keep-all]` (364 sites: 256 + 108) and any element that forgot wrapped mid-word. The rule holds from the first paint: the root layout cannot know the locale, so the inline boot script (`accent-boot-script.tsx`, `LANG_BOOT`) sets `<html lang>` from the path. It is the first script in `<body>` (`<AccentBootScript />` in `app/layout.tsx`; the served HTML puts only Next's empty hidden div before it) and runs before any rendered body content is parsed; `LocaleHtmlLang` only follows client-side switches. The per-element count is an exact ratchet: it may not rise, and a removal must lower the ceiling to the new count, so new Korean prose does not add `break-keep`. An element that must break anywhere (a path, a hash) declares `break-all` or `[overflow-wrap:anywhere]` on itself, which wins over inheritance. Gates: `tests/contract/hangul-word-keep.contract.test.ts` (rule, boot locales, ratchet) and `tests/e2e/hangul-first-paint.spec.ts` (computed `word-break` with every script blocked).
+
 #### Do not overlay Latin-only decorations on Korean (2026-07-26)
 
 The owner read `What goes out`, `Sent records`, and `It's your choice to commit` with double spaces in the [AI Connection] panel. The i18n string contained only a single space — the gap was not between words but in the **space glyph**.
@@ -2534,9 +2538,9 @@ Tailwind v4 `--radius-*` namespace generates `rounded-<step>`.
 | Unit | Token (Utility) | px | Target |
 |---|---|---|---|
 | micro | `--radius-micro` (`rounded-micro`) | 4 | Micro badge, command tag, kbd — one layer below the chip |
-| chip | `--radius-chip` (`rounded-chip`) | 6 | Chip, badge, small button |
-| card | `--radius-card` (`rounded-card`) | 9 | Card · Input · Medium Surface |
-| panel | `--radius-panel` (`rounded-panel`) | 12 | Panel, Modal, Large Surface |
+| chip | `--radius-chip` (`rounded-chip`) | 6 | Chip, badge, field (`fieldClass`, every boxed size above `xs`), `Button` `sm` (32px, the box family of chips and fields) and `lg` (44px hero CTA) |
+| card | `--radius-card` (`rounded-card`) | 9 | Card · Medium Surface |
+| panel | `--radius-panel` (`rounded-panel`) | 12 | Panel, Modal, Large Surface, `Button` `md` (40px, the default) |
 
 | sheet | `--radius-sheet` (`rounded-sheet`) | 18 | Floating sheet/palette — a large temporary surface that floats above the screen and obscures what's below |
 
@@ -2836,6 +2840,7 @@ Chrome surfaces (tiles/chips) must only be created via `ChromeTile` / `ChromeChi
 |---|---|---|
 | `Select` (Dark Listbox) | `src/shared/ui/select.tsx` | Native `<select>` replacement — macOS gray system dropdown adapted to dark app syntax |
 | `EmptyState` | `src/shared/ui/empty-state.tsx` | Empty lists/charts/pages — skeleton placeholders + icon + one-line guidance |
+| `Button` | `src/shared/ui/button.tsx` | Standard action — `primary` · `outline` · `ghost` · `danger` (the confirm step of an irreversible action only, drawn from the danger ramp). Radius follows the size: `sm` 32px and `lg` 44px wear the chip radius, `md` 40px keeps the panel radius; type is `text-body-lg` at every size, the step a 32px field sets its value in. So a `Button sm` beside a `fieldClass` field or a `controlClass` chip `lg` shares their corner. While disabled, `danger` drops its hue for `outline`'s (the danger ink at `opacity-55` measured 2.42:1). Gate: `src/shared/ui/button.test.tsx` |
 | `ChromeTile` / `ChromeChip` | `src/shared/ui/chrome-tile.tsx` · `chrome-chip.tsx` | Chrome tiles/chips (see separate "Chrome Syntax" section) |
 | `controlClass()` | `src/shared/ui/control-class.ts` | **Value Layer** — single source of classes for interactive elements (see section below) |
 | `Chip` · `IconButton` · `RowButton` | `src/shared/ui/controls.tsx` | **Action Layer** — defaults to `type="button"` · enforces accessible names · button semantics |
@@ -3290,6 +3295,8 @@ The value is not preference but **the exact derived value from the root face**; 
 
 - **Slots** — `icon` (line-art glyph, muted rounded rect) · `skeleton` (true = default muted 3-line bar, or custom ReactNode) · `title` (single-line plain text) · `description` (next action guidance) · `action` (selection button).
 - **Tone/Alignment** — `tone` dashed (inside lists/cards, signals «filling spot») | solid, `align` left (default) | center (entire page body empty situation).
+- **Title step** (2026-09-25) — only a centred card **without** a description demotes its title to the body step; that card is one sentence. A centred card with a description keeps the heading step (`text-title`, primary ink), so title and paragraph never read as one grey block. Consumers do not restyle the title through `className`.
+- **One start line** (2026-09-25) — with a left icon, the action row sits in the text column (`[data-empty-action]`), so title, description and buttons start on one x. Gate: `src/shared/ui/empty-state.test.tsx`.
 - Empty charts/lists show **filling form (skeleton)** first instead of «long whitespace» — applied to current insight «most needed items» / «hub» empty areas.
 
 ### Control Height Tokens (#13)

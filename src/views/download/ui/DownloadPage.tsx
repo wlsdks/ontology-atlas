@@ -503,7 +503,7 @@ function HeroSection({
                   <a
                     href={windowsInstaller!.downloadUrl}
                     data-testid="gateway-hero-cta"
-                    className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
+                    className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
                   >
                     <Download size={ICON_SIZE.lg} aria-hidden />
                     {t('windowsDownloadCta')}
@@ -520,7 +520,7 @@ function HeroSection({
                     <a
                       href={windowsInstaller.downloadUrl}
                       data-testid="gateway-hero-windows"
-                      className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-4 sm:px-6', HERO_CTA_WRAP)}
+                      className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'px-4 sm:px-6', HERO_CTA_WRAP)}
                     >
                       <Download size={ICON_SIZE.lg} aria-hidden />
                       {t('heroWindowsCta')}
@@ -537,7 +537,7 @@ function HeroSection({
               <Link
                 href="/topology"
                 data-testid="gateway-hero-cta"
-                className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
+                className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
               >
                 {t('webCta')}
               </Link>
@@ -547,7 +547,7 @@ function HeroSection({
               <Link
                 href="/topology"
                 data-testid="gateway-hero-web-cta"
-                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-4 sm:px-6', HERO_CTA_WRAP)}
+                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'px-4 sm:px-6', HERO_CTA_WRAP)}
               >
                 {t('heroPlaygroundCta')}
               </Link>
@@ -1331,7 +1331,7 @@ function ClosingBand({
             <a
               href={subject.downloadUrl}
               data-testid="download-closing-cta"
-              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), HERO_CTA_WRAP)}
             >
               <Download size={ICON_SIZE.lg} aria-hidden />
               {subjectIsWindows ? t('windowsDownloadCta') : t('primaryCtaPublished')}
@@ -1341,7 +1341,7 @@ function ClosingBand({
             <Link
               href="/topology"
               data-testid="download-closing-cta"
-              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), HERO_CTA_WRAP)}
             >
               {t('webCta')}
             </Link>

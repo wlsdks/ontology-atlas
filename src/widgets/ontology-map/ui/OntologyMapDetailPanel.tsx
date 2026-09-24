@@ -709,9 +709,14 @@ function DetailActionMenu({
         aria-label={label}
         data-testid={triggerTestId}
         onClick={() => onOpenChange(!open)}
+        /*
+         * The icon-only "more" trigger is the 32px icon step (`lg`), not `md` (28px): it sits in
+         * one row with the 32px `Button sm` and the 32px `Edit` chip, and at 28px it was the one
+         * control in the row that stood short (captured at 1512, 2026-09-25).
+         */
         className={controlClass({
           shape: iconOnly ? "icon" : "chip",
-          size: "md",
+          size: iconOnly ? "lg" : "md",
           tone: "muted",
           className:
             "atlas-touch-floor atlas-touch-floor-wide border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)]",

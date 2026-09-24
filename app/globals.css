@@ -5132,6 +5132,32 @@ body *::-webkit-scrollbar {
   text-transform: none;
 }
 
+/*
+ * Korean lines break between words, not between syllables (2026-09-25).
+ *
+ * The browser default (`word-break: normal`) lets Hangul wrap after any syllable, so a line can
+ * end one syllable short of a word, with the verb's last syllable alone on the next. Every screen
+ * had been fixing that one element at a time: 364 sites on 2026-09-25 — 256 `break-keep` classes
+ * plus 108 hand-written `[word-break:keep-all]` — and three screen reviews in one round each
+ * asked for it again. A fix per site is a promise the next site is born broken.
+ *
+ * On `body`, so it inherits: an element that means to break anywhere (`break-all`, a path with
+ * `[overflow-wrap:anywhere]`) declares that on itself and wins over inheritance whatever its
+ * layer. `overflow-wrap: break-word` is the safety for a run with no space at all — it breaks
+ * only when the run would otherwise overflow, and leaves min-content sizing alone. Scoped to
+ * `:lang(ko)` because `keep-all` only means "between words" for a script that puts spaces
+ * between words. Outside every layer, beside the caps override, for the same reason it gives.
+ * `:lang(ko)` holds from the first paint because the inline boot script sets `<html lang>` from
+ * the path. It is the first script in `<body>` (`app/layout.tsx`, `<AccentBootScript />`; served
+ * after only Next's empty hidden div) and runs before any rendered body content is parsed
+ * (`accent-boot-script.tsx`, `LANG_BOOT`).
+ * Gates: `tests/contract/hangul-word-keep.contract.test.ts`, `tests/e2e/hangul-first-paint.spec.ts`.
+ */
+:root:lang(ko) body {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 /* ── Position of agent panel and selected-node inspector (2026-07-27) ──────────────────
    The inspector is a fixed surface attached to the right edge of the viewport, and the agent panel is a column taking width from the same side. If both remain as-is, the inspector covers the panel — but
    these two are **a pair that must be read together** (the basis of the proposal: looking at the node in the proposal while instructing the agent). So while the panel is open, the inspector stands inward by the panel's width.
