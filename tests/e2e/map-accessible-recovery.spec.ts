@@ -124,49 +124,61 @@ test.describe('touch has an explicit overview return', () => {
   }
 });
 
-test('search selection hands keyboard focus to the map, while cancellation returns to its opener', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await openMap(page);
-  const trigger = page.getByTestId('topology-concept-search');
-  await trigger.click();
-  const search = page.getByRole('dialog', { name: '이 지도에서 검색' });
-  await expect(search).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(search).toBeHidden();
-  await expect(trigger).toBeFocused();
-  await page.keyboard.press('Meta+k');
-  await expect(search).toBeVisible();
-  await search.getByRole('combobox').fill('결제');
-  await expect(search.locator('[role="option"][aria-selected="true"]')).toContainText('결제');
-  await page.keyboard.press('Enter');
-  await expect(search).toBeHidden();
-  const canvas = page.getByTestId('ontology-map-canvas');
-  await expect(canvas).toBeFocused();
-  await expect(canvas).toHaveAttribute('data-keyboard-focus', 'true');
-  expect(await canvas.evaluate(el => getComputedStyle(el).outlineStyle)).toBe('solid');
-  const selected = () => page.evaluate(() => (window as unknown as { __atlasMap: { selection(): { nodeId: string | null } } }).__atlasMap.selection().nodeId);
-  const original = await selected();
-  expect(original).toBeTruthy();
-  for (const key of ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp']) {
-    await page.keyboard.press(key);
-    if ((await selected()) !== original) break;
-  }
-  await expect.poll(selected).not.toBe(original);
-  await page.keyboard.press('Meta+k');
-  await expect(search).toBeVisible();
-  await expect(canvas).not.toHaveAttribute('data-keyboard-focus');
-  await page.keyboard.press('Escape');
-  await expect(canvas).toBeFocused();
-  await expect(canvas).toHaveAttribute('data-keyboard-focus', 'true');
-  const rect = (await canvas.boundingBox())!;
-  await page.mouse.click(rect.x + 20, rect.y + rect.height - 20);
-  await expect(canvas).not.toHaveAttribute('data-keyboard-focus');
-  await trigger.click();
-  await search.getByRole('combobox').fill('결제');
-  const option = search.locator('[role="option"][aria-selected="true"]');
-  await expect(option).toContainText('결제');
-  await option.click();
-  await expect(search).toBeHidden();
-  await expect(canvas).toBeFocused();
-  await expect(canvas).not.toHaveAttribute('data-keyboard-focus');
-});
+for (const width of [1440, 1920]) {
+  test(`${width}: search selection hands keyboard focus to the map, while cancellation returns to its opener`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openMap(page);
+    const trigger = page.getByTestId('topology-concept-search');
+    await trigger.click();
+    const search = page.getByRole('dialog', { name: '이 지도에서 검색' });
+    await expect(search).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(search).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await page.keyboard.press('Meta+k');
+    await expect(search).toBeVisible();
+    await search.getByRole('combobox').fill('결제');
+    await expect(search.locator('[role="option"][aria-selected="true"]')).toContainText('결제');
+    await page.keyboard.press('Enter');
+    await expect(search).toBeHidden();
+    const canvas = page.getByTestId('ontology-map-canvas');
+    await expect(canvas).toBeFocused();
+    await expect(canvas).toHaveAttribute('data-keyboard-focus', 'true');
+    expect(await canvas.evaluate(el => getComputedStyle(el).outlineStyle)).toBe('solid');
+    const selected = () => page.evaluate(() => (window as unknown as { __atlasMap: { selection(): { nodeId: string | null } } }).__atlasMap.selection().nodeId);
+    const original = await selected();
+    expect(original).toBeTruthy();
+    for (const key of ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp']) {
+      await page.keyboard.press(key);
+      if ((await selected()) !== original) break;
+    }
+    await expect.poll(selected).not.toBe(original);
+    await page.keyboard.press('Meta+k');
+    await expect(search).toBeVisible();
+    await expect(canvas).not.toHaveAttribute('data-keyboard-focus');
+    await page.keyboard.press('Escape');
+    await expect(canvas).toBeFocused();
+    await expect(canvas).toHaveAttribute('data-keyboard-focus', 'true');
+    const rect = (await canvas.boundingBox())!;
+    await page.mouse.click(rect.x + 20, rect.y + rect.height - 20);
+    await expect(canvas).not.toHaveAttribute('data-keyboard-focus');
+    // The exiting inspector still reserves room and temporarily moves search clear of
+    // the utility buttons. Verify the resting toolbar, not that transient safe position.
+    await expect(page.getByTestId('topology-search-action-lane')).not.toHaveAttribute(
+      'data-right-inspector-reserve', 'recenter-in-remaining-map',
+    );
+    const searchRect = (await trigger.boundingBox())!;
+    const utilityRect = (await page.getByTestId('topology-utility-action-lane').boundingBox())!;
+    const overlapWidth = Math.max(0, Math.min(searchRect.x + searchRect.width, utilityRect.x + utilityRect.width) - Math.max(searchRect.x, utilityRect.x));
+    const overlapHeight = Math.max(0, Math.min(searchRect.y + searchRect.height, utilityRect.y + utilityRect.height) - Math.max(searchRect.y, utilityRect.y));
+    expect(overlapWidth * overlapHeight, 'the resting search control overlaps the utility lane').toBe(0);
+    await trigger.click();
+    await search.getByRole('combobox').fill('결제');
+    const option = search.locator('[role="option"][aria-selected="true"]');
+    await expect(option).toContainText('결제');
+    await option.click();
+    await expect(search).toBeHidden();
+    await expect(canvas).toBeFocused();
+    await expect(canvas).not.toHaveAttribute('data-keyboard-focus');
+  });
+}

@@ -227,6 +227,9 @@ export function TopologyCommandChrome({
         <>
           <SearchHint
             density={topologyUtilityChromeCompact || searchLaneCrowded ? "compact-focus" : "default"}
+            // Compact icons alone still overlap the named utility group after the
+            // inspector closes. Keep search on its own row in the same crowded band.
+            belowUtilityRow={searchLaneCrowded}
             phoneFocusSuppressed={selectedNodeFocusActive}
             rightInspectorReserved={nodePanelMounted}
             leftIndexReserved={renderedIndexState === "expanded"}

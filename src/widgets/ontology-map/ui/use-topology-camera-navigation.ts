@@ -176,7 +176,8 @@ export function useTopologyCameraNavigation({
     // overflowed: three domains under the toolbar, one off the canvas
     // (measured 2026-09-19). The lens dims that ring now, so it is the frame
     // the path wants, not a crop to cut away.
-    if (mapLensKindRef.current === "path" && !galaxyRef.current) {
+    const spinePath = mapLensKindRef.current === "path" && !galaxyRef.current;
+    if (spinePath) {
       const spine = world.spineBounds;
       if (spine.minX < minX) minX = spine.minX;
       if (spine.minY < minY) minY = spine.minY;
@@ -194,12 +195,15 @@ export function useTopologyCameraNavigation({
       maxX: maxX + padX,
       maxY: maxY + padY,
     };
-    const target = constellationFocusId !== null
+    const target = constellationFocusId !== null || spinePath
       ? computeOverviewCameraTarget(
-        focusBounds,
+        // A path keeps the spine clear of the toolbar and bottom labels, just
+        // like overview. Use its unpadded bounds so those safe insets are not
+        // added on top of the ordinary lens's 18% padding.
+        spinePath ? { minX, minY, maxX, maxY } : focusBounds,
         width,
         height,
-        { ...cameraTokens(tokens), overviewEntryRatio: 1 },
+        spinePath ? cameraTokens(tokens) : { ...cameraTokens(tokens), overviewEntryRatio: 1 },
       )
       // Beside the panels, not on the raw viewport: the raw fit landed
       // expand-all 116 px off the free centre (measured 2026-09-19).

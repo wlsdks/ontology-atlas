@@ -16,7 +16,7 @@ describe("search lane crowding — labels drop only where the map measured no ro
     expect(isSearchLaneCrowded({ viewportBelowCrowdedWidth: false, indexExpanded: false })).toBe(false);
   });
 
-  it("reserves room for the Meaning review action beside the expanded-index search lane", () => {
-    expect(SEARCH_LANE_CROWDED_BELOW_PX).toBe(1728);
+  it("reserves room for the named desktop utilities beside a trail and expanded index", () => {
+    expect(SEARCH_LANE_CROWDED_BELOW_PX).toBe(2048);
   });
 });

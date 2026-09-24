@@ -1495,7 +1495,9 @@ export function useLibraryGraphEngine({
     radiiRef.current = libraryMarkRadii(graph);
     zoomMaxRef.current =
       radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
+    const previousPicture = pictureRef.current;
     pictureRef.current = layoutRef.current === "flow" && overviewRef.current && graph.nodes.length >= ISLANDS_MIN_MARKS ? "islands" : layoutRef.current;
+    const compose = pictureRef.current === "force";
     setPicture(pictureRef.current);
     const layPicture = (sim: LibrarySimulation, travelling: boolean, known: ReadonlySet<string> | null = null) => {
       /*
@@ -1593,7 +1595,9 @@ export function useLibraryGraphEngine({
     const existing = simRef.current;
     if (!existing) {
       if (box.width === 0 || box.height === 0) return;
-      const sim = createLibrarySimulation({ graph, box });
+      // Flow and Islands replace the positions below; settling force footprints
+      // first only blocks the same frame for a picture that will never be drawn.
+      const sim = createLibrarySimulation({ graph, box, compose });
       simRef.current = sim;
       /*
        * **Reduced motion settles before the first frame and never ticks.** It is not the
@@ -1605,9 +1609,20 @@ export function useLibraryGraphEngine({
       autoFitRef.current = { on: true, converged: false };
     } else {
       const known = new Set(existing.nodes.map((node) => node.id));
-      const changed = syncLibrarySimulation(existing, graph);
+      const changed = syncLibrarySimulation(existing, graph, { compose });
       // The columns are recomputed whole: a new page changes every row under it.
       if (pictureRef.current !== "force") layPicture(existing, true, known);
+      else if (previousPicture !== "force") {
+        columnsRef.current = null;
+        publishWalkOrder(null);
+        islandsRef.current = null;
+        islandFieldRef.current = null;
+        islandOffsetsRef.current = new Map();
+        setIslandsList([]);
+        travelRef.current = null;
+        reheatLibrarySimulation(existing);
+        if (reducedMotion) settleLibrarySimulation(existing);
+      }
       const now = typeof performance === "undefined" ? 0 : performance.now();
       for (const gone of changed.removed) {
         const node = ghostsRef.current.get(gone.id)?.node ?? lastKnownRef.current.get(gone.id);
@@ -1635,7 +1650,7 @@ export function useLibraryGraphEngine({
 
   useEffect(() => {
     syncSimulation();
-  }, [graph, reducedMotion, syncSimulation]);
+  }, [graph, layout, overview, reducedMotion, syncSimulation]);
 
   // ── Measure the box; the frame commits it. ──
   useEffect(() => {
