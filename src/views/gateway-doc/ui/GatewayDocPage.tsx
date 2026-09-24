@@ -241,6 +241,9 @@ export function GatewayDocPage({
            * whenever there is room (1512: 629px measure, both sides 209px). When there is not
            * (1280), the right side collapses to zero first and the left keeps its 11.5rem, so the
            * table of contents survives beside a full measure (880 = 184 + 32 + 629 + 32 + 3).
+           * The left minimum is `clamp(9rem, 100% - measure - 4rem, 11.5rem)`, not a flat 11.5rem:
+           * CI resolved the guide's measure to 660px, and a flat 184px left the article 632px at
+           * 1280. The list now gives up to 40px before the measure does.
            * The empty right cell that used to reserve the centre is gone: an empty `1fr` track
            * does that without an element. The list itself sits at the **start** of its track, on
            * the gutter: at 1920 an end-aligned list began at x=381 while the brand above it began
@@ -251,7 +254,7 @@ export function GatewayDocPage({
           <div
             className={cn(
               sidebar || entryNav
-                ? 'xl:grid xl:grid-cols-[minmax(11.5rem,1fr)_minmax(0,var(--measure-prose))_minmax(0,1fr)] xl:gap-x-8'
+                ? 'xl:grid xl:grid-cols-[minmax(clamp(9rem,calc(100%_-_var(--measure-prose)_-_4rem),11.5rem),1fr)_minmax(0,var(--measure-prose))_minmax(0,1fr)] xl:gap-x-8'
                 : 'flex flex-col items-center',
             )}
           >
