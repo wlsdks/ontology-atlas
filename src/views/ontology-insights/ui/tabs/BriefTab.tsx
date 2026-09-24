@@ -199,10 +199,16 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
   return (
     <div
       data-testid="brief-band"
-      // The slot decides, not the window: at the app's 1040 floor the slot is 896px and a viewport
-      // `xl` gave a 2x2 band 101px taller than the Concepts band beside it (design-responsive).
-      className="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-divider)] @min-[960px]/insights:grid-cols-4"
+      // The rounded box is the ordinary panel (`border-soft + panel`); the 1px divider colour lives
+      // on the square grid inside it. Painting the rounded box itself in the divider colour made a
+      // surface no other screen wears (surface-vocabulary-ratchet, 8 -> 9 on 2026-09-23).
+      className="overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
     >
+      <div
+        // The slot decides, not the window: at the app's 1040 floor the slot is 896px and a viewport
+        // `xl` gave a 2x2 band 101px taller than the Concepts band beside it (design-responsive).
+        className="grid grid-cols-2 gap-px bg-[color:var(--color-divider)] @min-[960px]/insights:grid-cols-4"
+      >
       {cores.map((core) => {
         const [c1, c2, c3] = COLUMNS[core.core];
         const measured = core.availability === 'measured';
@@ -246,6 +252,7 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

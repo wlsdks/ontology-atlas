@@ -152,9 +152,13 @@ export function InsightsCensusStrip({
       /*
        * One band, the brief's shape (owner direction C, 2026-09-23): four cells share one panel
        * and a 1px divider instead of four cards, so switching subject keeps the band in place.
+       * The rounded box is the ordinary panel; the divider colour lives on the square grid inside,
+       * because a rounded box painted in the divider colour is a surface no other screen wears
+       * (surface-vocabulary-ratchet).
        */
-      className="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-divider)] @min-[960px]/insights:grid-cols-4"
+      className="overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
     >
+      <div className="grid grid-cols-2 gap-px bg-[color:var(--color-divider)] @min-[960px]/insights:grid-cols-4">
       <BandCell><CensusTile testId="insights-census-tile" surface="bare" label={labels.concepts}>
         <CensusBigNumber testId="insights-bignum" value={totalNodes} scale="section" tone="primary" />
         <div className="mt-auto flex flex-col gap-1.5">
@@ -231,6 +235,7 @@ export function InsightsCensusStrip({
           <CensusSubStat label={labels.evidenceLinked} value={`${health.evidenceLinkedPct}%`} />
         </div>
       </CensusTile></BandCell>
+      </div>
     </div>
   );
 }
