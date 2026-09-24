@@ -3705,6 +3705,24 @@
        metal surface. Dissolves in far-field(farT>=0.98)/small(r<=3). */
     --map-node-sheen-tint: #232329;
     --map-node-sheen-blend: 0.6;
+    /* Territories view (2026-09-24, `render/territories.ts`). Every value points at an existing
+       ramp; the family exists so the view reads one name per role rather than borrowing roles
+       that mean something else on the flat map.
+       - title/count: a domain's name reads as a territory name, its counts a step quieter
+         (5.49:1 on --map-canvas-bg-near, 4.96:1 on the pill surface).
+       - stale/stale-fill: the product's one warning hue, the same amber the brief uses.
+       - rim-light: the disc's upper inner rim, the canvas twin of the DOM hairline highlight.
+       - rollup-alpha: rolled-up domain strokes sit under the data, never over it.
+       - glow-alpha: the ambient light behind a territory, never a boundary.
+       - arrival: the shelves settle in once per layout, inside the settle clock. */
+    --map-territory-title: var(--color-text-secondary);
+    --map-territory-count: var(--map-panel-text-tertiary);
+    --map-territory-stale: var(--color-status-warning);
+    --map-territory-stale-fill: var(--color-amber-source-a12);
+    --map-territory-rim-light: var(--color-overlay-3);
+    --map-territory-rollup-alpha: 0.55;
+    --map-territory-glow-alpha: 0.12;
+    --map-territory-arrival: var(--motion-settle);
     /* builder-core (feat/builder-core, docs/prototypes/builder-v2-0{2,3}.html):
        the ONE DOM surface that draws a real ontology-map node as an HTML card
        (`AtlasNode`, the `/ontology/edit` builder canvas) instead of canvas-2D

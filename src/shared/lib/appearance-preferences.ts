@@ -345,6 +345,35 @@ export function useGalaxy(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+/* ── Territories (2D map, nothing folded) ───────────────────────────────── */
+
+/**
+ * Whether the flat map is drawn as **Territories** — every capability named, gathered in its
+ * domain's own slice of the plane, with no expansion step (owner decision, 2026-09-24).
+ *
+ * It sits beside `galaxy` for the same reason Galaxy sits beside `view3d`: to a reader it is
+ * one more answer to "how does the map look", chosen in the same picker. The three flags are
+ * written together by that picker so at most one of them is on. The home route mirrors this
+ * flag into `?view=territories`, so a link can open the view and a reload keeps it.
+ */
+const TERRITORIES_KEY = "atlas.appearance.territories";
+
+const DEFAULT_TERRITORIES = false;
+
+function readTerritories(): boolean {
+  return readOnOff(TERRITORIES_KEY, DEFAULT_TERRITORIES);
+}
+
+export function writeTerritories(value: boolean): void {
+  writeOnOff(TERRITORIES_KEY, value);
+}
+
+export function useTerritories(): boolean {
+  const getSnapshot = useCallback(() => readTerritories(), []);
+  const getServerSnapshot = useCallback(() => DEFAULT_TERRITORIES, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 /* ── Arrangement (3D map) ───────────────────────────────────────────────── */
 
 /**
