@@ -743,16 +743,25 @@ function FactsStrip({
     <div className={cn('gateway-rise gateway-t400', heroIn && 'is-in', 'w-full', className)}>
       {/* Two flex items on one rule: the facts list and the destination pair. The pair is one
           item so it moves as a unit — measured at 834 with the links loose in the list, the
-          push-right left one link alone on a third row. From `lg` the pair sits on the column's
-          right edge; narrower, it wraps whole beneath the facts. */}
+          push-right left one link alone on a third row. When all six fit on one line, the pair
+          sits on the column's right edge.
+
+          **When they do not fit, the strip is one grid** (2026-09-25). The pair used to wrap
+          whole beneath the facts and keep its push-right, so at 1040 and 1280 the second row
+          started mid-column on a grid of its own: two rows sharing no start line. Below the
+          one-line width the facts and the pair are subgrids of one `max-content` grid, so the
+          two links fall into the facts' first two columns and every row starts at the column's
+          left edge. The switch is a container query on the strip, because the column, not the
+          window, decides whether six items fit. */}
       <div
         data-testid="gateway-facts"
         className={cn(
           PAGE_COLUMN,
-          'flex flex-wrap gap-x-12 gap-y-4 border-t border-[color:var(--color-border-soft)] py-5',
+          '@container/gateway-facts border-t border-[color:var(--color-border-soft)] py-5',
         )}
       >
-        <dl className="flex min-w-0 flex-wrap gap-x-12 gap-y-4">
+        <div className="grid grid-cols-1 gap-x-10 gap-y-4 @min-[21rem]/gateway-facts:grid-cols-2 @min-[38rem]/gateway-facts:grid-cols-[repeat(4,max-content)] @min-[66rem]/gateway-facts:flex @min-[66rem]/gateway-facts:gap-x-12">
+        <dl className="col-span-full grid min-w-0 grid-cols-subgrid gap-y-4 @min-[66rem]/gateway-facts:flex @min-[66rem]/gateway-facts:gap-x-12">
           {facts.map((fact) => (
             <div key={fact.label} className="min-w-0">
               <dt className={FACT_LABEL}>{fact.label}</dt>
@@ -765,7 +774,7 @@ function FactsStrip({
             </div>
           ))}
         </dl>
-        <div className="flex min-w-0 flex-wrap gap-x-12 gap-y-4 lg:ml-auto">
+        <div className="col-span-full grid min-w-0 grid-cols-subgrid gap-y-4 @min-[66rem]/gateway-facts:ml-auto @min-[66rem]/gateway-facts:flex @min-[66rem]/gateway-facts:gap-x-12">
           {links.map((link) => (
             <div key={link.label} className="min-w-0">
               <span className={cn(FACT_LABEL, 'block')}>{link.label}</span>
@@ -791,6 +800,7 @@ function FactsStrip({
               </span>
             </div>
           ))}
+        </div>
         </div>
       </div>
     </div>

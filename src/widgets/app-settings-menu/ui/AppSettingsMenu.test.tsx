@@ -618,6 +618,22 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
     });
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  /**
+   * Every pane opens with one head — the section's name and the sentence saying what it
+   * decides (2026-09-25). On the API Key pane that sentence is the trust charter, so it
+   * must stay on screen after it left `AiConnectionPanel`.
+   */
+  it('opens each pane with its own head, and the API Key head carries the trust charter', () => {
+    render(<AppSettingsMenu mode="static" open onOpenChange={vi.fn()} />);
+    const screenHead = screen.getByTestId('app-settings-pane-head');
+    expect(screenHead).toHaveTextContent('nav.settingsMenu.section.screen');
+    expect(screenHead).toHaveTextContent('nav.settingsMenu.sectionPurpose.screen');
+    fireEvent.click(screen.getByTestId('app-settings-nav-ai'));
+    const aiHead = screen.getByTestId('app-settings-pane-head');
+    expect(aiHead.querySelector('h3')).toHaveTextContent('nav.settingsMenu.section.ai');
+    expect(aiHead).toHaveTextContent('nav.settingsMenu.sectionPurpose.ai');
+  });
 });
 
 // Phase 5 #20/#21 — whether the personalisation pickers (3 canvas backgrounds, 2

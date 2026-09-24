@@ -11,8 +11,8 @@ import {
   Expand,
   Sparkles,
   HardDrive,
+  KeyRound,
   Layers,
-  MessageSquare,
   Monitor,
   Plug,
   Settings,
@@ -47,7 +47,13 @@ import { AccentPicker, CanvasBackgroundPicker, GlyphSetPicker } from './Appearan
 import { FootprintSettings } from './FootprintSettings';
 import { ExpandSettings } from './ExpandSettings';
 import { AgentActivitySettings } from './AgentActivitySettings';
-import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
+import {
+  DETAIL_TOGGLE_CHIP,
+  SegmentSwitch,
+  SettingsGroup,
+  SettingsPaneHead,
+  SettingsRow,
+} from './settings-primitives';
 import { VaultShapeSettings } from './VaultShapeSettings';
 import { WikiWriteModeSettings } from './WikiWriteModeSettings';
 import { useFrameMeter, writeFrameMeter } from '@/shared/lib/appearance-preferences';
@@ -143,10 +149,11 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  * - `px-3 py-2` — **the same padding** as the right pane's `SettingsRow`. Equal
  *   vertical inset derives a height of 36px, and equal horizontal inset puts the
  *   left list's and the right rows' text on the same rhythm.
- * - `text-body-lg` (14px) — this list is **what you choose from first** when the
- *   sheet opens (the attention winner). It has to be one step above the right
- *   rows' labels (12.5px) so "where do I go" and "what do I change" do not
- *   compete at equal weight.
+ * - `text-body` (12.5px) since 2026-09-25. It was `text-body-lg` (14px) as the
+ *   sheet's attention winner, which made the index louder than every setting it
+ *   leads to (rows 12.5, captions 11) and as loud as the sheet title. The winner
+ *   is now each pane's own head (`SettingsPaneHead`, 16px); the nav is the quiet
+ *   index beside it.
  * - 16px icons — at 14px they matched the text (14px) and never became a
  *   scanning channel.
  */
@@ -236,12 +243,12 @@ const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
   // (Layers), footprints, drive or bot (icons are a scanning channel, see above).
   expand: Expand,
   footprint: Sparkles,
-  // A bell — the only «ringing» silhouette in this list. It cannot be confused
-  // with the speech bubble (ai): a bubble means «I speak to it», a bell means «the
-  // app calls me», and their outlines separate as rectangle versus triangle.
+  // A bell — the only «ringing» silhouette in this list.
   notify: Bell,
   workspace: HardDrive,
-  ai: MessageSquare,
+  // A key, because the pane holds API keys (2026-09-25). It wore a speech bubble, the
+  // same glyph as the agent chat affordance, from when the pane was the in-app chat.
+  ai: KeyRound,
 };
 /**
  * Hover for an LNB row — **written in one place only** (2026-08-21).
@@ -800,7 +807,7 @@ export function AppSettingsMenu({
                           shape: 'row',
                           size: 'md',
                           tone: 'muted',
-                          className: `w-auto shrink-0 whitespace-nowrap gap-2.5 rounded-card px-3 py-2 text-body-lg sm:w-full ${SETTINGS_NAV_ROW_HOVER}`,
+                          className: `w-auto shrink-0 whitespace-nowrap gap-2.5 rounded-card px-3 py-2 text-body sm:w-full ${SETTINGS_NAV_ROW_HOVER}`,
                         })}
                       >
                         {/* The destination's own rail icon, so the row and the tile agree. */}
@@ -831,7 +838,7 @@ export function AppSettingsMenu({
                             shape: 'row',
                             size: 'md',
                             tone: active ? 'accentOnTint' : 'muted',
-                            className: `w-auto shrink-0 whitespace-nowrap gap-2.5 rounded-card px-3 py-2 text-body-lg sm:w-full ${
+                            className: `w-auto shrink-0 whitespace-nowrap gap-2.5 rounded-card px-3 py-2 text-body sm:w-full ${
                               active
                                 ? 'bg-[color:var(--color-indigo-line-a13)]'
                                 : SETTINGS_NAV_ROW_HOVER
@@ -858,9 +865,13 @@ export function AppSettingsMenu({
                 }}
                 data-testid={`app-settings-pane-${section}`}
               >
+                <SettingsPaneHead
+                  testId="app-settings-pane-head"
+                  title={t(`section.${section}`)}
+                  description={t(`sectionPurpose.${section}`)}
+                />
                 {section === 'screen' ? (
                   <>
-                  {/* The section title is not repeated — the left list already names this pane. */}
                   <SettingsGroup>
                 <SettingsRow
                   label={t('languageTitle')}
@@ -1134,32 +1145,36 @@ export function AppSettingsMenu({
                 {vaultRootPath ? (
                   <SettingsRow
                     testId="app-settings-vault-path"
-                    label={tPicker('copyPathTooltip')}
+                    /* The row names the value and the buttons name the act (2026-09-25): the
+                       title and its button both read "copy ontology folder path", and Finder
+                       wore the accent that belongs to the pane's one primary act (change). */
+                    label={t('workspacePathLabel')}
                     caption={vaultRootPath}
                     control={
                       <>
                         <Chip
                           size="lg"
+                          tone="secondary"
                           data-testid="app-settings-copy-vault-path"
                           onClick={() => void copy(vaultRootPath)}
                           aria-label={tPicker('copyPathAriaLabel', { path: vaultRootPath })}
-                          className="shrink-0 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+                          className={DETAIL_TOGGLE_CHIP}
                         >
                           {copyState === 'copied'
                             ? tPicker('copyPathCopied')
                             : copyState === 'failed'
                               ? tPicker('copyPathFailed')
-                              : tPicker('copyPathTooltip')}
+                              : t('workspacePathCopy')}
                         </Chip>
                         <Chip
                           size="lg"
-                          tone="accentOnTint"
+                          tone="secondary"
                           data-testid="app-settings-reveal-vault-path"
                           onClick={() => void openTauriVaultInFinder(vaultRootPath)}
                           aria-label={tPicker('revealPathAriaLabel', { path: vaultRootPath })}
-                          className={INDIGO_ACTION_CHIP}
+                          className={DETAIL_TOGGLE_CHIP}
                         >
-                          {tPicker('revealPathLabel')}
+                          {t('workspacePathReveal')}
                         </Chip>
                       </>
                     }
@@ -1222,14 +1237,16 @@ export function AppSettingsMenu({
                   className={controlClass({ shape: "row", stacked: true, className: "min-h-12 justify-between gap-3 px-3 py-2 hover:bg-[color:var(--color-overlay-2)]" })}
                 >
                   <span className="min-w-0">
-                    <span className="block text-body text-[color:var(--color-text-secondary)]">
+                    <span className="block text-body text-[color:var(--color-text-primary)]">
                       {t('vaultTitle')}
                     </span>
-                    <span className="mt-0.5 block break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+                    <span className="mt-0.5 block break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
                       {vaultBody}
                     </span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-1 text-body text-[color:var(--color-indigo-accent)]">
+                  {/* The whole row is the link; its trailing mark wears the same secondary
+                      chip as the pane's other row actions instead of a bare accent text link. */}
+                  <span className={controlClass({ shape: 'chip', size: 'lg', tone: 'secondary', className: 'shrink-0 gap-1 border-[color:var(--color-border-soft)]' })}>
                     {vaultCta}
                     <ChevronRight size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
                   </span>

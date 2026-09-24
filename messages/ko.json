@@ -99,7 +99,7 @@
       "workspaceRecentOpenAria": "최근 작업공간 {name} 열기",
       "workspaceRecentForgetAria": "최근 작업공간 {name} 지우기",
       "vaultTitle": "온톨로지 문서",
-      "vaultBodyLocal": "온톨로지 문서을 열어 파일과 개념을 확인해요",
+      "vaultBodyLocal": "온톨로지 파일 목록과 개념을 한 화면에서 봐요.",
       "vaultBodyStatic": "저장 가능한 폴더는 데스크톱 앱 또는 로컬 작업공간에서 열어요",
       "vaultCtaLocal": "열기",
       "vaultCtaStatic": "시작하기",
@@ -116,7 +116,6 @@
       "mcpProofCopy": "첫 호출 안내 복사",
       "mcpProofCopied": "복사됨",
       "footprint": {
-        "caption": "지도에서 눌러 본 개념에 별이 하나씩 켜져요. 걸어온 순서가 숫자로 붙고, 이은 선을 따라 빛이 걸어간 방향으로 흘러요.",
         "presetLabel": "세기",
         "preset": {
           "subtle": "은은하게",
@@ -135,15 +134,14 @@
         "reset": "기본값으로 되돌리기"
       },
       "expand": {
-        "caption": "지도에서 접힌 묶음을 어떻게 펼칠지 정해요. 바꾸면 지도에 바로 반영돼요.",
         "affordanceLabel": "펼치기 표시",
         "affordancePill": "뜬 알약",
         "affordanceBar": "머리 위 막대",
         "affordanceBadge": "어깨 배지",
         "affordanceHint": {
-          "pill": "노드에서 떨어진 빈 자리에 뜨고 점선으로 이어진다. 셋 중 유일하게 자리를 「찾아야」 해서, 빈 곳이 없어지면 멀어진다.",
-          "bar": "고른 노드 바로 위에 글자 버튼이 뜬다. 안 고르면 아무것도 없고, 몇 개가 열릴지 숫자로 말한다.",
-          "badge": "노드 왼쪽 위 어깨에 붙은 작은 원. 노드를 따라다니므로 자리를 찾을 일이 없고, 무엇을 할지는 호버로 말한다."
+          "pill": "노드에서 떨어진 빈 자리에 뜨고 점선으로 이어져요. 셋 중 유일하게 자리를 「찾아야」 해서, 빈 곳이 없어지면 멀어져요.",
+          "bar": "고른 노드 바로 위에 글자 버튼이 떠요. 고르지 않으면 아무것도 없고, 몇 개가 열릴지 숫자로 알려 줘요.",
+          "badge": "노드 왼쪽 위 어깨에 붙은 작은 원이에요. 노드를 따라다녀서 자리를 찾을 일이 없고, 무엇을 할지는 호버로 알려 줘요."
         },
         "structureLabel": "확장 구조",
         "structureDisc": "나선 원반",
@@ -151,17 +149,17 @@
         "structureRing": "고리",
         "structureColumn": "기둥",
         "structureHint": {
-          "disc": "종전 배치. 황금각 나선이라 자식이 늘어도 차지하는 면적이 √로만 자란다.",
-          "fan": "지금 쓰는 배치. 바깥쪽으로 부채꼴이라 이름이 나란히 놓인다. 층이 쌓이며 넓어진다.",
-          "ring": "부모를 감싸는 고리. 사방을 쓰니 같은 개수를 더 좁은 면적에 담는다.",
-          "column": "바깥으로 줄 세우기. 이름이 옆으로 나란해 읽기가 가장 쉽다. 대신 길어진다."
+          "disc": "예전 배치예요. 황금각 나선이라 자식이 늘어도 차지하는 면적이 √로만 자라요.",
+          "fan": "지금 쓰는 배치예요. 바깥쪽으로 부채꼴이라 이름이 나란히 놓이고, 층이 쌓이며 넓어져요.",
+          "ring": "부모를 감싸는 고리예요. 사방을 쓰니 같은 개수를 더 좁은 면적에 담아요.",
+          "column": "바깥으로 줄을 세워요. 이름이 옆으로 나란해 읽기가 가장 쉽지만, 대신 길어져요."
         },
         "batchLabel": "한 번에 여는 개수",
-        "batchHint": "나머지는 「N개 펼치기」를 다시 누른다. 작을수록 이름이 붙을 자리가 생긴다.",
+        "batchHint": "나머지는 「N개 펼치기」를 다시 누르면 열려요. 작을수록 이름이 붙을 자리가 생겨요.",
         "labelAttemptsLabel": "이름을 시도할 개수",
-        "labelAttemptsHint": "한 부모당. 중요한 것부터 시도하고, 자리가 없으면 그 이름은 버린다. 그래서 이 값은 「몇 개가 붙나」가 아니라 「몇 개까지 시도하나」다.",
+        "labelAttemptsHint": "부모 하나마다 세요. 중요한 것부터 시도하고, 자리가 없으면 그 이름은 버려요. 그래서 이 값은 「몇 개가 붙나」가 아니라 「몇 개까지 시도하나」예요.",
         "maxOpenLabel": "동시에 펼쳐 둘 부모",
-        "maxOpenHint": "넘게 펼치면 가장 오래 펼쳐 둔 부모가 닫힌다. 누른 것이 아무 일도 안 하는 것보다 낫다.",
+        "maxOpenHint": "이보다 많이 펼치면 가장 오래 펼쳐 둔 부모가 닫혀요. 눌렀는데 아무 일도 없는 것보다 나아요.",
         "detailShow": "펼치는 개수 직접 정하기",
         "detailHide": "펼치는 개수 접기",
         "reset": "기본값으로 되돌리기"
@@ -175,6 +173,16 @@
         "workspace": "작업 공간",
         "ai": "API Key",
         "update": "업데이트"
+      },
+      "sectionPurpose": {
+        "screen": "언어와 보기 방식, 아이콘과 강조색을 정해요. 모든 화면에 함께 적용돼요.",
+        "background": "지도 뒤에 깔리는 바탕을 골라요. 고르면 지도에 바로 보여요.",
+        "expand": "지도에서 접힌 묶음을 어떻게 펼칠지 정해요. 바꾸면 지도에 바로 반영돼요.",
+        "footprint": "지도에서 눌러 본 개념에 별이 하나씩 켜져요. 걸어온 순서가 숫자로 붙고, 이은 선을 따라 빛이 걸어간 방향으로 흘러요.",
+        "notify": "에이전트가 일하는 동안 무엇을 보여 주고 알려 줄지 정해요.",
+        "workspace": "지금 연 폴더와 그 안에 담긴 것을 관리해요.",
+        "ai": "키는 이 컴퓨터의 OS 자격 증명 저장소에만 두고, 보내기를 누를 때만 전송하며, 모든 호출을 폴더 안에 기록해요.",
+        "update": "이 앱의 새 판이 나오면 우하단에 알려 드려요. 지금 바로 확인할 수도 있어요."
       },
       "sectionGroup": {
         "look": "보이는 것",
@@ -239,9 +247,10 @@
         "hintLabel": "대화를 열면 무엇이 만들어지는지"
       },
       "appUpdate": {
-        "intro": "이 앱의 새 판이 나오면 우하단에 알려 드려요. 지금 바로 확인할 수도 있어요.",
         "versionLabel": "지금 쓰는 판",
         "versionValue": "{version}",
+        "versionReading": "버전을 읽는 중이에요.",
+        "versionUnknown": "버전을 읽지 못했어요. 업데이트 확인을 누르면 다시 읽어요.",
         "check": "업데이트 확인",
         "checking": "확인 중",
         "resultCurrent": "최신이에요. 더 받을 것이 없어요.",
@@ -251,7 +260,10 @@
         "resultFailed": "업데이트 정보를 가져오지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.",
         "resultInstallFailed": "업데이트 설치를 마치지 못했어요. 잠시 뒤 다시 시도해 주세요."
       },
-      "goToMcp": "MCP"
+      "goToMcp": "MCP",
+      "workspacePathLabel": "폴더 경로",
+      "workspacePathCopy": "복사",
+      "workspacePathReveal": "Finder에서 보기"
     },
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"
@@ -710,17 +722,17 @@
     "trademarks": "Claude Code, Codex, Cursor를 비롯해 여기 나오는 제품 이름은 각 소유자의 상표예요. Ontology Atlas는 어느 쪽과도 제휴하거나 승인받은 관계가 아니며, 이름은 무엇과 연결되는지 말하기 위해서만 써요."
   },
   "firstRun": {
-    "eyebrow": "Local-first workbench",
+    "eyebrow": "내 컴퓨터 안의 작업대",
     "title": "폴더를 열고 바로 시작하세요",
     "subtitle": "이 Mac의 마크다운 폴더를 가리키면 그 파일들이 로컬 원본이 돼요. Atlas가 업로드하지는 않지만, 나중에 연결한 코딩 에이전트는 질문과 문맥을 자기 제공자에게 보낼 수 있어요.",
     "openTitle": "내 폴더 열기",
     "openBody": "이미 있는 마크다운 폴더를 골라 온톨로지 폴더로 써요.",
     "justStartTitle": "그냥 시작하기",
-    "justStartBody": "내 문서(Documents) › Ontology Atlas 폴더에 바로 만들어요. 폴더 선택 없이. AI 에이전트도 이 폴더를 읽고 쓸 수 있어요.",
+    "justStartBody": "내 문서(Documents) › Ontology Atlas 폴더를 고를 필요 없이 바로 만들어요. AI 에이전트도 이 폴더를 읽고 쓸 수 있어요.",
     "justStartBusy": "만드는 중…",
     "justStartToast": "{path}에 만들었어요. 에이전트도 이 폴더를 볼 수 있어요.",
     "createTitle": "새 문서 폴더 만들기",
-    "createBody": "빈 폴더를 고르면 시작 구조를 만들어 드려요. 마크다운 시드 5개 + 에이전트 설정.",
+    "createBody": "빈 폴더를 고르면 시작 파일 5개와 에이전트 설정을 만들어 드려요.",
     "demoTitle": "예시 둘러보기",
     "demoBody": "내 폴더를 열기 전에 Ontology Atlas가 자기 자신을 그린 예시를 살펴봐요.",
     "busy": "폴더 여는 중…",
@@ -3829,7 +3841,6 @@
     "ai": {
       "title": "AI 연결",
       "subtitle": "내 API 키로 쓰는 선택 기능",
-      "principle": "키는 이 컴퓨터의 OS 자격 증명 저장소에만 · 전송은 당신이 누를 때만 · 모든 호출은 폴더 안에 기록",
       "providerAnthropic": "Anthropic",
       "providerOpenai": "OpenAI",
       "providerGemini": "Google Gemini",
@@ -3840,7 +3851,7 @@
       "cancel": "취소",
       "saving": "저장 중…",
       "saved": "키를 저장했어요",
-      "pasteSafety": "키는 이 컴퓨터의 OS 자격 증명 저장소에만 저장돼요. 저장한 뒤에는 화면 어디에서도 전체 키를 다시 볼 수 없어요(끝 4자만 표시). Atlas에는 서버가 없어요. 이 키가 가는 곳은 당신이 직접 승인한 {provider} API 호출뿐이에요.",
+      "pasteSafety": "키는 이 컴퓨터의 OS 자격 증명 저장소에만 저장돼요. 저장한 뒤에는 화면 어디에서도 전체 키를 다시 볼 수 없어요(끝 4자만 표시). Atlas에는 서버가 없어요. 이 키가 가는 곳은 직접 승인한 {provider} API 호출뿐이에요.",
       "whatItUnlocks": "하나만 연결하면 지도 옆에 「에이전트」가 열려요. 열어 둔 문서 폴더를 읽어 답하고, 고칠 것이 있으면 바뀔 내용을 먼저 보여줘요.",
       "storedLabel": "등록됨",
       "verify": "연결 확인",
@@ -3853,16 +3864,16 @@
       "clear": "지우기",
       "clearConfirm": "정말 지우기",
       "cleared": "키를 지웠어요",
-      "scopeTitle": "무엇이 나가는가",
+      "scopeTitle": "밖으로 나가는 것",
       "scopeWhatLabel": "무엇이",
-      "scopeWhatValue": "당신이 쓴 질문 + 폴더에서 고른 노드 발췌(호출 전에 목록·글자수·전문을 보여줘요)",
+      "scopeWhatValue": "쓴 질문 + 폴더에서 고른 노드 발췌(호출 전에 목록·글자수·전문을 보여줘요)",
       "scopeWhenLabel": "언제",
-      "scopeWhenValue": "당신이 보내기를 누를 때만. 자동 호출은 없어요",
+      "scopeWhenValue": "보내기를 누를 때만 보내요. 자동 호출은 없어요",
       "scopeLogLabel": "기록",
       "scopeLogValue": "모든 호출이 폴더 안.ontology-atlas/llm-audit.jsonl에 남아요. 평문이라 git으로도 확인돼요",
       "auditTitle": "보낸 기록",
       "auditEmpty": "아직 보낸 것이 없어요. 이 파일은 호출이 있을 때만 생겨요.",
-      "auditPathNote": "커밋할지는 당신의 선택이에요",
+      "auditPathNote": "커밋할지는 직접 정해요",
       "auditOpen": "Finder에서 열기",
       "auditPurposeVerify": "연결 확인",
       "auditPurposeAsk": "질문",
@@ -3891,8 +3902,8 @@
       "localFailUnreachable": "{host}에서 응답이 없어요. 러너가 꺼져 있거나 포트가 달라요. Ollama 라면 터미널에서 ollama serve로 켜고, 포트를 바꿨다면 위 주소를 고쳐 주세요.",
       "localFailNotCompatible": "{host}는 응답하는데 OpenAI 호환 API가 아니에요 (404). 그 포트를 다른 프로그램이 쓰고 있거나, 러너가 호환 API를 안 여는 버전이에요. 러너의 포트와 버전을 확인해 주세요.",
       "localFailNoModels": "연결은 됐는데 설치된 모델이 하나도 없어요. 터미널에서 ollama pull qwen3:8b처럼 모델을 하나 받은 다음 다시 확인해 주세요.",
-      "localScopeLoopback": "전송: 당신이 쓴 질문 + 폴더에서 고른 노드 발췌 → {host}. 이 컴퓨터 밖으로 나가지 않고, 기록에도 목적지가 {host}로 남아요. 그게 나가지 않았다는 증거예요.",
-      "localScopeRemote": "전송: 당신이 쓴 질문 + 폴더에서 고른 노드 발췌 → {host}. 이 주소는 이 컴퓨터 밖이라 기록에 {host}가 목적지로 남아요.",
+      "localScopeLoopback": "전송: 쓴 질문 + 폴더에서 고른 노드 발췌 → {host}. 이 컴퓨터 밖으로 나가지 않고, 기록에도 목적지가 {host}로 남아요. 그게 나가지 않았다는 증거예요.",
+      "localScopeRemote": "전송: 쓴 질문 + 폴더에서 고른 노드 발췌 → {host}. 이 주소는 이 컴퓨터 밖이라 기록에 {host}가 목적지로 남아요.",
       "webDegradedLocalBody": "이 컴퓨터에서 도는 러너(Ollama · LM Studio 등)에 주소로 붙는 것도 브라우저에서는 안 돼요. 러너 쪽 설정을 바꿔도 마찬가지예요. 웹 화면에는 모델로 글을 보내는 길 자체를 두지 않기로 했거든요. 데스크톱 앱에서는 러너 주소만 적으면 되고 키는 필요 없어요. 보낸 기록에도 목적지가 이 컴퓨터로 남아요."
     },
     "workspaceShapeLabel": "이 폴더에 있는 것",

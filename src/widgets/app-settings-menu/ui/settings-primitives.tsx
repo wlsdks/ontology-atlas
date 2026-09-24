@@ -96,6 +96,41 @@ export const RESET_LINK_INK = 'justify-self-start hover:text-[color:var(--color-
 export const SETTINGS_SECTION_LABEL =
   'font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]';
 
+/**
+ * The head every pane opens with — the section's name on the title step and one finished
+ * sentence saying what the pane decides (2026-09-25).
+ *
+ * ⚠️ **This overturns "the section title is not repeated"** (2026-07-29). That rule held
+ * while the nav was the loudest type in the sheet (14px against 12.5px row titles), but it
+ * left the pane with no attention winner and nothing on the right saying where you are, and
+ * three panes grew their own substitute: a free-floating 11px intro line (Update, Expand,
+ * Footprint) or a dot-joined 12.5px fragment (API Key), while Screen and Workspace opened
+ * straight into a card. One head in one place replaces all four patterns, and type now
+ * descends pane head (16) → row title (12.5) → caption (11), with the nav quiet at 12.5.
+ * Falsifier: if a measured session shows people reading the nav and head as a stutter
+ * (the same word twice), fold the name back and keep only the sentence.
+ */
+export function SettingsPaneHead({
+  title,
+  description,
+  testId,
+}: {
+  title: string;
+  description: string;
+  testId?: string;
+}) {
+  return (
+    <header className="grid min-w-0 gap-1 px-1 pb-1" data-testid={testId}>
+      <h3 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+        {title}
+      </h3>
+      <p className="max-w-[var(--settings-content-measure)] break-keep text-body leading-body text-pretty text-[color:var(--color-text-tertiary)]">
+        {description}
+      </p>
+    </header>
+  );
+}
+
 /** Group header plus row container — the skeleton of the Toss-style "group header + immediately operable rows" grammar. */
 /**
  * A group of settings rows. `label` is **optional**: where the LNB already names
@@ -329,9 +364,11 @@ export function Choice<T extends string | boolean>({
   return (
     <div className="flex min-h-11 flex-col items-stretch gap-3 px-1 py-2 sm:flex-row sm:items-center">
       <span className="shrink-0 text-body text-[color:var(--color-text-primary)] sm:w-28">{label}</span>
+      {/* The joined `well` track, the same one-of-N grammar the Screen pane's switches use
+          (2026-09-25). Detached chips made the Expand pane read as a second control family
+          for the same kind of choice. */}
       <SegmentedControl
         ariaLabel={label}
-        variant="chips"
         value={value}
         onChange={onChange}
         options={options.map((option) => ({

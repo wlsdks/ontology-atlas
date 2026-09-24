@@ -104,9 +104,11 @@ describe('설정 시트 — 얼굴이 달라도 행의 폭은 하나다', () => 
     expect(tokenPx('--git-setup-measure')).toBeLessThan(tokenPx('--settings-content-measure'));
     // The place where the "connect just one…" line ran across 846px, far past the prose
     // measure (`--measure-prose`, `60ch` since 2026-09-11). Prose blocks come back inside it.
+    // One block since 2026-09-25: the trust notice left the panel for the sheet's pane head
+    // (`SettingsPaneHead`), which caps its own sentence at the row measure.
     expect(
       (PANEL.match(/max-w-\[var\(--git-setup-measure\)\]/g) ?? []).length,
-      '산문 블록(신뢰 고지 · 「무엇이 열리나」)이 산문 measure 를 안 쓴다',
-    ).toBeGreaterThanOrEqual(2);
+      '산문 블록(「무엇이 열리나」)이 산문 measure 를 안 쓴다',
+    ).toBeGreaterThanOrEqual(1);
   });
 });

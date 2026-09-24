@@ -161,7 +161,6 @@ export function AiConnectionPanel({
         className="grid max-w-[var(--settings-content-measure)] content-start gap-3"
         data-testid="ai-connection-view"
       >
-        <TrustHeadline>{t('principle')}</TrustHeadline>
         <div
           className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
           data-testid="ai-connection-web-degraded"
@@ -217,7 +216,9 @@ export function AiConnectionPanel({
         cancelDraft(expanded);
       }}
     >
-      <TrustHeadline>{t('principle')}</TrustHeadline>
+      {/* The trust notice (key stays on this computer, nothing leaves until you press,
+          every call is logged) is the sheet's pane head for this section since 2026-09-25,
+          written as one sentence instead of a dot-joined fragment. */}
 
       {/* It sits **above** the list because the first question of anyone arriving
           here is "what do I get if I connect", and "how do I connect" comes second.
@@ -238,7 +239,7 @@ export function AiConnectionPanel({
           cap applies to **prose only**. */}
       <p
         data-testid="ai-what-it-unlocks"
-        className="max-w-[var(--git-setup-measure)] break-keep px-1 text-label text-[color:var(--color-text-secondary)]"
+        className="max-w-[var(--git-setup-measure)] break-keep px-1 text-label text-pretty text-[color:var(--color-text-secondary)]"
       >
         {t('whatItUnlocks')}
       </p>
@@ -300,23 +301,6 @@ export function AiConnectionPanel({
         vaultRootPath={vaultRootPath}
       />
     </div>
-  );
-}
-
-/**
- * The one-line trust notice — the first sentence that should be read in this panel.
- *
- * The old styling was `text-label` plus tertiary, the **dimmest ink on screen**.
- * Writing this product's core promises — keychain, when transmission happens,
- * logging — at footnote size is materially the same as deleting them. It is raised
- * with body size and secondary ink and given no box, so the vendor list below
- * (primary ink plus border) is still the attention winner.
- */
-function TrustHeadline({ children }: { children: ReactNode }) {
-  return (
-    <p className="max-w-[var(--git-setup-measure)] break-keep px-1 text-body leading-body text-[color:var(--color-text-secondary)]">
-      {children}
-    </p>
   );
 }
 
@@ -485,6 +469,7 @@ function ProviderCard({
           </span>
         ) : (
           <Chip
+            size="lg"
             data-testid={`ai-register-${provider}`}
             // Having declared `aria-expanded`, pressing again must collapse it —
             // otherwise a promise made to a screen reader becomes a lie. So this
@@ -715,6 +700,7 @@ function LocalEndpointCard({
           </span>
         ) : (
           <Chip
+            size="lg"
             data-testid="ai-register-local"
             onClick={expanded ? onCancel : onExpand}
             aria-expanded={expanded}
@@ -1153,25 +1139,20 @@ function AuditTail({
       testId="ai-audit-tail"
       action={
         vaultRootPath ? (
-          <button
-            type="button"
+          /*
+           * The sheet's one trailing-action grammar, `lg` secondary chip (2026-09-25). It was
+           * a `link/sm` — 9.5px text in a 24px box, the smallest control in a sheet whose other
+           * actions are 12.5px/32px.
+           */
+          <Chip
+            size="lg"
+            tone="secondary"
             data-testid="ai-audit-open"
             onClick={() => void openTauriVaultInFinder(vaultRootPath)}
-            /*
-             * Text that is pressable on its own is `link`. The ramp's floor is WCAG
-             * 2.5.8 (AA)'s 24×24 — the old comment called 44 "satisfying 2.5.8", but
-             * 44 is the touch value from 2.5.5 (AAA) and the HIG, and that comes from
-             * `.touch-hit-expand` on a coarse pointer (floor reset 2026-08-04).
-             */
-            className={controlClass({
-              shape: 'link',
-              size: 'sm',
-              className:
-                'touch-hit-expand hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
-            })}
+            className="shrink-0 border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
           >
             {t('auditOpen')}
-          </button>
+          </Chip>
         ) : null
       }
     >

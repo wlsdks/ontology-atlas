@@ -638,10 +638,11 @@ describe('AiConnectionPanel hierarchy', () => {
 
   it('keeps every trust fact on screen while demoting its weight', () => {
     // Whether the hierarchy adjustment leaked into deleting information — the
-    // charter line, the three "what goes out" rows and the log file name must all remain.
+    // three "what goes out" rows and the log file name must all remain. The charter line
+    // itself is the sheet's pane head for this section since 2026-09-25
+    // (`nav.settingsMenu.sectionPurpose.ai`, asserted in `AppSettingsMenu.test.tsx`).
     renderPanel(makeConnection());
     for (const key of [
-      'settings.ai.principle',
       'settings.ai.scopeTitle',
       'settings.ai.scopeWhatValue',
       'settings.ai.scopeWhenValue',

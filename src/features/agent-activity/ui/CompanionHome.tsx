@@ -101,7 +101,8 @@ export function CompanionHome({ compact = false }: { compact?: boolean }) {
       <RowButton onClick={show} data-testid="companion-home" className="w-full">
         <span className={styles.homeRow}>
           <HomeScene keepsakes={objects} />
-          <span className="min-w-0 text-left">
+          {/* `flex-1` so the chevron keeps the row's right edge instead of trailing the text. */}
+          <span className="min-w-0 flex-1 text-left">
             <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">{t('home')}</span>
             <span className="mt-1 block truncate text-label text-[color:var(--color-text-secondary)]">{latest ? latest.note : t('emptyHome')}</span>
           </span>

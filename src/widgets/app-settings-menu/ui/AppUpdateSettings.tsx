@@ -42,7 +42,12 @@ import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primi
 export function AppUpdateSettings() {
   const t = useTranslations('nav.settingsMenu.appUpdate');
   const update = useAppUpdateContext();
-  const [version, setVersion] = useState<string | null>(null);
+  /*
+   * `undefined` while the read is in flight, `null` when it failed, a string once known. A
+   * label standing with no value reads as unfinished (2026-09-25), so each state says something.
+   */
+  const [version, setVersion] = useState<string | null | undefined>(undefined);
+  const [readAttempt, setReadAttempt] = useState(0);
 
   /*
    * The running version comes from **what the bundle knows**. A build constant would
@@ -57,12 +62,13 @@ export function AppUpdateSettings() {
         if (alive) setVersion(value);
       })
       .catch(() => {
-        // If it cannot be read, the version line is not drawn — no value is invented.
+        // No value is invented: the row says the read failed and that checking reads again.
+        if (alive) setVersion(null);
       });
     return () => {
       alive = false;
     };
-  }, []);
+  }, [readAttempt]);
 
   if (!isDesktopShell() || !update) return null;
 
@@ -91,13 +97,17 @@ export function AppUpdateSettings() {
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-update">
-      <p className="min-w-0 break-keep px-1 text-label leading-label text-[color:var(--color-text-quaternary)]">
-        {t('intro')}
-      </p>
       <SettingsGroup>
         <SettingsRow
           label={t('versionLabel')}
-          caption={version ? t('versionValue', { version }) : undefined}
+          caption={
+            version
+              ? t('versionValue', { version })
+              : version === null
+                ? t('versionUnknown')
+                : t('versionReading')
+          }
+          captionTone={version === null ? 'warning' : 'neutral'}
           testId="app-settings-update-version"
           control={
             <Chip
@@ -105,7 +115,13 @@ export function AppUpdateSettings() {
               tone="secondary"
               data-testid="app-settings-update-check"
               disabled={checking}
-              onClick={update.checkNow}
+              onClick={() => {
+                if (version === null) {
+                  setVersion(undefined);
+                  setReadAttempt((attempt) => attempt + 1);
+                }
+                update.checkNow();
+              }}
               className={DETAIL_TOGGLE_CHIP}
             >
               <RefreshCw size={ICON_SIZE.md} aria-hidden />

@@ -204,7 +204,9 @@ export function FirstRunPage() {
     shape: "row",
     className: choosingFolderHome
       ? "grid grid-cols-[28px_1fr] items-start gap-2.5 border bg-[color:var(--color-panel)] px-3 py-2.5"
-      : "grid grid-cols-[32px_1fr] items-start gap-3 border bg-[color:var(--color-panel)] px-4 py-3.5",
+      : // Centred in the card: the doors share one height, so top-aligned copy left a blank
+        // band under the one-line doors.
+        "grid grid-cols-[32px_1fr] items-center gap-3 border bg-[color:var(--color-panel)] px-4 py-3.5",
   });
   const iconChip =
     "flex h-8 w-8 items-center justify-center rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)]";
@@ -226,7 +228,7 @@ export function FirstRunPage() {
       <section
         className={choosingFolderHome
           ? `${styles.frame} architecture-result-arrive flex min-h-0 w-full max-w-3xl flex-col gap-5`
-          : "my-auto grid h-fit w-full max-w-[var(--dialog-w-sm)] gap-6"}
+          : "my-auto grid h-fit w-full max-w-[var(--dialog-w-md)] gap-6"}
       >
         <header
           className={`grid shrink-0 gap-3 ${choosingFolderHome ? "justify-items-start text-left" : "justify-items-center text-center"}`}
@@ -240,14 +242,16 @@ export function FirstRunPage() {
             </span>
           </div>
           <div className="grid gap-1.5">
-            {!choosingFolderHome ? <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+            {!choosingFolderHome ? <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
               {choosingFolder ? tSwitch("choose.eyebrow") : t("eyebrow")}
             </p> : null}
-            <div className="flex items-center gap-3"><h1 className={`${styles.title} min-w-0 break-keep font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] ${choosingFolderHome ? "text-hero" : "text-display"}`}>
+            {/* The centred screen centres its headline too: the shrink-wrapped h1 sat at the
+                flex start, 52px left of every other centred line (1512 and 1920). */}
+            <div className={`flex items-center gap-3 ${choosingFolderHome ? "justify-start" : "justify-center"}`}><h1 className={`${styles.title} min-w-0 break-keep font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] ${choosingFolderHome ? "text-hero" : "text-display"}`}>
               {choosingFolder ? tSwitch("choose.title") : t("title")}
             </h1>{choosingFolderHome ? <div className={styles.help}><IconButton label={tSwitch('choose.helpLabel')} size="lg" className="atlas-touch-floor atlas-touch-floor-wide" onClick={()=>setChooserHelpOpen(true)}><CircleHelp size={ICON_SIZE.md} aria-hidden /></IconButton></div> : null}</div>
             <p
-              className={`${styles.description} break-keep text-[color:var(--color-text-tertiary)] ${choosingFolderHome ? "text-body-lg" : "mx-auto max-w-[360px] text-body"}`}
+              className={`${styles.description} break-keep text-[color:var(--color-text-tertiary)] ${choosingFolderHome ? "text-body-lg" : "mx-auto max-w-[440px] text-body-lg"}`}
             >
               {choosingFolder
                 ? isTauriVaultRuntime()
@@ -258,7 +262,9 @@ export function FirstRunPage() {
           </div>
         </header>
 
-        {!choosingFor ? <div className="shrink-0"><CompanionHome /></div> : null}
+        {/* On the first-run column the companion row wears the door cards' surface, so the
+            column reads as one stack of cards rather than one bare row above three framed ones. */}
+        {!choosingFor ? <div className={choosingFolderHome ? "shrink-0" : "shrink-0 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"}><CompanionHome /></div> : null}
 
         {choosingFor ? (
           <div ref={shapePanel} tabIndex={-1} className="grid gap-2" aria-busy={busy} data-testid="first-run-shape">
@@ -293,7 +299,7 @@ export function FirstRunPage() {
                   <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                     {option.title}
                   </span>
-                  <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
+                  <span className="mt-0.5 block break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
                     {option.body}
                   </span>
                 </span>
@@ -357,7 +363,9 @@ export function FirstRunPage() {
               </section>
             ) : null}
 
-        {!choosingFolderHome ? <div className="grid gap-2" aria-busy={busy}>
+        {/* One column of repeated door cards keeps one height (Don'ts, content-decided card
+            height): measured 92 · 72 · 92 before this. */}
+        {!choosingFolderHome ? <div className="grid auto-rows-fr gap-2" aria-busy={busy}>
           {showJustStart ? (
             <button
               type="button"
@@ -395,7 +403,7 @@ export function FirstRunPage() {
                       ? t("justStartBusy")
                       : t("justStartTitle")}
                 </span>
-                <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
+                <span className="mt-0.5 block break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
                   {choosingFolderHome ? tSwitch("choose.justStartBody") : t("justStartBody")}
                 </span>
               </span>
@@ -424,7 +432,7 @@ export function FirstRunPage() {
                   ? t("busy")
                   : t("openTitle")}
               </span>
-              <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
+              <span className="mt-0.5 block break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
                 {choosingFolderHome ? tSwitch("choose.openBody") : t("openBody")}
               </span>
             </span>
@@ -444,7 +452,7 @@ export function FirstRunPage() {
               <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {scaffolding ? t("scaffolding") : t("createTitle")}
               </span>
-              <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
+              <span className="mt-0.5 block break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
                 {choosingFolderHome ? tSwitch("choose.createBody") : t("createBody")}
               </span>
             </span>
@@ -466,7 +474,7 @@ export function FirstRunPage() {
 
         <p
           data-token="engraved-numeral"
-          className={`${styles.trust} shrink-0 text-center font-mono text-caption uppercase tracking-[var(--tracking-caps-16)]`}
+          className={`${styles.trust} shrink-0 text-center font-mono text-label uppercase tracking-[var(--tracking-caps-14)]`}
           style={{
             color: "var(--engraved-numeral-face)",
             textShadow: "var(--engraved-numeral-text-shadow)",

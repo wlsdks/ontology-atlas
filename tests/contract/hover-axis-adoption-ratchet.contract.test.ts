@@ -96,8 +96,11 @@ const ROOT = process.cwd();
  * 299 → 295 (2026-09-14): the compact project index removed three card-local hover
  * declarations with its metric dashboard, then moved the project-name hover ink onto
  * `controlClass({ hoverInk: "strong" })`. Four hand declarations are now owned by the axis.
+ *
+ * 292 → 291 (2026-09-25): the settings sheet's row actions moved onto one chip grammar and
+ * the shared `DETAIL_TOGGLE_CHIP` ink, a net one fewer hand-written hover declaration.
  */
-const CEILING = 292;
+const CEILING = 291;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

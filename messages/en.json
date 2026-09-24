@@ -116,7 +116,6 @@
       "mcpProofCopy": "Copy first-call packet",
       "mcpProofCopied": "Copied",
       "footprint": {
-        "caption": "A star lights on every concept you open, numbered in the order you walked them, with light running along each line the way you went.",
         "presetLabel": "Strength",
         "preset": {
           "subtle": "Subtle",
@@ -135,7 +134,6 @@
         "reset": "Reset to defaults"
       },
       "expand": {
-        "caption": "Choose how collapsed groups open on the map. Changes apply to the map right away.",
         "affordanceLabel": "Open control",
         "affordancePill": "Floating pill",
         "affordanceBar": "Bar above the node",
@@ -175,6 +173,16 @@
         "workspace": "Workspace",
         "ai": "API Key",
         "update": "Updates"
+      },
+      "sectionPurpose": {
+        "screen": "Language, view mode, icons and accent colour. They apply to every screen.",
+        "background": "Choose what lies behind the map. The map shows it right away.",
+        "expand": "Choose how collapsed groups open on the map. Changes apply to the map right away.",
+        "footprint": "A star lights on every concept you open, numbered in the order you walked them, with light running along each line the way you went.",
+        "notify": "Choose what the app shows and tells you while an agent works.",
+        "workspace": "The folder you opened and what it holds.",
+        "ai": "Your key stays in this computer’s Keychain, nothing is sent until you press Send, and every call is logged inside your folder.",
+        "update": "When a new build of this app ships, we tell you in the bottom-right corner. You can also check right now."
       },
       "sectionGroup": {
         "look": "Appearance",
@@ -239,9 +247,10 @@
         "hintLabel": "What starting a chat creates"
       },
       "appUpdate": {
-        "intro": "When a new build of this app ships, we tell you in the bottom-right corner. You can also check right now.",
         "versionLabel": "Running build",
         "versionValue": "{version}",
+        "versionReading": "Reading the version…",
+        "versionUnknown": "Could not read the version. Checking for updates reads it again.",
         "check": "Check for updates",
         "checking": "Checking",
         "resultCurrent": "You're on the newest build. Nothing to fetch.",
@@ -251,7 +260,10 @@
         "resultFailed": "Couldn't fetch the update information. Check your connection, then try again.",
         "resultInstallFailed": "The update could not finish installing. Try again in a moment."
       },
-      "goToMcp": "MCP"
+      "goToMcp": "MCP",
+      "workspacePathLabel": "Folder path",
+      "workspacePathCopy": "Copy",
+      "workspacePathReveal": "Show in Finder"
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
@@ -3829,7 +3841,6 @@
     "ai": {
       "title": "AI Connection",
       "subtitle": "Optional, powered by your own API key",
-      "principle": "Key lives in your Keychain · nothing is sent until you click · every call is logged inside your folder",
       "providerAnthropic": "Anthropic",
       "providerOpenai": "OpenAI",
       "providerGemini": "Google Gemini",
