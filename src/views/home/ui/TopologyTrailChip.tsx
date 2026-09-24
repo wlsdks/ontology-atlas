@@ -85,6 +85,13 @@ export interface TopologyTrailChipProps {
   /** Pre-formatted chip label — "trail · {count}" (HomePage owns i18n; the chip is pure chrome). */
   label: string;
   /**
+   * What the chip shows when the map's top toolbar is narrower than 35rem (an agent
+   * dock or review panel on a small window): the visit count alone. `label` stays
+   * the tooltip, so the words are one hover away, and the trigger keeps its
+   * accessible name.
+   */
+  compactLabel?: string;
+  /**
    * Visit order (oldest → newest), exactly as the model gives it. The popover
    * **reverses** it so the newest is on top: every time-ordered list in the app
    * is newest-first, and the target you want to go back to is usually 1–3 steps
@@ -166,6 +173,7 @@ export interface TopologyTrailChipProps {
  */
 export function TopologyTrailChip({
   label,
+  compactLabel,
   entries,
   stepCaptions,
   currentId,
@@ -295,7 +303,7 @@ export function TopologyTrailChip({
   }, [open, close]);
 
   return (
-    <div ref={rootRef} className="relative" data-testid="topology-trail-chip">
+    <div ref={rootRef} className="relative shrink-0" data-testid="topology-trail-chip">
       <div className={CHROME_STATUS_CHIP_CLASS}>
         <Sparkles size={ICON_SIZE.md} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
         <button
@@ -308,6 +316,7 @@ export function TopologyTrailChip({
           aria-haspopup="true"
           aria-expanded={open}
           aria-label={labels.triggerAriaLabel}
+          title={label}
           data-testid="topology-trail-chip-trigger"
           className={controlClass({
             shape: "link",
@@ -318,7 +327,17 @@ export function TopologyTrailChip({
             className: "min-w-0 font-[var(--font-weight-signature)]",
           })}
         >
-          {label}
+          {compactLabel ? (
+            // Keyed to the width of the map's top toolbar (`@container/map-toolbar`),
+            // not to a density flag: a node selection also sets that flag at 1512,
+            // where there is room for the words.
+            <>
+              <span className="hidden @min-[35rem]/map-toolbar:inline">{label}</span>
+              <span className="@min-[35rem]/map-toolbar:hidden">{compactLabel}</span>
+            </>
+          ) : (
+            label
+          )}
         </button>
         {/* The armed state wears the same two changes as the footer sibling: the tone steps up
             and the glyph swaps. It carried only the `aria-label` before, so a sighted person's
