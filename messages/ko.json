@@ -2257,14 +2257,35 @@
         "visual": {
           "title": "도메인 {count, number}곳의 선언된 지침 범위",
           "fieldLabel": "도메인별 선언된 지침 범위",
-          "mode": { "label": "지침 읽기 방식", "diagram": "도표", "text": "텍스트" },
+          "mode": {
+            "label": "지침 읽기 방식",
+            "diagram": "도표",
+            "text": "텍스트"
+          },
           "collection": {
             "eyebrow": "지침 근거",
             "none": "이 묶음에는 항목이 없어요.",
-            "separate": { "action": "별도 {role}", "title": "별도로 집계한 {role}", "description": "경로 범위를 추출하지 못했거나 기록된 모든 도메인에 범위가 닿는 선언을 별도로 집계해요. 도메인의 경로 한정 개수에는 넣지 않아요." },
-            "outside": { "action": "도메인 매핑 밖", "title": "도메인 매핑 밖 선언", "description": "이 경로 한정 선언은 온톨로지에 기록된 도메인 진입점과 일치하지 않아요. 코드가 깨졌거나 범위가 보편적이거나 파일이 없다는 뜻은 아니에요." },
-            "unreached": { "action": "닿지 않은 진입점", "title": "지침이 닿지 않은 capability 진입점", "description": "이 capability 진입점에는 경로 한정 작업 지침 선언이 닿지 않아요. 별도로 집계한 작업 지침은 존재할 수 있어요. capability 수와 매핑 밖 선언 수는 서로 다른 단위예요." },
-            "findings": { "action": "점검 항목", "title": "하네스 점검 항목 전체", "description": "점검 항목의 원래 경로와 메시지를 그대로 보여 줘요. 뒷받침하는 연결 근거 없이 도메인에 귀속하지 않아요.", "independence": "Codex와 Claude 지침 트리의 차이는 정보일 수 있어요. 독립된 하네스를 같게 만들라는 뜻이 아니에요." }
+            "separate": {
+              "action": "별도 {role}",
+              "title": "별도로 집계한 {role}",
+              "description": "경로 범위를 추출하지 못했거나 기록된 모든 도메인에 범위가 닿는 선언을 별도로 집계해요. 도메인의 경로 한정 개수에는 넣지 않아요."
+            },
+            "outside": {
+              "action": "도메인 매핑 밖",
+              "title": "도메인 매핑 밖 선언",
+              "description": "이 경로 한정 선언은 온톨로지에 기록된 도메인 진입점과 일치하지 않아요. 코드가 깨졌거나 범위가 보편적이거나 파일이 없다는 뜻은 아니에요."
+            },
+            "unreached": {
+              "action": "닿지 않은 진입점",
+              "title": "지침이 닿지 않은 capability 진입점",
+              "description": "이 capability 진입점에는 경로 한정 작업 지침 선언이 닿지 않아요. 별도로 집계한 작업 지침은 존재할 수 있어요. capability 수와 매핑 밖 선언 수는 서로 다른 단위예요."
+            },
+            "findings": {
+              "action": "점검 항목",
+              "title": "하네스 점검 항목 전체",
+              "description": "점검 항목의 원래 경로와 메시지를 그대로 보여 줘요. 뒷받침하는 연결 근거 없이 도메인에 귀속하지 않아요.",
+              "independence": "Codex와 Claude 지침 트리의 차이는 정보일 수 있어요. 독립된 하네스를 같게 만들라는 뜻이 아니에요."
+            }
           },
           "inventoryCaption": "지침 파일 {guides, number}개 · 검사 항목 {checks, number}개.",
           "diagramCaption": "도표의 숫자는 도메인에 귀속된 경로 한정 선언 수예요. 실행 결과를 뜻하지 않아요.",
@@ -5615,7 +5636,15 @@
       "guard": "읽기 전용 · 온톨로지 쓰기·의미 확정 없음",
       "emptyTitle": "온톨로지 점검을 예약하세요",
       "emptyDescription": "에이전트가 빠진 연결이나 부족한 근거를 찾아 개선안을 남깁니다. 주기를 정해 두고, 다음에 돌아와 결과를 검토하세요.",
-      "preview": { "title": "예약 작업대", "empty": "예약하면 여기에 표시됩니다", "name": "이름", "cadence": "주기", "next": "다음 실행", "resultLabel": "실행 결과", "resultEmpty": "첫 실행 뒤 이 예약에서 확인할 수 있어요" },
+      "preview": {
+        "title": "예약 작업대",
+        "empty": "예약하면 여기에 표시됩니다",
+        "name": "이름",
+        "cadence": "주기",
+        "next": "다음 실행",
+        "resultLabel": "실행 결과",
+        "resultEmpty": "첫 실행 뒤 이 예약에서 확인할 수 있어요"
+      },
       "defaultName": "온톨로지 정교화",
       "eyebrow": "온톨로지 검토",
       "sheet": {
@@ -5640,7 +5669,15 @@
       "guard": "기존 자료실 범위 · 온톨로지 쓰기 거부",
       "emptyTitle": "예약된 문서 점검이 없습니다",
       "emptyDescription": "일치 점검이나 서비스 점검을 여기서 만들고, 전체 실행 기록과 페이지 검토는 자료실에서 여세요.",
-      "preview": { "title": "예약 작업대", "empty": "예약하면 여기에 표시됩니다", "name": "이름", "cadence": "주기", "next": "다음 실행", "resultLabel": "점검 기록", "resultEmpty": "첫 실행 뒤 자료실에서 검토할 수 있어요" },
+      "preview": {
+        "title": "예약 작업대",
+        "empty": "예약하면 여기에 표시됩니다",
+        "name": "이름",
+        "cadence": "주기",
+        "next": "다음 실행",
+        "resultLabel": "점검 기록",
+        "resultEmpty": "첫 실행 뒤 자료실에서 검토할 수 있어요"
+      },
       "openRounds": "자료실 점검 기록 열기"
     }
   },
@@ -6351,7 +6388,12 @@
       },
       "emptyTitle": "아직 문서 점검 기록이 없어요",
       "emptyDescription": "자동화에서 점검을 예약하면 이 맥이 켜져 있는 동안 실행합니다. 실행 결과와 바뀐 문서는 여기에서 확인하세요.",
-      "historyShape": { "run": "실행", "outcome": "결과", "review": "검토", "empty": "첫 실행 뒤 이 기록이 채워집니다" },
+      "historyShape": {
+        "run": "실행",
+        "outcome": "결과",
+        "review": "검토",
+        "empty": "첫 실행 뒤 이 기록이 채워집니다"
+      },
       "kind": {
         "consistency": "문서가 원문과 여전히 맞는지",
         "consistencyBody": "이 맥에서 인용된 원문마다 해시를 재고 문서 점검을 돌려요. 에이전트 턴 없음.",
@@ -6716,14 +6758,14 @@
     },
     "noteLabel": "간직하고 싶은 한 줄",
     "placeholder": "어떤 것을 알게 됐나요? 아직 풀리지 않은 질문도 좋아요.",
-    "keepsakeLabel": "집에 남길 물건",
+    "keepsakeLabel": "추억의 표식",
     "object": {
       "book": "책",
       "plant": "화분",
       "star": "별"
     },
     "save": "추억 남기기",
-    "saved": "기억해 둘게요. 작은 집에도 물건을 놓았어요.",
+    "saved": "추억과 표식을 간직했어요.",
     "storage": "이 기기에만 저장돼요. 앱 데이터를 지우면 추억도 사라져요.",
     "saveFailed": "저장하지 못했어요. 쓴 내용은 그대로 두었어요.",
     "unreadable": "저장된 추억을 읽지 못했어요. 덮어쓰지 않았어요. 초기화하면 다시 시작할 수 있어요.",
@@ -6735,6 +6777,396 @@
     "reset": "추억 초기화",
     "resetPrompt": "이 기기의 추억과 집의 물건을 모두 지울까요? 폴더와 온톨로지는 그대로예요.",
     "cancel": "취소",
-    "resetConfirm": "모든 추억 지우기"
+    "resetConfirm": "모든 추억 지우기",
+    "subtitle": "함께 알아갈수록, 동료의 작은 집도 자라요.",
+    "sections": "함께한 기억의 공간",
+    "growthTab": "우리의 성장",
+    "memoriesTab": "개인 추억",
+    "growth": {
+      "progressLabel": "동료의 다음 레벨까지 경험치",
+      "noProject": "아직 연결한 폴더가 없어요",
+      "level": "동료 레벨 {level}",
+      "stage": {
+        "1": "작은 방에서 시작해요",
+        "2": "첫 책이 생겼어요",
+        "3": "초록 친구가 찾아왔어요",
+        "4": "기억을 비추는 별",
+        "5": "불을 밝힌 작은 서재"
+      },
+      "reward": {
+        "2": "빛나는 책갈피",
+        "3": "행운의 새싹",
+        "4": "별빛 부적",
+        "5": "서재 등불"
+      },
+      "xp": "{earned} / {needed} XP · 누적 {total}",
+      "nextReward": "{remaining} XP 더 쌓으면 {reward}",
+      "nextLevel": "다음 레벨까지 {remaining} XP",
+      "meaning": "레벨은 학습과 모험의 기록이에요. 온톨로지의 정확도나 검토 완료를 뜻하지 않아요.",
+      "startTitle": "내 기록에서 첫 탐험을 시작해요",
+      "startBody": "온톨로지 폴더를 열면 개념·관계·위키가 캐릭터의 힘이 돼요. 개념을 함께 읽거나 발견을 남겨도 경험치가 쌓여요. 샘플은 성장에 반영하지 않아요.",
+      "openFolder": "내 폴더 열기",
+      "nextTitle": "다음에 함께 알아볼 것",
+      "exploreHint": "처음 살펴보는 개념은 +{xp} XP. 다시 열어도 중복으로 쌓이지 않아요.",
+      "explore": "함께 살펴보기",
+      "allExplored": "이 폴더의 개념을 모두 한 번씩 살펴봤어요. 발견을 남기거나 아직 모르는 질문을 다시 살펴봐요.",
+      "revisit": "남은 질문 다시 보기 · {title}",
+      "reflectionTitle": "발견 기록",
+      "reflectionHint": "개념마다 한 번, 나의 발견을 남기면 +{xp} XP. 아직 모르는 점을 찾아도 같은 경험치를 얻어요.",
+      "reflectionKind": "어떤 발견인가요?",
+      "kind": {
+        "learned": "새롭게 알았어요",
+        "corrected": "고친 점을 남겼어요",
+        "uncertain": "아직 질문이 있어요"
+      },
+      "noteLabel": "무엇을 발견했나요?",
+      "notePlaceholder": "알게 된 책임, 고친 이유, 더 알아볼 질문을 한 줄로 남겨요.",
+      "keepDiscovery": "발견 간직하기",
+      "saved": "발견을 간직했어요. 수정할 때는 경험치가 중복되지 않아요.",
+      "history": "함께 쌓은 발자취",
+      "empty": "아직 첫 발자취를 기다리고 있어요. 개념을 살펴보면 여기에 남아요.",
+      "explored": "{title} 살펴보기",
+      "missing": "이 개념은 현재 폴더에서 찾을 수 없어요. 지난 발자취는 남겨 두었어요.",
+      "rulesTitle": "경험치는 어떻게 쌓이나요?",
+      "rules": "이 공간에서 개념을 처음 펼쳐보면 {explore} XP, 그 개념에 발견을 남기면 {reflect} XP를 얻어요. 개념마다 각 활동은 한 번만 인정해요. 자동 생성량이나 승인 횟수는 점수에 영향을 주지 않아요. 개인 추억은 경험치로 바꾸지 않아요. 모험 보상은 별도로 쌓이며, 자리를 비운 동안의 전투는 최대 4시간까지 반영해요.",
+      "storage": "성장과 발견은 이 기기에만 저장돼요. 같은 고유 식별자를 가진 폴더 복사본은 성장을 공유해요. 앱 데이터를 지우면 사라져요.",
+      "unreadable": "성장 기록을 읽지 못했어요. 기존 데이터를 보존했으며 경험치를 새로 저장하지 않아요.",
+      "failed": "성장 기록을 저장하지 못했어요. 입력한 발견은 남겨 두었어요.",
+      "more": "발자취 더 보기 · {count}개 남음",
+      "reset": "이 폴더의 학습 기록 초기화",
+      "resetPrompt": "이 기기에 저장된 이 폴더의 읽기 경험치와 발견을 모두 지울까요? 구축 경험치, 개인 추억과 온톨로지 파일은 그대로 남아요.",
+      "resetConfirm": "성장 기록 지우기",
+      "cancel": "취소",
+      "full": "성장 기록 2,000개를 간직하고 있어요. 기존 기록을 덮어쓰지 않았어요.",
+      "editDiscovery": "발견 다듬기",
+      "updateDiscovery": "발견 수정하기",
+      "preview": "폴더에 기록된 개념 미리보기",
+      "openConcept": "지도에서 자세히 보기",
+      "noDescription": "아직 이 개념의 설명이 없어요. 지도를 열어 연결과 원문을 살펴보세요.",
+      "gameUnavailable": "모험 기록을 저장하거나 읽지 못했어요. 기존 데이터는 덮어쓰지 않았어요.",
+      "offline": "자리를 비운 동안 {wins}번 승리했어요. +{xp} XP · +{gold} G",
+      "continue": "모험 이어가기",
+      "resetGame": "모험 기록 초기화",
+      "resetGamePrompt": "모험 경험치, 골드, 장비와 도감을 지울까요? 학습 기록과 개인 추억, 온톨로지는 그대로 남아요.",
+      "xpBreakdown": "구축·읽기 {knowledge} XP · 모험 {adventure} XP",
+      "studyTitle": "온톨로지 공부",
+      "studySections": "지식 수첩 보기",
+      "readTab": "살펴보기",
+      "reflectTab": "발견 쓰기",
+      "historyTab": "발자취",
+      "noConcepts": "아직 살펴볼 개념이 없어요.",
+      "readFirst": "먼저 개념 하나를 살펴봐요.",
+      "conceptPages": "개념 넘기기",
+      "welcomeBack": "돌아왔네요!",
+      "startStudy": "개념 하나 공부하고 출발하기",
+      "collectionSections": "성장 수첩 보기",
+      "equipmentTab": "장비",
+      "bestiaryTab": "도감",
+      "gold": "골드 {amount}",
+      "guideTab": "도움말"
+    },
+    "life": {
+      "title": "동료의 작은 하루",
+      "hint": "동료나 방 안의 가구를 눌러 보세요.",
+      "pause": "동료 움직임 멈추기",
+      "resume": "동료 움직임 다시 시작",
+      "greet": "동료에게 인사하기",
+      "code": "코딩하기",
+      "read": "책 읽기",
+      "sleep": "낮잠 자기",
+      "walk": "산책하기",
+      "actions": "동료와 함께하기",
+      "playful": "방 안의 생활은 놀이예요. 실제 에이전트의 작업 상태와는 별개예요.",
+      "reduced": "동작 줄이기 설정을 따르고 있어요. 버튼으로 동료의 활동을 바꿀 수 있어요.",
+      "activity": {
+        "idle": "오늘은 어떤 걸 알아볼까요?",
+        "walk": "사뿐사뿐, 방을 걷는 중",
+        "coding": "작은 아이디어를 코딩하는 중",
+        "reading": "새로운 이야기를 읽는 중",
+        "sleeping": "잠깐, 꿈속으로…",
+        "greeting": "와 줘서 반가워요!"
+      }
+    },
+    "game": {
+      "expedition": "온톨로지 세계 탐험",
+      "journey": "모험 수첩",
+      "unknownArea": "기억의 숲",
+      "stage": "{stage}번째 만남",
+      "autoBattle": "자동 전투 중 · 잠시 자리를 비워도 모험은 이어져요",
+      "return": "거점으로",
+      "companion": "동료",
+      "heroHealth": "동료 체력",
+      "enemyHealth": "몬스터 체력",
+      "bossPrefix": "수호자 · ",
+      "monster": {
+        "slime": "별안개 슬라임",
+        "golem": "이끼 골렘",
+        "moth": "달빛 나방"
+      },
+      "phase": {
+        "camp": "거점에서 쉬고 있어요",
+        "approach": "새로운 상대를 만났어요",
+        "attack": "지식의 힘으로 공격!",
+        "hurt": "다시 자세를 가다듬어요",
+        "loot": "승리! 골드와 경험치를 얻었어요",
+        "rest": "잠깐 회복한 뒤 다시 출발해요"
+      },
+      "cooldown": "지식 파동 · {turns}턴 후",
+      "skill": "지식 파동 ×3",
+      "heal": "회복하기 · 5 G",
+      "fiction": "몬스터와 전투는 동료의 모험이에요. 실제 코드의 오류나 온톨로지 품질을 뜻하지 않아요.",
+      "wins": "사냥 {count}회",
+      "power": "공격력 {attack}",
+      "areas": "탐험 지역",
+      "gear": "장비",
+      "bestiary": "몬스터 도감",
+      "noAreas": "온톨로지의 도메인이 탐험 지역이 돼요. 도메인이 있는 내 폴더를 열어 주세요.",
+      "locked": "구축 + 읽기 {current}/{xp} XP · {remaining} XP 더 필요",
+      "departHint": "난이도 {difficulty} · 눌러서 출정",
+      "upgrade": {
+        "sword": "지식의 검",
+        "armor": "모험가 망토",
+        "library": "여행 서재"
+      },
+      "effect": {
+        "sword": "공격력 +2",
+        "armor": "최대 체력 +8",
+        "library": "승리 경험치 +1"
+      },
+      "encounters": "물리친 횟수 {count}",
+      "regionGoal": "개념을 알아가며 새로운 지역을 열고, 몬스터를 사냥해 장비를 성장시켜요.",
+      "depart": "출정하기",
+      "upgradeAction": "강화 · {gold} G",
+      "questCounter": "보급 상자까지 {count}/5승 · 자동 전투",
+      "chest": "보급 상자 {count}개 열기",
+      "chestReward": "보급품을 받았어요! +{gold} G · +{xp} XP",
+      "skillHint": "공격력의 3배 피해 · 재사용 대기 8턴"
+    },
+    "tabs": {
+      "camp": "거점",
+      "adventure": "탐험",
+      "study": "학습",
+      "collection": "성장",
+      "memories": "추억"
+    },
+    "pages": {
+      "previous": "이전 페이지",
+      "next": "다음 페이지",
+      "position": "{current} / {total}"
+    },
+    "memorySections": "추억 수첩 보기",
+    "writeTab": "새 추억",
+    "savedTab": "간직한 추억 {count}",
+    "memoryPages": "추억 내용",
+    "world": {
+      "traveler": "기록의 여행자",
+      "camp": "작은 기록 공방",
+      "field": "기억의 숲",
+      "knowledge": "구축 {xp} XP",
+      "hint": "WASD 이동 · E 상호작용 · I 가방 · K 스킬",
+      "help": "조작 안내",
+      "exit": "게임 닫기",
+      "interact": "상호작용 (E)",
+      "movement": "방향 이동",
+      "actions": "게임 메뉴",
+      "closePanel": "창 닫기 (Esc)",
+      "potion": "물약 {count}",
+      "journalSections": "기록 종류",
+      "knowledgeBook": "읽기 기록",
+      "personalBook": "함께한 기억",
+      "controls": "WASD / 방향키로 이동 · 바닥 클릭으로 걷기 · E 상호작용 · I 가방 · K 스킬 · M 지도 · J 기록 · Q 지식 파동 · 1 물약 · R 휴식 · Esc 창 닫기 · B 축복 · Space 회피 · N 몬스터 도감",
+      "panel": {
+        "inventory": "여행자의 가방",
+        "skills": "별빛의 기술",
+        "map": "탐험 지도",
+        "study": "지식의 책상",
+        "journal": "여행 일지",
+        "help": "여행 안내",
+        "blessings": "원정의 축복",
+        "bestiary": "몬스터 도감"
+      },
+      "move": {
+        "ArrowUp": "위로 이동",
+        "ArrowLeft": "왼쪽으로 이동",
+        "ArrowDown": "아래로 이동",
+        "ArrowRight": "오른쪽으로 이동"
+      },
+      "spot": {
+        "study": "책상",
+        "skills": "서재",
+        "rest": "휴식",
+        "inventory": "가방",
+        "growth": "기록의 별자리",
+        "expedition": "모험 포털"
+      },
+      "projectBook": "구축 기록",
+      "projectReward": "쌓아 온 기록이 힘이 되었어요 · +{xp} XP",
+      "dodged": "회피",
+      "shortcut": {
+        "interact": "살피기",
+        "blessings": "축복",
+        "inventory": "가방",
+        "skills": "스킬",
+        "map": "지도",
+        "journal": "기록",
+        "back": "닫기"
+      },
+      "target": {
+        "study": "공부",
+        "skills": "수련",
+        "rest": "쉬기",
+        "inventory": "상자",
+        "growth": "성장",
+        "expedition": "모험"
+      }
+    },
+    "inventory": {
+      "bag": "소지품",
+      "items": "아이템 슬롯",
+      "upgrade": "강화 · {gold} G",
+      "use": "마시기",
+      "buy": "구입 · 5 G",
+      "readCards": "지식 카드 읽기",
+      "name": {
+        "sword": "별빛 검",
+        "armor": "밤하늘 망토",
+        "library": "기록의 마법서",
+        "potion": "회복 물약",
+        "cards": "지식 카드",
+        "relic": "숲의 유물",
+        "bestiary": "몬스터 도감"
+      },
+      "description": {
+        "sword": "강화할 때마다 공격력 +2. 몬스터를 처치해 얻은 골드로 강화합니다.",
+        "armor": "강화할 때마다 최대 체력 +8. 오래 탐험할 수 있게 도와줍니다.",
+        "library": "강화할 때마다 처치 경험치 +1. 발견을 모험의 힘으로 바꾸는 책입니다.",
+        "potion": "체력 20 회복. 회복 스킬을 익히면 효과가 늘어납니다.",
+        "cards": "이 폴더의 실제 개념들입니다. 책상에서 함께 읽고 발견을 기록할 수 있습니다.",
+        "relic": "열 번째 몬스터인 수호자를 물리치면 얻는 기념품입니다.",
+        "bestiary": "만난 생물 108종의 특징과 처치 기록. 다음 모험을 준비해 보세요."
+      },
+      "chest": "보급 상자 열기 · {count}",
+      "readBestiary": "도감 펼치기 (N)"
+    },
+    "skills": {
+      "points": "사용할 스킬 포인트 {count}",
+      "tree": "스킬 목록",
+      "rank": "숙련도 {rank}/5",
+      "learn": "익히기 · 1 포인트",
+      "max": "최고 숙련도",
+      "earn": "레벨마다 1포인트를 얻으며, 여섯 기술에 최대 30포인트를 사용할 수 있어요.",
+      "name": {
+        "focus": "집중의 칼날",
+        "ward": "기록의 수호",
+        "recovery": "회복의 지혜",
+        "wave": "지식 파동",
+        "fortune": "발견의 행운",
+        "insight": "통찰"
+      },
+      "effect": {
+        "focus": "한 단계마다 공격력 +1.",
+        "ward": "한 단계마다 최대 체력 +5.",
+        "recovery": "한 단계마다 물약 회복량 +5.",
+        "wave": "Q로 사용하는 지식 파동의 공격 배율이 한 단계마다 0.25 증가합니다.",
+        "fortune": "한 단계마다 몬스터 처치 골드 +1.",
+        "insight": "한 단계마다 몬스터 처치 경험치 +1."
+      }
+    },
+    "project": {
+      "total": "기록의 성장 · {xp} XP",
+      "category": {
+        "concepts": "온톨로지 개념",
+        "relations": "연결된 관계",
+        "implementation": "구현 연결 기록",
+        "wiki": "위키 페이지",
+        "detail": "본문 보강"
+      },
+      "record": "최고 {count}",
+      "other": "함께 읽기 {study} XP · 모험 {adventure} XP",
+      "how": "개념 24 · 관계 8 · 구현 연결 16 · 위키 40 XP. 본문 40단어마다 4 XP(문서당 10회). 폴더 갱신 시 항목별 최고치를 반영하며, 정리해도 성장 기록은 유지됩니다. 코드 작업은 이 기록에 남았을 때 반영됩니다. 정확도 평가는 아닙니다.",
+      "sigil": "개념·관계·위키가 쌓여 자라는 기록의 별자리"
+    },
+    "run": {
+      "title": "원정의 축복",
+      "floor": "{floor}층 · {room}/3 방",
+      "chosen": "선택한 축복 {count}/5",
+      "chooseHint": "선택 기회 {count}회. 카드 셋 중 하나를 고르세요. 선택 중에도 자동 전투는 계속돼요.",
+      "nextHint": "다음 층에 도착하면 새로운 축복을 고를 수 있어요.",
+      "campHint": "출정하면 첫 축복을 고를 수 있어요.",
+      "take": "{name} 선택",
+      "rank": "선택 후 {rank}단계",
+      "temporary": "축복은 이번 원정에만 적용됩니다. 장비·스킬·구축 성장은 다음 원정에도 남아요.",
+      "open": "축복 고르기 (B)",
+      "available": "B · 새로운 축복을 고를 수 있어요",
+      "progress": "원정 {run} · 완주 {clears}회 · 자동 전투",
+      "repeatOn": "자동 재도전 켜짐",
+      "repeatOff": "자동 재도전 꺼짐",
+      "record": "최고 {best}층 · 완주 {clears}회 · 메뉴에서도 자동 전투는 계속돼요.",
+      "name": {
+        "ember": "불씨의 검",
+        "ward": "수호의 망토",
+        "leech": "생명의 이끼",
+        "echo": "메아리 파동",
+        "fortune": "황금 씨앗",
+        "insight": "깊은 통찰",
+        "haste": "바람의 문장",
+        "thorns": "가시의 고리"
+      },
+      "effect": {
+        "ember": "공격력 +3. 중첩해 강한 일격을 만듭니다.",
+        "ward": "최대 체력 +12, 즉시 체력 12 회복.",
+        "leech": "몬스터를 처치할 때 체력 3 추가 회복.",
+        "echo": "지식 파동의 공격 배율 +0.75.",
+        "fortune": "몬스터 처치 골드 +3.",
+        "insight": "몬스터 처치 경험치 +3.",
+        "haste": "지식 파동의 재사용 대기 1턴 감소.",
+        "thorns": "피격 시 몬스터에게 피해 3 반사."
+      },
+      "dodge": "공격 회피 (Space)",
+      "dodgeHint": "다음 공격을 피합니다. 다시 사용하려면 4턴을 기다려요.",
+      "waveHint": "공격력 ×{multiplier} 피해 · 재사용 {cooldown}턴",
+      "incoming": "공격 예고 · Space 회피",
+      "cleared": "지난 원정 · 수호자 격파! 보상을 간직했어요. M으로 다음 원정을 정해요.",
+      "defeated": "지난 원정 · 패배했지만 모은 보상은 남아요. M으로 다시 준비해요.",
+      "waveLabel": "지식 파동 ×{multiplier}"
+    },
+    "adventure": {
+      "atlas": "36개 모험지 · 108종 몬스터",
+      "regions": "모험 지역",
+      "route": "위험도 {difficulty} · 완주 {clears}회",
+      "guardian": "수호자",
+      "ready": "구축 + 읽기 {current} / {required} XP · 출발 가능",
+      "bestiary": "몬스터 도감",
+      "discovered": "발견 {count}/{total}",
+      "unknownNumber": "미발견 몬스터 {number}",
+      "unknown": "아직 만나지 못했어요",
+      "findIn": "{region}에서 만날 수 있어요.",
+      "defeated": "처치 {count}회",
+      "fiction": "게임 속 창작 생물이며 온톨로지 근거가 아닙니다.",
+      "effect": {
+        "calm": "고요한 길 · 기본 전투와 보상.",
+        "bounty": "보급로 · 승리할 때마다 골드 +3.",
+        "vital": "회복의 땅 · 승리 후 체력 +3 회복.",
+        "fortified": "오래된 성벽 · 적의 최대 체력 25% 증가.",
+        "insight": "서고의 파편 · 승리할 때마다 모험 경험치 +4.",
+        "elite": "수호자의 길 · 적의 공격 피해 20% 증가."
+      },
+      "trait": {
+        "armored": "갑옷: 받는 피해가 20% 감소해요. 검을 강화해 보세요.",
+        "fierce": "맹공: 공격 피해가 30% 커요. 회피 타이밍을 노려보세요.",
+        "mender": "재생: 일반 공격을 받기 전에 회복해요. Q로 한 번에 공격해 보세요.",
+        "siphon": "흡수: 입힌 피해의 절반을 회복해요. 회피하면 회복도 막아요.",
+        "swarm": "연타: 약한 공격을 두 번 해요. 방어구가 각각의 공격을 막아요.",
+        "arcane": "비전 껍질: 지식 파동 피해가 30% 줄어요. 일반 공격이 유리해요."
+      },
+      "traitName": {
+        "armored": "갑옷",
+        "fierce": "맹공",
+        "mender": "재생",
+        "siphon": "흡수",
+        "swarm": "연타",
+        "arcane": "파동 저항"
+      }
+    }
   }
 }
