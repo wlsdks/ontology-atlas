@@ -8,8 +8,13 @@ import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { cn } from '@/shared/lib/cn';
-import { TerminalState } from './TerminalState';
-import { StandaloneLocaleProvider, useIsDesktopShell } from './standalone-locale';
+import { TerminalState, TerminalStatePending } from './TerminalState';
+import {
+  StandaloneLocaleProvider,
+  useClientAnswered,
+  useIsDesktopShell,
+} from './standalone-locale';
+import type { StandaloneMessages } from '@/i18n/standalone-messages';
 
 /**
  * The 404, one component for both not-found files.
@@ -24,9 +29,14 @@ import { StandaloneLocaleProvider, useIsDesktopShell } from './standalone-locale
  * vault is the home, so project search is the primary there and the gateway chrome is not drawn
  * (the app never offers the gateway's own pages as its chrome).
  */
-export function NotFoundScreen({ standalone = false }: { standalone?: boolean }) {
-  return standalone ? (
-    <StandaloneLocaleProvider>
+export function NotFoundScreen({
+  standaloneMessages,
+}: {
+  /** Given by the root `not-found.tsx` (a server component), which has no locale layout. */
+  standaloneMessages?: StandaloneMessages;
+}) {
+  return standaloneMessages ? (
+    <StandaloneLocaleProvider messages={standaloneMessages}>
       <NotFoundBody />
     </StandaloneLocaleProvider>
   ) : (
@@ -38,6 +48,7 @@ function NotFoundBody() {
   const router = useRouter();
   const t = useTranslations('notFound');
   const desktop = useIsDesktopShell();
+  const answered = useClientAnswered();
 
   // With the mobile BottomTabBar visible at the same time, "where to go" splits across two
   // places and the stage's exits lose their clarity (the CSS rule is in globals.css).
@@ -70,6 +81,10 @@ function NotFoundBody() {
       {t('previous')}
     </Button>
   );
+
+  // Until the URL and the shell are known the prerendered answer is "English, web", which is
+  // wrong for a Korean visitor and for the app; the canvas waits one frame instead of lying.
+  if (!answered) return <TerminalStatePending testId="not-found-pending" />;
 
   return (
     <TerminalState

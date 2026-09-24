@@ -20,6 +20,9 @@ import { StandaloneLocaleProvider, useStandaloneLocale } from './standalone-loca
  *
  * No gateway chrome: the error can come from anywhere, the installed app included, and the chrome
  * itself may be what threw.
+ *
+ * Its copy comes from the root layout (`StandaloneMessagesProvider` with `ROUTE_ERROR_PICK`), not
+ * from a JSON import, so the message files stay out of every page's JavaScript.
  */
 export function RouteErrorScreen({ digest, onRetry }: { digest?: string; onRetry: () => void }) {
   return (
@@ -39,7 +42,10 @@ function RouteErrorBody({ digest, onRetry }: { digest?: string; onRetry: () => v
       icon={<AlertTriangle size={ICON_SIZE.lg} />}
       eyebrow={t('label')}
       title={t('title')}
-      body={t('body')}
+      // The "report it with the ID below" sentence only when there is an ID to report. Under
+      // `output: 'export'` a client render error usually has no digest, and the sentence then
+      // pointed at nothing (review of PR #1839).
+      body={digest ? t('bodyWithId') : t('body')}
       detail={
         digest ? (
           <p className="font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">

@@ -12,7 +12,7 @@ import { PAGE_GUTTER } from '@/shared/lib/gateway-frame';
  * pill dialect (`h-10`, custom indigo fill, a manual focus ring). At 1512 the 404 card filled 15%
  * of the width and 36% of the height, and the rest of the canvas was empty.
  *
- * The shape now is a centred stage, not a floating card: a quiet indigo light behind a tinted
+ * The shape now is a centred stage, not a floating card: a quiet light in the tone's hue behind a tinted
  * icon tile, an eyebrow, one `hero-lg` title (the gateway's headline step, so a lost visitor meets
  * the same voice as the page they came from), one sentence at the note measure, and one action
  * row: a single primary plus secondary exits **side by side**, never a vertical menu of equals.
@@ -45,6 +45,34 @@ const TILE_TONE = {
     'border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] text-[color:var(--color-status-warning)]',
 } as const;
 
+/*
+ * The light behind the stage takes the tile's hue: an amber tile under an indigo light split the
+ * "something broke" signal across two colours (review of PR #1839). Each ramp step fades to
+ * nothing, and the ellipse is tall enough to reach well under the action row, so the canvas
+ * around a short stage reads as depth rather than as an empty lower half.
+ */
+const GLOW_TONE = {
+  neutral:
+    'bg-[radial-gradient(52%_62%_at_50%_46%,var(--color-indigo-a10)_0%,var(--color-indigo-a06)_40%,transparent_76%)]',
+  warning:
+    'bg-[radial-gradient(52%_62%_at_50%_46%,var(--color-amber-source-a08)_0%,var(--color-amber-source-a06)_40%,transparent_76%)]',
+} as const;
+
+/**
+ * The canvas a terminal screen shows before it knows who is looking (see `useClientAnswered`):
+ * the same surface and height, nothing drawn on it, so the stage's entrance is the first thing
+ * that moves.
+ */
+export function TerminalStatePending({ testId }: { testId: string }) {
+  return (
+    <div
+      data-testid={testId}
+      aria-busy="true"
+      className="min-h-screen w-full bg-[color:var(--color-canvas)]"
+    />
+  );
+}
+
 export function TerminalState({
   tone,
   icon,
@@ -66,15 +94,20 @@ export function TerminalState({
         data-testid={testId}
         className={cn(
           PAGE_GUTTER,
-          'relative isolate flex flex-1 items-center justify-center overflow-hidden py-16',
+          /*
+           * Optical centre, not geometric. Centred in what the 64px nav left, the stage's middle
+           * sat at 507 of 949 (53%) and read as sunk below the middle (measured 2026-09-25).
+           * The heavier bottom padding lifts the
+           * middle to about 46% of the viewport at 1512×949 and 1920×1080.
+           */
+          'relative isolate flex flex-1 items-center justify-center overflow-hidden pt-16 pb-[calc(4rem+14svh)]',
         )}
       >
-        {/* The light behind the stage: one indigo ramp step fading to nothing, so the empty
-            canvas reads as depth rather than as a void. Decorative, so it is hidden from the
+        {/* The light behind the stage (`GLOW_TONE`). Decorative, so it is hidden from the
             accessibility tree and takes no pointer. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(40%_46%_at_50%_46%,var(--color-indigo-a10)_0%,var(--color-indigo-a06)_42%,transparent_74%)]"
+          className={cn('pointer-events-none absolute inset-0 -z-10', GLOW_TONE[tone])}
         />
         <div className="flex w-full max-w-[var(--measure-note-column)] flex-col items-center text-center [word-break:keep-all] motion-safe:animate-[atlasStatusIn_var(--motion-settle)_var(--motion-ease)_both]">
           <span

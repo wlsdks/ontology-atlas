@@ -140,8 +140,13 @@ export function GatewayNav() {
            * The two marks are one group: 32px square targets (`shape: 'icon'`, the row's chip
            * height) 4px apart. As bare `link` shapes they were 15×24 and 14×24, under the 24px
            * WCAG 2.2 target minimum across, and read as loose glyphs (measured 2026-09-25).
+           *
+           * Under a coarse pointer the `icon` shape's `touch-hit-expand` grows each hit area to
+           * 44px, 6px past each edge. At 4px apart the two invisible areas overlapped by 8px, the
+           * overlap `touch-hit-expand` was rejected for elsewhere, so the gap opens to 12px there
+           * and the two areas meet without overlapping. Fine pointers keep the tight pair.
            */}
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 pointer-coarse:gap-3">
           {/*
            * The repository (2026-09-02). The eyebrow on `/download` says "open source" and the
            * chrome offered no way to the source — the only github.com links on the page were the

@@ -57,3 +57,26 @@ test("changelog entry titles never start with the date separator", async ({ page
   expect(titles.length, "found no entry titles; the check would idle").toBeGreaterThan(3);
   expect(titles.filter((title) => /^[\s·—–-]/u.test(title))).toEqual([]);
 });
+
+/*
+ * The table of contents shares the brand's start line. With the list end-aligned in its
+ * `1fr` track it began at x=381 at 1920 while the brand began at 200, so its left edge moved
+ * with the viewport (review of PR #1839); on the gutter it matches at every width.
+ */
+for (const [route, testId] of [
+  ["/ko/guide/", "guide-sidebar"],
+  ["/ko/changelog/", "entry-sidebar"],
+] as const) {
+  for (const width of [1280, 1512, 1920] as const) {
+    test(`${route} at ${width}: the table of contents starts on the brand's line`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
+      const toc = page.getByTestId(testId);
+      await expect(toc).toBeVisible();
+      const brandX = await page.getByTestId("gateway-brand-mark").evaluate((el) => el.getBoundingClientRect().x);
+      const tocX = await toc.evaluate((el) => el.getBoundingClientRect().x);
+      expect(brandX).toBeGreaterThan(0);
+      expect(Math.abs(tocX - brandX), `toc ${tocX} vs brand ${brandX}`).toBeLessThanOrEqual(12);
+    });
+  }
+}

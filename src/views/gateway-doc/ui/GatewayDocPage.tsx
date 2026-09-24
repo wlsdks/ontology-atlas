@@ -242,7 +242,10 @@ export function GatewayDocPage({
            * (1280), the right side collapses to zero first and the left keeps its 11.5rem, so the
            * table of contents survives beside a full measure (880 = 184 + 32 + 629 + 32 + 3).
            * The empty right cell that used to reserve the centre is gone: an empty `1fr` track
-           * does that without an element. Below `xl` the column is a single centred flow and the chapter picker
+           * does that without an element. The list itself sits at the **start** of its track, on
+           * the gutter: at 1920 an end-aligned list began at x=381 while the brand above it began
+           * at 200, so its start line moved with the viewport; on the gutter it shares the
+           * brand's line at every width (review of PR #1839). Below `xl` the column is a single centred flow and the chapter picker
            * stands in for the list.
            */}
           <div
@@ -309,15 +312,34 @@ export function GatewayDocPage({
            * (`my-4`); the article's own margin stacked with either, so the changelog's first
            * entry floated 88px below its header against the guide's 56px (measured 2026-09-25).
            */}
-          <article
-            data-testid="gateway-doc-body"
-            lang={bodyIsForeign ? 'en' : undefined}
-            className="mt-10 w-full max-w-[var(--measure-prose)] [&>*:first-child]:mt-0"
-          >
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-              {body}
-            </ReactMarkdown>
-          </article>
+          {/*
+           * **The empty state.** The body is bundled data read synchronously, so there is no
+           * loading moment to design; the one way it goes wrong is a build that did not carry the
+           * document (`readVaultDoc` returns null). An empty article under the title then read as
+           * a page that forgot its content. It says so in one line and names where the text is,
+           * in the same panel grammar as the truncation notice.
+           */}
+          {body.trim() === '' ? (
+            <aside
+              data-testid="gateway-doc-empty"
+              className="mt-10 w-full max-w-[var(--measure-prose)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
+            >
+              <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
+                {t('emptyBody')}
+              </p>
+              <ReadFullSourceLink sourcePath={sourcePath} label={t('readFullSource')} />
+            </aside>
+          ) : (
+            <article
+              data-testid="gateway-doc-body"
+              lang={bodyIsForeign ? 'en' : undefined}
+              className="mt-10 w-full max-w-[var(--measure-prose)] [&>*:first-child]:mt-0"
+            >
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                {body}
+              </ReactMarkdown>
+            </article>
+          )}
 
           {/*
            * The two reading destinations the chrome folds at narrow widths belong here. These two
@@ -347,15 +369,7 @@ export function GatewayDocPage({
               <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
                 {t('truncatedNote', { count: omittedSections })}
               </p>
-              <a
-                href={`${GITHUB_REPO_URL}/blob/main/${sourcePath}`}
-                target="_blank"
-                rel="noreferrer noopener"
-                className={controlClass({ shape: "link", tone: "secondary", className: "mt-3 gap-2 text-body leading-body underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]" })}
-              >
-                <GithubMark size={13} aria-hidden />
-                {t('readFullSource')}
-              </a>
+              <ReadFullSourceLink sourcePath={sourcePath} label={t('readFullSource')} />
             </aside>
           ) : null}
             </div>
@@ -363,6 +377,21 @@ export function GatewayDocPage({
         </div>
       </main>
     </div>
+  );
+}
+
+/** "Read the full file on GitHub" — one link shared by the truncation and empty notices. */
+function ReadFullSourceLink({ sourcePath, label }: { sourcePath: string; label: string }) {
+  return (
+    <a
+      href={`${GITHUB_REPO_URL}/blob/main/${sourcePath}`}
+      target="_blank"
+      rel="noreferrer noopener"
+      className={controlClass({ shape: "link", tone: "secondary", className: "mt-3 gap-2 text-body leading-body underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]" })}
+    >
+      <GithubMark size={13} aria-hidden />
+      {label}
+    </a>
   );
 }
 
@@ -687,7 +716,7 @@ function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
     <nav
       aria-label={t('guideNavLabel')}
       data-testid="guide-sidebar"
-      className="hidden w-full max-w-[15rem] justify-self-end xl:block"
+      className="hidden w-full max-w-[15rem] justify-self-start xl:block"
     >
       <div className="sticky top-24">
         <p className="mb-3 px-2.5 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
@@ -780,7 +809,7 @@ function EntrySidebar({ entries }: { entries: DocEntry[] }) {
     <nav
       aria-label={t('entryNavLabel')}
       data-testid="entry-sidebar"
-      className="hidden w-full max-w-[15rem] justify-self-end xl:block"
+      className="hidden w-full max-w-[15rem] justify-self-start xl:block"
     >
       <div className="sticky top-24 max-h-[calc(100svh-9rem)] overflow-y-auto pr-1">
         <p className="mb-3 px-2.5 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
