@@ -4,17 +4,12 @@ import { CalendarClock, ChevronDown, Pause, Play } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { cadenceKey, cadenceMinutes, type RoundRecord } from '@/entities/library-round';
 import type { RoundsRunnerValue } from '@/features/library-rounds';
+import { cn } from '@/shared/lib/cn';
 import { RowButton, RowDisclosure } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { AutomationScheduleActions } from './AutomationScheduleActions';
 import { AutomationRunHistory } from './AutomationRunHistory';
-
-function automationDate(locale: string, value: string): string {
-  const date = new Date(value);
-  return Number.isFinite(date.getTime())
-    ? new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
-    : '—';
-}
+import { automationDate } from './automation-date';
 
 export function AutomationScheduleRow({ round, runner, expanded, onToggle }: {
   round: RoundRecord;
@@ -38,10 +33,15 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle }: {
   const detailId = `automation-detail-${round.id}`;
 
   return (
-    <li className="min-w-0 py-2">
-      <RowButton onClick={onToggle} active={expanded} aria-expanded={expanded} aria-controls={detailId}
-        data-testid={`automation-${round.id}`} className="w-full px-4 py-5 text-left" hoverSurface="lift">
-        <span className="mt-1 flex-none self-start text-[color:var(--color-text-tertiary)]">
+    // Collapsed rows are quiet outlined rows; the expanded one becomes a single raised card that
+    // holds both its header and its detail, so selection and its content share one surface.
+    <li className={cn('min-w-0 overflow-hidden rounded-panel border transition-[background-color,border-color,box-shadow] motion-reduce:transition-none',
+      expanded
+        ? 'border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-1)]'
+        : 'border-[color:var(--color-divider)]')}>
+      <RowButton onClick={onToggle} aria-expanded={expanded} aria-controls={detailId}
+        data-testid={`automation-${round.id}`} className="w-full gap-3 px-4 py-4 text-left" hoverSurface="lift">
+        <span className="mt-1 flex w-4 flex-none self-start justify-center text-[color:var(--color-text-tertiary)]">
           {running ? <Play size={ICON_SIZE.md} aria-hidden /> : round.enabled ? <CalendarClock size={ICON_SIZE.md} aria-hidden /> : <Pause size={ICON_SIZE.md} aria-hidden />}
         </span>
         <span className="grid min-w-0 flex-1 grid-cols-2 gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)] md:items-center">
@@ -60,11 +60,12 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle }: {
             {last ? <time dateTime={last.endedAt} className="mt-1 block text-label text-[color:var(--color-text-tertiary)]">{automationDate(locale, last.endedAt)}</time> : null}
           </span>
         </span>
-        <ChevronDown size={ICON_SIZE.sm} aria-hidden className={`mt-1 flex-none self-start transition-transform motion-reduce:transition-none ${expanded ? 'rotate-180' : ''}`} />
+        <ChevronDown size={ICON_SIZE.lg} aria-hidden className={cn('flex-none self-center text-[color:var(--color-text-tertiary)] transition-transform motion-reduce:transition-none', expanded && 'rotate-180')} />
       </RowButton>
 
-      <RowDisclosure id={detailId} open={expanded} className="px-4 pb-4 pt-4 md:pl-10">
-        <div className="space-y-5 border-l border-[color:var(--color-divider)] pl-5">
+      {/* pl-11 = the row's px-4 + the w-4 icon slot + gap-3: detail text starts on the name's line. */}
+      <RowDisclosure id={detailId} open={expanded} className="pb-5 pl-11 pr-4">
+        <div className="space-y-5 border-t border-[color:var(--color-divider)] pt-4">
         {'query' in round && round.query ? <p className="break-words text-body text-[color:var(--color-text-secondary)]"><span className="text-[color:var(--color-text-tertiary)]">{t('scopeLabel')} · </span>{round.query}</p> : null}
         <AutomationRunHistory entries={entries} />
         <AutomationScheduleActions round={round} runner={runner} />
