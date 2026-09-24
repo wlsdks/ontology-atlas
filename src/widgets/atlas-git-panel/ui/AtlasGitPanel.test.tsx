@@ -1263,6 +1263,23 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
     // Relations are **names, not counts** — 「1」 cannot say what the 1 is.
     const neighbors = screen.getAllByTestId("atlas-git-ego-neighbor");
     expect(neighbors.map((el) => el.textContent).join(" ")).toContain("온보딩·배포·앱 셸");
+
+    /*
+     * Said once (round four). The owning domain is the "Belongs to" neighbour, so a "Domain"
+     * cell above it printed the same name twice; and the names live in the table, so the
+     * drawing names nobody until a name is pointed at.
+     */
+    expect(ego).not.toHaveTextContent("도메인");
+    // The mark's `<title>` is its tooltip and accessible name, not printed text.
+    const printed = ego.cloneNode(true) as HTMLElement;
+    printed.querySelectorAll("title").forEach((title) => title.remove());
+    expect(printed.textContent?.match(/온보딩·배포·앱 셸/g)).toHaveLength(1);
+    fireEvent.pointerEnter(neighbors[0]);
+    expect(screen.getAllByTestId("atlas-git-ego-label").map((el) => el.textContent)).toEqual(["온보딩·배포·앱 셸"]);
+
+    // A person's sentence is the headline; the concept names are the chips, not a second title.
+    expect(screen.getByTestId("atlas-git-detail-headline")).toHaveTextContent(/^무언가 고쳤다$/);
+    expect(screen.queryByTestId("atlas-git-detail-byline")).toBeNull();
   });
 
   it("그래프가 없으면 (웹·미로드) 카드를 아예 안 그린다 — 빈 상자를 두지 않는다", async () => {

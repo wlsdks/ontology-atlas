@@ -236,8 +236,12 @@ export function DocumentChangeReader({
    * file's first line is a comment (`# Serena MCP project cache`), and the prose reader drew
    * it as the document's title. Such a file has no front matter either; its leading `---`,
    * if any, is three hyphens.
+   *
+   * An empty kind is no kind (round four, 2026-09-25): a step's file entry can carry `""`
+   * for a non-concept file, and `!== null` let `config/atlas.json` read as prose in the
+   * document font, labelled "Edited document".
    */
-  const isDocument = kind !== null;
+  const isDocument = Boolean(kind);
   const { frontmatter, body, lines, frontmatterChanged, firstHeadingIndex } = useMemo(() => {
     const all = file?.lines ?? [];
     const split = isDocument ? splitFrontmatter(all) : { frontmatter: [] as Line[], body: [...all] };

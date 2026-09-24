@@ -191,6 +191,11 @@ export function layoutConceptEgo(
   ego: ConceptEgo,
   geometry: EgoGeometry = DEFAULT_EGO_GEOMETRY,
   view: EgoView = DEFAULT_EGO_VIEW,
+  /**
+   * The words an "and N more" pill carries. The pill used to be sized for its digits alone
+   * (26px plus 6 per digit), so "and 1 more" ran out of both ends of a 32px pill (round four).
+   */
+  moreText?: (rest: number) => string,
 ): EgoLayout | null {
   const groups = EGO_BEARINGS.map((bearing) => {
     const all = ego.neighbors[bearing];
@@ -263,7 +268,9 @@ export function layoutConceptEgo(
       const y = cy + radius * Math.sin(angle) * geometry.ey * sy;
       const dashed = DASHED.includes(group.bearing);
       if (isMore) {
-        const width = 26 + String(group.rest).length * 6;
+        const width = moreText
+          ? estimateLabelWidth(moreText(group.rest), 10) + 16
+          : 26 + String(group.rest).length * 6;
         slots.push({ type: "more", bearing: group.bearing, index: i, rest: group.rest, x, y, width, dashed });
         obstacles.push({ x: x - width / 2, y: y - 9, w: width, h: 18 });
         continue;

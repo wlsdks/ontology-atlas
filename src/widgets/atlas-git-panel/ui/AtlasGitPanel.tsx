@@ -2338,10 +2338,26 @@ function StepListScroller({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [roomy, setRoomy] = useState(false);
+  /*
+   * Which edges hide rows (round four, 2026-09-25). At the app floor the stacked list shows
+   * about three steps and ended on a hairline, with no sign that eleven more scrolled inside
+   * it. The edge that hides rows fades by `--tabbar-edge-fade`, the mask the tab strips, the
+   * Library index and the conversation history already use; a list that shows everything
+   * fades nothing.
+   */
+  const [edge, setEdge] = useState({ top: false, bottom: false });
+  const readEdge = useCallback(() => {
+    const el = ref.current;
+    if (!el || el.clientHeight < 1) return;
+    const top = el.scrollTop > 1;
+    const bottom = el.scrollHeight - el.clientHeight - el.scrollTop > 1;
+    setEdge((prev) => (prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
+  }, []);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const read = () => {
+      readEdge();
       // An unmeasured box (a test DOM, a hidden panel) has no room to fill.
       if (el.clientHeight < 1) return setRoomy(false);
       // Room for one more row at the list's own row height.
@@ -2354,12 +2370,28 @@ function StepListScroller({
     const list = el.firstElementChild;
     if (list) observer.observe(list);
     return () => observer.disconnect();
-  }, []);
+  }, [readEdge]);
   useEffect(() => {
     if (roomy && hasMore && !busy) onMore();
   }, [roomy, hasMore, busy, onMore]);
+  const fade = "var(--tabbar-edge-fade)";
+  const mask =
+    edge.top && edge.bottom
+      ? `linear-gradient(to bottom, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`
+      : edge.bottom
+        ? `linear-gradient(to bottom, black calc(100% - ${fade}), transparent 100%)`
+        : edge.top
+          ? `linear-gradient(to bottom, transparent 0, black ${fade})`
+          : undefined;
   return (
-    <div ref={ref} className={cn("min-h-0 max-xl:overflow-y-auto xl:flex-1 xl:overflow-y-auto", className)}>
+    <div
+      ref={ref}
+      data-testid="atlas-git-steps-scroll"
+      data-edge-bottom={edge.bottom ? "true" : undefined}
+      onScroll={readEdge}
+      style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
+      className={cn("min-h-0 max-xl:overflow-y-auto xl:flex-1 xl:overflow-y-auto", className)}
+    >
       {children}
     </div>
   );
@@ -3410,9 +3442,14 @@ function DesktopBody({
              * picked row is brought into view inside the list (`revealSelectedRow`), and
              * the rest of the history scrolls in place.
              */
+            /*
+             * Round four: three two-line steps (about 171px) rather than four. At 1040x720 the
+             * list plus the Save dock still took about 60% of the first window, and the picked
+             * step's card started at y=672. The faded bottom edge says the rest scrolls here.
+             */
             className={
               selection.kind === "commit"
-                ? "max-xl:max-h-60"
+                ? "max-xl:max-h-44"
                 : "max-xl:max-h-[var(--git-evidence-stack-max)]"
             }
           >

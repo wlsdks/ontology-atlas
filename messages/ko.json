@@ -4222,7 +4222,7 @@
     "egoAgentReference": "AI에게 말할 때 쓰는 이름",
     "egoLinkedCount": "이어진 곳 {count}",
     "egoHeading": "고른 개념",
-    "egoHint": "성질과 바로 옆 이웃 · 이웃을 누르면 그쪽으로 넘어가요",
+    "egoHint": "이웃 이름을 가리키면 그림에서 켜지고, 누르면 그 개념으로 넘어가요",
     "egoDomain": "도메인",
     "egoDoc": "근거 문서",
     "egoNone": "없음",

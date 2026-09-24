@@ -66,6 +66,9 @@ test("앱 최소 창(1040x720)에서 쌓인 문서 읽기 칸이 높이를 갖�
     Number.parseFloat(getComputedStyle(document.querySelector('[data-testid="atlas-git-detail-headline"]')!).fontSize),
   ]);
   expect(picked, "the page title and the selected step tie in size").toBeGreaterThan(pageTitle);
+  // The capped list says it continues: its bottom edge fades while rows hide below it
+  // (round four: it ended on a hairline with eleven steps scrolling unseen inside it).
+  await expect(page.getByTestId("atlas-git-steps-scroll")).toHaveAttribute("data-edge-bottom", "true");
 
   // The list and the reader are one page: no horizontal scroll on the way.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

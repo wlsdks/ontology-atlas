@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useFormatter } from "next-intl";
 import { cn } from "@/shared/lib/cn";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -148,8 +148,15 @@ export function CommitDetail({
   const { state: hashState, copy: copyHash } = useCopyFeedback();
   const authored = stripConventionalPrefix(subject);
   const reason = headline ? t("stepAutoSubject", { summary: headline }) : authored;
+  /*
+   * Round four (2026-09-25): the headline is the step's sentence whenever a person wrote one.
+   * "Payment approval, Payment service and 1 more" put a list of names and an overflow count on the screen's
+   * largest line and demoted the sentence that says what the step did — and the concept chips
+   * a few lines down print those same names again. Only an automatic subject, which has no
+   * sentence of its own, is named by its concepts, with the reader's-language summary under it.
+   */
   const conceptTitle =
-    concepts.length > 0
+    headline && concepts.length > 0
       ? `${concepts
           .slice(0, HEADLINE_CONCEPTS)
           .map((concept) => concept.label)
@@ -324,7 +331,9 @@ export function CommitDetail({
         <h2
           data-testid="atlas-git-detail-headline"
           title={subject}
-          className="text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] break-keep"
+          /* Bounded by the document column's measure, balanced so a two-line sentence does not
+             leave one word alone on its second line. */
+          className="max-w-[var(--measure-doc-column)] text-balance text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] break-keep"
         >
           {title}
         </h2>
@@ -502,25 +511,6 @@ export function CommitDetail({
               ))}
             </ul>
 
-            {/* The document's other steps sit between the chooser and the reader, and the
-                restore door rides on their heading, as it does in the concepts lens (round
-                three, 2026-09-25). In the reader's header it stood at the measure's right edge,
-                about 320px from the path and counts it was meant to belong to. */}
-            {activeEntry ? (
-              <div className="px-5">
-                <DocumentHistory
-                  t={t}
-                  vaultPath={vaultPath}
-                  path={activeEntry.path}
-                  currentHash={hash}
-                  whenOf={whenOf}
-                  stepTitleOf={stepTitleOf}
-                  onJump={onJumpToCommit}
-                  action={restoreDoor(activeEntry)}
-                />
-              </div>
-            ) : null}
-
             {activeDocument ? (
               /*
                * Keyed by hash and path: a new step or a new file is a new document, so the
@@ -531,7 +521,7 @@ export function CommitDetail({
               <div
                 key={`${hash}:${activeDocument.entry.path}:${diff === null ? "reading" : "read"}`}
                 data-testid="atlas-git-commit-diff"
-                className="flex min-h-0 flex-1 flex-col"
+                className="flex min-h-0 flex-none flex-col"
               >
                 <DocumentChangeReader
                   t={t}
@@ -539,6 +529,26 @@ export function CommitDetail({
                   document={activeDocument}
                   fallback={activeFallback}
                   source={hash}
+                />
+              </div>
+            ) : null}
+            {/* Subject first, then its history (round four, 2026-09-25). The document's other
+                steps and the restore door sat between the chooser and the document they refer
+                to, so the timeline was read before its subject and the reader's own title sat
+                further down as a smaller heading. The reader now follows its chooser, and the
+                history with its door closes the document — the door restores what was just
+                read. The concepts lens keeps the same order: card, then history. */}
+            {activeEntry ? (
+              <div className="px-5 pb-4">
+                <DocumentHistory
+                  t={t}
+                  vaultPath={vaultPath}
+                  path={activeEntry.path}
+                  currentHash={hash}
+                  whenOf={whenOf}
+                  stepTitleOf={stepTitleOf}
+                  onJump={onJumpToCommit}
+                  action={restoreDoor(activeEntry)}
                 />
               </div>
             ) : null}
@@ -707,6 +717,30 @@ function DocumentHistory({
    * away and counted, never silently dropped.
    */
   const [expanded, setExpanded] = useState(false);
+  const listRef = useRef<HTMLUListElement>(null);
+  /*
+   * "Show fewer" leaves the way "Show N more" arrived (round four, 2026-09-25): the rows it
+   * removes fade out on the same fast curve before the list shortens, instead of vanishing in
+   * one frame. Opacity only, so the reduced-motion reading is the same fade without the
+   * stagger; where the Web Animations API is missing, the list simply shortens.
+   */
+  const collapse = () => {
+    const leaving = [...(listRef.current?.querySelectorAll<HTMLLIElement>("li[data-extra]") ?? [])];
+    if (leaving.length === 0 || typeof leaving[0].animate !== "function") {
+      setExpanded(false);
+      return;
+    }
+    const style = getComputedStyle(leaving[0]);
+    // The token computes as ".12s" in the browser, not "120ms"; read either unit.
+    const raw = style.getPropertyValue("--motion-fast").trim();
+    const value = Number.parseFloat(raw);
+    const duration = Number.isFinite(value) ? (raw.endsWith("ms") ? value : value * 1000) : 120;
+    const easing = style.getPropertyValue("--motion-ease").trim() || "ease";
+    const runs = leaving.map((row) =>
+      row.animate([{ opacity: 1 }, { opacity: 0 }], { duration, easing, fill: "forwards" }).finished,
+    );
+    void Promise.allSettled(runs).then(() => setExpanded(false));
+  };
   // Until the history is read (or where it cannot be, on the web) the door still stands.
   if (rows === null) return action ? <div className="flex pt-4">{action}</div> : null;
   const shown = expanded ? others : others.slice(0, DOCUMENT_HISTORY_PREVIEW);
@@ -723,10 +757,11 @@ function DocumentHistory({
         {action}
       </div>
       {others.length > 0 ? (
-        <ul className="flex flex-col">
+        <ul ref={listRef} className="flex flex-col">
           {shown.map((commit, index) => (
             <li
               key={commit.hash}
+              data-extra={index >= DOCUMENT_HISTORY_PREVIEW ? "true" : undefined}
               /* "Show N more" was a hard cut (review 2026-09-25). The rows it adds arrive on
                  the screen's one arrival curve, staggered and capped at eight like the step
                  list; under reduced motion they crossfade together with no stagger. The first
@@ -771,7 +806,7 @@ function DocumentHistory({
           type="button"
           data-testid="atlas-git-document-history-more"
           aria-expanded={expanded}
-          onClick={() => setExpanded((value) => !value)}
+          onClick={() => (expanded ? collapse() : setExpanded(true))}
           className={controlClass({
             shape: "chip",
             size: "md",

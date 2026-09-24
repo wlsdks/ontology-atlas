@@ -4222,7 +4222,7 @@
     "egoAgentReference": "Name to use with an AI",
     "egoLinkedCount": "{count} linked",
     "egoHeading": "Selected concept",
-    "egoHint": "Its facts and immediate neighbours · click a neighbour to move there",
+    "egoHint": "Point at a neighbour to light it in the drawing · click to move there",
     "egoDomain": "Domain",
     "egoDoc": "Source document",
     "egoNone": "None",

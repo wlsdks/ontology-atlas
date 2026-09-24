@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { EGO_BEARINGS, type ConceptEgo, type EgoBearing } from "../model/build-concept-ego";
 import { ConceptEgoGraph } from "./ConceptEgoGraph";
@@ -9,7 +10,9 @@ import { controlClass } from '@/shared/ui/control-class';
  * The chosen concept's **properties plus its immediate neighbours** — the trail
  * ends here instead of sending the reader out to the map.
  *
- * Reading on the left, drawing on the right. Relation names were pulled out of
+ * Reading on the left, drawing on the right. Since round four (2026-09-25) the reading
+ * table is the one place a neighbour is named and the drawing is the structure; pointing at
+ * either lights its twin. Relation names were pulled out of
  * the drawing and moved left because inside it they sit outside the fan and
  * widen the box, and a wider box shrinks the height-bound drawing (measured
  * fill rate 24%). The reading table's line swatches use the same tokens as the
@@ -47,12 +50,27 @@ export function ConceptEgoCard({
   kindLabel: (kind: string) => string;
   onSelect?: (nodeId: string) => void;
 }) {
+  /*
+   * The neighbour pointed at or focused, in the table or on the drawing. The table carries
+   * the names and the drawing the structure (round four); this is the one thread between
+   * them, lighting the mark of the name under the pointer and naming the mark under it.
+   */
+  const [activeId, setActiveId] = useState<string | null>(null);
   if (!ego) return null;
+
+  /*
+   * Said once (round four, 2026-09-25). For a capability the owning domain is also its
+   * "Belongs to" neighbour, so a "Domain" cell printed the same name one row above the
+   * relation that already carries it, and carries it as a door. The cell stays only when
+   * the domain is not among the drawn neighbours.
+   */
+  const domainIsNeighbour =
+    ego.domainLabel !== null && ego.neighbors.belongsTo.some((neighbor) => neighbor.label === ego.domainLabel);
 
   const facts: { label: string; value: string | null; mono?: boolean }[] = [
     // A domain or a project has no owning domain; "Domain: none" on one is a slot nobody
     // could ever fill, which the rule above says gets no cell.
-    ...(ego.kind === "domain" || ego.kind === "project"
+    ...(ego.kind === "domain" || ego.kind === "project" || domainIsNeighbour
       ? []
       : [{ label: t("egoDomain"), value: ego.domainLabel }]),
     ...(ego.projectLabels.length > 0
@@ -174,8 +192,13 @@ export function ConceptEgoCard({
                     type="button"
                     data-testid="atlas-git-ego-neighbor"
                     onClick={onSelect ? () => onSelect(neighbor.id) : undefined}
+                    onPointerEnter={() => setActiveId(neighbor.id)}
+                    onPointerLeave={() => setActiveId(null)}
+                    onFocus={() => setActiveId(neighbor.id)}
+                    onBlur={() => setActiveId(null)}
+                    data-active={activeId === neighbor.id ? "true" : undefined}
                     disabled={!onSelect}
-                    className={controlClass({ hoverInk: 'strong', shape: "link", tone: "secondary", className: "min-w-0 gap-1.5 text-label enabled: disabled:cursor-default" })}
+                    className={controlClass({ hoverInk: 'strong', shape: "link", tone: "secondary", className: "min-w-0 gap-1.5 text-label enabled: disabled:cursor-default data-[active=true]:text-[color:var(--color-text-primary)]" })}
                   >
                     <OntologyMapKindGlyph kind={neighbor.kind} size={11} />
                     <span className="truncate">{neighbor.label}</span>
@@ -192,6 +215,15 @@ export function ConceptEgoCard({
             bearingLabel={(bearing) => bearingLabel(t, bearing)}
             moreLabel={(count) => t("moreSlugs", { count })}
             onSelect={onSelect}
+            activeId={activeId}
+            onActive={setActiveId}
+            /*
+             * The table sets the card's height and the drawing meets it (round four): with its
+             * names moved to the table the drawing needs no label room of its own, so the
+             * token's 280-440px floor gave way to 13rem. A domain with four links no longer
+             * leaves a 140px hole under a short table beside a tall drawing.
+             */
+            className="min-h-52"
           />
         ) : (
           <div className="grid place-items-center px-4 py-10 text-label text-[color:var(--color-text-quaternary)]">

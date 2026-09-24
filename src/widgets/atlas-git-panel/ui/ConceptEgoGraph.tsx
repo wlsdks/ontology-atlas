@@ -27,6 +27,18 @@ import {
  *
  * Where every mark and label sits is decided by `layoutConceptEgo` (pure, tested);
  * this component only draws it.
+ *
+ * ## The table carries names, the drawing carries structure (round four, 2026-09-25)
+ *
+ * Every neighbour's name was printed twice in one card, once in the relation table and again
+ * as a label here (sixteen names twice for a dense concept), and the labels that stayed on the
+ * drawing were struck through by the spokes of their neighbours. The relation table already
+ * holds the names, grouped and clickable (2026-08-02: "names, not counts"), so the drawing
+ * now draws only what the table cannot: kind by silhouette, relation by line, and the share
+ * of each relation around the concept. A neighbour's name appears here only while it is
+ * pointed at or focused, in the table or on its mark, and it wears a canvas halo so no line
+ * crosses the one label on screen. The centre's name is the card's own header, so it is not
+ * drawn a second time either.
  */
 
 /**
@@ -110,11 +122,29 @@ function NodeShape({
   );
 }
 
+/** A canvas-coloured outline painted under the glyphs, so a line behind a label never strikes it. */
+const LABEL_HALO = {
+  paintOrder: "stroke",
+  stroke: "var(--color-canvas)",
+  strokeWidth: 4,
+  strokeLinejoin: "round",
+} as const;
+
+/** The point `inset` units from `(x2, y2)` back toward `(x1, y1)`. */
+function pullBack(x1: number, y1: number, x2: number, y2: number, inset: number): [number, number] {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const length = Math.hypot(dx, dy) || 1;
+  return [x2 - (dx / length) * inset, y2 - (dy / length) * inset];
+}
+
 export function ConceptEgoGraph({
   ego,
   bearingLabel,
   moreLabel,
   onSelect,
+  activeId = null,
+  onActive,
   className,
 }: {
   ego: ConceptEgo;
@@ -122,6 +152,9 @@ export function ConceptEgoGraph({
   bearingLabel: (bearing: EgoBearing) => string;
   moreLabel: (count: number) => string;
   onSelect?: (nodeId: string) => void;
+  /** The neighbour pointed at or focused, here or in the relation table; its name is drawn. */
+  activeId?: string | null;
+  onActive?: (nodeId: string | null) => void;
   className?: string;
 }) {
   const gradientId = useId();
@@ -152,9 +185,10 @@ export function ConceptEgoGraph({
     ego,
     readGeometry(typeof document === "undefined" ? null : document.documentElement),
     box,
+    moreLabel,
   );
   if (!layout) return null;
-  const { cx, cy, selfRadius, selfLabel, slots } = layout;
+  const { cx, cy, selfRadius, slots } = layout;
 
   return (
     <div
@@ -175,21 +209,49 @@ export function ConceptEgoGraph({
             <stop offset="1" stopColor="var(--map-node-fill-domain)" />
           </linearGradient>
         </defs>
-        {slots.map((slot) => (
-          <path
-            key={`edge-${slot.bearing}-${slot.index}`}
-            d={`M${cx},${cy} L${slot.x.toFixed(1)},${slot.y.toFixed(1)}`}
-            fill="none"
-            stroke={slot.dashed ? "var(--map-edge-depends)" : "var(--map-edge-contains)"}
-            strokeWidth={1}
-            strokeDasharray={slot.dashed ? "3.5 3.5" : undefined}
-            className="git-fade-in"
-            style={{ ["--git-row-index" as string]: Math.min(slot.index, 7) }}
-          />
-        ))}
+        {slots.map((slot) => {
+          /*
+           * A spoke runs from the centre's ring to the edge of its neighbour's mark, not through
+           * either shape: through the centre it crossed the selection ring, and through an
+           * "and N more" pill it struck the pill's own words (round-four review).
+           */
+          const [x1, y1] = pullBack(slot.x, slot.y, cx, cy, selfRadius + 6);
+          // A pill is a rect: the spoke stops where its direction meets the pill's edge.
+          const angle = Math.atan2(slot.y - cy, slot.x - cx);
+          const pillInset =
+            slot.type === "more"
+              ? Math.min(
+                  slot.width / 2 / Math.max(Math.abs(Math.cos(angle)), 1e-3),
+                  9 / Math.max(Math.abs(Math.sin(angle)), 1e-3),
+                ) + 1
+              : 0;
+          const [x2, y2] = pullBack(cx, cy, slot.x, slot.y, slot.type === "more" ? pillInset : slot.r + 1);
+          const lit = slot.type === "node" && slot.id === activeId;
+          return (
+            <path
+              key={`edge-${slot.bearing}-${slot.index}`}
+              d={`M${x1.toFixed(1)},${y1.toFixed(1)} L${x2.toFixed(1)},${y2.toFixed(1)}`}
+              fill="none"
+              stroke={slot.dashed ? "var(--map-edge-depends)" : "var(--map-edge-contains)"}
+              strokeWidth={lit ? 1.6 : 1}
+              strokeDasharray={slot.dashed ? "3.5 3.5" : undefined}
+              className="git-fade-in"
+              style={{ ["--git-row-index" as string]: Math.min(slot.index, 7) }}
+            />
+          );
+        })}
         {slots.map((slot) =>
           slot.type === "more" ? (
             <g key={`more-${slot.bearing}`}>
+              {/* Opaque backing: the overlay tint alone let the canvas lines show through. */}
+              <rect
+                x={slot.x - slot.width / 2}
+                y={slot.y - 9}
+                width={slot.width}
+                height={18}
+                rx={9}
+                fill="var(--color-canvas)"
+              />
               <rect
                 x={slot.x - slot.width / 2}
                 y={slot.y - 9}
@@ -214,7 +276,13 @@ export function ConceptEgoGraph({
               role={onSelect ? "button" : undefined}
               tabIndex={onSelect ? 0 : undefined}
               aria-label={slot.fullLabel}
+              data-testid="atlas-git-ego-mark"
+              data-active={slot.id === activeId ? "true" : undefined}
               onClick={onSelect ? () => onSelect(slot.id) : undefined}
+              onPointerEnter={onActive ? () => onActive(slot.id) : undefined}
+              onPointerLeave={onActive ? () => onActive(null) : undefined}
+              onFocus={onActive ? () => onActive(slot.id) : undefined}
+              onBlur={onActive ? () => onActive(null) : undefined}
               onKeyDown={
                 onSelect
                   ? (event) => {
@@ -225,26 +293,29 @@ export function ConceptEgoGraph({
                     }
                   : undefined
               }
-              className={cn("git-fade-in group/ego", onSelect && "cursor-pointer")}
+              className={cn("git-fade-in outline-none", onSelect && "cursor-pointer")}
               style={{ ["--git-row-index" as string]: Math.min(slot.index, 7) }}
             >
               <title>{slot.fullLabel}</title>
-              <NodeShape kind={slot.kind} x={slot.x} y={slot.y} r={slot.r} />
-              <text
-                x={slot.label.x}
-                y={slot.label.y}
-                textAnchor={slot.label.anchor}
-                /* Secondary ink (round three): tertiary grey at the drawing's old 0.88 scale read
-                   as a faint afterthought beside the reading table's own names. */
-                className="fill-[color:var(--color-text-secondary)] text-label group-hover/ego:fill-[color:var(--color-text-primary)]"
-              >
-                {slot.label.text}
-              </text>
+              <NodeShape kind={slot.kind} x={slot.x} y={slot.y} r={slot.r} selected={slot.id === activeId} />
+              {slot.id === activeId ? (
+                <text
+                  data-testid="atlas-git-ego-label"
+                  x={slot.label.x}
+                  y={slot.label.y}
+                  textAnchor={slot.label.anchor}
+                  style={LABEL_HALO}
+                  className="git-fade-in pointer-events-none fill-[color:var(--color-text-primary)] text-label"
+                >
+                  {slot.label.text}
+                </text>
+              ) : null}
               {onSelect ? <circle cx={slot.x} cy={slot.y} r={slot.r + 9} fill="transparent" /> : null}
             </g>
           ),
         )}
-        <g>
+        {/* The centre is marked by its ring; its name is the card's header, not drawn twice. */}
+        <g aria-hidden>
           <circle
             cx={cx}
             cy={cy}
@@ -253,14 +324,6 @@ export function ConceptEgoGraph({
             stroke="var(--map-selection-ring-hairline)"
           />
           <NodeShape kind={ego.kind} x={cx} y={cy} r={selfRadius} selected />
-          <text
-            x={selfLabel.x}
-            y={selfLabel.y}
-            textAnchor="middle"
-            className="fill-[color:var(--color-text-primary)] text-body-lg font-[var(--font-weight-emphasis)]"
-          >
-            {selfLabel.text}
-          </text>
         </g>
       </svg>
     </div>
