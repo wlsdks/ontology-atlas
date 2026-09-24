@@ -21,6 +21,7 @@ import {
   lastDrawnLabelBoxes,
   lastDrawnNodeAlphas,
   lastDrawnRelationCaptions,
+  lastLitStateCounts,
 } from "./topology-frame-draw";
 import type {
   NodeDragState,
@@ -466,6 +467,14 @@ export function useTopologyMapInstrumentation({
            * state; the idle gate already reads this flag for the same reason.
            */
           entryArmed: d.entryArmed,
+          /*
+           * Lit 3D (2026-09-25) — the fly-to in effect (the node it framed) and how many
+           * drawn nodes wore each evidence light in the last frame. What the frame
+           * painted, so a spec compares it with the legend's measured counts.
+           */
+          flight: d.flight?.slug ?? null,
+          flyPending: d.flyRequest !== null,
+          light: lastLitStateCounts(),
         };
       },
       /**

@@ -31,6 +31,8 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
+import { TopologyLightLegend } from "./TopologyLightLegend";
+import { useMapEvidenceStates } from "../model/use-map-evidence-states";
 import { TopologyTerritoriesSurface } from "./TopologyTerritoriesSurface";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 const VaultStartSteps = dynamic(
@@ -232,6 +234,13 @@ export function TopologyCanvasSurface({
     vault, deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, changedSlugs,
     recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason, ontologyInsight
   } = topologyVaultReadModel;
+  /*
+   * Lit 3D (2026-09-25): the evidence states the light is drawn from — the same rule and the
+   * same Git walk the insights brief uses. Walked only while 3D is on; no other view here
+   * reads it.
+   */
+  const view3dOn = topologyPreferences.view3d;
+  const mapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3dOn });
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
   const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
   /** The hex board threw: this session falls back to the flat map and says so in one line. */
@@ -593,6 +602,14 @@ export function TopologyCanvasSurface({
                 view3d={view3d}
                 galaxy={galaxy}
                 mapArrangement={mapArrangement}
+                domeEvidence={mapEvidence.availability === "measured" ? mapEvidence.states : null}
+                domeLightLegend={
+                  <TopologyLightLegend
+                    evidence={mapEvidence}
+                    nodeIds={ontologyMapGraph.nodes.map((node) => node.id)}
+                    kindLabels={domeTierLabels}
+                  />
+                }
                 // The "the viewport changed" event for the 3D selection reframe: true
                 // while the detail panel actually covers the screen, false once its
                 // exit animation ends. On each flip the dome reframes smoothly against
