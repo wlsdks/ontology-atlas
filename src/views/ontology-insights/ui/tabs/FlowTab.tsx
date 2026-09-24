@@ -282,8 +282,17 @@ export function FlowTab({
  * text past that edge, so a request that fits keeps its last line whole.
  */
 function RequestScroller({ request }: { request: string }) {
+  const frameRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLPreElement>(null);
   const [edge, setEdge] = useState({ top: false, bottom: false });
+  /*
+   * ⚠️ **The viewport ends between two lines, not through one** (review, 2026-09-25, round 4).
+   * With the text filling the frame, the last visible line was cut through its glyphs and a 22px
+   * fade over a 19px line could not hide it. The scroll viewport is now snapped to a whole number
+   * of lines under the top padding, so at rest the last line shown is whole and the fade dims it
+   * as "more below"; the frame keeps its full height and the remainder reads as its padding.
+   */
+  const [viewport, setViewport] = useState<number | null>(null);
   const measure = useCallback(() => {
     const el = ref.current;
     if (!el) return;
@@ -291,15 +300,29 @@ function RequestScroller({ request }: { request: string }) {
     const bottom = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
     setEdge((prev) => (prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
   }, []);
-  useEffect(() => {
+  const snap = useCallback(() => {
+    const frame = frameRef.current;
     const el = ref.current;
-    if (!el) return;
+    if (!frame || !el) return;
+    const style = getComputedStyle(el);
+    const line = Number.parseFloat(style.lineHeight);
+    const padTop = Number.parseFloat(style.paddingTop) || 0;
+    const available = frame.clientHeight;
+    if (!Number.isFinite(line) || line <= 0 || available <= 0) return;
+    const lines = Math.max(1, Math.floor((available - padTop * 2) / line));
+    const snapped = Math.round(padTop + lines * line);
+    setViewport((prev) => (el.scrollHeight <= available ? null : prev === snapped ? prev : snapped));
     measure();
+  }, [measure]);
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    snap();
     if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
+    const observer = new ResizeObserver(snap);
+    observer.observe(frame);
     return () => observer.disconnect();
-  }, [measure, request]);
+  }, [snap, request]);
   const fade = "var(--tabbar-edge-fade)";
   const mask =
     edge.top && edge.bottom
@@ -310,13 +333,16 @@ function RequestScroller({ request }: { request: string }) {
           ? `linear-gradient(to bottom, transparent 0, black ${fade})`
           : undefined;
   return (
-    <div className="relative min-h-64 flex-1 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] @min-[960px]/insights:min-h-32">
+    <div ref={frameRef} className="relative min-h-64 flex-1 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] @min-[960px]/insights:min-h-32">
       <pre
         ref={ref}
         data-testid="flow-request-text"
         data-fade-bottom={edge.bottom ? "" : undefined}
         onScroll={measure}
-        style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
+        style={{
+          ...(mask ? { maskImage: mask, WebkitMaskImage: mask } : null),
+          ...(viewport != null ? { height: viewport, bottom: "auto" } : null),
+        }}
         className="atlas-scroll-quiet absolute inset-0 overflow-auto whitespace-pre-wrap p-3 text-label leading-prose text-[color:var(--color-text-secondary)]"
       >
         {request}

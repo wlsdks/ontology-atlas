@@ -1798,8 +1798,8 @@
         },
         "markSeenUndo": "Undo",
         "evidenceUnreadable": "The linked code could not be checked. Reopen the folder to try again.",
-        "evidenceNoSource": "No code repository is connected to this folder yet. Connect it from the project on the map.",
-        "noSourceShared": "Connect a code repository on the map and this counts both the code behind concepts and where the guides reach.",
+        "evidenceNoSource": "Whether concepts still match their code is not checked yet. Connect a code repository on the map and it is counted here.",
+        "noSourceShared": "Whether concepts still match their code, and where the guides reach, is not counted yet. Connect a code repository on the map and both are counted here.",
         "bandState": {
           "app-only": "current and stale are measured in the app",
           "no-data": "none yet",

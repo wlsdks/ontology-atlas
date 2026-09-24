@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { INDIGO_RGB } from "@/shared/config/indigo-tokens";
-import { RELATION_TYPE_MIN_ALPHA, relationTypeAlpha, relationTypeIndigo } from "./relation-type-tone";
+import { RELATION_TYPE_MIN_ALPHA, relationTypeAlpha, relationTypeFill, relationTypeHatched, relationTypeIndigo } from "./relation-type-tone";
 
 const KNOWN = ["contains", "belongs_to", "depends_on", "implements", "uses", "describes", "related_to"];
 
@@ -22,11 +22,19 @@ function contrastOnPanel(alpha: number): number {
 }
 
 describe("relationTypeAlpha", () => {
-  it("ranks containment strongest, then depends_on, then the rest", () => {
-    expect(relationTypeAlpha("contains")).toBeGreaterThan(relationTypeAlpha("depends_on"));
-    expect(relationTypeAlpha("belongs_to")).toBeGreaterThan(relationTypeAlpha("depends_on"));
-    expect(relationTypeAlpha("depends_on")).toBeGreaterThan(relationTypeAlpha("describes"));
-    expect(relationTypeAlpha("depends_on")).toBeGreaterThan(relationTypeAlpha("related_to"));
+  /*
+   * Round 4 review, 2026-09-25: depends_on at 0.85 and related_to at 0.62 were two nearly
+   * identical indigos. The families now differ in kind: two solids a full scale apart, and a hatch.
+   */
+  it("draws containment and depends_on as two solids a full scale apart, and hatches the rest", () => {
+    expect(relationTypeAlpha("contains")).toBe(0.95);
+    expect(relationTypeAlpha("depends_on")).toBe(RELATION_TYPE_MIN_ALPHA);
+    for (const type of ["contains", "belongs_to", "depends_on"]) expect(relationTypeHatched(type)).toBe(false);
+    for (const type of ["implements", "uses", "describes", "related_to", "some_future_type"]) {
+      expect(relationTypeHatched(type)).toBe(true);
+      expect(relationTypeFill(type)).toContain("repeating-linear-gradient");
+    }
+    expect(relationTypeFill("depends_on")).toBe(relationTypeIndigo("depends_on"));
   });
 
   it("gives an unknown type the floor", () => {
@@ -45,6 +53,6 @@ describe("relationTypeAlpha", () => {
 describe("relationTypeIndigo", () => {
   it("returns the highlight indigo with a type-scaled alpha", () => {
     expect(relationTypeIndigo("contains")).toBe(`rgba(${INDIGO_RGB.highlight}, 0.95)`);
-    expect(relationTypeIndigo("related_to")).toBe(`rgba(${INDIGO_RGB.highlight}, 0.62)`);
+    expect(relationTypeIndigo("depends_on")).toBe(`rgba(${INDIGO_RGB.highlight}, 0.62)`);
   });
 });

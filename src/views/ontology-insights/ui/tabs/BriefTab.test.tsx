@@ -103,16 +103,17 @@ describe("BriefTab", () => {
     mount(brief());
     const list = screen.getByTestId("brief-lines");
     const lines = list.querySelectorAll("[data-brief-line]");
+    // "agent-calls-since" is not here: the since card under the list names those calls one by
+    // one, so counting them in the list too said one fact twice (review, 2026-09-25, round 4).
     expect([...lines].map((line) => line.getAttribute("data-brief-line"))).toEqual([
       "ontology-evidence-moved",
       "ontology-agent-unreviewed",
       "ontology-repair",
-      "agent-calls-since",
     ]);
     expect(lines[0]).toHaveAttribute("data-brief-state", "stale");
     expect(lines[0]).toHaveAttribute("data-brief-core", "ontology");
-    // Every row names its core, so a reader never looks back at the band to place it.
-    expect(lines[3]).toHaveTextContent("에이전트");
+    // Every row names its core, the run's later rows too, so the column is one start line.
+    for (const line of lines) expect(line).toHaveTextContent("개념");
     expect(list.querySelector('a[href="/ontology/insights/?tab=do-next"]')).not.toBeNull();
     fireEvent.click(screen.getByTestId("brief-line-open-ontology-evidence-moved"));
     // The stale line names what it counts: concept, the file, and both dates — never a bare number.
@@ -279,7 +280,8 @@ describe("a marked visit folds what it cleared", () => {
   it("keeps a departing line for one fold, hidden from assistive technology, then drops it", async () => {
     vi.useFakeTimers();
     try {
-      const first = brief();
+      // Without an agent call in the since card, the list counts the calls itself.
+      const first = brief({ since: [{ core: "ontology", at: "2026-09-18T03:00:00Z", kind: "concept-doc", label: "Payments", href: "/topology/?p=capabilities%2Fpay" }] });
       const { rerender } = render(
         <NextIntlClientProvider locale="ko" messages={ko}>
           <BriefTab brief={first} />
@@ -367,7 +369,7 @@ describe("taking the visit mark back", () => {
 });
 
 describe("a line that cannot be checked", () => {
-  it.each(["measured", "reading", "unreadable", "no-source"] as const)("offers the app in a browser and never inside it: %s", (availability) => {
+  it.each(["measured", "reading", "unreadable"] as const)("offers the app in a browser and never inside it: %s", (availability) => {
     /*
      * Measured in the installed app at 1040x720 on this repository's own vault: "50 concepts
      * whose code could not be checked · Get the app", inside the app. In a browser the same line
@@ -392,5 +394,34 @@ describe("a line that cannot be checked", () => {
     const inApp = app.container.querySelector('[data-brief-line="ontology-evidence-unchecked"] a');
     expect(app.container.querySelector('a[href="/download/"]'), "앱 안에서 앱을 받으라고 한다").toBeNull();
     expect(inApp?.getAttribute("href")).toContain("/topology/");
+  });
+});
+
+describe("no repository", () => {
+  /*
+   * Round 4 review, 2026-09-25: with no repository every concept is unchecked, and the unchecked
+   * line and the connect row stood one above the other with two doors to the same map.
+   */
+  it("is one row in the unchecked line's place, with its ring and the one connect door", () => {
+    const { container } = render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <BriefTab
+          brief={brief({
+            ontology: core({ core: "ontology", availability: "no-source", headline: 20, current: null, stale: null, unknown: null, lines: [{ id: "ontology-evidence-unchecked", count: 20, state: "unknown" }, { id: "ontology-repair", count: 5, state: "current" }] }),
+            harness: core({ core: "harness", availability: "no-source", headline: null, current: null, stale: null, unknown: null }),
+          })}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(container.querySelector('[data-brief-line="ontology-evidence-unchecked"]')).toBeNull();
+    const rows = [...container.querySelectorAll('[data-testid="brief-lines"] > li')];
+    const connect = screen.getByTestId("brief-core-no-source-ontology");
+    expect(rows[0]).toBe(connect);
+    expect(connect).toHaveTextContent("개념 · 지침");
+    expect(connect.querySelector('a[href="/topology/"]')).not.toBeNull();
+    expect(container.querySelectorAll('[data-testid="brief-lines"] a[href="/topology/"]')).toHaveLength(1);
+    // Both band cells stopped by it put the reason on the same line, the caption.
+    expect(screen.getByTestId("brief-core-state-ontology")).toHaveTextContent("저장소 연결 전");
+    expect(screen.getByTestId("brief-core-reason-harness")).toHaveTextContent("저장소 연결 전");
   });
 });

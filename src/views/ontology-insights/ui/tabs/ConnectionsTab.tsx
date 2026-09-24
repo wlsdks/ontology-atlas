@@ -5,14 +5,12 @@ import {
   EmptyState,
   EvidenceOnlyBadge,
   OntologyMapKindGlyph,
-  OntologyMapTraceMark,
 } from "@/shared/ui";
 import {
-  isContainmentRelation,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { relationTypeIndigo } from "../../lib/relation-type-tone";
+import { relationTypeFill, relationTypeIndigo } from "../../lib/relation-type-tone";
 import { buildImpactRanking } from "../../lib/impact-ranking";
 import { InsightsBar } from "../parts/InsightsBar";
 import {
@@ -160,8 +158,11 @@ export function ConnectionsTab({
             />
           </div>
         ) : (
-          /* The key names each segment once: its swatch, the line the map draws for it, the
-             count and the share. Items sit on one row and wrap on a narrow board. */
+          /* The key names each segment once: its swatch, the count and the share. Items sit on
+             one row and wrap on a narrow board. The map's line mark is not repeated here: the
+             map draws only two lines (solid containment, dashed everything else), so two types
+             wore the same dashed mark and the key told them apart by the label alone (review,
+             2026-09-25, round 4). The swatch is a literal sample of the segment instead. */
           <ShareStack
             total={totalEdges}
             keyTestId="connections-relation-type-key"
@@ -171,7 +172,7 @@ export function ConnectionsTab({
               label: edgeTypeLabel(row.type),
               count: row.count,
               color: relationTypeIndigo(row.type),
-              mark: <OntologyMapTraceMark containment={isContainmentRelation(row.type)} />,
+              fill: relationTypeFill(row.type),
             }))}
           />
         )}

@@ -6,6 +6,8 @@ export interface ShareStackItem {
   count: number;
   /** A colour token or a computed tone; it must clear 3:1 on the panel (WCAG 1.4.11). */
   color: string;
+  /** A CSS `background` that replaces the flat colour on both the segment and its swatch (a hatch). */
+  fill?: string;
   /** A glyph or trace mark that ties the key item to the map's own drawing. */
   mark?: ReactNode;
 }
@@ -49,7 +51,7 @@ export function ShareStack({
             data-testid={segmentTestId}
             // `min-w-1`: a one-item share still shows as a mark; its exact value is in the key.
             className="min-w-1"
-            style={{ flexGrow: item.count / total, flexBasis: 0, backgroundColor: item.color }}
+            style={{ flexGrow: item.count / total, flexBasis: 0, background: item.fill ?? item.color }}
           />
         ))}
       </div>
@@ -57,8 +59,10 @@ export function ShareStack({
         {items.map((item) => {
           const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
           return (
-            <li key={item.id} className="flex min-h-7 items-center gap-2">
-              <span aria-hidden className="size-2.5 flex-none rounded-micro" style={{ backgroundColor: item.color }} />
+            // The name and its numbers sit 6px apart and the next item 32px away, so a Hangul
+            // name and its mono count read as one item, not three evenly spaced words.
+            <li key={item.id} className="flex min-h-7 items-center gap-1.5">
+              <span aria-hidden className="mr-0.5 size-2.5 flex-none rounded-micro" style={{ background: item.fill ?? item.color }} />
               {item.mark}
               <span className="text-body text-[color:var(--color-text-primary)]">{item.label}</span>
               <span className="font-mono text-body tabular-nums text-[color:var(--map-numeral-face)]">{item.count}</span>
