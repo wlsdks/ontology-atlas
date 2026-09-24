@@ -611,6 +611,21 @@ had become false).
 - Clicking the status line first shows actor, phase, request summary, actual target, next step, last tool,
   and places work-unit notification records below. Notifications aggregate by task and structure changes as before, not drawing raw tool-call streams. The anchored surface
   is positioned `--chrome-tile-size + 8px` away from the right map tool column, so tool icons behind the translucent surface do not mix with the work row.
+- **The status is a segment of the bell's control, in the toolbar row (2026-09-24).** It no
+  longer hangs under the row: the dot, the agent and step, and the elapsed time sit left of
+  the bell inside one outline. Where the lane is compact (a docked panel beside it, a focus)
+  or narrower than `xl`, it folds to the dot and the elapsed time, and its accessible name
+  keeps the whole sentence. While the conversation panel is open, an in-app turn's status
+  leaves the toolbar, because the panel is already streaming it; another agent's heartbeat
+  or a recent write still shows. The node it names moved into the status view it opens.
+- **Toasts stand at the bottom of the free lane (2026-09-24).** The toaster is centred
+  between the innermost walls a screen declares with `data-toast-wall` — the nav rail, the
+  map's INDEX stack, the map's docked panel — 16px above the floor (the bottom tab bar's
+  top below `lg`, or the map's corner readout and first-visit hint when they stand), and
+  each box hugs its sentence up to `--dialog-w-md`. One neutral box
+  (`--color-elevated`, `--radius-card`, `--shadow-elevation-1`) serves four tones —
+  neutral, success, warning, error — told apart by a small glyph in the tone's ink, never a
+  coloured fill. The Library keeps its pane-corner claim.
 - Target links visibly state `Current Target:`/`Last Change:`
   and directly update node selection for `HomePage` on the map already. Route remount
   does not temporarily switch current vault to sample graph; independent consumers only
@@ -1274,7 +1289,7 @@ and nothing inline, in the guide's step two least of all.
 
 **A toast stands in the corner of the pane it is about** (owner, 2026-09-12: *"the toast at
 the top — its position is odd too, right?"*). This surface claims `bottom-right` where the
-rest of the app keeps the top centre, and the two walls it stops a 16px gutter short of are
+rest of the app keeps the bottom centre of its free lane (2026-09-24), and the two walls it stops a 16px gutter short of are
 the pane's rather than the window's: the conversation's left edge from `xl` up, and the
 bottom tab bar's top below `lg`. While the answer comparison stands — the one
 `size="viewport"` dialog this view has left since the graph became the home — both gutters

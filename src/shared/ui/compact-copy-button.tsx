@@ -11,6 +11,11 @@ export interface CompactCopyButtonProps {
   ariaLabel: string;
   onClick: () => void;
   className?: string;
+  /**
+   * Draw the glyph alone. The label stays the tooltip and `ariaLabel` stays the
+   * accessible name; use it where a crowded chrome row has no room for the words.
+   */
+  iconOnly?: boolean;
 }
 
 /**
@@ -25,6 +30,7 @@ export function CompactCopyButton({
   ariaLabel,
   onClick,
   className = "",
+  iconOnly = false,
   ...attrs
 }: CompactCopyButtonProps & Omit<HTMLAttributes<HTMLButtonElement>, "className" | "onClick">) {
   return (
@@ -42,7 +48,7 @@ export function CompactCopyButton({
       title={label}
     >
       {copied ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
-      <span className="min-w-0 truncate">{label}</span>
+      {iconOnly ? null : <span className="min-w-0 truncate">{label}</span>}
     </button>
   );
 }

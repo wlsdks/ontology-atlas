@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { writeGalaxy, writeView3d } from "@/shared/lib/appearance-preferences";
 import { withBasePath } from "@/shared/lib/base-path";
+import { cn } from "@/shared/lib/cn";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import type { useToast } from "@/shared/ui";
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip, Tooltip } from "@/shared/ui";
@@ -225,11 +226,81 @@ export function TopologyCommandChrome({
     >
       {!selectedRelationActive ? (
         <>
+          {/* Mobile-only settings escape hatch: the utility lane is hidden while the
+              expanded INDEX owns the <md surface. */}
+          {!inspectorOwnsRightRail && renderedIndexState === "expanded" ? (
+            <div
+              className="pointer-events-auto absolute right-4 top-4 z-[var(--z-map-scrim)] md:hidden"
+              data-testid="topology-mobile-settings"
+            >
+              <AppSettingsMenu
+                mode={vault.status === 'loaded' ? 'local' : 'static'}
+                triggerVariant="chrome-tile"
+                screenControls={{
+                  audiencePlain,
+                  onAudiencePlainChange: setAudiencePlain,
+                  indexCollapsed: indexPanelCollapsedStored,
+                  onIndexCollapsedChange: handleChangeIndexDefaultCollapsed,
+                }}
+              />
+            </div>
+          ) : null}
+          <div
+            /*
+             * **One toolbar, one box** (owner report, 2026-09-24, installed app at
+             * 1512x949 with the meaning-review panel open): the search lane and the
+             * utility lane were two absolute overlays, one centred on the map and one
+             * pinned to its right edge, and neither knew the other's width. Once the
+             * panel took 430px of the map, the centred lane ran into the utility lane
+             * and eight tiles were painted over one another.
+             *
+             * Both lanes are now items of this one flex box. Below `xl` they stack
+             * at the right (utility on top, search 16px under it, the rhythm the two
+             * absolute boxes used to fake). From `xl` they share one row while both
+             * fit at their natural width: the utility lane holds the right edge and
+             * the search lane is centred in what is left of the map. When they do not
+             * fit, `flex-wrap-reverse` puts the search lane on its own line under the
+             * utility lane, where it has the whole width and its status chips
+             * truncate before any tile gives up its box. Measured at 1280 with the
+             * review panel open and a path: one line would have left the path chip
+             * 42px, the wrapped line gives it the full row.
+             *
+             * The box owns every horizontal reserve the lanes used to compute on
+             * their own: the expanded INDEX on the left (from `md`, where the panel
+             * floats over the map), the node inspector on the right from `xl`
+             * (`app/globals.css`), and the shared seam beside an open agent dock
+             * (the dock-adjacent rail attribute below). It also owns the one
+             * `topology-ui-scale` zoom, so nothing inside scales twice.
+             */
+            className={cn(
+              "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 transition-[left,right] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-6 md:top-6 xl:right-8 xl:top-8 xl:flex-row xl:flex-wrap-reverse xl:items-start",
+              renderedIndexState === "expanded"
+                ? "left-4 md:left-[calc(var(--topology-index-width)+var(--topology-index-inset)*2)]"
+                : "left-4 md:left-6 xl:left-8",
+              // The agent activity status is a segment of the bell inside the utility
+              // row (2026-09-24), so it takes part in this box's own wrap and needs no
+              // second-line reserve. The reserve that measured a caption hanging under
+              // the bell and hid it when the lane did not fit is gone: once the status
+              // joined the row, hiding it shrank the row, which let the lane fit, which
+              // showed it again, and the row never settled.
+              activityInboxOpen ? "z-30" : "z-20",
+            )}
+            data-testid="topology-top-toolbar"
+            data-agent-dock-adjacent-rail="true"
+            data-right-inspector-reserve={
+              nodePanelMounted ? "recenter-in-remaining-map" : undefined
+            }
+            data-left-index-reserve={
+              renderedIndexState === "expanded" ? "recenter-in-remaining-map" : undefined
+            }
+          >
           <SearchHint
+            // `ml-auto` on both lanes splits the free space of a shared line into the
+            // gap before this lane and the gap after it, which centres it in the map
+            // left of the utility lane; with no utility lane it centres in the box.
+            className={inspectorOwnsRightRail ? "xl:mx-auto" : "xl:ml-auto"}
             density={topologyUtilityChromeCompact || searchLaneCrowded ? "compact-focus" : "default"}
             phoneFocusSuppressed={selectedNodeFocusActive}
-            rightInspectorReserved={nodePanelMounted}
-            leftIndexReserved={renderedIndexState === "expanded"}
             constellationControl={(
               <SavedConstellationsControl
                 handle={vault.status === 'loaded' ? vault.handle : null}
@@ -337,6 +408,7 @@ export function TopologyCommandChrome({
                   onCopyPacket={copyPathPacket}
                   clearAriaLabel={t("analysis.pathChipClear")}
                   onClear={handleClearPath}
+                  compact={topologyUtilityChromeCompact || searchLaneCrowded}
                 />
               ) : undefined
             }
@@ -357,6 +429,7 @@ export function TopologyCommandChrome({
               footprintTrailEntries.length >= 1 ? (
                 <TopologyTrailChip
                   label={t("footprint.chipLabel", { count: footprintTrailEntries.length })}
+                  compactLabel={String(footprintTrailEntries.length)}
                   entries={footprintTrailEntries}
                   stepCaptions={footprintTrailStepCaptions}
                   currentId={canvasSelectedSlug}
@@ -401,26 +474,6 @@ export function TopologyCommandChrome({
             }
           />
           {inspectorOwnsRightRail ? null : (
-            <>
-              {/* Mobile-only settings escape hatch: the utility lane is
-                        hidden while the expanded INDEX owns the <md surface. */}
-              {renderedIndexState === "expanded" ? (
-                <div
-                  className="pointer-events-auto absolute right-4 top-4 z-[var(--z-map-scrim)] md:hidden"
-                  data-testid="topology-mobile-settings"
-                >
-                  <AppSettingsMenu
-                    mode={vault.status === 'loaded' ? 'local' : 'static'}
-                    triggerVariant="chrome-tile"
-                    screenControls={{
-                      audiencePlain,
-                      onAudiencePlainChange: setAudiencePlain,
-                      indexCollapsed: indexPanelCollapsedStored,
-                      onIndexCollapsedChange: handleChangeIndexDefaultCollapsed,
-                    }}
-                  />
-                </div>
-              ) : null}
               <div
                 // Overlap sweep, 2026-07-23. ① Below `md`, while the expanded
                 // INDEX is a full-bleed sheet, the whole lane retreats — 8px of
@@ -428,16 +481,15 @@ export function TopologyCommandChrome({
                 // labels shrink through the `max-xl` / `max-2xl`
                 // `[data-chip-label]` steps below: 499px of combined label was
                 // what overlapped the centre search lane and the expanded INDEX
-                // between 768 and 1365.
-                className={`topology-ui-scale absolute right-4 top-4 flex-col items-end gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8 ${activityInboxOpen ? "z-30" : "z-20"
-                  } ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
+                // between 768 and 1365. ③ Since 2026-09-24 this is a grid item of
+                // `topology-top-toolbar`, which owns position and scale.
+                className={`pointer-events-auto shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
                 data-phone-sheet-utility-contract={
                   renderedIndexState === "expanded"
                     ? "hidden-below-md-while-index-sheet-owns-surface"
                     : undefined
                 }
                 data-testid="topology-utility-action-lane"
-                data-agent-dock-adjacent-rail="true"
                 data-utility-lane-density={
                   topologyUtilityChromeCompact ? "compact-focus" : "default"
                 }
@@ -764,7 +816,7 @@ export function TopologyCommandChrome({
                       }}
                     />
                   </div>
-                  {/* Work status is anchored below this row, and only the notification bell stands as the
+                  {/* Work status is the left segment of the bell's control, and the bell stands as the
                         last square tile of this row. The same component owns both feeds and
                         outside click/Escape to avoid duplicating polling/read state. */}
                   <CompanionHome compact />
@@ -780,14 +832,16 @@ export function TopologyCommandChrome({
                       (Boolean(v2DatasheetModel) || selectedEdgeOwnsRightRail) && !activityInboxOpen
                     }
                     liveWork={acpLiveWork}
+                    conversationOpen={agentDockOpen}
+                    compact={topologyUtilityChromeCompact}
                     onOpenChange={setActivityInboxOpen}
                     onOpenNode={handleSelect}
                     onOpenConversation={openVaultAgent}
                   />
                 </div>
               </div>
-            </>
           )}
+          </div>
         </>
       ) : null}
     </div>

@@ -149,7 +149,12 @@ describe("AgentActivityChip", () => {
     });
     expect(screen.getByTestId("agent-activity-chip")).toHaveAttribute('data-work-mode', 'live');
     expect(screen.getByTestId("agent-activity-status")).toHaveTextContent("Codex · 검증 중");
-    expect(screen.getByTestId("agent-activity-target")).toHaveTextContent("현재 대상:주문서 작성");
+    // The node lives in the status view since 2026-09-24; the row keeps who and which step.
+    expect(screen.queryByTestId("agent-activity-target")).toBeNull();
+    fireEvent.click(screen.getByTestId("agent-activity-status-trigger"));
+    const current = screen.getByTestId("agent-activity-current-work");
+    expect(current).toHaveTextContent("현재 대상");
+    expect(screen.getByTestId("agent-activity-target")).toHaveTextContent("주문서 작성");
   });
 
   it("로그만 최근이면 작업 중이라고 단정하지 않는다", () => {
@@ -187,11 +192,14 @@ describe("AgentActivityChip", () => {
   it("대상이 지도에 없으면 링크를 만들지 않는다 — 대상 없이 상태만", () => {
     renderChip({ lastNode: null, lastTargetUnnamed: true });
     expect(screen.getByTestId("agent-activity-status")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("agent-activity-status-trigger"));
+    expect(screen.getByTestId("agent-activity-current-work")).toBeInTheDocument();
     expect(screen.queryByTestId("agent-activity-target")).toBeNull();
   });
 
   it("대상 링크는 지도 노드 딥링크다", () => {
     renderChip();
+    fireEvent.click(screen.getByTestId("agent-activity-status-trigger"));
     expect(screen.getByTestId("agent-activity-target")).toHaveAttribute(
       "href",
       expect.stringContaining("/topology?mode=focus&p=capabilities%2Fcheckout"),
@@ -206,6 +214,7 @@ describe("AgentActivityChip", () => {
         <AgentActivityChip onOpenNode={onOpenNode} />
       </NextIntlClientProvider>,
     );
+    fireEvent.click(screen.getByTestId('agent-activity-status-trigger'));
     const target = screen.getByTestId('agent-activity-target');
     expect(target.tagName).toBe('BUTTON');
     expect(target).not.toHaveAttribute('href');
@@ -234,6 +243,70 @@ describe("AgentActivityChip", () => {
     expect(current).toHaveTextContent('검증 중');
     expect(current).toHaveTextContent('변경 결과 확인');
     expect(current).toHaveTextContent('validate_vault');
+  });
+
+  /*
+   * **The status is a segment of the toolbar row, joined to the bell** (owner,
+   * 2026-09-24). It used to hang under the row, attached to nothing.
+   */
+  it("상태는 종과 한 몸인 도구줄 조각이다 — 줄 아래로 떠 있지 않다", () => {
+    renderBell({ writing: true, agentName: "Codex", work: { ...feed().work, mode: "live", agentName: "Codex", phase: "planning" } });
+    const dock = screen.getByTestId("agent-activity-dock");
+    const status = screen.getByTestId("agent-activity-status-trigger");
+    const bell = screen.getByTestId("agent-activity-bell");
+    expect(dock).toContainElement(status);
+    expect(dock).toContainElement(bell);
+    expect(dock).toHaveAttribute("data-agent-activity-status-slot", "utility-row-segment");
+    expect(status.className).not.toMatch(/\babsolute\b/);
+    expect(status.className).toMatch(/rounded-r-none/);
+    expect(bell.className).toMatch(/rounded-l-none/);
+    // The whole sentence stays reachable when the label folds.
+    expect(status).toHaveAttribute("aria-label", expect.stringContaining("Codex · 계획 중"));
+  });
+
+  /*
+   * **Nothing said twice** (2026-09-19; owner, 2026-09-24): an in-app turn's status is
+   * already streaming in the open conversation panel, so the toolbar stops saying it.
+   */
+  it("대화 패널이 열려 있으면 앱 안 턴의 상태를 도구줄에서 다시 말하지 않는다", () => {
+    mocks.feed = feed({ writing: true, agentName: "Codex", work: { ...feed().work, mode: "live", agentName: "Codex", phase: "planning", startedAt: NOW - 6_000 } });
+    const liveWork = { rawAgentName: "codex-acp", phase: "planning" as const, summary: null, targetSlug: null, lastTool: null, updatedAt: NOW, startedAt: NOW - 6_000 };
+    const { rerender } = render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AgentActivityChip liveWork={liveWork} conversationOpen />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("agent-activity-status-trigger")).toBeNull();
+    rerender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AgentActivityChip liveWork={liveWork} conversationOpen={false} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId("agent-activity-status-trigger")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-activity-elapsed")).toHaveTextContent("6초");
+  });
+
+  it("대화 패널이 열려 있어도 패널이 보여주지 않는 다른 에이전트의 작업은 말한다", () => {
+    mocks.feed = feed({ writing: true, agentName: "Claude Code", work: { ...feed().work, mode: "live", agentName: "Claude Code", phase: "editing" } });
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AgentActivityChip conversationOpen />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId("agent-activity-status")).toHaveTextContent("Claude Code · 편집 중");
+  });
+
+  it("도구줄이 좁은 상태면 상태는 점과 경과 시간으로 접히고 문장은 보조 기술에 남는다", () => {
+    mocks.feed = feed({ writing: true, agentName: "Codex", work: { ...feed().work, mode: "live", agentName: "Codex", phase: "planning", startedAt: NOW - 6_000 } });
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AgentActivityChip compact />
+      </NextIntlClientProvider>,
+    );
+    const status = screen.getByTestId("agent-activity-status-trigger");
+    expect(status).toHaveAttribute("data-status-fold", "compact");
+    expect(screen.getByTestId("agent-activity-status").className).toMatch(/\bsr-only\b/);
+    expect(screen.getByTestId("agent-activity-elapsed")).toHaveTextContent("6초");
   });
 
   it("안 읽은 결과 수를 벨에 단다", () => {
@@ -284,7 +357,10 @@ describe("AgentActivityChip", () => {
     });
     const status = screen.getByTestId('agent-activity-status-trigger');
     const bell = screen.getByTestId('agent-activity-bell');
-    expect(status.parentElement).not.toContainElement(bell);
+    // One control outline, two presses: the status segment and the bell stay apart.
+    expect(status).not.toBe(bell);
+    expect(status).not.toContainElement(bell);
+    expect(bell).not.toContainElement(status);
 
     fireEvent.click(status);
     expect(screen.getByTestId('agent-activity-current-work')).toBeInTheDocument();

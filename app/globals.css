@@ -1680,6 +1680,76 @@
   }
 
   /*
+   * **Words still being worked on — a light band sweeping across them** (owner, 2026-09-24:
+   * "while it works I cannot tell whether it is doing anything; make the letters ripple").
+   *
+   * Worn by a running tool row's label and its 「running」 word, an active work group's title and
+   * the composer's 「thinking · 25s」, and removed the frame the work lands, so a sweeping line is
+   * in flight and a still line is finished. `src/widgets/acp-chat-panel/ui/working-ink.ts` owns
+   * which states qualify.
+   *
+   * The ink at rest is the row's own `--color-text-tertiary`, so a running row and a finished one
+   * share a column and differ only by the band — `--color-text-primary`, the brightest ink the
+   * text ramp has, which is what makes the travel visible on a 12px line. The gradient is painted
+   * through the glyphs (`background-clip: text`), never behind them: no box, no glow.
+   *
+   * ⚠️ **`linear`, and twice the scan period.** A loop that never arrives takes the linear curve
+   * for the reason `.harness-scan-sweep` records. The period is that bar's `--motion-settle * 4`
+   * doubled: the bar crosses an empty track, this band crosses words someone is reading, and at
+   * 960ms it flickered across a label before the eye settled on it. Two scan beats keep one
+   * rhythm family rather than inventing a second.
+   */
+  @keyframes acpWorkingShimmer {
+    from { background-position: 100% 0; }
+    to { background-position: 0% 0; }
+  }
+
+  .acp-working-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-text-tertiary) 0%,
+      var(--color-text-tertiary) 40%,
+      var(--color-text-primary) 50%,
+      var(--color-text-tertiary) 60%,
+      var(--color-text-tertiary) 100%
+    );
+    /* 250% puts the band (the gradient's middle) outside the text at both ends of the loop,
+       so every pass enters from the left edge and leaves past the right one. */
+    background-size: 250% 100%;
+    background-position: 100% 0;
+    background-repeat: no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: acpWorkingShimmer calc(var(--motion-settle) * 8) linear infinite;
+  }
+
+  /*
+   * **Reduced motion: no sweep, a brighter still ink.** The global rule stops the travel; this
+   * takes the painted gradient away so the words are ordinary text again, one step brighter
+   * (`--color-text-secondary`) than a finished row's tertiary. Beside it the running row keeps
+   * its hollow indigo ring and its 「running」 word, the work group keeps its accent dot and
+   * 「working」, and the composer keeps its ticking clock — each already says the same fact in a
+   * form that does not move. None of these properties is one the global rule marks `!important`,
+   * so nothing here fights it.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .acp-working-shimmer {
+      background-image: none;
+      -webkit-text-fill-color: currentColor;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  /* A forced palette cannot paint text through a gradient; give the glyphs back their colour. */
+  @media (forced-colors: active) {
+    .acp-working-shimmer {
+      background-image: none;
+      -webkit-text-fill-color: currentColor;
+    }
+  }
+
+  /*
  * ## Architecture canvas — a calm comparison surface
  *
  * This is not the topology map. A repeated dot field competed with every caption and dependency
@@ -2974,7 +3044,11 @@
        though it actually rendered no pixels.
        Same precedent as `--pad-card`/`--pad-panel`: tokens no one uses are misinformation, not specifications. */
     --topology-chrome-icon-size: 12px;
-    --topology-chrome-gap: clamp(5px, 0.4vw, 6px);
+    /* 8px, one value for every tile in the top toolbar (2026-09-24). The utility lane
+       read this clamp (5-6px) while the search lane beside it spaced its tiles with
+       `gap-2`; one row showed two rhythms, which is part of why the owner read the
+       collapsed row as one broken control. Both lanes now read this token. */
+    --topology-chrome-gap: 0.5rem;
     /*
      * The same 12px at the default root, in `rem` because this is a **type size** consumed
      * through `text-[length:var(…)]` (`TopologyReviewLink`, `TopologyChangeAnnouncement`) —
@@ -5087,12 +5161,24 @@ body *::-webkit-scrollbar {
    SearchHint stands at the center of the map column itself. The agent dock reduces that column,
    so it reflects automatically, but the fixed node inspector covers above the column, requiring separate reservation. Moving left by half the right inset equal to the panel width places the command column
    at the center of the actual remaining map area excluding the inspector. It is not pixel-per-screen or chat-width constant, but the sum of current design tokens. */
+/* Since 2026-09-24 the reserve lands on the whole top toolbar
+   (`topology-top-toolbar`), which centres the search lane between its own left and
+   right edges while the node inspector owns the right rail (the utility lane is not
+   mounted then). Pulling the right edge in by the inspector's width plus its inset
+   puts that centre where the old `left: 50% - (panel + inset) / 2` put it, and the
+   2rem is the toolbar's own `xl` inset. The toolbar also carries
+   `data-agent-dock-adjacent-rail`; its `left` moves when INDEX opens or closes, so
+   the transition list below names `left` as well as `right`. */
 @media (min-width: 1280px) {
-  [data-right-inspector-reserve='recenter-in-remaining-map'] {
-    left: calc(
-      50% - (var(--map-panel-width) + var(--topology-node-popover-right-inset)) / 2
+  [data-testid='topology-top-toolbar'][data-right-inspector-reserve='recenter-in-remaining-map'] {
+    right: calc(
+      var(--map-panel-width) + var(--topology-node-popover-right-inset) + 2rem
     );
   }
+}
+
+[data-testid='topology-top-toolbar'][data-agent-dock-adjacent-rail='true'] {
+  transition-property: left, right;
 }
 
 /* ── Toast (sonner) motion — swapping vendor factory values with app ramp (2026-07-28) ──
@@ -5148,15 +5234,20 @@ body *::-webkit-scrollbar {
   }
 }
 
-/* The toaster is top-centred on the **viewport** (owner, 2026-09-07). It used to centre
-   over the map area, shifted left by half the agent dock's width, and on the Library the
-   result stood over the index column, far from where the eye was. A toast is transient
-   and drawn above every dock, so the screen's own centre is the one place a person finds
-   it whatever pane is open. sonner injects its own stylesheet at runtime, after ours,
-   with the same `[data-sonner-toaster][data-x-position]` selector, so the `html` prefix
-   is what makes this rule win. */
+/* The toaster is bottom-centred in the **free lane** (owner, 2026-09-24): the space
+   between the innermost wall a screen declares on each side (`data-toast-wall` — the nav
+   rail, the map's INDEX stack, the map's docked panel), published while a toast stands
+   by `src/shared/ui/toast-walls.ts`. With no walls both variables are 0 and this is the
+   viewport's centre, the 2026-09-07 rule. It replaces top-centred on the viewport, which
+   stood over INDEX at 1040 and over an open dock below 1480. `%` rather than `vw`: the
+   toaster is fixed, so `100%` is the viewport less any scrollbar. sonner injects its own
+   stylesheet at runtime, after ours, with the same `[data-sonner-toaster][data-x-position]`
+   selector, so the `html` prefix is what makes this rule win. */
 html [data-sonner-toaster][data-x-position='center'] {
-  left: 50%;
+  left: calc(
+    var(--app-toast-left-wall, 0px) +
+      (100% - var(--app-toast-left-wall, 0px) - var(--app-toast-right-wall, 0px)) / 2
+  );
   transform: translateX(-50%);
 }
 

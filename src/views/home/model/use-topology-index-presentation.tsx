@@ -6,9 +6,8 @@ import type { useTopologyVaultReadModel } from "./use-topology-vault-read-model"
 
 import { readFirstRunStarterDismissed, writeFirstRunStarterDismissed } from "@/features/first-run-starter";
 import { useSurfaceSwap } from "@/shared/lib/use-presence";
-import { TOAST_TOP_OFFSET_UNDER_MAP_TOOLBAR_PX } from "@/shared/ui/toast-position";
 import { VAULT_START_STEPS_DISMISSED_KEY } from "@/widgets/topology-controls";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { resolveContextualIndexState } from "../lib/resolve-contextual-index-state";
 import { useIndexSelectionOverride } from "./use-index-selection-override";
 
@@ -69,20 +68,10 @@ export function useTopologyIndexPresentation({
     }
   }, [analysisMode, markIndexManualExpandDuringSelection, setIndexManualExpandWhileEmpty, setIndexPreference, setRouteState]);
   /*
-   * Toasts stand under the map's top toolbar (owner, 2026-09-06: the bottom-right
-   * corner sat behind the agent dock and outside the person's attention). The
-   * toaster is top-centred everywhere; only the map plants a larger top offset so
-   * the box clears the 36px toolbar tiles. `--app-right-dock-width`, published by the
-   * dock effect below, keeps it centred over the map area rather than the viewport.
+   * The map plants no toast offset: toasts stand at the bottom of the free map, between
+   * the walls INDEX and the dock declare (`data-toast-wall`, 2026-09-24).
    */
   const readoutStackRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty("--app-toast-top-offset", `${TOAST_TOP_OFFSET_UNDER_MAP_TOOLBAR_PX}px`);
-    return () => {
-      root.style.removeProperty("--app-toast-top-offset");
-    };
-  }, []);
   // Click focus signature — aligns the growth origin (transform-origin) of the popover with the screen coordinates of the just-clicked node.
   // The panel is keyed by slug and re-mounts + triggers `.topology-chrome-in` appearance every time the node changes, so
   // using the slug as a dependency and injecting the origin converted to the positioner's local coordinate system as a CSS variable before paint (useLayoutEffect) (inheritance → internal panels read it). If no recent (<600ms) canvas pointer exists (list/keyboard selection), clears the variable to fall back to existing `center top`.

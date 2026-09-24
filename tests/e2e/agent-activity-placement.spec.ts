@@ -87,10 +87,14 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
     Math.abs(bellBox.x + bellBox.width - (utilityRowBox.x + utilityRowBox.width)),
     '종이 도구줄 맨 오른쪽이 아니다',
   ).toBeLessThanOrEqual(1);
+  // Since 2026-09-24 the status is the bell's left segment in the same row, not a line
+  // hanging under it (owner: the floating line read as a stray toast).
   const statusBox = (await page.getByTestId('agent-activity-status-trigger').boundingBox())!;
-  expect(statusBox.y, '작업 상태 행이 독립 알림 아이콘 아래로 분리되지 않았다').toBeGreaterThan(
-    bellBox.y + bellBox.height,
-  );
+  expect(Math.abs(statusBox.y - bellBox.y), '작업 상태가 종과 같은 줄이 아니다').toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(statusBox.x + statusBox.width - bellBox.x),
+    '작업 상태가 종에 붙어 있지 않다',
+  ).toBeLessThanOrEqual(1);
   const statusLabelFits = await page.getByTestId('agent-activity-status').evaluate(
     (element) => element.scrollWidth <= element.clientWidth + 1,
   );

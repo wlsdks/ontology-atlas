@@ -63,10 +63,11 @@ test("fresh heartbeat만 현재 단계와 지도 대상을 말하고, 제거되�
     timeout: 30_000,
   });
   await expect(status).toHaveText("Codex · 검증 중");
-  await expect(page.getByTestId("agent-activity-target")).toContainText("현재 대상:");
-  await expect(page.getByTestId("agent-activity-target")).toContainText("Pay");
+  // The node is named in the status view the row opens (2026-09-24), not in the row.
   await page.getByTestId("agent-activity-status-trigger").click();
   const current = page.getByTestId("agent-activity-current-work");
+  await expect(current).toContainText("현재 대상");
+  await expect(page.getByTestId("agent-activity-target")).toContainText("Pay");
   await expect(current).toContainText("결제 역량 관계를 검증해줘");
   await expect(current).toContainText("validate_vault");
   await page.keyboard.press("Escape");
@@ -99,9 +100,10 @@ test("fresh heartbeat만 현재 단계와 지도 대상을 말하고, 제거되�
   });
   expect(cleared).toBe(true);
   await expect(status).toHaveText(/Codex · 변경 감지/, { timeout: 30_000 });
-  await expect(page.getByTestId("agent-activity-target")).toContainText("마지막 변경:");
   await expect.poll(focused, { timeout: 30_000 }).toEqual([]);
 
+  await page.getByTestId("agent-activity-status-trigger").click();
+  await expect(page.getByTestId("agent-activity-current-work")).toContainText("마지막 변경");
   await page.getByTestId("agent-activity-target").click();
   await expect(page).toHaveURL(/\/ko\/topology\/?\?.*p=capabilities%2Fpay/);
   await expect(page.getByRole("heading", { name: "Pay" })).toBeVisible();

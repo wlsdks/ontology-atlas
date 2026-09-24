@@ -208,42 +208,34 @@ describe("SearchHint", () => {
     expect(lane).not.toHaveClass("md:block");
   });
 
-  it("marks a visible right inspector so the wide lane can recenter in the remaining map", () => {
+  it("takes its place from the toolbar instead of positioning itself", () => {
+    // Owner report, 2026-09-24: centred on its own with `left-1/2`, the lane ran into
+    // the utility lane once the review panel narrowed the map. The toolbar that holds
+    // both lanes now owns position; the lane only accepts a placement class.
+    render(<SearchHint className="xl:ml-auto" onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
+    const lane = screen.getByTestId("topology-search-action-lane");
+    expect(lane).toHaveClass("xl:ml-auto");
+    expect(lane).toHaveClass("min-w-0");
+    expect(lane.className).not.toMatch(/\b(absolute|left-1\/2|-translate-x-1\/2|topology-ui-scale)\b/);
+  });
+
+  it("keeps status chips in a group that yields and tool tiles in one that does not", () => {
     render(
       <SearchHint
-        rightInspectorReserved
         onOpenSearch={vi.fn()}
         onRelayout={vi.fn()}
+        pathChip={<div data-testid="path-slot">path</div>}
       />,
     );
-
-    const lane = screen.getByTestId("topology-search-action-lane");
-    expect(lane).toHaveAttribute(
-      "data-right-inspector-reserve",
-      "recenter-in-remaining-map",
-    );
-    expect(lane).toHaveClass("transition-[left]");
-  });
-});
-
-/**
- * The lane is centred in the map, but the INDEX panel is an overlay -- so with the
- * panel expanded, `left-1/2` centred the chip column over the panel and the first
- * chip sat underneath it (owner report, 2026-08-24). Reserving the panel width
- * moves the column into the map that is actually visible.
- */
-describe('SearchHint — INDEX 패널 자리 확보', () => {
-  it('패널이 펼쳐지면 남은 지도 기준으로 다시 가운데 정렬한다', () => {
-    render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} leftIndexReserved />);
-    const lane = screen.getByTestId('topology-search-action-lane');
-    expect(lane).toHaveAttribute('data-left-index-reserve', 'recenter-in-remaining-map');
-    expect(lane.className).toContain('xl:left-[calc(50%+var(--topology-index-width)/2)]');
+    const group = screen.getByTestId("topology-status-chip-group");
+    expect(group).toHaveClass("min-w-0");
+    expect(group).toContainElement(screen.getByTestId("path-slot"));
+    const tools = screen.getByTestId("topology-concept-search").parentElement!;
+    expect(tools).toHaveClass("shrink-0");
   });
 
-  it('패널이 접혀 있으면 지도 전체 기준 가운데를 유지한다', () => {
+  it("draws no status group when there is no status chip", () => {
     render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
-    const lane = screen.getByTestId('topology-search-action-lane');
-    expect(lane).not.toHaveAttribute('data-left-index-reserve');
-    expect(lane.className).toContain('xl:left-1/2');
+    expect(screen.queryByTestId("topology-status-chip-group")).toBeNull();
   });
 });

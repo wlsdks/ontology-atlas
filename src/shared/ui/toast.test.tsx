@@ -16,6 +16,7 @@ import { renderHook } from '@testing-library/react';
 const sonnerToast = vi.hoisted(() => ({
   success: vi.fn(),
   info: vi.fn(),
+  warning: vi.fn(),
   error: vi.fn(),
 }));
 
@@ -36,6 +37,7 @@ function show(...args: Parameters<ReturnType<typeof useToast>['show']>) {
 beforeEach(() => {
   sonnerToast.success.mockClear();
   sonnerToast.info.mockClear();
+  sonnerToast.warning.mockClear();
   sonnerToast.error.mockClear();
 });
 
@@ -54,6 +56,15 @@ describe('useToast — 후속 동작 계약', () => {
     show('안내', 'info');
     expect(sonnerToast.error).toHaveBeenCalledWith('실패', { id: 'error:실패' });
     expect(sonnerToast.info).toHaveBeenCalledWith('안내', { id: 'info:안내' });
+  });
+
+  // The fourth tone (2026-09-24): done, with a caveat. Its own sonner type, so its
+  // glyph is the triangle and its ink the warning token.
+  it('warning 톤은 sonner 의 warning 으로 간다', () => {
+    show('붙였지만 꺼져 있어요', 'warning');
+    expect(sonnerToast.warning).toHaveBeenCalledWith('붙였지만 꺼져 있어요', {
+      id: 'warning:붙였지만 꺼져 있어요',
+    });
   });
 
   /*
