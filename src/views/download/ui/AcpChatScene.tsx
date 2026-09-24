@@ -23,8 +23,10 @@ import { HeroTypewriter } from './HeroTypewriter';
  *
  * ## Brand and terms boundaries (docs/DECISIONS.md 2026-08-16 (5))
  *
- * This section's copy never implies we provide model access. It distinguishes guarded in-app
- * Claude Agent chat from Codex's external MCP path, and uses only registry-permitted display names;
+ * This section's copy never implies we provide model access. Both guarded runtimes — Claude Agent
+ * and Codex — can open the in-app chat (Codex earned it back on 2026-08-24; `runtime-gate.ts`),
+ * so the scene shows the Atlas write review they share rather than one runtime's path, and the
+ * copy uses only registry-permitted display names;
  * `tests/contract/vendor-naming.contract.test.ts` locks that boundary.
  *
  * ## Motion

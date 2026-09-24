@@ -38,6 +38,40 @@ const CHECKOUT = doc({
 });
 
 describe("the library graph", () => {
+  it("names a concept in the screen's language, both ways a concept joins the picture", () => {
+    const setup = doc({
+      slug: "capabilities/agent-connector-setup",
+      title: "Agent connector setup",
+      frontmatter: { kind: "capability", display_ko: "에이전트 커넥터 설정" },
+      linksOut: ["wiki/agent-connection"],
+    });
+    const map = doc({
+      slug: "capabilities/ontology-map",
+      title: "Ontology map",
+      frontmatter: { kind: "capability", display_ko: "온톨로지 지도" },
+    });
+    const bare = doc({ slug: "capabilities/no-korean", title: "No Korean name", frontmatter: { kind: "capability" } });
+    const docs = [
+      setup,
+      map,
+      bare,
+      doc({ slug: "wiki/agent-connection", linksOut: ["capabilities/ontology-map", "capabilities/no-korean"] }),
+    ];
+    const wikiPages = [page("wiki/agent-connection")];
+    const label = (graph: ReturnType<typeof buildLibraryGraph>, slug: string) =>
+      graph.nodes.find((node) => node.id === `concept:${slug}`)?.label;
+
+    const ko = buildLibraryGraph({ docs, wikiPages, sources: [], locale: "ko" });
+    // A page's link to a concept, and a concept's link to a page: both read `display_ko`.
+    expect(label(ko, "capabilities/ontology-map")).toBe("온톨로지 지도");
+    expect(label(ko, "capabilities/agent-connector-setup")).toBe("에이전트 커넥터 설정");
+    // No Korean name recorded: the title, not an empty mark.
+    expect(label(ko, "capabilities/no-korean")).toBe("No Korean name");
+
+    const en = buildLibraryGraph({ docs, wikiPages, sources: [], locale: "en" });
+    expect(label(en, "capabilities/ontology-map")).toBe("Ontology map");
+  });
+
   it("draws every source, cited or not — an unattached dot is the fact that nobody wrote it up", () => {
     const graph = buildLibraryGraph({
       docs: [doc({ slug: "wiki/plan" })],

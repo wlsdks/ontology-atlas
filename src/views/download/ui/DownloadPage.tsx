@@ -31,7 +31,7 @@ import { StageMap, useStageGraph, type StageScriptedFocus } from './StageMap';
 import { GatewayFx } from './GatewayFx';
 import { HeroAtlas } from './HeroAtlas';
 import { HeroMacMenu } from './HeroMacMenu';
-import { SurfaceCapture } from './SurfaceCapture';
+import { ScreensStage } from './ScreensStage';
 import { AcpChatScene } from './AcpChatScene';
 import { useInViewOnce } from '../lib/use-in-view-once';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
@@ -200,11 +200,11 @@ export function DownloadPage() {
           graph={graph}
         />
         {/* The demo is second (owner, 2026-09-08): a person sees it move before reading what is
-            in it; the three readings of one folder follow, then the agents. */}
+            in it; the live map follows, then the folder's other screens on one stage
+            (2026-09-24), then the agents. */}
         <DemoSection />
         <EvidenceSection graph={graph} />
-        <SurfaceSection kind="arch" />
-        <SurfaceSection kind="library" />
+        <ScreensSection />
         <AgentSection />
 
         {/*
@@ -813,37 +813,24 @@ const FACT_LINK = controlClass({
 // ─── ② Demo — plays itself once visible ─────────────────────────────────────
 
 /**
- * The architecture and the library, each as a captured screen with a caption that names the
- * folder on it (2026-09-08). They follow the map so the page reads as the product does: one
- * folder, three readings — the map is live, the other two are shown as screens because a view
- * may not mount another view.
+ * The folder's other screens, on one stage (2026-09-24, owner-selected direction B). The
+ * architecture and the library used to be two sections of their own (2026-09-08, "one folder,
+ * three readings"); the stage widens that to every destination of the app's rail and keeps one
+ * picture on screen at a time. The map is the one live reading, just above; the others are
+ * captures because a view may not mount another view. `ScreensStage` owns the list and the swap.
  */
-function SurfaceSection({ kind }: { kind: 'arch' | 'library' }) {
-  const t = useTranslations('download');
-  const isArch = kind === 'arch';
+function ScreensSection() {
+  const t = useTranslations('download.screens');
   return (
     <section
-      id={isArch ? 'architecture' : 'library'}
-      data-testid={isArch ? 'gateway-architecture-section' : 'gateway-library-section'}
+      id="screens"
+      data-testid="gateway-screens-section"
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <SectionIntro
-          eyebrow={t(isArch ? 'archEyebrow' : 'libraryEyebrow')}
-          title={t(isArch ? 'archTitle' : 'libraryTitle')}
-          sub={t(isArch ? 'archSub' : 'librarySub')}
-        />
-        <div className="gateway-scroll-stage mt-9">
-          <SurfaceCapture
-            testId={isArch ? 'gateway-architecture-capture' : 'gateway-library-capture'}
-            src={isArch ? '/gateway/architecture.png' : '/gateway/library.png'}
-            width={1336}
-            height={860}
-            alt={t(isArch ? 'archTitle' : 'libraryTitle')}
-            caption={t(isArch ? 'archCaption' : 'libraryCaption')}
-            href={isArch ? '/architecture' : '/library'}
-            door={t(isArch ? 'archDoor' : 'libraryDoor')}
-          />
+        <SectionIntro eyebrow={t('eyebrow')} title={t('title')} sub={t('sub')} />
+        <div className="gateway-scroll-stage">
+          <ScreensStage />
         </div>
       </div>
     </section>
@@ -1063,9 +1050,10 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
  * The previous version was an `mcp-verify` terminal and the owner rejected it (*"I have no idea what this means"* — I have no idea what this means; it showed a developer verifying configuration, not
  * the thing being sold). The real thing already exists: `AcpChatPanel` (the in-app conversation),
  * `AcpRuntimeSettings`, and the vault capability "in-app coding agent runner (ACP)". Eligibility
- * requires an app-owned write review and folder boundary; current copy names Claude Agent for
- * that path and Codex for external MCP setup. The scene (`AcpChatScene`) re-enacts a measured
- * round trip of the guarded path (ledger 2026-08-16 (7)).
+ * requires an app-owned write review and folder boundary, and both Claude Agent and Codex meet
+ * it (`CHAT_ELIGIBLE` in `src-tauri/src/acp.rs`; Codex opens in its forced `read-only` mode and
+ * its Atlas writes pause at the server checkpoint — `runtime-gate.ts`). The scene
+ * (`AcpChatScene`) re-enacts a measured round trip of the guarded path (ledger 2026-08-16 (7)).
  *
  * Copy boundaries come from ledger 2026-08-16 (5): ① we redistribute nothing (the adapter runs
  * via npx on the user's machine) ② "Claude Code" is forbidden where our runner list is described —

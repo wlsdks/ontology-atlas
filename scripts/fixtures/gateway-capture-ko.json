@@ -1,0 +1,14 @@
+{
+  "titles": {
+    "release-overview": "릴리스 개요",
+    "harness-needs": "하네스에 바란 것",
+    "onboarding-findings": "첫 사용 조사 결과",
+    "layer-rules": "층 규칙",
+    "write-review": "쓰기 검토",
+    "agent-connection": "에이전트 연결"
+  },
+  "summary": "원본 {count}개에서 정리한 {title} 페이지예요.",
+  "roundName": "자료실 원본 점검",
+  "passHeld": "페이지 {count}장 확인, 원본이 모두 그대로예요.",
+  "passStale": "페이지 {count}장 확인, 한 장의 원본이 바뀌었어요."
+}

@@ -78,6 +78,43 @@ describe('TabBar', () => {
     expect(screen.getByRole('tab', { name: 'A' })).toBeInTheDocument();
   });
 
+  it('a vertical tab list moves on Up and Down, ignores Left and Right, and marks the selection by surface', () => {
+    function Vertical() {
+      const [activeKey, setActiveKey] = useState('overview');
+      return (
+        <TabBar
+          items={ITEMS}
+          activeKey={activeKey}
+          onSelect={setActiveKey}
+          ariaLabel="탭"
+          orientation="vertical"
+        />
+      );
+    }
+    render(<Vertical />);
+    const list = screen.getByRole('tablist');
+    expect(list).toHaveAttribute('aria-orientation', 'vertical');
+    // A column of names is not a sideways strip, so the overflow audit must not exempt it.
+    expect(list).not.toHaveAttribute('data-scroll-x');
+
+    const overview = screen.getByRole('tab', { name: /개요/ });
+    const relations = screen.getByRole('tab', { name: /관계/ });
+    const freshness = screen.getByRole('tab', { name: /신선도/ });
+    overview.focus();
+    fireEvent.keyDown(overview, { key: 'ArrowRight' });
+    expect(overview).toHaveFocus();
+    fireEvent.keyDown(overview, { key: 'ArrowDown' });
+    expect(relations).toHaveFocus();
+    expect(relations).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(relations, { key: 'ArrowUp' });
+    fireEvent.keyDown(overview, { key: 'ArrowUp' });
+    expect(freshness).toHaveFocus();
+
+    // The rail's active tile, not an edge stripe or an underline.
+    expect(freshness.className).toContain('bg-[color:var(--color-indigo-a14)]');
+    expect(freshness.className).not.toMatch(/border-b-|border-l-/);
+  });
+
   it('moves focus and activates tabs with horizontal arrow keys, wrapping at both ends', () => {
     const onSelect = vi.fn();
     render(<InteractiveTabBar initialKey="overview" onSelect={onSelect} />);

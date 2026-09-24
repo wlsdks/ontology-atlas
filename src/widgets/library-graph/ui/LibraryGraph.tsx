@@ -214,12 +214,13 @@ export function LibraryGraph({
   cardFacts,
 }: LibraryGraphProps) {
   const t = useTranslations("library");
+  const locale = useLocale();
   const router = useRouter();
   const reducedMotion = usePrefersReducedMotion();
 
   const wholeGraph = useMemo(
-    () => buildLibraryGraph({ docs, wikiPages, sources }),
-    [docs, sources, wikiPages],
+    () => buildLibraryGraph({ docs, wikiPages, sources, locale }),
+    [docs, locale, sources, wikiPages],
   );
   /**
    * **The island a person stepped onto.** On a folder past `ISLANDS_MIN_MARKS` the home is a
@@ -382,7 +383,6 @@ export function LibraryGraph({
   // the camera decides that. See the note above the removed threshold.
   const standingLabels = true;
   const islandLabels = useMemo(() => ({ unsorted: t("graph.islandUnsorted"), unread: t("graph.islandUnread") }), [t]);
-  const locale = useLocale();
   const engine = useLibraryGraphEngine({
     graph,
     islandLabels,

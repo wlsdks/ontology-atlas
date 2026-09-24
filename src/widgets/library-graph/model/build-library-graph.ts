@@ -1,4 +1,5 @@
 import { buildTopologyDeeplinkForDoc, type VaultDoc } from "@/entities/docs-vault";
+import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
 
 /**
  * The library's own small graph — **what this folder's write-ups are made of**.
@@ -145,12 +146,21 @@ export function buildLibraryGraph({
   docs,
   wikiPages,
   sources,
+  locale,
 }: {
   /** Every document in the manifest — the lookup that resolves a page's wikilinks. */
   docs: readonly VaultDoc[];
   wikiPages: readonly LibraryGraphPage[];
   sources: readonly LibraryGraphSource[] | undefined;
+  /**
+   * The screen's locale. A concept is named the way the map names it — its `display_<locale>`
+   * when the document has one, else its `title` — so a Korean screen does not print English
+   * concept names beside Korean page titles (found in the gateway capture, 2026-09-24).
+   */
+  locale?: string;
 }): LibraryGraph {
+  const conceptLabel = (doc: VaultDoc): string =>
+    resolveLocaleDisplayName(doc.frontmatter, locale, doc.title);
   const nodes: LibraryGraphNode[] = [];
   const edges: LibraryGraphEdge[] = [];
   const seen = new Set<string>();
@@ -229,7 +239,7 @@ export function buildLibraryGraph({
       push({
         id: to,
         kind: "concept",
-        label: linked.title,
+        label: conceptLabel(linked),
         ref: target,
         href: buildTopologyDeeplinkForDoc(linked),
       });
@@ -251,7 +261,7 @@ export function buildLibraryGraph({
       push({
         id: from,
         kind: "concept",
-        label: doc.title,
+        label: conceptLabel(doc),
         ref: doc.slug,
         href: buildTopologyDeeplinkForDoc(doc),
       });

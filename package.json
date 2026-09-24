@@ -221,6 +221,7 @@
     "design:toc:check": "node scripts/build-design-system-toc.mjs --check",
     "gateway:specimen": "node scripts/generate-evidence-specimen.mjs",
     "gateway:specimen:check": "node scripts/generate-evidence-specimen.mjs --check",
+    "gateway:capture": "node scripts/capture-gateway-screens.mjs",
     "integration:cli:architecture": "node scripts/run-focused-node-test.mjs --test-name-pattern '^architecture --json' cli/src/integration.test.mjs",
     "mcp:catalogue:check-online": "node scripts/build-mcp-catalogue.mjs --check-online",
     "test:mcp:rpc": "node --test scripts/lib/mcp-test-rpc.test.mjs",

@@ -2145,6 +2145,22 @@
     animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
   }
 
+  /* The gateway's screens stage (2026-09-24): pressing a name crossfades one captured screen
+     into the next **in the same slot**. Both pictures are stacked in one grid cell; the arriving
+     one fades in on `--motion-base` while the leaving one fades out on 2/3 of it under its own
+     keyframe name (`overlayFadeOut` — reusing the entrance name in reverse is the silent hard cut
+     recorded above), and `useSurfaceSwap` unmounts nothing, it only holds the leaving picture for
+     `EXIT_WINDOW_MS`. Opacity only: a 1336×860 picture sliding reads as the page moving. New
+     keyframes 0 · new durations 0. Reduced motion keeps the fade on `--motion-fast` (① below). */
+  .gateway-screen-in {
+    animation: panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  .gateway-screen-out {
+    animation: overlayFadeOut calc(var(--motion-base) * 0.67) var(--motion-ease) both;
+    pointer-events: none;
+  }
+
   /* Keep the settings frame and navigation stationary while its selected content changes. */
   .settings-section-in {
     animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
@@ -4697,6 +4713,8 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
     /* ① Already opacity-only — revert time only. */
     .insights-tab-crossfade,
     .insights-disclosure-in,
+    .gateway-screen-in,
+    .gateway-screen-out,
     .ai-row-swap,
     .agent-panel-stage-swap,
     .agent-next-step-in,

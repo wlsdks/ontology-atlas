@@ -7,11 +7,21 @@ import { withBasePath } from '@/shared/lib/base-path';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 
+/** Where a captured screen's door leads — the app destination the picture was taken from. */
+export type SurfaceHref =
+  | '/topology'
+  | '/architecture'
+  | '/library'
+  | '/automations'
+  | '/ontology/insights'
+  | '/projects'
+  | '/git';
+
 /**
- * A real screen, shown as a screen (2026-09-08). The architecture and the library cannot be
- * mounted on the gateway — both are route-level views and a view may not import another
- * view — so the gateway shows a **capture** of each, taken from the running app by the
- * capture spec in the commit that added it, with a caption that says exactly what folder was on
+ * A real screen, shown as a screen (2026-09-08). The app's destinations cannot be mounted on the
+ * gateway — each is a route-level view and a view may not import another view — so the gateway
+ * shows a **capture** of each, taken from the running static export by
+ * `scripts/capture-gateway-screens.mjs`, with a caption that says exactly what folder was on
  * screen. A capture is honest when it says it is one; it is not a mockup.
  *
  * The frame is the product's own panel: one hairline, the panel surface, the panel radius. The
@@ -33,7 +43,7 @@ export function SurfaceCapture({
   height: number;
   alt: string;
   caption: string;
-  href: '/topology' | '/architecture' | '/library';
+  href: SurfaceHref;
   door: string;
   testId: string;
   className?: string;
