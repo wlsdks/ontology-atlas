@@ -2166,6 +2166,7 @@
         "view": "자료실에서 보기",
         "findingCount": "{count, number}건",
         "more": "{count, number}개 더",
+        "end": "위키 분석은 여기까지예요. 원문이 바뀌거나 자동 점검이 돌면 그 결과가 이 위에 더해져요.",
         "stale": {
           "title": "원문이 바뀐 페이지 {count, number}개",
           "caption": "인용한 원문이 바뀌었어요. 영향을 받은 내용을 확인하고 필요하면 페이지를 고쳐 주세요.",

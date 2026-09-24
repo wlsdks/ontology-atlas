@@ -307,7 +307,7 @@ export function HarnessCoverageOverview({
             testId="guidance-mode"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2" data-testid="guidance-collection-actions">
+        <div className={`flex flex-wrap items-center gap-2 ${styles.collectionStrip}`} data-testid="guidance-collection-actions">
           {(['told', 'gated', 'watched'] as const).map((column) => evidenceAction({ kind: 'separate', column }, t('collection.separate.action', { role: t(`role.${column}`) }), evidence.everywhere[column].length))}
           {evidenceAction({ kind: 'outside' }, t('collection.outside.action'), evidence.outsideAreas.length)}
           {evidenceAction({ kind: 'unreached' }, t('collection.unreached.action'), evidence.unreachedCapabilities.length)}
@@ -417,8 +417,15 @@ type RowProps = Omit<RoleChipProps, 'column'>;
 
 /*
  * The tree grows with its grid cell: the two stems take whatever height the row gives the domain,
- * so the domains fill the field instead of floating in it. The fork sits just above the two lower
- * chips, which keeps the drawing a tree however tall the stems get.
+ * up to a cap, so the domains fill the field instead of floating in it. The fork sits just above
+ * the two lower chips, which keeps the drawing a tree however tall the stems get.
+ *
+ * The stem under the name is shared by both branches and is drawn exactly once. The stroke is
+ * translucent, so two paths laid over one stem measured brighter (blue 142) than one path (89) and
+ * a dashed "none" branch laid over a solid one showed dashes through it. Each branch therefore
+ * keeps its full heading-to-chip geometry (the attachment checks walk it), but only one of them
+ * paints the shared stem: a declared branch whose sibling already paints it skips that length
+ * with its dash array, and an empty branch starts at the fork.
  */
 function DomainGroup(props: RowProps) {
   const { area } = props;
@@ -438,8 +445,12 @@ function DomainGroup(props: RowProps) {
       setSize((current) => current.width === next.width && current.top === next.top && current.lower === next.lower ? current : next);
     };
     measure();
+    /* The stems can change height while the domain keeps its size (a web font swapping in rewraps
+       the name), so each stem is observed on its own, not only the domain around them. */
     const observer = new ResizeObserver(measure);
     observer.observe(domain);
+    if (topRef.current) observer.observe(topRef.current);
+    if (lowerRef.current) observer.observe(lowerRef.current);
     return () => observer.disconnect();
   }, []);
   const told = area.roles.told.declarations.length > 0;
@@ -449,23 +460,34 @@ function DomainGroup(props: RowProps) {
   const lowerGap = 10;
   const gatedX = (width - lowerGap) / 4;
   const watchedX = width - gatedX;
+  const center = width / 2;
   const fork = Math.max(0, lower - 7);
-  const topPath = `M ${width / 2} 0 V ${top}`;
-  const gatedPath = `M ${width / 2} 0 V ${fork} H ${gatedX} V ${lower}`;
-  const watchedPath = `M ${width / 2} 0 V ${fork} H ${watchedX} V ${lower}`;
+  const topPath = `M ${center} 0 V ${top}`;
+  const gatedPath = `M ${center} 0 V ${fork} H ${gatedX} V ${lower}`;
+  const watchedPath = `M ${center} 0 V ${fork} H ${watchedX} V ${lower}`;
+  const fromFork = (x: number) => `M ${center} ${fork} H ${x} V ${lower}`;
+  // Gated paints the shared stem when it is declared, or when neither branch is (then dashed).
+  const gatedPaintsStem = gated || !watched;
   return (
     <section ref={domainRef} className={styles.domain} aria-label={area.title} data-testid={`harness-domain-${area.slug}`}>
       <div className={styles.topRole}><RoleChip {...props} column="told" /></div>
       <svg ref={topRef} className={styles.topConnection} viewBox={`0 0 ${width} ${top}`} preserveAspectRatio="none" aria-hidden>
         {told ? <path data-role-connection="told" d={topPath} /> : <path data-role-connection-empty="told" data-empty d={topPath} />}
       </svg>
-      <h4 className={styles.domainName} data-domain-heading>{area.title}</h4>
+      <div className={styles.domainHeading} data-domain-heading>
+        <h4 className={styles.domainName}>{area.title}</h4>
+        {/* What the domain is for is what makes a zero readable: "this area does X and nothing
+            checks it", not "a file is absent". It also gives each tree a body instead of a bare
+            stretched stem. The full sentence stays in the text reading. */}
+        {area.purpose ? <p className={styles.domainPurpose} title={area.purpose}>{area.purpose}</p> : null}
+      </div>
       <svg ref={lowerRef} className={styles.lowerConnections} viewBox={`0 0 ${width} ${lower}`} preserveAspectRatio="none" aria-hidden>
-        {/* The two branches share the stem under the name. When one branch is declared, the empty
-            one starts at the fork, so the shared stem is drawn once, solid, and a translucent
-            solid stroke never shows dashes through it. */}
-        {gated ? <path data-role-connection="gated" d={gatedPath} /> : <path data-role-connection-empty="gated" data-empty d={watched ? `M ${width / 2} ${fork} H ${gatedX} V ${lower}` : gatedPath} />}
-        {watched ? <path data-role-connection="watched" d={watchedPath} /> : <path data-role-connection-empty="watched" data-empty d={gated ? `M ${width / 2} ${fork} H ${watchedX} V ${lower}` : watchedPath} />}
+        {gated
+          ? <path data-role-connection="gated" d={gatedPath} />
+          : <path data-role-connection-empty="gated" data-empty d={gatedPaintsStem ? gatedPath : fromFork(gatedX)} />}
+        {watched
+          ? <path data-role-connection="watched" d={watchedPath} style={gated ? { strokeDasharray: `0 ${fork} ${width + lower}` } : undefined} />
+          : <path data-role-connection-empty="watched" data-empty d={fromFork(watchedX)} />}
       </svg>
       <div className={styles.lowerRoles}><RoleChip {...props} column="gated" /><RoleChip {...props} column="watched" /></div>
     </section>

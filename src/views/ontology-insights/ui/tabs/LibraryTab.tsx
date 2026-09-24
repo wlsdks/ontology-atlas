@@ -124,16 +124,22 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
   const filled = cards.filter((card) => card.size > 0);
   const clear = cards.filter((card) => card.size === 0);
   const beside = filled.length > 0 && clear.length > 0;
+  // The end line only claims "this is everything" when no card cut rows behind a "N more" line.
+  const complete = cards.every((card) => (card.shownOverride ?? Math.min(ROWS, card.size)) >= card.size);
   /*
    * From 1280 the quiet statuses stand beside the cards instead of under them: the lead card keeps
    * a bounded row length (a count used to sit ~1450px from its name) and the tab reads as one
-   * block, what to act on and what is clear, with both columns starting on the same line.
+   * block, what to act on and what is clear, with both columns starting on the same line. The
+   * clear panel keeps its own height (it used to stretch to the lead card and hold 60% empty
+   * surface), and the tab ends on a line saying so: a small folder leaves canvas below, and the
+   * page states that this is everything rather than leaving the reader to wonder what failed to
+   * load.
    */
   return (
     <section
       data-testid="library-tab"
       data-library-layout={beside ? 'beside' : 'stacked'}
-      className={cn('grid grid-cols-1 gap-[var(--card-gap)]', beside && 'xl:grid-cols-[minmax(0,1fr)_20rem]')}
+      className={cn('grid grid-cols-1 items-start gap-[var(--card-gap)]', beside && 'xl:grid-cols-[minmax(0,1fr)_20rem]')}
     >
       {filled.length > 0 ? (
         <div className="grid grid-cols-1 content-start gap-[var(--card-gap)] lg:grid-cols-2">
@@ -150,7 +156,7 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
         </div>
       ) : null}
       {clear.length > 0 ? (
-        <div data-library-clear className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+        <div data-library-clear className="self-start rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
           <ul className={cn('flex flex-wrap gap-x-6 gap-y-2', beside && 'xl:flex-col xl:gap-3')}>
             {clear.map((card) => (
               <li key={card.key} data-library-clear-item={card.key} className="flex items-baseline gap-2 break-keep text-body tabular-nums text-[color:var(--color-text-secondary)]">
@@ -161,6 +167,10 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
           </ul>
         </div>
       ) : null}
+      {complete ? <p data-library-end className="col-span-full flex items-center gap-3 pt-2 break-keep text-label text-[color:var(--color-text-tertiary)]">
+        <span aria-hidden className="h-px w-6 flex-none bg-[color:var(--color-border-strong)]" />
+        <span className="min-w-0">{t('end')}</span>
+      </p> : null}
     </section>
   );
 }

@@ -2166,6 +2166,7 @@
         "view": "View in the library",
         "findingCount": "{count, plural, one {# finding} other {# findings}}",
         "more": "{count, number} more",
+        "end": "That is everything the wiki analysis found. When a source changes or a pass runs, its results join the list above.",
         "stale": {
           "title": "{count, number} pages whose source changed",
           "caption": "A cited source changed. Review the affected content and update the page if needed.",

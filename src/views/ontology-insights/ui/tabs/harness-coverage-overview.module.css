@@ -30,11 +30,23 @@
   gap: calc(var(--card-gap) * 2) calc(var(--card-gap) + 8px);
 }
 
+/*
+ * The folder-wide collections (separate guides, outside the domains, unreached entrypoints,
+ * findings) are a control strip, not the first row of the diagram: they used the same chip
+ * grammar 13px above the first tree-top chips and read as part of the first domain. A rule and
+ * a clear gap end the strip before the domains begin, in both readings.
+ */
+.collectionStrip {
+  padding-bottom: 16px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
 .textList {
   display: flex;
   flex-direction: column;
   gap: 0;
-  border-block: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
 }
 
 .textRow {
@@ -56,16 +68,18 @@
 .textRow:last-child { border-bottom: 0; }
 
 /*
- * The stems take the cell's spare height, so a domain is as tall as its row. The cap keeps a
- * folder with one row of four domains from drawing stems half a screen long; there the tree
- * stops at the cap and the field ends under it.
+ * The stems take the cell's spare height, so a domain is as tall as its row, up to a cap that keeps
+ * them short enough to read as connectors (about 4rem each at 1920x1080) rather than bare line; the
+ * name and the sentence saying what the domain is for carry the rest of the cell. The cap never
+ * clips: when the content needs more (large text, a long name), the content minimum outranks it and
+ * the row grows instead of the chips riding over the name.
  */
 .domain {
   display: grid;
-  grid-template-rows: auto minmax(12px, 1fr) minmax(48px, max-content) minmax(14px, 1fr) auto;
+  grid-template-rows: auto minmax(24px, 1fr) minmax(48px, max-content) minmax(24px, 1fr) auto;
   min-width: 0;
-  min-height: 184px;
-  max-height: 20rem;
+  min-height: min-content;
+  max-height: 18.5rem;
 }
 
 .topRole {
@@ -97,20 +111,36 @@
   stroke-dasharray: 3 3;
 }
 
-.domainName {
+.domainHeading {
   display: flex;
-  min-height: 48px;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
-  max-width: 15rem;
+  gap: 4px;
+  min-height: 48px;
+  max-width: 17rem;
   justify-self: center;
   text-align: center;
+}
+
+.domainName {
   text-wrap: balance;
   overflow-wrap: anywhere;
   font-size: var(--text-body-lg);
   line-height: var(--leading-body-lg);
   font-weight: var(--font-weight-emphasis);
   color: var(--color-text-primary);
+}
+
+.domainPurpose {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  color: var(--color-text-tertiary);
 }
 
 .lowerRoles {
@@ -155,6 +185,5 @@
 @media (max-width: 767px) {
   .field { padding-inline: 0; margin-inline: 0; }
   .domainGrid { grid-template-columns: 1fr; gap: 12px; }
-  .domain { min-height: 176px; }
   .textRow { gap: 8px; }
 }
