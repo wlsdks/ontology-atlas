@@ -24,19 +24,9 @@
   }
 }
 
-@keyframes libraryPanelFadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-/* Reduced motion keeps the arrival as a fade: the change of place stays visible, the travel goes. */
-@media (prefers-reduced-motion: reduce) {
-  .panel {
-    animation-name: libraryPanelFadeIn;
-  }
-}
+/*
+ * No reduced-motion block here. The global rule cuts every CSS animation to 0.01ms with
+ * `!important`, so a fade declared here never played (sampled 2026-09-25, round three). The
+ * reduced form, the fade without the travel, is played from `index.tsx` with the Web
+ * Animations API, which the global rule does not reach.
+ */

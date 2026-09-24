@@ -6339,7 +6339,7 @@
     "rounds": {
       "eyebrow": "자동화가 남긴",
       "title": "점검 기록",
-      "lede": "자동화에서 예약한 문서 점검의 실행 기록을 살펴봅니다. 예약과 실행 설정은 자동화에서 관리해요.",
+      "lede": "자동화에서 예약한 문서 점검이 남긴 실행 기록이에요. 예약과 실행 설정은 자동화에서 바꿔요.",
       "indexHeader": "자동 점검 · {count, number}",
       "indexAria": "이 폴더를 위해 이 맥이 지키는 자동 점검",
       "newRound": "새 자동 점검",
@@ -6353,9 +6353,20 @@
       "malformedDescription": ".ontology-atlas/rounds.json을 읽지 못해 그대로 두었어요. 고치거나 지운 뒤 다시 읽으세요.",
       "retry": "다시 읽기",
       "emptyTitle": "첫 문서 점검을 예약하세요",
-      "emptyDescription": "예약한 점검이 돌 때마다 결과와 바뀐 문서가 여기에 최신순으로 쌓여요. 바뀐 문서는 여기서 바로 열어 검토할 수 있어요.",
+      "emptyDescription": "예약한 점검이 돌 때마다 결과가 여기에 최신순으로 쌓여요.",
       "emptyAction": "자동화에서 예약하기",
       "emptyKinds": "예약할 수 있는 점검",
+      "emptySignals": "실행마다 여기에 남는 것",
+      "signal": {
+        "stale": "낡음",
+        "staleBody": "인용한 원문이 바뀐 문서예요. 누르면 위키에서 바로 열려요.",
+        "redrafted": "다시 씀",
+        "redraftedBody": "에이전트가 새로 쓴 초안이에요. 검토하기 전까지 초안으로 남아요.",
+        "refused": "거부됨",
+        "refusedBody": "예약할 때 허락하지 않은 요청이에요. 무엇을 막았는지 이름이 남아요.",
+        "held": "바뀐 것 없음",
+        "heldBody": "모든 문서가 원문과 맞았던 실행이에요. 한 줄로만 남아요."
+      },
       "kind": {
         "consistency": "문서가 원문과 여전히 맞는지",
         "consistencyBody": "이 맥에서 인용된 원문마다 해시를 재고 문서 점검을 돌려요. 에이전트 턴 없음.",
@@ -6395,7 +6406,6 @@
       },
       "header": {
         "rounds": "자동 점검 {count, number}개",
-        "lastPass": "마지막 실행 {time}",
         "next": "다음 {time} · {name}",
         "running": "지금 도는 중 · {name}",
         "nothingYet": "아직 실행 없음",
@@ -6420,7 +6430,6 @@
         "held": "바뀐 것 없는 실행 {count, number}번",
         "refused": "요청 {count, number}개 거부됨",
         "failed": "끝내지 못한 실행 {count, number}번",
-        "asleep": "잠듦 {from} → {to}",
         "openPage": "{page} 위키에서 열기"
       },
       "ledger": {

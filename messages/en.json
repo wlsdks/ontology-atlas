@@ -6353,9 +6353,20 @@
       "malformedDescription": "Atlas could not read .ontology-atlas/rounds.json and left it unchanged. Fix or remove it, then read again.",
       "retry": "Read again",
       "emptyTitle": "Schedule the first document check",
-      "emptyDescription": "Each time a scheduled check runs, its result and the pages it changed land here, newest first. Open a changed page from here to review it.",
+      "emptyDescription": "Each time a scheduled check runs, its result lands here, newest first.",
       "emptyAction": "Schedule in Automations",
       "emptyKinds": "Checks you can schedule",
+      "emptySignals": "What each pass leaves here",
+      "signal": {
+        "stale": "Stale",
+        "staleBody": "A source the page cites changed. Press the page to open it in Wiki.",
+        "redrafted": "Redrafted",
+        "redraftedBody": "The agent wrote a new draft. It stays a draft until you review it.",
+        "refused": "Refused",
+        "refusedBody": "A request the schedule never allowed. The ledger names what it stopped.",
+        "held": "No change",
+        "heldBody": "Every page still matched its sources. It takes one quiet line."
+      },
       "kind": {
         "consistency": "Pages still match their sources",
         "consistencyBody": "Hashes every cited source on this Mac and runs the page check. No agent turn.",
@@ -6395,7 +6406,6 @@
       },
       "header": {
         "rounds": "{count, plural, one {# round} other {# rounds}}",
-        "lastPass": "last pass {time}",
         "next": "next {time} · {name}",
         "running": "running now · {name}",
         "nothingYet": "no pass yet",
@@ -6420,7 +6430,6 @@
         "held": "{count, plural, one {# pass} other {# passes}} with no change",
         "refused": "{count, plural, one {# request was} other {# requests were}} refused",
         "failed": "{count, plural, one {# pass} other {# passes}} did not finish",
-        "asleep": "asleep {from} → {to}",
         "openPage": "Open {page} in Wiki"
       },
       "ledger": {

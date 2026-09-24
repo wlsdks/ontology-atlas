@@ -18,7 +18,7 @@ import { Button, EmptyState, InfoHint, RowButton, buttonVariants } from "@/share
 
 import { useLibraryRounds } from "../lib/library-rounds-context";
 import { capitalize } from "../lib/round-presentation";
-import { lastOutcome, lastPass, nextRound, sinceSpan, summarizeSince } from "../lib/round-presentation";
+import { lastOutcome, nextRound, sinceSpan, summarizeSince } from "../lib/round-presentation";
 import { RoundsLedger } from "./parts/RoundsLedger";
 import { SinceYouLeft } from "./parts/SinceYouLeft";
 import { RoundsHistoryEmpty } from "./parts/RoundsHistoryEmpty";
@@ -83,7 +83,6 @@ export function LibraryRounds() {
     (slug: string) => pageTitles.get(slug.replace(/\.md$/, "")) ?? slug.replace(/^wiki\//, "").replace(/\.md$/, ""),
     [pageTitles],
   );
-  const last = lastPass(entries);
   const next = nextRound(rounds);
   const allPaused = rounds.length > 0 && rounds.every((round) => !round.enabled);
 
@@ -223,11 +222,16 @@ export function LibraryRounds() {
         No index column before the first round (2026-09-25, round two). It could only draw an
         empty list beside a stage that drew another, and its corner link was the page's one
         door. Work scope drops its column in the same state; the stage below carries the door.
+
+        `overflow-visible`, not hidden (round three). The help glyph's 288px card is wider than
+        this 280 column, so a hidden overflow made the column a sideways scroller: hovering or
+        tabbing to the glyph scrolled the whole index 243px left, hiding every round's name, and
+        the card was cut at the column's edge. The list below scrolls on its own.
       */}
       {rounds.length > 0 ? <aside
         data-testid="library-rounds-index"
         aria-label={t("indexAria")}
-        className="flex w-full min-w-0 min-h-0 flex-col overflow-hidden bg-[color:var(--color-panel)] max-lg:max-h-[40vh] max-lg:border-b max-lg:border-[color:var(--color-border-soft)] lg:w-[var(--docs-list-width)] lg:flex-none lg:border-r lg:border-[color:var(--color-border-soft)]"
+        className="flex w-full min-w-0 min-h-0 flex-col overflow-visible bg-[color:var(--color-panel)] max-lg:max-h-[40vh] max-lg:border-b max-lg:border-[color:var(--color-border-soft)] lg:w-[var(--docs-list-width)] lg:flex-none lg:border-r lg:border-[color:var(--color-border-soft)]"
       >
         {/*
           **The same column head the other four tabs draw** (2026-09-17). The strip already
@@ -303,11 +307,29 @@ export function LibraryRounds() {
           switch. Both tabs now wear `PAGE_FRAME_FORM`: the same width, the same centring, and
           the same top, so the two headlines stand at the same height.
         */}
-        <div className={`${PAGE_FRAME_FORM} flex flex-col gap-8 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]`}>
+        {/*
+          **Beside the index, the frame stands near it** (2026-09-25, round three). Centred in
+          the stage, the 960 frame left a 350px empty band at 1920 between the index column
+          (ends x=344) and the headline (x=692), so the list and what it filters read as two
+          separate things. The cap stays; the gutter moves: the frame takes a left margin of
+          5vw, never more than the room the cap leaves, and the slack goes to the right edge,
+          where a reading column ends anyway. With no index column (no rounds yet) the frame
+          stays centred, the way Work scope's is.
+        */}
+        <div className={cn(
+          PAGE_FRAME_FORM,
+          "flex flex-col gap-8 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]",
+          rounds.length > 0 && "lg:ml-[max(0px,min(5vw,calc(100%_-_960px)))] lg:mr-auto",
+        )}>
           {/*
             The same page head Work scope draws: eyebrow, display headline, then the status as
             its description. The status line used to be the head, at body size, and the largest
             text on the screen was the empty state's own headline below it.
+
+            No "last pass" in it (round three): the ledger's top row is the last pass, one line
+            below, and the header's 09:00 beside the away card's "→ 09:02" read as two different
+            "now"s on one screen. The header says how many and what runs next; the ledger says
+            what ran.
           */}
           <header className="min-w-0">
             <div className="min-w-0">
@@ -319,7 +341,6 @@ export function LibraryRounds() {
               </h1>
               <p data-testid="library-rounds-header-line" className="mt-2 max-w-prose text-body-lg leading-title text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
                 <span className="text-[color:var(--color-text-secondary)]">{t("header.rounds", { count: rounds.length })}</span>
-                {last ? <> · {t("header.lastPass", { time: dueLabel(last.endedAt) })}</> : null}
                 {" · "}
                 <span className={running ? "text-[color:var(--color-indigo-text-soft)]" : undefined}>{headerLine}</span>
               </p>
@@ -330,6 +351,10 @@ export function LibraryRounds() {
           {rounds.length === 0 ? (
             <RoundsHistoryEmpty title={t("emptyTitle")} description={t("emptyDescription")}
               kindsLabel={t("emptyKinds")}
+              signalsLabel={t("emptySignals")}
+              signals={(["stale", "redrafted", "refused", "held"] as const).map((tone) => ({
+                tone, name: t(`signal.${tone}`), body: t(`signal.${tone}Body`),
+              }))}
               kinds={[
                 { id: "consistency", name: t("kind.consistency"), body: t("kind.consistencyBody") },
                 { id: "service", name: t("kind.service"), body: t("kind.serviceBody") },

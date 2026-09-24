@@ -41,6 +41,18 @@ test.describe("Library rounds", () => {
     await expect(since).toContainText("3 passes with no change");
     // The chip names the page the way the person named it, not the file it lives in.
     await expect(since.getByRole("button", { name: "Open Design system in Wiki" })).toBeVisible();
+    // The sleep gap is the ledger's row; the card above it does not say it again.
+    await expect(since).not.toContainText("asleep");
+
+    // The help card is wider than the index column. Reaching its glyph must not scroll the
+    // column sideways (it hid every round's name when the column clipped its overflow).
+    const index = page.getByTestId("library-rounds-index");
+    const help = index.getByRole("button", { name: /Automations/ }).first();
+    await help.hover();
+    // The column scrolled as the card finished arriving, so read it once the card is shown.
+    const card = page.locator(`[id="${await help.getAttribute("aria-describedby")}"]`);
+    await expect(card).toHaveCSS("opacity", "1");
+    expect(await index.evaluate((el) => el.scrollLeft)).toBe(0);
 
     const ledger = page.getByTestId("library-rounds-ledger");
     await expect(ledger.locator("[data-outcome='held']")).toHaveCount(3);

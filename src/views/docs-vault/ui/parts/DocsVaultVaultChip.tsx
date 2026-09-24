@@ -75,7 +75,7 @@ export function DocsVaultVaultChip({
            by its localized label ("Workspace info menu"). That is a seam where
            editing a translation silently kills a spec — give it a locale-independent handle. */
         data-testid="vault-chip-menu-trigger"
-        className="min-w-0 max-w-[200px] flex-none font-mono hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+        className="min-w-0 max-w-[200px] flex-none hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
         {/* The chip's icon states the source — this one glyph replaces the radio pair removed
             from the right (2026-08-08). */}
@@ -84,10 +84,13 @@ export function DocsVaultVaultChip({
         ) : (
           <HardDrive size={ICON_SIZE.sm} aria-hidden className="flex-none" />
         )}
-        <span className="hidden min-w-0 truncate text-[color:var(--color-text-secondary)] sm:inline">
+        {/* Mono on the folder name only, the machine string (DESIGN-SYSTEM "font-mono sentence").
+            The whole chip was mono, so the Korean document count beside it set Korean in a Latin-only face and
+            the chip read as a different family from the sans chips around it (2026-09-25). */}
+        <span className="hidden min-w-0 truncate font-mono text-[color:var(--color-text-secondary)] sm:inline">
           {label}
         </span>
-        <span className="flex-none text-[color:var(--color-text-secondary)]">
+        <span className="flex-none tabular-nums text-[color:var(--color-text-secondary)]">
           {docCount === null ? null : t("header.docCount", { count: docCount })}
         </span>
         <ChevronDown

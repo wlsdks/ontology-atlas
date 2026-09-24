@@ -58,15 +58,24 @@ export function LibraryWorkspace() {
    * popover inside the panel changes its containing block. Before paint, so the new list
    * never shows a full-opacity first frame.
    */
+  /*
+   * **Reduced motion keeps the fade** (round three). The global reduced-motion rule cuts every
+   * CSS animation to 0.01ms with `!important`, so the panel's CSS enter — travel and fade —
+   * became a hard cut there, and only Sources↔Wiki (played here) still faded. The reduced form
+   * of an arrival is the fade without the travel, not no arrival: under reduced motion every
+   * switch plays it here, opacity only, on the short step.
+   */
   useLayoutEffect(() => {
     const from = previousTab.current;
     previousTab.current = tab;
     const panel = panelRef.current;
-    const segmentSwitch = from !== tab && (from === 'sources' || from === 'wiki') && (tab === 'sources' || tab === 'wiki');
-    if (!segmentSwitch || !panel || typeof panel.animate !== 'function') return;
+    if (from === tab || !panel || typeof panel.animate !== 'function') return;
+    const segmentSwitch = (from === 'sources' || from === 'wiki') && (tab === 'sources' || tab === 'wiki');
+    const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!segmentSwitch && !reduced) return;
     const style = getComputedStyle(panel);
     // The browser hands the token back normalised (`.18s`, not `180ms`), so read the unit.
-    const raw = style.getPropertyValue('--motion-base').trim();
+    const raw = style.getPropertyValue(reduced ? '--motion-fast' : '--motion-base').trim();
     const duration = (Number.parseFloat(raw) || 0) * (raw.endsWith('ms') ? 1 : 1000);
     if (duration <= 0) return;
     const easing = style.getPropertyValue('--motion-ease').trim() || undefined;
