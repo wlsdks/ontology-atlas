@@ -1,0 +1,37 @@
+{
+  "created": "2026-09-24",
+  "method": "OpenAI image generation, followed by lossless WebP packaging. No third-party game assets were bundled.",
+  "scope": "Optional companion game only; the application mark and verified agent-work mascot are separate.",
+  "assets": [
+    {
+      "file": "companion-workshop.webp",
+      "generation": "exec-466d4462-5b1e-4b90-a661-9446da9b4a48",
+      "description": "Original pixel workshop",
+      "sha256": "f464b50777eafad88e826ad596032f7b78390f57e5fb076b9ceabbf436d76afb"
+    },
+    {
+      "file": "companion-expedition.webp",
+      "generation": "exec-830ed36f-62d1-4c9f-af53-af6efde7ab8d",
+      "description": "Original archive forest",
+      "sha256": "af679a028cf9419f49b6721ddb8530b986719e3c7be36f49d37e2ff8468a5f6b"
+    },
+    {
+      "file": "companion-monsters.webp",
+      "generation": "exec-244ef1aa-dfda-4d4d-b4b4-5b2718e8653a",
+      "description": "Original three-family monster atlas",
+      "sha256": "69df09048c76f4613625b68166b01ecd96875910f0b8b2e2fb4cb1f0f56899a7"
+    },
+    {
+      "file": "companion-fox-atlas.webp",
+      "generation": "exec-9f309f74-a2c4-4a78-8bbe-d1603fe148df",
+      "description": "Original fox adventurer with sixteen poses",
+      "sha256": "f55d7fd0fe3b2e8a2d12de2292fd50f61575520f1a77a5b9f3961e0ece8b6a3e"
+    },
+    {
+      "file": "companion-items.webp",
+      "generation": "exec-64b91cdf-5e1c-4fd2-8dec-a476b4a93f25",
+      "description": "Original nine-item atlas",
+      "sha256": "d69a6bc5483c7b7b4bcd1c87845d17efe2d4ccceea7d34289bb1a395fdc886dc"
+    }
+  ]
+}

@@ -103,6 +103,22 @@ existing glyph slots, without shrinking the 64px character. Beneath the app's
 zoomed chrome, these pending marks cancel that inherited zoom so the rasters
 stay 64px and 16px. Unzoomed loading surfaces and portals keep their native size.
 
+## Optional adventure companion
+
+The owner’s 2026-09-24 request establishes a separate playful fox inside
+“Memories together.” It does not replace the Atlas application mark or the
+verified-work mascot in map chrome. The home and expedition use original generated
+pixel environments, a sixteen-pose fox atlas, item icons, and a three-family monster atlas under
+`public/brand/companion-*.webp`. Their raster palettes belong only to this optional
+game scene; application controls retain their existing tokens. Generation receipts and
+asset hashes are in `public/brand/companion-assets.json`.
+
+This bounded game permits ambient life and fictional combat. Its explicit activity
+labels, hidden-surface suspension, and reduced-motion equivalent do
+not claim that a real agent is reading or changing code. The verified-work motion
+rules above continue to govern `AgentMascotPresence`. The game's master PNGs are
+preserved outside the repository; WebP packaging preserves visible RGBA pixels.
+
 ## Generated Assets
 
 | Surface | Asset |
