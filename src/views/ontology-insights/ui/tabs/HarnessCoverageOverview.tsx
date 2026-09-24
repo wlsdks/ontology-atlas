@@ -230,12 +230,24 @@ export function HarnessCoverageOverview({
         aria-controls={narrow ? 'harness-role-evidence-dialog-content' : 'harness-role-evidence-popup'}
         data-guidance-evidence-action={key}
         onClick={(event) => select(selection, event.currentTarget)}
-        className={controlClass({ shape: 'chip', size: 'sm', active: isSelected, hoverSurface: 'lift' })}
+        className={controlClass({ shape: 'chip', size: 'md', active: isSelected, hoverSurface: 'lift' })}
       >
         <span>{label}</span><span className="font-mono tabular-nums">{count}</span>
       </button>
     );
   };
+
+  /*
+   * How many domains each role reaches at all. The column that reaches the fewest is the one
+   * thing on this screen worth reading first, so it alone is drawn in the warning ink; the
+   * others stay quiet. It states coverage as a count, not a verdict.
+   */
+  const covered = (['told', 'gated', 'watched'] as const).map((column) => ({
+    column,
+    count: evidence.areas.filter((area) => area.roles[column].declarations.length > 0).length,
+  }));
+  const weakest = covered.reduce((low, entry) => (entry.count < low.count ? entry : low), covered[0]!);
+  const weakestColumn = evidence.areas.length > 0 && weakest.count < evidence.areas.length ? weakest.column : null;
 
   const evidenceContent = presented?.kind === 'domain' && presentedArea ? (
     <RoleEvidence
@@ -264,14 +276,23 @@ export function HarnessCoverageOverview({
       <div ref={fieldRef} className={styles.field} data-domain-count={evidence.areas.length} tabIndex={-1} aria-label={t('fieldLabel')}>
         <div data-guidance-overview-header className="flex flex-wrap items-start justify-between gap-x-5 gap-y-2">
           <div>
-            <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+            <h3 className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('title', { count: evidence.areas.length })}
             </h3>
-            <p className="mt-1 text-label text-[color:var(--color-text-quaternary)]">
-              {t('inventoryCaption', { guides: guideFiles, checks })}
+            <p data-guidance-coverage className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-body text-[color:var(--color-text-tertiary)]">
+              {covered.map(({ column, count }) => (
+                <span
+                  key={column}
+                  data-coverage-role={column}
+                  data-weakest={column === weakestColumn ? 'true' : undefined}
+                  className={column === weakestColumn ? 'font-[var(--font-weight-emphasis)] text-[color:var(--color-status-warning)]' : undefined}
+                >
+                  {t('coverage', { role: t(`role.${column}`), covered: count, total: evidence.areas.length })}
+                </span>
+              ))}
             </p>
-            <p className="mt-1 text-label text-[color:var(--color-text-quaternary)]">
-              {t('diagramCaption')}
+            <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">
+              <span>{t('inventoryCaption', { guides: guideFiles, checks })}</span> <span>{t('diagramCaption')}</span>
             </p>
           </div>
           <SegmentedControl
@@ -286,12 +307,12 @@ export function HarnessCoverageOverview({
             testId="guidance-mode"
           />
         </div>
-        <div className="flex flex-wrap gap-2" data-testid="guidance-collection-actions">
+        <div className="flex flex-wrap items-center gap-2" data-testid="guidance-collection-actions">
           {(['told', 'gated', 'watched'] as const).map((column) => evidenceAction({ kind: 'separate', column }, t('collection.separate.action', { role: t(`role.${column}`) }), evidence.everywhere[column].length))}
           {evidenceAction({ kind: 'outside' }, t('collection.outside.action'), evidence.outsideAreas.length)}
           {evidenceAction({ kind: 'unreached' }, t('collection.unreached.action'), evidence.unreachedCapabilities.length)}
           {evidenceAction({ kind: 'findings' }, t('collection.findings.action'), drift.length)}
-          <Link href="/architecture/?view=guides" className={controlClass({ shape: 'link', size: 'sm', className: 'text-[color:var(--color-indigo-text-strong)]' })}>{t('findingSummary', { count: drift.length })}</Link>
+          <Link href="/architecture/?view=guides" className={controlClass({ shape: 'link', size: 'md', className: 'px-1 text-[color:var(--color-indigo-text-strong)]' })}>{t('findingSummary')}</Link>
         </div>
         {mode === 'diagram' ? (
           <div className={styles.domainGrid} data-guidance-domain-grid>
@@ -387,7 +408,7 @@ function DomainGroup({
         onClick={(event) => onSelect(selection, event.currentTarget)}
         className={controlClass({
           shape: 'chip',
-          size: 'sm',
+          size: 'md',
           active: isSelected,
           hoverSurface: 'lift',
           className: styles.role,
@@ -409,12 +430,12 @@ function DomainGroup({
     <section ref={domainRef} className={styles.domain} aria-label={area.title} data-testid={`harness-domain-${area.slug}`}>
       <div className={styles.topRole}>{roleButton('told')}</div>
       <svg className={styles.topConnection} viewBox={`0 0 ${connectionWidth} 12`} preserveAspectRatio="none" aria-hidden>
-        {told ? <path data-role-connection="told" d={`M ${connectionWidth / 2} 0 V 12`} /> : null}
+        {told ? <path data-role-connection="told" d={`M ${connectionWidth / 2} 0 V 12`} /> : <path data-role-connection-empty="told" data-empty d={`M ${connectionWidth / 2} 0 V 12`} />}
       </svg>
       <h4 className={styles.domainName} data-domain-heading>{area.title}</h4>
       <svg className={styles.lowerConnections} viewBox={`0 0 ${connectionWidth} 14`} preserveAspectRatio="none" aria-hidden>
-        {gated ? <path data-role-connection="gated" d={`M ${connectionWidth / 2} 0 V 7 H ${gatedX} V 14`} /> : null}
-        {watched ? <path data-role-connection="watched" d={`M ${connectionWidth / 2} 0 V 7 H ${watchedX} V 14`} /> : null}
+        {gated ? <path data-role-connection="gated" d={`M ${connectionWidth / 2} 0 V 7 H ${gatedX} V 14`} /> : <path data-role-connection-empty="gated" data-empty d={`M ${connectionWidth / 2} 0 V 7 H ${gatedX} V 14`} />}
+        {watched ? <path data-role-connection="watched" d={`M ${connectionWidth / 2} 0 V 7 H ${watchedX} V 14`} /> : <path data-role-connection-empty="watched" data-empty d={`M ${connectionWidth / 2} 0 V 7 H ${watchedX} V 14`} />}
       </svg>
       <div className={styles.lowerRoles}>{roleButton('gated')}{roleButton('watched')}</div>
     </section>
@@ -436,7 +457,7 @@ function TextDomainRow(props: {
         <h4 className="break-words text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{area.title}</h4>
         <p className="mt-1 break-words text-label text-[color:var(--color-text-tertiary)]">{area.purpose}</p>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="contents">
         {(['told', 'gated', 'watched'] as const).map((column) => {
           const selection: Selection = { kind: 'domain', areaSlug: area.slug, column };
           const key = selectionKey(selection);
@@ -454,9 +475,9 @@ function TextDomainRow(props: {
               aria-controls={controlsId}
               aria-label={count === 0 ? t('emptyRoleLabel', { domain: area.title, role: t(`role.${column}`) }) : t('filledRoleLabel', { domain: area.title, role: t(`role.${column}`), count })}
               onClick={(event) => onSelect(selection, event.currentTarget)}
-              className={controlClass({ shape: 'chip', size: 'sm', active: isSelected, hoverSurface: 'lift' })}
+              className={controlClass({ shape: 'chip', size: 'md', active: isSelected, hoverSurface: 'lift', className: styles.textRole })}
             >
-              <span>{t(`role.${column}`)}</span><span className="font-mono tabular-nums">{count}</span>
+              <span className="min-w-0 break-keep">{t(`role.${column}`)}</span><span className={count === 0 ? 'font-mono tabular-nums text-[color:var(--color-text-quaternary)]' : 'font-mono tabular-nums text-[color:var(--color-text-primary)]'}>{count}</span>
             </button>
           );
         })}

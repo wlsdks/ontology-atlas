@@ -6,15 +6,27 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  /*
+   * The 4px inline inset keeps the chips' inset focus ring clear of the scroller's clip edge;
+   * the matching negative margin puts the header, chips and rows back on the page's start line
+   * (they sat 4px right of the title and the tab row).
+   */
   padding: 12px 4px 20px;
+  margin-inline: -4px;
 }
 
+/*
+ * The field fills the pane; the grid fills what the header leaves, and each row takes an equal
+ * share of it. At 1512 and 1920 the eight domains used to stop at 678px and leave a third of the
+ * field blank. When the rows need more than the field has, `auto` wins and the field scrolls.
+ */
 .domainGrid {
   display: grid;
+  flex: 1 0 auto;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-rows: max-content;
-  align-content: start;
-  gap: 22px 28px;
+  grid-auto-rows: minmax(auto, 1fr);
+  align-content: stretch;
+  gap: var(--card-gap) calc(var(--card-gap) + 8px);
 }
 
 .textList {
@@ -26,7 +38,8 @@
 
 .textRow {
   display: grid;
-  grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
+  /* Name and purpose, then one fixed column per role, so the counts line up down the list. */
+  grid-template-columns: minmax(12rem, 1fr) repeat(3, minmax(8.5rem, 10rem));
   align-items: center;
   gap: 16px;
   padding-block: 12px;
@@ -40,7 +53,13 @@
   grid-template-rows: auto 12px minmax(48px, max-content) 14px auto;
   min-width: 0;
   min-height: 184px;
-  align-content: start;
+  align-content: center;
+}
+
+.textRole {
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
 }
 
 .topRole {
@@ -64,6 +83,13 @@
   stroke: var(--color-indigo-line-a32);
   stroke-width: 1px;
   vector-effect: non-scaling-stroke;
+}
+
+/* A branch with nothing declared is still drawn, dashed and neutral, so it reads as "none" rather than as a missing line. */
+.topConnection path[data-empty],
+.lowerConnections path[data-empty] {
+  stroke: var(--color-border-strong);
+  stroke-dasharray: 3 3;
 }
 
 .domainName {
@@ -108,15 +134,19 @@
 }
 
 .role[data-state='filled'] .roleMark { border-color: var(--color-indigo-text-soft); background: var(--color-indigo-text-soft); }
-.role[data-state='empty'] .roleMark { border-color: var(--color-amber-source-a90); background: transparent; }
+.role[data-state='empty'] .roleMark { border-color: var(--color-text-quaternary); border-style: dashed; background: transparent; }
 
 @media (max-width: 1279px) {
   .domainGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Below the four-column band the name takes its own line and the three counts share the row, so
+     large text never pushes a fixed column past the pane. */
+  .textRow { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 12px; row-gap: 8px; }
+  .textRow > :first-child { grid-column: 1 / -1; }
 }
 
 @media (max-width: 767px) {
-  .field { padding-inline: 0; }
+  .field { padding-inline: 0; margin-inline: 0; }
   .domainGrid { grid-template-columns: 1fr; gap: 12px; }
   .domain { min-height: 176px; }
-  .textRow { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .textRow { gap: 8px; }
 }
