@@ -21,6 +21,14 @@ export interface DomainCapacityBarProps {
    * full-width project card), so the title column is the one thing left
    * tunable per call site. Defaults to the insights list's column width. */
   titleWidthClassName?: string;
+  /**
+   * Where the `Capability N · Element M` breakdown sits. `tail` (the default, `/projects` cards)
+   * stacks it under the total in a fixed 192px column sized for the longest English tail.
+   * `title` puts it under the domain name and leaves the tail to the total alone, so the number
+   * stands right beside the bar it counts: in the insights list the Korean tail used about 80 of
+   * those 192px and each bar ended ~150px short of its number at 1512 (review, 2026-09-25).
+   */
+  breakdownPlacement?: "tail" | "title";
 }
 
 /**
@@ -90,6 +98,7 @@ export function DomainCapacityBar({
   row,
   labels,
   titleWidthClassName = "sm:w-[220px]",
+  breakdownPlacement = "tail",
 }: DomainCapacityBarProps) {
   // The denominator is **this row's own sum**, not the list's maximum. So the track is
   // always full and what gets compared between rows is not length but **where the
@@ -97,14 +106,25 @@ export function DomainCapacityBar({
   const filled = row.capabilityCount + row.elementCount;
   const capWidth = filled > 0 ? (row.capabilityCount / filled) * 100 : 0;
   const elWidth = filled > 0 ? (row.elementCount / filled) * 100 : 0;
+  const breakdownText = `${labels.capabilityUnit} ${row.capabilityCount} · ${labels.elementUnit} ${row.elementCount}`;
+  const underTitle = breakdownPlacement === "title";
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 py-0.5" data-testid="domain-capacity-bar-row">
-      <span
-        className={`flex w-full shrink-0 items-center gap-2 truncate text-body-lg text-[color:var(--color-text-secondary)] ${titleWidthClassName}`}
-      >
-        <OntologyMapKindGlyph kind="domain" size={15} />
-        <span className="truncate">{row.title}</span>
+      <span className={`flex w-full min-w-0 shrink-0 flex-col ${titleWidthClassName}`}>
+        <span className="flex min-w-0 items-center gap-2 text-body-lg text-[color:var(--color-text-secondary)]">
+          <OntologyMapKindGlyph kind="domain" size={15} />
+          <span className="truncate">{row.title}</span>
+        </span>
+        {underTitle ? (
+          // Under the name the line starts on the name's own text line (glyph 15 + gap 8).
+          <span
+            data-testid="domain-capacity-bar-breakdown"
+            className="block truncate pl-[23px] text-label tabular-nums text-[color:var(--color-text-tertiary)]"
+          >
+            {breakdownText}
+          </span>
+        ) : null}
       </span>
       {/* The track is `aria-hidden` — the same fact (capability N · element M) sits as
           text immediately to its right, so reading it out makes a screen-reader user
@@ -145,17 +165,21 @@ export function DomainCapacityBar({
           `tabular-nums` is applied to both rows so the digit positions do not shift either. */}
       <span
         data-testid="domain-capacity-bar-tail"
-        className="w-[192px] flex-none text-right"
+        // With the breakdown under the name the tail holds the total alone: still a fixed
+        // column, now as wide as three title-step digits.
+        className={`${underTitle ? "w-8" : "w-[192px]"} flex-none text-right`}
       >
         <span className="block font-mono text-title tabular-nums text-[color:var(--map-numeral-face)]">
           {row.total}
         </span>
-        <span
-          data-testid="domain-capacity-bar-breakdown"
-          className="block truncate text-label tabular-nums text-[color:var(--color-text-quaternary)]"
-        >
-          {labels.capabilityUnit} {row.capabilityCount} · {labels.elementUnit} {row.elementCount}
-        </span>
+        {underTitle ? null : (
+          <span
+            data-testid="domain-capacity-bar-breakdown"
+            className="block truncate text-label tabular-nums text-[color:var(--color-text-quaternary)]"
+          >
+            {breakdownText}
+          </span>
+        )}
       </span>
     </div>
   );

@@ -144,10 +144,10 @@ export function DomainCouplingCard({
     // ceiling is max-content, so **the length of one caption sentence below the card** ends up
     // deciding the card width (measured 746px). Dimensions are a design decision, not a byproduct
     // of sentence length.
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
+    <div className="grid min-h-0 grid-cols-1 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-[minmax(0,34rem)_minmax(0,1fr)] @min-[960px]/insights:grid-rows-[auto_auto_auto] @min-[960px]/insights:gap-y-0">
       <section
         aria-label={labels.title}
-        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className={PEER_CARD}
       >
         <CardHead label={labels.title} unit={labels.countUnit} count={crossDomainEdgeCount} />
         {/*
@@ -158,7 +158,7 @@ export function DomainCouplingCard({
           * beside the grid is where "here" in the hint points; it wraps under the grid on a
           * narrow card. The one caption closes the card on the same floor as its neighbour.
           */}
-        <div className="@container/coupling mt-2.5 flex min-w-0 flex-wrap items-start gap-x-5 gap-y-3">
+        <div className="@container/coupling mt-2.5 mb-2.5 flex min-w-0 flex-wrap items-start gap-x-5 gap-y-3">
           <CouplingGrid
             grid={grid}
             selectedKey={selectedKey}
@@ -174,7 +174,7 @@ export function DomainCouplingCard({
             )}
           </div>
         </div>
-        <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
+        <p className="border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
           {grid.totalDomainCount > grid.domains.length
             ? `${labels.gridTruncated(grid.domains.length, grid.totalDomainCount)} · `
             : ""}
@@ -185,7 +185,7 @@ export function DomainCouplingCard({
 
       <section
         aria-label={labels.boundaryTitle}
-        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className={PEER_CARD}
       >
         <CardHead label={labels.boundaryTitle} unit={labels.boundaryCountUnit} count={domainCount} />
         <div className={`mt-2 mb-2.5 ${INSIGHTS_LIST}`}>
@@ -217,7 +217,7 @@ export function DomainCouplingCard({
             );
           })}
         </div>
-        <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
+        <p className="border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
           {boundaryTotalCount > boundaries.length
             ? `${labels.gridTruncated(boundaries.length, boundaryTotalCount)} · `
             : ""}
@@ -227,6 +227,18 @@ export function DomainCouplingCard({
     </div>
   );
 }
+
+/**
+ * ⚠️ **The two peer cards share one anatomy by construction** (review, 2026-09-25). Each card
+ * placed its caption with `mt-auto`, so the caption *bottoms* met but a two-line caption beside a
+ * one-line one put the two rules 20px apart (y≈639 vs 659 at 1512), and the shorter body left a
+ * 30px band above the right caption. On a two-column board each card now spans the three rows of
+ * its parent (head, body, caption) as a subgrid: the rules sit on one line, the bodies end on one
+ * line, and a card taller than its content cannot occur because no row stretches past the tallest
+ * content in it. The parent's row gap is 0 there, so the card's own margins are its rhythm.
+ */
+const PEER_CARD =
+  "flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] @min-[960px]/insights:row-span-3 @min-[960px]/insights:grid @min-[960px]/insights:grid-rows-subgrid @min-[960px]/insights:gap-y-0";
 
 /**
  * A cell's saturation — four indigo alpha steps. Colour is for skimming (where is it noisy?);

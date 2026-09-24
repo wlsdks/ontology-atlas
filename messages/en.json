@@ -1744,7 +1744,7 @@
         },
         "reading": "Reading the folder.",
         "unreadable": "The guide files in this folder could not be read. Reopening the folder tries again.",
-        "noSource": "This folder is not bound to a code repository yet. Bind one and the guides and checks are counted here.",
+        "noSource": "Connect a code repository on the map and this counts where the guides and checks reach.",
         "markSeen": "Seen up to here",
         "markSeenDone": "Marked as seen. Counting from now.",
         "core": {
@@ -1801,7 +1801,7 @@
         "markSeenUndo": "Undo",
         "evidenceUnreadable": "The linked code could not be checked. Reopen the folder to try again.",
         "evidenceNoSource": "No code repository is connected to this folder yet. Connect it from the project on the map.",
-        "noSourceShared": "No code repository is connected to this folder yet. Connect one on the map and this counts both the code behind concepts and where the guides reach.",
+        "noSourceShared": "Connect a code repository on the map and this counts both the code behind concepts and where the guides reach.",
         "bandState": {
           "app-only": "current and stale are measured in the app",
           "no-data": "none yet",

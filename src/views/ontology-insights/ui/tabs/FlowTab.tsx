@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { controlClass } from "@/shared/ui/control-class";
 import { Disclosure } from "@/shared/ui";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
@@ -263,14 +263,64 @@ export function FlowTab({
               <h3 className="text-body text-[color:var(--color-text-secondary)]">{labels.requestLabel}</h3>
               {copyButton}
             </div>
-            <div className="relative min-h-64 flex-1 @min-[960px]/insights:min-h-32">
-              <pre className="absolute inset-0 overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 text-label leading-prose text-[color:var(--color-text-secondary)]">
-                {request}
-              </pre>
-            </div>
+            <RequestScroller request={request} />
           </section>
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * The request text as a designed scroll region beside the explanation.
+ *
+ * ⚠️ **A clipped line reads as a bug** (review, 2026-09-25). The box ended wherever the row did,
+ * so its last visible line was cut through the middle of its glyphs with nothing saying the text
+ * went on. The frame (border and surface) now stays still while the text scrolls inside it, and
+ * the edge that has more text fades out over `--tabbar-edge-fade`, the same width and the same
+ * four-state mask the library index and the tab strips use. The fade appears only while there is
+ * text past that edge, so a request that fits keeps its last line whole.
+ */
+function RequestScroller({ request }: { request: string }) {
+  const ref = useRef<HTMLPreElement>(null);
+  const [edge, setEdge] = useState({ top: false, bottom: false });
+  const measure = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const top = el.scrollTop > 1;
+    const bottom = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+    setEdge((prev) => (prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
+  }, []);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measure, request]);
+  const fade = "var(--tabbar-edge-fade)";
+  const mask =
+    edge.top && edge.bottom
+      ? `linear-gradient(to bottom, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`
+      : edge.bottom
+        ? `linear-gradient(to bottom, black calc(100% - ${fade}), transparent 100%)`
+        : edge.top
+          ? `linear-gradient(to bottom, transparent 0, black ${fade})`
+          : undefined;
+  return (
+    <div className="relative min-h-64 flex-1 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] @min-[960px]/insights:min-h-32">
+      <pre
+        ref={ref}
+        data-testid="flow-request-text"
+        data-fade-bottom={edge.bottom ? "" : undefined}
+        onScroll={measure}
+        style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
+        className="atlas-scroll-quiet absolute inset-0 overflow-auto whitespace-pre-wrap p-3 text-label leading-prose text-[color:var(--color-text-secondary)]"
+      >
+        {request}
+      </pre>
+    </div>
   );
 }

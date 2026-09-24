@@ -57,12 +57,27 @@ const AUTH_ROW = {
  * domains).
  */
 describe("OverviewTab — 도메인 용량", () => {
-  it("종류 스택은 낮은 인접 색 대비를 1px 구조 seam으로 나눈다", () => {
+  it("종류 스택은 조각 사이를 패널 틈으로 가르고, 테두리로 빈 트랙을 흉내 내지 않는다", () => {
     render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
     const stack = screen.getByTestId("insights-kind-stack");
-    expect(stack).toHaveClass("gap-px");
-    expect(stack).toHaveClass("bg-[color:var(--color-divider)]");
+    expect(stack).toHaveClass("gap-0.5");
+    expect(stack.className).not.toContain("border");
     expect(screen.getAllByTestId("insights-kind-stack-segment")).toHaveLength(3);
+  });
+
+  // The key names each kind once, with its share. A second bar per kind for the same share
+  // was the row that left the blank band beside the domain card (review, 2026-09-25).
+  it("종류는 한 줄 키로 이름·수·비율을 한 번씩만 말한다", () => {
+    render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
+    const key = screen.getByTestId("insights-kind-key");
+    expect(key.querySelectorAll("li")).toHaveLength(3);
+    expect(key).toHaveTextContent("capability360%");
+  });
+
+  it("도메인 행의 내역은 이름 아래에 있어 막대 바로 옆에 합계가 선다", () => {
+    render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
+    expect(screen.getByTestId("domain-capacity-bar-tail")).toHaveTextContent(/^3$/);
+    expect(screen.getByTestId("domain-capacity-bar-breakdown")).toHaveTextContent("역량 2 · 요소 1");
   });
 
   it("도메인이 없으면 만들 길을 내민다 — 「없습니다」로 끝나는 것은 다음 단계가 없음이다", () => {

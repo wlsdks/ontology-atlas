@@ -21,6 +21,7 @@ import {
   type ImpactRankingLink,
 } from "./ImpactRankingCard";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { ShareStack } from "../parts/ShareStack";
 import { INSIGHTS_LIST_ROW, INSIGHTS_LIST_TWO_COLUMN, insightsTwoColumnCell } from "../parts/insights-list";
 import { controlClass } from '@/shared/ui/control-class';
 
@@ -159,39 +160,20 @@ export function ConnectionsTab({
             />
           </div>
         ) : (
-          <>
-            <div
-              aria-hidden
-              className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)]"
-            >
-              {edgeTypeRows.map((row) => {
-                const share = totalEdges > 0 ? row.count / totalEdges : 0;
-                if (share <= 0) return null;
-                return (
-                  <span
-                    key={row.type}
-                    style={{ flexGrow: share, backgroundColor: relationTypeIndigo(row.type) }}
-                  />
-                );
-              })}
-            </div>
-            {/* The key names each segment once: its swatch, the line the map draws for it, the
-                count and the share. Items sit on one row and wrap on a narrow board. */}
-            <ul className="mt-3 mb-3 flex flex-wrap gap-x-8 gap-y-2" data-testid="connections-relation-type-key">
-              {edgeTypeRows.map((row) => {
-                const pct = totalEdges > 0 ? Math.round((row.count / totalEdges) * 100) : 0;
-                return (
-                  <li key={row.type} className="flex min-h-7 items-center gap-2">
-                    <span aria-hidden className="size-2.5 flex-none rounded-micro" style={{ backgroundColor: relationTypeIndigo(row.type) }} />
-                    <OntologyMapTraceMark containment={isContainmentRelation(row.type)} />
-                    <span className="text-body text-[color:var(--color-text-primary)]">{edgeTypeLabel(row.type)}</span>
-                    <span className="font-mono text-body tabular-nums text-[color:var(--map-numeral-face)]">{row.count}</span>
-                    <span className="text-label tabular-nums text-[color:var(--color-text-quaternary)]">{pct}%</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
+          /* The key names each segment once: its swatch, the line the map draws for it, the
+             count and the share. Items sit on one row and wrap on a narrow board. */
+          <ShareStack
+            total={totalEdges}
+            keyTestId="connections-relation-type-key"
+            segmentTestId="connections-relation-type-segment"
+            items={edgeTypeRows.map((row) => ({
+              id: row.type,
+              label: edgeTypeLabel(row.type),
+              count: row.count,
+              color: relationTypeIndigo(row.type),
+              mark: <OntologyMapTraceMark containment={isContainmentRelation(row.type)} />,
+            }))}
+          />
         )}
         <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
           {labels.relationTypesCaption}

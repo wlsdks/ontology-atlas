@@ -218,10 +218,12 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
         const [c1, c2, c3] = COLUMNS[core.core];
         const measured = core.availability === 'measured';
         /*
-         * "No repository" is said once, as a line in the list below with its connect action.
-         * The band printed it again in two cells (design sweep, 2026-09-25: four times on one
-         * screen), so a cell that cannot split its count for that reason wears the same
-         * hollow-ring "unknown" mark the list uses, with the reason kept for assistive tech.
+         * ⚠️ **"No repository" is said once on this screen** (review, 2026-09-25: the band said
+         * it in two cells and the list row said it again as a sentence). The fact lives in the
+         * one cell that has nothing else to show, the core with no magnitude, and the list row
+         * carries the effect and the connect action rather than the fact again. A cell that has
+         * a magnitude but cannot split it wears the list's hollow-ring "unknown" mark where its
+         * columns would be, in the columns' own word.
          */
         const noSource = core.availability === 'no-source';
         const unit = t(`unit.${core.core}`);
@@ -245,7 +247,9 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
               {core.headline != null ? (
                 <BandNumber value={core.headline} unit={unit} />
               ) : noSource ? (
-                <UnknownMark label={t(`bandState.${core.availability}`)} testId={`brief-core-state-${core.core}`} word={t('col.unknown')} />
+                /* The value line wears the title step like its peers' numerals, so the band
+                   reads as four answers of one weight rather than three and a footnote. */
+                <UnknownMark label={t('col.unknown')} testId={`brief-core-state-${core.core}`} word={t('col.unknown')} size="title" />
               ) : (
                 <span className="text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-state-${core.core}`}>
                   {t(`bandState.${core.availability}`)}
@@ -259,14 +263,15 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
                 <CensusSubStat label={t(`col.${c3}`)} value={core.unknown ?? 0} />
               </div>
             ) : noSource && core.headline != null ? (
-              <UnknownMark label={t(`bandState.${core.availability}`)} testId={`brief-core-state-${core.core}`} word={t(`bandState.${core.availability}`)} small />
+              <UnknownMark label={t(`bandState.${core.availability}`)} testId={`brief-core-state-${core.core}`} word={t('col.unknown')} />
             ) : noSource ? (
               /*
                * ⚠️ **The reason stays in sight.** With the reason only in `sr-only`, a cell with no
                * magnitude showed one line where its peers showed three, and a sighted reader had to
                * find the list row to learn why the value was unknown (review, 2026-09-25). Three
-               * words under the mark carry the why; the list row still carries the sentence and
-               * the one connect action, so the fix is not said twice.
+               * words under the mark carry the why, and this is the only place the band says
+               * it; the list row says what connecting gets you and offers the one connect
+               * action, so neither the fact nor the fix is said twice.
                */
               <span className="text-label text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-reason-${core.core}`}>
                 {t(`bandState.${core.availability}`)}
@@ -285,10 +290,16 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
 }
 
 /** The band's "unknown" mark: the list's hollow ring and one word, the reason read aloud. */
-function UnknownMark({ label, word, testId, small = false }: { label: string; word: string; testId: string; small?: boolean }) {
+function UnknownMark({ label, word, testId, size = 'label' }: { label: string; word: string; testId: string; size?: 'label' | 'title' }) {
   return (
-    <span className={cn('inline-flex items-center gap-1.5 text-[color:var(--color-text-tertiary)]', small ? 'text-label' : 'text-body')} data-testid={testId}>
-      <span aria-hidden="true" className="size-2 shrink-0 rounded-full border border-[color:var(--color-text-tertiary)]" />
+    <span
+      className={cn(
+        'inline-flex items-center text-[color:var(--color-text-tertiary)]',
+        size === 'title' ? 'gap-2 text-title font-[var(--font-weight-strong)]' : 'gap-1.5 text-label',
+      )}
+      data-testid={testId}
+    >
+      <span aria-hidden="true" className={cn('shrink-0 rounded-full border border-[color:var(--color-text-tertiary)]', size === 'title' ? 'size-2.5' : 'size-2')} />
       <span aria-hidden="true">{word}</span>
       <span className="sr-only">{label}</span>
     </span>
