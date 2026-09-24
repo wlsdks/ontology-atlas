@@ -76,10 +76,28 @@ index 1111111..2222222 100644
  * Everything is defined inside the init script's own scope: `addInitScript` serializes the
  * function, so a reference to a module-level constant here would be `undefined` in the page.
  */
+/** When one path last changed, as the native `git_paths_last_change` walk answers it. */
+export interface StubPathChange {
+  exists: boolean;
+  isDir: boolean;
+  lastChangedAt: string | null;
+}
+
+export interface DesktopRuntimeOptions {
+  /** Serve only `extraFiles`, without the shared fixture vault underneath them. */
+  replaceFixture?: boolean;
+  /**
+   * Answers for `git_paths_last_change`, keyed by the path exactly as the app passes it. Without
+   * this the command stays unstubbed and rejects, as it always has.
+   */
+  gitPathChanges?: Record<string, StubPathChange>;
+}
+
 export async function installDesktopRailRuntime(
   page: Page,
   extraFiles: Record<string, string> = {},
   runtimeResponses?: { fast: unknown[]; probed: unknown[] },
+  options: DesktopRuntimeOptions = {},
 ): Promise<void> {
   await seedFirstRunSeen(page);
   await page.addInitScript(
@@ -91,6 +109,7 @@ export async function installDesktopRailRuntime(
       pending: unknown[];
       diff: string;
       runtimeResponses?: { fast: unknown[]; probed: unknown[] };
+      gitPathChanges?: Record<string, { exists: boolean; isDir: boolean; lastChangedAt: string | null }>;
     }) => {
       const { root, latency, files, commits, pending, diff } = input;
       const mtime = Date.now();
@@ -134,6 +153,12 @@ export async function installDesktopRailRuntime(
             return slow({ path: args.relativePath, diff, untracked: false, tooLarge: false });
           case "git_commit_diff":
             return slow({ count: 1, files: commits[0] ? (commits[0] as { files: unknown[] }).files : [], diff, truncated: false });
+          case "git_paths_last_change": {
+            if (!input.gitPathChanges) return null;
+            const changes = input.gitPathChanges;
+            const asked = [...((args.repoPaths as string[]) ?? []), ...((args.vaultPaths as string[]) ?? [])];
+            return slow(asked.map((path) => ({ path, ...(changes[path] ?? { exists: false, isDir: false, lastChangedAt: null }) })));
+          }
           case "pick_vault_directory":
             return slow(root);
           case "vault_path_exists": {
@@ -228,11 +253,12 @@ export async function installDesktopRailRuntime(
     {
       root: DESKTOP_VAULT_ROOT,
       latency: NATIVE_LATENCY_MS,
-      files: { ...FIXTURE_VAULT, ...extraFiles },
+      files: options.replaceFixture ? { ...extraFiles } : { ...FIXTURE_VAULT, ...extraFiles },
       commits: COMMITS,
       pending: PENDING,
       diff: DIFF,
       runtimeResponses,
+      gitPathChanges: options.gitPathChanges,
     },
   );
 }
