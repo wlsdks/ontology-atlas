@@ -2,8 +2,10 @@
 
 import { useEffect, useRef } from 'react';
 import {
+  useHexBoard,
   useTerritories,
   writeGalaxy,
+  writeHexBoard,
   writeTerritories,
   writeView3d,
 } from '@/shared/lib/appearance-preferences';
@@ -11,7 +13,7 @@ import type { HomeRouteState } from './url-state';
 import type { HomeRouteStateUpdateOptions } from './use-home-route-state';
 
 /**
- * Keeps `?view=territories` and the view picker's stored choice saying the same thing.
+ * Keeps `?view=territories` (or `?view=hex`) and the view picker's stored choice saying the same thing.
  *
  * The picker stores the choice (like Galaxy and the 3D arrangements), so the map keeps the view
  * a reader chose across visits. The address carries it too, so a link opens Territories and a
@@ -25,19 +27,22 @@ export function useTerritoriesViewSync(
     options?: HomeRouteStateUpdateOptions,
   ) => void,
 ): void {
-  const stored = useTerritories();
+  const territories = useTerritories();
+  const hexBoard = useHexBoard();
+  const stored = hexBoard ? 'hex' : territories ? 'territories' : null;
   const arrivedRef = useRef(false);
   useEffect(() => {
     if (!arrivedRef.current) {
       arrivedRef.current = true;
-      if (routeMapView === 'territories' && !stored) {
+      if (routeMapView && routeMapView !== stored) {
         writeGalaxy(false);
         writeView3d(false);
-        writeTerritories(true);
+        writeTerritories(routeMapView === 'territories');
+        writeHexBoard(routeMapView === 'hex');
         return;
       }
     }
-    const wanted = stored ? 'territories' : null;
+    const wanted = stored;
     if (routeMapView !== wanted) setRouteState({ mapView: wanted }, { replace: true });
   }, [stored, routeMapView, setRouteState]);
 }

@@ -374,6 +374,34 @@ export function useTerritories(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+/* ── Hex board (2D map, one tile per capability) ─────────────────────────── */
+
+/**
+ * Whether the flat map is drawn as the **hex board** — one hexagonal tile per capability,
+ * each domain a region of tiles round its title tile (owner decision, 2026-09-25).
+ *
+ * One more answer to "how does the map look", chosen in the same picker as Galaxy and
+ * Territories; the picker writes every view flag together, so at most one is on. The home
+ * route mirrors it into `?view=hex`.
+ */
+const HEX_BOARD_KEY = "atlas.appearance.hex-board";
+
+const DEFAULT_HEX_BOARD = false;
+
+function readHexBoard(): boolean {
+  return readOnOff(HEX_BOARD_KEY, DEFAULT_HEX_BOARD);
+}
+
+export function writeHexBoard(value: boolean): void {
+  writeOnOff(HEX_BOARD_KEY, value);
+}
+
+export function useHexBoard(): boolean {
+  const getSnapshot = useCallback(() => readHexBoard(), []);
+  const getServerSnapshot = useCallback(() => DEFAULT_HEX_BOARD, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 /* ── Arrangement (3D map) ───────────────────────────────────────────────── */
 
 /**

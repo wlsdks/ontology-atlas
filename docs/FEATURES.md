@@ -430,9 +430,9 @@ had become false).
   bootstrap from found docs, create a node, open Topology INDEX, open Workshop,
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
-- **Six map views, chosen in one picker** — the current-view chip in the top tool
-  lane opens **Flat** (the ordinary 2D map, default), **Territories**, **Galaxy**,
-  **Cone**, **Strata**, and **Neural**. Territories is the flat plane with nothing
+- **Seven map views, chosen in one picker** — the current-view chip in the top tool
+  lane opens **Flat** (the ordinary 2D map, default), **Territories**, **Hex board**,
+  **Galaxy**, **Cone**, **Strata**, and **Neural**. Territories is the flat plane with nothing
   folded: every capability is drawn and named on open shelves fanning out from its
   domain's mark, each domain in its own angular territory around the project, with
   no hull around any of them. A capability's disc grows with its element count;
@@ -446,6 +446,23 @@ had become false).
   elements and its own dependency arrows. The view survives in the address as
   `?view=territories`, pans but never zooms, and past about ten domains or seven
   shelves per territory draws discs only, naming them on hover and in focus.
+  The **Hex board** gives every capability one hexagonal tile: a domain is a
+  contiguous region of tiles around its title tile, the project sits at the centre,
+  and empty cells between regions keep them apart. A tile's brightness and its row
+  of dots count its elements (a gold dot is a stale element); a gold rim is stale
+  and a dashed, hatched tile is unknown, by the same rule and Git walk as
+  Territories. Placement is append-only per folder: a new capability takes a free
+  cell of its region and a new domain the next free slot, so nothing already placed
+  moves; only a region that outgrows its room re-seeds the board, and the board says
+  so. At rest, strokes between regions count their dependencies; hovering a tile
+  shows a one-line summary and routes what it needs and what uses it, and selecting
+  opens the flat map's inspector with those routes kept. Routes run only in the
+  gaps between tiles, never across one. "◐ Stale only" keeps stale tiles, naming the
+  moved file, and recedes the rest; arrow keys move the selection to the
+  neighbouring tile, crossing to the next region when there is none. The wheel scales
+  the tiles (8–96 px): names appear once every name fits its face, dots and title
+  names from 28 px, and below that each region is one nameplate; "⬡ Region names
+  only" holds that band. The address carries `?view=hex`.
   Cone and Strata both draw containment and answer
   different questions with it. Galaxy gives every real concept a stable
   three-arm position: the project forms the core, domains anchor contiguous

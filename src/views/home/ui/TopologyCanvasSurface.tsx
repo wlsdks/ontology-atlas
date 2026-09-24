@@ -31,6 +31,7 @@ import dynamic from "next/dynamic";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { TopologyTerritoriesSurface } from "./TopologyTerritoriesSurface";
+import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 const VaultStartSteps = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.VaultStartSteps),
   { ssr: false },
@@ -105,6 +106,7 @@ interface TopologyCanvasSurfaceProps {
     | "tTopologyKeyboardWalk"
     | "galaxy"
     | "territories"
+    | "hexBoard"
     | "reducedMotion"
     | "audiencePlain"
     | "glyphSet"
@@ -230,7 +232,7 @@ export function TopologyCanvasSurface({
     recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason, ontologyInsight
   } = topologyVaultReadModel;
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
-  const { t, tTopologyKeyboardWalk, galaxy, territories, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
+  const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug, localGraphProjects, resolvedSelectionSlug } = topologyGraphProjection;
   const { mapRelationCaptions, mapReviewQuestionIds } = topologyAnalysisReview;
   const { handleClose, handleSelect } = topologyNavigationActions;
@@ -424,6 +426,28 @@ export function TopologyCanvasSurface({
                   nodes={ontologyMapGraph.nodes}
                   edges={ontologyMapGraph.edges}
                   insightNodes={ontologyInsight?.nodes}
+                  selectedId={canvasSelectedSlug}
+                  onSelect={(slug) => {
+                    setMeaningEditorState(null);
+                    setSelectedEdge(null);
+                    handleSelect(slug);
+                  }}
+                  onPaneClick={() => {
+                    setMeaningEditorState(null);
+                    setSelectedEdge(null);
+                    handleClose();
+                  }}
+                  onDrawnCountChange={handleMapFrameDrawn}
+                  reducedMotion={reducedMotion}
+                />
+              ) : hexBoard ? (
+                /* Hex board (owner decision, 2026-09-25): one tile per capability. The same
+                   selection contract as Territories — a click selects, the inspector opens. */
+                <TopologyHexBoardSurface
+                  nodes={ontologyMapGraph.nodes}
+                  edges={ontologyMapGraph.edges}
+                  insightNodes={ontologyInsight?.nodes}
+                  vaultKey={vaultIdentity}
                   selectedId={canvasSelectedSlug}
                   onSelect={(slug) => {
                     setMeaningEditorState(null);

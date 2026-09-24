@@ -3743,6 +3743,55 @@
     --map-galaxy-domain: #f0d4a4;
     --map-galaxy-capability: #c8dcff;
     --map-galaxy-element: #91b5ff;
+    /* ── Hex board material (owner decision 2026-09-25, spec "F2") ─────────────
+       Spent only by `render/hex-board.ts` through `tokens/read-hex-board-tokens.ts`,
+       only in the Hex board view. One tile = one capability. The face ladder is
+       the element-count bucket (0, 1–2, 3–4, 5–6, 7+): luminance only, never
+       hue. Stale capabilities trade it for the warm ladder with a rim in the
+       product's one warning hue; unknown evidence is a hatched face with a
+       dashed rim. Domain title tiles wear the indigo face and double rim, the
+       project the hub's warm face. Every face gets the same bevel light (one
+       light, top-left). Ink at rest (text-secondary) on face-4 measures 9:1;
+       the dimmed ink (text-quaternary) on a 30% face stays above 4.5:1, so a
+       dimmed board is still readable. Relations never cross a face: needs in
+       --map-hex-accent, used-by in pale indigo (--map-edge-selected), both on
+       a board-colour casing. */
+    --map-hex-face-0: #141419;
+    --map-hex-face-1: #18181f;
+    --map-hex-face-2: #1d1d25;
+    --map-hex-face-3: #23232c;
+    --map-hex-face-4: #2a2a35;
+    --map-hex-face-stale-0: #18150f;
+    --map-hex-face-stale-1: #1c1812;
+    --map-hex-face-stale-2: #221d15;
+    --map-hex-face-stale-3: #282218;
+    --map-hex-face-stale-4: #2f281b;
+    --map-hex-face-domain-top: #20213a;
+    --map-hex-face-domain-bottom: #16172a;
+    --map-hex-face-selected-top: #2a2c55;
+    --map-hex-face-selected-bottom: #1b1c36;
+    --map-hex-face-project-top: #262219;
+    --map-hex-face-project-bottom: #15130f;
+    --map-hex-riser: #060608;
+    --map-hex-rim: #5e5f6b;
+    --map-hex-rim-domain: #7c80d8;
+    --map-hex-rim-selected: #a5abff;
+    --map-hex-rim-unknown: #6a6a74;
+    --map-hex-hatch: #2a2a33;
+    --map-hex-bevel-light: rgba(255, 255, 255, 0.16);
+    --map-hex-bevel-mid: rgba(255, 255, 255, 0.03);
+    --map-hex-bevel-shade: rgba(0, 0, 0, 0.25);
+    --map-hex-plate: var(--color-indigo-a06);
+    --map-hex-plate-focus: var(--color-indigo-a12);
+    --map-hex-plate-stroke: rgba(136, 144, 224, 0.22);
+    --map-hex-moat: rgba(255, 255, 255, 0.022);
+    --map-hex-glow: var(--color-indigo-a08);
+    --map-hex-accent: #9aa0f0;
+    --map-hex-canal: #4a4c62;
+    --map-hex-canal-head: #6d7090;
+    --map-hex-ink-meta: #a3a6ae;
+    --map-hex-dim-alpha: 0.3;
+    --map-hex-dim-far-alpha: 0.16;
     --map-selection-ring-indigo: var(--map-indigo-bright);
     --map-selection-ring-hairline: rgba(94, 106, 210, 0.45);
     /*
