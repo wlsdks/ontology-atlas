@@ -16,7 +16,7 @@ const actionLinkClass = controlClass({
   size: "md",
   tone: "muted",
   className:
-    "min-h-8 border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] font-mono underline-offset-2 transition-[background-color,border-color,color,transform] hover:-translate-y-0.5 hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:border-[color:var(--color-indigo-line-a54)] active:bg-[color:var(--color-indigo-line-a13)] motion-reduce:transform-none",
+    "min-h-8 border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] underline-offset-2 transition-[background-color,border-color,color,transform] hover:-translate-y-0.5 hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:border-[color:var(--color-indigo-line-a54)] active:bg-[color:var(--color-indigo-line-a13)] motion-reduce:transform-none",
 });
 
 /**
@@ -145,9 +145,9 @@ export function DocMetaBar({
             data-in-graph={inGraph ? "true" : "false"}
             className={
               inGraph
-                ? "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-secondary)]"
+                ? "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 text-label text-[color:var(--color-text-secondary)]"
                 : // Not being on the map is a fact, not an alarm — kept neutral.
-                  "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 font-mono text-label text-[color:var(--color-text-quaternary)]"
+                  "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 text-label text-[color:var(--color-text-quaternary)]"
             }
           >
             <FileText className="h-3.5 w-3.5" aria-hidden="true" />
@@ -167,9 +167,9 @@ export function DocMetaBar({
             data-in-graph={inGraph ? "true" : "false"}
             className={
               inGraph
-                ? "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-secondary)]"
+                ? "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 text-label text-[color:var(--color-text-secondary)]"
                 : // Not being on the map is a fact, not an alarm — kept neutral.
-                  "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 font-mono text-label text-[color:var(--color-text-quaternary)]"
+                  "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 text-label text-[color:var(--color-text-quaternary)]"
             }
           >
             <FileText className="h-3.5 w-3.5" aria-hidden="true" />
@@ -190,7 +190,7 @@ export function DocMetaBar({
             className={badgeClass({
               shape: "tag",
               className:
-                "min-h-7 gap-1.5 border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-[color:var(--color-text-secondary)]",
+                "min-h-8 gap-1.5 border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 text-label text-[color:var(--color-text-secondary)]",
             })}
           >
             {reviewRow.reason === "raised" ? (
@@ -221,13 +221,7 @@ export function DocMetaBar({
             data-testid="doc-review-action"
             disabled={review.busy}
             onClick={review.onConfirm}
-            className={controlClass({
-              shape: "chip",
-              size: "sm",
-              tone: "muted",
-              hoverSurface: "lift",
-              className: "min-h-7 font-mono",
-            })}
+            className={controlClass({ shape: "chip", size: "md", tone: "muted", hoverSurface: "lift" })}
           >
             {tReview("actionConfirm")}
           </button>
@@ -238,22 +232,16 @@ export function DocMetaBar({
             data-testid="doc-review-release"
             disabled={review.busy}
             onClick={review.onRelease}
-            className={controlClass({
-              shape: "chip",
-              size: "sm",
-              tone: "muted",
-              hoverSurface: "lift",
-              className: "min-h-7 font-mono",
-            })}
+            className={controlClass({ shape: "chip", size: "md", tone: "muted", hoverSurface: "lift" })}
           >
             {tReview("actionRelease")}
           </button>
         ) : null}
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-mono tabular-nums">
+          <span className="tabular-nums">
             {t("wordsUnit", { count: doc.wordCount.toLocaleString(numberLocale) })}
           </span>
-          <span className="font-mono tabular-nums">
+          <span className="tabular-nums">
             {t("readingMinutes", { minutes: readingMinutes })}
           </span>
         </div>
@@ -290,7 +278,7 @@ export function DocMetaBar({
             {doc.tags.map((tag) => `#${tag}`).join(" ")}
           </span>
         ) : null}
-        <span className="ml-auto flex min-w-0 items-baseline gap-2 font-mono tabular-nums">
+        <span className="ml-auto flex min-w-0 items-baseline gap-2 tabular-nums">
           {reviewedAt ? (
             <span
               data-testid="doc-meaning-time"

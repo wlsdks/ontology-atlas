@@ -1,13 +1,20 @@
-.layout { display: grid; grid-template-columns: minmax(0,.8fr) minmax(0,1.2fr); gap: clamp(2rem,4vw,4rem); align-items: start; width: 100%; padding: 1.5rem 0; }
-.intro { min-width: 0; max-width: 29rem; }
-.icon { color: var(--color-indigo-text-soft); }
-.intro h2 { margin-top: 1rem; color: var(--color-text-primary); font-size: var(--text-title); line-height: var(--leading-title); font-weight: var(--font-weight-strong); }
-.intro p { margin-top: .75rem; color: var(--color-text-secondary); font-size: var(--text-body); line-height: var(--leading-body); }
-.action { width: fit-content; margin-top: 1.5rem; }
+.layout { display: flex; flex-direction: column; gap: .75rem; width: 100%; }
+/* The same section-title step the filled ledger's heading wears, so the two states share one hierarchy. */
+.intro h2 { color: var(--color-text-primary); font-size: var(--text-body-lg); line-height: var(--leading-body); font-weight: var(--font-weight-strong); }
+.intro p { margin-top: .25rem; max-width: var(--measure-prose); color: var(--color-text-tertiary); font-size: var(--text-body); line-height: var(--leading-body); word-break: keep-all; }
 .ledger { min-width: 0; border-top: 1px solid var(--color-border-strong); border-bottom: 1px solid var(--color-border-soft); animation: ledgerIn var(--motion-base) var(--motion-ease) both; }
-.columns { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,.7fr) minmax(0,.8fr); gap: .75rem; padding: .75rem 1rem; border-bottom: 1px solid var(--color-divider); color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
-.emptyRow { display: flex; align-items: center; gap: .625rem; min-height: 6.5rem; padding: 1rem; color: var(--color-text-secondary); font-size: var(--text-body); line-height: var(--leading-body); }
-.emptyRow svg { flex: none; color: var(--color-text-tertiary); }
+.columns { display: grid; grid-template-columns: 4.5rem 1rem minmax(0,1fr); gap: .75rem; padding: .625rem .25rem; border-bottom: 1px solid var(--color-divider); color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
+.columns span:nth-child(2) { grid-column: 3; grid-row: 1; }
+.columns span:nth-child(3) { grid-column: 3; justify-self: end; grid-row: 1; }
+/* Ghost passes: the axis drawn with nothing on it. Static, not a shimmer: nothing is loading. */
+.ghost { display: grid; grid-template-columns: 4.5rem 1rem minmax(0,1fr); align-items: center; gap: .75rem; min-height: 2.5rem; padding: 0 .25rem; border-bottom: 1px dashed var(--color-divider); }
+.ghost:last-child { border-bottom: 0; }
+.ghost[data-ghost-row="1"] { opacity: .7; }
+.ghost[data-ghost-row="2"] { opacity: .45; }
+.time { color: var(--color-text-quaternary); font-size: var(--text-label); line-height: var(--leading-label); font-variant-numeric: tabular-nums; }
+.dot { justify-self: center; width: .375rem; height: .375rem; border: 1px solid var(--color-text-quaternary); border-radius: 9999px; }
+.line span { display: block; width: 52%; height: .375rem; border-radius: 9999px; background: var(--color-overlay-2); }
+.ghost[data-ghost-row="1"] .line span { width: 38%; }
+.ghost[data-ghost-row="2"] .line span { width: 46%; }
 @keyframes ledgerIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 63.99rem) { .layout { grid-template-columns: minmax(0,1fr); align-items: start; gap: 2rem; min-height: 0; } .intro { max-width: 38rem; } }
 @media (prefers-reduced-motion: reduce) { .ledger { animation: none; } }

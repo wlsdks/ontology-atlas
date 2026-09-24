@@ -234,20 +234,24 @@ export function LibraryRounds() {
           (x 76), and the door below takes the seat the search field takes (76–331), so
           switching tabs changes what the column lists and nothing about where it sits.
         */}
-        <div className="flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <h1 className="sr-only">{t("indexHeader", { count: rounds.length })}</h1>
-            <InfoHint label={t("lede")} align="left">{t("lede")}</InfoHint>
-          </div>
+        {/*
+          One row: the door and its help. The help glyph used to stand alone on a row above the
+          link (2026-09-25), a 24px control with nothing beside it. The door is the column's one
+          control and this screen's one way to Automations; with no rounds yet it takes the
+          accent, because it is then the only next step there is.
+        */}
+        <div className="flex flex-none items-center gap-1 border-b border-[color:var(--color-overlay-2)] px-3 py-2.5">
+          <h2 className="sr-only">{t("indexHeader", { count: rounds.length })}</h2>
           {/* Schedule changes live in Automations; this door keeps results and controls distinct. */}
           <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-new"
-            className={cn(controlClass({ shape: "link", size: "md", tone: "secondary" }), "mt-2 flex w-full justify-start atlas-touch-floor") }>
+            className={cn(controlClass({ shape: "link", size: "md", tone: rounds.length === 0 ? "accent" : "secondary" }), "min-w-0 flex-1 justify-start atlas-touch-floor")}>
             <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}
           </Link>
+          <InfoHint label={t("lede")} align="left">{t("lede")}</InfoHint>
         </div>
         <ul className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-1 pb-3 pt-2" data-testid="library-rounds-list">
-          {rounds.length === 0 ? <li aria-hidden className="px-2 py-3"><EmptyShape icon={<Clock3 size={ICON_SIZE.sm} aria-hidden />}
-            columns={[t("shape.name"), t("shape.cadence"), t("shape.next")]} /></li> : null}
+          {rounds.length === 0 ? <li aria-hidden className="px-2 pt-3"><EmptyShape icon={<Clock3 size={ICON_SIZE.sm} aria-hidden />}
+            columns={[t("shape.name"), t("shape.cadence"), t("shape.next")]} ghostRows={2} /></li> : null}
           {rounds.map((round) => {
             const word = outcomeWord(round);
             const isRunning = running?.roundId === round.id;
@@ -290,26 +294,44 @@ export function LibraryRounds() {
       </aside>
 
       <section data-testid="library-rounds-stage" className="atlas-scroll-quiet min-h-0 min-w-0 flex-1 overflow-y-auto">
-        {/* Left-aligned, not centred: the stage shares one text start line with the index beside it. */}
-        <div className="flex w-full max-w-[1120px] flex-col gap-6 px-5 pt-5 md:px-8 md:pt-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]">
-          <header className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p data-testid="library-rounds-header-line" className="min-w-0 flex-1 text-body leading-body text-[color:var(--color-text-secondary)]">
-                <span className="text-[color:var(--color-text-primary)]">{t("header.rounds", { count: rounds.length })}</span>
+        {/*
+          **The Library tabs' one content frame** (2026-09-25). This stage was a left-anchored
+          1120 column while Work scope wore the centred form frame, so at 1920 the check history
+          ended at 1432 and left a 488px strip, and the content's start line jumped on every tab
+          switch. Both tabs now wear `PAGE_FRAME_FORM`: the same width, the same centring, and
+          the same top, so the two headlines stand at the same height.
+        */}
+        <div className={`${PAGE_FRAME_FORM} flex flex-col gap-8 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]`}>
+          {/*
+            The same page head Work scope draws: eyebrow, display headline, then the status as
+            its description. The status line used to be the head, at body size, and the largest
+            text on the screen was the empty state's own headline below it.
+          */}
+          <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
+                {t("eyebrow")}
+              </p>
+              <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                {t("title")}
+              </h1>
+              <p data-testid="library-rounds-header-line" className="mt-2 max-w-prose text-body-lg leading-title text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+                <span className="text-[color:var(--color-text-secondary)]">{t("header.rounds", { count: rounds.length })}</span>
                 {last ? <> · {t("header.lastPass", { time: dueLabel(last.endedAt) })}</> : null}
                 {" · "}
                 <span className={running ? "text-[color:var(--color-indigo-text-soft)]" : undefined}>{headerLine}</span>
               </p>
-              {selected ? <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-manage-automations"
-                className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>{t("manageAutomations")}</Link> : null}
+              <p className="mt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]">{t("limit")}</p>
             </div>
-            <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">{t("limit")}</p>
+            {selected ? <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-manage-automations"
+              className={cn(controlClass({ shape: "link", size: "md", tone: "secondary" }), "shrink-0 atlas-touch-floor")}>
+              <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}</Link> : null}
           </header>
 
           {rounds.length === 0 ? (
-            <RoundsHistoryEmpty title={t("emptyTitle")} description={t("emptyDescription")} action={t("manageAutomations")}
+            <RoundsHistoryEmpty title={t("ledger.title")} description={t("emptyDescription")}
               columns={[t("historyShape.run"), t("historyShape.outcome"), t("historyShape.review")]}
-              empty={t("historyShape.empty")} />
+              aria={t("ledger.aria")} />
           ) : (
             <>
               <SinceYouLeft span={span} summary={summary} locale={locale} onOpenPage={openPage} titleFor={titleFor} />

@@ -13,6 +13,8 @@ import { useLibraryIndexSegment, writeLibraryIndexSegment } from '@/shared/lib/a
 import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
 import { RouteLoadingFallback, TabBar } from '@/shared/ui';
 
+import styles from './library-workspace.module.css';
+
 // The editor is loaded only when its tab is opened. Composition belongs to the
 // app layer so neither view imports the other or duplicates its state machine.
 const OntologyPage = dynamic(
@@ -115,11 +117,18 @@ export function LibraryWorkspace() {
         */}
         <div ref={setToolsHost} data-testid="library-strip-tools" className="ml-auto flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-1 self-end pr-3" />
       </header>
+      {/*
+        Keyed by the view, so a tab switch remounts the panel and plays its short enter.
+        Sources and Wiki share one view (`LibraryPage` with a segment), so they share one key:
+        switching between them keeps that view's state and does not replay the enter.
+      */}
       <div
+        key={tab === 'sources' || tab === 'wiki' ? 'library' : tab}
         id={'library-workspace-tabpanel-' + tab}
         role="tabpanel"
         aria-labelledby={'library-workspace-tab-' + tab}
-        className="flex min-h-0 flex-1"
+        data-testid="library-workspace-panel"
+        className={`flex min-h-0 flex-1 ${styles.panel}`}
       >
         {tab === 'ontology' ? (
           <OntologyPage initialCollection="ontology" documentScope="ontology" />

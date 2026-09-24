@@ -6258,6 +6258,7 @@
       "emptyDescription": "Switch the map to its Galaxy view, pick a few concepts and give them a name and a purpose; that set is kept here so you can return to the same scope. “Pick on the map” takes you there.",
       "startingSource": "Concepts available in this ontology",
       "startingNoConcepts": "Add concepts to the map first to see them here.",
+      "startingMore": "{count, number} more · see them all on the map",
       "memberCount": "{count, plural, one {# concept} other {# concepts}}",
       "referenceCount": "{count, plural, one {# reference} other {# references}}",
       "shape": {
@@ -6265,7 +6266,6 @@
         "members": "Concepts",
         "purpose": "Purpose"
       },
-      "noPurpose": "No purpose added",
       "viewInGalaxy": "View on the map",
       "viewInGalaxyNamed": "View {name} on the map",
       "membersNamed": "Concepts in {name}",
@@ -6280,7 +6280,7 @@
       }
     },
     "rounds": {
-      "eyebrow": "WHILE YOU ARE AWAY",
+      "eyebrow": "LEFT BY AUTOMATIONS",
       "title": "Check history",
       "lede": "Review the document checks scheduled in Automations. Manage schedules and execution settings there.",
       "indexHeader": "Rounds · {count, number}",
@@ -6300,9 +6300,8 @@
         "cadence": "Cadence",
         "next": "Next run"
       },
-      "emptyTitle": "No document check history yet",
-      "emptyDescription": "Schedule a document check in Automations. While this Mac is awake, Atlas runs it and leaves the results here for review.",
-      "historyShape": { "run": "Run", "outcome": "Outcome", "review": "Review", "empty": "This ledger fills after the first run" },
+      "emptyDescription": "Schedule a document check in Automations. Each pass then leaves its result and the pages it changed here, newest first.",
+      "historyShape": { "run": "Run", "outcome": "Outcome", "review": "Review" },
       "kind": {
         "consistency": "Pages still match their sources",
         "consistencyBody": "Hashes every cited source on this Mac and runs the page check. No agent turn.",
@@ -6387,6 +6386,7 @@
         "called": "called",
         "asleep": "Asleep",
         "duration": "{seconds} s",
+        "durationMinutes": "{minutes, number} min",
         "heldLine": "{name} · {checked} · held",
         "noAgent": "No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again.",
         "runningNow": "{name} · {phase} · {seconds, number} s",

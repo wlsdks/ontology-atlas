@@ -1,0 +1,42 @@
+/*
+ * A tab's panel arrives rather than cuts in (2026-09-25). Sampled from the tab press, the
+ * Ontology panel painted at full opacity on its first frame on every switch; Work scope and
+ * Check history moved only inner parts. One short enter for the panel itself, shared by all
+ * five tabs.
+ *
+ * `backwards`, not `both`: a finished transform would leave `translateY(0)` on the panel, and
+ * any transform makes the panel the containing block for every `position: fixed` popover
+ * inside it. Filling backwards only covers the delay-free first frame and then lets go.
+ */
+.panel {
+  animation: libraryPanelIn var(--motion-base) var(--motion-ease) backwards;
+}
+
+@keyframes libraryPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes libraryPanelFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Reduced motion keeps the arrival as a fade: the change of place stays visible, the travel goes. */
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation-name: libraryPanelFadeIn;
+  }
+}

@@ -32,6 +32,19 @@ function memberRows(items: readonly LibraryCollectionItem[], documents: readonly
     : { kind: 'reference', item });
 }
 
+const KIND_ORDER = ['domain', 'capability', 'element'];
+/** Enough rows to show every kind the map nests, few enough that the list stays a preview. */
+const STARTING_ROWS = 6;
+
+/**
+ * The micro badge (9.5px) is for decoration; these carry a count or a kind a person reads, so
+ * they stand on the label step the Chip primitive uses.
+ */
+const quietTag = badgeClass({
+  shape: 'tag',
+  className: 'border border-[color:var(--color-border-soft)] py-0.5 text-[color:var(--color-text-tertiary)]',
+});
+
 function documentKind(document: { frontmatter: Record<string, unknown> }): string {
   const value = document.frontmatter.kind;
   return typeof value === 'string' && value.trim() ? value.trim() : 'ontology';
@@ -59,12 +72,15 @@ export function LibraryConstellations({
     [documents, saved.constellations],
   );
   const availableConcepts = useMemo(() => documents.filter(doc => ['domain', 'capability', 'element'].includes(documentKind(doc))), [documents]);
+  // Domains first, then capabilities, then elements: the order the map nests them in.
   const startingConcepts = useMemo(() => [...availableConcepts]
-    .sort((a, b) => Number(documentKind(a) !== 'domain') - Number(documentKind(b) !== 'domain'))
-    .slice(0, 3)
+    .sort((a, b) => KIND_ORDER.indexOf(documentKind(a)) - KIND_ORDER.indexOf(documentKind(b)))
+    .slice(0, STARTING_ROWS)
     .map(doc => ({ id: doc.slug, name: resolveLocaleDisplayName(doc.frontmatter, locale, doc.title),
-      kind: documentKind(doc) === 'domain' ? tCreateNode('kindDomain') : documentKind(doc) === 'capability' ? tCreateNode('kindCapability') : tCreateNode('kindElement') })),
+      kind: documentKind(doc),
+      kindLabel: documentKind(doc) === 'domain' ? tCreateNode('kindDomain') : documentKind(doc) === 'capability' ? tCreateNode('kindCapability') : tCreateNode('kindElement') })),
   [availableConcepts, locale, tCreateNode]);
+  const hiddenStarting = availableConcepts.length - startingConcepts.length;
 
   const createInGalaxy = () => router.push('/topology/?constellation=new');
   const openInGalaxy = (id: string) => router.push(`/topology/?constellation=${encodeURIComponent(id)}`);
@@ -144,6 +160,7 @@ export function LibraryConstellations({
   } else if (saved.constellations.length === 0) {
     content = <ConstellationsStartingPoint title={t('emptyTitle')} description={t('emptyDescription')}
       sourceLabel={t('startingSource')} sourceCount={availableConcepts.length} concepts={startingConcepts} noConcepts={t('startingNoConcepts')}
+      more={hiddenStarting > 0 ? { label: t('startingMore', { count: hiddenStarting }), onOpen: () => router.push('/topology/') } : null}
       action={<Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInGalaxy}><Plus size={ICON_SIZE.sm} aria-hidden />{t('create')}</Button>} />;
   } else {
     content = (
@@ -178,24 +195,22 @@ export function LibraryConstellations({
                         <span className="truncate text-body-lg leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
                           {folder.name}
                         </span>
-                        <span className={badgeClass({
-                          shape: 'micro',
-                          className: 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]',
-                        })}>
+                        <span className={quietTag}>
                           {t('memberCount', { count: ontologyCount })}
                         </span>
                         {referenceCount > 0 ? (
-                          <span className={badgeClass({
-                            shape: 'micro',
-                            className: 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]',
-                          })}>
+                          <span className={quietTag}>
                             {t('referenceCount', { count: referenceCount })}
                           </span>
                         ) : null}
                       </span>
-                      <span className="mt-1 block truncate text-body leading-body text-[color:var(--color-text-tertiary)]">
-                        {folder.purpose || t('noPurpose')}
-                      </span>
+                      {/* A scope saved without a purpose shows its title alone: a sentence saying
+                          nothing was written read, in a scan down the list, like one more purpose. */}
+                      {folder.purpose ? (
+                        <span className="mt-1 block truncate text-body leading-body text-[color:var(--color-text-tertiary)]">
+                          {folder.purpose}
+                        </span>
+                      ) : null}
                     </span>
                   </RowButton>
                   <Button
@@ -217,7 +232,7 @@ export function LibraryConstellations({
                   aria-label={referenceCount > 0
                     ? t('membersWithReferencesNamed', { name: folder.name })
                     : t('membersNamed', { name: folder.name })}
-                  className="border-t border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 sm:px-4 sm:py-3"
+                  className="border-t border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-2 sm:px-3 sm:py-3"
                 >
                   {rows.length === 0 ? (
                     <p className="py-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
@@ -232,17 +247,14 @@ export function LibraryConstellations({
                             <li
                               key={row.item.id}
                               data-testid={`library-constellation-reference-${row.item.id}`}
-                              className="flex min-h-11 items-center gap-3 px-2 py-2.5"
+                              className="flex min-h-11 items-center gap-2 px-2 py-2.5"
                               data-row-surface-contract="flat-divider-row"
                             >
                               <Paperclip size={ICON_SIZE.sm} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
                               <span className="min-w-0 flex-1 truncate text-body leading-body text-[color:var(--color-text-secondary)]">
                                 {row.item.label}
                               </span>
-                              <span className={badgeClass({
-                                shape: 'micro',
-                                className: 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]',
-                              })}>
+                              <span className={quietTag}>
                                 {referenceKind === 'source' ? t('kind.sourceReference') : t('kind.wikiReference')}
                               </span>
                             </li>
@@ -255,7 +267,7 @@ export function LibraryConstellations({
                             <li
                               key={resolution.item.id}
                               data-testid={`library-constellation-unresolved-${resolution.item.id}`}
-                              className="flex min-h-11 items-center gap-3 px-2 py-2.5"
+                              className="flex min-h-11 items-center gap-2 px-2 py-2.5"
                               data-row-surface-contract="flat-divider-row"
                             >
                               <TriangleAlert size={ICON_SIZE.sm} className="flex-none text-[color:var(--color-amber-source-a90)]" aria-hidden />
@@ -268,8 +280,8 @@ export function LibraryConstellations({
                                 </span>
                               </span>
                               <span className={badgeClass({
-                                shape: 'micro',
-                                className: 'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
+                                shape: 'tag',
+                                className: 'border border-[color:var(--color-amber-source-a35)] py-0.5 bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
                               })}>
                                 {resolution.reason === 'ambiguous' ? t('ambiguous') : t('missing')}
                               </span>
@@ -293,10 +305,11 @@ export function LibraryConstellations({
                               className="w-full text-left"
                             >
                               <FileText size={ICON_SIZE.sm} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
-                              <span className="min-w-0 flex-1 truncate">{name}</span>
+                              {/* The members are the content of the scope: primary ink, not the purpose's grey. */}
+                              <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">{name}</span>
                               <span className={badgeClass({
-                                shape: 'micro',
-                                className: 'border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] text-[color:var(--color-indigo-text-soft)]',
+                                shape: 'tag',
+                                className: 'border border-[color:var(--color-indigo-line-a20)] py-0.5 bg-[color:var(--color-indigo-a06)] text-[color:var(--color-indigo-text-soft)]',
                               })}>
                                 {kindLabel(documentKind(resolution.document))}
                               </span>

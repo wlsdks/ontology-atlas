@@ -1,18 +1,25 @@
-.layout { display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); align-items: center; gap: clamp(2rem,5vw,5rem); min-height: 24rem; padding: 1.5rem 0; }
-.intro { min-width: 0; max-width: 34rem; }
+/*
+ * Top-anchored, not centred (2026-09-25). A 24rem centred box left a ~150px dead band between
+ * the page lede and the first line of this state at 1512; the block now starts one section step
+ * under the header, on the same top line as the list beside it.
+ */
+.layout { display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); align-items: start; gap: clamp(2rem,5vw,5rem); padding: .5rem 0 0; }
+.intro { min-width: 0; max-width: 34rem; padding-top: .75rem; }
 .icon { color: var(--color-indigo-text-soft); }
 .intro h2 { margin-top: 1rem; color: var(--color-text-primary); font-size: var(--text-title); line-height: var(--leading-title); font-weight: var(--font-weight-strong); }
-.intro p { margin-top: .875rem; color: var(--color-text-secondary); font-size: var(--text-body); line-height: var(--leading-body); }
+.intro p { margin-top: .875rem; color: var(--color-text-secondary); font-size: var(--text-body); line-height: var(--leading-body); word-break: keep-all; }
 .action { margin-top: 1.5rem; }
 .source { min-width: 0; border-top: 1px solid var(--color-border-strong); border-bottom: 1px solid var(--color-border-soft); animation: sourceIn var(--motion-base) var(--motion-ease) both; }
-.sourceHead { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 0; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
+.sourceHead { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem .5rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
 .sourceHead strong { color: var(--color-text-secondary); font-weight: var(--font-weight-emphasis); font-variant-numeric: tabular-nums; }
 .concepts { margin: 0; padding: 0; list-style: none; }
-.concepts li { display: flex; align-items: center; gap: .75rem; min-height: 3.5rem; border-top: 1px solid var(--color-divider); }
-.mark { display: inline-grid; flex: none; place-items: center; width: 1.75rem; height: 1.75rem; color: var(--color-indigo-text-soft); }
+.concepts li { display: flex; align-items: center; gap: .625rem; min-height: 2.5rem; padding: 0 .5rem; border-top: 1px solid var(--color-divider); }
+.mark { display: inline-grid; flex: none; place-items: center; width: 1rem; height: 1rem; }
 .name { min-width: 0; overflow: hidden; color: var(--color-text-primary); font-size: var(--text-body); line-height: var(--leading-body); text-overflow: ellipsis; white-space: nowrap; }
 .kind { flex: none; margin-left: auto; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
-.noConcepts { padding: 1.25rem 0; border-top: 1px solid var(--color-divider); color: var(--color-text-tertiary); font-size: var(--text-body); }
+.more { width: 100%; min-height: 2.5rem; justify-content: flex-start; gap: .625rem; padding: 0 .5rem; border-top: 1px solid var(--color-divider); border-radius: 0; font-size: var(--text-body); line-height: var(--leading-body); }
+.more .mark { color: var(--color-indigo-text-soft); }
+.noConcepts { padding: 1.25rem .5rem; border-top: 1px solid var(--color-divider); color: var(--color-text-tertiary); font-size: var(--text-body); }
 @keyframes sourceIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 63.99rem) { .layout { grid-template-columns: minmax(0,1fr); align-items: start; min-height: 0; gap: 2rem; } .intro { max-width: 38rem; } }
+@media (max-width: 63.99rem) { .layout { grid-template-columns: minmax(0,1fr); gap: 2rem; } .intro { max-width: 38rem; } }
 @media (prefers-reduced-motion: reduce) { .source { animation: none; } }

@@ -635,7 +635,8 @@ export function DocFrontmatterBlock({
           <span className="min-w-0 truncate text-[color:var(--color-text-quaternary)]">
             slug: <span className="text-[color:var(--color-text-secondary)]">{slugValue}</span>
           </span>
-          <span className="ml-auto flex-none text-[color:var(--color-text-quaternary)]">
+          {/* A count in a Korean sentence, not a key: the summary's mono voice stops at the keys. */}
+          <span className="ml-auto flex-none font-sans text-label text-[color:var(--color-text-quaternary)]">
             {t("collapsedSummary", { count: fields.length })}
           </span>
         </summary>
@@ -756,7 +757,7 @@ export function DocFrontmatterBlock({
         ) : null}
         {quickPatchSection}
         <p
-          data-testid="doc-frontmatter-note" className="mt-2 flex items-center gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
+          data-testid="doc-frontmatter-note" className="mt-2 flex items-center gap-1.5 font-sans text-label text-[color:var(--color-text-quaternary)]">
           <svg width="16" height="6" viewBox="0 0 16 6" aria-hidden="true" className="shrink-0">
             <line
               x1="1"
