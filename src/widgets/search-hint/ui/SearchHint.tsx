@@ -32,25 +32,17 @@ interface Props {
    */
   phoneSheetSuppressed?: boolean;
   /**
-   * On wide screens, the right node inspector actually occupies the map width. It
-   * moves to the center of the remaining area within the same map column so it does
-   * not overlap with the inspector.
+   * Grid placement inside the map's top toolbar. The toolbar
+   * (`TopologyCommandChrome`) owns position, insets, scale and the reserves for
+   * INDEX and the node inspector; this lane is only a row of controls that can
+   * shrink.
    */
-  rightInspectorReserved?: boolean;
-  /**
-   * The left INDEX panel is expanded. The lane is centred in the **map**, but the
-   * panel is an overlay, so `left-1/2` centres it over the panel too and the first
-   * chip in the column (trail/realm/path) ends up underneath it -- reported
-   * 2026-08-24 with the trail chip half-covered. Reserving the panel's width shifts
-   * the whole column into the map that is actually visible. `transition-[left]`
-   * below already animates the shift, so the chips slide aside rather than jump.
-   */
-  leftIndexReserved?: boolean;
+  className?: string;
   /**
    * Path mode status chip (`TopologyPathChip`, analysis panel complete elimination phase 2 §b) —
-   * satisfies the "next to top-center search" placement requirement by leveraging this
-   * component's existing center-alignment calculation (`xl:left-1/2 xl:-translate-x-1/2`)
-   * without new absolute position calculations. Rendered only when this slot exists — if
+   * satisfies the "next to top-center search" placement requirement by riding in this
+   * lane, which the top toolbar centres, without a position calculation of its own.
+   * Rendered only when this slot exists — if
    * not in path mode, it is completely empty and identical to the previous search/sort
    * 2-button layout.
    */
@@ -102,8 +94,7 @@ export function SearchHint({
   density = 'default',
   phoneFocusSuppressed = false,
   phoneSheetSuppressed = false,
-  rightInspectorReserved = false,
-  leftIndexReserved = false,
+  className,
   pathChip,
   returnChip,
   realmChip,
@@ -131,12 +122,19 @@ export function SearchHint({
 
   return (
     <div
-      // Overlap cleanup 2026-08-22 — top-center alignment is xl+ only. The lane
-      // that joined with full expansion at 350px overlapped INDEX end (388) by 19px
-      // at 1024px. Placed on the second column from the right (top 76px) below xl,
-      // and returns to center from 1280.
+      /*
+       * An item of the map's top toolbar, not an overlay of its own (owner report,
+       * 2026-09-24). This lane
+       * used to centre itself with `left-1/2 -translate-x-1/2` while the utility lane
+       * pinned itself to the right edge: two boxes that never measured each other.
+       * With the meaning-review panel open at 1512 the map column is 928px wide, the
+       * centred lane (784px with a path chip and the trail chip) ran 136px into the
+       * utility lane, and eight icons were drawn on top of one another. Inside one
+       * box the utility lane keeps its width and this lane gets what is left, so it
+       * truncates instead of overlapping.
+       */
       className={cn(
-        "topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 transition-[left] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-6 xl:left-1/2 xl:right-auto xl:top-8 xl:-translate-x-1/2",
+        "pointer-events-auto min-w-0 max-w-full",
         // When both downgrades happen simultaneously, the stricter focus (<lg) wins —
         // applying both classes causes md:block to revive hidden at md, creating a conflict.
         phoneFocusSuppressed
@@ -144,18 +142,9 @@ export function SearchHint({
           : phoneSheetSuppressed
             ? "hidden md:block"
             : undefined,
-        // Only from xl, where the lane is actually centred; below that it is pinned
-        // to the right edge and the panel never reaches it.
-        leftIndexReserved &&
-          "xl:left-[calc(50%+var(--topology-index-width)/2)]",
+        className,
       )}
       data-testid="topology-search-action-lane"
-      data-right-inspector-reserve={
-        rightInspectorReserved ? "recenter-in-remaining-map" : undefined
-      }
-      data-left-index-reserve={
-        leftIndexReserved ? "recenter-in-remaining-map" : undefined
-      }
       data-search-lane-density={density}
       data-search-lane-contract={
         compact ? 'icon-first-focus-search' : 'labeled-search-utility'
@@ -173,11 +162,19 @@ export function SearchHint({
       data-search-lane-border-token="--chrome-border"
       data-search-lane-shadow-token="--chrome-shadow"
     >
-      <div className="flex items-center gap-2">
-        {returnChip}
-        {realmChip}
-        {pathChip}
-        {trailChip}
+      <div className="flex min-w-0 items-center justify-end gap-[var(--topology-chrome-gap)]">
+        {returnChip || realmChip || pathChip || trailChip ? (
+          // The status chips are the part of the row that yields. Each truncates its
+          // own label (the full text stays on hover and in its accessible name) so
+          // the tool tiles beside them keep their 36px boxes at every width.
+          <div className="flex min-w-0 items-center gap-[var(--topology-chrome-gap)]" data-testid="topology-status-chip-group">
+            {returnChip}
+            {realmChip}
+            {pathChip}
+            {trailChip}
+          </div>
+        ) : null}
+        <div className="flex shrink-0 items-center gap-[var(--topology-chrome-gap)]">
         {onToggleExpandAll ? (
           <div className="hidden md:block">
             <ChromeChip
@@ -268,7 +265,9 @@ export function SearchHint({
             data-utility-action-focus-ring-token="--color-indigo-accent"
             icon={<MapIcon />}
             active={view3d || galaxy}
-            compact={false}
+            // Icon-first with the rest of the lane in the crowded density (dock or
+            // review panel open); the current view stays in the name and tooltip.
+            compact={compact}
             className={`max-xl:[&_[data-chip-label]]:hidden ${CHROME_CHIP_COMPACT_BELOW_XL}`}
             aria-label={`${t('mapViewAriaLabel')}: ${t(`view3dChoice.${currentView}`)}`}
             title={t('view3dPickerHelp', {
@@ -308,6 +307,7 @@ export function SearchHint({
         >
           {t('searchLabel')}
         </ChromeChip>
+        </div>
       </div>
     </div>
   );

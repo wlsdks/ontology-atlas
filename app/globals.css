@@ -2958,7 +2958,11 @@
        though it actually rendered no pixels.
        Same precedent as `--pad-card`/`--pad-panel`: tokens no one uses are misinformation, not specifications. */
     --topology-chrome-icon-size: 12px;
-    --topology-chrome-gap: clamp(5px, 0.4vw, 6px);
+    /* 8px, one value for every tile in the top toolbar (2026-09-24). The utility lane
+       read this clamp (5-6px) while the search lane beside it spaced its tiles with
+       `gap-2`; one row showed two rhythms, which is part of why the owner read the
+       collapsed row as one broken control. Both lanes now read this token. */
+    --topology-chrome-gap: 0.5rem;
     /*
      * The same 12px at the default root, in `rem` because this is a **type size** consumed
      * through `text-[length:var(…)]` (`TopologyReviewLink`, `TopologyChangeAnnouncement`) —
@@ -5069,12 +5073,32 @@ body *::-webkit-scrollbar {
    SearchHint stands at the center of the map column itself. The agent dock reduces that column,
    so it reflects automatically, but the fixed node inspector covers above the column, requiring separate reservation. Moving left by half the right inset equal to the panel width places the command column
    at the center of the actual remaining map area excluding the inspector. It is not pixel-per-screen or chat-width constant, but the sum of current design tokens. */
+/* Since 2026-09-24 the reserve lands on the whole top toolbar
+   (`topology-top-toolbar`), which centres the search lane between its own left and
+   right edges while the node inspector owns the right rail (the utility lane is not
+   mounted then). Pulling the right edge in by the inspector's width plus its inset
+   puts that centre where the old `left: 50% - (panel + inset) / 2` put it, and the
+   2rem is the toolbar's own `xl` inset. The toolbar also carries
+   `data-agent-dock-adjacent-rail`; its `left` moves when INDEX opens or closes, so
+   the transition list below names `left` as well as `right`. */
 @media (min-width: 1280px) {
-  [data-right-inspector-reserve='recenter-in-remaining-map'] {
-    left: calc(
-      50% - (var(--map-panel-width) + var(--topology-node-popover-right-inset)) / 2
+  [data-testid='topology-top-toolbar'][data-right-inspector-reserve='recenter-in-remaining-map'] {
+    right: calc(
+      var(--map-panel-width) + var(--topology-node-popover-right-inset) + 2rem
     );
   }
+}
+
+[data-testid='topology-top-toolbar'][data-agent-dock-adjacent-rail='true'] {
+  transition-property: left, right;
+}
+
+/* The search lane and the agent activity status row share the toolbar's second line,
+   and when the whole caption does not fit beside the lane it steps aside
+   (`use-topology-toolbar-status-reserve.ts`). The bell and the mascot still show the
+   agent's state; the bell's panel holds the whole status. */
+[data-testid='topology-top-toolbar'][data-status-yield='true'] [data-agent-activity-status-slot] {
+  display: none;
 }
 
 /* ── Toast (sonner) motion — swapping vendor factory values with app ramp (2026-07-28) ──

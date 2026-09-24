@@ -5,7 +5,7 @@ import { BookOpen, ChevronRight, Leaf, Star, Trash2, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useLocalVault } from '@/entities/vault-session';
 import { withBasePath } from '@/shared/lib/base-path';
-import { Button, Dialog, IconButton, RowButton, Textarea } from '@/shared/ui';
+import { Button, ChromeTile, Dialog, IconButton, RowButton, Textarea } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useCompanionJournal } from '../model/use-companion-journal';
@@ -82,12 +82,21 @@ export function CompanionHome({ compact = false }: { compact?: boolean }) {
 
   return <>
     {compact ? (
-      <IconButton label={t('open')} onClick={show} className="relative shrink-0" data-testid="companion-trigger">
-        <span className={styles.workPose} aria-hidden="true">
-          <span className={styles.idle} style={{ backgroundImage: `url(${withBasePath('/brand/mascot-compact.png')})` }} />
-          <AgentMascotPresence inline />
-        </span>
-      </IconButton>
+      // The compact trigger lives in the map's top toolbar, so it wears the toolbar's
+      // tile (36px, chrome surface and border) instead of a bare 28px icon button:
+      // the one control in that row that did not share the row's box (2026-09-24).
+      <ChromeTile
+        title={t('open')}
+        onClick={show}
+        className="relative"
+        data-testid="companion-trigger"
+        icon={
+          <span className={styles.workPose} aria-hidden="true">
+            <span className={styles.idle} style={{ backgroundImage: `url(${withBasePath('/brand/mascot-compact.png')})` }} />
+            <AgentMascotPresence inline />
+          </span>
+        }
+      />
     ) : (
       <RowButton onClick={show} data-testid="companion-home" className="w-full">
         <span className={styles.homeRow}>
