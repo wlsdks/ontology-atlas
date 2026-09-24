@@ -572,8 +572,8 @@ describe('DownloadPage', () => {
     const terminal = screen.getByTestId('gateway-agent-chat');
     const colophon = screen.getByTestId('download-bottom-band');
     // 2026-09-08 (owner): the demo is second — it moves before a person reads what is in it —
-    // then the three readings of one folder: the live map, the architecture and the library as
-    // captured screens, and the agents last.
+    // then the live map, then (2026-09-24) the folder's other screens on one stage in the app
+    // rail's order, which still puts the architecture before the library, and the agents last.
     const architecture = screen.getByTestId('gateway-architecture-capture');
     const library = screen.getByTestId('gateway-library-capture');
 
@@ -590,6 +590,59 @@ describe('DownloadPage', () => {
         earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     }
+  });
+
+  /**
+   * **One stage, the app's own rail** (owner, 2026-09-24). The page shows the folder's other
+   * screens as one list of the rail's names beside one captured picture. Three properties are
+   * locked: the names come in the rail's order with the rail's words (a visitor meets the same
+   * list after installing), the map row goes back up to the live map instead of repeating it,
+   * and pressing a name swaps the picture, caption and door in place — the door naming the
+   * destination it opens.
+   */
+  it('shows the folder’s other screens on one stage, in the rail’s order, swapped in place', () => {
+    renderDownloadPage();
+
+    const stage = screen.getByTestId('gateway-screens-stage');
+    const tabs = screen.getAllByRole('tab').filter((tab) => stage.contains(tab));
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      'Harness',
+      'Library',
+      'Automations',
+      'Insights',
+      'Projects',
+      'Git',
+    ]);
+
+    const map = screen.getByTestId('gateway-screens-map');
+    expect(map).toHaveAttribute('href', '#evidence');
+    // The link it points at is the live map's own section.
+    expect(document.getElementById('evidence')).toBe(screen.getByTestId('gateway-evidence-section'));
+
+    // Every tab's panel exists, so no `aria-controls` points at nothing.
+    for (const tab of tabs) {
+      expect(document.getElementById(tab.getAttribute('aria-controls')!)).not.toBeNull();
+    }
+
+    const harness = screen.getByTestId('gateway-architecture-section');
+    expect(harness).toHaveAttribute('data-state', 'active');
+    expect(harness.querySelector('a')).toHaveAttribute('href', '/architecture');
+
+    fireEvent.click(screen.getByTestId('gateway-screens-tab-git'));
+    const git = screen.getByTestId('gateway-git-section');
+    expect(git).toHaveAttribute('data-state', 'active');
+    expect(git.querySelector('a')).toHaveAttribute('href', '/git');
+    expect(git).toHaveTextContent('Open Git');
+    expect(harness).toHaveAttribute('data-state', 'leaving');
+
+    // The keyboard walks the same list.
+    const gitTab = screen.getByTestId('gateway-screens-tab-git');
+    fireEvent.keyDown(gitTab, { key: 'Home' });
+    expect(harness).toHaveAttribute('data-state', 'active');
+    expect(screen.getByTestId('gateway-library-section').querySelector('a')).toHaveAttribute(
+      'href',
+      '/library',
+    );
   });
 
   /**

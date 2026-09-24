@@ -65,8 +65,9 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  * slot.
  */
 /*
- * **What is attached now** (filmed 2026-08-30, installed rc.18, public `docs/ontology` example):
- * one 44-second take per locale. The path starts on a settled map, finds the localized MCP Server
+ * **What is attached now** (the 2026-09-08 footage, public `docs/ontology` example): one
+ * 28-second take per locale (`seconds` above is the ffprobe measurement; this sentence follows it,
+ * and both change together at the next refilm). The path starts on a settled map, finds the localized MCP Server
  * capability, holds its typed relations and evidence, then has Codex read both endpoint concepts
  * and their path through Atlas MCP before leaving the one-sentence result on screen.
  *
@@ -74,7 +75,7 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  * when the take starts. A picker sheet puts a real disk path on screen, and the scene it buys
  * ("choose a folder") is the one thing a viewer already assumes works.
  *
- * **Why it is 44 seconds.** The nine-second predecessor proved only neighbourhood focus and the
+ * **Why it is about half a minute.** The nine-second predecessor proved only neighbourhood focus and the
  * owner observed that it was too short. The older 199-second take proved too many unrelated
  * features. The current bound is the shortest rehearsed path that keeps concept, relation,
  * evidence, and the real agent lookup in one unsped take.
@@ -88,7 +89,7 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  * ⚠️ **The two assets must not become one again.** For its first two days this registry shipped a
  * single Korean master under both names, and `demoProvisionalNote` carried a clause admitting it.
  * Re-copying one locale over the other would restore that silently: every existing check would
- * stay green, because both files would still exist, still be over 10KB, and still measure 44s.
+ * stay green, because both files would still exist, still be over 10KB, and still measure 28s.
  * `demo-clip-assets.contract` now compares their bytes for exactly this reason.
  *
  * Why the registry is not simply left empty: emptying it removes the demo section from the gateway

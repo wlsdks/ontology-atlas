@@ -33,6 +33,7 @@ export function TabBar({
   idPrefix = 'insights',
   testId,
   placement = 'default',
+  orientation = 'horizontal',
 }: {
   items: readonly TabBarItem[];
   activeKey: string;
@@ -60,7 +61,17 @@ export function TabBar({
   testId?: string;
   /** Lets a page header provide the strip's one shared bottom rule. */
   placement?: 'default' | 'header';
+  /**
+   * `vertical` stacks the tabs as a column of names (the gateway's screens stage, 2026-09-24).
+   * Up/Down move instead of Left/Right, the strip never scrolls sideways, and the selected tab
+   * is marked by its **whole surface** — the app rail's own active tile (`AppNavRail`) — not by
+   * a coloured edge, because a stripe on a selected row is a listed Don't
+   * (`docs/DESIGN-SYSTEM.md`, "No left-edge selection stripe"). The caller decides when a
+   * column fits; the tab pattern and its roving focus stay this one implementation.
+   */
+  orientation?: 'horizontal' | 'vertical';
 }) {
+  const vertical = orientation === 'vertical';
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingFocusKey = useRef<string | null>(null);
   const stripRef = useRef<HTMLDivElement | null>(null);
@@ -173,11 +184,13 @@ export function TabBar({
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
     let nextIndex: number | null = null;
 
+    const forward = vertical ? 'ArrowDown' : 'ArrowRight';
+    const backward = vertical ? 'ArrowUp' : 'ArrowLeft';
     switch (event.key) {
-      case 'ArrowRight':
+      case forward:
         nextIndex = (currentIndex + 1) % items.length;
         break;
-      case 'ArrowLeft':
+      case backward:
         nextIndex = (currentIndex - 1 + items.length) % items.length;
         break;
       case 'Home':
@@ -197,8 +210,9 @@ export function TabBar({
 
   // A transparent fade only on the edge that has hidden tabs. Four states: both, either, neither.
   const fade = 'var(--tabbar-edge-fade)';
-  const maskImage =
-    edgeOverflow.left && edgeOverflow.right
+  const maskImage = vertical
+    ? undefined
+    : edgeOverflow.left && edgeOverflow.right
       ? `linear-gradient(to right, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`
       : edgeOverflow.right
         ? `linear-gradient(to right, black calc(100% - ${fade}), transparent 100%)`
@@ -211,7 +225,7 @@ export function TabBar({
       ref={stripRef}
       data-testid={testId}
       role="tablist"
-      aria-orientation="horizontal"
+      aria-orientation={vertical ? 'vertical' : 'horizontal'}
       aria-label={ariaLabel}
       /*
        * Declares this a deliberate horizontal strip. `responsive-overflow-audit` exempts a
@@ -219,9 +233,11 @@ export function TabBar({
        * else — keying on computed `overflow-x` matched the page's vertical scroll
        * container too, and the sweep stopped being able to fail.
        */
-      data-scroll-x="true"
+      data-scroll-x={vertical ? undefined : 'true'}
       data-edge-overflow={
-        edgeOverflow.left && edgeOverflow.right
+        vertical
+          ? undefined
+          : edgeOverflow.left && edgeOverflow.right
           ? 'both'
           : edgeOverflow.right
             ? 'right'
@@ -234,9 +250,11 @@ export function TabBar({
       // so this scrolls horizontally inside itself — the same pattern AppSettingsMenu's
       // tablist uses — and page-level overflow never happens.
       className={
-        placement === 'header'
-          ? "flex h-full items-end gap-3 overflow-x-auto"
-          : "flex gap-3 overflow-x-auto border-b border-[color:var(--color-divider)]"
+        vertical
+          ? "flex flex-col gap-0.5"
+          : placement === 'header'
+            ? "flex h-full items-end gap-3 overflow-x-auto"
+            : "flex gap-3 overflow-x-auto border-b border-[color:var(--color-divider)]"
       }
       style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
     >
@@ -287,6 +305,12 @@ export function TabBar({
              * 44px. `items-center` keeps the label centered above its indicator at every height.
              */
             className={
+              vertical
+                ? "atlas-touch-floor relative inline-flex min-h-[var(--control-h-lg)] w-full items-center gap-2 rounded-card px-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+                  (active
+                    ? "bg-[color:var(--color-indigo-a14)] font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
+                    : "bg-transparent font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]")
+                :
               "atlas-touch-floor relative -mb-px inline-flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-2 whitespace-nowrap border-b-[length:var(--tabbar-underline)] bg-transparent px-3 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
               (active
                 ? "border-b-[color:var(--color-indigo-accent)] font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
