@@ -81,7 +81,10 @@ export function WikiPageHeader({
    * **Title, byline, then a breath before whatever the page opens on** (design sweep round
    * 2, 2026-09-25). With the missing-original line handed to the problem card, the card
    * followed the byline by 16px — the same gap as title to byline, so the three read as
-   * one run. The header's `pb-2` makes it 24 below the byline against 8 above it. The title
+   * one run. The header's `pb-2` makes it 24 below the byline against 8 above it. A retained
+   * answer (`compactTop`) keeps its tight top instead: its own context block follows the
+   * byline, and the answer's Summary has to stay above 45% of the 1040×720 window floor
+   * (`library-answer-comparison-rows.spec.ts`). The title
    * keeps `text-display`'s own 28px leading, the pair `app/globals.css` writes for a page
    * headline; the 24px `leading-title` it used to carry is the 16px panel title's pair and
    * set a wrapping headline's lines tighter than its size.
@@ -89,7 +92,7 @@ export function WikiPageHeader({
   return (
     <header
       data-testid="library-wiki-header"
-      className={`mx-auto w-full max-w-[var(--measure-doc-column)] px-6 pb-2 md:px-10 ${compactTop ? "pt-3" : "pt-8"}`}
+      className={`mx-auto w-full max-w-[var(--measure-doc-column)] px-6 md:px-10 ${compactTop ? "pt-3" : "pb-2 pt-8"}`}
     >
       <h2 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
         {doc.title}
