@@ -60,7 +60,7 @@ export function AutomationScheduleActions({ round, runner }: {
           <p id={`${detailId}-question`} className="w-full text-body-lg text-[color:var(--color-text-primary)]">{t('removeQuestion', { name: round.name })}</p>
           <Button variant="outline" size="sm" disabled={pending} className="atlas-touch-floor"
             onClick={() => { setConfirmRemove(false); removeButton.current?.focus(); }}>{t('cancel')}</Button>
-          <Button variant="danger" size="sm" disabled={pending} className="atlas-touch-floor"
+          <Button variant="danger" size="sm" disabled={pending} className="atlas-touch-floor" data-confirm-step
             data-testid="automations-confirm-remove"
             onClick={() => void change(async () => {
               const removed = await runner.remove(round.id);

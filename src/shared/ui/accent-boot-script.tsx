@@ -42,9 +42,10 @@ const ACCENT_BOOT = [
  * first paint. Every `:lang(ko)` rule (the Korean line rule on `body` above all) therefore
  * missed the first frame on `/ko/*` and the text reflowed once when the effect ran.
  *
- * The locale is always the first path segment after an optional `basePath`
+ * It shares the accent script's tag, the first script in `<body>`, so `lang` is set before any
+ * rendered body content is parsed. The locale is always the first path segment after an optional `basePath`
  * (`localePrefix: 'always'`), so the first segment that is a known locale is the answer. The
- * list is a constant, not interpolated — `tests/contract/accent-palette-switch.contract.test.ts`
+ * list is a constant, not interpolated — `tests/contract/hangul-word-keep.contract.test.ts`
  * holds it equal to `routing.locales`. `LocaleHtmlLang` stays for client-side locale switches.
  */
 const LANG_BOOT = [
@@ -82,9 +83,9 @@ export function AccentBootScript() {
    * `async` here is **the marker that tells React 19 to hoist this into the
    * document**, not an instruction to defer. Per the HTML spec the attribute has no
    * effect on an inline script (it only means something for external ones), so this
-   * still runs synchronously where it is parsed — hence no flash. React hoists it
-   * into `<head>`, so wherever it sits in the render tree it lands in the document
-   * once, in the right place.
+   * still runs synchronously where it is parsed — hence no flash. Measured in the
+   * served HTML (2026-09-25): it lands as the first script in `<body>`, after only
+   * Next's empty hidden div, so it runs before any rendered body content is parsed.
    *
    * Drop that one word and React says exactly this: *"Cannot render a sync or defer
    * `<script>` outside the main document without knowing its order. Try adding

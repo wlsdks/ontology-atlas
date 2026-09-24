@@ -82,13 +82,14 @@ describe("<html lang> is right before the first paint", () => {
 
 /**
  * **`break-keep` may not grow** (2026-09-25). The body rule makes a per-element `break-keep`
- * redundant on Korean pages, but the 273 existing sites stay until each screen is touched —
+ * redundant on Korean pages, but the 364 existing sites stay until each screen is touched —
  * removing them is churn with no visible change. What must not happen is the old habit
  * continuing: a new site is a vote for "each element opts in", the pattern the body rule
  * replaced. Both spellings count — the utility `break-keep` and the hand-written
  * `[word-break:keep-all]` — in production source after comments are stripped (a comment that
- * *mentions* the class is not a use). Measured 2026-09-25: 256 + 108. Lower the ceiling when
- * you remove sites; never raise it.
+ * *mentions* the class is not a use). Measured 2026-09-25: 256 + 108 = 364. The ceiling is
+ * exact in both directions: a removal fails the gate until the ceiling is lowered to the new
+ * count, so the room a removal frees cannot be spent silently by the next site.
  */
 const BREAK_KEEP_CEILING = 364;
 
@@ -128,7 +129,7 @@ describe("per-element break-keep does not grow", () => {
     expect(countBreakKeep('"[&_h1]:break-keep"')).toBe(1);
   });
 
-  it(`stays at or under ${BREAK_KEEP_CEILING}`, () => {
+  it(`stays at exactly ${BREAK_KEEP_CEILING} — never above, and the ceiling follows every removal`, () => {
     const files = productionFiles();
     expect(files.length, "the walk found no source — the ceiling would pass vacuously").toBeGreaterThan(500);
     const perFile = files
@@ -142,5 +143,9 @@ describe("per-element break-keep does not grow", () => {
         "`:root:lang(ko) body` (app/globals.css); drop the class from the new site. Top files: " +
         perFile.sort((a, b) => b[1] - a[1]).slice(0, 5).map(([f, n]) => `${f} ${n}`).join(", "),
     ).toBeLessThanOrEqual(BREAK_KEEP_CEILING);
+    expect(
+      total,
+      `break-keep sites fell to ${total} — lower BREAK_KEEP_CEILING to ${total} in this file so the room cannot be spent again.`,
+    ).toBe(BREAK_KEEP_CEILING);
   });
 });
