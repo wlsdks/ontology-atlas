@@ -6351,9 +6351,20 @@
       "errorDescription": "Atlas could not read the saved collection file. It was left unchanged.",
       "retry": "Read again",
       "emptyTitle": "No collection yet",
-      "emptyDescription": "Switch the map to its Galaxy view, pick a few concepts and give them a name and a purpose; that set is kept here so you can return to the same scope. “Pick on the map” takes you there.",
+      "emptyDescription": "A saved set stays inside this folder, so it is there again whenever the folder is reopened.",
       "startingSource": "Concepts available in this ontology",
-      "startingNoConcepts": "Add concepts to the map first to see them here.",
+      "startingNoConcepts": "The map has no concepts yet.",
+      "addConcepts": "Add concepts on the map",
+      "stepsLabel": "How a collection is made",
+      "step": {
+        "pick": "Pick",
+        "pickBody": "Pick only the concepts one piece of work needs, on the map.",
+        "name": "Name",
+        "nameBody": "Give the set a name, and the reason you kept it together, so it still reads later.",
+        "return": "Return",
+        "returnBody": "Unfold it here for its concepts, or open it on the map to see only that scope."
+      },
+      "startingMore": "{count, number} more · see them all on the map",
       "memberCount": "{count, plural, one {# concept} other {# concepts}}",
       "referenceCount": "{count, plural, one {# reference} other {# references}}",
       "shape": {
@@ -6361,7 +6372,6 @@
         "members": "Concepts",
         "purpose": "Purpose"
       },
-      "noPurpose": "No purpose added",
       "viewInGalaxy": "View on the map",
       "viewInGalaxyNamed": "View {name} on the map",
       "membersNamed": "Concepts in {name}",
@@ -6376,7 +6386,7 @@
       }
     },
     "rounds": {
-      "eyebrow": "WHILE YOU ARE AWAY",
+      "eyebrow": "LEFT BY AUTOMATIONS",
       "title": "Check history",
       "lede": "Review the document checks scheduled in Automations. Manage schedules and execution settings there.",
       "indexHeader": "Rounds · {count, number}",
@@ -6391,18 +6401,20 @@
       "malformedTitle": "The rounds file needs attention",
       "malformedDescription": "Atlas could not read .ontology-atlas/rounds.json and left it unchanged. Fix or remove it, then read again.",
       "retry": "Read again",
-      "shape": {
-        "name": "Name",
-        "cadence": "Cadence",
-        "next": "Next run"
-      },
-      "emptyTitle": "No document check history yet",
-      "emptyDescription": "Schedule a document check in Automations. While this Mac is awake, Atlas runs it and leaves the results here for review.",
-      "historyShape": {
-        "run": "Run",
-        "outcome": "Outcome",
-        "review": "Review",
-        "empty": "This ledger fills after the first run"
+      "emptyTitle": "Schedule the first document check",
+      "emptyDescription": "Each time a scheduled check runs, its result lands here, newest first.",
+      "emptyAction": "Schedule in Automations",
+      "emptyKinds": "Checks you can schedule",
+      "emptySignals": "What each pass leaves here",
+      "signal": {
+        "stale": "Stale",
+        "staleBody": "A source the page cites changed. Press the page to open it in Wiki.",
+        "redrafted": "Redrafted",
+        "redraftedBody": "The agent wrote a new draft. It stays a draft until you review it.",
+        "refused": "Refused",
+        "refusedBody": "A request the schedule never allowed. The ledger names what it stopped.",
+        "held": "No change",
+        "heldBody": "Every page still matched its sources. It takes one quiet line."
       },
       "kind": {
         "consistency": "Pages still match their sources",
@@ -6432,7 +6444,7 @@
         "running": "Running"
       },
       "outcome": {
-        "held": "held",
+        "held": "no change",
         "reviewed": "reviewed",
         "stale": "{count, plural, one {# stale} other {# stale}}",
         "redrafted": "{count, plural, one {# redrafted} other {# redrafted}}",
@@ -6443,7 +6455,6 @@
       },
       "header": {
         "rounds": "{count, plural, one {# round} other {# rounds}}",
-        "lastPass": "last pass {time}",
         "next": "next {time} · {name}",
         "running": "running now · {name}",
         "nothingYet": "no pass yet",
@@ -6465,10 +6476,9 @@
         "noPasses": "No pass ran in this span.",
         "stale": "{count, plural, one {# page} other {# pages}} went stale",
         "redrafted": "{count, plural, one {# redraft waits} other {# redrafts wait}} for you",
-        "held": "{count, plural, one {# pass} other {# passes}} held",
+        "held": "{count, plural, one {# pass} other {# passes}} with no change",
         "refused": "{count, plural, one {# request was} other {# requests were}} refused",
         "failed": "{count, plural, one {# pass} other {# passes}} did not finish",
-        "asleep": "asleep {from} → {to}",
         "openPage": "Open {page} in Wiki"
       },
       "ledger": {
@@ -6482,13 +6492,14 @@
         "agentTurn": "1 agent turn",
         "noAgentTurn": "no agent turn",
         "manual": "run by hand",
-        "catchUp": "catch-up",
+        "catchUp": "missed run made up",
         "wrote": "wrote",
         "refused": "refused",
         "called": "called",
         "asleep": "Asleep",
         "duration": "{seconds} s",
-        "heldLine": "{name} · {checked} · held",
+        "durationMinutes": "{minutes, number} min",
+        "heldLine": "{name} · {checked} · no change",
         "noAgent": "No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again.",
         "runningNow": "{name} · {phase} · {seconds, number} s",
         "phaseChecking": "Checking documents",
@@ -6583,6 +6594,7 @@
         "valueHours": "every {count, number} hours"
       },
       "index": {
+        "title": "Scheduled checks",
         "subtitle": "{cadence} · {places}"
       }
     }

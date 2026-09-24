@@ -1111,7 +1111,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // through `buttonVariants` (a full reload after a render failure), so `a` 8→9.
 // 2026-09-25: Automations' "Get the app" and "Open Library check history" became standard
 // buttons (primary, ghost sm) instead of text links, so `Link` 19→21.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 21, a: 9 };
+// 2026-09-25: Check history's first-run door to Automations is one `<Link>` through
+// `buttonVariants`, so `Link` 21→22.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 22, a: 9 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1212,6 +1214,18 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
       '`<Button variant="outline" size="sm">` — the two must be one control at two ' +
       'tags. `control-class.ts` declares it "does not replace standard buttons", so ' +
       'moving this to `controlClass` would break that rule rather than honour it.',
+  },
+  {
+    file: 'src/views/library/ui/LibraryRounds.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'Check history before any round exists (2026-09-25): the page\'s one next step, ' +
+      '"Schedule in Automations". It is a `<Link>` because it navigates, and ' +
+      '`cn(buttonVariants(), …)` because it stands in Work scope\'s starting-point frame ' +
+      'where the same moment is a primary `<Button>`; the two empty tabs must press alike. ' +
+      'The value layer yields the standard button, so `controlClass` cannot make it.',
   },
   {
     file: 'src/views/terminal-state/ui/NotFoundScreen.tsx',
@@ -1336,9 +1350,10 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // has no standard-button anchor shape, so the row is registered like the 404's own.
 // 28 → 30 (2026-09-25): Automations' two navigating actions, registered for the reason their
 // row states — the standard-button shape, at the two tags a navigating button needs.
-const BASELINE_ANCHOR_REGISTERED = 30;
+// 30 → 31 (2026-09-25): Check history's first-run door, the standard-button shape again.
+const BASELINE_ANCHOR_REGISTERED = 31;
 
-/** **Only this number may fall.** The current anchor total (30) minus registered (30). */
+/** **Only this number may fall.** The current anchor total (31) minus registered (31). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

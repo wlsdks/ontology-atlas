@@ -140,7 +140,8 @@ test('pinned, recent, and restored tabs stay inside the ontology scope', async (
   await page.getByTestId('docs-compatibility-library-return').click();
 
   await expect(page.getByText('Pinned · 1')).toBeVisible();
-  await expect(page.getByText('Recent · 2')).toBeVisible();
+  // Recent lists the way back to the others: the open document is the tab, not a Recent row.
+  await expect(page.getByText('Recent · 1')).toBeVisible();
   await expect(page.getByTestId('docs-vault-doc-list').getByText('Vault instructions')).toHaveCount(0);
   await expect(page.locator('[data-docs-header-zone="tabs"]')).toContainText('Settlement');
   await expect(page.locator('[data-docs-header-zone="tabs"]')).toContainText('Payments');

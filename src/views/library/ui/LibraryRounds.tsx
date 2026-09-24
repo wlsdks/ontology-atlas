@@ -14,21 +14,20 @@ import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_FRAME_FORM } from "@/shared/ui/page-frame";
-import { Button, EmptyState, InfoHint, RowButton } from "@/shared/ui";
+import { Button, EmptyState, RowButton, buttonVariants } from "@/shared/ui";
 
 import { useLibraryRounds } from "../lib/library-rounds-context";
 import { capitalize } from "../lib/round-presentation";
-import { lastOutcome, lastPass, nextRound, sinceSpan, summarizeSince } from "../lib/round-presentation";
+import { lastOutcome, nextRound, sinceSpan, summarizeSince } from "../lib/round-presentation";
 import { RoundsLedger } from "./parts/RoundsLedger";
 import { SinceYouLeft } from "./parts/SinceYouLeft";
-import { EmptyShape } from "./parts/EmptyShape";
 import { RoundsHistoryEmpty } from "./parts/RoundsHistoryEmpty";
 
 /**
  * **Check history** — the Library's read side of document rounds.
  *
- * Index on the left: document rounds this Mac keeps. Stage on the right: the last and next
- * run, the morning card, and the ledger. Selection filters the ledger. Schedule controls
+ * One centred page: what runs next, the away card, the rounds this Mac keeps, and the ledger.
+ * Selecting a round filters the ledger. Schedule controls
  * live in Automations; the Library keeps the execution evidence and page links.
  *
  * The web build has no clock and no agent, so it draws the explanation and the app door and
@@ -84,7 +83,6 @@ export function LibraryRounds() {
     (slug: string) => pageTitles.get(slug.replace(/\.md$/, "")) ?? slug.replace(/^wiki\//, "").replace(/\.md$/, ""),
     [pageTitles],
   );
-  const last = lastPass(entries);
   const next = nextRound(rounds);
   const allPaused = rounds.length > 0 && rounds.every((round) => !round.enabled);
 
@@ -218,101 +216,125 @@ export function LibraryRounds() {
       data-testid="library-rounds"
       data-rounds-state={rounds.length === 0 ? "empty" : "ready"}
       data-rounds-running={running ? running.phase : undefined}
-      className="topology-ui-scale relative flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)] max-lg:flex-col"
+      className="topology-ui-scale relative flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]"
     >
-      <aside
-        data-testid="library-rounds-index"
-        aria-label={t("indexAria")}
-        className="flex w-full min-w-0 min-h-0 flex-col overflow-hidden bg-[color:var(--color-panel)] max-lg:max-h-[40vh] max-lg:border-b max-lg:border-[color:var(--color-border-soft)] lg:w-[var(--docs-list-width)] lg:flex-none lg:border-r lg:border-[color:var(--color-border-soft)]"
-      >
-        {/*
-          **The same column head the other four tabs draw** (2026-09-17). The strip already
-          says "Rounds" and carries the count of the ones that are on; this column said
-          "Rounds · 3" 38 px below it — one thing, two numbers, neither labelled — while
-          Sources and Wiki carry no name at all since the owner's decision this morning. The
-          name is now assistive-only, the glyph keeps the seat the Library's info glyph has
-          (x 76), and the door below takes the seat the search field takes (76–331), so
-          switching tabs changes what the column lists and nothing about where it sits.
-        */}
-        <div className="flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <h1 className="sr-only">{t("indexHeader", { count: rounds.length })}</h1>
-            <InfoHint label={t("lede")} align="left">{t("lede")}</InfoHint>
-          </div>
-          {/* Schedule changes live in Automations; this door keeps results and controls distinct. */}
-          <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-new"
-            className={cn(controlClass({ shape: "link", size: "md", tone: "secondary" }), "mt-2 flex w-full justify-start atlas-touch-floor") }>
-            <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}
-          </Link>
-        </div>
-        <ul className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-1 pb-3 pt-2" data-testid="library-rounds-list">
-          {rounds.length === 0 ? <li aria-hidden className="px-2 py-3"><EmptyShape icon={<Clock3 size={ICON_SIZE.sm} aria-hidden />}
-            columns={[t("shape.name"), t("shape.cadence"), t("shape.next")]} /></li> : null}
-          {rounds.map((round) => {
-            const word = outcomeWord(round);
-            const isRunning = running?.roundId === round.id;
-            return (
-              <li key={round.id}>
-                <RowButton
-                  data-testid={`library-round-${round.id}`}
-                  data-round-enabled={round.enabled}
-                  onClick={() => setSelectedId((current) => (current === round.id ? null : round.id))}
-                  active={selectedId === round.id}
-                  aria-pressed={selectedId === round.id}
-                  hoverInk="strong"
-                  hoverSurface="lift"
-                  className="w-full px-2 text-left"
-                >
-                  {/*
-                    The leading glyph the source and page rows carry, which is what puts this
-                    row's name on the list's text edge (96 at 1512) instead of 82, and what
-                    spec §9.1 asked for: the round's state, readable without reading.
-                  */}
-                  <span className="flex-none self-start pt-1 text-[color:var(--color-text-quaternary)]">
-                    {isRunning ? <Play size={ICON_SIZE.sm} aria-hidden /> : round.enabled ? <Clock3 size={ICON_SIZE.sm} aria-hidden /> : <Pause size={ICON_SIZE.sm} aria-hidden />}
-                  </span>
-                  <span className="min-w-0 flex-1 py-0.5">
-                    <span className="flex items-center gap-2">
-                      <span className={cn("truncate text-body leading-body font-[var(--font-weight-strong)]", round.enabled ? "text-[color:var(--color-text-primary)]" : "text-[color:var(--color-text-tertiary)]")}>
-                        {round.name}
-                      </span>
-                    </span>
-                    <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
-                      {placeWords(round)} · {isRunning ? t("state.running") : round.enabled ? t("state.on") : t("state.paused")}
-                    </span>
-                  </span>
-                  <span className={badgeClass({ shape: "micro", className: cn("border shrink-0", toneClass[word.tone]) })}>{word.text}</span>
-                </RowButton>
-              </li>
-            );
-          })}
-        </ul>
-      </aside>
-
       <section data-testid="library-rounds-stage" className="atlas-scroll-quiet min-h-0 min-w-0 flex-1 overflow-y-auto">
-        {/* Left-aligned, not centred: the stage shares one text start line with the index beside it. */}
-        <div className="flex w-full max-w-[1120px] flex-col gap-6 px-5 pt-5 md:px-8 md:pt-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]">
-          <header className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p data-testid="library-rounds-header-line" className="min-w-0 flex-1 text-body leading-body text-[color:var(--color-text-secondary)]">
-                <span className="text-[color:var(--color-text-primary)]">{t("header.rounds", { count: rounds.length })}</span>
-                {last ? <> · {t("header.lastPass", { time: dueLabel(last.endedAt) })}</> : null}
+        {/*
+          **The Library page tabs' one content frame** (2026-09-25). Check history and Work
+          scope both wear `PAGE_FRAME_FORM`, centred, with nothing beside it: the same width,
+          the same start line and the same top, so switching between the two moves nothing
+          but the words. Round three had shifted this frame toward an index column; with the
+          column folded into the page (below), the shift and the band it left are both gone.
+        */}
+        <div className={cn(
+          PAGE_FRAME_FORM,
+          "flex flex-col gap-8 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]",
+        )}>
+          {/*
+            The same page head Work scope draws: eyebrow, display headline, then the status as
+            its description. The status line used to be the head, at body size, and the largest
+            text on the screen was the empty state's own headline below it.
+
+            No "last pass" in it (round three): the ledger's top row is the last pass, one line
+            below, and the header's 09:00 beside the away card's "→ 09:02" read as two different
+            "now"s on one screen. The header says how many and what runs next; the ledger says
+            what ran.
+          */}
+          <header className="min-w-0">
+            <div className="min-w-0">
+              <p className="text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
+                {t("eyebrow")}
+              </p>
+              <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                {t("title")}
+              </h1>
+              <p data-testid="library-rounds-header-line" className="mt-2 max-w-prose text-body-lg leading-title text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+                <span className="text-[color:var(--color-text-secondary)]">{t("header.rounds", { count: rounds.length })}</span>
                 {" · "}
                 <span className={running ? "text-[color:var(--color-indigo-text-soft)]" : undefined}>{headerLine}</span>
               </p>
-              {selected ? <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-manage-automations"
-                className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>{t("manageAutomations")}</Link> : null}
+              <p className="mt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]">{t("limit")}</p>
             </div>
-            <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">{t("limit")}</p>
           </header>
 
           {rounds.length === 0 ? (
-            <RoundsHistoryEmpty title={t("emptyTitle")} description={t("emptyDescription")} action={t("manageAutomations")}
-              columns={[t("historyShape.run"), t("historyShape.outcome"), t("historyShape.review")]}
-              empty={t("historyShape.empty")} />
+            <RoundsHistoryEmpty title={t("emptyTitle")} description={t("emptyDescription")}
+              kindsLabel={t("emptyKinds")}
+              signalsLabel={t("emptySignals")}
+              signals={(["stale", "redrafted", "refused", "held"] as const).map((tone) => ({
+                tone, name: t(`signal.${tone}`), body: t(`signal.${tone}Body`),
+              }))}
+              kinds={[
+                { id: "consistency", name: t("kind.consistency"), body: t("kind.consistencyBody") },
+                { id: "service", name: t("kind.service"), body: t("kind.serviceBody") },
+              ]}
+              action={<Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-new"
+                className={cn(buttonVariants(), "atlas-touch-floor atlas-touch-floor-wide")}>
+                <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("emptyAction")}</Link>} />
           ) : (
             <>
               <SinceYouLeft span={span} summary={summary} locale={locale} onOpenPage={openPage} titleFor={titleFor} />
+              {/*
+                **The schedules stand in the page, not in a column beside it** (2026-09-25,
+                round four). A 280px index column held two rows and then ~700px of empty
+                panel at 949 and 1080 tall, and it pushed this tab's headline 112px right of
+                Work scope's at 1512: switching tabs moved the page sideways. The rounds are
+                now a section of the same centred form frame every page tab wears, between the
+                away card (what happened) and the ledger (each run) it filters. The door to
+                Automations heads the section it manages; the help glyph that said the same
+                thing as the door's label is gone.
+              */}
+              <section data-testid="library-rounds-index" aria-labelledby="library-rounds-index-title" className="flex flex-col gap-3">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                  <h2 id="library-rounds-index-title" className="text-body-lg leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+                    {t("index.title")}
+                  </h2>
+                  {/* Schedule changes live in Automations; this door keeps results and controls distinct. */}
+                  <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-new"
+                    className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>
+                    <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}
+                  </Link>
+                </div>
+                <ul aria-label={t("indexAria")} data-testid="library-rounds-list"
+                  className="grid grid-cols-1 gap-x-4 border-y border-[color:var(--color-divider)] py-1 md:grid-cols-2">
+                  {rounds.map((round) => {
+                    const word = outcomeWord(round);
+                    const isRunning = running?.roundId === round.id;
+                    return (
+                      <li key={round.id}>
+                        <RowButton
+                          data-testid={`library-round-${round.id}`}
+                          data-round-enabled={round.enabled}
+                          onClick={() => setSelectedId((current) => (current === round.id ? null : round.id))}
+                          active={selectedId === round.id}
+                          aria-pressed={selectedId === round.id}
+                          hoverInk="strong"
+                          hoverSurface="lift"
+                          className="w-full px-2 text-left"
+                        >
+                          {/*
+                            The round's state as a glyph, readable without reading (spec §9.1).
+                          */}
+                          <span className="flex-none self-start pt-1 text-[color:var(--color-text-quaternary)]">
+                            {isRunning ? <Play size={ICON_SIZE.sm} aria-hidden /> : round.enabled ? <Clock3 size={ICON_SIZE.sm} aria-hidden /> : <Pause size={ICON_SIZE.sm} aria-hidden />}
+                          </span>
+                          <span className="min-w-0 flex-1 py-0.5">
+                            <span className="flex items-center gap-2">
+                              <span className={cn("truncate text-body leading-body font-[var(--font-weight-strong)]", round.enabled ? "text-[color:var(--color-text-primary)]" : "text-[color:var(--color-text-tertiary)]")}>
+                                {round.name}
+                              </span>
+                            </span>
+                            <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
+                              {placeWords(round)} · {isRunning ? t("state.running") : round.enabled ? t("state.on") : t("state.paused")}
+                            </span>
+                          </span>
+                          <span className={badgeClass({ shape: "micro", className: cn("border shrink-0", toneClass[word.tone]) })}>{word.text}</span>
+                        </RowButton>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
               <div className="flex flex-col gap-3">
                 <h2 className="text-body-lg leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
                   {t("ledger.title")}
