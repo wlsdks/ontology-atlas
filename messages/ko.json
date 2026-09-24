@@ -33,6 +33,15 @@
     "home": "홈으로",
     "previous": "이전 화면"
   },
+  "routeError": {
+    "label": "오류",
+    "title": "이 화면을 그리다 멈췄어요",
+    "body": "잠깐의 문제일 수 있어요. 다시 시도하거나 홈으로 돌아가세요.",
+    "bodyWithId": "잠깐의 문제일 수 있어요. 다시 시도하거나 홈으로 돌아가세요. 계속되면 아래 오류 ID와 함께 알려 주세요.",
+    "retry": "다시 시도",
+    "home": "홈으로",
+    "errorId": "오류 ID"
+  },
   "nav": {
     "skipToContent": "메인 콘텐츠로 건너뛰기",
     "surfaceLoading": "화면을 불러오는 중이에요.",
@@ -4499,7 +4508,9 @@
     "changelogLead": "무엇이 언제 바뀌었는지. 최신이 위예요.",
     "guideLead": "폴더 하나가 지도가 되고, 그 지도를 AI 에이전트가 읽기까지.",
     "guideUnknownSegment": "요청하신 장을 찾지 못했어요. 대신 가이드의 첫 장을 보여드려요. 차례에서 원하는 장을 고를 수 있어요.",
+    "bodyLanguageNote": "본문은 영어 원문 그대로 보여 드려요.",
     "truncatedNote": "이전 항목 {count}개는 접어 뒀어요. 이 목록은 최근 것만 보여줘요.",
+    "emptyBody": "이 빌드에는 이 문서가 실려 있지 않아요. 원문은 저장소에서 읽을 수 있어요.",
     "readFullSource": "저장소에서 전문 읽기",
     "guidePages": {
       "whatIsAtlas": "이게 무엇인가",

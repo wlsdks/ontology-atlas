@@ -8,11 +8,12 @@ import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Languages } from 'lucide-react';
 import { GithubMark } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import {
   extractEntries,
+  separateCategoryLines,
   normalizeHeadingKey,
   readVaultDoc,
   readVaultDocOmittedSections,
@@ -112,6 +113,15 @@ export function GatewayDocPage({
   entryNav = false,
 }: GatewayDocPageProps) {
   const t = useTranslations('gatewayNav');
+  /*
+   * The body is the English source document on every locale (authored prose is English, and
+   * the guide and changelog are vault documents, not translated copies). Under a Korean title
+   * that read as a broken translation: /ko/guide had 0 Hangul in 2,023 body characters
+   * (measured 2026-09-25). So the page says so in one line, and the article carries
+   * `lang="en"` so a screen reader switches voice instead of reading English with a Korean one.
+   */
+  const locale = useLocale();
+  const bodyIsForeign = locale !== 'en';
 
   const { body, omittedSections } = useMemo(() => {
     const raw = readVaultDoc(slug);
@@ -129,7 +139,7 @@ export function GatewayDocPage({
      * nothing is stripped.
      */
     const withoutPreamble = entryNav
-      ? withoutH1.replace(/^(?:>.*(?:\r?\n)+)+(?:---(?:\r?\n)+)?/, '')
+      ? separateCategoryLines(withoutH1.replace(/^(?:>.*(?:\r?\n)+)+(?:---(?:\r?\n)+)?/, ''))
       : withoutH1;
     /*
      * The folded-section count is the sum of two truncations — at bundle time (the full text was too
@@ -213,15 +223,38 @@ export function GatewayDocPage({
           {/*
            * Two columns only when there is a table of contents; otherwise one centred column.
            *
-           * ⚠️ The table of contents **folds below `lg`**. Keeping the sidebar at narrow widths lets
+           * ⚠️ The table of contents **folds below `xl`**. Keeping the sidebar at narrow widths lets
            * the list take width from the prose column, so what someone came to read becomes unreadable.
            * The chrome's "guide" chip stands in for the folded slot — the way back to the guide
            * survives without the list.
            */}
+          {/*
+           * ⚠️ **The grid waits for `xl`, and its tracks give the prose its measure first**
+           * (2026-09-25). It used to turn on at `lg` as `15rem · 1fr · 15rem` with a 48px gap.
+           * The gateway gutter is 200px at every width, so at 1040 the page column is 640px and
+           * that grid left the article **64px** (a Korean title broke two syllables per line,
+           * the changelog grew to 133,603px); at 1280 it left 304px.
+           *
+           * The tracks now read `minmax(11.5rem, 1fr) · minmax(0, measure) · minmax(0, 1fr)`: the
+           * middle track grows to the full measure before either side gets a pixel, and the two
+           * `1fr` sides split what is left equally, so the text still sits on the true centre
+           * whenever there is room (1512: 629px measure, both sides 209px). When there is not
+           * (1280), the right side collapses to zero first and the left keeps its 11.5rem, so the
+           * table of contents survives beside a full measure (880 = 184 + 32 + 629 + 32 + 3).
+           * The left minimum is `clamp(9rem, 100% - measure - 4rem, 11.5rem)`, not a flat 11.5rem:
+           * CI resolved the guide's measure to 660px, and a flat 184px left the article 632px at
+           * 1280. The list now gives up to 40px before the measure does.
+           * The empty right cell that used to reserve the centre is gone: an empty `1fr` track
+           * does that without an element. The list itself sits at the **start** of its track, on
+           * the gutter: at 1920 an end-aligned list began at x=381 while the brand above it began
+           * at 200, so its start line moved with the viewport; on the gutter it shares the
+           * brand's line at every width (review of PR #1839). Below `xl` the column is a single centred flow and the chapter picker
+           * stands in for the list.
+           */}
           <div
             className={cn(
               sidebar || entryNav
-                ? 'lg:grid lg:grid-cols-[15rem_minmax(0,1fr)_15rem] lg:gap-12'
+                ? 'xl:grid xl:grid-cols-[minmax(clamp(9rem,calc(100%_-_var(--measure-prose)_-_4rem),11.5rem),1fr)_minmax(0,var(--measure-prose))_minmax(0,1fr)] xl:gap-x-8'
                 : 'flex flex-col items-center',
             )}
           >
@@ -241,7 +274,7 @@ export function GatewayDocPage({
               <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">{notice}</p>
             </aside>
           ) : null}
-          <header className="w-full max-w-[var(--measure-prose)]">
+          <header className="w-full max-w-[var(--measure-prose)] [word-break:keep-all]">
             <h1
               data-testid="gateway-doc-title"
               /*
@@ -263,18 +296,53 @@ export function GatewayDocPage({
                 {lead}
               </p>
             ) : null}
+            {bodyIsForeign ? (
+              <p
+                data-testid="gateway-doc-language-note"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-label leading-label text-[color:var(--color-text-tertiary)]"
+              >
+                <Languages size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
+                {t('bodyLanguageNote')}
+              </p>
+            ) : null}
           </header>
 
           {sidebar ? <GuideChapterPicker activeSegment={activeSegment} /> : null}
 
-          <article
-            data-testid="gateway-doc-body"
-            className="mt-10 w-full max-w-[var(--measure-prose)]"
-          >
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-              {body}
-            </ReactMarkdown>
-          </article>
+          {/*
+           * `[&>*:first-child]:mt-0` — the first block sits exactly `mt-10` under the header on
+           * both pages. The changelog opens with an `h2` (`mt-12`) and the guide with a `p`
+           * (`my-4`); the article's own margin stacked with either, so the changelog's first
+           * entry floated 88px below its header against the guide's 56px (measured 2026-09-25).
+           */}
+          {/*
+           * **The empty state.** The body is bundled data read synchronously, so there is no
+           * loading moment to design; the one way it goes wrong is a build that did not carry the
+           * document (`readVaultDoc` returns null). An empty article under the title then read as
+           * a page that forgot its content. It says so in one line and names where the text is,
+           * in the same panel grammar as the truncation notice.
+           */}
+          {body.trim() === '' ? (
+            <aside
+              data-testid="gateway-doc-empty"
+              className="mt-10 w-full max-w-[var(--measure-prose)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
+            >
+              <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
+                {t('emptyBody')}
+              </p>
+              <ReadFullSourceLink sourcePath={sourcePath} label={t('readFullSource')} />
+            </aside>
+          ) : (
+            <article
+              data-testid="gateway-doc-body"
+              lang={bodyIsForeign ? 'en' : undefined}
+              className="mt-10 w-full max-w-[var(--measure-prose)] [&>*:first-child]:mt-0"
+            >
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                {body}
+              </ReactMarkdown>
+            </article>
+          )}
 
           {/*
            * The two reading destinations the chrome folds at narrow widths belong here. These two
@@ -304,39 +372,29 @@ export function GatewayDocPage({
               <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
                 {t('truncatedNote', { count: omittedSections })}
               </p>
-              <a
-                href={`${GITHUB_REPO_URL}/blob/main/${sourcePath}`}
-                target="_blank"
-                rel="noreferrer noopener"
-                className={controlClass({ shape: "link", tone: "secondary", className: "mt-3 gap-2 text-body leading-body underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]" })}
-              >
-                <GithubMark size={13} aria-hidden />
-                {t('readFullSource')}
-              </a>
+              <ReadFullSourceLink sourcePath={sourcePath} label={t('readFullSource')} />
             </aside>
           ) : null}
             </div>
-            {/*
-             * **The empty column on the right** — the same width as the sidebar (15rem).
-             *
-             * Without it the body column takes everything right of the sidebar, and centring inside
-             * that still leaves it **pushed right relative to the screen**. Left-aligning instead
-             * produces the skew the owner pointed out twice (measured at 1894: body 480–1150, 744px
-             * empty on the right).
-             *
-             * Reserving a slot of the same width on the right puts the centre column at the true
-             * centre of the page column, and since the page column is itself `mx-auto` the result is
-             * **the true centre of the screen**. The sidebar then floats in that text's left margin,
-             * which is right: a table of contents guides, it does not compete with the body for width.
-             *
-             * It gets neither `aria-hidden` nor a `role` — an empty grid cell puts nothing into the
-             * accessibility tree in the first place.
-             */}
-            {sidebar || entryNav ? <div className="hidden lg:block" /> : null}
           </div>
         </div>
       </main>
     </div>
+  );
+}
+
+/** "Read the full file on GitHub" — one link shared by the truncation and empty notices. */
+function ReadFullSourceLink({ sourcePath, label }: { sourcePath: string; label: string }) {
+  return (
+    <a
+      href={`${GITHUB_REPO_URL}/blob/main/${sourcePath}`}
+      target="_blank"
+      rel="noreferrer noopener"
+      className={controlClass({ shape: "link", tone: "secondary", className: "mt-3 gap-2 text-body leading-body underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]" })}
+    >
+      <GithubMark size={13} aria-hidden />
+      {label}
+    </a>
   );
 }
 
@@ -553,7 +611,7 @@ const PROSE_COMPONENTS: Components = {
 /**
  * The guide's chapter list — **one copy shared by two widths.**
  *
- * At `lg` and above the left table of contents (`GuideSidebar`) calls this; below that, the
+ * At `xl` and above the left table of contents (`GuideSidebar`) calls this; below that, the
  * disclosure under the title (`GuideChapterPicker`) does. Writing the list twice means only one side
  * grows when a chapter is added.
  */
@@ -661,7 +719,7 @@ function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
     <nav
       aria-label={t('guideNavLabel')}
       data-testid="guide-sidebar"
-      className="hidden lg:block"
+      className="hidden w-full max-w-[15rem] justify-self-start xl:block"
     >
       <div className="sticky top-24">
         <p className="mb-3 px-2.5 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
@@ -674,7 +732,7 @@ function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
 }
 
 /**
- * The table of contents below `lg` — a disclosure directly under the title.
+ * The table of contents below `xl` — a disclosure directly under the title.
  *
  * ## Why it is needed (measured 2026-08-07)
  *
@@ -707,7 +765,7 @@ function GuideChapterPicker({ activeSegment }: { activeSegment?: string }) {
   return (
     <details
       data-testid="guide-chapter-picker"
-      className="group mt-6 w-full max-w-[var(--measure-prose)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] lg:hidden"
+      className="group mt-6 w-full max-w-[var(--measure-prose)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] xl:hidden"
     >
       <summary
         data-testid="guide-chapter-picker-summary"
@@ -751,12 +809,16 @@ function EntrySidebar({ entries }: { entries: DocEntry[] }) {
   const t = useTranslations('gatewayNav');
   if (entries.length === 0) return null;
   return (
-    <nav aria-label={t('entryNavLabel')} data-testid="entry-sidebar" className="hidden lg:block">
+    <nav
+      aria-label={t('entryNavLabel')}
+      data-testid="entry-sidebar"
+      className="hidden w-full max-w-[15rem] justify-self-start xl:block"
+    >
       <div className="sticky top-24 max-h-[calc(100svh-9rem)] overflow-y-auto pr-1">
         <p className="mb-3 px-2.5 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
           {t('entryNavLabel')}
         </p>
-        <ul className="flex flex-col gap-0.5">
+        <ul lang="en" className="flex flex-col gap-0.5">
           {entries.map((entry) => (
             <li key={entry.id}>
               <a
