@@ -12,11 +12,12 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { cn } from '@/shared/lib/cn';
 import { useArrivalMemory } from '@/shared/lib/route-arrival-memory';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip, Dialog, InfoHint } from '@/shared/ui';
+import { Chip, Dialog, EmptyState, InfoHint } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
 import { isGuardedRuntime } from '@/features/acp-session';
+import { AGENT_CLIENTS } from '@/entities/vault-session';
 import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
 
 import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primitives';
@@ -195,35 +196,60 @@ export function AcpRuntimeSettings({
   // A browser cannot spawn a process — impossible in principle, so the reason and
   // the place to go are stated together (`.claude/rules/surfaces.md`).
   if (!isAcpBridgeAvailable()) {
+    /*
+     * ⚠️ **An empty state, not a settings row** (2026-09-25, design polish). This was one
+     * `SettingsRow`: a 110-character caption running as a single 796px line at 11px, and the
+     * only way on an 11px text link to MCP. It is the whole content of the tab on the web, so it
+     * takes the page's own empty-state shape: a title that says why, two lines that say what the
+     * app changes, and the two ways on as real buttons. No icon tile: `EmptyState` indents the
+     * text beside it but not the actions, which would give the card two start lines — the app first, because it is the path
+     * this tab is about; MCP second, because it works from here today.
+     */
     return (
-      <SettingsGroup>
-        <SettingsRow
-          label={t('webLabel')}
-          caption={t('webCaption')}
-          testId="app-settings-runtimes-web"
-          /*
-           * ⚠️ **A link, because the place it names is no longer on this screen**
-           * (2026-09-05). The caption used to say "the «MCP connection» section on this
-           * screen", and a section name is guidance only while that section is here to be
-           * scrolled to. MCP became its own destination, so the row carries the way there
-           * instead of a name — the same rule that forbids a degradation card from stating
-           * a reason with nowhere to go.
-           */
-          control={
-            <Link
-              href={DESTINATION_HREF.mcp}
-              data-testid="app-settings-runtimes-mcp-link"
-              className={controlClass({
-                shape: 'link',
-                tone: 'accent',
-                className: 'font-[var(--font-weight-signature)]',
-              })}
-            >
-              {t('webMcpLink')}
-            </Link>
+      <div data-testid="app-settings-runtimes-web" className="min-w-0">
+        <EmptyState
+          tone="solid"
+          title={t('webLabel')}
+          description={<span className="block max-w-2xl break-keep">{t('webCaption')}</span>}
+          action={
+            <>
+              <Link
+                href="/download/"
+                data-testid="app-settings-runtimes-get-app"
+                className={controlClass({
+                  shape: 'chip',
+                  size: 'lg',
+                  tone: 'accentOnTint',
+                  className:
+                    'border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)]',
+                })}
+              >
+                {t('webGetApp')}
+              </Link>
+              {/*
+               * ⚠️ **A link, because the place it names is no longer on this screen**
+               * (2026-09-05). The caption used to say "the «MCP connection» section on this
+               * screen", and a section name is guidance only while that section is here to be
+               * scrolled to. MCP became its own destination, so the card carries the way there
+               * instead of a name — the same rule that forbids a degradation card from stating
+               * a reason with nowhere to go.
+               */}
+              <Link
+                href={DESTINATION_HREF.mcp}
+                data-testid="app-settings-runtimes-mcp-link"
+                className={controlClass({
+                  shape: 'chip',
+                  size: 'lg',
+                  tone: 'secondary',
+                  hoverInk: 'strong',
+                })}
+              >
+                {t('webMcpLink')}
+              </Link>
+            </>
           }
         />
-      </SettingsGroup>
+      </div>
     );
   }
 
@@ -597,6 +623,21 @@ function isRuntimeUsable(state: AcpRuntimeStatus['state']): boolean {
   return state === 'ready' || state === 'login-unknown';
 }
 
+/**
+ * **The same product wears the same mark on both tabs** (2026-09-25).
+ *
+ * The runtime list takes its mark from the registry, and a registry entry without one drew an
+ * empty 32px tile — while the MCP tab one press away drew Claude Code, Codex and Cursor with their
+ * full brand tiles. Where the registry is silent and the MCP tab knows the product (its bundled
+ * mark is this runtime's own `/acp-icons/<id>.svg`), that mark and ink are used; anything else
+ * falls back to the row's monogram, never to a blank tile.
+ */
+function runtimeMark(runtime: AcpRuntimeStatus): { icon: string | null; ink: string | null } {
+  if (runtime.icon) return { icon: runtime.icon, ink: runtime.brandInk };
+  const client = AGENT_CLIENTS.find((entry) => entry.icon === `/acp-icons/${runtime.id}.svg`);
+  return client ? { icon: client.icon, ink: runtime.brandInk ?? client.brandInk } : { icon: null, ink: null };
+}
+
 function RuntimeRow({
   runtime,
   onOpenChat,
@@ -632,6 +673,7 @@ function RuntimeRow({
    * help. On the web there is neither a process nor a keychain to see, so it is absent.
    */
   const doctor = useAgentDoctor(runtime.id, onRuntimesChanged);
+  const mark = runtimeMark(runtime);
   const showDoctor = isGuardedRuntime(runtime.id, runtime.isolated) && isAgentDoctorAvailable();
 
   /*
@@ -658,10 +700,18 @@ function RuntimeRow({
               : undefined
         }
         testId={`app-settings-runtime-${runtime.id}`}
-        icon={runtime.icon}
-        iconInk={runtime.brandInk}
+        icon={mark.icon}
+        iconInk={mark.ink}
+        monogram={runtime.label}
         control={
-          /* Owner (2026-08-20): *"The buttons are so close together it feels cramped"* — the buttons are so close together it feels cramped. Three controls plus a status badge stand on one row, and at `gap-1.5` (6px) the eye cannot tell where one button ends. Widen by one step on the ramp. */
+          /* Owner (2026-08-20): *"The buttons are so close together it feels cramped"* — the buttons are so close together it feels cramped. Three controls plus a status badge stand on one row, and at `gap-1.5` (6px) the eye cannot tell where one button ends. Widen by one step on the ramp.
+
+             ⚠️ **Columns are read from the right** (2026-09-25, design polish). The cluster is
+             right-aligned, so the controls every row carries — the check and the state badge —
+             stand at the right end and the optional ones (open a chat, install guide) at the
+             left. In the other-tools dialog the check used to start at x=855 on one row and
+             x=778 on the next because the optional install link stood between it and the name;
+             now the check and the fixed-width badge share one edge down the whole list. */
         <span className="flex items-center gap-2">
             {/*
              * ⚠️ **The badge was revised three times and finally removed.** Worth recording:
@@ -712,7 +762,6 @@ function RuntimeRow({
              * opened a conversation**. Someone stuck on "the conversation will not
              * open at all" comes to this screen.
              */}
-            {showDoctor ? doctor.scanButton : null}
             {/*
              * ⚠️ Tools that only lacked a login were being offered 「Installation Method」 — to people who had already installed them. Different action, different sentence.
              */}
@@ -728,9 +777,11 @@ function RuntimeRow({
                    pressable. That it leaves the app is still said by the glyph (↗). */
                 className={controlClass({
                   shape: 'chip',
-                  /* The row's third control — the same step as the doctor chips beside it. */
-                  size: 'md',
-                  tone: 'muted',
+                  /* One size for every control on the row (2026-09-25): the label size used to
+                     step 12.5 → 11 across one row, so the smaller ones read as disabled. The
+                     primary is told apart by tone, not by type size. */
+                  size: 'lg',
+                  tone: 'secondary',
                   hoverInk: 'strong',
                   className: 'shrink-0',
                 })}
@@ -742,6 +793,7 @@ function RuntimeRow({
                 {t('installGuide')}
               </a>
             ) : null}
+            {showDoctor ? doctor.scanButton : null}
             <span
               data-runtime-state={runtime.state}
               /*
@@ -752,8 +804,10 @@ function RuntimeRow({
                */
               className={badgeClass({
                 shape: 'tag',
+                /* A fixed floor with the word centred, so the badges form one column down the
+                   list instead of ending wherever their word does (62px vs 53px, 2026-09-25). */
                 className: cn(
-                  'inline-flex items-center gap-1.5 py-0.5',
+                  'inline-flex min-w-18 items-center justify-center gap-1.5 py-0.5',
                   isReady ? READY_INK : NOT_READY_INK,
                 ),
               })}
@@ -770,7 +824,12 @@ function RuntimeRow({
           </span>
         }
       />
-      {showDoctor ? <div className="min-w-0 px-3 pb-2.5">{doctor.result}</div> : null}
+      {/* Only when there is a result. The wrapper used to be drawn around a null result, so every
+          guarded row carried an empty 10px strip under it: the card's content sat 16px from the
+          top and 26px from the bottom (measured 2026-09-25). */}
+      {showDoctor && doctor.result ? (
+        <div className="min-w-0 px-3 pb-2.5">{doctor.result}</div>
+      ) : null}
     </div>
   );
 }

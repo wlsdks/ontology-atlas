@@ -272,16 +272,21 @@ export function useAgentDoctor(
        * debris rather than as the row's second action. `md` shares `lg`'s 32px height and drops only
        * one text step — equal height, real hierarchy, which is what the dimensional-regularity rule
        * asks for.
+       *
+       * ⚠️ **Hierarchy by tone, not by type size** (2026-09-25). Measured on the agents row, the
+       * one step down was 11px text in the quaternary ink next to 12.5px — it read as disabled,
+       * not as secondary. `lg` puts both on one label size; the chat chip beside it keeps the
+       * indigo, so the order of the two is still said, now by colour.
        */
-      size="md"
-      tone="muted"
+      size="lg"
+      tone="secondary"
       hoverInk="strong"
       data-testid="agent-doctor-scan"
       disabled={busy !== null}
       onClick={() => void run()}
       className="shrink-0"
     >
-      <Stethoscope size={ICON_SIZE.sm} aria-hidden />
+      <Stethoscope size={ICON_SIZE.md} aria-hidden />
       {busy === 'scan' ? t('scanning') : t('scan')}
     </Chip>
     {/*
@@ -295,15 +300,15 @@ export function useAgentDoctor(
     {checks && !prerequisiteBlocked ? (
       <Chip
         /* Same row as the scan chip above, so the same step. */
-        size="md"
-        tone="muted"
+        size="lg"
+        tone="secondary"
         hoverInk="strong"
         data-testid="agent-doctor-reset"
         disabled={busy !== null}
         onClick={() => void reset()}
         className="ml-1.5 shrink-0"
       >
-        <RotateCcw size={ICON_SIZE.sm} aria-hidden />
+        <RotateCcw size={ICON_SIZE.md} aria-hidden />
         {busy === 'reset' ? t('resetting') : t('reset')}
       </Chip>
     ) : null}

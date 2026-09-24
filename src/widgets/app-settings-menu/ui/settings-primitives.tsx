@@ -163,6 +163,7 @@ export function SettingsRow({
   testId,
   icon,
   iconInk,
+  monogram,
 }: {
   label: string;
   caption?: string;
@@ -184,6 +185,12 @@ export function SettingsRow({
    * colour is invented for a brand we have not verified.
    */
   iconInk?: string | null;
+  /**
+   * The name whose first letter stands in the mark slot when there is no drawing (2026-09-25).
+   * An empty tile beside a product name read as a broken image; a letter keeps the slot doing
+   * its job, which is to be found before the name is read.
+   */
+  monogram?: string;
 }) {
   /*
    * **A row with a mark is naturally taller** — no new axis is invented for
@@ -216,7 +223,23 @@ export function SettingsRow({
       )}
       data-testid={testId}
     >
-      {hasMarkSlot ? <VendorMark src={icon ?? null} ink={iconInk ?? null} /> : null}
+      {hasMarkSlot ? (
+        !icon && monogram?.trim() ? (
+          <span
+            aria-hidden
+            data-vendor-mark="monogram"
+            /* The tile is `VendorMark`'s empty plate (same size, radius, edge); only the letter
+               inside is new, so the two stay one object rather than a badge beside a mark. */
+            className="flex size-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)]"
+          >
+            <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+              {Array.from(monogram.trim())[0]?.toUpperCase()}
+            </span>
+          </span>
+        ) : (
+          <VendorMark src={icon ?? null} ink={iconInk ?? null} />
+        )
+      ) : null}
       <div className="min-w-0 flex-1 basis-40">
         <p className="text-body text-[color:var(--color-text-primary)]">{label}</p>
         {caption ? (

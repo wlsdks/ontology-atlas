@@ -29,7 +29,7 @@ import {
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
 } from '@/features/docs-vault-local';
-import { SETTINGS_SECTION_LABEL, SettingsGroup, SettingsRow } from './settings-primitives';
+import { DETAIL_TOGGLE_CHIP, SETTINGS_SECTION_LABEL, SettingsGroup, SettingsRow } from './settings-primitives';
 import { formatAgentPostChangeSyncPacket } from '@/entities/knowledge-graph';
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { AgentClientId } from '@/entities/vault-session';
@@ -898,14 +898,17 @@ export function VaultAgentSetupPanel({
                     : t('agentSetup.rootSummaryMissing')}
                 </p>
               </InfoHint>
+              {/* The same control as the agents tab's 「check again」 in the same slot
+                  (2026-09-25): a 24px/9.5px chip here made the heading's action visibly shrink
+                  when the tab changed, and 9.5px is below this sheet's type floor. */}
               <Chip
-                size="sm"
+                size="lg"
                 tone="secondary"
                 data-testid="agent-setup-verify-open"
                 onClick={() => setVerifyOpen(true)}
-                className={NEUTRAL_COPY_CHIP}
+                className={`${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`}
               >
-                <CheckCircle2 size={ICON_SIZE.sm} aria-hidden />
+                <CheckCircle2 size={ICON_SIZE.md} aria-hidden />
                 {tc('step3Title')}
               </Chip>
             </>
@@ -1003,6 +1006,9 @@ export function VaultAgentSetupPanel({
             ) : null}
           </p>
 
+          {/* Restarting "the tool you just connected" means nothing while no file exists yet, so
+              the step waits for the first one (2026-09-25). */}
+          {agentSetupReadyCount > 0 ? (
           <section data-testid="agent-setup-step-2" className="mt-4">
             <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               {tc('step2Title')}
@@ -1011,6 +1017,7 @@ export function VaultAgentSetupPanel({
               {tc('step2Desc')}
             </p>
           </section>
+          ) : null}
 
           {/*
             ⚠️ **A section may not be named after the dialog it is in** (2026-09-20). This heading
@@ -1044,7 +1051,10 @@ export function VaultAgentSetupPanel({
                            "N/M connection files ready", which the dialog's own subtitle says
                            130px above it; what it adds is where the missing ones come from.
                         */
-                        t('agentSetup.connectionCheckPending')}
+                        /* 「The rest」 needs something before it; at zero there is none. */
+                        agentSetupReadyCount === 0
+                        ? t('agentSetup.connectionCheckNone')
+                        : t('agentSetup.connectionCheckPending')}
                   </span>
                 </div>
                 <dl className="grid gap-1 px-2.5 py-2">
