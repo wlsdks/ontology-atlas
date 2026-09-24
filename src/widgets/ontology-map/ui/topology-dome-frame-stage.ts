@@ -6,6 +6,7 @@ import {
   CAMERA_TRANSITION_MIN_MS,
   cameraTransitionDurationMs,
   easeInOutCubic,
+  easeOutCubic,
   type CameraKeyframe,
 } from "../model/camera-easing";
 import {
@@ -25,7 +26,9 @@ import {
   DOME_TIER_LAG_DECAY_PER_MS,
   domeEgoWorldBounds,
   domeFocusYaw,
+  domeNearestYawTurn,
   domeWorldBounds,
+  DOME_FLY_MS,
   ORBIT_SMOOTH_TAU_MS,
   ORBIT_SNAP_ARRIVE_RAD,
   orbitSnapTauMs,
@@ -49,6 +52,12 @@ import { overviewBoundsFor } from "./topology-overview-fit";
 import { radiusForKind, type TopologyWorld } from "./topology-world";
 
 type SourceRef<T> = { current: T; };
+
+/**
+ * How far inside the free canvas a nudged node lands (CSS px) — enough for its disc, its
+ * selection ring and the start of its name to clear the panel edge.
+ */
+const DOME_NUDGE_MARGIN_PX = 64;
 
 export interface DomeFrameStageSources {
   view3dRef: SourceRef<boolean>;
@@ -81,7 +90,7 @@ export interface DomeFrameStageSources {
   lastActiveMsRef: SourceRef<number>;
   ambientSleepDelayRef: SourceRef<number | undefined>;
   viewportRef: SourceRef<{ width: number; height: number; dpr: number; }>;
-  beginCameraTween: (target: CameraTarget, durationOverrideMs?: number) => void;
+  beginCameraTween: (target: CameraTarget, durationOverrideMs?: number, ease?: "out") => void;
   cameraTokens: (tokens: OntologyMapTokens) => OntologyMapTokens;
   domeFitTarget: (
     model: DomeModel,
@@ -234,6 +243,20 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               return false;
             } else {
               domeModelBuildRef.current = null;
+              /*
+               * **The structure stays where it stood** (2026-09-25). A selection opens its
+               * ancestors in the flat layout, which rebuilds the world, and the model's anchor
+               * (`centerX/Y`, `unit`) is derived from that flat layout — so the whole 3D view
+               * slid under the pointer after a click, and the next click landed on a
+               * different node. The selection reframe used to hide the slide by moving the
+               * camera anyway; now that a click only selects, a rebuild in the same
+               * arrangement keeps the anchor it was drawn at.
+               */
+              if (pending.build.model.arrangement === dome.model.arrangement) {
+                pending.build.model.centerX = dome.model.centerX;
+                pending.build.model.centerY = dome.model.centerY;
+                pending.build.model.unit = dome.model.unit;
+              }
               beginDomeMorph(dome, pending.build.model, now, reducedMotionRef.current ? 0 : DOME_POSE_MS);
               dome.drawnBounds = null;
               dome.drag = null;
@@ -463,6 +486,148 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             }
           }
         }
+        /*
+         * Fly-to (2026-09-25, `DOME_FLY_MS`): the explicit gesture that moves the view.
+         * A single click only selects; a double-click or Enter writes `flyRequest` and
+         * this frame carries that node to the front and frames its family, on one
+         * ease-out clock for pose and camera. Esc / Home write a null request, which
+         * flies back to the exact view the first fly-to left from (or, with no flight
+         * in effect, to the whole structure at the current pose). Gestures win, as
+         * with every programmatic move.
+         */
+        if (
+          dome.flyRequest !== null &&
+          domeTargetOn &&
+          !dome.orbiting &&
+          pointerMachineRef.current.phase !== "dragging"
+        ) {
+          const request = dome.flyRequest;
+          dome.flyRequest = null;
+          const { width: vw, height: vh } = viewportRef.current;
+          const sameTarget = (a: CameraTarget, b: CameraTarget) =>
+            Math.abs(a.tx - b.tx) < 0.01 && Math.abs(a.ty - b.ty) < 0.01 && Math.abs(a.tscale - b.tscale) < 1e-4;
+          if (request.unnudge === true) {
+            // The selection cleared: undo the click's nudge if the view is still where it put it.
+            const back = dome.nudgeReturn;
+            dome.nudgeReturn = null;
+            if (back !== null && dome.flight === null && sameTarget(cameraTargetRef.current, back.landed)) {
+              const target = { ...back.before };
+              cameraTargetRef.current = target;
+              userDrivenCameraRef.current = false;
+              dampingRef.current = tokens.cameraDampingDefault;
+              cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+              beginCameraTween(target);
+              lastActiveMsRef.current = now;
+            }
+          } else if (request.nudge === true && request.slug !== null && vw > 0 && vh > 0) {
+            /*
+             * The click's one allowed move (see `DomeRuntime.flyRequest`): slide sideways
+             * until the selected node clears the panels, and nothing else.
+             */
+            const coord = dome.model.coords.get(request.slug);
+            if (coord !== undefined) {
+              const at = projectDomeCoord(dome.model, coord, dome.yaw, dome.pitch);
+              const measured = cameraTokens(tokens);
+              const current = cameraTargetRef.current;
+              const sx = (at.wx - current.tx) * current.tscale + vw / 2;
+              const lo = measured.safeInsetLeft + DOME_NUDGE_MARGIN_PX;
+              const hi = vw - measured.safeInsetRight - DOME_NUDGE_MARGIN_PX;
+              const shift = hi <= lo ? 0 : sx > hi ? sx - hi : sx < lo ? sx - lo : 0;
+              if (Math.abs(shift) > 0.5) {
+                const target = { tx: current.tx + shift / current.tscale, ty: current.ty, tscale: current.tscale };
+                // Chained nudges keep the first view as the one a deselect returns to.
+                const before =
+                  dome.nudgeReturn !== null && sameTarget(current, dome.nudgeReturn.landed)
+                    ? dome.nudgeReturn.before
+                    : { ...current };
+                dome.nudgeReturn = { before, landed: { ...target } };
+                cameraTargetRef.current = target;
+                userDrivenCameraRef.current = false;
+                dampingRef.current = tokens.cameraDampingDefault;
+                cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+                beginCameraTween(target);
+                lastActiveMsRef.current = now;
+              }
+            }
+          } else if (vw > 0 && vh > 0) {
+            dome.spinArmed = false;
+            commitDomeEntrySweep(dome);
+            dome.yawVel = 0;
+            dome.pitchVel = 0;
+            dome.yawSnap = null;
+            const flyCamera = (target: CameraTarget) => {
+              cameraTargetRef.current = target;
+              userDrivenCameraRef.current = false;
+              dampingRef.current = tokens.cameraDampingDefault;
+              cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+              beginCameraTween(target, DOME_FLY_MS, "out");
+            };
+            const flyer = dome;
+            const flyPose = (targetYaw: number, targetPitch: number) => {
+              flyer.poseTween = {
+                startYaw: flyer.yaw,
+                startPitch: flyer.pitch,
+                targetYaw,
+                targetPitch,
+                startMs: now,
+                durationMs: DOME_FLY_MS,
+                ease: "out",
+              };
+            };
+            if (request.slug === null) {
+              const back = dome.flight;
+              dome.flight = null;
+              if (back !== null) {
+                flyPose(domeNearestYawTurn(back.returnYaw, dome.yaw), clampDomePitch(back.returnPitch));
+                flyCamera({ ...back.returnCamera });
+              } else {
+                const target = domeFitTarget(dome.model, dome.yaw, dome.pitch, vw, vh, tokens);
+                if (target !== null) {
+                  dome.fitScale = target.tscale;
+                  flyCamera(target);
+                }
+              }
+            } else {
+              const coord = dome.model.coords.get(request.slug);
+              if (coord !== undefined) {
+                const targetYaw = domeFocusYaw(coord, dome.yaw);
+                const targetPitch = clampDomePitch(dome.pitch);
+                const egoIds = [request.slug, ...(world.neighborMap.get(request.slug) ?? [])];
+                const b = domeEgoWorldBounds(dome.model, egoIds, targetYaw, targetPitch);
+                if (b !== null) {
+                  const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+                  const anchorAtTarget = projectDomeCoord(dome.model, coord, targetYaw, targetPitch);
+                  const target = computeDomeFocusCameraTarget(
+                    b,
+                    cameraTokens(tokens),
+                    vw,
+                    vh,
+                    overviewEntryScale,
+                    dome.fitScale,
+                    { x: anchorAtTarget.wx, y: anchorAtTarget.wy },
+                  );
+                  // The first fly-to remembers where the reader was; a second one keeps
+                  // that memory, so Esc always lands on the view they chose.
+                  dome.flight = {
+                    slug: request.slug,
+                    returnYaw: dome.flight?.returnYaw ?? dome.yaw,
+                    returnPitch: dome.flight?.returnPitch ?? dome.pitch,
+                    // A nudge before the flight is the click's, not the reader's: return past it.
+                    returnCamera:
+                      dome.flight?.returnCamera ??
+                      (dome.nudgeReturn !== null && sameTarget(cameraTargetRef.current, dome.nudgeReturn.landed)
+                        ? { ...dome.nudgeReturn.before }
+                        : { ...cameraTargetRef.current }),
+                  };
+                  dome.nudgeReturn = null;
+                  flyPose(targetYaw, targetPitch);
+                  flyCamera(target);
+                }
+              }
+            }
+            lastActiveMsRef.current = now;
+          }
+        }
         // Programmatic pose moves (reset, selection reframe). If an orbit
         // drag starts, the gesture wins and continues from the current pose.
         const pose = dome.poseTween;
@@ -476,7 +641,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               dome.pitch = pose.targetPitch;
               dome.poseTween = null;
             } else {
-              const e = easeInOutCubic(t);
+              const e = pose.ease === "out" ? easeOutCubic(t) : easeInOutCubic(t);
               const prevPoseYaw = dome.yaw;
               dome.yaw = pose.startYaw + (pose.targetYaw - pose.startYaw) * e;
               dome.pitch = pose.startPitch + (pose.targetPitch - pose.startPitch) * e;

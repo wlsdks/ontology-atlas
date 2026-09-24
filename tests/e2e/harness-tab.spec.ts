@@ -1007,6 +1007,11 @@ test.describe("하네스 탭", () => {
     await expect(nodes).toHaveCount(13);
     await nodes.first().focus();
     for(const node of await nodes.all()){
+      /* The loop card's own hint button sits between the told and gated bands in reading order;
+         it is a real stop, so the walk steps over it rather than pretending it is not there. */
+      for (let guard = 0; guard < 2 && !(await node.evaluate((el) => el === document.activeElement)); guard += 1) {
+        await page.keyboard.press('Tab');
+      }
       await expect(node).toBeFocused();
       await expect.poll(()=>node.evaluate(el=>{
         const box=el.getBoundingClientRect();const bar=document.querySelector('[data-tabbar="primary"]')?.getBoundingClientRect();

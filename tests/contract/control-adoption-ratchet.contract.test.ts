@@ -1106,7 +1106,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // button-styled Link to Map. The destination count and the verified registration both fall by one.
 // 2026-09-11 (slice U2): the Library's blocked steps gained a door to `/agents` —
 // `AgentDoor` is one `<Link>` through `buttonVariants`, so `Link` 18→19.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 19, a: 8 };
+// 2026-09-25: Automations' "Get the app" and "Open Library check history" became standard
+// buttons (primary, ghost sm) instead of text links, so `Link` 19→21.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 21, a: 8 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1180,6 +1182,20 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     claim: 'standard-button',
     proof: 'buttonVariants',
     why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
+  },
+  {
+    file: 'src/views/automations/ui/AutomationsPage.tsx',
+    count: 2,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'Two navigating actions on Automations (2026-09-25). "Get the app" is the app-required ' +
+      "stage's one primary action and must match the empty lane's `<Button>` primary " +
+      "(`buttonVariants({ variant: \"primary\" })`); \"Open Library check history\" sits in the " +
+      "lane header beside the outline `<Button>` CTA as `buttonVariants({ variant: \"ghost\", " +
+      'size: "sm" })`. As 11-12.5px `shape: "link"` text they read as captions, not actions. ' +
+      'Both are `<Link>` because they navigate, and `control-class.ts` does not replace ' +
+      'standard buttons.',
   },
   {
     file: 'src/views/library/ui/parts/AgentDoor.tsx',
@@ -1307,9 +1323,11 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // 26 → 27 (2026-09-11, slice U2): `AgentDoor`, the one control that follows each of the
 // Library's agent-availability sentences. Registered rather than moved, for the reason its
 // row states — it is the standard-button shape the value layer itself yields.
-const BASELINE_ANCHOR_REGISTERED = 27;
+// 27 → 29 (2026-09-25): Automations' two navigating actions, registered for the reason their
+// row states — the standard-button shape, at the two tags a navigating button needs.
+const BASELINE_ANCHOR_REGISTERED = 29;
 
-/** **Only this number may fall.** The current anchor total (28) minus registered (28). */
+/** **Only this number may fall.** The current anchor total (29) minus registered (29). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

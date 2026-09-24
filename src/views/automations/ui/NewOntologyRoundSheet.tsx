@@ -33,7 +33,9 @@ export function NewOntologyRoundSheet({ open, onClose, onSave }: NewOntologyRoun
   const [cadence, setCadence] = useState<RoundCadenceKey>("6h");
   const [time, setTime] = useState("09:00");
   const [focus, setFocus] = useState("");
-  const [name, setName] = useState("");
+  // The default name is a real, editable value: as a placeholder it rendered in placeholder
+  // grey, so nobody could tell it was already filled and would be saved.
+  const [name, setName] = useState(() => t("ontology.defaultName"));
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState(false);
 
@@ -72,16 +74,15 @@ export function NewOntologyRoundSheet({ open, onClose, onSave }: NewOntologyRoun
 
   return (
     <Dialog open={open} onClose={close} size="md" labelledBy={titleId} testId="ontology-automation-sheet" className="flex max-h-[calc(100dvh-var(--chrome-inset)*2)] flex-col gap-4 overflow-hidden break-keep">
+      {/* No eyebrow: "Ontology review" sat directly above "Schedule an ontology review". */}
       <header className="shrink-0">
-        <p className="text-body text-[color:var(--color-text-tertiary)]">
-          {t("ontology.eyebrow")}
-        </p>
-        <h2 id={titleId} className="mt-2 text-title leading-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        <h2 id={titleId} className="text-title leading-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t("ontology.sheet.title")}
         </h2>
       </header>
 
-      <DialogBody className="flex flex-col gap-5 pr-1">
+      {/* -mr-1 pr-1: the scrollbar keeps its gutter while the fields end on the footer's right line. */}
+      <DialogBody className="-mr-1 flex flex-col gap-5 pr-1">
       <fieldset disabled={saving} className="contents disabled:pointer-events-none">
       <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{t("ontology.sheet.description")}</p>
 
@@ -89,7 +90,6 @@ export function NewOntologyRoundSheet({ open, onClose, onSave }: NewOntologyRoun
         label={t("sheetName")}
         value={name}
         onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}
-        placeholder={t("ontology.defaultName")}
         data-testid="ontology-automation-name"
       />
 
