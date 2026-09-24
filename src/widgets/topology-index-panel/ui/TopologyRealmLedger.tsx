@@ -186,10 +186,17 @@ export function TopologyRealmLedger({
   };
 
   return (
+    /*
+     * Content height up to the slot (`max-h-full`), the same box rule as `TopologyIndexPanel`
+     * (2026-09-25). The two take turns in one slot through a crossfade; with INDEX ending under
+     * its last row and this ledger still `h-full`, entering a realm also jumped the surface from
+     * content height to the floor (463 to 1056px at 1920), so the swap read as a new panel rather
+     * than the same box changing its contents. A long subtree still scrolls inside the list.
+     */
     <aside
       aria-label={labels.label}
       data-testid="topology-realm-ledger"
-      className={`flex h-full flex-col rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
+      className={`flex max-h-full flex-col rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-width)" }}
     >
       {/* ── 1. Header ── caps eyebrow + title + one-line census + a quiet leave action. */}
