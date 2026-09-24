@@ -157,6 +157,25 @@ describe('HeroTypewriter', () => {
     for (let i = 1; i < heard.length; i += 1) expect(heard[i][0]).toBeGreaterThan(heard[i - 1][0]);
   });
 
+  /**
+   * **The late-tick defect** (2026-09-25). A typewriter that admits one character per timer
+   * callback is paced by the main thread, not the clock: on a 4× throttled CPU the Korean headline
+   * took 5.0s against its 1.8s budget. Here the clock jumps ten steps while no callback runs, then
+   * one callback arrives — it must show what the clock has earned, and only its newest character
+   * lands; the ones it caught up appear settled.
+   */
+  it('a late tick shows every character the clock has earned, and only the newest lands', () => {
+    render(<HeroTypewriter lines={LINES} start />);
+    const step = typingStepMs(TOTAL);
+    vi.setSystemTime(Date.now() + step * 10);
+    act(() => void vi.advanceTimersByTime(step / 2));
+    const on = chars().filter((c) => c.classList.contains('is-on'));
+    expect(on.length, 'one late tick admitted one character, not what the clock earned').toBeGreaterThanOrEqual(10);
+    const landing = on.filter((c) => c.classList.contains('gateway-type-land'));
+    expect(landing, 'several characters landed at once').toHaveLength(1);
+    expect(landing[0]).toBe(on.at(-1));
+  });
+
   it('under reduced motion the first report is already the whole sentence', () => {
     vi.stubGlobal(
       'matchMedia',
