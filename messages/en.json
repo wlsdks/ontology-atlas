@@ -2251,14 +2251,35 @@
         "visual": {
           "title": "Declared guidance across {count, number} domains",
           "fieldLabel": "Declared guidance by domain",
-          "mode": { "label": "Guidance reading mode", "diagram": "Diagram", "text": "Text" },
+          "mode": {
+            "label": "Guidance reading mode",
+            "diagram": "Diagram",
+            "text": "Text"
+          },
           "collection": {
             "eyebrow": "Guidance evidence",
             "none": "No entries in this group.",
-            "separate": { "action": "Separate {role}", "title": "Separately counted {role}", "description": "These declarations are counted separately because no path scope was extracted, or their scope matches every recorded domain. They are not added to a domain's scoped count." },
-            "outside": { "action": "Outside mapping", "title": "Outside the domain mapping", "description": "These scoped declarations do not match the ontology's recorded domain entrypoints. That does not establish broken code, universal scope, or an absent file." },
-            "unreached": { "action": "Unreached entrypoints", "title": "Unreached capability entrypoints", "description": "These capability entrypoints are not reached by a path-scoped instruction declaration. Separately counted instructions may still exist. This capability count is not an outside-declaration count." },
-            "findings": { "action": "Findings", "title": "All harness findings", "description": "These findings retain their original paths and messages. They are not attributed to a domain without a supporting join.", "independence": "Differences between Codex and Claude instruction trees can be informational; this list is not an instruction to make independent harnesses identical." }
+            "separate": {
+              "action": "Separate {role}",
+              "title": "Separately counted {role}",
+              "description": "These declarations are counted separately because no path scope was extracted, or their scope matches every recorded domain. They are not added to a domain's scoped count."
+            },
+            "outside": {
+              "action": "Outside mapping",
+              "title": "Outside the domain mapping",
+              "description": "These scoped declarations do not match the ontology's recorded domain entrypoints. That does not establish broken code, universal scope, or an absent file."
+            },
+            "unreached": {
+              "action": "Unreached entrypoints",
+              "title": "Unreached capability entrypoints",
+              "description": "These capability entrypoints are not reached by a path-scoped instruction declaration. Separately counted instructions may still exist. This capability count is not an outside-declaration count."
+            },
+            "findings": {
+              "action": "Findings",
+              "title": "All harness findings",
+              "description": "These findings retain their original paths and messages. They are not attributed to a domain without a supporting join.",
+              "independence": "Differences between Codex and Claude instruction trees can be informational; this list is not an instruction to make independent harnesses identical."
+            }
           },
           "inventoryCaption": "{guides, number} guide files · {checks, number} check items.",
           "diagramCaption": "Diagram numbers count scoped declarations attributed to each domain; they do not show execution results.",
@@ -5576,7 +5597,15 @@
       "guard": "Read-only · no ontology writes or meaning finalization",
       "emptyTitle": "Nothing is reviewing the ontology yet",
       "emptyDescription": "Schedule a read-only pass to find one evidence-backed improvement area at a time. The result waits for review before anything can change.",
-      "preview": { "title": "Schedule workbench", "empty": "Schedules appear here", "name": "Name", "cadence": "Cadence", "next": "Next run", "resultLabel": "Run result", "resultEmpty": "Available here after the first run" },
+      "preview": {
+        "title": "Schedule workbench",
+        "empty": "Schedules appear here",
+        "name": "Name",
+        "cadence": "Cadence",
+        "next": "Next run",
+        "resultLabel": "Run result",
+        "resultEmpty": "Available here after the first run"
+      },
       "defaultName": "Ontology refinement",
       "eyebrow": "ONTOLOGY REVIEW",
       "sheet": {
@@ -5601,7 +5630,15 @@
       "guard": "Existing Library scope · ontology writes refused",
       "emptyTitle": "No document round is scheduled",
       "emptyDescription": "Create a consistency or service round here, then open the Library for the full ledger and page review.",
-      "preview": { "title": "Schedule workbench", "empty": "Schedules appear here", "name": "Name", "cadence": "Cadence", "next": "Next run", "resultLabel": "Check history", "resultEmpty": "Review in the Library after the first run" },
+      "preview": {
+        "title": "Schedule workbench",
+        "empty": "Schedules appear here",
+        "name": "Name",
+        "cadence": "Cadence",
+        "next": "Next run",
+        "resultLabel": "Check history",
+        "resultEmpty": "Review in the Library after the first run"
+      },
       "openRounds": "Open Library check history"
     }
   },
@@ -6312,7 +6349,12 @@
       },
       "emptyTitle": "No document check history yet",
       "emptyDescription": "Schedule a document check in Automations. While this Mac is awake, Atlas runs it and leaves the results here for review.",
-      "historyShape": { "run": "Run", "outcome": "Outcome", "review": "Review", "empty": "This ledger fills after the first run" },
+      "historyShape": {
+        "run": "Run",
+        "outcome": "Outcome",
+        "review": "Review",
+        "empty": "This ledger fills after the first run"
+      },
       "kind": {
         "consistency": "Pages still match their sources",
         "consistencyBody": "Hashes every cited source on this Mac and runs the page check. No agent turn.",
@@ -6677,14 +6719,14 @@
     },
     "noteLabel": "A line to remember",
     "placeholder": "What did you learn? An unanswered question belongs here too.",
-    "keepsakeLabel": "A keepsake for home",
+    "keepsakeLabel": "Memory keepsake",
     "object": {
       "book": "Book",
       "plant": "Plant",
       "star": "Star"
     },
     "save": "Keep memory",
-    "saved": "Remembered. Your keepsake is at home too.",
+    "saved": "Your memory and keepsake are saved.",
     "storage": "Saved only on this device. Clearing app data also clears these memories.",
     "saveFailed": "Could not save. Your draft is still here.",
     "unreadable": "Could not read your saved memories. Nothing was overwritten. Reset to start again.",
@@ -6696,6 +6738,396 @@
     "reset": "Reset memories",
     "resetPrompt": "Clear all memories and keepsakes on this device? Your folders and ontology will stay as they are.",
     "cancel": "Cancel",
-    "resetConfirm": "Clear all memories"
+    "resetConfirm": "Clear all memories",
+    "subtitle": "As we learn together, our little home grows.",
+    "sections": "Companion spaces",
+    "growthTab": "Our growth",
+    "memoriesTab": "Personal memories",
+    "growth": {
+      "progressLabel": "Experience toward the next companion level",
+      "noProject": "No project connected yet",
+      "level": "Companion level {level}",
+      "stage": {
+        "1": "A little room to begin",
+        "2": "Our first book",
+        "3": "A new green friend",
+        "4": "A star for our memories",
+        "5": "A little study, lit up"
+      },
+      "reward": {
+        "2": "a luminous bookmark",
+        "3": "a lucky sprout",
+        "4": "a starlight charm",
+        "5": "a study lantern"
+      },
+      "xp": "{earned} / {needed} XP · {total} total",
+      "nextReward": "{remaining} XP until {reward}",
+      "nextLevel": "{remaining} XP to the next level",
+      "meaning": "Your level records learning and adventure, not ontology accuracy or completed review.",
+      "startTitle": "Begin an adventure in your project",
+      "startBody": "Open an ontology folder with a project. Explore concepts to earn experience, then keep discoveries to grow your companion’s home. Samples do not earn experience.",
+      "openFolder": "Open my folder",
+      "nextTitle": "Explore together next",
+      "exploreHint": "A first look earns {xp} XP. Reopening the same concept does not earn more.",
+      "explore": "Explore together",
+      "allExplored": "You have visited every concept in this project. Keep a discovery or return to an open question.",
+      "revisit": "Revisit a question · {title}",
+      "reflectionTitle": "Keep a discovery",
+      "reflectionHint": "Once per concept, keep a discovery for {xp} XP. Finding an unanswered question earns the same experience.",
+      "reflectionKind": "What did you discover?",
+      "kind": {
+        "learned": "I learned something",
+        "corrected": "I recorded a correction",
+        "uncertain": "I still have a question"
+      },
+      "noteLabel": "What did you discover?",
+      "notePlaceholder": "Keep a responsibility you learned, a reason for a correction, or a question to explore.",
+      "keepDiscovery": "Keep discovery",
+      "saved": "Discovery kept. Editing does not earn duplicate experience.",
+      "history": "Our shared footsteps",
+      "empty": "Your first footstep is waiting. Explore a concept to leave it here.",
+      "explored": "Explored {title}",
+      "missing": "This concept is no longer in the current folder. Your past experience remains.",
+      "rulesTitle": "How do I earn experience?",
+      "rules": "Preview a concept here for {explore} XP, then keep a discovery about it for {reflect} XP. Each activity counts once per concept. Generated node counts and approvals do not earn XP. Personal memories are not converted into experience.Adventure rewards accumulate separately. Away progress is capped at four hours.",
+      "storage": "Growth and discoveries stay on this device. They are separated by project UID; copies of the same project share progress. Clearing app data removes them.",
+      "unreadable": "Growth records could not be read. Existing data is preserved and no new experience is being saved.",
+      "failed": "Growth could not be saved. Your discovery draft is still here.",
+      "more": "More footsteps · {count} remaining",
+      "reset": "Reset growth for this project",
+      "resetPrompt": "Clear this folder’s reading XP and discoveries on this device? Construction XP, personal memories and ontology files remain.",
+      "resetConfirm": "Clear growth records",
+      "cancel": "Cancel",
+      "full": "You have 2,000 growth records. Existing records have not been overwritten.",
+      "editDiscovery": "Refine discovery",
+      "updateDiscovery": "Update discovery",
+      "preview": "Concept preview from your folder",
+      "openConcept": "See details on the map",
+      "noDescription": "This concept has no description yet. Open the map to inspect its connections and source.",
+      "gameUnavailable": "Adventure records could not be read or saved. Existing data was not overwritten.",
+      "offline": "While away: {wins} victories, +{xp} XP and +{gold} G.",
+      "continue": "Continue the adventure",
+      "resetGame": "Reset adventure",
+      "resetGamePrompt": "Clear adventure XP, gold, equipment and the bestiary? Learning records, personal memories and ontology files stay as they are.",
+      "xpBreakdown": "Project and reading {knowledge} XP · Adventure {adventure} XP",
+      "studyTitle": "Study your ontology",
+      "studySections": "Knowledge journal view",
+      "readTab": "Explore",
+      "reflectTab": "Reflect",
+      "historyTab": "History",
+      "noConcepts": "No concepts to explore yet.",
+      "readFirst": "Explore a concept first.",
+      "conceptPages": "Concept pages",
+      "welcomeBack": "Welcome back!",
+      "startStudy": "Explore a concept to begin",
+      "collectionSections": "Growth journal view",
+      "equipmentTab": "Equipment",
+      "bestiaryTab": "Bestiary",
+      "gold": "{amount} gold",
+      "guideTab": "Guide"
+    },
+    "life": {
+      "title": "A little day together",
+      "hint": "Tap your companion or the furniture.",
+      "pause": "Pause companion motion",
+      "resume": "Resume companion motion",
+      "greet": "Greet your companion",
+      "code": "Code a little",
+      "read": "Read a book",
+      "sleep": "Take a nap",
+      "walk": "Take a stroll",
+      "actions": "Spend time together",
+      "playful": "Life in this room is play, separate from your coding agent’s actual work.",
+      "reduced": "Reduced motion is on. Use the buttons to choose your companion’s activity.",
+      "activity": {
+        "idle": "What shall we discover today?",
+        "walk": "A little stroll around the room",
+        "coding": "Coding a little idea",
+        "reading": "Reading a new story",
+        "sleeping": "Off to a little dream…",
+        "greeting": "So glad you are here!"
+      }
+    },
+    "game": {
+      "expedition": "Explore your ontology world",
+      "journey": "Adventure journal",
+      "unknownArea": "Forest of memories",
+      "stage": "Encounter {stage}",
+      "autoBattle": "Auto battle · the adventure continues while you are away",
+      "return": "Return to camp",
+      "companion": "Companion",
+      "heroHealth": "Companion health",
+      "enemyHealth": "Monster health",
+      "bossPrefix": "Guardian · ",
+      "monster": {
+        "slime": "Starmist slime",
+        "golem": "Moss golem",
+        "moth": "Moonlight moth"
+      },
+      "phase": {
+        "camp": "Resting at camp",
+        "approach": "A new encounter",
+        "attack": "A strike of knowledge!",
+        "hurt": "Finding our footing again",
+        "loot": "Victory! Gold and experience earned",
+        "rest": "Recovering before the next adventure"
+      },
+      "cooldown": "Knowledge wave · {turns} turns",
+      "skill": "Knowledge wave ×3",
+      "heal": "Recover · 5 G",
+      "fiction": "Monsters and battles belong to the game. They do not represent code defects or ontology quality.",
+      "wins": "{count} victories",
+      "power": "Attack {attack}",
+      "areas": "Regions",
+      "gear": "Equipment",
+      "bestiary": "Bestiary",
+      "noAreas": "Your ontology domains become regions. Open a folder containing domains to explore.",
+      "locked": "Project + reading {current}/{xp} XP · Need {remaining} more",
+      "departHint": "Difficulty {difficulty} · depart",
+      "upgrade": {
+        "sword": "Knowledge blade",
+        "armor": "Explorer cloak",
+        "library": "Travel library"
+      },
+      "effect": {
+        "sword": "+2 attack",
+        "armor": "+8 maximum health",
+        "library": "+1 victory XP"
+      },
+      "encounters": "Defeated {count} times",
+      "regionGoal": "Explore concepts to unlock regions, defeat monsters, and grow your equipment.",
+      "depart": "Depart",
+      "upgradeAction": "Upgrade · {gold} G",
+      "questCounter": "Supply chest: {count}/5 victories · Auto battle",
+      "chest": "Open {count} supply chests",
+      "chestReward": "Supplies received! +{gold} G · +{xp} XP",
+      "skillHint": "Deals triple attack damage · 8-turn cooldown"
+    },
+    "tabs": {
+      "camp": "Home",
+      "adventure": "Quest",
+      "study": "Learn",
+      "collection": "Grow",
+      "memories": "Notes"
+    },
+    "pages": {
+      "previous": "Previous page",
+      "next": "Next page",
+      "position": "{current} / {total}"
+    },
+    "memorySections": "Personal journal view",
+    "writeTab": "Write",
+    "savedTab": "Saved {count}",
+    "memoryPages": "Memory content",
+    "world": {
+      "traveler": "Archive traveler",
+      "camp": "The little workshop",
+      "field": "Memory forest",
+      "knowledge": "Project {xp} XP",
+      "hint": "WASD move · E interact · I bag · K skills",
+      "help": "Controls",
+      "exit": "Close game",
+      "interact": "Interact (E)",
+      "movement": "Movement",
+      "actions": "Game menu",
+      "closePanel": "Close panel (Esc)",
+      "potion": "Potion {count}",
+      "journalSections": "Journal sections",
+      "knowledgeBook": "Reading log",
+      "personalBook": "Shared memories",
+      "controls": "WASD / arrows to move · Click the ground to walk · E interact · I inventory · K skills · M map · J journal · Q knowledge wave · 1 potion · R rest · Esc close panel · B blessings · Space dodge · N Creature field guide",
+      "panel": {
+        "inventory": "Traveler’s inventory",
+        "skills": "Starlight skills",
+        "map": "Expedition map",
+        "study": "The study desk",
+        "journal": "Travel journal",
+        "help": "Traveler’s guide",
+        "blessings": "Expedition blessings",
+        "bestiary": "Creature field guide"
+      },
+      "move": {
+        "ArrowUp": "Move up",
+        "ArrowLeft": "Move left",
+        "ArrowDown": "Move down",
+        "ArrowRight": "Move right"
+      },
+      "spot": {
+        "study": "Desk",
+        "skills": "Library",
+        "rest": "Rest",
+        "inventory": "Bag",
+        "growth": "Archive constellation",
+        "expedition": "Adventure portal"
+      },
+      "projectBook": "Project",
+      "projectReward": "Your project records became strength · +{xp} XP",
+      "dodged": "Dodge",
+      "shortcut": {
+        "interact": "Inspect",
+        "blessings": "Boons",
+        "inventory": "Bag",
+        "skills": "Skills",
+        "map": "Map",
+        "journal": "Journal",
+        "back": "Back"
+      },
+      "target": {
+        "study": "Study",
+        "skills": "Train",
+        "rest": "Rest",
+        "inventory": "Chest",
+        "growth": "Growth",
+        "expedition": "Travel"
+      }
+    },
+    "inventory": {
+      "bag": "Belongings",
+      "items": "Item slots",
+      "upgrade": "Upgrade · {gold} G",
+      "use": "Drink",
+      "buy": "Buy · 5 G",
+      "readCards": "Read knowledge cards",
+      "name": {
+        "sword": "Starlight blade",
+        "armor": "Night-sky cloak",
+        "library": "Archive spellbook",
+        "potion": "Healing potion",
+        "cards": "Knowledge cards",
+        "relic": "Forest relic",
+        "bestiary": "Creature field guide"
+      },
+      "description": {
+        "sword": "Each upgrade adds 2 attack. Spend gold earned from monsters.",
+        "armor": "Each upgrade adds 8 maximum HP, helping you explore longer.",
+        "library": "Each upgrade adds 1 XP per defeated monster.",
+        "potion": "Restores 20 HP. The recovery skill increases its effect.",
+        "cards": "Real concepts in this folder. Read them together and keep discoveries at the desk.",
+        "relic": "A keepsake from defeating a guardian, every tenth encounter.",
+        "bestiary": "Discover 108 creatures, their behavior, and your defeats. Prepare for the next journey."
+      },
+      "chest": "Open supply chests · {count}",
+      "readBestiary": "Open field guide (N)"
+    },
+    "skills": {
+      "points": "Available skill points: {count}",
+      "tree": "Skill list",
+      "rank": "Rank {rank}/5",
+      "learn": "Learn · 1 point",
+      "max": "Mastered",
+      "earn": "Earn one point per level, up to 30 points across six skills.",
+      "name": {
+        "focus": "Focused blade",
+        "ward": "Archive ward",
+        "recovery": "Restorative wisdom",
+        "wave": "Knowledge wave",
+        "fortune": "Discovery’s fortune",
+        "insight": "Insight"
+      },
+      "effect": {
+        "focus": "Adds 1 attack per rank.",
+        "ward": "Adds 5 maximum HP per rank.",
+        "recovery": "Adds 5 potion healing per rank.",
+        "wave": "Adds 0.25 to the damage multiplier of your Q knowledge wave per rank.",
+        "fortune": "Adds 1 gold per defeated monster per rank.",
+        "insight": "Adds 1 XP per defeated monster per rank."
+      }
+    },
+    "project": {
+      "total": "Project growth · {xp} XP",
+      "category": {
+        "concepts": "Ontology concepts",
+        "relations": "Resolved relations",
+        "implementation": "Implementation links",
+        "wiki": "Wiki pages",
+        "detail": "Written detail"
+      },
+      "record": "best {count}",
+      "other": "Reading {study} XP · Adventure {adventure} XP",
+      "how": "Concepts 24 · relations 8 · implementation links 16 · wiki pages 40 XP. Every 40 words adds 4 XP, up to 10 units per document. Folder refreshes record category high-water marks; cleanup never removes progress. Code work counts when reflected in these records. This is not a correctness score.",
+      "sigil": "An archive constellation grown from concepts, relations and wiki pages"
+    },
+    "run": {
+      "title": "Expedition blessings",
+      "floor": "Floor {floor} · Room {room}/3",
+      "chosen": "Blessings chosen {count}/5",
+      "chooseHint": "{count} picks available. Choose one of three. Auto battle continues while choosing.",
+      "nextHint": "Reach the next floor to choose another blessing.",
+      "campHint": "Depart to choose your first blessing.",
+      "take": "Choose {name}",
+      "rank": "Rank {rank} after choosing",
+      "temporary": "Blessings last for this expedition. Equipment, skills and construction growth carry into the next run.",
+      "open": "Choose a blessing (B)",
+      "available": "B · A new blessing is available",
+      "progress": "Run {run} · {clears} clears · Auto battle",
+      "repeatOn": "Auto retry on",
+      "repeatOff": "Auto retry off",
+      "record": "Best floor {best} · {clears} clears. Battles continue in menus.",
+      "name": {
+        "ember": "Ember blade",
+        "ward": "Guardian cloak",
+        "leech": "Living moss",
+        "echo": "Echo wave",
+        "fortune": "Golden seed",
+        "insight": "Deep insight",
+        "haste": "Wind sigil",
+        "thorns": "Thorn ring"
+      },
+      "effect": {
+        "ember": "Adds 3 attack. Stack it for stronger strikes.",
+        "ward": "Adds 12 maximum HP and immediately heals 12.",
+        "leech": "Heals 3 additional HP after each victory.",
+        "echo": "Adds 0.75 to the knowledge-wave multiplier.",
+        "fortune": "Adds 3 gold per defeated monster.",
+        "insight": "Adds 3 XP per defeated monster.",
+        "haste": "Shortens the wave cooldown by one turn.",
+        "thorns": "Reflects 3 damage when a monster hits you."
+      },
+      "dodge": "Dodge attack (Space)",
+      "dodgeHint": "Avoid the next attack. Recharges in four turns.",
+      "waveHint": "Attack ×{multiplier} damage · {cooldown}-turn recharge",
+      "incoming": "Attack incoming · Space to dodge",
+      "cleared": "Last expedition: guardian cleared! Rewards kept. M plans your next run.",
+      "defeated": "Last expedition: defeated, rewards kept. M prepares another run.",
+      "waveLabel": "Knowledge wave ×{multiplier}"
+    },
+    "adventure": {
+      "atlas": "36 destinations · 108 creatures",
+      "regions": "Adventure regions",
+      "route": "Threat {difficulty} · Clears {clears}",
+      "guardian": "Guardian",
+      "ready": "Project + reading {current} / {required} XP · Ready",
+      "bestiary": "Creature field guide",
+      "discovered": "Discovered {count}/{total}",
+      "unknownNumber": "Unknown creature {number}",
+      "unknown": "Undiscovered",
+      "findIn": "Explore {region} to encounter this creature.",
+      "defeated": "Defeated {count} times",
+      "fiction": "Original game creatures; never ontology evidence.",
+      "effect": {
+        "calm": "Quiet trail · Standard encounters and rewards.",
+        "bounty": "Supply route · +3 G per victory.",
+        "vital": "Restorative ground · +3 HP after each victory.",
+        "fortified": "Ancient walls · Enemies have 25% more health.",
+        "insight": "Archive fragments · +4 adventure XP per victory.",
+        "elite": "Guardian approach · Enemies deal 20% more damage."
+      },
+      "trait": {
+        "armored": "Armor: takes 20% less damage. Strengthen your blade.",
+        "fierce": "Fierce: attacks deal 30% more damage. Time a dodge.",
+        "mender": "Regeneration: heals before each regular strike. Burst with Q.",
+        "siphon": "Siphon: restores half the damage it deals. Dodge to deny healing.",
+        "swarm": "Swarm: attacks twice for reduced damage; armor blocks each hit.",
+        "arcane": "Arcane shell: takes 30% less wave damage. Regular attacks remain effective."
+      },
+      "traitName": {
+        "armored": "Armored",
+        "fierce": "Fierce",
+        "mender": "Regenerating",
+        "siphon": "Siphoning",
+        "swarm": "Double strike",
+        "arcane": "Wave resistant"
+      }
+    }
   }
 }

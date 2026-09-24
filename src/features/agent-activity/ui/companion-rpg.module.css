@@ -1,0 +1,14 @@
+.heroSprite { --companion-size:64px; display:block; position:relative; width:var(--companion-size); height:var(--companion-size); flex:none; }
+.largeSprite { --companion-size:96px; }
+.heroPixels { display:block; position:absolute; background-repeat:no-repeat; image-rendering:pixelated; }
+.heroSprite[data-playing='true'][data-pose='greet'],.heroSprite[data-playing='true'][data-pose='victory'] { animation:heroHappy calc(var(--motion-settle)*3) ease-in-out infinite alternate; }
+.heroSprite[data-playing='true'][data-pose='sleep'] { animation:heroRest calc(var(--motion-settle)*10) ease-in-out infinite alternate; }
+@keyframes heroHappy {from{transform:translateY(0)}to{transform:translateY(-4px)}}
+@keyframes heroRest {from{transform:scaleY(1)}to{transform:scaleY(.98)}}
+@keyframes monsterFrames {from{background-position-x:0}to{background-position-x:100%}}
+.monster {display:block;width:112px;height:112px;background-repeat:no-repeat;background-size:400% 300%;image-rendering:pixelated;animation:monsterFrames calc(var(--motion-settle)*6) steps(3,end) infinite;}
+.monster[data-kind='slime']{background-position-y:0}.monster[data-kind='golem']{background-position-y:50%}.monster[data-kind='moth']{background-position-y:100%}
+.monster[data-boss='true']{width:144px;height:144px;}
+.damage {position:absolute;top:-60px;left:50%;font-weight:var(--font-weight-strong);color:var(--color-text-primary);text-shadow:2px 2px var(--color-canvas);animation:damageRise calc(var(--motion-settle)*5) ease-out both;}
+@keyframes damageRise {from{transform:translateY(0);opacity:1}to{transform:translateY(-28px);opacity:0}}
+@media(prefers-reduced-motion:reduce){.heroSprite,.monster,.damage{animation:none}.damage{opacity:1}}
