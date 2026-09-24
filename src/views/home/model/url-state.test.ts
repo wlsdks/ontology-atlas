@@ -46,6 +46,7 @@ describe("parseHomeRouteState", () => {
       realmSlug: null,
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
   });
 
@@ -103,10 +104,12 @@ describe("parseHomeRouteState", () => {
     expect(parseHomeRouteState(new URLSearchParams("recent=90"))).toMatchObject({
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
     expect(parseHomeRouteState(new URLSearchParams("recent=yesterday"))).toMatchObject({
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
   });
 
@@ -272,6 +275,7 @@ describe("applyHomeRouteState", () => {
       realmSlug: null,
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
 
     expect(params.toString()).toBe(
@@ -301,6 +305,7 @@ describe("applyHomeRouteState", () => {
       realmSlug: null,
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
 
     expect(params.toString()).toBe(
@@ -328,6 +333,7 @@ describe("applyHomeRouteState", () => {
       realmSlug: null,
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
 
     expect(hidden.toString()).toBe("");
@@ -357,6 +363,7 @@ describe("applyHomeRouteState", () => {
         realmSlug: null,
         recentWindow: null,
       constellationIntent: null,
+      mapView: null,
       },
     );
 
@@ -383,6 +390,7 @@ describe("applyHomeRouteState", () => {
       ...DEFAULT_HOME_ROUTE_STATE,
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
     expect(off.toString()).toBe("");
   });

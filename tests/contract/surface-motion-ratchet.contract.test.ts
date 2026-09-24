@@ -336,7 +336,10 @@ const BASELINE_HARD_CUTS = 0;
  * opening path and both owners are audited in `tests/e2e/harness-tab.spec.ts` (portal/nonmodal and
  * narrow modal, settled axe floor, zero violations). Hard-cut debt remains unchanged.
  */
-const BASELINE_APPEARING_SURFACES = 55;
+// 55 -> 56 (2026-09-24): one in-world companion panel, shared by inventory,
+// skills, map and journals. The desktop bridge opener and nonempty axe audit live
+// in companion-growth.spec.ts; Escape and input scoping are exercised there too.
+const BASELINE_APPEARING_SURFACES = 56;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

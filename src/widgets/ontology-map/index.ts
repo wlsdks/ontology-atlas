@@ -1,4 +1,5 @@
 export { OntologyMap } from './ui/OntologyMap';
+export { OntologyTerritoriesMap } from './ui/OntologyTerritoriesMap';
 export type {
   OntologyMapNode,
   OntologyMapEdge,
