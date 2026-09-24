@@ -36,10 +36,7 @@ export function AutomationRunHistory({ entries }: { entries: readonly RoundPassE
 
 function RunEntry({ entry, latest = false }: { entry: RoundPassEntry; latest?: boolean }) {
   const t = useTranslations('automations');
-  const pageText = useTranslations('library.rounds.since');
   const locale = useLocale();
-  const pages = [...new Set([...entry.stale, ...entry.written.filter((path) => path.startsWith('wiki/'))]
-    .map((path) => path.replace(/\.md$/, '')))];
   return (
             <li data-testid={latest ? 'automations-last-run' : undefined} className="py-3 first:pt-0">
               {/* The row header already states the latest outcome and its time; saying it again
@@ -49,15 +46,12 @@ function RunEntry({ entry, latest = false }: { entry: RoundPassEntry; latest?: b
                 <time dateTime={entry.endedAt} className="text-body text-[color:var(--color-text-tertiary)]">{automationDate(locale, entry.endedAt)}</time>
               </div>}
               <p className={`break-words ${latest ? 'text-body-lg text-[color:var(--color-text-primary)]' : 'text-body text-[color:var(--color-text-secondary)]'}`}>{entry.summary || (entry.checked > 0 ? t('checked', { count: entry.checked }) : t('noSummary'))}</p>
-              {entry.stale.length > 0 ? <p className="mt-2 break-words text-body text-[color:var(--color-text-secondary)]">{t('stalePages', { pages: entry.stale.join(', ') })}</p> : null}
-              {entry.written.length > 0 ? <p className="mt-2 break-words text-body text-[color:var(--color-text-secondary)]">{t('writtenFiles', { files: entry.written.join(', ') })}</p> : null}
-              {pages.length > 0 ? <div className="mt-2 flex flex-wrap gap-2">
-                {pages.map((slug) => <Link key={slug} href={`/docs/?slug=${encodeURIComponent(slug)}`}
-                  aria-label={pageText('openPage', { page: slug.replace(/^wiki\//, '') })}
-                  className={controlClass({ shape: 'chip', size: 'lg', tone: 'secondary', hoverInk: 'strong', hoverSurface: 'lift', hoverBorder: 'strong', className: 'max-w-full break-all' })}>
-                  <FileText size={ICON_SIZE.sm} className="flex-none" aria-hidden />{slug.replace(/^wiki\//, '')}
-                </Link>)}
-              </div> : null}
+              {/* Each file is said once: a wiki page is its own link, anything else its path.
+                  A sentence listing the paths and a chip row for the same pages said it twice. */}
+              {entry.stale.length > 0 || entry.written.length > 0 ? <dl className="mt-3 space-y-2">
+                {entry.stale.length > 0 ? <FileGroup label={t('staleLabel')} paths={entry.stale} page={() => true} /> : null}
+                {entry.written.length > 0 ? <FileGroup label={t('writtenLabel')} paths={entry.written} page={(path) => path.startsWith('wiki/')} /> : null}
+              </dl> : null}
               {entry.refused.length > 0 ? <p className="mt-2 text-body text-[color:var(--color-text-secondary)]">{t('blockedActions', { count: entry.refused.length })}</p> : null}
               {entry.refused.length > 0 || entry.called.length > 0 ? (
                 <div className="mt-2"><Disclosure animated summary={t('toolActivity')}>
@@ -66,5 +60,25 @@ function RunEntry({ entry, latest = false }: { entry: RoundPassEntry; latest?: b
                 </Disclosure></div>
               ) : null}
             </li>
+  );
+}
+
+function FileGroup({ label, paths, page }: { label: string; paths: readonly string[]; page: (path: string) => boolean }) {
+  const pageText = useTranslations('library.rounds.since');
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <dt className="text-body text-[color:var(--color-text-tertiary)]">{label}</dt>
+      {paths.map((path) => {
+        const slug = path.replace(/\.md$/, '');
+        const name = slug.replace(/^wiki\//, '');
+        return <dd key={path} className="min-w-0 max-w-full">
+          {page(path) ? <Link href={`/docs/?slug=${encodeURIComponent(slug)}`}
+            aria-label={pageText('openPage', { page: name })}
+            className={controlClass({ shape: 'chip', size: 'lg', tone: 'secondary', hoverInk: 'strong', hoverSurface: 'lift', hoverBorder: 'strong', className: 'max-w-full break-all' })}>
+            <FileText size={ICON_SIZE.sm} className="flex-none" aria-hidden />{name}
+          </Link> : <span className="break-all font-mono text-label text-[color:var(--color-text-secondary)]">{path}</span>}
+        </dd>;
+      })}
+    </div>
   );
 }

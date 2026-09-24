@@ -1327,7 +1327,7 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // row states — the standard-button shape, at the two tags a navigating button needs.
 const BASELINE_ANCHOR_REGISTERED = 29;
 
-/** **Only this number may fall.** The current anchor total (28) minus registered (28). */
+/** **Only this number may fall.** The current anchor total (29) minus registered (29). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

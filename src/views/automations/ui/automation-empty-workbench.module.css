@@ -1,44 +1,41 @@
-/* Top-aligned under the lane tabs. Centred in the leftover height with a 25rem floor, the first
-   words sat 263px under the tabs at 1512x900 and 353px at 1920 (design sweep, 2026-09-23).
-   The facts band under the workbench carries the rest of the stage: without it the intro and
-   preview ended at y=497, leaving 48% of a 1512x949 and 54% of a 1920x1080 screen empty. */
-.stage { display: flex; flex-direction: column; gap: clamp(2rem,4vw,3.5rem); width: 100%; }
-.workbench { display: grid; grid-template-columns: minmax(0,.9fr) minmax(0,1.1fr); align-items: stretch; gap: clamp(2rem,5vw,5rem); width: 100%; }
-.intro { display: flex; flex-direction: column; justify-content: center; min-width: 0; max-width: 32rem; }
+/* One column under the lane tabs, one text start line: intro, facts, then the schedule list.
+   Top-aligned: centred in the leftover height with a 25rem floor, the first words sat 263px under
+   the tabs at 1512x900 (design sweep, 2026-09-23); centred beside the preview card, the title
+   floated ~88px under the card's top edge (review, 2026-09-25).
+   The list takes the tab panel's remaining height, capped at a 56rem stage, so the page ends in
+   the list it becomes instead of a blank floor: a fixed-height stage left 34% of 1920x1080 and
+   25% of 1512x949 empty under it. */
+.stage { display: flex; flex: 1 1 0; flex-direction: column; min-height: min-content; max-height: 56rem; width: 100%; min-width: 0; }
+.intro { min-width: 0; max-width: 40rem; }
 /* One display-size string per screen: the page h1 owns --text-display, so the stage title
    sits one ramp step below it (was 23px/510 twice, 180px apart). */
 .title { margin-top: 0; color: var(--color-text-primary); font-size: var(--text-title); line-height: var(--leading-title); font-weight: var(--font-weight-strong); word-break: keep-all; overflow-wrap: break-word; }
-.description { margin-top: .75rem; color: var(--color-text-secondary); font-size: var(--text-body-lg); line-height: var(--leading-title); word-break: keep-all; overflow-wrap: break-word; }
-.action { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 1.75rem; }
-.preview { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--color-border-soft); border-radius: var(--radius-panel); background: var(--color-panel); box-shadow: var(--shadow-elevation-1); animation: previewIn var(--motion-base) var(--motion-ease) both; }
-.previewHead { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--color-divider); }
+.description { margin-top: .5rem; color: var(--color-text-secondary); font-size: var(--text-body-lg); line-height: var(--leading-title); word-break: keep-all; overflow-wrap: break-word; }
+.action { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
+/* Three facts as a divided row, not three more cards, so the list stays the stage's one raised
+   surface. Each column's text starts on its own divider. */
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 2rem; margin: 2.5rem 0 0; }
+.fact { min-width: 0; padding-top: 1rem; border-top: 1px solid var(--color-divider); animation: rowIn var(--motion-base) var(--motion-ease) both; }
+.fact:nth-child(2) { animation-delay: .05s; }
+.fact:nth-child(3) { animation-delay: .1s; }
+.factTitle { color: var(--color-text-primary); font-size: var(--text-body); line-height: var(--leading-body); font-weight: var(--font-weight-emphasis); }
+.factBody { margin: .25rem 0 0; color: var(--color-text-secondary); font-size: var(--text-body); line-height: var(--leading-body); word-break: keep-all; overflow-wrap: break-word; }
+.preview { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; min-height: 13rem; margin-top: 2.5rem; border: 1px solid var(--color-border-soft); border-radius: var(--radius-panel); background: var(--color-panel); box-shadow: var(--shadow-elevation-1); animation: previewIn var(--motion-base) var(--motion-ease) .1s both; }
+.previewHead { display: flex; align-items: center; gap: 1rem; min-height: 3.5rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--color-divider); }
 .previewTitle { color: var(--color-text-primary); font-size: var(--text-body-lg); font-weight: var(--font-weight-emphasis); }
 .zero { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; margin-left: auto; border: 1px solid var(--color-border-soft); border-radius: var(--radius-chip); color: var(--color-text-secondary); font: var(--text-label)/var(--leading-label) var(--font-mono); }
-.columnHead, .emptyRow { display: grid; grid-template-columns: minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr); gap: .75rem; align-items: center; }
-.columnHead { padding: .75rem 1.25rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
-.emptyRow { margin: 0 1.25rem 1.25rem;min-height: 4.5rem; padding: .75rem 1rem; border: 1px dashed var(--color-indigo-line-a32); border-radius: var(--radius-card); background: var(--color-indigo-a06); animation: rowIn var(--motion-base) var(--motion-ease) .05s both; }
-.emptyName { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; color: var(--color-text-secondary); font-size: var(--text-body); line-height: var(--leading-body); word-break: keep-all; }
+.columnHead { display: grid; grid-template-columns: minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr); gap: .75rem; padding: .75rem 1.25rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
+/* The list body: where rows will land. It takes the card's spare height. */
+.emptyRow { display: grid; flex: 1 1 auto; place-items: center; min-height: 4.5rem; margin: 0 1.25rem 1.25rem; padding: 1.5rem 1rem; border: 1px dashed var(--color-indigo-line-a32); border-radius: var(--radius-card); background: var(--color-indigo-a06); }
+.emptyName { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; color: var(--color-text-secondary); font-size: var(--text-body); line-height: var(--leading-body); text-align: center; word-break: keep-all; }
 .emptyName svg { flex: none; color: var(--color-indigo-text-soft); }
-/* The illustrative row names what will appear and spans the columns; two dashes under
-   "Cadence" and "Next run" were placeholders standing in for values that do not exist. */
-.emptyRow .emptyName { grid-column: 1 / -1; }
-/* The result sits on the card's floor, so a stretched preview never shows a gap under it. */
-.result { display: flex; align-items: flex-start; gap: .75rem; margin: auto 1.25rem 0; padding: 1rem 0 1.25rem; border-top: 1px solid var(--color-divider); color: var(--color-text-secondary); }
+/* The result sits on the card's floor, so a stretched card never shows a gap under it. */
+.result { display: flex; align-items: flex-start; gap: .75rem; margin: 0 1.25rem; padding: 1rem 0 1.25rem; border-top: 1px solid var(--color-divider); color: var(--color-text-secondary); }
 .result > svg { flex: none; margin-top: .125rem; color: var(--color-indigo-text-soft); }
 .result span { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
 .result strong { color: var(--color-text-primary); font-size: var(--text-body); font-weight: var(--font-weight-emphasis); }
 .result small { color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); word-break: keep-all; }
-/* Three equal-height cards: what runs, when, what it may change. Quieter than the preview
-   (no elevation), so the preview stays the stage's one raised surface. */
-.facts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
-.fact { display: flex; flex-direction: column; min-width: 0; padding: 1.25rem; border: 1px solid var(--color-divider); border-radius: var(--radius-panel); background: var(--color-overlay-1); animation: rowIn var(--motion-base) var(--motion-ease) both; }
-.fact:nth-child(2) { animation-delay: .05s; }
-.fact:nth-child(3) { animation-delay: .1s; }
-.factIcon { display: inline-grid; place-items: center; width: 2rem; height: 2rem; border: 1px solid var(--color-indigo-line-a32); border-radius: var(--radius-card); background: var(--color-indigo-a06); color: var(--color-indigo-text-soft); }
-.factTitle { margin-top: 1rem; color: var(--color-text-primary); font-size: var(--text-body-lg); line-height: var(--leading-body-lg); font-weight: var(--font-weight-emphasis); }
-.factBody { margin-top: .375rem; color: var(--color-text-secondary); font-size: var(--text-body); line-height: var(--leading-body); word-break: keep-all; overflow-wrap: break-word; }
 @keyframes previewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes rowIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 63.99rem) { .workbench { grid-template-columns: minmax(0,1fr); gap: 2rem; } .intro { max-width: 38rem; } }
-@media (max-width: 47.99rem) { .stage, .workbench { gap: 1.5rem; } .facts { grid-template-columns: minmax(0,1fr); } .columnHead, .emptyRow { grid-template-columns: minmax(0,1fr) 3.5rem 3.5rem; } .columnHead { padding-inline: .875rem; } .emptyRow { margin-inline: .875rem; padding-inline: .625rem; } .previewHead { padding-inline: .875rem; } .result { margin-inline: .875rem; } }
-@media (prefers-reduced-motion: reduce) { .preview, .emptyRow, .fact { animation: none; } }
+@media (max-width: 47.99rem) { .stage { flex: none; } .facts { grid-template-columns: minmax(0,1fr); gap: 1rem; margin-top: 2rem; } .preview { margin-top: 2rem; min-height: 0; } .emptyRow { min-height: 6rem; } .columnHead { grid-template-columns: minmax(0,1fr) 3.5rem 3.5rem; padding-inline: .875rem; } .emptyRow { margin-inline: .875rem; padding-inline: .625rem; } .previewHead { padding-inline: .875rem; } .result { margin-inline: .875rem; } }
+@media (prefers-reduced-motion: reduce) { .preview, .fact { animation: none; } }

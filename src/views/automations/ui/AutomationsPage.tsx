@@ -80,9 +80,12 @@ export function AutomationsPage({
     setOntologySheetOpen(true);
   } : onOpenDocumentSchedule;
 
-  const emptyStage = (title: string, description: string, action: ReactNode) => (
+  // Where no schedule can exist yet (the browser, no folder), the preview drops its "0" and says
+  // where schedules come from instead of promising a list this runtime cannot fill.
+  const emptyStage = (title: string, description: string, action: ReactNode, previewEmpty?: string) => (
     <AutomationEmptyWorkbench title={title} description={description} action={action}
-      previewTitle={t(`${lane}.preview.title`)} previewEmpty={t(`${lane}.preview.empty`)}
+      previewTitle={t(`${lane}.preview.title`)} previewEmpty={previewEmpty ?? t(`${lane}.preview.empty`)}
+      count={previewEmpty ? null : 0}
       columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.next`)]}
       resultLabel={t(`${lane}.preview.resultLabel`)} resultEmpty={t(`${lane}.preview.resultEmpty`)}
       facts={[
@@ -121,13 +124,14 @@ export function AutomationsPage({
           {state === "app-required" || state === "no-vault" ? (
             // The same stage as an empty lane: the tabs still switch what each lane would do,
             // and one primary action wins, instead of a one-row notice over a blank screen.
-            <div className="flex pt-6 pb-8">
+            <div className="flex flex-1 flex-col pt-6 pb-8">
               {emptyStage(
                 state === "app-required" ? t("appRequiredTitle") : t("openFolderTitle"),
                 state === "app-required" ? t("appRequiredDescription") : t("openFolderDescription"),
                 state === "app-required"
                   ? <Link href="/download/" className={cn(buttonVariants({ variant: "primary" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("getApp")}</Link>
                   : <OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" />,
+                state === "app-required" ? t("previewEmptyApp") : t("previewEmptyFolder"),
               )}
             </div>
           ) : state === "loading" ? (
@@ -147,12 +151,14 @@ export function AutomationsPage({
                   </p>
                 </div>
                 {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
-                {lane === "documents" ? <Link href="/library/?tab=rounds" data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide")}>
+                {/* -mr-3.5 cancels the ghost's px-3.5, so the label ends on the cards' right edge
+                    instead of 14px inside it; the hover surface overhangs the gutter instead. */}
+                {lane === "documents" ? <Link href="/library/?tab=rounds" data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide -mr-3.5")}>
                   <LibraryBig size={ICON_SIZE.sm} aria-hidden />{t("documents.openRounds")}
                 </Link> : null}
               </div> : null}
               {rounds.length === 0 ? (
-                <div className="flex pt-6 pb-8">
+                <div className="flex flex-1 flex-col pt-6 pb-8">
                   {emptyStage(t(`${lane}.emptyTitle`), t(`${lane}.emptyDescription`),
                     <Button onClick={add} disabled={lanePending} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide"><Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}</Button>)}
                 </div>
