@@ -20,6 +20,7 @@ import { parseInsightsTabHref, type InsightsTab } from '../../lib/insights-tab-s
 import { briefTotals, type BriefCore, type BriefLine, type BriefLineDetail, type BriefState } from '../../lib/brief/brief-model';
 import { briefRows, type BriefRow } from '../../lib/brief/brief-rows';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
+import { BRIEF_TWO_COLUMN, INSIGHTS_LIST_ROW, insightsTwoColumnCell } from '../parts/insights-list';
 
 /**
  * Where each line opens. A line is a count of named things; the destination is the screen
@@ -356,26 +357,38 @@ function BriefLineList({
    * line down the list (review, 2026-09-25, round 4). The since card's kind column follows the
    * same rule.
    */
-  const listed = withLeaving(rows, leaving);
+  /*
+   * ⚠️ **Two columns once the slot holds them, and the door ends the sentence.** One column with a
+   * bounded measure left the card's right 39% hollow at 1920 and a 600px trip from a short
+   * sentence to its link (review, 2026-09-25, round 4). The rows now fill both halves of the
+   * card on the band's own middle line, and each link sits in the sentence's flow, on its
+   * baseline, at every width.
+   */
+  const listed = withLeaving(rows, leaving).filter(
+    ({ row, leaving: isLeaving }) => isLeaving || !(row.kind === 'status' && row.status === 'no-source' && sharedNoSource && row.core !== noSourceCores[0]),
+  );
   return (
     <ol
       data-testid="brief-lines"
-      className="flex flex-col divide-y divide-[color:var(--color-divider)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-[var(--card-pad)]"
+      className={cn(BRIEF_TWO_COLUMN, 'rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-[var(--card-pad)]')}
     >
-      {listed.map(({ row, leaving: isLeaving }) => {
+      {listed.map(({ row, leaving: isLeaving }, index) => {
+        const cell = insightsTwoColumnCell(index, listed.length);
         if (isLeaving) {
-          return <LeavingRow key={`leaving-${rowKey(row)}`} label={leavingLabel(row, t)} />;
+          return <LeavingRow key={`leaving-${rowKey(row)}`} label={leavingLabel(row, t)} className={cell} />;
         }
         if (row.kind === 'status' && row.status === 'no-source' && sharedNoSource) {
-          if (row.core !== noSourceCores[0]) return null;
           return (
-            <li key="status-no-source" className={ROW} data-testid={`brief-core-no-source-${row.core}`} data-brief-core={noSourceCores.join(' ')}>
+            <li key="status-no-source" className={cn(ROW, cell)} data-testid={`brief-core-no-source-${row.core}`} data-brief-core={noSourceCores.join(' ')}>
               <NoSourceMark unchecked={row.unchecked === true} />
               <span className={CORE_LABEL}>{noSourceCores.map((key) => t(`core.${key}`)).join(t('coreJoin'))}</span>
-              <span className={cn(SENTENCE, 'text-[color:var(--color-text-tertiary)]')}>{t('noSourceShared')}</span>
-              <DestinationLink href={CORE_NEXT_HREF.ontology} className={LINE_LINK} onOpenTab={onOpenTab}>
-                {t('emptyAction.ontology')}
-              </DestinationLink>
+              <span className={cn(SENTENCE, 'text-[color:var(--color-text-tertiary)]')}>
+                {t('noSourceShared')}
+                {DOOR_GAP}
+                <DestinationLink href={CORE_NEXT_HREF.ontology} className={LINE_LINK} onOpenTab={onOpenTab}>
+                  {t('emptyAction.ontology')}
+                </DestinationLink>
+              </span>
             </li>
           );
         }
@@ -383,6 +396,7 @@ function BriefLineList({
           return (
             <BriefLineRow
               key={row.line.id}
+              className={cell}
               line={row.line}
               core={row.core}
               availability={row.availability}
@@ -405,29 +419,37 @@ function BriefLineList({
                   : t(row.core === 'ontology' && row.status === 'unreadable' ? 'evidenceUnreadable' : row.status);
           const door = row.status === 'no-data' || row.status === 'no-source';
           return (
-            <li key={`status-${row.core}`} className={ROW} data-testid={`brief-core-${row.status === 'quiet' ? 'quiet' : row.status === 'no-data' ? 'empty' : row.status}-${row.core}`} data-brief-core={row.core}>
+            <li key={`status-${row.core}`} className={cn(ROW, cell)} data-testid={`brief-core-${row.status === 'quiet' ? 'quiet' : row.status === 'no-data' ? 'empty' : row.status}-${row.core}`} data-brief-core={row.core}>
               {/* A status row counts nothing, so it wears no state mark: the dash means "happened"
                   and a row saying "nothing here yet" is not an event (design-infoviz, 2026-09-23).
                   The one exception stands for the unchecked-evidence line; see `briefRows`. */}
               <NoSourceMark unchecked={row.kind === 'status' && row.unchecked === true} />
               <span className={CORE_LABEL}>{t(`core.${row.core}`)}</span>
-              <span className={cn(SENTENCE, 'text-[color:var(--color-text-tertiary)]')}>{sentence}</span>
-              {door ? (
-                <DestinationLink href={CORE_NEXT_HREF[row.core]} className={LINE_LINK} onOpenTab={onOpenTab}>
-                  {t(`emptyAction.${row.core}`)}
-                </DestinationLink>
-              ) : null}
+              <span className={cn(SENTENCE, 'text-[color:var(--color-text-tertiary)]')}>
+                {sentence}
+                {door ? (
+                  <>
+                    {DOOR_GAP}
+                    <DestinationLink href={CORE_NEXT_HREF[row.core]} className={LINE_LINK} onOpenTab={onOpenTab}>
+                      {t(`emptyAction.${row.core}`)}
+                    </DestinationLink>
+                  </>
+                ) : null}
+              </span>
             </li>
           );
         }
         return (
-          <li key="app-only" className={ROW} data-testid="brief-app-only" data-brief-core={row.cores.join(' ')}>
+          <li key="app-only" className={cn(ROW, cell)} data-testid="brief-app-only" data-brief-core={row.cores.join(' ')}>
             <span aria-hidden="true" className={MARK_SLOT}><span className={STATE_MARK.unknown} /></span>
             <span className={CORE_LABEL}>{row.cores.map((key) => t(`core.${key}`)).join(t('coreJoin'))}</span>
-            <span className={cn(SENTENCE, 'text-[color:var(--color-text-tertiary)]')}>{t('appOnly')}</span>
-            <DestinationLink href="/download/" className={LINE_LINK} onOpenTab={onOpenTab}>
-              {t('getApp')}
-            </DestinationLink>
+            <span className={cn(SENTENCE, 'text-[color:var(--color-text-tertiary)]')}>
+              {t('appOnly')}
+              {DOOR_GAP}
+              <DestinationLink href="/download/" className={LINE_LINK} onOpenTab={onOpenTab}>
+                {t('getApp')}
+              </DestinationLink>
+            </span>
           </li>
         );
       })}
@@ -500,7 +522,7 @@ function withLeaving(rows: readonly BriefRow[], leaving: ReadonlyArray<{ row: Br
 }
 
 /** A departing line: drawn open for one frame, then folded by the shared row disclosure. */
-function LeavingRow({ label }: { label: { core: string; sentence: string } }) {
+function LeavingRow({ label, className }: { label: { core: string; sentence: string }; className?: string }) {
   const [open, setOpen] = useState(true);
   const id = useId();
   useEffect(() => {
@@ -508,15 +530,14 @@ function LeavingRow({ label }: { label: { core: string; sentence: string } }) {
     return () => cancelAnimationFrame(raf);
   }, []);
   return (
-    <li aria-hidden="true" data-brief-leaving="" className="text-body">
+    <li aria-hidden="true" data-brief-leaving="" className={cn('text-body', className)}>
       <RowDisclosure open={open} id={id}>
         <div className="flex flex-wrap items-start gap-x-3 gap-y-1 py-3 text-[color:var(--color-text-tertiary)] sm:flex-nowrap">
           <span className={MARK_SLOT}><span className={STATE_MARK.current} /></span>
           <span className={CORE_LABEL}>{label.core}</span>
-          <span className={SENTENCE}>{label.sentence}</span>
-          {/* The door's height without the door, so the copy starts as tall as the line it
-              replaces: without it the rows below stepped up 8px in the first frame. */}
-          <span className="min-h-7 w-0 shrink-0" />
+          {/* The door's line box without the door, so the copy starts as tall as the line it
+              replaces: without it the rows below stepped up in the first frame. */}
+          <span className={SENTENCE}>{label.sentence}{DOOR_GAP}<span className={cn(LINE_LINK, 'invisible')}>{'\u00a0'}</span></span>
         </div>
       </RowDisclosure>
     </li>
@@ -526,13 +547,13 @@ function LeavingRow({ label }: { label: { core: string; sentence: string } }) {
 /** One row of the list: mark, core, sentence, door. `flex-wrap` lets the core name sit above at 390. */
 const ROW = 'flex flex-wrap items-start gap-x-3 gap-y-1 py-3 text-body sm:flex-nowrap';
 /**
- * The sentence column, bounded to the reading measure with the door straight after it.
+ * The sentence, bounded to the reading measure, with its door inside it.
  *
- * ⚠️ **The door follows the sentence, not the card edge** (review, 2026-09-25, round 5). At 1920
- * a row ran 1,450px: the sentence ended near x=940 and its link sat at x=1700+, so every action
- * cost a trip across an empty middle. The column now stops at `--measure-doc-column` (the one
- * box-width measure, 629px), and the links stand in one column right after it at every width
- * wide enough to hold it; a narrower slot shrinks the column and the link keeps the card's edge.
+ * ⚠️ **The door ends the sentence** (review, 2026-09-25, rounds 5 and 4). At the card's edge a
+ * link sat 1,300px from its sentence; in a column after the measure it still sat 600px from a
+ * short one, moved to the card edge below 1280, and hung 4px under the sentence because the
+ * row top-aligned a 28px link box with a 20px line. In the sentence's flow it is one word-gap
+ * after the last word, on the same baseline, in the same place at every width.
  */
 const SENTENCE = 'min-w-0 flex-1 break-keep sm:max-w-[var(--measure-doc-column)]';
 /** A fixed column so every sentence starts on one line down the list, whatever the core's name. */
@@ -595,7 +616,17 @@ function lineHref(lineId: string, availability: BriefCore['availability'], appRo
   return href;
 }
 
-const LINE_LINK = 'atlas-touch-floor atlas-touch-floor-wide shrink-0 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]';
+/**
+ * A door inside a sentence: whole, on the text's baseline, after `DOOR_GAP`. It carries no side
+ * margin or padding: a margin also indented the door when it wrapped to a line of its own, 12px
+ * off the sentence's start line (1920, the long first row).
+ */
+const LINE_LINK = 'atlas-touch-floor atlas-touch-floor-wide whitespace-nowrap align-baseline text-[color:var(--color-indigo-text-strong)]';
+/**
+ * The gap before a door: one em space. Unlike a margin it stays at the end of the line it
+ * follows when the door wraps, so a wrapped door starts on the sentence's own start line.
+ */
+const DOOR_GAP = '\u2003';
 
 /**
  * A destination link that knows when it is not leaving.
@@ -654,7 +685,7 @@ function DestinationLink({
  * rests on. A count whose only destination is another screen counting something else is
  * the falsifier this decision wrote down for itself (PO evidence seat, 2026-09-19).
  */
-function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs, onAskAgent, onOpenTab }: { line: BriefLine; core: BriefCore['core']; availability: BriefCore['availability']; appRowPresent: boolean; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
+function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs, onAskAgent, onOpenTab, className }: { className?: string; line: BriefLine; core: BriefCore['core']; availability: BriefCore['availability']; appRowPresent: boolean; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
   const [open, setOpen] = useState(false);
   const detailId = useId();
   const t = useTranslations('ontologyPages.insights.brief');
@@ -670,7 +701,7 @@ function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs,
    */
   const handoff = line.id === 'ontology-evidence-moved' ? buildDriftHandoff({ rows: details, locale }) : null;
   return (
-    <li className="py-3 text-body text-[color:var(--color-text-primary)]" data-brief-line={line.id} data-brief-state={line.state} data-brief-core={core}>
+    <li className={cn('py-3 text-body text-[color:var(--color-text-primary)]', className)} data-brief-line={line.id} data-brief-state={line.state} data-brief-core={core}>
       <div className="flex flex-wrap items-start gap-x-3 gap-y-1 sm:flex-nowrap">
         <span aria-hidden="true" className={MARK_SLOT}><span className={STATE_MARK[line.state]} /></span>
         <span className={CORE_LABEL}>{t(`core.${core}`)}</span>
@@ -727,14 +758,17 @@ function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs,
             </RowDisclosure>
           </div>
         ) : (
-          <>
-            <span className={SENTENCE}>{sentence}</span>
+          <span className={SENTENCE}>
+            {sentence}
             {href ? (
-              <DestinationLink href={href} className={LINE_LINK} onOpenTab={onOpenTab}>
-                {destinationLabel(href, t)}
-              </DestinationLink>
+              <>
+                {DOOR_GAP}
+                <DestinationLink href={href} className={LINE_LINK} onOpenTab={onOpenTab}>
+                  {destinationLabel(href, t)}
+                </DestinationLink>
+              </>
             ) : null}
-          </>
+          </span>
         )}
       </div>
     </li>
@@ -762,27 +796,25 @@ function BriefSinceList({ rows, total, soleKind, nowMs }: { rows: readonly Since
         {soleKind ? t(`sinceTitleKind.${soleKind}`, { count: total }) : t('sinceTitle', { count: total })}
       </h3>
       {/*
-        * **Newest first, one row grammar with the list above**: the slot where that list keeps its
-        * state mark, then the time in the column where it names the core, then what moved, bounded
-        * to the same measure, then its door straight after it. Time leads because the list is a
-        * chronology; at the right edge it sat 1,300px from the name it dated at 1920.
+        * **Newest first, in the list above's columns.** The mark slot, then the time where that list
+        * names the core, then what moved. Time leads because the list is a chronology.
+        *
+        * ⚠️ **The name is the door.** A separate "open" column sat 600px from names that end
+        * near their start at 1920, and one bounded column left 39% of the card hollow (review,
+        * 2026-09-25, round 4). Each row is now the hub rows' pressable row, split into the same
+        * two halves as the list above; a row with nowhere to go is the same row, unpressable.
         */}
-      <ol className="mt-2 flex flex-col divide-y divide-[color:var(--color-divider)]">
-        {rows.map((row, index) => (
-          <li
-            key={`${row.core}-${row.at}-${index}`}
-            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-3 text-body sm:grid-cols-[0.625rem_6rem_minmax(0,var(--measure-doc-column))_auto] sm:py-2"
-            data-since-core={row.core}
-            data-since-kind={row.kind}
-          >
-            <span aria-hidden="true" className="hidden sm:block" />
-            {/* Tabular figures in the text face: the relative time carries Hangul in Korean,
-                and the monospace face fell back glyph by glyph with word-wide gaps. */}
-            <time dateTime={row.at} className="col-span-2 break-keep tabular-nums text-label leading-body text-[color:var(--color-text-tertiary)] sm:col-span-1">
-              {format.relativeTime(new Date(row.at), nowMs)}
-            </time>
-            <span className="flex min-h-10 min-w-0 items-baseline gap-2 sm:min-h-0">
-              <span className="min-w-0 line-clamp-2 break-words text-[color:var(--color-text-primary)] sm:line-clamp-1" title={row.label}>
+      <ol className={cn(BRIEF_TWO_COLUMN, 'mt-2')}>
+        {rows.map((row, index) => {
+          const body = (
+            <>
+              <span aria-hidden="true" className={cn(MARK_SLOT, 'hidden sm:flex')} />
+              {/* Tabular figures in the text face: the relative time carries Hangul in Korean,
+                  and the monospace face fell back glyph by glyph with word-wide gaps. */}
+              <time dateTime={row.at} className="w-20 shrink-0 break-keep tabular-nums text-label leading-body text-[color:var(--color-text-tertiary)] sm:w-24">
+                {format.relativeTime(new Date(row.at), nowMs)}
+              </time>
+              <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]" title={row.label}>
                 {row.label}
               </span>
               {soleKind ? null : (
@@ -790,16 +822,28 @@ function BriefSinceList({ rows, total, soleKind, nowMs }: { rows: readonly Since
                   {t(`since.${row.kind}`)}
                 </span>
               )}
-            </span>
-            {row.href ? (
-              <Link href={row.href} className={controlClass({ shape: 'link', className: LINE_LINK })}>
-                {t('open')}
-              </Link>
-            ) : (
-              <span />
-            )}
-          </li>
-        ))}
+            </>
+          );
+          return (
+            <li
+              key={`${row.core}-${row.at}-${index}`}
+              className={insightsTwoColumnCell(index, rows.length)}
+              data-since-core={row.core}
+              data-since-kind={row.kind}
+            >
+              {row.href ? (
+                <Link
+                  href={row.href}
+                  className={controlClass({ shape: 'row', size: 'md', hoverSurface: 'lift', className: `-mx-1.5 w-auto gap-3 px-1.5 text-body ${INSIGHTS_LIST_ROW}` })}
+                >
+                  {body}
+                </Link>
+              ) : (
+                <div className={`flex items-center gap-3 text-body ${INSIGHTS_LIST_ROW}`}>{body}</div>
+              )}
+            </li>
+          );
+        })}
       </ol>
       <HiddenCountLine
         total={total}

@@ -1702,7 +1702,7 @@
       "brief": {
         "sinceSeen": "{days, plural, =0 {오늘 본 뒤로} one {# 일 전 본 뒤로} other {# 일 전 본 뒤로}}",
         "sinceDefault": "최근 7일 기준",
-        "sinceGloss": "줄을 펴면 해당 개념이, 오른쪽 링크를 누르면 고치는 곳이 열려요.",
+        "sinceGloss": "줄을 펴면 해당 개념이, 문장 끝 링크를 누르면 고치는 곳이 열려요.",
         "headline": "<learn>새로 알아야 할 것 {stale}개</learn><sep> · </sep><unchecked>확인 못 한 것 {unknown}개</unchecked>",
         "unit": {
           "ontology": "",

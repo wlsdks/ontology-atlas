@@ -81,6 +81,8 @@ export function OverviewTab({
   domainLink,
   labels,
 }: OverviewTabProps) {
+  // See the domain list below: two columns only when folding leaves no hole.
+  const foldDomains = domainRows.length % 2 === 0 || domainRows.length >= 7;
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
       <section
@@ -139,7 +141,14 @@ export function OverviewTab({
             <DomainCapacityLegend
               labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
             />
-            <div className={`mt-1 ${INSIGHTS_LIST_TWO_COLUMN}`}>
+            {/*
+              * ⚠️ **Fold only when the fold leaves no hole.** Three domains in two columns left a
+              * 650x60 empty cell beside the third bar (review, 2026-09-25, round 4). The odd row
+              * cannot span both columns: its bar would be drawn twice as long as its neighbours'
+              * for the same count. A short odd list stays one column; from seven rows the one
+              * empty cell is a list's ragged end, not a hole in a four-cell card.
+              */}
+            <div className={foldDomains ? `mt-1 ${INSIGHTS_LIST_TWO_COLUMN}` : 'mt-1 grid auto-rows-min content-start'}>
               {/*
                * **The row is the door to the map** (census 2026-08-12: this tab had zero
                * pressable controls). **The consumer wraps the link** — the bar component is
@@ -161,7 +170,7 @@ export function OverviewTab({
                * bar ends 12px from the number it counts.
                */}
               {domainRows.map((row, i) => (
-                <div key={row.id} className={insightsTwoColumnCell(i)}>
+                <div key={row.id} className={foldDomains ? insightsTwoColumnCell(i) : i === 0 ? '' : 'border-t border-[color:var(--color-divider)]'}>
                   <Link
                     href={domainLink.href(row.id)}
                     aria-label={domainLink.ariaLabel(row)}

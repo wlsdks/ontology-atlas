@@ -126,6 +126,24 @@ describe("BriefTab", () => {
     expect(list.querySelectorAll('[data-brief-line][data-brief-core="wiki"]')).toHaveLength(0);
   });
 
+  it("ends each sentence with its door, and makes each changed name its own door", () => {
+    mount(brief());
+    // The door is in the sentence's flow, so it follows the last word at every width instead
+    // of standing in a column hundreds of pixels away (review, 2026-09-25, round 4).
+    const repair = screen.getByTestId("brief-lines").querySelector('[data-brief-line="ontology-repair"] a[href="/ontology/insights/?tab=do-next"]');
+    expect(repair?.parentElement).toHaveTextContent(/58|\d+개/);
+    expect(repair?.parentElement?.tagName).toBe("SPAN");
+    // A changed row is one link carrying its name; there is no separate "open" word per row.
+    const since = screen.getByTestId("brief-since");
+    for (const row of since.querySelectorAll("li[data-since-core]")) {
+      const links = row.querySelectorAll("a");
+      if (links.length === 0) continue;
+      expect(links).toHaveLength(1);
+      expect(links[0]).not.toHaveTextContent(/^열기$/);
+    }
+    expect(since).not.toHaveTextContent(/열기/);
+  });
+
   it("makes exiting evidence inert and reopens the same rows on interruption", () => {
     mount(brief());
     const toggle = screen.getByTestId("brief-line-open-ontology-evidence-moved");

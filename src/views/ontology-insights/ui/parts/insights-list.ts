@@ -32,8 +32,18 @@ export const INSIGHTS_LIST_TWO_COLUMN = "grid auto-rows-min content-start gap-x-
  * The cell around one row of `INSIGHTS_LIST_TWO_COLUMN`. `divide-y` cannot serve a grid: the
  * second column's first row is also a column head, and a line above it reads as a torn table.
  */
-export function insightsTwoColumnCell(index: number): string {
-  if (index === 0) return "";
+export function insightsTwoColumnCell(index: number, count?: number): string {
+  // An odd list's last row spans both columns when the caller passes the count: left in one
+  // column it stood beside an empty cell as wide as a row (review, 2026-09-25, round 4).
+  const span = count !== undefined && count % 2 === 1 && index === count - 1 ? " @min-[960px]/insights:col-span-2" : "";
+  if (index === 0) return span.trim();
   if (index === 1) return "border-t border-[color:var(--color-divider)] @min-[960px]/insights:border-t-0";
-  return "border-t border-[color:var(--color-divider)]";
+  return `border-t border-[color:var(--color-divider)]${span}`;
 }
+
+/**
+ * The brief's two columns. The gutter is two card insets (`gap-x-8` = 2 x `--card-pad`), so the
+ * second column's first mark stands where the band's third tile starts its name, one start line
+ * from the band down through both lists (brief, 2026-09-25, round 4).
+ */
+export const BRIEF_TWO_COLUMN = "grid auto-rows-min content-start gap-x-8 @min-[960px]/insights:grid-cols-2";

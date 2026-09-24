@@ -1702,7 +1702,7 @@
       "brief": {
         "sinceSeen": "{days, plural, =0 {Since you looked today} one {Since you looked # day ago} other {Since you looked # days ago}}",
         "sinceDefault": "The last 7 days",
-        "sinceGloss": "Expand a line to see the concepts it counts; the link on the right opens where to fix them.",
+        "sinceGloss": "Expand a line to see the concepts it counts; the link at the end of a line opens where to fix them.",
         "headline": "<learn>{stale, plural, one {# thing} other {# things}} to learn</learn><sep> · </sep><unchecked>{unknown, plural, one {# thing} other {# things}} not checked</unchecked>",
         "unit": {
           "ontology": "",
