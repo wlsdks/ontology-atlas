@@ -11,3 +11,29 @@
 .memoryAdded { animation: memoryEnter var(--motion-fast) var(--motion-ease) both; }
 @keyframes memoryEnter { from { opacity: 0; } to { opacity: 1; } }
 @media (max-width: 480px) { .homeRow { gap: 0.5rem; } }
+
+.grownRoom { width: 100%; height: 160px; border: 1px solid var(--color-border-soft); border-radius: var(--radius-card); background: var(--color-overlay-1); }
+.grownRoom .window { top: 1.25rem; right: 1.25rem; width: 2.5rem; height: 3rem; }
+.grownRoom .floor { bottom: 1.25rem; inset-inline: 0.75rem; }
+.grownRoom .resident { left: 0.75rem; bottom: 1.25rem; }
+.grownRoom .shelf { bottom: 1.5rem; right: 1rem; gap: 0.5rem; }
+.desk { position: absolute; top: 1.5rem; left: 1.25rem; padding-bottom: 0.5rem; width: 2.5rem; border-bottom: 2px solid var(--color-border-soft); }
+.fixedPanel { width:100%; max-width:var(--dialog-w-md); height:100%; min-height:0; margin-inline:auto; display:flex; flex-direction:column; gap:0.75rem; }
+.panelPage { flex:1; min-height:0; display:flex; flex-direction:column; gap:0.75rem; }
+.pageBody { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; gap:0.5rem; }
+.centerPage { height:100%; min-height:0; max-width:var(--dialog-w-md); margin-inline:auto; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:1rem; }
+.centerPanel { height:100%; min-height:0; max-width:var(--dialog-w-md); margin-inline:auto; display:flex; flex-direction:column; gap:0.75rem; }
+.noteForm { display:grid; min-height:0; gap:0.75rem; }
+/* The outer game always stays edge-to-edge, including short landscape windows. */
+.homeDialog {padding:0;gap:0;}
+.optionalCopy{flex:none;}
+@media(max-height:650px){.optionalCopy{display:none}.fixedPanel,.panelPage,.noteForm{gap:0.25rem}.compactMemoryForm{display:flex;flex-direction:column;gap:0.5rem}}
+@media(min-width:700px) and (max-height:650px){
+ .compactMemoryRead{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:4px 16px}
+ .compactMemoryRead > :first-child{grid-column:1;grid-row:1}
+ .compactMemoryRead > .pageBody{grid-column:1/-1;grid-row:2;justify-content:flex-start;gap:0}
+ .compactMemoryRead > .pageBody > p:last-child{margin-top:0}
+ .compactMemoryRead > :nth-child(3){grid-column:2;grid-row:1}
+ .compactMemoryForm{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:4px 16px}
+ .compactMemoryForm > p{grid-column:1/-1}
+}

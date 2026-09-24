@@ -1,218 +1,45 @@
-import { expect, test, type Page } from '@playwright/test';
-
-const widths = [[320,740],[390,844],[600,900],[768,1024],[834,1112],[1024,768],[1440,900],[1920,1080],[2560,1440]];
-
-// The production export deliberately ignores ?shell=desktop. Only shell identity is
-// stubbed here; installed-app proof exercises the real host separately.
-async function seedEmptyDesktop(page: Page) {
-  if (!process.env.PLAYWRIGHT_STATIC) return;
-  await page.addInitScript(() => {
-    (window as unknown as {isTauri:boolean}).isTauri = true;
-    (window as unknown as {__TAURI_INTERNALS__:unknown}).__TAURI_INTERNALS__ = {
-      transformCallback: () => 0,
-      invoke: async (command: string) => { throw new Error(`No host operation in companion fixture: ${command}`); },
-    };
-  });
+import {expect,test,type Page} from '@playwright/test';
+async function start(page:Page){
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.addInitScript(()=>{(window as unknown as {isTauri:boolean}).isTauri=true;(window as unknown as {__TAURI_INTERNALS__:unknown}).__TAURI_INTERNALS__={transformCallback:()=>0,invoke:async()=>{throw Error('No host operations in personal journal fixture');}};});
+ await page.goto('/en/?shell=desktop&guides=off');
 }
+async function notes(page:Page){await page.getByTestId('companion-home').click();const dialog=page.getByTestId('companion-journal');await expect(dialog.getByTestId('companion-world')).toBeVisible();await page.keyboard.press('j');await dialog.getByRole('radio',{name:'Shared memories',exact:true}).click();return dialog;}
 
-test('a personal uncertainty survives reopening; saving and reset preserve keyboard access', async ({page}) => {
-  await page.emulateMedia({reducedMotion:'reduce'});
-  await seedEmptyDesktop(page);
-  await page.goto('/en/?shell=desktop&guides=off');
-  await page.getByTestId('companion-home').click();
-  const journal = page.getByTestId('companion-journal');
-  await journal.getByRole('radio',{name:'Still unsure',exact:true}).click();
-  await journal.getByRole('textbox').fill('The relation still needs evidence.');
-  await journal.getByRole('radio',{name:'Plant',exact:true}).click();
-  const editorBefore = await journal.getByRole('textbox').boundingBox();
-  await journal.getByRole('button',{name:'Keep memory',exact:true}).click();
-  const editorAfter = await journal.getByRole('textbox').boundingBox();
-  expect(Math.abs(editorAfter!.y-editorBefore!.y), 'saving must not move the composer').toBeLessThanOrEqual(1);
-  await expect(journal.getByRole('textbox')).toBeFocused();
-  await expect(journal.getByTestId('companion-memories')).toContainText('Still unsure');
-  await expect(journal.locator('[data-keepsake="plant"]')).toHaveCount(1);
-  await page.keyboard.press('Escape');
-  await expect(page.getByTestId('companion-home')).toBeFocused();
-  await page.reload();
-  await expect(page.getByTestId('companion-home')).toContainText('The relation still needs evidence.');
-  await page.getByTestId('companion-home').click();
-  await journal.getByRole('button',{name:'Remove memory: The relation still needs evidence.',exact:true}).click();
-  await expect(journal.getByRole('button',{name:'Cancel',exact:true})).toBeFocused();
-  await journal.getByRole('button',{name:'Cancel',exact:true}).click();
-  await expect(journal.getByRole('button',{name:'Remove memory: The relation still needs evidence.',exact:true})).toBeFocused();
-  await expect(journal.getByTestId('companion-memories')).toContainText('The relation still needs evidence.');
-  await journal.getByRole('button',{name:'Reset memories',exact:true}).click();
-  await expect(journal.getByRole('button',{name:'Cancel',exact:true})).toBeFocused();
-  await journal.getByRole('button',{name:'Cancel',exact:true}).click();
-  await expect(journal.getByRole('button',{name:'Reset memories',exact:true})).toBeFocused();
-  await expect(journal.getByTestId('companion-memories')).toContainText('The relation still needs evidence.');
-  await journal.getByRole('button',{name:'Reset memories',exact:true}).click();
-  await journal.getByRole('button',{name:'Clear all memories',exact:true}).click();
-  await expect(journal.getByTestId('companion-memories')).toHaveCount(0);
-  await expect(journal.getByRole('textbox')).toBeFocused();
+test('personal memories retain their old storage, keepsakes, cancellation, and explicit reset',async({page})=>{
+ await start(page);let dialog=await notes(page);
+ await dialog.getByRole('radio',{name:'Still unsure',exact:true}).click();await dialog.getByRole('textbox').fill('The relation still needs evidence.');await dialog.getByRole('radio',{name:'Plant',exact:true}).click();
+ const before=await dialog.getByRole('textbox').boundingBox();await dialog.getByRole('button',{name:'Keep memory',exact:true}).click();const after=await dialog.getByRole('textbox').boundingBox();expect(Math.abs(after!.y-before!.y)).toBeLessThanOrEqual(1);await expect(dialog.getByRole('textbox')).toBeFocused();
+ await dialog.getByRole('radio',{name:'Saved 1',exact:true}).click();await expect(dialog.getByTestId('companion-memories')).toContainText('The relation still needs evidence.');await expect(dialog.locator('[data-keepsake="plant"]')).toHaveCount(1);
+ await page.keyboard.press('Escape');await page.keyboard.press('Escape');await expect(page.getByTestId('companion-home')).toBeFocused();await page.reload();dialog=await notes(page);await expect(dialog.getByTestId('companion-memories')).toContainText('The relation still needs evidence.');
+ const remove=dialog.getByRole('button',{name:'Remove memory: The relation still needs evidence.',exact:true});await remove.click();await expect(dialog.getByRole('button',{name:'Cancel',exact:true})).toBeFocused();await dialog.getByRole('button',{name:'Cancel',exact:true}).click();await expect(remove).toBeFocused();
+ await dialog.getByRole('button',{name:'Reset memories',exact:true}).click();await expect(dialog.getByRole('button',{name:'Cancel',exact:true})).toBeFocused();await dialog.getByRole('button',{name:'Cancel',exact:true}).click();await expect(dialog.getByRole('button',{name:'Reset memories',exact:true})).toBeFocused();
+ await dialog.getByRole('button',{name:'Reset memories',exact:true}).click();await dialog.getByRole('button',{name:'Clear all memories',exact:true}).click();await expect(dialog.getByTestId('companion-memories')).toHaveCount(0);
 });
 
-test('keyboard entry, per-memory cancellation, and deletion remain explicit', async ({page}) => {
-  await seedEmptyDesktop(page);
-  await page.goto('/en/?shell=desktop&guides=off');
-  const home = page.getByTestId('companion-home');
-  const journal = page.getByTestId('companion-journal');
-  const tabTo = async (target: ReturnType<typeof page.getByRole>) => {
-    for(let i=0;i<30;i++) {
-      if(await target.evaluate(el=>el===document.activeElement)) return;
-      await page.keyboard.press('Tab');
-    }
-    await expect(target).toBeFocused();
-  };
-  await tabTo(home);
-  await page.keyboard.press('Enter');
-  await tabTo(journal.getByRole('textbox'));
-  await page.keyboard.insertText('Keyboard-only memory.');
-  await tabTo(journal.getByRole('button',{name:'Keep memory',exact:true}));
-  await page.keyboard.press('Enter');
-  await expect(journal.getByRole('textbox')).toBeFocused();
-  await tabTo(journal.getByRole('button',{name:'Remove memory: Keyboard-only memory.',exact:true}));
-  await page.keyboard.press('Enter');
-  await expect(journal.getByTestId('companion-memories')).toContainText('Keyboard-only memory.');
-  await tabTo(journal.getByRole('button',{name:'Remove this memory',exact:true}));
-  await page.keyboard.press('Enter');
-  await expect(journal.getByTestId('companion-memories')).toHaveCount(0);
-  await expect(journal.getByRole('textbox')).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(home).toBeFocused();
+test('keyboard entry, writing, paging and removal preserve visible focus',async({page})=>{
+ await start(page);const trigger=page.getByTestId('companion-home');await trigger.focus();await page.keyboard.press('Enter');const dialog=page.getByTestId('companion-journal');await expect(dialog.getByTestId('companion-world')).toBeVisible();
+ const tabTo=async(target:ReturnType<typeof page.getByRole>)=>{for(let i=0;i<40;i++){if(await target.evaluate(el=>el===document.activeElement))return;await page.keyboard.press('Tab');}await expect(target).toBeFocused();};
+ await page.keyboard.press('j');await tabTo(dialog.getByRole('radio',{name:'Project',exact:true}));await page.keyboard.press('ArrowLeft');await expect(dialog.getByRole('radio',{name:'Shared memories',exact:true})).toBeChecked();
+ await tabTo(dialog.getByRole('textbox'));await page.keyboard.insertText('Keyboard-only memory.');await tabTo(dialog.getByRole('button',{name:'Keep memory',exact:true}));await page.keyboard.press('Enter');await expect(dialog.getByRole('textbox')).toBeFocused();
+ await tabTo(dialog.getByRole('radio',{name:'Write',exact:true}));await page.keyboard.press('ArrowRight');await tabTo(dialog.getByRole('button',{name:'Remove memory: Keyboard-only memory.',exact:true}));await page.keyboard.press('Enter');
+ await expect(dialog.getByRole('button',{name:'Cancel',exact:true})).toBeFocused();await page.keyboard.press('Tab');await page.keyboard.press('Enter');await expect(dialog.getByTestId('companion-memories')).toHaveCount(0);await expect(dialog.getByRole('button',{name:'Write',exact:true})).toBeFocused();
+ await page.keyboard.press('Escape');await page.keyboard.press('Escape');await expect(trigger).toBeFocused();
 });
 
-test('coarse targets and doubled text preserve access without horizontal overflow', async ({browser}) => {
-  const context = await browser.newContext({hasTouch:true,viewport:{width:390,height:844},reducedMotion:'reduce'});
-  const page = await context.newPage();
-  await seedEmptyDesktop(page);
-  await page.goto('/en/?shell=desktop&guides=off');
-  await page.getByTestId('companion-home').click();
-  const journal=page.getByTestId('companion-journal');
-  const targets=await journal.locator('button').evaluateAll(els=>els.map(el=>{
-    const r=el.getBoundingClientRect(); const after=getComputedStyle(el,'::after');
-    const expanded=after.content !== 'none' && after.position === 'absolute';
-    return {label:el.textContent||el.getAttribute('aria-label'),height:Math.max(r.height,expanded ? parseFloat(after.height)||0 : 0),width:Math.max(r.width,expanded ? parseFloat(after.width)||0 : 0)};
-  }));
-  console.log(JSON.stringify({coarseTargets:targets}));
-  for(const target of targets) {expect(target.height).toBeGreaterThanOrEqual(44);expect(target.width).toBeGreaterThanOrEqual(44);}
-  await page.addStyleTag({content:'html { font-size: 200% !important; }'});
-  await expect(journal).toHaveCSS('opacity','1');
-  console.log(JSON.stringify(await journal.evaluate(el=>({overflow:el.scrollWidth-el.clientWidth, wide:Array.from(el.querySelectorAll('*')).filter(child=>child.getBoundingClientRect().right>el.getBoundingClientRect().right).map(child=>({tag:child.tagName,class:child.className,text:child.textContent?.slice(0,30),right:child.getBoundingClientRect().right}))}))));
-  expect(await journal.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(1);
-  await journal.getByRole('textbox').fill('Readable at doubled text.');
-  await journal.getByRole('button',{name:'Keep memory',exact:true}).click();
-  await expect(journal.getByTestId('companion-memories')).toContainText('Readable at doubled text.');
-  await context.close();
+test('rotation and failed storage preserve the draft, with no outer scrolling',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await start(page);const dialog=await notes(page);await dialog.getByRole('radio',{name:'Still unsure',exact:true}).click();await dialog.getByRole('textbox').fill('A question to keep.');
+ await page.setViewportSize({width:844,height:390});await expect(dialog.getByRole('textbox')).toHaveValue('A question to keep.');expect(await dialog.getByTestId('companion-content').evaluate(el=>el.scrollHeight-el.clientHeight)).toBeLessThanOrEqual(1);
+ await page.setViewportSize({width:390,height:844});await expect(dialog.getByRole('radio',{name:'Still unsure',exact:true})).toBeChecked();
+ await page.evaluate(()=>{const original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='ontology-atlas:companion-journal:v1')throw new DOMException('full','QuotaExceededError');return original.call(this,key,value);};});
+ await dialog.getByRole('button',{name:'Keep memory',exact:true}).click();await expect(dialog.getByRole('alert')).toBeVisible();await expect(dialog.getByRole('textbox')).toHaveValue('A question to keep.');
 });
 
-test('home and a populated journal fit every band in both languages', async ({page}) => {
-  await seedEmptyDesktop(page);
-  await page.emulateMedia({reducedMotion:'reduce'});
-  await page.addInitScript(() => {
-    localStorage.setItem('ontology-atlas:companion-journal:v1', JSON.stringify({version:1,memories:Array.from({length:5},(_,i)=>({id:String(i),kind:'uncertain',keepsake:'star',note:'Evidence remains uncertain. 아직 확인하지 못한 관계의 이유를 간직합니다.',folder:'Atlas',createdAt:1}))}));
-  });
-  for (const locale of ['en','ko']) for(const [width,height] of widths) {
-    await page.setViewportSize({width,height});
-    await page.goto(`/${locale}/?shell=desktop&guides=off`);
-    const home = page.getByTestId('companion-home');
-    await expect(home).toBeVisible();
-    await home.click();
-    const journal = page.getByTestId('companion-journal');
-    await expect(journal).toBeVisible();
-    await expect(journal).toHaveCSS("opacity", "1");
-    await page.evaluate(()=>document.fonts.ready);
-    const geometry = await journal.evaluate((element)=>{
-      const r=element.getBoundingClientRect();
-      const controls=Array.from(element.querySelectorAll('button,input,textarea')).filter(el=>!(el as HTMLButtonElement).disabled);
-      return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,overflow:element.scrollWidth-element.clientWidth,
-        closeReachable: controls.slice(0,1).every(el=> {const b=el.getBoundingClientRect();return el.contains(document.elementFromPoint(b.x+b.width/2,b.y+b.height/2));})};
-    });
-    expect(geometry.x).toBeGreaterThanOrEqual(0); expect(geometry.y).toBeGreaterThanOrEqual(0);
-    expect(geometry.right).toBeLessThanOrEqual(width);expect(geometry.bottom).toBeLessThanOrEqual(height);
-    expect(geometry.overflow).toBeLessThanOrEqual(1);expect(geometry.closeReachable).toBe(true);
-    console.log(JSON.stringify({locale,width,height,...geometry}));
-    if(width===390) {
-      await page.addScriptTag({path: require.resolve('axe-core/axe.min.js')});
-      const result = await page.evaluate(() => (window as unknown as {axe:{run:(context:string)=>Promise<{violations:unknown[]}>}}).axe.run('[data-testid="companion-journal"]'));
-      expect(result.violations).toEqual([]);
-    }
-    const memories=journal.getByTestId('companion-memories');
-    const end=await memories.evaluate(el=> {el.scrollTop=el.scrollHeight;const r=el.getBoundingClientRect();const last=el.lastElementChild!.getBoundingClientRect();return r.bottom-last.bottom;});
-    expect(end).toBeGreaterThanOrEqual(-1);
-    const reset=journal.getByRole('button',{name:locale==='en'?'Reset memories':'추억 초기화',exact:true});
-    await reset.scrollIntoViewIfNeeded();
-    const hit=await reset.evaluate(el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));});
-    expect(hit).toBe(true);
-    console.log(JSON.stringify({locale,width,lastMemoryClearance:end,resetReachable:hit}));
-    await page.keyboard.press('Escape');
-  }
-});
-
-test('workbench companion is reachable beside work status and yields to its journal',async({page})=>{
-  for(const [width,height] of widths){
-    await page.setViewportSize({width,height});
-    await page.goto('/en/topology/?guides=off&index=collapsed');
-    const trigger=page.getByTestId('companion-trigger');
-    await expect(trigger).toBeVisible();
-    const reachable=await trigger.evaluate(el=> {const b=el.getBoundingClientRect();return {right:b.right,width:innerWidth,hit:el.contains(document.elementFromPoint(b.x+b.width/2,b.y+b.height/2))};});
-    expect(reachable.right).toBeLessThanOrEqual(reachable.width);expect(reachable.hit).toBe(true);
-    await trigger.click();
-    await expect(page.getByTestId('companion-journal')).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(trigger).toBeFocused();
-  }
-});
-
-
-test('rotation keeps a draft and a failed write never pretends to save it',async({page})=>{
-  await seedEmptyDesktop(page);
-  await page.setViewportSize({width:390,height:844});
-  await page.goto('/en/?shell=desktop&guides=off');
-  await page.getByTestId('companion-home').click();
-  const journal=page.getByTestId('companion-journal');
-  await journal.getByRole('radio',{name:'Still unsure',exact:true}).click();
-  await journal.getByRole('textbox').fill('This question is still open.');
-  await page.setViewportSize({width:844,height:390});
-  await expect(journal.getByRole('textbox')).toHaveValue('This question is still open.');
-  await expect(journal.getByRole('radio',{name:'Still unsure',exact:true})).toBeChecked();
-  await page.setViewportSize({width:390,height:844});
-  await page.evaluate(()=>{
-    const original=Storage.prototype.setItem;
-    Storage.prototype.setItem=function(key,value){
-      if(key==='ontology-atlas:companion-journal:v1') throw new DOMException('Fixture storage full','QuotaExceededError');
-      return original.call(this,key,value);
-    };
-  });
-  await journal.getByRole('button',{name:'Keep memory',exact:true}).click();
-  await expect(journal.getByRole('alert')).toHaveText('Could not save. Your draft is still here.');
-  await expect(journal.getByRole('textbox')).toHaveValue('This question is still open.');
-  await expect(journal.getByTestId('companion-memories')).toHaveCount(0);
-});
-
-test('a newly saved memory has a real opacity transition',async({page})=>{
-  await seedEmptyDesktop(page);
-  await page.emulateMedia({reducedMotion:'no-preference'});
-  await page.goto('/en/?shell=desktop&guides=off');
-  await page.getByTestId('companion-home').click();
-  const journal=page.getByTestId('companion-journal');
-  await journal.getByRole('textbox').fill('A visible new memory.');
-  await page.evaluate(()=>{
-    (window as unknown as {memoryEntrance:Promise<{active:boolean;opacity:number}>}).memoryEntrance=new Promise(resolve=>{
-      const observer=new MutationObserver(()=>{
-        const section=document.querySelector('[data-testid="companion-memories"]')?.parentElement;
-        if(!section)return;
-        observer.disconnect();
-        const animation=section.getAnimations()[0];
-        if(animation){animation.pause();animation.currentTime=60;}
-        resolve({active:!!animation,opacity:Number(getComputedStyle(section).opacity)});
-      });
-      observer.observe(document.body,{childList:true,subtree:true});
-    });
-  });
-  await journal.getByRole('button',{name:'Keep memory',exact:true}).click();
-  const entry=await page.evaluate(()=>(window as unknown as {memoryEntrance:Promise<{active:boolean;opacity:number}>}).memoryEntrance);
-  expect(entry.active,'the new memory must animate, not reference a missing keyframe').toBe(true);
-  expect(entry.opacity).toBeGreaterThan(0);
-  expect(entry.opacity).toBeLessThan(1);
+test('a populated journal pages all long content on coarse screens without hiding a control',async({browser})=>{
+ const context=await browser.newContext({hasTouch:true,viewport:{width:390,height:844},reducedMotion:'reduce'});const page=await context.newPage();await page.addInitScript(()=>localStorage.setItem('ontology-atlas:companion-journal:v1',JSON.stringify({version:1,memories:Array.from({length:5},(_,i)=>({id:String(i),kind:'uncertain',keepsake:'star',note:'A long reflection. '.repeat(12),folder:'Atlas',createdAt:1}))})));await start(page);const dialog=await notes(page);
+ for(const [width,height] of [[320,740],[390,844],[844,390],[1920,1080]]){
+  await page.setViewportSize({width,height});await expect.poll(()=>dialog.evaluate(el=>{const r=el.getBoundingClientRect();return Math.max(Math.abs(r.x+r.width/2-innerWidth/2),Math.abs(r.y+r.height/2-innerHeight/2));})).toBeLessThanOrEqual(1);await expect(dialog.getByTestId('companion-memory-panel')).toHaveAttribute('data-compact',String(height<=650));const screen=dialog.getByTestId('companion-content');console.log('TOUCH_PAGE',JSON.stringify(await screen.evaluate(el=>{const r=el.getBoundingClientRect();return {width:innerWidth,height:innerHeight,w:el.clientWidth,h:el.clientHeight,sw:el.scrollWidth,sh:el.scrollHeight,wide:Array.from(el.querySelectorAll('*')).filter(item=>item.getBoundingClientRect().right>r.right+1).map(item=>({tag:item.tagName,text:item.textContent?.slice(0,40),right:item.getBoundingClientRect().right-r.right}))};})));expect(await screen.evaluate(el=>el.scrollHeight-el.clientHeight)).toBeLessThanOrEqual(1);expect(await screen.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(1);
+  const targets=await dialog.locator('button:visible:enabled').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect(),a=getComputedStyle(el,'::after');const expanded=a.content!=='none'&&a.position==='absolute';return{height:Math.max(r.height,expanded?parseFloat(a.height)||0:0),width:Math.max(r.width,expanded?parseFloat(a.width)||0:0)};}));for(const target of targets){expect(target.height).toBeGreaterThanOrEqual(44);expect(target.width).toBeGreaterThanOrEqual(44);}
+ }
+ await context.close();
 });

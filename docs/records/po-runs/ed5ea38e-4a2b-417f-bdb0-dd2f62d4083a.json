@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-24",
+  "decision": "Expand the owner-selected companion with contextual interaction and a finite 36-map, 108-creature catalog",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "orient",
+  "changes": [
+    "substantial-investment"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "scope",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-leverage"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-24",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "ed5ea38e-4a2b-417f-bdb0-dd2f62d4083a",
+  "recordedAt": "2026-09-24T14:35:11.230Z"
+}
