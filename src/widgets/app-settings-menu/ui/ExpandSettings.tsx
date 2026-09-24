@@ -14,7 +14,6 @@ import {
   type ExpandPreference,
   type ExpandStructure,
 } from '@/shared/lib/appearance-preferences';
-import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';
 import { RowDisclosure } from '@/shared/ui/row-disclosure';
 import { Choice, DETAIL_TOGGLE_CHIP, RESET_LINK_INK, Slider } from './settings-primitives';
@@ -81,11 +80,10 @@ export function ExpandSettings() {
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-expand">
-      <p className="break-keep text-label text-[color:var(--color-text-tertiary)]">
-        {t('caption')}
-      </p>
-
-      <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-2">
+      {/* What this pane does is said once, by the pane head (`SettingsPaneHead`). The two
+          decision boxes wear the settings group surface (`overlay-1`) so they layer like
+          every other pane's cards instead of standing as bare outlines. */}
+      <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2">
         <Choice
           label={t('affordanceLabel')}
           testId="app-settings-expand-affordance"
@@ -105,7 +103,7 @@ export function ExpandSettings() {
         </p>
       </div>
 
-      <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-2">
+      <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2">
         <Choice
           label={t('structureLabel')}
           testId="app-settings-expand-structure"
@@ -123,6 +121,10 @@ export function ExpandSettings() {
       </div>
 
       <div className="min-w-0">
+      {/* The detail toggle and the reset share one row: open-more on the start line, the
+          escape hatch on the cards' right edge, both the sheet's `lg` chip (2026-09-25). The
+          reset used to be bare 11px text on a line of its own with no control affordance. */}
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
       <Chip
         size="lg"
         tone="secondary"
@@ -139,9 +141,18 @@ export function ExpandSettings() {
         />
         {detailOpen ? t('detailHide') : t('detailShow')}
       </Chip>
+      <Chip
+        size="lg"
+        data-testid="app-settings-expand-reset"
+        onClick={() => writeExpand(DEFAULT_EXPAND)}
+        className={`border-transparent ${RESET_LINK_INK} hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]`}
+      >
+        {t('reset')}
+      </Chip>
+      </div>
 
       <RowDisclosure open={detailOpen} id={detailId} className="pt-3">
-      <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-2">
+      <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2">
         <Slider
           label={t('batchLabel')}
           testId="app-settings-expand-batch"
@@ -178,20 +189,6 @@ export function ExpandSettings() {
       </div>
       </RowDisclosure>
       </div>
-
-      <button
-        type="button"
-        data-testid="app-settings-expand-reset"
-        onClick={() => writeExpand(DEFAULT_EXPAND)}
-        className={controlClass({
-          shape: 'link',
-          size: 'md',
-          tone: 'muted',
-          className: `touch-hit-expand ${RESET_LINK_INK}`,
-        })}
-      >
-        {t('reset')}
-      </button>
     </div>
   );
 }

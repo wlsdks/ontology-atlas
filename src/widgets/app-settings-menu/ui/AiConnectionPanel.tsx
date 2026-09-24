@@ -161,7 +161,6 @@ export function AiConnectionPanel({
         className="grid max-w-[var(--settings-content-measure)] content-start gap-3"
         data-testid="ai-connection-view"
       >
-        <TrustHeadline>{t('principle')}</TrustHeadline>
         <div
           className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
           data-testid="ai-connection-web-degraded"
@@ -217,31 +216,15 @@ export function AiConnectionPanel({
         cancelDraft(expanded);
       }}
     >
-      <TrustHeadline>{t('principle')}</TrustHeadline>
-
-      {/* It sits **above** the list because the first question of anyone arriving
-          here is "what do I get if I connect", and "how do I connect" comes second.
-          While this sentence was a footnote below the list the order was inverted,
-          and it was denying an already-shipped feature as "coming soon" — the agent
-          panel's [Register Key in Settings] sends people here, and the arrival screen was
-          invalidating the CTA that sent them. So the copy states **only what works
-          today**: it reads and answers (10 read tools) · writes happen after
-          confirmation (`scope.consent` is already that contract). Not one word of
-          future tense. */}
-      {/* The size is `text-label` (11px) — this sentence is **a line meant to be
-          read**, not the ramp's "micro label, legend, timestamp" (9.5px). Leading
-          comes with the step's own pair (16px).
-          The width stays inside the prose measure — the dock's prose column was
-          846px, which at 9.5px fitted **74 characters per line**, over the prose
-          measure (`--measure-prose`; it read `70ch` when that was measured and reads
-          `60ch` since the 2026-09-11 calibration). Control rows use 820px, so this
-          cap applies to **prose only**. */}
-      <p
-        data-testid="ai-what-it-unlocks"
-        className="max-w-[var(--git-setup-measure)] break-keep px-1 text-label text-[color:var(--color-text-secondary)]"
-      >
-        {t('whatItUnlocks')}
-      </p>
+      {/*
+        What connecting gives you is the pane head's sentence since 2026-09-25 (the "why
+        connect" question comes before "how", and it states only what works today). It was a
+        second paragraph under the head, 11px in secondary ink under a 12.5px tertiary head, so
+        the smaller line was the brighter one, and it wrapped a two-word orphan at the prose
+        measure. The trust facts (where the key lives, what leaves, when) are said once, in
+        "What leaves this computer" below; where every call is recorded is said once, in the
+        sent log under it.
+      */}
 
       {/* The only block in this panel with a filled bordered box — the place you operate. */}
       <div
@@ -277,17 +260,20 @@ export function AiConnectionPanel({
       </div>
 
       <SupportingSection title={t('scopeTitle')}>
+        {/* The value is what you read, so it carries the ink; the short label is the quiet
+            column (it was 12.5px tertiary over an 11px quaternary value: the label louder than
+            the fact, and the fact under 4.5:1). */}
         <dl className="grid gap-1.5">
           {[
+            { label: t('scopeKeyLabel'), value: t('scopeKeyValue') },
             { label: t('scopeWhatLabel'), value: t('scopeWhatValue') },
             { label: t('scopeWhenLabel'), value: t('scopeWhenValue') },
-            { label: t('scopeLogLabel'), value: t('scopeLogValue') },
           ].map((row) => (
             <div key={row.label} className="flex gap-3">
-              <dt className="w-12 shrink-0 text-body leading-body text-[color:var(--color-text-tertiary)]">
+              <dt className="w-12 shrink-0 text-label leading-label text-[color:var(--color-text-tertiary)]">
                 {row.label}
               </dt>
-              <dd className="min-w-0 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+              <dd className="min-w-0 break-keep text-label leading-label text-[color:var(--color-text-secondary)]">
                 {row.value}
               </dd>
             </div>
@@ -300,23 +286,6 @@ export function AiConnectionPanel({
         vaultRootPath={vaultRootPath}
       />
     </div>
-  );
-}
-
-/**
- * The one-line trust notice — the first sentence that should be read in this panel.
- *
- * The old styling was `text-label` plus tertiary, the **dimmest ink on screen**.
- * Writing this product's core promises — keychain, when transmission happens,
- * logging — at footnote size is materially the same as deleting them. It is raised
- * with body size and secondary ink and given no box, so the vendor list below
- * (primary ink plus border) is still the attention winner.
- */
-function TrustHeadline({ children }: { children: ReactNode }) {
-  return (
-    <p className="max-w-[var(--git-setup-measure)] break-keep px-1 text-body leading-body text-[color:var(--color-text-secondary)]">
-      {children}
-    </p>
   );
 }
 
@@ -344,13 +313,16 @@ function SupportingSection({
     <section
       aria-label={title}
       data-testid={testId}
-      className="border-t border-[color:var(--color-divider)] px-1 pt-3"
+      className="border-t border-[color:var(--color-divider)] pt-3"
     >
-      <div className="flex min-h-6 items-center justify-between gap-2">
+      {/* Text on the provider rows' start line and the chip on their right edge: those rows
+          sit in a 1px-bordered box with `px-3`, so this section carries the same transparent
+          border and inset. At `px-1` it started 9px left of them and its chip ended 9px right. */}
+      <div className="flex min-h-6 items-center justify-between gap-2 border-x border-transparent px-3">
         <h3 className="text-label text-[color:var(--color-text-tertiary)]">{title}</h3>
         {action}
       </div>
-      <div className="mt-1.5">{children}</div>
+      <div className="mt-1.5 border-x border-transparent px-3">{children}</div>
     </section>
   );
 }
@@ -485,6 +457,7 @@ function ProviderCard({
           </span>
         ) : (
           <Chip
+            size="lg"
             data-testid={`ai-register-${provider}`}
             // Having declared `aria-expanded`, pressing again must collapse it —
             // otherwise a promise made to a screen reader becomes a lie. So this
@@ -715,6 +688,7 @@ function LocalEndpointCard({
           </span>
         ) : (
           <Chip
+            size="lg"
             data-testid="ai-register-local"
             onClick={expanded ? onCancel : onExpand}
             aria-expanded={expanded}
@@ -1153,25 +1127,20 @@ function AuditTail({
       testId="ai-audit-tail"
       action={
         vaultRootPath ? (
-          <button
-            type="button"
+          /*
+           * The sheet's one trailing-action grammar, `lg` secondary chip (2026-09-25). It was
+           * a `link/sm` — 9.5px text in a 24px box, the smallest control in a sheet whose other
+           * actions are 12.5px/32px.
+           */
+          <Chip
+            size="lg"
+            tone="secondary"
             data-testid="ai-audit-open"
             onClick={() => void openTauriVaultInFinder(vaultRootPath)}
-            /*
-             * Text that is pressable on its own is `link`. The ramp's floor is WCAG
-             * 2.5.8 (AA)'s 24×24 — the old comment called 44 "satisfying 2.5.8", but
-             * 44 is the touch value from 2.5.5 (AAA) and the HIG, and that comes from
-             * `.touch-hit-expand` on a coarse pointer (floor reset 2026-08-04).
-             */
-            className={controlClass({
-              shape: 'link',
-              size: 'sm',
-              className:
-                'touch-hit-expand hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
-            })}
+            className="shrink-0 border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
           >
             {t('auditOpen')}
-          </button>
+          </Chip>
         ) : null
       }
     >
@@ -1222,7 +1191,7 @@ function AuditTail({
           because the monospace glyph width carries straight into letter
           spacing. A file path is a machine string, so mono is information there —
           the sentence next to it is not. */}
-      <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+      <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
         <span className="font-mono">{LLM_AUDIT_RELATIVE_PATH}</span>
         {' · '}
         {t('auditPathNote')}

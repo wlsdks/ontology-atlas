@@ -13,6 +13,8 @@ import {
   type DomeViewKind
 } from "../model/dome-view";
 import { stepFocusRamp } from "../model/focus-state";
+import { createStrataStage, sampleStrataStage } from "../model/strata-stage";
+import { hexToRgb, parseRgbTriple, type DomeLightFrame, type EvidenceLight, type Rgb } from "../render/dome-light";
 import {
   buildFootprintSteps,
   buildWalkedEdgeArrivalSteps,
@@ -125,6 +127,8 @@ interface Dependencies {
   domeFitInsetsRef: RefObject<{ left: number; right: number; } | null>;
   tierLegendPlacementSentRef: RefObject<TierLegendPlacement | null>;
   onTierLegendPlacementChangeRef: RefObject<((placement: TierLegendPlacement) => void) | undefined>;
+  /** Lit 3D — node id → evidence state from the product's one rule; null when nothing was measured. */
+  domeEvidenceRef: RefObject<ReadonlyMap<string, EvidenceLight> | null>;
 }
 
 /** Advance visual ramps, publish hit-test visibility, paint the canvas, and report screen anchors. */
@@ -208,7 +212,46 @@ export function createPresentationFrameStage({
   domeFitInsetsRef,
   tierLegendPlacementSentRef,
   onTierLegendPlacementChangeRef,
+  domeEvidenceRef,
 }: Dependencies) {
+  /*
+   * Lit 3D (2026-09-25) — the stage buffers and parsed inks live for the stage's lifetime;
+   * the inks are re-parsed only when the token strings change.
+   */
+  const strataStage = createStrataStage();
+  let litInkKey = "";
+  let litInks: Pick<DomeLightFrame, "kindRgb" | "warningRgb" | "focusRgb"> | null = null;
+  const resolveLitInks = (tokens: OntologyMapTokens) => {
+    const key = `${tokens.kindRgbProject}|${tokens.kindRgbDomain}|${tokens.kindRgbCapability}|${tokens.kindRgbElement}|${tokens.statusWarning}|${tokens.indigoBright}`;
+    if (key === litInkKey && litInks !== null) return litInks;
+    const fallback: Rgb = [128, 128, 140];
+    litInks = {
+      kindRgb: {
+        project: parseRgbTriple(tokens.kindRgbProject) ?? fallback,
+        domain: parseRgbTriple(tokens.kindRgbDomain) ?? fallback,
+        capability: parseRgbTriple(tokens.kindRgbCapability) ?? fallback,
+        element: parseRgbTriple(tokens.kindRgbElement) ?? fallback,
+      },
+      warningRgb: hexToRgb(tokens.statusWarning) ?? parseRgbTriple(tokens.statusWarning) ?? fallback,
+      focusRgb: hexToRgb(tokens.indigoBright) ?? fallback,
+    };
+    litInkKey = key;
+    return litInks;
+  };
+  const domeLightFor = (tokens: OntologyMapTokens): DomeLightFrame | null => {
+    const dome = domeRuntimeRef.current;
+    if (dome === null || dome.rampClock <= 0) return null;
+    const inks = resolveLitInks(tokens);
+    return {
+      ...inks,
+      evidence: domeEvidenceRef.current,
+      reducedMotion: reducedMotionRef.current,
+      sampleStage:
+        dome.model.arrangement === "strata"
+          ? (litIds) => sampleStrataStage(dome, litIds, strataStage)
+          : null,
+    };
+  };
 
   return function runPresentationFrameStage(
     frameChips: readonly ClusterChip[],
@@ -509,6 +552,7 @@ export function createPresentationFrameStage({
         domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
           ? domeEdgeControlForFrame
           : null,
+      domeLight: domeLightFor(tokens),
       paintAnimatedBackground: animatedBgRef.current
         ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
         : null,

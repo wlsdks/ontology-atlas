@@ -164,3 +164,64 @@ describe("the web note's door to the app is a door", () => {
     expect(door.className).not.toContain("--color-text-tertiary");
   });
 });
+
+/**
+ * **No agent: one notice with its door, not two dead chips** (design sweep, 2026-09-25).
+ * Measured at 1512 the column's top 120px held Check and Compile at opacity 0.55 over a
+ * two-line reason. The installed app with no runtime now draws one sentence and the door to
+ * the agents page; while detection is still running the doors stay, because nothing is
+ * missing yet.
+ */
+describe("the wiki head with no coding agent", () => {
+  function NoAgent({ agentMissing }: { agentMissing: boolean }) {
+    const t = useTranslations("library");
+    return (
+      <LibrarySection
+        model={{ ...BASE, wikiPages: [{ slug: "wiki/a", title: "A", sourcePaths: [], createdBy: "agent:claude", compiledAt: null }] } as unknown as LibraryUiModel}
+        selectedSlug={null}
+        selectedSourcePath={null}
+        onSelect={() => {}}
+        onOpenSource={() => {}}
+        sourceHandles={new Map()}
+        vaultScope="test"
+        onAddFiles={() => {}}
+        onFindDocuments={() => {}}
+        onImportFromService={() => {}}
+        onCompile={null}
+        onLint={null}
+        onNewPage={null}
+        report={null}
+        segment="wiki"
+        actionsNote="No verified coding agent is set up on this computer."
+        inApp
+        agentMissing={agentMissing}
+        busy={false}
+        t={t}
+      />
+    );
+  }
+  const mountNoAgent = (agentMissing: boolean) =>
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <NoAgent agentMissing={agentMissing} />
+      </NextIntlClientProvider>,
+    );
+
+  it("draws one notice that names both jobs and ends in the agents door", () => {
+    mountNoAgent(true);
+    const notice = screen.getByTestId("library-agent-missing");
+    expect(notice).toHaveTextContent("check page format");
+    expect(screen.getByTestId("library-agent-missing-door")).toHaveAttribute("href", expect.stringContaining("agents"));
+    expect(screen.queryByTestId("library-lint")).toBeNull();
+    expect(screen.queryByTestId("library-compile")).toBeNull();
+    // The reason is said once: the notice replaces the paragraph, it does not sit above it.
+    expect(screen.queryByTestId("library-actions-blocked")).toBeNull();
+  });
+
+  it("keeps the doors and their reason while the runtimes are still being looked for", () => {
+    mountNoAgent(false);
+    expect(screen.queryByTestId("library-agent-missing")).toBeNull();
+    expect(screen.getByTestId("library-lint")).toBeDisabled();
+    expect(screen.getByTestId("library-actions-blocked")).toBeInTheDocument();
+  });
+});
