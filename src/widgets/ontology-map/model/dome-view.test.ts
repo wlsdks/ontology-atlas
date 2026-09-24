@@ -324,14 +324,15 @@ describe("dome-view — 물성(관성·러버밴드·스프링)", () => {
     expect(split).toBeCloseTo(oneStep, 12);
   });
 
-  it("pitch 는 극점 직전까지 전각이다 — 옆면(0)·아래 시점(음수)이 열려 있다", () => {
-    // Owner report, 2026-08-18: *"Looking up from below
-    // doesn't work."* The 0.12–0.72 range inherited from the hero was dropped. The
-    // only wall left is the pole (±π/2), where the screen's up direction flips.
-    expect(DOME_PITCH_MAX).toBeCloseTo(Math.PI / 2 - 0.12, 12);
-    expect(DOME_PITCH_MIN).toBeCloseTo(-(Math.PI / 2 - 0.12), 12);
-    expect(clampDomePitch(0)).toBe(0); // Side pass — does not lock
-    expect(clampDomePitch(-0.8)).toBe(-0.8); // Looking up from below — open
+  it("pitch is clamped to 0.15–0.95 rad: the lit planes are always seen from above", () => {
+    // 2026-09-25 (lit strata): a tier disc seen from below reverses the level order and
+    // an edge-on disc loses it, so both are walls now. This replaces the 2026-08-18
+    // pole-to-pole range; the dissent is kept in the decision fragment.
+    expect(DOME_PITCH_MIN).toBe(0.15);
+    expect(DOME_PITCH_MAX).toBe(0.95);
+    expect(clampDomePitch(0)).toBe(DOME_PITCH_MIN); // edge-on — locked
+    expect(clampDomePitch(-0.8)).toBe(DOME_PITCH_MIN); // from below — locked
+    expect(clampDomePitch(DOME_PITCH_DEFAULT)).toBe(DOME_PITCH_DEFAULT);
     expect(clampDomePitch(2)).toBe(DOME_PITCH_MAX);
     expect(clampDomePitch(-2)).toBe(DOME_PITCH_MIN);
   });

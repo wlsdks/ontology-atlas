@@ -90,6 +90,8 @@ const HOVER_AVOID_REACH_PX = 420;
  * leaving nothing selected and nothing opened.
  */
 export const DOUBLE_TAP_WINDOW_MS = 350;
+/** How far apart (CSS px) two presses may land and still be one 3D double-click. */
+const DOUBLE_TAP_SLOP_PX = 8;
 /**
  * Breathing room around each disc and name. "Clear" means visibly clear, not
  * touching: without it the card's edge sat 1 px inside a disc's ring and the
@@ -276,7 +278,7 @@ export interface PointerHandlerRefs {
   /** Density gate — this frame's cluster chips (world anchors), for chip hit testing. */
   clusterChipsRef?: Ref<readonly ClusterChip[]>;
   /** The last committed node tap, so the next one can be read as a double-click. */
-  lastTapRef?: Ref<{ nodeId: string; at: number } | null>;
+  lastTapRef?: Ref<{ nodeId: string; at: number; x?: number; y?: number } | null>;
   /**
    * S3 finishing polish (an S2 known gap) — the set of nodes not drawn this frame
    * (density-gate collapsed plus optionally hidden ego neighbours). Node and edge hit
@@ -1530,10 +1532,32 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     if (commitClick !== null && commitClick.nodeId !== null && lastTapRef) {
       const now = performance.now();
       const last = lastTapRef.current;
-      const nodeId = commitClick.nodeId;
+      /*
+       * 3D: a double-click belongs to the node the **first** click hit. That click selects,
+       * and a selection names its neighbours — one of those names can land under the
+       * cursor, and a hit test that prefers the name would hand the second click to a
+       * different node (measured 2026-09-25 on the sample vault in Neural: a domain's
+       * double-click selected a capability 80 px away and never flew). Two presses within
+       * a few pixels are one gesture on one thing.
+       */
+      const sameSpot =
+        domeInteractive() !== null &&
+        last !== null &&
+        clickPoint !== null &&
+        last.x !== undefined &&
+        last.y !== undefined &&
+        Math.hypot(clickPoint.x - last.x, clickPoint.y - last.y) <= DOUBLE_TAP_SLOP_PX;
+      const nodeId = sameSpot && last !== null ? last.nodeId : commitClick.nodeId;
       if (last !== null && last.nodeId === nodeId && now - last.at <= DOUBLE_TAP_WINDOW_MS) {
         lastTapRef.current = null;
         if (focusedSlugRef.current !== nodeId) onSelect?.(nodeId);
+        // 3D: the double-click is the fly-to — the one gesture that moves the view to a node
+        // (`DOME_FLY_MS`). The single click before it only selected.
+        const flyDome = domeInteractive();
+        if (flyDome !== null) {
+          flyDome.flyRequest = { slug: nodeId };
+          return;
+        }
         const chip = clusterChipsRef?.current?.find((c) => c.parentId === nodeId);
         if (chip && onToggleCluster) {
           onToggleCluster(nodeId);
@@ -1541,7 +1565,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         }
         return;
       }
-      lastTapRef.current = { nodeId, at: now };
+      lastTapRef.current = { nodeId, at: now, x: clickPoint?.x, y: clickPoint?.y };
     }
     const action = resolveClickAction(commitClick, focusedSlugRef.current);
     if (action.type === "select") {
