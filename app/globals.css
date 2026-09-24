@@ -5093,14 +5093,6 @@ body *::-webkit-scrollbar {
   transition-property: left, right;
 }
 
-/* The search lane and the agent activity status row share the toolbar's second line,
-   and when the whole caption does not fit beside the lane it steps aside
-   (`use-topology-toolbar-status-reserve.ts`). The bell and the mascot still show the
-   agent's state; the bell's panel holds the whole status. */
-[data-testid='topology-top-toolbar'][data-status-yield='true'] [data-agent-activity-status-slot] {
-  display: none;
-}
-
 /* ── Toast (sonner) motion — swapping vendor factory values with app ramp (2026-07-28) ──
    Measurement (1512×853, 60fps rAF sample): entrance opacity
    increases as 0.025 → 0.101 → 0.177 → 0.267 → 0.362 → 0.497 … with **increasing delta** before bending. First frame share is **2.5%**, peak at the **6th frame**, ramp width **350ms+**.

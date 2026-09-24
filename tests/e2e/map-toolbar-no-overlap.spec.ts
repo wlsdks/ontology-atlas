@@ -180,3 +180,80 @@ test("the map's top toolbar never draws one control over another, with or withou
   }
   expect(failures, failures.join("\n")).toEqual([]);
 });
+
+/*
+ * **The toolbar comes to rest at every width, not only at the five above** (2026-09-24).
+ *
+ * When the agent status joined the bell inside the utility row, a reserve that hid the
+ * status whenever the search lane did not fit beside it became a loop: hiding it
+ * shrank the row, so the lane fit, so the status came back, so the lane no longer
+ * fit. It oscillated only in a band a few pixels wide where the lane's text width sat
+ * on that edge, which is why the five widths above passed locally and one of them
+ * failed on CI's fonts ("box never stopped moving"). A sweep across the band where
+ * the lanes meet with the panel open finds the edge whatever the fonts measure.
+ */
+test("the toolbar settles at every width while the panel is open — no lane reflows forever", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1512, height: HEIGHT });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await installDesktopRailRuntime(page, { ".ontology-atlas/activity.jsonl": `${ACTIVITY_LINE}\n` });
+  await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+  await page.getByTestId("first-run-open").click();
+  await waitForMapStill(page).catch(() => {});
+  await page.goto("/ko/topology/?guides=off&e2e=1&mode=path&pathFrom=capabilities/checkout&p=capabilities/checkout", {
+    waitUntil: "domcontentloaded",
+  });
+  await expect(page.getByTestId("topology-trail-chip")).toBeVisible({ timeout: 30_000 });
+  await waitForMapStill(page).catch(() => {});
+  // The owner's state, as above: the path's target picked on the map.
+  const canvasBox = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+  const target = await page.evaluate(() => {
+    const map = (window as unknown as { __atlasMap?: { nodes(): Array<{ id: string; x: number; y: number }> } }).__atlasMap;
+    return map?.nodes().find((node) => node.id === "capability:invoice") ?? null;
+  });
+  expect(target, "the path target is not on the map").not.toBeNull();
+  await page.mouse.click(canvasBox.x + target!.x, canvasBox.y + target!.y);
+  await expect(page.getByTestId("topology-path-chip-copy-packet")).toBeVisible();
+  // Attached, not visible: the loop this guards against hid the bell with the status.
+  await expect(page.getByTestId("agent-activity-bell")).toHaveCount(1, { timeout: 30_000 });
+  await page.getByTestId("topology-meaning-workbench-toggle").click();
+  await expect(page.getByTestId("topology-meaning-workbench-toggle")).toHaveAttribute("aria-pressed", "true");
+
+  const restless: string[] = [];
+  for (let width = 1240; width <= 1720; width += 6) {
+    await page.setViewportSize({ width, height: HEIGHT });
+    // Count layout changes of the two lanes over 30 frames, after 10 to settle.
+    const changes = await page.evaluate(async () => {
+      const frame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const read = () =>
+        ["topology-search-action-lane", "topology-utility-action-row"]
+          .map((id) => {
+            const el = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+            if (!el) return "none";
+            const r = el.getBoundingClientRect();
+            return `${Math.round(r.x)},${Math.round(r.y)},${Math.round(r.width)}`;
+          })
+          .join("|");
+      for (let i = 0; i < 10; i += 1) await frame();
+      let last = read();
+      let count = 0;
+      for (let i = 0; i < 30; i += 1) {
+        await frame();
+        const next = read();
+        if (next !== last) count += 1;
+        last = next;
+      }
+      return count;
+    });
+    if (changes > 0) {
+      restless.push(`${width}: ${changes} layout changes in 30 frames`);
+      continue;
+    }
+    // At rest, the same per-control invariant as the five widths above.
+    const report = await measureToolbar(page);
+    for (const overlap of report.overlaps) restless.push(`${width}: overlap ${overlap}`);
+    for (const outside of report.outside) restless.push(`${width}: outside the map ${outside}`);
+    for (const off of report.offTile) restless.push(`${width}: off the tile height ${off}`);
+  }
+  expect(restless, restless.join("\n")).toEqual([]);
+});
