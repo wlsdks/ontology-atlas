@@ -87,7 +87,7 @@ export function OverviewTab({
         aria-label={labels.kindCensusTitle}
         className="flex min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <CardHead label={labels.kindCensusTitle} count={totalNodes} />
+        <CardHead label={labels.kindCensusTitle} />
         <ShareStack
           total={totalNodes}
           testId="insights-kind-stack"
@@ -110,7 +110,7 @@ export function OverviewTab({
         aria-label={labels.domainCapacityTitle}
         className="flex min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <CardHead label={labels.domainCapacityTitle} count={domainRows.length} />
+        <CardHead label={labels.domainCapacityTitle} />
         {domainRows.length === 0 ? (
           /*
            * **The "composition" tab had zero pressable controls** (census 2026-08-12 — the only
@@ -197,13 +197,15 @@ export function OverviewTab({
   );
 }
 
-function CardHead({ label, count }: { label: string; count: number }) {
+/**
+ * A card's name. It carries no total: the census tile above the tab bar prints the concept count
+ * and the count per kind, domains included, and a second copy at the card's far corner was the
+ * same number twice in one viewport (review, 2026-09-25, round 5).
+ */
+function CardHead({ label }: { label: string }) {
   return (
     <div className="flex items-baseline gap-2.5">
       <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">{label}</InsightsSectionTitle>
-      <span className="ml-auto font-mono text-body tabular-nums text-[color:var(--map-numeral-face)]">
-        {count}
-      </span>
     </div>
   );
 }

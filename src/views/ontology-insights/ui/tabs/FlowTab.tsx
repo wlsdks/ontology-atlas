@@ -175,7 +175,7 @@ export function FlowTab({
     <Disclosure summary={labels.requestLabel} summaryTestId="flow-request-open">
       <div className="mt-2 flex flex-col gap-2">
         <div className="flex justify-end">{copyButton}</div>
-        <pre className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 text-label leading-prose text-[color:var(--color-text-secondary)]">
+        <pre className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)]">
           {request}
         </pre>
       </div>
@@ -280,6 +280,11 @@ export function FlowTab({
  * the edge that has more text fades out over `--tabbar-edge-fade`, the same width and the same
  * four-state mask the library index and the tab strips use. The fade appears only while there is
  * text past that edge, so a request that fits keeps its last line whole.
+ *
+ * ⚠️ **The text face, not the monospace one** (review, 2026-09-25, round 5). `<pre>` defaults to
+ * monospace, and Hangul in it fell back glyph by glyph with word-wide gaps. What is copied is
+ * the string, never the face it is drawn in, so the preview reads as the sentences it is while
+ * `pre-wrap` still keeps its line breaks and numbered list exactly as sent.
  */
 function RequestScroller({ request }: { request: string }) {
   const frameRef = useRef<HTMLDivElement>(null);
@@ -343,7 +348,7 @@ function RequestScroller({ request }: { request: string }) {
           ...(mask ? { maskImage: mask, WebkitMaskImage: mask } : null),
           ...(viewport != null ? { height: viewport, bottom: "auto" } : null),
         }}
-        className="atlas-scroll-quiet absolute inset-0 overflow-auto whitespace-pre-wrap p-3 text-label leading-prose text-[color:var(--color-text-secondary)]"
+        className="atlas-scroll-quiet absolute inset-0 overflow-auto whitespace-pre-wrap break-keep break-words p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)]"
       >
         {request}
       </pre>

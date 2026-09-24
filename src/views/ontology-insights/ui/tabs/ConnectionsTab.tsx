@@ -145,7 +145,7 @@ export function ConnectionsTab({
         data-testid="connections-relation-types"
         className="flex min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <CardHead label={labels.relationTypesTitle} count={totalEdges} />
+        <CardHead label={labels.relationTypesTitle} />
         {edgeTypeRows.length === 0 ? (
           <div className="mt-3 flex flex-col">
             <EmptyState
@@ -267,15 +267,15 @@ export function ConnectionsTab({
   );
 }
 
-function CardHead({ label, count }: { label: string; count?: number }) {
+/**
+ * A card's name. It carries no total: the census tile above the tab bar prints the relation
+ * count, and a second copy at the card's far corner was the same number twice in one viewport
+ * (review, 2026-09-25, round 5).
+ */
+function CardHead({ label }: { label: string }) {
   return (
     <div className="flex items-baseline gap-2.5">
       <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">{label}</InsightsSectionTitle>
-      {count === undefined ? null : (
-        <span className="ml-auto font-mono text-body tabular-nums text-[color:var(--map-numeral-face)]">
-          {count}
-        </span>
-      )}
     </div>
   );
 }

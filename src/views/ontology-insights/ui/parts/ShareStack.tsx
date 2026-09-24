@@ -15,7 +15,7 @@ export interface ShareStackItem {
 /**
  * **One share band for every "what is this made of" card** (kinds on Composition, relation types
  * on Relations): one stacked bar, then one key that names each segment once — swatch, the map's
- * own mark, name, count, share.
+ * own mark, name, share. The counts live in the census tile above the tab bar.
  *
  * The kinds card drew the stacked bar *and* a row per kind with a second bar for the same share,
  * so four rows beside the taller domain card left a 41-103px blank band above its caption
@@ -59,14 +59,20 @@ export function ShareStack({
         {items.map((item) => {
           const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
           return (
-            // The name and its numbers sit 6px apart and the next item 32px away, so a Hangul
-            // name and its mono count read as one item, not three evenly spaced words.
-            <li key={item.id} className="flex min-h-7 items-center gap-1.5">
+            // The name and its share sit 6px apart and the next item 32px away, so a Hangul
+            // name and its mono figure read as one item, not evenly spaced words.
+            //
+            // ⚠️ **The key says the share, not the count** (review, 2026-09-25, round 5). The
+            // census tile above the tab bar already prints every count (each kind, each relation
+            // type), and this key repeated them ~250px lower in the same
+            // viewport. The share is what only this card can say; the count stays for a
+            // listener, who has no tile beside it in the reading order of this card.
+            <li key={item.id} className="flex min-h-7 items-center gap-1.5" data-share-count={item.count}>
               <span aria-hidden className="mr-0.5 size-2.5 flex-none rounded-micro" style={{ background: item.fill ?? item.color }} />
               {item.mark}
               <span className="text-body text-[color:var(--color-text-primary)]">{item.label}</span>
-              <span className="font-mono text-body tabular-nums text-[color:var(--map-numeral-face)]">{item.count}</span>
-              <span className="text-label tabular-nums text-[color:var(--color-text-tertiary)]">{pct}%</span>
+              <span className="font-mono text-body tabular-nums text-[color:var(--map-numeral-face)]" aria-hidden>{pct}%</span>
+              <span className="sr-only">{`${item.count} · ${pct}%`}</span>
             </li>
           );
         })}

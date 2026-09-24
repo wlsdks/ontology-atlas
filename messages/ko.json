@@ -1703,7 +1703,7 @@
         "sinceSeen": "{days, plural, =0 {오늘 본 뒤로} one {# 일 전 본 뒤로} other {# 일 전 본 뒤로}}",
         "sinceDefault": "최근 7일 기준",
         "sinceGloss": "줄을 펴면 해당 개념이, 오른쪽 링크를 누르면 고치는 곳이 열려요.",
-        "headline": "새로 알아야 할 것 {stale}개 · 확인 못 한 것 {unknown}개",
+        "headline": "<learn>새로 알아야 할 것 {stale}개</learn><sep> · </sep><unchecked>확인 못 한 것 {unknown}개</unchecked>",
         "unit": {
           "ontology": "",
           "wiki": "페이지",
@@ -1711,6 +1711,12 @@
           "agent": "호출"
         },
         "sinceTitle": "그 뒤로 바뀐 것 {count, number}건",
+        "sinceTitleKind": {
+          "concept-doc": "그 뒤로 바뀐 개념 문서 {count, number}건",
+          "wiki-log": "그 뒤로 남은 위키 기록 {count, number}건",
+          "guide-file": "그 뒤로 바뀐 지침 파일 {count, number}개",
+          "agent-call": "그 뒤로 에이전트 호출 {count, number}회"
+        },
         "sinceHidden": "{count, number}건 더 있어요.",
         "sinceHiddenRoute": "기록에서 전부 보기",
         "since": {

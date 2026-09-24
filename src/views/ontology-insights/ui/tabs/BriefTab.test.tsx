@@ -52,6 +52,7 @@ function brief(overrides: Partial<InsightsBrief> = {}): InsightsBrief {
       { core: "agent", at: "2026-09-18T06:00:00Z", kind: "agent-call", label: "add_concept · capabilities/refund", href: "/agents/" },
     ],
     sinceTotal: 5,
+    sinceKind: null,
     library: {
       availability: "no-data",
       pageCount: 0,
@@ -145,9 +146,11 @@ describe("BriefTab", () => {
 
   it("says where a core cannot be measured instead of showing zeros as fine", () => {
     mount(brief());
-    // The band says it in words where the counts would be, never as three dashes.
-    expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("앱에서 재요");
-    expect(screen.getByTestId("brief-core-state-wiki")).toHaveTextContent("아직 없음");
+    // The band shows the ring where no magnitude exists, never three dashes; the reason is the
+    // list's to say, once.
+    expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("모름");
+    expect(screen.getByTestId("brief-band")).not.toHaveTextContent("앱에서 재요");
+    expect(screen.getByTestId("brief-core-wiki")).not.toHaveTextContent("아직 없음");
     // The list says why and where to go, one row per core.
     const wiki = screen.getByTestId("brief-core-empty-wiki");
     expect(wiki).toHaveTextContent("이 폴더엔 아직 위키 페이지가 없어요");
@@ -176,11 +179,29 @@ describe("BriefTab", () => {
     expect(screen.getByTestId("brief-core-quiet-agent")).toHaveTextContent("그 뒤로 새로 알아야 할 것이 없어요");
   });
 
+  it("keys the list's two marks in the headline and marks nothing that merely happened", () => {
+    const { container } = mount(brief());
+    const headline = screen.getByTestId("brief-headline");
+    expect(headline.querySelector('[data-brief-headline-part="stale"]')).toHaveTextContent("새로 알아야 할 것 69개");
+    expect(headline.querySelector('[data-brief-headline-part="unknown"]')).toHaveTextContent("확인 못 한 것 3개");
+    const repair = container.querySelector('[data-brief-line="ontology-repair"] [aria-hidden="true"] > span');
+    expect(repair?.className ?? "").toBe("");
+  });
+
+  it("says a kind every row shares once, in the title, not on every row", () => {
+    mount(brief({ since: [{ core: "ontology", at: "2026-09-18T03:00:00Z", kind: "concept-doc", label: "Payments", href: "/topology/?p=a" }, { core: "ontology", at: "2026-09-18T02:00:00Z", kind: "concept-doc", label: "Refund", href: "/topology/?p=b" }], sinceTotal: 2, sinceKind: "concept-doc" }));
+    const since = screen.getByTestId("brief-since");
+    expect(since).toHaveTextContent("그 뒤로 바뀐 개념 문서 2건");
+    expect(screen.queryAllByTestId("brief-since-kind")).toHaveLength(0);
+  });
+
   it("names what changed since, newest first, and counts the rest", () => {
     mount(brief());
     const since = screen.getByTestId("brief-since");
     expect(since).toHaveTextContent("그 뒤로 바뀐 것 5건");
     expect(since.querySelectorAll("li")).toHaveLength(2);
+    // Mixed kinds: each row names its own.
+    expect(screen.getAllByTestId("brief-since-kind")).toHaveLength(2);
     expect(screen.getByTestId("hidden-count-line")).toHaveAttribute("data-hidden-count", "3");
   });
 
@@ -420,8 +441,10 @@ describe("no repository", () => {
     expect(connect).toHaveTextContent("개념 · 지침");
     expect(connect.querySelector('a[href="/topology/"]')).not.toBeNull();
     expect(container.querySelectorAll('[data-testid="brief-lines"] a[href="/topology/"]')).toHaveLength(1);
-    // Both band cells stopped by it put the reason on the same line, the caption.
-    expect(screen.getByTestId("brief-core-state-ontology")).toHaveTextContent("저장소 연결 전");
-    expect(screen.getByTestId("brief-core-reason-harness")).toHaveTextContent("저장소 연결 전");
+    // The band states no reason at all: the one row above says it once (round 5 review found
+    // "no repository" three times, twice in the band and once in this row).
+    expect(screen.getByTestId("brief-band")).not.toHaveTextContent("저장소 연결 전");
+    expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("모름");
+    expect(screen.getAllByText(/저장소를 연결하면/)).toHaveLength(1);
   });
 });

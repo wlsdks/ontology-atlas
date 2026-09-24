@@ -67,11 +67,16 @@ describe("OverviewTab — 도메인 용량", () => {
 
   // The key names each kind once, with its share. A second bar per kind for the same share
   // was the row that left the blank band beside the domain card (review, 2026-09-25).
-  it("종류는 한 줄 키로 이름·수·비율을 한 번씩만 말한다", () => {
+  // The census tile above the tab bar prints every count; the key says only the share it adds
+  // (review, 2026-09-25, round 5: the same counts stood ~250px apart in one viewport).
+  it("종류는 한 줄 키로 이름·비율을 말하고, 수는 인구 타일에 맡긴다", () => {
     render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
     const key = screen.getByTestId("insights-kind-key");
     expect(key.querySelectorAll("li")).toHaveLength(3);
-    expect(key).toHaveTextContent("capability360%");
+    const first = key.querySelector("li")!;
+    expect(first).toHaveAttribute("data-share-count", "3");
+    const visible = [...first.querySelectorAll("span")].filter((el) => !el.classList.contains("sr-only")).map((el) => el.textContent).join("");
+    expect(visible).toBe("capability60%");
   });
 
   it("도메인 행의 내역은 이름 아래에 있어 막대 바로 옆에 합계가 선다", () => {

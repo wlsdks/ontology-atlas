@@ -1703,7 +1703,7 @@
         "sinceSeen": "{days, plural, =0 {Since you looked today} one {Since you looked # day ago} other {Since you looked # days ago}}",
         "sinceDefault": "The last 7 days",
         "sinceGloss": "Expand a line to see the concepts it counts; the link on the right opens where to fix them.",
-        "headline": "{stale, plural, one {# thing} other {# things}} to learn · {unknown, plural, one {# thing} other {# things}} not checked",
+        "headline": "<learn>{stale, plural, one {# thing} other {# things}} to learn</learn><sep> · </sep><unchecked>{unknown, plural, one {# thing} other {# things}} not checked</unchecked>",
         "unit": {
           "ontology": "",
           "wiki": "pages",
@@ -1711,6 +1711,12 @@
           "agent": "calls"
         },
         "sinceTitle": "{count, plural, one {# thing} other {# things}} changed since",
+        "sinceTitleKind": {
+          "concept-doc": "{count, plural, one {# concept document} other {# concept documents}} changed since",
+          "wiki-log": "{count, plural, one {# wiki log entry} other {# wiki log entries}} since",
+          "guide-file": "{count, plural, one {# guide file} other {# guide files}} changed since",
+          "agent-call": "{count, plural, one {# agent call} other {# agent calls}} since"
+        },
         "sinceHidden": "{count, plural, one {# more} other {# more}}.",
         "sinceHiddenRoute": "See all in Records",
         "since": {
