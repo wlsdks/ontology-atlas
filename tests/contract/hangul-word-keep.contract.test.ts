@@ -94,8 +94,10 @@ describe("<html lang> is right before the first paint", () => {
  * 364 → 357 (2026-09-25, polish bundle): the screens that landed beside this rule (projects,
  * download, gateway, library ops, history, insights, agents) had added per-element sites; each
  * was dropped from its new line, which also took seven sites on moved or rewritten lines.
+ * 357 → 356 (2026-09-25): a settings-sheet caption rewritten by the chrome interaction fix
+ * dropped its per-element site; the root `:lang(ko)` rule covers it.
  */
-const BREAK_KEEP_CEILING = 357;
+const BREAK_KEEP_CEILING = 356;
 
 function stripComments(source: string): string {
   return source

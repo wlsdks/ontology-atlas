@@ -96,7 +96,15 @@ export function usePanelPresence(
     }, exitMs);
     return () => clearTimeout(id);
   }, [open, exitMs]);
-  return { mounted, exiting };
+  /*
+   * **Exiting only while something is on screen and closed.** The effect above also runs on
+   * mount with `open=false`, which set `exiting` for the first exit window of every surface
+   * that had never opened, and `exiting` lags one commit behind a reopen. A surface opened in
+   * either gap rendered its first commit `inert`, so the focus trap's `focus()` on that commit
+   * failed silently and focus stayed on `<body>` - the settings sheet reopened after a language
+   * switch did exactly that (inspection, 2026-09-25).
+   */
+  return { mounted, exiting: exiting && mounted && !open };
 }
 
 /**

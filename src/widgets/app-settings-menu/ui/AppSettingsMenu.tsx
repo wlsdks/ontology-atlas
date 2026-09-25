@@ -33,6 +33,7 @@ import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
+import { isDesktopShell } from '@/shared/lib/desktop-shell';
 import { Chip, IconButton, RowButton } from '@/shared/ui/controls';
 import { subscribeSettingsViewIntent } from '@/shared/lib/settings-view-intent';
 
@@ -288,17 +289,21 @@ export { AGENT_GRAPH_WORKFLOW_HREF };
 interface SettingsLocaleFocusIntent {
   locale: string;
   triggerVariant: SettingsTriggerVariant;
+  /** The pane the language was changed from — the sheet reopens there. */
+  section?: SettingsSection;
   createdAt: number;
 }
 
 function rememberSettingsLocaleFocus(
   locale: string,
   triggerVariant: SettingsTriggerVariant,
+  section: SettingsSection,
 ) {
   try {
     const intent: SettingsLocaleFocusIntent = {
       locale,
       triggerVariant,
+      section,
       createdAt: Date.now(),
     };
     window.sessionStorage.setItem(SETTINGS_LOCALE_FOCUS_KEY, JSON.stringify(intent));
@@ -307,29 +312,42 @@ function rememberSettingsLocaleFocus(
   }
 }
 
+const SETTINGS_SECTIONS: readonly string[] = SETTINGS_GROUPS.flatMap((group) => [...group.items]);
+
+/**
+ * Reads the intent left by a language switch. Returns the pane to reopen on, or `null`.
+ *
+ * `canConsume` is asked before the intent is removed: several instances of this widget are
+ * mounted at once (the rail tile and the narrow-width chrome tiles), and a hidden one that took
+ * the intent first left the visible one with nothing to restore (inspection, 2026-09-25).
+ */
 function consumeSettingsLocaleFocus(
   locale: string,
   triggerVariant: SettingsTriggerVariant,
-): boolean {
+  canConsume: () => boolean,
+): SettingsSection | null {
   try {
     const raw = window.sessionStorage.getItem(SETTINGS_LOCALE_FOCUS_KEY);
-    if (!raw) return false;
+    if (!raw) return null;
     const intent = JSON.parse(raw) as Partial<SettingsLocaleFocusIntent>;
     const age = Date.now() - Number(intent.createdAt);
     if (!Number.isFinite(age) || age < 0 || age > SETTINGS_LOCALE_FOCUS_MAX_AGE_MS) {
       window.sessionStorage.removeItem(SETTINGS_LOCALE_FOCUS_KEY);
-      return false;
+      return null;
     }
-    if (intent.locale !== locale || intent.triggerVariant !== triggerVariant) return false;
+    if (intent.locale !== locale || intent.triggerVariant !== triggerVariant) return null;
+    if (!canConsume()) return null;
     window.sessionStorage.removeItem(SETTINGS_LOCALE_FOCUS_KEY);
-    return true;
+    return typeof intent.section === 'string' && SETTINGS_SECTIONS.includes(intent.section)
+      ? (intent.section as SettingsSection)
+      : 'screen';
   } catch {
     try {
       window.sessionStorage.removeItem(SETTINGS_LOCALE_FOCUS_KEY);
     } catch {
       // sessionStorage unavailable — leave no in-memory focus contract behind.
     }
-    return false;
+    return null;
   }
 }
 
@@ -415,6 +433,16 @@ export function AppSettingsMenu({
   });
   const titleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
+  /*
+   * **The web lists no pane it cannot fill.** The 「App」 group's one item, Updates, draws
+   * nothing outside the desktop shell (`AppUpdateSettings` returns null there, by design: a tab
+   * cannot replace itself). Listed anyway, it opened on a heading, one app-only promise and a
+   * 470px empty pane (inspection, 2026-09-25, `h-web-ko-update.png`). The group goes with it.
+   */
+  const desktopShell = isDesktopShell();
+  const settingsGroups = SETTINGS_GROUPS.filter((group) => group.key !== 'app' || desktopShell);
+  const shownSection: SettingsSection =
+    section === 'update' && !desktopShell ? 'screen' : section;
 
   const isLocalVaultLoaded = localVault.status === 'loaded';
   // #72 — the absolute path is knowable only on the desktop (a web FSA handle has no path).
@@ -490,13 +518,27 @@ export function AppSettingsMenu({
     }
   }, [open]);
 
+  /*
+   * **A language switch reopens the sheet where it was.** Changing locale remounts the whole
+   * `[locale]` layout, so the sheet the person was using closed under them and focus fell to
+   * `<body>`; refocusing only the gear was not enough, and with three instances mounted it did
+   * not even reach the visible one (inspection, 2026-09-25, `h-locale-switched.png`). The person
+   * changed one value inside settings, so they stay inside settings, on the same pane. The sheet
+   * is `aria-modal`, which `RouteFocusManager` already leaves alone.
+   */
   useEffect(() => {
-    if (!consumeSettingsLocaleFocus(locale, triggerVariant)) return undefined;
     const timer = window.setTimeout(() => {
-      triggerRef.current?.focus({ preventScroll: true });
+      const reopen = consumeSettingsLocaleFocus(
+        locale,
+        triggerVariant,
+        () => triggerRef.current !== null && triggerRef.current.offsetParent !== null,
+      );
+      if (!reopen) return;
+      setSection(reopen);
+      setOpen(true);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [locale, triggerVariant]);
+  }, [locale, triggerVariant, setOpen]);
 
   useEffect(() => {
     if (!open) return;
@@ -757,7 +799,7 @@ export function AppSettingsMenu({
                 data-testid="app-settings-nav"
                 className="flex w-full shrink-0 gap-1 overflow-x-auto border-b border-[color:var(--color-border-soft)] p-2 scroll-px-2 sm:w-[180px] sm:flex-col sm:gap-0.5 sm:overflow-y-auto sm:border-b-0 sm:border-r"
               >
-                {SETTINGS_GROUPS.map((group) => (
+                {settingsGroups.map((group) => (
                   <div key={group.key} className="flex w-max shrink-0 gap-1 sm:mb-3 sm:block sm:w-auto sm:last:mb-0">
                     <p className="hidden px-2.5 pb-1 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)] sm:block">
                       {t(`sectionGroup.${group.key}`)}
@@ -821,7 +863,7 @@ export function AppSettingsMenu({
                       </button>
                     ) : null}
                     {group.items.map((item) => {
-                      const active = item === section;
+                      const active = item === shownSection;
                       const Icon = SECTION_ICON[item];
                       return (
                         <button
@@ -830,7 +872,7 @@ export function AppSettingsMenu({
                           data-testid={`app-settings-nav-${item}`}
                           aria-current={active ? 'page' : undefined}
                           onClick={() => {
-                            if (item === section) return;
+                            if (item === shownSection) return;
                             setAnimateSection(true);
                             setSection(item);
                           }}
@@ -855,7 +897,7 @@ export function AppSettingsMenu({
               </nav>
 
               <div
-                key={section}
+                key={shownSection}
                 // The 20px margin is the value from the macOS settings window layout guide.
                 // A new section starts at its first control. Only section selection fades;
                 // opening the dialog already has its own panel animation.
@@ -863,14 +905,14 @@ export function AppSettingsMenu({
                 onAnimationEnd={(event) => {
                   if (event.target === event.currentTarget) setAnimateSection(false);
                 }}
-                data-testid={`app-settings-pane-${section}`}
+                data-testid={`app-settings-pane-${shownSection}`}
               >
                 <SettingsPaneHead
                   testId="app-settings-pane-head"
-                  title={t(`section.${section}`)}
-                  description={t(`sectionPurpose.${section}`)}
+                  title={t(`section.${shownSection}`)}
+                  description={t(`sectionPurpose.${shownSection}`)}
                 />
-                {section === 'screen' ? (
+                {shownSection === 'screen' ? (
                   <>
                   <SettingsGroup>
                 <SettingsRow
@@ -878,7 +920,7 @@ export function AppSettingsMenu({
                   control={
                     <LocaleSwitch
                       onSwitchStart={(nextLocale) =>
-                        rememberSettingsLocaleFocus(nextLocale, triggerVariant)
+                        rememberSettingsLocaleFocus(nextLocale, triggerVariant, shownSection)
                       }
                     />
                   }
@@ -981,7 +1023,7 @@ export function AppSettingsMenu({
                 />
                   </SettingsGroup>
                   </>
-                ) : section === 'notify' ? (
+                ) : shownSection === 'notify' ? (
                   /*
                    * Why "Notifications" gets its own pane (2026-08-02, owner report).
                    *
@@ -1005,7 +1047,7 @@ export function AppSettingsMenu({
                    * «what outside thing this connects to», which is a different nature.
                    */
                   <AgentActivitySettings />
-                ) : section === 'background' ? (
+                ) : shownSection === 'background' ? (
                   <>
                   {/* 3D layout (dome/cloud) is not here — the picker the map's top
                       "3D" chip opens owns it (`View3dMenu`). It was here at first and
@@ -1039,11 +1081,11 @@ export function AppSettingsMenu({
                     />
                   </SettingsGroup>
                   </>
-                ) : section === 'expand' ? (
+                ) : shownSection === 'expand' ? (
                   <ExpandSettings />
-                ) : section === 'footprint' ? (
+                ) : shownSection === 'footprint' ? (
                   <FootprintSettings />
-                ) : section === 'workspace' ? (
+                ) : shownSection === 'workspace' ? (
                     <>
                   <SettingsGroup>
                 <VaultShapeSettings />
@@ -1234,27 +1276,27 @@ export function AppSettingsMenu({
                       </div>
                     ))
                   : null}
-                <Link
-                  href={vaultNavigationHref}
-                  onClick={handleVaultNavigate}
-                  className={controlClass({ shape: "row", stacked: true, className: "min-h-12 justify-between gap-3 px-3 py-2 hover:bg-[color:var(--color-overlay-2)]" })}
-                >
-                  <span className="min-w-0">
-                    <span className="block text-body text-[color:var(--color-text-primary)]">
-                      {t('vaultTitle')}
-                    </span>
-                    <span className="mt-0.5 block break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
-                      {vaultBody}
-                    </span>
-                  </span>
-                  {/* The whole row is the link, so its trailing mark is the row-link grammar the
-                      nav's MCP row uses: a quiet word and a chevron, no box. A chip-shaped span
-                      inside a link read as a second target that was not its own button. */}
-                  <span className="flex shrink-0 items-center gap-1 text-body text-[color:var(--color-text-tertiary)]">
-                    {vaultCta}
-                    <ChevronRight size={ICON_SIZE.sm} aria-hidden />
-                  </span>
-                </Link>
+                {/*
+                  The same row grammar as its neighbours: label and caption on the left, one
+                  `lg` secondary chip on the right. It was the only whole-row link in the group,
+                  closing on a borderless "Open ›" between rows whose actions are all bordered
+                  32px chips (inspection, 2026-09-25, `b-1512-en-workspace.png`).
+                */}
+                <SettingsRow
+                  testId="app-settings-vault-docs"
+                  label={t('vaultTitle')}
+                  caption={vaultBody}
+                  control={
+                    <Link
+                      href={vaultNavigationHref}
+                      onClick={handleVaultNavigate}
+                      data-testid="app-settings-vault-docs-open"
+                      className={controlClass({ shape: 'chip', size: 'lg', tone: 'secondary', className: DETAIL_TOGGLE_CHIP })}
+                    >
+                      {vaultCta}
+                    </Link>
+                  }
+                />
                     {/*
                       "Import nodes from another folder"
                       — moved here from the bottom of INDEX (2026-08-02, owner:
@@ -1296,7 +1338,7 @@ export function AppSettingsMenu({
                   </SettingsGroup>
                     </>
 
-                ) : section === 'update' ? (
+                ) : shownSection === 'update' ? (
                   <AppUpdateSettings />
 
                 ) : (

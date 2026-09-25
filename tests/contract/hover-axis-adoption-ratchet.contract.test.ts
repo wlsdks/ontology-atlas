@@ -107,8 +107,10 @@ const ROOT = process.cwd();
  * path chip's copy action the chip's own icon button, four fewer hand hovers.
  * 284 → 283 (2026-09-25): the map edge panel's hand-built edit chip became the node panel's
  * primary `buttonVariants`, so its hover rides the standard button.
+ * 283 → 282 (2026-09-25): the chrome interaction fix left one hand-written hover fewer in
+ * the rail and settings chips it moved onto shared chip grammar.
  */
-const CEILING = 283;
+const CEILING = 282;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
