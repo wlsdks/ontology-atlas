@@ -510,11 +510,17 @@ export function AppNavRail({
             title={t("getAppTitle")}
             aria-label={t("getApp")}
             data-testid="app-nav-rail-get-app"
-            className={controlClass({ shape: "card", tone: "muted", className: "group relative h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] justify-center border-0 transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:bg-[color:var(--color-overlay-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
+            className={controlClass({ shape: "card", tone: "muted", className: "group relative min-h-0 p-0 h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] justify-center border-0 transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:bg-[color:var(--color-overlay-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
           >
+            {/*
+              `min-h-0 p-0` on the tile: the `card` shape's own `min-h-9 px-3 py-1.5` beat the
+              tile height, so this stood 36px beside the gear's 32 and its 12px side insets left
+              a 38px box 14px for the glyph, squashing it to 14x20 (inspection, 2026-09-25). The
+              tile's geometry is the rail token, as the gear and the history tile have it.
+            */}
             <Download
               aria-hidden
-              className="h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)]"
+              className="h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)] shrink-0"
             />
           </Link>
         ) : null}

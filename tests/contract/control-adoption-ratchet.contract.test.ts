@@ -1114,7 +1114,11 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // 2026-09-25: Check history's first-run door to Automations is one `<Link>` through
 // `buttonVariants`, so `Link` 21→22.
 // 2026-09-25 (agents polish): AgentClientButtons' outline anchor became a `<Button>`, so `a` 9→8.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 22, a: 8 };
+// 2026-09-25: the map's edge panel "fix this relation on the map" link took the node panel's
+// primary `Button` grammar, so its `<Link>` branch goes through `buttonVariants`, `Link` 22→23.
+// 2026-09-25: the Wiki and Guidance preview footers' three pill links became standard sm
+// buttons, entering the census as `buttonVariants` anchors, so `Link` 23→26.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 26, a: 8 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1181,6 +1185,38 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     conditional:
       '⚠️ 이 중 둘은 `className` 이 프리미티브의 반경·인셋을 덮는다(`rounded-chip px-4 sm:px-6`). ' +
       '그건 이 게이트가 아니라 다음 디자인 라운드의 일이다 — 등재가 그 결함을 승인하지는 않는다.',
+  },
+  {
+    file: 'src/widgets/ontology-map/ui/OntologyMapEdgePanel.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The edge panel\'s one action (2026-09-25). Its `<button>` branch is the primary `<Button>` ' +
+      'the node panel\'s action row uses; the `<Link>` branch (navigating to the editor) wears the ' +
+      'same `buttonVariants({ variant: "primary", size: "sm" })` so the docked slot speaks one ' +
+      'grammar whichever branch renders. `control-class.ts` does not replace standard buttons.',
+  },
+  {
+    file: 'src/views/ontology-insights/ui/tabs/HarnessTab.tsx',
+    count: 2,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The Guidance preview footer (2026-09-25): "Open Harness" as `buttonVariants({ variant: ' +
+      '"primary", size: "sm" })` and "Get the app" as outline sm. They were fully round `pill` ' +
+      'links at 32px beside the Analysis views\' 32px rounded-panel buttons, two shapes for one ' +
+      'kind of panel action. Both navigate, so they stay `<Link>`, and `control-class.ts` does ' +
+      'not replace standard buttons.',
+  },
+  {
+    file: 'src/views/ontology-insights/ui/tabs/LibraryTab.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The Wiki preview footer\'s "Start from the Library" (2026-09-25), the same primary sm ' +
+      'standard button as the Guidance footer beside it, for the same reason.',
   },
   {
     file: 'src/views/automations/ui/AutomationsPage.tsx',
@@ -1347,9 +1383,14 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // 30 → 31 (2026-09-25): Check history's first-run door, the standard-button shape again.
 // 31 → 30 (2026-09-25, agents polish): `AgentClientButtons` left the anchor census — its
 // control is a `<Button>` now, so its row is gone.
-const BASELINE_ANCHOR_REGISTERED = 30;
+// 30 → 31 (2026-09-25): the edge panel's one action, a `<Link>` when it navigates to the
+// editor. It is the panel's primary and must match the node panel's primary `<Button>`; a
+// 6px 11px chip there was the second grammar the interaction audit measured.
+// 31 → 34 (2026-09-25): the Analysis preview footers' three actions left the `pill` shape for the
+// standard sm button the Analysis views use for panel actions.
+const BASELINE_ANCHOR_REGISTERED = 34;
 
-/** **Only this number may fall.** The current anchor total (30) minus registered (30). */
+/** **Only this number may fall.** The current anchor total (34) minus registered (34). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

@@ -16,6 +16,7 @@ import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
 import { controlClass } from '@/shared/ui/control-class';
 import { usePanelPresence } from "@/shared/lib/use-presence";
+import { measureCanvasInsets } from "../interaction/free-area";
 
 /**
  * How long the notice stays on screen.
@@ -616,6 +617,34 @@ export function OntologyMap(props: OntologyMapProps) {
       footprint,
       expand,
     });
+
+  /*
+   * **What the open panels really cover, for the chrome drawn on the map** (interaction
+   * audit, 2026-09-25). The lit legend ran on under the inspector because its right edge was
+   * the static `--map-safe-inset-right`. The camera already measures the panels
+   * (`measureCanvasInsets`); publishing the same measurement as
+   * `--map-live-inset-left/right` lets an overlay stop at the panel's edge. Re-read when the
+   * panel flips (and once more after its entrance), and on resize.
+   */
+  useEffect(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
+    const publish = () => {
+      const box = canvas.getBoundingClientRect();
+      if (box.width <= 0 || box.height <= 0) return;
+      const insets = measureCanvasInsets(canvas, { x: box.x, y: box.y, width: box.width, height: box.height });
+      container.style.setProperty("--map-live-inset-left", `${insets.left}px`);
+      container.style.setProperty("--map-live-inset-right", `${insets.right}px`);
+    };
+    publish();
+    const settled = window.setTimeout(publish, 360);
+    window.addEventListener("resize", publish);
+    return () => {
+      window.clearTimeout(settled);
+      window.removeEventListener("resize", publish);
+    };
+  }, [canvasRef, containerRef, detailPanelVisible]);
 
   return (
     <div

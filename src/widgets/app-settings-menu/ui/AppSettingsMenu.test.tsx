@@ -151,7 +151,7 @@ describe('AppSettingsMenu desktop acquisition boundary', () => {
   it('routes the hosted browser vault action to the app download page', () => {
     openSheet(undefined, 'workspace');
     expect(
-      screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
+      screen.getByTestId('app-settings-vault-docs-open'),
     ).toHaveAttribute('href', '/download/?focus=main');
   });
 
@@ -159,21 +159,21 @@ describe('AppSettingsMenu desktop acquisition boundary', () => {
     mocks.isDesktopRuntime = true;
     openSheet(undefined, 'workspace');
     expect(
-      screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
+      screen.getByTestId('app-settings-vault-docs-open'),
     ).toHaveAttribute('href', '/docs/?intent=local&focus=main');
   });
 
   it('sends an already-loaded local vault straight back to /docs', () => {
     openSheet(<AppSettingsMenu mode="local" />, 'workspace');
     expect(
-      screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
+      screen.getByTestId('app-settings-vault-docs-open'),
     ).toHaveAttribute('href', '/docs/?focus=main');
   });
 
   it('records the destination reading-start intent before activating the vault link', () => {
     openSheet(<AppSettingsMenu mode="local" />, 'workspace');
     fireEvent.click(
-      screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
+      screen.getByTestId('app-settings-vault-docs-open'),
     );
 
     expect(mocks.rememberRouteFocusIntent).toHaveBeenCalledWith('/docs/');
@@ -471,9 +471,23 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     );
   });
 
-  it('returns focus to the equivalent settings trigger after a locale navigation remount', async () => {
+  /*
+   * A language switch remounts the `[locale]` layout. The person changed one value inside
+   * settings, so the sheet reopens on the pane they were in rather than closing under them
+   * (inspection, 2026-09-25: the sheet closed and focus fell to <body>).
+   *
+   * jsdom lays nothing out, so `offsetParent` - the "is this instance on screen" test - is null
+   * for every element; these cases stand the triggers up as rendered.
+   */
+  const renderedTriggers = () =>
+    vi.spyOn(HTMLElement.prototype, 'offsetParent', 'get').mockImplementation(() => document.body);
+
+  it('reopens the sheet on the same pane after a locale navigation remount', async () => {
+    const spy = renderedTriggers();
     const first = render(<AppSettingsMenu mode="static" />);
     fireEvent.click(screen.getByTestId('app-settings-trigger'));
+    fireEvent.click(screen.getByTestId('app-settings-nav-background'));
+    fireEvent.click(screen.getByTestId('app-settings-nav-screen'));
     fireEvent.click(screen.getByTestId('locale-switch'));
     first.unmount();
 
@@ -481,15 +495,14 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     render(<AppSettingsMenu mode="static" />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('app-settings-trigger')).toHaveFocus();
+      expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'true');
     });
-    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
+    expect(screen.getByTestId('app-settings-pane-screen')).toBeInTheDocument();
+    spy.mockRestore();
   });
 
   it('restores the exact responsive trigger variant when two settings entries remount', async () => {
+    const spy = renderedTriggers();
     const first = render(
       <AppSettingsMenu mode="static" triggerVariant="chrome-tile" />,
     );
@@ -512,8 +525,24 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
       (trigger) => trigger.getAttribute('data-trigger-variant') === 'chrome-tile',
     );
 
-    await waitFor(() => expect(chromeTrigger).toHaveFocus());
-    expect(railTrigger).not.toHaveFocus();
+    await waitFor(() => expect(chromeTrigger).toHaveAttribute('aria-expanded', 'true'));
+    expect(railTrigger).toHaveAttribute('aria-expanded', 'false');
+    spy.mockRestore();
+  });
+
+  it('a hidden instance does not take the locale intent from the visible one', async () => {
+    const first = render(<AppSettingsMenu mode="static" triggerVariant="chrome-tile" />);
+    fireEvent.click(screen.getByTestId('app-settings-trigger'));
+    fireEvent.click(screen.getByTestId('locale-switch'));
+    first.unmount();
+
+    mocks.locale = 'ko';
+    // jsdom: offsetParent is null, so this instance counts as not on screen.
+    render(<AppSettingsMenu mode="static" triggerVariant="chrome-tile" />);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
+    expect(window.sessionStorage.getItem('ontology-atlas:settings-locale-focus')).not.toBeNull();
+    window.sessionStorage.clear();
   });
 });
 
@@ -689,6 +718,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * order, and without it the list is just five rows.
    */
   it('LNB 는 세 묶음으로 나뉘고 5·2·1 로 갈린다 (이정표 행 별도)', () => {
+    mocks.isDesktopRuntime = true;
     openSheet();
     const nav = screen.getByTestId('app-settings-nav');
     // Pinned by **structure**, not copy — it must not break every time a label is refined.
@@ -713,11 +743,23 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * contract.
    */
   it('LNB 항목마다 아이콘이 하나씩 있다', () => {
+    mocks.isDesktopRuntime = true;
     openSheet();
     for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'ai', 'update']) {
       const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
       expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
     }
+  });
+
+  /*
+   * On the web the 「App」 group's one pane (Updates) can draw nothing, so neither the group nor
+   * the item is listed (inspection, 2026-09-25: a heading, one promise and a 470px empty pane).
+   */
+  it('웹에서는 앱 전용 「업데이트」 묶음이 없다', () => {
+    mocks.isDesktopRuntime = false;
+    openSheet();
+    expect(screen.queryByTestId('app-settings-nav-update')).toBeNull();
+    expect([...screen.getByTestId('app-settings-nav').children]).toHaveLength(2);
   });
 
   it('LNB 여덟 절을 모두 싣는다', () => {
@@ -1037,8 +1079,8 @@ describe('AppSettingsMenu — 가져오기 모듈의 자리', () => {
       'utf-8',
     );
     const workspaceBranch = source.slice(
-      source.indexOf("section === 'workspace' ?"),
-      source.indexOf("section === 'agent' ?"),
+      source.indexOf("shownSection === 'workspace' ?"),
+      source.indexOf("shownSection === 'update' ?"),
     );
     expect(workspaceBranch, '작업 공간 절이 없다').not.toBe('');
     expect(

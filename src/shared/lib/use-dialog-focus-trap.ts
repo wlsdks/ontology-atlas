@@ -49,8 +49,16 @@ export function useDialogFocusTrap<T extends HTMLElement>({
     const container = containerRef.current;
     if (!container) return undefined;
 
+    /*
+     * A child that focused itself during the commit (`autoFocus`) is already inside the
+     * container by the time this effect runs. Recording it as the opener made close restore
+     * focus to an element that unmounts with the dialog, dropping the keyboard to `<body>`
+     * (add-connector dialog, 2026-09-25). Such a child is never the opener; the fallback below
+     * then applies.
+     */
+    const active = document.activeElement;
     previousFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      active instanceof HTMLElement && !container.contains(active) ? active : null;
 
     const focusables = () =>
       Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(

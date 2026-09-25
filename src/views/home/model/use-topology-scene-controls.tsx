@@ -67,7 +67,7 @@ export function useTopologySceneControls({
   const drawerOpen = drawerProject !== null || selectedOntologyNode !== null;
   const {
     pathLensNodeIds, pathLensEdgeIds,
-    allMapNodeIds, allExpandedParentIds, pathExpandedParents, pathChipState, pathChipLabel,
+    allMapNodeIds, allExpandedParentIds, pathExpandedParents, pathChipState, pathChipLabel, pathChipOutcome,
     pathPacketCopied, copyPathPacket,
   } = useTopologyPathLens({
     sourceSlug: pathSourceSlug, targetSlug: pathTargetSlug, projectBySlug,
@@ -282,7 +282,7 @@ export function useTopologySceneControls({
     [interactionSelectedSlugRef, setFullDetailSlug, setSelectedRelationActive, setRouteState, projectBySlug],
   );
   return {
-    drawerOpen, handleToggleExpandAll, pathChipLabel, pathChipState, pathPacketCopied, copyPathPacket,
+    drawerOpen, handleToggleExpandAll, pathChipLabel, pathChipOutcome, pathChipState, pathPacketCopied, copyPathPacket,
     handleClearPath, indexTreeResult, realmActive, realmLedgerModel, indexMaxDomainDescendantCount,
     indexDomainCensus, topologyTotalNodes, topologyTotalRelations, indexDomainCount, topologyOverlayState,
     handleScaffoldStarter, starterScaffolding, emptyTopologyNodeCount, clearTopologyFilters,

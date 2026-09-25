@@ -294,10 +294,7 @@ export function DocumentChangeReader({
           {kind ? <OntologyMapKindGlyph kind={kind} size={source ? 14 : 16} /> : null}
           <span className="min-w-0 truncate">{label}</span>
         </h2>
-        {/* The metadata line and this document's door share one row: the door acts on the
-            document these counts describe, so it stands where they do. */}
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
-        <p className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 font-mono text-caption text-[color:var(--color-text-quaternary)]">
+        <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 font-mono text-caption text-[color:var(--color-text-quaternary)]">
           {/* The path, unless it is the name already shown above it — a file at the folder's
               root would otherwise read its own name twice, at two sizes, in two lines. */}
           {/* Inside a step the file chooser's highlighted row above already prints the path,
@@ -316,8 +313,11 @@ export function DocumentChangeReader({
           </span>
 
         </p>
-        {action ? <div className="flex-none">{action}</div> : null}
-        </div>
+        {/* The door stands under the metadata it acts on, left-aligned in the column's
+            full width: the same slot and card the restore confirm uses. Floated right in
+            the metadata row, its confirm opened as a 424px card detached from both the
+            door and the sentence it answers (2026-09-25 sweep). */}
+        {action ? <div className="mt-1 flex w-full flex-none flex-col">{action}</div> : null}
       </header>
 
       {lines.length === 0 ? (

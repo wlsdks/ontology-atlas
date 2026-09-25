@@ -105,6 +105,18 @@ describe("the library graph section", () => {
     );
   });
 
+  it("draws each count as a whole clause, so a narrow row drops clauses rather than cutting one", () => {
+    renderGraph();
+    const clauses = [...screen.getByTestId("library-graph-counts").querySelectorAll("[data-counts-clause]")];
+    expect(clauses.map((clause) => clause.textContent)).toEqual([
+      "원문 1개",
+      " · 위키 문서 1개",
+      " · 개념 1개",
+      " · 인용 1",
+      " · 언급 1",
+    ]);
+  });
+
   /*
    * ⚠️ **`Enter` used to be the commit** — it called `onSelect` and the Library replaced the
    * picture with the page. Since 2026-09-12 it opens the card beside the mark instead, and

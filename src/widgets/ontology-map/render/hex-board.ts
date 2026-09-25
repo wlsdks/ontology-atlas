@@ -86,6 +86,12 @@ export interface HexDrawRoute {
   count?: number;
   twoWay?: boolean;
   pill?: { x: number; y: number } | null;
+  /**
+   * The route stops short of its target: the free map had no way through, so it runs as far
+   * toward the target as it can and ends in an arrow pointing at it, rather than leaving the
+   * free map to arrive.
+   */
+  stub?: boolean;
 }
 
 export interface HexDrawState {
@@ -475,6 +481,27 @@ export function drawHexBoard(
     ctx.lineJoin = "round";
     ctx.stroke();
   };
+  /**
+   * A stub's end: an open arrowhead at the tip, aimed at the target it could not reach inside
+   * the free map, so the line still says where it is going.
+   */
+  const stubHead = (tip: { x: number; y: number }, target: HexTile, color: string) => {
+    const dx = sx(target.x) - tip.x;
+    const dy = sy(target.y) - tip.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    const size = R >= 44 ? 9 : R >= 28 ? 7 : 5;
+    ctx.beginPath();
+    ctx.moveTo(tip.x - ux * size - uy * size * 0.6, tip.y - uy * size + ux * size * 0.6);
+    ctx.lineTo(tip.x + ux * 2, tip.y + uy * 2);
+    ctx.lineTo(tip.x - ux * size + uy * size * 0.6, tip.y - uy * size - ux * size * 0.6);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
+  };
   const canals = state.routes.filter((r) => r.role === "canal");
   const deps = state.routes.filter((r) => r.role !== "canal");
   ctx.globalAlpha = routesAlpha * (1 - dimT);
@@ -493,7 +520,7 @@ export function drawHexBoard(
       ctx.lineWidth = w;
       ctx.stroke();
       const target = layout.byId.get(c.targetId);
-      if (target) arrivalNotch(pts[pts.length - 1]!, target, T.canalHead);
+      if (target) (c.stub ? stubHead : arrivalNotch)(pts[pts.length - 1]!, target, T.canalHead);
       const source = layout.byId.get(c.sourceId);
       if (c.twoWay && source) arrivalNotch(pts[0]!, source, T.canalHead);
       stats.canals += 1;
@@ -706,7 +733,7 @@ export function drawHexBoard(
       ctx.lineWidth = 1;
       ctx.stroke();
       const target = layout.byId.get(route.targetId);
-      if (target) arrivalNotch(pts[pts.length - 1]!, target, color);
+      if (target) (route.stub ? stubHead : arrivalNotch)(pts[pts.length - 1]!, target, color);
       stats.routes += 1;
     }
     // Used-by tiles wear a pale inner ring, so "who relies on this" reads without the lines.

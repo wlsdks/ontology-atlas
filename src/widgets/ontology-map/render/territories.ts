@@ -21,7 +21,9 @@ import { hexPoints } from "./node-shapes";
 import { scaledLabelFont } from "./labels";
 import {
   TERRITORY_GEOMETRY,
-  territorySatellites,
+  placeTerritoryCluster,
+  territoryClusterAvoid,
+  type Box,
   type TerritoryCapability,
   type TerritoryLabel,
   type TerritoryLayout,
@@ -87,6 +89,8 @@ export interface TerritoryFrameStats {
   satellites: number;
   rollups: number;
   offset: [number, number];
+  /** The selected capability's element plate in canvas px ([x, y, w, h]), or null. */
+  callout: [number, number, number, number] | null;
 }
 
 const easeOut = (t: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
@@ -220,6 +224,7 @@ export function drawTerritories(
     satellites: 0,
     rollups: 0,
     offset: [Math.round(state.offsetX), Math.round(state.offsetY)],
+    callout: null,
   };
   const { lit, dimT, dpr } = state;
   const G = TERRITORY_GEOMETRY;
@@ -461,7 +466,16 @@ export function drawTerritories(
         tokens.canvasBgNear,
       );
     }
-    stats.satellites = drawElementCluster(ctx, focusCap, state, tokens, inks);
+    const plate = drawElementCluster(ctx, layout, focusCap, state, tokens, inks);
+    stats.satellites = focusCap.elementIds.length;
+    if (plate) {
+      stats.callout = [
+        Math.round(plate.x + state.offsetX),
+        Math.round(plate.y + state.offsetY),
+        Math.round(plate.w),
+        Math.round(plate.h),
+      ];
+    }
     ctx.globalAlpha = 1;
   }
   ctx.restore();
@@ -492,31 +506,24 @@ function drawCounts(ctx: CanvasRenderingContext2D, stats: TerritoryLabel, stale:
  */
 function drawElementCluster(
   ctx: CanvasRenderingContext2D,
+  layout: TerritoryLayout,
   cap: TerritoryCapability,
   state: TerritoryDrawState,
   tokens: OntologyMapTokens,
   inks: TerritoryInks,
-): number {
-  const sats = territorySatellites(cap);
-  if (sats.length === 0) return 0;
-  const side = sats[0]!.x >= cap.x ? 1 : -1;
-  const railX = sats[0]!.x - side * 9;
-  const top = sats[0]!.y;
-  const bottom = sats[sats.length - 1]!.y;
+): Box | null {
+  if (cap.elementIds.length === 0) return null;
   /*
    * The cluster sits on its own plate: the names cross whatever dimmed shelf lies beside the
    * disc, and a plate in the canvas colour keeps them one readable list instead of a collision.
+   * The plate is placed clear of the capability's name and its domain's title.
    */
   ctx.font = TERRITORY_FONTS.element;
-  const widest = Math.max(...sats.map((s) => ctx.measureText(state.elementNames.get(s.id) ?? s.id).width));
-  const plateNear = railX - side * 6;
-  const plateFar = sats[0]!.x + side * (9 + widest + 10);
-  const plate = {
-    x: Math.min(plateNear, plateFar),
-    y: top - 12,
-    w: Math.abs(plateFar - plateNear),
-    h: bottom - top + 24,
-  };
+  const widest = territoryElementNameWidth(cap, state.elementNames, (text) => ctx.measureText(text).width);
+  const { side, satellites: sats, plate } = placeTerritoryCluster(cap, widest, territoryClusterAvoid(layout, cap));
+  const railX = sats[0]!.x - side * 9;
+  const top = sats[0]!.y;
+  const bottom = sats[sats.length - 1]!.y;
   ctx.beginPath();
   ctx.roundRect(plate.x, plate.y, plate.w, plate.h, 8);
   ctx.fillStyle = tokens.canvasBgNear;
@@ -556,7 +563,18 @@ function drawElementCluster(
       tokens.canvasBgNear,
     );
   }
-  return sats.length;
+  return plate;
+}
+
+/** The longest element name of a capability, as `measure` sets it in the element font. */
+export function territoryElementNameWidth(
+  cap: Pick<TerritoryCapability, "elementIds">,
+  elementNames: ReadonlyMap<string, string>,
+  measure: (text: string) => number,
+): number {
+  let widest = 0;
+  for (const id of cap.elementIds) widest = Math.max(widest, measure(elementNames.get(id) ?? id));
+  return widest;
 }
 
 function drawCapabilityDisc(

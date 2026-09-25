@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { seedFirstRunSeen } from './first-run-seed';
 import { stubDirectoryPicker } from './vault-picker-stub';
@@ -124,11 +124,23 @@ async function strongestChroma(page: import('@playwright/test').Page, selector: 
 }
 
 /** Opens one folder through the stubbed picker, from the first-run starter. */
-async function pickFolderFromFirstRun(page: import('@playwright/test').Page) {
+async function pickFolderFromFirstRun(page: Page) {
   await page.goto('/en/topology/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
   await page.getByTestId('first-run-starter-open').click();
   await page.getByTestId('vault-guide-pick-existing').click();
-  await expect(page.getByTestId('vault-switch-rail-tile')).toBeVisible({ timeout: 60_000 });
+  await switchSettled(page);
+}
+
+/**
+ * The rail tile stays on screen while the next folder opens (it is disabled and `data-busy`
+ * then), so "the tile is visible" no longer means "the switch finished". Wait for the busy
+ * state to come and go.
+ */
+async function switchSettled(page: Page) {
+  const tile = page.getByTestId('vault-switch-rail-tile');
+  await expect(tile).toHaveAttribute('data-busy', 'true', { timeout: 5_000 }).catch(() => undefined);
+  await expect(tile).toBeVisible({ timeout: 60_000 });
+  await expect(tile).not.toHaveAttribute('data-busy', 'true', { timeout: 60_000 });
 }
 
 test.describe('the launch asks which folder when it knows more than one', () => {
@@ -162,7 +174,7 @@ test.describe('the launch asks which folder when it knows more than one', () => 
     await settled(page, 'vault-switch-popover');
     await page.screenshot({ path: `${SHOT_DIR}/02-rail-switcher-open.png` });
     await page.getByTestId('vault-switch-pick-other').click();
-    await expect(page.getByTestId('vault-switch-rail-tile')).toBeVisible({ timeout: 60_000 });
+    await switchSettled(page);
     await expect
       .poll(async () => (await page.getByTestId('vault-switch-rail-tile').innerText()).trim(), {
         timeout: 60_000,
@@ -275,7 +287,7 @@ test.describe('the launch asks which folder when it knows more than one', () => 
     await pickFolderFromFirstRun(page);
     await page.getByTestId('vault-switch-rail-tile').click();
     await page.getByTestId('vault-switch-pick-other').click();
-    await expect(page.getByTestId('vault-switch-rail-tile')).toBeVisible({ timeout: 60_000 });
+    await switchSettled(page);
 
     /*
      * Make the stored handles answer `denied` to the non-prompting permission query. This is
@@ -333,7 +345,7 @@ test.describe('the chooser meets the touch floor it is never swept for', () => {
     await pickFolderFromFirstRun(page);
     await page.getByTestId('vault-switch-rail-tile').click();
     await page.getByTestId('vault-switch-pick-other').click();
-    await expect(page.getByTestId('vault-switch-rail-tile')).toBeVisible({ timeout: 60_000 });
+    await switchSettled(page);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/en/docs/?source=local&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });

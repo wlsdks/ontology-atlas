@@ -556,11 +556,16 @@ describe('ArchitectureWorkbench', () => {
       expect.stringContaining("--vault '/Users/dana/Atlas Source/docs/ontology'"),
     );
     await waitFor(() => {
-      const buttons = screen.getAllByRole('button', { name: 'Copied “Inspect source”. Paste it into your agent' });
+      /* The button says the short state and keeps its width; the sentence naming the task is
+         announced by the polite status region instead of stretching the toolbar. */
+      const buttons = screen.getAllByRole('button', { name: 'Copied' });
       expect(buttons).toHaveLength(1);
       for (const button of buttons) {
         expect(button).toHaveAttribute('data-architecture-copy-state', 'copied');
       }
+      expect(
+        screen.getAllByRole('status').some((node) => node.textContent === 'Copied “Inspect source”. Paste it into your agent'),
+      ).toBe(true);
     });
   });
 
@@ -596,9 +601,10 @@ describe('ArchitectureWorkbench', () => {
        only "copied" and, thirty seconds later, still no way to copy again (2026-09-03). */
     await waitFor(() =>
       expect(
-        screen.getByRole('button', { name: 'Copied “Find improvements”. Paste it into your agent' }),
-      ).toBeInTheDocument(),
+        screen.getAllByRole('status').some((node) => node.textContent === 'Copied “Find improvements”. Paste it into your agent'),
+      ).toBe(true),
     );
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument();
     /* The confirmation leaves, and the chosen task stays on the button. */
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Copy the “Find improvements” task' })).toBeInTheDocument(),

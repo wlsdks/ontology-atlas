@@ -27,6 +27,7 @@ export {
   buildTopologyReturnHref,
   parseTopologyReturnMarker,
   resolveOntologyBuilderNodeSlug,
+  resolveOntologyBuilderNodeSlugFromGraphId,
 } from "./lib/ontology-node-href";
 export type { MeaningEditRelation } from "./lib/ontology-node-href";
 export {

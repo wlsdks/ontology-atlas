@@ -98,6 +98,19 @@ export function useTopologyCanvasFocus({ topologyVaultReadModel }: Options) {
     { slug: string; x: number; y: number } | null
   >(null);
   const closeContextMenu = useCallback(() => setContextMenuNode(null), []);
+  /*
+   * A menu belongs to the moment it was opened in. When the selection moves on
+   * (INDEX, search, the keyboard walk), the camera moves with it and the node the
+   * menu hangs off slides away — the menu used to stay behind, floating over the
+   * newly opened panel. Adjusted during render, not in an effect, so the stale
+   * menu never paints a frame over the new panel.
+   */
+  const selectedNodeId = selectedOntologyNode?.id ?? null;
+  const [menuSelectionId, setMenuSelectionId] = useState(selectedNodeId);
+  if (menuSelectionId !== selectedNodeId) {
+    setMenuSelectionId(selectedNodeId);
+    if (contextMenuNode) setContextMenuNode(null);
+  }
   const handleContextMenuNode = useCallback(
     (slug: string, position: { x: number; y: number }) => {
       setContextMenuNode({ slug, x: position.x, y: position.y });

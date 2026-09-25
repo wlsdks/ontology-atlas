@@ -26,9 +26,9 @@
 .zero { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; margin-left: auto; border: 1px solid var(--color-border-soft); border-radius: var(--radius-chip); color: var(--color-text-secondary); font: var(--text-label)/var(--leading-label) var(--font-mono); }
 .columnHead { display: grid; grid-template-columns: minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr); gap: .75rem; padding: .75rem 1.25rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
 /* The list body: where rows will land. It takes the card's spare height. */
-.emptyRow { display: grid; flex: 1 1 auto; place-items: center; min-height: 4.5rem; margin: 0 1.25rem 1.25rem; padding: 1.5rem 1rem; border: 1px dashed var(--color-indigo-line-a32); border-radius: var(--radius-card); background: var(--color-indigo-a06); }
-.emptyName { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; color: var(--color-text-secondary); font-size: var(--text-body); line-height: var(--leading-body); text-align: center; word-break: keep-all; }
-.emptyName svg { flex: none; color: var(--color-indigo-text-soft); }
+/* A quiet placeholder, not a well: a dashed box with a + read as an add button and did nothing when pressed (2026-09-25). The real action is the one above the facts. */
+.emptyRow { display: grid; flex: 1 1 auto; place-items: center; min-height: 4.5rem; margin: 0 1.25rem 1.25rem; padding: 1.5rem 1rem; border-top: 1px solid var(--color-divider); }
+.emptyName { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; color: var(--color-text-tertiary); font-size: var(--text-body); line-height: var(--leading-body); text-align: center; word-break: keep-all; }
 /* The result sits on the card's floor, so a stretched card never shows a gap under it. */
 .result { display: flex; align-items: flex-start; gap: .75rem; margin: 0 1.25rem; padding: 1rem 0 1.25rem; border-top: 1px solid var(--color-divider); color: var(--color-text-secondary); }
 .result > svg { flex: none; margin-top: .125rem; color: var(--color-indigo-text-soft); }

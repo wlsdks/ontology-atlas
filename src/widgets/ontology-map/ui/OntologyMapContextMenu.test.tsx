@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { clampContextMenuPosition, OntologyMapContextMenu } from "./OntologyMapContextMenu";
@@ -42,6 +42,7 @@ function renderMenu(overrides: {
       onSetPathSource={overrides.onSetPathSource ?? (() => {})}
       onOpenFullDetail={overrides.onOpenFullDetail ?? (() => {})}
       onClose={overrides.onClose ?? (() => {})}
+      ariaLabel="Actions for Views"
     />,
   );
 }
@@ -115,6 +116,37 @@ describe("OntologyMapContextMenu", () => {
     renderMenu({ onClose });
     fireEvent.pointerDown(screen.getByTestId("map-context-menu-path"));
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("names its node and takes focus on its first item, so the arrow keys are the menu's", async () => {
+    renderMenu();
+    const menu = screen.getByTestId("map-context-menu");
+    expect(menu).toHaveAttribute("aria-label", "Actions for Views");
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("map-context-menu-document")));
+  });
+
+  it("walks its enabled items with ArrowUp/ArrowDown/Home/End, cyclically", async () => {
+    renderMenu({ documentHref: null });
+    // The disabled document item is skipped: focus starts on the next one.
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("map-context-menu-edit")));
+    fireEvent.keyDown(document.activeElement!, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(screen.getByTestId("map-context-menu-handoff"));
+    fireEvent.keyDown(document.activeElement!, { key: "End" });
+    expect(document.activeElement).toBe(screen.getByTestId("map-context-menu-full-detail"));
+    fireEvent.keyDown(document.activeElement!, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(screen.getByTestId("map-context-menu-edit"));
+    fireEvent.keyDown(document.activeElement!, { key: "ArrowUp" });
+    expect(document.activeElement).toBe(screen.getByTestId("map-context-menu-full-detail"));
+    fireEvent.keyDown(document.activeElement!, { key: "Home" });
+    expect(document.activeElement).toBe(screen.getByTestId("map-context-menu-edit"));
+  });
+
+  it("closes when Tab leaves it", async () => {
+    const onClose = vi.fn();
+    renderMenu({ onClose });
+    await waitFor(() => expect(document.activeElement?.getAttribute("role")).toBe("menuitem"));
+    fireEvent.keyDown(document.activeElement!, { key: "Tab" });
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("anchors the menu at the given cursor position", () => {

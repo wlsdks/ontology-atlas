@@ -2372,6 +2372,9 @@
      on close, text clears first so the empty box does not look like it is closing. 2px is
      just enough to say "came from above" without drawing attention. */
   .ai-row-disclosure-body {
+    /* A new block formatting context: a child's margin cannot collapse out of the height the
+       disclosure measures, so the row never opens short and clips its last line. */
+    display: flow-root;
     opacity: 1;
     transform: translateY(0);
     transition:
@@ -3019,7 +3022,10 @@
     /* panel surface/border/shadow/divider are shared by the living `TopologyTrailChip`
        popover. Legacy control-panel-specific positioning tokens(phone-bottom,
        phone-max-height, desktop-top, desktop-max-height) were removed along with the panel (0 consumers). */
-    --topology-floating-panel-surface: rgba(15, 16, 17, 0.92);
+    /* Opaque (2026-09-25): at 0.92 with no blur the map's labels and edges read
+       through the trail popover and the activity inbox, which then looked drawn
+       over by the map rather than above it. One surface with the map panels. */
+    --topology-floating-panel-surface: var(--map-panel-surface);
     --topology-floating-panel-border: rgba(255, 255, 255, 0.075);
     --topology-floating-panel-shadow: 0 16px 34px rgba(0, 0, 0, 0.26);
     --topology-floating-panel-divider: rgba(255, 255, 255, 0.06);
@@ -6063,4 +6069,13 @@ html[data-gateway-stage] {
   --color-indigo-brand: #5e6ad2;
   --color-indigo-accent: #7170ff;
   --color-indigo-a24: rgba(94, 106, 210, 0.24);
+}
+
+/* A floating panel that holds nothing to press passes the pointer through, its positioning
+ * wrapper included (2026-09-25 interaction review). `Tooltip`'s `panelClassName="pointer-events-none"`
+ * reached only the panel: Radix wraps it in a positioned box of the same size, and that box
+ * still answered `elementFromPoint` and took the clicks meant for the row the panel lay over
+ * (the Git remote hints across the "now" row, 246x34 at every width). */
+[data-radix-popper-content-wrapper]:has(> .pointer-events-none) {
+  pointer-events: none;
 }

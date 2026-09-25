@@ -5,7 +5,7 @@ import { useId } from 'react';
 import { Check } from 'lucide-react';
 import { answerObservation, type RetainedAnswerHead } from '@/features/library';
 import { cn } from '@/shared/lib/cn';
-import { Button } from '@/shared/ui';
+import { Chip } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { StateBadge } from './StateBadge';
@@ -117,10 +117,14 @@ export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk,
           <p className={headingHidden ? 'text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]' : 'mt-2 text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]'}>{t('answers.lede')}</p>
         </div>
         {onAsk || askBlocked ? (
-          <Button
+          /* The Library's chip grammar — the one `library-compile-popover-run` and the
+             strip's doors use. A `Button sm` here drew a 12px radius and 14px type under an
+             11px/6px trigger, two grammars in one popover (2026-09-25). */
+          <Chip
             className="atlas-touch-floor max-w-full"
-            size="sm"
-            variant="outline"
+            tone="strong"
+            hoverSurface="lift"
+            hoverBorder="strong"
             data-testid="library-questions-ask"
             disabled={onAsk === null}
             /* Tied to its reason, not merely near it: a disabled button leaves the tab
@@ -130,7 +134,7 @@ export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk,
             onClick={onAsk ?? undefined}
           >
             {t('answers.ask')}
-          </Button>
+          </Chip>
         ) : null}
       </div>
       {askBlockedBelow ? (

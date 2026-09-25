@@ -109,6 +109,15 @@ export async function installLibraryWorkHarness(
     writeMode?: 'ask' | 'auto';
     filePermission?: boolean;
     runtimeId?: LibraryWorkRuntimeId;
+    /**
+     * Detect every one of these runtimes instead of the one `runtimeId` names. Two or more turn
+     * the footer's runtime name into a picker, which is the only way to render that picker beside
+     * the mode picker — the pair whose overlap no single-runtime fixture could reach.
+     */
+    runtimeIds?: readonly LibraryWorkRuntimeId[];
+    /** The modes `session/new` offers, and the one it reports as current. */
+    modes?: ReadonlyArray<{ id: string; name: string }>;
+    currentModeId?: string;
     localResponses?: string[];
     /**
      * Make `acp_start` refuse, with this exact message.
@@ -127,8 +136,11 @@ export async function installLibraryWorkHarness(
 ): Promise<LibraryWorkHarness> {
   const scenario = options.scenario ?? "successful-write";
   const runtime = options.runtimeId ? ACP_RUNTIMES[options.runtimeId] : RUNTIME;
+  const runtimes = options.runtimeIds?.length ? options.runtimeIds.map((id) => ACP_RUNTIMES[id]) : [runtime];
+  const modes = options.modes ?? [{ id: "default", name: "Default" }];
+  const currentModeId = options.currentModeId ?? modes[0]?.id ?? "default";
   await page.addInitScript(
-    ({ initialFiles, initialScenario, vaultRoot, runtime, architecturePage, permissionFile, permissionText, permissionKind, writeMode, filePermission, mcpBinary, localResponses, pastSessions, slashCommands, startError }) => {
+    ({ initialFiles, initialScenario, vaultRoot, runtimes, modes, currentModeId, architecturePage, permissionFile, permissionText, permissionKind, writeMode, filePermission, mcpBinary, localResponses, pastSessions, slashCommands, startError }) => {
       const fixtureWindow = window as unknown as HarnessWindow;
       const record = (value: unknown): JsonRecord | null => typeof value === "object" && value !== null && !Array.isArray(value)
         ? value as JsonRecord
@@ -264,7 +276,7 @@ export async function installLibraryWorkHarness(
         }
         if (method === "session/load" && id !== null) return result(id, {});
         if (method === "session/new" && id !== null) {
-          const answer = result(id, { sessionId, modes: { availableModes: [{ id: "default", name: "Default" }], currentModeId: "default" }, models: { availableModels: [], currentModelId: null } });
+          const answer = result(id, { sessionId, modes: { availableModes: modes, currentModeId }, models: { availableModels: [], currentModelId: null } });
           /*
            * ⚠️ **After the client has the session, not in the same tick as the answer.** Every
            * `session/update` is dropped unless its session id matches the one the client is
@@ -345,7 +357,7 @@ export async function installLibraryWorkHarness(
         calls.push({ method: command, params: args });
         if (command === "plugin:event|listen") { const id = Number(args.handler); const event = String(args.event); if (!callbacks.has(id)) return Promise.reject(new Error("missing event callback")); const set = listeners.get(event) ?? new Set<number>(); set.add(id); listeners.set(event, set); return Promise.resolve(id); }
         if (command === "plugin:event|unlisten") { const event = String(args.event); listeners.get(event)?.delete(Number(args.eventId)); callbacks.delete(Number(args.eventId)); return Promise.resolve(); }
-        if (command === "acp_detect_runtimes") return Promise.resolve(localResponses ? [] : [runtime]);
+        if (command === "acp_detect_runtimes") return Promise.resolve(localResponses ? [] : runtimes);
         if (command === "llm_chat" && localResponses) {
           const scripted = localResponses[localRound++];
           if (!scripted) return Promise.reject(new Error("local fixture exhausted"));
@@ -392,7 +404,7 @@ export async function installLibraryWorkHarness(
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
       fixtureWindow.__atlasLibraryWorkHarness = { emitRead, emitWait, emitWrite, finish, answer, think, mutateSource: write, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
-    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtime, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError },
+    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError },
   );
   const call = (currentPage: Page, method: "emitRead" | "emitWait" | "emitWrite" | "finish") => currentPage.evaluate((name) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.[name](), method);
   return { snapshot: (currentPage) => currentPage.evaluate(() => {

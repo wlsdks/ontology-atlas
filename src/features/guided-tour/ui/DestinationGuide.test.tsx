@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ko from "../../../../messages/ko.json";
 import { GuideReplayProvider, useGuideReplay } from "../model/guide-replay-context";
 import { destinationTourStatusKey } from "../model/tour-storage";
+import { EXIT_WINDOW_MS } from "@/shared/lib/use-presence";
 import { DestinationGuide } from "./DestinationGuide";
 
 const DOCS_KEY = destinationTourStatusKey("docs");
@@ -125,6 +126,11 @@ describe("DestinationGuide", () => {
     expect(blocker).toHaveAttribute("data-dismissable", "true");
     await act(async () => {
       fireEvent.click(blocker);
+    });
+    // It leaves through its exit window (inert, fading), then unmounts.
+    expect(screen.getByTestId("guided-tour-overlay")).toHaveAttribute("data-state", "closed");
+    await act(async () => {
+      vi.advanceTimersByTime(EXIT_WINDOW_MS);
     });
     expect(screen.queryByTestId("guided-tour-card")).toBeNull();
   });

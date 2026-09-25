@@ -67,9 +67,14 @@ test('the wiki kind still drives the wiki tool', async ({ page }) => {
   await harness.read(page);
   await harness.wait(page);
   await expect(page.getByTestId('acp-permission-card')).toBeVisible({ timeout: 15_000 });
+  // The wire carries the wiki tool...
+  const { events } = await harness.snapshot(page);
+  expect(JSON.stringify(events)).toContain('mcp__atlas-vault__write_wiki_file');
+  // ...and the row names what it does to the wiki page, not a concept patch. Since 2026-09-25 a call
+  // on our server the label table does not know reads as its ACP kind rather than its function name.
   const rows = await page.evaluate(() => [...document.querySelectorAll('[data-acp-entry="tool"]')]
     .map((row) => (row.textContent ?? '').trim()));
-  expect(rows.join(' | ')).toContain('write_wiki_file');
+  expect(rows.join(' | ')).toContain('Edit · wiki/architecture.md');
 });
 
 /**

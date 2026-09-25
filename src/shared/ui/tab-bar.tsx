@@ -303,6 +303,8 @@ export function TabBar({
              * control height as a minimum, so a reader's enlarged line box can grow the tab
              * rather than clip at a fixed height; coarse pointers promote the same minimum to
              * 44px. `items-center` keeps the label centered above its indicator at every height.
+             * A horizontal tab also takes the width floor: a three-letter label ("Git") measured
+             * 40.9px wide on a coarse pointer at 390.
              */
             className={
               vertical
@@ -311,7 +313,7 @@ export function TabBar({
                     ? "bg-[color:var(--color-indigo-a14)] font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
                     : "bg-transparent font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]")
                 :
-              "atlas-touch-floor relative -mb-px inline-flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-2 whitespace-nowrap border-b-[length:var(--tabbar-underline)] bg-transparent px-3 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+              "atlas-touch-floor atlas-touch-floor-wide relative -mb-px inline-flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-2 whitespace-nowrap border-b-[length:var(--tabbar-underline)] bg-transparent px-3 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
               (active
                 ? "border-b-[color:var(--color-indigo-accent)] font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
                 : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]")

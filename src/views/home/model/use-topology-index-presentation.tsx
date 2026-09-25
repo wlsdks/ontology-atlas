@@ -18,7 +18,7 @@ interface Options {
   routeState: import("@/views/home/model/url-state").HomeRouteState;
   meaningEditorIntent: boolean;
   indexState: import("@/widgets/topology-index-panel/lib/index-panel-state").IndexPanelState | null;
-  topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "canCreateNode">;
+  topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "canCreateNode" | "selectedEdge">;
   homeWorkbenchController: Pick<ReturnType<typeof useHomeWorkbenchController>, "meaningWorkbenchOpen" | "acpDockFrameOpen" | "vaultAgentOpen">;
   topologyVaultReadModel: Pick<ReturnType<typeof useTopologyVaultReadModel>, "ontologyInsight" | "llmBridgeAvailable">;
   topologyRouteControls: Pick<
@@ -39,13 +39,17 @@ export function useTopologyIndexPresentation({
   const { setIndexPreference, setIndexManualExpandWhileEmpty, baseRenderedIndexState, indexManualExpandWhileEmpty } = topologyRouteControls;
   const { ontologyInsight, llmBridgeAvailable } = topologyVaultReadModel;
   const { meaningWorkbenchOpen, acpDockFrameOpen, vaultAgentOpen } = homeWorkbenchController;
-  const { canCreateNode } = topologyAuthoring;
+  const { canCreateNode, selectedEdge } = topologyAuthoring;
 
   // Bound to the datasheet being *shown*, not merely to its model existing, so the Esc
   // dismissal order is honoured: after the first press (popover closed, selection
   // kept) the left panel must come back. The realm ledger is exempt from the
   // automatic demotion because it is a realm's only exit and navigation surface.
-  const topologySelectionActive = Boolean(v2DatasheetModel) && !nodePopoverDismissed;
+  //
+  // An open edge panel is a selection too: it docks in the same slot as the datasheet, so
+  // INDEX yields to it by the same rule. It used to stay expanded beside an edge and fold beside
+  // a node, so one slot behaved two ways (interaction audit, 2026-09-25).
+  const topologySelectionActive = (Boolean(v2DatasheetModel) && !nodePopoverDismissed) || selectedEdge !== null;
   const {
     manualExpand: indexManualExpandDuringSelection,
     markManualExpand: markIndexManualExpandDuringSelection,

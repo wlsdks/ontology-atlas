@@ -24,6 +24,7 @@ import { OntologyMapClusterHoverCard, OntologyMapContextMenu, OntologyMapDetailP
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { useTranslations } from "next-intl";
 import { normalizeKindLabelKey } from "../lib/topology-node-significance";
+import { returnFocusIfDropped } from "../lib/topology-focus-return";
 
 
 interface TopologyInspectorSurfacesProps {
@@ -577,6 +578,10 @@ export function TopologyInspectorSurfaces({
           closeContextMenu();
         }}
         onClose={closeContextMenu}
+        ariaLabel={t("nodeDatasheet.contextMenuAriaLabel", { name: heldContextMenu.model.title })}
+        // The menu held focus; once it has gone the canvas takes it back, so the
+        // arrow keys walk the map again from where they were.
+        onExited={() => returnFocusIfDropped("ontology-map-canvas")}
       />
     ) : null}
     {/* Full-bleed surface, **opacity only** (`motion="overlay"`). It used to have

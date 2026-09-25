@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 import { cn } from "@/shared/lib/cn";
 import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
+import { useHeldValue, usePanelPresence } from "@/shared/lib/use-presence";
 import type { UseGuidedTourResult } from "../model/use-guided-tour";
 import {
   computeCardPlacement,
@@ -78,7 +79,16 @@ export interface GuidedTourOverlayProps {
    * covers the screen.
    */
   onBlockedInteraction?: () => void;
+  /**
+   * What the card must leave in view on a step, in client px — the drawn nodes the step
+   * explains (`computeCardPlacement`'s `avoidRects`). The map supplies it; the feature does not
+   * know how a map is drawn.
+   */
+  readAvoidRects?: (stepId: string) => readonly AnchorBox[];
 }
+
+/** Read again once the camera and a freshly opened panel have settled. */
+const AVOID_SETTLE_MS = 450;
 
 /**
  * Draws the scrim, cutout, blocker, card, and progress dots. Every step's scrim
@@ -93,10 +103,44 @@ export function GuidedTourOverlay({
   canvasAnchorRef,
   onActivateAnchor,
   onBlockedInteraction,
+  readAvoidRects,
 }: GuidedTourOverlayProps) {
-  const { open, step } = tour;
+  const { open: liveOpen, step: liveStep } = tour;
+  /*
+   * **It leaves the way it arrived** (2026-09-25). The card fades in over about 100ms,
+   * but on Escape or finish the whole overlay went from present to absent in one frame
+   * (11–13ms measured). The last open state is held through an exit window
+   * (`usePanelPresence`), drawn under `.map-overlay-out` — the map's opacity-only exit,
+   * which keeps its time under reduced motion — and made inert, so nothing in it
+   * answers a press while it fades.
+   */
+  const liveTour = liveOpen && liveStep ? tour : null;
+  const heldTour = useHeldValue(liveTour, liveTour ? liveStep?.id : null);
+  const presence = usePanelPresence(liveTour !== null);
+  const shownTour = liveTour ?? (presence.mounted ? heldTour : null);
+  const exiting = liveTour === null && shownTour !== null;
+  const open = shownTour !== null;
+  const step = shownTour?.step ?? null;
+  /*
+   * The drawn marks the card must not cover, keyed by step so a stale read from the previous
+   * step never places this one. Read on arrival and again after the camera has settled.
+   */
+  const [avoid, setAvoid] = useState<{ step: string | null; rects: readonly AnchorBox[] }>({ step: null, rects: [] });
+  const avoidStepId = open ? (step?.id ?? null) : null;
+  useEffect(() => {
+    if (!avoidStepId || !readAvoidRects) return undefined;
+    const read = () => setAvoid({ step: avoidStepId, rects: readAvoidRects(avoidStepId) });
+    const first = window.requestAnimationFrame(read);
+    const settled = window.setTimeout(read, AVOID_SETTLE_MS);
+    window.addEventListener("resize", read);
+    return () => {
+      window.cancelAnimationFrame(first);
+      window.clearTimeout(settled);
+      window.removeEventListener("resize", read);
+    };
+  }, [avoidStepId, readAvoidRects]);
   const overlayRef = useDialogFocusTrap<HTMLDivElement>({
-    open,
+    open: liveOpen,
     initialFocus: "none",
     restoreFocus: false,
   });
@@ -166,6 +210,28 @@ export function GuidedTourOverlay({
     };
   }, [anchorKey, open, step]);
 
+  // What the card must not cover: every `[data-tour-keep-clear]` box on the page (the
+  // map's top toolbar). Read for canvas-node steps only — a DOM anchor may sit inside
+  // that box, and its card stands beside it by design. Refreshed on step and resize.
+  const [keepClear, setKeepClear] = useState<readonly AnchorBox[]>([]);
+  const keepClearActive = open && step?.anchor?.type === "canvas-node";
+  useEffect(() => {
+    if (!keepClearActive) return undefined;
+    const measure = () =>
+      setKeepClear(
+        [...document.querySelectorAll<HTMLElement>("[data-tour-keep-clear]")]
+          .map((el) => el.getBoundingClientRect())
+          .filter((r) => r.width > 0 && r.height > 0)
+          .map((r) => ({ top: r.top, left: r.left, width: r.width, height: r.height })),
+      );
+    const raf = window.requestAnimationFrame(measure);
+    window.addEventListener("resize", measure);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("resize", measure);
+    };
+  }, [keepClearActive, anchorKey]);
+
   // Canvas node anchors follow every frame (inheriting the camera spring's
   // rhythm, no CSS transition). While the probe is still unprojected (zero-size)
   // — or while the node it tracks is panned outside the viewport — this is null
@@ -202,7 +268,7 @@ export function GuidedTourOverlay({
     return () => window.cancelAnimationFrame(raf);
   }, [anchorKey, open, step, canvasAnchorRef]);
 
-  if (!open || !step) return null;
+  if (!open || !step || !shownTour) return null;
 
   const anchorRect =
     step.anchor?.type === "testid"
@@ -236,6 +302,8 @@ export function GuidedTourOverlay({
     // And the card must clear the node itself, not only its name: this step asks the person to
     // look at that dot and press it.
     avoidTarget: step.anchor?.type === "canvas-node",
+    keepClear: keepClearActive ? keepClear : undefined,
+    avoidRects: avoid.step === step.id ? avoid.rects : undefined,
   });
 
   const isInteractive = Boolean(step.interactive);
@@ -256,7 +324,14 @@ export function GuidedTourOverlay({
       : null;
 
   return (
-    <div ref={overlayRef} data-testid="guided-tour-overlay" data-tour-step={step.id}>
+    <div
+      ref={overlayRef}
+      data-testid="guided-tour-overlay"
+      data-tour-step={step.id}
+      data-state={exiting ? "closed" : "open"}
+      inert={exiting}
+      className={exiting ? "map-overlay-out fixed inset-0 z-[var(--z-tour)]" : undefined}
+    >
       {/* The blocker — non-interactive steps block everything (the scrim is the
           evidence of dimming, satisfying the modal-without-modality rule). The
           interactive step (4) is not fully click-through but blocks with four
@@ -363,7 +438,7 @@ export function GuidedTourOverlay({
           rises into place while tracking accuracy is unchanged. */}
       <GuidedTourCard
         key={step.id}
-        tour={tour}
+        tour={shownTour}
         placement={placement}
         width={cardWidth}
         onActivateAnchor={onActivateAnchor}

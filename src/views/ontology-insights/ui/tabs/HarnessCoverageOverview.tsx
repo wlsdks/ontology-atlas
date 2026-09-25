@@ -98,6 +98,15 @@ export function HarnessCoverageOverview({
   const desktopOpen = selected !== null && presentationMode === 'desktop' && !narrow;
   const narrowOpen = selected !== null && presentationMode === 'narrow' && narrow;
 
+  /** The vertical room the popup may use: the scroll field's top to the usable bottom. */
+  const fieldBounds = () => {
+    const nav = document.querySelector<HTMLElement>('[data-tabbar="primary"]')?.getBoundingClientRect();
+    return {
+      top: fieldRef.current?.getBoundingClientRect().top ?? 0,
+      bottom: nav && nav.width > 0 && nav.height > 0 ? nav.top : window.innerHeight,
+    };
+  };
+
   const place = useCallback(() => {
     if (!selected || typeof window === 'undefined') return;
     const trigger = triggerRefs.current.get(selectionKey(selected));
@@ -121,7 +130,7 @@ export function HarnessCoverageOverview({
       return;
     }
     const railRight = document.querySelector<HTMLElement>('[data-testid="app-nav-rail"]')?.getBoundingClientRect().right ?? 0;
-    setPopupStyle(popupPlacement(rect, window.innerWidth, window.innerHeight, railRight, popupRef.current?.getBoundingClientRect()));
+    setPopupStyle(popupPlacement(rect, window.innerWidth, window.innerHeight, railRight, popupRef.current?.getBoundingClientRect(), { top: fieldRect?.top ?? 0, bottom: usableBottom }));
   }, [close, selected]);
 
   useLayoutEffect(() => {
@@ -209,7 +218,7 @@ export function HarnessCoverageOverview({
     setPresentationMode(narrow ? 'narrow' : 'desktop');
     setSelected(selection);
     const railRight = document.querySelector<HTMLElement>('[data-testid="app-nav-rail"]')?.getBoundingClientRect().right ?? 0;
-    setPopupStyle(popupPlacement(trigger.getBoundingClientRect(), window.innerWidth, window.innerHeight, railRight));
+    setPopupStyle(popupPlacement(trigger.getBoundingClientRect(), window.innerWidth, window.innerHeight, railRight, undefined, fieldBounds()));
   };
 
   const selectMode = (next: ReadingMode) => {
@@ -312,7 +321,7 @@ export function HarnessCoverageOverview({
           {evidenceAction({ kind: 'outside' }, t('collection.outside.action'), evidence.outsideAreas.length)}
           {evidenceAction({ kind: 'unreached' }, t('collection.unreached.action'), evidence.unreachedCapabilities.length)}
           {evidenceAction({ kind: 'findings' }, t('collection.findings.action'), drift.length)}
-          <Link href="/architecture/?view=guides" className={controlClass({ shape: 'link', size: 'md', className: 'px-1 text-[color:var(--color-indigo-text-strong)]' })}>{t('findingSummary')}</Link>
+          <Link href="/architecture/?view=guides" className={controlClass({ shape: 'link', size: 'md', className: 'min-h-8 px-1 text-[color:var(--color-indigo-text-strong)]' })}>{t('findingSummary')}</Link>
         </div>
         {mode === 'diagram' ? (
           <div className={styles.domainGrid} data-guidance-domain-grid>
@@ -687,14 +696,24 @@ function EvidenceLine({ label, children }: { label: string; children: ReactNode 
   return <p className="mt-2 text-label text-[color:var(--color-text-tertiary)]"><span className="block text-caption text-[color:var(--color-text-quaternary)]">{label}</span>{children}</p>;
 }
 
-function popupPlacement(anchor: DOMRect, viewportWidth: number, viewportHeight: number, paneLeft = 0, popup?: DOMRect): CSSProperties & { transformOrigin: string } {
+/**
+ * Where the evidence popup stands beside its port.
+ *
+ * ⚠️ **Vertical room is the field's, not the window's.** Measured against the viewport, a port in
+ * the second row at 1040×720 flipped the popup upward to y=16, over the page title and the
+ * Brief/Concepts/Wiki/Guidance switch (2026-09-25). `bounds` is the scroll field's own top and the
+ * usable bottom; the popup opens on whichever side has more of that room and scrolls inside it.
+ */
+function popupPlacement(anchor: DOMRect, viewportWidth: number, viewportHeight: number, paneLeft = 0, popup?: DOMRect, bounds?: { top: number; bottom: number }): CSSProperties & { transformOrigin: string } {
   const leftFloor = Math.max(16, paneLeft + 16);
   const width = Math.min(popup?.width || 380, viewportWidth - leftFloor - 16);
   const measuredHeight = popup?.height || 480;
-  const availableBelow = viewportHeight - anchor.bottom - 16;
-  const availableAbove = anchor.top - 16;
+  const ceiling = Math.max(16, (bounds?.top ?? 0) + 8);
+  const floor = Math.min(viewportHeight - 16, (bounds?.bottom ?? viewportHeight) - 8);
+  const availableBelow = floor - anchor.bottom - 8;
+  const availableAbove = anchor.top - 8 - ceiling;
   const placeAbove = availableBelow < Math.min(measuredHeight, 360) && availableAbove > availableBelow;
-  const maxHeight = Math.max(180, placeAbove ? availableAbove - 8 : availableBelow - 8);
+  const maxHeight = Math.max(160, placeAbove ? availableAbove : availableBelow);
   const left = Math.min(Math.max(leftFloor, anchor.left + anchor.width / 2 - width / 2), viewportWidth - width - 16);
   const top = placeAbove ? undefined : anchor.bottom + 8;
   const bottom = placeAbove ? viewportHeight - anchor.top + 8 : undefined;

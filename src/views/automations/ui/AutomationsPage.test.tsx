@@ -97,13 +97,15 @@ describe('Automations manager', () => {
     fireEvent.click(screen.getByTestId('automations-new'));
     fireEvent.change(screen.getByTestId('ontology-automation-name'), { target: { value: 'Discard this name' } });
     fireEvent.change(screen.getByTestId('ontology-automation-focus'), { target: { value: 'Discard this scope' } });
-    fireEvent.click(screen.getByRole('radio', { name: 'Daily' }));
+    /* The same unit + rail picker as the documents sheet; every six hours is the rail's 6h detent. */
+    fireEvent.click(screen.getByRole('radio', { name: 'Day' }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByTestId('ontology-automation-sheet')).not.toBeInTheDocument());
     fireEvent.click(screen.getByTestId('automations-new'));
     expect(screen.getByTestId('ontology-automation-name')).toHaveValue(en.automations.ontology.defaultName);
     expect(screen.getByTestId('ontology-automation-focus')).toHaveValue('');
-    expect(screen.getByRole('radio', { name: 'Every 6 hours' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: 'Hours' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('slider')).toHaveAttribute('aria-valuetext', 'every 6 hours');
   });
 
   it('shows a completed ontology review as a review result with its read receipt', () => {

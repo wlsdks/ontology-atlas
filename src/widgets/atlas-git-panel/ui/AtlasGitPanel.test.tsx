@@ -894,8 +894,8 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
      */
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-    expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("Push 2");
-    expect(screen.getByTestId("atlas-git-remote-pull")).toHaveTextContent("Pull 1");
+    expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("보내기 2");
+    expect(screen.getByTestId("atlas-git-remote-pull")).toHaveTextContent("받아오기 1");
     // The numbers themselves stay for assistive technology (losing the visual chip does not lose the fact).
     expect(screen.getByTestId("atlas-git-divergence")).toHaveTextContent("2");
   });
@@ -1629,7 +1629,8 @@ describe("AtlasGitPanel — 문서 하나를 되돌린다", () => {
     fireEvent.click(rows.find((row) => row.textContent?.includes("bar"))!);
 
     const discard = await screen.findByTestId("atlas-git-discard");
-    expect(discard.className).toContain("text-label");
+    // The same 32px / text-body step as the restore door and every confirm pair (2026-09-25).
+    expect(discard.className).toContain("text-body");
     expect(discard.className).not.toContain("text-caption");
     expect(discard.className).toContain("atlas-touch-floor");
     // In the reader's header, beside the path and the +/− counts.
@@ -2161,5 +2162,66 @@ describe("AtlasGitPanel — 문이 없는 이유는 말한다", () => {
     await screen.findByTestId("atlas-git-history-detail");
     expect(await screen.findByTestId("atlas-git-restore-absent")).toHaveTextContent("지웠어요");
     expect(screen.queryByTestId("atlas-git-restore")).toBeNull();
+  });
+});
+
+describe("AtlasGitPanel — confirms that swap in take and return focus (2026-09-25)", () => {
+  it("Push with uncommitted changes opens the commit confirm instead of committing silently", async () => {
+    // `git_snapshot(push:true)` records pending changes under the automatic subject first, so a
+    // press on "Push" used to write a commit nobody confirmed or named.
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const push = await screen.findByTestId("atlas-git-remote-push");
+    // The hint is the shared tooltip, not a native `title`: it opens on keyboard focus.
+    expect(push.getAttribute("title")).toBeNull();
+    act(() => push.focus());
+    const hints = await screen.findAllByTestId("atlas-git-remote-push-hint");
+    expect(hints[0]).toHaveTextContent("커밋");
+    expect(hints[0]).toHaveTextContent("git push");
+    fireEvent.click(push);
+    const step = await screen.findByTestId("atlas-git-confirm-step");
+    expect(
+      tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_snapshot"),
+    ).toHaveLength(0);
+    expect(screen.getByTestId("atlas-git-push-optin")).toBeChecked();
+    expect(document.activeElement).toBe(screen.getByTestId("atlas-git-message-input"));
+    fireEvent.keyDown(step, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByTestId("atlas-git-confirm-step")).toBeNull());
+    expect(document.activeElement).toBe(screen.getByTestId("atlas-git-remote-push"));
+    // The send tick belonged to that one confirm: the next plain commit is not commit-and-push.
+    fireEvent.click(screen.getByTestId("atlas-git-snapshot-button"));
+    await screen.findByTestId("atlas-git-confirm-step");
+    expect(screen.getByTestId("atlas-git-push-optin")).not.toBeChecked();
+  });
+
+  it("the commit step focuses its message, Escape cancels, and focus returns to the commit button", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-snapshot-button"));
+    const input = await screen.findByTestId("atlas-git-message-input");
+    expect(document.activeElement).toBe(input);
+    fireEvent.keyDown(input, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByTestId("atlas-git-confirm-step")).toBeNull());
+    expect(document.activeElement).toBe(screen.getByTestId("atlas-git-snapshot-button"));
+  });
+
+  it("the discard step lands on its safe answer, Escape cancels, focus returns to the door", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-change-groups");
+    const rows = screen.getAllByTestId("atlas-git-change-row");
+    fireEvent.click(rows.find((row) => row.textContent?.includes("bar"))!);
+    fireEvent.click(await screen.findByTestId("atlas-git-discard"));
+    const step = await screen.findByTestId("atlas-git-discard-step");
+    expect(document.activeElement).toBe(screen.getByTestId("atlas-git-discard-cancel"));
+    fireEvent.keyDown(step, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByTestId("atlas-git-discard-step")).toBeNull());
+    expect(document.activeElement).toBe(screen.getByTestId("atlas-git-discard"));
+
+    // Cancel by press returns focus the same way.
+    fireEvent.click(screen.getByTestId("atlas-git-discard"));
+    fireEvent.click(await screen.findByTestId("atlas-git-discard-cancel"));
+    await waitFor(() => expect(screen.queryByTestId("atlas-git-discard-step")).toBeNull());
+    expect(document.activeElement).toBe(screen.getByTestId("atlas-git-discard"));
   });
 });

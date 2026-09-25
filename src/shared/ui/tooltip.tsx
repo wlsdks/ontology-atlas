@@ -32,10 +32,13 @@ export const TooltipProvider = TooltipPrimitive.Provider;
 const TooltipContent = forwardRef<
   HTMLDivElement,
   ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> & { panelClassName?: string }
->(({ className, panelClassName, sideOffset = 6, ...props }, ref) => (
+>(({ className, panelClassName, sideOffset = 6, collisionPadding = 8, ...props }, ref) => (
   <TooltipPrimitive.Content
     ref={ref}
     sideOffset={sideOffset}
+    // A panel flipped or slid by the window edge keeps one gap from it instead of
+    // landing flush against it (the map toolbar's right-hand tiles, 2026-09-25).
+    collisionPadding={collisionPadding}
     className={cn(
       className ??
         "z-[var(--z-tooltip)] rounded-chip border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-panel)] px-2 py-1 text-label text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)] data-[state=delayed-open]:animate-in data-[state=closed]:animate-out",
