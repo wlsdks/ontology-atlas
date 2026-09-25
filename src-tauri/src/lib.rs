@@ -2854,7 +2854,14 @@ fn read_library_collections(root_path: String) -> Result<Option<String>, String>
     }
     #[cfg(not(unix))]
     {
-        let path = resolve_write_target_inside(&root_path, &format!("{DIRECTORY}/{FILE_NAME}"))?;
+        // A read must not create the sidecar folder: the write-target resolver
+        // runs `create_dir_all`, so an untouched vault would gain an empty
+        // `.ontology-atlas` just by being looked at.
+        let path = resolve_inside(&root_path, &format!("{DIRECTORY}/{FILE_NAME}"))?;
+        if !path.exists() {
+            return Ok(None);
+        }
+        let path = ensure_inside_canonical(&root_path, &path)?;
         read_library_collections_file(&path)
     }
 }
@@ -2941,6 +2948,10 @@ mod library_collections_write_tests {
         let root = vault("absent");
         let root_path = root.to_string_lossy().to_string();
         assert_eq!(read_library_collections(root_path.clone()).unwrap(), None);
+        assert!(
+            !root.join(".ontology-atlas").exists(),
+            "reading must not create the sidecar folder"
+        );
         std::fs::create_dir(root.join(".ontology-atlas")).unwrap();
         std::fs::write(root.join(".ontology-atlas/activity.jsonl"), "{}\n").unwrap();
         assert_eq!(read_library_collections(root_path).unwrap(), None);
