@@ -708,6 +708,28 @@ fn get_remote_url(repo_root: &Path, remote_name: &str) -> Option<String> {
     }
 }
 
+/// HEAD names a commit rather than a branch. `git symbolic-ref -q HEAD` fails exactly then; a
+/// branch with no commit yet is still a branch. A git that cannot run answers "not detached",
+/// the state that offers nothing new.
+fn is_head_detached(repo_root: &Path) -> bool {
+    run_git(repo_root, &["symbolic-ref", "-q", "HEAD"])
+        .map(|out| !out.success)
+        .unwrap_or(false)
+}
+
+fn get_head_short_hash(repo_root: &Path) -> Option<String> {
+    let out = run_git(repo_root, &["rev-parse", "--short", "HEAD"]).ok()?;
+    if !out.success {
+        return None;
+    }
+    let trimmed = out.stdout.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
 // ── Result types (consumed by the web GUI) ─────────────────────────────────
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -731,6 +753,19 @@ pub struct GitStatusResult {
     ahead: Option<usize>,
     /// Number of steps on the upstream that I don't have. `None` when there is no upstream.
     behind: Option<usize>,
+    /// Whether a remote named `origin` exists, read locally (`git remote get-url origin`) —
+    /// this never contacts it.
+    ///
+    /// With no upstream the screen used to say "no remote yet" and offer to connect one, whether
+    /// or not `origin` existed; in a repository whose branch had simply never been pushed, that
+    /// button ran `git remote set-url origin` over the real remote (2026-09-25). "No remote",
+    /// "a remote this branch was never sent to" and "no branch at all" have different next steps.
+    has_origin: bool,
+    /// HEAD names a commit, not a branch. Nothing can be sent until a branch is checked out, and
+    /// `branch` then reads `HEAD`.
+    detached: bool,
+    /// Short hash of the commit HEAD names; `None` before the first commit.
+    head_short_hash: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -832,6 +867,9 @@ pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
             staged_outside_vault: Vec::new(),
             ahead: None,
             behind: None,
+            has_origin: false,
+            detached: false,
+            head_short_hash: None,
         });
     };
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
@@ -853,6 +891,9 @@ pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
         staged_outside_vault: staged_outside,
         ahead,
         behind,
+        has_origin: get_remote_url(&repo_root, "origin").is_some(),
+        detached: is_head_detached(&repo_root),
+        head_short_hash: get_head_short_hash(&repo_root),
     })
 }
 
@@ -917,19 +958,33 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
 
 /// Semantic-unit snapshot that adds + commits only the vault scope. Without `message`,
 /// the auto summary is used as the subject. Sends to upstream only when `push` is true (opt-in).
-/// No changes to commit is not an error but `committed:false, reason:"no-changes"`.
+/// No changes to commit is not an error but `committed:false, reason:"no-changes"` — and a push
+/// asked for still goes, because steps already recorded are exactly what Push exists to send.
+///
+/// `set_upstream` is the press on "send this branch" for a branch `origin` has never seen: the
+/// push then names `origin` and records it as this branch's upstream. It is never implied by
+/// `push` alone (charter ①).
 #[tauri::command(async)]
 pub fn git_snapshot(
     vault_path: String,
     message: Option<String>,
     push: Option<bool>,
+    set_upstream: Option<bool>,
 ) -> Result<GitSnapshotResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
+    let set_upstream = set_upstream.unwrap_or(false);
 
     let rows = get_porcelain_status(&repo_root, &pathspec)?;
     if rows.is_empty() {
+        // This used to return before the push, so Push with nothing left to record sent
+        // nothing and said nothing, while the button promised the steps already piled up.
+        let push_outcome = if push.unwrap_or(false) {
+            Some(run_push(&repo_root, set_upstream))
+        } else {
+            None
+        };
         return Ok(GitSnapshotResult {
             committed: false,
             reason: Some("no-changes".into()),
@@ -945,7 +1000,7 @@ pub fn git_snapshot(
             },
             files: Vec::new(),
             staged_outside_vault: Vec::new(),
-            push: None,
+            push: push_outcome,
         });
     }
 
@@ -995,9 +1050,10 @@ pub fn git_snapshot(
         total: changes.len(),
     };
 
-    // push only on explicit opt-in — no automatic `-u` setup when there is no upstream (charter ①).
+    // push only on explicit opt-in — and `-u` only when the person pressed the button that says
+    // it sets this branch's destination, never because an upstream happens to be missing (charter ①).
     let push_outcome = if push.unwrap_or(false) {
-        Some(run_push(&repo_root))
+        Some(run_push(&repo_root, set_upstream))
     } else {
         None
     };
@@ -1017,19 +1073,49 @@ pub fn git_snapshot(
 
 /// The commit already exists locally, so a push failure does not crash as Err;
 /// it is delivered as `PushOutcome{pushed:false, ...}` guidance instead.
-fn run_push(repo_root: &Path) -> PushOutcome {
-    let Some(upstream) = get_upstream_ref(repo_root) else {
-        let branch = get_current_branch(repo_root).unwrap_or_else(|| "<branch>".into());
-        return PushOutcome {
-            pushed: false,
-            remote_url: None,
-            message: Some(coded("push-no-upstream", "")),
-            guidance: Some(format!("git push -u origin {branch}")),
+///
+/// With no upstream, `set_upstream` sends the checked-out branch to `origin` under the same name
+/// and records `origin/<branch>` as its upstream (`git push --set-upstream origin HEAD`). Without
+/// it, or with no `origin`, or on a detached HEAD, nothing is sent.
+fn run_push(repo_root: &Path, set_upstream: bool) -> PushOutcome {
+    let upstream = get_upstream_ref(repo_root);
+    let first_send = upstream.is_none();
+    if first_send {
+        let refusal = if !set_upstream || get_remote_url(repo_root, "origin").is_none() {
+            let branch = get_current_branch(repo_root).unwrap_or_else(|| "<branch>".into());
+            Some((
+                coded("push-no-upstream", ""),
+                format!("git push -u origin {branch}"),
+            ))
+        } else if is_head_detached(repo_root) {
+            // `origin HEAD` from a detached HEAD has no branch name to send under.
+            Some((
+                coded("push-detached-head", ""),
+                "git switch <branch>".to_string(),
+            ))
+        } else {
+            None
         };
+        if let Some((message, guidance)) = refusal {
+            return PushOutcome {
+                pushed: false,
+                remote_url: None,
+                message: Some(message),
+                guidance: Some(guidance),
+            };
+        }
+    }
+    let args: &[&str] = if first_send {
+        &["push", "--set-upstream", "origin", "HEAD"]
+    } else {
+        &["push"]
     };
-    match run_network_git(repo_root, &["push"]) {
+    match run_network_git(repo_root, args) {
         Ok(out) if out.success => {
-            let remote_name = upstream.split('/').next().unwrap_or("origin");
+            let remote_name = upstream
+                .as_deref()
+                .and_then(|name| name.split('/').next())
+                .unwrap_or("origin");
             PushOutcome {
                 pushed: true,
                 remote_url: get_remote_url(repo_root, remote_name),
@@ -2518,5 +2604,171 @@ mod tests {
         assert!(done.restored);
         assert_eq!(fs::read_to_string(&file).unwrap(), committed);
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// A scratch repository with one commit on `main`, and a bare repository beside it that can
+    /// stand in for `origin` — a local path, so nothing here touches the network.
+    struct Scratch {
+        dir: PathBuf,
+        work: PathBuf,
+        origin: PathBuf,
+    }
+
+    impl Scratch {
+        fn new(name: &str) -> Self {
+            let dir = std::env::temp_dir()
+                .join(format!("atlas-remote-state-{name}-{}", std::process::id()));
+            let _ = fs::remove_dir_all(&dir);
+            let work = dir.join("work");
+            let origin = dir.join("origin.git");
+            fs::create_dir_all(&work).unwrap();
+            let scratch = Scratch { dir, work, origin };
+            scratch.git(&["init", "-q", "-b", "main"]);
+            scratch.git(&["config", "user.email", "test@example.invalid"]);
+            scratch.git(&["config", "user.name", "atlas test"]);
+            scratch.git(&["config", "commit.gpgsign", "false"]);
+            scratch.git(&["config", "core.autocrlf", "false"]);
+            scratch.commit("one.md", "one");
+            let out = Command::new("git")
+                .args(["init", "-q", "--bare"])
+                .arg(&scratch.origin)
+                .output()
+                .unwrap();
+            assert!(out.status.success(), "git init --bare");
+            scratch
+        }
+
+        fn git(&self, args: &[&str]) -> String {
+            let out = Command::new("git")
+                .args(args)
+                .current_dir(&self.work)
+                .output()
+                .unwrap();
+            assert!(
+                out.status.success(),
+                "git {args:?}: {}",
+                String::from_utf8_lossy(&out.stderr)
+            );
+            String::from_utf8_lossy(&out.stdout).trim().to_string()
+        }
+
+        fn commit(&self, file: &str, body: &str) {
+            fs::write(self.work.join(file), body).unwrap();
+            self.git(&["add", file]);
+            self.git(&["commit", "-qm", body]);
+        }
+
+        fn add_origin(&self) {
+            let origin = self.origin.to_string_lossy().into_owned();
+            self.git(&["remote", "add", "origin", &origin]);
+        }
+
+        /// What `origin` holds for `main`, read from the bare repository itself.
+        fn origin_main(&self) -> Option<String> {
+            let out = Command::new("git")
+                .args(["rev-parse", "--verify", "-q", "refs/heads/main"])
+                .current_dir(&self.origin)
+                .output()
+                .unwrap();
+            out.status
+                .success()
+                .then(|| String::from_utf8_lossy(&out.stdout).trim().to_string())
+        }
+
+        fn vault(&self) -> String {
+            self.work.to_string_lossy().into_owned()
+        }
+    }
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.dir);
+        }
+    }
+
+    #[test]
+    fn status_tells_no_remote_from_a_branch_never_sent_from_a_detached_head() {
+        // No remote at all: the one state where "connect a remote" is the next step.
+        let scratch = Scratch::new("status");
+        let status = git_status(scratch.vault()).unwrap();
+        assert!(status.upstream.is_none());
+        assert!(!status.has_origin);
+        assert!(!status.detached);
+        assert_eq!(status.branch.as_deref(), Some("main"));
+
+        // `origin` exists and this branch was never pushed: still no upstream, but a remote
+        // that "connect a remote" would have rewritten.
+        scratch.add_origin();
+        let status = git_status(scratch.vault()).unwrap();
+        assert!(status.upstream.is_none());
+        assert!(status.has_origin);
+        assert!(!status.detached);
+
+        // A commit checked out directly: no branch to send from.
+        let head = scratch.git(&["rev-parse", "--short", "HEAD"]);
+        scratch.git(&["checkout", "-q", "--detach"]);
+        let status = git_status(scratch.vault()).unwrap();
+        assert!(status.detached);
+        assert!(status.upstream.is_none());
+        assert_eq!(status.head_short_hash.as_deref(), Some(head.as_str()));
+    }
+
+    #[test]
+    fn a_branch_never_sent_goes_to_origin_only_when_asked_to_set_its_upstream() {
+        let scratch = Scratch::new("first-send");
+        scratch.add_origin();
+
+        // Push alone does not invent a destination (charter ①): nothing leaves.
+        let refused = git_snapshot(scratch.vault(), None, Some(true), None).unwrap();
+        let outcome = refused
+            .push
+            .expect("a push was asked for, so it is answered");
+        assert!(!outcome.pushed);
+        assert_eq!(outcome.message.as_deref(), Some("push-no-upstream"));
+        assert_eq!(scratch.origin_main(), None);
+
+        // The press on "send this branch": nothing to record, so only the steps already made
+        // go — and `origin/main` becomes the upstream the next Push, Pull and Fetch follow.
+        let sent = git_snapshot(scratch.vault(), None, Some(true), Some(true)).unwrap();
+        assert!(!sent.committed);
+        assert!(sent.push.expect("answered").pushed);
+        assert_eq!(
+            scratch.origin_main(),
+            Some(scratch.git(&["rev-parse", "HEAD"]))
+        );
+        let status = git_status(scratch.vault()).unwrap();
+        assert_eq!(status.upstream.as_deref(), Some("origin/main"));
+        assert_eq!((status.ahead, status.behind), (Some(0), Some(0)));
+    }
+
+    #[test]
+    fn push_with_nothing_to_record_still_sends_the_steps_already_made() {
+        let scratch = Scratch::new("push-recorded");
+        scratch.add_origin();
+        scratch.git(&["push", "-q", "-u", "origin", "main"]);
+        scratch.commit("two.md", "two");
+        assert_eq!(git_status(scratch.vault()).unwrap().ahead, Some(1));
+
+        let result = git_snapshot(scratch.vault(), None, Some(true), None).unwrap();
+        assert!(!result.committed);
+        assert_eq!(result.reason.as_deref(), Some("no-changes"));
+        assert!(result.push.expect("answered").pushed);
+        assert_eq!(
+            scratch.origin_main(),
+            Some(scratch.git(&["rev-parse", "HEAD"]))
+        );
+    }
+
+    #[test]
+    fn a_detached_head_sends_nothing_even_when_asked_to_set_an_upstream() {
+        let scratch = Scratch::new("detached");
+        scratch.add_origin();
+        scratch.git(&["checkout", "-q", "--detach"]);
+
+        let result = git_snapshot(scratch.vault(), None, Some(true), Some(true)).unwrap();
+        let outcome = result.push.expect("answered");
+        assert!(!outcome.pushed);
+        assert_eq!(outcome.message.as_deref(), Some("push-detached-head"));
+        assert_eq!(scratch.origin_main(), None);
     }
 }

@@ -466,7 +466,8 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
   it("보낼 곳이 없으면 실패를 알리는 대신 그 자리에서 주소를 받는다", async () => {
     installDesktopGit({
-      status: { ...STATUS_WITH_CHANGES, upstream: null },
+      // No `origin` at all: the one state the address form belongs to.
+      status: { ...STATUS_WITH_CHANGES, upstream: null, hasOrigin: false, detached: false },
       diff: { count: 0, files: [], diff: "" },
       history: HISTORY,
     });
@@ -1003,7 +1004,14 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
 
   it("보낼 곳이 없으면 세 버튼을 아예 안 그린다 — 누를 수 없는 것을 보여주지 않는다", async () => {
     installDesktopGit({
-      status: { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null },
+      status: {
+        ...STATUS_WITH_CHANGES,
+        upstream: null,
+        ahead: null,
+        behind: null,
+        hasOrigin: false,
+        detached: false,
+      },
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     await screen.findByTestId("atlas-git-location");
@@ -2223,5 +2231,150 @@ describe("AtlasGitPanel — confirms that swap in take and return focus (2026-09
     fireEvent.click(await screen.findByTestId("atlas-git-discard-cancel"));
     await waitFor(() => expect(screen.queryByTestId("atlas-git-discard-step")).toBeNull());
     expect(document.activeElement).toBe(screen.getByTestId("atlas-git-discard"));
+  });
+});
+
+/*
+ * "No remote yet" and "connect a remote" used to stand under every branch without an upstream.
+ * A repository whose `origin` exists but whose branch was never pushed, and the owner's vault
+ * checked out detached at `main`, were both told there was no remote — and "connect" there ran
+ * `git remote set-url origin` over the real one (2026-09-25). Each state now says its own fact.
+ */
+describe("AtlasGitPanel — the remote state is told as it is (2026-09-25)", () => {
+  const CLEAN = { count: 0, files: [], diff: "" };
+  const NEVER_SENT = {
+    ...STATUS_WITH_CHANGES,
+    branch: "feature-x",
+    upstream: null,
+    ahead: null,
+    behind: null,
+    changedCount: 0,
+    hasOrigin: true,
+    detached: false,
+    headShortHash: "1a2b3c4",
+  };
+
+  const setRemoteCalls = () =>
+    tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_set_remote");
+
+  it("origin exists and the branch was never sent: it says so, and its one press sends and sets the upstream", async () => {
+    installDesktopGit({
+      status: NEVER_SENT,
+      diff: CLEAN,
+      snapshot: {
+        committed: false,
+        reason: "no-changes",
+        push: { pushed: true, remoteUrl: "git@github.com:me/repo.git", message: null, guidance: null },
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const location = await screen.findByTestId("atlas-git-location");
+    expect(location).toHaveTextContent("feature-x");
+    expect(location).toHaveTextContent("origin에 아직 보낸 적 없는 브랜치예요");
+    expect(location).not.toHaveTextContent("원격 저장소가 아직 없어요");
+    // Nothing on this screen can reach the form that rewrites `origin`.
+    expect(screen.queryByTestId("atlas-git-remote-toggle")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-dock-connect-remote")).toBeNull();
+    expect(screen.getByTestId("atlas-git-dock-never-sent")).toHaveTextContent("아직 보낸 적이 없어요");
+
+    const push = screen.getByTestId("atlas-git-remote-push");
+    act(() => push.focus());
+    const [hint] = await screen.findAllByTestId("atlas-git-remote-push-hint");
+    expect(hint).toHaveTextContent("feature-x 브랜치를 origin에 처음 보내요");
+    expect(hint).toHaveTextContent("git push -u origin feature-x");
+
+    fireEvent.click(push);
+    await waitFor(() => expect(snapshotInvokeCalls()).toHaveLength(1));
+    expect(snapshotInvokeCalls()[0][1]).toMatchObject({ push: true, setUpstream: true });
+    expect(await screen.findByTestId("atlas-git-remote-notice")).toHaveTextContent(
+      "feature-x 브랜치를 origin에 보냈어요",
+    );
+    expect(setRemoteCalls()).toHaveLength(0);
+  });
+
+  it("with changes pending, the first send opens the commit confirm, ticked, and names what the tick does", async () => {
+    installDesktopGit({ status: { ...NEVER_SENT, changedCount: 2 } });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-push"));
+    await screen.findByTestId("atlas-git-confirm-step");
+    expect(snapshotInvokeCalls()).toHaveLength(0);
+    const tick = screen.getByTestId("atlas-git-push-optin");
+    expect(tick).toBeChecked();
+    expect(tick).toBeEnabled();
+    expect(screen.getByTestId("atlas-git-confirm-step")).toHaveTextContent(
+      "feature-x 브랜치를 처음 보내고",
+    );
+
+    fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
+    await waitFor(() => expect(snapshotInvokeCalls()).toHaveLength(1));
+    expect(snapshotInvokeCalls()[0][1]).toMatchObject({ push: true, setUpstream: true });
+  });
+
+  it("a detached HEAD names the commit, says sending needs a branch, and offers no send and no remote form", async () => {
+    installDesktopGit({
+      status: { ...NEVER_SENT, branch: "HEAD", detached: true, headShortHash: "f3e793f" },
+      diff: CLEAN,
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const location = await screen.findByTestId("atlas-git-location");
+    expect(screen.getByTestId("atlas-git-location-ref")).toHaveTextContent("f3e793f");
+    expect(screen.getByTestId("atlas-git-location-ref")).not.toHaveTextContent("HEAD");
+    expect(location).toHaveTextContent("보내려면 브랜치가 필요해요");
+    expect(location).not.toHaveTextContent("원격 저장소가 아직 없어요");
+    expect(screen.getByTestId("atlas-git-dock-detached")).toHaveTextContent("f3e793f");
+    for (const id of [
+      "atlas-git-remote-push",
+      "atlas-git-remote-toggle",
+      "atlas-git-dock-connect-remote",
+      "atlas-git-dock-send-branch",
+    ]) {
+      expect(screen.queryByTestId(id)).toBeNull();
+    }
+    expect(setRemoteCalls()).toHaveLength(0);
+  });
+
+  it("a bridge that does not report origin is unknown: it claims no remote and offers nothing", async () => {
+    // An older bridge answers without `hasOrigin`; absence is not "no remote".
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null },
+      diff: CLEAN,
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const location = await screen.findByTestId("atlas-git-location");
+    expect(location).toHaveTextContent("이 브랜치는 보낼 곳이 정해지지 않았어요");
+    expect(location).not.toHaveTextContent("원격 저장소가 아직 없어요");
+    expect(screen.queryByTestId("atlas-git-remote-toggle")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-dock-connect-remote")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-remote-push")).toBeNull();
+  });
+
+  it("no origin at all keeps the connect flow in the header and the dock", async () => {
+    installDesktopGit({
+      status: { ...NEVER_SENT, hasOrigin: false },
+      diff: CLEAN,
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    expect(await screen.findByTestId("atlas-git-location")).toHaveTextContent("원격 저장소가 아직 없어요");
+    expect(screen.getByTestId("atlas-git-remote-toggle")).toBeInTheDocument();
+    expect(screen.getByTestId("atlas-git-dock-connect-remote")).toBeInTheDocument();
+    expect(screen.queryByTestId("atlas-git-remote-push")).toBeNull();
+
+    // Connected, the branch is "never sent": the form closes and the result speaks under the
+    // header, where the first send now waits.
+    fireEvent.click(screen.getByTestId("atlas-git-remote-toggle"));
+    fireEvent.change(screen.getByTestId("atlas-git-remote-input"), {
+      target: { value: "git@github.com:me/repo.git" },
+    });
+    fireEvent.click(screen.getByTestId("atlas-git-remote-submit"));
+    expect(await screen.findByTestId("atlas-git-remote-notice")).toHaveTextContent(
+      "원격 저장소를 연결했어요",
+    );
+    expect(screen.queryByTestId("atlas-git-remote-setup")).toBeNull();
+    expect(setRemoteCalls()).toHaveLength(1);
   });
 });

@@ -66,6 +66,8 @@ describe('tauri git bridge', () => {
       vaultPath: '/v',
       message: null,
       push: false,
+      // Recording a branch's destination is its own press, never a default.
+      setUpstream: false,
     });
   });
 
@@ -77,6 +79,19 @@ describe('tauri git bridge', () => {
       vaultPath: '/v',
       message: 'my subject',
       push: true,
+      setUpstream: false,
+    });
+  });
+
+  it('asks for an upstream only when the caller says so', async () => {
+    tauriApiMock.runtimeAvailable = true;
+    tauriApiMock.invoke.mockResolvedValue({ committed: false });
+    await gitSnapshot('/v', { push: true, setUpstream: true });
+    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_snapshot', {
+      vaultPath: '/v',
+      message: null,
+      push: true,
+      setUpstream: true,
     });
   });
 
