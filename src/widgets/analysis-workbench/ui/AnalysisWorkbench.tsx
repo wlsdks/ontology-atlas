@@ -55,8 +55,8 @@ const announcedSaveIds = new Set<string>();
  * An error in this panel, drawn as the app's inline alert box (the danger hairline over a faint
  * danger wash) rather than bare red caption text, which read as a stray line of copy.
  */
-function InlineAlert({ children, testId }: { children: ReactNode; testId?: string }) {
-  return <div role="alert" data-testid={testId} className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{children}</div>;
+function InlineAlert({ children }: { children: ReactNode }) {
+  return <p role="alert" className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{children}</p>;
 }
 
 export function AnalysisWorkbench({ context, contextLabel, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, onFitContentChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
@@ -319,10 +319,11 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
       </div>
       <IconButton ref={closeRef} data-testid="analysis-workbench-close" className="absolute right-0 top-0 size-[var(--overlay-close-size)]" label={t(tab === 'conversation' ? 'closeConversation' : 'close')} onClick={onClose}><X size={ICON_SIZE.lg} /></IconButton>
     </header>
-    {error ? <InlineAlert testId="analysis-workbench-error">
-      <p>{error.sentence}</p>
+    {/* The sentence in the alert box; the exception text folded under it, outside the box. */}
+    {error ? <div data-testid="analysis-workbench-error" className="flex flex-col gap-1">
+      <InlineAlert>{error.sentence}</InlineAlert>
       {error.detail ? <FailureDetail summary={t('errorDetails')} detail={error.detail} /> : null}
-    </InlineAlert> : null}
+    </div> : null}
     {notice ? <p role="status" className="text-label leading-label text-[color:var(--color-text-secondary)]">{notice}</p> : null}
     {/*
       **Action first, reference last** (owner, 2026-09-06: "messy" / "nothing is set apart"). The
