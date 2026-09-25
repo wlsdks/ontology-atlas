@@ -1381,7 +1381,15 @@ fn validate_remote_url(url: &str) -> Result<String, String> {
         || trimmed.starts_with("http://")
         || trimmed.starts_with("ssh://")
         || trimmed.starts_with("git://");
-    let looks_path = trimmed.starts_with('/') || trimmed.starts_with("file://");
+    // A Windows folder is a path too (`D:\backup\repo.git`, `D:/backup/repo.git`): the
+    // Windows build and its tests hand git exactly that, and refusing it left a first send
+    // to a local backup impossible there.
+    let bytes = trimmed.as_bytes();
+    let looks_drive_path = bytes.len() > 2
+        && bytes[0].is_ascii_alphabetic()
+        && bytes[1] == b':'
+        && (bytes[2] == b'\\' || bytes[2] == b'/');
+    let looks_path = trimmed.starts_with('/') || trimmed.starts_with("file://") || looks_drive_path;
     if !(looks_scp || looks_url || looks_path) {
         return Err(coded("remote-url-unrecognized", ""));
     }
@@ -2503,6 +2511,8 @@ mod tests {
             "https://github.com/me/repo.git",
             "ssh://git@host/me/repo.git",
             "/Users/me/backup/repo.git",
+            "D:\\backup\\repo.git",
+            "D:/backup/repo.git",
         ] {
             assert_eq!(
                 validate_remote_url(url).unwrap(),
@@ -2526,6 +2536,8 @@ mod tests {
             "--upload-pack=evil",
             "git@host:a b",
             "저장소주소",
+            "D:",
+            "1:\\backup",
         ] {
             assert!(validate_remote_url(bad).is_err(), "should reject {bad:?}");
         }
