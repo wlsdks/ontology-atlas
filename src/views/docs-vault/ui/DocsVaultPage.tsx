@@ -46,6 +46,7 @@ import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { useNavRailSettingsSlot } from '@/widgets/app-nav-rail';
 import { copyText } from '@/shared/lib/copy-text';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
+import { useClaimShellKey } from '@/shared/lib/shell-key-claims';
 import { usePrevious } from '@/shared/lib/use-previous';
 import { cn } from '@/shared/lib/cn';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
@@ -1838,6 +1839,9 @@ function DocsVaultContent({
     ],
   );
 
+  // ⌘K is this workspace's own palette (search · command · tag), so the shell's search stands
+  // aside while the workspace is mounted, here and on the Library's Ontology tab.
+  useClaimShellKey('search');
   useTypingShortcuts([
     {
       combo: { key: 'k', meta: true },

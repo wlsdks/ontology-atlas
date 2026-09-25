@@ -222,7 +222,12 @@ describe('API key rows', () => {
     fireEvent.click(screen.getByTestId('ai-save-openai'));
     await waitFor(() => expect(applyStatus).toHaveBeenCalledWith('openai', { provider: 'openai', stored: true, last4: 'wxyz' }));
     expect(mocks.secretSet).toHaveBeenCalledWith('openai', 'sk-openai-real');
-    expect(mocks.toast).toHaveBeenCalledWith(`${NS}.saved`);
+    // Said by the row and read out by the announcer — not by a toast over the page
+    // (2026-09-26: on this tall tab the toast stood over the sent-log caption).
+    await waitFor(() =>
+      expect(screen.getByTestId('models-announcer')).toHaveTextContent(`${NS}.providerOpenai · ${NS}.saved`),
+    );
+    expect(mocks.toast).not.toHaveBeenCalled();
     expect(document.body.innerHTML).not.toContain('sk-openai-real');
     await waitFor(() => expect(screen.getByTestId('ai-detail-openai')).toHaveAttribute('data-state', 'closed'));
   });
@@ -261,7 +266,10 @@ describe('API key rows', () => {
     fireEvent.click(clearButton);
     await waitFor(() => expect(mocks.secretClear).toHaveBeenCalledWith('anthropic'));
     expect(applyStatus).toHaveBeenCalledWith('anthropic', { provider: 'anthropic', stored: false, last4: null });
-    expect(mocks.toast).toHaveBeenCalledWith(`${NS}.cleared`);
+    await waitFor(() =>
+      expect(screen.getByTestId('models-announcer')).toHaveTextContent(`${NS}.providerAnthropic · ${NS}.cleared`),
+    );
+    expect(mocks.toast).not.toHaveBeenCalled();
   });
 
   it('never writes anything on cancel, and hands focus back to the opener', async () => {
