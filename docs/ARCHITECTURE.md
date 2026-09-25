@@ -731,6 +731,13 @@ before saving a reflection. Failed reads or persistence preserve the draft and d
 not announce completion. No curriculum store, mastery score, canonical writer, or
 additional polling is introduced.
 
+Learning-note recall projects existing personal reflection rows by UID. It does
+not read source files or create activity entries. Saved-note display is independent
+of current topic availability; a missing source disables re-exploration without
+discarding the historical note. Explicit re-exploration invalidates the cached
+read and re-enters the same guarded learning flow. Recording dates remain the
+original activity timestamp, including after a reflection is revised.
+
 **One piece of code decides which nav item is active; each screen size shows a
 different list of buttons.** The desktop rail shows eight destinations: Map,
 Architecture, Library, Automations, Insights, Projects, Agents, and Git. MCP is the
