@@ -907,6 +907,15 @@ export function ArchitectureWorkbench({
                     <span aria-hidden className="invisible col-start-1 row-start-1">
                       {idleAgentLabel}
                     </span>
+                    {/* Every transient label reserves its width too: the Korean error line is
+                        wider than some idle labels and would still resize the button. */}
+                    {agentRoute === 'clipboard'
+                      ? [t('copyingHandoff'), t('copiedShort'), t('copyHandoffError')].map((reserve) => (
+                          <span key={reserve} aria-hidden className="invisible col-start-1 row-start-1">
+                            {reserve}
+                          </span>
+                        ))
+                      : null}
                     <span className="col-start-1 row-start-1">
                       {agentRoute === 'checking'
                         ? t('checkingAgent')

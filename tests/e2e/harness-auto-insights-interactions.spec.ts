@@ -266,3 +266,188 @@ test.describe('Analysis', () => {
     expect(rect.y, 'the popup rose above its field').toBeGreaterThanOrEqual(fieldRect.y);
   });
 });
+
+/**
+ * Where a hint panel may sit: in the window, inside the page scroller (what lies outside it is
+ * chrome), readable on one pass, and on top at its own corners.
+ */
+async function hintPlacement(page: Page, button: Locator) {
+  const id = (await button.getAttribute('aria-describedby'))!;
+  return page.evaluate((id) => {
+    const panel = document.getElementById(id)!;
+    const body = (panel.querySelector<HTMLElement>(':scope > div') ?? panel);
+    /* The visible region: the window, cut by every ancestor that actually scrolls on an axis. */
+    const field = { left: 0, top: 0, right: document.documentElement.clientWidth, bottom: innerHeight };
+    for (let node = panel.parentElement; node && node !== document.body; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight + 1) {
+        field.top = Math.max(field.top, rect.top);
+        field.bottom = Math.min(field.bottom, rect.bottom);
+      }
+      if (/(auto|scroll)/.test(style.overflowX) && node.scrollWidth > node.clientWidth + 1) {
+        field.left = Math.max(field.left, rect.left);
+        field.right = Math.min(field.right, rect.right);
+      }
+    }
+    const r = panel.getBoundingClientRect();
+    const inset = 14;
+    const corners = [
+      [r.left + inset, r.top + inset],
+      [r.right - inset, r.top + inset],
+      [r.left + inset, r.bottom - inset],
+      [r.right - inset, r.bottom - inset],
+    ];
+    return {
+      rect: { left: r.left, top: r.top, right: r.right, bottom: r.bottom },
+      field,
+      /* A nowrap host gave a 640px line in a 254px body before. */
+      wideText: body.scrollWidth - body.clientWidth,
+      covered: corners
+        .map(([x, y]) => document.elementFromPoint(x, y))
+        .filter((hit) => !panel.contains(hit))
+        .map((hit) => `${hit?.tagName}.${String(hit?.className).slice(0, 40)}`),
+    };
+  }, id);
+}
+
+function expectInside(placement: Awaited<ReturnType<typeof hintPlacement>>, what: string) {
+  const { rect, field } = placement;
+  expect(placement.wideText, `${what}: the hint text runs past its panel`).toBeLessThanOrEqual(1);
+  expect(rect.left, `${what}: panel left of the field`).toBeGreaterThanOrEqual(field.left + 8 - 0.5);
+  expect(rect.right, `${what}: panel right of the field`).toBeLessThanOrEqual(field.right - 8 + 0.5);
+  expect(rect.top, `${what}: panel above the field`).toBeGreaterThanOrEqual(field.top - 0.5);
+  expect(rect.bottom, `${what}: panel under the scroller's edge`).toBeLessThanOrEqual(field.bottom + 0.5);
+  expect(placement.covered, `${what}: something sits over the panel`).toEqual([]);
+}
+
+test.describe('Harness hints stay whole', () => {
+  test.beforeEach(async ({ page }) => {
+    await installHarnessRuntime(page);
+    await mountHarnessVault(page);
+  });
+
+  test('the Guides header hints wrap inside their panel and stay in the window', async ({ page }) => {
+    for (const [width, height] of [[1512, 949], [390, 844]] as const) {
+      await page.setViewportSize({ width, height });
+      await page.goto('/ko/architecture/?view=guides&guides=off');
+      for (const name of ['짝', '바뀜']) {
+        const button = page.getByRole('button', { name, exact: true }).first();
+        await expect(button).toBeVisible({ timeout: 30_000 });
+        await button.scrollIntoViewIfNeeded();
+        await button.hover();
+        await expect(await hintPanel(page, button)).toHaveCSS('opacity', '1');
+        expectInside(await hintPlacement(page, button), `${width} ${name}`);
+      }
+    }
+  });
+
+  test('a hint near the scroller bottom opens upward instead of under the edge', async ({ page }) => {
+    /* 768 wide, and short enough that the page scrolls the button down to the tab bar's edge. */
+    await page.setViewportSize({ width: 768, height: 760 });
+    await page.goto('/ko/architecture/?guides=off');
+    const button = page.getByRole('button', { name: '저장소가 정하지 않는 것', exact: true }).first();
+    await expect(button).toBeVisible({ timeout: 30_000 });
+    /* Put the button 60px above the page scroller's bottom edge. */
+    await button.evaluate((element) => {
+      let scroller: HTMLElement | null = null;
+      for (let node = element.parentElement; node && !scroller; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight + 1) scroller = node;
+      }
+      if (!scroller) throw new Error('no vertical scroller around the hint');
+      const bottom = Math.min(innerHeight, scroller.getBoundingClientRect().bottom);
+      scroller.scrollTop += element.getBoundingClientRect().bottom - (bottom - 60);
+    });
+    await page.waitForTimeout(200);
+    await button.hover();
+    const panel = await hintPanel(page, button);
+    await expect(panel).toHaveCSS('opacity', '1');
+    const placement = await hintPlacement(page, button);
+    expectInside(placement, '768 structure');
+    const trigger = await box(button);
+    expect(placement.rect.bottom, 'the panel did not open upward').toBeLessThanOrEqual(trigger.y);
+  });
+
+  test('Escape closes the hint and leaves the cell detail under it open', async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 949 });
+    await page.goto('/ko/architecture/?view=coverage&guides=off');
+    const cell = page.locator('[data-harness-cell="told"]').first();
+    await expect(cell).toBeVisible({ timeout: 30_000 });
+    await cell.click();
+    const detail = page.getByTestId('harness-coverage-detail');
+    await expect(detail).toBeVisible();
+    const button = page.getByRole('button', { name: '말해둔 것', exact: true });
+    await button.hover();
+    const panel = await hintPanel(page, button);
+    await expect(panel).toHaveCSS('opacity', '1');
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCSS('opacity', '0');
+    /* Both closed on one press before. */
+    await expect(detail, 'one Escape closed the hint and the detail').toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(detail).toHaveCount(0);
+  });
+
+  test('a hint dismissed with Escape comes back when the pointer returns', async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 949 });
+    await page.goto('/ko/architecture/?view=coverage&guides=off');
+    const button = page.getByRole('button', { name: '말해둔 것', exact: true });
+    await expect(button).toBeVisible({ timeout: 30_000 });
+    const panel = await hintPanel(page, button);
+    await button.focus();
+    await button.hover();
+    await expect(panel).toHaveCSS('opacity', '1');
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCSS('opacity', '0');
+    await page.mouse.move(2, 2);
+    await button.hover();
+    /* It stayed at 0 until the button blurred before. */
+    await expect(panel, 'hover no longer reopens a dismissed hint').toHaveCSS('opacity', '1');
+    await expect(button).toBeFocused();
+  });
+});
+
+test.describe('Automations remove confirm at 390', () => {
+  test('the answer pair stays together on one row', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await installDesktopBridge(page, { seedRounds: true });
+    await page.goto('/en/');
+    await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+    await page.goto('/ko/automations/?guides=off&kind=documents');
+    const remove = page.getByTestId('automations-remove').filter({ visible: true }).first();
+    await expect(remove).toBeVisible({ timeout: 30_000 });
+    await remove.click();
+    const cancel = await box(page.getByRole('button', { name: '취소', exact: true }));
+    const confirm = await box(page.getByTestId('automations-confirm-remove').filter({ visible: true }).first());
+    /* The danger button wrapped alone to a second line, below and left of Cancel, before. */
+    expect(Math.abs(cancel.y + cancel.height / 2 - (confirm.y + confirm.height / 2)), 'the pair split across rows').toBeLessThanOrEqual(1);
+    expect(confirm.x, 'the danger step is not after Cancel').toBeGreaterThan(cancel.x + cancel.width);
+    expect(confirm.x + confirm.width).toBeLessThanOrEqual(390);
+  });
+});
+
+test.describe('Architecture copy failure', () => {
+  test('the error label does not resize the toolbar button', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: () => Promise.reject(new Error('denied')) },
+      });
+      document.execCommand = () => false;
+    });
+    await installHarnessRuntime(page);
+    await mountHarnessVault(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/ko/architecture/?view=architecture&guides=off');
+    const action = page.getByTestId('architecture-agent-action');
+    await expect(action).toBeVisible({ timeout: 30_000 });
+    const rail = page.getByTestId('architecture-evidence-rail');
+    const before = { action: (await box(action)).width, rail: (await box(rail)).width };
+    await action.click();
+    await expect(action).toHaveAttribute('data-architecture-copy-state', 'error');
+    const after = { action: (await box(action)).width, rail: (await box(rail)).width };
+    expect(Math.abs(after.action - before.action), 'the error label resized the button').toBeLessThanOrEqual(1);
+    expect(Math.abs(after.rail - before.rail), 'the error label squeezed the evidence rail').toBeLessThanOrEqual(1);
+  });
+});
