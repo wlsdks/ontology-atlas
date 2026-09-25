@@ -411,6 +411,13 @@ export interface TopologyPointerHandlers {
   handlePointerUp: (e?: ReactPointerEvent<HTMLCanvasElement>) => void;
   handlePointerCancel: (e?: ReactPointerEvent<HTMLCanvasElement>) => void;
   /**
+   * The pointer left the canvas, most often for chrome drawn over it (the tool row, a
+   * panel). The edge card and the cluster tooltip explain what is under the pointer, so
+   * they go with it: they used to wait for the next move *on the canvas*, and a card
+   * hovered from a line straight onto a toolbar button stayed up over that button.
+   */
+  handlePointerLeave: () => void;
+  /**
    * FIX (QA first-light pass — console error sweep): takes a native
    * `WheelEvent`, not React's synthetic `WheelEvent<...>`. React attaches its
    * delegated `wheel` listener as passive by default, so a JSX `onWheel`
@@ -1655,6 +1662,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
   };
 
+  const handlePointerLeave = () => {
+    clearEdgeHover();
+    clearClusterHover();
+  };
+
   const handlePointerCancel = (e?: ReactPointerEvent<HTMLCanvasElement>) => {
     // rank4 touch pinch zoom — bookkeeping for a cancelled touch pointer (a browser gesture hijack and the like).
     if (e && activeTouchesRef && e.pointerType === "touch") {
@@ -1842,5 +1854,5 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   const probeEdgeAt = (screenX: number, screenY: number, thresholdPx = 7) =>
     hitTestEdges(buildEdgeCandidates(), screenX, screenY, thresholdPx);
 
-  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleWheel, handleContextMenu, probeEdgeAt };
+  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleWheel, handleContextMenu, probeEdgeAt };
 }
