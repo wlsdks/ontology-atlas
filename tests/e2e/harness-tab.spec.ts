@@ -972,6 +972,9 @@ test.describe("하네스 탭", () => {
          folder: wait for the gateway itself to leave before navigating away from it. */
       await expect(touchPage.getByTestId('first-run-open')).toHaveCount(0, { timeout: 60_000 });
       await expect(touchPage.locator('[data-tabbar="primary"]')).toBeVisible();
+      /* The drawn map is the folder read and remembered; a reload before it lands on the gateway. */
+      await touchPage.getByTestId('ontology-map-canvas').waitFor({ state: 'attached', timeout: 60_000 });
+      await touchPage.waitForLoadState('networkidle');
       await touchPage.goto('/ko/ontology/insights/?tab=harness&guides=off');
       const touchOverview = touchPage.getByTestId('harness-coverage-overview');
       await expect(touchOverview).toBeVisible();
