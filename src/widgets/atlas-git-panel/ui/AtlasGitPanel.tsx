@@ -1610,8 +1610,8 @@ function SetupFrame({
       {/* The telling cell never exceeds the prose measure **at any width**.
           Without that cap, below `lg` where the two cells fold, the divider and
           the CLI line stretch to 1,012px and `justify-between` pushes the ends
-          700px apart — the settings sheet had the same illness once (see the
-          `--settings-content-measure` comment). */}
+          700px apart — the settings sheet's key pane had the same illness once,
+          before it moved to Agents → Models. */}
       <div className="flex min-w-0 max-w-[var(--git-setup-measure)] flex-col gap-5">
         {/* "records" is not this screen's title but **where you are** — the
             destination name drops to an eyebrow and the h1 belongs to the task at

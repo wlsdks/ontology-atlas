@@ -1811,7 +1811,7 @@ Tour one-click doors: hree one-click doors, plus one that reaches outside this c
   wiki flows into it, through the person. The brief carries what the script already found (the page
   and folder codes the Wiki list shows) and asks the agent not to repeat them, so the
   model's reading goes to judgement.
-- **The local-model route** — when Settings → AI connection holds a verified
+- **The local-model route** — when Agents → Models holds a verified
   connect-by-address runner (any OpenAI-compatible `/v1` server: Ollama, LM Studio,
   llama.cpp, vLLM), the shelf names that model and its host as the brain. It says nothing
   leaves this computer only when the saved host really is this computer; a runner reached
@@ -2588,7 +2588,7 @@ Opening a conversation preserves the selected runner across the quick detection 
 - **App-specific installation** — Downloads Node and tools only inside the app folder. Fixes versions, and after downloading Node, **compares hashes** (if mismatched, delete and stop). Shows the original text before executing anything. Progress and completion remain on screen — even if you close and reopen the window.
 - **Reconnection** — Deletes only what the app created and recreates it. This is not "logout": this app has no app-side login, and links to the login the user did in the terminal, using it as-is.
 
-**Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **API Keys and workspaces remain in settings** — the former has a "Path Freezing" decision on 2026-08-16 (promoting destination is itself an emphasis), and the latter's axis answered by vault is different.
+**Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **Workspaces remain in settings** (the axis a vault answers is different). API keys stayed behind until 2026-09-25, when they followed as the models tab below.
 
 **On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01). That row names the place: since 2026-09-19 it is the MCP tab on the same strip, one press away, so the sentence no longer carries a link (the settings sheet, which has no strip, still does).
 
@@ -2598,7 +2598,39 @@ Opening a conversation preserves the selected runner across the quick detection 
 
 **What changed on 2026-09-07**: only the tools Atlas confirmed on this machine are listed inline. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product. Nothing left the list; a fold of 36 rows had nowhere to put a search.
 
-### `/agents?tab=mcp` — MCP (new 2026-09-05; the Agents page's second tab since 2026-09-19)
+### `/agents?tab=models` — Models (new 2026-09-25; the Agents page's second tab)
+
+**One sentence on what this screen does**: which model the conversation beside the map calls,
+and with whose key. The strip reads Agents | Models | MCP. Decision:
+`docs/records/decisions/2026-09-25-agents-models-tab-1935d5cf-3a40-4a69-b8f0-f62b4eb4b3ff.md`.
+
+- **Local models** — Ollama (`localhost:11434`), LM Studio (`localhost:1234`), llama.cpp
+  (`localhost:8080`) and a typed address, one row each. The conversation uses one saved runner
+  (`local-endpoint.ts`); the row in use names its model beside its address and reads "saved"
+  in grey until a check turns it green. Nothing is probed on arrival: a row nobody checked says
+  "not connected", and after Check it says the runner answered with N models, answered with
+  none, answered as another program, or did not answer. A check belongs to the address it asked,
+  and checking any address other than the saved one saves nothing until a model is picked there,
+  so the working runner keeps answering.
+- **API keys** — Anthropic, OpenAI and Gemini in the Keychain: add, check (a request with 0
+  folder characters to the named host, offered only when a folder is open to record it),
+  replace, and a two-press remove. Only the last four characters are ever drawn (a screen
+  reader hears "key ending …"); a pasted draft lives only while its row is open.
+- **External check** — the Jev evidence check, labelled experimental: a separate Keychain key,
+  a pasted claim and passage (held read-only while a request is out), the exact JSON request on
+  screen before the one press that sends it to `api.typesafe.ai` (the Rust bridge refuses any
+  other shape and runs off the main thread), an audit line reserved first that counts pasted
+  characters, never folder data, and an advisory answer that writes nothing. Guide:
+  `docs/guide/external-judgment.md`.
+- **Sent log** — one line with the whole count of Atlas's own transfers in
+  `.ontology-atlas/llm-audit.jsonl` (coding agents talk to their providers themselves and are not
+  in it), the newest five transfers, and a Finder button that selects the file once it exists.
+- **Web** — the tab exists and shows the desktop-only card (why, and the app download); no
+  sample rows. Settings keeps a single "Models · API keys" pointer row, and the map dock's
+  no-key button opens this tab. Every way a row closes returns focus to its opener, and results
+  are announced once through one polite live region.
+
+### `/agents?tab=mcp` — MCP (new 2026-09-05; the Agents page's third tab since 2026-09-25)
 
 **One sentence on what this screen does**: everything MCP — the folder's own server
 (share this folder with a coding tool) and the external connectors an in-app agent may
@@ -3088,7 +3120,8 @@ The phone tabs and the `G` keys read the same verdict.
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
   agent entry are scanned in one column. `LocaleSwitch` is an immediate screen
   control; the long MCP connection proof stays behind the AI agent drill-in.
-- **AI Connection** (`AiConnectionPanel`, 2026-07-26) — a second drill-in row for
+- **AI Connection** (`AiConnectionPanel`, 2026-07-26; moved to Agents → Models as
+  `ModelConnectionsPanel` on 2026-09-25, the sheet keeps a pointer row) — a second drill-in row for
   your own API key: store it in the operating-system credential store (desktop only), check the
   connection with a request that carries **0 vault characters**, and read the
   tail of `.ontology-atlas/llm-audit.jsonl` where every call is recorded. The

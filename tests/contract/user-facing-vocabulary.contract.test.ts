@@ -167,8 +167,12 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
      * it (Territories). It is the view's name in the picker, not a word for the domain kind —
      * the view's own copy still uses the kind's real name wherever it means the kind, and its
      * accessible labels avoid the word.
+     *
+     * The softened word for capability went 6 → 7 on 2026-09-25: the owner named the Jev row's
+     * Korean badge "experimental feature" (`agents.models.experimental`), and the Korean word
+     * for feature is the counted one. It labels the app's own feature, not the capability kind.
      */
-    const SOFTENED_BASELINE = { 영역: 14, 기능: 6 } as const;
+    const SOFTENED_BASELINE = { 영역: 14, 기능: 7 } as const;
     for (const [softened, cap] of Object.entries(SOFTENED_BASELINE)) {
       const current = hits(softened).length;
       expect(

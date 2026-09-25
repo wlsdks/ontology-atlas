@@ -94,8 +94,11 @@ describe("<html lang> is right before the first paint", () => {
  * 364 → 357 (2026-09-25, polish bundle): the screens that landed beside this rule (projects,
  * download, gateway, library ops, history, insights, agents) had added per-element sites; each
  * was dropped from its new line, which also took seven sites on moved or rewritten lines.
+ *
+ * 357 → 343 (2026-09-25, models tab): the API Key pane moved from the settings sheet to the
+ * Agents destination and was rewritten without per-element sites.
  */
-const BREAK_KEEP_CEILING = 357;
+const BREAK_KEEP_CEILING = 343;
 
 function stripComments(source: string): string {
   return source

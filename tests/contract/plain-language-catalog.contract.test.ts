@@ -237,8 +237,10 @@ const INTENTIONALLY_ENGLISH = new Set([
   'settings.projectForm.fields.linksPlaceholder', // example URLs
   'settings.projectForm.fields.stackPlaceholder', // technology names
   'settings.projectForm.fields.tagsPlaceholder', // example tags
-  'settings.ai.providerGemini', // a product name
-  'settings.ai.localBaseUrlPlaceholder', // a URL
+  'agents.models.providerGemini', // a product name
+  'agents.models.localBaseUrlPlaceholder', // a URL
+  'agents.models.runnerLmStudio', // a product name
+  'agents.models.runnerLlamaCpp', // a product name
   'download.heroMacSilicon', // Apple's own chip name — the row beside it reads Intel
   'library.rounds.sheet.wherePlaceholder', // example locations, spelled the way each service spells them
 ]);
@@ -250,7 +252,6 @@ const INTENTIONALLY_ENGLISH = new Set([
  */
 const UNTRANSLATED_BASELINE: readonly string[] = [
   'firstRun.eyebrow', // "Local-first workbench" on the first screen
-  'nav.settingsMenu.section.ai', // "API Key" as a settings section name
   'settings.projectForm.fields.nameEnPlaceholder', // "English name" as a Korean field's placeholder
 ];
 

@@ -34,13 +34,12 @@ import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
 import { Chip, IconButton, RowButton } from '@/shared/ui/controls';
-import { subscribeSettingsViewIntent } from '@/shared/lib/settings-view-intent';
 
 import {
   buildRouteFocusHref,
   rememberRouteFocusIntent,
 } from '@/shared/ui/route-focus-manager';
-import { DESTINATION_HREF } from '@/shared/config/destinations';
+import { AGENTS_MODELS_HREF, DESTINATION_HREF } from '@/shared/config/destinations';
 
 import { AppUpdateSettings } from './AppUpdateSettings';
 import { AccentPicker, CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
@@ -58,8 +57,6 @@ import { VaultShapeSettings } from './VaultShapeSettings';
 import { WikiWriteModeSettings } from './WikiWriteModeSettings';
 import { useFrameMeter, writeFrameMeter } from '@/shared/lib/appearance-preferences';
 import { BlockImportModule } from '@/features/ontology-blocks';
-import { AiConnectionPanel } from './AiConnectionPanel';
-import { useAiConnection } from '../model/use-ai-connection';
 import { AGENT_GRAPH_WORKFLOW_HREF } from '@/shared/config';
 import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from "@/shared/ui/transient-surface";
@@ -217,7 +214,7 @@ const SETTINGS_GROUPS = [
    * For anyone looking for what left, **one signpost row stands at the head** of
    * this group — it draws no content and only sends you to the destination.
    */
-  { key: 'connect', items: ['workspace', 'ai'] },
+  { key: 'connect', items: ['workspace'] },
   /*
    * Why 「App」 (app) is **last**: the two groups before it are things you touch
    * daily (how the map looks · what attaches to this folder), while this group is
@@ -246,9 +243,6 @@ const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
   // A bell — the only «ringing» silhouette in this list.
   notify: Bell,
   workspace: HardDrive,
-  // A key, because the pane holds API keys (2026-09-25). It wore a speech bubble, the
-  // same glyph as the agent chat affordance, from when the pane was the in-app chat.
-  ai: KeyRound,
 };
 /**
  * Hover for an LNB row — **written in one place only** (2026-08-21).
@@ -456,12 +450,6 @@ export function AppSettingsMenu({
     rememberRouteFocusIntent(vaultHref);
   };
 
-  // [in-app agent] (#80) — with the sheet closed, neither the keychain nor the
-  // audit log is read (zero silent queries).
-  const aiConnection = useAiConnection({
-    enabled: open,
-    vaultHandle: isLocalVaultLoaded ? (localVault.handle ?? null) : null,
-  });
 
   // P3 defect ⑥ — in controlled mode React state must be the source of truth for
   // this `<details>`. Re-aligning the DOM `open` to the React value on every render
@@ -519,37 +507,6 @@ export function AppSettingsMenu({
       window.setTimeout(() => triggerRef.current?.focus(), 0);
     }
   };
-  /** Go to the requested section and **focus that list item** — the list records where you arrived. */
-  const focusSection = (next: SettingsSection) => {
-    setSection(next);
-    window.setTimeout(() => {
-      navRef.current
-        ?.querySelector<HTMLButtonElement>(`[data-testid="app-settings-nav-${next}"]`)
-        ?.focus({ preventScroll: true });
-    }, 0);
-  };
-
-  // A request from another surface to open "that place in settings". The map's
-  // right dock 「Register Key in Settings」 (register a key in settings) comes in this way —
-  // giving the user a door instead of telling them where the gear is.
-  //
-  // This widget mounts twice depending on viewport width (rail tile at lg+, chrome
-  // tile below lg) but **only the visible one responds**. The sheet is portalled,
-  // so a hidden instance responding too would open the same sheet twice over. The
-  // breakpoint is not duplicated here; the test is whether it actually renders
-  // (`offsetParent`), so this code does not diverge when the width contract changes.
-  useEffect(
-    () =>
-      subscribeSettingsViewIntent((next) => {
-        const trigger = triggerRef.current;
-        if (!trigger || trigger.offsetParent === null) return;
-        setOpen(true);
-        // With subviews gone the request lands directly on the **LNB section** —
-        // the names `'ai'`/`'agent'` are unchanged, so callers see no difference.
-        focusSection(next);
-      }),
-    [setOpen],
-  );
 
   return (
     <details
@@ -813,6 +770,38 @@ export function AppSettingsMenu({
                         {/* The destination's own rail icon, so the row and the tile agree. */}
                         <Plug size={16} aria-hidden className="shrink-0" />
                         <span className="min-w-0 flex-1 text-left">{t('goToMcp')}</span>
+                        <ChevronRight
+                          size={16}
+                          aria-hidden
+                          className="shrink-0 text-[color:var(--color-text-quaternary)]"
+                        />
+                      </button>
+                    ) : null}
+                    {/*
+                      **The API Key pane left for Agents → Models** (owner, 2026-09-25). A person
+                      who still reaches for the key here meets one pointer row, the same grammar as
+                      the MCP row above: it names where the keys live now and takes them there. The
+                      pane itself is gone, so nothing about keys is said in two places.
+                    */}
+                    {group.key === 'connect' ? (
+                      <button
+                        type="button"
+                        data-testid="app-settings-nav-models"
+                        title={t('goToModelsHint')}
+                        aria-label={t('goToModelsHint')}
+                        onClick={() => {
+                          setOpen(false);
+                          router.push(buildRouteFocusHref(AGENTS_MODELS_HREF));
+                        }}
+                        className={controlClass({
+                          shape: 'row',
+                          size: 'md',
+                          tone: 'muted',
+                          className: `w-auto shrink-0 whitespace-nowrap gap-2.5 rounded-card px-3 py-2 text-body sm:w-full ${SETTINGS_NAV_ROW_HOVER}`,
+                        })}
+                      >
+                        <KeyRound size={16} aria-hidden className="shrink-0" />
+                        <span className="min-w-0 flex-1 text-left">{t('goToModels')}</span>
                         <ChevronRight
                           size={16}
                           aria-hidden
@@ -1296,16 +1285,8 @@ export function AppSettingsMenu({
                   </SettingsGroup>
                     </>
 
-                ) : section === 'update' ? (
-                  <AppUpdateSettings />
-
                 ) : (
-                  <AiConnectionPanel
-                    connection={aiConnection}
-                    vaultRootPath={vaultRootPath}
-                    downloadHref={buildRouteFocusHref('/download/')}
-                    onDownloadNavigate={() => rememberRouteFocusIntent('/download/')}
-                  />
+                  <AppUpdateSettings />
                 )}
               </div>
             </div>

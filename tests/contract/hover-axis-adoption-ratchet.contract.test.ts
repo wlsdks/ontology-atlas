@@ -103,8 +103,10 @@ const ROOT = process.cwd();
  * the shared `DETAIL_TOGGLE_CHIP` ink, a net one fewer hand-written hover declaration.
  * 289 → 288 (2026-09-25): the insights hub rows left the `chip` shape for a bare `row` with
  * `hoverSurface: "lift"`, so their hand-written overlay hover is owned by the axis.
+ * 288 → 286 (2026-09-25): the API Key pane moved to Agents → Models on the chip hover axes
+ * (`hoverInk`/`hoverBorder`), dropping two hand-written hover strings.
  */
-const CEILING = 288;
+const CEILING = 286;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

@@ -426,7 +426,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Public guide examples
 
 **Run**: `pnpm test:guide-examples`
-**Proves**: Every public guide node example satisfies the live UID schema.
+**Proves**: Every public guide node example satisfies the live UID schema, and the external Jev probe's preview, opt-in send, audit receipt, and response handling work with mocked HTTP.
 **Escalate**: none
 
 ### Claude/Codex hook wiring

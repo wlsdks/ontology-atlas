@@ -23,6 +23,7 @@ vi.mock('@/widgets/app-settings-menu', () => ({
   AcpRuntimeSettings: ({ embedded }: { embedded?: boolean }) => (
     <div data-testid="acp-runtimes" data-embedded={embedded ? 'true' : 'false'} />
   ),
+  ModelConnections: () => <div data-testid="model-connections" />,
 }));
 
 function renderPage(children?: React.ReactNode, mcpCount?: number) {
@@ -90,7 +91,7 @@ describe('한 목록에 이름 하나', () => {
   });
 });
 
-describe('두 탭, 한 번에 하나', () => {
+describe('세 탭, 한 번에 하나', () => {
   it('기본은 에이전트 탭이고 MCP 탭의 몸통은 그리지 않는다', () => {
     renderPage(<div data-testid="mcp-body" />);
     expect(screen.getByRole('tab', { name: ko.agents.workspace.agents })).toHaveAttribute(
@@ -121,6 +122,36 @@ describe('두 탭, 한 번에 하나', () => {
     fireEvent.click(screen.getByRole('tab', { name: ko.agents.workspace.agents }));
     expect(screen.getByTestId('acp-runtimes')).toBeInTheDocument();
     expect(window.location.search).toBe('?guides=off');
+  });
+
+  it('탭은 에이전트 | 모델 | MCP 순서다', () => {
+    renderPage();
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      ko.agents.workspace.agents,
+      ko.agents.workspace.models,
+      ko.agents.workspace.mcp,
+    ]);
+  });
+
+  it('?tab=models 는 모델 탭을 열고 그 탭의 설명을 위에 둔다 — 설정에서 옮겨 온 문이 여기로 온다', () => {
+    search = 'tab=models';
+    renderPage(<div data-testid="mcp-body" />);
+    expect(screen.getByTestId('model-connections')).toBeInTheDocument();
+    expect(screen.queryByTestId('acp-runtimes')).toBeNull();
+    expect(screen.queryByTestId('mcp-body')).toBeNull();
+    expect(screen.getByText(ko.agents.models.lede)).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveAttribute('data-agents-tab', 'models');
+    expect(screen.getByRole('region', { name: ko.agents.workspace.models })).toBeInTheDocument();
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'agents-tab-models');
+  });
+
+  it('모델 탭을 누르면 주소가 ?tab=models 가 되고, MCP 전용 키는 떨어진다', () => {
+    window.history.replaceState(null, '', '/ko/agents/?tab=mcp&mcp=connectors&install=abc');
+    search = 'tab=mcp';
+    renderPage(<div data-testid="mcp-body" />);
+    fireEvent.click(screen.getByRole('tab', { name: ko.agents.workspace.models }));
+    expect(screen.getByTestId('model-connections')).toBeInTheDocument();
+    expect(window.location.search).toBe('?tab=models');
   });
 
   it('탭 띠는 페이지 몸통에 있다 — 머리띠(56px 크롬)가 아니다', () => {

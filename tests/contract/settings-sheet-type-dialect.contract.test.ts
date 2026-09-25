@@ -93,7 +93,7 @@ const ROOT_SHEET_FILES = [
  */
 const DRILL_IN_FILES = [
   `${UI}/VaultAgentSetupPanel.tsx`,
-  `${UI}/AiConnectionPanel.tsx`,
+  `${UI}/ModelConnectionsPanel.tsx`,
   "src/features/docs-vault-local/ui/AgentClientButtons.tsx",
   "src/features/docs-vault-local/ui/WebManualConnectPanel.tsx",
 ] as const;

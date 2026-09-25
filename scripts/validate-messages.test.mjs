@@ -336,6 +336,8 @@ describe('i18n message catalog', () => {
     const visibleCopy = [
       JSON.stringify(settings.section),
       settings.goToMcp,
+      settings.goToModels,
+      settings.goToModelsHint,
       settings.agentStatusNoVault,
       settings.agentNoVaultHint,
       settings.mcpProofTitle,
@@ -361,7 +363,14 @@ describe('i18n message catalog', () => {
      * MCP destination. **The locked property is unchanged**: inside the connect group, can the eye
      * separate the two rows by first character?
      */
-    assert.notEqual(settings.goToMcp[0], settings.section.ai[0]);
+    /*
+     * ⚠️ The API Key pane left for Agents → Models on 2026-09-25; the connect group now holds two
+     * pointer rows (MCP, Models) and the workspace pane. The locked property is unchanged: the
+     * rows in that group start with different characters.
+     */
+    const connectRows = [settings.goToMcp, settings.goToModels, settings.section.workspace];
+    assert.equal(new Set(connectRows.map((label) => label[0])).size, connectRows.length);
+    assert.equal(settings.section.ai, undefined, 'the API Key pane is a pointer row now, not a section');
     assert.doesNotMatch(visibleCopy, /\bAgent\b|\bFallback\b|\bclient\b|\bnamespace\b|\breload\b|\brestart\b|graph DB gate/);
   });
 

@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-25",
+  "decision": "Move model connections into Agents → Models and land the Jev evidence check there as an experimental opt-in",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "judge",
+  "changes": [
+    "surface-inventory"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "affected",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-25",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "dca107eb-a6bc-494f-924f-1639c2ac6fd5",
+  "recordedAt": "2026-09-25T10:26:57.636Z"
+}

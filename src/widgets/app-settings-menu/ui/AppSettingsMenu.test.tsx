@@ -1,9 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { MouseEventHandler, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { requestSettingsView } from '@/shared/lib/settings-view-intent';
 import {
   AGENT_GRAPH_WORKFLOW_HREF,
   AppSettingsMenu,
@@ -127,7 +126,7 @@ vi.mock('next-intl', () => ({
  */
 function openSheet(
   ui?: ReactNode,
-  section?: 'screen' | 'background' | 'expand' | 'footprint' | 'workspace' | 'ai',
+  section?: 'screen' | 'background' | 'expand' | 'footprint' | 'workspace',
 ) {
   const view = render(ui ?? <AppSettingsMenu mode="static" />);
   fireEvent.click(screen.getByTestId('app-settings-trigger'));
@@ -331,58 +330,22 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
    */
 
   /**
-   * #80 — [AI Connection] is a subview of this sheet, not a new route. In a browser (no
-   * bridge) it builds no key input field and explains why.
+   * The API Key pane left for Agents → Models on 2026-09-25 (owner). The sheet keeps one pointer
+   * row in the Connection group — the same grammar as the MCP row — and no pane: saying the keys'
+   * facts in both places is what the move was meant to end.
    */
-  it('opens the in-app agent destination from its own LNB row', () => {
-    openSheet(undefined, 'ai');
-    expect(screen.getByTestId('app-settings-pane-ai')).toBeInTheDocument();
-    expect(screen.getByTestId('ai-connection-view')).toBeInTheDocument();
-    // It is a pane, not a subview — the list is still there.
-    expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
-  });
-
-  /**
-   * The path the settings window's "Register Key in Settings" takes — the request arrives
-   * **while the sheet is closed** and it opens straight into the [AI Connection] subview.
-   * It is the one wire that gives the user a door instead of telling them where the
-   * gear is.
-   *
-   * Why `offsetParent` is stubbed: this widget mounts twice depending on width, so
-   * **only the visible one** may respond, and jsdom has no layout so every element
-   * computes as hidden.
-   */
-  it('opens straight into the AI subview when another surface asks for it', () => {
-    const visible = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetParent');
-    Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
-      configurable: true,
-      get: () => document.body,
-    });
-    try {
-      render(<AppSettingsMenu mode="static" />);
-      expect(screen.queryByTestId('app-settings-pane-ai')).toBeNull();
-
-      act(() => requestSettingsView('ai'));
-
-      expect(screen.getByTestId('app-settings-pane-ai')).toBeInTheDocument();
-      expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
-    } finally {
-      if (visible) Object.defineProperty(HTMLElement.prototype, 'offsetParent', visible);
-      else Reflect.deleteProperty(HTMLElement.prototype, 'offsetParent');
-    }
-  });
-
-  it('ignores the request when its own trigger is not rendered at this width', () => {
-    // If a hidden instance responded too, the same sheet would open twice over.
-    render(<AppSettingsMenu mode="static" />);
-    act(() => requestSettingsView('ai'));
-    expect(screen.queryByTestId('app-settings-pane-ai')).toBeNull();
-  });
-
-  it('renders the honest desktop-only card instead of a key field in the browser', () => {
-    openSheet(undefined, 'ai');
-    expect(screen.getByTestId('ai-connection-web-degraded')).toBeInTheDocument();
-    expect(screen.queryByTestId('ai-key-input-anthropic')).toBeNull();
+  it('points at Agents → Models instead of drawing a key pane', () => {
+    openSheet();
+    expect(screen.queryByTestId('app-settings-nav-ai')).toBeNull();
+    expect(screen.queryByTestId('ai-connection-view')).toBeNull();
+    const row = screen.getByTestId('app-settings-nav-models');
+    // The sentence is the row's accessible name, and it contains the visible word.
+    expect(row).toHaveAccessibleName('nav.settingsMenu.goToModelsHint');
+    expect(row).toHaveTextContent('nav.settingsMenu.goToModels');
+    routerPush.mockClear();
+    fireEvent.click(row);
+    expect(routerPush).toHaveBeenCalledTimes(1);
+    expect(String(routerPush.mock.calls[0][0])).toContain('/agents/?tab=models');
   });
 
   /**
@@ -391,7 +354,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
    * is owned by `AiConnectionPanel`.)
    */
   it('Escape closes the sheet — there is no subview left to back out of', () => {
-    openSheet(undefined, 'ai');
+    openSheet(undefined, 'workspace');
     fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
       key: 'Escape',
       bubbles: true,
@@ -441,7 +404,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
 
   /** Modal means focus stays inside — Tab escaping behind the dim makes the blocking half-real. */
   it('모달이므로 Tab 이 창 안에 머문다', async () => {
-    openSheet(undefined, 'ai');
+    openSheet(undefined, 'workspace');
     const panel = screen.getByTestId('app-settings-popover');
     // The last focusable differs per section, so **the end of DOM order** is picked
     // each time — pinning a named control would break this test falsely whenever a
@@ -610,8 +573,8 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
   it('Escape from an agent section closes at once — no intermediate step remains', () => {
     const onOpenChange = vi.fn();
     render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
-    fireEvent.click(screen.getByTestId('app-settings-nav-ai'));
-    expect(screen.getByTestId('app-settings-pane-ai')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('app-settings-nav-workspace'));
+    expect(screen.getByTestId('app-settings-pane-workspace')).toBeInTheDocument();
     fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
       key: 'Escape',
       bubbles: true,
@@ -619,20 +582,16 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  /**
-   * Every pane opens with one head — the section's name and the sentence saying what it
-   * decides (2026-09-25). On the API Key pane that sentence is the trust charter, so it
-   * must stay on screen after it left `AiConnectionPanel`.
-   */
-  it('opens each pane with its own head, and the API Key head carries the trust charter', () => {
+  /** Every pane opens with one head — the section's name and the sentence saying what it decides. */
+  it('opens each pane with its own head', () => {
     render(<AppSettingsMenu mode="static" open onOpenChange={vi.fn()} />);
     const screenHead = screen.getByTestId('app-settings-pane-head');
     expect(screenHead).toHaveTextContent('nav.settingsMenu.section.screen');
     expect(screenHead).toHaveTextContent('nav.settingsMenu.sectionPurpose.screen');
-    fireEvent.click(screen.getByTestId('app-settings-nav-ai'));
-    const aiHead = screen.getByTestId('app-settings-pane-head');
-    expect(aiHead.querySelector('h3')).toHaveTextContent('nav.settingsMenu.section.ai');
-    expect(aiHead).toHaveTextContent('nav.settingsMenu.sectionPurpose.ai');
+    fireEvent.click(screen.getByTestId('app-settings-nav-workspace'));
+    const workspaceHead = screen.getByTestId('app-settings-pane-head');
+    expect(workspaceHead.querySelector('h3')).toHaveTextContent('nav.settingsMenu.section.workspace');
+    expect(workspaceHead).toHaveTextContent('nav.settingsMenu.sectionPurpose.workspace');
   });
 });
 
@@ -678,7 +637,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     const baseline = sizeClasses();
     expect(baseline, '고정 높이가 없다 — 내용이 창 크기를 정하고 있다').toMatch(/h-\[\d+px\]/);
     expect(baseline, '고정 폭이 없다').toMatch(/w-\[\d+px\]/);
-    for (const item of ['background', 'expand', 'footprint', 'notify', 'workspace', 'ai']) {
+    for (const item of ['background', 'expand', 'footprint', 'notify', 'workspace']) {
       fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
       expect(sizeClasses(), `${item} 절에서 창 크기가 바뀐다`).toBe(baseline);
     }
@@ -700,7 +659,8 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     // title** — the counts are a by-product of that structure, updated when a section
     // is added. The 「Connection」 group is 2 items + **1 signpost row** = 3 buttons; the
     // signpost sends you to a destination rather than opening a pane, so the item
-    // count and the button count differ.
+    // count and the button count differ. Since 2026-09-25 the group is 1 item + 2 signposts
+    // (MCP, and Models where the API Key pane was).
     expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 3, 1]);
     for (const g of groups) {
       expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 열 줄이다').not.toBeNull();
@@ -714,15 +674,15 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    */
   it('LNB 항목마다 아이콘이 하나씩 있다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'ai', 'update']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'update']) {
       const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
       expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
     }
   });
 
-  it('LNB 여덟 절을 모두 싣는다', () => {
+  it('LNB 일곱 절을 모두 싣는다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'ai']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'update']) {
       expect(screen.getByTestId(`app-settings-nav-${item}`)).toBeInTheDocument();
     }
   });

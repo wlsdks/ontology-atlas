@@ -279,9 +279,17 @@ search matches localized display names as well as canonical paths.
 ![The current Agents screen in the installed macOS app, listing the three coding tools found on this computer with their readiness, Open a chat with this tool and Check connection for the two that can run inside Atlas, the note on which tools can pause writes for review, and the option to show the other 36](docs/assets/readme/agent-connect.png)
 
 **Agents** finds the coding tools already installed on this computer and opens a
-conversation beside the map. **MCP** holds the folder's own connection, the setup
-for each client, and the Connectors that attach external servers to that
-conversation.
+conversation beside the map. **Models** holds what that conversation can call with
+no coding tool at all: a local runner by address (Ollama, LM Studio, llama.cpp) or
+your own API key kept in the Keychain, plus the count of every transfer recorded in
+the folder. **MCP** holds the folder's own connection, the setup for each client,
+and the Connectors that attach external servers to that conversation.
+
+**Jev is an optional, experimental check under Models in the macOS app.** Save your
+own TypeSafe key in the Keychain, paste one explanation and the passage meant to
+support it, read the exact request on screen, and press send. The answer is advice:
+Atlas records the transfer in the folder first and never changes or accepts meaning
+because of it. See the [Jev evidence-check guide](docs/guide/external-judgment.md).
 
 ![The current MCP screen in the installed macOS app, with Share this folder open: how many connection files are ready and which file comes next, one connect button each for Claude Code, Codex, Cursor and Antigravity, the note that the server runs only while a conversation needs it, and the two later steps to restart the agent and confirm the connection](docs/assets/readme/mcp-connect.png)
 
@@ -610,7 +618,9 @@ have documents and no code. Full contracts: the
   back to the folder you picked, and Git is the history. There is no other store.
 - **No Atlas backend, account, or telemetry.** The web app is a static export; the
   desktop app checks the public updater manifest once a day and uploads no vault
-  content. A connected coding agent talks to its own provider only when you ask.
+  content. A connected coding agent talks to its own provider only when you ask;
+  a model key or the optional Jev check sends only what you press send on, and
+  each transfer is a line in the folder's `.ontology-atlas/llm-audit.jsonl`.
 - **Two ways in, one folder.** The hosted web app can open a local folder through
   the File System Access API. The desktop app uses a Tauri bridge to your selected
   folder and keeps it open as a workspace.

@@ -70,16 +70,16 @@ vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOrigin
   }),
 }));
 
-import { subscribeSettingsViewIntent } from '@/shared/lib/settings-view-intent';
+/** Where the panel's doors navigated — the no-key door goes to the Agents models tab. */
+const navigation = vi.hoisted(() => ({ pushed: [] as string[] }));
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ push: (href: string) => navigation.pushed.push(href) }),
+}));
 
 import { VaultAgentPanel } from './VaultAgentPanel';
 
-/** A record of the "open that place in settings" requests the panel sent. */
-const settingsIntents: string[] = [];
 beforeEach(() => {
-  settingsIntents.length = 0;
-  const unsubscribe = subscribeSettingsViewIntent((view) => settingsIntents.push(view));
-  return unsubscribe;
+  navigation.pushed.length = 0;
 });
 
 function renderPanel(overrides: Partial<Parameters<typeof VaultAgentPanel>[0]> = {}) {
@@ -239,8 +239,9 @@ describe('VaultAgentPanel', () => {
     expect(screen.queryByTestId('vault-agent-input')).not.toBeInTheDocument();
 
     fireEvent.click(door);
-    // The settings sheet is owned by the app shell — the panel only sends "open that place".
-    expect(settingsIntents).toEqual(['ai']);
+    // Keys moved to Agents → Models on 2026-09-25: the door lands on that tab, never on a
+    // settings pane that no longer exists.
+    expect(navigation.pushed).toEqual(['/agents/?tab=models']);
     secrets.stored = true;
   });
 

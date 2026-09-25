@@ -105,6 +105,28 @@ export interface DesktopRuntimeOptions {
    * does. Off by default so existing specs keep their one shared history.
    */
   scopeHistoryByPath?: boolean;
+  /**
+   * The models tab's native answers (2026-09-25): Keychain state, local runners by address, the
+   * experimental Jev bridge, and the sent log. Without it only `secret_status` answers (no key),
+   * as before. Every stubbed transfer appends a line to `.ontology-atlas/llm-audit.jsonl` in the
+   * served vault, the way `llm_audit::reserve` + `finalize` do, so the tab's count is read back
+   * through the same file path the app reads.
+   */
+  models?: ModelsStubOptions;
+}
+
+export interface ModelsStubOptions {
+  /** Saved keys by provider → their last four characters. */
+  keys?: Partial<Record<"anthropic" | "openai" | "gemini", string>>;
+  /** The saved Jev key's last four, or nothing saved. */
+  jevKey?: string | null;
+  /**
+   * How each runner address answers `secret_verify` for the local provider. An address not
+   * listed answers like nothing is listening (curl exit, no HTTP status).
+   */
+  runners?: Record<string, { answer: "ok"; models: string[] } | { answer: "unreachable" | "not-compatible" }>;
+  /** Existing sent-log lines (JSON objects) the vault starts with. */
+  audit?: Record<string, unknown>[];
 }
 
 export async function installDesktopRailRuntime(
@@ -126,8 +148,27 @@ export async function installDesktopRailRuntime(
       scopeHistoryByPath?: boolean;
       runtimeResponses?: { fast: unknown[]; probed: unknown[] };
       gitPathChanges?: Record<string, { exists: boolean; isDir: boolean; lastChangedAt: string | null }>;
+      models?: {
+        keys?: Record<string, string>;
+        jevKey?: string | null;
+        runners?: Record<string, { answer: string; models?: string[] }>;
+        audit?: Record<string, unknown>[];
+      };
     }) => {
       const { root, latency, files, commits, pending, diff } = input;
+      const AUDIT = ".ontology-atlas/llm-audit.jsonl";
+      const keys: Record<string, string> = { ...(input.models?.keys ?? {}) };
+      let jevKey: string | null = input.models?.jevKey ?? null;
+      if (input.models?.audit?.length) {
+        files[AUDIT] = input.models.audit.map((line) => JSON.stringify(line)).join("\n") + "\n";
+      }
+      /** What left, as the page would see it recorded: one finished line per transfer. */
+      const recordTransfer = (line: Record<string, unknown>) => {
+        files[AUDIT] = (files[AUDIT] ?? "") + JSON.stringify({ v: 1, at: new Date().toISOString(), ...line }) + "\n";
+      };
+      const sentJevPayloads: string[] = [];
+      (window as unknown as { __jevPayloads: string[] }).__jevPayloads = sentJevPayloads;
+      const keyStatus = (provider: string) => ({ provider, stored: provider in keys, last4: keys[provider] ?? null });
       const mtime = Date.now();
       const callbacks = new Map<number, (event: { event: string; payload: unknown }) => void>();
       let nextCallback = 1;
@@ -256,7 +297,108 @@ export async function installDesktopRailRuntime(
           case "mcp_bundled_server":
             return slow({ path: `${root}/mcp`, available: true, reason: null });
           case "secret_status":
-            return slow({ provider: args.provider, stored: false, last4: null });
+            if (!input.models) return slow({ provider: args.provider, stored: false, last4: null });
+            return slow(keyStatus(String(args.provider)));
+          case "secret_set": {
+            if (!input.models) return null;
+            keys[String(args.provider)] = String(args.secret).trim().slice(-4);
+            return slow(keyStatus(String(args.provider)));
+          }
+          case "secret_clear": {
+            if (!input.models) return null;
+            delete keys[String(args.provider)];
+            return slow(keyStatus(String(args.provider)));
+          }
+          case "secret_verify": {
+            if (!input.models) return null;
+            const provider = String(args.provider);
+            if (provider === "local") {
+              const baseUrl = String(args.baseUrl ?? "").replace(/\/+$/, "");
+              const host = baseUrl.split("://")[1]?.split("/")[0] ?? baseUrl;
+              const runner = input.models.runners?.[baseUrl];
+              const base = { provider, denied: false, durationMs: 9, loggedAt: new Date().toISOString() };
+              let result: Record<string, unknown>;
+              if (!runner || runner.answer === "unreachable") {
+                result = { ...base, ok: false, httpStatus: null, message: "curl exit 7: connection refused", body: null };
+              } else if (runner.answer === "not-compatible") {
+                result = { ...base, ok: false, httpStatus: 404, message: null, body: null };
+              } else {
+                result = {
+                  ...base,
+                  ok: true,
+                  httpStatus: 200,
+                  message: null,
+                  body: JSON.stringify({ data: (runner.models ?? []).map((id) => ({ id })) }),
+                };
+              }
+              recordTransfer({
+                provider,
+                host,
+                model: null,
+                purpose: "verify",
+                question: null,
+                scope: { nodes: [], promptChars: 0, vaultChars: 0 },
+                payloadSha256: "0".repeat(64),
+                outcome: result.ok ? "ok" : "error",
+                httpStatus: result.httpStatus,
+                responseChars: 0,
+                durationMs: 9,
+              });
+              return slow(result);
+            }
+            const ok = provider in keys;
+            recordTransfer({
+              provider,
+              host: `api.${provider}.com`,
+              model: null,
+              purpose: "verify",
+              question: null,
+              scope: { nodes: [], promptChars: 0, vaultChars: 0 },
+              payloadSha256: "0".repeat(64),
+              outcome: ok ? "ok" : "denied",
+              httpStatus: ok ? 200 : 401,
+              responseChars: 0,
+              durationMs: 9,
+            });
+            return slow({ provider, ok, denied: !ok, httpStatus: ok ? 200 : 401, message: null, durationMs: 9, loggedAt: new Date().toISOString(), body: null });
+          }
+          case "jev_secret_status":
+            if (!input.models) return null;
+            return slow({ stored: jevKey !== null, last4: jevKey });
+          case "jev_secret_set":
+            if (!input.models) return null;
+            jevKey = String(args.secret).trim().slice(-4);
+            return slow({ stored: true, last4: jevKey });
+          case "jev_secret_clear":
+            if (!input.models) return null;
+            jevKey = null;
+            return slow({ stored: false, last4: null });
+          case "jev_judge": {
+            if (!input.models) return null;
+            const payload = String(args.payload);
+            sentJevPayloads.push(payload);
+            const parsed = JSON.parse(payload) as { state: { claim: string; evidence: string } };
+            recordTransfer({
+              provider: "jev",
+              host: "api.typesafe.ai",
+              model: "jev-latest",
+              purpose: "judgment",
+              question: null,
+              scope: { nodes: [], promptChars: [...parsed.state.claim].length + [...parsed.state.evidence].length, vaultChars: 0 },
+              payloadSha256: "0".repeat(64),
+              outcome: "ok",
+              httpStatus: 200,
+              responseChars: 180,
+              durationMs: 420,
+            });
+            return slow({
+              choice: "contradicted",
+              confidence: 0.91,
+              probabilities: { supported: 0.04, contradicted: 0.91, insufficient: 0.05 },
+              responseModel: "jev-1.13.0",
+              loggedAt: new Date().toISOString(),
+            });
+          }
           case "start_vault_watch":
           case "ensure_vault_directory":
             return Promise.resolve(null);
@@ -302,6 +444,7 @@ export async function installDesktopRailRuntime(
       scopeHistoryByPath: options.scopeHistoryByPath,
       runtimeResponses,
       gitPathChanges: options.gitPathChanges,
+      models: options.models,
     },
   );
 }
