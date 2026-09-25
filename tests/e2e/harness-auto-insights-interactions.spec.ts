@@ -412,8 +412,12 @@ test.describe('Automations remove confirm at 390', () => {
   test('the answer pair stays together on one row', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await installDesktopBridge(page, { seedRounds: true });
-    await page.goto('/en/');
-    await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+    /* The Rounds specs' own door: navigating while the folder is still opening lands back on
+       the gateway, so the map's heading is the proof the folder is open before leaving it. */
+    await page.goto('/en/docs/');
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: /^Open my folder/ }).first().click();
+    await page.getByRole('heading', { name: 'Map', level: 1 }).waitFor({ timeout: 30_000 });
     await page.goto('/ko/automations/?guides=off&kind=documents');
     const remove = page.getByTestId('automations-remove').filter({ visible: true }).first();
     await expect(remove).toBeVisible({ timeout: 30_000 });
