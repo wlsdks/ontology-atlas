@@ -22,12 +22,21 @@ import path from 'node:path';
  * (`scaffoldOntology: (starterLocale: string) =>`) and the definition
  * (`const scaffoldOntology = useCallback(async (…)`) carry a type annotation in the
  * argument position and are filtered out naturally.
+ *
+ * **Two forms carry the locale** (2026-09-25, D1). A door that creates a folder no longer calls
+ * `scaffoldOntology()` after the open — the screen that pressed it is gone by then — but asks the
+ * open itself for the starter: `open({ starter: { locale, shape } })`. That request is the same
+ * creation path in a different call, so it is judged by the same rule; scanning only the first
+ * form would have left the two doors that most need it outside the gate.
  */
 
 const SRC_DIR = path.join(process.cwd(), 'src');
 
 /** `…scaffoldOntology(<args>)` call sites. Requiring a leading `.` excludes the declaration and definition. */
 const SCAFFOLD_CALL = /\.scaffoldOntology\(([^)]*)\)/g;
+
+/** `starter: { locale: <arg>` — a creation door's starter request riding `open` / `openRecent`. */
+const STARTER_REQUEST = /starter:\s*\{\s*locale:\s*([^,}\s]+)/g;
 
 /** Identifiers that carry the screen's language (locale, activeLocale, starterLocale, …). */
 const LOCALE_IDENTIFIER = /^[A-Za-z_$][\w$.]*$/;
@@ -56,11 +65,12 @@ describe('스타터 볼트 언어 — 생성 경로 전부가 화면 언어를 �
     expect(files.length).toBeGreaterThan(20);
 
     const callSites: string[] = [];
+    const starterRequests: string[] = [];
     const violations: string[] = [];
     for (const file of files) {
       const source = stripComments(readFileSync(file, 'utf8'));
+      const rel = path.relative(process.cwd(), file);
       for (const match of source.matchAll(SCAFFOLD_CALL)) {
-        const rel = path.relative(process.cwd(), file);
         // The locale is the first argument; a second one (the vault shape, 2026-09-06) is
         // not a locale and is not judged here.
         const arg = (match[1].split(',')[0] ?? '').trim();
@@ -69,14 +79,25 @@ describe('스타터 볼트 언어 — 생성 경로 전부가 화면 언어를 �
           violations.push(`${rel}: ${match[0]}`);
         }
       }
+      for (const match of source.matchAll(STARTER_REQUEST)) {
+        starterRequests.push(`${rel}: ${match[0]}`);
+        if (!LOCALE_IDENTIFIER.test(match[1].trim())) {
+          violations.push(`${rel}: ${match[0]}`);
+        }
+      }
     }
 
-    // Guarantees the scanner saw real call sites — if a rename quietly takes the count to
-    // 0, the gate must fail rather than pass.
+    // Guarantees the scanner saw real call sites of both forms — if a rename quietly takes
+    // either count to 0, the gate must fail rather than pass.
     expect(
       callSites.length,
       'scaffoldOntology 호출부를 하나도 못 찾았다 — 게이트가 무력화됐다.',
-    ).toBeGreaterThanOrEqual(4);
+    ).toBeGreaterThan(0);
+    expect(
+      starterRequests.length,
+      '「starter: { locale }」 요청을 하나도 못 찾았다 — 만드는 문 두 곳이 게이트 밖으로 빠졌다.',
+    ).toBeGreaterThan(0);
+    expect(callSites.length + starterRequests.length).toBeGreaterThanOrEqual(4);
 
     expect(
       violations,

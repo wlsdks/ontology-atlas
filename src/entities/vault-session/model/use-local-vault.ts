@@ -57,6 +57,7 @@ import {
 import { resolvePickedVaultFolder } from './resolve-picked-vault-folder';
 import { classifyVaultAccessError, isMissingFolderError } from './classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/error-message';
+import { codedFailure } from '@/shared/lib/failure-code';
 import { isPickerAbort } from '@/shared/lib/picker-abort';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import {
@@ -709,6 +710,184 @@ async function writeAgentConfigFiles(
   return { created, skipped };
 }
 
+/** The starter a door writes when nobody was asked what the folder holds: all of it. */
+const FULL_STARTER_SHAPE: VaultShape = { map: true, wiki: true };
+
+/**
+ * A creation door's request (just start, create a new folder): write the starter the person
+ * chose, but only into a folder that holds no documents yet.
+ */
+interface VaultStarterRequest {
+  /** The screen's language. The starter bodies are written in it (walkthrough 2026-07-26). */
+  locale: string;
+  /** What the person said the folder will hold. Omitted means the whole starter. */
+  shape?: VaultShape;
+}
+
+export interface VaultOpenOptions {
+  starter?: VaultStarterRequest;
+}
+
+/** What an open settled into, for the door that asked for it. */
+export interface VaultOpenResult {
+  /** The folder was read and is the open vault now. False on a cancel or a failure: the state says which. */
+  opened: boolean;
+  /** Starter files written before the folder was first shown. 0 when none was asked for or it already held documents. */
+  starterWritten: number;
+  /** Why the requested starter could not be written, or `null`. The folder itself still opened. */
+  starterError: unknown;
+}
+
+const NOT_OPENED: VaultOpenResult = Object.freeze({
+  opened: false,
+  starterWritten: 0,
+  starterError: null,
+});
+
+interface StarterWrite {
+  /** Markdown files that become ontology nodes — the same unit the map and settings count. */
+  markdownCreated: number;
+  /** Agent guides, skills, the wiki template and config files such as `.mcp.json`. Not concepts. */
+  agentConfigCreated: number;
+  created: number;
+  skipped: number;
+  /** The first file that could not be written (an existing file is a skip, not a failure). */
+  firstFailure: unknown;
+}
+
+async function starterFileParent(
+  root: FileSystemDirectoryHandle,
+  relPath: string,
+): Promise<{ parent: FileSystemDirectoryHandle; fileName: string }> {
+  const parts = relPath.split('/').filter(Boolean);
+  const fileName = parts.pop();
+  if (!fileName) throw new Error('Empty starter path');
+  let parent = root;
+  for (const part of parts) parent = await parent.getDirectoryHandle(part, { create: true });
+  return { parent, fileName };
+}
+
+/**
+ * Writes the starter for the parts a person chose (`VaultShape`) into `root`: the map's starter
+ * nodes and skills, the wiki's template, or both, plus the agent guide pair. Every folder of the
+ * fixed shape is created either way — `domains/`, `capabilities/`, `elements/`, `sources/`,
+ * `wiki/` — so the folder a teammate pulls always has the same tree, and "start the map" or "start
+ * a wiki" later only adds the files that make that part real.
+ *
+ * It takes the folder as an argument rather than reading the session's current one, because a
+ * creation door writes into a folder **while it is being opened**: the screen that pressed the
+ * door is gone by then (the shell swaps it for the opening pane, and the root entry swaps that for
+ * the map), so nothing that waits for that screen's next render can run (2026-09-25, D1).
+ *
+ * Existing files are skipped rather than overwritten. A file that fails is counted as skipped and
+ * the first such failure is reported, so a caller can say the starter is incomplete instead of
+ * presenting a half-written folder as done.
+ */
+async function writeVaultStarter(
+  root: FileSystemDirectoryHandle,
+  starterLocale: string,
+  shape: VaultShape,
+  existingSlugs: { has(slug: string): boolean },
+): Promise<StarterWrite> {
+  // Count the two kinds **separately**. They used to be summed into one `created`, so the
+  // toast said "8 starter documents" while the real ontology concept count was 5 and the
+  // settings panel said "5 documents" — two screens giving different numbers for one vault.
+  let markdownCreated = 0;
+  let skipped = 0;
+  let firstFailure: unknown = null;
+  for (const { relPath, content } of shape.map ? materializeStarterFiles(starterLocale) : []) {
+    // The slug is the path with the `.md` extension removed, per createDoc / saveDoc rules.
+    if (existingSlugs.has(relPath.replace(/\.md$/, ''))) {
+      skipped += 1;
+      continue;
+    }
+    try {
+      const { parent, fileName } = await starterFileParent(root, relPath);
+      const fh = await parent.getFileHandle(fileName, { create: true });
+      const writable = await fh.createWritable();
+      await writable.write(content);
+      await writable.close();
+      markdownCreated += 1;
+    } catch (error) {
+      skipped += 1;
+      firstFailure ??= error;
+    }
+  }
+  /*
+   * The agent guide — **config alone is not enough** (measured 2026-08-17). Even with MCP
+   * connected, the agent read frontmatter directly with `sed` and `grep` (zero MCP calls).
+   * Putting `AGENTS.md` in the vault made it call `list_concepts` for the same question
+   * immediately. Evidence: the `VAULT_AGENT_GUIDE_PATH` comment in `ontology-starter.ts`.
+   *
+   * **Not counted in `markdownCreated`**, because it is not a concept and that number is
+   * rendered as "N concept documents".
+   */
+  let guideCreated = 0;
+  for (const guide of [
+    vaultAgentGuideForLocale(starterLocale),
+    // Claude Code does not read `AGENTS.md` directly; it goes through `CLAUDE.md`'s import.
+    // With only one of them, one of the two runtimes gets no guide at all.
+    vaultClaudeBridgeForLocale(starterLocale),
+    /*
+     * The procedural skill set. Where the guide says *what to call*, these say *in what order
+     * and where to stop*. The vault is the agent's working folder, so they appear directly in
+     * its `/` listing — evidence: the `VAULT_SKILL_NAMES` comment in `ontology-starter.ts`.
+     */
+    ...(shape.map ? vaultSkillFilesForLocale(starterLocale) : []),
+    /*
+     * The wiki's furniture. The vault shape is one folder with `sources/` and `wiki/`
+     * always (ledger, 2026-09-06), and the CLI's `init` writes the page template into
+     * every new vault; a folder the app started used to lack it, so the two doors left
+     * two shapes. The template is the same string the validator enforces.
+     */
+    ...(shape.wiki ? [{ relPath: 'wiki/_template.md', content: WIKI_PAGE_TEMPLATE }] : []),
+  ]) {
+    try {
+      const { parent, fileName } = await starterFileParent(root, guide.relPath);
+      const existing = await parent
+        .getFileHandle(fileName)
+        .then(() => true)
+        .catch(() => false);
+      if (existing) {
+        skipped += 1;
+        continue;
+      }
+      const fh = await parent.getFileHandle(fileName, { create: true });
+      const writable = await fh.createWritable();
+      await writable.write(guide.content);
+      await writable.close();
+      guideCreated += 1;
+    } catch (error) {
+      skipped += 1;
+      firstFailure ??= error;
+    }
+  }
+  // `sources/` from the first minute, in both shapes, so the folder says where files go.
+  for (const folder of ['domains', 'capabilities', 'elements', 'sources', 'wiki']) {
+    try {
+      await root.getDirectoryHandle(folder, { create: true });
+    } catch {
+      // A folder that cannot be made is reported by the first file written into it.
+    }
+  }
+
+  // Ready-to-use agent configs for "open the vault folder itself" flows.
+  // Fail closed when the bundled server cannot be found: write the markdown starter only.
+  const starterLaunch = await resolveBundledLaunch();
+  const agentConfigResult = starterLaunch
+    ? await writeAgentConfigFiles(root, starterLaunch)
+    : { created: 0, skipped: 0 };
+  skipped += agentConfigResult.skipped;
+  return {
+    markdownCreated,
+    agentConfigCreated: agentConfigResult.created + guideCreated,
+    /** Backwards-compatible total. When shown to a user, state the two above separately. */
+    created: markdownCreated + agentConfigResult.created + guideCreated,
+    skipped,
+    firstFailure,
+  };
+}
+
 /**
  * @internal — do not call directly. Access it through `useLocalVault()`, a consumer of
  * `LocalVaultProvider`. This hook exists so `LocalVaultProvider` can mount it once and
@@ -803,7 +982,10 @@ export function useLocalVaultInternal() {
     [],
   );
 
-  const load = useCallback(async (handle: FileSystemDirectoryHandle) => {
+  const load = useCallback(async (
+    handle: FileSystemDirectoryHandle,
+    options: VaultOpenOptions = {},
+  ): Promise<Omit<VaultOpenResult, 'opened'> | null> => {
     // Any folder actually being opened ends the choosing state, whichever door it came
     // through — the chooser row, the picker, or a restore. Clearing it here rather than in
     // each caller is why a new door cannot forget to.
@@ -847,6 +1029,41 @@ export function useLocalVaultInternal() {
           result = await buildLocalManifestWithEntries(handle);
         }
       } else {
+        result = await buildLocalManifestWithEntries(handle);
+      }
+      /*
+       * **A creation door's starter lands before the folder is first shown** (2026-09-25, D1).
+       *
+       * "Just start" and "Create a new folder" used to open the folder and then wait for the
+       * next render of the screen that pressed them to write the starter. That screen never
+       * rendered again: the shell swaps it for the opening pane the moment the open begins, and
+       * the root entry swaps that for the map. The folder opened empty with no error, three
+       * runs out of three. Written here, the starter is part of the open itself, so it does not
+       * matter which screen is on the glass, and the map is never drawn empty first.
+       *
+       * Only into a folder with no documents: picking an existing vault through a creation
+       * door must not plant examples in it. A failure does not fail the open (the folder is
+       * readable and is shown); it is handed back so the door can say the starter is missing.
+       */
+      let starterWritten = 0;
+      let starterError: unknown = null;
+      if (options.starter && result.build.manifest.docs.length === 0) {
+        try {
+          if ((await verifyHandlePermission(handle, 'readwrite', { ask: true })) !== 'granted') {
+            throw codedFailure('permission-denied');
+          }
+          const written = await writeVaultStarter(
+            handle,
+            options.starter.locale,
+            options.starter.shape ?? FULL_STARTER_SHAPE,
+            result.build.fileHandles,
+          );
+          starterWritten = written.created;
+          starterError = written.firstFailure;
+        } catch (error) {
+          starterError = error;
+        }
+        // Re-read what actually landed, a partial starter included: the screen shows the disk.
         result = await buildLocalManifestWithEntries(handle);
       }
       const { build, entries } = result;
@@ -914,6 +1131,7 @@ export function useLocalVaultInternal() {
       } catch {
         /* The counts stay absent; the row says so. */
       }
+      return { starterWritten, starterError };
     } catch (err) {
       lastBuildRef.current = null;
       // `toErrorMessage` preserves the cause string. Tauri commands return `Err(String)`, so
@@ -940,6 +1158,7 @@ export function useLocalVaultInternal() {
         lastLoadedAt: null,
         manifestHandle: null,
       });
+      return null;
     }
   }, []);
 
@@ -947,10 +1166,16 @@ export function useLocalVaultInternal() {
     setRecentVaults(await listRecentLocalFsHandles());
   }, []);
 
-  const open = useCallback(async () => {
+  /**
+   * Picks a folder and opens it. `options.starter` is a creation door's request: when the picked
+   * folder holds no documents, the starter is written before the folder is first shown. The result
+   * says whether the folder opened and whether its starter landed, because the screen that pressed
+   * the door is usually gone by the time this settles.
+   */
+  const open = useCallback(async (options: VaultOpenOptions = {}): Promise<VaultOpenResult> => {
     if (!isSupported()) {
       setState(emptyState('unsupported'));
-      return;
+      return NOT_OPENED;
     }
     // Cancelling the native or browser picker is not a state change: the exact contract from
     // just before the picker opened — permission-needed, error, idle, loaded — must be
@@ -976,7 +1201,7 @@ export function useLocalVaultInternal() {
           ).showDirectoryPicker({ mode: 'read' });
       if (!handle) {
         setState(previousState);
-        return;
+        return NOT_OPENED;
       }
       /*
        * ⚠️ **A person who picks their project means their map** (owner, 2026-08-24). Since the map
@@ -1008,13 +1233,14 @@ export function useLocalVaultInternal() {
        * was already gone — the user saw a silent sample map. Add to the list only after
        * success.
        */
-      await load(openHandle);
+      const loaded = await load(openHandle, options);
       await refreshRecentVaults();
+      return loaded ? { opened: true, ...loaded } : NOT_OPENED;
     } catch (err) {
       // A cancel is not a failure — restore the state from just before the picker (see `isPickerAbort`).
       if (isPickerAbort(err)) {
         setState(previousState);
-        return;
+        return NOT_OPENED;
       }
       // A "cannot be a vault root" rejection is handled differently from a failure. Leaking
       // the cause string to the screen would show the user `vault-root-rejected:filesystem-root`,
@@ -1027,7 +1253,7 @@ export function useLocalVaultInternal() {
           errorMessage: null,
           errorCode: 'root-rejected',
         }));
-        return;
+        return NOT_OPENED;
       }
       // Same reason the hardcoded Korean "Failed to open folder" was removed — null lets
       // LocalVaultPicker fall back to `t('errorFallback')`.
@@ -1040,14 +1266,16 @@ export function useLocalVaultInternal() {
             ? 'permission-denied'
             : 'access-failed',
       }));
+      return NOT_OPENED;
     }
   }, [load, refreshRecentVaults, state]);
 
+  /** Reopens a known folder; `options.starter` as in `open`. */
   const openRecent = useCallback(
-    async (record: LocalFsHandleRecord) => {
+    async (record: LocalFsHandleRecord, options: VaultOpenOptions = {}): Promise<VaultOpenResult> => {
       if (!isSupported()) {
         setState(emptyState('unsupported'));
-        return;
+        return NOT_OPENED;
       }
       setState((s) => ({
         ...s,
@@ -1067,7 +1295,7 @@ export function useLocalVaultInternal() {
             errorMessage: null,
             errorCode: 'path-missing',
           }));
-          return;
+          return NOT_OPENED;
         }
         const resolvedHandle = await resolveVaultHandle(record.handle);
         setOpenedInsidePickedFolder(resolvedHandle.redirectedFrom);
@@ -1083,7 +1311,8 @@ export function useLocalVaultInternal() {
         };
         await putLocalFsHandle(nextRecord);
         await refreshRecentVaults();
-        await load(resolvedHandle.handle);
+        const loaded = await load(resolvedHandle.handle, options);
+        return loaded ? { opened: true, ...loaded } : NOT_OPENED;
       } catch (err) {
         // `toErrorMessage` — a Tauri `invoke` rejects with `Err(String)` as a plain string.
         setState((s) => ({
@@ -1095,6 +1324,7 @@ export function useLocalVaultInternal() {
               ? 'permission-denied'
               : 'access-failed',
         }));
+        return NOT_OPENED;
       }
     },
     [load, refreshRecentVaults],
@@ -1755,10 +1985,10 @@ export function useLocalVaultInternal() {
   }, [load, refreshRecentVaults]);
 
   /**
-   * Writes the ontology starter markdown files, and seeds `.mcp.json` / `.codex` config only
-   * when the bundled agent server is actually installable — an unrunnable config is never
-   * planted silently. Existing files are skipped rather than overwritten, so calling this on
-   * an existing vault is safe.
+   * Writes the ontology starter into the open folder (`writeVaultStarter`) and rescans it. Config
+   * files such as `.mcp.json` / `.codex` are seeded only when the bundled agent server is actually
+   * installable — an unrunnable config is never planted silently. Existing files are skipped rather
+   * than overwritten, so calling this on an existing vault is safe.
    *
    * `starterLocale` decides the language of the starter bodies: a vault created from a screen
    * in one language should read in that language. The file set and the frontmatter are
@@ -1769,133 +1999,26 @@ export function useLocalVaultInternal() {
    * bodies (walkthrough 2026-07-26). Removing the default makes the type demand a locale from
    * any new call site, so the same drift cannot reopen. An unknown locale is downgraded to EN
    * by `starterFilesForLocale`.
+   *
+   * This is the door for a folder that is **already open** (Settings › Workspace, the map's empty
+   * state). A door that creates a folder asks `open`/`openRecent` for the starter instead, so it is
+   * written before the folder is first shown.
    */
-  /**
-   * Write the starter for the parts a person chose (`VaultShape`): the map's starter
-   * nodes and skills, the wiki's template, or both. Every folder of the fixed shape is
-   * created either way — `domains/`, `capabilities/`, `elements/`, `sources/`, `wiki/` —
-   * so the folder a teammate pulls always has the same tree, and "start the map" or
-   * "start a wiki" later only adds the files that make that part real.
-   */
-  const scaffoldOntology = useCallback(async (starterLocale: string, shape: VaultShape = { map: true, wiki: true }) => {
+  const scaffoldOntology = useCallback(async (starterLocale: string, shape: VaultShape = FULL_STARTER_SHAPE) => {
     if (!state.handle) {
       throw new Error('Vault is not open');
     }
     const vaultHandle = state.handle;
     await requireWritePermission(vaultHandle);
-    // Count the two kinds **separately**. They used to be summed into one `created`, so the
-    // toast said "8 starter documents" while the real ontology concept count was 5 and the
-    // settings panel said "5 documents" — two screens giving different numbers for one vault.
-    let markdownCreated = 0;
-    let skipped = 0;
-    for (const { relPath, content } of shape.map ? materializeStarterFiles(starterLocale) : []) {
-      // The slug is the path with the `.md` extension removed, per createDoc / saveDoc rules.
-      const slug = relPath.replace(/\.md$/, '');
-      if (state.fileHandles.has(slug)) {
-        skipped += 1;
-        continue;
-      }
-      try {
-        const resolved = await getParentAndName(slug, true);
-        if (!resolved) continue;
-        const fh = await resolved.parent.getFileHandle(resolved.fileName, {
-          create: true,
-        });
-        const writable = await fh.createWritable();
-        await writable.write(content);
-        await writable.close();
-        markdownCreated += 1;
-      } catch {
-        skipped += 1;
-      }
-    }
-    /*
-     * The agent guide — **config alone is not enough** (measured 2026-08-17). Even with MCP
-     * connected, the agent read frontmatter directly with `sed` and `grep` (zero MCP calls).
-     * Putting `AGENTS.md` in the vault made it call `list_concepts` for the same question
-     * immediately. Evidence: the `VAULT_AGENT_GUIDE_PATH` comment in `ontology-starter.ts`.
-     *
-     * **Not counted in `markdownCreated`**, because it is not a concept and that number is
-     * rendered as "N concept documents".
-     */
-    let guideCreated = 0;
-    for (const guide of [
-      vaultAgentGuideForLocale(starterLocale),
-      // Claude Code does not read `AGENTS.md` directly; it goes through `CLAUDE.md`'s import.
-      // With only one of them, one of the two runtimes gets no guide at all.
-      vaultClaudeBridgeForLocale(starterLocale),
-      /*
-       * The procedural skill set. Where the guide says *what to call*, these say *in what order
-       * and where to stop*. The vault is the agent's working folder, so they appear directly in
-       * its `/` listing — evidence: the `VAULT_SKILL_NAMES` comment in `ontology-starter.ts`.
-       */
-      ...(shape.map ? vaultSkillFilesForLocale(starterLocale) : []),
-      /*
-       * The wiki's furniture. The vault shape is one folder with `sources/` and `wiki/`
-       * always (ledger, 2026-09-06), and the CLI's `init` writes the page template into
-       * every new vault; a folder the app started used to lack it, so the two doors left
-       * two shapes. The template is the same string the validator enforces.
-       */
-      ...(shape.wiki ? [{ relPath: 'wiki/_template.md', content: WIKI_PAGE_TEMPLATE }] : []),
-    ]) {
-      try {
-        const resolved = await getParentAndName(guide.relPath.replace(/\.md$/, ''), true);
-        if (!resolved) continue;
-        const existing = await resolved.parent
-          .getFileHandle(resolved.fileName)
-          .then(() => true)
-          .catch(() => false);
-        if (existing) {
-          skipped += 1;
-          continue;
-        }
-        const fh = await resolved.parent.getFileHandle(resolved.fileName, { create: true });
-        const writable = await fh.createWritable();
-        await writable.write(guide.content);
-        await writable.close();
-        guideCreated += 1;
-      } catch {
-        skipped += 1;
-      }
-    }
-    // `sources/` from the first minute, in both shapes, so the folder says where files go.
-    for (const folder of ['domains', 'capabilities', 'elements', 'sources', 'wiki']) {
-      try {
-        await state.handle?.getDirectoryHandle(folder, { create: true });
-      } catch {
-        // A folder that cannot be made is reported by the first file written into it.
-      }
-    }
-    try {
-      await state.handle?.getDirectoryHandle('sources', { create: true });
-    } catch {
-      // A folder that refuses a directory still has its pages; the Library creates it on Add files.
-    }
-
-    // Ready-to-use agent configs for "open the vault folder itself" flows.
-    // Fail closed when the bundled server cannot be found: write the markdown starter only.
-    const starterLaunch = await resolveBundledLaunch();
-    const agentConfigResult = starterLaunch
-      ? await writeAgentConfigFiles(vaultHandle, starterLaunch)
-      : { created: 0, skipped: 0 };
-    skipped += agentConfigResult.skipped;
+    const { markdownCreated, agentConfigCreated, created, skipped } = await writeVaultStarter(
+      vaultHandle,
+      starterLocale,
+      shape,
+      state.fileHandles,
+    );
     await load(vaultHandle);
-    return {
-      /** Markdown files that become ontology nodes — the same unit the map and settings count. */
-      markdownCreated,
-      /** Agent config files such as `.mcp.json`. Not concepts. */
-      agentConfigCreated: agentConfigResult.created + guideCreated,
-      /** Backwards-compatible total. When shown to a user, state the two above separately. */
-      created: markdownCreated + agentConfigResult.created + guideCreated,
-      skipped,
-    };
-  }, [
-    state.fileHandles,
-    state.handle,
-    getParentAndName,
-    load,
-    requireWritePermission,
-  ]);
+    return { markdownCreated, agentConfigCreated, created, skipped };
+  }, [state.fileHandles, state.handle, load, requireWritePermission]);
 
   /**
    * The write the "connect" button performs — it takes the client and writes **only that

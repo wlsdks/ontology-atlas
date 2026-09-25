@@ -80,7 +80,7 @@ function makeVault(): MockVault {
     errorMessage: null,
     errorCode: null,
     handle: { name: 'my-product' },
-    open: vi.fn(async () => undefined),
+    open: vi.fn(async () => ({ opened: false, starterWritten: 0, starterError: null })),
     openRecent: (record: { desktopRootPath?: string }) => mocks.openRecent(record),
     scaffoldOntology: vi.fn(async () => ({ created: 8, skipped: 0 })),
   };
@@ -141,24 +141,35 @@ describe('useFirstRunStarter', () => {
     expect(mocks.vault.open).toHaveBeenCalledTimes(1);
   });
 
-  it('createVault() reuses the shared vault-create-flow (open + scaffold empty folder)', async () => {
-    mocks.vault.open = vi.fn(async () => {
-      mocks.vault.status = 'loaded';
-      mocks.vault.manifest = { docs: [] };
-    });
-    const { result, rerender } = renderHook(() => useFirstRunStarter());
+  it('createVault() reuses the shared vault-create-flow (one open that seeds an empty folder)', async () => {
+    mocks.vault.open = vi.fn(async () => ({ opened: true, starterWritten: 12, starterError: null }));
+    const { result } = renderHook(() => useFirstRunStarter());
 
     await act(async () => {
       await result.current.createVault();
     });
-    rerender();
+
+    // Walkthrough 2026-07-26 — the INDEX's "create a new vault" also produces a starter
+    // in the screen's language (the same result as the checklist and docs CTAs).
+    expect(mocks.vault.open).toHaveBeenCalledWith({ starter: { locale: 'ko', shape: undefined } });
+    expect(result.current.errorText).toBeNull();
+  });
+
+  it('createVault() says in the card when the starter could not be written, since the card stays', async () => {
+    mocks.vault.open = vi.fn(async () => ({
+      opened: true,
+      starterWritten: 0,
+      starterError: new Error('disk full'),
+    }));
+    const { result } = renderHook(() => useFirstRunStarter());
+
+    await act(async () => {
+      await result.current.createVault();
+    });
 
     await waitFor(() => {
-      expect(mocks.vault.scaffoldOntology).toHaveBeenCalledTimes(1);
+      expect(result.current.errorText).toBe('errorFallback');
     });
-  // Walkthrough 2026-07-26 — the INDEX's "create a new vault" also produces a starter
-  // in the screen's language (the same result as the checklist and docs CTAs).
-    expect(mocks.vault.scaffoldOntology).toHaveBeenCalledWith('ko');
   });
 
   it('consumes Escape at capture priority and dismisses without leaking to a bubble-phase listener', () => {

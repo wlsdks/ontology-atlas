@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { failureCodeOf } from '@/shared/lib/failure-code';
 import type { VaultShape } from '@/shared/lib/vault-shape';
-import { shouldClearCreateIntent, shouldScaffoldAfterOpen } from './vault-create-flow';
+import type { VaultOpenOptions, VaultOpenResult } from '@/entities/vault-session';
 
 /**
  * Minimal shape this hook needs from `useLocalVault()` — kept narrow so any
@@ -10,67 +10,71 @@ import { shouldClearCreateIntent, shouldScaffoldAfterOpen } from './vault-create
  */
 export interface VaultCreateFlowVault {
   status: string;
-  manifest: { docs: unknown[] } | null;
-  open: () => Promise<void>;
-  scaffoldOntology: (starterLocale: string, shape?: VaultShape) => Promise<{ created: number; skipped: number }>;
+  open: (options?: VaultOpenOptions) => Promise<VaultOpenResult>;
 }
 
 /**
- * The "create a new vault" action — after folder selection (open), an empty folder is seeded with the
- * starter (scaffoldOntology). `FirstRunPage` (desktop first run) and `FirstRunChooser` (the web's
- * root-first-open) reuse it identically — zero new pipeline, with the decision logic living as pure
- * functions in `vault-create-flow.ts`.
+ * What a creation door says once its folder has opened.
+ *
+ * ⚠️ **By then the screen that pressed the door is usually gone** (2026-09-25, D1). On the
+ * installed app the shell swaps the first-run screen for the opening pane as soon as the open
+ * begins, and the root entry swaps that for the map, so hook state set afterwards reaches nothing.
+ * A host that is swapped away passes these and speaks through something that outlives it (a
+ * toast); a host that stays mounted (the INDEX starter card) omits them and reads `actionError`.
+ */
+export interface CreationReport {
+  /** The folder opened but its starter could not be written; the raw failure, for the screen to translate. */
+  starterFailed?: (error: unknown) => void;
+}
+
+/**
+ * The "create a new vault" action — after folder selection, an empty folder is seeded with the
+ * starter. `FirstRunPage` (desktop first run) and the web INDEX starter card reuse it identically.
+ *
+ * It is one call, `open({ starter })`, and not `open()` followed by `scaffoldOntology()`. The second
+ * half used to wait for this hook's next render to see the opened folder, and on the installed app
+ * that render never happens (see `CreationReport`); the session now writes the starter into an
+ * empty folder before showing it, and a folder that already holds documents is left untouched.
  *
  * The caller passes the screen's language as `starterLocale` — the same "create a new vault" must not
  * produce a vault in a different language depending on the entry path (walkthrough 2026-07-26).
  */
-export function useVaultCreateFlow(vault: VaultCreateFlowVault, starterLocale: string) {
-  const [createArmed, setCreateArmed] = useState(false);
-  const [scaffolding, setScaffolding] = useState(false);
+export function useVaultCreateFlow(
+  vault: VaultCreateFlowVault,
+  starterLocale: string,
+  report: CreationReport = {},
+) {
+  const [creating, setCreating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const { starterFailed } = report;
 
-  /** What the person said the folder will hold; `null` keeps the full starter. */
-  const [shape, setShape] = useState<VaultShape | null>(null);
+  /** `chosen` is what the person said the folder will hold; `null` keeps the full starter. */
   const handleCreate = useCallback(async (chosen: VaultShape | null = null) => {
-    setShape(chosen);
     setActionError(null);
-    await vault.open();
-    // open() resolves after the picker + manifest build settled (or the
-    // user cancelled) — arming here avoids racing the status flip.
-    setCreateArmed(true);
-  }, [vault]);
-
-  useEffect(() => {
-    if (!createArmed) return;
-    const status = vault.status;
-    const docCount = vault.manifest ? vault.manifest.docs.length : null;
-    // Deferred to a microtask to avoid a synchronous setState straight after render — the decision
-    // inputs are pinned to the values at the time this effect ran.
-    queueMicrotask(() => {
-      if (shouldScaffoldAfterOpen({ createIntent: true, status, docCount })) {
-        setCreateArmed(false);
-        setScaffolding(true);
-        (shape ? vault.scaffoldOntology(starterLocale, shape) : vault.scaffoldOntology(starterLocale))
-          .catch((err: unknown) => {
-            /**
- * `actionError` carries a **failure code**, not a sentence.
- *
- * `''` still means "it failed and there is nothing more specific to say"; a non-empty value is a
- * code the screen looks up in the `failures` catalogue. It used to be `err.message` — the
- * developer's English — which a Korean screen then printed verbatim (installed-app inspection
- * before v1.2.2, B2). A module that throws cannot know the reader's language, so it names the
- * failure and the screen owns the sentence.
- */
-            setActionError(failureCodeOf(err) ?? '');
-          })
-          .finally(() => setScaffolding(false));
-        return;
+    setCreating(true);
+    try {
+      const result = await vault.open({ starter: { locale: starterLocale, shape: chosen ?? undefined } });
+      // A cancel or a failed read is the session's to say (its own error state).
+      if (!result.opened) return;
+      if (result.starterError !== null) {
+        /*
+         * `actionError` carries a **failure code**, not a sentence: `''` means "it failed and
+         * there is nothing more specific to say", anything else is looked up in `failures`. It
+         * used to be `err.message`, which a Korean screen printed verbatim (v1.2.2, B2).
+         */
+        if (starterFailed) starterFailed(result.starterError);
+        else setActionError(failureCodeOf(result.starterError) ?? '');
       }
-      if (shouldClearCreateIntent(status)) {
-        setCreateArmed(false);
-      }
-    });
-  }, [createArmed, shape, starterLocale, vault, vault.manifest, vault.status]);
+    } finally {
+      setCreating(false);
+    }
+  }, [vault, starterLocale, starterFailed]);
 
-  return { handleCreate, scaffolding, actionError, setActionError };
+  return {
+    handleCreate,
+    /** The chosen folder is being read and, when empty, seeded — the picker itself is not this. */
+    scaffolding: creating && vault.status === 'loading',
+    actionError,
+    setActionError,
+  };
 }

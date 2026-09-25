@@ -51,8 +51,11 @@ vi.mock('@/shared/ui/toast', () => ({
 }));
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string, vars?: Record<string, unknown>) =>
-    vars ? `${key}:${JSON.stringify(vars)}` : key,
+  useTranslations: () =>
+    Object.assign(
+      (key: string, vars?: Record<string, unknown>) => (vars ? `${key}:${JSON.stringify(vars)}` : key),
+      { has: () => false },
+    ),
   useLocale: () => 'ko',
 }));
 
@@ -68,13 +71,15 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
+const NOT_OPENED = { opened: false, starterWritten: 0, starterError: null };
+
 function makeVault(): MockVault {
   const vault: MockVault = {
     status: 'idle',
     manifest: null,
     errorMessage: null,
-    open: vi.fn(async () => undefined),
-    openRecent: vi.fn(async () => undefined),
+    open: vi.fn(async () => NOT_OPENED),
+    openRecent: vi.fn(async () => NOT_OPENED),
     forgetRecent: vi.fn(async () => undefined),
     scaffoldOntology: vi.fn(async () => ({ created: 8, skipped: 0 })),
     recentVaults: [],
@@ -82,6 +87,46 @@ function makeVault(): MockVault {
     storedVaultRecord: null,
   };
   return vault;
+}
+
+type StarterRequest = { locale: string; shape?: { map: boolean; wiki: boolean } };
+
+/**
+ * A vault double that behaves like the installed app around a creation door.
+ *
+ * - **The screen is swapped away while the folder opens.** The shell puts its opening pane where
+ *   this page was as soon as the status turns `opening`, and the root entry puts the map there once
+ *   a manifest exists, so the page never renders again. `open`/`openRecent` unmount it at exactly
+ *   that moment.
+ * - **An empty folder**, with a disk the test can read. The starter can land the two ways the real
+ *   session offers — a `starter` request riding the open, or `scaffoldOntology()` on the open folder
+ *   — so what is asserted is the disk, not which call carried it.
+ */
+function swappingVault(unmountPage: () => void) {
+  const disk: string[] = [];
+  const writeStarter = (request: StarterRequest) => {
+    const shape = request.shape ?? { map: true, wiki: true };
+    if (shape.map) disk.push(`project.md (${request.locale})`);
+    if (shape.wiki) disk.push(`wiki/_template.md (${request.locale})`);
+  };
+  const settle = async (options?: { starter?: StarterRequest }) => {
+    mocks.vault.status = 'opening';
+    unmountPage();
+    await Promise.resolve();
+    if (options?.starter) writeStarter(options.starter);
+    mocks.vault.status = 'loaded';
+    mocks.vault.manifest = { docs: [...disk] };
+    return { opened: true, starterWritten: disk.length, starterError: null };
+  };
+  mocks.vault.open = vi.fn(async (options?: { starter?: StarterRequest }) => settle(options));
+  mocks.vault.openRecent = vi.fn(async (_record: unknown, options?: { starter?: StarterRequest }) =>
+    settle(options),
+  );
+  mocks.vault.scaffoldOntology = vi.fn(async (locale: string, shape?: StarterRequest['shape']) => {
+    writeStarter({ locale, shape });
+    return { created: disk.length, skipped: 0 };
+  });
+  return disk;
 }
 
 describe('FirstRunPage', () => {
@@ -132,26 +177,22 @@ describe('FirstRunPage', () => {
     expect(open).toHaveFocus();
   });
 
-  it('scaffolds the starter structure after creating into an empty folder', async () => {
-    mocks.vault.open = vi.fn(async () => {
-      mocks.vault.status = 'loaded';
-      mocks.vault.manifest = { docs: [] };
-    });
+  it('creating asks the open for the starter the person chose, in the screen language', async () => {
+    mocks.vault.open = vi.fn(async () => ({ opened: true, starterWritten: 12, starterError: null }));
     render(<FirstRunPage />);
 
     fireEvent.click(screen.getByTestId('first-run-create'));
-    fireEvent.click(screen.getByTestId('first-run-shape-both'));
+    fireEvent.click(screen.getByTestId('first-run-shape-map'));
 
     await waitFor(() => {
-      expect(mocks.vault.scaffoldOntology).toHaveBeenCalledTimes(1);
+      expect(mocks.vault.open).toHaveBeenCalledWith({
+        starter: { locale: 'ko', shape: { map: true, wiki: false } },
+      });
     });
+    expect(toastMocks.show).not.toHaveBeenCalled();
   });
 
-  it('does not scaffold when the chosen folder already has docs', async () => {
-    mocks.vault.open = vi.fn(async () => {
-      mocks.vault.status = 'loaded';
-      mocks.vault.manifest = { docs: [{ slug: 'existing' }] };
-    });
+  it('a cancelled picker leaves no toast and no error', async () => {
     render(<FirstRunPage />);
 
     fireEvent.click(screen.getByTestId('first-run-create'));
@@ -160,22 +201,68 @@ describe('FirstRunPage', () => {
     await waitFor(() => {
       expect(mocks.vault.open).toHaveBeenCalledTimes(1);
     });
-    expect(mocks.vault.scaffoldOntology).not.toHaveBeenCalled();
+    expect(toastMocks.show).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('does not scaffold when the picker is cancelled', async () => {
-    mocks.vault.open = vi.fn(async () => {
-      mocks.vault.status = 'idle';
-    });
-    render(<FirstRunPage />);
+  /*
+   * D1, 2026-09-25: "Just start" and "Create a new folder" opened a folder that stayed empty,
+   * with no error and no toast, 3 runs out of 3. The starter was written by an effect waiting for
+   * this page's next render, and the installed app never renders it again once the folder starts
+   * opening. These two cases swap the page away exactly as the shell does and read the disk.
+   */
+  it('just start leaves its starter on disk and says where, though the page is swapped away mid-open', async () => {
+    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
+    let unmountPage = () => undefined as void;
+    const disk = swappingVault(() => unmountPage());
+    const { unmount } = render(<FirstRunPage />);
+    unmountPage = unmount;
 
-    fireEvent.click(screen.getByTestId('first-run-create'));
+    fireEvent.click(screen.getByTestId('first-run-just-start'));
     fireEvent.click(screen.getByTestId('first-run-shape-both'));
 
     await waitFor(() => {
-      expect(mocks.vault.open).toHaveBeenCalledTimes(1);
+      expect(disk).toEqual(['project.md (ko)', 'wiki/_template.md (ko)']);
     });
-    expect(mocks.vault.scaffoldOntology).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(toastMocks.show).toHaveBeenCalledWith(
+        expect.stringContaining('~/Ontology Atlas/my-ontology'),
+        'success',
+      );
+    });
+  });
+
+  it('create leaves its starter on disk though the page is swapped away mid-open', async () => {
+    let unmountPage = () => undefined as void;
+    const disk = swappingVault(() => unmountPage());
+    const { unmount } = render(<FirstRunPage />);
+    unmountPage = unmount;
+
+    fireEvent.click(screen.getByTestId('first-run-create'));
+    fireEvent.click(screen.getByTestId('first-run-shape-wiki'));
+
+    await waitFor(() => {
+      expect(disk).toEqual(['wiki/_template.md (ko)']);
+    });
+  });
+
+  it('a starter that could not be written is said in a toast, because the page is gone by then', async () => {
+    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
+    mocks.vault.openRecent = vi.fn(async () => ({
+      opened: true,
+      starterWritten: 0,
+      starterError: new Error('disk full'),
+    }));
+    render(<FirstRunPage />);
+
+    fireEvent.click(screen.getByTestId('first-run-just-start'));
+    fireEvent.click(screen.getByTestId('first-run-shape-both'));
+
+    await waitFor(() => {
+      expect(toastMocks.show).toHaveBeenCalledWith('starterFailed', 'error');
+    });
+    // Not a success sentence about a folder that holds nothing.
+    expect(toastMocks.show).not.toHaveBeenCalledWith(expect.stringContaining('justStartToast'), 'success');
   });
 
   it('hides "just start" when the Tauri invoke bridge is unavailable (e.g. dev ?shell=desktop override in a plain browser)', () => {
@@ -185,29 +272,25 @@ describe('FirstRunPage', () => {
     expect(screen.queryByTestId('first-run-just-start')).not.toBeInTheDocument();
   });
 
-  it('creates the default folder on disk, connects it, and scaffolds it when "just start" is available', async () => {
+  it('creates the default folder on disk and opens it with the chosen starter when "just start" is available', async () => {
     tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
-    mocks.vault.openRecent = vi.fn(async () => {
-      mocks.vault.status = 'loaded';
-      mocks.vault.manifest = { docs: [] };
-    });
+    mocks.vault.openRecent = vi.fn(async () => ({ opened: true, starterWritten: 3, starterError: null }));
     render(<FirstRunPage />);
 
     expect(screen.getByTestId('first-run-just-start')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('first-run-just-start'));
     fireEvent.click(screen.getByTestId('first-run-shape-wiki'));
 
+    // The door asks what the folder will hold; the answer rides into the open.
     await waitFor(() => {
-      expect(mocks.vault.scaffoldOntology).toHaveBeenCalledTimes(1);
+      expect(mocks.vault.openRecent).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'my-ontology' }),
+        { starter: { locale: 'ko', shape: { map: false, wiki: true } } },
+      );
     });
-    // The door asks what the folder will hold; the answer rides into the scaffold.
-    expect(mocks.vault.scaffoldOntology).toHaveBeenCalledWith('ko', { map: false, wiki: true });
     expect(tauriFsMocks.ensureTauriChildDirectory).toHaveBeenCalledWith(
       '/Users/me/Documents/Ontology Atlas',
       'my-ontology',
-    );
-    expect(mocks.vault.openRecent).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'my-ontology' }),
     );
     await waitFor(() => {
       expect(toastMocks.show).toHaveBeenCalledWith(
@@ -220,10 +303,7 @@ describe('FirstRunPage', () => {
   it('picks a numbered folder name and reports it in the toast when the base name is already taken', async () => {
     tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriFsMocks.listTauriDirectoryNames.mockResolvedValue(['my-ontology']);
-    mocks.vault.openRecent = vi.fn(async () => {
-      mocks.vault.status = 'loaded';
-      mocks.vault.manifest = { docs: [] };
-    });
+    mocks.vault.openRecent = vi.fn(async () => ({ opened: true, starterWritten: 3, starterError: null }));
     render(<FirstRunPage />);
 
     fireEvent.click(screen.getByTestId('first-run-just-start'));
@@ -233,6 +313,12 @@ describe('FirstRunPage', () => {
       expect(tauriFsMocks.ensureTauriChildDirectory).toHaveBeenCalledWith(
         '/Users/me/Documents/Ontology Atlas',
         'my-ontology-2',
+      );
+    });
+    await waitFor(() => {
+      expect(toastMocks.show).toHaveBeenCalledWith(
+        expect.stringContaining('~/Ontology Atlas/my-ontology-2'),
+        'success',
       );
     });
   });
