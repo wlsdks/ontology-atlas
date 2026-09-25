@@ -81,12 +81,18 @@ describe('업데이트 확인 절', () => {
 
   it('아직 안 눌렀으면 결과를 말하지 않는다', () => {
     renderAt({ kind: 'idle' });
-    expect(screen.queryByTestId('app-settings-update-result')).toBeNull();
+    // The live region stands empty so the first result is announced when it arrives.
+    expect(screen.getByTestId('app-settings-update-result').textContent).toBe('');
   });
 
   it('확인 중에는 두 번 누르지 못한다', () => {
     renderAt({ kind: 'checking' });
-    expect(screen.getByTestId('app-settings-update-check')).toBeDisabled();
+    const check = screen.getByTestId('app-settings-update-check');
+    // aria-disabled rather than disabled: a disabled button drops the focus it holds.
+    expect(check).toHaveAttribute('aria-disabled', 'true');
+    expect(check).not.toBeDisabled();
+    fireEvent.click(check);
+    expect(checkNow).not.toHaveBeenCalled();
   });
 
   it('최신이면 최신이라고 말한다 — 토스트가 못 하던 말이다', () => {

@@ -29,7 +29,7 @@ import {
   type LocalVerifyReason,
 } from '@/shared/lib/local-endpoint';
 import type { LlmAuditEntry } from '@/shared/lib/llm-audit-log';
-import { openTauriVaultInFinder } from '@/shared/lib/tauri-vault-fs';
+import { revealTauriVaultFile } from '@/shared/lib/tauri-vault-fs';
 import { controlClass, fieldClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';
 import { Select } from '@/shared/ui/select';
@@ -465,12 +465,12 @@ function ProviderCard({
             // (`onCancel`).
             onClick={expanded ? onCancel : onExpand}
             aria-expanded={expanded}
-            // It does not disappear while expanded but stays in the **pressed
-            // state**. If it vanished, nothing on screen would point at where the
-            // card came from, and the place to return to on collapse would go with
-            // it. Pressed now comes from the value layer's `active` — one ramp state
-            // instead of three hand-written indigos.
-            active={expanded}
+            // It does not disappear while expanded - if it vanished, nothing on screen
+            // would point at where the card came from, and the place to return to on
+            // collapse would go with it. It is **not** drawn pressed, though: an indigo
+            // border here stood beside the indigo commit action, so two controls in one
+            // row claimed to be primary (inspection, 2026-09-25). `aria-expanded` carries
+            // the state; the accent belongs to the one action that commits.
             className={cn(
               'shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
               expanded
@@ -501,6 +501,7 @@ function ProviderCard({
               {stored ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <Chip
+                    size="lg"
                     tone="accentOnTint"
                     data-testid={`ai-verify-${provider}`}
                     onClick={() => void handleVerify()}
@@ -510,6 +511,7 @@ function ProviderCard({
                     {verify.kind === 'checking' ? t('verifying') : t('verify')}
                   </Chip>
                   <Chip
+                    size="lg"
                     // Arming changes the tone — colour states first that this
                     // deletion cannot be undone. The ramp's `danger`, not a
                     // hand-written danger colour.
@@ -692,7 +694,6 @@ function LocalEndpointCard({
             data-testid="ai-register-local"
             onClick={expanded ? onCancel : onExpand}
             aria-expanded={expanded}
-            active={expanded}
             className={cn(
               'shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
               expanded
@@ -732,6 +733,7 @@ function LocalEndpointCard({
               />
               {!connected ? (
                 <Chip
+                  size="lg"
                   data-testid="ai-cancel-local"
                   onClick={onCancel}
                   className={NEUTRAL_CHIP_HOVER}
@@ -740,6 +742,7 @@ function LocalEndpointCard({
                 </Chip>
               ) : null}
               <Chip
+                size="lg"
                 tone="accentOnTint"
                 data-testid="ai-verify-local"
                 onClick={() => void handleVerify()}
@@ -779,6 +782,7 @@ function LocalEndpointCard({
                 />
                 {connected ? (
                   <Chip
+                    size="lg"
                     data-testid="ai-local-disconnect"
                     onClick={handleDisconnect}
                     className={NEUTRAL_CHIP_HOVER}
@@ -793,6 +797,7 @@ function LocalEndpointCard({
                   {settings.model}
                 </span>
                 <Chip
+                  size="lg"
                   data-testid="ai-local-disconnect"
                   onClick={handleDisconnect}
                   className={NEUTRAL_CHIP_HOVER}
@@ -1005,6 +1010,7 @@ function KeyDraftForm({
           expansion with no visible way back is a trap, so a discoverable control is
           what makes the contract hold. */}
       <Chip
+        size="lg"
         data-testid={`ai-cancel-${provider}`}
         onClick={onCancel}
         className={NEUTRAL_CHIP_HOVER}
@@ -1012,6 +1018,7 @@ function KeyDraftForm({
         {t('cancel')}
       </Chip>
       <Chip
+        size="lg"
         tone="accentOnTint"
         data-testid={`ai-save-${provider}`}
         onClick={() => void handleSave()}
@@ -1126,18 +1133,21 @@ function AuditTail({
       title={t('auditTitle')}
       testId="ai-audit-tail"
       action={
-        vaultRootPath ? (
+        vaultRootPath && entries.length > 0 ? (
           /*
-           * The sheet's one trailing-action grammar, `lg` secondary chip (2026-09-25). It was
-           * a `link/sm` — 9.5px text in a 24px box, the smallest control in a sheet whose other
-           * actions are 12.5px/32px.
+           * The sheet's one trailing-action grammar: an `lg` chip in the same neutral tone as
+           * the pane's other row actions (it was the only text-primary chip beside grey ones).
+           *
+           * It **selects the log file itself**, and exists only once there is one. It used to
+           * open the vault root under a row naming `llm-audit.jsonl`, and it was offered while
+           * the caption below said the file does not exist yet (inspection, 2026-09-25) - a
+           * button that promised a file and showed a folder without it.
            */
           <Chip
             size="lg"
-            tone="secondary"
             data-testid="ai-audit-open"
-            onClick={() => void openTauriVaultInFinder(vaultRootPath)}
-            className="shrink-0 border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+            onClick={() => void revealTauriVaultFile(vaultRootPath, LLM_AUDIT_RELATIVE_PATH)}
+            className={NEUTRAL_CHIP_HOVER}
           >
             {t('auditOpen')}
           </Chip>

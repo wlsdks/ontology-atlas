@@ -7,6 +7,7 @@ import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
 import { settleRouteViewTransition } from "@/shared/lib/route-view-transition";
 import { installExternalLinkOpener } from "@/shared/lib/tauri-external-link";
 import { useToast } from "@/shared/ui";
+import { BrandWaitingMark } from "@/shared/ui/brand-waiting-mark";
 import { useTranslations } from "next-intl";
 import {
   AppNavRail,
@@ -341,7 +342,10 @@ function VaultRouteIdentityBoundary({
     router.replace("/");
   }, [desktopWithoutVault, router, vault.restoreAttempted]);
 
-  if (localLoadPending || desktopWithoutVault) {
+  if (localLoadPending) {
+    return <VaultOpeningPane name={vault.status === "loading" ? (vault.handle?.name ?? null) : null} />;
+  }
+  if (desktopWithoutVault) {
     return (
       <div
         data-testid="vault-route-identity-pending"
@@ -352,6 +356,44 @@ function VaultRouteIdentityBoundary({
   }
 
   return children;
+}
+
+/**
+ * **A folder that is opening says so, and says which one.**
+ *
+ * This pane used to be an empty canvas-coloured `div`: switching folders at 1512x949 left the
+ * whole workbench blank for 3.6 s with no copy, no mark and no folder name, and first run's
+ * "Open my folder" showed the same nothing (inspection, 2026-09-25, `f-back-400.png`,
+ * `e-1512-opening-150.png`). Blank reads as broken.
+ *
+ * The previous folder is deliberately **not** kept on screen: `isReloadingSameVault` is false
+ * while switching so the old folder is never drawn as if it were the new one. What the pane can
+ * say honestly is what is happening - opening - and, once the read has started, the folder's
+ * name. While the picker is still up there is no chosen folder yet, so it names none.
+ *
+ * It enters on the same 400ms anti-flash delay as `RouteLoadingFallback` (`route-loading-in`),
+ * so a fast switch does not flash a caption; it is not `<main>`, so `RouteFocusManager` does not
+ * send focus into a pane that is about to be replaced.
+ */
+function VaultOpeningPane({ name }: { name: string | null }) {
+  const t = useTranslations("vaultSwitch");
+  return (
+    <div
+      data-testid="vault-route-identity-pending"
+      aria-busy="true"
+      className="flex min-h-full flex-1 items-center justify-center bg-[color:var(--color-canvas)] p-6"
+    >
+      <div
+        role="status"
+        className="route-loading-in flex flex-col items-center gap-3 text-label text-[color:var(--color-text-quaternary)]"
+      >
+        <BrandWaitingMark active initialVisibility="visible" />
+        <p data-testid="vault-opening-caption" className="max-w-[min(32rem,80vw)] truncate">
+          {name ? t("openingNamed", { name }) : t("openingUnnamed")}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 

@@ -6,6 +6,7 @@ import { RefreshCw } from 'lucide-react';
 
 import { readUpdateMemory, useAppUpdateContext } from '@/features/app-update';
 import { isDesktopShell } from '@/shared/lib/desktop-shell';
+import { cn } from '@/shared/lib/cn';
 import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
@@ -125,8 +126,15 @@ export function AppUpdateSettings() {
               size="lg"
               tone="secondary"
               data-testid="app-settings-update-check"
-              disabled={checking}
+              /*
+               * `aria-disabled`, not `disabled`, while checking. A `disabled` button drops the
+               * focus it holds, so pressing this sent the keyboard to `<body>` (inspection,
+               * 2026-09-25). The press is ignored instead, and the result is announced by the
+               * status line below.
+               */
+              aria-disabled={checking || undefined}
               onClick={() => {
+                if (checking) return;
                 if (version === null) {
                   setVersion(undefined);
                   setReadAttempt((attempt) => attempt + 1);
@@ -161,17 +169,26 @@ export function AppUpdateSettings() {
           control={null}
         />
       </SettingsGroup>
-      {outcome ? (
-        <p
-          data-testid="app-settings-update-result"
-          data-phase={phase.kind}
-          role="status"
-          aria-live="polite"
-          className="min-w-0 break-keep px-1 text-label leading-label text-[color:var(--color-text-tertiary)]"
-        >
-          {outcome}
-        </p>
-      ) : null}
+      {/*
+        The result line starts on the rows' text line - the group's 1px border plus the row's
+        `px-3` - rather than 16px left of it, and a failure reads in the warning tone the version
+        row already uses for its own failure (inspection, 2026-09-25: grey at x=517 against the
+        rows' 533). The live region is always present, so the first result is announced too.
+      */}
+      <p
+        data-testid="app-settings-update-result"
+        data-phase={phase.kind}
+        role="status"
+        aria-live="polite"
+        className={cn(
+          'ml-px min-w-0 break-keep px-3 text-label leading-label empty:hidden',
+          phase.kind === 'failed'
+            ? 'text-[color:var(--color-status-warning)]'
+            : 'text-[color:var(--color-text-tertiary)]',
+        )}
+      >
+        {outcome ?? ''}
+      </p>
     </div>
   );
 }

@@ -3954,7 +3954,7 @@
       "auditTitle": "보낸 기록",
       "auditEmpty": "아직 보낸 것이 없어요. 이 파일은 호출이 있을 때만 생겨요.",
       "auditPathNote": "평문이라 git으로 볼 수 있고, 커밋할지는 직접 정해요",
-      "auditOpen": "Finder에서 열기",
+      "auditOpen": "Finder에서 보기",
       "auditPurposeVerify": "연결 확인",
       "auditPurposeAsk": "질문",
       "auditScope": "폴더 데이터 {chars}자",
@@ -6643,6 +6643,9 @@
   },
   "vaultSwitch": {
     "railTileAriaLabel": "열린 폴더: {name}. 다른 폴더 고르기",
+    "railTileOpeningAriaLabel": "폴더 여는 중. 지금 표시: {name}",
+    "openingNamed": "{name} 여는 중…",
+    "openingUnnamed": "폴더 여는 중…",
     "switcherAriaLabel": "폴더 바꾸기",
     "openFolderLabel": "열린 폴더",
     "switchTo": "바꿀 폴더",

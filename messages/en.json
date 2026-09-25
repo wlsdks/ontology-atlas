@@ -3954,7 +3954,7 @@
       "auditTitle": "Sent log",
       "auditEmpty": "Nothing sent yet. This file only appears when a call happens.",
       "auditPathNote": "plain text, so git can read it; whether to commit it is your call",
-      "auditOpen": "Open in Finder",
+      "auditOpen": "Show in Finder",
       "auditPurposeVerify": "Connection check",
       "auditPurposeAsk": "Question",
       "auditScope": "{chars} folder characters",
@@ -6643,6 +6643,9 @@
   },
   "vaultSwitch": {
     "railTileAriaLabel": "Open folder: {name}. Choose a different folder",
+    "railTileOpeningAriaLabel": "Opening a folder. Now showing: {name}",
+    "openingNamed": "Opening {name}…",
+    "openingUnnamed": "Opening a folder…",
     "switcherAriaLabel": "Folder switcher",
     "openFolderLabel": "OPEN FOLDER",
     "switchTo": "SWITCH TO",

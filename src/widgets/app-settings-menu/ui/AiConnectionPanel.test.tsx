@@ -24,7 +24,7 @@ vi.mock('@/shared/lib/tauri-secrets', async (importOriginal) => {
 });
 
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
-  openTauriVaultInFinder: (...args: unknown[]) => mocks.reveal(...args),
+  revealTauriVaultFile: (...args: unknown[]) => mocks.reveal(...args),
 }));
 
 vi.mock('@/shared/ui/toast', () => ({

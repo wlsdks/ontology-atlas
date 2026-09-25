@@ -2,7 +2,7 @@
 
 import { FolderOpen, HardDrive } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type FocusEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { useLocalVault } from '@/entities/vault-session';
@@ -68,6 +68,13 @@ export function VaultSwitchRailTile() {
    * map's INDEX panel painted straight over it - the text of both read on top of each other
    * (inspection, 2026-09-13). `AppNavRail`'s own note already says why: the rail is narrow,
    * so surfaces that hang off it open through a portal, exactly as the settings sheet does.
+   *
+   * **It hangs from the chip's lower corner, not its top.** Top-aligned with the chip it lay
+   * over the INDEX head (title and folder line) and, at 1512, over the map toolbar's first two
+   * controls, which share that top band (inspection, 2026-09-25, `e-1512-popover-with-recent.png`;
+   * measured by elementFromPoint in `app-chrome-interaction.spec.ts`). Starting at the chip's
+   * bottom edge it still reads as the chip's menu and leaves that band - the INDEX head and
+   * the toolbar - uncovered.
    */
   const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
 
@@ -75,14 +82,80 @@ export function VaultSwitchRailTile() {
     setOpen((wasOpen) => {
       if (wasOpen) return false;
       const rect = triggerRef.current?.getBoundingClientRect();
-      if (rect) setAnchor({ top: rect.top, left: rect.right + 6 });
+      if (rect) setAnchor({ top: rect.bottom, left: rect.right + 6 });
       return true;
     });
   }, [setOpen]);
   const busy = vault.status === 'opening' || vault.status === 'loading';
 
+  /*
+   * **The popover takes focus once, when it opens** - not on every render. The ref callback
+   * used to be an inline arrow, which React re-runs on every commit, so any re-render while the
+   * popover was open pulled focus back from whichever row the person had tabbed to.
+   */
+  const setSurface = useCallback(
+    (node: HTMLElement | null) => {
+      const wasEmpty = surfaceRef.current === null;
+      surfaceRef.current = node;
+      if (node && wasEmpty) node.focus({ preventScroll: true });
+    },
+    [surfaceRef],
+  );
+
+  /*
+   * **Focus goes back to the chip only when it has nowhere else to be.** After Escape, or after a
+   * folder was picked, focus sat on a control that had just left the page, so the browser dropped
+   * it to `<body>` and the next Tab restarted from the skip link (inspection, 2026-09-25: BODY at
+   * 1512, 1280 and 1040). After a press on some other control, that control keeps it.
+   */
+  const returnFocusIfLost = useCallback(() => {
+    const active = document.activeElement;
+    if (active && active !== document.body && active.isConnected) return;
+    triggerRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  /*
+   * A switch that started from the popover ends on the chip. The chip stays mounted while the
+   * next folder loads (see below), and once the new folder has landed it is the one place that
+   * names it, so the keyboard lands there too.
+   */
+  const switchingRef = useRef(false);
+  useEffect(() => {
+    if (!switchingRef.current || busy) return;
+    switchingRef.current = false;
+    if (vault.status === 'loaded') returnFocusIfLost();
+  }, [busy, vault.status, returnFocusIfLost]);
+
+  /*
+   * **Tab out of the popover closes it.** Portalled to the end of `<body>`, the popover was the
+   * last stop in the tab order, so Tab past its last control walked to `<body>` and on to the
+   * skip link while the popover stayed open over the INDEX (inspection, 2026-09-25). Leaving it
+   * by keyboard is the same intent as pressing outside it.
+   */
+  const handleBlur = useCallback(
+    (event: FocusEvent<HTMLElement>) => {
+      const inside = (node: Node | null) =>
+        node !== null && (surfaceRef.current?.contains(node) || ref.current?.contains(node));
+      const next = event.relatedTarget;
+      if (next instanceof Node) {
+        if (!inside(next)) setOpen(false);
+        return;
+      }
+      // Focus left for nothing - the page's end, or a control that vanished. Decide once the
+      // browser has settled where focus went, and never because the whole window lost focus.
+      window.setTimeout(() => {
+        if (!document.hasFocus()) return;
+        const active = document.activeElement;
+        if (active && active !== document.body && inside(active)) return;
+        setOpen(false);
+      }, 0);
+    },
+    [ref, setOpen, surfaceRef],
+  );
+
   const handleOpenRecent = useCallback(
     (record: LocalFsHandleRecord) => {
+      switchingRef.current = true;
       setOpen(false);
       void vault.openRecent(record);
     },
@@ -95,12 +168,20 @@ export function VaultSwitchRailTile() {
     [vault],
   );
   const handlePick = useCallback(() => {
+    switchingRef.current = true;
     setOpen(false);
     void vault.open();
   }, [setOpen, vault]);
 
+  /*
+   * **The chip stays while the next folder opens.** It used to render only on `loaded`, so a
+   * switch removed it for the whole load and every rail item below slid up 66px, then back down
+   * four seconds later (inspection, 2026-09-25, sampled per frame). While opening it keeps the
+   * name it has - the folder still open while the picker is up, then the incoming one once the
+   * read starts - and says it is busy.
+   */
   const handle = vault.handle;
-  if (vault.status !== 'loaded' || !handle) return null;
+  if (!handle || (vault.status !== 'loaded' && !busy)) return null;
 
   const name = handle.name;
   // The absolute path is knowable only on the desktop - a web FSA handle has no path.
@@ -137,8 +218,18 @@ export function VaultSwitchRailTile() {
          * absent for the same reason the destination tiles give: the OS tooltip is a grey
          * box drawn outside this design system, over a label that is already on screen.
          */
-        aria-label={t('railTileAriaLabel', { name })}
+        aria-label={busy ? t('railTileOpeningAriaLabel', { name }) : t('railTileAriaLabel', { name })}
+        aria-busy={busy || undefined}
+        data-busy={busy ? 'true' : undefined}
         ref={triggerRef}
+        /*
+         * Disabled, not merely inert, while the next folder loads: a press then has nothing to
+         * switch from, and saying so in the element's state lets anything waiting to press it
+         * wait for the load instead of pressing a tile that ignores it. Focus is not lost to
+         * this - the popover that held it has already closed, and the switch hands focus back
+         * to this tile once it is enabled again.
+         */
+        disabled={busy}
         onClick={toggle}
         className={controlClass({
           shape: 'card',
@@ -154,7 +245,7 @@ export function VaultSwitchRailTile() {
               : 'border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)] group-hover:bg-[color:var(--color-overlay-2)] group-hover:text-[color:var(--color-text-primary)]')
           }
         >
-          <HardDrive size={ICON_SIZE.md} aria-hidden />
+          <HardDrive size={ICON_SIZE.md} aria-hidden className={busy ? 'animate-pulse' : undefined} />
         </span>
         {/*
           **The tail is kept, not the head.** `ontology-atlas` and `ontology-atlas-old`
@@ -172,7 +263,12 @@ export function VaultSwitchRailTile() {
         </span>
       </button>
 
-      {open && anchor && typeof document !== 'undefined'
+      {/*
+        Gated on the anchor alone, not on `open`: `Surface` owns its presence and plays the exit
+        when `open` turns false. With `open &&` here the portal unmounted the surface in the same
+        commit, so the exit never ran and `onExited` - the focus return - never fired.
+      */}
+      {anchor && typeof document !== 'undefined'
         ? createPortal(
       <Surface
         open={open}
@@ -181,18 +277,15 @@ export function VaultSwitchRailTile() {
         tabIndex={-1}
         aria-label={t('switcherAriaLabel')}
         data-testid="vault-switch-popover"
-        ref={(node: HTMLElement | null) => {
-          surfaceRef.current = node;
-          /*
-           * `transient-surface.ts` says an `anchored` surface "may take focus; closes and
-           * returns focus". Portalled to `document.body`, this one sat at the end of the
-           * document, so Tab from the tile walked the whole page before reaching it.
-           * Focusing the surface puts the list next in order, and `onExited` hands focus
-           * back to the tile the person pressed.
-           */
-          node?.focus();
-        }}
-        onExited={() => triggerRef.current?.focus()}
+        /*
+         * `transient-surface.ts` says an `anchored` surface "may take focus; closes and returns
+         * focus". Portalled to `document.body`, this one sat at the end of the document, so Tab
+         * from the tile walked the whole page before reaching it. Focusing the surface puts the
+         * list next in order, and `onExited` hands focus back to the tile when it has nowhere
+         * else to be.
+         */
+        ref={setSurface}
+        onExited={returnFocusIfLost}
         {...transientSurface('anchored')}
         style={{ top: anchor.top, left: anchor.left }}
         /*
@@ -205,14 +298,20 @@ export function VaultSwitchRailTile() {
          */
         className="fixed z-50 max-h-[min(72vh,640px)] w-[26rem] max-w-[min(80vw,26rem)] overflow-y-auto rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
       >
-        <p className="px-1.5 pt-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+        {/*
+          One start line for everything in the popover: the captions, the recent rows' glyph
+          column and the picker's glyph all begin 12px in (`px-3`), the inset the rows and the
+          picker already had. The captions sat at 6px, so the popover read as three columns.
+        */}
+        <div onBlur={handleBlur}>
+        <p className="px-3 pt-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
           {t('openFolderLabel')}
         </p>
-        <p className="truncate px-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        <p className="truncate px-3 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {name}
         </p>
         {path ? (
-          <p className="truncate px-1.5 pb-1 font-mono text-caption text-[color:var(--color-text-quaternary)]">
+          <p className="truncate px-3 pb-1 font-mono text-caption text-[color:var(--color-text-quaternary)]">
             {path}
           </p>
         ) : null}
@@ -226,7 +325,7 @@ export function VaultSwitchRailTile() {
         */}
         {alternatives.length > 0 ? (
           <>
-            <p className="px-1.5 pb-1.5 pt-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+            <p className="px-3 pb-1.5 pt-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
               {t('switchTo')}
             </p>
             <RecentVaultList
@@ -255,6 +354,7 @@ export function VaultSwitchRailTile() {
             {t('pickAnotherFolder')}
           </span>
         </button>
+        </div>
       </Surface>,
             document.body,
           )
