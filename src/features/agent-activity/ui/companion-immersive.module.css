@@ -66,6 +66,7 @@
 @media(prefers-reduced-motion:reduce){.worldEnemy[data-phase='loot'],.lootReward{animation:none}.worldEnemy[data-phase='loot']{opacity:0}}
 @media(max-height:650px){.gameRoot[data-panel-open='true'] .rightHud > button{display:none}}
 .helpPanel{display:flex;flex-direction:column;height:100%;gap:12px}
+.helpPanel > div > button{max-width:100%;white-space:normal;height:auto;min-height:44px}
 @media(min-width:700px) and (max-height:650px){.helpPanel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 16px}.helpPanel > p:first-child{grid-column:1;grid-row:1/4}.helpPanel > p:not(:first-child){grid-column:2}.helpPanel > div{grid-column:1/-1;grid-row:4}}
 /* The character's contact point is the ground, not the bottom of a padded cell. */
 .actorFacing{bottom:0}
@@ -382,7 +383,8 @@
 @media(max-width:400px){.inventoryGrid{grid-template-columns:repeat(4,minmax(0,64px))}}
 @media(max-width:600px){.inventoryGrid > .emptySlot{display:none}}
 @media(max-width:600px){.inventoryLayout{gap:8px}.inventoryLayout .itemDetail{gap:6px}.inventoryLayout .panelEyebrow{margin-bottom:6px}}
-@media(max-height:650px){.forge[data-gated='true'] .forgeRank{display:none}}
+@media(max-height:650px),(max-width:600px){.forge[data-gated='true'] .forgeRank{display:none}}
+@media(max-width:600px){.forge[data-gated='true']{gap:4px}}
 @media(max-height:650px){.adventureRoutes{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(44px,1fr))}}
 .learningTopic strong{color:var(--color-text-primary)}
 .learningNoteLabel{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
