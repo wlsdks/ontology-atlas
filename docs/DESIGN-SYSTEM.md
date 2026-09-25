@@ -306,6 +306,8 @@ working channels, so kind is carried by shape.
 | `element` | square + center via-hole (drill hole) | `bodyPoints()` body + separate via arc in `draw()` | `<rect>` + center `<circle>` |
 
 
+A kind the map never draws (`document`, `vault-readme`, or a kind the app does not know) has no row here and borrows no silhouette: the DOM facade draws it the page mark the vault tree gives a document with no map kind (lucide `FileText`, `--color-text-quaternary`, a 1px stroke in both sets). Until 2026-09-25 it fell back to the element's square and via-hole, so the vault README read as an implementation role on the Git step chips and "Document" looked like "Element" in the new-document kind picker.
+
 **Both gateways must render the same mapping** — merely listing it in the table isn't enough to enforce this (consistent with the principle "specs are enforced by lint"). Each file has only validated consistency within itself (`node-shapes.test.ts`, `map-kind-glyph.test.tsx`), meaning nothing checked whether the two files **shared** the same mapping. The contract test `tests/contract/node-kind-shape-parity.contract.test.ts` (added 2026-08-01) fills this gap: we broke one side's mapping with a probe to confirm failure (e.g., forcing it to draw domain silhouettes as circles is immediately caught).
 
 Shapes converge to circles based on `farT` (far-distance progress) — once `FULL_CIRCLE_FAR_T = 0.985` is exceeded, they are always circles. Corner radii interpolate from `minCornerRadius`(kind-specific minimum corner ratio — e.g., project is 14% of the radius) to `r`(full circle) via `interpolateCornerRadius(minCornerRadius(kind, r), r, farT)` — this is a continuous morph, not a silhouette swap (`docs/ONTOLOGY-MAP-DESIGN.md` §3.1).

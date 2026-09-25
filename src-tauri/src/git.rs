@@ -708,6 +708,14 @@ fn get_remote_url(repo_root: &Path, remote_name: &str) -> Option<String> {
     }
 }
 
+/// `git symbolic-ref -q HEAD` fails exactly when HEAD names a commit rather than a branch. A
+/// first push sends the checked-out *branch*, so a detached HEAD has nothing to send it as.
+fn is_head_detached(repo_root: &Path) -> bool {
+    run_git(repo_root, &["symbolic-ref", "-q", "HEAD"])
+        .map(|out| !out.success)
+        .unwrap_or(false)
+}
+
 // ── Result types (consumed by the web GUI) ─────────────────────────────────
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -731,6 +739,14 @@ pub struct GitStatusResult {
     ahead: Option<usize>,
     /// Number of steps on the upstream that I don't have. `None` when there is no upstream.
     behind: Option<usize>,
+    /// Whether an `origin` remote is registered — read locally (`git remote get-url origin`),
+    /// never over the network.
+    ///
+    /// `upstream` alone cannot tell "no remote at all" from "a remote registered, but this
+    /// branch was never sent there": only a first push (`push -u`) creates the tracking ref. The
+    /// screen used to read both as the first, so right after "Connect a remote" succeeded it went
+    /// on saying there was no remote and never offered a way to send (real-bridge QA, 2026-09-25).
+    has_origin: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -832,6 +848,7 @@ pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
             staged_outside_vault: Vec::new(),
             ahead: None,
             behind: None,
+            has_origin: false,
         });
     };
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
@@ -853,6 +870,7 @@ pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
         staged_outside_vault: staged_outside,
         ahead,
         behind,
+        has_origin: get_remote_url(&repo_root, "origin").is_some(),
     })
 }
 
@@ -918,18 +936,32 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
 /// Semantic-unit snapshot that adds + commits only the vault scope. Without `message`,
 /// the auto summary is used as the subject. Sends to upstream only when `push` is true (opt-in).
 /// No changes to commit is not an error but `committed:false, reason:"no-changes"`.
+///
+/// `set_upstream` is the first send of a branch that has never been sent: with no upstream it
+/// pushes the checked-out branch to `origin` and records it as the upstream (`push -u`). It is
+/// passed only from the screen's own "publish" press, never implied by `push`.
 #[tauri::command(async)]
 pub fn git_snapshot(
     vault_path: String,
     message: Option<String>,
     push: Option<bool>,
+    set_upstream: Option<bool>,
 ) -> Result<GitSnapshotResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
+    let set_upstream = set_upstream.unwrap_or(false);
 
     let rows = get_porcelain_status(&repo_root, &pathspec)?;
     if rows.is_empty() {
+        // Nothing to record is no reason to drop a send the person asked for: the steps already
+        // saved are exactly what Push (and a first publish) exist to send. This used to return
+        // before the push, so Push with nothing pending answered with silence.
+        let push_outcome = if push.unwrap_or(false) {
+            Some(run_push(&repo_root, set_upstream))
+        } else {
+            None
+        };
         return Ok(GitSnapshotResult {
             committed: false,
             reason: Some("no-changes".into()),
@@ -945,7 +977,7 @@ pub fn git_snapshot(
             },
             files: Vec::new(),
             staged_outside_vault: Vec::new(),
-            push: None,
+            push: push_outcome,
         });
     }
 
@@ -995,9 +1027,9 @@ pub fn git_snapshot(
         total: changes.len(),
     };
 
-    // push only on explicit opt-in — no automatic `-u` setup when there is no upstream (charter ①).
+    // push only on explicit opt-in — and `-u` only when the caller asked for it (charter ①).
     let push_outcome = if push.unwrap_or(false) {
-        Some(run_push(&repo_root))
+        Some(run_push(&repo_root, set_upstream))
     } else {
         None
     };
@@ -1017,19 +1049,44 @@ pub fn git_snapshot(
 
 /// The commit already exists locally, so a push failure does not crash as Err;
 /// it is delivered as `PushOutcome{pushed:false, ...}` guidance instead.
-fn run_push(repo_root: &Path) -> PushOutcome {
-    let Some(upstream) = get_upstream_ref(repo_root) else {
+///
+/// With no upstream, `set_upstream` sends the checked-out branch to `origin` and records
+/// `origin/<branch>` as its upstream (`git push --set-upstream origin HEAD`). That is the only
+/// thing that creates the tracking ref Fetch, Pull and Push work from, and before it this screen
+/// had no way to do it: registering a remote stores an address, nothing more. Without the flag,
+/// with no `origin`, or on a detached HEAD (no branch to send it as), nothing is sent.
+fn run_push(repo_root: &Path, set_upstream: bool) -> PushOutcome {
+    let upstream = get_upstream_ref(repo_root);
+    if upstream.is_none() {
         let branch = get_current_branch(repo_root).unwrap_or_else(|| "<branch>".into());
-        return PushOutcome {
-            pushed: false,
-            remote_url: None,
-            message: Some(coded("push-no-upstream", "")),
-            guidance: Some(format!("git push -u origin {branch}")),
-        };
+        if !set_upstream || get_remote_url(repo_root, "origin").is_none() {
+            return PushOutcome {
+                pushed: false,
+                remote_url: None,
+                message: Some(coded("push-no-upstream", "")),
+                guidance: Some(format!("git push -u origin {branch}")),
+            };
+        }
+        if is_head_detached(repo_root) {
+            return PushOutcome {
+                pushed: false,
+                remote_url: None,
+                message: Some(coded("push-detached-head", "")),
+                guidance: Some("git switch <branch>".into()),
+            };
+        }
+    }
+    let args: &[&str] = if upstream.is_some() {
+        &["push"]
+    } else {
+        &["push", "--set-upstream", "origin", "HEAD"]
     };
-    match run_network_git(repo_root, &["push"]) {
+    match run_network_git(repo_root, args) {
         Ok(out) if out.success => {
-            let remote_name = upstream.split('/').next().unwrap_or("origin");
+            let remote_name = upstream
+                .as_deref()
+                .and_then(|name| name.split('/').next())
+                .unwrap_or("origin");
             PushOutcome {
                 pushed: true,
                 remote_url: get_remote_url(repo_root, remote_name),
@@ -2518,5 +2575,83 @@ mod tests {
         assert!(done.restored);
         assert_eq!(fs::read_to_string(&file).unwrap(), committed);
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_registered_remote_is_told_apart_and_the_first_send_sets_the_upstream() {
+        // Registering a remote stores an address; only a first push creates the tracking ref that
+        // Fetch, Pull and Push work from. The screen needs to tell the two states apart, and a
+        // way to make that first push, or "Connect a remote" is a dead end (2026-09-25).
+        let base = std::env::temp_dir().join(format!("atlas-publish-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let dir = base.join("vault");
+        let remote = base.join("remote.git");
+        fs::create_dir_all(&dir).unwrap();
+        let git = |cwd: &Path, args: &[&str]| -> String {
+            let out = std::process::Command::new("git")
+                .args(args)
+                .current_dir(cwd)
+                .output()
+                .unwrap();
+            assert!(
+                out.status.success(),
+                "git {args:?}: {}",
+                String::from_utf8_lossy(&out.stderr)
+            );
+            String::from_utf8_lossy(&out.stdout).trim().to_string()
+        };
+        git(&base, &["init", "-q", "--bare", "remote.git"]);
+        git(&dir, &["init", "-q"]);
+        git(&dir, &["config", "user.email", "test@example.invalid"]);
+        git(&dir, &["config", "user.name", "atlas test"]);
+        git(&dir, &["config", "commit.gpgsign", "false"]);
+        fs::write(dir.join("orders.md"), "---\nkind: domain\n---\n# Orders\n").unwrap();
+        git(&dir, &["add", "orders.md"]);
+        git(&dir, &["commit", "-qm", "seed"]);
+        let vault = dir.to_string_lossy().into_owned();
+
+        let before = git_status(vault.clone()).unwrap();
+        assert!(!before.has_origin, "no remote is registered yet");
+        assert!(before.upstream.is_none());
+
+        git_set_remote(vault.clone(), remote.to_string_lossy().into_owned()).unwrap();
+        let saved = git_status(vault.clone()).unwrap();
+        assert!(saved.has_origin, "a registered origin reads as a remote");
+        assert!(
+            saved.upstream.is_none(),
+            "registering an address sends nothing"
+        );
+
+        // A plain push still refuses and names the command: the upstream is set only when asked.
+        let plain = git_snapshot(vault.clone(), None, Some(true), None).unwrap();
+        let refused = plain.push.expect("a push was asked for");
+        assert!(!refused.pushed);
+        assert!(refused.message.unwrap().starts_with("push-no-upstream"));
+
+        // Nothing to record, and the first send still goes.
+        let first = git_snapshot(vault.clone(), None, Some(true), Some(true)).unwrap();
+        assert!(!first.committed);
+        let sent = first.push.expect("a push was asked for");
+        assert!(sent.pushed, "{:?}", sent.message);
+        let after = git_status(vault.clone()).unwrap();
+        let branch = after.branch.clone().expect("a branch is checked out");
+        assert_eq!(
+            after.upstream.as_deref(),
+            Some(format!("origin/{branch}").as_str())
+        );
+        assert_eq!((after.ahead, after.behind), (Some(0), Some(0)));
+        assert_eq!(
+            git(&remote, &["rev-parse", &format!("refs/heads/{branch}")]),
+            git(&dir, &["rev-parse", "HEAD"]),
+            "the remote holds the step that was sent"
+        );
+
+        // A detached HEAD has no branch to send, so the first send is refused by name.
+        git(&dir, &["checkout", "-q", "--detach"]);
+        let detached = git_snapshot(vault, None, Some(true), Some(true)).unwrap();
+        let refused = detached.push.expect("a push was asked for");
+        assert!(!refused.pushed);
+        assert!(refused.message.unwrap().starts_with("push-detached-head"));
+        let _ = fs::remove_dir_all(&base);
     }
 }

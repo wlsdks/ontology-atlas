@@ -55,7 +55,12 @@ import {
   gitRestoreFile,
 } from "@/shared/lib/tauri-git";
 import { useNativeErrorLookup } from "@/shared/lib/use-native-error-lookup";
-import type { OntologyChangeset, KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import {
+  isCanonicalConcept,
+  type OntologyChangeset,
+  type KnowledgeGraphEdge,
+  type KnowledgeGraphNode,
+} from "@/entities/knowledge-graph";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { Checkbox, controlClass } from "@/shared/ui";
@@ -367,6 +372,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
  */
 export type WorkbenchSelection = { kind: "pending" } | { kind: "commit"; hash: string };
 
+/**
+ * The presses that reach the remote. `publish` is the first send of a branch that was never
+ * sent (`push -u`): the one press that turns a saved address into an upstream.
+ */
+type RemoteAction = "fetch" | "pull" | "push" | "publish";
+
 type GitStage = "web" | "no-vault" | "loading" | "not-installed" | "error" | "not-initialized" | "workbench";
 
 type SetupStep = 1 | 2 | 3;
@@ -492,14 +503,23 @@ export function AtlasGitPanel({
    * tool wrote and never fit human commits. #842 ships per-commit files with
    * kind/slug, so nothing is guessed any more — only what actually matches a
    * concept node in the vault is counted.
+   *
+   * **A concept, by the census's own rule** (real-bridge QA, 2026-09-25). The vault's README
+   * carries a kind of its own (`vault-readme`, the reader guide Atlas writes, never authored)
+   * and a node in the graph, so it matched like any concept: the founding step read "Concepts
+   * changed 99" over 98 concept documents, and README stood among the chips, and led the
+   * "Other steps" titles of every document from that step. `isCanonicalConcept` is the one
+   * membership every count that says "concept" goes through; the file's own kind is checked
+   * too, so README never stands in through a node that merely cites it.
    */
   const conceptsByHash = useMemo(() => {
-    const nodes = graph?.nodes ?? [];
+    const nodes = (graph?.nodes ?? []).filter(isCanonicalConcept);
     const map = new Map<string, { id: string; label: string; kind: string }[]>();
     for (const commit of history) {
       const seen = new Set<string>();
       const list: { id: string; label: string; kind: string }[] = [];
       for (const file of commit.files ?? []) {
+        if (file.kind && !isCanonicalConcept({ kind: file.kind })) continue;
         const id = matchNodeId(file, nodes);
         if (!id || seen.has(id)) continue;
         const node = nodes.find((n) => n.id === id);
@@ -593,6 +613,12 @@ export function AtlasGitPanel({
   const [snapshotting, setSnapshotting] = useState(false);
   const [snapshotResult, setSnapshotResult] = useState<GitSnapshotResult | null>(null);
   const [snapshotError, setSnapshotError] = useState<string | null>(null);
+  /** A save that was asked to send and did not: git's reason, in the reader's language. */
+  const snapshotPushFailure = useMemo(() => {
+    const push = snapshotResult?.push;
+    if (!push || push.pushed) return null;
+    return push.message ? gitErrorMessage(push.message, nativeErrors) : push.guidance;
+  }, [snapshotResult, nativeErrors]);
 
   /**
    * Evidence pane tabs — changed lines / past steps. List left, evidence right
@@ -636,6 +662,14 @@ export function AtlasGitPanel({
   const [remoteRunning, setRemoteRunning] = useState(false);
   const [remoteError, setRemoteError] = useState<string | null>(null);
   const [remoteNotice, setRemoteNotice] = useState<string | null>(null);
+  /**
+   * `git_set_remote` just answered ok, and the status read that will say so is still in flight.
+   * What git did is known without asking again, so the location line says "connected, not sent
+   * yet" from the same frame as the notice; the read ends it. Kept apart from the remembered
+   * workspace read on purpose: that read is one moment's facts, and this is the write's own
+   * answer, like the notice beside it.
+   */
+  const [originJustSaved, setOriginJustSaved] = useState(false);
 
   const applyWorkspaceRead = useCallback(
     (next: GitWorkspaceRead) => {
@@ -849,6 +883,7 @@ export function AtlasGitPanel({
    */
   const [snapshotMessage, setSnapshotMessage] = useState("");
 
+  const statusUpstream = status?.upstream ?? null;
   const confirmSnapshot = useCallback(async () => {
     if (!vaultPath) return;
     setSnapshotting(true);
@@ -857,6 +892,8 @@ export function AtlasGitPanel({
       const trimmed = snapshotMessage.trim();
       const result = await gitSnapshot(vaultPath, {
         push: pushOptIn,
+        // A branch never sent has no upstream yet; "Save and send" then is its first send.
+        setUpstream: pushOptIn && !statusUpstream,
         ...(trimmed ? { message: trimmed } : {}),
       });
       setSnapshotResult(result);
@@ -876,7 +913,7 @@ export function AtlasGitPanel({
     } finally {
       setSnapshotting(false);
     }
-  }, [vaultPath, pushOptIn, snapshotMessage, refresh, nativeErrors, setConfirming]);
+  }, [vaultPath, pushOptIn, statusUpstream, snapshotMessage, refresh, nativeErrors, setConfirming]);
 
   /**
    * A copy reports **both success and failure** (2026-07-28 QA).
@@ -926,7 +963,7 @@ export function AtlasGitPanel({
    * All three run **only after an explicit click**. Zero automatic calls, exactly
    * as the trust charter requires.
    */
-  const [remoteBusy, setRemoteBusy] = useState<null | "fetch" | "pull" | "push">(null);
+  const [remoteBusy, setRemoteBusy] = useState<null | RemoteAction>(null);
   const [remoteActionNotice, setRemoteActionNotice] = useState<string | null>(null);
   const [remoteActionError, setRemoteActionError] = useState<string | null>(null);
   /**
@@ -1040,7 +1077,7 @@ export function AtlasGitPanel({
   }, [desktop, vaultPath]);
 
   const runRemote = useCallback(
-    async (kind: "fetch" | "pull" | "push") => {
+    async (kind: RemoteAction) => {
       if (!vaultPath) return;
       /*
        * **Push never commits behind the person's back** (2026-09-25). The only
@@ -1049,9 +1086,10 @@ export function AtlasGitPanel({
        * button labelled "Push" used to write a commit nobody confirmed or named.
        * With changes pending, Push opens the same confirm step as the commit
        * button, the send already ticked: the person reads and can edit the line
-       * that will be recorded, and nothing leaves until they confirm.
+       * that will be recorded, and nothing leaves until they confirm. A first
+       * publish sends through the same command, so it takes the same step.
        */
-      if (kind === "push" && hasChanges) {
+      if ((kind === "push" || kind === "publish") && hasChanges) {
         setPushOptIn(true);
         setConfirming(true);
         return;
@@ -1059,36 +1097,42 @@ export function AtlasGitPanel({
       setRemoteBusy(kind);
       setRemoteActionError(null);
       setRemoteActionNotice(null);
+      let notice: string | null = null;
+      let failure: string | null = null;
       try {
         if (kind === "fetch") {
           const r = await gitFetch(vaultPath);
-          if (r)
-            setRemoteActionNotice(
-              t("remoteDoneFetch", { summary: remoteSummary(r.summary, r.ahead, r.behind) }),
-            );
+          if (r) notice = t("remoteDoneFetch", { summary: remoteSummary(r.summary, r.ahead, r.behind) });
         } else if (kind === "pull") {
           const r = await gitPull(vaultPath);
-          if (r) setRemoteActionNotice(t("remoteDonePull", { summary: r.summary }));
+          if (r) notice = t("remoteDonePull", { summary: r.summary });
         } else {
           /*
            * Push has no dedicated command — `git_snapshot(push:true)` does that
            * job. With zero changes to record it returns
            * `committed:false/no-changes` and **only the already-piled steps are
            * sent**, which is what makes "you can push with nothing to commit"
-           * true.
+           * true. A publish adds `setUpstream`: the first send of a branch that was
+           * never sent, which is what creates the upstream the other three need.
            */
-          const r = await gitSnapshot(vaultPath, { push: true });
-          if (r?.push?.pushed) setRemoteActionNotice(t("remoteDonePush"));
+          const r = await gitSnapshot(vaultPath, { push: true, setUpstream: kind === "publish" });
+          if (r?.push?.pushed) notice = kind === "publish" ? t("remoteDonePublish") : t("remoteDonePush");
           // The reason first, in the reader's language; the bare git command is the
           // fallback for a push failure Rust had no code for.
-          else if (r?.push?.message)
-            setRemoteActionError(gitErrorMessage(r.push.message, nativeErrors));
-          else if (r?.push?.guidance) setRemoteActionError(r.push.guidance);
+          else if (r?.push?.message) failure = gitErrorMessage(r.push.message, nativeErrors);
+          else if (r?.push?.guidance) failure = r.push.guidance;
         }
+        /*
+         * The result is said with the screen it describes (2026-09-25). Announced before this
+         * re-read, "Published." stood beside the same button still reading "…", and a count
+         * such as "Push 2" beside "Sent." — the counts and the buttons are this read's facts.
+         */
         await refresh();
       } catch (err) {
-        setRemoteActionError(gitErrorMessage(err, nativeErrors));
+        failure = gitErrorMessage(err, nativeErrors);
       } finally {
+        setRemoteActionNotice(notice);
+        setRemoteActionError(failure);
         setRemoteBusy(null);
       }
     },
@@ -1105,6 +1149,7 @@ export function AtlasGitPanel({
     setRemoteRunning(true);
     setRemoteError(null);
     setRemoteNotice(null);
+    let saved = false;
     try {
       const result = await gitSetRemote(vaultPath, remoteUrl);
       if (result) {
@@ -1114,13 +1159,22 @@ export function AtlasGitPanel({
             : t("remoteSaved"),
         );
         setRemoteUrl("");
+        setOriginJustSaved(true);
+        saved = true;
       }
-      await refresh();
     } catch (err) {
       setRemoteError(gitErrorMessage(err, nativeErrors));
     } finally {
+      /*
+       * The press is over when git answers (real-bridge QA, 2026-09-25). This used to wait out
+       * the re-read below as well, so the button still read "Connecting…" beside its own
+       * "Connected the remote repository." for as long as status, diff and history took.
+       */
       setRemoteRunning(false);
     }
+    if (!saved) return;
+    await refresh();
+    setOriginJustSaved(false);
   }, [vaultPath, remoteUrl, refresh, t, nativeErrors]);
 
   return (
@@ -1191,6 +1245,7 @@ export function AtlasGitPanel({
             setPushOptIn={setPushOptIn}
             snapshotting={snapshotting}
             snapshotResult={snapshotResult}
+            snapshotPushFailure={snapshotPushFailure}
             snapshotError={snapshotError}
             confirmSnapshot={confirmSnapshot}
             onRetry={refresh}
@@ -1230,6 +1285,7 @@ export function AtlasGitPanel({
             remoteError={remoteError}
             remoteNotice={remoteNotice}
             onSetRemote={submitRemote}
+            originSaved={status?.hasOrigin === true || originJustSaved}
             remoteBusy={remoteBusy}
             onRemoteAction={(kind) => void runRemote(kind)}
             remoteActionNotice={remoteActionNotice}
@@ -1859,16 +1915,19 @@ function RemoteActionButton({
   id,
   label,
   hint,
+  command = `git ${id}`,
   busy,
   disabled,
   onClick,
 }: {
-  id: "fetch" | "pull" | "push";
+  id: RemoteAction;
   label: string;
   hint: string;
+  /** The git command the press runs, shown under the hint; the verb itself by default. */
+  command?: string;
   busy: boolean;
   disabled: boolean;
-  onClick: (kind: "fetch" | "pull" | "push") => void;
+  onClick: (kind: RemoteAction) => void;
 }) {
   return (
     <Tooltip
@@ -1881,7 +1940,7 @@ function RemoteActionButton({
       content={
         <span className="flex flex-col gap-0.5" data-testid={`atlas-git-remote-${id}-hint`}>
           <span>{hint}</span>
-          <span className="font-mono text-[color:var(--color-text-tertiary)]">git {id}</span>
+          <span className="font-mono text-[color:var(--color-text-tertiary)]">{command}</span>
         </span>
       }
     >
@@ -1924,6 +1983,7 @@ function LocationLine({
   t,
   branch,
   upstream,
+  originSaved,
   ahead,
   behind,
   remoteOpen,
@@ -1937,13 +1997,15 @@ function LocationLine({
   pendingCount: number;
   branch: string | null;
   upstream: string | null;
+  /** An `origin` is registered. Without an upstream that means "saved, never sent". */
+  originSaved: boolean;
   /** With no upstream both are null — that is "unknown", not 0. */
   ahead: number | null;
   behind: number | null;
   remoteOpen: boolean;
   setRemoteOpen: (v: boolean) => void;
-  remoteBusy: null | "fetch" | "pull" | "push";
-  onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
+  remoteBusy: null | RemoteAction;
+  onRemoteAction: (kind: RemoteAction) => void;
 }) {
   if (!branch) return null;
   const known = ahead !== null && behind !== null;
@@ -1997,8 +2059,13 @@ function LocationLine({
           </>
         ) : null}
       </span>
+      {/*
+        The two states are keyed apart. Unkeyed, React reused the pressed "Publish branch"
+        button as the "Pull" that took its slot, so focus sat on Pull after a first send and a
+        second Enter would have pulled (2026-09-25).
+      */}
       {upstream ? (
-        <>
+        <Fragment key="tracked">
           {/* "identical" appears only when there are no numbers — it says why both buttons are disabled. */}
           {same ? (
             <span
@@ -2050,26 +2117,51 @@ function LocationLine({
             disabled={remoteBusy !== null}
             onClick={onRemoteAction}
           />
-        </>
+        </Fragment>
       ) : (
-        <>
+        <Fragment key="untracked">
           <span aria-hidden>·</span>
-          <span>{t("noUpstream")}</span>
+          {/*
+            A saved address is not an upstream (real-bridge QA, 2026-09-25). Only a first push
+            creates the tracking ref Fetch, Pull and Push read, so right after "Connect a remote"
+            succeeded this line went on saying there was no remote, with nothing to press but
+            the same connect door. A saved origin now says what is true and offers the one
+            press that finishes the job, in the slot where Fetch, Pull and Push arrive after it.
+          */}
+          <span data-testid={originSaved ? "atlas-git-remote-unsent" : "atlas-git-remote-none"}>
+            {originSaved ? t("remoteUnsent") : t("noUpstream")}
+          </span>
+          {originSaved ? (
+            <RemoteActionButton
+              id="publish"
+              label={t("remotePublish")}
+              hint={
+                pendingCount > 0
+                  ? t("remotePushCommitsFirstHint", { count: pendingCount })
+                  : t("remotePublishHint", { branch })
+              }
+              command={`git push -u origin ${branch}`}
+              busy={remoteBusy === "publish"}
+              disabled={remoteBusy !== null}
+              onClick={onRemoteAction}
+            />
+          ) : null}
           <button
             type="button"
             data-testid="atlas-git-remote-toggle"
             aria-expanded={remoteOpen}
             onClick={() => setRemoteOpen(!remoteOpen)}
             className={controlClass({
+              // `lg`, the size of the remote actions it now stands beside: one type size in the row.
               shape: "chip",
-              size: "md",
+              size: "lg",
               className:
                 "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
             })}
           >
-            {remoteOpen ? t("remoteToggleClose") : t("remoteToggle")}
+            {remoteOpen ? t("remoteToggleClose") : originSaved ? t("remoteChange") : t("remoteToggle")}
           </button>
-        </>
+        </Fragment>
       )}
     </div>
   );
@@ -2095,19 +2187,34 @@ function RemoteResultLine({
   /** Which action the line reports; only the test id differs. */
   kind?: "remote" | "restore";
 }) {
-  if (!error && !notice) return null;
+  const ref = useRef<HTMLParagraphElement | null>(null);
+  const text = error ?? notice;
+  /*
+   * A press whose button leaves with its result — "Publish branch" turns into Fetch, Pull and
+   * Push — dropped focus to `<body>` (2026-09-25). The result takes it instead, as the save
+   * result does: it is what just happened, and a screen reader reads it out. A button that is
+   * still there keeps its focus.
+   */
+  useEffect(() => {
+    if (!text || typeof document === "undefined") return;
+    const active = document.activeElement;
+    if (!active || active === document.body) ref.current?.focus({ preventScroll: true });
+  }, [text]);
+  if (!text) return null;
   return (
     <p
+      ref={ref}
+      tabIndex={-1}
       role="status"
       data-testid={error ? `atlas-git-${kind}-error` : `atlas-git-${kind}-notice`}
       className={cn(
-        "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-prose",
+        "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-prose outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]",
         error
           ? "text-[color:var(--color-danger-text)]"
           : "text-[color:var(--color-text-tertiary)]",
       )}
     >
-      {error ?? notice}
+      {text}
     </p>
   );
 }
@@ -2748,26 +2855,36 @@ function SnapshotResultLine({
   t,
   result,
   fallbackCount,
+  pushFailure,
 }: {
   t: Translator;
   result: GitSnapshotResult;
   fallbackCount: number;
+  /** Why the send failed, in the reader's language — git's reason, read by the caller. */
+  pushFailure: string | null;
 }) {
   const count = result.counts?.total ?? fallbackCount;
   const remote = result.push?.remoteUrl ?? "";
+  const saved = result.committed ? t("snapshotDone", { count }) : t("snapshotNoChanges");
+  /*
+   * One sentence per outcome (2026-09-25). A save that was sent read "Saved 1 · Saved 1 and sent
+   * to …", because `pushDone` already says both halves. A send that failed named an empty remote
+   * ("Couldn't reach .") — `remoteUrl` is filled only on success — and dropped the reason git
+   * gave, which is what a first send to a mistyped address needs to be told.
+   */
+  const line = !result.push
+    ? saved
+    : result.push.pushed
+      ? result.committed
+        ? t("pushDone", { count, upstream: remote })
+        : t("remoteDonePush")
+      : `${saved} · ${pushFailure ?? t("pushFailed", { count, remote })}`;
   return (
     <p
       className="git-fade-in text-caption text-[color:var(--color-text-tertiary)]"
       data-testid="atlas-git-snapshot-result"
     >
-      {result.committed ? t("snapshotDone", { count }) : t("snapshotNoChanges")}
-      {result.push
-        ? ` · ${
-            result.push.pushed
-              ? t("pushDone", { count, upstream: remote })
-              : t("pushFailed", { count, remote })
-          }`
-        : null}
+      {line}
     </p>
   );
 }
@@ -2791,9 +2908,26 @@ function SnapshotResultLine({
  * see **the string that will actually be recorded**, so the English there is a
  * value, not a plumbing leak.
  */
+/**
+ * The door on the dock's last line — the next remote step for the state it names ("Connect a
+ * remote", or "Publish branch" once an address is saved). One class for both: the two doors hold
+ * the same slot in turn, so they must look the same, and a second copy of the class would only
+ * have been the first one written again.
+ */
+const DOCK_DOOR_CLASS = controlClass({
+  shape: "chip",
+  size: "sm",
+  className:
+    "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+});
+
 function ActionDock({
   t,
   onConnectRemote,
+  unsent,
+  onPublish,
+  publishBusy,
+  remoteBusy,
   hasChanges,
   changeCount,
   predictedSubject,
@@ -2803,15 +2937,23 @@ function ActionDock({
   setPushOptIn,
   snapshotting,
   snapshotResult,
+  snapshotPushFailure,
   snapshotError,
   confirmSnapshot,
   upstream,
+  sendTarget,
   snapshotMessage,
   setSnapshotMessage,
 }: {
   t: Translator;
   /** The input the dock's last line opens when there is no remote. */
   onConnectRemote: () => void;
+  /** A remote is saved but this branch was never sent: the last line's door is the first send. */
+  unsent: boolean;
+  onPublish: () => void;
+  publishBusy: boolean;
+  /** A remote action is running; the first-send door waits for it. */
+  remoteBusy: boolean;
   hasChanges: boolean;
   changeCount: number;
   predictedSubject: string;
@@ -2821,9 +2963,13 @@ function ActionDock({
   setPushOptIn: (v: boolean) => void;
   snapshotting: boolean;
   snapshotResult: GitSnapshotResult | null;
+  /** Why the last save's send failed, in the reader's language; `null` when it did not fail. */
+  snapshotPushFailure: string | null;
   snapshotError: string | null;
   confirmSnapshot: () => void;
   upstream: string | null;
+  /** Where "Save and send" sends: the upstream, or the one a first send creates. `null`: nowhere. */
+  sendTarget: string | null;
   /** A subject the user typed. Empty falls back to the automatic wording. */
   snapshotMessage: string;
   setSnapshotMessage: (v: string) => void;
@@ -2879,15 +3025,17 @@ function ActionDock({
             aria-label={t("messageLabel")}
             className={fieldClass({ multiline: true, size: "md", className: "w-full font-mono break-all" })}
           />
+          {/* A saved origin can take the send too: its first send sets the upstream. The box
+              used to stay disabled until an upstream existed, which nothing here could create. */}
           <Checkbox
             data-testid="atlas-git-push-optin"
             checked={pushOptIn}
-            disabled={!upstream}
+            disabled={!sendTarget}
             onChange={(event) => setPushOptIn(event.target.checked)}
             label={t("pushOptIn")}
           />
           <p className="text-caption text-[color:var(--color-text-quaternary)]">
-            {upstream ? t("pushOptInHint", { upstream }) : t("pushNoUpstream")}
+            {sendTarget ? t("pushOptInHint", { upstream: sendTarget }) : t("pushNoUpstream")}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -2939,7 +3087,12 @@ function ActionDock({
           role="status"
           className="rounded-[var(--radius-chip)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
         >
-          <SnapshotResultLine t={t} result={snapshotResult} fallbackCount={changeCount} />
+          <SnapshotResultLine
+            t={t}
+            result={snapshotResult}
+            fallbackCount={changeCount}
+            pushFailure={snapshotPushFailure}
+          />
         </div>
       ) : null}
 
@@ -2958,6 +3111,25 @@ function ActionDock({
           <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
           {t("scopeNotice")}
         </p>
+      ) : unsent ? (
+        /* A saved address that was never sent to: the next step is the first send, not
+           "connect a remote" again (real-bridge QA, 2026-09-25). */
+        <p
+          data-testid="atlas-git-dock-unsent"
+          className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption leading-label text-[color:var(--color-text-quaternary)]"
+        >
+          <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
+          <span>{t("dockUnsent")}</span>
+          <button
+            type="button"
+            data-testid="atlas-git-dock-publish"
+            disabled={remoteBusy}
+            onClick={onPublish}
+            className={DOCK_DOOR_CLASS}
+          >
+            {publishBusy ? "…" : t("remotePublish")}
+          </button>
+        </p>
       ) : (
         <p
           data-testid="atlas-git-dock-no-remote"
@@ -2969,12 +3141,7 @@ function ActionDock({
             type="button"
             data-testid="atlas-git-dock-connect-remote"
             onClick={onConnectRemote}
-            className={controlClass({
-              shape: "chip",
-              size: "sm",
-              className:
-                "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
-            })}
+            className={DOCK_DOOR_CLASS}
           >
             {t("dockConnectRemote")}
           </button>
@@ -3005,6 +3172,7 @@ function DesktopBody({
   setPushOptIn,
   snapshotting,
   snapshotResult,
+  snapshotPushFailure,
   snapshotError,
   confirmSnapshot,
   onRetry,
@@ -3036,6 +3204,7 @@ function DesktopBody({
   remoteError,
   remoteNotice,
   onSetRemote,
+  originSaved,
   remoteBusy,
   onRemoteAction,
   remoteActionNotice,
@@ -3072,6 +3241,7 @@ function DesktopBody({
   setPushOptIn: (v: boolean) => void;
   snapshotting: boolean;
   snapshotResult: GitSnapshotResult | null;
+  snapshotPushFailure: string | null;
   snapshotError: string | null;
   confirmSnapshot: () => void;
   onRetry: () => void;
@@ -3107,8 +3277,10 @@ function DesktopBody({
   remoteError: string | null;
   remoteNotice: string | null;
   onSetRemote: () => void;
-  remoteBusy: null | "fetch" | "pull" | "push";
-  onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
+  /** An `origin` is registered (git says so, or `git_set_remote` just did). */
+  originSaved: boolean;
+  remoteBusy: null | RemoteAction;
+  onRemoteAction: (kind: RemoteAction) => void;
   remoteActionNotice: string | null;
   remoteActionError: string | null;
   sessionChangeset: OntologyChangeset | null;
@@ -3319,6 +3491,14 @@ function DesktopBody({
 
   // ── Workbench ──────────────────────────────────────────────────────────
   const upstream = status?.upstream ?? null;
+  const branch = status?.branch ?? null;
+  /*
+   * Where "Save and send" would send. With an upstream, that upstream; with a saved origin and a
+   * branch that was never sent, the upstream its first send creates (`push -u origin HEAD` names
+   * it `origin/<branch>`). A detached HEAD ("HEAD") has no branch to send, so nothing.
+   */
+  const sendTarget =
+    upstream ?? (originSaved && branch && branch !== "HEAD" ? `origin/${branch}` : null);
   const showRemoteSetup = remoteOpen && !upstream;
   const deltaByPath = new Map(
     diffFiles.map((file) => [file.path, { added: file.added, removed: file.removed }]),
@@ -3327,8 +3507,9 @@ function DesktopBody({
   const locationLine = (
     <LocationLine
       t={t}
-      branch={status?.branch ?? null}
+      branch={branch}
       upstream={upstream}
+      originSaved={originSaved}
       ahead={status?.ahead ?? null}
       behind={status?.behind ?? null}
       remoteOpen={remoteOpen}
@@ -3365,6 +3546,10 @@ function DesktopBody({
     <ActionDock
       t={t}
       onConnectRemote={() => setRemoteOpen(true)}
+      unsent={!upstream && originSaved}
+      onPublish={() => onRemoteAction("publish")}
+      publishBusy={remoteBusy === "publish"}
+      remoteBusy={remoteBusy !== null}
       hasChanges={hasChanges}
       changeCount={changeCount}
       predictedSubject={predictedSubject}
@@ -3374,9 +3559,11 @@ function DesktopBody({
       setPushOptIn={setPushOptIn}
       snapshotting={snapshotting}
       snapshotResult={snapshotResult}
+      snapshotPushFailure={snapshotPushFailure}
       snapshotError={snapshotError}
       confirmSnapshot={confirmSnapshot}
       upstream={upstream}
+      sendTarget={sendTarget}
       snapshotMessage={snapshotMessage}
       setSnapshotMessage={setSnapshotMessage}
     />

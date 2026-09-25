@@ -57,8 +57,24 @@ describe("OntologyMapKindGlyph — silhouette invariance across sets (#21 hard r
     }
   });
 
-  it("falls back to element silhouette for unknown kinds (unchanged behavior)", () => {
-    const { container } = render(<OntologyMapKindGlyph kind="document" glyphSet="geometric" />);
-    expect(container.querySelector("svg")?.getAttribute("data-kind-glyph")).toBe("element");
+  it("draws a page, never another kind's silhouette, for a kind the map does not draw", () => {
+    // The vault README (`vault-readme`) used to wear the element's square and via-hole on the Git
+    // step chips, and "Document" looked exactly like "Element" in the new-document kind picker.
+    const element = render(<OntologyMapKindGlyph kind="element" glyphSet="geometric" />);
+    const elementShape = element.container.querySelector("svg")?.innerHTML;
+    element.unmount();
+    for (const kind of ["document", "vault-readme", "not-a-kind", ""]) {
+      for (const set of ["geometric", "line"] as GlyphSet[]) {
+        const { container, unmount } = render(<OntologyMapKindGlyph kind={kind} glyphSet={set} size={12} />);
+        const svg = container.querySelector("svg")!;
+        expect(svg.getAttribute("data-kind-glyph")).toBe("document");
+        expect(svg.getAttribute("data-glyph-set")).toBe(set);
+        // No silhouette of the four map kinds (hex, chip, circle, via-pad) is drawn.
+        expect(svg.querySelector("polygon, rect, circle")).toBeNull();
+        expect(svg.innerHTML).not.toBe(elementShape);
+        expect(svg.getAttribute("width")).toBe("12");
+        unmount();
+      }
+    }
   });
 });

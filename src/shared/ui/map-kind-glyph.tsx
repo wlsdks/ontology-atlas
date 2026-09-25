@@ -17,7 +17,16 @@
  * the studio, popovers, and detail together, because they all go through here; the
  * canvas renderer reads the same store and stays in lockstep. The `glyphSet` prop is
  * an override for tests and previews.
+ *
+ * **A kind the map does not draw borrows no silhouette** (2026-09-25). `document`,
+ * `vault-readme` and any kind this app does not know used to fall back to the element's
+ * square with its via-hole, so the vault's README read as an implementation role on the
+ * Git step chips and "Document" looked exactly like "Element" in the new-document kind
+ * picker. They take the page mark the vault tree already draws for a document with no map
+ * kind (`DocsVaultTree`'s `FileText` in quaternary ink), in both sets.
  */
+
+import { FileText } from "lucide-react";
 
 import { useGlyphSet, type GlyphSet } from "@/shared/lib/appearance-preferences";
 
@@ -56,9 +65,21 @@ export function OntologyMapKindGlyph({
   const preferredSet = useGlyphSet();
   const activeSet = glyphSet ?? preferredSet;
   const line = activeSet === "line";
-  const resolved: OntologyMapRenderableKind = isOntologyMapRenderableKind(kind)
-    ? kind
-    : "element";
+  if (!isOntologyMapRenderableKind(kind)) {
+    return (
+      <FileText
+        size={size}
+        strokeWidth={1}
+        absoluteStrokeWidth
+        color="var(--color-text-quaternary)"
+        aria-hidden="true"
+        data-kind-glyph="document"
+        data-glyph-set={activeSet}
+        className={className ?? "shrink-0"}
+      />
+    );
+  }
+  const resolved: OntologyMapRenderableKind = kind;
   const strokeColor = `var(--map-node-stroke-${resolved})`;
   // Line set: same silhouette, different render style — no fill, a 1px outline only.
   // Geometric set: the kind fill plus a 1.25px outline.

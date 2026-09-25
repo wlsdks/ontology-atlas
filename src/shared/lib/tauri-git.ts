@@ -8,8 +8,8 @@ import { type NativeErrorLookup, nativeErrorMessage } from './native-error';
  *
  * - `git_status(vault_path)` → `GitStatusResult` — outside a repo it returns
  *   `initialized: false`, not an error
- * - `git_snapshot(vault_path, message?, push?)` → `GitSnapshotResult` — with no
- *   changes, `committed: false` / `reason: "no-changes"`
+ * - `git_snapshot(vault_path, message?, push?, set_upstream?)` → `GitSnapshotResult` —
+ *   with no changes, `committed: false` / `reason: "no-changes"`
  * - `git_history(vault_path, limit?, path?)` → `GitCommitInfo[]` — empty array when
  *   there are no commits
  * - `git_diff(vault_path)` → `GitDiffResult`
@@ -83,6 +83,13 @@ export interface GitStatusResult {
   behind: number | null;
   /** Already-staged paths outside the vault; the snapshot leaves them alone (informational). */
   stagedOutsideVault: string[];
+  /**
+   * Whether an `origin` remote is registered, read locally. With `upstream: null` it separates
+   * "no remote yet" from "a remote is saved but this branch was never sent" — only a first
+   * send (`gitSnapshot({ push: true, setUpstream: true })`) creates the upstream. Optional
+   * because an older app answers without it; absent reads as no remote, as before.
+   */
+  hasOrigin?: boolean;
 }
 
 /** Rust `PushOutcome` — a failed push is guidance, not a crash: the commit is already local. */
@@ -301,11 +308,13 @@ export async function gitStatus(vaultPath: string): Promise<GitStatusResult | nu
 /**
  * A meaningful snapshot that adds and commits the vault scope only — **call it
  * only after an explicit user click** (never automatically). `push` is opt-in
- * and defaults to false.
+ * and defaults to false; with nothing to commit a push asked for still goes.
+ * `setUpstream` (only with `push`) is the first send of a never-sent branch: it
+ * pushes to `origin` and records the upstream, and is sent only when asked.
  */
 export async function gitSnapshot(
   vaultPath: string,
-  options: { message?: string | null; push?: boolean } = {},
+  options: { message?: string | null; push?: boolean; setUpstream?: boolean } = {},
 ): Promise<GitSnapshotResult | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
@@ -313,6 +322,7 @@ export async function gitSnapshot(
     vaultPath,
     message: options.message ?? null,
     push: options.push ?? false,
+    ...(options.push && options.setUpstream ? { setUpstream: true } : {}),
   });
 }
 
