@@ -9836,8 +9836,81 @@ await test("remove_relation — dry-run then confirmed removal also removes rati
       label: "remove_relation no-op preview",
     });
     const project = getCallParsed(responses, 5);
-    assert.deepEqual(project.frontmatter.contains, []);
+    // `contains` is no kind's scaffold list, so its last entry takes the key with it (2026-09-26).
+    assert.equal(project.frontmatter.contains, undefined);
     assert.equal(project.frontmatter.relation_notes, undefined);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+/*
+ * Owner inspection, 2026-09-26: removing the only `relates` entry of capabilities/wiki-pages left
+ * `relates: []` in the file. A removal now leaves the bytes creating the node would have left: the
+ * key goes with its last entry, `relation_notes` goes with its last reason, and only a kind's own
+ * scaffold list (a capability's `elements`) returns to the `[]` add_concept writes. Asserted on the
+ * file itself, because get_concept reads an absent key and an empty one the same way.
+ */
+await test("remove_relation / replace_relation — an emptied key is deleted, a scaffold list returns to []", async () => {
+  const WIKI_PAGES = [
+    "---",
+    "uid: c9f6fc1b-8321-47ce-bd51-78b1f1c1389f",
+    "slug: capabilities/wiki-pages",
+    "kind: capability",
+    "title: Wiki pages",
+    "domain: domains/meaning",
+    "elements: [elements/page-contract]",
+    "dependencies: [elements/frontmatter-parser]",
+    "relates: [capabilities/library]",
+    'relation_notes: { elements/frontmatter-parser: "wiki-schema.mjs imports parser.mjs." }',
+    "---",
+    "",
+    "Pages that cite their sources.",
+    "",
+  ].join("\n");
+  const root = makeVault([
+    { slug: "capabilities/wiki-pages", content: WIKI_PAGES },
+    { slug: "capabilities/library", content: "---\nuid: 4d2f7c1e-5b3a-4c8d-9e0f-1a2b3c4d5e6f\nkind: capability\ntitle: Library\ndomain: domains/meaning\n---\n" },
+    { slug: "elements/frontmatter-parser", content: "---\nuid: 5e3a8d2f-6c4b-4d9e-8f1a-2b3c4d5e6f7a\nkind: element\ntitle: Frontmatter parser\ndomain: domains/meaning\n---\n" },
+    { slug: "elements/page-contract", content: "---\nuid: 6f4b9e3a-7d5c-4e0f-9a2b-3c4d5e6f7a8b\nkind: element\ntitle: Page contract\ndomain: domains/meaning\n---\n" },
+    { slug: "domains/meaning", content: "---\nuid: 7a5c0f4b-8e6d-4f1a-8b3c-4d5e6f7a8b9c\nkind: domain\ntitle: Meaning\n---\n" },
+  ]);
+  const file = join(root, "capabilities/wiki-pages.md");
+  const lines = () => readFileSync(file, "utf8").split("\n");
+  try {
+    await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "remove_relation", { from: "capabilities/wiki-pages", to: "capabilities/library", type: "relates", confirm: true }),
+    ]);
+    assert.equal(lines().some((line) => line.startsWith("relates:")), false, `relates: stayed behind:\n${lines().join("\n")}`);
+
+    await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "remove_relation", { from: "capabilities/wiki-pages", to: "elements/frontmatter-parser", type: "depends_on", confirm: true }),
+    ]);
+    assert.equal(lines().some((line) => line.startsWith("dependencies:")), false, `dependencies: stayed behind:\n${lines().join("\n")}`);
+    assert.equal(lines().some((line) => line.startsWith("relation_notes:")), false, `relation_notes: stayed behind:\n${lines().join("\n")}`);
+
+    await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "remove_relation", { from: "capabilities/wiki-pages", to: "elements/page-contract", type: "elements", confirm: true }),
+    ]);
+    assert.ok(lines().includes("elements: []"), `a capability's scaffold list did not return to []:\n${lines().join("\n")}`);
+
+    // replace_relation moves the only entry to another key: the old key goes with it.
+    writeFileSync(file, WIKI_PAGES);
+    await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "replace_relation", {
+        from: "capabilities/wiki-pages", oldTo: "capabilities/library", oldType: "relates",
+        newTo: "capabilities/library", newType: "depends_on", why: "The library reads the page contract.", confirm: true,
+      }),
+    ]);
+    assert.equal(lines().some((line) => line.startsWith("relates:")), false, `replace_relation left relates: behind:\n${lines().join("\n")}`);
+    assert.ok(
+      lines().some((line) => line.startsWith("dependencies: [") && line.includes("capabilities/library")),
+      `replace_relation did not land the new edge:\n${lines().join("\n")}`,
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -9869,7 +9942,8 @@ await test("replace_relation — atomically replaces target/type and rationale",
     });
     assert.equal(getCallParsed(responses, 3).changed, true);
     const project = getCallParsed(responses, 4);
-    assert.deepEqual(project.frontmatter.contains, []);
+    // The only `contains` entry moved to `domains`, so `contains` goes with it (2026-09-26).
+    assert.equal(project.frontmatter.contains, undefined);
     assert.deepEqual(project.frontmatter.domains, ["domains/identity"]);
     assert.equal(project.frontmatter.relation_notes["domains/identity"], "Canonical ownership");
     assert.equal(project.frontmatter.relation_notes["domains/auth"], undefined);

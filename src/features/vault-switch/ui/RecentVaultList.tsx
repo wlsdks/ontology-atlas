@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Folder, HardDrive, KeyRound, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { computeEditAge } from '@/shared/lib/edit-age';
@@ -13,10 +13,12 @@ import { MOTION } from '@/shared/motion';
 import {
   buildRecentVaultRows,
   canOpenReachability,
+  partitionRecentVaultRows,
   type RecentVaultReachability,
   type RecentVaultRow,
 } from '../lib/recent-vault-row';
 import { useRecentVaultReachability } from '../model/use-recent-vault-reachability';
+import { MissingFolderGroup, type MissingFolderReviewMode } from './MissingFolderGroup';
 
 /**
  * The known folders, each stating what it holds and whether it opens.
@@ -36,9 +38,12 @@ export function RecentVaultList({
   busy,
   onOpen,
   onForget,
+  onForgetAll,
   onLocate,
   emphasis = false,
   scroll = 'contained',
+  missingReview = 'dialog',
+  footnote,
   className,
 }: {
   records: ReadonlyArray<LocalFsHandleRecord>;
@@ -48,12 +53,18 @@ export function RecentVaultList({
   onOpen: (record: LocalFsHandleRecord) => void;
   onForget: (record: LocalFsHandleRecord) => void;
   /**
+   * Stops listing several folders in one write — the missing-folder group's "forget all".
+   * Without it each folder goes through `onForget`, and the list redraws once per folder.
+   */
+  onForgetAll?: (records: readonly LocalFsHandleRecord[]) => void;
+  /**
    * Opens the folder picker, so a row that cannot be pressed is still not a dead end.
    *
    * A `missing` or `blocked` row states a problem and offers no open. Without this the only
    * action ever offered for it was to throw the folder out of the list, and the control that
-   * would actually recover it sat elsewhere on the screen labelled as a folder Atlas has
-   * *not seen* - which is not what the person is looking at (interaction seat, 2026-09-13).
+   * would actually recover it sat elsewhere on the screen, labelled for folders the list does
+   * not hold - which is not what the person is looking at (interaction seat, 2026-09-13).
+   * Missing folders offer it once, from their group; a `blocked` row keeps its own.
    */
   onLocate?: () => void;
   /**
@@ -70,11 +81,21 @@ export function RecentVaultList({
   emphasis?: boolean;
   /** The viewport chooser fills its allocated space; popovers retain their compact cap. */
   scroll?: 'page' | 'contained' | 'viewport';
+  /**
+   * How the folders that are gone are reviewed: in a dialog on a page (the default), in place in
+   * a popover that grows downward. `MissingFolderReviewMode` says why the two differ.
+   */
+  missingReview?: MissingFolderReviewMode;
+  /**
+   * A line that belongs under the list — the chooser's release valve. It is drawn by the list,
+   * with the list, so it never stands under an empty space for the frames before the list
+   * appears and then jumps down by the list's height.
+   */
+  footnote?: ReactNode;
   className?: string;
 }) {
   const t = useTranslations('vaultSwitch');
   const reachability = useRecentVaultReachability(records);
-  const rows = buildRecentVaultRows({ records, reachability, currentKey });
   /*
    * One clock for the whole list, **taken once when the list mounts**. Reading `Date.now()`
    * per row would let two rows drawn in the same paint disagree about what "now" is, and
@@ -86,38 +107,95 @@ export function RecentVaultList({
    * same pattern for the same ladder.
    */
   const [nowMs] = useState(() => Date.now());
+  const listRef = useRef<HTMLDivElement | null>(null);
+  /*
+   * **Where focus goes once the last missing folder is forgotten.** The pressed button leaves the
+   * page with the group, and focus left on nothing drops to `<body>` (or, from the review dialog,
+   * to the page's `<main>`), so the next Tab restarts from the top. It lands on the list's first
+   * control instead: the person is back to choosing a folder. While missing folders remain, the
+   * group keeps focus itself (`MissingFolderGroup`).
+   */
+  const refocusAfterForget = useRef(false);
+  const rows = reachability ? buildRecentVaultRows({ records, reachability, currentKey }) : [];
+  const { listed, missing } = partitionRecentVaultRows(rows);
+  useEffect(() => {
+    if (!refocusAfterForget.current) return;
+    refocusAfterForget.current = false;
+    if (missing.length > 0) return;
+    listRef.current?.querySelector<HTMLElement>('button:not([disabled])')?.focus({ preventScroll: true });
+  }, [missing.length]);
+  const forgetMissing = useCallback(
+    (record: LocalFsHandleRecord) => {
+      refocusAfterForget.current = true;
+      onForget(record);
+    },
+    [onForget],
+  );
+  const forgetAllMissing = useCallback(
+    (all: readonly LocalFsHandleRecord[]) => {
+      refocusAfterForget.current = true;
+      if (onForgetAll) onForgetAll(all);
+      else for (const record of all) onForget(record);
+    },
+    [onForget, onForgetAll],
+  );
 
-  if (rows.length === 0) return null;
+  /*
+   * Nothing is drawn until the probe has answered (`useRecentVaultReachability`): the first
+   * frame of this list is its real shape, not five pressable rows that fold a frame later.
+   */
+  if (!reachability || rows.length === 0) return null;
+  const wide = scroll !== 'contained';
 
   return (
-    <div
-      data-testid="recent-vault-list"
-      className={cn(
-        'grid border bg-[color:var(--color-panel)]',
-        scroll !== 'contained' ? 'rounded-card' : 'rounded-chip',
-        scroll === 'contained' && 'max-h-[var(--recent-vault-list-max-h)] overflow-y-auto overscroll-contain',
-        scroll === 'viewport' && 'min-h-0 auto-rows-max overflow-y-auto overscroll-contain',
-        emphasis
-          ? 'border-[color:var(--color-indigo-line-a32)]'
-          : 'border-[color:var(--color-border-soft)]',
-        className,
-      )}
-    >
-      {rows.map((row, index) => (
-        <RecentVaultRowView
-          key={row.key}
-          row={row}
-          nowMs={nowMs}
+    <>
+      <div
+        ref={listRef}
+        data-testid="recent-vault-list"
+        className={cn(
+          'grid border bg-[color:var(--color-panel)]',
+          scroll !== 'contained' ? 'rounded-card' : 'rounded-chip',
+          scroll === 'contained' && 'max-h-[var(--recent-vault-list-max-h)] overflow-y-auto overscroll-contain',
+          scroll === 'viewport' && 'min-h-0 auto-rows-max overflow-y-auto overscroll-contain',
+          emphasis
+            ? 'border-[color:var(--color-indigo-line-a32)]'
+            : 'border-[color:var(--color-border-soft)]',
+          className,
+        )}
+      >
+        {listed.map((row, index) => (
+          <RecentVaultRowView
+            key={row.key}
+            row={row}
+            nowMs={nowMs}
+            busy={busy}
+            divided={index > 0}
+            wrapName={wide}
+            onOpen={onOpen}
+            onForget={onForget}
+            onLocate={onLocate}
+            t={t}
+          />
+        ))}
+        {/*
+          Mounted with no missing folders too: it then draws nothing in the list, and its review
+          dialog can still leave through its exit after the last one is forgotten.
+        */}
+        <MissingFolderGroup
+          rows={missing}
+          wide={wide}
+          divided={listed.length > 0}
           busy={busy}
-          divided={index > 0}
-          wrapName={scroll !== 'contained'}
-          onOpen={onOpen}
-          onForget={onForget}
+          nowMs={nowMs}
+          review={missingReview}
+          onForget={forgetMissing}
+          onForgetAll={forgetAllMissing}
           onLocate={onLocate}
           t={t}
         />
-      ))}
-    </div>
+      </div>
+      {footnote}
+    </>
   );
 }
 

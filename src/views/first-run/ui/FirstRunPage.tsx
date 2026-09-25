@@ -370,17 +370,19 @@ export function FirstRunPage() {
                   scroll={choosingFolderHome ? "viewport" : "contained"}
                   onOpen={(record) => void vault.openRecent(record)}
                   onForget={(record) => void vault.forgetRecent(record)}
+                  onForgetAll={(records) => void vault.forgetRecent(records)}
                   onLocate={() => void handleOpen()}
+                  /*
+                    The release valve belongs under the list it acts on, not buried as the third
+                    clause of the intro paragraph (design-lead seat, 2026-09-13). The list draws
+                    it, so it arrives with the list rather than a frame before it.
+                  */
+                  footnote={choosingFolder ? (
+                    <p className={`${styles.release} px-1 text-label text-[color:var(--color-text-tertiary)]`}>
+                      {tSwitch("choose.releaseValve")}
+                    </p>
+                  ) : null}
                 />
-                {/*
-                  The release valve belongs under the list it acts on, not buried as the third
-                  clause of the intro paragraph (design-lead seat, 2026-09-13).
-                */}
-                {choosingFolder ? (
-                  <p className={`${styles.release} px-1 text-label text-[color:var(--color-text-tertiary)]`}>
-                    {tSwitch("choose.releaseValve")}
-                  </p>
-                ) : null}
               </section>
             ) : null}
 

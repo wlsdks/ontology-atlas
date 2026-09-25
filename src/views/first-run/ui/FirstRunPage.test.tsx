@@ -347,14 +347,15 @@ describe('FirstRunPage', () => {
       };
     }
 
-    it('lists the known folders with what each holds and when it was last open', () => {
+    it('lists the known folders with what each holds and when it was last open', async () => {
       mocks.vault.recentVaults = [folder('atlas'), folder('atlas-old')];
       mocks.vault.awaitingVaultChoice = true;
       mocks.vault.storedVaultRecord = mocks.vault.recentVaults[0];
 
       render(<FirstRunPage />);
 
-      expect(screen.getByTestId('recent-vault-list')).toBeTruthy();
+      // The list is drawn once its reachability probe has answered, not a frame before.
+      expect(await screen.findByTestId('recent-vault-list')).toBeTruthy();
       expect(screen.getAllByTestId('recent-vault-row')).toHaveLength(2);
       /*
        * The *rendered wording* of the facts line is asserted in a real browser against the
@@ -376,7 +377,7 @@ describe('FirstRunPage', () => {
       mocks.vault.storedVaultRecord = mocks.vault.recentVaults[0];
 
       render(<FirstRunPage />);
-      fireEvent.click(screen.getAllByTestId('recent-vault-open')[1]);
+      fireEvent.click((await screen.findAllByTestId('recent-vault-open'))[1]);
 
       await waitFor(() => expect(mocks.vault.openRecent).toHaveBeenCalledTimes(1));
       expect(mocks.vault.openRecent.mock.calls[0][0].name).toBe('atlas-old');

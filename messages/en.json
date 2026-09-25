@@ -4768,6 +4768,7 @@
     "showLess": "Show less",
     "beforeLabel": "Now",
     "afterLabel": "After",
+    "noValue": "None",
     "allValuesNew": "All of these are written for the first time.",
     "afterValuesOnly": "This request does not carry the current values, so only what will be written is shown.",
     "requestValuesRaw": "These are the exact values carried by this request. Use Compare for the trusted before and proposed after values.",
@@ -6901,7 +6902,7 @@
     "switcherAriaLabel": "Folder switcher",
     "openFolderLabel": "OPEN FOLDER",
     "switchTo": "SWITCH TO",
-    "pickAnotherFolder": "Open a folder Atlas has not seen",
+    "pickAnotherFolder": "Open another folder",
     "openFolder": "Open {name}",
     "open": "Open",
     "forget": "Forget",
@@ -6946,7 +6947,17 @@
     },
     "locate": "Find it again",
     "locateFolder": "Find {name} again through the folder picker",
-    "countedAgo": "counted {when}"
+    "countedAgo": "counted {when}",
+    "missing": {
+      "summary": "{count, plural, one {# folder} other {# folders}} not found",
+      "review": "Review",
+      "hide": "Hide",
+      "body": "The folder is no longer at the path Atlas remembers: it was renamed, moved, or is on a volume that is not mounted. Forgetting drops a folder from this list only; nothing on disk changes.",
+      "forgetAll": "Forget all {count}",
+      "locate": "Find a moved folder",
+      "locateLabel": "Find a moved folder through the folder picker",
+      "close": "Close"
+    }
   },
   "constellations": {
     "openTooltip": "Open saved constellations",

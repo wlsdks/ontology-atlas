@@ -5,6 +5,7 @@
  */
 
 import { WRITE_RELATION_TYPE_VALUES } from '../ontology-engine.mjs';
+import { emptiedRelationListValue } from '../schema.mjs';
 import { NEIGHBOR_KEY_ALIASES } from '../vault.mjs';
 import { resolveExistingVaultSlug } from './vault-nodes.mjs';
 
@@ -55,9 +56,18 @@ function relationRefsFor(doc, canonicalKey) {
  * A write to a relation key consolidates its alias spellings into the canonical
  * key in the same patch: the alias arrays fold into `nextRefs` and are deleted,
  * so one edit never leaves the same edge type split across two frontmatter keys.
+ *
+ * An emptied list is written the way creating the node writes it
+ * (`emptiedRelationListValue`): deleted, unless it is one of the kind's scaffold
+ * lists, which go back to `[]`. Writing the emptied array back is what left
+ * `relates: []` in a file after its only relation was removed (2026-09-26).
  */
 function relationKeyPatch(doc, canonicalKey, nextRefs) {
-  const patch = { [canonicalKey]: nextRefs };
+  const patch = {
+    [canonicalKey]: nextRefs.length > 0
+      ? nextRefs
+      : emptiedRelationListValue(doc.frontmatter.kind, canonicalKey),
+  };
   for (const alias of aliasKeysFor(canonicalKey)) {
     if (doc.frontmatter[alias] !== undefined) patch[alias] = null;
   }

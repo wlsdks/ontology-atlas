@@ -56,6 +56,29 @@ function sameValue(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+/*
+ * ⚠️ **An emptied key is deleted, never written empty** (owner inspection, 2026-09-26).
+ *
+ * Removing the only `relates` entry of `capabilities/wiki-pages` from the map's edge panel left
+ * `relates: []` in the file, and removing a relation that carried the only reason left
+ * `relation_notes: {  }` — residue a person has to clean by hand, and a git diff that says a key
+ * was kept when the relation was taken away. `applyFrontmatterUpdates` deletes a key written as
+ * `null`, so that is what an emptied list or map is written as here.
+ *
+ * The MCP writers (`remove_relation`, `replace_relation`) and the CLI's `remove-relation` follow
+ * the same rule, with one difference this editor never meets: a kind's own containment list
+ * (`add_concept` scaffolds a capability with `elements: []`) goes back to that `[]`. The four
+ * keys written here — `broader`, `dependencies`, `contains`, `relates` — are no kind's scaffold,
+ * so they always go.
+ */
+function writtenRelationList(refs: string[]): string[] | null {
+  return refs.length > 0 ? refs : null;
+}
+
+function writtenRelationNotes(notes: Record<string, string>): Record<string, string> | null {
+  return Object.keys(notes).length > 0 ? notes : null;
+}
+
 export function buildOntologyRelationEditPlan({
   sourceSlug,
   targetSlug,
@@ -99,7 +122,7 @@ export function buildOntologyRelationEditPlan({
     const before = refs(frontmatter[key]);
     const after = nextRelations[key];
     if (!sameValue(before, after)) {
-      updates[key] = after;
+      updates[key] = writtenRelationList(after);
       fields.push({ key, before, after });
     }
   }
@@ -123,7 +146,7 @@ export function buildOntologyRelationEditPlan({
   }
   if (trimmedWhy) afterNotes[targetSlug] = trimmedWhy;
   if (!sameValue(beforeNotes, afterNotes)) {
-    updates.relation_notes = afterNotes;
+    updates.relation_notes = writtenRelationNotes(afterNotes);
     fields.push({ key: 'relation_notes', before: beforeNotes, after: afterNotes });
   }
 
@@ -176,7 +199,7 @@ export function buildOntologyRelationRemovalPlan({
   const before = refs(frontmatter[relationKey]);
   const after = before.filter((entry) => !matchesRef(entry, targetSlug));
   if (!sameValue(before, after)) {
-    updates[relationKey] = after;
+    updates[relationKey] = writtenRelationList(after);
     fields.push({ key: relationKey, before, after });
   }
 
@@ -199,7 +222,7 @@ export function buildOntologyRelationRemovalPlan({
       Object.entries(beforeNotes).filter(([key]) => !matchesRef(key, targetSlug)),
     );
     if (!sameValue(beforeNotes, afterNotes)) {
-      updates.relation_notes = afterNotes;
+      updates.relation_notes = writtenRelationNotes(afterNotes);
       fields.push({ key: 'relation_notes', before: beforeNotes, after: afterNotes });
     }
   }

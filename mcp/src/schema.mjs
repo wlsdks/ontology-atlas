@@ -579,6 +579,24 @@ export function containmentKeyFor(holderKind, childKind) {
   return CONTAINMENT_HOLDER_KINDS[key].includes(holderKind) ? key : null;
 }
 
+/**
+ * What a relation list is written as once its last entry is removed: `[]` when the list is one
+ * `add_concept` writes empty for this kind (`arrayDefaults` — a capability's `elements`, a
+ * domain's `capabilities`, a project's three), and `null` — the key deleted — for every other key.
+ *
+ * **Why** (owner inspection, 2026-09-26). Removing the only `relates` entry of
+ * `capabilities/wiki-pages` left `relates: []` behind: a key no node is created with, kept only
+ * because a writer wrote back the emptied array. A removal leaves the file in the shape creating
+ * the node would have left it, so the next reader cannot tell a removed relation from one that was
+ * never there — and a scaffold list stays where every other node of the kind keeps it. The app's
+ * relation editor (`ontology-relation-edit.ts`) and the CLI's `remove-relation` follow this rule.
+ */
+export function emptiedRelationListValue(kind, key) {
+  const name = typeof kind === 'string' ? kind.trim() : '';
+  const schema = Object.hasOwn(VAULT_KIND_SCHEMA, name) ? VAULT_KIND_SCHEMA[name] : undefined;
+  return schema?.arrayDefaults.includes(key) ? [] : null;
+}
+
 const GRAPH_ARRAY_KEYS = new Set([
   'domains',
   'capabilities',

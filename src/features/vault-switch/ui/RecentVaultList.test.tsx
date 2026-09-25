@@ -97,8 +97,10 @@ describe('RecentVaultList reachability', () => {
     mocks.reachability.mockReturnValue({ '/Users/dana/gone': 'missing' });
     renderList([record('gone')]);
 
-    expect(screen.getByTestId('recent-vault-notice-missing').textContent).toMatch(
-      /Not at this path any more/,
+    expect(screen.queryByTestId('recent-vault-open')).toBeNull();
+    fireEvent.click(screen.getByTestId('recent-vault-missing-toggle'));
+    expect(screen.getByTestId('recent-vault-missing-review').textContent).toMatch(
+      /no longer at the path Atlas remembers/,
     );
     expect(screen.queryByTestId('recent-vault-open')).toBeNull();
     // The action that *is* available on a folder that is gone.
@@ -171,8 +173,18 @@ describe('RecentVaultList leaves no dead ends', () => {
     mocks.reachability.mockReturnValue({ '/Users/dana/gone': 'missing' });
     const { onLocate } = renderList([record('gone')]);
 
+    fireEvent.click(screen.getByTestId('recent-vault-missing-toggle'));
     const locate = screen.getByTestId('recent-vault-locate');
     fireEvent.click(locate);
+    expect(onLocate).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps its own picker on a folder the browser refused, which is still there', () => {
+    mocks.reachability.mockReturnValue({ '/Users/dana/walled': 'blocked' });
+    const { onLocate } = renderList([record('walled')]);
+
+    expect(screen.queryByTestId('recent-vault-missing-group')).toBeNull();
+    fireEvent.click(screen.getByTestId('recent-vault-locate'));
     expect(onLocate).toHaveBeenCalledTimes(1);
   });
 
@@ -190,8 +202,158 @@ describe('RecentVaultList leaves no dead ends', () => {
     mocks.reachability.mockReturnValue({ '/Users/dana/gone': 'missing' });
     renderList([record('gone')], '/Users/dana/gone');
 
+    fireEvent.click(screen.getByTestId('recent-vault-missing-toggle'));
     expect(screen.getByTestId('recent-vault-forget')).toBeTruthy();
     expect(screen.getByTestId('recent-vault-locate')).toBeTruthy();
+  });
+});
+
+/**
+ * **Folders that are gone are one quiet line at the end, not rows above the live ones**
+ * (owner inspection, 2026-09-26). After a few QA runs the launch chooser opened on five dead rows,
+ * each with a warning and two buttons, above the folders that still exist — the deleted temporary
+ * folders were the most recently opened. Nothing is removed unless the person presses for it.
+ */
+describe('RecentVaultList gathers missing folders at the end', () => {
+  const now = Date.now();
+  const deadThenLive = [
+    record('qa-run-a', { lastAccessedAt: now - 1 * 3600_000 }),
+    record('qa-run-b', { lastAccessedAt: now - 2 * 3600_000 }),
+    record('qa-run-c', { lastAccessedAt: now - 3 * 3600_000 }),
+    record('atlas', { lastAccessedAt: now - 5 * 3600_000 }),
+    record('atlas-notes', { lastAccessedAt: now - 30 * 3600_000 }),
+  ];
+  const reachability = {
+    '/Users/dana/qa-run-a': 'missing',
+    '/Users/dana/qa-run-b': 'missing',
+    '/Users/dana/qa-run-c': 'missing',
+    '/Users/dana/atlas': 'ready',
+    '/Users/dana/atlas-notes': 'ready',
+  };
+
+  function renderGathered(
+    onForgetAll?: (records: readonly LocalFsHandleRecord[]) => void,
+    missingReview?: 'dialog' | 'inline',
+  ) {
+    const onForget = vi.fn();
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <RecentVaultList
+          records={deadThenLive}
+          currentKey="/Users/dana/atlas"
+          busy={false}
+          onOpen={vi.fn()}
+          onForget={onForget}
+          onForgetAll={onForgetAll}
+          onLocate={vi.fn()}
+          missingReview={missingReview}
+          footnote={<p data-testid="release-valve">release valve</p>}
+        />
+      </NextIntlClientProvider>,
+    );
+    return { onForget };
+  }
+
+  it('draws the live folders first and one line for the missing ones after them', () => {
+    mocks.reachability.mockReturnValue(reachability);
+    renderGathered();
+
+    const list = screen.getByTestId('recent-vault-list');
+    const rows = screen.getAllByTestId('recent-vault-row');
+    expect(rows.map((row) => row.querySelector('[data-testid="recent-vault-name"]')?.textContent)).toEqual([
+      'atlas',
+      'atlas-notes',
+    ]);
+    const group = screen.getByTestId('recent-vault-missing-group');
+    expect(group.getAttribute('data-count')).toBe('3');
+    expect(group.textContent).toMatch(/3 folders not found/);
+    // The line is the list's last child: nothing live sits below it.
+    expect(list.lastElementChild).toBe(group);
+    // Closed, it offers one action and no removals.
+    expect(screen.queryAllByTestId('recent-vault-forget')).toHaveLength(1); // atlas-notes, a live row
+    expect(screen.queryByTestId('recent-vault-missing-review')).toBeNull();
+  });
+
+  it('reviews them in a dialog on a page, where each stays removable on its own', () => {
+    mocks.reachability.mockReturnValue(reachability);
+    const { onForget } = renderGathered(vi.fn());
+
+    const toggle = screen.getByTestId('recent-vault-missing-toggle');
+    expect(toggle.getAttribute('aria-haspopup')).toBe('dialog');
+    fireEvent.click(toggle);
+    const review = screen.getByTestId('recent-vault-missing-review');
+    expect(review.getAttribute('role')).toBe('dialog');
+    const missingRows = review.querySelectorAll('[data-testid="recent-vault-row"]');
+    expect([...missingRows].map((row) => row.getAttribute('data-reachability'))).toEqual([
+      'missing',
+      'missing',
+      'missing',
+    ]);
+    expect(review.textContent).toContain('/Users/dana/qa-run-b');
+    expect(onForget).not.toHaveBeenCalled();
+
+    const forgetB = [...review.querySelectorAll<HTMLButtonElement>('[data-testid="recent-vault-forget"]')].find(
+      (button) => button.getAttribute('aria-label')?.includes('qa-run-b'),
+    );
+    fireEvent.click(forgetB!);
+    expect(onForget).toHaveBeenCalledTimes(1);
+    expect(onForget.mock.calls[0]?.[0].desktopRootPath).toBe('/Users/dana/qa-run-b');
+  });
+
+  it('opens in place in the rail popover, which grows downward', () => {
+    mocks.reachability.mockReturnValue(reachability);
+    renderGathered(vi.fn(), 'inline');
+
+    const toggle = screen.getByTestId('recent-vault-missing-toggle');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    const group = screen.getByTestId('recent-vault-missing-group');
+    expect(group.getAttribute('data-state')).toBe('open');
+    expect(group.querySelectorAll('[data-testid="recent-vault-row"]')).toHaveLength(3);
+    expect(screen.queryByTestId('recent-vault-missing-review')).toBeNull();
+  });
+
+  it('forgets all of them in one call, only when that is pressed', () => {
+    mocks.reachability.mockReturnValue(reachability);
+    const onForgetAll = vi.fn();
+    const { onForget } = renderGathered(onForgetAll);
+
+    fireEvent.click(screen.getByTestId('recent-vault-missing-toggle'));
+    expect(onForgetAll).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('recent-vault-forget-missing'));
+    expect(onForget).not.toHaveBeenCalled();
+    expect(onForgetAll).toHaveBeenCalledTimes(1);
+    expect(onForgetAll.mock.calls[0]?.[0].map((entry: LocalFsHandleRecord) => entry.desktopRootPath)).toEqual([
+      '/Users/dana/qa-run-a',
+      '/Users/dana/qa-run-b',
+      '/Users/dana/qa-run-c',
+    ]);
+  });
+
+  it('forgets them one by one when the seat has no bulk forget', () => {
+    mocks.reachability.mockReturnValue(reachability);
+    const { onForget } = renderGathered();
+
+    fireEvent.click(screen.getByTestId('recent-vault-missing-toggle'));
+    fireEvent.click(screen.getByTestId('recent-vault-forget-missing'));
+    expect(onForget).toHaveBeenCalledTimes(3);
+  });
+
+  it('draws nothing, footnote included, until the probe has answered', () => {
+    mocks.reachability.mockReturnValue(null as unknown as Record<string, string>);
+    renderGathered();
+
+    expect(screen.queryByTestId('recent-vault-list')).toBeNull();
+    expect(screen.queryByTestId('release-valve')).toBeNull();
+  });
+
+  it('draws the footnote under the list once it is drawn', () => {
+    mocks.reachability.mockReturnValue(reachability);
+    renderGathered();
+
+    const list = screen.getByTestId('recent-vault-list');
+    expect(list.nextElementSibling).toBe(screen.getByTestId('release-valve'));
   });
 });
 

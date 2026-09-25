@@ -242,6 +242,56 @@ describe('before and after are drawn only from what the change set carries', () 
   });
 });
 
+/**
+ * **A field that ends up holding nothing says so in words** (2026-09-26). Removing the last
+ * relation of a key printed 「After []」, and a patch that deletes a key printed 「null」 — the
+ * request's serialization, not the change. Since the same day an emptied relation key is deleted
+ * rather than written `[]`, so the literal would also show a value the file never holds.
+ */
+describe('an emptied or deleted value reads as none', () => {
+  const item = (fields: OntologyChangeItem['fields']): OntologyChangeItem => ({
+    key: 'patch_concept:0:capabilities/wiki-pages',
+    target: 'capabilities/wiki-pages',
+    exact: true,
+    relation: null,
+    fields,
+  });
+
+  it('an emptied list', () => {
+    renderReview(item([{ key: 'relates', before: ['capabilities/library'], after: [] }]), 'remove');
+
+    const value = screen.getByTestId('ontology-change-review-field-value');
+    expect(value).toHaveTextContent('capabilities/library');
+    expect(value).toHaveTextContent('noValue');
+    expect(value.textContent).not.toContain('[]');
+  });
+
+  it('a deleted key, and an empty previous value', () => {
+    renderReview(item([
+      { key: 'domain', before: 'domains/checkout', after: null },
+      { key: 'relates', before: [], after: ['capabilities/library'] },
+    ]));
+
+    const [deleted, added] = screen.getAllByTestId('ontology-change-review-field-value');
+    expect(deleted).toHaveTextContent('noValue');
+    expect(deleted.textContent).not.toContain('null');
+    expect(added).toHaveTextContent('noValue');
+    expect(added.textContent).not.toContain('[]');
+  });
+
+  it('a reason that is removed', () => {
+    renderReview(item([
+      { key: 'relation_notes', before: { 'capabilities/library': 'The library reads pages.' }, after: {} },
+    ]), 'remove');
+
+    const row = screen.getByTestId('ontology-change-review-entry-row');
+    expect(row).toHaveAttribute('data-change', 'removed');
+    expect(row).toHaveTextContent('The library reads pages.');
+    expect(row).toHaveTextContent('afterLabel');
+    expect(row).toHaveTextContent('noValue');
+  });
+});
+
 describe('complete selected-item field inspection', () => {
   const fields = (prefix: string) => Array.from({ length: 10 }, (_, index) => ({
     key: `${prefix}_field_${index + 1}`,
