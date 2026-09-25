@@ -163,25 +163,15 @@ test.describe('the Library spine at one saved answer', () => {
     const row = popup.getByTestId(`library-question-${ANSWER_SLUG}`);
     await expect(row).toBeVisible();
 
-    // 3 — Ask keeps the outline plane. Compared against the token the variant resolves to,
-    //     so a renamed class cannot pass and `ghost` (transparent) cannot.
+    // 3 — Ask wears the chip grammar of the trigger that opened the popup (2026-09-25
+    //     interaction sweep): the trigger's radius and type size, not a second button shape.
     const ask = popup.getByTestId('library-questions-ask');
     await expect(ask).toBeVisible();
-    const plane = await ask.evaluate((el) => {
-      /* A fresh probe with motion off: the token is authored as `#ffffff05` and the
-         control reports `rgba(255, 255, 255, 0.02)`, so the two are compared after the
-         engine has resolved both — and a reused element would report a mid-transition
-         value instead of the resting one. */
-      const probe = document.createElement('div');
-      probe.style.transition = 'none';
-      probe.style.backgroundColor = 'var(--color-overlay-1)';
-      document.body.append(probe);
-      const outline = getComputedStyle(probe).backgroundColor;
-      probe.remove();
-      return { background: getComputedStyle(el).backgroundColor, outline };
-    });
-    expect(plane.background).not.toBe('rgba(0, 0, 0, 0)');
-    expect(plane.background).toBe(plane.outline);
+    const shape = (el: Element) => {
+      const style = getComputedStyle(el);
+      return { radius: style.borderTopLeftRadius, size: style.fontSize };
+    };
+    expect(await ask.evaluate(shape)).toEqual(await opener.evaluate(shape));
 
     /*
      * 4 — **the row says "door" at rest** (design-lead F2 with design-interaction C1,

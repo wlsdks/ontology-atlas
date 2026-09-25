@@ -132,8 +132,7 @@ function writeCleanWorkbenchFixtures(root) {
     [
       'function FlowTab() { return <section data-testid="flow-tab">',
       '<button data-testid="flow-prefill" onClick={() => onPrefill?.(request)} />',
-      "navigator.clipboard.writeText(request)",
-      '<button data-testid="flow-copy" />',
+      '<CopyControl text={request} testId="flow-copy" />',
       "</section>; }",
     ].join("\n"),
   );

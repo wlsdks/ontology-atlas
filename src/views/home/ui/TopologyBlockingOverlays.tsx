@@ -55,7 +55,7 @@ export function TopologyBlockingOverlays(props: TopologyBlockingOverlaysProps) {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label={t("bootstrap.heading")}
+            aria-label={props.bootstrapPlan.existingProjectSlug ? t("bootstrap.headingAddToMap") : t("bootstrap.heading")}
             tabIndex={-1}
             className="absolute left-1/2 top-[var(--topology-blocking-composer-top)] z-30 max-h-[var(--topology-blocking-composer-max-height)] w-[var(--topology-blocking-composer-width)] -translate-x-1/2 overflow-y-auto"
             data-testid="ontology-bootstrap-panel"
@@ -69,7 +69,8 @@ export function TopologyBlockingOverlays(props: TopologyBlockingOverlaysProps) {
             data-max-height-token="--topology-blocking-composer-max-height"
           >
             <OntologyBootstrapForm plan={props.bootstrapPlan} onCancel={props.closeBootstrap} onConfirm={props.runBootstrap} labels={{
-              heading: t("bootstrap.heading"), projectName: t("bootstrap.projectName"), folders: t("bootstrap.folders"),
+              heading: t("bootstrap.heading"), headingAddToMap: t("bootstrap.headingAddToMap"),
+              projectName: t("bootstrap.projectName"), folders: t("bootstrap.folders"),
               folderDocCount: (count) => t("bootstrap.folderDocCount", { count }),
               summary: (docCount, projectFile) => t("bootstrap.summary", { count: docCount, projectFile }),
               summaryExistingProject: (docCount, projectFile) => t("bootstrap.summaryExistingProject", { count: docCount, projectFile }),
@@ -78,6 +79,7 @@ export function TopologyBlockingOverlays(props: TopologyBlockingOverlaysProps) {
               runtimeSkills: (count) => t("bootstrap.runtimeSkills", { count }),
               agentPointers: (count) => t("bootstrap.agentPointers", { count }),
               libraryFiles: (count) => t("bootstrap.libraryFiles", { count }), confirm: t("bootstrap.confirm"),
+              confirmAddToMap: (count) => t("bootstrap.confirmAddToMap", { count }),
               cancel: t("bootstrap.cancel"), errorPrefix: t("bootstrap.errorPrefix")
             }} />
           </div>

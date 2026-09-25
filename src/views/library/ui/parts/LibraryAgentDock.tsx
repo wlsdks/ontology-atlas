@@ -75,6 +75,9 @@ export interface LibraryAgentOpeningRequest {
   nonce: number;
 }
 
+/** Where focus goes back to when the opener itself is gone: the Library's own conversation door. */
+const LIBRARY_CONVERSATION_DOOR = '[data-testid="library-open-conversation"]';
+
 export interface LibraryAgentRuntime {
   id: string;
   label: string;
@@ -102,6 +105,7 @@ export function LibraryAgentDock({
   fileAnswerNote = null,
   noticeActions = null,
   chatWidth,
+  indexBeside = false,
 }: {
   open: boolean;
   runtime: LibraryAgentRuntime;
@@ -160,6 +164,13 @@ export function LibraryAgentDock({
     setWidth: (width: number) => void;
     commitWidth: (width: number) => void;
   };
+  /**
+   * Whether the index column is drawn beside the reader. Between `lg` and `xl` the dock is
+   * an overlay rather than a column, and with the index drawn it starts at the index's
+   * right edge instead of covering it: measured at 1040 the full-width overlay lay 268px
+   * across the index, which is the list a person picks the next page from (2026-09-25).
+   */
+  indexBeside?: boolean;
 }) {
   const tChat = useTranslations("acpChat");
   const tLibrary = useTranslations("library");
@@ -221,9 +232,122 @@ export function LibraryAgentDock({
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
 
+  /*
+   * **The keyboard follows the dock in, and comes back out with it** (2026-09-25).
+   *
+   * Measured at 1040, 1280 and 1512: pressing *Conversation* left focus on `body`, because
+   * that chip unmounts when the dock opens, and at 1280 the index folds for the dock's width
+   * so *Check page format* and *Compile* unmount the same way. Below `xl` the dock is an
+   * overlay that covers the reader, and Escape did nothing. So on open focus moves into the
+   * dock — the composer when it can take text, otherwise the dock itself — and on close it
+   * returns to whatever opened it, or to the reader when that control is gone.
+   *
+   * Transition-keyed on a ref rather than cleaned up per run, so StrictMode's double effect
+   * cannot cancel the one focus move an opening owes.
+   */
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const surfaceRef = useRef<HTMLElement | null>(null);
+  const openerRef = useRef<{ node: HTMLElement | null; testId: string | null }>({ node: null, testId: null });
+  /* Starts shut: the page mounts this dock when it is first opened, so a dock born open
+     is an opening like any other and owes the same focus move. */
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (open === wasOpenRef.current) return;
+    wasOpenRef.current = open;
+    if (open) {
+      const active = document.activeElement;
+      const node = active instanceof HTMLElement && active !== document.body && !frameRef.current?.contains(active) ? active : null;
+      openerRef.current = { node, testId: node?.getAttribute("data-testid") ?? null };
+      /* `Surface` mounts its node a frame or two after `open`, so the move waits for it —
+         bounded, and abandoned the moment the dock is shut again. */
+      let tries = 0;
+      const land = () => {
+        if (!wasOpenRef.current) return;
+        const surface = surfaceRef.current;
+        if (surface) {
+          /* The composer when it takes text; the dock itself otherwise — a composer that
+             cannot take focus yet (disabled, or not laid out) leaves focus where it was. */
+          surface.querySelector<HTMLTextAreaElement>("textarea:not([disabled])")?.focus({ preventScroll: true });
+          if (!surface.contains(document.activeElement)) surface.focus({ preventScroll: true });
+          if (surface.contains(document.activeElement)) return;
+        }
+        if (++tries < 30) window.requestAnimationFrame(land);
+      };
+      window.requestAnimationFrame(land);
+      return;
+    }
+    /* Only when the close left the keyboard nowhere — inside the now-inert dock or on
+       `body`. A close caused by a press elsewhere keeps focus where that press put it. */
+    const active = document.activeElement;
+    if (active && active !== document.body && !frameRef.current?.contains(active)) return;
+    const { node, testId } = openerRef.current;
+    const visible = (candidate: Element | null): candidate is HTMLElement =>
+      candidate instanceof HTMLElement && candidate.isConnected && candidate.getClientRects().length > 0;
+    const again = testId ? document.querySelector(`[data-testid="${CSS.escape(testId)}"]`) : null;
+    const door = document.querySelector(LIBRARY_CONVERSATION_DOOR);
+    const target = visible(node) ? node : visible(again) ? again : visible(door) ? door : document.querySelector<HTMLElement>('[data-testid="library-reader"]');
+    target?.focus({ preventScroll: true });
+  }, [open]);
+
+  /*
+   * **Focus that entered the dock does not fall out of it by itself.** The composer can be
+   * disabled a moment after it took focus (the runtime check settles after the dock opens),
+   * and a disabled control drops focus to `body`. While the dock is open, a focus that left
+   * for nowhere lands on the dock itself instead.
+   */
+  useEffect(() => {
+    if (!open) return;
+    const onFocusOut = (event: FocusEvent) => {
+      const surface = surfaceRef.current;
+      if (!surface || event.relatedTarget || !surface.contains(event.target as Node)) return;
+      window.requestAnimationFrame(() => {
+        const active = document.activeElement;
+        if (surfaceRef.current && (active === null || active === document.body)) {
+          surfaceRef.current.focus({ preventScroll: true });
+        }
+      });
+    };
+    document.addEventListener("focusout", onFocusOut, true);
+    return () => document.removeEventListener("focusout", onFocusOut, true);
+  }, [open]);
+
+  /*
+   * **Escape puts the overlay away.** Only below `xl`, where the dock covers the reader:
+   * there it is a surface on top of the page and owes the key every other surface answers.
+   * At `xl` it is a column beside the reader, and Escape stays with whatever else claims it.
+   * Listened on `document` in the bubble phase — after the chat panel's own Escape (slash
+   * menu, history list) has had its say through `defaultPrevented`, and before the page's
+   * window-level "Escape closes the document" handler, which `preventDefault` then stands
+   * down, so one press closes one thing.
+   */
+  useEffect(() => {
+    if (!open || typeof window.matchMedia !== "function") return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (window.matchMedia("(min-width: 1280px)").matches) return;
+      if (document.querySelector('[aria-modal="true"]')) return;
+      event.preventDefault();
+      onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose, open]);
+
   return (
     <div
+      ref={frameRef}
       data-testid="library-agent-dock-frame"
+      /*
+       * **One Escape rule for both docks.** Escape anywhere in the dock puts it away, as it closes
+       * the map's; a composer holding a sentence claims the key first (`defaultPrevented`), so an
+       * unsent draft is never what Escape takes. This dock used to ignore the key entirely.
+       */
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || event.defaultPrevented || !open) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+      }}
       data-right-dock={open || presence.mounted ? "library-agent" : undefined}
       data-dock-state={open ? "open" : standing ? "put-away" : "empty"}
       /*
@@ -252,7 +376,9 @@ export function LibraryAgentDock({
         "absolute right-0 top-0 z-30 min-h-0 overflow-hidden bg-[color:var(--color-canvas)]",
         "bottom-[calc(var(--topology-mobile-bottom-tab-reserve)+0.75rem)] lg:bottom-0",
         "xl:relative xl:inset-auto xl:z-auto xl:shrink-0",
-        open ? "w-full xl:w-[var(--library-agent-chat-width)]" : "pointer-events-none w-0 xl:w-0",
+        open
+          ? cn("w-full xl:w-[var(--library-agent-chat-width)]", indexBeside && "lg:w-[calc(100%-var(--docs-list-width))]")
+          : "pointer-events-none w-0 xl:w-0",
       )}
     >
       {standing ? (
@@ -263,11 +389,14 @@ export function LibraryAgentDock({
            */
           open={standing}
           as="aside"
+          ref={surfaceRef}
+          tabIndex={-1}
+          aria-label={tChat("dockTitle")}
           motion="overlay"
           data-testid="library-agent-dock"
           data-agent-dock-surface="inset"
           data-agent-request-kind={openingRequest?.kind}
-          className={`${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 xl:left-auto xl:w-[calc(var(--library-agent-chat-width)-var(--chrome-inset))]`}
+          className={`${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 focus-visible:outline-none xl:left-auto xl:w-[calc(var(--library-agent-chat-width)-var(--chrome-inset))]`}
         >
           <div className="hidden xl:contents">
             <AcpChatResizeHandle

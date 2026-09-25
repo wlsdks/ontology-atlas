@@ -62,6 +62,15 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * touching pairs, and 2 overlapping pairs down from 5. 1512 is unchanged at 66.3%
  * with the rail still on the edge. Ledger: `docs/DECISIONS.md`, 2026-09-06 and
  * 2026-09-07.
+ *
+ * **The lit map's key stays one row (2026-09-25).** The key became a strip along the
+ * canvas bottom that the fit keeps the drawing above (`data-map-fit-obstacle="bottom"`),
+ * because as a corner card it stood over nine drawn nodes. Wrapped to two rows at 1040
+ * (three on the CI runner's fonts) it reserved 72px and more: the outline fell to
+ * 565 × 528 locally and 539 × 505 on CI, with 6 overlapping and 3 same-tier pairs. Below
+ * `xl` the strip now sets its words at the legend size in one row, and the fill counts
+ * the strip out of the free canvas the way it counts a side panel. Measured after:
+ * **592 × 553 = 73.7%**, 3 overlapping pairs, 0 same-tier. The ceilings did not move.
  */
 const SCREENS = [
   { width: 1512, height: 982, fillFloor: 0.58, overlapMax: 3, sameTierMax: 1, stolenMax: 1 },
@@ -115,6 +124,16 @@ async function readStrata(page: Page) {
     const maxY = Math.max(...nodes.map((n) => n.y + n.radius));
     const insets = probe.obstacleInsets();
     const freeW = Math.max(1, box.width - (insets?.left ?? 0) - (insets?.right ?? 0));
+    /* A strip that declares itself a bottom fit obstacle (the lit map's key, 2026-09-25) is
+       canvas the drawing is kept out of, the same as a side panel's width: it leaves the
+       free canvas rather than counting as unfilled. */
+    let bottomStrip = 0;
+    for (const strip of document.querySelectorAll('[data-map-fit-obstacle="bottom"]')) {
+      const r = strip.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0 || r.top >= box.bottom || r.bottom <= box.top) continue;
+      bottomStrip = Math.max(bottomStrip, box.bottom - r.top);
+    }
+    const freeH = Math.max(1, box.height - bottomStrip);
 
     let overlapPairs = 0;
     let sameTierPairs = 0;
@@ -198,7 +217,7 @@ async function readStrata(page: Page) {
 
     return {
       nodeCount: nodes.length,
-      fill: ((maxX - minX) * (maxY - minY)) / (freeW * box.height),
+      fill: ((maxX - minX) * (maxY - minY)) / (freeW * freeH),
       outline: { width: Math.round(maxX - minX), height: Math.round(maxY - minY) },
       overlapPairs,
       sameTierPairs,
@@ -223,6 +242,10 @@ for (const screen of SCREENS) {
     const read = await readStrata(page);
     expect(read, "read no 3D nodes at all — the instrument is idling").not.toBeNull();
     const strata = read!;
+    console.info(
+      "STRATA_READING",
+      JSON.stringify({ size: `${screen.width}x${screen.height}`, fill: Number(strata.fill.toFixed(3)), outline: strata.outline, overlap: strata.overlapPairs, sameTier: strata.sameTierPairs }),
+    );
 
     expect(strata.nodeCount, "the sample vault did not load").toBeGreaterThan(100);
 

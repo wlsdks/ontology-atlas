@@ -16,7 +16,8 @@ import {
 } from '@/entities/agent-files';
 import { ChevronRight } from 'lucide-react';
 
-import { Disclosure, EmptyState, InfoHint } from '@/shared/ui';
+import { Button, Disclosure, EmptyState } from '@/shared/ui';
+import { PlacedInfoHint } from './PlacedInfoHint';
 import {
   CensusBigNumber,
   CensusSubStat,
@@ -350,19 +351,27 @@ function DeclarationList({ entries, t }: { entries: readonly ScopeDeclaration[];
 /**
  * The names behind one cell, beside the cell that was pressed.
  *
- * Below `lg` it is an ordinary block under the cell rather than a floating box: the table is inside
- * a horizontal scroller at that width, and a popover positioned inside a scroll container is
- * clipped by it. One element, two positions, no second implementation.
+ * It is an ordinary block in its own full-width row under the pressed row, at every width, so
+ * opening it pushes the rows below down instead of covering them. At `lg` it used to lift out of
+ * the flow as a popover, and it then sat over the next rows' cells: four of them at 1512 and eight
+ * at 1040, measured with `elementFromPoint` at each cell's centre, with no outside press closing it
+ * (2026-09-25).
  *
- * Where the popover is anchored at `lg` and above, as a fraction of the table's own column widths
- * (46 / 18 / 18 / 18). Written as classes rather than measured at runtime: the columns are declared
- * in a `colgroup`, so the anchor is a layout fact and not something to read back from the DOM.
+ * At `lg` it still starts under the column that was pressed, as a fraction of the table's own
+ * column widths (46 / 18 / 18 / 18), clamped so a 22rem card never passes the table's right edge.
+ * Written as classes rather than measured at runtime: the columns are declared in a `colgroup`, so
+ * the anchor is a layout fact and not something to read back from the DOM.
  */
 const DETAIL_ANCHOR: Readonly<Record<CoverageColumn, string>> = {
-  told: 'lg:left-[46%]',
-  gated: 'lg:left-[64%]',
-  watched: 'lg:right-0',
+  told: 'lg:ml-[min(46%,calc(100%-22rem))]',
+  gated: 'lg:ml-[min(64%,calc(100%-22rem))]',
+  watched: 'lg:ml-auto',
 };
+
+/** The detail's id, so the cell that opens it can name what it controls. */
+function cellDetailId(slug: string): string {
+  return `harness-coverage-detail-${slug.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+}
 
 function CellDetail({
   area,
@@ -397,38 +406,27 @@ function CellDetail({
   return (
     <div
       ref={detailRef}
+      id={cellDetailId(area.slug)}
       data-harness-detail-reveal={revealKey}
       data-testid="harness-coverage-detail"
       className={cn(
-        'relative z-30 w-full rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)] shadow-[var(--shadow-elevation-2)]',
-        /* Below `lg` the cells are narrow marks and this is an ordinary block in a full-width row
-           under them, because a 63px-wide popover is not a popover. At `lg` it lifts out of the
-           flow and anchors under the column that was pressed. One element, two positions. */
-        'lg:absolute lg:top-0 lg:w-[22rem]',
+        'w-full rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)] shadow-[var(--shadow-elevation-1)]',
+        'lg:w-[22rem] lg:max-w-full',
         DETAIL_ANCHOR[column],
       )}
     >
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         {/* The domain's own name, because once the header has scrolled away the open detail said
             only "Watched" and nothing said which row it belonged to — and at 390 the row's name is
             truncated, so this is also the only place the full name is recoverable. */}
         <p className="min-w-0 text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
           {t(COLUMN_HEAD[column])} · <span className="normal-case">{area.title}</span>
         </p>
-        <button
-          type="button"
-          onClick={onClose}
-          className={controlClass({
-            shape: 'link',
-            size: 'sm',
-            tone: 'muted',
-            hoverInk: 'strong',
-            /* `link` carries no touch floor, and this is the only dismissal a finger has. */
-            className: 'shrink-0 touch-hit-expand',
-          })}
-        >
+        {/* The Analysis guidance evidence's close, so one product closes its evidence one way: a
+            ghost `Button` sm rather than a 16×24 text link at 9.5px (2026-09-25). */}
+        <Button variant="ghost" size="sm" className="atlas-touch-floor shrink-0" onClick={onClose}>
           {t('coverageCloseNames')}
-        </button>
+        </Button>
       </div>
       {/* Focusable, because a scroll container with no focusable child cannot be scrolled by a
           keyboard at all once a declaration list passes its height. */}
@@ -551,8 +549,8 @@ function DocumentReachBlock({
             centre is the only one of the three anchors that clears both edges at 390 in both
             locales. `InfoHint`'s own doc-block states when a static anchor is sound at all.
           */}
-          <InfoHint
-            align="center"
+          <PlacedInfoHint
+            preferred="center"
             label={t('reachTitle')}
             panelClassName="text-body text-[color:var(--color-text-secondary)]"
           >
@@ -566,7 +564,7 @@ function DocumentReachBlock({
                 </div>
               ))}
             </dl>
-          </InfoHint>
+          </PlacedInfoHint>
         </div>
         <p className="text-label tabular-nums text-[color:var(--color-text-quaternary)]">
           {t('reachTotal', { total: reach.total, excluded: reach.excluded.length })}
@@ -815,9 +813,9 @@ export function HarnessCoverageView({
               rowKey={column}
               label={t(COLUMN_HEAD[column])}
               labelSuffix={
-                <InfoHint align={HINT_ANCHOR[column]} label={t(COLUMN_HEAD[column])}>
+                <PlacedInfoHint preferred={HINT_ANCHOR[column]} label={t(COLUMN_HEAD[column])}>
                   {t(COLUMN_HINT[column])}
-                </InfoHint>
+                </PlacedInfoHint>
               }
             >
               <div data-harness-column-gap={gaps}>
@@ -905,19 +903,9 @@ export function HarnessCoverageView({
               {t('coverageEverywhereTitle')} ·{' '}
               <span className="normal-case">{t(COLUMN_HEAD[openEverywhere])}</span>
             </h2>
-            <button
-              type="button"
-              onClick={closeEverywhere}
-              className={controlClass({
-                shape: 'link',
-                size: 'sm',
-                tone: 'muted',
-                hoverInk: 'strong',
-                className: 'shrink-0 touch-hit-expand',
-              })}
-            >
+            <Button variant="ghost" size="sm" className="atlas-touch-floor shrink-0" onClick={closeEverywhere}>
               {t('coverageCloseNames')}
-            </button>
+            </Button>
           </div>
           <p className="mt-1 text-label text-[color:var(--color-text-quaternary)]">
             {t('coverageEverywhereBody', { areas: matrix.areas.length })}
@@ -1021,6 +1009,7 @@ export function HarnessCoverageView({
                           }}
                           onClick={() => setOpenCell((current) => (current === key ? null : key))}
                           aria-expanded={openCell === key}
+                          aria-controls={openCell === key ? cellDetailId(area.slug) : undefined}
                           aria-label={t('coverageOpenNames', {
                             area: area.title,
                             column: t(COLUMN_HEAD[column]),
@@ -1059,11 +1048,9 @@ export function HarnessCoverageView({
                   })}
                 </tr>,
                 openColumn ? (
-                  /* Its own row, so the anchored popover has a full-width containing block and the
-                     narrow-width fallback has somewhere to stand. `p-0` collapses the row to
-                     nothing at `lg`, where the only child has left the flow. */
+                  /* Its own full-width row, so the detail pushes the rows under it down. */
                   <tr key={`${area.slug}-detail`}>
-                    <td colSpan={4} className="relative p-0">
+                    <td colSpan={4} className="px-0 pb-3">
                       <CellDetail
                         area={area}
                         column={openColumn}

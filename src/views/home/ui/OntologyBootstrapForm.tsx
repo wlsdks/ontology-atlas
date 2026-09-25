@@ -26,6 +26,11 @@ import { Checkbox } from "@/shared/ui";
 export interface OntologyBootstrapFormLabels {
   headingId?: string;
   heading: string;
+  /**
+   * Used instead of `heading` when the vault already has a project: the action adds to that
+   * map, so it must not announce a new one.
+   */
+  headingAddToMap: string;
   projectName: string;
   folders: string;
   folderDocCount: (count: number) => string;
@@ -38,6 +43,8 @@ export interface OntologyBootstrapFormLabels {
   agentPointers: (count: number) => string;
   libraryFiles: (count: number) => string;
   confirm: string;
+  /** Used instead of `confirm` when the vault already has a project. */
+  confirmAddToMap: (count: number) => string;
   cancel: string;
   errorPrefix: string;
 }
@@ -74,7 +81,17 @@ export function OntologyBootstrapForm({
   // never creates (measured on the starter's own output, 2026-09-04). The name and the sentence
   // both follow the branch the execution actually takes.
   const projectFileName = `${plan.existingProjectSlug ?? plan.projectSlug}.md`;
-  const canConfirm = projectTitle.trim().length > 0 && pickedCount > 0 && !busy;
+  /*
+   * **Adding to a map is not making one** (interaction audit, 2026-09-25). On a vault that
+   * already had its project, "add to map" opened a dialog titled "make a map from my documents"
+   * with a project-name field and a "make the map" button, while its own summary said the
+   * documents would be added to the existing project file. With a project present the title
+   * and the button say "add", and the name field goes: the existing project keeps its own name
+   * (`executeBootstrapPlan` merges into it).
+   */
+  const addingToMap = plan.existingProjectSlug != null;
+  const heading = addingToMap ? labels.headingAddToMap : labels.heading;
+  const canConfirm = (addingToMap || projectTitle.trim().length > 0) && pickedCount > 0 && !busy;
 
   const toggleDomain = (name: string) => {
     setAccepted((prev) => {
@@ -90,7 +107,7 @@ export function OntologyBootstrapForm({
     setBusy(true);
     setError(null);
     try {
-      await onConfirm({ projectTitle: projectTitle.trim(), acceptedDomains: accepted });
+      await onConfirm({ projectTitle: projectTitle.trim() || plan.projectTitle, acceptedDomains: accepted });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setBusy(false);
@@ -99,8 +116,9 @@ export function OntologyBootstrapForm({
 
   return (
     <section
-      aria-label={labels.heading}
+      aria-label={heading}
       data-testid="ontology-bootstrap-form"
+      data-bootstrap-mode={addingToMap ? "add" : "create"}
       data-surface-role="blocking-edit-surface"
       data-elevation-contract="solid-panel-over-dimmed-map"
       data-surface-token="--topology-blocking-composer-surface"
@@ -113,7 +131,7 @@ export function OntologyBootstrapForm({
           id={labels.headingId}
           className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
         >
-          {labels.heading}
+          {heading}
         </p>
         <button
           type="button"
@@ -132,24 +150,27 @@ export function OntologyBootstrapForm({
       </div>
 
       <div className="mt-2.5 flex flex-col gap-2.5">
-        <label className="flex flex-col gap-1">
-          <span className="text-label text-[color:var(--color-text-tertiary)]">
-            {labels.projectName}
-          </span>
-          <input
-            type="text"
-            value={projectTitle}
-            autoFocus
-            disabled={busy}
-            onChange={(e) => setProjectTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void submit();
-            }}
-            aria-label={labels.projectName}
-            data-testid="ontology-bootstrap-title"
-            className={fieldClass({ size: "md", className: "w-full" })}
-          />
-        </label>
+        {addingToMap ? null : (
+          <label className="flex flex-col gap-1">
+            <span className="text-label text-[color:var(--color-text-tertiary)]">
+              {labels.projectName}
+            </span>
+            {/* The same field size as the sibling create-node dialog (`CreateNodeForm`). */}
+            <input
+              type="text"
+              value={projectTitle}
+              autoFocus
+              disabled={busy}
+              onChange={(e) => setProjectTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void submit();
+              }}
+              aria-label={labels.projectName}
+              data-testid="ontology-bootstrap-title"
+              className={fieldClass({ size: "lg", className: "w-full" })}
+            />
+          </label>
+        )}
 
         {plan.domains.length > 0 ? (
           <fieldset className="flex flex-col gap-1">
@@ -157,9 +178,12 @@ export function OntologyBootstrapForm({
               {labels.folders}
             </legend>
             <div className="mt-1 flex max-h-40 flex-col gap-0.5 overflow-y-auto">
-              {plan.domains.map((d) => (
+              {plan.domains.map((d, index) => (
                 <Checkbox
                   key={d.name}
+                  // With no name field (adding to a map), focus starts on the first choice so
+                  // the dialog opens with focus inside it, as the create branch does.
+                  autoFocus={addingToMap && index === 0}
                   className="rounded-[var(--radius-chip)] px-1.5 py-1 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
                   checked={accepted.has(d.name)}
                   disabled={busy}
@@ -243,16 +267,18 @@ export function OntologyBootstrapForm({
           onClick={() => void submit()}
           disabled={!canConfirm}
           data-testid="ontology-bootstrap-confirm"
+          autoFocus={addingToMap && plan.domains.length === 0}
+          // The create-node dialog's submit, class for class: two dialogs in the same slot on
+          // the same map keep one control height (40) and one type size.
           className={controlClass({
             shape: "pill",
-            size: "md",
             tone: "accentOnTint",
             className:
-              "justify-center gap-1.5 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
+              "h-[var(--control-h-lg)] justify-center gap-1.5 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-body font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
           })}
         >
           <MapIcon size={ICON_SIZE.sm} aria-hidden />
-          {busy ? "…" : labels.confirm}
+          {busy ? "…" : addingToMap ? labels.confirmAddToMap(pickedCount) : labels.confirm}
         </button>
       </div>
     </section>

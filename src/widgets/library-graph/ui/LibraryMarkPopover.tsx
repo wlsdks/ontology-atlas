@@ -6,7 +6,7 @@ import type { useTranslations } from "next-intl";
 
 import { formatSourceBytes } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
-import { Button, Surface } from "@/shared/ui";
+import { Chip, Surface } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { transientSurface } from "@/shared/ui/transient-surface";
@@ -215,17 +215,29 @@ export function LibraryMarkPopover({
       )}
     >
       {/* ── Identity: the same three marks the canvas draws, the name, the kind. ── */}
-      <div className="flex items-center gap-2">
-        <MarkGlyph kind={node.kind} />
-        <p
-          data-testid="library-graph-card-title"
-          className="min-w-0 flex-1 truncate text-body leading-title text-[color:var(--color-text-primary)]"
-        >
-          {node.label}
-        </p>
-        <span className="flex-none text-label leading-body text-[color:var(--color-text-quaternary)]">
-          {t(`graph.kind.${node.kind}`)}
+      {/*
+        The card is where a name the canvas already cut can be read whole, so the title wraps
+        to two lines instead of truncating, and the kind moves under it to give the name the
+        full width beside the glyph (2026-09-25: a long page name was cut mid-word on both
+        the canvas and the card, so the whole name appeared nowhere on screen). The glyph and
+        the close glyph stay on the first line.
+      */}
+      <div className="flex items-start gap-2">
+        <span className="flex h-[var(--leading-title)] flex-none items-center">
+          <MarkGlyph kind={node.kind} />
         </span>
+        <div className="min-w-0 flex-1">
+          <p
+            data-testid="library-graph-card-title"
+            title={node.label}
+            className="line-clamp-2 text-body leading-title text-[color:var(--color-text-primary)] [word-break:keep-all] [overflow-wrap:anywhere]"
+          >
+            {node.label}
+          </p>
+          <span data-testid="library-graph-card-kind" className="block text-label leading-body text-[color:var(--color-text-quaternary)]">
+            {t(`graph.kind.${node.kind}`)}
+          </span>
+        </div>
         <button
           type="button"
           onClick={onClose}
@@ -297,63 +309,71 @@ export function LibraryMarkPopover({
         </ul>
       ) : null}
 
-      {/* ── The doors. The first one is what a press used to do, now named and explicit. ── */}
+      {/* ── The doors. The first one is what a press used to do, now named and explicit.
+             Chips, not `Button sm`: the card's close glyph and every other Library popover
+             control are the 6px/11px chip grammar, and a 12px/14px button beside them was a
+             second grammar in one card (2026-09-25). ── */}
       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
         {node.kind === "concept" ? (
           onOpenOnMap ? (
-            <Button
-              size="sm"
-              variant="outline"
+            <Chip
+              tone="strong"
+              hoverSurface="lift"
+              hoverBorder="strong"
               className="atlas-touch-floor"
               data-testid="library-graph-card-map"
               onClick={onOpenOnMap}
             >
               {t("graph.openOnMap")}
-            </Button>
+            </Chip>
           ) : null
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
+          <Chip
+            tone="strong"
+            hoverSurface="lift"
+            hoverBorder="strong"
             className="atlas-touch-floor"
             data-testid="library-graph-card-open"
             onClick={onOpen}
           >
             {t("graph.card.open")}
-          </Button>
+          </Chip>
         )}
         {facts?.refresh?.onRequest ? (
-          <Button
-            size="sm"
-            variant="outline"
+          <Chip
+            tone="strong"
+            hoverSurface="lift"
+            hoverBorder="strong"
             className="atlas-touch-floor"
             data-testid="library-graph-card-refresh"
             onClick={facts.refresh.onRequest}
           >
             {t("graph.card.refresh")}
-          </Button>
+          </Chip>
         ) : null}
         {facts?.onReveal ? (
-          <Button
-            size="sm"
-            variant="outline"
+          <Chip
+            tone="strong"
+            hoverSurface="lift"
+            hoverBorder="strong"
             className="atlas-touch-floor"
             data-testid="library-graph-card-reveal"
             onClick={facts.onReveal}
           >
             {facts.revealsCopy ? t("source.download") : t("source.reveal")}
-          </Button>
+          </Chip>
         ) : null}
         {hidden > 0 ? (
-          <Button
-            size="sm"
-            variant="outline"
+          <Chip
+            tone="strong"
+            hoverSurface="lift"
+            hoverBorder="strong"
             className="atlas-touch-floor"
             data-testid="library-graph-card-all"
             onClick={onExpand}
           >
             {t("graph.card.seeAll", { count: rows.length })}
-          </Button>
+          </Chip>
         ) : null}
       </div>
 

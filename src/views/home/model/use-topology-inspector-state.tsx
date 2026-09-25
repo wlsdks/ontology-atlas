@@ -125,6 +125,7 @@ export function useTopologyInspectorState({
     });
     return {
       nodeId: node.id,
+      title: node.display ?? node.title,
       slug,
       // Same return marker as the datasheet model: a document opened from the map keeps a
       // crumb back to the node it was opened from.

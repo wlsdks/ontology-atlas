@@ -64,19 +64,34 @@ export function RecentChangesNeedsVaultDialog({
   const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   const { ref: dialogLockoutRef, onAnimationStart: dialogLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
 
+  // The latest `onClose` without re-running the open effect: callers pass an inline
+  // arrow, and re-running it on every parent render re-captured the opener from inside
+  // the dialog and pulled focus back to the primary action.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
+    // What had focus when it opened — the control that asked. Every close hands focus
+    // back to it: after Escape it used to fall to BODY (measured 2026-09-25 on the
+    // recent-changes chip in the sample), so a keyboard user started over from the top.
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     // On open, focus goes to **the next action** — that is this surface's only job.
     primaryRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
       }
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (opener && opener !== document.body && opener.isConnected) opener.focus({ preventScroll: true });
+    };
+  }, [open]);
 
   return (
     <AnimatePresence>

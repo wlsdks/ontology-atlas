@@ -1,4 +1,4 @@
-import { Clock3, Plus } from 'lucide-react';
+import { Clock3 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import styles from './automation-empty-workbench.module.css';
@@ -56,7 +56,7 @@ export function AutomationEmptyWorkbench({ title, description, action, previewTi
         {columns.map(column => <span key={column}>{column}</span>)}
       </div>
       <div className={styles.emptyRow}>
-        <span className={styles.emptyName}><Plus size={ICON_SIZE.md} aria-hidden />{previewEmpty}</span>
+        <span className={styles.emptyName}>{previewEmpty}</span>
       </div>
       <div className={styles.result}>
         <Clock3 size={ICON_SIZE.sm} aria-hidden />

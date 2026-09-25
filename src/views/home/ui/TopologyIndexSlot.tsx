@@ -14,6 +14,7 @@ import type { useTopologySourceReadiness } from "../model/use-topology-source-re
 import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
 
 import { filterTreeExcludeKind } from "@/entities/knowledge-graph";
+import { focusWhenReady } from "../lib/topology-focus-return";
 import { TopologyIndexPanel, TopologyIndexTab, TopologyRealmLedger } from "@/widgets/topology-index-panel";
 
 
@@ -198,7 +199,12 @@ export function TopologyIndexSlot({
                   changedSlugs={changedSlugs}
                   selectedId={canvasSelectedSlug}
                   onSelect={(id) => handleSelect(id, { keepIndexOpen: true })}
-                  onCollapse={handleIndexCollapse}
+                  onCollapse={() => {
+                    // Folding hands focus to the tab that unfolds it, not to <body>.
+                    const leaving = document.activeElement;
+                    handleIndexCollapse();
+                    focusWhenReady(["topology-index-tab"], { leaving });
+                  }}
                   onStartTour={openGuidedTour}
                   tourIndexSpotlit={tour.open && tour.step?.id === "index"}
                   tourAgentSpotlit={tour.open && tour.step?.id === "agent"}
@@ -239,6 +245,13 @@ export function TopologyIndexSlot({
                   dustyNodeCount={dustySlugs.size}
                   brokenDocCount={brokenDocCount}
                   unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
+                  // "Connect" opens the project and puts the caret on its connect action, so
+                  // the row keeps its promise from the keyboard too.
+                  onOpenUnboundSource={(id) => {
+                    const leaving = document.activeElement;
+                    handleSelect(id, { keepIndexOpen: true });
+                    focusWhenReady(["map-project-source-action"], { leaving });
+                  }}
                   noProjectsYet={projectSourceReadiness.state === "no-projects"}
                   /*
                    * Which folder these rows came from. Audit, 2026-09-05: opening a folder
@@ -316,7 +329,12 @@ export function TopologyIndexSlot({
             </div>
           ) : (
             <TopologyIndexTab
-              onExpand={handleIndexTabExpandFromAgent}
+              onExpand={() => {
+                // Unfolding hands focus to the fold control that folds it again.
+                const leaving = document.activeElement;
+                handleIndexTabExpandFromAgent();
+                focusWhenReady(["topology-index-fold"], { leaving });
+              }}
               labels={{
                 label: t("index.label"),
                 expandAria: t("index.expandAria"),

@@ -451,6 +451,8 @@ export function TopologyCanvasSurface({
                   }}
                   onDrawnCountChange={handleMapFrameDrawn}
                   reducedMotion={reducedMotion}
+                  inspectorOpen={nodePanelMounted}
+                  indexExpanded={renderedIndexState === "expanded"}
                 />
               ) : hexBoard && !hexFailed ? (
                 /* Hex board (owner decision, 2026-09-25): one tile per capability. The same

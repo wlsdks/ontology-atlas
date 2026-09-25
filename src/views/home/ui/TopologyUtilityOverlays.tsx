@@ -8,6 +8,7 @@ const MountedGlobalSearch = dynamic(() => import("@/widgets/global-search").then
 
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { GuidedTourOverlay } from "@/features/guided-tour";
+import { readDrawnMapMarks } from "@/widgets/ontology-map";
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
 import dynamic from "next/dynamic";
 const ShortcutSheet = dynamic(
@@ -18,6 +19,24 @@ const DocsQuickDrawer = dynamic(
   () => import("@/widgets/docs-quick-drawer").then((m) => m.DocsQuickDrawer),
   { ssr: false },
 );
+
+/**
+ * What the tour's card must leave in view, per step (interaction audit, 2026-09-25): on "lines
+ * are relations" the project and the domains whose lines it explains, and on the datasheet
+ * step the node whose datasheet just opened. Module scope, so its identity is stable.
+ */
+function readTourAvoidRects(stepId: string) {
+  if (stepId === "relations") {
+    return readDrawnMapMarks((id) => id.startsWith("domain:") || id.startsWith("project:"));
+  }
+  if (stepId === "datasheet") {
+    const selected = document
+      .querySelector('[data-testid="map-detail-panel"]')
+      ?.getAttribute("data-selected-node-id");
+    return selected ? readDrawnMapMarks((id) => id === selected) : [];
+  }
+  return [];
+}
 
 interface TopologyUtilityOverlaysProps {
   ontologySearchOpen: boolean;
@@ -75,6 +94,7 @@ export function TopologyUtilityOverlays({
       tour={tour}
       canvasAnchorRef={tourAnchorRef}
       onActivateAnchor={tourAnchorNodeId ? activateTourAnchor : undefined}
+      readAvoidRects={readTourAvoidRects}
     />
   </>);
 }

@@ -72,7 +72,14 @@ test("the press that dismisses the 3D picker does not also walk the map", async 
   const target = await page.evaluate(() => {
     const m = (window as unknown as { __atlasMap: { nodes: () => Array<{ id: string; hidden: boolean; x: number; y: number }> } }).__atlasMap;
     const box = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
-    const n = m.nodes().find((n) => !n.hidden && n.id.startsWith("capability:"));
+    /* A press on the map, not on the picker or the toolbar above it: the picker hangs from
+       the chip into the map (2026-09-25), so a node under it would be a press on the picker. */
+    const covers = ['[data-testid="topology-view-3d-menu"]', '[data-testid="topology-top-toolbar"]']
+      .map((selector) => document.querySelector(selector)?.getBoundingClientRect())
+      .filter((rect): rect is DOMRect => Boolean(rect));
+    const free = (x: number, y: number) =>
+      covers.every((r) => x < r.left - 8 || x > r.right + 8 || y < r.top - 8 || y > r.bottom + 8);
+    const n = m.nodes().find((n) => !n.hidden && n.id.startsWith("capability:") && free(box.left + n.x, box.top + n.y));
     return n ? { id: n.id, px: box.left + n.x, py: box.top + n.y } : null;
   });
   expect(target, "3D 에서 역량 노드를 못 찾았다 — 공회전").not.toBeNull();

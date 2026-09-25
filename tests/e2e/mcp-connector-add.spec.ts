@@ -146,9 +146,10 @@ test("추가 대화상자는 검색 하나 아래 한 목록이고, 직접 적�
   await page.getByTestId("connectors-search").fill("nothing-matches-this");
   await expect(page.getByTestId("connectors-add-none")).toBeVisible();
   await expect(page.getByTestId("connectors-catalogue-section")).toHaveCount(0);
-  // …and the by-hand row is still there to unfold.
-  await page.getByTestId("connectors-custom-toggle").click();
-  await expect(page.getByTestId("connectors-custom-name")).toBeVisible();
+  // …and the by-hand form is one press away, through the empty card's one door.
+  await expect(page.getByTestId("connectors-custom-toggle")).toHaveCount(0);
+  await page.getByTestId("connectors-add-none-custom").click();
+  await expect(page.getByTestId("connectors-custom-name")).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 });

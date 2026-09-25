@@ -238,8 +238,27 @@ function RecentVaultRowView({
               {t('lastOpenBadge')}
             </span>
           ) : null}
+          {/*
+            In the compact popover the row's "Open" wears the same chip face as the "Forget"
+            beside it. It was 11px plain text next to a bordered 9.5px chip, so one row spoke two
+            grammars for its two actions (inspection, 2026-09-25). It stays a label, not a
+            second button - the whole row is the press target - so it is hidden from the
+            accessibility tree, which already has the row's own name.
+          */}
           {openable ? (
-            <span className="ml-auto shrink-0 text-label text-[color:var(--color-text-tertiary)]">
+            <span
+              aria-hidden={wrapName ? undefined : true}
+              className={
+                wrapName
+                  ? 'ml-auto shrink-0 text-label text-[color:var(--color-text-tertiary)]'
+                  : controlClass({
+                      shape: 'chip',
+                      size: 'xs',
+                      tone: 'muted',
+                      className: 'pointer-events-none ml-auto shrink-0 justify-center rounded-micro',
+                    })
+              }
+            >
               {t('open')}
             </span>
           ) : null}

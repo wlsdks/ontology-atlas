@@ -729,10 +729,28 @@ export function ProjectForm({
     }
   };
 
-  const completenessInsight = useMemo(
-    () => resolveProjectCompletenessInsight(previewProject),
-    [previewProject],
-  );
+  /*
+   * **The create screen counts what it asks for** (2026-09-25 sweep). Its lede promises that
+   * name, category, status and a short description are all it takes, yet the side card scored
+   * the eight optional fields the edit screen offers — 13%, "1/8 filled" — after the person had
+   * filled everything in front of them. On create the score is over those four; the optional
+   * fields are scored on the edit screen, where they can be filled.
+   */
+  const completenessInsight = useMemo(() => {
+    if (mode !== "create") return resolveProjectCompletenessInsight(previewProject);
+    const required = [
+      previewProject.name,
+      previewProject.category,
+      previewProject.status,
+      previewProject.description,
+    ];
+    const completedCount = required.filter((value) => String(value ?? "").trim().length > 0).length;
+    return {
+      score: Math.round((completedCount / required.length) * 100),
+      completedCount,
+      totalCount: required.length,
+    };
+  }, [mode, previewProject]);
   const freshnessInsight = useMemo(
     () => resolveProjectFreshnessInsight(previewProject),
     [previewProject],
@@ -1739,7 +1757,7 @@ export function ProjectForm({
                 </div>
               </div>
               <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">
-                {t("preview.completenessFraction", {
+                {t(mode === "create" ? "preview.completenessFractionCreate" : "preview.completenessFraction", {
                   completed: completenessInsight.completedCount,
                   total: completenessInsight.totalCount,
                 })}

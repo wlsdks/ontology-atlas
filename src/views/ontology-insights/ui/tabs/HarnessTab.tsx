@@ -2,7 +2,8 @@
 
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { controlClass } from '@/shared/ui/control-class';
+import { cn } from '@/shared/lib/cn';
+import { buttonVariants } from '@/shared/ui';
 import { GuidanceRelationshipPreview } from '@/widgets/relationship-preview';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 import { HarnessCoverageOverview } from './HarnessCoverageOverview';
@@ -19,11 +20,11 @@ export function HarnessTab({ detail }: { detail: InsightsBrief['harnessDetail'] 
             <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t(`availability.${detail.availability}.description`)}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/architecture/?view=guides" data-testid="preview-primary-action" className={controlClass({ shape: 'pill', size: 'lg', tone: 'onAccent', className: 'atlas-touch-floor atlas-touch-floor-wide' })}>
+            <Link href="/architecture/?view=guides" data-testid="preview-primary-action" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor')}>
               {t('preview.openHarness')}
             </Link>
             {detail.availability === 'app-only' ? (
-              <Link href="/download/" className={controlClass({ shape: 'pill', size: 'lg', tone: 'secondary', hoverInk: 'strong', hoverSurface: 'lift', hoverBorder: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide' })}>
+              <Link href="/download/" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'atlas-touch-floor')}>
                 {t('getApp')}
               </Link>
             ) : null}

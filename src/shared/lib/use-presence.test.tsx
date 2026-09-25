@@ -1,7 +1,7 @@
-import { act, fireEvent, render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { act, fireEvent, render, renderHook } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
-import { useSwapHeight } from './use-presence';
+import { usePanelPresence, useSwapHeight } from './use-presence';
 
 function Harness({ token }: { token: string }) {
   const { hostRef, capture } = useSwapHeight(token);
@@ -56,5 +56,31 @@ describe('useSwapHeight', () => {
       if (originalRect) Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', originalRect);
       else delete (HTMLElement.prototype as unknown as Record<string, unknown>).getBoundingClientRect;
     }
+  });
+});
+
+describe('usePanelPresence', () => {
+  /*
+   * A surface opened in its first exit window (a locale remount reopening the settings sheet)
+   * rendered `inert` on its opening commit, so the focus trap could not focus it.
+   */
+  it('is never exiting while open, even when opened right after mount', () => {
+    vi.useFakeTimers();
+    const { result, rerender } = renderHook(({ open }) => usePanelPresence(open), {
+      initialProps: { open: false },
+    });
+    expect(result.current.exiting).toBe(false);
+    rerender({ open: true });
+    expect(result.current.exiting).toBe(false);
+    rerender({ open: false });
+    expect(result.current).toEqual({ mounted: true, exiting: true });
+    rerender({ open: true });
+    expect(result.current.exiting).toBe(false);
+    rerender({ open: false });
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(result.current).toEqual({ mounted: false, exiting: false });
+    vi.useRealTimers();
   });
 });
