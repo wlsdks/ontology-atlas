@@ -26,6 +26,12 @@
  * - **Dense mode.** When a territory would need more than `maxShelves` shelves, or there are
  *   more than `denseDomainCount` domains, the overview places discs only; names are drawn on
  *   hover and in focus. Every capability is still placed, and nothing overlaps.
+ * - **Inside the room before all names.** The room is the map minus its chrome (INDEX, the tool
+ *   lane, the utility tiles, the legend). A name drawn under that chrome is a name nobody can
+ *   read. When the drawing does not fit the room, the ring and shelves first draw in (never the
+ *   type); if every name still cannot fit, the names that do not wait for hover and focus (as in
+ *   dense mode) while every disc still stands inside the room. Only when the discs themselves
+ *   cannot fit does the drawing grow past the room and the camera pan.
  *
  * Coordinates are CSS pixels at a fixed label scale, origin at the project's centre. The view
  * never zooms: labels keep one size and the camera only pans.
@@ -129,7 +135,10 @@ export interface TerritoryCapability {
   hasDependency: boolean;
   /** Its name. In dense mode it is placed but not reserved (drawn on hover and in focus only). */
   label: TerritoryLabel;
-  /** Whether `label` was reserved (no overlap guaranteed). False only in dense mode. */
+  /**
+   * Whether `label` was reserved (no overlap guaranteed). False in dense mode, and for the names
+   * that did not fit the room (drawn on hover and in focus only).
+   */
   labelReserved: boolean;
 }
 
@@ -208,6 +217,13 @@ export const TERRITORY_GEOMETRY = {
   denseDomainCount: 10,
   /** Upper bound on shelves in dense mode — a safety bound, never reached in practice. */
   denseShelfLimit: 400,
+  /** Shelves a disc may reach inside the room once its name has been folded to hover. */
+  foldedShelfLimit: 14,
+  /**
+   * Spacings tried, widest first, when the drawing does not fit its room: the ring and the
+   * shelves draw in, never the type (the view does not zoom; names keep one size).
+   */
+  roomSpreads: [1, 0.86, 0.74, 0.64],
   capabilityFontPx: 11,
   domainFontPx: 15,
   domainStatsFontPx: 10,
@@ -389,12 +405,18 @@ function attempt(
   options: TerritoryLayoutOptions,
   room: Box | null,
   dense: boolean,
+  /** Inside a room: a capability whose name finds no place is placed as a disc, name on hover. */
+  foldNames = false,
+  /** How far apart territories and shelves stand (1 = the tuned spacing). Names keep one size. */
+  spread = 1,
 ): Attempt {
   const G = TERRITORY_GEOMETRY;
   const grid = new BoxGrid(room);
   const measure = options.measure;
   const denseRing = Math.max(G.domainRing, 36 * tree.domains.length);
-  const ring = dense ? denseRing : G.domainRing;
+  const ring = (dense ? denseRing : G.domainRing) * spread;
+  const shelfRadius = G.shelfRadius * spread;
+  const shelfStep = G.shelfStep * spread;
 
   /* Project at the origin, its name under the hexagon. */
   let project: TerritoryProject | null = null;
@@ -585,7 +607,7 @@ function attempt(
       const w = measure(reserve, "capability");
       let placed: TerritoryCapability | null = null;
       for (let k = 0; k < shelfLimit && !placed; k++) {
-        const radius = G.shelfRadius + k * G.shelfStep;
+        const radius = shelfRadius + k * shelfStep;
         for (const a of angles) {
           const p = onArc(m.x, m.y, radius, a);
           const disc = { x: p.x - r - 3, y: p.y - r - 3, w: 2 * r + 6, h: 2 * r + 6 };
@@ -614,6 +636,37 @@ function attempt(
           break;
         }
       }
+      if (!placed && foldNames && !dense) {
+        // Its name found no place inside the room: stand the disc there anyway and let the name
+        // wait for hover and focus, rather than draw it under the chrome.
+        for (let k = 0; k < G.foldedShelfLimit && !placed; k++) {
+          const radius = shelfRadius + k * shelfStep;
+          for (const a of angles) {
+            const p = onArc(m.x, m.y, radius, a);
+            const disc = { x: p.x - r - 3, y: p.y - r - 3, w: 2 * r + 6, h: 2 * r + 6 };
+            if (grid.hits(disc)) continue;
+            grid.add(c.id, "mark", disc);
+            placed = {
+              id: c.id,
+              name: c.label,
+              domainId: s.t.domain ? s.t.id : null,
+              x: p.x,
+              y: p.y,
+              r,
+              angle: a,
+              shelf: k,
+              elementIds,
+              hasDependency: dependent.has(c.id),
+              label: capabilityLabelAt(p.x, p.y, r, a, c.label, w),
+              labelReserved: false,
+            };
+            const list = used.get(k);
+            if (list) list.push(a);
+            else used.set(k, [a]);
+            break;
+          }
+        }
+      }
       if (!placed) {
         complete = false;
         break;
@@ -628,7 +681,7 @@ function attempt(
           domainId: s.t.id,
           cx: m.x,
           cy: m.y,
-          radius: G.shelfRadius + k * G.shelfStep,
+          radius: shelfRadius + k * shelfStep,
           from: Math.min(...list) - 5 * DEG,
           to: Math.max(...list) + 5 * DEG,
         });
@@ -647,7 +700,8 @@ function attempt(
     maxY = Math.max(maxY, b.y + b.h);
   };
   for (const { box } of grid.all) extend(box);
-  for (const c of capabilities) extend(c.label.box);
+  // A folded name is drawn only on hover; it does not widen the resting drawing.
+  for (const c of capabilities) if (c.labelReserved || dense) extend(c.label.box);
   const bounds = Number.isFinite(minX) ? { x: minX, y: minY, w: maxX - minX, h: maxY - minY } : { x: 0, y: 0, w: 0, h: 0 };
 
   return {
@@ -677,10 +731,18 @@ export function computeTerritoryLayout(
   const dependencies = rollDependencies(tree, edges);
   const forcedDense = tree.domains.length > TERRITORY_GEOMETRY.denseDomainCount;
   if (!forcedDense) {
-    // Inside the room first; then unbounded (the camera pans); then dense.
+    // Inside the room first — every name, then with the names that do not fit folded to hover;
+    // then unbounded (the camera pans); then dense.
+    // Every name at any spacing beats the tuned spacing with some names folded.
     if (options.room) {
-      const inRoom = attempt(tree, dependencies, options, options.room, false);
-      if (inRoom.complete) return inRoom.layout;
+      for (const spread of TERRITORY_GEOMETRY.roomSpreads) {
+        const inRoom = attempt(tree, dependencies, options, options.room, false, false, spread);
+        if (inRoom.complete) return inRoom.layout;
+      }
+      for (const spread of TERRITORY_GEOMETRY.roomSpreads) {
+        const folded = attempt(tree, dependencies, options, options.room, false, true, spread);
+        if (folded.complete) return folded.layout;
+      }
     }
     const open = attempt(tree, dependencies, options, null, false);
     if (open.complete) return open.layout;
@@ -694,17 +756,84 @@ export interface TerritorySatellite {
   y: number;
 }
 
+/** A selected capability's element list: which side of the disc, its rows, and its plate. */
+export interface TerritoryCluster {
+  side: 1 | -1;
+  satellites: TerritorySatellite[];
+  /** The plate the list is drawn on — the box a reader has to see past. */
+  plate: Box;
+}
+
+/** The plate's geometry around a column of satellites, `widest` being the longest name. */
+function clusterPlate(sats: readonly TerritorySatellite[], side: 1 | -1, widest: number): Box {
+  const x = sats[0]!.x;
+  const near = x - side * 15;
+  const far = x + side * (9 + widest + 10);
+  const top = sats[0]!.y;
+  const bottom = sats[sats.length - 1]!.y;
+  return { x: Math.min(near, far), y: top - 12, w: Math.abs(far - near), h: bottom - top + 24 };
+}
+
 /**
- * Where a selected capability's elements sit: a fan on the outward side of its disc, centred on
- * its shelf angle. Drawn only while the capability (or one of its elements) is selected.
+ * Where a selected capability's elements sit: a column beside the disc, one name row apart, so
+ * the names read as a list and never stack on each other however many there are.
+ *
+ * The column starts opposite the capability's own name, centred on the disc. It must not cover
+ * what the reader needs next to it — its domain's title and counts (interaction audit,
+ * 2026-09-25: the list sat on the human-workbench domain title and left only its counts showing) — so when the
+ * plate would land on an `avoid` box it slides along the disc's side, then tries the other side,
+ * and keeps the first place that is clear. The same inputs always give the same place, so the
+ * hit test and the paint agree.
  */
-export function territorySatellites(capability: TerritoryCapability): TerritorySatellite[] {
+export function placeTerritoryCluster(
+  capability: TerritoryCapability,
+  widest = 0,
+  avoid: readonly Box[] = [],
+): TerritoryCluster {
   const G = TERRITORY_GEOMETRY;
   const n = capability.elementIds.length;
-  // A column beside the disc, one name row apart, so the names read as a list and never
-  // stack on each other however many there are.
-  // Opposite the capability's own name, so the list never covers the name it belongs to.
-  const side = capability.label.align === "right" ? 1 : capability.label.align === "left" ? -1 : Math.cos(capability.angle) >= 0 ? 1 : -1;
-  const x = capability.x + side * (capability.r + G.satelliteGap + 16);
-  return capability.elementIds.map((id, i) => ({ id, x, y: capability.y + (i - (n - 1) / 2) * G.satelliteRow }));
+  const home: 1 | -1 =
+    capability.label.align === "right" ? 1 : capability.label.align === "left" ? -1 : Math.cos(capability.angle) >= 0 ? 1 : -1;
+  const at = (side: 1 | -1, shift: number) => {
+    const x = capability.x + side * (capability.r + G.satelliteGap + 16);
+    return capability.elementIds.map((id, i) => ({ id, x, y: capability.y + shift + (i - (n - 1) / 2) * G.satelliteRow }));
+  };
+  const first = { side: home, satellites: at(home, 0) };
+  if (n === 0) return { ...first, plate: { x: capability.x, y: capability.y, w: 0, h: 0 } };
+  const clear = (plate: Box) => !avoid.some((b) => boxesOverlap(plate, b));
+  // Slides keep one end of the list level with the disc, so the spine still reaches it.
+  const reach = ((n - 1) / 2) * G.satelliteRow + G.satelliteRow;
+  const shifts = [0];
+  for (let d = G.satelliteRow; d <= reach; d += G.satelliteRow) shifts.push(-d, d);
+  for (const side of [home, (home === 1 ? -1 : 1) as 1 | -1]) {
+    for (const shift of shifts) {
+      const satellites = at(side, shift);
+      const plate = clusterPlate(satellites, side, widest);
+      if (clear(plate)) return { side, satellites, plate };
+    }
+  }
+  return { ...first, plate: clusterPlate(first.satellites, home, widest) };
+}
+
+/**
+ * Where a selected capability's elements sit (see `placeTerritoryCluster`). Drawn only while the
+ * capability (or one of its elements) is selected.
+ */
+export function territorySatellites(
+  capability: TerritoryCapability,
+  widest = 0,
+  avoid: readonly Box[] = [],
+): TerritorySatellite[] {
+  return placeTerritoryCluster(capability, widest, avoid).satellites;
+}
+
+/**
+ * What the element list must leave readable: the capability's own name, and its domain's title
+ * and counts.
+ */
+export function territoryClusterAvoid(layout: TerritoryLayout, capability: TerritoryCapability): Box[] {
+  const out: Box[] = [capability.label.box];
+  const domain = layout.domains.find((d) => d.id === capability.domainId);
+  if (domain) out.push(domain.label.box, domain.stats.box);
+  return out;
 }

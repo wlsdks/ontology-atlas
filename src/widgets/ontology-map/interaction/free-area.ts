@@ -241,3 +241,28 @@ export function measureCanvasInsets(canvas: Element, canvasRect: Rect): CanvasIn
   }
   return { left: Math.round(left), right: Math.round(right) };
 }
+
+/** Air the fit keeps between the drawing and a bottom strip. */
+const BOTTOM_OBSTACLE_GAP_PX = 8;
+
+/**
+ * **How much of the canvas's bottom a declared strip takes** (`data-map-fit-obstacle="bottom"`,
+ * such as the lit 3D map's legend), in px from the canvas's bottom edge, or 0.
+ *
+ * Unlike a side panel this is not recognised by shape: a strip is too short to read as a
+ * panel, and the label reservation along the bottom must not be confused with one. So the
+ * strip's owner says what it is, and the fit keeps the drawing above it (the lit legend used to
+ * stand over nine drawn nodes at 1040 — interaction audit, 2026-09-25).
+ */
+export function measureBottomFitObstacle(canvas: Element): number {
+  const c = canvas.getBoundingClientRect();
+  if (c.width <= 0 || c.height <= 0) return 0;
+  let reserve = 0;
+  for (const el of canvas.ownerDocument.querySelectorAll('[data-map-fit-obstacle="bottom"]')) {
+    const box = el.getBoundingClientRect();
+    if (box.width <= 0 || box.height <= 0) continue;
+    if (box.right <= c.left || box.left >= c.right || box.bottom <= c.top || box.top >= c.bottom) continue;
+    reserve = Math.max(reserve, c.bottom - box.top + BOTTOM_OBSTACLE_GAP_PX);
+  }
+  return Math.round(reserve);
+}

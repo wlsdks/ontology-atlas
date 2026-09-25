@@ -2372,6 +2372,9 @@
      on close, text clears first so the empty box does not look like it is closing. 2px is
      just enough to say "came from above" without drawing attention. */
   .ai-row-disclosure-body {
+    /* A new block formatting context: a child's margin cannot collapse out of the height the
+       disclosure measures, so the row never opens short and clips its last line. */
+    display: flow-root;
     opacity: 1;
     transform: translateY(0);
     transition:

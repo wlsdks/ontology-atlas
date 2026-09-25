@@ -3192,6 +3192,7 @@
       "actionEditRelations": "Edit relations",
       "actionEditMenu": "Edit",
       "actionMore": "More actions",
+      "contextMenuAriaLabel": "Actions for {name}",
       "actionCopyHandoff": "Copy handoff",
       "actionAskAgent": "Ask the agent",
       "actionPath": "Path",
@@ -3473,6 +3474,8 @@
     "deeplinkNotFound": "Node not found: {query}",
     "bootstrap": {
       "heading": "Build the map from my documents",
+      "headingAddToMap": "Add to the map",
+      "confirmAddToMap": "{count, plural, one {Add # document to the map} other {Add # documents to the map}}",
       "projectName": "Project name",
       "folders": "Folders to put on the map",
       "folderDocCount": "{count} docs",

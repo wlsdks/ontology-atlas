@@ -3192,6 +3192,7 @@
       "actionEditRelations": "관계 편집",
       "actionEditMenu": "편집",
       "actionMore": "더 보기",
+      "contextMenuAriaLabel": "{name} 작업",
       "actionCopyHandoff": "AI에게 줄 항목 정보 복사",
       "actionAskAgent": "AI에게 물어보기",
       "actionPath": "경로 찾기",
@@ -3473,6 +3474,8 @@
     "deeplinkNotFound": "노드를 찾을 수 없어요: {query}",
     "bootstrap": {
       "heading": "내 문서로 지도 만들기",
+      "headingAddToMap": "지도에 추가",
+      "confirmAddToMap": "문서 {count, number}개 지도에 추가",
       "projectName": "프로젝트 이름",
       "folders": "지도에 올릴 폴더",
       "folderDocCount": "문서 {count}개",

@@ -105,8 +105,10 @@ const ROOT = process.cwd();
  * `hoverSurface: "lift"`, so their hand-written overlay hover is owned by the axis.
  * 288 → 284 (2026-09-25): the guided tour card's actions became `Button` variants and the
  * path chip's copy action the chip's own icon button, four fewer hand hovers.
+ * 284 → 283 (2026-09-25): the map edge panel's hand-built edit chip became the node panel's
+ * primary `buttonVariants`, so its hover rides the standard button.
  */
-const CEILING = 284;
+const CEILING = 283;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

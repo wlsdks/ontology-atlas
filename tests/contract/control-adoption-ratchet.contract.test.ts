@@ -1114,7 +1114,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // 2026-09-25: Check history's first-run door to Automations is one `<Link>` through
 // `buttonVariants`, so `Link` 21→22.
 // 2026-09-25 (agents polish): AgentClientButtons' outline anchor became a `<Button>`, so `a` 9→8.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 22, a: 8 };
+// 2026-09-25: the map's edge panel "fix this relation on the map" link took the node panel's
+// primary `Button` grammar, so its `<Link>` branch goes through `buttonVariants`, `Link` 22→23.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 23, a: 8 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1181,6 +1183,17 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     conditional:
       '⚠️ 이 중 둘은 `className` 이 프리미티브의 반경·인셋을 덮는다(`rounded-chip px-4 sm:px-6`). ' +
       '그건 이 게이트가 아니라 다음 디자인 라운드의 일이다 — 등재가 그 결함을 승인하지는 않는다.',
+  },
+  {
+    file: 'src/widgets/ontology-map/ui/OntologyMapEdgePanel.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The edge panel\'s one action (2026-09-25). Its `<button>` branch is the primary `<Button>` ' +
+      'the node panel\'s action row uses; the `<Link>` branch (navigating to the editor) wears the ' +
+      'same `buttonVariants({ variant: "primary", size: "sm" })` so the docked slot speaks one ' +
+      'grammar whichever branch renders. `control-class.ts` does not replace standard buttons.',
   },
   {
     file: 'src/views/automations/ui/AutomationsPage.tsx',
@@ -1347,9 +1360,12 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // 30 → 31 (2026-09-25): Check history's first-run door, the standard-button shape again.
 // 31 → 30 (2026-09-25, agents polish): `AgentClientButtons` left the anchor census — its
 // control is a `<Button>` now, so its row is gone.
-const BASELINE_ANCHOR_REGISTERED = 30;
+// 30 → 31 (2026-09-25): the edge panel's one action, a `<Link>` when it navigates to the
+// editor. It is the panel's primary and must match the node panel's primary `<Button>`; a
+// 6px 11px chip there was the second grammar the interaction audit measured.
+const BASELINE_ANCHOR_REGISTERED = 31;
 
-/** **Only this number may fall.** The current anchor total (30) minus registered (30). */
+/** **Only this number may fall.** The current anchor total (31) minus registered (31). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

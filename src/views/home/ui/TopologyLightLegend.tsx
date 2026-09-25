@@ -17,7 +17,10 @@ type Kind = (typeof KINDS)[number];
  * measurement's, over the concepts on the map; when nothing was measured the note says why,
  * so an unlit map is never read as a map of current concepts.
  *
- * Bottom-left of the canvas, clear of the readout (bottom-right) and the hint (centre).
+ * One strip along the bottom of the canvas, between the panels, that wraps rather than cuts.
+ * It used to be a 176px card in the bottom-left corner, and the camera did not know it was
+ * there: at 1040 it stood over nine drawn nodes (interaction audit, 2026-09-25). The strip is
+ * marked `data-map-fit-obstacle="bottom"`, and the 3D fit keeps the drawing above it.
  */
 export function TopologyLightLegend({
   evidence,
@@ -45,24 +48,26 @@ export function TopologyLightLegend({
     "no-paths": t("noteNoPaths"),
   };
 
+  const sep = <span aria-hidden className="h-3 w-px shrink-0 bg-[color:var(--map-panel-border)]" />;
   return (
     <div
       data-testid="topology-light-legend"
+      data-map-fit-obstacle="bottom"
       data-evidence-availability={evidence.availability}
       data-evidence-current={current}
       data-evidence-stale={stale}
       data-evidence-unknown={unknown}
       role="group"
       aria-label={t("legendLabel")}
-      className="pointer-events-none absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px+16px)] z-20 hidden w-44 flex-col gap-1.5 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-2 text-label text-[color:var(--map-panel-text-secondary)] md:flex"
+      className="pointer-events-none absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px+16px)] right-[max(calc(var(--map-safe-inset-right)*1px),calc(var(--map-live-inset-right,0px)+16px))] z-20 hidden justify-center md:flex"
     >
-      {kindLabels ? (
-        <div className="flex flex-col gap-1">
-          <span className="text-[color:var(--map-panel-text-tertiary)]">{t("kindsHeading")}</span>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+      <div className="flex max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-chip bg-[color:var(--chrome-surface)] px-3.5 py-1.5 text-label text-[color:var(--map-panel-text-secondary)]">
+        {kindLabels ? (
+          <>
+            <span className="sr-only">{t("kindsHeading")}</span>
             {KINDS.map((kind) =>
               kindLabels[kind] ? (
-                <span key={kind} className="flex items-center gap-1.5" data-light-kind={kind}>
+                <span key={kind} className="flex items-center gap-1.5 whitespace-nowrap" data-light-kind={kind}>
                   <span
                     aria-hidden
                     className="size-2 rounded-full"
@@ -72,37 +77,37 @@ export function TopologyLightLegend({
                 </span>
               ) : null,
             )}
-          </div>
-        </div>
-      ) : null}
-      <div className="flex flex-col gap-1">
-        <span className="text-[color:var(--map-panel-text-tertiary)]">{t("evidenceHeading")}</span>
-        <div className="flex flex-col gap-1">
-          <span className="flex items-center gap-1.5" data-light-evidence="current">
-            <span aria-hidden className="size-2 rounded-full bg-[color:var(--map-indigo-bright)]" />
-            {t("current", { count: current })}
-          </span>
-          <span className="flex items-center gap-1.5" data-light-evidence="stale">
-            <span
-              aria-hidden
-              className="size-2.5 rounded-full border border-[color:var(--color-status-warning)] bg-[color:var(--map-node-fill-capability)]"
-            />
-            {t("stale", { count: stale })}
-          </span>
-          <span className="flex items-center gap-1.5" data-light-evidence="unknown">
-            <span
-              aria-hidden
-              className="size-2.5 rounded-full border border-dashed border-[color:var(--map-node-stroke-capability)]"
-            />
-            {t("unknown", { count: unknown })}
-          </span>
-        </div>
-      </div>
-      {evidence.availability !== "measured" ? (
-        <span data-testid="topology-light-legend-note" className="text-[color:var(--map-panel-text-tertiary)]">
-          {note[evidence.availability]}
+            {sep}
+          </>
+        ) : null}
+        <span className="sr-only">{t("evidenceHeading")}</span>
+        <span className="flex items-center gap-1.5 whitespace-nowrap" data-light-evidence="current">
+          <span aria-hidden className="size-2 rounded-full bg-[color:var(--map-indigo-bright)]" />
+          {t("current", { count: current })}
         </span>
-      ) : null}
+        <span className="flex items-center gap-1.5 whitespace-nowrap" data-light-evidence="stale">
+          <span
+            aria-hidden
+            className="size-2.5 rounded-full border border-[color:var(--color-status-warning)] bg-[color:var(--map-node-fill-capability)]"
+          />
+          {t("stale", { count: stale })}
+        </span>
+        <span className="flex items-center gap-1.5 whitespace-nowrap" data-light-evidence="unknown">
+          <span
+            aria-hidden
+            className="size-2.5 rounded-full border border-dashed border-[color:var(--map-node-stroke-capability)]"
+          />
+          {t("unknown", { count: unknown })}
+        </span>
+        {evidence.availability !== "measured" ? (
+          <span
+            data-testid="topology-light-legend-note"
+            className="text-center text-[color:var(--map-panel-text-tertiary)]"
+          >
+            {note[evidence.availability]}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }

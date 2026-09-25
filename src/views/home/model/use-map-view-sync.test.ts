@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideMapViewSync } from "./use-territories-view-sync";
+import { decideMapViewSync } from "./use-map-view-sync";
 
 describe("map view address sync", () => {
   it("writes the address when the reader picks a view, and not when it already says so", () => {
