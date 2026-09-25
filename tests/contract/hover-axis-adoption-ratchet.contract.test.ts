@@ -109,8 +109,10 @@ const ROOT = process.cwd();
  * primary `buttonVariants`, so its hover rides the standard button.
  * 283 → 282 (2026-09-25): the chrome interaction fix left one hand-written hover fewer in
  * the rail and settings chips it moved onto shared chip grammar.
+ * 282 → 280 (2026-09-25): the API Key pane moved to Agents → Models on the chip hover axes
+ * (`hoverInk`/`hoverBorder`), dropping its hand-written hover strings.
  */
-const CEILING = 282;
+const CEILING = 280;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

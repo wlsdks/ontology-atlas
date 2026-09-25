@@ -63,14 +63,14 @@ test("AI settings verification fails loudly instead of passing on missing elemen
         ...PASSING_MARKERS,
         aiSettingsSheetOpen: false,
       },
-      /did not open the settings sheet/,
+      /did not reach the Agents destination/,
     ],
     [
       {
         ...PASSING_MARKERS,
         aiSettingsAiViewOpen: false,
       },
-      /did not reach the AI connection view/,
+      /did not reach the models tab/,
     ],
     [
       {
@@ -376,12 +376,11 @@ test("installed-app AI settings driver walks the real settings testids", () => {
   ].join("\n");
 
   for (const testId of [
-    "app-settings-trigger",
-    "app-settings-popover",
-    "app-settings-nav-ai",
-    "app-settings-pane-ai",
-    "ai-provider-local",
-    "ai-register-local",
+    "agents-tab-models",
+    "app-nav-rail",
+    "ai-connection-view",
+    "ai-provider-local-custom",
+    "ai-register-local-custom",
     "ai-local-url",
     "ai-verify-local",
     "ai-local-verified",
@@ -435,13 +434,17 @@ test("model list row cap matches the shipped rule", () => {
 });
 
 test("AI settings web surface testids still exist in the shipped panel", () => {
-  const panel = fs.readFileSync(
-    "src/widgets/app-settings-menu/ui/AiConnectionPanel.tsx",
-    "utf8",
-  );
+  // The runner rows' markers are spelled out in the runner model (`rowTestId`), so both files
+  // make up "the shipped panel" (2026-09-25: the panel moved to Agents → Models).
+  const panel = [
+    "src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx",
+    "src/widgets/app-settings-menu/model/local-runners.ts",
+  ]
+    .map((file) => fs.readFileSync(file, "utf8"))
+    .join("\n");
   for (const testId of [
-    "ai-provider-local",
-    "ai-register-local",
+    "ai-provider-local-custom",
+    "ai-register-local-",
     "ai-local-url",
     "ai-verify-local",
     "ai-local-verified",

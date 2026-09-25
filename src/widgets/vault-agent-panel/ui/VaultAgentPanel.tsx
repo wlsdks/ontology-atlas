@@ -26,7 +26,8 @@ import { useHeldValue } from '@/shared/lib/use-presence';
 import { AGENT_DOCK_INSET_SURFACE_CLASS, Surface } from '@/shared/ui';
 import { controlClass, fieldClass } from '@/shared/ui/control-class';
 import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
-import { requestSettingsView } from '@/shared/lib/settings-view-intent';
+import { useRouter } from '@/i18n/navigation';
+import { AGENTS_MODELS_HREF } from '@/shared/config/destinations';
 import { gitHistory, isGitBridgeAvailable } from '@/shared/lib/tauri-git';
 import { isLlmChatBridgeAvailable } from '@/shared/lib/tauri-llm';
 import {
@@ -100,6 +101,7 @@ export function VaultAgentPanel({
   prefillRequest?: { text: string; nonce: number } | null;
 }) {
   const t = useTranslations('vaultAgentPanel');
+  const router = useRouter();
   const locale = useLocale();
   const [draft, setDraft] = useState('');
   const [scopeAccepted, setScopeAccepted] = useState(false);
@@ -780,7 +782,9 @@ export function VaultAgentPanel({
             testId="vault-agent-open-settings"
             hint={t('placeholderFirst')}
             actionLabel={t('degraded.noKeyAction')}
-            onAction={() => requestSettingsView('ai')}
+            // Keys live on the Agents destination's models tab since 2026-09-25; the door goes
+            // straight there rather than opening a settings pane that no longer exists.
+            onAction={() => router.push(AGENTS_MODELS_HREF)}
           />
         ) : null}
 

@@ -78,8 +78,10 @@
                                 : libraryOntologyStarterVisible
                                   ? "ontology-starter"
                                   : "";
-                              const aiSettingsPopover = document.querySelector('[data-testid="app-settings-popover"]');
-                              const aiSettingsAiView = document.querySelector('[data-testid="app-settings-pane-ai"]');
+                              // Model connections live on the Agents destination's models tab since
+                              // 2026-09-25; the marker names are kept so the payload contract is stable.
+                              const aiSettingsPopover = document.querySelector('[data-testid="agents-page"]');
+                              const aiSettingsAiView = document.querySelector('[data-testid="ai-connection-view"]');
                               const aiSettingsUrlInput = document.querySelector('[data-testid="ai-local-url"]');
                               const aiSettingsVerifiedLine = document.querySelector('[data-testid="ai-local-verified"]');
                               const aiSettingsFailureLine = document.querySelector('[data-testid="ai-local-failure"]');

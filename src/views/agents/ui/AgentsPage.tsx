@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
-import { AcpRuntimeSettings } from '@/widgets/app-settings-menu';
+import { AcpRuntimeSettings, ModelConnections } from '@/widgets/app-settings-menu';
 import { TabBar } from '@/shared/ui';
 import { useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
@@ -26,7 +26,7 @@ import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } 
  * what is behind it and owns Esc; a sheet unmounts entirely when closed; settings is where you
  * pick values, and this is an operational task with progress state.
  *
- * **Two tabs in the body, not a header strip** (owner, 2026-09-19). MCP has been one subject
+ * **Tabs in the body, not a header strip** (owner, 2026-09-19). MCP has been one subject
  * with Agents since 2026-09-17; on 2026-09-18 the owner rejected the *header* tab strip that
  * split them ("a 56px chrome band on two words"), and it became a section below the tool list.
  * The owner then rejected the stack as well: *"I don't want agents and MCP on one screen with a
@@ -39,10 +39,12 @@ import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } 
  * older link and the installed app's deep link (`ontology-atlas://mcp?install=…`) keep resolving.
  *
  * **What this screen holds and does not.** Holds: the runner list, connection checks, app-only
- * install, reconnection, opening a conversation, and — on its second tab — the folder's MCP
- * connection and connectors. Does not hold: **API keys** (the 2026-08-16 "freeze the path, do not
- * emphasize it" decision stands) and **the workspace** (a vault answers a different axis; owned
- * by `local-vault-management`).
+ * install, reconnection, opening a conversation; on its second tab the **models** Atlas's own
+ * conversation calls (API keys in the Keychain, local runners by address, the experimental Jev
+ * check and the sent log — moved here from the settings sheet on 2026-09-25, overturning the
+ * 2026-08-16 "freeze the `ai` path" clause); and on its third the folder's MCP connection and
+ * connectors. Does not hold **the workspace** (a vault answers a different axis; owned by
+ * `local-vault-management`).
  *
  * **One line above the strip, nothing else** (owner, 2026-09-19: *"there is so much useless text
  * here — tooltips if it is really needed"*). The 2026-09-06 fold ("what this screen does") and
@@ -167,7 +169,13 @@ export function AgentsPage({
       >
         {/* On the web the agents lede cannot say "Atlas finds": the card right under it says a
             browser cannot start programs. The app is the subject there (2026-09-25). */}
-        {tab === 'mcp' ? tMcp('lede') : isAcpBridgeAvailable() ? t('lede') : t('ledeWeb')}
+        {tab === 'mcp'
+          ? tMcp('lede')
+          : tab === 'models'
+            ? t('models.lede')
+            : isAcpBridgeAvailable()
+              ? t('lede')
+              : t('ledeWeb')}
       </p>
 
       <nav className="mt-5" data-testid="agents-tabs">
@@ -178,6 +186,7 @@ export function AgentsPage({
           onSelect={selectTab}
           items={[
             { key: 'agents', label: t('workspace.agents'), testId: 'agents-tab-agents' },
+            { key: 'models', label: t('workspace.models'), testId: 'agents-tab-models' },
             {
               key: 'mcp',
               label: t('workspace.mcp'),
@@ -218,6 +227,10 @@ export function AgentsPage({
           */
           <section className="min-w-0" aria-label={t('runtimesHeading')}>
             <AcpRuntimeSettings embedded onOpenChat={openChatOnMap} />
+          </section>
+        ) : tab === 'models' ? (
+          <section className="min-w-0" aria-label={t('workspace.models')}>
+            <ModelConnections />
           </section>
         ) : (
           children

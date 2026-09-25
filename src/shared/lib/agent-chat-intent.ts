@@ -14,8 +14,8 @@
  *
  * So each row gets a door: open a conversation with this tool. The settings
  * sheet is owned by the app shell and the conversation panel by the map, so they
- * are joined by the same window-event convention the neighbouring file
- * (`settings-view-intent`) already uses — the same road in the other direction.
+ * are joined by a window event (the convention `app:urlchange` and the appearance
+ * preferences use).
  */
 
 const AGENT_CHAT_INTENT_EVENT = 'ontology-atlas:agent-chat-intent';

@@ -10,6 +10,12 @@ export { AppSettingsMenu } from './ui/AppSettingsMenu';
  */
 export { AcpRuntimeSettings } from './ui/AcpRuntimeSettings';
 
+/**
+ * The Agents destination's models tab (2026-09-25) — API keys, local runners, the experimental
+ * external check and the sent log. It left the settings sheet whole; the sheet keeps a signpost.
+ */
+export { ModelConnections } from './ui/ModelConnectionsPanel';
+
 /** The 「MCP Connection」 (MCP connection) pane — shared by the destination and the settings sheet, for the reason above. */
 export { AgentSetupSection } from './ui/AgentSetupSection';
 

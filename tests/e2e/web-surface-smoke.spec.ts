@@ -390,6 +390,17 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     alsoHereLink: { testId: "app-settings-runtimes-mcp-link", href: /\/agents\/\?tab=mcp/ },
   },
   {
+    // **"Models"** (registered 2026-09-25) — API keys, local runners and the experimental Jev
+    // check, moved from the settings sheet to the Agents destination's own tab. Keeping a key
+    // needs an OS keychain and calling a runner needs a program on this computer; the tab
+    // exists on the web and says so, with no sample rows standing in for data it does not have.
+    name: "모델 — 브라우저는 키를 안전하게 보관하지 못한다",
+    url: "/ko/agents/?tab=models",
+    card: "ai-connection-web-degraded",
+    reason: /악성 코드[\s\S]*데스크톱 앱/,
+    destination: "ai-connection-download-link",
+  },
+  {
     // **"Connectors"** (registered 2026-09-05) — external MCP servers a person lets the
     // in-app agent reach.
     //
@@ -706,7 +717,7 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     await expect(web).toHaveAttribute("href", /\/ko\/topology\/?$/);
   });
 
-  test("설정의 AI 연결이 브라우저에서 키를 받지 않는 이유를 말한다", async ({ page }) => {
+  test("설정의 키 자리는 에이전트 → 모델로 가고, 그곳이 브라우저에서 키를 받지 않는 이유를 말한다", async ({ page }) => {
     // Testing the workbench, so go to the map address — since 2026-07-30 `/` is the gateway.
     await gotoSettled(page, "/ko/topology/");
 
@@ -715,9 +726,10 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
       .getByTestId("app-nav-rail-utility-tier")
       .getByTestId("app-settings-trigger")
       .click();
-    // 2026-08-02 — the in-app agent is one LNB row (the drill-in corridor was
-    // removed). The former two steps (section → summary row) became one.
-    await page.getByTestId("app-settings-nav-ai").click();
+    // 2026-09-25 — the API Key pane moved to the Agents destination's models tab; the sheet
+    // keeps one pointer row, and the old habit lands on the new tab.
+    await page.getByTestId("app-settings-nav-models").click();
+    await expect(page).toHaveURL(/\/agents\/\?(?:.*&)?tab=models/);
 
     const card = page.getByTestId("ai-connection-web-degraded");
     await expect(card).toBeVisible({ timeout: 15_000 });

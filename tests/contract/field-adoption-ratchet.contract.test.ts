@@ -109,7 +109,7 @@ const TEXT_CAP: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/views/ontology-insights/ui/tabs/MeaningGapSection.tsx", 1],
   ["src/views/project-detail/ui/ProjectDetailPage.tsx", 1],
   ["src/views/project-detail/ui/construction-review/ConstructionReviewPanel.tsx", 3],
-  ["src/widgets/app-settings-menu/ui/AiConnectionPanel.tsx", 2],
+  ["src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx", 2],
   ["src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx", 2],
   ["src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx", 1],
   ["src/widgets/docs-vault/ui/DocsVaultEditor.tsx", 1],

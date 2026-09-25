@@ -92,6 +92,10 @@ export const AUDITED_ROUTES = [
   // files or hold a token, so that is both what the ratchet can see and what a
   // first-time visitor meets.
   "/ko/agents/?tab=mcp",
+  // Models (added 2026-09-25). API keys, local runners and the experimental Jev check moved here
+  // from the settings sheet; the web state is the honest desktop-only card, which is what a
+  // browser ratchet can see.
+  "/ko/agents/?tab=models",
   // Library (added 2026-09-06). Sources and Wiki left `/docs` for their own destination;
   // the same reason MCP is on this list applies unchanged — a new route that is not here
   // is a surface four gates (scroll padding, responsive overflow, cursor, Korean line

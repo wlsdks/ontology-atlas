@@ -232,6 +232,19 @@ test('every currently tracked path belongs to a known impact namespace', () => {
   assert.deepEqual(buildImpactPlan({ files }).unknownPaths, []);
 });
 
+test('the external judgment example is inventoried and runs its offline contract', () => {
+  const files = execFileSync('git', ['ls-files', 'examples/external-judgment'], { encoding: 'utf8' })
+    .trim().split('\n').filter(Boolean);
+  assert.ok(files.length >= 2, 'the example inventory must contain its source and test');
+  assert.ok(files.includes('examples/external-judgment/probe.mjs'));
+  assert.ok(files.includes('examples/external-judgment/probe.test.mjs'));
+  for (const path of files) {
+    const plan = buildImpactPlan({ files: [path] });
+    assert.deepEqual(plan.unknownPaths, []);
+    assert.ok(plan.lanes.gates.commands.includes('pnpm test:guide-examples'), path);
+  }
+});
+
 // 2026-09-01 review regressions: four formerly-unconditional gates ran on no
 // pull request, rendering .ts in ui/ segments planned zero browser evidence,
 // two MCP-spawning smokes missed the needsMcp flag, and PLANNER_SURFACE was a

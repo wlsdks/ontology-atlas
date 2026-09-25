@@ -79,5 +79,5 @@ export const EVIDENCE_SPECIMEN: EvidenceSpecimen = {
       },
       "implPath": "mcp/src/server/registry.mjs"
     },
-    "vaultNodeCount": 96
+    "vaultNodeCount": 98
   } as const;

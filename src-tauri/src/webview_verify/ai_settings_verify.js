@@ -63,40 +63,36 @@
       return;
     }
 
-    const popover = find("app-settings-popover");
-    if (!popover) {
-      result.step = "open-settings-sheet";
-      const trigger = find("app-settings-trigger");
-      if (!trigger) {
-        result.reason = "no visible settings trigger on this route";
-        again();
-        return;
-      }
-      clickOnce("settings-trigger", trigger, attempt);
-      result.reason = "waiting for the settings sheet";
-      again(220);
-      return;
-    }
-    result.sheetOpen = true;
-
-    // 2026-08-02 — the drill-in corridor is gone. "Agents in the app" is one
-    // LNB row, and its content stands directly in the right pane
-    // (`app-settings-pane-ai`). The former two steps (section → summary row →
-    // subview) became one.
-    const aiView = find("app-settings-pane-ai");
+    // 2026-09-25: model connections left the settings sheet for the Agents destination's
+    // models tab (`/agents/?tab=models`). The probe walks there the way a person does: the
+    // rail's Agents tile, then the models tab. `sheetOpen` keeps its name in the payload and
+    // now means "reached the Agents destination".
+    const aiView = find("ai-connection-view");
     if (!aiView) {
-      result.step = "open-ai-connection-view";
-      const navAi = find("app-settings-nav-ai");
-      if (navAi) {
-        clickOnce("nav-ai", navAi, attempt);
-        result.reason = "waiting for the AI connection section";
+      const modelsTab = find("agents-tab-models");
+      if (modelsTab) {
+        result.sheetOpen = true;
+        result.step = "open-models-tab";
+        clickOnce("models-tab", modelsTab, attempt);
+        result.reason = "waiting for the models tab";
         again(220);
         return;
       }
-      result.reason = "settings sheet has no AI connection entry";
-      again();
+      result.step = "open-agents-destination";
+      const railAgents = Array.from(
+        document.querySelectorAll('[data-testid="app-nav-rail"] a[href*="/agents"]')
+      ).find(visible);
+      if (!railAgents) {
+        result.reason = "no visible Agents destination on this route";
+        again();
+        return;
+      }
+      clickOnce("rail-agents", railAgents, attempt);
+      result.reason = "waiting for the Agents destination";
+      again(300);
       return;
     }
+    result.sheetOpen = true;
     result.aiViewOpen = true;
 
     if (document.querySelector('[data-testid="ai-connection-web-degraded"]')) {
@@ -106,7 +102,8 @@
       return;
     }
 
-    const localRow = document.querySelector('[data-testid="ai-provider-local"]');
+    // The typed-address row: this probe points at whatever runner it was handed.
+    const localRow = document.querySelector('[data-testid="ai-provider-local-custom"]');
     if (!localRow) {
       result.step = "find-local-provider-row";
       result.reason = "AI connection view has no local/address row";
@@ -118,7 +115,7 @@
     const urlInput = find("ai-local-url");
     if (!urlInput) {
       result.step = "expand-local-row";
-      const register = find("ai-register-local");
+      const register = find("ai-register-local-custom") || find("ai-change-local-custom");
       if (!register) {
         result.reason = "local row has neither a base URL field nor a connect control";
         again();

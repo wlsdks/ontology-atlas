@@ -385,8 +385,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     scope: "global",
     note: "외부 MCP 연결 도구 토큰 보유 상태 변경 — 다른 화면의 패널이 다시 읽는다 (shared/lib/tauri-connector-secrets.ts)",
   },
-  { key: "ontology-atlas:settings-view-intent", kind: "event", scope: "global", note: "설정 시트 드릴인 요청" },
-  { key: "ontology-atlas:agent-chat-intent", kind: "event", scope: "global", note: "설정 → 대화 열기 요청 (위 신호의 반대 방향)" },
+  { key: "ontology-atlas:agent-chat-intent", kind: "event", scope: "global", note: "에이전트 → 대화 열기 요청" },
   { key: "ontology-atlas:verify-edge-selected", kind: "event", scope: "global", note: "e2e 검증 훅" },
   { key: "ontology-atlas:verify-select-edge", kind: "event", scope: "global", note: "e2e 검증 훅" },
 ];

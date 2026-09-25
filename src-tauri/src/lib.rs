@@ -33,6 +33,9 @@ mod deep_link;
 mod errors;
 /// Atlas Git — native layer for versioning vaults with git (invoked by the web GUI).
 mod git;
+/// Optional, experimental Jev evidence check: Keychain key, previewed fixed-endpoint transfer,
+/// audit line reserved before sending, advisory answer only.
+mod jev;
 /// The library half of a vault — raw sources under `sources/`, the documents a person may
 /// choose to bring in, and the hashes that say whether a wiki page still matches one.
 mod library;
@@ -4271,6 +4274,10 @@ pub fn run() {
             secrets::secret_set,
             secrets::secret_status,
             secrets::secret_clear,
+            jev::jev_secret_set,
+            jev::jev_secret_status,
+            jev::jev_secret_clear,
+            jev::jev_judge,
             llm::secret_verify,
             llm::llm_chat,
             git::git_status,
@@ -4732,10 +4739,11 @@ mod tests {
         assert!(!script.contains("__ATLAS_AI_BASE_URL__"));
         assert!(script.contains("window.__ontologyAtlasAiSettingsVerify = result"));
         for test_id in [
-            "app-settings-trigger",
-            "app-settings-nav-ai",
-            "app-settings-pane-ai",
-            "ai-register-local",
+            "agents-tab-models",
+            "app-nav-rail",
+            "ai-connection-view",
+            "ai-provider-local-custom",
+            "ai-register-local-custom",
             "ai-local-url",
             "ai-verify-local",
             "ai-local-model-listbox",

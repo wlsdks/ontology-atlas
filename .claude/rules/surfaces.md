@@ -46,6 +46,7 @@ action or renders an honest degradation card stating why and where it works.
 | Vault absolute path | `src/shared/lib/tauri-vault-fs.ts` | FSA handle instead; no absolute path |
 | Git | `src/shared/lib/tauri-git.ts` | unavailable; degradation card |
 | Keychain | `src/shared/lib/tauri-secrets.ts` | impossible in a browser; degradation card |
+| Jev evidence check (experimental) | `src/shared/lib/tauri-jev.ts`, `src-tauri/src/jev.rs` | no keychain and no audited transfer in a browser; the models tab's degradation card covers it |
 | LLM call | `src/shared/lib/tauri-llm.ts` | impossible; action not rendered |
 | Agent setup | `src/shared/lib/tauri-agent-setup.ts` | cannot write a ready config without an absolute path; degradation card |
 | ACP runtime | `src/shared/lib/tauri-acp.ts`, `src-tauri/src/acp.rs` | cannot spawn a process; degradation card. A user may still attach an externally launched agent to the folder |

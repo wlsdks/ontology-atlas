@@ -63,10 +63,10 @@ export function validateAiSettingsMarkers(markers, { expectedBaseUrl = null } = 
     return "installed app rendered the web-degraded AI card; the desktop LLM bridge was unavailable";
   }
   if (markers.aiSettingsSheetOpen !== true) {
-    return `WebView did not open the settings sheet (verifier stopped at ${run.step || "unknown step"}: ${run.reason || "unknown reason"})`;
+    return `WebView did not reach the Agents destination (verifier stopped at ${run.step || "unknown step"}: ${run.reason || "unknown reason"})`;
   }
   if (markers.aiSettingsAiViewOpen !== true) {
-    return `WebView did not reach the AI connection view (verifier stopped at ${run.step || "unknown step"}: ${run.reason || "unknown reason"})`;
+    return `WebView did not reach the models tab (verifier stopped at ${run.step || "unknown step"}: ${run.reason || "unknown reason"})`;
   }
   if (run.localRowFound !== true) {
     return "WebView did not find the local/address provider row inside the AI connection view";

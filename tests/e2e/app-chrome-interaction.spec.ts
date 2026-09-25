@@ -454,12 +454,15 @@ test.describe('settings', () => {
     await page.screenshot({ path: shot('ch6-update.png') });
   });
 
+  // The key form lives on Agents → Models since 2026-09-25; the settings sheet's pointer row
+  // is the door a person who reaches for keys in settings takes.
   test('an inline key form uses one control size', async ({ page }) => {
     test.setTimeout(120_000);
     await installDesktopRailRuntime(page);
     await mountDesktopVault(page);
     await page.locator('[data-testid="app-settings-trigger"]:visible').click();
-    await page.getByTestId('app-settings-nav-ai').click();
+    await page.getByTestId('app-settings-nav-models').click();
+    await expect(page).toHaveURL(/\/agents\/\?(?:.*&)?tab=models/);
     await page.getByTestId('ai-register-anthropic').click();
     await expect(page.getByTestId('ai-save-anthropic')).toBeVisible();
     const faces = await page.evaluate(() =>
@@ -473,7 +476,7 @@ test.describe('settings', () => {
     await page.screenshot({ path: shot('ch7-key-form.png') });
   });
 
-  test('neutral row actions read in one text tone across the Workspace and AI panes', async ({ page }) => {
+  test('neutral row actions read in one text tone across Settings → Workspace and Agents → Models', async ({ page }) => {
     test.setTimeout(120_000);
     await installDesktopRailRuntime(page);
     await mountDesktopVault(page);
@@ -482,15 +485,25 @@ test.describe('settings', () => {
     const workspace = page.getByTestId('app-settings-reveal-vault-path');
     await expect(workspace).toBeVisible();
     const workspaceInk = await workspace.evaluate((el) => getComputedStyle(el).color);
-    await page.getByTestId('app-settings-nav-ai').click();
+    await page.getByTestId('app-settings-nav-models').click();
+    await expect(page).toHaveURL(/\/agents\/\?(?:.*&)?tab=models/);
     await page.getByTestId('ai-register-anthropic').click();
-    const aiInks = await page.evaluate(() =>
-      ['ai-register-anthropic', 'ai-cancel-anthropic'].map((id) => {
-        const el = document.querySelector(`[data-testid="${id}"]`)!;
-        return getComputedStyle(el).color;
-      }),
-    );
-    expect(aiInks, `workspace chip ink ${workspaceInk}`).toEqual([workspaceInk, workspaceInk]);
+    await expect(page.getByTestId('ai-cancel-anthropic')).toBeVisible();
+    // The claim is about the resting ink. The pointer that just pressed the opener still sits on
+    // it, and its hover ink (stronger, by design) would be measured instead once the colour
+    // transition finishes, so the pointer leaves first and the colour is read after it settles.
+    await page.mouse.move(0, 0);
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          ['ai-register-anthropic', 'ai-cancel-anthropic'].map((id) => {
+            const el = document.querySelector(`[data-testid="${id}"]`)!;
+            return getComputedStyle(el).color;
+          }),
+        ),
+        { message: `workspace chip ink ${workspaceInk}` },
+      )
+      .toEqual([workspaceInk, workspaceInk]);
   });
 
   test('the web lists no app-only Updates pane', async ({ page }) => {
