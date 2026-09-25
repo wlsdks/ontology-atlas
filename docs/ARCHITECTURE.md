@@ -400,7 +400,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   `<vault>/sources/`, and its discovery walk contains no writer.
 - **One Library destination, five tabs (2026-09-17; four on 2026-09-15).**
   `src/app/library-workspace/` composes `src/views/library/` for Sources/Wiki and
-  Collections, and `src/views/docs-vault/` for Ontology. `/library/?tab=ontology` opens the existing
+  Work scopes, and `src/views/docs-vault/` for Ontology. `/library/?tab=ontology` opens the existing
   reader/editor and filters every list, search, count, and saved working set to explicit
   authorable kinds. `/docs` redirects ontology and no-slug entries into Library; only an
   exact existing non-ontology target stays in its bounded Document reader with the same
@@ -659,9 +659,9 @@ until a local manifest exists.
 /library                   the project documents gathered into this folder, the wiki
                            pages written from them, typed ontology documents, and saved
                            constellations. Four tabs keep Sources, Wiki, Ontology, and
-                           Collections distinct. The first two use the two-pane document
+                           Work scopes distinct. The first two use the two-pane document
                            flow, whose right pane shows the selected Wiki page or the
-                           bounded facts known about a raw source. Collections resolves
+                           bounded facts known about a raw source. Work scopes resolves
                            real ontology members by UID and returns the whole set to Galaxy
                            with `?constellation=<folder UUID>`. Split out of /docs 2026-09-06:
                            gathering documents of any format and reading the ontology's
@@ -746,7 +746,7 @@ different list of buttons.** The desktop rail shows eight destinations: Map,
 Architecture, Library, Automations, Insights, Projects, Agents, and Git. Agents carries
 three body tabs, `agents`, `models` and `mcp`, addressed by `?tab=`. The mobile bottom
 bar shows five persistent destinations: Map, Architecture, Library, Insights, and Projects;
-web adds Get App as a separate utility. Library contains Sources, Wiki, Ontology, and Collections;
+web adds Get App as a separate utility. Library contains Sources, Wiki, Ontology, and Work scopes;
 `/docs` remains an exact-document compatibility address for non-ontology files and resolves
 active navigation to Library; it does not restore a general Docs home.
 Contextual writing stays inside Map, while Agents, MCP and Git keep their narrow-screen

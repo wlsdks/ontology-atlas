@@ -24,10 +24,11 @@ import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion
 import {
   decodeWikilinkSlug,
   normalizeOriginalPaths,
+  parseWikilinkHref,
   resolveSourceCitation,
   rewriteWikilinks,
-  WIKILINK_SENTINEL,
 } from '@/shared/lib/source-citation';
+import { sourceCitationWords } from '@/features/library';
 import { resolveWikilinkTargetSlug } from '@/shared/lib/parse-frontmatter';
 import { fetchServerDocContent } from '../lib/server-doc-content';
 import { resolveDocLink } from '../lib/resolve-doc-link';
@@ -65,6 +66,12 @@ interface Props {
   knownOriginalPaths?: ReadonlySet<string>;
   /** Opens a known original source at the cited anchor. */
   onSourceNavigate?: (path: string, anchor?: string) => void;
+  /**
+   * The one original the parent already names beside this page (the Library header's
+   * "View original"). A citation of that file says only where in it; every other citation
+   * names its file too, because nothing else on screen would.
+   */
+  namedSourcePath?: string;
   /** Uses the smaller top inset when parent context already separates the body. */
   compactTop?: boolean;
 }
@@ -94,9 +101,11 @@ export function DocsVaultViewer({
   vaultRepoRoot,
   knownOriginalPaths,
   onSourceNavigate,
+  namedSourcePath,
   compactTop = false,
 }: Props) {
   const t = useTranslations('vaultWidgets.viewer');
+  const libraryT = useTranslations('library');
   const reducedMotion = usePrefersReducedMotion();
   /*
    * **A document already read once arrives painted** (2026-09-12).
@@ -276,15 +285,17 @@ export function DocsVaultViewer({
     () => normalizeOriginalPaths(knownOriginalPaths),
     [knownOriginalPaths],
   );
+  /** Compared with a citation's decoded path, which `resolveSourceCitation` returns in NFC. */
+  const namedSource = namedSourcePath?.normalize('NFC');
 
   const components: Components = {
       a({ href, children, ...rest }) {
         if (!href) return <span {...rest}>{children}</span>;
         // The preprocessing sentinel — `[[slug#anchor]]` has been turned into
         // WIKILINK:slug#anchor. Matched directly against vault slugs.
-        if (href.startsWith(WIKILINK_SENTINEL)) {
-          const spec = href.slice(WIKILINK_SENTINEL.length);
-          const [rawWikiSlug, rawAnchor] = spec.split('#');
+        const wikilink = parseWikilinkHref(href);
+        if (wikilink) {
+          const { rawSlug: rawWikiSlug, rawAnchor, labelled } = wikilink;
           const typedSlug = rawWikiSlug ? decodeWikilinkSlug(rawWikiSlug) : rawWikiSlug;
           const wikiSlug = typedSlug
             ? resolveWikilinkTargetSlug(typedSlug, doc.slug)
@@ -317,14 +328,27 @@ export function DocsVaultViewer({
               )
             : null;
           if (citation) {
+            /*
+             * **A citation says where, in words** (2026-09-25). Without a `|label` the
+             * link's text is its target, and the page printed `src:sources/budget.md#l5`
+             * on every fact while the Source pane a press away said "line 5". The words
+             * replace that stand-in only; a label the author wrote is kept as written.
+             */
+            const words = sourceCitationWords(
+              { path: citation.path ?? citation.rawPath, anchor: citation.anchor },
+              { nameFile: citation.rawPath !== namedSource },
+              libraryT,
+            );
+            const shown = labelled ? children : words.text;
             if (citation.status === 'known' && citation.path && onSourceNavigate) {
               return (
                 <button
                   type="button"
-                  aria-label={t('sourceCitationTitle', {
-                    path: citation.path,
-                    anchor: citation.anchor ? `#${citation.anchor}` : '',
-                  })}
+                  aria-label={
+                    words.place
+                      ? t('sourceCitationTitleAt', { path: citation.path, place: words.place })
+                      : t('sourceCitationTitle', { path: citation.path })
+                  }
                   data-source-path={citation.path}
                   data-source-anchor={citation.anchor}
                   onClick={() => onSourceNavigate(citation.path!, citation.anchor)}
@@ -335,7 +359,7 @@ export function DocsVaultViewer({
                     className: 'inline align-baseline break-keep whitespace-normal',
                   })}
                 >
-                  {children}
+                  {shown}
                 </button>
               );
             }
@@ -352,7 +376,7 @@ export function DocsVaultViewer({
                 )}
                 {...rest}
               >
-                {children}
+                {shown}
               </span>
             );
           }

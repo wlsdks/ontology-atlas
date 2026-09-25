@@ -14,7 +14,7 @@ import { cn } from "@/shared/lib/cn";
 import { BrandMark } from "@/shared/ui/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
 import { Button, Chip, Dialog, RowButton, Tooltip } from "@/shared/ui";
-import { AgentDoor } from "./AgentDoor";
+import { AgentMissingNotice } from "./AgentMissingNotice";
 import { Input } from "@/shared/ui/input";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import {
@@ -24,9 +24,8 @@ import {
   type LibraryIndexSegment,
 } from "@/shared/lib/appearance-preferences";
 
-import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount } from "@/features/library";
+import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount, passageLabelText } from "@/features/library";
 import { captionWindow } from "../../lib/caption-window";
-import { passageLabelText } from "../../lib/passage-label";
 import { useSourceSearch } from "../../lib/use-source-search";
 import { LibraryShelf } from "./LibraryShelf";
 import { useRovingRows } from "@/shared/lib/use-roving-rows";
@@ -1213,41 +1212,12 @@ export function LibrarySection({
       {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
       {agentNotice ? (
         /*
-         * **No agent on this computer: one notice with its way out, not two dead doors**
-         * (design sweep, 2026-09-25). Measured at 1512 on the no-agent folder, the column's
-         * top 120px held Check and Compile at opacity 0.55 (text about 2.3:1) over a
-         * two-line paragraph saying why. The two features are still named here — the
-         * sentence says what they would do — and the reason keeps its one place, now with
-         * the press that removes it. "Availability is a state with its reason"
-         * (`docs/DECISIONS.md`, 2026-09-11) holds: the state is this card, and it ends in a
-         * door. While the runtimes are still being detected the doors stay drawn, because
-         * nothing is missing yet.
+         * No agent on this computer: the two dead doors become the one notice that names
+         * what they would do and ends in the door (`AgentMissingNotice`, 2026-09-25). While
+         * the runtimes are still being detected the doors stay drawn, because nothing is
+         * missing yet.
          */
-        /*
-         * ⚠️ **One box edge, one text line, and not the loudest thing in the column**
-         * (design sweep round 2, 2026-09-25). The door used to be a full-width white-ink
-         * outline button inside this card's padding: its box stood at 87 while every other
-         * box in the column stood at 76, and it out-shouted the selected page card. Now the
-         * card is the only box, its sentence and its door both start on the column's text
-         * line after the glyph slot, and the door is the accent link a pressable fact wears.
-         */
-        <div
-          data-testid="library-agent-missing"
-          className="mx-3 mb-2 grid grid-cols-[1rem_minmax(0,1fr)] gap-x-1.5 gap-y-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2.5"
-        >
-          <span className="flex h-[var(--leading-label)] items-center justify-center">
-            <Sparkles size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
-          </span>
-          <p
-            id={SECTION_ACTIONS_NOTE_ID}
-            className="min-w-0 text-label leading-label text-[color:var(--color-text-secondary)] [word-break:keep-all]"
-          >
-            {t("wiki.agentMissing")}
-          </p>
-          <span className="col-start-2 flex min-w-0">
-            <AgentDoor testId="library-agent-missing-door" variant="link" label={t("wiki.agentMissingDoor")} />
-          </span>
-        </div>
+        <AgentMissingNotice id={SECTION_ACTIONS_NOTE_ID} className="mx-3 mb-2" t={t} />
       ) : null}
       <SectionActions>
         {agentNotice ? null : <>

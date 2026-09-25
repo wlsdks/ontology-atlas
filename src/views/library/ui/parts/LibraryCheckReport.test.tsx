@@ -367,6 +367,31 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     expect(chip.getAttribute("aria-describedby")).toBe("library-check-report-lint-blocked");
   });
 
+  /*
+   * With no coding agent on this computer the index draws one notice ending in the agents
+   * door; this page, one press away, kept a dead Check over a caption with no way out
+   * (2026-09-25). One missing agent now reads the same on both.
+   */
+  it("draws the index's no-agent notice with its door instead of a dead check", () => {
+    mount(
+      <Harness
+        structural={STRUCTURAL}
+        onLint={null}
+        lintBlockedReason="Needs a coding agent on this computer."
+        agentMissing
+      />,
+    );
+    const notice = screen.getByTestId("library-check-report-agent-missing");
+    expect(notice).toHaveTextContent("check page format");
+    expect(screen.getByTestId("library-check-report-agent-missing-door")).toHaveAttribute(
+      "href",
+      expect.stringContaining("agents"),
+    );
+    expect(screen.queryByTestId("library-check-report-lint")).toBeNull();
+    // The notice is the reason; the caption does not stand under it as a second one.
+    expect(screen.queryByTestId("library-check-report-lint-blocked")).toBeNull();
+  });
+
   it("gives the rail one head per ledger so the agent's half is one press away", () => {
     const TestOutline = () => {
       const t = useTranslations("library");
