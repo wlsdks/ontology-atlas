@@ -49,6 +49,24 @@ export interface HexRoute {
   /** The tile the route arrives at (the arrival notch points into it). */
   targetId: string;
   sourceId: string;
+  /**
+   * The route stops short: the open lattice (see `HexRouter`'s `blocked`) had no way to the
+   * target, so this runs from the source as far toward it as the open lattice allows. Drawn
+   * as a stub with an arrow pointing at the target, never as an arrival.
+   */
+  stub?: boolean;
+}
+
+/**
+ * Close every lattice node the predicate rejects — the router's way of keeping out of the
+ * chrome. `open(x, y)` is asked in unit space; a closed node is never entered, so no route
+ * can run over it, and a tile whose every terminal is closed can neither send nor receive.
+ */
+export function closedNodes(lattice: HexLattice, open: (x: number, y: number) => boolean): Uint8Array {
+  const n = lattice.xs.length;
+  const out = new Uint8Array(n);
+  for (let i = 0; i < n; i += 1) if (!open(lattice.xs[i]!, lattice.ys[i]!)) out[i] = 1;
+  return out;
 }
 
 const APO = SQRT3 / 2;
@@ -218,9 +236,23 @@ export class HexRouter {
   constructor(
     readonly lattice: HexLattice,
     private otherPenalty = 1.15,
+    /**
+     * Nodes a route may not enter (1 = closed), from `closedNodes`: the lattice is padded two
+     * rings past the board, and on screen those rings can lie under the map's chrome — the
+     * toolbar above, INDEX on the left, the inspector on the right, the legend below. Without
+     * this, the cheapest way round the board ran along the canvas's top edge under the
+     * toolbar (owner report, 2026-09-25).
+     */
+    private readonly blocked: Uint8Array | null = null,
   ) {}
 
-  private search(src: ReadonlySet<number>, dst: ReadonlySet<number>, bundle: string): number[] | null {
+  private search(
+    src: ReadonlySet<number>,
+    dst: ReadonlySet<number>,
+    bundle: string,
+    /** When the target is unreachable, the reached node nearest this point (unit space). */
+    toward?: { x: number; y: number },
+  ): { path: number[]; stub: boolean } | null {
     const L = this.lattice;
     const n = L.xs.length;
     const dist = new Float64Array(n).fill(Infinity);
@@ -230,15 +262,27 @@ export class HexRouter {
       dist[i] = 0;
       heap.push(0, i);
     }
+    const blocked = this.blocked;
+    const walk = (end: number) => {
+      const path: number[] = [];
+      for (let v = end; v !== -1; v = prev[v]!) path.push(v);
+      return path.reverse();
+    };
+    let best = -1;
+    let bestD = Infinity;
     while (heap.size) {
       const [d, u] = heap.pop();
       if (d > dist[u]!) continue;
-      if (dst.has(u)) {
-        const path: number[] = [];
-        for (let v = u; v !== -1; v = prev[v]!) path.push(v);
-        return path.reverse();
+      if (dst.has(u)) return { path: walk(u), stub: false };
+      if (toward && L.kind[u] !== "m") {
+        const h = Math.hypot(L.xs[u]! - toward.x, L.ys[u]! - toward.y);
+        if (h < bestD) {
+          bestD = h;
+          best = u;
+        }
       }
       for (const [v, w, e] of L.adj[u]!) {
+        if (blocked && blocked[v]) continue;
         // Other tiles' terminals are closed: a route never touches a tile it does not serve.
         if (L.kind[v] === "m" && !dst.has(v) && !src.has(v)) continue;
         const used = this.use.get(e);
@@ -252,7 +296,8 @@ export class HexRouter {
         }
       }
     }
-    return null;
+    if (best === -1) return null;
+    return { path: walk(best), stub: true };
   }
 
   private record(path: readonly number[], bundle: string) {
@@ -278,20 +323,41 @@ export class HexRouter {
   route(from: Iterable<string>, to: Iterable<string>, bundle: string): HexRoute | null {
     const fromIds = new Set(from);
     const toIds = new Set(to);
-    const dst = this.terminals(toIds);
+    const blocked = this.blocked;
+    const L = this.lattice;
+    const allDst = this.terminals(toIds);
+    const dst = new Set([...allDst].filter((t) => !blocked?.[t]));
     // A seam two neighbours share is an arrival, never a departure: leaving from it would be
     // a route of no length and no direction.
-    const src = new Set([...this.terminals(fromIds)].filter((t) => !dst.has(t)));
-    if (!src.size || !dst.size) return null;
-    const path = this.search(src, dst, bundle);
-    if (!path || path.length < 2) return null;
+    const src = new Set([...this.terminals(fromIds)].filter((t) => !allDst.has(t) && !blocked?.[t]));
+    if (!src.size || !allDst.size) return null;
+    // Where the target is, for a stub when the open lattice cannot reach it.
+    let tx = 0;
+    let ty = 0;
+    for (const t of allDst) {
+      tx += L.xs[t]!;
+      ty += L.ys[t]!;
+    }
+    const toward = { x: tx / allDst.size, y: ty / allDst.size };
+    const found = this.search(src, dst, bundle, toward);
+    if (!found || found.path.length < 2) return null;
+    const { path, stub } = found;
+    if (stub) {
+      // A stub earns its place only by getting clearly nearer: at least one cell radius closer
+      // to the target than the edge it left from.
+      const start = path[0]!;
+      const end = path[path.length - 1]!;
+      const d0 = Math.hypot(L.xs[start]! - toward.x, L.ys[start]! - toward.y);
+      const d1 = Math.hypot(L.xs[end]! - toward.x, L.ys[end]! - toward.y);
+      if (path.length < 3 || d0 - d1 < 1) return null;
+    }
     this.record(path, bundle);
-    const L = this.lattice;
     return {
       nodes: path,
       points: path.map((i) => ({ x: L.xs[i]!, y: L.ys[i]! })),
       sourceId: L.terminalOwners[path[0]!]?.find((id) => fromIds.has(id)) ?? "",
-      targetId: L.terminalOwners[path[path.length - 1]!]?.find((id) => toIds.has(id)) ?? "",
+      targetId: stub ? ([...toIds][0] ?? "") : (L.terminalOwners[path[path.length - 1]!]?.find((id) => toIds.has(id)) ?? ""),
+      ...(stub ? { stub: true } : {}),
     };
   }
 }
