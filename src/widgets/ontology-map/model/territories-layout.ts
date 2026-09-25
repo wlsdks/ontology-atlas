@@ -151,7 +151,7 @@ interface TerritoryShelf {
   to: number;
 }
 
-interface TerritoryDependency {
+export interface TerritoryDependency {
   /** Capability the dependency starts from (an element's dependency is rolled up to it). */
   from: string;
   /** Capability the dependency lands on (an element target is rolled up to its capability). */
@@ -298,7 +298,7 @@ export function boxesOverlap(a: Box, b: Box): boolean {
 
 /* ── graph reading ──────────────────────────────────────────────────────── */
 
-interface Tree {
+export interface Tree {
   project: TerritoryInputNode | null;
   domains: TerritoryInputNode[];
   capabilityDomain: Map<string, string | null>;
@@ -312,7 +312,7 @@ const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id 
 const byLabel = (a: { label: string; id: string }, b: { label: string; id: string }) =>
   a.label < b.label ? -1 : a.label > b.label ? 1 : byId(a, b);
 
-function readTree(nodes: readonly TerritoryInputNode[], edges: readonly TerritoryInputEdge[]): Tree {
+export function readTree(nodes: readonly TerritoryInputNode[], edges: readonly TerritoryInputEdge[]): Tree {
   const kindOf = new Map(nodes.map((n) => [n.id, n.kind] as const));
   const parents = new Map<string, string[]>();
   for (const e of edges) {
@@ -354,7 +354,7 @@ function readTree(nodes: readonly TerritoryInputNode[], edges: readonly Territor
   return { project, domains, capabilityDomain, capabilities, elementParent, capabilityElements, domainElementCount };
 }
 
-function rollDependencies(tree: Tree, edges: readonly TerritoryInputEdge[]): TerritoryDependency[] {
+export function rollDependencies(tree: Tree, edges: readonly TerritoryInputEdge[]): TerritoryDependency[] {
   const isCapability = new Set(tree.capabilities.map((c) => c.id));
   const toCapability = (id: string): string | null => {
     if (isCapability.has(id)) return id;

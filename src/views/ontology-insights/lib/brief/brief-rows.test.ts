@@ -62,4 +62,35 @@ describe('briefRows — one list across the four cores', () => {
     expect(rows.map((row) => row.kind)).toEqual(['line', 'app-only', 'status', 'status']);
     expect(rows[0]).toMatchObject({ kind: 'line', core: 'ontology', availability: 'app-only' });
   });
+
+  it('leaves a happened line to the since card when the card names its kind', () => {
+    const cores = [
+      core({ core: 'ontology', availability: 'measured', lines: [{ id: 'ontology-changed-since', count: 3, state: 'current' }, { id: 'ontology-repair', count: 2, state: 'current' }] }),
+      core({ core: 'wiki', availability: 'measured', lines: [{ id: 'wiki-written-since', count: 1, state: 'current' }] }),
+      core({ core: 'harness', availability: 'measured', lines: [{ id: 'harness-changed-since', count: 1, state: 'current' }] }),
+      core({ core: 'agent', availability: 'measured', lines: [{ id: 'agent-calls-since', count: 4, state: 'current' }] }),
+    ];
+    const ids = (rows: ReturnType<typeof briefRows>) => rows.map((row) => (row.kind === 'line' ? row.line.id : `${row.kind}`));
+    expect(ids(briefRows(cores))).toEqual(['ontology-changed-since', 'ontology-repair', 'wiki-written-since', 'harness-changed-since', 'agent-calls-since']);
+    expect(ids(briefRows(cores, { namedSince: ['concept-doc', 'agent-call'] }))).toEqual(['ontology-repair', 'wiki-written-since', 'harness-changed-since']);
+  });
+
+  it('puts the no-repository row in the unchecked line\'s place and does not draw the line', () => {
+    const rows = briefRows([
+      core({ core: 'ontology', availability: 'no-source', headline: 20, lines: [
+        { id: 'ontology-evidence-unchecked', count: 20, state: 'unknown' },
+        { id: 'ontology-repair', count: 5, state: 'current' },
+      ] }),
+      core({ core: 'wiki', availability: 'no-data' }),
+      core({ core: 'harness', availability: 'no-source' }),
+      core({ core: 'agent', availability: 'no-data' }),
+    ]);
+    expect(rows).toEqual([
+      { kind: 'status', core: 'ontology', status: 'no-source', unchecked: true },
+      { kind: 'line', core: 'ontology', availability: 'no-source', line: { id: 'ontology-repair', count: 5, state: 'current' } },
+      { kind: 'status', core: 'wiki', status: 'no-data' },
+      { kind: 'status', core: 'harness', status: 'no-source' },
+      { kind: 'status', core: 'agent', status: 'no-data' },
+    ]);
+  });
 });

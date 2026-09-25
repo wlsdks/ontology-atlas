@@ -2681,17 +2681,16 @@ function DocsVaultContent({
                   onDismiss={() => setSampleWelcomeDismissed(true)}
                 />
               ) : null}
-              {/* Editor head — display title + preview/edit segment + sync status. It used to show
-                  only the inner filename of `dir/file.md` in mono, making a raw filename like
-                  "README.md" the primary label for a non-developer. The title is now the primary
-                  single-line label and the file path drops to a secondary caption — the same
-                  `title ?? name` priority the tree (`DocsVaultTree`) uses. */}
+              {/* Editor head — file path + preview/edit segment + sync status. A raw filename is
+                  never the primary label for a non-developer: the open tab and the body's H1
+                  carry the display title (`title ?? name`, the tree's priority). */}
+              {/* **The path alone** (2026-09-25, library polish round four). The name stood in
+                  the open tab directly above this row, here, in the tree's selected row and as
+                  the body's H1: four times within about 250px. The tab and the H1 keep it; this
+                  row says the one thing neither does, where the file lives. */}
               <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-[color:var(--color-border-soft)] px-4 py-2">
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                    {selectedDocDisplayTitle}
-                  </span>
-                  <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                  <span data-testid="docs-editor-path" className="truncate font-mono text-label text-[color:var(--color-text-tertiary)]">
                     <span>{splitVaultSlugPath(selectedDoc.slug).dir}</span>
                     {splitVaultSlugPath(selectedDoc.slug).name}.md
                   </span>
@@ -2718,7 +2717,7 @@ function DocsVaultContent({
                       active={!editing}
                       tone={!editing ? 'strong' : 'muted'}
                       onClick={() => setEditing(false)}
-                      className="font-mono hover:text-[color:var(--color-text-secondary)]"
+                      className="hover:text-[color:var(--color-text-secondary)]"
                     >
                       {t('editorHeader.previewTab')}
                     </Chip>
@@ -2728,7 +2727,7 @@ function DocsVaultContent({
                       active={editing}
                       tone={editing ? 'strong' : 'muted'}
                       onClick={() => setEditing(true)}
-                      className="font-mono hover:text-[color:var(--color-text-secondary)]"
+                      className="hover:text-[color:var(--color-text-secondary)]"
                     >
                       {t('editorHeader.editTab')}
                     </Chip>
@@ -2741,7 +2740,7 @@ function DocsVaultContent({
                     ⚠️ This line says only whether the **vault source** is local. It is unrelated to
                     whether this document is on the map, which is `DocMetaBar`'s verdict. */}
                 {isLocalSourceLoaded ? (
-                  <span className="flex-none font-mono text-label text-[color:var(--color-text-quaternary)]">
+                  <span className="flex-none text-label text-[color:var(--color-text-quaternary)]">
                     <span
                       className="mr-1.5 inline-block h-[5px] w-[5px] rounded-full bg-[color:var(--color-indigo-accent)] align-middle"
                       aria-hidden

@@ -145,7 +145,7 @@ for (const width of [1040, 1512]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/en/topology/?e2e=1&guides=off&p=capability%3Acart&open=domain%3Aorder%2Cproject%3Astorefront');
     await page.getByTestId('map-detail-panel-action-meaning').click();
-    const relation = page.getByTestId('analysis-workbench').locator('article').filter({ hasText: 'Product Detail Page' });
+    const relation = page.getByTestId('analysis-workbench').getByTestId('meaning-relation').filter({ hasText: 'Product Detail Page' });
     await relation.getByRole('button', { name: en.analysisWorkbench.showConnection }).click();
     await expect.poll(() => page.evaluate(() => {
       const api = (window as unknown as { __atlasMap: {

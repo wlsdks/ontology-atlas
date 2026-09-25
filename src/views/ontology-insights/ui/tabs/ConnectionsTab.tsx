@@ -5,14 +5,12 @@ import {
   EmptyState,
   EvidenceOnlyBadge,
   OntologyMapKindGlyph,
-  OntologyMapTraceMark,
 } from "@/shared/ui";
 import {
-  isContainmentRelation,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { relationTypeIndigo } from "../../lib/relation-type-tone";
+import { relationTypeFill, relationTypeIndigo } from "../../lib/relation-type-tone";
 import { buildImpactRanking } from "../../lib/impact-ranking";
 import { InsightsBar } from "../parts/InsightsBar";
 import {
@@ -21,6 +19,8 @@ import {
   type ImpactRankingLink,
 } from "./ImpactRankingCard";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { ShareStack } from "../parts/ShareStack";
+import { INSIGHTS_LIST_ROW, INSIGHTS_LIST_TWO_COLUMN, insightsTwoColumnCell } from "../parts/insights-list";
 import { controlClass } from '@/shared/ui/control-class';
 
 export interface ConnectionHubRow {
@@ -85,8 +85,8 @@ export interface ConnectionsTabProps extends ConnectionsTabBaseProps {
 
 /**
  * The `connections` tab — it answers "which concepts are central, and how far does a change
- * spread?". The three cards (relation types ∥ hubs · impact ranking) share one anatomy so they read
- * alike: head (title + total) → chart → rows → one footnote.
+ * spread?". The three cards (relation types · hubs · impact ranking) stack at full width and share
+ * one anatomy so they read alike: head (title + total) → chart or rows → one footnote.
  *
  * Two ink reductions are reflected here.
  * ① The "most depended upon" card was deleted — measured against the dogfood vault, all top five
@@ -126,19 +126,28 @@ export function ConnectionsTab({
     () => buildImpactRanking(impactNodes, impactEdges, impactLimit),
     [impactNodes, impactEdges, impactLimit],
   );
-  const edgeMax = edgeTypeRows.reduce((m, r) => Math.max(m, r.count), 0);
   // `hubs` is already sorted by degree descending — `hubs[0]` is the maximum within this list.
   const hubDegreeMax = hubs.reduce((m, h) => Math.max(m, h.degree), 0);
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-2">
+    /*
+     * ⚠️ **Three full-width cards, no side-by-side pair.** Relation types (three or four rows)
+     * stood beside the hubs (six rows) and the shared row height left a 100-120px blank band
+     * above the short card's caption at 1512x949 (review, 2026-09-25). Spreading the rows was
+     * rejected once already, and so was stretching the card. The type rows also drew a second
+     * bar for the share the stacked bar above them already showed, so the card is now that one
+     * stacked bar with its key: a band, as tall as what it says. The hubs take the full width
+     * and fold into two columns, the same grammar the impact ranking under them uses.
+     */
+    <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
       <section
         aria-label={labels.relationTypesTitle}
-        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        data-testid="connections-relation-types"
+        className="flex min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <CardHead label={labels.relationTypesTitle} count={totalEdges} />
+        <CardHead label={labels.relationTypesTitle} />
         {edgeTypeRows.length === 0 ? (
-          <div className="mt-3 flex flex-1 flex-col">
+          <div className="mt-3 flex flex-col">
             <EmptyState
               size="compact"
               icon={<Waypoints aria-hidden />}
@@ -149,67 +158,38 @@ export function ConnectionsTab({
             />
           </div>
         ) : (
-          <>
-            <div
-              aria-hidden
-              className="mt-3 flex h-2 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)]"
-            >
-              {edgeTypeRows.map((row) => {
-                const share = totalEdges > 0 ? row.count / totalEdges : 0;
-                if (share <= 0) return null;
-                return (
-                  <span
-                    key={row.type}
-                    style={{ flexGrow: share, backgroundColor: relationTypeIndigo(row.type) }}
-                  />
-                );
-              })}
-            </div>
-            {/* Relation types are only 3–4 rows, so the hub card beside it (6 rows) sets the grid
-                height — the leftover vertical space is distributed evenly between rows so the bottom
-                of the card does not look empty (the same treatment as the kind distribution card). */}
-            <div className="mt-2 flex flex-1 flex-col justify-evenly">
-              {edgeTypeRows.map((row, i) => {
-                const width = edgeMax > 0 ? Math.max(2, Math.round((row.count / edgeMax) * 100)) : 0;
-                const pct = totalEdges > 0 ? Math.round((row.count / totalEdges) * 100) : 0;
-                return (
-                  <div
-                    key={row.type}
-                    className="flex items-center gap-3 border-t border-[color:var(--color-divider)] py-2.5 first:border-t-0"
-                  >
-                    <OntologyMapTraceMark containment={isContainmentRelation(row.type)} />
-                    <span className="w-[var(--insights-row-label-w)] flex-none truncate font-mono text-body text-[color:var(--color-text-primary)]">
-                      {edgeTypeLabel(row.type)}
-                    </span>
-                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
-                      <InsightsBar pct={width} color={relationTypeIndigo(row.type)} index={i} />
-                    </span>
-                    <span className="w-11 flex-none text-right font-mono text-body tabular-nums text-[color:var(--map-numeral-face)]">
-                      {row.count}
-                    </span>
-                    <span className="w-9 flex-none text-right font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                      {pct}%
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </>
+          /* The key names each segment once: its swatch, the count and the share. Items sit on
+             one row and wrap on a narrow board. The map's line mark is not repeated here: the
+             map draws only two lines (solid containment, dashed everything else), so two types
+             wore the same dashed mark and the key told them apart by the label alone (review,
+             2026-09-25, round 4). The swatch is a literal sample of the segment instead. */
+          <ShareStack
+            total={totalEdges}
+            keyTestId="connections-relation-type-key"
+            segmentTestId="connections-relation-type-segment"
+            items={edgeTypeRows.map((row) => ({
+              id: row.type,
+              label: edgeTypeLabel(row.type),
+              count: row.count,
+              color: relationTypeIndigo(row.type),
+              fill: relationTypeFill(row.type),
+            }))}
+          />
         )}
-        <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+        <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
           {labels.relationTypesCaption}
         </p>
       </section>
 
       <section
         aria-label={labels.hubsTitle}
-        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className="flex min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         {/* The hub total is already stated by the truncation copy below ("top 6 / 289 total") — the
             same figure is not printed twice in one card. */}
         <CardHead label={labels.hubsTitle} />
-        <div className="mt-2 flex flex-1 flex-col justify-start">
-          {hubs.length === 0 ? (
+        {hubs.length === 0 ? (
+          <div className="mt-2 mb-2.5 flex flex-col">
             <EmptyState
               size="compact"
               icon={<Waypoints aria-hidden />}
@@ -218,55 +198,61 @@ export function ConnectionsTab({
               description={labels.noHubsHint}
               action={<EmptyRelationAction label={labels.emptyAction} testId="connections-hubs-empty-action" />}
             />
-          ) : (
-            hubs.map((hub, i) => {
+          </div>
+        ) : (
+          <div className={`mt-2 mb-2.5 ${INSIGHTS_LIST_TWO_COLUMN}`}>
+            {hubs.map((hub, i) => {
               const meterPct = hubDegreeMax > 0 ? Math.max(6, Math.round((hub.degree / hubDegreeMax) * 100)) : 0;
               return (
-                <Link
-                  key={hub.id}
-                  href={hubLink.href(hub.id)}
-                  aria-label={hubLink.ariaLabel(hub.title)}
-                  data-testid="insights-hub-row-link"
-                  className={controlClass({ shape: "chip", className: "-mx-1.5 flex gap-3 border-t border-[color:var(--color-divider)] px-1.5 py-2.5 first:border-t-0 hover:bg-[color:var(--color-overlay-1)]" })}
-                >
-                  <OntologyMapKindGlyph kind={hub.kind} size={16} className="flex-none" />
-                  <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-primary)]">
-                    {hub.title}
-                  </span>
-                  {hub.evidenceOnly ? (
-                    <EvidenceOnlyBadge
-                      label={labels.evidenceBadge}
-                      hint={labels.evidenceBadgeHint}
-                    />
-                  ) : null}
-                  <span className="hidden flex-none text-label text-[color:var(--color-text-quaternary)] sm:inline">
-                    {kindLabel(hub.kind)}
-                  </span>
-                  <span
-                    aria-hidden
-                    className="h-1.5 w-14 flex-none overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]"
+                <div key={hub.id} className={insightsTwoColumnCell(i)}>
+                  <Link
+                    href={hubLink.href(hub.id)}
+                    aria-label={hubLink.ariaLabel(hub.title)}
+                    data-testid="insights-hub-row-link"
+                    /*
+                     * A bare divider row, like the impact ranking's. `row` has no border, and the
+                     * -mx/px pair lets only the hover surface pass the card inset; the divider sits
+                     * on the cell around it, on the card's padding line (`insights-list.ts`).
+                     */
+                    className={controlClass({ shape: "row", size: "md", hoverSurface: "lift", className: `-mx-1.5 w-auto gap-3 px-1.5 ${INSIGHTS_LIST_ROW}` })}
                   >
-                    <InsightsBar pct={meterPct} color="var(--color-indigo-a66)" index={i} />
-                  </span>
-                  <span className="w-9 flex-none text-right font-mono text-body tabular-nums text-[color:var(--map-numeral-face)]">
-                    {hub.degree}
-                  </span>
-                </Link>
+                    <OntologyMapKindGlyph kind={hub.kind} size={16} className="flex-none" />
+                    <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-primary)]">
+                      {hub.title}
+                    </span>
+                    {hub.evidenceOnly ? (
+                      <EvidenceOnlyBadge
+                        label={labels.evidenceBadge}
+                        hint={labels.evidenceBadgeHint}
+                      />
+                    ) : null}
+                    <span className="hidden flex-none text-label text-[color:var(--color-text-quaternary)] sm:inline">
+                      {kindLabel(hub.kind)}
+                    </span>
+                    <span
+                      aria-hidden
+                      className="h-1.5 w-14 flex-none overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]"
+                    >
+                      <InsightsBar pct={meterPct} color="var(--color-indigo-a66)" index={i} />
+                    </span>
+                    <span className="w-9 flex-none text-right font-mono text-body tabular-nums text-[color:var(--map-numeral-face)]">
+                      {hub.degree}
+                    </span>
+                  </Link>
+                </div>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
         {/* The truncation copy is appended to the footnote to keep it one line — an optional slot
             that shifts the card height would give two cards in the same grid different anatomies. */}
-        <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+        <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
           {hubTotalCount > hubs.length ? `${labels.hubTruncated(hubs.length, hubTotalCount)} · ` : ""}
           {labels.hubDegreeCaption}
         </p>
       </section>
 
-      {/* The second line of the same grid — the ranking's titles are long and would be clipped in half a column. */}
       <ImpactRankingCard
-        className="@min-[960px]/insights:col-span-2"
         rows={impact.rows}
         rankedCount={impact.rankedCount}
         evidenceRows={impact.evidenceRows}
@@ -281,15 +267,15 @@ export function ConnectionsTab({
   );
 }
 
-function CardHead({ label, count }: { label: string; count?: number }) {
+/**
+ * A card's name. It carries no total: the census tile above the tab bar prints the relation
+ * count, and a second copy at the card's far corner was the same number twice in one viewport
+ * (review, 2026-09-25, round 5).
+ */
+function CardHead({ label }: { label: string }) {
   return (
     <div className="flex items-baseline gap-2.5">
       <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">{label}</InsightsSectionTitle>
-      {count === undefined ? null : (
-        <span className="ml-auto font-mono text-body tabular-nums text-[color:var(--map-numeral-face)]">
-          {count}
-        </span>
-      )}
     </div>
   );
 }

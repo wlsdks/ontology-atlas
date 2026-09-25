@@ -98,11 +98,15 @@ export function TopologyIndexSlot({
           // and is zoomed at ≥1920px / ≥2400px. Without it this wrapper would stay
           // at fixed px while the group grows proportionally under that zoom, and
           // the two would overlap again — see the `--topology-index-top` comment.
-          className={`${frame.exiting ? "map-overlay-out pointer-events-none" : "map-overlay-in"} topology-ui-scale absolute z-20 ${
+          // The slot itself never takes pointer input: the INDEX surface ends under its
+          // last row (`max-h-full`, 2026-09-25), so a full-height slot would swallow
+          // canvas clicks in the strip below it. Only the surface it holds — the panel
+          // `aside` or the folded tab — is live.
+          className={`${frame.exiting ? "map-overlay-out" : "map-overlay-in"} pointer-events-none topology-ui-scale absolute z-20 ${
             // `indexDemotedByNodeSheet` — see its definition: below `lg` the node
             // sheet is painted over this stack, so it recedes rather than leaving
             // 24 reachable-looking controls under an opaque surface.
-            indexDemotedByNodeSheet ? "pointer-events-none" : ""
+            frame.exiting || indexDemotedByNodeSheet ? "" : "[&>button]:pointer-events-auto [&_aside]:pointer-events-auto"
             }`}
           data-index-demoted-by-node-sheet={indexDemotedByNodeSheet || undefined}
           // The toaster centres in the free map right of INDEX, never over it.
@@ -332,6 +336,7 @@ export function TopologyIndexSlot({
                 focusWhenReady(["topology-index-fold"], { leaving });
               }}
               labels={{
+                label: t("index.label"),
                 expandAria: t("index.expandAria"),
                 agentSyncTitle: t("index.agentSync"),
               }}

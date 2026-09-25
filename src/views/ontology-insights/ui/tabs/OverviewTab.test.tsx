@@ -57,12 +57,32 @@ const AUTH_ROW = {
  * domains).
  */
 describe("OverviewTab — 도메인 용량", () => {
-  it("종류 스택은 낮은 인접 색 대비를 1px 구조 seam으로 나눈다", () => {
+  it("종류 스택은 조각 사이를 패널 틈으로 가르고, 테두리로 빈 트랙을 흉내 내지 않는다", () => {
     render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
     const stack = screen.getByTestId("insights-kind-stack");
-    expect(stack).toHaveClass("gap-px");
-    expect(stack).toHaveClass("bg-[color:var(--color-divider)]");
+    expect(stack).toHaveClass("gap-0.5");
+    expect(stack.className).not.toContain("border");
     expect(screen.getAllByTestId("insights-kind-stack-segment")).toHaveLength(3);
+  });
+
+  // The key names each kind once, with its share. A second bar per kind for the same share
+  // was the row that left the blank band beside the domain card (review, 2026-09-25).
+  // The census tile above the tab bar prints every count; the key says only the share it adds
+  // (review, 2026-09-25, round 5: the same counts stood ~250px apart in one viewport).
+  it("종류는 한 줄 키로 이름·비율을 말하고, 수는 인구 타일에 맡긴다", () => {
+    render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
+    const key = screen.getByTestId("insights-kind-key");
+    expect(key.querySelectorAll("li")).toHaveLength(3);
+    const first = key.querySelector("li")!;
+    expect(first).toHaveAttribute("data-share-count", "3");
+    const visible = [...first.querySelectorAll("span")].filter((el) => !el.classList.contains("sr-only")).map((el) => el.textContent).join("");
+    expect(visible).toBe("capability60%");
+  });
+
+  it("도메인 행의 내역은 이름 아래에 있어 막대 바로 옆에 합계가 선다", () => {
+    render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
+    expect(screen.getByTestId("domain-capacity-bar-tail")).toHaveTextContent(/^3$/);
+    expect(screen.getByTestId("domain-capacity-bar-breakdown")).toHaveTextContent("역량 2 · 요소 1");
   });
 
   it("도메인이 없으면 만들 길을 내민다 — 「없습니다」로 끝나는 것은 다음 단계가 없음이다", () => {
@@ -122,15 +142,16 @@ describe("OverviewTab — 도메인 용량", () => {
   /**
    * **The wrapping link does not change the row's dimensions.** The six rows of this card must share
    * one height for boundary positions to be compared side by side (dimensional regularity). The
-   * value layer's `row` carries a vertical inset (`py-1.5`) and a flex layout (`flex w-full`), and
-   * since the bar inside already has its own layout, both must be emptied — this assertion stops
-   * those three values reappearing in the merged result. jsdom does not compute layout, so what is
+   * value layer's `row` carries a vertical inset (`py-1.5`) and a flex layout (`flex w-full`); the
+   * layout must be emptied because the bar inside has its own, and the inset is replaced by the
+   * board's one list inset (`py-3`, `insights-list.ts`) so every row carries the same one — this
+   * assertion stops the value layer's values reappearing in the merged result. jsdom does not compute layout, so what is
    * measured is the classes, and that is all this layer can measure deterministically.
    */
-  it("링크가 행 높이를 늘리지 않는다 — 세로 인셋 0 · 배치는 막대의 것", () => {
+  it("링크가 행마다 같은 목록 인셋을 쓴다 — 배치는 막대의 것", () => {
     render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
     const classes = screen.getByTestId("insights-domain-row-link").className.split(/\s+/);
-    expect(classes).toContain("py-0");
+    expect(classes).toContain("py-3");
     expect(classes).toContain("block");
     expect(classes).toContain("w-auto");
     expect(classes).not.toContain("py-1.5");

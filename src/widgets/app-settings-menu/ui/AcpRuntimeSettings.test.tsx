@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const bridge = vi.hoisted(() => ({
@@ -654,5 +654,169 @@ describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
 
     // ④ Nobody is sent to install a tool that is already on the machine.
     expect(screen.queryByTestId('app-settings-runtime-install')).toBeNull();
+  });
+});
+
+describe('runtime rows: marks, columns and the result block (design polish, 2026-09-25)', () => {
+  it('borrows the MCP tab mark when the registry has none for the same product', async () => {
+    bridge.detect.mockResolvedValue([makeRuntime({ id: 'claude-acp', isolated: true, icon: null })]);
+    render(<AcpRuntimeSettings embedded />);
+    const row = await screen.findByTestId('app-settings-runtime-claude-acp');
+
+    const ink = row.querySelector<HTMLElement>('[data-vendor-mark-ink]');
+    expect(ink?.style.maskImage).toContain('/acp-icons/claude-acp.svg');
+    // The MCP tab's verified brand colour comes along with its drawing.
+    expect(ink).toHaveAttribute('data-vendor-mark-ink', 'brand');
+    expect(row.querySelector('[data-vendor-mark="monogram"]')).toBeNull();
+  });
+
+  it('draws initials on the shared plate when no product mark is known', async () => {
+    bridge.detect.mockResolvedValue([
+      { ...makeRuntime({ id: 'gemini', state: 'cli-missing' }), label: 'Gemini CLI' },
+      { ...makeRuntime({ id: 'goose', state: 'cli-missing' }), label: 'Goose' },
+      makeRuntime({ id: 'claude-acp', isolated: true, icon: '/acp-icons/claude-acp.svg' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    fireEvent.click(screen.getByTestId('app-settings-runtimes-others-toggle'));
+
+    const gemini = screen.getByTestId('app-settings-runtime-gemini');
+    const goose = screen.getByTestId('app-settings-runtime-goose');
+    // Two tools starting with G stay two different tiles.
+    expect(gemini.querySelector('[data-vendor-mark="monogram"]')).toHaveTextContent(/^GC$/);
+    expect(goose.querySelector('[data-vendor-mark="monogram"]')).toHaveTextContent(/^G$/);
+    // The letters sit on VendorMark's own empty plate, not a hand-drawn copy of it.
+    const plate = gemini.querySelector('[data-vendor-mark="empty"]');
+    expect(plate).not.toBeNull();
+    expect(plate?.parentElement?.querySelector('[data-vendor-mark="monogram"]')).not.toBeNull();
+  });
+
+  it('gives every state badge the same floor so the badges form one column', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'cursor', state: 'cli-missing' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    fireEvent.click(screen.getByTestId('app-settings-runtimes-others-toggle'));
+
+    for (const id of ['claude-acp', 'cursor']) {
+      const badge = screen.getByTestId(`app-settings-runtime-${id}`).querySelector('[data-runtime-state]');
+      expect(badge).toHaveClass('min-w-18', 'justify-center');
+    }
+  });
+
+  it('offers the Mac app as the one filled press, from the ramp rather than a hand tint', () => {
+    bridge.available = false;
+    render(<AcpRuntimeSettings embedded />);
+    const getApp = screen.getByTestId('app-settings-runtimes-get-app');
+    expect(getApp).toHaveAttribute('href', '/download/');
+    expect(getApp).toHaveClass('rounded-full', 'atlas-touch-floor');
+    // The fill is the ramp's `onAccent` tone (it clears the border), not an indigo tint mixed here.
+    expect(getApp).toHaveClass('border-transparent');
+    expect(getApp.className).not.toMatch(/indigo-a16/);
+  });
+
+  it('lists the tools the app looks for, read from the registry the app ships with', async () => {
+    bridge.available = false;
+    const registry = (await import('@/src-tauri/src/acp-registry.json')).default;
+    render(<AcpRuntimeSettings embedded />);
+    const list = screen.getByTestId('app-settings-runtimes-web-tools');
+    expect(within(list).getByText(`webToolsHeading:${JSON.stringify({ count: registry.agents.length })}`)).toBeInTheDocument();
+    for (const agent of registry.agents) {
+      expect(within(list).getByTestId(`app-settings-runtimes-web-tool-${agent.id}`)).toHaveTextContent(agent.name);
+    }
+    // Nothing to press and no state to claim in a browser: marks and names only.
+    expect(within(list).queryByRole('button')).toBeNull();
+    expect(within(list).queryByRole('link')).toBeNull();
+    expect(list.querySelector('[data-vendor-mark="monogram"]')).toBeNull();
+  });
+
+  it('keeps one winner on the web card: the app is a pill, MCP steps back to a link', () => {
+    bridge.available = false;
+    render(<AcpRuntimeSettings embedded />);
+    const mcp = screen.getByTestId('app-settings-runtimes-mcp-link');
+    expect(mcp).not.toHaveClass('rounded-full');
+    expect(mcp).not.toHaveClass('border');
+  });
+});
+
+describe('the other-tools shelf (round 3, 2026-09-25)', () => {
+  it('puts what a person can make ready first — a sign-in, then installs — and says the undetectable state once', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'amp', state: 'cli-unknown' }),
+      makeRuntime({ id: 'cursor', state: 'cli-missing' }),
+      makeRuntime({ id: 'devin', state: 'binary-missing' }),
+      makeRuntime({ id: 'codex-acp', isolated: true, state: 'login-needed' }),
+      makeRuntime({ id: 'zed', state: 'cli-unknown' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    const next = screen.getByTestId('app-settings-runtimes-others-shelf');
+    expect(
+      within(next).getAllByRole('button').map((b) => b.getAttribute('data-testid')),
+    ).toEqual([
+      'app-settings-runtimes-tile-codex-acp',
+      'app-settings-runtimes-tile-cursor',
+      'app-settings-runtimes-tile-devin',
+    ]);
+    const unknown = screen.getByTestId('app-settings-runtimes-unknown-shelf');
+    expect(within(unknown).getAllByRole('button')).toHaveLength(2);
+    // The state is said by the group, not by every tile; the tile's accessible name keeps it.
+    expect(within(unknown).queryByText('state.cli-unknown')).toBeNull();
+    expect(screen.getByTestId('app-settings-runtimes-unknown-shelf-note')).toHaveTextContent('unknownShelfNote');
+    expect(within(unknown).getByTestId('app-settings-runtimes-tile-amp')).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('state.cli-unknown'),
+    );
+    // One door to the setup window, on the first group's heading.
+    expect(screen.getAllByTestId('app-settings-runtimes-others-toggle')).toHaveLength(1);
+  });
+
+  it('with only undetectable tools, the door moves to that group', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'amp', state: 'cli-unknown' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    expect(screen.queryByTestId('app-settings-runtimes-others-shelf')).toBeNull();
+    expect(
+      within(screen.getByTestId('app-settings-runtimes-others')).getByTestId('app-settings-runtimes-others-toggle'),
+    ).toBeInTheDocument();
+  });
+
+  it('names every other tool on the page as a tile, without its row controls', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'cursor', state: 'cli-missing', website: 'https://example.com' }),
+      makeRuntime({ id: 'gemini', state: 'cli-missing', website: 'https://example.com' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    const shelf = screen.getByTestId('app-settings-runtimes-others-shelf');
+    expect(within(shelf).getByTestId('app-settings-runtimes-tile-cursor')).toBeInTheDocument();
+    expect(within(shelf).getByTestId('app-settings-runtimes-tile-gemini')).toBeInTheDocument();
+    // Setting a tool up still happens in the dialog: no install link or badge row on the page.
+    expect(within(shelf).queryByTestId('app-settings-runtime-install')).toBeNull();
+    expect(screen.queryByTestId('app-settings-runtime-cursor')).toBeNull();
+  });
+
+  it('a tile opens the dialog already searched to that tool', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'cursor', state: 'cli-missing' }),
+      makeRuntime({ id: 'gemini', state: 'cli-missing' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    fireEvent.click(await screen.findByTestId('app-settings-runtimes-tile-cursor'));
+    expect(screen.getByTestId('app-settings-runtimes-others-dialog')).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-runtimes-others-search')).toHaveValue('cursor');
+    // The dialog names its errand; the count stays with the shelf heading on the page.
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('othersDialogTitle');
+    expect(screen.getByText(`nextHeading:${JSON.stringify({ count: 2 })}`)).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-runtime-cursor')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-settings-runtime-gemini')).toBeNull();
   });
 });

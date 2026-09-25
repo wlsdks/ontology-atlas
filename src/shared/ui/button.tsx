@@ -7,7 +7,6 @@ const buttonVariants = cva(
     'inline-flex items-center justify-center gap-2 whitespace-nowrap',
     'text-body-lg leading-caption',
     'font-[var(--font-weight-signature)]',
-    'rounded-panel',
     'border border-transparent',
     'select-none',
     /*
@@ -60,11 +59,49 @@ const buttonVariants = cva(
           'bg-transparent text-[color:var(--color-text-primary)] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-border-soft)] active:shadow-[var(--shadow-control-press)]',
         outline:
           'border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-overlay-2)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-overlay-2)] active:shadow-[inset_0_1px_0_var(--color-overlay-2),var(--shadow-control-press)]',
+        /*
+         * **The one irreversible action in a confirm row** (2026-09-25). A destructive
+         * confirm used to borrow `ghost` or `outline`, so "Remove" and "Cancel" differed only
+         * by order. The hue comes from the existing danger ramp (`a08`/`a12` plane, `a32`/`a50`
+         * rule, `--color-danger-text` ink) — the same four steps the insights copy-failure
+         * state already wears by hand — so the variant adds no value, only a name.
+         * Use it for the confirm step only, never for the button that opens the question.
+         *
+         * **Disabled drops the hue, not the value.** The one disabled treatment
+         * (`opacity-55`) took the danger ink to 2.42:1 on /en/automations while the removal
+         * was pending (rendered pixels, 1512, 2026-09-25); the neutral ink at the same
+         * opacity stays readable. So while disabled the variant wears `outline`'s plane,
+         * rule and ink, and the shared opacity still says "not now" — a pending confirm has
+         * nothing left to warn about.
+         */
+        danger:
+          'border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-danger-text)] hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)] active:bg-[color:var(--color-danger-a12)] active:shadow-[var(--shadow-control-press)] disabled:border-[color:var(--color-overlay-3)] disabled:bg-[color:var(--color-overlay-1)] disabled:text-[color:var(--color-text-primary)]',
       },
+      /*
+       * **Radius follows the box** (2026-09-25).
+       *
+       * Every size used to wear `rounded-panel` (12px). A 32px `Button sm` stood beside a
+       * 32px `controlClass` chip `lg` and a 32px `fieldClass` field, both `rounded-chip`
+       * (6px), and read as a second product — the seam three screen reviews found at 32px
+       * (Harness toolbar, Insights brief, Projects top bar). `sm` joins them.
+       *
+       * `lg` (44px) is the download hero, whose every consumer already overrode the panel
+       * radius back to the chip radius (six call sites); the override moved here. The other
+       * `lg` consumers — the Harness toolbar's split action and rules toggle — sit in a row of
+       * chip-radius controls, so they gain the same radius, not lose one. `md` (40px) keeps
+       * `rounded-panel`: no reviewed screen showed a seam at 40px, so it is not changed on
+       * speculation.
+       *
+       * Type stays `text-body-lg` (14px) at every size: a 32px field (`fieldClass` md) sets
+       * its text at 14px, and a 12.5px `sm` label beside it read one step smaller than the
+       * value it acts on (captured /en/project/new, 2026-09-25).
+       *
+       * No new value: every class here is an existing ramp step.
+       */
       size: {
-        sm: 'h-8 px-3.5',
-        md: 'h-10 px-4.5',
-        lg: 'h-11 px-6',
+        sm: 'h-8 px-3.5 rounded-chip',
+        md: 'h-10 px-4.5 rounded-panel',
+        lg: 'h-11 px-6 rounded-chip',
       },
     },
     defaultVariants: {

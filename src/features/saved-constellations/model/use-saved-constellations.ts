@@ -13,7 +13,7 @@ import {
   type LibraryCollections,
   type LibraryCollectionsSnapshot,
 } from '@/entities/library-collection';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface ConstellationMemberDraft {
   uid: string;
@@ -71,7 +71,8 @@ export function useSavedConstellations(handle: FileSystemDirectoryHandle | null)
     constellations: [],
     error: null,
   });
-  handleRef.current = handle;
+  // Committed before the load effect below reads it, never during render.
+  useLayoutEffect(() => { handleRef.current = handle; }, [handle]);
 
   const reload = useCallback(async (): Promise<SavedConstellationsReloadResult> => {
     const captured = handleRef.current;
@@ -124,12 +125,12 @@ export function useSavedConstellations(handle: FileSystemDirectoryHandle | null)
       snapshotRef.current = saved;
       setState({ status: 'ready', constellations: collect(next), error: null });
     } catch (error) {
+      // A failed save is the editor's to report (it keeps the draft and says so). The list
+      // still holds exactly what was read, so it stays `ready`: marking it `error` made the
+      // popover say "could not read your saved constellations" about a file that read fine,
+      // and disabled "Create" until a reload.
       if (handleRef.current === captured && operationRef.current === operation) {
-        setState((current) => ({
-          ...current,
-          status: 'error',
-          error: error instanceof Error ? error.message : String(error),
-        }));
+        setState((current) => ({ ...current, status: 'ready', error: null }));
       }
       throw error;
     }

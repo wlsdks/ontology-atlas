@@ -281,6 +281,7 @@ export function DocsSidebarBody({
   const t = useTranslations("vaultWidgets.parts.sidebar");
   const locale = useLocale();
   const tAgentFiles = useTranslations("agentFiles");
+  const recentOthers = recentSlugs.filter((slug) => slug !== selectedSlug && docsBySlug.has(slug));
   const [treeQuery, setTreeQuery] = useState("");
   // The search input is opened and closed by a toggle in the top icon row. A
   // surviving query forces it open, so a filter that is still applied is never invisible.
@@ -876,18 +877,19 @@ export function DocsSidebarBody({
           />
         </section>
 
-        {recentSlugs.length > 0 ? (
+        {/* **Recent is the way back to the others** (2026-09-25, library polish round four). The
+            open document is already the tab, the selected tree row and the H1; listing it here
+            as well made "Recent · 1" a fifth copy of the name on a first visit. */}
+        {recentOthers.length > 0 ? (
           <section className="flex-none border-t border-[color:var(--color-overlay-2)] pb-2">
-            <SectionLabel>{t("recentHeader", { count: recentSlugs.length })}</SectionLabel>
+            <SectionLabel>{t("recentHeader", { count: recentOthers.length })}</SectionLabel>
             <ul className="flex max-h-[22vh] flex-col gap-0.5 overflow-auto px-2">
-              {recentSlugs.map((slug) => {
+              {recentOthers.map((slug) => {
                 const d = docsBySlug.get(slug);
                 if (!d) return null;
-                const active = selectedSlug === slug;
                 return (
                   <li key={slug}>
                     <RowButton
-                      active={active}
                       onClick={() => onSelect(slug)}
                       className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                     >

@@ -137,7 +137,7 @@ export function ProjectBriefSummary({
                 ·
               </span>
             ) : null}
-            <span className="min-w-0 break-keep text-body text-[color:var(--color-text-secondary)]">
+            <span className="min-w-0 text-body text-[color:var(--color-text-secondary)]">
               {sectionTitle(section.title)}
             </span>
           </li>

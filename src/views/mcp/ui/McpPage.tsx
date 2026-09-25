@@ -172,7 +172,9 @@ export function McpPage({
            * still states its own count for any caller that draws no heading.
            */
           label={
-            countKnown
+            /* "0 of 0 on" above an empty state that says the same absence was one fact twice,
+               and "N of 0" is not a count anyone says (2026-09-25). The empty card carries it. */
+            countKnown && connectors.connectors.length > 0
               ? t('connectorsHeadingCount', {
                   on: enabledCount,
                   total: connectors.connectors.length,
@@ -181,15 +183,18 @@ export function McpPage({
           }
           trailing={
             connectorsListed ? (
+              /* One heading action size across the destination (2026-09-25): the share group
+                 above and the agents tab both stand a 32px/12.5px control in this slot. */
               <Chip
                 ref={addOpenerRef}
-                size="sm"
+                size="lg"
                 tone="secondary"
                 data-testid="connectors-add-open"
                 hoverSurface="lift"
                 onClick={() => setAddOpenRequest((n) => n + 1)}
+                className="shrink-0 whitespace-nowrap"
               >
-                <Plus size={ICON_SIZE.sm} aria-hidden />
+                <Plus size={ICON_SIZE.md} aria-hidden />
                 {tConnectors('addOpen')}
               </Chip>
             ) : null

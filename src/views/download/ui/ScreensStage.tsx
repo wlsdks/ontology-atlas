@@ -226,7 +226,7 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
             >
               <p
                 id={`gateway-screens-caption-${id}`}
-                className="min-w-0 max-w-[var(--measure-doc-column)] break-keep text-body leading-body text-[color:var(--color-text-secondary)]"
+                className="min-w-0 max-w-[var(--measure-doc-column)] text-body leading-body text-[color:var(--color-text-secondary)]"
               >
                 {t(`caption.${id}`)}
               </p>

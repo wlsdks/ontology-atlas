@@ -1043,3 +1043,13 @@ describe("business-flow ask value", () => {
     expect(state.askBusinessFlow).toBe(false);
   });
 });
+
+describe("map view in the address", () => {
+  it("names Territories and the hex board, and drops anything else", () => {
+    expect(parseHomeRouteState(new URLSearchParams("view=territories")).mapView).toBe("territories");
+    expect(parseHomeRouteState(new URLSearchParams("view=hex")).mapView).toBe("hex");
+    expect(parseHomeRouteState(new URLSearchParams("view=honeycomb")).mapView).toBeNull();
+    const params = applyHomeRouteState(new URLSearchParams(), { ...DEFAULT_HOME_ROUTE_STATE, mapView: "hex" });
+    expect(params.get("view")).toBe("hex");
+  });
+});

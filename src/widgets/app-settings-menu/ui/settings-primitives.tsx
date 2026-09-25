@@ -126,7 +126,7 @@ export function SettingsPaneHead({
       <h3 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
         {title}
       </h3>
-      <p className="max-w-[var(--git-setup-measure)] break-keep text-body leading-body text-balance text-[color:var(--color-text-tertiary)]">
+      <p className="max-w-[var(--git-setup-measure)] text-body leading-body text-balance text-[color:var(--color-text-tertiary)]">
         {description}
       </p>
     </header>
@@ -155,7 +155,10 @@ export function SettingsGroupHeading({
   id?: string;
 }) {
   return (
-    <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1">
+    /* No side inset (round 4, 2026-09-25): the heading shares the start line of the card or
+       tiles beneath it. `px-1` put the eyebrow 4px right of the card edge, so every group on
+       both Agents tabs had two start lines in one column. */
+    <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1">
       <h3 id={id} className={SETTINGS_SECTION_LABEL}>
         {label}
       </h3>
@@ -191,6 +194,56 @@ export function SettingsGroup({
 
 import { VendorMark } from '@/shared/ui/vendor-mark';
 
+/**
+ * **Initials of the first two words, not the first letter** (2026-09-25, round 2). One letter made
+ * Gemini CLI and Goose the same「G」tile in one list, so the mark no longer told them apart before
+ * the name was read. Two words give「GC」and「G」; a one-word name keeps one letter, so the tile
+ * never invents a second letter the name does not have.
+ */
+function monogramOf(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => Array.from(word)[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+/**
+ * A product's mark in its 32px plate, or its initials on the same plate when there is no drawing.
+ *
+ * ⚠️ **The monogram rides on `VendorMark`'s own plate** (2026-09-25, round 2). The first version
+ * drew a look-alike tile by hand, and it had already drifted (overlay-2 where the mark's empty
+ * plate is overlay-1). Composing keeps one plate: if the mark changes, the monogram changes with
+ * it. Exported on its own (round 3) because the other-tools shelf on the agents tab draws the same
+ * product marks outside a row, and a second copy would be the drift this comment records.
+ */
+export function ProductMark({
+  icon,
+  ink,
+  monogram,
+}: {
+  icon?: string | null;
+  ink?: string | null;
+  monogram?: string;
+}) {
+  return (
+    <span className="relative flex shrink-0">
+      <VendorMark src={icon ?? null} ink={ink ?? null} />
+      {!icon && monogram ? (
+        <span
+          aria-hidden
+          data-vendor-mark="monogram"
+          className="absolute inset-0 flex items-center justify-center text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]"
+        >
+          {monogramOf(monogram)}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 /** One row = label (plus a one-line description when needed) on the left, current value and control on the right. */
 export function SettingsRow({
   label,
@@ -200,6 +253,7 @@ export function SettingsRow({
   testId,
   icon,
   iconInk,
+  monogram,
 }: {
   label: string;
   caption?: string;
@@ -221,6 +275,12 @@ export function SettingsRow({
    * colour is invented for a brand we have not verified.
    */
   iconInk?: string | null;
+  /**
+   * The name whose initials stand in the mark slot when there is no drawing (2026-09-25).
+   * An empty tile beside a product name read as a broken image; letters keep the slot doing
+   * its job, which is to be found before the name is read. See `monogramOf`.
+   */
+  monogram?: string;
 }) {
   /*
    * **A row with a mark is naturally taller** — no new axis is invented for
@@ -253,7 +313,7 @@ export function SettingsRow({
       )}
       data-testid={testId}
     >
-      {hasMarkSlot ? <VendorMark src={icon ?? null} ink={iconInk ?? null} /> : null}
+      {hasMarkSlot ? <ProductMark icon={icon} ink={iconInk} monogram={monogram} /> : null}
       <div className="min-w-0 flex-1 basis-40">
         <p className="text-body text-[color:var(--color-text-primary)]">{label}</p>
         {caption ? (

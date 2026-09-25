@@ -136,7 +136,7 @@ export interface HomeRouteState {
 }
 
 /** The map views an address can name: every view the picker offers but the flat map, which is the parameter's absence. */
-const HOME_MAP_VIEWS = ["territories", "galaxy", "strata", "coupling"] as const;
+const HOME_MAP_VIEWS = ["territories", "hex", "galaxy", "strata", "coupling"] as const;
 export type HomeMapView = (typeof HOME_MAP_VIEWS)[number];
 
 function parseHomeMapView(value: string | null): HomeMapView | null {

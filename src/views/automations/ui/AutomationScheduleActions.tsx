@@ -60,12 +60,9 @@ export function AutomationScheduleActions({ round, runner }: {
         <div id={`${detailId}-remove`} role="group" aria-labelledby={`${detailId}-question`}
           className="flex flex-wrap items-center gap-3 border-t border-[color:var(--color-divider)] pt-3">
           <p id={`${detailId}-question`} className="w-full text-body-lg text-[color:var(--color-text-primary)]">{t('removeQuestion', { name: round.name })}</p>
-          <Button variant="ghost" size="sm" disabled={pending} className="atlas-touch-floor"
+          <Button variant="outline" size="sm" disabled={pending} className="atlas-touch-floor"
             onClick={() => { setConfirmRemove(false); removeButton.current?.focus(); }}>{t('cancel')}</Button>
-          {/* The one irreversible step wears the danger tone; its trigger above stays neutral
-              because it only asks. Same 32px outline geometry as the row, danger ink and edge. */}
-          <Button variant="outline" size="sm" disabled={pending}
-            className="atlas-touch-floor border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-danger-text)] hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)] active:bg-[color:var(--color-danger-a12)]"
+          <Button variant="danger" size="sm" disabled={pending} className="atlas-touch-floor" data-confirm-step
             data-testid="automations-confirm-remove"
             onClick={() => void change(async () => {
               const removed = await runner.remove(round.id);

@@ -87,7 +87,7 @@ async function measureDoc(page: Page, title: string, expectFile: string) {
     const stripLink = document.querySelector<HTMLAnchorElement>(
       '[data-testid="docs-backlinks-open-in-map"]',
     );
-    const header = document.querySelector("main .truncate.font-mono.text-caption");
+    const header = document.querySelector('main [data-testid="docs-editor-path"]');
     return {
       openedFile: (header?.textContent ?? "").trim(),
       hasBlock: Boolean(block),
