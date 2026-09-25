@@ -732,6 +732,154 @@ describe('useLocalVaultInternal — 기존 파일 보호 (createDoc / renameDoc)
     expect(removeEntry).toHaveBeenCalledWith('a.md');
   });
 
+  /*
+   * 2026-09-26 map-edit review: a reclassifying move rewrote the referrer to the new address but
+   * kept the entry under the old kind's list — `capabilities: [..., elements/companion-memories]`.
+   */
+  function reclassifyFixture(referrerText: string) {
+    const source = fakeFileHandle({
+      text:
+        '---\nuid: 292f0e3a-23a8-4bad-9f87-7a38e1f1a01c\nslug: capabilities/companion-memories\n' +
+        'kind: capability\ntitle: Companion memories\n---\n\nBody.\n',
+      lastModified: 1000,
+    });
+    const referrer = fakeFileHandle({ text: referrerText, lastModified: 1000 });
+    const created = fakeFileHandle({ text: '', lastModified: 0 });
+    const removeEntry = vi.fn(async () => {});
+    const elements = { kind: 'directory', name: 'elements', getFileHandle: vi.fn(async () => created.handle) };
+    const capabilities = { kind: 'directory', name: 'capabilities', removeEntry };
+    const root = {
+      kind: 'directory',
+      name: 'my-vault',
+      getDirectoryHandle: vi.fn(async (name: string) => (name === 'elements' ? elements : capabilities)),
+    } as unknown as FileSystemDirectoryHandle;
+    const manifest = manifestWithDoc('capabilities/companion-memories', { kind: 'capability' });
+    manifest.docs.push({
+      ...manifest.docs[0],
+      slug: 'domains/human-workbench',
+      path: 'domains/human-workbench.md',
+      frontmatter: { kind: 'domain' },
+    });
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));
+    // Set here, not only by the file's afterEach, so the test also runs alone (`-t`).
+    fsHandleMocks.listRecentLocalFsHandles.mockResolvedValue([]);
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(
+      makeBuildResult({
+        manifest,
+        fileHandles: new Map([
+          ['capabilities/companion-memories', source.handle],
+          ['domains/human-workbench', referrer.handle],
+        ]),
+      }),
+    );
+    entitiesMocks.rebuildLocalManifestIncremental.mockResolvedValue(makeBuildResult());
+    return { source, referrer, created, removeEntry };
+  }
+
+  const WORKBENCH =
+    '---\nkind: domain\ntitle: Human workbench\n' +
+    'capabilities: [capabilities/agent-work-visibility, capabilities/companion-memories]\n' +
+    'elements: [elements/map-camera]\n---\n\nBody.\n';
+
+  it('renameDoc: a kind change moves the referrer entry into the list for the new kind, and says so', async () => {
+    const { referrer, created } = reclassifyFixture(WORKBENCH);
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    let report: Awaited<ReturnType<typeof result.current.renameDoc>> | undefined;
+    await act(async () => {
+      report = await result.current.renameDoc('capabilities/companion-memories', 'elements/companion-memories', {
+        rewriteBacklinks: true,
+        expectedMtime: 1000,
+        frontmatterUpdates: { kind: 'element' },
+      });
+    });
+
+    expect(created.state.text).toContain('kind: element\n');
+    expect(referrer.state.text).toContain('capabilities: [capabilities/agent-work-visibility]\n');
+    expect(referrer.state.text).toContain('elements: [elements/map-camera, elements/companion-memories]\n');
+    expect(report?.referrers).toEqual([
+      {
+        slug: 'domains/human-workbench',
+        moved: [{ ref: 'elements/companion-memories', from: 'capabilities', to: 'elements' }],
+        kept: [],
+        failed: false,
+      },
+    ]);
+  });
+
+  it('renameDoc: a referrer it may not write is reported, not silently skipped', async () => {
+    const { referrer } = reclassifyFixture(WORKBENCH);
+    fsHandleMocks.verifyHandlePermission.mockImplementation(async (handle: unknown, mode: string) =>
+      handle === referrer.handle && mode === 'readwrite' ? 'denied' : 'granted',
+    );
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    let report: Awaited<ReturnType<typeof result.current.renameDoc>> | undefined;
+    await act(async () => {
+      report = await result.current.renameDoc('capabilities/companion-memories', 'elements/companion-memories', {
+        rewriteBacklinks: true,
+        frontmatterUpdates: { kind: 'element' },
+      });
+    });
+
+    expect(referrer.write).not.toHaveBeenCalled();
+    expect(referrer.state.text).toBe(WORKBENCH);
+    expect(report?.referrers).toEqual([
+      { slug: 'domains/human-workbench', moved: [], kept: [], failed: true },
+    ]);
+  });
+
+  it('reclassifyDoc: a kind change in place moves referrer entries too', async () => {
+    const doc = fakeFileHandle({
+      text: '---\nuid: 292f0e3a-23a8-4bad-9f87-7a38e1f1a01c\nkind: capability\ntitle: X\n---\n',
+      lastModified: 1000,
+    });
+    const referrer = fakeFileHandle({
+      text: '---\nkind: domain\ncapabilities: [notes/x, capabilities/y]\n---\n',
+      lastModified: 1000,
+    });
+    const manifest = manifestWithDoc('notes/x', { kind: 'capability' });
+    manifest.docs.push({ ...manifest.docs[0], slug: 'domains/d', path: 'domains/d.md', frontmatter: { kind: 'domain' } });
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(fakeRootHandle('my-vault')));
+    fsHandleMocks.listRecentLocalFsHandles.mockResolvedValue([]);
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    const build = makeBuildResult({
+      manifest,
+      fileHandles: new Map([
+        ['notes/x', doc.handle],
+        ['domains/d', referrer.handle],
+      ]),
+    });
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(build);
+    entitiesMocks.rebuildLocalManifestIncremental.mockResolvedValue(build);
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    // A patch that keeps the kind touches only its own file, through either door.
+    await act(async () => {
+      await result.current.reclassifyDoc('notes/x', { title: 'X2' });
+    });
+    expect(referrer.write).not.toHaveBeenCalled();
+
+    let report: Awaited<ReturnType<typeof result.current.reclassifyDoc>> | undefined;
+    await act(async () => {
+      report = await result.current.reclassifyDoc('notes/x', { kind: 'element' });
+    });
+    expect(doc.state.text).toContain('kind: element\n');
+    expect(referrer.state.text).toBe('---\nkind: domain\ncapabilities: [capabilities/y]\nelements: [notes/x]\n---\n\n');
+    expect(report?.referrers).toEqual([
+      {
+        slug: 'domains/d',
+        moved: [{ ref: 'notes/x', from: 'capabilities', to: 'elements' }],
+        kept: [],
+        failed: false,
+      },
+    ]);
+  });
+
   it('renameDoc: an outside change since the move was offered is refused, and nothing moves', async () => {
     const source = fakeFileHandle({
       text: '---\nslug: capabilities/a\nkind: capability\ntitle: A\n---\n',

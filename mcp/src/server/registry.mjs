@@ -4508,7 +4508,7 @@ const TOOLS = [
   {
     name: 'reclassify_concept',
     description:
-      '⚠ MULTI-FILE WRITE — change a concept kind and optionally its canonical slug/domain in one previewable transaction. The permanent UID is preserved. Redirects backlinks like rename_concept and replaces a generated starter body with the new kind template while preserving custom prose. Defaults to dry-run.',
+      '⚠ MULTI-FILE WRITE — change a concept kind and optionally its canonical slug/domain in one previewable transaction. The permanent UID is preserved. Redirects backlinks like rename_concept, and a referrer that lists the node under domains/capabilities/elements moves the entry to the list for the new kind when its own kind keeps that list; otherwise the entry stays and `warnings` names it. Replaces a generated starter body with the new kind template while preserving custom prose. Defaults to dry-run.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -4532,6 +4532,8 @@ const TOOLS = [
         sourcePath: NON_BLANK_STRING_SCHEMA, targetPath: NON_BLANK_STRING_SCHEMA,
         bodyAction: { type: 'string', enum: ['preserved', 'replaced_explicitly', 'regenerated_starter'] },
         backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
+        // Entries the kind change left in a list the referrer's kind keeps no list for the new kind in.
+        warnings: { type: 'array', items: { type: 'string' } },
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
       required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'uid', 'oldSlug', 'newSlug', 'oldKind', 'newKind', 'sourcePath', 'targetPath', 'bodyAction', 'backlinkUpdates'],
@@ -4593,6 +4595,8 @@ const TOOLS = [
         fromPath: { type: 'string' },
         deleted: { type: 'boolean' },
         backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
+        // Entries a cross-kind merge left in a list the referrer keeps for the old kind.
+        warnings: { type: 'array', items: { type: 'string' } },
         capturedFrom: CAPTURED_DOC_OUTPUT_SCHEMA,
         message: { type: 'string' },
         changed: { type: 'boolean' },

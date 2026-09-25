@@ -1,9 +1,19 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Check, ChevronRight, Clipboard, Pencil } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { useLocale, useTranslations } from "next-intl";
-import { buildNewNodeDoc, isWikiPage, type VaultDoc } from "@/entities/docs-vault";
+import {
+  buildNewNodeDoc,
+  isWikiPage,
+  type KindChangeReferrer,
+  type VaultDoc,
+} from "@/entities/docs-vault";
+import {
+  CONTAINMENT_KEYS,
+  containmentKeyForKind,
+  kindForContainmentKey,
+} from "@/shared/lib/containment-keys";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { VaultConflictError, type AgentActivityStatus } from "@/entities/vault-session";
 import { routing } from "@/i18n/routing";
@@ -146,6 +156,75 @@ function collectDanglingRefs(
 /** How many missing names the warning spells out before it counts the rest. */
 const DANGLING_NAMED_MAX = 3;
 
+/**
+ * Entries in a list named for a kind whose document is another kind — an element under
+ * `capabilities:`, or a `domain:` parent that is not a domain.
+ *
+ * **Why it is shown here** (2026-09-26, map-edit review). Reclassifying a capability into an
+ * element used to leave its domain reading `capabilities: [..., elements/companion-memories]`.
+ * The entry resolved, so the dangling warning above never fired and nothing on any screen said
+ * so, while the map and the dense-parent count took it as one of the domain's capabilities. A
+ * kind change now moves such an entry — but only into a list the referrer's kind may keep, so an
+ * entry it may not keep stays, and this is where the person learns about it (as do entries a
+ * hand edit or an older write left behind). Code paths under `elements:` are evidence, not
+ * references, and are skipped like the dangling check skips them.
+ */
+function collectMisfiledRefs(
+  frontmatter: Record<string, unknown> | undefined,
+  resolveRef: (token: string) => string | null,
+  kindOf: (slug: string) => string | null,
+): Array<{ token: string; key: string; kind: string }> {
+  const misfiled: Array<{ token: string; key: string; kind: string }> = [];
+  const seen = new Set<string>();
+  for (const key of [...CONTAINMENT_KEYS, "domain"]) {
+    const expected = key === "domain" ? "domain" : kindForContainmentKey(key);
+    const { tokens } = toRefTokens(frontmatter?.[key]);
+    for (const token of tokens) {
+      if (key === "elements" && looksLikeCodePath(token)) continue;
+      const target = resolveRef(token);
+      const kind = target ? kindOf(target) : null;
+      if (!kind || kind === expected || seen.has(`${key}\0${token}`)) continue;
+      seen.add(`${key}\0${token}`);
+      misfiled.push({ token, key, kind });
+    }
+  }
+  return misfiled;
+}
+
+/** One document a kind change touches, as the page names it (`planKindChangeReferrers`). */
+export interface KindChangeReferrerRow extends KindChangeReferrer {
+  name: string;
+}
+
+/** How many referrers the quick patch names before Save, before it counts the rest. */
+const KIND_CHANGE_ROWS_MAX = 4;
+
+/**
+ * The plain name of a list named for a kind — the reader's word, not the schema key
+ * (`capabilities` → the reader's word for capabilities, in their language). Shared with the
+ * receipt the page shows after Save.
+ */
+export function useReferrerListName(): (key: string) => string {
+  const t = useTranslations("docsVault.frontmatterBlock.referrerLists.listName");
+  return useCallback(
+    (key: string) => {
+      switch (key) {
+        case "domains":
+          return t("domains");
+        case "capabilities":
+          return t("capabilities");
+        case "elements":
+          return t("elements");
+        case "domain":
+          return t("domain");
+        default:
+          return key;
+      }
+    },
+    [t],
+  );
+}
+
 // Only the kinds the vault frontmatter schema treats as editable — sentinel kinds
 // such as vault-readme and unknown are not touched by this select.
 const EDITABLE_KINDS = ["project", "domain", "capability", "element", "document"] as const;
@@ -220,11 +299,17 @@ export interface DocFrontmatterBlockProps {
   /** Moves this document into its kind's folder — the remedy beside the
    *  `slug-outside-kind-folder` warning. Without it the warning stands alone. */
   onMoveToKindFolder?: (target: string) => void;
+  /** The documents that list this one by kind, and what a change to `newKind` (at `newSlug`)
+   *  does to each list — named in the form before Save. Without it nothing is previewed. */
+  kindChangeReferrers?: (newKind: string, newSlug: string) => KindChangeReferrerRow[];
   /** Navigates to a reference slug when clicked — without it, references stay plain text. */
   onNavigate?: (slug: string) => void;
   /** Resolves a bare slug (the frontmatter reference spelling) to a real navigation slug.
    *  Null means the reference is not in the vault, so it is not rendered as a link. */
   resolveRef?: (token: string) => string | null;
+  /** The kind of a resolved document — with `resolveRef`, it finds an entry listed under a
+   *  list for another kind. Without it (a sample or server vault) nothing is judged. */
+  kindOf?: (slug: string) => string | null;
   /** The real data behind the "last edited · AI agent" fact. Without it (a server or sample
    *  vault) the AI subject row is never rendered. */
   agentActivityStatus?: AgentActivityStatus | null;
@@ -241,12 +326,15 @@ export function DocFrontmatterBlock({
   domainOptions = [],
   onPatch,
   onMoveToKindFolder,
+  kindChangeReferrers,
   onNavigate,
   resolveRef,
+  kindOf,
   agentActivityStatus = null,
   selfEditTimestamps,
 }: DocFrontmatterBlockProps) {
   const t = useTranslations("docsVault.frontmatterBlock");
+  const listName = useReferrerListName();
   const tProvenance = useTranslations("editProvenance");
   const tLocale = useTranslations("locale");
   const locale = useLocale();
@@ -318,6 +406,15 @@ export function DocFrontmatterBlock({
   // Where saving this kind change moves the file (D8): into the new kind's folder, when the
   // document is filed under its old kind's folder. Stated in the form before Save is pressed.
   const moveTarget = editing ? reclassifyMoveTarget(doc.slug, currentKind, draftKind) : null;
+  // What that kind change does to the documents that list this one by kind — named before
+  // Save, from the verdict the write applies (2026-09-26, map-edit review).
+  const kindChangeRows = useMemo(
+    () =>
+      editing && currentKind && draftKind && draftKind !== currentKind && kindChangeReferrers
+        ? kindChangeReferrers(draftKind, moveTarget ?? doc.slug)
+        : [],
+    [editing, currentKind, draftKind, kindChangeReferrers, moveTarget, doc.slug],
+  );
 
   // Inline validator diagnostics — while editing, the draft (kind/domain) is validated;
   // otherwise the saved frontmatter is, after a 400ms debounce.
@@ -474,6 +571,8 @@ export function DocFrontmatterBlock({
   // (a sample or server vault passes none, so it is never accused of anything).
   const danglingRefs = kindValue && resolveRef ? collectDanglingRefs(doc.frontmatter, resolveRef) : [];
   const danglingSet = new Set(danglingRefs);
+  const misfiledRefs =
+    kindValue && resolveRef && kindOf ? collectMisfiledRefs(doc.frontmatter, resolveRef, kindOf) : [];
   // The remedy the folder warning names: move the file into its kind's folder (D8).
   const kindFolderTarget =
     kindValue && canEdit && onMoveToKindFolder ? kindFolderAddress(doc.slug, kindValue) : null;
@@ -583,7 +682,7 @@ export function DocFrontmatterBlock({
     </span>
   );
   const issueRows =
-    validationIssues.length > 0 || danglingRefs.length > 0 ? (
+    validationIssues.length > 0 || danglingRefs.length > 0 || misfiledRefs.length > 0 ? (
       <div
         data-testid="doc-frontmatter-validator-warnings"
         aria-label={t("validatorWarningsAriaLabel")}
@@ -642,8 +741,58 @@ export function DocFrontmatterBlock({
             </p>
           </div>
         ) : null}
+        {/* An entry that resolves but sits in a list for another kind (2026-09-26): the
+            dangling warning never sees it, and the map counts it by its list. */}
+        {misfiledRefs.length > 0 ? (
+          <div
+            data-testid="doc-frontmatter-issue"
+            data-severity="warning"
+            data-issue-code="kind-list-mismatch"
+            className={issueRowClass("warning")}
+          >
+            <p className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+              {severityTag("warning")}
+              {t("misfiledRefs", {
+                count: misfiledRefs.length,
+                names: misfiledRefs
+                  .slice(0, DANGLING_NAMED_MAX)
+                  .map((ref) =>
+                    t("misfiledRefName", {
+                      ref: ref.token,
+                      kind: kindLabel(ref.kind),
+                      list: listName(ref.key),
+                    }),
+                  )
+                  .join(", "),
+                more:
+                  misfiledRefs.length > DANGLING_NAMED_MAX
+                    ? t("danglingRefsMore", { count: misfiledRefs.length - DANGLING_NAMED_MAX })
+                    : "",
+              })}
+            </p>
+          </div>
+        ) : null}
       </div>
     ) : null;
+
+  /** One referrer's line before Save: where its entry moves, or why it stays and is flagged. */
+  function kindChangeSentence(row: KindChangeReferrerRow): string {
+    const move = row.moved[0];
+    if (move) {
+      return t("referrerLists.movedPreview", {
+        name: row.name,
+        from: listName(move.from),
+        to: listName(move.to),
+      });
+    }
+    const kept = row.kept[0];
+    if (!kept) return "";
+    if (kept.key === "domain") return t("referrerLists.keptDomainPreview", { name: row.name });
+    const newList = containmentKeyForKind(draftKind);
+    return newList
+      ? t("referrerLists.keptPreview", { name: row.name, list: listName(kept.key), to: listName(newList) })
+      : t("referrerLists.keptNoListPreview", { name: row.name, list: listName(kept.key) });
+  }
 
   const quickPatchSection = canQuickPatch ? (
     editing ? (
@@ -655,7 +804,14 @@ export function DocFrontmatterBlock({
             onChange={(event) => setDraftKind(event.target.value)}
             disabled={saving}
             data-testid="doc-frontmatter-kind-select"
-            aria-describedby={moveTarget ? `doc-frontmatter-move-hint-${doc.slug}` : undefined}
+            aria-describedby={
+              [
+                moveTarget ? `doc-frontmatter-move-hint-${doc.slug}` : null,
+                kindChangeRows.length > 0 ? `doc-frontmatter-kind-referrers-${doc.slug}` : null,
+              ]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
             className={fieldClass({ size: "xs" })}
           >
             {/* A document with no kind has an empty draft too. Without a placeholder the
@@ -679,6 +835,34 @@ export function DocFrontmatterBlock({
           >
             {t("editKindMoveHint", { path: `${moveTarget}.md` })}
           </p>
+        ) : null}
+        {/* The documents that list this one by kind, named before Save: which list each entry
+            moves to, or why it stays (2026-09-26, map-edit review). */}
+        {kindChangeRows.length > 0 ? (
+          <ul
+            id={`doc-frontmatter-kind-referrers-${doc.slug}`}
+            data-testid="doc-frontmatter-kind-referrers"
+            className="flex flex-col gap-1 text-label leading-label text-[color:var(--color-text-tertiary)]"
+          >
+            {kindChangeRows.slice(0, KIND_CHANGE_ROWS_MAX).map((row) => (
+              <li
+                key={row.slug}
+                data-testid="doc-frontmatter-kind-referrer"
+                data-referrer={row.slug}
+                data-outcome={row.kept.length > 0 ? "kept" : "moved"}
+                className={row.kept.length > 0 ? "text-[color:var(--color-amber-docs-a92)]" : undefined}
+              >
+                {kindChangeSentence(row)}
+              </li>
+            ))}
+            {kindChangeRows.length > KIND_CHANGE_ROWS_MAX ? (
+              <li>
+                {t("referrerLists.previewMore", {
+                  count: kindChangeRows.length - KIND_CHANGE_ROWS_MAX,
+                })}
+              </li>
+            ) : null}
+          </ul>
         ) : null}
         <label className={fieldLabel({ className: "flex flex-col gap-1" })}>
           {t("editDomainLabel")}

@@ -22,8 +22,10 @@ import {
   applyFrontmatterUpdates,
   type FrontmatterUpdateValue,
   computeRenameRefContext,
+  planReferrerRewrite,
   rewriteMovedDocSelf,
-  rewriteRenamedDocRefs,
+  type ReferrerListKept,
+  type ReferrerListMove,
 } from '@/entities/docs-vault';
 import {
   CURRENT_LOCAL_FS_HANDLE_ID,
@@ -217,6 +219,104 @@ function assertIdentityTransition(previousRaw: string, nextRaw: string): void {
       '`merged_uids:` is merge-owned identity history and cannot be edited by a generic browser save.',
     );
   }
+}
+
+/** What a move or a kind change did to one document that names the moved one. */
+interface ReferrerRewriteOutcome {
+  slug: string;
+  /** Entries that followed the document into the list for its new kind. */
+  moved: ReferrerListMove[];
+  /** Entries left in their list: this referrer's kind keeps no list for the new kind. */
+  kept: ReferrerListKept[];
+  /**
+   * The bytes this referrer needed could not be written — write permission was refused or the
+   * write failed — so the file on disk is as it was and `moved` did not happen.
+   */
+  failed: boolean;
+}
+
+export interface ReferrerRewriteReport {
+  /** Referrers that were rewritten, kept an entry, or could not be written. In folder order. */
+  referrers: ReferrerRewriteOutcome[];
+}
+
+const EMPTY_REFERRER_REPORT: ReferrerRewriteReport = { referrers: [] };
+
+/**
+ * The referrer pass shared by a move (`renameDoc`) and a kind change in place
+ * (`reclassifyDoc`): every document naming `oldSlug` is rewritten by
+ * `planReferrerRewrite`, and what that did is returned for the confirmation to name.
+ *
+ * Every document is read (reads are free) and only one whose bytes change asks for write
+ * permission. A document that cannot be read is skipped, as before: nothing is known about it.
+ * One whose rewrite is refused or fails is reported rather than dropped — the old loop swallowed
+ * both, and the screen then said nothing about a document still pointing at the old address.
+ */
+async function rewriteReferrerFiles(args: {
+  docs: ReadonlyArray<{ slug: string }>;
+  fileHandles: ReadonlyMap<string, FileSystemFileHandle>;
+  oldSlug: string;
+  newSlug: string;
+  /** Only when the change moves the document to another kind. */
+  newKind?: string;
+  markSelfWrite: (slug: string) => void;
+}): Promise<ReferrerRewriteReport> {
+  const { docs, fileHandles, oldSlug, newSlug, newKind, markSelfWrite } = args;
+  const { canRewriteTail } = computeRenameRefContext(
+    docs.map((d) => d.slug),
+    oldSlug,
+  );
+  const referrers: ReferrerRewriteOutcome[] = [];
+  for (const doc of docs) {
+    if (doc.slug === oldSlug || doc.slug === newSlug) continue;
+    const fh = fileHandles.get(doc.slug);
+    if (!fh) continue;
+    let srcText: string;
+    try {
+      srcText = await (await fh.getFile()).text();
+    } catch {
+      continue;
+    }
+    const plan = planReferrerRewrite(srcText, {
+      oldSlug,
+      newSlug,
+      referrerSlug: doc.slug,
+      canRewriteTail,
+      newKind,
+    });
+    const changed = plan.text !== srcText;
+    if (!changed && plan.kept.length === 0) continue;
+    const outcome: ReferrerRewriteOutcome = {
+      slug: doc.slug,
+      moved: plan.moved,
+      kept: plan.kept,
+      failed: false,
+    };
+    if (changed) {
+      try {
+        const perm = await verifyHandlePermission(fh, 'readwrite', { ask: true });
+        if (perm !== 'granted') throw new Error('write permission refused');
+        const w = await fh.createWritable();
+        await w.write(plan.text);
+        await w.close();
+        markSelfWrite(doc.slug);
+      } catch {
+        outcome.failed = true;
+        outcome.moved = [];
+      }
+    }
+    referrers.push(outcome);
+  }
+  return { referrers };
+}
+
+/** The `kind:` a patch gives a document that already had another one — null when it does not. */
+function kindChangeOf(raw: string, updates: Record<string, FrontmatterUpdateValue> | undefined): string | null {
+  const nextKind = typeof updates?.kind === 'string' ? updates.kind.trim() : '';
+  if (!nextKind) return null;
+  const { frontmatter } = parseFrontmatter(raw);
+  const currentKind = typeof frontmatter.kind === 'string' ? frontmatter.kind.trim() : '';
+  return currentKind && currentKind !== nextKind ? nextKind : null;
 }
 
 type Status =
@@ -1481,13 +1581,15 @@ export function useLocalVaultInternal() {
    * Atomicity is the same path as `saveDoc` (`createWritable` → write). `opts.skipRefresh`
    * skips the refresh so a run of calls does not cause scroll jumps and flicker, and
    * `opts.expectedMtime` is the same conflict guard as `saveDoc`.
+   *
+   * `opts.rewriteBacklinks` is `reclassifyDoc`'s: see there.
    */
-  const updateFrontmatter = useCallback(
+  const writeFrontmatterPatch = useCallback(
     async (
       slug: string,
       updates: Record<string, FrontmatterUpdateValue>,
-      opts: { skipRefresh?: boolean; expectedMtime?: number } = {},
-    ) => {
+      opts: { skipRefresh?: boolean; expectedMtime?: number; rewriteBacklinks?: boolean } = {},
+    ): Promise<ReferrerRewriteReport> => {
       const fh = state.fileHandles.get(slug);
       if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
       await requireWritePermission(fh);
@@ -1497,14 +1599,57 @@ export function useLocalVaultInternal() {
       assertIdentityPatch(raw, updates);
       const next = applyFrontmatterUpdates(raw, updates);
       assertNodeIdentityContent(slug, next, state.manifest?.docs ?? []);
-      if (next === raw) return; // nothing changed
+      if (next === raw) return EMPTY_REFERRER_REPORT; // nothing changed
+      const newKind = opts.rewriteBacklinks ? kindChangeOf(raw, updates) : null;
       const writable = await fh.createWritable();
       await writable.write(next);
       await writable.close();
       markSelfWrite(slug);
+      const report =
+        newKind && state.manifest
+          ? await rewriteReferrerFiles({
+              docs: state.manifest.docs,
+              fileHandles: state.fileHandles,
+              oldSlug: slug,
+              newSlug: slug,
+              newKind,
+              markSelfWrite,
+            })
+          : EMPTY_REFERRER_REPORT;
       if (!opts.skipRefresh && state.handle) await load(state.handle);
+      return report;
     },
     [state.fileHandles, state.handle, state.manifest, load, requireWritePermission, markSelfWrite, guardExpectedMtime],
+  );
+
+  const updateFrontmatter = useCallback(
+    async (
+      slug: string,
+      updates: Record<string, FrontmatterUpdateValue>,
+      opts: { skipRefresh?: boolean; expectedMtime?: number } = {},
+    ): Promise<void> => {
+      await writeFrontmatterPatch(slug, updates, opts);
+    },
+    [writeFrontmatterPatch],
+  );
+
+  /**
+   * A person changing a document's kind where it stands — the quick patch, when the file is not
+   * filed in its old kind's folder, so nothing moves (`renameDoc` does the moving case).
+   *
+   * The patch is written exactly as `updateFrontmatter` writes it; then, when it changes an
+   * existing `kind:`, every document that lists this one under the list for its old kind moves
+   * the entry to the list for the new one (`planReferrerRewrite`, 2026-09-26 map-edit review),
+   * and the returned report says what each referrer got.
+   */
+  const reclassifyDoc = useCallback(
+    (
+      slug: string,
+      updates: Record<string, FrontmatterUpdateValue>,
+      opts: { expectedMtime?: number } = {},
+    ): Promise<ReferrerRewriteReport> =>
+      writeFrontmatterPatch(slug, updates, { ...opts, rewriteBacklinks: true }),
+    [writeFrontmatterPatch],
   );
 
   /**
@@ -1519,6 +1664,10 @@ export function useLocalVaultInternal() {
    * that mirrors the old address (the MCP `rename_concept` rule) and applies
    * `frontmatterUpdates` in the same bytes, which is how a reclassify changes `kind:` and
    * folder in one write. `expectedMtime` is `saveDoc`'s conflict guard, on the source.
+   *
+   * When `frontmatterUpdates` changes the document's kind, referrers also move each entry from
+   * the list for the old kind to the list for the new one (`planReferrerRewrite`), and the
+   * returned report says what every referrer got — the confirmation names them.
    */
   const renameDoc = useCallback(
     async (
@@ -1529,8 +1678,8 @@ export function useLocalVaultInternal() {
         expectedMtime?: number;
         frontmatterUpdates?: Record<string, FrontmatterUpdateValue>;
       } = {},
-    ) => {
-      if (oldSlug === newSlug) return;
+    ): Promise<ReferrerRewriteReport> => {
+      if (oldSlug === newSlug) return EMPTY_REFERRER_REPORT;
       /*
        * ⚠️ **Names that differ only in case are the same file** (review 2026-08-16 — reproduced
        * on the MCP side as documents disappearing; this path has the same shape).
@@ -1574,55 +1723,34 @@ export function useLocalVaultInternal() {
       }
 
       // --- optional cascading backlink rewrite
-      if (opts.rewriteBacklinks && state.manifest) {
-        /*
-         * ⚠️ **Frontmatter relations are the primary graph** (bug sweep
-         * 2026-09-01). This block used to rewrite only body `[[wikilink]]` /
-         * `](x.md)` forms and select referrers from body-only `linksOut`, so a
-         * rename orphaned every frontmatter relation (`dependencies:`,
-         * `capabilities:`, …) to the renamed node — backlinks vanished and the
-         * graph minted a phantom stub under the old name, unlike MCP
-         * `rename_concept`. `rewriteRenamedDocRefs` now applies the same key
-         * family and tail rules as the MCP rewrite, and every doc is scanned
-         * (reads are free; only actual changes ask for write permission), which
-         * also catches referrers `linksOut` missed — a same-directory relative
-         * link was previously detected but left dangling by the full-slug regex.
-         */
-        const { canRewriteTail } = computeRenameRefContext(
-          state.manifest.docs.map((d) => d.slug),
-          oldSlug,
-        );
-        for (const doc of state.manifest.docs) {
-          if (doc.slug === oldSlug) continue;
-          const fh = state.fileHandles.get(doc.slug);
-          if (!fh) continue;
-          try {
-            const srcFile = await fh.getFile();
-            const srcText = await srcFile.text();
-            const nextText = rewriteRenamedDocRefs(srcText, {
+      /*
+       * ⚠️ **Frontmatter relations are the primary graph** (bug sweep 2026-09-01). This pass
+       * used to rewrite only body `[[wikilink]]` / `](x.md)` forms and select referrers from
+       * body-only `linksOut`, so a rename orphaned every frontmatter relation (`dependencies:`,
+       * `capabilities:`, …) to the renamed node — backlinks vanished and the graph minted a
+       * phantom stub under the old name, unlike MCP `rename_concept`. `planReferrerRewrite`
+       * applies the same key family and tail rules as the MCP rewrite, and every doc is scanned,
+       * which also catches referrers `linksOut` missed — a same-directory relative link was
+       * previously detected but left dangling by the full-slug regex.
+       *
+       * A kind change also moves each entry into the list for the new kind (2026-09-26): the
+       * same-key rewrite alone left an element listed under `capabilities:`.
+       */
+      const report =
+        opts.rewriteBacklinks && state.manifest
+          ? await rewriteReferrerFiles({
+              docs: state.manifest.docs,
+              fileHandles: state.fileHandles,
               oldSlug,
               newSlug,
-              referrerSlug: doc.slug,
-              canRewriteTail,
-            });
-            if (nextText !== srcText) {
-              const perm = await verifyHandlePermission(fh, 'readwrite', {
-                ask: true,
-              });
-              if (perm !== 'granted') continue;
-              const w = await fh.createWritable();
-              await w.write(nextText);
-              await w.close();
-              markSelfWrite(doc.slug);
-            }
-          } catch {
-            /* Best effort — skip a file that fails. */
-          }
-        }
-      }
+              newKind: kindChangeOf(raw, opts.frontmatterUpdates) ?? undefined,
+              markSelfWrite,
+            })
+          : EMPTY_REFERRER_REPORT;
 
       markSelfWrite(newSlug);
       if (state.handle) await load(state.handle);
+      return report;
     },
     [state.fileHandles, state.handle, state.manifest, getParentAndName, load, markSelfWrite, guardExpectedMtime],
   );
@@ -2053,6 +2181,7 @@ export function useLocalVaultInternal() {
     scaffoldOntology,
     ensureAgentConfigs,
     updateFrontmatter,
+    reclassifyDoc,
     markSelfWrite,
     unmarkSelfWrite,
     consumeSelfWrittenSlugs,

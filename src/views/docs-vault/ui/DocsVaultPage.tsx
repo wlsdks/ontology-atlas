@@ -38,6 +38,7 @@ import {
   useLocalVault,
   useStaticVaultSource,
   VaultSourceHydrationBoundary,
+  type ReferrerRewriteReport,
 } from '@/entities/vault-session';
 import {
   OntologyStarterCta,
@@ -126,6 +127,7 @@ import {
   resolveStaticVaultSource,
   type StaticVaultHeadings,
   reviewDigest,
+  planKindChangeReferrers,
   type FrontmatterUpdateValue,
 } from '@/entities/docs-vault';
 import type { VaultCommand } from '@/widgets/docs-vault';
@@ -133,6 +135,8 @@ import type { VaultCommand } from '@/widgets/docs-vault';
 const subscribeDesktopRuntime = () => () => undefined;
 const readDesktopRuntime = () => isTauriVaultRuntime();
 const readServerDesktopRuntime = () => false;
+/** How many referrer names a kind-change receipt spells out before it counts the rest. */
+const REFERRER_NAMES_SHOWN = 3;
 
 /** slug "capabilities/foo" → { dir: "capabilities/", name: "foo" }; a root slug
  *  gets dir "". Pure helper for rendering the mono filename in the editor head. */
@@ -149,6 +153,7 @@ import { DesktopVaultWelcome } from "./parts/DesktopVaultWelcome";
 import { recentVaultRowKey } from "@/features/vault-switch";
 import {
   DocFrontmatterBlock,
+  useReferrerListName,
   type DocFrontmatterPatch,
 } from "./parts/DocFrontmatterBlock";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
@@ -167,6 +172,7 @@ import { NewDocKindDialog, type NewDocKind } from "./parts/NewDocKindDialog";
 import { RenameDocDialog, type RenameDocTarget } from "./parts/RenameDocDialog";
 import { DeleteDocDialog, type DeleteDocTarget } from "./parts/DeleteDocDialog";
 import { reclassifyMoveTarget } from "../lib/kind-folder-move";
+import { kindChangeReceipt } from "../lib/kind-change-receipt";
 import { useOpenDocTabs } from "../lib/use-open-doc-tabs";
 import { resolveVaultChipIdentity } from "../lib/vault-chip-identity";
 import {
@@ -215,6 +221,7 @@ function DocsVaultContent({
   const reducedMotion = usePrefersReducedMotion();
   const t = useTranslations('docsVault');
   const locale = useLocale();
+  const referrerListName = useReferrerListName();
   const siteT = useTranslations('metadata');
   const tSkillParity = useTranslations('skillParity');
   const searchParams = useSearchParams();
@@ -916,11 +923,11 @@ function DocsVaultContent({
       fromSlug: string,
       toSlug: string,
       options: { expectedMtime?: number; frontmatterUpdates?: Record<string, FrontmatterUpdateValue> } = {},
-    ) => {
+    ): Promise<ReferrerRewriteReport> => {
       if (manifest.docs.some((d) => d.slug === toSlug)) {
         throw codedFailure('already-exists', `${toSlug}.md`);
       }
-      await localVault.renameDoc(fromSlug, toSlug, { rewriteBacklinks: true, ...options });
+      const report = await localVault.renameDoc(fromSlug, toSlug, { rewriteBacklinks: true, ...options });
       appTouchedSlugsRef.current = new Set([fromSlug, toSlug]);
       setSelectedSlug(toSlug);
       replaceUrlState({ slug: toSlug });
@@ -954,6 +961,7 @@ function DocsVaultContent({
         });
         return mapped;
       });
+      return report;
     },
     [manifest, localVault, recentKey, replaceUrlState, setPinnedSlugs, setRecentSlugs],
   );
@@ -1564,13 +1572,105 @@ function DocsVaultContent({
     [manifest],
   );
   /*
+   * **A kind change names the documents it rewrote** (2026-09-26, map-edit review).
+   *
+   * The names a referrer is shown by, and the plain name of each list — `capabilities:` is the
+   * schema's word; the reader gets the word for it in their own language.
+   */
+  const docDisplayName = useCallback(
+    (slug: string) => {
+      const doc = docsBySlug.get(slug);
+      return doc ? resolveLocaleDisplayName(doc.frontmatter, locale, doc.title) : slug;
+    },
+    [docsBySlug, locale],
+  );
+  const joinDocNames = useCallback(
+    (slugs: readonly string[]) => {
+      const shown = slugs.slice(0, REFERRER_NAMES_SHOWN).map(docDisplayName).join(', ');
+      return slugs.length > REFERRER_NAMES_SHOWN
+        ? `${shown}${t('frontmatterBlock.referrerLists.namesMore', { count: slugs.length - REFERRER_NAMES_SHOWN })}`
+        : shown;
+    },
+    [docDisplayName, t],
+  );
+  /*
+   * What a kind change will do to the documents that list this one by kind — the rows the quick
+   * patch shows before Save, from the same verdict the write applies (`planKindChangeReferrers`).
+   */
+  const kindChangeReferrers = useCallback(
+    (newKind: string, newSlug: string) => {
+      if (!selectedDoc) return [];
+      return planKindChangeReferrers(manifest.docs, {
+        oldSlug: selectedDoc.slug,
+        newSlug,
+        newKind,
+      }).map((row) => ({ ...row, name: docDisplayName(row.slug) }));
+    },
+    [selectedDoc, manifest, docDisplayName],
+  );
+  /*
+   * The receipt after Save: which referrers now list the document in the list for its new kind
+   * (fact), and what that changes (effect) — or which kept it, or could not be written.
+   */
+  const showKindChangeReceipt = useCallback(
+    (report: ReferrerRewriteReport) => {
+      const receipt = kindChangeReceipt(report);
+      if (!receipt) return;
+      const list = (key: string | null) => (key ? referrerListName(key) : '');
+      const sentences: string[] = [];
+      if (receipt.moved.slugs.length > 0) {
+        const args = {
+          count: receipt.moved.slugs.length,
+          names: joinDocNames(receipt.moved.slugs),
+          to: list(receipt.moved.to),
+          from: list(receipt.moved.from),
+        };
+        sentences.push(
+          receipt.moved.from
+            ? t('frontmatterBlock.referrerLists.movedReceipt', args)
+            : t('frontmatterBlock.referrerLists.movedReceiptMixed', args),
+        );
+      }
+      if (receipt.kept.slugs.length > 0) {
+        sentences.push(
+          t('frontmatterBlock.referrerLists.keptReceipt', {
+            count: receipt.kept.slugs.length,
+            names: joinDocNames(receipt.kept.slugs),
+          }),
+        );
+      }
+      if (receipt.failed.slugs.length > 0) {
+        sentences.push(
+          t('frontmatterBlock.referrerLists.failedReceipt', {
+            count: receipt.failed.slugs.length,
+            names: joinDocNames(receipt.failed.slugs),
+          }),
+        );
+      }
+      // The second line is the effect of a clean move, or the facts that were not one.
+      const description =
+        sentences.length > 1
+          ? sentences.slice(1).join(' ')
+          : receipt.moved.slugs.length > 0
+            ? t('frontmatterBlock.referrerLists.movedEffect', {
+                count: receipt.moved.slugs.length,
+                to: list(receipt.moved.to),
+              })
+            : undefined;
+      toast.show(sentences[0], receipt.tone, undefined, description ? { description } : undefined);
+    },
+    [t, joinDocNames, referrerListName, toast],
+  );
+  /*
    * The quick patch's write. A rejection is **not** toasted here any more: the form shows it
    * in place, in the reader's language (`DocFrontmatterBlock`, map-edit QA D4), and a second
    * copy of the same sentence in a toast was the message said twice.
    *
    * A kind change files the document under its new kind when it was filed under its old one
    * (D8): `kind:` and the address change in one move, with every referrer rewritten, rather
-   * than leaving the file in a folder the validator then asks the person to leave.
+   * than leaving the file in a folder the validator then asks the person to leave. Either way,
+   * a document that lists it under the list for its old kind lists it under the list for the new
+   * one, and the receipt names it.
    */
   const handlePatchDocFrontmatter = useCallback(
     async (patch: DocFrontmatterPatch) => {
@@ -1581,21 +1681,20 @@ function DocsVaultContent({
       }
       const currentKind =
         typeof selectedDoc.frontmatter?.kind === 'string' ? selectedDoc.frontmatter.kind.trim() : null;
-      const moveTarget = updates.kind
-        ? reclassifyMoveTarget(selectedDoc.slug, currentKind, updates.kind)
-        : null;
-      if (moveTarget) {
-        await moveDoc(selectedDoc.slug, moveTarget, {
-          expectedMtime: selectedDoc.mtime,
-          frontmatterUpdates: updates,
-        });
+      const newKind = updates.kind && updates.kind !== currentKind ? updates.kind : null;
+      const expectedMtime = selectedDoc.mtime;
+      if (!newKind) {
+        await localVault.updateFrontmatter(selectedDoc.slug, updates, { expectedMtime });
         return;
       }
-      await localVault.updateFrontmatter(selectedDoc.slug, updates, {
-        expectedMtime: selectedDoc.mtime,
-      });
+      const moveTarget = reclassifyMoveTarget(selectedDoc.slug, currentKind, newKind);
+      showKindChangeReceipt(
+        moveTarget
+          ? await moveDoc(selectedDoc.slug, moveTarget, { expectedMtime, frontmatterUpdates: updates })
+          : await localVault.reclassifyDoc(selectedDoc.slug, updates, { expectedMtime }),
+      );
     },
-    [selectedDoc, localVault, moveDoc],
+    [selectedDoc, localVault, moveDoc, showKindChangeReceipt],
   );
   // The remedy beside the folder warning: the same move, with nothing else changed.
   const handleMoveToKindFolder = useCallback(
@@ -2932,8 +3031,13 @@ function DocsVaultContent({
                             domainOptions={domainOptions}
                             onPatch={handlePatchDocFrontmatter}
                             onMoveToKindFolder={handleMoveToKindFolder}
+                            kindChangeReferrers={kindChangeReferrers}
                             onNavigate={handleSelect}
                             resolveRef={(token) => refSlugResolver.get(token) ?? null}
+                            kindOf={(slug) => {
+                              const kind = docsBySlug.get(slug)?.frontmatter?.kind;
+                              return typeof kind === "string" ? kind.trim() : null;
+                            }}
                             // The real data behind the last-editor and conflict badges. Both use only
                             // what the local vault singleton (`LocalVaultProvider`) actually observed —
                             // in a server or sample vault there is no heartbeat or self-write record,

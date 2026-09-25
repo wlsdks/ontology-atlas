@@ -2746,6 +2746,27 @@
       "danglingRefs": "{count, plural, one {Points at a document this folder does not have} other {Points at # documents this folder does not have}}: {names}{more}. The map draws no line for {count, plural, one {that reference} other {those references}}; remove or repoint {count, plural, one {it} other {them}} from Edit.",
       "danglingRefsMore": " and {count} more",
       "danglingRefTitle": "No document in this folder has this name",
+      "misfiledRefs": "{count, plural, one {Lists a document under a list for another kind} other {Lists # documents under lists for another kind}}: {names}{more}. The map and every count take {count, plural, one {it} other {them}} by the list, not by what {count, plural, one {it is} other {they are}}; move {count, plural, one {it} other {them}} to a list that fits, or remove {count, plural, one {it} other {them}}, from Edit.",
+      "misfiledRefName": "{ref} ({kind}, in {list})",
+      "referrerLists": {
+        "listName": {
+          "domains": "domains",
+          "capabilities": "capabilities",
+          "elements": "elements",
+          "domain": "domain"
+        },
+        "movedPreview": "{name} lists it among its {from}; saving moves it to its {to}.",
+        "keptPreview": "{name} lists it among its {list} and cannot keep a list of {to}: the entry stays there, and that page will flag it.",
+        "keptNoListPreview": "{name} lists it among its {list}, and no document keeps a list of this kind: the entry stays there, and that page will flag it.",
+        "keptDomainPreview": "{name} names it as its domain, which it will no longer be: that stays, and that page will flag it.",
+        "previewMore": "{count, plural, one {# more document changes} other {# more documents change}} the same way.",
+        "movedReceipt": "{names} now {count, plural, one {lists} other {list}} it among {count, plural, one {its} other {their}} {to}, no longer {count, plural, one {its} other {their}} {from}.",
+        "movedReceiptMixed": "{names} now {count, plural, one {lists} other {list}} it among {count, plural, one {its} other {their}} {to}.",
+        "movedEffect": "So it counts among {count, plural, one {that document’s} other {those documents’}} {to} on the map and in every count.",
+        "keptReceipt": "{names} still {count, plural, one {lists} other {list}} it under a list for another kind; {count, plural, one {that page flags} other {those pages flag}} it.",
+        "failedReceipt": "{names} could not be written and {count, plural, one {is} other {are}} unchanged.",
+        "namesMore": " and {count} more"
+      },
       "moveToKindFolder": "Move into {folder}",
       "validatorWarningsAriaLabel": "Folder validation warnings",
       "validatorIssues": {
