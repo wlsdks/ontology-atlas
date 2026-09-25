@@ -2,7 +2,7 @@
 
 import { FolderOpen, HardDrive } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useRef, useState, type FocusEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { useLocalVault } from '@/entities/vault-session';
@@ -53,6 +53,16 @@ export const RAIL_LABEL_MAX_CHARS = 9;
 export function railLabel(name: string): string {
   if (name.length <= RAIL_LABEL_MAX_CHARS) return name;
   return `\u2026${name.slice(-(RAIL_LABEL_MAX_CHARS - 1))}`;
+}
+
+const TABBABLE =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Keyboard stops inside `root`, in document order, that are actually on screen. */
+function tabbables(root: ParentNode): HTMLElement[] {
+  return Array.from(root.querySelectorAll<HTMLElement>(TABBABLE)).filter(
+    (node) => node.getAttribute('aria-hidden') !== 'true' && node.getClientRects().length > 0,
+  );
 }
 
 export function VaultSwitchRailTile() {
@@ -127,31 +137,59 @@ export function VaultSwitchRailTile() {
   }, [busy, vault.status, returnFocusIfLost]);
 
   /*
-   * **Tab out of the popover closes it.** Portalled to the end of `<body>`, the popover was the
-   * last stop in the tab order, so Tab past its last control walked to `<body>` and on to the
-   * skip link while the popover stayed open over the INDEX (inspection, 2026-09-25). Leaving it
-   * by keyboard is the same intent as pressing outside it.
+   * **Tab out of the popover closes it, and goes where Tab from the chip would have gone.**
+   * Portalled to the end of `<body>`, the popover was the last stop in the tab order, so Tab
+   * past its last control walked to `<body>` and on to the skip link while the popover stayed
+   * open over the INDEX (inspection, 2026-09-25).
+   *
+   * ⚠️ **Not a blur handler.** The first fix closed on blur and, when focus left for nothing,
+   * decided in a 0ms timeout - which returned early because the window itself had lost focus
+   * to the browser's own chrome. The next Tab brought focus back to the skip link, no blur fired
+   * on the popover, and it stayed open at every step at a 300ms typing pace; only a burst of
+   * Tabs faster than the timeout passed the test (review, 2026-09-25). So the edges of the tab
+   * order are handled where they happen - the keydown - and a `focusin` anywhere outside the
+   * chip and the popover closes it however focus got there.
    */
-  const handleBlur = useCallback(
-    (event: FocusEvent<HTMLElement>) => {
-      const inside = (node: Node | null) =>
-        node !== null && (surfaceRef.current?.contains(node) || ref.current?.contains(node));
-      const next = event.relatedTarget;
-      if (next instanceof Node) {
-        if (!inside(next)) setOpen(false);
+  const handleSurfaceKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
+      const surface = surfaceRef.current;
+      const trigger = triggerRef.current;
+      const active = document.activeElement;
+      if (!surface || !trigger || !active || !surface.contains(active)) return;
+      const items = tabbables(surface);
+      if (event.shiftKey) {
+        if (active !== surface && active !== items[0]) return;
+        event.preventDefault();
+        setOpen(false);
+        trigger.focus({ preventScroll: true });
         return;
       }
-      // Focus left for nothing - the page's end, or a control that vanished. Decide once the
-      // browser has settled where focus went, and never because the whole window lost focus.
-      window.setTimeout(() => {
-        if (!document.hasFocus()) return;
-        const active = document.activeElement;
-        if (active && active !== document.body && inside(active)) return;
-        setOpen(false);
-      }, 0);
+      // Forward from the surface itself or any row but the last is the browser's to walk.
+      if (items.length > 0 && active !== items[items.length - 1]) return;
+      event.preventDefault();
+      setOpen(false);
+      const order = tabbables(document.body).filter((node) => !surface.contains(node));
+      const next = order[order.indexOf(trigger) + 1] ?? trigger;
+      next.focus({ preventScroll: true });
     },
-    [ref, setOpen, surfaceRef],
+    [setOpen, surfaceRef],
   );
+  useEffect(() => {
+    if (!open) return undefined;
+    const handleFocusIn = (event: globalThis.FocusEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (surfaceRef.current?.contains(target) || ref.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('keydown', handleSurfaceKeyDown);
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('keydown', handleSurfaceKeyDown);
+    };
+  }, [open, ref, setOpen, surfaceRef, handleSurfaceKeyDown]);
 
   const handleOpenRecent = useCallback(
     (record: LocalFsHandleRecord) => {
@@ -223,18 +261,22 @@ export function VaultSwitchRailTile() {
         data-busy={busy ? 'true' : undefined}
         ref={triggerRef}
         /*
-         * Disabled, not merely inert, while the next folder loads: a press then has nothing to
-         * switch from, and saying so in the element's state lets anything waiting to press it
-         * wait for the load instead of pressing a tile that ignores it. Focus is not lost to
-         * this - the popover that held it has already closed, and the switch hands focus back
-         * to this tile once it is enabled again.
+         * **Busy, but still holding focus.** While the next folder loads a press has nothing to
+         * switch from, so the chip says it is disabled - with `aria-disabled`, not `disabled`. A
+         * natively disabled button cannot hold focus, so from the press on "Open a folder"
+         * until the load finished (about 3.6s) focus sat on `<body>` and a Tab in that window
+         * restarted from the skip link (review, 2026-09-25). `aria-disabled` keeps the chip in
+         * the tab order with its state announced, and the press is ignored here.
          */
-        disabled={busy}
-        onClick={toggle}
+        aria-disabled={busy || undefined}
+        onClick={() => {
+          if (busy) return;
+          toggle();
+        }}
         className={controlClass({
           shape: 'card',
           className:
-            'group relative w-full flex-col gap-1 border-0 px-0 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+            'group relative w-full flex-col gap-1 border-0 px-0 py-1 aria-disabled:cursor-progress aria-disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
         })}
       >
         <span
@@ -303,7 +345,7 @@ export function VaultSwitchRailTile() {
           column and the picker's glyph all begin 12px in (`px-3`), the inset the rows and the
           picker already had. The captions sat at 6px, so the popover read as three columns.
         */}
-        <div onBlur={handleBlur}>
+        <div>
         <p className="px-3 pt-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
           {t('openFolderLabel')}
         </p>

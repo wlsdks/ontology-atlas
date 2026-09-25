@@ -103,8 +103,10 @@ const ROOT = process.cwd();
  * the shared `DETAIL_TOGGLE_CHIP` ink, a net one fewer hand-written hover declaration.
  * 289 → 288 (2026-09-25): the insights hub rows left the `chip` shape for a bare `row` with
  * `hoverSurface: "lift"`, so their hand-written overlay hover is owned by the axis.
+ * 288 → 287 (2026-09-25): the chrome interaction fix left one hand-written hover fewer in
+ * the rail and settings chips it moved onto shared chip grammar.
  */
-const CEILING = 288;
+const CEILING = 287;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

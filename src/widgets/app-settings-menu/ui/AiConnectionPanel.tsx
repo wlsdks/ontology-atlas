@@ -83,10 +83,15 @@ const CLEAR_ARM_MS = 3000;
  * **Hover and focus** for a neutral chip. The value layer (`controlClass`)
  * deliberately does not supply this layer (frequency eats the motion budget, so
  * the consumer decides the hover colour), so it is written once here and used by
- * four sites — written by hand four times, one copy eventually diverges.
+ * every neutral chip in this pane — written by hand per site, one copy eventually diverges.
+ *
+ * Every chip that wears it is `tone="secondary"`, the Workspace pane's row-action tone
+ * (`DETAIL_TOGGLE_CHIP`). The chips here used the default tertiary ink, so the sheet's two
+ * "Show in Finder" actions read in two text tones across neighbouring panes (review,
+ * 2026-09-25: rgb(138,143,152) against rgb(208,214,224)).
  */
 const NEUTRAL_CHIP_HOVER =
-  'shrink-0 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
+  'shrink-0 border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
 
 /**
  * The **border and hover** of the indigo emphasis chip — one copy, for the same
@@ -458,6 +463,7 @@ function ProviderCard({
         ) : (
           <Chip
             size="lg"
+            tone="secondary"
             data-testid={`ai-register-${provider}`}
             // Having declared `aria-expanded`, pressing again must collapse it —
             // otherwise a promise made to a screen reader becomes a lie. So this
@@ -691,6 +697,7 @@ function LocalEndpointCard({
         ) : (
           <Chip
             size="lg"
+            tone="secondary"
             data-testid="ai-register-local"
             onClick={expanded ? onCancel : onExpand}
             aria-expanded={expanded}
@@ -734,6 +741,7 @@ function LocalEndpointCard({
               {!connected ? (
                 <Chip
                   size="lg"
+                  tone="secondary"
                   data-testid="ai-cancel-local"
                   onClick={onCancel}
                   className={NEUTRAL_CHIP_HOVER}
@@ -783,6 +791,7 @@ function LocalEndpointCard({
                 {connected ? (
                   <Chip
                     size="lg"
+                    tone="secondary"
                     data-testid="ai-local-disconnect"
                     onClick={handleDisconnect}
                     className={NEUTRAL_CHIP_HOVER}
@@ -798,6 +807,7 @@ function LocalEndpointCard({
                 </span>
                 <Chip
                   size="lg"
+                  tone="secondary"
                   data-testid="ai-local-disconnect"
                   onClick={handleDisconnect}
                   className={NEUTRAL_CHIP_HOVER}
@@ -1011,6 +1021,7 @@ function KeyDraftForm({
           what makes the contract hold. */}
       <Chip
         size="lg"
+        tone="secondary"
         data-testid={`ai-cancel-${provider}`}
         onClick={onCancel}
         className={NEUTRAL_CHIP_HOVER}
@@ -1145,6 +1156,7 @@ function AuditTail({
            */
           <Chip
             size="lg"
+            tone="secondary"
             data-testid="ai-audit-open"
             onClick={() => void revealTauriVaultFile(vaultRootPath, LLM_AUDIT_RELATIVE_PATH)}
             className={NEUTRAL_CHIP_HOVER}

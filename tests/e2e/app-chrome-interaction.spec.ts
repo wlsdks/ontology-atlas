@@ -99,13 +99,110 @@ test.describe('the vault switcher', () => {
     });
   }
 
-  test('Tab out of the popover closes it instead of leaving it open behind the focus', async ({ page }) => {
+  /*
+   * Paced at 300ms, a person's typing speed, and asserted after every press. The first version of
+   * this test sent six Tabs in a burst, which passed only because a 0ms timeout ran after focus
+   * had already reached the skip link - at a normal pace the popover stayed open throughout
+   * (review, 2026-09-25).
+   */
+  for (const opener of ['mouse', 'Enter'] as const) {
+    test(`Tab past the popover's last control closes it and moves on from the chip (${opener})`, async ({ page }) => {
+      test.setTimeout(120_000);
+      await installDesktopRailRuntime(page);
+      await mountDesktopVault(page);
+      const tile = page.getByTestId('vault-switch-rail-tile');
+      await expect(tile).toBeVisible({ timeout: 60_000 });
+      if (opener === 'mouse') {
+        await openSwitcher(page);
+      } else {
+        await tile.focus();
+        await page.keyboard.press('Enter');
+        await expect(page.getByTestId('vault-switch-popover')).toBeVisible();
+      }
+      // What Tab from the chip reaches when no popover is in the way.
+      const expected = await page.evaluate(() => {
+        const sel =
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+        const popover = document.querySelector('[data-testid="vault-switch-popover"]')!;
+        const all = Array.from(document.body.querySelectorAll<HTMLElement>(sel)).filter(
+          (n) => !popover.contains(n) && n.getClientRects().length > 0 && n.getAttribute('aria-hidden') !== 'true',
+        );
+        const tileEl = document.querySelector('[data-testid="vault-switch-rail-tile"]')!;
+        const next = all[all.indexOf(tileEl as HTMLElement) + 1];
+        return next?.getAttribute('data-testid') ?? next?.outerHTML.slice(0, 80) ?? null;
+      });
+      expect(expected, 'nothing follows the chip in the tab order').not.toBeNull();
+      const trail: string[] = [];
+      for (let i = 0; i < 6; i += 1) {
+        await page.keyboard.press('Tab');
+        await page.waitForTimeout(300);
+        const state = await page.evaluate(() => {
+          const a = document.activeElement as HTMLElement | null;
+          const popover = document.querySelector('[data-testid="vault-switch-popover"]');
+          return {
+            active: a?.getAttribute('data-testid') ?? a?.tagName ?? 'none',
+            inPopover: popover !== null && a !== null && popover.contains(a),
+            open: popover !== null,
+          };
+        });
+        trail.push(`${state.active}${state.open ? ' [open]' : ''}`);
+        expect(state.active, `focus fell to BODY: ${trail.join(' -> ')}`).not.toBe('BODY');
+        if (!state.inPopover) {
+          expect(state.open, `focus left but the popover stayed: ${trail.join(' -> ')}`).toBe(false);
+          const active = await page.evaluate(
+            () => (document.activeElement?.getAttribute('data-testid') ?? document.activeElement?.outerHTML.slice(0, 80)) ?? null,
+          );
+          expect(active, `Tab out did not continue from the chip: ${trail.join(' -> ')}`).toBe(expected);
+          return;
+        }
+      }
+      throw new Error(`six paced Tabs never left the popover: ${trail.join(' -> ')}`);
+    });
+  }
+
+  test('Shift+Tab from the popover closes it and lands on the chip', async ({ page }) => {
     test.setTimeout(120_000);
     await installDesktopRailRuntime(page);
     await mountDesktopVault(page);
     await openSwitcher(page);
-    for (let i = 0; i < 6; i += 1) await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
     await expect(page.getByTestId('vault-switch-popover')).toHaveCount(0);
+    await expect(page.getByTestId('vault-switch-rail-tile')).toBeFocused();
+  });
+
+  test('focus stays on the chip while the picked folder loads', async ({ page }) => {
+    test.setTimeout(120_000);
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page);
+    await openSwitcher(page);
+    await page.evaluate(() => {
+      const samples: Array<{ at: number; active: string; busy: boolean }> = [];
+      (window as unknown as { __focusSamples: typeof samples }).__focusSamples = samples;
+      const start = performance.now();
+      const tick = () => {
+        const a = document.activeElement as HTMLElement | null;
+        const tileEl = document.querySelector('[data-testid="vault-switch-rail-tile"]');
+        samples.push({
+          at: Math.round(performance.now() - start),
+          active: a?.getAttribute('data-testid') ?? a?.tagName ?? 'none',
+          busy: tileEl?.getAttribute('data-busy') === 'true',
+        });
+        if (performance.now() - start < 5000) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await page.getByTestId('vault-switch-pick-other').click();
+    await page.waitForTimeout(5200);
+    const samples = await page.evaluate(
+      () => (window as unknown as { __focusSamples: Array<{ at: number; active: string; busy: boolean }> }).__focusSamples,
+    );
+    const busyFrames = samples.filter((s) => s.busy);
+    expect(busyFrames.length, 'the switch never showed a busy chip').toBeGreaterThan(5);
+    // The popover's exit takes a moment; after it, the busy chip holds the keyboard.
+    const lost = busyFrames.filter((s) => s.at > 400 && s.active !== 'vault-switch-rail-tile');
+    expect(lost.map((s) => `${s.at}ms ${s.active}`), 'focus left the chip during the load').toEqual([]);
+    // And it is still there once the new folder has landed.
+    await expect(page.getByTestId('vault-switch-rail-tile')).toBeFocused({ timeout: 10_000 });
   });
 
   test('the popover starts its captions, rows and picker on one line', async ({ page }) => {
@@ -264,6 +361,26 @@ test.describe('settings', () => {
     expect(new Set(faces.map((f) => f.size)).size, JSON.stringify(faces)).toBe(1);
     expect(new Set(faces.map((f) => Math.round(f.height))).size, JSON.stringify(faces)).toBe(1);
     await page.screenshot({ path: `${SHOTS}/ch7-key-form.png` });
+  });
+
+  test('neutral row actions read in one text tone across the Workspace and AI panes', async ({ page }) => {
+    test.setTimeout(120_000);
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page);
+    await page.locator('[data-testid="app-settings-trigger"]:visible').click();
+    await page.getByTestId('app-settings-nav-workspace').click();
+    const workspace = page.getByTestId('app-settings-reveal-vault-path');
+    await expect(workspace).toBeVisible();
+    const workspaceInk = await workspace.evaluate((el) => getComputedStyle(el).color);
+    await page.getByTestId('app-settings-nav-ai').click();
+    await page.getByTestId('ai-register-anthropic').click();
+    const aiInks = await page.evaluate(() =>
+      ['ai-register-anthropic', 'ai-cancel-anthropic'].map((id) => {
+        const el = document.querySelector(`[data-testid="${id}"]`)!;
+        return getComputedStyle(el).color;
+      }),
+    );
+    expect(aiInks, `workspace chip ink ${workspaceInk}`).toEqual([workspaceInk, workspaceInk]);
   });
 
   test('the web lists no app-only Updates pane', async ({ page }) => {
