@@ -50,15 +50,15 @@ import {
  * hidden one matches first, **the destination shortcuts die permanently** with
  * no clue on screen; opening the settings sheet reproduced exactly that.
  *
- * So scan them all and block only if one is rendered — the test is what is on
- * screen, not what is in the tree.
+ * So scan them all and block only if one is rendered and not leaving (`isLeavingSurface`) — the
+ * test is what is on screen and still taking input, not what is in the tree.
  *
  * Exported for the shell's `?` (2026-09-26): the shortcut sheet must not stack over a dialog the
  * way a destination key must not move the screen behind one, and one test keeps them agreeing.
  */
 export function blockingSurfaceOpen(): boolean {
   for (const el of document.querySelectorAll('[aria-modal="true"]')) {
-    if (el.closest('[aria-hidden="true"]')) continue;
+    if (isLeavingSurface(el)) continue;
     if (el.getClientRects().length === 0) continue;
     const style = getComputedStyle(el);
     if (style.visibility === 'hidden' || style.display === 'none') continue;
@@ -66,6 +66,33 @@ export function blockingSurfaceOpen(): boolean {
     return true;
   }
   return false;
+}
+
+/**
+ * **Is this surface on its way out** — closed, and only still drawn for its exit motion.
+ *
+ * A leaving surface blocks nothing: it no longer takes input, and counting it swallowed the next
+ * key. Measured on 2026-09-26 against a real folder: `?` pressed right after Esc closed the
+ * Automations sheet (the `Dialog` primitive) did not open the shortcut sheet, because the guard
+ * above saw the sheet at opacity 0.99 in the first frame of its exit and refused.
+ *
+ * Every exit path here already stops input at its first frame, so that mark is what is read —
+ * not the opacity, which says "on its way out" only once the motion is nearly over:
+ *
+ * - `Surface`, the settings sheet and the guided tour go `inert` (the settings sheet also
+ *   `aria-hidden`) for the length of their exit.
+ * - A Radix dialog's content (the search) keeps `data-state="closed"` through its exit animation.
+ * - Every framer exit takes `pointer-events: none` from `useExitLockout` on its first exit frame
+ *   (`framer-exit-asymmetry.contract.test.ts`), and the Radix and `Surface` exits carry the same
+ *   value from their exit classes.
+ *
+ * An open modal never computes `pointer-events: none` — one that cannot be clicked is not a
+ * modal — so none of these marks can let a key through while a blocking surface is really up.
+ */
+function isLeavingSurface(el: Element): boolean {
+  if (el.closest('[aria-hidden="true"], [inert]')) return true;
+  if (el.getAttribute('data-state') === 'closed') return true;
+  return getComputedStyle(el).pointerEvents === 'none';
 }
 
 /**

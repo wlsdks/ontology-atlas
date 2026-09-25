@@ -63,6 +63,7 @@ export function TopologyUtilityOverlays({
 
   return (<>
     <MountedGlobalSearch
+      onMap
       onSelectionFocus={(keyboard) => { focusMapCanvasWhenReady(undefined, keyboard); }}
       open={!createNodeOpen && ontologySearchOpen}
       onOpenChange={(next) => {

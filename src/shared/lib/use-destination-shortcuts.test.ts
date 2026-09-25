@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useDestinationShortcuts } from "./use-destination-shortcuts";
+import { blockingSurfaceOpen, useDestinationShortcuts } from "./use-destination-shortcuts";
 import { NAV_LEADER_WINDOW_MS } from "@/shared/config/destinations";
 
 /**
@@ -347,5 +347,79 @@ describe("useDestinationShortcuts", () => {
     press("d");
     expect(firstNavigate).not.toHaveBeenCalled();
     expect(secondNavigate).toHaveBeenCalledWith("/project/second/docs/", "docs");
+  });
+});
+
+/**
+ * **A surface on its way out blocks nothing** (2026-09-26).
+ *
+ * Measured against a real folder: `?` pressed right after Esc closed the Automations sheet did not
+ * open the shortcut sheet, and `?` right after Esc closed the search did not either, because the
+ * guard still counted the closing dialog while its exit motion played (opacity 0.99 and 1). Each
+ * exit path marks the leaving node from its first frame; the guard reads those marks, and a
+ * really open modal beside a leaving one still blocks.
+ */
+describe("blockingSurfaceOpen", () => {
+  /** An `aria-modal` surface that jsdom reports as laid out, like the ones the tests above fake. */
+  function modal(parent: HTMLElement = document.body): HTMLElement {
+    const el = document.createElement("div");
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    el.getClientRects = (() => [{}] as unknown as DOMRectList) as typeof el.getClientRects;
+    parent.append(el);
+    return el;
+  }
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("blocks while a modal is open", () => {
+    modal();
+    expect(blockingSurfaceOpen()).toBe(true);
+  });
+
+  it("blocks while a Radix dialog is open", () => {
+    modal().setAttribute("data-state", "open");
+    expect(blockingSurfaceOpen()).toBe(true);
+  });
+
+  it("does not block once the modal has closed and left the page", () => {
+    modal().remove();
+    expect(blockingSurfaceOpen()).toBe(false);
+  });
+
+  it("does not block while a framer exit plays (useExitLockout pins pointer-events: none)", () => {
+    modal().style.pointerEvents = "none";
+    expect(blockingSurfaceOpen()).toBe(false);
+  });
+
+  it("does not block while a Radix dialog plays its exit (data-state=closed)", () => {
+    modal().setAttribute("data-state", "closed");
+    expect(blockingSurfaceOpen()).toBe(false);
+  });
+
+  it("does not block while a Surface or the settings sheet leaves (inert wrapper)", () => {
+    const leaving = document.createElement("div");
+    leaving.setAttribute("inert", "");
+    document.body.append(leaving);
+    modal(leaving);
+    expect(blockingSurfaceOpen()).toBe(false);
+  });
+
+  it("still blocks when a leaving modal stands beside one that is really open", () => {
+    modal().style.pointerEvents = "none";
+    modal().setAttribute("data-state", "closed");
+    modal();
+    expect(blockingSurfaceOpen()).toBe(true);
+  });
+
+  it("lets the destination keys through while the only dialog is leaving", () => {
+    const navigate = vi.fn();
+    renderHook(() => useDestinationShortcuts({ navigate }));
+    modal().style.pointerEvents = "none";
+    press("g");
+    press("p");
+    expect(navigate).toHaveBeenCalledTimes(1);
   });
 });

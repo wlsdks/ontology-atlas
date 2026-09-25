@@ -3195,7 +3195,7 @@ The phone tabs and the `G` keys read the same verdict.
 
 ### Search palettes (separate by design — R5 skip merge)
 - **`⌘K` `SearchPalette`** — a project page's own palette: projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
-- **`⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized). The map mounts its own (a pick selects on the canvas); every other screen with the rail gets the shell's (`ShellKeyboardSurfaces`, 2026-09-26), mounted on the first ⌘K. Shift is accepted and changes nothing, so the shortcut sheet lists ⌘K once. The ontology documents workspace keeps ⌘K for its unified palette.
+- **`⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized). The map mounts its own (a pick selects on the canvas); every other screen with the rail gets the shell's (`ShellKeyboardSurfaces`, 2026-09-26), mounted on the first ⌘K. Only the map's mount (`onMap`) calls itself "Search this map"; elsewhere the dialog is named for what it searches ("Search concepts"; a project is one), and its empty state and footer name the loaded project, or "this folder" when there are several. Shift is accepted and changes nothing, so the shortcut sheet lists ⌘K once. The ontology documents workspace keeps ⌘K for its unified palette.
 - Both palettes share keyboard: `↑↓` navigate · `↵` select · `Esc` close
 
 **The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised
