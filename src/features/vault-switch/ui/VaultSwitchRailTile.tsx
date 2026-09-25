@@ -177,6 +177,25 @@ export function VaultSwitchRailTile() {
    * names it, so the keyboard lands there too.
    */
   const switchingRef = useRef(false);
+
+  /*
+   * **Focus leaves the closing popover when it closes, not when its exit ends.** The exit takes a
+   * few frames, and on a slower machine the surface went inert before `onExited` ran: focus sat on
+   * `<body>` for about 50 ms mid-switch (CI, 2026-09-25). Focus still inside the closing surface,
+   * or already dropped to `<body>`, moves to the chip at once; focus a press put elsewhere stays.
+   */
+  const wasOpenRef = useRef(open);
+  useEffect(() => {
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = open;
+    if (!wasOpen || open) return;
+    const active = document.activeElement;
+    const inSurface = active instanceof Node && Boolean(surfaceRef.current?.contains(active));
+    if (inSurface || active === null || active === document.body) {
+      triggerRef.current?.focus({ preventScroll: true });
+    }
+  }, [open, surfaceRef]);
+
   useEffect(() => {
     if (!switchingRef.current || busy) return;
     switchingRef.current = false;
