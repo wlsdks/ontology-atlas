@@ -2,6 +2,9 @@ import type { VaultDoc } from '@/entities/docs-vault';
 import {EMPTY_CONSTRUCTION,parseConstruction,type ConstructionCounts} from './companion-construction';
 import {blessingChoices,newCompanionRun,nextCompanionRun,parseCompanionRun,runFloor,type Blessing,type CompanionRun} from './companion-run';
 import {ADVENTURE_MAPS,adventureMap,adventureSpecies,encounterSpecies,localName} from './companion-catalog';
+import {PATH_EFFECTS,isRunPath,type RunPath} from './companion-paths';
+import {parseQuestClaims,questReady,questDefinition,forgeLimit,type QuestClaims,type QuestId,type QuestEvidence} from './companion-quests';
+import {equipmentTier,forgeRelicCost} from './companion-forge';
 import {companionLevelForXp} from './companion-growth';
 
 /** All of these values belong to the optional game, never ontology qualification. */
@@ -16,25 +19,27 @@ export type CompanionSkill=typeof COMPANION_SKILLS[number];
 type GamePhase = 'camp' | 'approach' | 'attack' | 'hurt' | 'loot' | 'rest';
 export type ExpeditionArea = {uid:string;title:string;slug:string;requiredKnowledge:number;difficulty:number};
 export type CompanionGame = {
-  version:1; run:CompanionRun; guard:number; dodgeCooldown:number; attackId:number; construction:ConstructionCounts; lastAt:number; mode:'camp'|'expedition'; phase:GamePhase;
+  version:1; questClaims:QuestClaims; run:CompanionRun; guard:number; dodgeCooldown:number; attackId:number; construction:ConstructionCounts; lastAt:number; mode:'camp'|'expedition'; phase:GamePhase;
   area:string|null; difficulty:number; turn:number; encounter:number;
   hp:number; enemyHp:number; gold:number; xp:number; knowledge:number;
   wins:number; chests:number; potions:number; relics:number; skills:Record<CompanionSkill,number>; rests:number; cooldown:number; lastDamage:number;
   upgrades:Record<Upgrade,number>; bestiary:Record<Monster,number>; discoveries:Record<string,number>; journeys:Record<string,number>;
 };
-export const newCompanionGame = (now:number):CompanionGame => ({version:1,run:newCompanionRun(now%1_000_000_000),guard:0,dodgeCooldown:0,attackId:0,construction:{...EMPTY_CONSTRUCTION},lastAt:now,mode:'camp',phase:'camp',area:null,difficulty:0,turn:0,encounter:0,hp:40,enemyHp:14,gold:0,xp:0,knowledge:0,wins:0,chests:0,potions:3,relics:0,skills:{focus:0,ward:0,recovery:0,wave:0,fortune:0,insight:0},rests:0,cooldown:0,lastDamage:0,upgrades:{sword:0,armor:0,library:0},bestiary:{slime:0,golem:0,moth:0},discoveries:{},journeys:{}});
-export const maxHp = (game:CompanionGame) => 40 + game.upgrades.armor*8 + game.skills.ward*5+(game.mode==='expedition'?game.run.boons.ward*12:0);
+export const newCompanionGame = (now:number):CompanionGame => ({version:1,questClaims:{},run:newCompanionRun(now%1_000_000_000),guard:0,dodgeCooldown:0,attackId:0,construction:{...EMPTY_CONSTRUCTION},lastAt:now,mode:'camp',phase:'camp',area:null,difficulty:0,turn:0,encounter:0,hp:40,enemyHp:14,gold:0,xp:0,knowledge:0,wins:0,chests:0,potions:3,relics:0,skills:{focus:0,ward:0,recovery:0,wave:0,fortune:0,insight:0},rests:0,cooldown:0,lastDamage:0,upgrades:{sword:0,armor:0,library:0},bestiary:{slime:0,golem:0,moth:0},discoveries:{},journeys:{}});
+export const maxHp = (game:CompanionGame) => 40 + game.upgrades.armor*8+equipmentTier(game.upgrades.armor)*5 + game.skills.ward*5+(game.mode==='expedition'?game.run.boons.ward*12:0);
 export const monsterKind = (game:CompanionGame):Monster => MONSTERS[(game.encounter+game.run.seed%3)%MONSTERS.length];
 export const isBoss = (game:CompanionGame) => (game.encounter+1)%15===0;
 export const currentSpecies=(game:CompanionGame)=>encounterSpecies(game.area,game.encounter,game.run.seed);
 const currentMapEffect=(game:CompanionGame)=>adventureMap(game.area)?.effect;
-export const monsterMaxHp = (game:CompanionGame) => Math.round((14+game.difficulty*7+(runFloor(game.encounter)-1)*12) * (isBoss(game)?3:1)*(currentSpecies(game)?.vitality??1)*(currentMapEffect(game)==='fortified'?1.25:1));
+export const activePath=(game:CompanionGame)=>game.mode==='expedition'?game.run.paths.find(step=>step.floor===runFloor(game.encounter)):undefined;
+const pathEffect=(game:CompanionGame)=>{const path=activePath(game);return path?PATH_EFFECTS[path.kind]:null;};
+export const monsterMaxHp = (game:CompanionGame) => Math.round((14+game.difficulty*7+(runFloor(game.encounter)-1)*12) * (isBoss(game)?3:1)*(currentSpecies(game)?.vitality??1)*(currentMapEffect(game)==='fortified'?1.25:1)*(pathEffect(game)?.health??1));
 export function strikeDamage(game:CompanionGame,power:number,wave=false){const trait=currentSpecies(game)?.trait;return Math.max(1,Math.floor(power*(trait==='armored'?.8:wave&&trait==='arcane'?.7:1)));}
-export function enemyDamage(game:CompanionGame){const species=currentSpecies(game);const base=3+game.difficulty+runFloor(game.encounter)-1;const attacks=species?.trait==='swarm'?2:1;return attacks*Math.max(1,Math.round(base*(species?.power??1)*(species?.trait==='fierce'?1.3:1)*(attacks===2?.6:1)*(currentMapEffect(game)==='elite'?1.2:1))-Math.floor(game.upgrades.armor/2));}
+export function enemyDamage(game:CompanionGame){const species=currentSpecies(game);const base=3+game.difficulty+runFloor(game.encounter)-1;const attacks=species?.trait==='swarm'?2:1;return attacks*Math.max(1,Math.round(base*(species?.power??1)*(species?.trait==='fierce'?1.3:1)*(attacks===2?.6:1)*(currentMapEffect(game)==='elite'?1.2:1)*(pathEffect(game)?.damage??1))-Math.floor(game.upgrades.armor/2));}
 function enterEncounter(game:CompanionGame):CompanionGame{const species=currentSpecies(game);return {...game,enemyHp:monsterMaxHp(game),discoveries:species&&game.discoveries[species.id]===undefined?{...game.discoveries,[species.id]:0}:game.discoveries};}
-export const attackPower = (game:CompanionGame) => 4+(game.mode==='expedition'?game.run.boons.ember*3:0)+game.upgrades.sword*2+game.skills.focus+Math.min(8,Math.floor(game.knowledge/20))+Math.floor(companionLevelForXp(game.xp+game.knowledge)/2);
+export const attackPower = (game:CompanionGame) => 4+(game.mode==='expedition'?game.run.boons.ember*3:0)+game.upgrades.sword*2+equipmentTier(game.upgrades.sword)*2+game.skills.focus+Math.min(8,Math.floor(game.knowledge/20))+Math.floor(companionLevelForXp(game.xp+game.knowledge)/2);
 export const availableSkillPoints=(game:CompanionGame)=>Math.max(0,Math.min(30,companionLevelForXp(game.xp+game.knowledge)-1)-COMPANION_SKILLS.reduce((sum,key)=>sum+game.skills[key],0));
-export const waveMultiplier=(game:CompanionGame)=>3+game.skills.wave*.25+(game.mode==='expedition'?game.run.boons.echo*.75:0);
+export const waveMultiplier=(game:CompanionGame)=>3+game.skills.wave*.25+equipmentTier(game.upgrades.library)*.25+(game.mode==='expedition'?game.run.boons.echo*.75:0);
 export const upgradeCost = (game:CompanionGame,kind:Upgrade) => 20+game.upgrades[kind]*game.upgrades[kind]*15;
 
 export function parseCompanionGame(raw:string|null):CompanionGame|null {
@@ -43,6 +48,7 @@ export function parseCompanionGame(raw:string|null):CompanionGame|null {
     const value=JSON.parse(raw);
     if(value?.version!==1 || !['camp','expedition'].includes(value.mode) || !['camp','approach','attack','hurt','loot','rest'].includes(value.phase)
       || !(value.area===null || (typeof value.area==='string' && value.area.length>0 && value.area.length<=160)))return null;
+    value.questClaims=parseQuestClaims(value.questClaims);if(!value.questClaims)return null;
     const legacyRun=value.run===undefined;
     if(legacyRun){value.run=newCompanionRun();value.encounter=0;}else value.run=parseCompanionRun(value.run);
     for(const [field,lookup,limit] of [['discoveries',adventureSpecies,108],['journeys',adventureMap,36]] as const){
@@ -64,7 +70,7 @@ export function parseCompanionGame(raw:string|null):CompanionGame|null {
     for(const key of ['sword','armor','library']) if(!Number.isInteger(value.upgrades?.[key]) || value.upgrades[key]<0 || value.upgrades[key]>20)return null;
     for(const key of MONSTERS) if(!Number.isSafeInteger(value.bestiary?.[key]) || value.bestiary[key]<0 || value.bestiary[key]>1_000_000_000)return null;
     if(legacyRun)value.enemyHp=Math.min(value.enemyHp,monsterMaxHp(value));
-    if(value.run.drafted>runFloor(value.encounter))return null;
+    if(value.run.drafted>runFloor(value.encounter)||value.run.paths.some((step:{floor:number})=>step.floor>runFloor(value.encounter)))return null;
     if(value.guard>2||value.dodgeCooldown>4||value.encounter>14||value.potions>99||value.difficulty>10 || value.rests>6 || value.cooldown>8 || value.hp>maxHp(value) || value.enemyHp>monsterMaxHp(value)
       || (value.mode==='expedition' && (!value.area || value.phase==='camp')) || (value.mode==='camp' && value.phase!=='camp'))return null;
     const chests=value.chests??0;
@@ -85,11 +91,17 @@ function settleGuardianClear(game:CompanionGame):CompanionGame {
 }
 
 export function victoryReward(game:CompanionGame){
- return {gold:4+game.difficulty*2+game.skills.fortune+game.run.boons.fortune*3+(isBoss(game)?10:0)+(currentMapEffect(game)==='bounty'?3:0),xp:6+game.difficulty*2+game.upgrades.library+game.skills.insight+game.run.boons.insight*3+(currentMapEffect(game)==='insight'?4:0)};
+ return {gold:Math.max(0,4+game.difficulty*2+game.skills.fortune+game.run.boons.fortune*3+(isBoss(game)?10:0)+(currentMapEffect(game)==='bounty'?3:0)+(pathEffect(game)?.gold??0)),xp:6+game.difficulty*2+game.upgrades.library+game.skills.insight+game.run.boons.insight*3+(currentMapEffect(game)==='insight'?4:0)+(pathEffect(game)?.xp??0)};
 }
 function victory(game:CompanionGame):CompanionGame {
   const reward=victoryReward(game);const species=currentSpecies(game);
   return {...game,discoveries:species?{...game.discoveries,[species.id]:(game.discoveries[species.id]??0)+1}:game.discoveries,phase:'loot',enemyHp:0,hp:Math.min(maxHp(game),game.hp+2+game.run.boons.leech*3+(currentMapEffect(game)==='vital'?3:0)),gold:game.gold+reward.gold,xp:game.xp+reward.xp,relics:game.relics+(isBoss(game)?1:0),wins:game.wins+1,bestiary:{...game.bestiary,[monsterKind(game)]:game.bestiary[monsterKind(game)]+1}};
+}
+
+function enterFloor(game:CompanionGame):CompanionGame{
+ const floor=runFloor(game.encounter);if(floor===1||game.run.paths.some(step=>step.floor===floor))return game;
+ const kind=game.run.plan;const healed=Math.min(maxHp(game)-game.hp,Math.ceil(maxHp(game)*PATH_EFFECTS[kind].heal));
+ return {...game,hp:game.hp+healed,run:{...game.run,paths:[...game.run.paths,{floor,kind,healed}]}};
 }
 
 function tick(game:CompanionGame):CompanionGame {
@@ -108,7 +120,7 @@ function tick(game:CompanionGame):CompanionGame {
     }
     const encounter=next.encounter+1;
     const advanced={...next,encounter,run:{...next.run,bestFloor:Math.max(next.run.bestFloor,runFloor(encounter))},phase:'approach' as const};
-    return enterEncounter(advanced);
+    return enterEncounter(encounter%3===0?enterFloor(advanced):advanced);
   }
   if(next.phase==='attack') {
     const damage=next.guard>0?0:enemyDamage(next);
@@ -141,9 +153,11 @@ export function advanceCompanionGame(game:CompanionGame, now:number):CompanionGa
   return {...next,lastAt:elapsed>OFFLINE_LIMIT_MS?now:game.lastAt+turns*TURN_MS};
 }
 
-export type GameAction = {type:'depart';area:ExpeditionArea}|{type:'return'}|{type:'upgrade';kind:Upgrade}|{type:'skill'}|{type:'heal'}|{type:'chest'}|{type:'knowledge';points:number}|{type:'learn-skill';skill:CompanionSkill}|{type:'buy-potion'}|{type:'blessing';blessing:Blessing;run:number}|{type:'repeat';enabled:boolean}|{type:'dodge'};
-export function actCompanionGame(game:CompanionGame, action:GameAction, now:number):CompanionGame {
+export type GameAction = {type:'claim-quest';id:QuestId}|{type:'plan-path';path:RunPath;run:number;floor:number}|{type:'depart';area:ExpeditionArea}|{type:'return'}|{type:'upgrade';kind:Upgrade}|{type:'skill'}|{type:'heal'}|{type:'chest'}|{type:'knowledge';points:number}|{type:'learn-skill';skill:CompanionSkill}|{type:'buy-potion'}|{type:'blessing';blessing:Blessing;run:number}|{type:'repeat';enabled:boolean}|{type:'dodge'};
+export function actCompanionGame(game:CompanionGame, action:GameAction, now:number, evidence:QuestEvidence|null=null):CompanionGame {
   const current=advanceCompanionGame(game,now);const actionTime=Math.max(current.lastAt,now);
+  if(action.type==='claim-quest'){const quest=questDefinition(action.id);if(!quest||current.questClaims[action.id]||!questReady(action.id,evidence))return current;const target=evidence!.targets[quest.source];return {...current,relics:current.relics+quest.relics,questClaims:{...current.questClaims,[action.id]:{at:actionTime,count:evidence!.counts[quest.source],targetUid:target?.uid??null,targetSlug:target?.slug??null}}};}
+  if(action.type==='plan-path'){if(current.mode!=='expedition'||!isRunPath(action.path)||action.run!==current.run.number||action.floor!==runFloor(current.encounter)||current.run.plan===action.path)return current;return {...current,run:{...current.run,plan:action.path}};}
   if(action.type==='repeat')return {...current,run:{...current.run,repeat:action.enabled}};
   if(action.type==='blessing'){if(current.mode!=='expedition'||action.run!==current.run.number||!blessingChoices(current.run,current.encounter).includes(action.blessing))return current;const next={...current,run:{...current.run,drafted:current.run.drafted+1,boons:{...current.run.boons,[action.blessing]:current.run.boons[action.blessing]+1}}};return {...next,hp:Math.min(maxHp(next),current.hp+(action.blessing==='ward'?12:0))};}
   if(action.type==='dodge')return current.mode==='expedition'&&current.dodgeCooldown===0&&current.phase!=='rest'&&current.phase!=='loot'?{...current,guard:2,dodgeCooldown:4}:current;
@@ -157,8 +171,9 @@ export function actCompanionGame(game:CompanionGame, action:GameAction, now:numb
   }
   if(action.type==='upgrade') {
     const cost=upgradeCost(current,action.kind);
-    if(current.upgrades[action.kind]>=20 || current.gold<cost)return current;
-    return {...current,gold:current.gold-cost,upgrades:{...current.upgrades,[action.kind]:current.upgrades[action.kind]+1}};
+    const relicCost=forgeRelicCost(current.upgrades[action.kind]);
+    if(current.upgrades[action.kind]>=forgeLimit(current.questClaims) || current.gold<cost||current.relics<relicCost)return current;
+    return {...current,gold:current.gold-cost,relics:current.relics-relicCost,upgrades:{...current.upgrades,[action.kind]:current.upgrades[action.kind]+1}};
   }
   if(action.type==='chest'){const pending=Math.floor(current.wins/5)-current.chests;return pending>0?{...current,chests:current.chests+pending,gold:current.gold+pending*15,xp:current.xp+pending*10}:current;}
   if(action.type==='learn-skill')return availableSkillPoints(current)>0&&current.skills[action.skill]<5?{...current,skills:{...current.skills,[action.skill]:current.skills[action.skill]+1}}:current;

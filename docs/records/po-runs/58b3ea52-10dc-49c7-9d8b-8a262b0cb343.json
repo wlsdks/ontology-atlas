@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-25",
+  "decision": "Teach recorded responsibilities and direct dependencies through one camp learning expedition",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "explain",
+  "changes": [
+    "substantial-investment"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "scope",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-leverage"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-25",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "58b3ea52-10dc-49c7-9d8b-8a262b0cb343",
+  "recordedAt": "2026-09-25T06:34:09.652Z"
+}
