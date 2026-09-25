@@ -122,8 +122,16 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
       : null,
     [projectSource.runtimeAvailable, projectSourceNeedsNativeRuntime, t],
   );
+  /*
+   * A project with no code folder yet has no "existing connection" to keep. Four of the failure
+   * sentences end by reassuring that it is unchanged, which on the connect path claimed a
+   * binding that does not exist (2026-09-25 sweep); that path reads its own sentence.
+   */
+  const projectSourceUnbound = projectSource.view?.nextAction.id === "connect_source";
   const projectSourceErrorLabel = projectSource.error
-    ? t(`nodeDatasheet.sourceError_${projectSource.error}`)
+    ? projectSourceUnbound && t.has(`nodeDatasheet.sourceErrorUnbound_${projectSource.error}`)
+      ? t(`nodeDatasheet.sourceErrorUnbound_${projectSource.error}`)
+      : t(`nodeDatasheet.sourceError_${projectSource.error}`)
     : null;
   /**
    * **"Is this the right folder?" (the on-screen prompt) — connecting in one step instead of two.**

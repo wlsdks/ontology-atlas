@@ -507,7 +507,7 @@ function ProjectSourceRemedy({
       // line breaking a word splits down the middle, as in "Here / Found it".
       // (The action strip already uses the same grammar for the same reason —
       // zero values added.)
-      className="mt-0.5 flex flex-col gap-2 rounded-chip border border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] px-2.5 py-2 [word-break:keep-all]"
+      className="flex flex-col gap-2 rounded-chip border border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] px-2.5 py-2 [word-break:keep-all]"
     >
       {why ? (
         <p
@@ -1571,14 +1571,6 @@ export function OntologyMapDetailPanel({
                   {labels.sourceGap}
                 </span>
               ) : null}
-              {projectSourceError ? (
-                <span
-                  data-testid="map-project-source-error"
-                  className="text-[color:var(--color-status-danger)]"
-                >
-                  {projectSourceError}
-                </span>
-              ) : null}
               <div
                 ref={remedyBoxRef}
                 className="ai-row-disclosure"
@@ -1588,7 +1580,13 @@ export function OntologyMapDetailPanel({
                 inert={!showSourceRemedy}
               >
                 {remedyMounted ? (
-                  <div ref={remedyContentRef} className="ai-row-disclosure-body">
+                  /*
+                    The card's 2px lead-in is padding on the measured body, not a margin on the
+                    card: a child's top margin collapses through the body, so the disclosure
+                    sized itself 2px short and its `overflow: hidden` cut the card's bottom
+                    border off (2026-09-25 sweep, at 1512 and 1040).
+                  */
+                  <div ref={remedyContentRef} className="ai-row-disclosure-body pt-0.5">
                     <ProjectSourceRemedy
                       why={labels.sourceWhy}
                       actionLabel={labels.sourceAction}
@@ -1602,6 +1600,18 @@ export function OntologyMapDetailPanel({
                   </div>
                 ) : null}
               </div>
+              {/* The failure answers the press, so it stands under the button that was pressed
+                  (2026-09-25 sweep). Inserted above the remedy it pushed the button down from
+                  under the pointer, and the keyboard's focus fell to `<body>`. */}
+              {projectSourceError ? (
+                <span
+                  role="status"
+                  data-testid="map-project-source-error"
+                  className="text-[color:var(--color-status-danger)]"
+                >
+                  {projectSourceError}
+                </span>
+              ) : null}
             </div>
           ) : null}
 

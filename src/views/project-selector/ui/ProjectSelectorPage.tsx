@@ -155,8 +155,13 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
                 tone: "secondary",
                 hoverInk: "strong",
                 className:
-                  "min-w-0 max-w-full text-title text-[color:var(--color-text-primary)] after:absolute after:inset-0 after:rounded-card after:content-['']",
+                  "min-w-0 max-w-full text-title text-[color:var(--color-text-primary)] after:absolute after:inset-0 after:rounded-card after:content-[''] focus-visible:ring-0 focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-[color:var(--color-indigo-focus-ring)]",
               })}
+              /*
+                The ring is drawn on the stretched layer, not the words (2026-09-25 sweep): the
+                mouse presses the whole card, so the keyboard's focus has to outline the whole
+                card. It hugged the title text alone.
+              */
             >
               <span className="min-w-0 truncate">{name}</span>
             </Link>

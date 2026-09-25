@@ -60,6 +60,12 @@ import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { Checkbox, controlClass } from "@/shared/ui";
 import { buildConceptEgo, matchNodeId, type ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
+import {
+  CONFIRM_CANCEL_CLASS,
+  CONFIRM_PRIMARY_CLASS,
+  DocumentConfirmStep,
+  useInlineConfirmFocus,
+} from "./DocumentConfirmStep";
 import { PendingDocumentPane, type ChangedDocument } from "./PendingDocumentPane";
 import { cn } from "@/shared/lib/cn";
 
@@ -1020,6 +1026,20 @@ export function AtlasGitPanel({
   const runRemote = useCallback(
     async (kind: "fetch" | "pull" | "push") => {
       if (!vaultPath) return;
+      /*
+       * **Push never commits behind the person's back** (2026-09-25). The only
+       * native path that sends is `git_snapshot(push:true)`, and with changes on
+       * disk it records them first under the automatic subject — so a press on a
+       * button labelled "Push" used to write a commit nobody confirmed or named.
+       * With changes pending, Push opens the same confirm step as the commit
+       * button, the send already ticked: the person reads and can edit the line
+       * that will be recorded, and nothing leaves until they confirm.
+       */
+      if (kind === "push" && hasChanges) {
+        setPushOptIn(true);
+        setConfirming(true);
+        return;
+      }
       setRemoteBusy(kind);
       setRemoteActionError(null);
       setRemoteActionNotice(null);
@@ -1056,7 +1076,7 @@ export function AtlasGitPanel({
         setRemoteBusy(null);
       }
     },
-    [vaultPath, refresh, t, nativeErrors, remoteSummary],
+    [vaultPath, refresh, t, nativeErrors, remoteSummary, hasChanges],
   );
 
   /**
@@ -1861,8 +1881,11 @@ function LocationLine({
   setRemoteOpen,
   remoteBusy,
   onRemoteAction,
+  pendingCount,
 }: {
   t: Translator;
+  /** Uncommitted changes. Above zero, Push opens the commit confirm step first. */
+  pendingCount: number;
   branch: string | null;
   upstream: string | null;
   /** With no upstream both are null — that is "unknown", not 0. */
@@ -1967,7 +1990,13 @@ function LocationLine({
           <RemoteActionButton
             id="push"
             label={ahead && ahead > 0 ? `${t("remotePush")} ${ahead}` : t("remotePush")}
-            hint={ahead && ahead > 0 ? t("remotePushHint", { ahead }) : t("remoteSameHint")}
+            hint={
+              pendingCount > 0
+                ? t("remotePushCommitsFirstHint", { count: pendingCount })
+                : ahead && ahead > 0
+                  ? t("remotePushHint", { ahead })
+                  : t("remoteSameHint")
+            }
             busy={remoteBusy === "push"}
             disabled={remoteBusy !== null}
             onClick={onRemoteAction}
@@ -2149,74 +2178,27 @@ function DiscardDock({
   busy: boolean;
   onDiscard: (path: string, others: number) => Promise<boolean>;
 }) {
-  const [confirming, setConfirming] = useState(false);
   return (
     <div className="flex shrink-0 flex-col gap-2" data-testid="atlas-git-discard-dock">
-      {confirming ? (
-        <div
-          className="git-fade-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
-          data-testid="atlas-git-discard-step"
-        >
-          <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
-            {status === "deleted"
-              ? t("discardConfirmDeleted")
-              : t("discardConfirmBody", { added: delta?.added ?? 0, removed: delta?.removed ?? 0 })}
-          </p>
-          <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
-            {t("discardConfirmOthers", { count: others })}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              data-testid="atlas-git-discard-confirm"
-              disabled={busy}
-              onClick={() => {
-                void onDiscard(path, others).then((ok) => {
-                  if (ok) setConfirming(false);
-                });
-              }}
-              className={controlClass({
-                tone: "danger",
-                className: "border-[color:var(--color-danger-text)]",
-              })}
-            >
-              {busy ? t("discardRunning") : t("discardButton")}
-            </button>
-            <button
-              type="button"
-              data-testid="atlas-git-discard-cancel"
-              disabled={busy}
-              onClick={() => setConfirming(false)}
-              className={controlClass({})}
-            >
-              {t("cancelButton")}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button
-          type="button"
-          data-testid="atlas-git-discard"
-          onClick={() => setConfirming(true)}
-          /*
-           * A **quiet control, not a footnote.** At `size: 'sm'` it drew 9.5px type in
-           * quaternary ink at the ramp's 24px floor, which under a finger is below the
-           * touch floor and to the eye is not a control at all (2026-09-21). `md` is the
-           * ramp's measured mode: 11px on the shared 32px height, and `shape: 'chip'`
-           * carries `atlas-touch-floor`, so a finger still gets 44px. Quiet is now the
-           * transparent border and tertiary ink, not small type.
-           */
-          className={controlClass({
-            shape: "chip",
-            size: "md",
-            hoverInk: "strong",
-            hoverBorder: "strong",
-            className: "self-start border-transparent",
-          })}
-        >
-          {t("discardAction")}
-        </button>
-      )}
+      <DocumentConfirmStep
+        testIdPrefix="atlas-git-discard"
+        doorLabel={t("discardAction")}
+        confirmLabel={t("discardButton")}
+        busyLabel={t("discardRunning")}
+        cancelLabel={t("cancelButton")}
+        tone="danger"
+        busy={busy}
+        onConfirm={() => onDiscard(path, others)}
+      >
+        <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
+          {status === "deleted"
+            ? t("discardConfirmDeleted")
+            : t("discardConfirmBody", { added: delta?.added ?? 0, removed: delta?.removed ?? 0 })}
+        </p>
+        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
+          {t("discardConfirmOthers", { count: others })}
+        </p>
+      </DocumentConfirmStep>
     </div>
   );
 }
@@ -2704,13 +2686,22 @@ function ActionDock({
   snapshotMessage: string;
   setSnapshotMessage: (v: string) => void;
 }) {
+  const { triggerRef, initialRef, close, onKeyDown } = useInlineConfirmFocus(confirming, setConfirming, {
+    busy: snapshotting,
+  });
   return (
     <div
       data-testid="atlas-git-dock"
       className="mt-auto flex shrink-0 flex-col gap-2 border-t border-[color:var(--color-divider)] pt-3"
     >
       {confirming ? (
-        <div className="git-fade-in flex flex-col gap-2" data-testid="atlas-git-confirm-step">
+        <div
+          role="group"
+          aria-label={t("messageLabel")}
+          onKeyDown={onKeyDown}
+          className="git-fade-in flex flex-col gap-2"
+          data-testid="atlas-git-confirm-step"
+        >
           <p className="text-caption text-[color:var(--color-text-tertiary)]">{t("confirmBody")}</p>
           {/*
             The subject is **editable.** The automatic wording says what changed
@@ -2721,12 +2712,15 @@ function ActionDock({
           */}
           <input
             type="text"
+            ref={(node) => {
+              initialRef.current = node;
+            }}
             data-testid="atlas-git-message-input"
             value={snapshotMessage}
             onChange={(event) => setSnapshotMessage(event.target.value)}
             placeholder={predictedSubject}
             aria-label={t("messageLabel")}
-            className={fieldClass({ multiline: true, size: "md", className: "w-full font-mono text-label break-all" })}
+            className={fieldClass({ multiline: true, size: "md", className: "w-full font-mono break-all" })}
           />
           <Checkbox
             data-testid="atlas-git-push-optin"
@@ -2744,7 +2738,7 @@ function ActionDock({
               data-testid="atlas-git-confirm-button"
               disabled={snapshotting}
               onClick={confirmSnapshot}
-              className={PRIMARY_ACTION_CLASS}
+              className={CONFIRM_PRIMARY_CLASS}
             >
               {snapshotting ? t("snapshotRunning") : t("confirmButton")}
             </button>
@@ -2752,8 +2746,8 @@ function ActionDock({
               type="button"
               data-testid="atlas-git-cancel-button"
               disabled={snapshotting}
-              onClick={() => setConfirming(false)}
-              className={SECONDARY_ACTION_CLASS}
+              onClick={close}
+              className={CONFIRM_CANCEL_CLASS}
             >
               {t("cancelButton")}
             </button>
@@ -2762,6 +2756,7 @@ function ActionDock({
       ) : (
         <button
           type="button"
+          ref={triggerRef}
           data-testid="atlas-git-snapshot-button"
           disabled={!hasChanges}
           onClick={() => setConfirming(true)}
@@ -3176,6 +3171,7 @@ function DesktopBody({
       setRemoteOpen={setRemoteOpen}
       remoteBusy={remoteBusy}
       onRemoteAction={onRemoteAction}
+      pendingCount={hasChanges ? changeCount : 0}
     />
   );
 

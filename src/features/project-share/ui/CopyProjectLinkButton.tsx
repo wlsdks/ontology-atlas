@@ -62,7 +62,23 @@ export function CopyProjectLinkButton({
         {...props}
       >
         {icon}
-        {label}
+        {/*
+          Every label this button can wear is laid in one grid cell and only the current one is
+          visible, so the button is always as wide as its longest word (2026-09-25 sweep): "copy
+          link" becoming "link copied" grew it by 12px, and in the right-aligned top bar every
+          control to its left jumped. The live region below still announces the change.
+        */}
+        <span className="inline-grid">
+          {[t("labelIdle"), t("labelCopied"), t("labelError")].map((option) => (
+            <span
+              key={option}
+              aria-hidden={option === label ? undefined : true}
+              className={option === label ? "col-start-1 row-start-1" : "invisible col-start-1 row-start-1"}
+            >
+              {option}
+            </span>
+          ))}
+        </span>
       </Button>
       <span className="sr-only" aria-live="polite" aria-atomic="true">
         {state === "idle" ? "" : label}

@@ -29,7 +29,7 @@ import {
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
 } from '@/features/docs-vault-local';
-import { SETTINGS_SECTION_LABEL, SettingsGroup, SettingsRow } from './settings-primitives';
+import { DETAIL_TOGGLE_CHIP, SETTINGS_SECTION_LABEL, SettingsGroup, SettingsRow } from './settings-primitives';
 import { formatAgentPostChangeSyncPacket } from '@/entities/knowledge-graph';
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { AgentClientId } from '@/entities/vault-session';
@@ -898,14 +898,17 @@ export function VaultAgentSetupPanel({
                     : t('agentSetup.rootSummaryMissing')}
                 </p>
               </InfoHint>
+              {/* The header slot's one action wears the Agents tab's grammar for the same slot
+                  (`Chip lg` + `DETAIL_TOGGLE_CHIP`, as "check again"): it was a 24px chip at 9.5px
+                  beside a 32px, 12.5px button in the sibling tab (2026-09-25 sweep). */}
               <Chip
-                size="sm"
+                size="lg"
                 tone="secondary"
                 data-testid="agent-setup-verify-open"
                 onClick={() => setVerifyOpen(true)}
-                className={NEUTRAL_COPY_CHIP}
+                className={`${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`}
               >
-                <CheckCircle2 size={ICON_SIZE.sm} aria-hidden />
+                <CheckCircle2 size={ICON_SIZE.md} aria-hidden />
                 {tc('step3Title')}
               </Chip>
             </>
@@ -989,7 +992,11 @@ export function VaultAgentSetupPanel({
             {tc('step3Title')}
           </h2>
           <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+            {/* The count names its scope (2026-09-25 sweep): "0/2" under a panel that lists four
+                tools read as two of the four being counted. Atlas reads back only these files;
+                the other tools' files it writes and never reads, which the footnote below says. */}
             {t('agentSetup.statusSummary', {
+              tools: agentSetupConnections.map(({ label }) => label).join(' · '),
               ready: agentSetupReadyCount,
               total: agentSetupFiles.length,
             })}
@@ -1026,27 +1033,17 @@ export function VaultAgentSetupPanel({
               {t('agentSetup.connectionStatusHeading')}
             </h3>
               <div className="divide-y divide-[color:var(--color-divider)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)]">
-                <div className="flex items-center gap-2 px-2.5 py-2">
-                  <span
-                    aria-hidden
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{
-                      backgroundColor: agentSetupReady
-                        ? 'var(--color-status-success)'
-                        : 'var(--color-text-quaternary)',
-                    }}
-                  />
-                  <span className="min-w-0 flex-1 break-keep text-body text-[color:var(--color-text-secondary)]">
-                    {agentSetupReady
-                      ? t('agentSetup.connectionCheckReady')
-                      : /*
-                           The count is **not** repeated here. This line used to open with
-                           "N/M connection files ready", which the dialog's own subtitle says
-                           130px above it; what it adds is where the missing ones come from.
-                        */
-                        t('agentSetup.connectionCheckPending')}
-                  </span>
-                </div>
+                {agentSetupReady ? (
+                  <div className="flex items-center gap-2 px-2.5 py-2">
+                    <span
+                      aria-hidden
+                      className="h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-status-success)]"
+                    />
+                    <span className="min-w-0 flex-1 break-keep text-body text-[color:var(--color-text-secondary)]">
+                      {t('agentSetup.connectionCheckReady')}
+                    </span>
+                  </div>
+                ) : null}
                 <dl className="grid gap-1 px-2.5 py-2">
                   {agentSetupConnections.map(({ key, label, check }) => (
                     <div key={key} className="flex items-baseline justify-between gap-2">
@@ -1062,6 +1059,19 @@ export function VaultAgentSetupPanel({
                   ))}
                 </dl>
               </div>
+              {/*
+                "The rest" refers to the rows above, so it follows them, as a footnote rather than
+                a status row with a dot ahead of the list it points at (2026-09-25 sweep). The
+                count is **not** repeated: the dialog's subtitle already says it.
+              */}
+              {agentSetupReady ? null : (
+                <p
+                  data-testid="agent-setup-connection-pending"
+                  className="break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+                >
+                  {t('agentSetup.connectionCheckPending')}
+                </p>
+              )}
               {/*
                 **The proof packet ends the step whose job is proving it** (2026-09-05). It used to
                 be a card below this whole pane, so on the installed app the thing that actually
@@ -1185,7 +1195,7 @@ export function VaultAgentSetupPanel({
           </ul>
           {hasMissingAgentConfig && canEditCurrent ? (
             <Chip
-              size="sm"
+              size="md"
               /* The message is already on screen; this catch only stops an unhandled rejection
                  from the re-throw that tells the per-tool buttons their write failed. */
               onClick={() => void handleEnsureAgentConfigs().catch(() => undefined)}
@@ -1390,7 +1400,7 @@ export function VaultAgentSetupPanel({
           </details>
           <div className="flex flex-wrap gap-1.5">
             <Chip
-              size="sm"
+              size="md"
               onClick={onOpenWorkflowGuide}
               title={t('agentSetup.openWorkflowGuideTitle')}
               tone="accentOnTint"
@@ -1400,7 +1410,7 @@ export function VaultAgentSetupPanel({
               {t('agentSetup.openWorkflowGuide')}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentSetupPacket()}
               title={t('agentSetup.copyPacketTitle')}
               tone="secondary"
@@ -1410,7 +1420,7 @@ export function VaultAgentSetupPanel({
               {copyPacketLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentVerifyPrompt()}
               title={t('agentSetup.copyPromptTitle')}
               tone="secondary"
@@ -1474,7 +1484,7 @@ export function VaultAgentSetupPanel({
           </ol>
           <div className="flex flex-wrap gap-1.5">
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentJsonGate()}
               title={t('agentSetup.copyJsonGateTitle')}
               tone="secondary"
@@ -1484,7 +1494,7 @@ export function VaultAgentSetupPanel({
               {copyJsonGateLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentVerifyCli()}
               title={t('agentSetup.copyCliTitle')}
               tone="secondary"
@@ -1494,7 +1504,7 @@ export function VaultAgentSetupPanel({
               {copyCliLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentFirstContactProof()}
               title={t('agentSetup.copyFirstContactProofTitle')}
               tone="secondary"
@@ -1512,7 +1522,7 @@ export function VaultAgentSetupPanel({
               {t('agentSetup.syncAfterChangeDesc')}
             </p>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentPostChangeSyncGate()}
               title={t('agentSetup.copyPostChangeSyncTitle')}
               tone="secondary"
@@ -1544,7 +1554,7 @@ export function VaultAgentSetupPanel({
           </dl>
           <div className="flex flex-wrap gap-1.5">
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentSetupCheckCliCommand()}
               title={t('agentSetup.copySetupCheckCliTitle')}
               tone="secondary"
@@ -1554,7 +1564,7 @@ export function VaultAgentSetupPanel({
               {copySetupCheckCliLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentSetupCliCommand()}
               title={t('agentSetup.copySetupCliTitle')}
               tone="secondary"
@@ -1564,7 +1574,7 @@ export function VaultAgentSetupPanel({
               {copySetupCliLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentConfigTemplate()}
               title={t('agentSetup.copyTemplateTitle')}
               tone="secondary"
@@ -1574,7 +1584,7 @@ export function VaultAgentSetupPanel({
               {copyTemplateLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyCodexConfigTemplate()}
               title={t('agentSetup.copyCodexTemplateTitle')}
               tone="secondary"
@@ -1584,7 +1594,7 @@ export function VaultAgentSetupPanel({
               {copyCodexTemplateLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyCodexMcpAddCommand()}
               title={t('agentSetup.copyCodexCliTitle')}
               tone="secondary"

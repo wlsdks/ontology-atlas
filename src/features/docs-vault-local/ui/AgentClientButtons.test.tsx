@@ -126,7 +126,10 @@ describe("AgentClientButtons — 쓰지 못한 write 는 성공처럼 보이지 
     expect(button.querySelector('[data-brand-detail]')).toBeNull();
     fireEvent.click(button);
     expect(button).toHaveAttribute('data-state', 'busy');
-    expect(button).toBeDisabled();
+    // Busy is announced, not `disabled`: a disabled button drops keyboard focus to <body>.
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).not.toBeDisabled();
     const mark = button.querySelector('[data-brand-detail="micro"]');
     expect(mark).toHaveAttribute('width', '16');
     expect(mark).toHaveAttribute('height', '16');

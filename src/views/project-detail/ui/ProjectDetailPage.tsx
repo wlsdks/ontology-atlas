@@ -698,7 +698,13 @@ export function ProjectDetailPage({
                   : t("constructionReview.openResult")}
               </Button>
               {canManageProject ? (
-                <ProjectQuickEditPanel project={project} settingsHref={projectFullEditHref} triggerVariant="outline" />
+                <ProjectQuickEditPanel
+                  project={project}
+                  settingsHref={projectFullEditHref}
+                  triggerVariant="outline"
+                  displayName={displayName ?? null}
+                  displayLocale={locale}
+                />
               ) : null}
             </div>
           </div>
@@ -1137,8 +1143,25 @@ export function ProjectDetailPage({
               data-testid="project-detail-handoff-copy"
               className="self-start @2xl/handoff:self-center"
             >
-              {handoffCopyLabel}
+              {/* The longest label reserves the width (2026-09-25 sweep): "copied: paste it into
+                  your AI chat" grew the button by 65px for two seconds and shrank it back. */}
+              <span className="inline-grid">
+                {[t("handoffCopyLabel"), t("handoffCopiedLabel"), t("handoffCopyErrorLabel")].map((option) => (
+                  <span
+                    key={option}
+                    aria-hidden={option === handoffCopyLabel ? undefined : true}
+                    className={
+                      option === handoffCopyLabel ? "col-start-1 row-start-1" : "invisible col-start-1 row-start-1"
+                    }
+                  >
+                    {option}
+                  </span>
+                ))}
+              </span>
             </Button>
+            <span className="sr-only" aria-live="polite" aria-atomic="true">
+              {handoffCopy.state === "idle" ? "" : handoffCopyLabel}
+            </span>
           </div>
           <details className="mt-3 border-t border-[color:var(--color-divider)] pt-3">
             <summary className="w-fit select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">

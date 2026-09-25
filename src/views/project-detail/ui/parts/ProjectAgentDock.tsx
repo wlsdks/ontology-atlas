@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/shared/lib/cn";
@@ -62,6 +62,34 @@ export function ProjectAgentDock({
     if (!open) bornOpenRef.current = false;
   }, [open]);
 
+  /*
+   * **Focus goes back where it came from** (2026-09-25 sweep). Closing turns the frame
+   * `inert`, and a focused control inside an inert subtree loses focus to `<body>`: the
+   * keyboard was left at the top of the document, pages away from the "hand it to an agent"
+   * door that opened the dock. The opener is read in a layout effect so it is taken before
+   * any child's passive effect can move focus into the composer.
+   */
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(open);
+  useLayoutEffect(() => {
+    if (open && !wasOpenRef.current) {
+      const active = document.activeElement;
+      openerRef.current =
+        active instanceof HTMLElement && active !== document.body && !frameRef.current?.contains(active)
+          ? active
+          : null;
+    }
+    if (!open && wasOpenRef.current) {
+      const active = document.activeElement;
+      const focusWasHere = !active || active === document.body || frameRef.current?.contains(active);
+      const opener = openerRef.current;
+      openerRef.current = null;
+      if (focusWasHere && opener?.isConnected) opener.focus();
+    }
+    wasOpenRef.current = open;
+  }, [open]);
+
   // The session is enabled once the frame's width transition has ended (see `onTransitionEnd`);
   // narrow viewports and reduced motion have no transition to wait for, so they settle on the
   // next frame instead.
@@ -81,6 +109,7 @@ export function ProjectAgentDock({
 
   return (
     <div
+      ref={frameRef}
       data-testid="project-agent-dock-frame"
       data-right-dock={open || presence.mounted ? "project-agent" : undefined}
       data-dock-state={open ? "open" : standing ? "put-away" : "empty"}
@@ -102,7 +131,16 @@ export function ProjectAgentDock({
       className={cn(
         "absolute right-0 top-0 z-30 min-h-0 overflow-hidden bg-[color:var(--color-canvas)]",
         "bottom-[calc(var(--topology-mobile-bottom-tab-reserve)+0.75rem)] lg:bottom-0",
-        "xl:relative xl:inset-auto xl:z-auto xl:shrink-0",
+        /*
+         * At `xl` the frame is a flex sibling of `main` inside the shell's scrolling body slot.
+         * As a plain `relative` child it stretched to the row, which is as tall as the page:
+         * 1389px against a 949px window at 1512, so the composer and send button started below
+         * the fold and the header scrolled away with the page (the close button and the composer
+         * were never on screen together). Sticky to the slot's top at the slot's own height
+         * (the shell's `h-dvh` column, with no bottom tab bar at `xl`), the dock stays one
+         * window tall and stays put while the page scrolls beside it.
+         */
+        "xl:sticky xl:inset-auto xl:top-0 xl:z-auto xl:h-dvh xl:shrink-0 xl:self-start",
         open ? "w-full xl:w-[var(--project-agent-chat-width)]" : "pointer-events-none w-0 xl:w-0",
       )}
     >

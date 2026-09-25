@@ -272,16 +272,22 @@ export function useAgentDoctor(
        * debris rather than as the row's second action. `md` shares `lg`'s 32px height and drops only
        * one text step — equal height, real hierarchy, which is what the dimensional-regularity rule
        * asks for.
+       *
+       * ⚠️ **Then the one text step was the mismatch** (2026-09-25 sweep): 11px beside 12.5px, 8px
+       * apart in one row, read as two grammars rather than as a hierarchy. The row's hierarchy is
+       * carried by tone — the chat chip is tinted indigo, this one is quiet ink on a soft border —
+       * so the size is the row's one step, `lg`.
        */
-      size="md"
-      tone="muted"
+      size="lg"
+      tone="secondary"
       hoverInk="strong"
+      hoverBorder="strong"
       data-testid="agent-doctor-scan"
       disabled={busy !== null}
       onClick={() => void run()}
-      className="shrink-0"
+      className="shrink-0 border-[color:var(--color-border-soft)]"
     >
-      <Stethoscope size={ICON_SIZE.sm} aria-hidden />
+      <Stethoscope size={ICON_SIZE.md} aria-hidden />
       {busy === 'scan' ? t('scanning') : t('scan')}
     </Chip>
     {/*
@@ -295,15 +301,16 @@ export function useAgentDoctor(
     {checks && !prerequisiteBlocked ? (
       <Chip
         /* Same row as the scan chip above, so the same step. */
-        size="md"
-        tone="muted"
+        size="lg"
+        tone="secondary"
         hoverInk="strong"
+        hoverBorder="strong"
         data-testid="agent-doctor-reset"
         disabled={busy !== null}
         onClick={() => void reset()}
-        className="ml-1.5 shrink-0"
+        className="ml-1.5 shrink-0 border-[color:var(--color-border-soft)]"
       >
-        <RotateCcw size={ICON_SIZE.sm} aria-hidden />
+        <RotateCcw size={ICON_SIZE.md} aria-hidden />
         {busy === 'reset' ? t('resetting') : t('reset')}
       </Chip>
     ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useFormatter } from "next-intl";
 import { cn } from "@/shared/lib/cn";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
@@ -10,6 +11,7 @@ import { parseUnifiedDiff } from "@/shared/lib/atlas-git-record";
 import { DocumentChangeReader, type ChangedDocument } from "./PendingDocumentPane";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { ConceptEgoCard } from "./ConceptEgoCard";
+import { DocumentConfirmStep } from "./DocumentConfirmStep";
 
 /**
  * What one step changed — identity (title, hash) always on top, the rest split
@@ -138,6 +140,16 @@ export function CommitDetail({
   kindLabel: (kind: string) => string;
 }) {
   const focused = focusedConceptId ?? concepts[0]?.id ?? null;
+  const format = useFormatter();
+  const absoluteTime = useMemo(() => {
+    const instant = new Date(isoTime);
+    if (Number.isNaN(instant.getTime())) return isoTime;
+    try {
+      return format.dateTime(instant, { dateStyle: "medium", timeStyle: "short" });
+    } catch {
+      return isoTime;
+    }
+  }, [format, isoTime]);
 
   /*
    * Concept chips are an **exclusive single selection**: the initial value is
@@ -247,7 +259,11 @@ export function CommitDetail({
         </p>
         <p className="font-mono text-caption break-all text-[color:var(--color-text-quaternary)]">
           {headline ? <>{subject} · </> : null}
-          {t("historyItemDetail", { hash, isoTime })} · {relativeTime}
+          {t("historyItemDetail", { hash })} ·{" "}
+          {/* The reader's clock, not git's wire format: `2026-09-12T06:00:00.000Z` sat on
+              /ko as the only English-shaped line on the screen. The instant itself stays
+              machine-readable in `dateTime`. */}
+          <time dateTime={isoTime}>{absoluteTime}</time> · {relativeTime}
         </p>
       </header>
 
@@ -484,92 +500,38 @@ function RestoreDock({
   busy: boolean;
   onRestore: (path: string, others: number) => Promise<boolean>;
 }) {
-  const [confirming, setConfirming] = useState(false);
   return (
     <div className="flex flex-col gap-2" data-testid="atlas-git-restore-dock">
-      {confirming ? (
-        <div
-          className="git-fade-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
-          data-testid="atlas-git-restore-step"
-        >
-          <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
-            {t("restoreConfirmBody", { path, when })}
-          </p>
-          {pending && pending.added + pending.removed > 0 ? (
-            <p className="text-label leading-prose text-[color:var(--color-danger-text)]">
-              {t("restoreConfirmPending", { added: pending.added, removed: pending.removed })}
-            </p>
-          ) : null}
-          <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
-            {t("restoreConfirmLands")}
-            {others > 0 ? ` ${t("restoreConfirmOthers", { count: others })}` : ""}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              data-testid="atlas-git-restore-confirm"
-              disabled={busy}
-              onClick={() => {
-                void onRestore(path, others).then((ok) => {
-                  if (ok) setConfirming(false);
-                });
-              }}
-              className={controlClass({ tone: "onAccent" })}
-            >
-              {busy ? t("restoreRunning") : t("restoreButton")}
-            </button>
-            <button
-              type="button"
-              data-testid="atlas-git-restore-cancel"
-              disabled={busy}
-              onClick={() => setConfirming(false)}
-              className={controlClass({})}
-            >
-              {t("cancelButton")}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          {label ? (
+      <DocumentConfirmStep
+        testIdPrefix="atlas-git-restore"
+        doorLabel={t("restoreAction")}
+        lead={
+          label ? (
             <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
               {label}
             </span>
-          ) : null}
-          <button
-            type="button"
-            data-testid="atlas-git-restore"
-            onClick={() => setConfirming(true)}
-            /*
-             * The screen's two doors share one grammar. Measured 2026-09-20: this door
-             * resolved to `--color-text-quaternary` (#82828a) and sat between a caption on
-             * the same token and a heading on `--color-text-tertiary` (#8a8f98) — a 3%
-             * luminance spread, so at rest nothing told the only control that writes to
-             * disk apart from the sentences around it. The chip shape carries the
-             * affordance (padding, a border on hover) exactly as the discard door does;
-             * `secondary` carries legibility. Neither adds a colour.
-             */
-            className={controlClass({
-              shape: "chip",
-              size: "sm",
-              tone: "secondary",
-              hoverInk: "strong",
-              hoverBorder: "strong",
-              /*
-               * The chip's own `px-2` would start this label 9px right of everything
-               * else in the column — the section heading, the timeline rows and the
-               * document name all begin on one line, and a control that breaks it
-               * reads as an indent rather than as an affordance. The negative inline
-               * start margin puts the label back on that line while the chip keeps
-               * its padding to draw a hover border around.
-               */
-              className: "-ml-2 self-start border-transparent",
-            })}
-          >
-            {t("restoreAction")}
-          </button>
+          ) : null
+        }
+        confirmLabel={t("restoreButton")}
+        busyLabel={t("restoreRunning")}
+        cancelLabel={t("cancelButton")}
+        tone="primary"
+        busy={busy}
+        onConfirm={() => onRestore(path, others)}
+      >
+        <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
+          {t("restoreConfirmBody", { path, when })}
         </p>
-      )}
+        {pending && pending.added + pending.removed > 0 ? (
+          <p className="text-label leading-prose text-[color:var(--color-danger-text)]">
+            {t("restoreConfirmPending", { added: pending.added, removed: pending.removed })}
+          </p>
+        ) : null}
+        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
+          {t("restoreConfirmLands")}
+          {others > 0 ? ` ${t("restoreConfirmOthers", { count: others })}` : ""}
+        </p>
+      </DocumentConfirmStep>
     </div>
   );
 }
