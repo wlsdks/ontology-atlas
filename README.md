@@ -66,7 +66,12 @@ and a final guardian. Plan a rest, supply, or elite path for the next floor. Twe
 one-time quests reward recorded project work with materials for guaranteed personal
 equipment enhancement. Ordinary activities can unlock every forge tier; verified
 ACP work offers optional quests with explicit assistance requests. Quest completion
-records activity, never meaning acceptance. Project and reading XP unlock
+records activity, never meaning acceptance. At camp, learning expeditions (T) follow
+a real concept's responsibility and boundaries, inspect a recorded direct dependency
+in its declaring document, and save your own explanation or open question. Sources
+remain readable inside the game; completion rechecks their saved identity and version.
+Learning activity reuses the existing once-per-concept reading and reflection XP,
+without certifying understanding. Project and reading XP unlock
 destinations; combat XP does not. Optional auto retry continues while away, with at most
 four hours of catch-up. A camp constellation shows the records you have built.
 Original personal memories remain intact. Game progress does not judge correctness,

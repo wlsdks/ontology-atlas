@@ -1,10 +1,12 @@
 import {expect,test,type Page} from '@playwright/test';
 import {installDesktopRailRuntime,DESKTOP_VAULT_ROOT} from './desktop-rail-arrival-harness';
 import type {AcpWorkReceipt} from '@/shared/lib/acp-work-receipt';
+import {FIXTURE_VAULT} from './fixture-vault';
+import {waitForBoxStill} from './settle';
 
 const completed=():AcpWorkReceipt=>({v:1,id:'quest-session:write-1',at:'2026-09-25T00:00:00Z',updatedAt:'2026-09-25T00:00:01Z',agent:'codex-acp',request:'Propose a useful body improvement',tool:'patch_concept',decision:'allowed',result:'completed',items:[{target:'capabilities/cart-pricing',operation:'update',relation:null,fields:['body']}],origin:{vaultId:DESKTOP_VAULT_ROOT,sessionGeneration:1,sessionId:'quest-session',userEventId:'human-request',requestId:1,toolCallId:'write-1'},writerCorrelation:{status:'verified',server:'atlas-vault',tool:'patch_concept',toolCall:'structured-mcp',approval:'structured-mcp',terminal:'completed'}});
-async function boot(page:Page,receipts:AcpWorkReceipt[]=[],locale='en'){
- await installDesktopRailRuntime(page,{'.ontology-atlas/acp-work.jsonl':receipts.map(value=>JSON.stringify(value)).join('\n')});await page.emulateMedia({reducedMotion:'reduce'});await page.goto(`/${locale}/?guides=off&e2e=1`);await page.getByTestId('first-run-open').click();await page.getByTestId('companion-trigger').click();
+async function boot(page:Page,receipts:AcpWorkReceipt[]=[],locale='en',files:Record<string,string>={}){
+ await installDesktopRailRuntime(page,{...files,'.ontology-atlas/acp-work.jsonl':receipts.map(value=>JSON.stringify(value)).join('\n')});await page.emulateMedia({reducedMotion:'reduce'});await page.goto(`/${locale}/?guides=off&e2e=1`);await page.getByTestId('first-run-open').click();await page.getByTestId('companion-trigger').click();
  const dialog=page.getByTestId('companion-journal');await expect(dialog.getByTestId('companion-world')).toBeVisible();const receipt=dialog.getByRole('button',{name:/Continue the adventure|모험 이어가기/});if(await receipt.isVisible())await receipt.click();await expect(dialog.getByTestId('companion-world')).toBeFocused();return dialog;
 }
 const state=(page:Page)=>page.evaluate(()=>JSON.parse(localStorage.getItem(Object.keys(localStorage).find(key=>key.startsWith('ontology-atlas:companion-game:v1:'))!)!));
@@ -12,13 +14,14 @@ async function openQuests(page:Page){await page.keyboard.press('l');await expect
 async function partner(page:Page){await openQuests(page);await page.getByTestId('companion-quests').getByRole('button',{name:'Next page',exact:true}).click();await page.getByRole('button',{name:'Working together',exact:true}).click();}
 
 async function panelGeometry(page:Page){
+ await waitForBoxStill(page.getByTestId('companion-content'));
  return page.getByTestId('companion-content').evaluate(el=>{
   const bounds=el.getBoundingClientRect();const outside:string[]=[];const misses:string[]=[];const sizes:{label:string;width:number;height:number}[]=[];
   for(const button of el.querySelectorAll('button')){
    const r=button.getBoundingClientRect();if(!r.width||!r.height)continue;const label=button.getAttribute('aria-label')||button.textContent||'button';sizes.push({label,width:r.width,height:r.height});
    if(r.left<bounds.left-1||r.right>bounds.right+1||r.top<bounds.top-1||r.bottom>bounds.bottom+1)outside.push(label);
    if(button.disabled)continue;
-   for(const [x,y] of [[r.x+r.width/2,r.y+r.height/2],[r.left+2,r.y+r.height/2],[r.right-2,r.y+r.height/2],[r.x+r.width/2,r.top+2],[r.x+r.width/2,r.bottom-2]])if(!button.contains(document.elementFromPoint(x,y)))misses.push(JSON.stringify({label,x,y,hit:document.elementFromPoint(x,y)?.outerHTML.slice(0,240)}));
+   for(const [x,y] of [[r.x+r.width/2,r.y+r.height/2],[r.left+2,r.y+r.height/2],[r.right-2,r.y+r.height/2],[r.x+r.width/2,r.top+2],[r.x+r.width/2,r.bottom-2]])if(!button.contains(document.elementFromPoint(x,y)))misses.push(JSON.stringify({label,x,y,hit:document.elementFromPoint(x,y)?.outerHTML.slice(0,600),bounds:bounds.toJSON(),button:r.toJSON(),panel:el.parentElement?.getBoundingClientRect().toJSON(),menu:document.querySelector('[aria-label="Game menu"]')?.getBoundingClientRect().toJSON()}));
   }
   return {x:el.scrollWidth-el.clientWidth,y:el.scrollHeight-el.clientHeight,outside,misses,sizes};
  });
@@ -54,6 +57,30 @@ for(const variant of ['pending','failed','rejected','foreign','legacy','approval
 test('assistance shows the request, can be cancelled, and stays honest when no ACP receiver is ready',async({page})=>{
  const dialog=await boot(page);await partner(page);await dialog.getByRole('button',{name:'Prepare ACP assistance',exact:true}).click();await expect(dialog.getByText('Send this request to the agent',{exact:true})).toBeVisible();await dialog.getByRole('button',{name:'Go back',exact:true}).click();await expect(dialog.getByTestId('companion-quests')).toBeVisible();expect((await state(page)).relics).toBe(0);
  await dialog.getByRole('button',{name:'Prepare ACP assistance',exact:true}).click();await dialog.getByRole('button',{name:'Send this request to ACP',exact:true}).click();await expect(dialog.getByRole('alert')).toContainText('Nothing was sent');await expect(dialog.getByRole('button',{name:'Check agent connection',exact:true})).toBeVisible();
+});
+
+test('the forge unlock route leads to an available ordinary quest after declining ACP',async({page})=>{
+ const dialog=await boot(page);await partner(page);await dialog.getByRole('button',{name:'Prepare ACP assistance',exact:true}).click();await dialog.getByRole('button',{name:'Go back',exact:true}).click();
+ await page.evaluate(()=>{const key=Object.keys(localStorage).find(key=>key.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.upgrades.sword=5;localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});
+ await page.keyboard.press('i');await dialog.getByRole('button',{name:'Unlock tiers through quests',exact:true}).click();await expect(dialog.getByTestId('companion-quests').getByRole('heading',{name:'First roots',exact:true})).toBeVisible();await expect(dialog.getByRole('button',{name:'Claim reward',exact:true})).toBeEnabled();
+});
+
+test('a saved source stays inside the game, pages beyond its excerpt, and returns to its quest',async({page})=>{
+ const path='capabilities/cart-pricing.md';const body=FIXTURE_VAULT[path]+'\n\n'+('A boundary must have supporting evidence. '.repeat(6))+'\n\nUnique final source witness.';
+ const dialog=await boot(page,[],'en',{[path]:body});await openQuests(page);const before=await state(page);await dialog.getByRole('button',{name:/Current source:/}).click();const reader=dialog.getByTestId('companion-source');await expect(reader).toBeVisible();await expect(reader).toBeFocused();
+ const next=reader.getByRole('button',{name:'Next page',exact:true});while(await next.isEnabled())await next.click();await expect(reader.getByTestId('companion-source-body')).toContainText('Unique final source witness.');expect((await state(page)).questClaims).toEqual(before.questClaims);
+ await page.keyboard.press('Escape');await expect(reader).toBeHidden();await expect(dialog.getByTestId('companion-quests').getByRole('heading',{name:'First roots',exact:true})).toBeVisible();await expect(dialog.getByTestId('companion-overlay')).toBeFocused();
+ await dialog.getByRole('button',{name:/Current source:/}).click();await reader.getByRole('button',{name:'Open in project (leaves game)',exact:true}).click();await expect(dialog).toBeHidden();await expect(page).toHaveURL(/p=capabilities%2Fcart-pricing/);
+});
+
+test('reduced motion keeps a visible opacity-only claim and forge receipt',async({page})=>{
+ const dialog=await boot(page);await openQuests(page);await dialog.getByRole('button',{name:'Claim reward',exact:true}).click();const receipt=dialog.getByTestId('companion-confirmation');await expect(receipt).toContainText('Relics ×1 collected');await expect(receipt).toBeVisible();expect(await receipt.evaluate(el=>getComputedStyle(el).transform)).toBe('none');
+ await page.evaluate(()=>{const key=Object.keys(localStorage).find(key=>key.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.gold=100;localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});await page.keyboard.press('i');await dialog.getByRole('button',{name:'Upgrade · 20 G',exact:true}).click();await expect(receipt).toContainText('Enhanced · +1');await expect(receipt).toBeVisible();expect(await receipt.evaluate(el=>getComputedStyle(el).transform)).toBe('none');
+});
+
+for(const locale of ['en','ko'])test(`saved source paging remains reachable at narrow, short and enlarged text (${locale})`,async({page})=>{
+ const path='capabilities/cart-pricing.md';const dialog=await boot(page,[],locale,{[path]:FIXTURE_VAULT[path]+'\n\n'+('사업 책임과 근거 Business responsibility and evidence.\n'.repeat(8))});await openQuests(page);await dialog.getByRole('button',{name:/Current source:|현재 자료:/}).click();const source=dialog.getByTestId('companion-source');await expect(source.getByRole('button',{name:/Next page|다음 페이지/})).toBeVisible();
+ for(const [width,height,font] of [[320,740,'100%'],[390,844,'100%'],[844,390,'100%'],[1512,900,'200%']] as const){await page.setViewportSize({width,height});await page.evaluate(value=>document.documentElement.style.fontSize=value,font);const geometry=await panelGeometry(page);console.log('SOURCE_FIT',locale,width,height,font,JSON.stringify(geometry));expectFit(geometry);}
 });
 
 test('the next path applies at the floor boundary while current-floor effects remain fixed',async({page})=>{
@@ -131,4 +158,14 @@ test('closed-panel quest and expedition controls do not overlap or lose their hi
   await page.keyboard.press('m');await dialog.getByRole('button',{name:'Return to camp',exact:true}).click();
  }
  await context.close();
+});
+
+test('closing a folio retains its content and width through the exit animation',async({page})=>{
+ const dialog=await boot(page);await page.emulateMedia({reducedMotion:'no-preference'});await openQuests(page);await page.getByTestId('companion-overlay').evaluate(element=>{const width=element.getBoundingClientRect().width;const observer=new MutationObserver(()=>{if(element.getAttribute('data-surface-state')==='exiting'){(window as unknown as {folioExit:unknown}).folioExit={width:element.getBoundingClientRect().width,originalWidth:width,title:element.querySelector('h3')?.textContent,retained:Boolean(element.querySelector('[data-testid="companion-quests"]'))};observer.disconnect();}});observer.observe(element,{attributes:true,childList:true,subtree:true});});
+ await page.keyboard.press('Escape');await expect.poll(()=>page.evaluate(()=>(window as unknown as {folioExit:{retained:boolean}|undefined}).folioExit?.retained)).toBe(true);const result=await page.evaluate(()=>(window as unknown as {folioExit:{width:number;originalWidth:number;title:string}}).folioExit);expect(result.width).toBeCloseTo(result.originalWidth,0);expect(result.title).toBeTruthy();await expect(dialog.getByTestId('companion-overlay')).toBeHidden();
+});
+
+for(const locale of ['en','ko'])test(`locked equipment explains every gate within the panel (${locale})`,async({page})=>{
+ const dialog=await boot(page,[],locale);await page.evaluate(()=>{const key=Object.keys(localStorage).find(key=>key.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.upgrades={sword:5,armor:5,library:5};localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});await page.keyboard.press('i');
+ for(const [width,height,font] of [[320,740,'100%'],[390,844,'100%'],[844,390,'100%'],[1512,900,'200%']] as const){await page.setViewportSize({width,height});await page.evaluate(value=>document.documentElement.style.fontSize=value,font);for(const gear of locale==='en'?['Starlight blade','Night-sky cloak','Archive spellbook']:['별빛 검','밤하늘 망토','기록의 마법서']){await dialog.getByRole('button',{name:gear+' · 1',exact:true}).click();await expect(dialog.getByRole('button',{name:/Unlock tiers through quests|의뢰로 강화 단계 열기/})).toBeVisible();const geometry=await panelGeometry(page);console.log('LOCKED_FORGE_FIT',locale,width,height,gear,JSON.stringify(geometry));expectFit(geometry);}}
 });

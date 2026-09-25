@@ -26,7 +26,7 @@ export function observeCompanionProject(manifest:VaultManifest){
  const wikiSlugs=new Set(selectWikiPages(manifest.docs).map(page=>page.slug));
  const wiki=manifest.docs.filter(doc=>wikiSlugs.has(doc.slug));
  const detail=[...concepts,...wiki].reduce((sum,doc)=>sum+Math.min(10,Math.floor(Math.max(0,doc.wordCount??0)/40)),0);
- return {relationSlug:connected[0]?nodes.get(connected[0].from)?.sourceSlug??null:null,counts:{concepts:Math.min(100000,targets.length),relations:Math.min(100000,edges.size),implementation:concepts.filter(doc=>typeof doc.frontmatter.path==='string'&&doc.frontmatter.path.trim()).length,wiki:Math.min(100000,wikiSlugs.size),detail:Math.min(100000,detail)}};
+ return {derivation,relationSlug:connected[0]?nodes.get(connected[0].from)?.sourceSlug??null:null,counts:{concepts:Math.min(100000,targets.length),relations:Math.min(100000,edges.size),implementation:concepts.filter(doc=>typeof doc.frontmatter.path==='string'&&doc.frontmatter.path.trim()).length,wiki:Math.min(100000,wikiSlugs.size),detail:Math.min(100000,detail)}};
 }
 
 export const observeConstruction=(manifest:VaultManifest):ConstructionCounts=>observeCompanionProject(manifest).counts;

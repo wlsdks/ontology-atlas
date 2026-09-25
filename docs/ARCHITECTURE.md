@@ -720,6 +720,17 @@ closes only when the workbench acknowledges the displayed request. Queued
 cold-start handoffs retain their separate lifecycle. This changes neither agent
 permissions nor canonical meaning acceptance.
 
+Camp learning expeditions reuse that manifest derivation, the existing personal
+reading/reflection store, and a project-scoped in-memory draft. Topics use uniquely
+resolved current documents; only original direct `depends_on` declarations identify
+review candidates. Containment, association, missing links, and transitive paths do
+not establish runtime impact. The in-game source reader preserves document bodies
+and can expose the original dependency fields and rationale. Targeted file reads
+check UID, modification time, and witnessed frontmatter, including a fresh check
+before saving a reflection. Failed reads or persistence preserve the draft and do
+not announce completion. No curriculum store, mastery score, canonical writer, or
+additional polling is introduced.
+
 **One piece of code decides which nav item is active; each screen size shows a
 different list of buttons.** The desktop rail shows eight destinations: Map,
 Architecture, Library, Automations, Insights, Projects, Agents, and Git. MCP is the

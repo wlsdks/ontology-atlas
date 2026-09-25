@@ -10,6 +10,7 @@ import { ChromeTile, Dialog, RouteLoadingFallback, RowButton } from '@/shared/ui
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { growthProgress, growthProjectKey, growthTargets } from '../model/companion-growth';
 import { useCompanionGrowth } from '../model/use-companion-growth';
+import {emptyLearningDraft,type LearningDraft} from '../model/companion-learning';
 import { useCompanionJournal } from '../model/use-companion-journal';
 import { AgentMascotPresence } from './AgentMascotPresence';
 import type { GrowthDraft } from './CompanionStudy';
@@ -28,6 +29,7 @@ export function CompanionHome({ compact = false }: { compact?: boolean }) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const [memoryDraft, setMemoryDraft] = useState<MemoryDraft>({kind:'checked',keepsake:'book',note:''});
+  const [learningDraft,setLearningDraft]=useState<{project:string|null;draft:LearningDraft}>({project:null,draft:emptyLearningDraft()});
   const [growthDraft, setGrowthDraft] = useState<{project: string | null; draft: GrowthDraft}>({project:null,draft:{selectedUid:null,note:'',reflection:'learned'}});
   const docs = mode === 'local' && (vault.status === 'loaded' || vault.isReloadingSameVault) ? vault.manifest?.docs : undefined;
   const project = useMemo(() => open && docs ? growthProjectKey(docs) : null, [open, docs]);
@@ -72,7 +74,7 @@ export function CompanionHome({ compact = false }: { compact?: boolean }) {
     <Dialog open={open} onClose={close} labelledBy={`${id}-title`} initialFocus="first" size="viewport" testId="companion-journal" className={`my-[var(--chrome-inset)] flex h-[min(var(--dialog-max-h),calc(100dvh-var(--chrome-inset)*2))] max-w-[calc(var(--dialog-w-md)*2)] flex-col overflow-hidden p-0 ${styles.homeDialog}`}>
       <h2 id={`${id}-title`} className="sr-only">{t('title')}</h2>
       <Suspense fallback={<RouteLoadingFallback embedded/>}>
-      {open ? <CompanionGrowth key={project ?? 'none'} growth={store.growth} targets={targets} docs={docs ?? []} manifest={vault.manifest} questLoaded={mode==='local'&&vault.status==='loaded'} receipts={vault.acpWorkReceipts??[]} vaultRoot={vault.handle?getTauriVaultRootPath(vault.handle)??null:null} projectKey={project} active={open} projectName={projectName} available={project !== null} unreadable={store.unreadable} failed={store.failed} record={store.record} reset={store.reset} revise={store.revise} close={close} openFolder={() => {close();void vault.open();}} draft={growthDraft.project===project?growthDraft.draft:{selectedUid:null,note:'',reflection:'learned'}} onDraft={draft=>setGrowthDraft({project,draft})} memoryDraft={memoryDraft} onMemoryDraft={setMemoryDraft}/> : null}
+      {open ? <CompanionGrowth learningDraft={learningDraft.project===project?learningDraft.draft:emptyLearningDraft()} onLearningDraft={draft=>setLearningDraft({project,draft})} key={project ?? 'none'} growth={store.growth} targets={targets} docs={docs ?? []} manifest={vault.manifest} questLoaded={mode==='local'&&vault.status==='loaded'} receipts={vault.acpWorkReceipts??[]} vaultRoot={vault.handle?getTauriVaultRootPath(vault.handle)??null:null} projectKey={project} active={open} projectName={projectName} available={project !== null} unreadable={store.unreadable} failed={store.failed} record={store.record} reset={store.reset} revise={store.revise} close={close} openFolder={() => {close();void vault.open();}} draft={growthDraft.project===project?growthDraft.draft:{selectedUid:null,note:'',reflection:'learned'}} onDraft={draft=>setGrowthDraft({project,draft})} memoryDraft={memoryDraft} onMemoryDraft={setMemoryDraft}/> : null}
       </Suspense>
     </Dialog>
   </>;

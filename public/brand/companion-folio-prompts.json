@@ -1,0 +1,23 @@
+{
+  "created": "2026-09-25",
+  "tool": "OpenAI built-in image_gen",
+  "scope": "Original optional companion game artwork. Dynamic project facts, labels and controls are rendered by code, never baked into the assets.",
+  "referenceConcepts": ["exec-381e0627-7d62-4d51-aaaf-1d2bd2ce119b", "exec-14ff701f-511e-4a96-97cc-b90022d96c74"],
+  "assets": [
+    {
+      "file": "companion-folio-scenes.webp",
+      "generation": "exec-c66c3a45-1508-42d1-b97a-909f46a1460a",
+      "prompt": "Use case: stylized-concept. Production raster game asset, not another UI mockup. Create ONE seamless contact sheet of exactly SIX equally sized square pixel-art scene tiles, arranged precisely in THREE columns by TWO rows, edge-to-edge, no gaps, no borders, no text anywhere. Each tile is independent and must remain wholly within its equal cell. Use the original midnight-indigo, walnut and warm brass/lantern indie RPG art direction in the two reference images. Readable deliberate pixel clusters, 16-bit-style original illustration, consistent density and lighting, no smooth 3D rendering. Top-left tile: peaceful forest campsite with small canvas tent and amber lantern, original tiny cream-orange fox sleeping nearby. Top-middle: wooden supply chest and cloth resource sacks among ancient tree roots, gentle gold glint. Top-right: ancient forest guardian shrine with an original faceless stone sentry and two candle flames, no franchise resemblance. Bottom-left: open knowledge book with one luminous green sapling growing out of its pages and a sparse star constellation above, charcoal library surroundings. Bottom-middle: compact character equipment forge, small anvil with a beautiful original silver sword, folded navy cloak and brass tools, tiny warm embers, dark workshop. Bottom-right: a small study desk with open books, linked brass constellation orbs and quill, moonlit window. Every tile full bleed, focus in middle 60 percent, corners quiet and dark for use as card art. No labels, typography, numbers, UI, logo, watermark, signature or recognizable copyrighted game elements. Overall aspect ratio 3:2 to ensure the 3 by 2 square grid is exact."
+    },
+    {
+      "file": "companion-folio-route.webp",
+      "generation": "exec-72b0ca8f-4471-4e39-a98c-ba8da53f3008",
+      "prompt": "Use case: stylized-concept. Produce a standalone TEXTLESS production background for the left map page of the original indie pixel RPG folio shown in the reference. Portrait aspect ratio 2:3. Full-bleed midnight-blue illustrated woodland cartography on subtly grained dark cloth paper; no book frame, no UI, no labels, no lettering, no numerals, no symbols that look like text, no watermark. A winding pale stone footpath climbs a moonlit forest valley from lower left to upper center, passing across a little river and ruined bridge, with dark fir trees, tiny mossy stones and five unobstructed clearings where code will draw its own markers. Approximate clearing centers as percent of canvas: (20,84),(65,68),(32,49),(73,31),(49,13). Keep those clearings empty and quiet, no baked markers. Sparse details around the borders, generous visual space surrounding path, readable at 300 pixels wide. At the far upper center a small original crescent arch ruins, no giant castle. No characters, no icons, no fake written legends. Crisp deliberate 16-bit pixel clusters, deep indigo/charcoal and muted moss, restrained warm amber lights, matching the reference's original art direction without copying any commercial game. Calm atlas-page illustration, not a noisy detailed landscape painting."
+    },
+    {
+      "file": "companion-folio-frame.webp",
+      "generation": "exec-d3f37807-0d51-4414-b3e5-061b76590aa9",
+      "prompt": "Use case: stylized-concept. Production UI frame asset only for our original indie pixel RPG. Create one rectangular 3:2 frame, outer dimensions completely fill the image, with TRUE TRANSPARENT ALPHA CENTER occupying exactly central 84% width and 84% height. A narrow continuous dark walnut/leather folio border is confined to outer 8% margins on all four sides. Subtle warm brass corner protectors, one fine inner brass rule, crisp 16-bit pixel clusters, charcoal-blue worn cloth edge. Match the reference journal material. Perfect straight edges and aligned corners for CSS nine-slice use. Every corner fully inside canvas. No perspective, no book hinge, no illustration, no props, no cast shadow outside frame, no text, lettering, numbers, icons, trademark or watermark. Center must be empty transparent, not black and not a baked checkerboard; controls and dark page surface will be provided by code. Restrain ornament so labels remain dominant. Flat orthographic front view, original crafted game UI border, thin and practical."
+    }
+  ]
+}
