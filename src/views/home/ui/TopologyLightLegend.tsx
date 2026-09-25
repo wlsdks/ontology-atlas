@@ -61,7 +61,15 @@ export function TopologyLightLegend({
       aria-label={t("legendLabel")}
       className="pointer-events-none absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px+16px)] right-[max(calc(var(--map-safe-inset-right)*1px),calc(var(--map-live-inset-right,0px)+16px))] z-20 hidden justify-center md:flex"
     >
-      <div className="flex max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-chip bg-[color:var(--chrome-surface)] px-3.5 py-1.5 text-label text-[color:var(--map-panel-text-secondary)]">
+      {/*
+        **One row below `xl`** (2026-09-25). The fit keeps the drawing above this strip, so every
+        row it wraps to is canvas the map gives up: at 1040 the strip took two rows (three on the
+        CI runner's fonts), reserved 72px and more, and Strata packed its planes until nodes on one
+        plane fused. Below `xl` the strip speaks at the legend size with tighter gaps, and the
+        availability note is read to assistive technology rather than drawn; the "Unknown" count
+        beside it still says the same thing on screen.
+      */}
+      <div className="flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-1 text-caption text-[color:var(--map-panel-text-secondary)] xl:gap-x-3 xl:px-3.5 xl:py-1.5 xl:text-label">
         {kindLabels ? (
           <>
             <span className="sr-only">{t("kindsHeading")}</span>
@@ -102,7 +110,7 @@ export function TopologyLightLegend({
         {evidence.availability !== "measured" ? (
           <span
             data-testid="topology-light-legend-note"
-            className="text-center text-[color:var(--map-panel-text-tertiary)]"
+            className="sr-only text-center text-[color:var(--map-panel-text-tertiary)] xl:not-sr-only"
           >
             {note[evidence.availability]}
           </span>

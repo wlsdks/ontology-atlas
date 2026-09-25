@@ -259,7 +259,10 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
 
-    // The same slot for an edge: same width, same primary grammar.
+    // The same slot for an edge: same width, same primary grammar. The two Escapes reframe the
+    // camera, so the line is read where it rests, not mid-flight.
+    await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
+    await waitForMapStill(page).catch(() => {});
     const edge = await page.evaluate(() => {
       const m = (window as unknown as {
         __atlasMap: { edges: () => Array<{ visible: boolean; hidden: boolean; ax: number; ay: number; bx: number; by: number; controlX: number; controlY: number; kind: string }> };

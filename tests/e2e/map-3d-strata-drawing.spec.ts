@@ -63,19 +63,18 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * with the rail still on the edge. Ledger: `docs/DECISIONS.md`, 2026-09-06 and
  * 2026-09-07.
  *
- * **1040 pays for the lit map's key (2026-09-25).** The key became a strip along the
+ * **The lit map's key stays one row (2026-09-25).** The key became a strip along the
  * canvas bottom that the fit keeps the drawing above (`data-map-fit-obstacle="bottom"`),
- * because as a corner card it stood over nine drawn nodes. At 1040 the strip wraps to two
- * rows (490 px between INDEX and the tier stack; its one-row content needs 523 without the
- * evidence note), so it reserves 72 px against the label band's 32 and the outline fell to
- * **565 × 528**. The strip leaves the free canvas (fill 69.7%, above the floor), but the
- * smaller silhouette packs harder: overlapping pairs 5 (was 2) and same-tier pairs 2 (was
- * 0). The ceilings below take that measurement; the strip fitting one row at this size is
- * the follow-up that would give the room back. 1512 (one row, 52 px) is unchanged.
+ * because as a corner card it stood over nine drawn nodes. Wrapped to two rows at 1040
+ * (three on the CI runner's fonts) it reserved 72px and more: the outline fell to
+ * 565 × 528 locally and 539 × 505 on CI, with 6 overlapping and 3 same-tier pairs. Below
+ * `xl` the strip now sets its words at the legend size in one row, and the fill counts
+ * the strip out of the free canvas the way it counts a side panel. Measured after:
+ * **592 × 553 = 73.7%**, 3 overlapping pairs, 0 same-tier. The ceilings did not move.
  */
 const SCREENS = [
   { width: 1512, height: 982, fillFloor: 0.58, overlapMax: 3, sameTierMax: 1, stolenMax: 1 },
-  { width: 1040, height: 720, fillFloor: 0.66, overlapMax: 6, sameTierMax: 2, stolenMax: 1 },
+  { width: 1040, height: 720, fillFloor: 0.66, overlapMax: 4, sameTierMax: 1, stolenMax: 1 },
 ] as const;
 
 async function openStrata(page: Page, width: number, height: number) {
