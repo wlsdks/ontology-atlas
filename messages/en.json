@@ -7093,7 +7093,7 @@
       "journalSections": "Journal sections",
       "knowledgeBook": "Reading log",
       "personalBook": "Shared memories",
-      "controls": "WASD / arrows to move · Click the ground to walk · E interact · I inventory · K skills · M map · J journal · Q knowledge wave · 1 potion · R rest · Esc close panel · B blessings · Space dodge · N Creature field guide · L Quests · T learning expedition",
+      "controls": "WASD / arrows to move · Click the ground to walk · Click a creature for a ready knowledge wave · E interact · I inventory · K skills · M map · J journal · Q knowledge wave · 1 potion · R rest · Esc close panel · B blessings · Space dodge · N Creature field guide · L Quests · T learning expedition",
       "panel": {
         "inventory": "Traveler’s inventory",
         "skills": "Starlight skills",
@@ -7249,6 +7249,7 @@
       },
       "dodge": "Dodge attack (Space)",
       "dodgeHint": "Avoid the next attack. Recharges in four turns.",
+      "cooldownTurns": "Ready in {count, plural, one {# turn} other {# turns}}",
       "waveHint": "Attack ×{multiplier} damage · {cooldown}-turn recharge",
       "incoming": "Attack incoming · Space to dodge",
       "cleared": "Last expedition: guardian cleared! Rewards kept. M plans your next run.",
