@@ -66,6 +66,10 @@ and a final guardian. A closer pixel combat floor keeps the fox and creature on
 the same ground; a visible incoming strike gives Space dodge a timing cue.
 Click or tap a creature to cast a ready knowledge wave; action slots show the
 remaining cooldown turns, and Space moves the fox immediately during a warning.
+Opening an in-game panel pauses combat until it closes; leaving the game still
+uses bounded offline catch-up. The first grove's 18 enemies have original darker
+pixel silhouettes, with a small overhead target mark and attack warning instead
+of large rings across the floor.
 Plan a rest, supply, or elite path for the next floor. Twelve
 one-time quests reward recorded project work with materials for guaranteed personal
 equipment enhancement. Ordinary activities can unlock every forge tier; verified

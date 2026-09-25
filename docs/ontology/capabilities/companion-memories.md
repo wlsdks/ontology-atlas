@@ -21,9 +21,9 @@ A person develops a project and records its ontology and wiki, then sees those r
 ## Adventure catalog
 
 - Six fictional regions contain 36 distinct scene destinations, with route-specific rosters, guardians, difficulty, and reward or threat conditions. Their game IDs are separate from canonical ontology UIDs. Construction and reading unlock them; combat XP alone does not.
-- 108 original species, including 18 guardians, share six disclosed combat trait families: armor, fierce attacks, regeneration, siphon, double strikes, and wave resistance. The field guide records observed sightings and defeats, while maps retain individual completion counts.
-- Expedition encounters frame the fox and creature together on an original foreground platform over the destination art. Walking remains on that visible floor; attack, enemy windup, dodge warning, and hit response show the current automatic combat phase without changing saved rewards or ontology authority.
-- Clicking or tapping a ready creature invokes the same saved, cooldown-bound knowledge wave as Q; the target ring and action slots expose readiness and remaining turns. Pressing Space during the incoming warning starts a short sidestep immediately. These controls do not create a separate reward path or ontology write authority.
+- 108 original species, including 18 guardians, share six disclosed combat trait families: armor, fierce attacks, regeneration, siphon, double strikes, and wave resistance. The field guide records observed sightings and defeats, while maps retain individual completion counts. Archive Grove uses newly generated dark-woodland sprites for all 18 of its creatures; the other regions retain their earlier original art.
+- Expedition encounters frame the fox and creature together on an original foreground platform over the destination art. Walking remains on that visible floor; attack, enemy windup, a warning above the fox, and hit response show the current automatic combat phase without changing saved rewards or ontology authority.
+- Clicking or tapping a ready creature invokes the same saved, cooldown-bound knowledge wave as Q; a small overhead mark and action slots expose readiness and remaining turns. Pressing Space during the incoming warning starts a short sidestep immediately. These controls do not create a separate reward path or ontology write authority.
 - Legacy saves default to empty catalog records without inventing discovery. A removed domain destination returns to camp, retaining accumulated progress. Final-guardian clear rewards are banked once even when returning during the loot display.
 
 ## Quests, personal equipment, and path planning
@@ -44,7 +44,7 @@ A person develops a project and records its ontology and wiki, then sees those r
 
 ## Persistence and motion contract
 
-- Project-UID-scoped device-local saves, deterministic automatic combat, and at most four hours of once-consumed away progress. Catch-up uses previously saved power before applying new project observations. Receipts follow successful persistence; failures preserve the prior save.
+- Project-UID-scoped device-local saves, deterministic automatic combat, and at most four hours of once-consumed away progress. Catch-up uses previously saved power before applying new project observations. In-game panels freeze combat turns and sprite motion through their exit transition; the unfinished fraction of a turn resumes on close. Closing the game still allows bounded offline catch-up. Receipts follow successful persistence; failures preserve the prior save.
 - The original journal retains up to 50 personal memories and keepsakes without conversion into XP. Drafts survive panel changes and closing. Resets are explicit; resetting adventure retains construction high-water marks.
 - Closed games have no simulation or movement loop. Hidden documents suspend updates; a recovered camp performs no periodic writes. Walking frames follow traveled distance with a shared foot contact line. Reduced motion updates live and suppresses ambient and sprite animation while retaining direct controls. The map toolbar and verified agent-work mascot remain separately owned.
 
@@ -54,8 +54,8 @@ A person develops a project and records its ontology and wiki, then sees those r
 
 ## Evidence
 - `src/features/agent-activity/ui/CompanionHome.tsx` owns existing entries and preserved drafts; `CompanionGrowth.tsx` owns the persistent world and keyboard panels.
-- `CompanionWorld.tsx`, `CompanionInventory.tsx`, `CompanionMap.tsx`, `CompanionBestiary.tsx`, and `CompanionProjectBook.tsx` implement movement, gameplay controls, and visible reward attribution.
-- `src/features/agent-activity/model/companion-construction.ts`, `companion-growth.ts`, and `companion-game.ts` own observed project counters, reading records, and deterministic combat. Their hooks persist only device-local game data.
+- `CompanionWorld.tsx`, `CompanionCreature.tsx`, `CompanionInventory.tsx`, `CompanionMap.tsx`, `CompanionBestiary.tsx`, and `CompanionProjectBook.tsx` implement movement, creature art, gameplay controls, and visible reward attribution.
+- `src/features/agent-activity/model/companion-construction.ts`, `companion-growth.ts`, and `companion-game.ts` own observed project counters, reading records, and deterministic combat. Their hooks persist only device-local game data; `use-companion-game.ts` owns the pause/resume clock.
 - Focused model and hook tests plus `tests/e2e/companion-growth.spec.ts` and `companion-home.spec.ts` verify reward deduplication, storage failure, keyboard scope, responsive panels, and preserved personal memories.
 
 - `companion-quests.ts`, `companion-forge.ts`, and `companion-paths.ts` own current evidence, enhancement tiers, and floor effects; `CompanionQuests.tsx`, `CompanionForge.tsx`, and `CompanionJourney.tsx` render the corresponding choices. `tests/e2e/companion-progression.spec.ts` probes claims, ACP exclusions/handoff, tier reachability, and panel geometry.
