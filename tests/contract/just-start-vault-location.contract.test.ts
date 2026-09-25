@@ -38,6 +38,39 @@ describe('그냥 시작하기의 금고 위치 — 두 쪽이 같은 곳을 말�
     ).toBe(true);
   });
 
+  /*
+   * ⚠️ **The door's own sentence is a third place that names the location** (2026-09-25). Both
+   * catalogues still promised Documents on the card and on the launch chooser a month after the
+   * folder moved to `~/Ontology Atlas` — the exact lie this file exists to prevent, told on the
+   * button itself. The container name is derived from the label, and the protected folders are the
+   * list above, so neither side of the check is a sentence pinned here.
+   */
+  it('문 문구도 같은 곳을 말한다 — 만드는 폴더를 이름으로 대고, 보호된 폴더는 대지 않는다', () => {
+    const container = DEFAULT_VAULT_PARENT_LABEL.replace(/^~[/\\]/, '');
+    const doors: string[] = [];
+    const collect = (node: unknown, trail: string, locale: string, catalogue: Record<string, unknown>) => {
+      if (!node || typeof node !== 'object') return;
+      for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+        const at = trail ? `${trail}.${key}` : key;
+        if (key === 'justStartBody' && typeof value === 'string') {
+          doors.push(`${locale}:${at}`);
+          expect(value, `${locale}:${at} 가 만드는 폴더(${container})를 말하지 않는다: ${value}`).toContain(container);
+          for (const protectedDir of TCC_PROTECTED) {
+            expect(value, `${locale}:${at} 가 만들지도 않는 ${protectedDir} 를 약속한다: ${value}`).not.toContain(protectedDir);
+          }
+        } else {
+          collect(value, at, locale, catalogue);
+        }
+      }
+    };
+    for (const locale of ['en', 'ko']) {
+      const catalogue = JSON.parse(readFileSync(join(REPO_ROOT, 'messages', `${locale}.json`), 'utf8')) as Record<string, unknown>;
+      collect(catalogue, '', locale, catalogue);
+    }
+    // The card and the launch chooser, in both languages. Zero would mean the scan saw nothing.
+    expect(doors.length, `검사한 문 문구: ${doors.join(', ')}`).toBeGreaterThanOrEqual(4);
+  });
+
   it('macOS 가 보호하는 폴더 안에 만들지 않는다', () => {
     const body = rustParentDirBody();
     for (const protectedDir of TCC_PROTECTED) {

@@ -187,15 +187,19 @@ dialog never says "ontology" (map-building framing for non-experts).
 `isDesktopShell()`, `src/shared/lib/desktop-shell.ts`), `/` with no vault
 renders an Obsidian-style **FirstRunPage** (`src/views/first-run/`): local-only
 actions — **just start** (2026-07-23, Tauri runtime only — no folder
-picker at all: creates `~/Documents/Ontology Atlas/<name>` on real disk
-automatically, numbering `-2`/`-3` on a name clash, connects it, then reuses
-the same `scaffoldOntology()` seed as "create new vault", and the success
+picker at all: creates `~/Ontology Atlas/<name>` on real disk
+automatically, numbering `-2`/`-3` on a name clash, connects it with the
+same starter seed as "create new vault", and the success
 toast names the exact path — real disk, not OPFS, so an AI agent/MCP can
 still read it; hidden when the real Tauri invoke bridge is absent, e.g. a dev
 `?shell=desktop` browser override) / open vault folder / create new vault
-(existing `scaffoldOntology()` when the picked folder is empty — 5 markdown
+(the seed is written only when the picked folder is empty — 5 markdown
 seeds + agent configs + the agent guide pair + 3 procedure skills) — plus a local-first trust
 line. Bundled demo vaults are web-only; no demo or download CTA appears inside the installed app.
+Both creation doors hand the seed to the open itself (`open`/`openRecent` with `starter`), so
+it lands before the folder is first shown: the first-run screen is replaced as soon as the open
+begins, and a seed left to it was never written (2026-09-25). A seed that cannot be written is
+said in a toast that points to Settings › Workspace.
 
 **Project-local vault (2026-08-24, supersedes the "just start" location above)**:
 the map now lives **inside the project it describes**, at `<project>/atlas`. One
