@@ -1079,19 +1079,6 @@ export function VaultAgentSetupPanel({
                 </dl>
               </div>
               {/*
-                "The rest" refers to the rows above, so it follows them, as a footnote rather than
-                a status row with a dot ahead of the list it points at (2026-09-25 sweep). The
-                count is **not** repeated: the dialog's subtitle already says it.
-              */}
-              {agentSetupReady ? null : (
-                <p
-                  data-testid="agent-setup-connection-pending"
-                  className="break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
-                >
-                  {t('agentSetup.connectionCheckPending')}
-                </p>
-              )}
-              {/*
                 **The proof packet ends the step whose job is proving it** (2026-09-05). It used to
                 be a card below this whole pane, so on the installed app the thing that actually
                 confirms the connection stood after the three steps rather than inside the one

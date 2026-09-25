@@ -100,6 +100,19 @@ test.describe("interaction sweep — projects, agents, git", () => {
     });
   }
 
+  test("project quick edit names the two names in the reader's words, not schema keys", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/ko/project/fallback/?slug=storefront&guides=off");
+    const toggle = page.getByTestId("public-quick-edit-toggle");
+    await expect(toggle).toBeVisible({ timeout: 30_000 });
+    await toggle.click();
+    const hint = page.getByTestId("public-quick-edit-name-hint");
+    await expect(hint).toBeVisible();
+    await expect(hint).toContainText("온라인 상점");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).not.toContainText(/display_|\(title\)/);
+  });
+
   test("git confirms share one grammar, take focus, close on Escape and hand focus back", async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 949 });
     await page.goto("/ko/git/?guides=off");
@@ -156,6 +169,56 @@ test.describe("interaction sweep — projects, agents, git", () => {
         ).length,
     );
     expect(snapshots, "Push committed without a confirm").toBe(0);
+    // One name for one action on /ko: the confirm Push opened uses the Korean label, not "Push".
+    await expect(page.getByTestId("atlas-git-confirm-step")).not.toContainText(/Push|Fetch|Pull/);
+
+    // A cancelled Push leaves nothing behind: the next plain commit is not commit-and-push.
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("atlas-git-confirm-step")).toHaveCount(0);
+    await page.getByTestId("atlas-git-snapshot-button").click();
+    await expect(page.getByTestId("atlas-git-confirm-step")).toBeVisible();
+    await expect(page.getByTestId("atlas-git-push-optin"), "a cancelled Push ticked the next commit's send").not.toBeChecked();
+  });
+
+  test("a finished commit hands focus to its result, not to <body>", async ({ page }) => {
+    await page.addInitScript(() => {
+      const internals = (
+        window as unknown as {
+          __TAURI_INTERNALS__: { invoke(command: string, args?: Record<string, unknown>): Promise<unknown> };
+        }
+      ).__TAURI_INTERNALS__;
+      const invoke = internals.invoke.bind(internals);
+      internals.invoke = (command, args) =>
+        command === "git_snapshot"
+          ? Promise.resolve({
+              committed: true,
+              reason: null,
+              commitHash: "f".repeat(40),
+              subject: "docs: order",
+              summary: null,
+              counts: { total: 1 },
+              files: [],
+              stagedOutsideVault: [],
+              push: null,
+            })
+          : invoke(command, args);
+    });
+    await page.setViewportSize({ width: 1512, height: 949 });
+    await page.goto("/ko/git/?guides=off");
+    const snapshot = page.getByTestId("atlas-git-snapshot-button");
+    await expect(snapshot).toBeVisible({ timeout: 30_000 });
+    await snapshot.click();
+    await page.getByTestId("atlas-git-confirm-button").click();
+    await expect(page.getByTestId("atlas-git-snapshot-result")).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const active = document.activeElement;
+          if (!active || active === document.body) return "BODY";
+          return active.contains(document.querySelector('[data-testid="atlas-git-snapshot-result"]')) ? "RESULT" : active.tagName;
+        }),
+      )
+      .toBe("RESULT");
   });
 
   test("remote actions read in Korean on /ko and explain themselves on keyboard focus", async ({
@@ -211,6 +274,22 @@ test.describe("interaction sweep — projects, agents, git", () => {
     expect(verifyBox.fontSize).toBe(recheckBox.fontSize);
   });
 
+  test("an info hint opened by keyboard focus closes on Escape and keeps the focus", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/ko/agents/?guides=off");
+    const note = page.getByTestId("app-settings-runtimes-disk-note");
+    await expect(note).toBeAttached({ timeout: 30_000 });
+    const panel = page.getByRole("tooltip").filter({ has: note });
+    const button = page.locator("div.group").filter({ has: note }).getByRole("button").first();
+    await button.focus();
+    await expect.poll(() => panel.evaluate((el) => getComputedStyle(el).opacity)).toBe("1");
+    // Shown by focus, the panel must not catch clicks meant for the rows it covers.
+    expect(await panel.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe("none");
+    await page.keyboard.press("Escape");
+    await expect.poll(() => panel.evaluate((el) => getComputedStyle(el).opacity)).toBe("0");
+    await expect(button, "Escape moved focus off the hint").toBeFocused();
+  });
+
   test("the add-connector dialog hands focus back to its opener, and an empty search answers first", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/ko/agents/?tab=mcp&mcp=connectors&guides=off");
@@ -230,6 +309,15 @@ test.describe("interaction sweep — projects, agents, git", () => {
     const noneBox = await box(none);
     expect(noneBox.y - groups.y, "the empty answer is not the first thing in the list").toBeLessThanOrEqual(1);
     await page.screenshot({ path: "output/ix/connectors-none-1280.png" });
+
+    // One door to the by-hand form: the card's, not the card's and the fold's.
+    const noneCustom = page.getByTestId("connectors-add-none-custom");
+    await expect(noneCustom).toBeVisible();
+    await expect(page.getByTestId("connectors-custom-toggle"), "two doors to the same form").toHaveCount(0);
+    await noneCustom.click();
+    await expect(page.getByTestId("connectors-custom-name"), "the door left the keyboard behind").toBeFocused();
+    await expect(noneCustom, "the used door stayed on screen").toHaveCount(0);
+    await expect(page.getByTestId("connectors-custom-toggle")).toHaveAttribute("aria-expanded", "true");
 
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("connectors-add-dialog")).toHaveCount(0);

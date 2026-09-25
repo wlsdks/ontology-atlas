@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { InfoHint } from './info-hint';
 
 describe('InfoHint', () => {
@@ -37,6 +37,31 @@ describe('InfoHint', () => {
     expect(tooltip.className).toContain('pointer-events-none');
     expect(tooltip.className).toContain('group-hover:opacity-100');
     expect(tooltip.className).toContain('group-focus-within:opacity-100');
+  });
+
+  it('Escape puts the panel away until focus leaves, without closing what holds it', () => {
+    const outer = vi.fn();
+    render(
+      <div onKeyDown={(event) => outer(event.key)}>
+        <InfoHint label="x">
+          <p>본문</p>
+        </InfoHint>
+      </div>,
+    );
+    const button = screen.getByRole('button', { name: 'x' });
+    const tooltip = screen.getByRole('tooltip');
+    button.focus();
+    fireEvent.keyDown(button, { key: 'Escape' });
+    expect(outer).not.toHaveBeenCalled();
+    expect(tooltip.className).not.toContain('group-focus-within:opacity-100');
+    expect(tooltip.className).not.toContain('group-hover:opacity-100');
+    // A second Escape belongs to whatever holds the hint (a dialog closes).
+    fireEvent.keyDown(button, { key: 'Escape' });
+    expect(outer).toHaveBeenCalledWith('Escape');
+    fireEvent.blur(button);
+    expect(tooltip.className).toContain('group-focus-within:opacity-100');
+    // Focus alone never makes the panel catch the pointer.
+    expect(tooltip.className).not.toContain('group-focus-within:pointer-events-auto');
   });
 
   it('merges custom className on root', () => {

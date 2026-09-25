@@ -343,6 +343,24 @@ export function AddConnectorDialog({
     }
   }, [customOpen, prefillTick, reducedMotion]);
 
+  /*
+   * **The empty search's one door lands in the form** (review, 2026-09-25). Pressing it used
+   * to unfold the form below while the card and its button stayed, focus stayed on the button,
+   * and a second press did nothing. Now the press unfolds the form, brings it into view and
+   * puts the keyboard on its first field; the card's button and the fold's own toggle are
+   * never both on screen.
+   */
+  const focusCustomNameRef = useRef(false);
+  useEffect(() => {
+    if (!focusCustomNameRef.current || !customOpen) return;
+    focusCustomNameRef.current = false;
+    const node = customRef.current;
+    if (node && typeof node.scrollIntoView === 'function') {
+      node.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
+    }
+    document.getElementById(`${testIdPrefix}-custom-name`)?.focus({ preventScroll: true });
+  }, [customOpen, reducedMotion, testIdPrefix]);
+
   const attempt = useCallback(
     async (write: () => Promise<ConnectorWriteResult | null>) => {
       const result = await write();
@@ -527,10 +545,14 @@ export function AddConnectorDialog({
             title={t('noneForSearchTitle', { query: query.trim() })}
             description={t('noneForSearchBody')}
             action={
+              customOpen ? undefined : (
               <button
                 type="button"
                 data-testid={`${testIdPrefix}-add-none-custom`}
-                onClick={() => setCustomOpen(true)}
+                onClick={() => {
+                  focusCustomNameRef.current = true;
+                  setCustomOpen(true);
+                }}
                 className={controlClass({
                   shape: 'chip',
                   size: 'lg',
@@ -542,6 +564,7 @@ export function AddConnectorDialog({
               >
                 {t('noneForSearchAction')}
               </button>
+              )
             }
           />
           </div>
@@ -586,6 +609,8 @@ export function AddConnectorDialog({
           unfolds it already filled.
         */}
         <section ref={customRef} data-testid={`${testIdPrefix}-custom-section`} className="pb-2">
+          {/* While the empty card offers the same door, the fold's toggle waits behind it. */}
+          {nothingMatches && !customOpen ? null : (
           <button
             type="button"
             aria-expanded={customOpen}
@@ -606,6 +631,7 @@ export function AddConnectorDialog({
             />
             {t('customToggle')}
           </button>
+          )}
           {customOpen ? (
             <div id={`${testIdPrefix}-custom-body`} className="mt-3">
               <CustomConnectorForm
@@ -830,7 +856,7 @@ function FoundSection({
                   ) : null}
                 </div>
                 {usable ? (
-                  <Chip data-testid={`${testIdPrefix}-found-add`} onClick={() => onAdd(server)}>
+                  <Chip size="lg" data-testid={`${testIdPrefix}-found-add`} onClick={() => onAdd(server)}>
                     <Plus size={ICON_SIZE.sm} aria-hidden />
                     {t('add')}
                   </Chip>
@@ -1013,6 +1039,7 @@ function CatalogueSection({
                   </span>
                 ) : (
                   <Chip
+                    size="lg"
                     data-testid={`${testIdPrefix}-catalogue-add`}
                     data-variant-kind={primary.kind}
                     data-press={pressOutcome(primary)}

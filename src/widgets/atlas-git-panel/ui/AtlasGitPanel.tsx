@@ -573,8 +573,17 @@ export function AtlasGitPanel({
   }, [vaultPath]);
   const [loadErrorText, setLoadErrorText] = useState<string | null>(null);
 
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirmingState] = useState(false);
   const [pushOptIn, setPushOptIn] = useState(false);
+  /*
+   * The send opt-in belongs to one opened confirm, not to the screen (review, 2026-09-25):
+   * Push opens the step already ticked, and a Push cancelled with Escape used to leave it
+   * ticked, so the next plain commit silently became commit-and-push. Every close resets it.
+   */
+  const setConfirming = useCallback((open: boolean) => {
+    setConfirmingState(open);
+    if (!open) setPushOptIn(false);
+  }, []);
   const [snapshotting, setSnapshotting] = useState(false);
   const [snapshotResult, setSnapshotResult] = useState<GitSnapshotResult | null>(null);
   const [snapshotError, setSnapshotError] = useState<string | null>(null);
@@ -846,7 +855,6 @@ export function AtlasGitPanel({
       });
       setSnapshotResult(result);
       setConfirming(false);
-      setPushOptIn(false);
       setSnapshotMessage("");
       /*
        * Clear the user's explicit selection so the screen returns to its default
@@ -862,7 +870,7 @@ export function AtlasGitPanel({
     } finally {
       setSnapshotting(false);
     }
-  }, [vaultPath, pushOptIn, snapshotMessage, refresh, nativeErrors]);
+  }, [vaultPath, pushOptIn, snapshotMessage, refresh, nativeErrors, setConfirming]);
 
   /**
    * A copy reports **both success and failure** (2026-07-28 QA).
@@ -1078,7 +1086,7 @@ export function AtlasGitPanel({
         setRemoteBusy(null);
       }
     },
-    [vaultPath, refresh, t, nativeErrors, remoteSummary, hasChanges],
+    [vaultPath, refresh, t, nativeErrors, remoteSummary, hasChanges, setConfirming],
   );
 
   /**
@@ -1883,10 +1891,14 @@ function RemoteActionButton({
        *
        * So all three changed: 28px tall, `elevated` background, secondary ink.
        * Zero new values (all ramp and token).
+       *
+       * `lg` since the 2026-09-25 interaction review: Push opens the commit confirm, whose pair
+       * is `lg` (32px at `text-body`), so at `md` the button and the step it opened were the
+       * same height at two type sizes.
        */
       className={controlClass({
         shape: "chip",
-        size: "md",
+        size: "lg",
         tone: "secondary",
         className:
           "font-[var(--font-weight-signature)] border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] disabled:border-[color:var(--color-border-soft)] disabled:bg-transparent disabled:text-[color:var(--color-text-quaternary)]",
@@ -2809,6 +2821,21 @@ function ActionDock({
   const { triggerRef, initialRef, close, onKeyDown } = useInlineConfirmFocus(confirming, setConfirming, {
     busy: snapshotting,
   });
+  /*
+   * A finished commit closes the step without `close()`, and the commit button it would return
+   * to turns inert once nothing is pending, so focus used to fall to `<body>` (review,
+   * 2026-09-25). The result sentence takes it instead: it is what just happened, and a screen
+   * reader reads it out.
+   */
+  const resultRef = useRef<HTMLDivElement | null>(null);
+  const confirmingBeforeRef = useRef(confirming);
+  useEffect(() => {
+    const closedByResult = confirmingBeforeRef.current && !confirming && snapshotResult !== null;
+    confirmingBeforeRef.current = confirming;
+    if (!closedByResult || typeof document === "undefined") return;
+    const active = document.activeElement;
+    if (!active || active === document.body) resultRef.current?.focus();
+  }, [confirming, snapshotResult]);
   return (
     <div
       data-testid="atlas-git-dock"
@@ -2896,7 +2923,14 @@ function ActionDock({
         </p>
       ) : null}
       {snapshotResult ? (
-        <SnapshotResultLine t={t} result={snapshotResult} fallbackCount={changeCount} />
+        <div
+          ref={resultRef}
+          tabIndex={-1}
+          role="status"
+          className="rounded-[var(--radius-chip)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+        >
+          <SnapshotResultLine t={t} result={snapshotResult} fallbackCount={changeCount} />
+        </div>
       ) : null}
 
       {/*

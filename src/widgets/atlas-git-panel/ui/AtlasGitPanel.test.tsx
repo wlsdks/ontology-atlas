@@ -2188,6 +2188,10 @@ describe("AtlasGitPanel — confirms that swap in take and return focus (2026-09
     fireEvent.keyDown(step, { key: "Escape" });
     await waitFor(() => expect(screen.queryByTestId("atlas-git-confirm-step")).toBeNull());
     expect(document.activeElement).toBe(screen.getByTestId("atlas-git-remote-push"));
+    // The send tick belonged to that one confirm: the next plain commit is not commit-and-push.
+    fireEvent.click(screen.getByTestId("atlas-git-snapshot-button"));
+    await screen.findByTestId("atlas-git-confirm-step");
+    expect(screen.getByTestId("atlas-git-push-optin")).not.toBeChecked();
   });
 
   it("the commit step focuses its message, Escape cancels, and focus returns to the commit button", async () => {
