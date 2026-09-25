@@ -202,3 +202,12 @@ describe('guide citations', () => {
     expect(UNCITED_TOOLS).toContain('antigravity');
   });
 });
+
+describe('bounded citation census as authored records grow',()=>{
+  it.each([{count:700,truncated:false},{count:900,truncated:true}])('reports completeness honestly for $count documents',async({count,truncated})=>{
+    const documents=Object.fromEntries(Array.from({length:count},(_,index)=>[`docs/record-${String(index).padStart(4,'0')}.md`,'A saved development observation.']));
+    const port=fixturePort({'AGENTS.md':'# Guide\nSee docs/record-0000.md.\n',...documents});const read=port.readText.bind(port);let documentReads=0;
+    port.readText=async(path)=>{const result=await read(path);if(result&&path.startsWith('docs/'))documentReads++;return result;};
+    const report=await scanHarness(port);expect(report.documentReach.total).toBe(count+1);expect(report.documentReach.truncated).toBe(truncated);expect(documentReads).toBeGreaterThan(0);expect(documentReads).toBeLessThanOrEqual(800);
+  });
+});

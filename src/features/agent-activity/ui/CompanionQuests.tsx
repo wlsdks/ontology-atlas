@@ -1,0 +1,32 @@
+'use client';
+import {useState} from 'react';
+import {useTranslations} from 'next-intl';
+import {Button,RowButton} from '@/shared/ui';
+import {QUESTS,forgeLimit,questCount,questReady,type QuestEvidence,type QuestTarget,type QuestId} from '../model/companion-quests';
+import type {CompanionGame,GameAction} from '../model/companion-game';
+import {CompanionItem} from './CompanionItem';
+import {CompanionPager} from './CompanionPager';
+import {CompanionFolioArt} from './CompanionFolioArt';
+import {CompanionSource} from './CompanionSource';
+import {CompanionConfirmation} from './CompanionConfirmation';
+import styles from './companion-immersive.module.css';
+const QUEST_ICONS={concepts:4,relations:7,implementation:8,wiki:2,explored:4,reflected:2,acp:0} as const;
+export function CompanionQuests({game,evidence,disabled,act,openTarget,requestHelp,study,index,onSelect,openAgents}:{game:CompanionGame;evidence:QuestEvidence;disabled:boolean;act:(action:GameAction)=>boolean;openTarget:(target:QuestTarget)=>void;requestHelp:(prompt:string)=>boolean;study:()=>void;index:number;onSelect:(index:number)=>void;openAgents:()=>void}){
+ const t=useTranslations('companion.quests');const [source,setSource]=useState<QuestTarget|null>(null);const [assist,setAssist]=useState(false);const [helpFailed,setHelpFailed]=useState(false);const [flash,setFlash]=useState<QuestId|null>(null);const quest=QUESTS[index];const claim=game.questClaims[quest.id];const target=claim?(claim.targetUid?evidence.byUid.get(claim.targetUid):claim.targetSlug?evidence.bySlug.get(claim.targetSlug):null)??null:evidence.targets[quest.source];const current=evidence.counts[quest.source];const page=Math.floor(index/6);const ready=questReady(quest.id,evidence);const isReading=quest.source==='explored'||quest.source==='reflected';const prompt=t('request');
+ if(source)return <CompanionSource target={source} onBack={()=>setSource(null)} onOpen={openTarget}/>;
+ return <div className={styles.questBoard} data-testid="companion-quests" data-claimed={questCount(game.questClaims)}>
+  <div className={styles.questList}><div><h4 className="text-body font-[var(--font-weight-strong)]">{t('list')}</h4><p className="text-caption">{t('forge',{limit:forgeLimit(game.questClaims),count:questCount(game.questClaims)})}</p></div>
+   <div className={styles.questGrid}>{QUESTS.slice(page*6,page*6+6).map((entry,i)=><RowButton key={entry.id} active={index===page*6+i} aria-pressed={index===page*6+i} aria-label={t(`name.${entry.id}`)} onClick={()=>{onSelect(page*6+i);setAssist(false);setFlash(null);}} className={styles.questEntry}><CompanionItem index={QUEST_ICONS[entry.source]}/><span className={styles.questMark} aria-hidden="true">{game.questClaims[entry.id]?'✓':questReady(entry.id,evidence)?'◆':'◇'}</span><span><strong className="font-[var(--font-weight-strong)]">{t(`name.${entry.id}`)}</strong><span>{game.questClaims[entry.id]?t('claimed'):!evidence.ready?t('loading'):t('listProgress',{current:Math.min(evidence.counts[entry.source],entry.goal),goal:entry.goal})}</span></span></RowButton>)}</div>
+   <CompanionPager index={page} count={2} onChange={value=>{onSelect(value*6);setAssist(false);setFlash(null);}} label={t('pages')}/>
+  </div>
+  <div className={styles.questDetail} data-assist={assist}>{assist?<div className={styles.questRequest}><h4 className="text-body font-[var(--font-weight-strong)]">{t('sendTitle')}</h4><p className="text-body">{prompt}</p><p className="text-label">{t('alternative')}</p>{helpFailed?<div role="alert"><p className="text-label">{t('helpUnavailable')}</p></div>:null}<div className="flex flex-wrap gap-2">{helpFailed?<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="primary" onClick={openAgents}>{t('agents')}</Button>:<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="primary" onClick={()=>setHelpFailed(!requestHelp(prompt))}>{t('send')}</Button>}<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" onClick={()=>setAssist(false)}>{t('cancel')}</Button></div></div>:<><CompanionFolioArt kind={quest.source==='acp'||isReading?'study':'quest'} className={styles.questIllustration}/><div className={styles.questFacts}><h4 className="text-title font-[var(--font-weight-strong)]">{t(`name.${quest.id}`)}</h4><p className="text-body">{t(`requirement.${quest.source}`,{goal:quest.goal})}</p><p className="text-label" data-testid="companion-quest-progress">{claim?t('past',{count:claim.count}):!evidence.ready?t('loading'):t('progress',{current,goal:quest.goal})}</p><progress className={styles.questProgress} max={quest.goal} value={claim?quest.goal:Math.min(current,quest.goal)} aria-label={t(`name.${quest.id}`)}/>
+   <div className={styles.questReward}><CompanionItem index={5}/><span>{t('reward',{count:quest.relics})}</span>{flash?<CompanionConfirmation key={flash}>{t('collected',{count:quest.relics})}</CompanionConfirmation>:null}</div>
+   {quest.source==='acp'?<p className="text-caption" data-testid="companion-quest-evidence">{t(`acp.${evidence.acp}`)}</p>:null}
+   <p className={styles.questBoundary}>{t('boundary')}</p></div><div className={styles.questOperations}><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="primary" disabled={disabled||Boolean(claim)||!ready} onClick={()=>{if(act({type:'claim-quest',id:quest.id}))setFlash(quest.id);else setFlash(null);}}>{t(claim?'claimed':'claim')}</Button>
+   <div className={styles.questLinks}>{isReading?<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={study}>{t('study')}</Button>:null}{target?<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" onClick={()=>setSource(target)}>{t('openEvidence',{title:target.title})}</Button>:<p className="text-caption">{t('unavailable')}</p>}</div>
+   {quest.source==='acp'?<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={()=>{setHelpFailed(false);setAssist(true);}}>{t('prepare')}</Button>:null}
+   <p className={styles.questAlternative}>{t('alternative')}</p></div></>}
+  </div><div className={styles.questCompactPager}><CompanionPager index={index} count={QUESTS.length} onChange={value=>{onSelect(value);setAssist(false);setFlash(null);}} label={t('pages')}/></div>
+  {flash?<><div key={flash} className={styles.questClaimed} aria-hidden="true" onAnimationEnd={()=>setFlash(null)}><CompanionItem index={5}/>{t('received',{name:t(`name.${flash}`)})}</div></>:null}
+ </div>;
+}

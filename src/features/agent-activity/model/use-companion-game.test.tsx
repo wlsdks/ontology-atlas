@@ -60,3 +60,19 @@ it('keeps a pending guardian clear retryable after a failed return save',()=>{
  expect(saved.run.clears).toBe(1);expect(saved.gold).toBe(defeated.gold+30);
  act(()=>h.result.current.act({type:'return'}));expect(h.result.current.game.gold).toBe(saved.gold);expect(h.result.current.game.run.clears).toBe(1);
 });
+it('does not publish a path preference when persistence fails, then retries without granting rewards',()=>{
+ const start=actCompanionGame({...newCompanionGame(61000),knowledge:5},{type:'depart',area},61000);localStorage.setItem(GAME_PREFIX+'project',JSON.stringify(start));
+ const h=renderHook(()=>useCompanionGame('project',5,false,'area'));const fail=vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw Error('quota');});
+ const choice={type:'plan-path' as const,path:'elite' as const,run:start.run.number,floor:1};
+ act(()=>expect(h.result.current.act(choice)).toBe(false));expect(h.result.current.game.run.plan).toBe('camp');
+ fail.mockRestore();act(()=>expect(h.result.current.act(choice)).toBe(true));expect(h.result.current.game.run.plan).toBe('elite');expect(h.result.current.game.hp).toBe(start.hp);expect(h.result.current.game.gold).toBe(start.gold);h.unmount();
+});
+it('claims quest rewards atomically, rejects foreign evidence, and grants nothing on a failed write',()=>{
+ const target={uid:'00000000-0000-4000-8000-000000000001',slug:'capabilities/a',title:'A'};
+ const evidence={project:'project',ready:true,counts:{concepts:3,relations:0,implementation:0,wiki:0,explored:0,reflected:0,acp:0},targets:{concepts:target,relations:null,implementation:null,wiki:null,explored:null,reflected:null,acp:null},acp:'unavailable' as const,byUid:new Map([[target.uid,target]]),bySlug:new Map([[target.slug,target]])};
+ localStorage.setItem(GAME_PREFIX+'project',JSON.stringify(newCompanionGame(61000)));
+ const h=renderHook(({projectEvidence})=>useCompanionGame('project',0,false,'',undefined,projectEvidence),{initialProps:{projectEvidence:evidence}});
+ const fail=vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw Error('quota');});act(()=>expect(h.result.current.act({type:'claim-quest',id:'roots'})).toBe(false));expect(h.result.current.game.relics).toBe(0);expect(h.result.current.game.questClaims).toEqual({});fail.mockRestore();
+ h.rerender({projectEvidence:{...evidence,project:'other'}});act(()=>expect(h.result.current.act({type:'claim-quest',id:'roots'})).toBe(false));expect(h.result.current.game.relics).toBe(0);
+ h.rerender({projectEvidence:evidence});act(()=>expect(h.result.current.act({type:'claim-quest',id:'roots'})).toBe(true));expect(h.result.current.game.relics).toBe(1);act(()=>expect(h.result.current.act({type:'claim-quest',id:'roots'})).toBe(false));expect(h.result.current.game.relics).toBe(1);h.unmount();
+});

@@ -93,8 +93,9 @@ const SCAN_MAX_DEPTH = 4;
  */
 const MARKDOWN_MAX_DEPTH = 8;
 const MARKDOWN_MAX_DIRECTORIES = 3000;
-/** Documents read for the citation walk beyond the ones the harness scan already holds. */
-const MARKDOWN_MAX_READS = 600;
+/** Citation reads beyond held guides. The September 2026 record census exceeds 600;
+ * retain a bounded walk with room for those authored records and explicit truncation above it. */
+const MARKDOWN_MAX_READS = 800;
 
 /** The hook configs this scan knows how to read, and whether the tool gates execution on approval. */
 const HOOK_CONFIGS: ReadonlyArray<{ path: string; approvalGate: boolean }> = Object.freeze([

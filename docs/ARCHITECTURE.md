@@ -706,6 +706,31 @@ canonical UIDs. Discovery and map-clear fields safely default for existing saves
 removed destinations return to camp without resetting accumulated progress. The existing verified mascot pose
 machine is mounted inline beside work status instead of as an AppShell map overlay.
 
+Companion quest evidence is derived while open from the loaded manifest, personal
+reading history, and the vault session's existing ACP work receipts. It adds no
+receipt polling or transcript parsing. Same-root writer correlation and current
+unique target resolution govern optional ACP claims; concept creation and body
+updates are eligible, while meaning-approval operations are not. Claims and relic
+materials persist atomically in the personal game save and unlock deterministic
+equipment tiers. Historical rewards retain their original target identity without
+inventing a replacement link after deletion. The run model saves the chosen next
+path and bounded applied floor history so healing/reward effects apply once.
+Quest assistance uses the existing cancelable live agent-chat intent: the game
+closes only when the workbench acknowledges the displayed request. Queued
+cold-start handoffs retain their separate lifecycle. This changes neither agent
+permissions nor canonical meaning acceptance.
+
+Camp learning expeditions reuse that manifest derivation, the existing personal
+reading/reflection store, and a project-scoped in-memory draft. Topics use uniquely
+resolved current documents; only original direct `depends_on` declarations identify
+review candidates. Containment, association, missing links, and transitive paths do
+not establish runtime impact. The in-game source reader preserves document bodies
+and can expose the original dependency fields and rationale. Targeted file reads
+check UID, modification time, and witnessed frontmatter, including a fresh check
+before saving a reflection. Failed reads or persistence preserve the draft and do
+not announce completion. No curriculum store, mastery score, canonical writer, or
+additional polling is introduced.
+
 **One piece of code decides which nav item is active; each screen size shows a
 different list of buttons.** The desktop rail shows eight destinations: Map,
 Architecture, Library, Automations, Insights, Projects, Agents, and Git. MCP is the

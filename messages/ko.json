@@ -7055,7 +7055,7 @@
       "journalSections": "기록 종류",
       "knowledgeBook": "읽기 기록",
       "personalBook": "함께한 기억",
-      "controls": "WASD / 방향키로 이동 · 바닥 클릭으로 걷기 · E 상호작용 · I 가방 · K 스킬 · M 지도 · J 기록 · Q 지식 파동 · 1 물약 · R 휴식 · Esc 창 닫기 · B 축복 · Space 회피 · N 몬스터 도감",
+      "controls": "WASD / 방향키로 이동 · 바닥 클릭으로 걷기 · E 상호작용 · I 가방 · K 스킬 · M 지도 · J 기록 · Q 지식 파동 · 1 물약 · R 휴식 · Esc 창 닫기 · B 축복 · Space 회피 · N 몬스터 도감 · L 의뢰 · T 학습 원정",
       "panel": {
         "inventory": "여행자의 가방",
         "skills": "별빛의 기술",
@@ -7064,7 +7064,9 @@
         "journal": "여행 일지",
         "help": "여행 안내",
         "blessings": "원정의 축복",
-        "bestiary": "몬스터 도감"
+        "bestiary": "몬스터 도감",
+        "quests": "여행자의 의뢰",
+        "learning": "학습 원정"
       },
       "move": {
         "ArrowUp": "위로 이동",
@@ -7114,8 +7116,9 @@
         "library": "기록의 마법서",
         "potion": "회복 물약",
         "cards": "지식 카드",
-        "relic": "숲의 유물",
-        "bestiary": "몬스터 도감"
+        "relic": "수호자의 유물",
+        "bestiary": "몬스터 도감",
+        "quests": "의뢰 수첩"
       },
       "description": {
         "sword": "강화할 때마다 공격력 +2. 몬스터를 처치해 얻은 골드로 강화합니다.",
@@ -7123,11 +7126,13 @@
         "library": "강화할 때마다 처치 경험치 +1. 발견을 모험의 힘으로 바꾸는 책입니다.",
         "potion": "체력 20 회복. 회복 스킬을 익히면 효과가 늘어납니다.",
         "cards": "이 폴더의 실제 개념들입니다. 책상에서 함께 읽고 발견을 기록할 수 있습니다.",
-        "relic": "열 번째 몬스터인 수호자를 물리치면 얻는 기념품입니다.",
-        "bestiary": "만난 생물 108종의 특징과 처치 기록. 다음 모험을 준비해 보세요."
+        "relic": "수호자 전투와 의뢰에서 얻은 유물. +5 이상의 전용 장비 강화에 사용해요.",
+        "bestiary": "만난 생물 108종의 특징과 처치 기록. 다음 모험을 준비해 보세요.",
+        "quests": "구축·읽기·동료의 작업을 확인하고 유물을 받아 전용 장비를 성장시켜요."
       },
       "chest": "보급 상자 열기 · {count}",
-      "readBestiary": "도감 펼치기 (N)"
+      "readBestiary": "도감 펼치기 (N)",
+      "readQuests": "의뢰 펼치기 (L)"
     },
     "skills": {
       "points": "사용할 스킬 포인트 {count}",
@@ -7209,7 +7214,8 @@
       "incoming": "공격 예고 · Space 회피",
       "cleared": "지난 원정 · 수호자 격파! 보상을 간직했어요. M으로 다음 원정을 정해요.",
       "defeated": "지난 원정 · 패배했지만 모은 보상은 남아요. M으로 다시 준비해요.",
-      "waveLabel": "지식 파동 ×{multiplier}"
+      "waveLabel": "지식 파동 ×{multiplier}",
+      "dodgeShort": "회피"
     },
     "adventure": {
       "atlas": "36개 모험지 · 108종 몬스터",
@@ -7248,6 +7254,201 @@
         "swarm": "연타",
         "arcane": "파동 저항"
       }
+    },
+    "journey": {
+      "title": "원정 계획",
+      "run": "원정 {number}회차",
+      "floors": "층별 여정",
+      "floor": "{floor}층",
+      "entrance": "출발",
+      "unreached": "앞으로",
+      "legacy": "이전 진행",
+      "current": "현재 층: {path}",
+      "standard": "기본 전투",
+      "restored": "체력 {hp} 회복",
+      "choose": "다음 길 고르기",
+      "applies": "{floor}층부터: {path}",
+      "nextRun": "다음 원정 2층부터: {path}",
+      "persists": "층에 들어갈 때 적용돼요. 자동 재도전에도 선택을 유지하며, 지금 체력이나 보상은 바뀌지 않아요.",
+      "name": {
+        "camp": "쉼터",
+        "cache": "보급로",
+        "elite": "정예 사냥"
+      },
+      "effect": {
+        "camp": "진입 시 체력 최대 {hp}% 회복 · 승리 골드 −{gold}",
+        "cache": "적 체력 +{health}% · 승리 골드 +{gold}",
+        "elite": "적 체력 +{health}%, 피해 +{damage}% · 승리 골드 +{gold} / 경험치 +{xp}"
+      },
+      "open": "원정 계획 (M), 5층 중 {floor}층",
+      "progress": "{floor} / 5층"
+    },
+    "quests": {
+      "title": "여행자의 의뢰",
+      "forge": "강화 +{limit}까지 · 수령한 의뢰 {count}개",
+      "pages": "의뢰 넘기기",
+      "name": {
+        "roots": "첫 뿌리",
+        "links": "이어진 생각",
+        "traces": "구현의 발자취",
+        "builder": "자라는 지도",
+        "weaver": "연결된 세계",
+        "archive": "위키 수호자",
+        "explorer": "첫 탐독",
+        "reflection": "솔직한 발견",
+        "scholar": "깊어진 탐구",
+        "partner": "동료와 함께",
+        "workshop": "함께 쌓는 공방",
+        "companions": "꾸준한 협업"
+      },
+      "requirement": {
+        "concepts": "현재 폴더에 온톨로지 개념 {goal}개 기록하기",
+        "relations": "현재 지도에 연결된 관계 {goal}개 기록하기",
+        "implementation": "구현 경로를 기록한 개념 {goal}개 모으기",
+        "wiki": "위키 페이지 {goal}개 쌓기",
+        "explored": "지식 카드 {goal}개 살펴보기",
+        "reflected": "서로 다른 개념에 발견·수정·불확실성을 {goal}개 남기기",
+        "acp": "에이전트 대화(ACP)에서 본문 저장 완료가 확인된 개념 {goal}개 살펴보기"
+      },
+      "claimed": "수령 완료",
+      "progress": "현재 {current} / {goal}",
+      "past": "수령 당시 {count}개 확인",
+      "reward": "수호자의 유물 ×{count}",
+      "claim": "보상 받기",
+      "study": "지식 카드로 가기",
+      "openEvidence": "현재 자료: {title}",
+      "unavailable": "지금 확인할 자료가 없어요. 받은 보상은 유지됩니다.",
+      "acp": {
+        "verified": "현재 폴더의 저장 완료 기록과 대상 개념을 확인했어요.",
+        "pending": "ACP 작업이 아직 진행 중이에요.",
+        "unavailable": "이 폴더에서 확인할 수 있는 완료 기록이 없어요. 오래된 기록은 남아 있지 않을 수도 있어요.",
+        "failed": "최근 작업은 완료되지 않았어요. 보상은 추가되지 않았습니다.",
+        "rejected": "요청을 거절했고 실행되지 않았어요. 일반 의뢰로 계속 진행할 수 있어요."
+      },
+      "boundary": "활동 기록을 위한 게임 보상이며 정확도·의미 승인 평가가 아닙니다.",
+      "alternative": "ACP 없이도 일반 의뢰 6개로 모든 강화 단계가 열려요.",
+      "received": "{name} · 유물을 받았어요",
+      "prepare": "ACP 도움 요청 준비",
+      "sendTitle": "이 요청을 에이전트에 보냅니다",
+      "send": "이 요청을 ACP에 보내기",
+      "cancel": "돌아가기",
+      "request": "현재 Atlas 폴더의 기존 온톨로지와 근거 자료를 읽고, 실제로 필요한 본문 개선 후보를 제안해 주세요. 근거가 부족하면 불확실성을 남기고 쓰지 마세요. 의뢰 보상을 위한 임의 문서나 승인은 만들지 마세요. 실제 쓰기는 기존 승인 절차를 따르세요.",
+      "notice": "의뢰 · 보상 대기 {count}",
+      "helpUnavailable": "지금 연결할 수 있는 ACP 에이전트가 없어 요청을 보내지 않았어요.",
+      "agents": "에이전트 연결 확인",
+      "list": "의뢰 목록",
+      "listProgress": "{current} / {goal}",
+      "loading": "기록을 읽는 중…",
+      "collected": "유물 ×{count} 수령 완료"
+    },
+    "forge": {
+      "title": "전용 장비 강화",
+      "rank": {
+        "0": "여행자의 장비",
+        "1": "각인 장비",
+        "2": "수호 장비",
+        "3": "광휘 장비",
+        "4": "별의 장비"
+      },
+      "level": "+{level}",
+      "preview": {
+        "sword": "공격력 {before} → {after}",
+        "armor": "최대 체력 {before} → {after}",
+        "library": "승리 경험치 보너스 +{before} → +{after}"
+      },
+      "milestone": {
+        "sword": "+5마다 공격력 +2 · 현재 전용 효과 +{bonus}",
+        "armor": "+5마다 최대 체력 +5 · 현재 전용 효과 +{bonus}",
+        "library": "+5마다 파동 배율 +0.25 · 현재 전용 효과 +{bonus}"
+      },
+      "gate": "다음 강화에는 의뢰 {count}/{needed}개 수령이 필요해요. 이미 얻은 장비는 유지됩니다.",
+      "quests": "의뢰로 강화 단계 열기",
+      "cost": "강화 · {gold} G + 유물 {relics}",
+      "max": "최고 단계",
+      "materials": "유물 {count}/{needed}개 · 의뢰와 수호자 전투에서 획득",
+      "guarantee": "확정 성공 · 파괴 없음",
+      "success": "강화 성공 · +{level}",
+      "waveTier": "새 단계 · 파동 ×{before} → ×{after}"
+    },
+    "source": {
+      "title": "현재 저장된 원문",
+      "pages": "원문 넘기기",
+      "back": "의뢰로 돌아가기",
+      "outside": "문서에서 열기 · 게임 나가기",
+      "loading": "현재 문서를 읽고 있어요…",
+      "unavailable": "현재 자료를 읽을 수 없어요. 이전 내용을 대신 보여주지 않습니다.",
+      "changed": "문서가 바뀌었어요. 폴더를 새로고친 뒤 읽거나 문서에서 원문을 확인해주세요.",
+      "large": "긴 원문은 문서에서 열어주세요.",
+      "empty": "아직 본문이 없어요. 이 개념의 업무 책임을 설명할 근거가 필요합니다.",
+      "boundary": "저장된 원문이며 정확성이나 이해도를 판정한 결과가 아닙니다.",
+      "draftPending": "새 메모를 저장하거나 비운 뒤 게임 밖으로 이동할 수 있어요. 돌아가면 초안이 그대로 남아 있어요."
+    },
+    "learning": {
+      "campTitle": "거점에서 탐구해요",
+      "campBody": "진행 중인 전투 원정을 끝내고 거점으로 돌아오면 학습 원정을 시작할 수 있어요. 이미 얻은 보상은 유지됩니다.",
+      "returnCamp": "전투를 끝내고 거점으로",
+      "loading": "현재 폴더의 근거를 읽고 있어요…",
+      "choose": "실제 기록에서 배울 주제",
+      "intro": "책임과 경계를 읽고, 기록된 의존관계를 따라간 뒤 알게 된 점과 모르는 점을 정리해요.",
+      "rewardRule": "읽기 5 XP·회고 15 XP는 개념당 한 번씩. 모름·정정도 같은 경험치예요.",
+      "hasLink": "직접 의존관계가 기록돼 있어요",
+      "unknownLink": "의존관계 근거가 아직 부족해요",
+      "topicPages": "학습 주제 넘기기",
+      "empty": "책임을 설명한 개념이 있어야 시작할 수 있어요. 게임이 업무 의미를 만들어내지는 않습니다.",
+      "retainedDraft": "보관 중인 미저장 메모 · 다른 주제를 고르려면 비워주세요",
+      "step": {
+        "read": "책임과 경계",
+        "relation": "연결 찾기",
+        "impact": "변경 검토",
+        "reflect": "내 말로 정리"
+      },
+      "recordBoundary": "기록된 연결은 살펴볼 근거이며 의미의 정확성이나 코드 영향을 증명하지는 않아요.",
+      "changed": "주제나 근거가 바뀌었어요. 다시 읽고 이어가세요. 작성한 메모는 남아 있어요.",
+      "restart": "바뀐 근거 다시 읽기",
+      "unavailable": "현재 저장된 근거를 확인할 수 없어요. 폴더를 새로고친 뒤 이어가세요.",
+      "readTitle": "기록된 책임 읽기",
+      "passages": "작성된 설명",
+      "purpose": "책임",
+      "boundary": "경계",
+      "missingPurpose": "분리된 책임 설명을 찾지 못했어요. 이 빈틈도 정리에 남길 수 있어요.",
+      "missingBoundary": "분리된 제외 범위 설명을 찾지 못했어요. 전체 원문을 읽고 경계를 판단해주세요.",
+      "passagePages": "본문 넘기기",
+      "readFull": "저장된 원문 전체 읽기",
+      "readNext": "읽고 다음으로",
+      "relationTitle": "기록된 의존관계 찾기",
+      "relationQuestion": "기록상 {title}을 직접 필요로 하는 대상은 무엇일까요?",
+      "missingLink": "여기에는 {title}을 직접 필요로 하는 연결이 확인되지 않아요. 실제 의존이나 영향이 없다는 뜻은 아닙니다.",
+      "relationChoices": "기록된 의존관계 후보",
+      "matchesRecord": "기록된 직접 연결과 일치해요.",
+      "tryEvidence": "이 선언과는 다른 선택이에요. 원문의 연결 방향을 확인해보세요.",
+      "checkWitness": "이름만 보고 판단하지 않고 원래 선언을 확인해요.",
+      "declaration": "연결을 선언한 문서 보기",
+      "next": "다음으로",
+      "compare": "기록과 비교하기",
+      "keepUnknown": "근거 부족을 남기고 계속",
+      "impactTitle": "함께 검토할 대상 찾기",
+      "dependsOn": "다음을 필요로 한다고 기록돼 있어요",
+      "candidate": "이 주제가 바뀐다면 {title}은 기록상 함께 검토할 후보예요.",
+      "reasonUnknown": "연결 이유와 한계는 선언 문서에서 확인해주세요. 연결만으로 이유를 추정하지 않아요.",
+      "declarationAt": "선언 문서: {title}",
+      "missingImpact": "이 기록만으로는 직접 검토할 대상을 정할 수 없어요. 영향이 없다고 결론 내리지 않고 미상으로 남겨요.",
+      "impactBoundary": "직접 선언된 연결만 보여줍니다. 실제 코드 영향과 그 너머의 영향은 추가 근거가 필요해요.",
+      "toReflection": "내 말로 정리하기",
+      "reflectionTitle": "다음에 쓸 수 있는 설명",
+      "reflectionPrompt": "책임·연결·아직 확인하지 못한 점을 적어주세요.",
+      "note": "내 설명 또는 질문",
+      "noteLimit": "240자 중 {count}자. 설명이나 질문을 짧게 남겨 주세요.",
+      "save": "탐구 기록 저장",
+      "saved": "탐구 기록을 남겼어요",
+      "completedBoundary": "활동과 설명을 기록했으며 이해도를 인증하거나 의미를 승인한 것은 아니에요.",
+      "another": "다른 주제 고르기",
+      "saveFailed": "아직 저장하지 못했어요. 초안은 그대로 있으니 저장 공간을 확인한 뒤 다시 시도해주세요.",
+      "returnLesson": "학습 원정으로 돌아가기",
+      "sourceShort": "원문",
+      "declarationShort": "선언 원문",
+      "checking": "현재 근거 확인 중…",
+      "verifyFailed": "근거 확인에 실패해 저장하지 않았어요. 초안은 그대로예요.",
+      "refreshEvidence": "근거를 새로고쳐 다시 읽기"
     }
   }
 }

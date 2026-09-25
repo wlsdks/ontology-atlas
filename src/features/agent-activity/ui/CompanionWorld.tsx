@@ -10,6 +10,7 @@ import {RowButton} from '@/shared/ui';
 import {currentSpecies,monsterKind,isBoss,victoryReward,type CompanionGame} from '../model/companion-game';
 import {moveInWorld,nearbyWorldSpot,WORLD_HEIGHT,WORLD_SPOTS,WORLD_WIDTH,WALK_SPEED,WALK_FRAME_DISTANCE,type WorldInteraction,type WorldPoint} from '../model/companion-world';
 import type {ConstructionCounts} from '../model/companion-construction';
+import {equipmentTier} from '../model/companion-forge';
 import {adventureMap,mapBackground} from '../model/companion-catalog';
 import {CompanionCreature} from './CompanionCreature';
 import {CompanionItem} from './CompanionItem';
@@ -27,6 +28,7 @@ export const CompanionWorld=forwardRef<CompanionWorldHandle,Props>(function Comp
  const viewport=useRef<HTMLDivElement>(null);const callbacks=useRef({onInteract,onStrike,onNear});
  useEffect(()=>{callbacks.current={onInteract,onStrike,onNear};},[onInteract,onStrike,onNear]);
  const x=useMotionValue(game.mode==='camp'?460:380),y=useMotionValue(535),width=useMotionValue(1000),height=useMotionValue(667),zoom=useMotionValue(1);
+ const spellX=useTransform(x,value=>value+(value>760?-20:20));const spellY=useTransform(y,value=>value-36);
  const markerScale=useTransform(zoom,value=>1/value);
  const cameraX=useTransform([x,zoom,width],values=>{const [px,s,w]=values as number[];const lead=game.mode==='expedition'?Math.max(-(w/2-64)/s,Math.min((w/2-64)/s,(760-px)/2)):0;return Math.min(0,Math.max(w-WORLD_WIDTH*s,w/2-(px+lead)*s));});
  const cameraY=useTransform([y,zoom,height],values=>{const [py,s,h]=values as number[];return Math.min(0,Math.max(h-WORLD_HEIGHT*s,h/2-py*s));});
@@ -75,15 +77,14 @@ export const CompanionWorld=forwardRef<CompanionWorldHandle,Props>(function Comp
   <link rel="preload" as="image" href={withBasePath('/brand/companion-fox-walk.webp')}/>
   <motion.div className={styles.worldPlane} style={{width:WORLD_WIDTH,height:WORLD_HEIGHT,x:cameraX,y:cameraY,scale:zoom,transformOrigin:'0 0'}}>
    {game.mode==='expedition'&&scene?<div className={styles.adventureBackground} data-map={game.area} style={{backgroundImage:`url(${withBasePath(scene.file)})`,backgroundPosition:scene.position}}/>:<Image src={withBasePath(game.mode==='camp'?'/brand/companion-workshop.webp':'/brand/companion-expedition.webp')} alt="" fill unoptimized sizes="1200px" className={styles.worldBackground}/>}
-   {game.mode==='expedition'&&map?<div className={styles.routeProgress} aria-hidden="true">{Array.from({length:5},(_,i)=><span key={i} data-done={i<=Math.floor(game.encounter/3)}>{i===4?'◆':'·'}</span>)}</div>:null}
    {game.mode==='camp'?<CompanionGrowthSigil counts={construction}/>:null}
    {game.mode==='camp'?WORLD_SPOTS.map(spot=><div key={spot.id} className={styles.worldSpot} style={{left:spot.anchor.x,top:spot.anchor.y}}><motion.div style={{scale:markerScale}}><RowButton tabIndex={-1} aria-label={t(`spot.${spot.id}`)} disabled={blocked} onClick={()=>walkTo(spot)} className="relative atlas-touch-floor atlas-touch-floor-wide"><span className={styles.interactionMarker} data-near={near===spot.id}>{spot.id==='expedition'?<CompanionItem index={7}/>:<span aria-hidden="true">◆</span>}<span>{t(`spot.${spot.id}`)}</span></span></RowButton></motion.div></div>):null}
    <motion.div className={styles.worldActor} style={{x,y}} data-testid="companion-player" data-pose={shownPose}>
-    <span className={styles.actorShadow} data-testid="companion-contact-shadow"/><span className={styles.actorFacing} style={{transform:direction<0&&pose==='walk'?'scaleX(-1)':undefined}}><CompanionSprite key={shownPose==='attack'?`${shownPose}-${game.attackId}`:shownPose} pose={shownPose} walkFrame={walkStep} large playing={active&&pageVisible&&!reduced}/></span>
+    <span className={styles.actorShadow} data-testid="companion-contact-shadow"/><span className={styles.actorFacing} data-gear-tier={Math.max(...Object.values(game.upgrades).map(equipmentTier))} style={{transform:(pose==='walk'?direction<0:game.mode==='expedition'&&x.get()>760)?'scaleX(-1)':undefined}}><CompanionSprite key={shownPose==='attack'?`${shownPose}-${game.attackId}`:shownPose} pose={shownPose} walkFrame={walkStep} large playing={active&&pageVisible&&!reduced}/></span>
     {game.mode==='expedition'&&game.phase==='hurt'?<span key={game.turn} className={spriteStyles.damage}>{game.lastDamage>0?`−${game.lastDamage}`:t('dodged')}</span>:null}
 
    </motion.div>
-   {game.mode==='expedition'&&(game.phase==='attack'||game.phase==='loot')&&active&&pageVisible&&!reduced?<svg className={styles.spellLayer} viewBox={`0 0 ${WORLD_WIDTH} ${WORLD_HEIGHT}`} aria-hidden="true"><motion.line key={game.attackId} x1={x} y1={y} x2={760} y2={510} stroke="var(--color-indigo-accent)" strokeWidth={5} initial={{pathLength:0,opacity:1}} animate={{pathLength:1,opacity:0}} transition={{duration:MOTION.fast.duration*3}}/></svg>:null}
+   {game.mode==='expedition'&&(game.phase==='attack'||game.phase==='loot')&&active&&pageVisible&&!reduced?<svg className={styles.spellLayer} viewBox={`0 0 ${WORLD_WIDTH} ${WORLD_HEIGHT}`} aria-hidden="true"><motion.line key={game.attackId} x1={spellX} y1={spellY} x2={760} y2={510} stroke="var(--color-indigo-accent)" strokeWidth={5} initial={{pathLength:0,opacity:1}} animate={{pathLength:1,opacity:0}} transition={{duration:MOTION.fast.duration}}/></svg>:null}
    {game.mode==='expedition'&&game.phase==='loot'?<div key={game.attackId} className={styles.lootReward} style={{left:760,top:470}} aria-hidden="true"><CompanionItem index={6}/><span>+{victoryReward(game).gold} G · +{victoryReward(game).xp} XP</span></div>:null}
    {game.mode==='expedition'?<div key={`${game.encounter}-${game.attackId}`} data-testid="companion-enemy" className={styles.worldEnemy} style={{left:760,top:530}} data-phase={game.phase} data-trait={species?.trait}>{species?<CompanionCreature species={species} large/>:<span className={spriteStyles.monster} data-kind={monsterKind(game)} data-boss={isBoss(game)} aria-hidden="true" style={{backgroundImage:`url(${withBasePath('/brand/companion-monsters.webp')})`}}/>}{game.phase==='attack'?<span key={game.attackId} className={spriteStyles.damage}>−{game.lastDamage}</span>:null}</div>:null}
   </motion.div>

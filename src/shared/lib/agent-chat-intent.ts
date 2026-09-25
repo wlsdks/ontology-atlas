@@ -41,16 +41,12 @@ interface AgentChatIntentDetail {
   prompt?: string | null;
 }
 
-export function requestAgentChat(
-  runtimeId: string | null = null,
-  prompt: string | null = null,
-): void {
-  if (typeof window === 'undefined') return;
-  window.dispatchEvent(
-    new CustomEvent<AgentChatIntentDetail>(AGENT_CHAT_INTENT_EVENT, {
-      detail: { runtimeId, prompt },
-    }),
-  );
+/** True only when the currently mounted workbench explicitly accepts this request. */
+export function requestAgentChat(runtimeId:string|null=null,prompt:string|null=null):boolean {
+  if(typeof window==='undefined')return false;
+  return !window.dispatchEvent(new CustomEvent<AgentChatIntentDetail>(AGENT_CHAT_INTENT_EVENT,{
+    cancelable:true,detail:{runtimeId,prompt},
+  }));
 }
 
 /**
@@ -125,15 +121,16 @@ export function consumeQueuedAgentChatIntent(): QueuedAgentChatIntent | undefine
 
 /** Subscribes to the request. Returns the unsubscribe function, for use as effect cleanup. */
 export function subscribeAgentChatIntent(
-  handler: (runtimeId: string | null, prompt: string | null) => void,
+  handler: (runtimeId: string | null, prompt: string | null) => void | boolean,
 ): () => void {
   if (typeof window === 'undefined') return () => {};
   const listener = (event: Event) => {
     const detail = (event as CustomEvent<AgentChatIntentDetail>).detail;
-    handler(
+    const accepted=handler(
       detail?.runtimeId ?? null,
       typeof detail?.prompt === 'string' && detail.prompt.trim() ? detail.prompt : null,
     );
+    if(accepted===true)event.preventDefault();
   };
   window.addEventListener(AGENT_CHAT_INTENT_EVENT, listener);
   return () => window.removeEventListener(AGENT_CHAT_INTENT_EVENT, listener);

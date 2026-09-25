@@ -2,21 +2,24 @@
 import {useState} from 'react';
 import {useTranslations} from 'next-intl';
 import {Button,RowButton} from '@/shared/ui';
-import {maxHp,availableSkillPoints,COMPANION_SKILLS,upgradeCost,type CompanionGame,type GameAction,type Upgrade,type CompanionSkill} from '../model/companion-game';
+import {maxHp,availableSkillPoints,COMPANION_SKILLS,type CompanionGame,type GameAction,type Upgrade,type CompanionSkill} from '../model/companion-game';
+import {CompanionForge} from './CompanionForge';
+import {questCount} from '../model/companion-quests';
 import {CompanionItem} from './CompanionItem';
+import {CompanionFolioArt} from './CompanionFolioArt';
 import styles from './companion-immersive.module.css';
-type Props={game:CompanionGame;act:(action:GameAction)=>boolean;disabled:boolean;cards:number;onStudy:()=>void;onBestiary:()=>void};
-const ITEMS=[{id:'sword',icon:0},{id:'armor',icon:1},{id:'library',icon:2},{id:'potion',icon:3},{id:'cards',icon:4},{id:'relic',icon:5},{id:'bestiary',icon:8}] as const;
-export function CompanionInventory({game,act,disabled,cards,onStudy,onBestiary}:Props){
+type Props={game:CompanionGame;act:(action:GameAction)=>boolean;disabled:boolean;cards:number;onStudy:()=>void;onBestiary:()=>void;onQuests:()=>void};
+const ITEMS=[{id:'sword',icon:0},{id:'armor',icon:1},{id:'library',icon:2},{id:'potion',icon:3},{id:'cards',icon:4},{id:'relic',icon:5},{id:'bestiary',icon:8},{id:'quests',icon:4}] as const;
+export function CompanionInventory({game,act,disabled,cards,onStudy,onBestiary,onQuests}:Props){
  const t=useTranslations('companion.inventory');const [selected,setSelected]=useState(0);const item=ITEMS[selected];const gear=['sword','armor','library'].includes(item.id)?item.id as Upgrade:null;
- const count=(id:string)=>id==='potion'?game.potions:id==='cards'?cards:id==='relic'?game.relics:id==='bestiary'?Object.keys(game.discoveries).length:1;
+ const count=(id:string)=>id==='potion'?game.potions:id==='cards'?cards:id==='relic'?game.relics:id==='bestiary'?Object.keys(game.discoveries).length:id==='quests'?questCount(game.questClaims):1;
  return <div className={styles.inventoryLayout}>
   <div><p className={styles.panelEyebrow}>{t('bag')} · {game.gold} G</p><div className={styles.inventoryGrid} aria-label={t('items')}>
    {Array.from({length:12},(_,i)=>{const slot=ITEMS[i];return slot?<RowButton key={slot.id} active={selected===i} aria-pressed={selected===i} aria-label={`${t(`name.${slot.id}`)} · ${count(slot.id)}`} onClick={()=>setSelected(i)} className={styles.inventorySlot}><CompanionItem index={slot.icon}/><span className={styles.stackCount}>{['sword','armor','library'].includes(slot.id)?`+${game.upgrades[slot.id as Upgrade]}`:count(slot.id)}</span></RowButton>:<span key={i} className={styles.emptySlot} aria-hidden="true"/>;})}
   </div><Button className="mt-2 atlas-touch-floor atlas-touch-floor-wide" variant="outline" disabled={disabled||game.chests>=Math.floor(game.wins/5)} onClick={()=>act({type:'chest'})}>{t('chest',{count:Math.floor(game.wins/5)-game.chests})}</Button></div>
   <div className={styles.itemDetail} aria-live="polite">
-   <CompanionItem index={item.icon} large/><h4>{t(`name.${item.id}`)}{gear?` +${game.upgrades[gear]}`:''}</h4><p>{t(`description.${item.id}`)}</p>
-   {gear?<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="primary" disabled={disabled||game.upgrades[gear]>=20||game.gold<upgradeCost(game,gear)} onClick={()=>act({type:'upgrade',kind:gear})}>{t('upgrade',{gold:upgradeCost(game,gear)})}</Button>:item.id==='potion'?<div className="flex flex-wrap gap-2"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="primary" disabled={disabled||game.potions<1||game.hp===maxHp(game)} onClick={()=>act({type:'heal'})}>{t('use')}</Button><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" disabled={disabled||game.gold<5||game.potions>=99} onClick={()=>act({type:'buy-potion'})}>{t('buy')}</Button></div>:item.id==='cards'?<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={onStudy}>{t('readCards')}</Button>:item.id==='bestiary'?<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={onBestiary}>{t('readBestiary')}</Button>:null}
+   {gear?<div className={styles.gearIllustration}><CompanionFolioArt kind="forge"/><CompanionItem index={item.icon} large/></div>:<CompanionItem index={item.icon} large/>}<h4>{t(`name.${item.id}`)}{gear?` +${game.upgrades[gear]}`:''}</h4>{!gear?<p>{t(`description.${item.id}`)}</p>:null}
+   {gear?<CompanionForge key={gear} game={game} kind={gear} disabled={disabled} act={act} onQuests={onQuests}/>:item.id==='potion'?<div className="flex flex-wrap gap-2"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="primary" disabled={disabled||game.potions<1||game.hp===maxHp(game)} onClick={()=>act({type:'heal'})}>{t('use')}</Button><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" disabled={disabled||game.gold<5||game.potions>=99} onClick={()=>act({type:'buy-potion'})}>{t('buy')}</Button></div>:item.id==='cards'?<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={onStudy}>{t('readCards')}</Button>:item.id==='bestiary'?<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={onBestiary}>{t('readBestiary')}</Button>:item.id==='quests'?<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={onQuests}>{t('readQuests')}</Button>:null}
   </div>
  </div>;
 }
