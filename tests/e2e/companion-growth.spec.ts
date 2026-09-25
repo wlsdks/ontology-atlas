@@ -6,7 +6,7 @@ async function openProject(page:Page,locale='en',reduced=true){
  await page.goto(`/${locale}/?guides=off&e2e=1`);await page.getByTestId('first-run-open').click();await expect(page.getByTestId('companion-trigger')).toBeVisible();
 }
 async function home(page:Page){await page.getByTestId('companion-trigger').click();const dialog=page.getByTestId('companion-journal');await expect(dialog.getByTestId('companion-world')).toBeVisible();const receipt=dialog.getByRole('button',{name:/Continue the adventure|모험 이어가기/});if(await receipt.isVisible())await receipt.click();return dialog;}
-async function study(page:Page,locale='en'){const dialog=page.getByTestId('companion-journal');await page.keyboard.press('i');await dialog.getByRole('button',{name:locale==='en'?/^Knowledge cards/:/^지식 카드/}).click();await dialog.getByRole('button',{name:locale==='en'?'Read knowledge cards':'지식 카드 읽기',exact:true}).click();}
+async function study(page:Page,locale='en'){const dialog=page.getByTestId('companion-journal');await expect(dialog.getByTestId('companion-overlay')).toBeHidden();await expect(dialog.getByTestId('companion-world')).toBeFocused();await page.keyboard.press('i');await dialog.getByRole('button',{name:locale==='en'?/^Knowledge cards/:/^지식 카드/}).click();await dialog.getByRole('button',{name:locale==='en'?'Read knowledge cards':'지식 카드 읽기',exact:true}).click();}
 async function xp(page:Page){return Number((await page.getByTestId('companion-xp').innerText()).split(' ')[0]);}
 
 test('project records grant starting power; reading, reflection and editing preserve exact rewards',async({page})=>{
@@ -78,6 +78,18 @@ test('battle framing and blessing choices fit narrow and short game screens',asy
  }
 });
 
+test('combat cues expose the dodge window, stop behind panels, and respect reduced motion',async({page})=>{
+ await openProject(page,'en',false);const dialog=await home(page);await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();
+ const world=dialog.getByTestId('companion-world');await expect(world.getByTestId('companion-battle-stage')).toHaveCSS('background-image',/companion-battle-stage\.webp/);
+ await page.clock.pauseAt(new Date());
+ await page.evaluate(()=>{const key=Object.keys(localStorage).find(value=>value.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.phase='attack';game.attackId++;game.guard=0;game.dodgeCooldown=0;game.run.lastOutcome='defeat';game.lastAt=Date.now();localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});
+ await expect(world.getByTestId('companion-dodge-telegraph')).toBeVisible();await expect(world.getByTestId('companion-attack-bolt')).toHaveCount(1);
+ await expect(dialog.getByTestId('companion-run-outcome')).toHaveCount(0);
+ await page.keyboard.press('m');await expect(world).toHaveAttribute('data-playing','false');await page.keyboard.press('Escape');await expect(world).toHaveAttribute('data-playing','true');
+ await page.emulateMedia({reducedMotion:'reduce'});await expect(world.getByTestId('companion-attack-bolt')).toHaveCount(0);await expect(world.getByTestId('companion-dodge-telegraph')).toHaveCSS('animation-name','none');
+ await page.keyboard.press('Space');await expect(world.getByTestId('companion-dodge-telegraph')).toHaveCount(0);
+});
+
 test('the game panels retain their controls with doubled text at a desktop viewport',async({page})=>{
  await page.setViewportSize({width:1512,height:900});await openProject(page);const dialog=await home(page);await page.evaluate(()=>document.documentElement.style.fontSize='200%');
  for(const key of ['i','k','m','n','j','e','Shift+Slash','b']){if(key==='b'){await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();}if(key==='e')await study(page);else await page.keyboard.press(key);const content=dialog.getByTestId('companion-content');await expect(content).toBeVisible();const sizes=await content.evaluate(el=>({x:el.scrollWidth-el.clientWidth,y:el.scrollHeight-el.clientHeight}));console.log('DOUBLE_TEXT',key,sizes);expect(sizes.x).toBeLessThanOrEqual(1);expect(sizes.y).toBeLessThanOrEqual(1);await page.keyboard.press('Escape');}
@@ -97,6 +109,9 @@ test('completed and defeated expeditions show distinct persistent outcomes',asyn
 
 test('coarse game controls have nonoverlapping 44px hit areas at centres and edges',async({browser})=>{
  const context=await browser.newContext({hasTouch:true,viewport:{width:1440,height:900},reducedMotion:'reduce'});const page=await context.newPage();await openProject(page);const dialog=await home(page);
+ // The dev-only Next badge occupies the bottom-right hit area at 320px. It is
+ // absent from static export; measure the game controls without that test overlay.
+ await page.evaluate(()=>document.querySelector('nextjs-portal')?.remove());
  expect(await page.evaluate(()=>matchMedia('(any-pointer: coarse)').matches)).toBe(true);
  for(const [width,height] of [[320,740],[390,844],[844,390],[1440,900]]){
   await page.setViewportSize({width,height});

@@ -4,5 +4,7 @@ it('keeps movement inside the world, slides along furniture and exposes reachabl
  expect(moveInWorld({x:460,y:535},10000,10000)).toEqual({x:945,y:600});
  expect(moveInWorld({x:460,y:450},-200,-100)).toEqual({x:260,y:450});
  expect(worldWalkable({x:150,y:350})).toBe(false);expect(worldWalkable({x:150,y:500},true)).toBe(true);
+ expect(worldWalkable({x:500,y:479},true)).toBe(false);
+ expect(moveInWorld({x:420,y:535},0,-1000,true)).toEqual({x:420,y:480});
  for(const spot of WORLD_SPOTS){expect(worldWalkable(spot.point)).toBe(true);expect(nearbyWorldSpot(spot.point)).toBe(spot.id);}
 });

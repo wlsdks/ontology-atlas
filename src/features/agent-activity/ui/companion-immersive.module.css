@@ -98,6 +98,13 @@
 .interactionMarker[data-near='true'] > span:last-child,.worldSpot button:hover .interactionMarker > span:last-child,.worldSpot button:focus-visible .interactionMarker > span:last-child{display:inline}
 .interactionMarker > .itemArt{display:inline-block;width:56px;height:56px}
 .adventureBackground{position:absolute;inset:0;background-size:300% 200%;image-rendering:pixelated}
+.battleStage{position:absolute;inset:0;z-index:1;background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none}
+.worldViewport[data-mode='expedition'] .actorFacing{left:-60px;width:120px;height:120px}
+.worldViewport[data-mode='expedition'] .actorFacing > span{--companion-size:120px}
+.worldViewport[data-mode='expedition'] .actorShadow{left:-30px;width:60px;height:14px;top:-6px}
+.worldViewport[data-mode='expedition'] .worldEnemy{transform:translate(-50%,-95%)}
+.worldViewport[data-mode='expedition'] .worldEnemy > .creature{width:130px;height:130px}
+.worldViewport[data-mode='expedition'] .worldEnemy::before{content:'';position:absolute;left:50%;bottom:0;width:72px;height:14px;border-radius:50%;background:var(--overlay-scrim);opacity:.55;transform:translateX(-50%)}
 .creature{display:inline-block;flex-shrink:0;width:56px;height:56px;background-size:600% 300%;background-repeat:no-repeat;image-rendering:pixelated;transform-origin:50% 100%}
 .creature[data-large='true']{width:100px;height:100px}
 .creature[data-unknown='true']{filter:brightness(.1);opacity:.65}
@@ -394,3 +401,32 @@
 @container(min-width:44rem) and (min-height:22rem){.learningNoteFull{display:block}.learningNoteExcerpt,.learningNotePager{display:none}}
 @container(max-height:22rem){.projectBook dl > div{padding-block:0}}
 @media(max-height:650px){.bestiaryGrid{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(44px,1fr))}.bestiaryList{gap:4px}.bestiarySlot > .creature{width:44px;height:44px}}
+
+/* Combat reads as one sequence: fox windup, rune travel, impact, then enemy answer. */
+.worldViewport[data-playing='true'] .worldActor[data-phase='attack'] .actorFacing,
+.worldViewport[data-playing='true'] .worldActor[data-phase='loot'] .actorFacing{animation:heroStrike calc(var(--motion-settle)*2) cubic-bezier(.18,.74,.35,1) both}
+.worldViewport[data-playing='true'] .worldActor[data-phase='hurt'] .actorFacing{animation:heroRecoil calc(var(--motion-settle)*2) ease-out both}
+.worldViewport[data-playing='true'] .worldActor[data-phase='hurt'][data-damage='0'] .actorFacing{animation:heroEvade calc(var(--motion-settle)*2) ease-out both}
+@keyframes heroStrike{0%,100%{translate:0 0}20%{translate:calc(-6px * var(--strike-direction)) 0}53%{translate:calc(20px * var(--strike-direction)) 0}75%{translate:calc(13px * var(--strike-direction)) 0}}
+@keyframes heroRecoil{0%,100%{translate:0 0}22%{translate:calc(-14px * var(--strike-direction)) 0}58%{translate:calc(-6px * var(--strike-direction)) 0}}
+@keyframes heroEvade{0%,100%{translate:0 0}30%{translate:calc(-24px * var(--strike-direction)) 0}65%{translate:calc(-18px * var(--strike-direction)) 0}}
+.attackBolt{position:absolute;z-index:5;display:block;width:22px;height:22px;pointer-events:none;background:var(--color-indigo-accent);clip-path:polygon(50% 0,65% 32%,100% 50%,65% 68%,50% 100%,35% 68%,0 50%,35% 32%)}
+.attackBolt::after{content:'';position:absolute;inset:7px;background:var(--color-text-primary);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.impactBurst{position:absolute;z-index:5;width:72px;height:72px;pointer-events:none;translate:-50% -50%;animation:combatImpact calc(var(--motion-settle)*2) ease-out both;animation-delay:var(--motion-settle)}
+.impactBurst::before,.impactBurst::after{content:'';position:absolute;inset:0;clip-path:polygon(47% 0,58% 30%,75% 8%,70% 39%,100% 47%,71% 58%,91% 78%,59% 71%,50% 100%,40% 72%,12% 91%,29% 58%,0 50%,29% 40%,11% 13%,41% 29%)}
+.impactBurst::before{background:var(--color-indigo-accent)}
+.impactBurst::after{inset:16px;background:var(--color-amber-source-text-a95)}
+@keyframes combatImpact{0%{scale:.3;opacity:0}16%{scale:.75;opacity:1}55%{scale:1.18;opacity:.9}100%{scale:1.5;opacity:0}}
+.worldEnemy[data-phase='loot'],.lootReward{animation-delay:calc(var(--motion-settle)*1.5)}
+.worldViewport[data-playing='true'] .worldEnemy[data-phase='attack'] > .creature{animation:creatureWindup var(--companion-turn-ms) steps(8,end) both}
+@keyframes creatureWindup{0%{scale:1 1}35%{scale:1.08 .93}76%{scale:.94 1.07}100%{scale:1 1}}
+.worldEnemy[data-phase='attack'],.worldEnemy[data-phase='attack'] .damage{animation-delay:var(--motion-settle)}
+@keyframes creatureStrike{0%,100%{translate:0 0;scale:1}36%{translate:-38px 0;scale:1.1}68%{translate:-18px 0;scale:1.04}}
+.dodgeTelegraph{position:absolute;left:-60px;top:-23px;z-index:2;width:120px;height:34px;border:3px solid var(--color-danger-text-strong);border-radius:50%;box-shadow:0 0 0 2px var(--color-canvas),inset 0 0 0 2px var(--color-text-primary);pointer-events:none;animation:dodgeWarning var(--companion-turn-ms) steps(8,end) both}
+.dodgeTelegraph::after{content:'';position:absolute;inset:5px;border:2px solid var(--color-danger-a50);border-radius:50%}
+@keyframes dodgeWarning{0%{scale:1.2;opacity:.4}75%{scale:.9;opacity:1}100%{scale:.75;opacity:1}}
+.worldActor[data-phase='hurt'] .damage{color:var(--color-danger-text-strong)}
+.gameRoot[data-incoming='true'] .actionBar > button:first-child:not(:disabled){border-color:var(--color-danger-text-strong);box-shadow:inset 0 0 0 1px var(--color-danger-a50)}
+.gameRoot[data-incoming='true'] .actionBar > button:first-child:not(:disabled) > .itemArt{animation:dodgeIcon calc(var(--motion-settle)*3) ease-in-out infinite alternate}
+@keyframes dodgeIcon{from{scale:.92}to{scale:1.08}}
+@media(prefers-reduced-motion:reduce){.worldViewport[data-playing='false'] .worldEnemy[data-phase='attack'],.worldViewport[data-playing='false'] .worldEnemy > .creature,.dodgeTelegraph,.gameRoot[data-incoming='true'] .actionBar > button:first-child:not(:disabled) > .itemArt{animation:none}.impactBurst,.attackBolt{display:none}}
