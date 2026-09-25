@@ -7448,7 +7448,17 @@
       "declarationShort": "Declaration",
       "checking": "Checking current sources…",
       "verifyFailed": "Not saved: evidence changed or unreadable. Your draft remains.",
-      "refreshEvidence": "Refresh and read the evidence again"
+      "refreshEvidence": "Refresh and read the evidence again",
+      "noteBadge": "My note",
+      "noteHint": "Opens the field note you already saved.",
+      "recallTitle": "Your field note",
+      "recordedOn": "First recorded {date}",
+      "dateUnavailable": "date unavailable",
+      "recallBoundary": "A personal note from an earlier exploration. Read current evidence before treating it as a current conclusion.",
+      "reexplore": "Explore again",
+      "reexploreHint": "Read the current saved sources before revising this note.",
+      "currentUnavailable": "Current source unavailable. Your note is kept.",
+      "noteUnavailable": "This saved note is unavailable in the journal."
     }
   }
 }

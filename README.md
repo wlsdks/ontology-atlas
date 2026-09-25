@@ -71,7 +71,9 @@ a real concept's responsibility and boundaries, inspect a recorded direct depend
 in its declaring document, and save your own explanation or open question. Sources
 remain readable inside the game; completion rechecks their saved identity and version.
 Learning activity reuses the existing once-per-concept reading and reflection XP,
-without certifying understanding. Project and reading XP unlock
+without certifying understanding. Topics with a saved field note open that note
+directly, including its original date and any uncertainty. Re-exploration reads
+the current evidence again; viewing a past note grants no additional XP. Project and reading XP unlock
 destinations; combat XP does not. Optional auto retry continues while away, with at most
 four hours of catch-up. A camp constellation shows the records you have built.
 Original personal memories remain intact. Game progress does not judge correctness,
