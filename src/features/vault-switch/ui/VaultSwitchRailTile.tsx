@@ -13,6 +13,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { Surface } from '@/shared/ui/surface';
 import { transientSurface } from '@/shared/ui/transient-surface';
 import { recentVaultRowKey } from '../lib/recent-vault-row';
+import { measureSwitcherPlacement, type SwitcherPlacement } from '../lib/switcher-placement';
 import { RecentVaultList } from './RecentVaultList';
 
 /**
@@ -65,13 +66,23 @@ function tabbables(root: ParentNode): HTMLElement[] {
   );
 }
 
+/*
+ * 26rem, not 20rem. At 320px the row's text column measured 168px while a realistic facts line
+ * ("184 documents · 121 concepts · opened 3 weeks ago") needs 259.9px, so the always-available
+ * switcher told a person *less* about a folder than the launch chooser did - and two similar
+ * folder names then render as the same row (responsive seat, 2026-09-13, measured). The
+ * placement shrinks it when the free map is narrower.
+ */
+const POPOVER_WIDTH_PX = 416;
+const POPOVER_MAX_HEIGHT_PX = 640;
+
 export function VaultSwitchRailTile() {
   const t = useTranslations('vaultSwitch');
   const vault = useLocalVault();
   const { open, setOpen, ref, surfaceRef } = useDismissibleMenu();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   /*
-   * Where the popover stands, measured from the trigger at the moment it opens.
+   * Where the popover stands, measured when it opens and again when the window resizes.
    *
    * ⚠️ **The popover is portalled to `document.body`, so it needs coordinates.** Anchored
    * with `absolute` inside the rail it was trapped in the rail's stacking context and the
@@ -79,23 +90,33 @@ export function VaultSwitchRailTile() {
    * (inspection, 2026-09-13). `AppNavRail`'s own note already says why: the rail is narrow,
    * so surfaces that hang off it open through a portal, exactly as the settings sheet does.
    *
-   * **It hangs from the chip's lower corner, not its top.** Top-aligned with the chip it lay
-   * over the INDEX head (title and folder line) and, at 1512, over the map toolbar's first two
-   * controls, which share that top band (inspection, 2026-09-25, `e-1512-popover-with-recent.png`;
-   * measured by elementFromPoint in `app-chrome-interaction.spec.ts`). Starting at the chip's
-   * bottom edge it still reads as the chip's menu and leaves that band - the INDEX head and
-   * the toolbar - uncovered.
+   * **It opens in the free map, not over INDEX.** Hung from the chip's corner it covered the
+   * INDEX search field and folder line, or the collapsed INDEX tab, at every width, and its edge
+   * straddled the INDEX card's (review, 2026-09-25). `switcher-placement.ts` steps it past INDEX
+   * and under the map toolbar, onto the toolbar's own start line; off the map it stays beside
+   * the chip. `app-chrome-interaction.spec.ts` samples INDEX and the toolbar by elementFromPoint.
    */
-  const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
+  const [anchor, setAnchor] = useState<SwitcherPlacement | null>(null);
+  const place = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    setAnchor(
+      measureSwitcherPlacement(trigger, {
+        width: POPOVER_WIDTH_PX,
+        maxHeight: Math.min(window.innerHeight * 0.72, POPOVER_MAX_HEIGHT_PX),
+      }),
+    );
+  }, []);
 
   const toggle = useCallback(() => {
-    setOpen((wasOpen) => {
-      if (wasOpen) return false;
-      const rect = triggerRef.current?.getBoundingClientRect();
-      if (rect) setAnchor({ top: rect.bottom, left: rect.right + 6 });
-      return true;
-    });
-  }, [setOpen]);
+    if (!open) place();
+    setOpen((wasOpen) => !wasOpen);
+  }, [open, place, setOpen]);
+  useEffect(() => {
+    if (!open) return undefined;
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [open, place]);
   const busy = vault.status === 'opening' || vault.status === 'loading';
 
   /*
@@ -329,16 +350,8 @@ export function VaultSwitchRailTile() {
         ref={setSurface}
         onExited={returnFocusIfLost}
         {...transientSurface('anchored')}
-        style={{ top: anchor.top, left: anchor.left }}
-        /*
-         * 26rem, not 20rem. At 320px the row's text column measured 168px while a realistic
-         * facts line ("184 documents · 121 concepts · opened 3 weeks ago") needs 259.9px, so
-         * the always-available switcher told a person *less* about a folder than the launch
-         * chooser did - and two similar folder names then render as the same row
-         * (responsive seat, 2026-09-13, measured). The popover's left edge is the rail's
-         * right at 69px, so 26rem still leaves 555px clear at the app's 1040px window floor.
-         */
-        className="fixed z-50 max-h-[min(72vh,640px)] w-[26rem] max-w-[min(80vw,26rem)] overflow-y-auto rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
+        style={{ top: anchor.top, left: anchor.left, width: anchor.width, maxHeight: anchor.maxHeight }}
+        className="fixed z-50 overflow-y-auto rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
       >
         {/*
           One start line for everything in the popover: the captions, the recent rows' glyph

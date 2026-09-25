@@ -503,6 +503,8 @@ export function TopologyIndexPanel({
     <aside
       aria-label={labels.label}
       data-testid="topology-index-panel"
+      // Chrome that opens from outside the map (the rail's folder switcher) stands clear of this.
+      data-popover-obstacle="index"
       className={`flex max-h-full flex-col has-[[data-testid=first-run-starter]]:h-full rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-width)" }}
     >

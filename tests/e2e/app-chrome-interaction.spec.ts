@@ -221,46 +221,91 @@ test.describe('the vault switcher', () => {
     await page.screenshot({ path: `${SHOTS}/ch3-popover.png` });
   });
 
-  for (const viewport of [
-    { width: 1512, height: 949 },
-    { width: 1040, height: 720 },
-  ]) {
-    test(`the popover leaves the map toolbar uncovered at ${viewport.width}`, async ({ page }) => {
-      test.setTimeout(120_000);
-      await page.setViewportSize(viewport);
-      await installDesktopRailRuntime(page);
-      await mountDesktopVault(page);
-      await expect(page.getByTestId('topology-top-toolbar')).toBeVisible({ timeout: 60_000 });
-      await openSwitcher(page);
-      // Every toolbar control, sampled at its centre and its four inset corners, is still the
-      // thing on top: the popover hangs from the chip, it does not lid the map's own controls.
-      const covered = await page.evaluate(() => {
-        const toolbar = document.querySelector('[data-testid="topology-top-toolbar"]')!;
-        const hits: string[] = [];
-        for (const control of toolbar.querySelectorAll('button, a')) {
-          const r = control.getBoundingClientRect();
-          if (r.width === 0 || r.height === 0) continue;
-          const points = [
-            [r.left + r.width / 2, r.top + r.height / 2],
-            [r.left + 3, r.top + 3],
-            [r.right - 3, r.top + 3],
-            [r.left + 3, r.bottom - 3],
-            [r.right - 3, r.bottom - 3],
-          ];
-          for (const [x, y] of points) {
+  /*
+   * **The popover opens in the free map: it covers neither INDEX nor the map toolbar.**
+   * Review, 2026-09-25: hung from the chip's corner it stood at x69-485 y70-186 at every width,
+   * over the whole INDEX search field and folder line (49/49 samples) or the collapsed INDEX
+   * tab (42/49), with its edge straddling the INDEX card's. Sampled by elementFromPoint on a
+   * 7x7 grid over INDEX and at every toolbar control's centre and corners, at each rail width,
+   * with INDEX open and folded.
+   */
+  test('the popover covers neither INDEX nor the map toolbar, open or folded, at every rail width', async ({ page }) => {
+    test.setTimeout(240_000);
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page);
+    const failures: string[] = [];
+    for (const index of ['expanded', 'collapsed'] as const) {
+      await page.goto(`/en/topology/?guides=off&e2e=1${index === 'collapsed' ? '&index=collapsed' : ''}`, {
+        waitUntil: 'domcontentloaded',
+      });
+      const indexTestId = index === 'expanded' ? 'topology-index-panel' : 'topology-index-tab';
+      await expect(page.getByTestId(indexTestId)).toBeVisible({ timeout: 60_000 });
+      for (const viewport of [
+        { width: 1040, height: 720 },
+        { width: 1280, height: 949 },
+        { width: 1512, height: 949 },
+        { width: 1920, height: 1080 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await expect(page.getByTestId('topology-top-toolbar')).toBeVisible();
+        const popover = await openSwitcher(page);
+        const where = `${viewport.width} index=${index}`;
+        const m = await page.evaluate((indexSelector) => {
+          const pop = document.querySelector('[data-testid="vault-switch-popover"]')!;
+          const covered = (x: number, y: number) => {
             const top = document.elementFromPoint(x, y);
-            if (top && top.closest('[data-testid="vault-switch-popover"]')) {
-              hits.push(`${control.getAttribute('aria-label') ?? control.textContent} @${Math.round(x)},${Math.round(y)}`);
-              break;
+            return top !== null && pop.contains(top);
+          };
+          const indexEl = document.querySelector(indexSelector)!;
+          const ir = indexEl.getBoundingClientRect();
+          let indexHits = 0;
+          for (let i = 0; i < 7; i += 1) {
+            for (let j = 0; j < 7; j += 1) {
+              if (covered(ir.left + (ir.width * (i + 0.5)) / 7, ir.top + (ir.height * (j + 0.5)) / 7)) indexHits += 1;
             }
           }
+          const toolbarHits: string[] = [];
+          const toolbar = document.querySelector('[data-testid="topology-top-toolbar"]')!;
+          for (const control of toolbar.querySelectorAll('button, a, input')) {
+            const r = control.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) continue;
+            const points = [
+              [r.left + r.width / 2, r.top + r.height / 2],
+              [r.left + 3, r.top + 3],
+              [r.right - 3, r.top + 3],
+              [r.left + 3, r.bottom - 3],
+              [r.right - 3, r.bottom - 3],
+            ];
+            if (points.some(([x, y]) => covered(x, y))) {
+              toolbarHits.push(control.getAttribute('aria-label') ?? control.textContent ?? '?');
+            }
+          }
+          const pr = pop.getBoundingClientRect();
+          return {
+            indexHits,
+            toolbarHits,
+            gapToIndex: pr.left - ir.right,
+            popover: { left: pr.left, top: pr.top, right: pr.right, bottom: pr.bottom },
+            toolbarBottom: toolbar.getBoundingClientRect().bottom,
+            viewport: { width: innerWidth, height: innerHeight },
+          };
+        }, `[data-testid="${indexTestId}"]`);
+        if (m.indexHits > 0) failures.push(`${where}: the popover covers INDEX (${m.indexHits}/49 samples)`);
+        // Beside INDEX, not straddling its edge.
+        if (m.gapToIndex < 0) failures.push(`${where}: the popover starts ${Math.round(-m.gapToIndex)}px inside INDEX`);
+        if (m.toolbarHits.length > 0) failures.push(`${where}: the popover covers toolbar controls ${m.toolbarHits.join(', ')}`);
+        if (m.popover.top < m.toolbarBottom) failures.push(`${where}: the popover starts inside the toolbar band`);
+        if (m.popover.right > m.viewport.width || m.popover.bottom > m.viewport.height) {
+          failures.push(`${where}: the popover leaves the window`);
         }
-        return hits;
-      });
-      expect(covered, 'the folder popover covers map toolbar controls').toEqual([]);
-      await page.screenshot({ path: `${SHOTS}/ch3-popover-${viewport.width}.png` });
-    });
-  }
+        await page.screenshot({ path: `${SHOTS}/ch3-popover-${index}-${viewport.width}.png` }).catch(() => {});
+        await page.keyboard.press('Escape');
+        await expect(popover).toHaveCount(0);
+        await expect(page.getByTestId('vault-switch-rail-tile')).toBeFocused();
+      }
+    }
+    expect(failures, failures.join('\n')).toEqual([]);
+  });
 });
 
 test.describe('the rail utility tier on the web', () => {
