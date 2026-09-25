@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GuidedTourOverlay } from "./GuidedTourOverlay";
 import { useGuidedTour } from "../model/use-guided-tour";
 import { GUIDED_TOUR_STATUS_KEY } from "../model/tour-storage";
+import { EXIT_WINDOW_MS } from "@/shared/lib/use-presence";
 
 vi.mock("next-intl", () => ({
   useLocale: () => 'en',
@@ -71,9 +72,17 @@ describe("GuidedTourOverlay", () => {
     });
     expect(document.activeElement).toBe(screen.getByTestId("guided-tour-card"));
 
+    vi.useFakeTimers();
     act(() => screen.getByTestId("guided-tour-skip").click());
-    expect(screen.queryByTestId("guided-tour-overlay")).not.toBeInTheDocument();
+    // Focus returns at once; the overlay leaves through an inert exit window.
     expect(document.activeElement).toBe(startBtn);
+    const leaving = screen.getByTestId("guided-tour-overlay");
+    expect(leaving).toHaveAttribute("data-state", "closed");
+    expect(leaving).toHaveAttribute("inert");
+    act(() => {
+      vi.advanceTimersByTime(EXIT_WINDOW_MS);
+    });
+    expect(screen.queryByTestId("guided-tour-overlay")).not.toBeInTheDocument();
   });
 
   it("traps Tab and Shift+Tab inside the current tour card", () => {

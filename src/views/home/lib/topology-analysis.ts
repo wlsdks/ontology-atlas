@@ -4,6 +4,8 @@ import {
   buildTopologyMeaningEditorNodeHref,
   buildOntologyHealthActionTarget,
   buildOntologyNodeHref,
+  buildTopologyReturnHref,
+  resolveOntologyBuilderNodeSlugFromGraphId,
   classifyRelationQuality,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
@@ -600,6 +602,7 @@ export function formatTopologyPathAgentPacket({
   sourceTitle,
   targetTitle,
   hopCount,
+  locale,
   labels,
 }: {
   sourceSlug: string;
@@ -607,18 +610,32 @@ export function formatTopologyPathAgentPacket({
   sourceTitle: string;
   targetTitle: string;
   hopCount: number | null;
+  /** The route locale; every link carries it, so a pasted link lands on a live page. */
+  locale?: string;
   labels: TopologyPathAgentPacketLabels;
 }): string {
+  /*
+   * One identifier grammar and live destinations (2026-09-25). The two ends arrive in
+   * whatever form the route held — the source from `pathFrom=` (a vault slug,
+   * `capabilities/checkout`) and the target from a map pick (a node id,
+   * `capability:invoice`) — so one packet said two different things about the same
+   * kind of reference. Both are normalised to the vault slug. The links used to point
+   * at `/ontology/?node=`, a redirect route, with no locale; they now name the map
+   * itself under the locale.
+   */
+  const source = resolveOntologyBuilderNodeSlugFromGraphId(sourceSlug);
+  const target = resolveOntologyBuilderNodeSlugFromGraphId(targetSlug);
+  const localized = (href: string) => (locale ? `/${locale}${href}` : href);
   return [
     `# ${labels.title}`,
-    `- ${labels.source}: ${sourceTitle} (${sourceSlug})`,
-    `- ${labels.target}: ${targetTitle} (${targetSlug})`,
+    `- ${labels.source}: ${sourceTitle} (${source})`,
+    `- ${labels.target}: ${targetTitle} (${target})`,
     `- ${labels.hops}: ${hopCount === null ? labels.hopsUnknown : hopCount}`,
-    `- ${labels.sourceOntologyUrl}: ${buildOntologyNodeHref(sourceSlug)}`,
-    `- ${labels.targetOntologyUrl}: ${buildOntologyNodeHref(targetSlug)}`,
-    `- ${labels.sourceBuilderUrl}: ${buildTopologyHealthRepairHref(sourceSlug)}`,
-    `- ${labels.targetBuilderUrl}: ${buildTopologyHealthRepairHref(targetSlug)}`,
-    `- ${labels.mcpCheck}: ${formatTopologyPathMcpCheck(sourceSlug, targetSlug)}`,
+    `- ${labels.sourceOntologyUrl}: ${localized(buildTopologyReturnHref(source))}`,
+    `- ${labels.targetOntologyUrl}: ${localized(buildTopologyReturnHref(target))}`,
+    `- ${labels.sourceBuilderUrl}: ${localized(buildTopologyHealthRepairHref(source))}`,
+    `- ${labels.targetBuilderUrl}: ${localized(buildTopologyHealthRepairHref(target))}`,
+    `- ${labels.mcpCheck}: ${formatTopologyPathMcpCheck(source, target)}`,
   ].join("\n");
 }
 

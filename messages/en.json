@@ -3352,8 +3352,9 @@
       "overviewBriefMcpWorkspaceCheck": "MCP workspace check",
       "healthEvidenceUrl": "URL",
       "pathChipUnresolved": "Path: {source} → choose a target",
-      "pathChipResolved": "{source} → {target} · {hops, plural, one {# hop} other {# hops}}",
-      "pathChipNoPath": "{source} → {target} · no path found",
+      "pathChipEndpoints": "{source} → {target}",
+      "pathChipResolved": "{hops, plural, one {# hop} other {# hops}}",
+      "pathChipNoPath": "no path found",
       "pathChipMissingEndpoints": "Not in this folder: {slugs}",
       "pathChipClear": "Clear path",
       "pathChipCopyPacket": "Copy path packet",
@@ -3364,8 +3365,8 @@
       "pathChipPacketTarget": "Target",
       "pathChipPacketHops": "Hops",
       "pathChipPacketHopsUnknown": "no path found",
-      "pathChipPacketSourceOntologyUrl": "Source ontology URL",
-      "pathChipPacketTargetOntologyUrl": "Target ontology URL",
+      "pathChipPacketSourceOntologyUrl": "Source map URL",
+      "pathChipPacketTargetOntologyUrl": "Target map URL",
       "pathChipPacketSourceBuilderUrl": "Source map edit URL",
       "pathChipPacketTargetBuilderUrl": "Target map edit URL",
       "pathChipPacketMcpCheck": "MCP check"
@@ -3377,9 +3378,9 @@
     },
     "controls": {
       "relayoutToast": "Relaying out the map",
-      "spotlightTooltip": "Recent-changes spotlight: nodes changed in the last N days stay crisp, the rest sink back",
+      "spotlightTooltip": "Recent-changes spotlight: nodes changed in {days, plural, one {the last day} other {the last # days}} stay crisp, the rest sink back",
       "spotlightEmptyTooltip": "Nothing changed recently: edit a document and this will point it out",
-      "spotlightSampleTooltip": "The sample has no edit history: open your folder and changes show up here",
+      "spotlightSampleTooltip": "The sample's dates are not your work: open your folder and your own changes show up here",
       "spotlightAriaLabel": "Toggle the recent-changes spotlight",
       "spotlightLabel": "Recent",
       "docsTooltip": "Quick view of Ontology documents (D)",
@@ -7189,7 +7190,8 @@
       "record": "best {count}",
       "other": "Reading {study} XP · Adventure {adventure} XP",
       "how": "Concepts 24 · relations 8 · implementation links 16 · wiki pages 40 XP. Every 40 words adds 4 XP, up to 10 units per document. Folder refreshes record category high-water marks; cleanup never removes progress. Code work counts when reflected in these records. This is not a correctness score.",
-      "sigil": "An archive constellation grown from concepts, relations and wiki pages"
+      "sigil": "An archive constellation grown from concepts, relations and wiki pages",
+      "sampleEmpty": "Open your folder and this record starts to grow. The sample is not counted."
     },
     "run": {
       "title": "Expedition blessings",

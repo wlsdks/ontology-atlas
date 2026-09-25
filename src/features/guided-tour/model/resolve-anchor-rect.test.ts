@@ -247,3 +247,44 @@ describe("computeCardPlacement · avoidTarget (the card clears the lit node)", (
     expect(withoutFlag.side).toBe("below");
   });
 });
+
+/**
+ * The card stands clear of the map's toolbar as well as its target (2026-09-25): at
+ * 1512x949 the try-click card covered y 61–309, over the toolbar's second line.
+ */
+describe("computeCardPlacement · keepClear (the card clears the toolbar)", () => {
+  const CARD = { cardWidth: 360, cardHeight: 250, gap: 12, belowGap: 40 } as const;
+  const toolbar = { top: 32, left: 412, width: 1068, height: 88 };
+  const targetRect = { top: 150, left: 380, width: 60, height: 60 };
+  const cardBox = (p: { top: number; left: number }) => ({ top: p.top, left: p.left, width: CARD.cardWidth, height: CARD.cardHeight });
+  const intersects = (a: { top: number; left: number; width: number; height: number }, b: typeof a) =>
+    a.left < b.left + b.width && a.left + a.width > b.left && a.top < b.top + b.height && a.top + a.height > b.top;
+
+  it("steps below a kept-clear box it would otherwise cover, still clear of the node", () => {
+    const without = computeCardPlacement({ targetRect, viewportWidth: 1512, viewportHeight: 949, avoidTarget: true, ...CARD });
+    expect(intersects(cardBox(without), toolbar), "the fixture must start on the toolbar").toBe(true);
+    const placement = computeCardPlacement({
+      targetRect,
+      viewportWidth: 1512,
+      viewportHeight: 949,
+      avoidTarget: true,
+      keepClear: [toolbar],
+      ...CARD,
+    });
+    expect(intersects(cardBox(placement), toolbar)).toBe(false);
+    expect(intersects(cardBox(placement), { ...targetRect, height: targetRect.height + CARD.belowGap })).toBe(false);
+  });
+
+  it("keeps the card inside the window when below the box there is no room", () => {
+    const tall = { top: 0, left: 0, width: 1512, height: 900 };
+    const placement = computeCardPlacement({
+      targetRect,
+      viewportWidth: 1512,
+      viewportHeight: 949,
+      avoidTarget: true,
+      keepClear: [tall],
+      ...CARD,
+    });
+    expect(placement.top + CARD.cardHeight).toBeLessThanOrEqual(949);
+  });
+});

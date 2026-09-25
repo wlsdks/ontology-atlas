@@ -317,7 +317,7 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
           { key: 'meaning', label: t('meaning') }, { key: 'history', label: t('history') }, ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []),
         ]} />
       </div>
-      <IconButton ref={closeRef} data-testid="analysis-workbench-close" className="absolute right-0 top-0" label={t(tab === 'conversation' ? 'closeConversation' : 'close')} onClick={onClose}><X size={ICON_SIZE.sm} /></IconButton>
+      <IconButton ref={closeRef} data-testid="analysis-workbench-close" className="absolute right-0 top-0 size-[var(--overlay-close-size)]" label={t(tab === 'conversation' ? 'closeConversation' : 'close')} onClick={onClose}><X size={ICON_SIZE.lg} /></IconButton>
     </header>
     {error ? <InlineAlert testId="analysis-workbench-error">
       <p>{error.sentence}</p>

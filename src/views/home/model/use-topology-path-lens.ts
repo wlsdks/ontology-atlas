@@ -75,10 +75,19 @@ export function useTopologyPathLens({
       case "awaiting-target":
         return t("analysis.pathChipUnresolved", { source: chipState.sourceTitle });
       case "no-path":
-        return t("analysis.pathChipNoPath", { source: chipState.sourceTitle, target: chipState.targetTitle });
       case "resolved":
-        return t("analysis.pathChipResolved", { source: chipState.sourceTitle, target: chipState.targetTitle, hops: chipState.hops });
+        return t("analysis.pathChipEndpoints", { source: chipState.sourceTitle, target: chipState.targetTitle });
     }
+  }, [chipState, t]);
+  /*
+   * The outcome is drawn apart from the endpoints so truncation never takes it: at 1040
+   * the chip read "{source} → {target} · ..." and the part cut off was "no path", the
+   * one fact the chip adds (measured 2026-09-25 on the Korean copy).
+   */
+  const chipOutcome = useMemo(() => {
+    if (chipState?.kind === "no-path") return t("analysis.pathChipNoPath");
+    if (chipState?.kind === "resolved") return t("analysis.pathChipResolved", { hops: chipState.hops });
+    return null;
   }, [chipState, t]);
   const [packetCopied, setPacketCopied] = useState(false);
   useEffect(() => {
@@ -95,6 +104,7 @@ export function useTopologyPathLens({
       sourceTitle,
       targetTitle,
       hopCount,
+      locale,
       labels: {
         title: t("analysis.pathChipPacketTitle"), source: t("analysis.pathChipPacketSource"),
         target: t("analysis.pathChipPacketTarget"), hops: t("analysis.pathChipPacketHops"),
@@ -107,7 +117,7 @@ export function useTopologyPathLens({
       },
     }));
     if (ok) setPacketCopied(true);
-  }, [chipState, sourceSlug, targetSlug, sourceTitle, targetTitle, hopCount, t]);
+  }, [chipState, sourceSlug, targetSlug, sourceTitle, targetTitle, hopCount, locale, t]);
 
   return {
     pathSourceTitle: sourceTitle,
@@ -120,6 +130,7 @@ export function useTopologyPathLens({
     pathExpandedParents: expandedParents,
     pathChipState: chipState,
     pathChipLabel: chipLabel,
+    pathChipOutcome: chipOutcome,
     pathPacketCopied: packetCopied,
     copyPathPacket: copyPacket,
   };
