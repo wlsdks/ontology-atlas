@@ -81,6 +81,29 @@ export interface TopologyPastWalkRow {
 /** How long the `clear all` two-step confirm stays armed before reverting. */
 const CLEAR_ALL_CONFIRM_RESET_MS = 4000;
 
+/** The popover's width (`w-[248px]` below); the side choice measures against it. */
+const TRAIL_POPOVER_WIDTH = 248;
+
+type TrailPopoverAlign = "start" | "end";
+
+/**
+ * Grow from the chip's right corner (`end`, the historical side) while the popover
+ * still starts inside the free map; otherwise from its left corner (`start`). The free
+ * map is the closest `[data-popover-boundary]` box — the toolbar, whose left edge is
+ * INDEX's right edge plus one inset — or the window when there is none.
+ */
+function resolveTrailPopoverAlign(root: HTMLElement | null): TrailPopoverAlign {
+  if (!root) return "end";
+  const chip = root.getBoundingClientRect();
+  const boundary = root.closest<HTMLElement>("[data-popover-boundary]")?.getBoundingClientRect();
+  const left = boundary ? boundary.left : 0;
+  const right = boundary ? boundary.right : window.innerWidth;
+  if (chip.right - TRAIL_POPOVER_WIDTH >= left) return "end";
+  // Leftward would cross the boundary; rightward is taken when it fits, and is still
+  // the lesser overlap when neither does (the boundary's right edge is the window's).
+  return chip.left + TRAIL_POPOVER_WIDTH <= right || chip.left - left < right - chip.right ? "start" : "end";
+}
+
 export interface TopologyTrailChipProps {
   /** Pre-formatted chip label — "trail · {count}" (HomePage owns i18n; the chip is pure chrome). */
   label: string;
@@ -205,6 +228,15 @@ export function TopologyTrailChip({
    * the same way.
    */
   const [clearArmed, setClearArmed] = useState(false);
+  /*
+   * Which of the chip's two bottom corners the popover grows from. It used to hang from
+   * the right corner always, so with the trail chip first in the lane (the lane starts
+   * at INDEX's right edge plus one inset) its left 92px landed under the INDEX panel,
+   * which paints above the toolbar (measured 2026-09-25 at 1280 and 1512:
+   * `elementFromPoint` along its left edge returned the INDEX rows). The side is chosen
+   * when it opens, against the toolbar's box, which is the free map.
+   */
+  const [align, setAlign] = useState<TrailPopoverAlign>("end");
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const pastLinkRef = useRef<HTMLButtonElement | null>(null);
@@ -303,15 +335,26 @@ export function TopologyTrailChip({
   }, [open, close]);
 
   return (
-    <div ref={rootRef} className="relative shrink-0" data-testid="topology-trail-chip">
+    <div
+      ref={rootRef}
+      className="relative shrink-0"
+      data-testid="topology-trail-chip"
+      // The toolbar reads this (`has-[[data-lane-popover=open]]`) to lift itself above
+      // INDEX while something it opened is showing.
+      data-lane-popover={open ? "open" : undefined}
+    >
       <div className={CHROME_STATUS_CHIP_CLASS}>
         <Sparkles size={ICON_SIZE.md} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
         <button
           ref={triggerRef}
           type="button"
           onClick={() => {
-            if (open) close(false);
-            else setOpen(true);
+            if (open) {
+              close(false);
+              return;
+            }
+            setAlign(resolveTrailPopoverAlign(rootRef.current));
+            setOpen(true);
           }}
           aria-haspopup="true"
           aria-expanded={open}
@@ -365,14 +408,15 @@ export function TopologyTrailChip({
           )}
         </button>
       </div>
-      {/* Hangs off the chip's bottom-right corner, and grows out of that corner. */}
+      {/* Hangs off one of the chip's bottom corners, and grows out of that corner. */}
       <Surface
         open={open}
-        origin="top right"
+        origin={align === "end" ? "top right" : "top left"}
+        data-align={align}
         role="group"
         aria-label={labels.heading}
         data-testid="topology-trail-chip-popover"
-        className="absolute right-0 top-[calc(100%+8px)] z-30 w-[248px] rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
+        className={`absolute ${align === "end" ? "right-0" : "left-0"} top-[calc(100%+8px)] z-30 w-[248px] rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]`}
       >
           <div className="flex items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
             {showPast ? (

@@ -282,7 +282,9 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
         <TabBar idPrefix="workbench" ariaLabel={t('section')} activeKey={tab} onSelect={(key) => setTab(key as Tab)} items={[
           { key: 'meaning', label: t('meaning') }, { key: 'history', label: t('history') }, ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []),
         ]} />
-        <IconButton ref={closeRef} label={t('close')} onClick={onClose}><X size={ICON_SIZE.sm} /></IconButton>
+        {/* The close size every map panel and sheet shares (`--overlay-close-size`, 32px):
+            this one was 28 while the agent panel in the same right-hand slot was 32. */}
+        <IconButton ref={closeRef} label={t('close')} onClick={onClose} className="size-[var(--overlay-close-size)]"><X size={ICON_SIZE.lg} /></IconButton>
       </div>
     </header>
     {error ? <p role="alert" className="text-caption text-[color:var(--color-danger-text)]">{error}</p> : null}

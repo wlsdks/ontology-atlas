@@ -111,6 +111,14 @@ export interface CardPlacementInput {
    * clamp is where an unchecked "it fits" turns back into an overlap.
    */
   avoidTarget?: boolean;
+  /**
+   * Boxes the card may not cover — the map's top toolbar (2026-09-25). At 1512x949 the
+   * try-click card stood at y 61–309 over the toolbar's second line and cut the path
+   * chip mid-word, because only the target and the window were in its collision
+   * boundary. A placement that would cover one of these moves below it when the card
+   * still fits the window there (and, with `avoidTarget`, still clears the target).
+   */
+  keepClear?: readonly AnchorBox[];
 }
 
 export interface CardPlacement {
@@ -178,11 +186,25 @@ export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
     },
   ];
 
-  const place = (candidate: { side: CardPlacementSide; top: number; left: number }): CardPlacement => ({
-    top: clamp(candidate.top, edgeMargin, Math.max(edgeMargin, viewportHeight - cardHeight - edgeMargin)),
-    left: clamp(candidate.left, edgeMargin, Math.max(edgeMargin, viewportWidth - cardWidth - edgeMargin)),
-    side: candidate.side,
-  });
+  const maxTop = Math.max(edgeMargin, viewportHeight - cardHeight - edgeMargin);
+  const keepClear = input.keepClear ?? [];
+  const covers = (top: number, left: number, box: AnchorBox) =>
+    left < box.left + box.width &&
+    left + cardWidth > box.left &&
+    top < box.top + box.height &&
+    top + cardHeight > box.top;
+  const place = (candidate: { side: CardPlacementSide; top: number; left: number }): CardPlacement => {
+    let top = clamp(candidate.top, edgeMargin, maxTop);
+    const left = clamp(candidate.left, edgeMargin, Math.max(edgeMargin, viewportWidth - cardWidth - edgeMargin));
+    // Step below every kept-clear box the card would sit on, as long as the window
+    // still holds it there; otherwise keep the placement (the card stays readable).
+    for (const box of keepClear) {
+      if (!covers(top, left, box)) continue;
+      const below = box.top + box.height + gap;
+      if (below <= maxTop) top = below;
+    }
+    return { top, left, side: candidate.side };
+  };
 
   if (input.avoidTarget) {
     // The target plus the room it needs around it: the plain gap on three sides, and the

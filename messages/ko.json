@@ -3310,8 +3310,9 @@
       "overviewBriefMcpWorkspaceCheck": "MCP 작업공간 점검",
       "healthEvidenceUrl": "URL",
       "pathChipUnresolved": "경로: {source} → 대상 선택",
-      "pathChipResolved": "{source} → {target} · {hops}홉",
-      "pathChipNoPath": "{source} → {target} · 경로 없음",
+      "pathChipEndpoints": "{source} → {target}",
+      "pathChipResolved": "{hops}홉",
+      "pathChipNoPath": "경로 없음",
       "pathChipMissingEndpoints": "이 폴더에 없는 노드예요. {slugs}",
       "pathChipClear": "경로 지우기",
       "pathChipCopyPacket": "AI에게 줄 경로 정보 복사",
@@ -3322,8 +3323,8 @@
       "pathChipPacketTarget": "도착",
       "pathChipPacketHops": "홉 수",
       "pathChipPacketHopsUnknown": "경로 없음",
-      "pathChipPacketSourceOntologyUrl": "출발 온톨로지 URL",
-      "pathChipPacketTargetOntologyUrl": "도착 온톨로지 URL",
+      "pathChipPacketSourceOntologyUrl": "출발 지도 URL",
+      "pathChipPacketTargetOntologyUrl": "도착 지도 URL",
       "pathChipPacketSourceBuilderUrl": "출발 지도 편집 URL",
       "pathChipPacketTargetBuilderUrl": "도착 지도 편집 URL",
       "pathChipPacketMcpCheck": "MCP 점검"
@@ -3335,9 +3336,9 @@
     },
     "controls": {
       "relayoutToast": "지도를 다시 정렬해요",
-      "spotlightTooltip": "최근 변경 스포트라이트: 지난 N일 동안 바뀐 노드만 또렷하게, 나머지는 가라앉혀요",
+      "spotlightTooltip": "최근 변경 스포트라이트: 지난 {days}일 동안 바뀐 노드만 또렷하게, 나머지는 가라앉혀요",
       "spotlightEmptyTooltip": "최근에 바뀐 게 없어요. 문서를 고치면 여기서 짚어드려요",
-      "spotlightSampleTooltip": "샘플에는 바뀐 기록이 없어요. 내 폴더를 열면 바뀐 것을 여기서 짚어드려요",
+      "spotlightSampleTooltip": "샘플의 날짜는 내 작업이 아니에요. 내 폴더를 열면 내가 바꾼 것을 여기서 짚어드려요",
       "spotlightAriaLabel": "최근 변경 스포트라이트 전환",
       "spotlightLabel": "최근 변경",
       "docsTooltip": "온톨로지 문서 빠른 보기 (D)",
@@ -7094,7 +7095,8 @@
       "record": "최고 {count}",
       "other": "함께 읽기 {study} XP · 모험 {adventure} XP",
       "how": "개념 24 · 관계 8 · 구현 연결 16 · 위키 40 XP. 본문 40단어마다 4 XP(문서당 10회). 폴더 갱신 시 항목별 최고치를 반영하며, 정리해도 성장 기록은 유지됩니다. 코드 작업은 이 기록에 남았을 때 반영됩니다. 정확도 평가는 아닙니다.",
-      "sigil": "개념·관계·위키가 쌓여 자라는 기록의 별자리"
+      "sigil": "개념·관계·위키가 쌓여 자라는 기록의 별자리",
+      "sampleEmpty": "내 폴더를 열면 기록이 쌓여요. 샘플은 세지 않아요."
     },
     "run": {
       "title": "원정의 축복",

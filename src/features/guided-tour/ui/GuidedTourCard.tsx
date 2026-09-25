@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/shared/lib/cn";
-import { controlClass } from "@/shared/ui/control-class";
+import { Button } from "@/shared/ui/button";
 import type { UseGuidedTourResult } from "../model/use-guided-tour";
 import type { CardPlacement } from "../model/resolve-anchor-rect";
 
@@ -93,20 +93,20 @@ export function GuidedTourCard({
         >
           {t("progressLabel", { current, total })}
         </p>
-        <button
-          type="button"
+        {/* One button grammar for every action in the card (2026-09-25): `<Button>` at
+            `sm`, ghost for the quiet ones, outline for the stand-in press and primary
+            for going forward. The card used to mix three shapes in one surface — a
+            dashed 326x32 chip, a 46x32 segment and a 39x24 text link. The skip sits in
+            the header row, pulled into its corner so its label keeps the padding line. */}
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={skip}
           data-testid="guided-tour-skip"
-          /* The header row that forms one line with the progress caption — the
-             floor of 24 comes from the ramp and the coarse 44 from `.touch-hit-expand`. */
-          className={controlClass({
-            shape: "link",
-            className:
-              "touch-hit-expand tracking-label hover:text-[color:var(--color-text-secondary)]",
-          })}
+          className="-mr-2 -mt-1"
         >
           {t("skipLabel")}
-        </button>
+        </Button>
       </div>
 
       <div className="mb-2 flex items-center gap-1" aria-hidden>
@@ -133,8 +133,9 @@ export function GuidedTourCard({
       </p>
 
       {isInteractive ? (
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={onActivateAnchor}
           disabled={!onActivateAnchor || hasSelection}
           data-testid="guided-tour-activate-target"
@@ -143,12 +144,12 @@ export function GuidedTourCard({
              centring declarations **had never once applied** — it sat left-aligned
              while claiming to be centred (measured 2026-07-29). Filling the width is
              also what lines its left edge up with "Previous" on the same row. */
-          className={controlClass({ shape: "chip", size: "md", tone: "muted", className: "h-8 w-full justify-center rounded-[var(--chrome-radius-inner)] border-dashed border-[color:var(--chrome-border)] text-center text-body" })}
+          className="w-full"
         >
           <span data-testid={hasSelection ? "guided-tour-success" : "guided-tour-waiting"}>
             {hasSelection ? t("clickSuccessLabel") : t("waitingForClickLabel")}
           </span>
-        </button>
+        </Button>
       ) : null}
 
       {/**
@@ -167,75 +168,54 @@ export function GuidedTourCard({
        */}
       {isBranchStep ? (
         <div className="mt-1 flex flex-col gap-2">
-          <button
-            type="button"
+          {/* The branch's two buttons are **one set** stacked vertically, one height. */}
+          <Button
+            variant="outline"
+            size="sm"
             onClick={finishAsDone}
             data-testid="guided-tour-finish-tour"
-            /* The branch's two buttons are **one set** stacked vertically and move
-               together. Both being `chip`/`lg` takes them 36 → 34px, keeping them level. */
-            className={controlClass({
-              shape: "chip",
-              size: "lg",
-              tone: "strong",
-              /* Weight is emitted by the value layer only under `onAccent` — the
-                 neutral chip's `font-[var(--font-weight-signature)]` keeps its
-                 original value (changing weights is not this round's work). */
-              className: "justify-center font-[var(--font-weight-signature)] hover:bg-[color:var(--color-overlay-2)]",
-            })}
+            className="w-full"
           >
             {t("finishTourAction")}
-          </button>
+          </Button>
           {/* When step 8's anchor (the first-run card) has already been dismissed and
               cannot resolve, the branch button is hidden — a button with nowhere to go
               was the welcome reset loop (measured correction 2026-07-23). */}
           {devBranchAvailable ? (
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              size="sm"
               onClick={chooseDevBranch}
               data-testid="guided-tour-dev-branch"
-              className={controlClass({
-                shape: "chip",
-                size: "lg",
-                tone: "onAccent",
-                className: "justify-center",
-              })}
+              className="w-full"
             >
               {t("devBranchAction")}
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : null}
 
       <div className="mt-1 flex items-center justify-between gap-2">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={back}
           disabled={isFirst}
           data-testid="guided-tour-back"
-          className={controlClass({
-            shape: "segment",
-            size: "lg",
-            className: "hover:text-[color:var(--color-text-primary)]",
-          })}
         >
           {t("prevLabel")}
-        </button>
+        </Button>
         {/* Only the forward control is chosen by the step — on an interactive step the
             anchor click does that job, and on the branch step the two choices above do. */}
         {!isInteractive && !isBranchStep ? (
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="sm"
             onClick={isFinalStep ? finishAsDone : advance}
             data-testid={isFinalStep ? "guided-tour-finish" : "guided-tour-next"}
-            className={controlClass({
-              shape: "segment",
-              size: "lg",
-              tone: "onAccent",
-              className: "hover:bg-[color:var(--color-indigo-brand-hover)]",
-            })}
           >
             {isFinalStep ? t("finishLabel") : t("nextLabel")}
-          </button>
+          </Button>
         ) : null}
       </div>
     </div>

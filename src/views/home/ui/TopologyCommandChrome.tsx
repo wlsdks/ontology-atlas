@@ -3,6 +3,7 @@ import { AgentActivityChip, CompanionHome } from "@/features/agent-activity";
 import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
 import { Link } from "@/i18n/navigation";
 import { writeGalaxy, writeView3d } from "@/shared/lib/appearance-preferences";
+import { VAULT_AGENT_PANEL_ID } from "@/shared/config/agent-panel";
 import { withBasePath } from "@/shared/lib/base-path";
 import { cn } from "@/shared/lib/cn";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
@@ -69,6 +70,7 @@ interface TopologyCommandChromeProps {
     ReturnType<typeof useTopologySceneControls>,
     | "handleToggleExpandAll"
     | "pathChipLabel"
+    | "pathChipOutcome"
     | "pathChipState"
     | "pathPacketCopied"
     | "copyPathPacket"
@@ -143,7 +145,7 @@ export function TopologyCommandChrome({
   } = topologyVaultReadModel;
   const { canvasSelectedSlug, resolvedRealmSlug, realmTitle } = topologyGraphProjection;
   const { openVaultAgent, agentDockOpen, closeVaultAgent } = topologyAgentOrchestration;
-  const { handleToggleExpandAll, pathChipLabel, pathChipState, pathPacketCopied, copyPathPacket, handleClearPath } = topologySceneControls;
+  const { handleToggleExpandAll, pathChipLabel, pathChipOutcome, pathChipState, pathPacketCopied, copyPathPacket, handleClearPath } = topologySceneControls;
   const { handleExitRealm, indexPanelCollapsedStored, handleChangeIndexDefaultCollapsed } = topologyRouteControls;
   const { handleSelect, handleReplayPastWalk } = topologyNavigationActions;
   const { meaningWorkbenchOpen, toggleMeaningWorkbench } = homeWorkbenchController;
@@ -269,7 +271,12 @@ export function TopologyCommandChrome({
              * `topology-ui-scale` zoom, so nothing inside scales twice.
              */
             className={cn(
-              "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 transition-[left,right] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-6 md:top-6 xl:right-8 xl:top-8 xl:flex-row xl:flex-wrap-reverse xl:items-start",
+              // `items-end` at every width. Below `xl` (a reversed column) it holds the
+              // lanes to the right; from `xl` `flex-wrap-reverse` swaps the cross axis, so
+              // `end` is the top of the line. With `items-start` there, the utility lane
+              // sank to the bottom of a line the search lane made two rows tall (its status
+              // chips under its tools) and landed on the right rail's fit tile.
+              "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 transition-[left,right] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-6 md:top-6 xl:right-8 xl:top-8 xl:flex-row xl:flex-wrap-reverse",
               renderedIndexState === "expanded"
                 ? "left-4 md:left-[calc(var(--topology-index-width)+var(--topology-index-inset)*2)]"
                 : "left-4 md:left-6 xl:left-8",
@@ -279,9 +286,16 @@ export function TopologyCommandChrome({
               // the bell and hid it when the lane did not fit is gone: once the status
               // joined the row, hiding it shrank the row, which let the lane fit, which
               // showed it again, and the row never settled.
-              activityInboxOpen ? "z-30" : "z-20",
+              // A popover a lane opened is part of this box's stacking context, so the
+              // box itself has to stand above INDEX (z-20, later in the DOM) while one is
+              // showing; at z-20 the trail popover was painted under the INDEX panel.
+              activityInboxOpen ? "z-30" : "z-20 has-[[data-lane-popover=open]]:z-30",
             )}
             data-testid="topology-top-toolbar"
+            // The free map: what a lane's popover may grow into (`resolveTrailPopoverAlign`).
+            data-popover-boundary="free-map"
+            // The guided tour's card stands clear of the toolbar (`GuidedTourOverlay`).
+            data-tour-keep-clear="map-toolbar"
             data-agent-dock-adjacent-rail="true"
             data-right-inspector-reserve={
               nodePanelMounted ? "recenter-in-remaining-map" : undefined
@@ -398,6 +412,7 @@ export function TopologyCommandChrome({
               analysisMode === "path" && pathChipLabel ? (
                 <TopologyPathChip
                   label={pathChipLabel}
+                  outcome={pathChipOutcome}
                   resolved={canCopyTopologyPathPacket(pathChipState)}
                   copyPacketLabel={t("analysis.pathChipCopyPacket")}
                   copyPacketCopied={pathPacketCopied}
@@ -408,7 +423,6 @@ export function TopologyCommandChrome({
                   onCopyPacket={copyPathPacket}
                   clearAriaLabel={t("analysis.pathChipClear")}
                   onClear={handleClearPath}
-                  compact={topologyUtilityChromeCompact || searchLaneCrowded}
                 />
               ) : undefined
             }
@@ -554,6 +568,8 @@ export function TopologyCommandChrome({
                         }}
                         aria-label={tAgent('title')}
                         aria-expanded={agentDockOpen}
+                        // The panel it opens; a close hands focus back here through it.
+                        aria-controls={VAULT_AGENT_PANEL_ID}
                         data-testid="topology-vault-agent-toggle"
                         active={agentDockOpen}
                         compact={topologyUtilityChromeCompact}
@@ -620,19 +636,26 @@ export function TopologyCommandChrome({
                      * the user, so this feature **cannot mean anything before a folder
                      * is opened**. A different reason needs a different sentence.
                      *
-                     * No popup. Opening a modal to say "there is nothing" makes the
-                     * person who pressed do the work twice, and it is the category this
-                     * repo forbids as popup soup (the 2026-08-02 decision in the chip
-                     * comment below still stands). Instead, **disabled now looks
-                     * disabled** — its not doing so was why people only found out by
-                     * pressing (`chrome-chip.tsx`, `DISABLED_CLASS`).
+                     * No popup for an absence. Opening a modal to say "there is nothing"
+                     * makes the person who pressed do the work twice (the 2026-08-02
+                     * decision in the chip comment below still stands); **disabled now
+                     * looks disabled** (`chrome-chip.tsx`, `DISABLED_CLASS`). The sample
+                     * is a next action, not an absence, so its press opens the folder
+                     * guidance (`use-topology-vault-read-model.tsx`).
+                     *
+                     * **The sample is decided first** (2026-09-25). The sample does carry
+                     * recent dates, so a branch that asked `recentNodeIds.size` first
+                     * promised the spotlight there ("only the recently changed nodes stay
+                     * crisp") while the press opened the folder guidance instead. Before a
+                     * folder is open the tooltip says what the press will do. The window
+                     * is the real one (`{days}`), not a literal "N".
                      */
                     content={
-                      spotlightOn || recentChanges.recentNodeIds.size > 0
-                        ? t('controls.spotlightTooltip')
-                        : vault.status === 'loaded'
-                          ? t('controls.spotlightEmptyTooltip')
-                          : t('controls.spotlightSampleTooltip')
+                      vault.status !== 'loaded'
+                        ? t('controls.spotlightSampleTooltip')
+                        : spotlightOn || recentChanges.recentNodeIds.size > 0
+                          ? t('controls.spotlightTooltip', { days: recentChanges.windowDays })
+                          : t('controls.spotlightEmptyTooltip')
                     }
                     side="bottom"
                     withProvider={false}

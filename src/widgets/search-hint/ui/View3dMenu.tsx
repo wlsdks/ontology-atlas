@@ -91,9 +91,13 @@ export function View3dMenu({
   open,
   onClose,
   anchorRef,
+  groupId,
 }: {
   open: boolean;
-  onClose: () => void;
+  /** `returnFocus`: a choice or Escape gives focus back to the chip; an outside press does not. */
+  onClose: (returnFocus: boolean) => void;
+  /** The radiogroup's id, which the chip names in `aria-controls`. */
+  groupId?: string;
   /**
    * The 「3D」 chip that owns this picker. A press on it is the chip's own
    * business — see the dismissal block below.
@@ -114,7 +118,7 @@ export function View3dMenu({
    */
   const presence = usePanelPresence(open);
 
-  const apply = (next: View3dChoice) => {
+  const write = (next: View3dChoice) => {
     // At most one of the three flags is on; each row writes all of them.
     writeTerritories(next === 'territories');
     if (next === 'flat' || next === 'galaxy' || next === 'territories') {
@@ -130,10 +134,24 @@ export function View3dMenu({
       writeMapArrangement(next);
       writeView3d(true);
     }
-    onClose();
   };
 
-  const group = useRovingRadioGroup({ value, values: CHOICES, onChange: apply });
+  /*
+   * Arrow keys move the checked view and the map follows at once, with the picker still
+   * open (a radiogroup's own grammar, and the point of choosing while watching the
+   * map). A press, Enter included, chooses and closes, and focus goes back to the chip:
+   * it used to fall to BODY after every choice (measured 2026-09-25, all five views).
+   */
+  const group = useRovingRadioGroup({ value, values: CHOICES, onChange: write });
+
+  // On open, focus the checked view, so the keyboard lands inside the picker it opened
+  // rather than on the chip with one Tab still to go.
+  // The box mounts one commit after `open` (the presence gate), so both are awaited.
+  const boxMounted = presence.mounted;
+  useEffect(() => {
+    if (!open || !boxMounted) return;
+    boxRef.current?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')?.focus({ preventScroll: true });
+  }, [open, boxMounted]);
 
   /*
    * Closes on an outside press or Esc. This surface **does not block what is behind
@@ -154,7 +172,7 @@ export function View3dMenu({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose();
+        onClose(true);
       }
     };
     /**
@@ -186,7 +204,7 @@ export function View3dMenu({
       if (!(e.target instanceof Node)) return;
       if (box?.contains(e.target)) return;
       if (anchorRef?.current?.contains(e.target)) return;
-      onClose();
+      onClose(false);
       if (!isMapCanvas(e.target)) return;
       e.preventDefault();
       e.stopPropagation();
@@ -222,24 +240,28 @@ export function View3dMenu({
       className={cn(
         'overlay-spring-surface',
         presence.exiting && 'pointer-events-none',
-        // Below `xl` the lane sits in the top-right corner, so a menu centred under
-        // the chip ran into the right-hand control column (measured 2026-09-02 at
-        // 1100 and 1200 px: it covered the fit, tour, and help tiles). There it
-        // hangs from the chip's right edge instead, which keeps it left of that
-        // column; from `xl` up the lane is centred in the map and the menu centres
-        // under the chip as before.
-        'absolute right-0 top-full z-40 mt-2 w-60 xl:left-1/2 xl:right-auto xl:-translate-x-1/2',
+        // It hangs from the chip's left edge and grows into the map. The lane starts
+        // at the free map's left edge at every width (2026-09-25), so growing leftward
+        // or centring under the chip put the picker's left part under INDEX; below
+        // `xl` the lane used to sit in the top-right corner, which is why this once
+        // hung from the right edge (2026-09-02, clear of the right rail).
+        'absolute left-0 top-full z-40 mt-2 w-60',
         'rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)]',
         'bg-[color:var(--map-panel-surface)] p-1.5 shadow-[var(--map-panel-shadow)]',
       )}
     >
-      <div {...group.groupProps} aria-label={t('mapViewAriaLabel')} className="flex flex-col gap-1">
+      <div {...group.groupProps} id={groupId} aria-label={t('mapViewAriaLabel')} className="flex flex-col gap-1">
         {CHOICES.map((choice, index) => {
           const active = choice === value;
+          const item = group.itemProps(index);
           return (
             <button
               key={choice}
-              {...group.itemProps(index)}
+              {...item}
+              onClick={() => {
+                item.onClick();
+                onClose(true);
+              }}
               type="button"
               data-testid={`topology-view-3d-choice-${choice}`}
               className={controlClass({

@@ -101,8 +101,10 @@ const ROOT = process.cwd();
  * fill) became the standard `Button` and `buttonVariants` outline.
  * 290 → 289 (2026-09-25): the settings sheet's row actions moved onto one chip grammar and
  * the shared `DETAIL_TOGGLE_CHIP` ink, a net one fewer hand-written hover declaration.
+ * 289 → 285 (2026-09-25): the guided tour card's actions became `Button` variants and the
+ * path chip's copy action the chip's own icon button, four fewer hand hovers.
  */
-const CEILING = 289;
+const CEILING = 285;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { ListTree, Map as MapIcon, RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -112,6 +112,8 @@ export function SearchHint({
   const currentView = view3d ? arrangement : territories ? 'territories' : galaxy ? 'galaxy' : 'flat';
   const [view3dMenuOpen, setView3dMenuOpen] = useState(false);
   const view3dAnchorRef = useRef<HTMLDivElement | null>(null);
+  const view3dChipRef = useRef<HTMLButtonElement | null>(null);
+  const view3dMenuId = useId();
   const [arranging, setArranging] = useState(false);
   const compact = density === 'compact-focus';
 
@@ -135,7 +137,29 @@ export function SearchHint({
        * truncates instead of overlapping.
        */
       className={cn(
-        "pointer-events-auto min-w-0 max-w-full",
+        /*
+         * **The tools hold their line; the status chips wrap** (2026-09-25). This lane
+         * used to enter the toolbar at its natural width, chips included, so when the
+         * path and trail chips made it 12px wider than the free map beside the utility
+         * lane (632 against 620 at 1512), the whole lane wrapped to a second line and
+         * left the first empty from INDEX to the utility lane; choosing Galaxy (which
+         * hides expand-all) then made it fit, and every tile jumped a line.
+         *
+         * From `xl` the lane now enters the line at no width of its own (`basis-0`,
+         * growing into what the utility lane leaves) and at least its min-content,
+         * which is its widest single piece — the tool row, or one status chip — so it
+         * leaves the first line only when that piece cannot stand beside the utility
+         * lane. Inside it the tools come first and the status chips after them, each
+         * group wrapping as a unit: the chips drop to the line under the tools, and the
+         * tools never move for them.
+         *
+         * Below `xl`, where the lane is its own line under the utility lane, it spans
+         * the free map and starts at its left edge, and it keeps out of the right
+         * rail's column (one tile and one gap): right-aligned, its search tile stood
+         * at 980–1016 directly above the rail's fit tile at 1040 and read as part of
+         * that rail.
+         */
+        "pointer-events-auto min-w-0 max-w-full md:self-stretch md:max-xl:pr-[calc(var(--chrome-tile-size)+var(--topology-chrome-gap))] xl:min-w-min xl:basis-0 xl:grow",
         // When both downgrades happen simultaneously, the stricter focus (<lg) wins —
         // applying both classes causes md:block to revive hidden at md, creating a conflict.
         phoneFocusSuppressed
@@ -163,19 +187,8 @@ export function SearchHint({
       data-search-lane-border-token="--chrome-border"
       data-search-lane-shadow-token="--chrome-shadow"
     >
-      <div className="flex min-w-0 items-center justify-end gap-[var(--topology-chrome-gap)]">
-        {returnChip || realmChip || pathChip || trailChip ? (
-          // The status chips are the part of the row that yields. Each truncates its
-          // own label (the full text stays on hover and in its accessible name) so
-          // the tool tiles beside them keep their 36px boxes at every width.
-          <div className="flex min-w-0 items-center gap-[var(--topology-chrome-gap)]" data-testid="topology-status-chip-group">
-            {returnChip}
-            {realmChip}
-            {pathChip}
-            {trailChip}
-          </div>
-        ) : null}
-        <div className="flex shrink-0 items-center gap-[var(--topology-chrome-gap)]">
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-[var(--topology-chrome-gap)] md:justify-start">
+        <div className="flex shrink-0 items-center gap-[var(--topology-chrome-gap)]" data-testid="topology-tool-tile-group">
         {onToggleExpandAll ? (
           <div className="hidden md:block">
             <ChromeChip
@@ -247,12 +260,20 @@ export function SearchHint({
             wrapper to the picker so a press on the chip is not treated as 「outside」 —
             without it the chip closed and reopened the picker in the same batch and
             could never put it away (`View3dMenu`'s dismissal block). */}
-        <div ref={view3dAnchorRef} className="relative hidden md:block">
+        <div
+          ref={view3dAnchorRef}
+          className="relative hidden md:block"
+          data-lane-popover={view3dMenuOpen ? 'open' : undefined}
+        >
           <ChromeChip
             type="button"
+            ref={view3dChipRef}
             onClick={() => setView3dMenuOpen((open) => !open)}
-            aria-haspopup="menu"
+            // A disclosure of a labelled radiogroup, not a menu: `aria-haspopup="menu"`
+            // promised menu items and arrow keys from the chip that the picker never had
+            // (its items are radios). The chip says it expands, and which group it shows.
             aria-expanded={view3dMenuOpen}
+            aria-controls={view3dMenuId}
             data-testid="topology-view-3d"
             data-view-3d={view3d ? 'true' : 'false'}
             data-map-view={currentView}
@@ -279,8 +300,14 @@ export function SearchHint({
           </ChromeChip>
           <View3dMenu
             open={view3dMenuOpen}
-            onClose={() => setView3dMenuOpen(false)}
+            onClose={(returnFocus) => {
+              setView3dMenuOpen(false);
+              // A choice or Escape hands focus back to the chip that opened the picker;
+              // a press elsewhere keeps it where that press put it.
+              if (returnFocus) view3dChipRef.current?.focus();
+            }}
             anchorRef={view3dAnchorRef}
+            groupId={view3dMenuId}
           />
         </div>
         {constellationControl}
@@ -309,6 +336,22 @@ export function SearchHint({
           {t('searchLabel')}
         </ChromeChip>
         </div>
+        {returnChip || realmChip || pathChip || trailChip ? (
+          // The status chips are the part of the row that yields. The group wraps
+          // under the tools when it does not fit beside them, and each chip wraps on
+          // its own inside it; a chip alone on a line truncates its own label (the
+          // full text stays on hover and in its accessible name), so the tool tiles
+          // keep their 36px boxes and their place at every width.
+          <div
+            className="flex min-w-0 max-w-full flex-wrap items-center gap-[var(--topology-chrome-gap)]"
+            data-testid="topology-status-chip-group"
+          >
+            {returnChip}
+            {realmChip}
+            {pathChip}
+            {trailChip}
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -491,6 +491,9 @@ describe("formatTopologyPathAgentPacket", () => {
         sourceTitle: "Views",
         targetTitle: "Topology Analysis Modes",
         hopCount: 2,
+        // The two ends arrive in two grammars (a `pathFrom=` slug and a map node id);
+        // the packet speaks one, and links to the live map under the locale.
+        locale: "ko",
         labels: {
           title: "Topology path",
           source: "Source",
@@ -508,13 +511,13 @@ describe("formatTopologyPathAgentPacket", () => {
       [
         "# Topology path",
         "- Source: Views (domains/views)",
-        "- Target: Topology Analysis Modes (capability:topology-analysis-modes)",
+        "- Target: Topology Analysis Modes (capabilities/topology-analysis-modes)",
         "- Hops: 2",
-        "- Source ontology URL: /ontology/?node=domains%2Fviews",
-        "- Target ontology URL: /ontology/?node=capability%3Atopology-analysis-modes",
-        "- Source builder URL: /topology/?p=domain%3Aviews&workbench=edit",
-        "- Target builder URL: /topology/?p=capability%3Atopology-analysis-modes&workbench=edit",
-        '- MCP check: query_ontology({"operation":"path","from":"domains/views","to":"capability:topology-analysis-modes","maxHops":5})',
+        "- Source ontology URL: /ko/topology/?p=domain%3Aviews",
+        "- Target ontology URL: /ko/topology/?p=capability%3Atopology-analysis-modes",
+        "- Source builder URL: /ko/topology/?p=domain%3Aviews&workbench=edit",
+        "- Target builder URL: /ko/topology/?p=capability%3Atopology-analysis-modes&workbench=edit",
+        '- MCP check: query_ontology({"operation":"path","from":"domains/views","to":"capabilities/topology-analysis-modes","maxHops":5})',
       ].join("\n"),
     );
   });
