@@ -488,13 +488,22 @@ test.describe('settings', () => {
     await page.getByTestId('app-settings-nav-models').click();
     await expect(page).toHaveURL(/\/agents\/\?(?:.*&)?tab=models/);
     await page.getByTestId('ai-register-anthropic').click();
-    const aiInks = await page.evaluate(() =>
-      ['ai-register-anthropic', 'ai-cancel-anthropic'].map((id) => {
-        const el = document.querySelector(`[data-testid="${id}"]`)!;
-        return getComputedStyle(el).color;
-      }),
-    );
-    expect(aiInks, `workspace chip ink ${workspaceInk}`).toEqual([workspaceInk, workspaceInk]);
+    await expect(page.getByTestId('ai-cancel-anthropic')).toBeVisible();
+    // The claim is about the resting ink. The pointer that just pressed the opener still sits on
+    // it, and its hover ink (stronger, by design) would be measured instead once the colour
+    // transition finishes, so the pointer leaves first and the colour is read after it settles.
+    await page.mouse.move(0, 0);
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          ['ai-register-anthropic', 'ai-cancel-anthropic'].map((id) => {
+            const el = document.querySelector(`[data-testid="${id}"]`)!;
+            return getComputedStyle(el).color;
+          }),
+        ),
+        { message: `workspace chip ink ${workspaceInk}` },
+      )
+      .toEqual([workspaceInk, workspaceInk]);
   });
 
   test('the web lists no app-only Updates pane', async ({ page }) => {
