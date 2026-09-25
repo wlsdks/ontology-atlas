@@ -220,6 +220,11 @@ export function AcpRuntimeSettings({
       <div data-testid="app-settings-runtimes-web" className="grid min-w-0 gap-3">
         <EmptyState
           tone="solid"
+          /* The card every quiet next-step card on these screens wears (the project list's
+             「next project」 slot): card radius, soft border, overlay fill. The primitive's
+             panel radius with divider ink was a surface combination no census route had, and
+             the surface-vocabulary ratchet refuses a ninth. */
+          className="rounded-card border-[color:var(--color-border-soft)]"
           title={t('webLabel')}
           description={<span className="block">{t('webCaption')}</span>}
           action={
