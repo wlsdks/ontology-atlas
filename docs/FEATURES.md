@@ -2574,6 +2574,14 @@ The screen's own copy had promised that earlier content can be brought back (`at
 #### One document's own timeline (2026-09-19)
 A commit's detail lists **the other steps that changed the focused document** — under the restore door in the concept lens and under the file list in the files lens — read from `git_history` scoped to that path (its optional `path` argument, bounded to the vault like every path the screen hands back). Twelve are read plus one more, so the list can say when older steps exist. Pressing a row jumps to that step; when the step lies below the depth the list has read, the list reads on a page at a time until the row exists, then selects it and scrolls it into view. Before this, "when else did this concept change" meant scanning every row for the concept's name.
 
+#### Where the steps can go (2026-09-25)
+The header's location line and the dock's last line say which of four states the branch is in, read from `git_status` without contacting any remote (`hasOrigin` comes from `git remote get-url origin`, plus `detached` and `headShortHash`):
+- **Tracking** — the branch has an upstream: `main → origin/main` with Fetch, Pull and Push.
+- **No remote** — no `origin` at all: "no remote repository yet" and the address form that registers one. This is the only state that form appears in; anywhere else it would have rewritten a real `origin` with `git remote set-url`, which is what it did before for every branch without an upstream.
+- **Never sent** — `origin` exists and this branch was never pushed: the line says so and offers one press that sends the branch and records `origin/<branch>` as its upstream (`git_snapshot(push, setUpstream)` → `git push --set-upstream origin HEAD`). With uncommitted changes the press opens the commit confirm first, like Push, and its hint names the first send.
+- **Detached HEAD** — a commit is checked out: the badge shows its short hash instead of `HEAD`, and both lines say sending needs a branch. No button.
+A bridge that does not report `hasOrigin` is read as unknown, never as "no remote": the line says only that no destination is set, and offers nothing. Push with nothing to commit now sends the steps already recorded; before, `git_snapshot` returned before the push.
+
 #### Nothing is written until the user clicks
 When the screen first opens, only read-only tools are called (`git_status` / `git_diff` / `git_history`). Tools that change something (`git_init` · `git_set_remote` · `git_snapshot` · `git_restore_file`) are executed only when the user presses their button (`onClick`).
 
@@ -3116,6 +3124,7 @@ folder shows all eight.
 The phone tabs and the `G` keys read the same verdict.
 
 ### `AppSettingsMenu` (app shell + contextual page headers)
+- The sheet is a modal like every `<Dialog>` (2026-09-25): opened by a click it takes focus itself (WebKit does not focus the clicked gear), so Escape and Tab work at once, and a click on the dim beside the panel closes it and returns focus to the gear. A drag that starts in the panel and ends over the dim does not close it.
 - Accent swatches display their own existing palette under either selected app accent. Notification kinds wrap below their full-width explanation instead of compressing that explanation beside six controls.
 - The old 5-tab settings modal is now one compact settings sheet
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
@@ -3314,7 +3323,7 @@ the chip's top and bottom edge, because a clipped control still measures full si
 | `D` | Home / Topology | Toggle docs drawer |
 | `?` | Home / Topology | Toggle shortcut sheet |
 | `⌘O` | Home / Topology static sample | Open a local Markdown folder |
-| `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state |
+| `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state. In the installed app one press closes one thing under every macOS input source: Korean 2-Set can keep Escape from the WebView, so the app notices the press natively and the page stands in for the missing key-down, never for one it already received (`src/shared/lib/tauri-native-escape.ts`, `src-tauri/src/native_escape.rs`, 2026-09-25) |
 | `Enter` | Workshop relation picker | Choose the first filtered relation candidate |
 | `↑↓` | Hub rail | Cycle hubs |
 | `Home` / `End` | Hub rail | First / last hub |
