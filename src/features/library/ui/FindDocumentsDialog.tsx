@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { FilePlus2, SearchX, X } from "lucide-react";
 
 import { candidateKey, formatSourceBytes, type SourceCandidate } from "@/entities/docs-vault";
-import { Button, Checkbox, Dialog, controlClass } from "@/shared/ui";
+import { Button, Checkbox, Chip, Dialog, EmptyState, IconButton, controlClass } from "@/shared/ui";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 
 import type { DiscoveryOutcome } from "../lib/discover-sources";
@@ -39,6 +41,13 @@ export interface FindDocumentsDialogProps {
   /** Copies the ticked candidates; the unticked ones are remembered as refused. */
   onAdd: (selected: SourceCandidate[], declined: SourceCandidate[]) => void;
   busy: boolean;
+  /**
+   * The other way in, offered when the walk proposes nothing: pick files by hand. Closes
+   * this dialog first, so the system picker is not stacked on a scrim.
+   */
+  onAddFiles?: () => void;
+  /** The visible label of that door — the index chip's own word, so the two read as one. */
+  addFilesLabel?: string;
 }
 
 export function FindDocumentsDialog({
@@ -49,6 +58,8 @@ export function FindDocumentsDialog({
   onForgetDeclined,
   onAdd,
   busy,
+  onAddFiles,
+  addFilesLabel,
 }: FindDocumentsDialogProps) {
   const t = useTranslations("library.find");
   const [ticked, setTicked] = useState<Set<string>>(() => new Set());
@@ -76,6 +87,13 @@ export function FindDocumentsDialog({
     return [...groups];
   }, [candidates]);
 
+  /*
+   * **Nothing to pick is a finished answer, not a list waiting for a choice** (2026-09-25).
+   * It used to be one bare sentence above a disabled primary — a door that could never
+   * open in this state. Now it is the EmptyState shape with the one move that remains,
+   * and the footer, whose whole job is committing a selection, stands down.
+   */
+  const nothingToPick = outcome !== null && candidates.length === 0;
   const selected = candidates.filter((candidate) => ticked.has(candidateKey(candidate)));
   const declined = candidates.filter((candidate) => !ticked.has(candidateKey(candidate)));
 
@@ -90,12 +108,26 @@ export function FindDocumentsDialog({
       // because a mobile browser's chrome moves and `vh` does not notice.
       className="flex max-h-[calc(100dvh-4rem)] flex-col"
     >
-      <h2
-        id="find-documents-title"
-        className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
-      >
-        {t("title")}
-      </h2>
+      {/* The corner ✕, as on the import dialog beside it: one dismissal grammar for the
+          two ways into sources/, with Escape and the scrim doing the same. */}
+      <div className="flex items-start justify-between gap-3">
+        <h2
+          id="find-documents-title"
+          className="min-w-0 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+        >
+          {t("title")}
+        </h2>
+        <IconButton
+          label={t("close")}
+          size="sm"
+          tone="muted"
+          data-testid="find-documents-close"
+          className="-mr-1 -mt-1 shrink-0"
+          onClick={onClose}
+        >
+          <X size={ICON_SIZE.lg} aria-hidden />
+        </IconButton>
+      </div>
       {/* The sentence a person needs before reading a list of their own files: what was
           walked, and that nothing has been read. */}
       <p className="mt-2 text-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
@@ -147,12 +179,33 @@ export function FindDocumentsDialog({
           // already hidden because you passed on it" send a person to different places,
           // and the second one is a state they can undo — measured on the north-star
           // walkthrough, where the generic sentence guessed while the count below it knew.
-          <p
-            data-testid="find-documents-empty"
-            className="text-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-          >
-            {declinedCount > 0 ? t("emptyAllDeclined", { count: declinedCount }) : t("empty")}
-          </p>
+          <div data-testid="find-documents-empty">
+            <EmptyState
+              size="compact"
+              tone="solid"
+              icon={<SearchX />}
+              title={declinedCount > 0 ? t("emptyAllDeclined", { count: declinedCount }) : t("empty")}
+              action={
+                onAddFiles && addFilesLabel ? (
+                  <Chip
+                    data-testid="find-documents-add-files"
+                    tone="strong"
+                    hoverSurface="lift"
+                    hoverBorder="strong"
+                    className="atlas-touch-floor gap-1.5 self-start"
+                    disabled={busy}
+                    onClick={() => {
+                      onClose();
+                      onAddFiles();
+                    }}
+                  >
+                    <FilePlus2 size={ICON_SIZE.sm} aria-hidden />
+                    {addFilesLabel}
+                  </Chip>
+                ) : undefined
+              }
+            />
+          </div>
         ) : (
           byRoot.map(([rootLabel, rows]) => (
             <section key={rootLabel} className="flex flex-col gap-1">
@@ -230,19 +283,21 @@ export function FindDocumentsDialog({
         </p>
       ) : null}
 
-      <div className="mt-4 flex justify-end gap-2">
-        <Button variant="ghost" onClick={onClose} disabled={busy}>
-          {t("cancel")}
-        </Button>
-        <Button
-          data-testid="find-documents-add"
-          variant="primary"
-          disabled={busy || selected.length === 0}
-          onClick={() => onAdd(selected, declined)}
-        >
-          {t("add", { count: selected.length })}
-        </Button>
-      </div>
+      {nothingToPick ? null : (
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {t("cancel")}
+          </Button>
+          <Button
+            data-testid="find-documents-add"
+            variant="primary"
+            disabled={busy || selected.length === 0}
+            onClick={() => onAdd(selected, declined)}
+          >
+            {t("add", { count: selected.length })}
+          </Button>
+        </div>
+      )}
     </Dialog>
   );
 }

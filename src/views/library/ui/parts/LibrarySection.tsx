@@ -318,6 +318,33 @@ const AGENT_DOOR_SPAN = "col-span-2";
 /** The one line under the index's button group, so a dead door can point at its reason. */
 const SECTION_ACTIONS_NOTE_ID = "library-actions-blocked";
 
+/**
+ * Where an index chip's explanation opens: **into the reader, wrapped.**
+ *
+ * The shared panel has no measure of its own, so a sentence rendered as one line —
+ * measured 449px for "Find documents", from x 44 across the 0–64 nav rail and the
+ * bottom 8px of the search box above. `right` + `start` hangs it off the chip's own
+ * row into the free reader beside the column; the cap keeps it a short paragraph.
+ */
+const INDEX_CHIP_TIP = {
+  side: "right",
+  align: "start",
+  panelClassName: "max-w-[min(20rem,calc(100vw-2rem))] [word-break:keep-all]",
+} as const;
+
+/**
+ * The same, for a chip in the **left** cell of `SectionActions`' two-column grid.
+ *
+ * Hung from that chip's own right edge the panel landed on its neighbour, measured at
+ * x 208 over *Find documents*. The margin carries it across the right cell and the
+ * column gap to the column's edge, derived from `SectionActions`' `px-3` and `gap-1`,
+ * so it opens where the full-width chips' panels open: beside the column, not on it.
+ */
+const INDEX_LEFT_CELL_TIP = {
+  ...INDEX_CHIP_TIP,
+  panelClassName: `${INDEX_CHIP_TIP.panelClassName} ml-[calc((var(--docs-list-width)-1.75rem)/2+0.25rem)]`,
+} as const;
+
 /*
  * **One box edge and one text line, for every control in the column** (design sweep,
  * 2026-09-25). The split above put row fills at 68 while the door chips, the wiki cards and
@@ -737,40 +764,37 @@ export function LibrarySection({
       <section data-testid="library-sources" className={cn("flex flex-col pb-1", searchHost ? "pt-1.5" : "pt-3")}>
         {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
         <SectionActions>
-          <Tooltip content={t("sources.addTooltip")}>
+          <Tooltip content={t("sources.addTooltip")} {...INDEX_LEFT_CELL_TIP}>
             <Chip
               data-testid="library-add-files"
               onClick={onAddFiles}
               disabled={busy}
               tone="muted"
               className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
-              aria-label={t("sources.addTooltip")}
             >
               <IndexGlyph><FilePlus2 size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
               <span className="min-w-0 truncate">{t("sources.add")}</span>
             </Chip>
           </Tooltip>
-          <Tooltip content={t("sources.findTooltip")}>
+          <Tooltip content={t("sources.findTooltip")} {...INDEX_CHIP_TIP}>
             <Chip
               data-testid="library-find-documents"
               onClick={onFindDocuments}
               disabled={busy}
               tone="muted"
               className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
-              aria-label={t("sources.findTooltip")}
             >
               <IndexGlyph><Search size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
               <span className="min-w-0 truncate">{t("sources.find")}</span>
             </Chip>
           </Tooltip>
-          <Tooltip content={t("sources.importTooltip")}>
+          <Tooltip content={t("sources.importTooltip")} {...INDEX_CHIP_TIP}>
             <Chip
               data-testid="library-import-open"
               onClick={onImportFromService}
               disabled={busy}
               tone="muted"
               className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
-              aria-label={t("sources.importTooltip")}
             >
               <IndexGlyph><CloudDownload size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
               <span className="min-w-0 truncate">{t("sources.import")}</span>
@@ -1133,11 +1157,19 @@ export function LibrarySection({
             <p className="mt-2 break-all font-mono text-label text-[color:var(--color-text-secondary)]">
               {newPagePreviewPath}
             </p>
-            {newPagePreviewIsExample ? (
-              <p className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
-                {t("wiki.newPagePreviewExample")}
-              </p>
-            ) : null}
+            {/* Held, not removed, once a title is typed: the dialog is centred, so a line
+                leaving the preview moved the field 9px under the caret on the first key
+                (2026-09-25). `invisible` keeps the height and takes it out of the tree. */}
+            <p
+              data-testid="library-new-page-example-note"
+              aria-hidden={!newPagePreviewIsExample || undefined}
+              className={cn(
+                "mt-1 text-caption text-[color:var(--color-text-quaternary)]",
+                !newPagePreviewIsExample && "invisible",
+              )}
+            >
+              {t("wiki.newPagePreviewExample")}
+            </p>
             <p className="mt-2 text-caption text-[color:var(--color-text-tertiary)]">
               {t("wiki.newPageMetadata")}
             </p>
@@ -1230,7 +1262,7 @@ export function LibrarySection({
           picker joins as a third cell and therefore spans the row: it is what the press
           will run on, not a third door.
         */}
-        <Tooltip content={t("wiki.lintTooltip")}>
+        <Tooltip content={t("wiki.lintTooltip")} {...INDEX_CHIP_TIP}>
           <Chip
             data-testid="library-lint"
             onClick={onLint ?? undefined}
@@ -1238,13 +1270,12 @@ export function LibrarySection({
             aria-describedby={onLint === null && actionsNote ? SECTION_ACTIONS_NOTE_ID : undefined}
             tone="muted"
             className={`w-full justify-start ${AGENT_DOOR_SPAN} hover:text-[color:var(--color-text-primary)]`}
-            aria-label={t("wiki.lint")}
           >
             <IndexGlyph><Stethoscope size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
             <span className="min-w-0 truncate">{t("wiki.lint")}</span>
           </Chip>
         </Tooltip>
-        <Tooltip content={t("wiki.compileTooltip")}>
+        <Tooltip content={t("wiki.compileTooltip")} {...INDEX_CHIP_TIP}>
           <Chip
             data-testid="library-compile"
             onClick={onCompile ?? undefined}
@@ -1254,7 +1285,6 @@ export function LibrarySection({
             }
             tone="muted"
             className={`w-full justify-start ${AGENT_DOOR_SPAN} hover:text-[color:var(--color-text-primary)]`}
-            aria-label={t("wiki.compile")}
           >
             <IndexGlyph><Sparkles size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
             <span className="min-w-0 truncate">{t("wiki.compile")}</span>

@@ -45,6 +45,9 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  * the anchored contract, and all three parts are here — Escape, an outside press, and
  * focus back on the door.
  */
+/** The free area a Library popup may occupy: the reader pane its door sits in. */
+const BOUNDARY_SELECTOR = '[data-testid="library-reader"]';
+
 export function LibraryHomePopover({
   open,
   onClose,
@@ -83,7 +86,7 @@ export function LibraryHomePopover({
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   const panelRef = useRef<HTMLElement | null>(null);
-  const [box, setBox] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
+  const [box, setBox] = useState<{ top: number; left: number; maxHeight: number; width: number } | null>(null);
 
   /**
    * The panel's place, from the door's rect.
@@ -109,19 +112,36 @@ export function LibraryHomePopover({
     /* A door drawn at no width cannot place anything; leaving `box` alone keeps the last
        good placement instead of throwing the panel into the corner. */
     if (rect.width === 0 && rect.height === 0) return;
-    const width = panelRef.current?.offsetWidth ?? Math.min(560, window.innerWidth - 32);
+    /*
+     * ⚠️ **Clamped to the reader pane, not only to the window** (2026-09-25). The doors sit
+     * at the right of the reader, and the index column is the reader's left neighbour. At
+     * 1040 the 560px guide measured x 310 against an index spanning 64–344: a window-only
+     * clamp let it lie 34px across the wiki rows. The pane is the free area this panel may
+     * use, so both its left edge and its width come from the pane; a pane narrower than
+     * 560 + 32 narrows the panel instead of spilling it.
+     */
+    const pane = anchor.closest<HTMLElement>(BOUNDARY_SELECTOR)?.getBoundingClientRect();
+    const floor = pane ? Math.max(16, pane.left + 16) : 16;
+    const ceiling = pane ? Math.min(window.innerWidth, pane.right) - 16 : window.innerWidth - 16;
+    const cap = Math.max(240, Math.min(560, ceiling - floor));
+    const width = Math.min(panelRef.current?.offsetWidth ?? cap, cap);
     const top = rect.bottom + 8;
     const raw = align === "end" ? rect.right - width : rect.left;
     const next = {
       top,
-      left: Math.max(16, Math.min(raw, window.innerWidth - 16 - width)),
+      left: Math.max(floor, Math.min(raw, ceiling - width)),
       /* Whatever is left under the door, minus the gutter: the panel scrolls inside. */
       maxHeight: Math.max(160, window.innerHeight - top - 16),
+      width: cap,
     };
     /* Equality first, because this runs after **every** render (see below): writing an
        identical box would be a render loop, not a placement. */
     setBox((current) =>
-      current && current.top === next.top && current.left === next.left && current.maxHeight === next.maxHeight
+      current &&
+      current.top === next.top &&
+      current.left === next.left &&
+      current.maxHeight === next.maxHeight &&
+      current.width === next.width
         ? current
         : next,
     );
@@ -258,8 +278,8 @@ export function LibraryHomePopover({
      * reaches past the panel's own bottom edge and must not swallow a press on the canvas.
      */
     <div
-      className="library-spine-scope pointer-events-none fixed z-40 w-[min(560px,calc(100vw-2rem))]"
-      style={{ top: box.top, left: box.left, height: box.maxHeight }}
+      className="library-spine-scope pointer-events-none fixed z-40"
+      style={{ top: box.top, left: box.left, height: box.maxHeight, width: box.width }}
     >
       <Surface
         open={open}

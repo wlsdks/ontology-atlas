@@ -2314,6 +2314,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onForgetDeclined={handleForgetDeclined}
           onAdd={handleAddCandidates}
           busy={busy}
+          onAddFiles={handleAddFiles}
+          addFilesLabel={t("sources.add")}
         />
       </main>
     );
@@ -3412,6 +3414,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               : null
           }
           knownSlugs={knownSlugs}
+          indexBeside={!indexCollapsed}
           onClose={() => agent.setOpen(false)}
         />
       ) : null}
@@ -3428,6 +3431,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         onForgetDeclined={handleForgetDeclined}
         onAdd={handleAddCandidates}
         busy={busy}
+        onAddFiles={handleAddFiles}
+        addFilesLabel={t("sources.add")}
       />
     </main>
   );

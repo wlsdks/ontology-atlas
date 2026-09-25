@@ -6053,6 +6053,7 @@
       "declined": "{count, plural, one {# file you passed on before is hidden} other {# files you passed on before are hidden}}",
       "forgetDeclined": "Show them again",
       "cancel": "Cancel",
+      "close": "Close",
       "add": "{count, plural, =0 {Add selected} one {Add # file} other {Add # files}}",
       "webGetApp": "Get the app",
       "emptyAllDeclined": "{count, plural, one {The only document left here is one you passed on before.} other {The only documents left here are # you passed on before.}}"

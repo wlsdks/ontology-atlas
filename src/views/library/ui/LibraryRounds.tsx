@@ -14,7 +14,7 @@ import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_FRAME_FORM } from "@/shared/ui/page-frame";
-import { Button, EmptyState, InfoHint, RowButton } from "@/shared/ui";
+import { Button, EmptyState, RowButton } from "@/shared/ui";
 
 import { useLibraryRounds } from "../lib/library-rounds-context";
 import { capitalize } from "../lib/round-presentation";
@@ -234,16 +234,24 @@ export function LibraryRounds() {
           (x 76), and the door below takes the seat the search field takes (76–331), so
           switching tabs changes what the column lists and nothing about where it sits.
         */}
+        {/*
+          **The lede is a caption, not a hover panel** (2026-09-25). It lived in an InfoHint whose
+          288px panel hung from x 76 inside this 280px column: `overflow-hidden` cut its last
+          20px mid-word, and the panel lay on top of the very door it explains. The column has
+          the room, so the sentence now sits under the door, readable without a hover.
+        */}
         <div className="flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <h1 className="sr-only">{t("indexHeader", { count: rounds.length })}</h1>
-            <InfoHint label={t("lede")} align="left">{t("lede")}</InfoHint>
-          </div>
+          <h1 className="sr-only">{t("indexHeader", { count: rounds.length })}</h1>
           {/* Schedule changes live in Automations; this door keeps results and controls distinct. */}
           <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-new"
-            className={cn(controlClass({ shape: "link", size: "md", tone: "secondary" }), "mt-2 flex w-full justify-start atlas-touch-floor") }>
+            aria-describedby="library-rounds-lede"
+            className={cn(controlClass({ shape: "link", size: "md", tone: "secondary" }), "flex w-full justify-start atlas-touch-floor") }>
             <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}
           </Link>
+          <p id="library-rounds-lede" data-testid="library-rounds-lede"
+            className="mt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+            {t("lede")}
+          </p>
         </div>
         <ul className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-1 pb-3 pt-2" data-testid="library-rounds-list">
           {rounds.length === 0 ? <li aria-hidden className="px-2 py-3"><EmptyShape icon={<Clock3 size={ICON_SIZE.sm} aria-hidden />}

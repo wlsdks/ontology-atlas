@@ -99,7 +99,15 @@ export function LibraryStatusStrip({
    * that remainder keeps the old waiting word so the arithmetic still closes, and it is
    * zero on every folder where the three states are the whole story.
    */
-  if (model.notCompiledCount > 0 && !indexShowsSourceStates) {
+  /*
+   * ⚠️ **One not-compiled file that the lead clause already names is said once** (2026-09-25).
+   * *Compile next: new-uncompiled-notes.md · 1 not compiled* stated the same single file
+   * twice, and the home strip, which carries no such clause, read differently for the same
+   * folder. At two or more the count adds what the name cannot, so it stays.
+   */
+  const leadNamesTheOnlyOne =
+    compileTarget !== null && model.notCompiledCount === 1 && compileTarget.state === "not-compiled";
+  if (model.notCompiledCount > 0 && !indexShowsSourceStates && !leadNamesTheOnlyOne) {
     parts.push(t("stage.statusNotCompiled", { count: model.notCompiledCount }));
   }
   if (model.staleCount > 0) parts.push(t("home.staleClause", { count: model.staleCount }));

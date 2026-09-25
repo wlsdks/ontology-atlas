@@ -6,7 +6,7 @@ import type { useTranslations } from "next-intl";
 
 import { formatSourceBytes } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
-import { Button, Surface } from "@/shared/ui";
+import { Chip, Surface } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { transientSurface } from "@/shared/ui/transient-surface";
@@ -297,63 +297,71 @@ export function LibraryMarkPopover({
         </ul>
       ) : null}
 
-      {/* ── The doors. The first one is what a press used to do, now named and explicit. ── */}
+      {/* ── The doors. The first one is what a press used to do, now named and explicit.
+             Chips, not `Button sm`: the card's close glyph and every other Library popover
+             control are the 6px/11px chip grammar, and a 12px/14px button beside them was a
+             second grammar in one card (2026-09-25). ── */}
       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
         {node.kind === "concept" ? (
           onOpenOnMap ? (
-            <Button
-              size="sm"
-              variant="outline"
+            <Chip
+              tone="strong"
+              hoverSurface="lift"
+              hoverBorder="strong"
               className="atlas-touch-floor"
               data-testid="library-graph-card-map"
               onClick={onOpenOnMap}
             >
               {t("graph.openOnMap")}
-            </Button>
+            </Chip>
           ) : null
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
+          <Chip
+            tone="strong"
+            hoverSurface="lift"
+            hoverBorder="strong"
             className="atlas-touch-floor"
             data-testid="library-graph-card-open"
             onClick={onOpen}
           >
             {t("graph.card.open")}
-          </Button>
+          </Chip>
         )}
         {facts?.refresh?.onRequest ? (
-          <Button
-            size="sm"
-            variant="outline"
+          <Chip
+            tone="strong"
+            hoverSurface="lift"
+            hoverBorder="strong"
             className="atlas-touch-floor"
             data-testid="library-graph-card-refresh"
             onClick={facts.refresh.onRequest}
           >
             {t("graph.card.refresh")}
-          </Button>
+          </Chip>
         ) : null}
         {facts?.onReveal ? (
-          <Button
-            size="sm"
-            variant="outline"
+          <Chip
+            tone="strong"
+            hoverSurface="lift"
+            hoverBorder="strong"
             className="atlas-touch-floor"
             data-testid="library-graph-card-reveal"
             onClick={facts.onReveal}
           >
             {facts.revealsCopy ? t("source.download") : t("source.reveal")}
-          </Button>
+          </Chip>
         ) : null}
         {hidden > 0 ? (
-          <Button
-            size="sm"
-            variant="outline"
+          <Chip
+            tone="strong"
+            hoverSurface="lift"
+            hoverBorder="strong"
             className="atlas-touch-floor"
             data-testid="library-graph-card-all"
             onClick={onExpand}
           >
             {t("graph.card.seeAll", { count: rows.length })}
-          </Button>
+          </Chip>
         ) : null}
       </div>
 
