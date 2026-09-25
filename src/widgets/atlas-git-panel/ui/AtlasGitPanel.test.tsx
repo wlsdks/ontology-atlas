@@ -2331,7 +2331,7 @@ describe("AtlasGitPanel — a jump along one document's history keeps that docum
     fireEvent.click(steps[0]);
     await waitFor(() => expect(selectedRow()).toHaveTextContent("Import the vault"));
     // The vault guide is a file of the step, never a concept chip (`isCanonicalConcept`), so the
-    // import's chips are its two concepts, "푸 기능" first; the jump must not fall back to it.
+    // import's chips are its two concepts, the capability first; the jump must not fall back to it.
     await waitFor(() => expect(chips()).toHaveLength(2));
     expect(chips()[0]).toHaveTextContent("푸 기능");
     expect(chip("바 요소")).toHaveAttribute("aria-checked", "true");
