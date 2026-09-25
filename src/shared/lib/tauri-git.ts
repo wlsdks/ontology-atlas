@@ -83,6 +83,19 @@ export interface GitStatusResult {
   behind: number | null;
   /** Already-staged paths outside the vault; the snapshot leaves them alone (informational). */
   stagedOutsideVault: string[];
+  /**
+   * Whether a remote named `origin` exists, read locally — nothing is contacted.
+   *
+   * **Absent means unknown, never "no remote".** A bridge older than this field does not send
+   * it, and reading its absence as `false` is the exact claim this field exists to stop making:
+   * "no remote yet" over a repository whose branch was simply never pushed, with a button that
+   * then rewrote the real `origin` (2026-09-25).
+   */
+  hasOrigin?: boolean;
+  /** HEAD names a commit, not a branch; `branch` then reads `HEAD`. Absent means unknown. */
+  detached?: boolean;
+  /** Short hash of the commit HEAD names; `null` before the first commit. Absent means unknown. */
+  headShortHash?: string | null;
 }
 
 /** Rust `PushOutcome` — a failed push is guidance, not a crash: the commit is already local. */
@@ -301,11 +314,16 @@ export async function gitStatus(vaultPath: string): Promise<GitStatusResult | nu
 /**
  * A meaningful snapshot that adds and commits the vault scope only — **call it
  * only after an explicit user click** (never automatically). `push` is opt-in
- * and defaults to false.
+ * and defaults to false; with nothing to record, a push still sends the steps
+ * already recorded.
+ *
+ * `setUpstream` is only for the press on "send this branch" when `origin` has never
+ * seen it: the push then goes to `origin` and records it as the branch's upstream.
+ * Never derive it from a missing upstream alone.
  */
 export async function gitSnapshot(
   vaultPath: string,
-  options: { message?: string | null; push?: boolean } = {},
+  options: { message?: string | null; push?: boolean; setUpstream?: boolean } = {},
 ): Promise<GitSnapshotResult | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
@@ -313,6 +331,7 @@ export async function gitSnapshot(
     vaultPath,
     message: options.message ?? null,
     push: options.push ?? false,
+    setUpstream: options.setUpstream ?? false,
   });
 }
 

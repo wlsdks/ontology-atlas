@@ -413,6 +413,8 @@ export function AppSettingsMenu({
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  /** Whether the current press went down on the dim itself — only such a press may close. */
+  const scrimPressRef = useRef(false);
   const navRef = useRef<HTMLElement | null>(null);
   const panelRef = useDialogFocusTrap<HTMLDivElement>({
     open,
@@ -660,6 +662,27 @@ export function AppSettingsMenu({
         inert={settingsExiting || undefined}
         {...transientSurface("sheet")}
       data-testid="app-settings-overlay"
+        /*
+         * **A click on the dim closes the sheet**, as it does for every `<Dialog>` (2026-09-25).
+         * The outside-press listener counted this full-screen scrim as inside the sheet, so a
+         * click beside the panel did nothing at all. Only a press that both starts and ends on
+         * the scrim counts: a drag that starts in the panel (selecting a path to copy) and is
+         * released over the dim produces a click on the scrim too, and it is not a dismissal.
+         *
+         * The press is also kept from moving focus. WebKit hands focus to `<body>` when the
+         * pointer goes down on something that cannot take it, so a press on the dim that was
+         * then released over the panel left the sheet open with the keyboard outside it, where
+         * neither Tab's trap nor this sheet's Escape reached.
+         */
+        onMouseDown={(event) => {
+          scrimPressRef.current = event.target === event.currentTarget;
+          if (scrimPressRef.current) event.preventDefault();
+        }}
+        onClick={(event) => {
+          const pressedOnScrim = scrimPressRef.current;
+          scrimPressRef.current = false;
+          if (pressedOnScrim && event.target === event.currentTarget) closePanel();
+        }}
       >
         <div
           ref={panelRef}
