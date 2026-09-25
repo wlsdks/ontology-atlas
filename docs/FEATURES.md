@@ -408,6 +408,21 @@ had become false).
   announced the project and its nine domains as ten peers, and an expanded
   domain's capabilities joined that same flat list.
 
+- **The INDEX tree follows the selection** (2026-09-25) → a node selected anywhere
+  but on its own rows — a `?p=` link, the canvas, the palette, or a pick from the
+  INDEX search that was then cleared — opens the rows above it once and scrolls its
+  row into view; a branch folded again stays folded until the next selection.
+
+- **"Recent" is dated by Git in the app** (2026-09-25) → the INDEX recent-changes
+  window, the `?recent=` spotlight, the dusty rows, a node's "changed … ago" and the
+  Analysis Recent changes tab read each concept document's date from one Git walk:
+  its last commit, or its file's
+  date when Git shows it edited or new since (the rule the bundled manifest is built
+  with). A clone, checkout or restored backup stamps every file with the moment it
+  landed, so the file dates alone called 98 of 98 concepts changed today. Until Git
+  answers the lens counts nothing and the date slot stays empty; the web build,
+  which reads no Git, keeps the file dates.
+
 - **The chrome may not eat the map** (2026-09-20) → the camera's side insets are
   absolute pixels (350 for the INDEX panel, 120 for the tool rail), so they did
   not shrink with the window: on an 820-wide canvas they reserved 57% of it, and

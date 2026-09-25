@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useId,
   useMemo,
   useRef,
@@ -21,6 +22,7 @@ import {
 } from "@/entities/knowledge-graph";
 import { FirstRunStarterModule } from "@/features/first-run-starter";
 import { computeMaxDomainDescendantCount } from "../lib/domain-subcounts";
+import { treeAncestorIds } from "../lib/reveal-row";
 import {
   flattenVisibleRowIds,
   nextRovingId,
@@ -155,7 +157,8 @@ export interface TopologyIndexPanelProps {
   labels: TopologyIndexPanelLabels;
   className?: string;
   /**
-   * The "recently changed" lens (a 7-day mtime window, `useRecentChanges`). Omitting
+   * The "recently changed" lens (a window over each document's change date,
+   * `useAdaptiveRecentChanges`). Omitting
    * it renders no segmented control at all (the previous search-only behaviour).
    * Enabled, `filterTreeByNodeIds` narrows the tree to this id set plus its ancestor
    * paths — reusing the same "preserve the parent chain" filter mechanism as
@@ -358,6 +361,29 @@ export function TopologyIndexPanel({
     });
   }
   const openIds = treeOpenState.openIds;
+  /*
+   * **The tree follows the selection** (2026-09-25). This panel says it shows what the map
+   * shows, yet a node selected anywhere but on its own rows — a `?p=` link, the canvas, the
+   * palette, or a pick from this search that the reader then cleared — stayed folded away under
+   * a closed domain, its row absent while the map held it selected. Each new selection now opens
+   * the rows above it, once: a reader who folds that branch again is not overruled until they
+   * select something else. A selection whose row is not in the tree yet (the tree still
+   * building) is revealed when the row arrives.
+   */
+  const [revealedSelection, setRevealedSelection] = useState<string | null>(null);
+  if (selectedId !== revealedSelection) {
+    // Walked only while a reveal is owed, not on every render of a large tree.
+    const ancestors = selectedId ? treeAncestorIds(treeResult.roots, selectedId) : null;
+    if (selectedId === null || ancestors !== null) {
+      setRevealedSelection(selectedId);
+      if (ancestors?.some((id) => !openIds.has(id))) {
+        setTreeOpenState((current) => ({
+          ...current,
+          openIds: new Set([...current.openIds, ...ancestors]),
+        }));
+      }
+    }
+  }
   // P4a — "Recently Changed" lens. If search is active, search takes precedence (narrowing both
   // splits the "why can't I see it" cause into two, causing confusion) — the lens narrows the tree
   // only when search is empty.
@@ -410,6 +436,14 @@ export function TopologyIndexPanel({
   // exactly one of them as the Tab entry point (tabIndex=0). Sibling movement is
   // handled by the arrow handler on the nav below.
   const treeRef = useRef<HTMLDivElement>(null);
+  // A revealed row is brought inside the tree's own scroll, not left opened below its fold —
+  // also when a search ends and the whole tree returns around it.
+  useEffect(() => {
+    if (!revealedSelection) return;
+    treeRef.current?.querySelectorAll<HTMLElement>("[data-index-row]").forEach((row) => {
+      if (row.dataset.indexRow === revealedSelection) row.scrollIntoView?.({ block: "nearest" });
+    });
+  }, [revealedSelection, isFiltering]);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   const orderedRowIds = useMemo(
     () => flattenVisibleRowIds(visibleRoots, isOpen),
@@ -505,10 +539,16 @@ export function TopologyIndexPanel({
      *
      * The first-run card is the exception: it is designed against the full height (its reference
      * block stands at the foot through `mt-auto`), so while it is in the panel the panel stays tall.
+     *
+     * A panel this short no longer tells the map it is one by its height (`computeFreeArea` reads
+     * 60% of the canvas as a side panel), so it says so. Without the declaration, a map that
+     * measured while INDEX was fading in (its full-height slot not counted yet) took the panel for
+     * chrome in the tool lane: the hex board fitted itself under the panel's bottom edge.
      */
     <aside
       aria-label={labels.label}
       data-testid="topology-index-panel"
+      data-topology-camera-obstacle="side-panel"
       className={`flex max-h-full flex-col has-[[data-testid=first-run-starter]]:h-full rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-width)" }}
     >

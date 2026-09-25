@@ -5,6 +5,7 @@ import {
   waitForElementToBeRemoved,
 } from "@testing-library/react";
 import type React from "react";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { buildOntologyTree } from "@/entities/knowledge-graph/lib/ontology-tree";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
@@ -1400,5 +1401,107 @@ describe("TopologyIndexPanel — 행 클릭 펼침", () => {
       counts.getAttribute("title"),
       "숫자만 있고 그 말이 무슨 뜻인지는 어디에도 없다",
     ).toBe(labels.subcountsTitle);
+  });
+});
+
+/*
+ * **The tree follows the selection** (measured 2026-09-25 through the app's bridge). This panel
+ * says it shows what the map shows, yet a node selected by a `?p=` link stayed folded away under
+ * a closed domain, and a pick from this search vanished from the tree the moment the search was
+ * cleared, while the map still held it selected.
+ */
+describe("TopologyIndexPanel follows the selection", () => {
+  const rowOf = (id: string) => document.querySelector(`[data-index-row="${id}"]`);
+
+  /** The panel as the page drives it: a pick selects, and the selection comes back down. */
+  function Selecting({ initial = null, tree = buildFixtureTree() }: { initial?: string | null; tree?: ReturnType<typeof buildFixtureTree> }) {
+    const [selectedId, setSelectedId] = useState<string | null>(initial);
+    return (
+      <>
+        <button type="button" data-testid="select-elsewhere" onClick={() => setSelectedId("capability:cli-entry")} />
+        <button type="button" data-testid="select-agent-brief" onClick={() => setSelectedId("element:agent-brief")} />
+        <TopologyIndexPanel
+          treeResult={tree}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onCollapse={() => {}}
+          labels={labels}
+        />
+      </>
+    );
+  }
+
+  it("opens the rows above a node selected from outside the tree", () => {
+    render(<Selecting initial="element:agent-brief" />);
+
+    const row = rowOf("element:agent-brief");
+    expect(row, "the selected row is folded away under a closed domain").not.toBeNull();
+    expect(row).toHaveAttribute("aria-selected", "true");
+    expect(rowOf("domain:onboarding")).toHaveAttribute("aria-expanded", "true");
+    expect(rowOf("capability:mcp-server")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("keeps a row picked from the search in the tree after the search is cleared", () => {
+    render(<Selecting />);
+    const search = screen.getByTestId("topology-index-search");
+
+    fireEvent.change(search, { target: { value: "Agent Brief" } });
+    fireEvent.click(rowOf("element:agent-brief")!);
+    fireEvent.change(search, { target: { value: "" } });
+
+    // A branch folding away keeps its rows for the exit transition, so the branch state is the
+    // claim: the rows above the pick stay open once the whole tree returns.
+    expect(rowOf("domain:onboarding"), "the pick's domain folded when the search ended").toHaveAttribute("aria-expanded", "true");
+    expect(rowOf("capability:mcp-server")).toHaveAttribute("aria-expanded", "true");
+    expect(rowOf("element:agent-brief")).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("reveals once per selection: a branch folded again stays folded until the next selection", async () => {
+    render(<Selecting initial="element:agent-brief" />);
+    const capability = rowOf("capability:mcp-server")!;
+
+    fireEvent.click(capability.querySelector("button")!);
+    await waitForElementToBeRemoved(() => rowOf("element:agent-brief"));
+    expect(rowOf("capability:mcp-server")).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(screen.getByTestId("select-elsewhere"));
+    fireEvent.click(screen.getByTestId("select-agent-brief"));
+    expect(rowOf("element:agent-brief"), "a new selection did not open its branch again").not.toBeNull();
+  });
+
+  it("reveals a selection that arrived before its tree", () => {
+    const empty = { roots: [], orphans: [], warnings: [] };
+    const { rerender } = render(
+      <TopologyIndexPanel
+        treeResult={empty}
+        totalConcepts={0}
+        totalRelations={0}
+        domainCount={0}
+        changedSlugs={new Set()}
+        selectedId="element:agent-brief"
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    rerender(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId="element:agent-brief"
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+
+    expect(rowOf("element:agent-brief")).not.toBeNull();
   });
 });

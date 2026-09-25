@@ -35,8 +35,9 @@ import {
  *   (persona bug).
  * - Containment ("what it holds") is a typed count, kept apart from the
  *   direction-only "what it leans on".
- * - `powered` (freshness) has one source, the updatedAt (mtime) ramp. Never
- *   also derive it from the changedSlugs session baseline.
+ * - `powered` (freshness) has one source, the change-date ramp
+ *   (`docFreshnessIndex`: Git where Git knows). Never also derive it from the
+ *   changedSlugs session baseline.
  * - `nodeId` is always the canvas graph id (in sync with path-mode route
  *   state); `slug` prefers the vault slug and is what document / editor deep
  *   links and handoff text use.
@@ -49,6 +50,19 @@ export interface UseNodeDatasheetModelArgs {
   /** frontmatter `significance` — overrides the derived value when present. */
   authoredSignificance: string | null;
   docFreshnessIndex: ReadonlyMap<string, string>;
+  /**
+   * The files' own dates (`useVaultDocFileDates`), for the conflict badge alone. Whether the
+   * document was written since the panel opened is a question about the file; a commit moves
+   * `docFreshnessIndex` without writing it and must not raise the badge. Defaults to
+   * `docFreshnessIndex`.
+   */
+  docFileDateIndex?: ReadonlyMap<string, string>;
+  /**
+   * Git is still dating the documents (`VaultDocDates.reading`). A node with no date yet then
+   * gets an empty `updatedAtLabel` rather than none: the slot stays, and neither a date nor
+   * "idle" is claimed until the answer lands.
+   */
+  docDatesReading?: boolean;
   /** Settled identity of the vault/source supplying `docFreshnessIndex`.
    *  Null means the source is still restoring; no edit baseline is captured
    *  or compared until the identity is authoritative. */
@@ -88,6 +102,7 @@ export interface NodeDatasheetDerivation {
     kind: string;
     domain: { id: string; title: string } | null;
     powered: boolean;
+    /** "changed … ago"; `""` while Git is still dating the documents; null with no date. */
     updatedAtLabel: string | null;
     metric: {
       contains: number;
@@ -135,6 +150,8 @@ export function useNodeDatasheetModel({
   handoffSource,
   authoredSignificance,
   docFreshnessIndex,
+  docFileDateIndex = docFreshnessIndex,
+  docDatesReading = false,
   editBaselineScopeKey,
   updatedAgoNowMs,
   formatUpdatedLabel,
@@ -171,7 +188,7 @@ export function useNodeDatasheetModel({
   };
   const currentNodeId = selectedOntologyNode?.id ?? null;
   const currentSourceSlug = nodeFocus?.sourceSlug ?? null;
-  const currentFreshnessIso = currentSourceSlug ? docFreshnessIndex.get(currentSourceSlug) ?? null : null;
+  const currentFreshnessIso = currentSourceSlug ? docFileDateIndex.get(currentSourceSlug) ?? null : null;
   const baselineForCurrentNode: EditBaseline | null =
     editBaselineScopeKey === null ||
     currentNodeId === null ||
@@ -264,7 +281,7 @@ export function useNodeDatasheetModel({
     const mtimeConflict = hasNodeMtimeConflict({
       sourceSlug: nodeFocus.sourceSlug,
       baselineFreshnessIso: activeBaseline?.freshnessIso ?? null,
-      currentFreshnessIso: freshnessIso ?? null,
+      currentFreshnessIso,
       baselineSelfEditAtMs: activeBaseline?.selfEditAtMs ?? null,
       selfEditTimestamps,
     });
@@ -284,7 +301,7 @@ export function useNodeDatasheetModel({
           }
         : null,
       powered: freshnessIso ? isWithinRecentWindow(freshnessIso, updatedAgoNowMs) : false,
-      updatedAtLabel: ago ? formatUpdatedLabel(ago.key, ago.count) : null,
+      updatedAtLabel: ago ? formatUpdatedLabel(ago.key, ago.count) : docDatesReading ? "" : null,
       metric,
       groups,
       evidence: { rows: evidenceRows, total: evidenceRows.length },
@@ -325,6 +342,8 @@ export function useNodeDatasheetModel({
     handoffSource,
     nodeFocusData,
     docFreshnessIndex,
+    currentFreshnessIso,
+    docDatesReading,
     updatedAgoNowMs,
     formatUpdatedLabel,
     agentActivityStatus,

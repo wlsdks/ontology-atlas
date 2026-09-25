@@ -1559,7 +1559,9 @@ export function OntologyMapDetailPanel({
           {!projectLayout || domain || updatedAtLabel ? (
             <div className="flex items-center justify-between gap-3">
               {!projectLayout ? (
-                updatedAtLabel ? (
+                // An empty label is a date still being read: the slot stays, and no
+                // fresh/idle verdict stands in for the date meanwhile.
+                updatedAtLabel != null ? (
                   <span
                     data-testid="map-datasheet-updated-at"
                     className="shrink-0 text-body text-[color:var(--map-panel-text-quaternary)]"

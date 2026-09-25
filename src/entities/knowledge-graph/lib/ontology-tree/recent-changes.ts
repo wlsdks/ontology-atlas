@@ -1,18 +1,24 @@
 import type { KnowledgeGraphNode } from "../../model";
 
 /**
- * Single source of truth for the "recent changes" lens. The semantics are an
- * **mtime window of N days** — a different question from `ontology-changeset.ts`,
- * which asks "what changed since the last baseline". This module answers "which
- * documents were actually modified in the last N days".
+ * Single source of truth for the "recent changes" lens. The semantics are a
+ * **window of N days over each document's change date** — a different question
+ * from `ontology-changeset.ts`, which asks "what changed since the last
+ * baseline". This module answers "which documents were actually modified in the
+ * last N days".
+ *
+ * The dates are the caller's (`useVaultDocDates` in the app: Git's last commit
+ * for a document Git shows untouched since, the file's own date for one edited
+ * since or never committed). A file's date alone is not one: a clone, a checkout
+ * or a restored backup stamps every file with the moment it landed, and this lens
+ * then read the whole vault as changed today.
  *
  * Two surfaces share the window arithmetic: the map lens
  * (`computeRecentChanges`, ontology node → `evidenceIds[0]` → the vault
- * document's real update date, looked up indirectly) and the docs sidebar strip
- * (`selectRecentVaultDocs`, reading `VaultDoc.updatedAt` directly, since the
- * document already carries the real date). Both call the same
- * `isWithinRecentWindow` / `daysAgoFromIso` helpers so that "recent" cannot come
- * to mean different things on different surfaces.
+ * document's change date, looked up indirectly) and the docs sidebar strip
+ * (`selectRecentVaultDocs`, reading the `updatedAt` each document carries). Both
+ * call the same `isWithinRecentWindow` / `daysAgoFromIso` helpers so that
+ * "recent" cannot come to mean different things on different surfaces.
  */
 
 const DAY_MS = 24 * 60 * 60 * 1000;

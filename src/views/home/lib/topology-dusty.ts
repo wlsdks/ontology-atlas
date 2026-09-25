@@ -25,9 +25,10 @@ import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
  * to take a staleness inventory, and the cap is what preserves the map's
  * attention economy.
  *
- * Dates come from vault document mtime (`useVaultDocFreshnessIndex`:
- * `file.lastModified` locally, a build-time git stamp for dogfood), keyed by
- * `evidenceIds[0]`. A node with no date is fresh.
+ * Dates are each document's change date (`useVaultDocFreshnessIndex`: Git's
+ * last commit in the app where Git knows, `file.lastModified` otherwise, a
+ * build-time git stamp for dogfood), keyed by `evidenceIds[0]`. A node with no
+ * date is fresh.
  */
 export const DUSTY_MIN_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
