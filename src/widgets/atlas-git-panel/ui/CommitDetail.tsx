@@ -13,6 +13,7 @@ import { parseUnifiedDiff } from "@/shared/lib/atlas-git-record";
 import { DocumentChangeReader, type ChangedDocument } from "./PendingDocumentPane";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { ConceptEgoCard } from "./ConceptEgoCard";
+import { DocumentConfirmStep } from "./DocumentConfirmStep";
 
 /**
  * What one step changed — identity (title, hash) always on top, the rest split
@@ -583,78 +584,35 @@ function RestoreDock({
   busy: boolean;
   onRestore: (path: string, others: number) => Promise<boolean>;
 }) {
-  const [confirming, setConfirming] = useState(false);
   return (
     // Armed, the confirm takes the heading row's full width, under the heading it belongs to.
-    <div className={cn("flex min-w-0 flex-col gap-2", confirming && "basis-full")} data-testid="atlas-git-restore-dock">
-      {confirming ? (
-        <div
-          className="git-fade-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
-          data-testid="atlas-git-restore-step"
-        >
-          <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
-            {t("restoreConfirmBody", { path, when })}
+    <div
+      className="flex min-w-0 flex-col gap-2 has-[[data-testid=atlas-git-restore-step]]:basis-full"
+      data-testid="atlas-git-restore-dock"
+    >
+      <DocumentConfirmStep
+        testIdPrefix="atlas-git-restore"
+        doorLabel={t("restoreAction")}
+        confirmLabel={t("restoreButton")}
+        busyLabel={t("restoreRunning")}
+        cancelLabel={t("cancelButton")}
+        tone="primary"
+        busy={busy}
+        onConfirm={() => onRestore(path, others)}
+      >
+        <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
+          {t("restoreConfirmBody", { path, when })}
+        </p>
+        {pending && pending.added + pending.removed > 0 ? (
+          <p className="text-label leading-prose text-[color:var(--color-danger-text)]">
+            {t("restoreConfirmPending", { added: pending.added, removed: pending.removed })}
           </p>
-          {pending && pending.added + pending.removed > 0 ? (
-            <p className="text-label leading-prose text-[color:var(--color-danger-text)]">
-              {t("restoreConfirmPending", { added: pending.added, removed: pending.removed })}
-            </p>
-          ) : null}
-          <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
-            {t("restoreConfirmLands")}
-            {others > 0 ? ` ${t("restoreConfirmOthers", { count: others })}` : ""}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              data-testid="atlas-git-restore-confirm"
-              disabled={busy}
-              onClick={() => {
-                void onRestore(path, others).then((ok) => {
-                  if (ok) setConfirming(false);
-                });
-              }}
-              className={controlClass({ tone: "onAccent" })}
-            >
-              {busy ? t("restoreRunning") : t("restoreButton")}
-            </button>
-            <button
-              type="button"
-              data-testid="atlas-git-restore-cancel"
-              disabled={busy}
-              onClick={() => setConfirming(false)}
-              className={controlClass({})}
-            >
-              {t("cancelButton")}
-            </button>
-          </div>
-        </div>
-      ) : (
-          <button
-            type="button"
-            data-testid="atlas-git-restore"
-            onClick={() => setConfirming(true)}
-            /*
-             * Measured 2026-09-20: in quaternary ink this door read as one more caption, so
-             * it carries `secondary` ink. `md` is 11px on the shared 32px height, and the chip
-             * shape's touch floor still gives a finger 44px (review 2026-09-25).
-             *
-             * Round three (2026-09-25): a transparent border left it a bare word at the end of
-             * a line. It wears the resting border the concept chips above it wear, so the
-             * pane's controls share one grammar, and it is no longer mistaken for text.
-             */
-            className={controlClass({
-              shape: "chip",
-              size: "md",
-              tone: "secondary",
-              hoverInk: "strong",
-              hoverBorder: "strong",
-              className: "self-start border-[color:var(--color-border-soft)]",
-            })}
-          >
-            {t("restoreAction")}
-          </button>
-      )}
+        ) : null}
+        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
+          {t("restoreConfirmLands")}
+          {others > 0 ? ` ${t("restoreConfirmOthers", { count: others })}` : ""}
+        </p>
+      </DocumentConfirmStep>
     </div>
   );
 }

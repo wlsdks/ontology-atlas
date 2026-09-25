@@ -6,7 +6,6 @@ import { ChevronRight, Info, Plus, X } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';
 import {
-  Button,
   Checkbox,
   Chip,
   Dialog,
@@ -17,6 +16,7 @@ import {
 import { badgeClass } from '@/shared/ui/badge-class';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { Input } from '@/shared/ui/input';
+import { EmptyState } from '@/shared/ui/empty-state';
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
@@ -319,6 +319,19 @@ export function AddConnectorDialog({
     setCustomOpen(true);
   }
 
+  /*
+   * **The search takes focus after the dialog has recorded who opened it** (2026-09-25 sweep).
+   * With `autoFocus` the input focused itself during the commit, before the focus trap's effect
+   * read `document.activeElement` — so the trap recorded the search box as the opener, and on
+   * Escape or the corner close it tried to return focus to an input that no longer existed and
+   * the keyboard fell to `<body>`. This effect belongs to the dialog's parent, so it runs after
+   * the trap's (child effects run first) and the real opener is already kept.
+   */
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (open) searchRef.current?.focus({ preventScroll: true });
+  }, [open]);
+
   /** The unfolded form, so a pre-fill from a link or a row can bring it into view. */
   const customRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -329,6 +342,24 @@ export function AddConnectorDialog({
       node.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
     }
   }, [customOpen, prefillTick, reducedMotion]);
+
+  /*
+   * **The empty search's one door lands in the form** (review, 2026-09-25). Pressing it used
+   * to unfold the form below while the card and its button stayed, focus stayed on the button,
+   * and a second press did nothing. Now the press unfolds the form, brings it into view and
+   * puts the keyboard on its first field; the card's button and the fold's own toggle are
+   * never both on screen.
+   */
+  const focusCustomNameRef = useRef(false);
+  useEffect(() => {
+    if (!focusCustomNameRef.current || !customOpen) return;
+    focusCustomNameRef.current = false;
+    const node = customRef.current;
+    if (node && typeof node.scrollIntoView === 'function') {
+      node.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
+    }
+    document.getElementById(`${testIdPrefix}-custom-name`)?.focus({ preventScroll: true });
+  }, [customOpen, reducedMotion, testIdPrefix]);
 
   const attempt = useCallback(
     async (write: () => Promise<ConnectorWriteResult | null>) => {
@@ -476,7 +507,7 @@ export function AddConnectorDialog({
         up typing it themselves — and the list answers by narrowing every group at once.
       */}
       {/*
-        It takes focus on open and wears the strong border at rest (design lead, 2026-09-07):
+        It takes focus on open (see `searchRef`) and wears the strong border at rest (design lead, 2026-09-07):
         drawn like the rows under it, it read as "row zero" rather than the one control that
         acts on all of them. `initialFocus="none"` on the dialog is what lets it, since the
         trap's "first" would land on the corner close.
@@ -487,7 +518,7 @@ export function AddConnectorDialog({
         type="search"
         autoComplete="off"
         spellCheck={false}
-        autoFocus
+        ref={searchRef}
         value={query}
         placeholder={t('searchPlaceholder')}
         data-testid={`${testIdPrefix}-search`}
@@ -500,6 +531,44 @@ export function AddConnectorDialog({
         className="-mx-4 mt-4 min-h-0 flex-1 overflow-y-auto px-4"
       >
       <div className="flex flex-col gap-5" data-testid={`${testIdPrefix}-add-groups`}>
+        {/*
+          **A search that matches nothing answers first, as one card, for the whole dialog**
+          (2026-09-25 sweep). The line used to come after the groups, under the machine scan's
+          heading and its note, so "nothing matches" read as the scan having found nothing; and
+          it was bare text above an empty frame. The groups step aside while it stands, and the
+          card carries the one next step, which is typing it by hand.
+        */}
+        {nothingMatches ? (
+          <div data-testid={`${testIdPrefix}-add-none`}>
+          <EmptyState
+            size="compact"
+            title={t('noneForSearchTitle', { query: query.trim() })}
+            description={t('noneForSearchBody')}
+            action={
+              customOpen ? undefined : (
+              <button
+                type="button"
+                data-testid={`${testIdPrefix}-add-none-custom`}
+                onClick={() => {
+                  focusCustomNameRef.current = true;
+                  setCustomOpen(true);
+                }}
+                className={controlClass({
+                  shape: 'chip',
+                  size: 'lg',
+                  tone: 'secondary',
+                  hoverInk: 'strong',
+                  hoverBorder: 'strong',
+                  className: 'border-[color:var(--color-border-soft)]',
+                })}
+              >
+                {t('noneForSearchAction')}
+              </button>
+              )
+            }
+          />
+          </div>
+        ) : null}
         {/*
           The catalogue leads on every surface (installed-app check, 2026-09-07). The scan of this
           machine led at first, and on a developer's machine it is nine rows of chrome-devtools,
@@ -532,16 +601,7 @@ export function AddConnectorDialog({
           testIdPrefix={testIdPrefix}
         />
 
-        {foundSection}
-
-        {nothingMatches ? (
-          <p
-            data-testid={`${testIdPrefix}-add-none`}
-            className="break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
-          >
-            {t('noneForSearch', { query: query.trim() })}
-          </p>
-        ) : null}
+        {nothingMatches ? null : foundSection}
 
         {/*
           **By hand is the last row, folded.** It reaches every server the two lists do not, and it
@@ -549,6 +609,8 @@ export function AddConnectorDialog({
           unfolds it already filled.
         */}
         <section ref={customRef} data-testid={`${testIdPrefix}-custom-section`} className="pb-2">
+          {/* While the empty card offers the same door, the fold's toggle waits behind it. */}
+          {nothingMatches && !customOpen ? null : (
           <button
             type="button"
             aria-expanded={customOpen}
@@ -569,6 +631,7 @@ export function AddConnectorDialog({
             />
             {t('customToggle')}
           </button>
+          )}
           {customOpen ? (
             <div id={`${testIdPrefix}-custom-body`} className="mt-3">
               <CustomConnectorForm
@@ -608,6 +671,23 @@ export function AddConnectorDialog({
     </Dialog>
   );
 }
+
+/** "Add connector" is one action with one shape, wherever in the dialog it is pressed. */
+const CONNECTOR_SUBMIT_CLASS = controlClass({
+  shape: 'chip',
+  size: 'lg',
+  tone: 'onAccent',
+  className: 'border-transparent',
+});
+/** The quiet actions beside it: the same 32px step, so the row keeps one height. */
+const CONNECTOR_QUIET_CLASS = controlClass({
+  shape: 'chip',
+  size: 'lg',
+  tone: 'muted',
+  hoverInk: 'strong',
+  hoverBorder: 'strong',
+  className: 'border-transparent',
+});
 
 /** A group's one-line heading: what the rows below have in common, and a quiet fact beside it. */
 function GroupHeading({ title, meta }: { title: string; meta?: string }) {
@@ -776,7 +856,7 @@ function FoundSection({
                   ) : null}
                 </div>
                 {usable ? (
-                  <Chip data-testid={`${testIdPrefix}-found-add`} onClick={() => onAdd(server)}>
+                  <Chip size="lg" data-testid={`${testIdPrefix}-found-add`} onClick={() => onAdd(server)}>
                     <Plus size={ICON_SIZE.sm} aria-hidden />
                     {t('add')}
                   </Chip>
@@ -933,7 +1013,7 @@ function CatalogueSection({
                       {others.map((variant) => (
                         <Chip
                           key={variantKey(variant)}
-                          size="sm"
+                          size="lg"
                           data-testid={`${testIdPrefix}-catalogue-other`}
                           data-variant-kind={variant.kind}
                           data-press={pressOutcome(variant)}
@@ -959,6 +1039,7 @@ function CatalogueSection({
                   </span>
                 ) : (
                   <Chip
+                    size="lg"
                     data-testid={`${testIdPrefix}-catalogue-add`}
                     data-variant-kind={primary.kind}
                     data-press={pressOutcome(primary)}
@@ -1123,22 +1204,29 @@ function VariantAsk({
           ))}
         </div>
       ) : null}
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+      {/*
+        One row, one height (2026-09-25 sweep). The submit was a 40px `Button` with 14px type while
+        the by-hand form's submit for the same action was a 32px chip at 11px, and the quiet
+        actions beside it were 24px links, one of them 19px wide. Every control here now stands
+        on the chip `lg` step: the submit filled, the rest quiet with a transparent border.
+      */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {canStoreSecrets ? (
-          <Button
-            variant="primary"
+          <button
+            type="button"
             data-testid={`${testIdPrefix}-catalogue-ask-add`}
             disabled={!complete}
             onClick={() => onAttach(values)}
+            className={CONNECTOR_SUBMIT_CLASS}
           >
             {t('customAdd')}
-          </Button>
+          </button>
         ) : null}
         <button
           type="button"
           data-testid={`${testIdPrefix}-catalogue-ask-edit`}
           onClick={onEdit}
-          className={controlClass({ shape: 'link', tone: 'muted', hoverInk: 'strong', className: 'text-label' })}
+          className={CONNECTOR_QUIET_CLASS}
         >
           {t('askEdit')}
         </button>
@@ -1146,7 +1234,7 @@ function VariantAsk({
           type="button"
           data-testid={`${testIdPrefix}-catalogue-ask-dismiss`}
           onClick={onDismiss}
-          className={controlClass({ shape: 'link', tone: 'muted', hoverInk: 'strong', className: 'text-label' })}
+          className={CONNECTOR_QUIET_CLASS}
         >
           {t('askDismiss')}
         </button>
@@ -1155,7 +1243,7 @@ function VariantAsk({
           target="_blank"
           rel="noopener noreferrer"
           data-testid={`${testIdPrefix}-catalogue-docs`}
-          className={controlClass({ shape: 'link', tone: 'muted', hoverInk: 'strong', className: 'text-label' })}
+          className={CONNECTOR_QUIET_CLASS}
         >
           <span aria-hidden data-external-link-marker>
             ↗
@@ -1488,6 +1576,7 @@ function CustomConnectorForm({
             })}
           </ul>
           <Chip
+            size="lg"
             data-testid={`${testIdPrefix}-custom-variable-add`}
             className="mt-2"
             onClick={() =>
@@ -1510,11 +1599,11 @@ function CustomConnectorForm({
         </p>
       ) : null}
 
-      <Chip
+      <button
+        type="button"
         data-testid={`${testIdPrefix}-custom-add`}
         disabled={problems.length > 0}
-        tone="accentOnTint"
-        className="mt-3"
+        className={cn(CONNECTOR_SUBMIT_CLASS, 'mt-3')}
         onClick={() => {
           const id = newConnectorId();
           const secrets: Array<{ ref: string; value: string }> = [];
@@ -1533,7 +1622,7 @@ function CustomConnectorForm({
         }}
       >
         {t('customAdd')}
-      </Chip>
+      </button>
     </div>
   );
 }

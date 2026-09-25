@@ -577,8 +577,15 @@ function ClientAction({
       hoverInk="strong"
       data-testid={testId}
       data-state={feedback}
-      onClick={onClick}
-      disabled={isBusy}
+      /*
+       * Busy is `aria-disabled`, not `disabled` (2026-09-25 sweep). A disabled button cannot hold
+       * focus, so pressing Enter on "connect" dropped the keyboard to `<body>` for the length of
+       * the write and the person lost their place in the list. `aria-busy` says why it does not
+       * answer; the press is ignored here instead of by the browser.
+       */
+      onClick={isBusy ? undefined : onClick}
+      aria-disabled={isBusy || undefined}
+      aria-busy={isBusy || undefined}
       /* The row beside this button already names the tool and its file, so only the verb is
          drawn; the sentence stays as the accessible name (see `Wording`). */
       aria-label={shownLabel.full}

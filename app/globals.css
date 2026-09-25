@@ -6070,3 +6070,12 @@ html[data-gateway-stage] {
   --color-indigo-accent: #7170ff;
   --color-indigo-a24: rgba(94, 106, 210, 0.24);
 }
+
+/* A floating panel that holds nothing to press passes the pointer through, its positioning
+ * wrapper included (2026-09-25 interaction review). `Tooltip`'s `panelClassName="pointer-events-none"`
+ * reached only the panel: Radix wraps it in a positioned box of the same size, and that box
+ * still answered `elementFromPoint` and took the clicks meant for the row the panel lay over
+ * (the Git remote hints across the "now" row, 246x34 at every width). */
+[data-radix-popper-content-wrapper]:has(> .pointer-events-none) {
+  pointer-events: none;
+}

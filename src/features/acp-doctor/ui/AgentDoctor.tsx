@@ -287,10 +287,11 @@ export function useAgentDoctor(
       size="lg"
       tone="default"
       hoverInk="strong"
+      hoverBorder="strong"
       data-testid="agent-doctor-scan"
       disabled={busy !== null}
       onClick={() => void run()}
-      className="shrink-0"
+      className="shrink-0 border-[color:var(--color-border-soft)]"
     >
       <Stethoscope size={ICON_SIZE.md} aria-hidden />
       {busy === 'scan' ? t('scanning') : t('scan')}
@@ -309,10 +310,11 @@ export function useAgentDoctor(
         size="lg"
         tone="default"
         hoverInk="strong"
+        hoverBorder="strong"
         data-testid="agent-doctor-reset"
         disabled={busy !== null}
         onClick={() => void reset()}
-        className="ml-1.5 shrink-0"
+        className="ml-1.5 shrink-0 border-[color:var(--color-border-soft)]"
       >
         <RotateCcw size={ICON_SIZE.md} aria-hidden />
         {busy === 'reset' ? t('resetting') : t('reset')}

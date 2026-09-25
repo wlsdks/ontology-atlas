@@ -28,6 +28,15 @@ interface Props {
    * filled primary plus outline siblings passes `outline` so the row reads as one group.
    */
   triggerVariant?: "ghost" | "outline";
+  /**
+   * The name this page shows, when it is a localized `display_<locale>` rather than the title.
+   * The field below edits the title; without this the drawer showed "Online Store" under
+   * "project name" while the page's h1 read the Korean name, and editing it changed a name the
+   * reader never sees (2026-09-25 sweep).
+   */
+  displayName?: string | null;
+  /** The locale `displayName` belongs to, named in the hint as the key that holds it. */
+  displayLocale?: string;
 }
 
 interface QuickEditValues {
@@ -41,15 +50,13 @@ interface QuickEditValues {
 const FIELD_INPUT_CLASS = fieldClass({ size: "lg", className: "mt-1.5 w-full" });
 
 /*
- * The rest state is byte-identical to link/md (text-label, tertiary ink), so it moved
- * into the value layer. The underline is on hover only, not at rest — hover belongs to
- * the consumer (the value-layer rule), hence the className. `min-h-6` (24) is the
- * WCAG 2.5.8 floor: the hit box used to be a 16px line box.
+ * The way out to full edit: a quiet text control at the ramp's 24px floor, standing in the
+ * footer's one row beside the two actions rather than alone on a line under them.
  */
 const TERTIARY_LINK_CLASS = controlClass({
   shape: "link",
   className:
-    "touch-hit-expand underline-offset-2 hover:text-[color:var(--color-indigo-accent)] hover:underline",
+    "touch-hit-expand text-body underline-offset-2 hover:text-[color:var(--color-indigo-accent)] hover:underline",
 });
 
 /** The canonical form label — plain text label plus a muted "(optional)" hint on optional fields. */
@@ -149,6 +156,8 @@ export function ProjectQuickEditPanel({
   documentNewHref,
   settingsHref,
   triggerVariant = "ghost",
+  displayName = null,
+  displayLocale,
 }: Props) {
   const t = useTranslations("settings.quickEdit");
   const failureSentence = useFailureSentence();
@@ -194,6 +203,8 @@ export function ProjectQuickEditPanel({
       baselineRef.current = next;
     });
   }, [project]);
+
+  const showsLocalizedName = Boolean(displayName && displayName !== project.name);
 
   const hasChanges = useMemo(
     () =>
@@ -335,16 +346,26 @@ export function ProjectQuickEditPanel({
 
           <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
             <label className="block">
-              <FieldLabel>{t("fieldName")}</FieldLabel>
+              <FieldLabel>{showsLocalizedName ? t("fieldNameTitle") : t("fieldName")}</FieldLabel>
               <input
                 data-testid="public-quick-edit-name"
                 name="projectName"
                 autoComplete="off"
                 value={values.name}
                 onChange={(event) => handleChange("name", event.target.value)}
+                aria-describedby={showsLocalizedName ? "public-quick-edit-name-hint" : undefined}
                 className={FIELD_INPUT_CLASS}
                 placeholder={t("fieldNamePlaceholder")}
               />
+              {showsLocalizedName ? (
+                <span
+                  id="public-quick-edit-name-hint"
+                  data-testid="public-quick-edit-name-hint"
+                  className="mt-1.5 block break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+                >
+                  {t("fieldNameDisplayHint", { name: displayName ?? "", locale: displayLocale ?? "" })}
+                </span>
+              ) : null}
             </label>
 
             <label className="block">
@@ -405,14 +426,32 @@ export function ProjectQuickEditPanel({
             ) : null}
           </div>
 
-          {/* Footer: one primary action (apply changes) plus a quiet revert on the right;
-              full edit and document registration sit quietly below as tertiary link actions. */}
-          <div className="space-y-3 border-t border-[color:var(--color-border-soft)] px-5 py-4">
-            <div className="flex items-center justify-end gap-2">
+          {/* Footer: one row (2026-09-25 sweep). The way out to full edit on the left, the
+              quiet revert and the one primary action on the right, all three on the same 40px
+              step: revert was a 32px ghost beside the 40px apply, and full edit an 11px link
+              alone on a line under them. */}
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 border-t border-[color:var(--color-border-soft)] px-5 py-4">
+            <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+              {documentNewHref ? (
+                <Link href={documentNewHref} className={TERTIARY_LINK_CLASS}>
+                  {t("openDocument")}
+                </Link>
+              ) : null}
+              {settingsHref ? (
+                <Link
+                  href={settingsHref}
+                  data-testid="public-quick-edit-full"
+                  className={TERTIARY_LINK_CLASS}
+                >
+                  {t("openSettings")}
+                </Link>
+              ) : null}
+            </div>
+            <div className="ml-auto flex items-center gap-2">
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
+                data-testid="public-quick-edit-reset"
                 onClick={handleReset}
                 disabled={!hasChanges || pending}
               >
@@ -420,26 +459,13 @@ export function ProjectQuickEditPanel({
               </Button>
               <Button
                 type="button"
+                data-testid="public-quick-edit-apply"
                 onClick={() => void handleSubmit()}
                 disabled={!hasChanges || pending}
               >
                 {pending ? t("applying") : t("apply")}
               </Button>
             </div>
-            {documentNewHref || settingsHref ? (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                {documentNewHref ? (
-                  <Link href={documentNewHref} className={TERTIARY_LINK_CLASS}>
-                    {t("openDocument")}
-                  </Link>
-                ) : null}
-                {settingsHref ? (
-                  <Link href={settingsHref} className={TERTIARY_LINK_CLASS}>
-                    {t("openSettings")}
-                  </Link>
-                ) : null}
-              </div>
-            ) : null}
           </div>
         </QuickEditDrawerFrame>
       </Surface>
