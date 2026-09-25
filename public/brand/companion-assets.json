@@ -1,6 +1,6 @@
 {
   "created": "2026-09-24",
-  "method": "OpenAI image generation, followed by lossless WebP packaging. No third-party game assets were bundled.",
+  "method": "OpenAI image generation. Original sprite assets use lossless WebP; folio scene/map illustrations use full-resolution WebP quality 92. No third-party game assets were bundled.",
   "scope": "Optional companion game only; the application mark and verified agent-work mascot are separate.",
   "assets": [
     {
@@ -110,6 +110,26 @@
       "generation": "exec-12fd1226-d13c-4740-8410-c282aa922f13",
       "description": "Six original astral adventure scenes, three columns by two rows",
       "sha256": "407bbf9d57ed5e83d46262361fc654c4c3aca757a44164f81fc836fb13b23870"
+    },
+    {
+      "file": "companion-folio-scenes.webp",
+      "generation": "exec-c66c3a45-1508-42d1-b97a-909f46a1460a",
+      "description": "Six original folio vignettes: camp, supplies, elite shrine, learning, forge, study; equal 3 by 2 atlas",
+      "sha256": "aa2210d6df5bba11079f5923efa7bfe37427fbf479da06dae479ad7796dad871",
+      "encoding": "WebP quality 92; full resolution, no art edits"
+    },
+    {
+      "file": "companion-folio-route.webp",
+      "generation": "exec-72b0ca8f-4471-4e39-a98c-ba8da53f3008",
+      "description": "Original textless woodland journey map for in-world expedition folio",
+      "sha256": "215851d9f75029def35d401070ad83f6b14a98de8b5d5b4d1f94160dc4309974",
+      "encoding": "WebP quality 92; full resolution, no art edits"
+    },
+    {
+      "file": "companion-folio-frame.webp",
+      "generation": "exec-d3f37807-0d51-4414-b3e5-061b76590aa9",
+      "description": "Original walnut, dark cloth and brass folio frame; nine-slice edges only, no baked controls",
+      "sha256": "becc94a0385eb66709ee8656a9a940549a3350b01c392ccaef5c7fa7970dbac7"
     }
   ]
 }

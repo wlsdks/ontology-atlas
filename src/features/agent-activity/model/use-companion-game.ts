@@ -2,11 +2,12 @@
 import {useCallback,useEffect,useMemo,useRef,useState,useSyncExternalStore} from 'react';
 import {actCompanionGame,advanceCompanionGame,GAME_PREFIX,maxHp,newCompanionGame,parseCompanionGame,TURN_MS,type GameAction,type CompanionGame} from './companion-game';
 import {constructionHighWater,constructionXp,EMPTY_CONSTRUCTION,type ConstructionCounts} from './companion-construction';
+import type {QuestEvidence} from './companion-quests';
 const EVENT='atlas-companion-game-updated';
 const server=()=>null;
 function read(key:string|null){if(!key)return null;try{return localStorage.getItem(key);}catch{return '__unavailable__';}}
 function subscribe(listener:()=>void){window.addEventListener(EVENT,listener);window.addEventListener('storage',listener);return()=>{window.removeEventListener(EVENT,listener);window.removeEventListener('storage',listener);};}
-export function useCompanionGame(project:string|null,knowledge:number,active:boolean,areaIds:string,construction:ConstructionCounts=EMPTY_CONSTRUCTION){
+export function useCompanionGame(project:string|null,knowledge:number,active:boolean,areaIds:string,construction:ConstructionCounts=EMPTY_CONSTRUCTION,questEvidence:QuestEvidence|null=null){
  const key=project?GAME_PREFIX+project:null;
  const get=useCallback(()=>read(key),[key]);
  const raw=useSyncExternalStore(subscribe,get,server);
@@ -46,7 +47,7 @@ export function useCompanionGame(project:string|null,knowledge:number,active:boo
   tick();const timer=window.setInterval(tick,TURN_MS);document.addEventListener('visibilitychange',tick);
   return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',tick);};
  },[active,key,knowledge,areaIds,construction,transact]);
- const act=useCallback((action:GameAction)=>{let applied=false;const ok=transact((current,now)=>{const ready=advanceCompanionGame(current,now);const next=actCompanionGame(ready,action,now);applied=next!==ready;return next;});setFailed(!ok);return ok&&applied;},[transact]);
+ const act=useCallback((action:GameAction)=>{let applied=false;const ok=transact((current,now)=>{const ready=advanceCompanionGame(current,now);const next=actCompanionGame(ready,action,now,questEvidence?.project===project?questEvidence:null);applied=next!==ready;return next;});setFailed(!ok);return ok&&applied;},[transact,questEvidence,project]);
  const reset=useCallback(()=>{
   if(!key)return false;
   const prior=parseCompanionGame(read(key));

@@ -7058,7 +7058,7 @@
       "journalSections": "Journal sections",
       "knowledgeBook": "Reading log",
       "personalBook": "Shared memories",
-      "controls": "WASD / arrows to move · Click the ground to walk · E interact · I inventory · K skills · M map · J journal · Q knowledge wave · 1 potion · R rest · Esc close panel · B blessings · Space dodge · N Creature field guide",
+      "controls": "WASD / arrows to move · Click the ground to walk · E interact · I inventory · K skills · M map · J journal · Q knowledge wave · 1 potion · R rest · Esc close panel · B blessings · Space dodge · N Creature field guide · L Quests · T learning expedition",
       "panel": {
         "inventory": "Traveler’s inventory",
         "skills": "Starlight skills",
@@ -7067,7 +7067,9 @@
         "journal": "Travel journal",
         "help": "Traveler’s guide",
         "blessings": "Expedition blessings",
-        "bestiary": "Creature field guide"
+        "bestiary": "Creature field guide",
+        "quests": "Traveler’s quests",
+        "learning": "Learning expedition"
       },
       "move": {
         "ArrowUp": "Move up",
@@ -7117,8 +7119,9 @@
         "library": "Archive spellbook",
         "potion": "Healing potion",
         "cards": "Knowledge cards",
-        "relic": "Forest relic",
-        "bestiary": "Creature field guide"
+        "relic": "Guardian relic",
+        "bestiary": "Creature field guide",
+        "quests": "Quest journal"
       },
       "description": {
         "sword": "Each upgrade adds 2 attack. Spend gold earned from monsters.",
@@ -7126,11 +7129,13 @@
         "library": "Each upgrade adds 1 XP per defeated monster.",
         "potion": "Restores 20 HP. The recovery skill increases its effect.",
         "cards": "Real concepts in this folder. Read them together and keep discoveries at the desk.",
-        "relic": "A keepsake from defeating a guardian, every tenth encounter.",
-        "bestiary": "Discover 108 creatures, their behavior, and your defeats. Prepare for the next journey."
+        "relic": "Relics earned from guardians and quests. Used to enhance personal equipment beyond +5.",
+        "bestiary": "Discover 108 creatures, their behavior, and your defeats. Prepare for the next journey.",
+        "quests": "Claim guardian relics from recorded construction, reading, and companion work to grow your equipment."
       },
       "chest": "Open supply chests · {count}",
-      "readBestiary": "Open field guide (N)"
+      "readBestiary": "Open field guide (N)",
+      "readQuests": "Open quests (L)"
     },
     "skills": {
       "points": "Available skill points: {count}",
@@ -7212,7 +7217,8 @@
       "incoming": "Attack incoming · Space to dodge",
       "cleared": "Last expedition: guardian cleared! Rewards kept. M plans your next run.",
       "defeated": "Last expedition: defeated, rewards kept. M prepares another run.",
-      "waveLabel": "Knowledge wave ×{multiplier}"
+      "waveLabel": "Knowledge wave ×{multiplier}",
+      "dodgeShort": "Dodge"
     },
     "adventure": {
       "atlas": "36 destinations · 108 creatures",
@@ -7251,6 +7257,201 @@
         "swarm": "Double strike",
         "arcane": "Wave resistant"
       }
+    },
+    "journey": {
+      "title": "Expedition plan",
+      "run": "Expedition {number}",
+      "floors": "Floor history",
+      "floor": "Floor {floor}",
+      "entrance": "Entrance",
+      "unreached": "Ahead",
+      "legacy": "Earlier progress",
+      "current": "This floor: {path}",
+      "standard": "Standard encounter",
+      "restored": "Recovered {hp} HP",
+      "choose": "Choose the next path",
+      "applies": "Floor {floor}: {path}",
+      "nextRun": "Next expedition, floor 2: {path}",
+      "persists": "Changes apply at floor entry, never immediately. Your preference carries into automatic retries.",
+      "name": {
+        "camp": "Rest stop",
+        "cache": "Supply trail",
+        "elite": "Elite hunt"
+      },
+      "effect": {
+        "camp": "Recover up to {hp}% HP on entry; −{gold} G per victory.",
+        "cache": "Enemy HP +{health}%; +{gold} G per victory.",
+        "elite": "Enemy HP +{health}%, damage +{damage}%; +{gold} G / +{xp} XP per victory."
+      },
+      "open": "Expedition plan (M), floor {floor} of 5",
+      "progress": "Floor {floor} / 5"
+    },
+    "quests": {
+      "title": "Traveler’s quests",
+      "forge": "Forge up to +{limit} · {count} claimed",
+      "pages": "Quest pages",
+      "name": {
+        "roots": "First roots",
+        "links": "Linked ideas",
+        "traces": "Source trail",
+        "builder": "Growing atlas",
+        "weaver": "Connected world",
+        "archive": "Wiki keeper",
+        "explorer": "First reading",
+        "reflection": "Honest reflection",
+        "scholar": "Thoughtful explorer",
+        "partner": "Working together",
+        "workshop": "Workshop partner",
+        "companions": "Steady collaboration"
+      },
+      "requirement": {
+        "concepts": "Record {goal} ontology concepts in the current folder",
+        "relations": "Record {goal} resolved connections in the current map",
+        "implementation": "Record implementation paths on {goal} concepts",
+        "wiki": "Build {goal} wiki pages",
+        "explored": "Explore {goal} knowledge cards",
+        "reflected": "Record discoveries, corrections, or uncertainty on {goal} distinct concepts",
+        "acp": "Inspect {goal} concepts with confirmed body saves through Agent Client Protocol (ACP)"
+      },
+      "claimed": "Claimed",
+      "progress": "Current {current} / {goal}",
+      "past": "Observed {count} when claimed",
+      "reward": "Guardian relics ×{count}",
+      "claim": "Claim reward",
+      "study": "Go to knowledge cards",
+      "openEvidence": "Current source: {title}",
+      "unavailable": "No current source is available. Earned rewards remain.",
+      "acp": {
+        "verified": "Completed writes and their current concepts are available in this folder.",
+        "pending": "ACP work is still pending.",
+        "unavailable": "No verifiable completion record is available for this folder. Older history may no longer be retained.",
+        "failed": "The last work did not complete. No reward was added.",
+        "rejected": "The request was declined and did not run. Ordinary quests remain available."
+      },
+      "boundary": "Game rewards record activity, not correctness or meaning acceptance.",
+      "alternative": "Six ordinary quests unlock every forge tier without ACP.",
+      "received": "{name} · Relics received",
+      "prepare": "Prepare ACP assistance",
+      "sendTitle": "Send this request to the agent",
+      "send": "Send this request to ACP",
+      "cancel": "Go back",
+      "request": "Read the existing ontology and evidence in the current Atlas folder, then propose genuinely needed body improvements. If evidence is insufficient, preserve uncertainty and do not write. Do not create arbitrary documents or approvals for quest rewards. Any actual write must follow the existing approval process.",
+      "notice": "Quests · {count} rewards ready",
+      "helpUnavailable": "No available ACP agent accepted the request. Nothing was sent.",
+      "agents": "Check agent connection",
+      "list": "Quest ledger",
+      "listProgress": "{current} / {goal}",
+      "loading": "Reading records…",
+      "collected": "Relics ×{count} collected"
+    },
+    "forge": {
+      "title": "Personal equipment forge",
+      "rank": {
+        "0": "Traveler gear",
+        "1": "Inscribed gear",
+        "2": "Guardian gear",
+        "3": "Radiant gear",
+        "4": "Astral gear"
+      },
+      "level": "+{level}",
+      "preview": {
+        "sword": "Attack {before} → {after}",
+        "armor": "Max HP {before} → {after}",
+        "library": "Victory XP bonus +{before} → +{after}"
+      },
+      "milestone": {
+        "sword": "Every +5: +2 attack · current equipment bonus +{bonus}",
+        "armor": "Every +5: +5 max HP · current equipment bonus +{bonus}",
+        "library": "Every +5: +0.25 wave multiplier · current equipment bonus +{bonus}"
+      },
+      "gate": "Claim {count}/{needed} quests for the next enhancement. Previously earned equipment remains.",
+      "quests": "Unlock tiers through quests",
+      "cost": "Enhance · {gold} G + {relics, plural, one {# relic} other {# relics}}",
+      "max": "Maximum tier",
+      "materials": "Relics {count}/{needed} · Earned from quests and guardians",
+      "guarantee": "Guaranteed success · No destruction",
+      "success": "Enhanced · +{level}",
+      "waveTier": "New tier · Wave ×{before} → ×{after}"
+    },
+    "source": {
+      "title": "Current saved document",
+      "pages": "Document pages",
+      "back": "Return to quest",
+      "outside": "Open in project (leaves game)",
+      "loading": "Reading the current document…",
+      "unavailable": "This source is unavailable. No older text is substituted.",
+      "changed": "This document changed. Read it after the folder refreshes, or open it in the project.",
+      "large": "Open this long document in the project.",
+      "empty": "This document has no body yet. Its business responsibility still needs evidence.",
+      "boundary": "These are the saved words, not a correctness or understanding assessment.",
+      "draftPending": "Save or clear your new note before leaving the game. You can return to the expedition with the draft intact."
+    },
+    "learning": {
+      "campTitle": "Study at camp",
+      "campBody": "Finish the current combat expedition and return to camp to begin a learning expedition. Earned rewards remain.",
+      "returnCamp": "End combat and return to camp",
+      "loading": "Reading current project evidence…",
+      "choose": "Choose a real project topic",
+      "intro": "Read its responsibility and boundary, trace a recorded dependency, then explain what you can and cannot conclude.",
+      "rewardRule": "Reading 5 XP and reflection 15 XP, once per concept. Uncertainty and corrections count equally.",
+      "hasLink": "A direct dependency is recorded",
+      "unknownLink": "Dependency evidence is missing",
+      "topicPages": "Learning topics",
+      "empty": "Record a concept with a responsibility to begin. The game does not invent business meaning.",
+      "retainedDraft": "Retained unsaved note. Clear it to choose another topic.",
+      "step": {
+        "read": "Responsibility",
+        "relation": "Find the relation",
+        "impact": "Review the change",
+        "reflect": "Your explanation"
+      },
+      "recordBoundary": "A recorded link is evidence to inspect, not proof of semantic truth or code impact.",
+      "changed": "The topic or its evidence changed. Read it again before continuing; your note is retained.",
+      "restart": "Read updated evidence",
+      "unavailable": "The current saved evidence could not be verified. Refresh the folder before continuing.",
+      "readTitle": "Read the recorded responsibility",
+      "passages": "Authored passages",
+      "purpose": "Purpose",
+      "boundary": "Boundary",
+      "missingPurpose": "No separate purpose paragraph was found. Keep that gap visible in your explanation.",
+      "missingBoundary": "No separate exclusion section was found. Open the full source before inferring its boundary.",
+      "passagePages": "Passage pages",
+      "readFull": "Read the full saved source",
+      "readNext": "Continue after reading",
+      "relationTitle": "Find the recorded dependency",
+      "relationQuestion": "What directly depends on {title}, according to the record?",
+      "missingLink": "No resolved direct dependency on {title} is recorded here. That does not establish that nothing depends on it.",
+      "relationChoices": "Recorded dependency candidates",
+      "matchesRecord": "This matches the recorded direct relation.",
+      "tryEvidence": "That choice does not match this declaration. Inspect the original direction.",
+      "checkWitness": "Compare the original declaration, not the names alone.",
+      "declaration": "Inspect the declaring document",
+      "next": "Continue",
+      "compare": "Compare with the record",
+      "keepUnknown": "Keep the evidence gap and continue",
+      "impactTitle": "Identify a review candidate",
+      "dependsOn": "records a dependency on",
+      "candidate": "If this topic changes, {title} is a recorded candidate to review.",
+      "reasonUnknown": "Inspect the declaring document for the reason and its limits. A reason is not inferred from the link.",
+      "declarationAt": "Declaration: {title}",
+      "missingImpact": "No direct review candidate is established by these records. Preserve the unknown; do not conclude “no impact.”",
+      "impactBoundary": "Only this direct declaration is shown. Runtime impact and transitive effects need further evidence.",
+      "toReflection": "Explain in your own words",
+      "reflectionTitle": "Leave a useful explanation",
+      "reflectionPrompt": "Describe the responsibility, the relation, and what remains uncertain.",
+      "note": "Your explanation",
+      "noteLimit": "{count} of 240 characters. Keep one concise explanation or question.",
+      "save": "Save exploration note",
+      "saved": "Exploration note saved",
+      "completedBoundary": "This records your activity and explanation; it does not certify understanding or approve meaning.",
+      "another": "Choose another topic",
+      "saveFailed": "The note was not saved. Your draft remains; retry after storage is available.",
+      "returnLesson": "Return to learning expedition",
+      "sourceShort": "Source",
+      "declarationShort": "Declaration",
+      "checking": "Checking current sources…",
+      "verifyFailed": "Not saved: evidence changed or unreadable. Your draft remains.",
+      "refreshEvidence": "Refresh and read the evidence again"
     }
   }
 }

@@ -65,3 +65,9 @@ describe('agent chat intent', () => {
     expect(consumeQueuedAgentChatIntent()).toBeUndefined();
   });
 });
+it('reports acceptance only when a live receiver explicitly accepts the request',()=>{
+ expect(requestAgentChat(null,'Inspect existing records.')).toBe(false);
+ const reject=subscribeAgentChatIntent(()=>false);expect(requestAgentChat(null,'Inspect existing records.')).toBe(false);reject();
+ const accept=subscribeAgentChatIntent(()=>true);expect(requestAgentChat(null,'Inspect existing records.')).toBe(true);accept();
+ expect(consumeQueuedAgentChatIntent()).toBeUndefined();
+});
