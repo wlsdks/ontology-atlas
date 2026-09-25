@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ConceptEgoGraph } from "./ConceptEgoGraph";
 import type { ConceptEgo } from "../model/build-concept-ego";
@@ -79,5 +79,34 @@ describe("ConceptEgoGraph — 그린 이웃 수", () => {
     const labels = screen.getAllByTestId("atlas-git-ego-label");
     expect(labels.map((el) => el.textContent)).toEqual(["이웃 2"]);
     expect(labels[0].style.paintOrder).toBe("stroke");
+  });
+
+  /*
+   * One neighbour can stand on two bearings: an element that belongs to a capability which also
+   * uses it (real vault, 2026-09-25). Keyed by id alone, the two marks shared one React key, and
+   * React warned that children may be duplicated or dropped across updates.
+   */
+  it("draws a neighbour that stands on two bearings once per bearing, each under its own key", () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const twice: ConceptEgo = {
+      ...ego(0),
+      total: 2,
+      neighbors: {
+        belongsTo: [{ id: "shared", label: "공유 이웃", kind: "capability" }],
+        contains: [],
+        dependsOn: [],
+        usedBy: [{ id: "shared", label: "공유 이웃", kind: "capability" }],
+      },
+    };
+    const { rerender } = render(
+      <ConceptEgoGraph ego={twice} bearingLabel={() => "관계"} moreLabel={(n) => `외 ${n}`} />,
+    );
+    rerender(
+      <ConceptEgoGraph ego={twice} bearingLabel={() => "관계"} moreLabel={(n) => `외 ${n}`} activeId="shared" />,
+    );
+    expect(screen.getAllByTestId("atlas-git-ego-mark")).toHaveLength(2);
+    const keyWarnings = errors.mock.calls.filter(([message]) => String(message).includes("same key"));
+    errors.mockRestore();
+    expect(keyWarnings).toHaveLength(0);
   });
 });

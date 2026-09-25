@@ -182,6 +182,7 @@ export function DocumentChangeReader({
   fallback,
   source,
   action = null,
+  heading = null,
 }: {
   t: Translator;
   vaultPath: string | null;
@@ -191,6 +192,13 @@ export function DocumentChangeReader({
   source?: string;
   /** This document's own door, drawn in the header beside its path and counts. */
   action?: React.ReactNode;
+  /**
+   * A section label drawn in place of the document's name, where a card right above already
+   * names the concept (a step's concepts lens): the reader then opens the way the sections around
+   * it do, instead of printing the name a second time. The document's own first heading, which
+   * repeats that name, stays hidden either way.
+   */
+  heading?: string | null;
 }) {
   const { entry, label, kind } = document;
   /*
@@ -285,15 +293,19 @@ export function DocumentChangeReader({
             box. Inside a step the step's own headline holds the display step, and a document
             is one part of it, so its name steps down to a panel title (review 2026-09-25:
             two 23px headlines on one screen, and the selection was neither). */}
-        <h2
-          className={cn(
-            "flex items-center gap-2 font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]",
-            source ? "text-title" : "text-display",
-          )}
-        >
-          {kind ? <OntologyMapKindGlyph kind={kind} size={source ? 14 : 16} /> : null}
-          <span className="min-w-0 truncate">{label}</span>
-        </h2>
+        {heading ? (
+          <h3 className="text-label text-[color:var(--color-text-tertiary)]">{heading}</h3>
+        ) : (
+          <h2
+            className={cn(
+              "flex items-center gap-2 font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]",
+              source ? "text-title" : "text-display",
+            )}
+          >
+            {kind ? <OntologyMapKindGlyph kind={kind} size={source ? 14 : 16} /> : null}
+            <span className="min-w-0 truncate">{label}</span>
+          </h2>
+        )}
         <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 font-mono text-caption text-[color:var(--color-text-quaternary)]">
           {/* The path, unless it is the name already shown above it — a file at the folder's
               root would otherwise read its own name twice, at two sizes, in two lines. */}

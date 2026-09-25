@@ -10,7 +10,7 @@ import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { controlClass } from "@/shared/ui";
 import { gitCommitDiff, gitHistory, type GitChangeEntry, type GitCommitInfo } from "@/shared/lib/tauri-git";
-import { parseUnifiedDiff } from "@/shared/lib/atlas-git-record";
+import { parseUnifiedDiff, type AtlasGitDiffFile } from "@/shared/lib/atlas-git-record";
 import { DocumentChangeReader, type ChangedDocument } from "./PendingDocumentPane";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { ConceptEgoCard } from "./ConceptEgoCard";
@@ -309,14 +309,7 @@ export function CommitDetail({
       kind: activeEntry.kind,
     };
   }, [activeEntry, concepts]);
-  const activeFallback = useMemo(() => {
-    if (!activeFile) return null;
-    return (
-      perFile.find((file) => file.path === activeFile) ??
-      perFile.find((file) => file.path.endsWith(activeFile) || activeFile.endsWith(file.path)) ??
-      null
-    );
-  }, [perFile, activeFile]);
+  const activeFallback = useMemo(() => patchOf(perFile, activeFile), [perFile, activeFile]);
   /*
    * The focused concept's own document in this commit. The concept lens is the default lens
    * (review, 2026-09-19: an action that lives only under "files" may never be found), so the
@@ -326,6 +319,49 @@ export function CommitDetail({
     if (!focused) return null;
     return files.find((file) => fileCarriesNode(file, focused)) ?? null;
   }, [files, focused]);
+  /*
+   * **What the step changed in that document, read in the concepts lens too** (real-bridge QA,
+   * 2026-09-25). The whole document with its changed lines marked in place is what this screen
+   * has that a git client does not, and the concepts lens is the default because it too exists
+   * only here — yet the lens drew the concept's card and its other steps and never the change
+   * itself; the same document's lines were one lens away. The reader the files lens uses sits
+   * between the card and the document's own steps, so the restore door still closes what was
+   * just read.
+   */
+  const focusedLabel = concepts.find((concept) => concept.id === focused)?.label ?? null;
+  const focusedDocument = useMemo<ChangedDocument | null>(
+    () =>
+      focusedFile && focusedLabel !== null
+        ? { entry: focusedFile, label: focusedLabel, kind: focusedFile.kind }
+        : null,
+    [focusedFile, focusedLabel],
+  );
+  const focusedFallback = useMemo(
+    () => patchOf(perFile, focusedFile?.path ?? null),
+    [perFile, focusedFile],
+  );
+  /*
+   * Keyed by hash and path, as in the files lens: a new concept is a new document, and a later
+   * commit patch replaces the fallback rather than layering on it. The card above already names
+   * the concept, so the reader opens with a section label like the card's and the document's
+   * other steps, rather than naming it a second time.
+   */
+  const conceptReader = focusedDocument ? (
+    <div
+      key={`${hash}:${focusedDocument.entry.path}:${diff === null ? "reading" : "read"}`}
+      data-testid="atlas-git-concept-diff"
+      className="flex min-h-0 flex-none flex-col"
+    >
+      <DocumentChangeReader
+        t={t}
+        vaultPath={vaultPath}
+        document={focusedDocument}
+        fallback={focusedFallback}
+        source={hash}
+        heading={t("changedLines")}
+      />
+    </div>
+  ) : null;
 
   /*
    * One door per document, drawn in one place in both lenses: on the heading of the
@@ -540,6 +576,7 @@ export function CommitDetail({
                 </Section>
               ) : null}
               {notInStep}
+              {conceptReader}
               {focusedFile ? (
                 <div className="px-5 pb-4">
                   {/* Keyed by document: a new document is a new timeline, never the last
@@ -931,4 +968,12 @@ function statusMark(status: string): string {
  * relative, so they differ at the front whenever the vault is a subfolder.
  * Exact match first, tail match second.
  */
+function patchOf(perFile: readonly AtlasGitDiffFile[], path: string | null): AtlasGitDiffFile | null {
+  if (!path) return null;
+  return (
+    perFile.find((file) => file.path === path) ??
+    perFile.find((file) => file.path.endsWith(path) || path.endsWith(file.path)) ??
+    null
+  );
+}
 

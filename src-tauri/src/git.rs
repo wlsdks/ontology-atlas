@@ -2771,4 +2771,82 @@ mod tests {
         assert_eq!(outcome.message.as_deref(), Some("push-detached-head"));
         assert_eq!(scratch.origin_main(), None);
     }
+
+    #[test]
+    fn a_registered_remote_is_told_apart_and_the_first_send_sets_the_upstream() {
+        // Registering a remote stores an address; only a first push creates the tracking ref that
+        // Fetch, Pull and Push work from. The screen needs to tell the two states apart, and a
+        // way to make that first push, or "Connect a remote" is a dead end (2026-09-25).
+        let base = std::env::temp_dir().join(format!("atlas-publish-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let dir = base.join("vault");
+        let remote = base.join("remote.git");
+        fs::create_dir_all(&dir).unwrap();
+        let git = |cwd: &Path, args: &[&str]| -> String {
+            let out = std::process::Command::new("git")
+                .args(args)
+                .current_dir(cwd)
+                .output()
+                .unwrap();
+            assert!(
+                out.status.success(),
+                "git {args:?}: {}",
+                String::from_utf8_lossy(&out.stderr)
+            );
+            String::from_utf8_lossy(&out.stdout).trim().to_string()
+        };
+        git(&base, &["init", "-q", "--bare", "remote.git"]);
+        git(&dir, &["init", "-q"]);
+        git(&dir, &["config", "user.email", "test@example.invalid"]);
+        git(&dir, &["config", "user.name", "atlas test"]);
+        git(&dir, &["config", "commit.gpgsign", "false"]);
+        fs::write(dir.join("orders.md"), "---\nkind: domain\n---\n# Orders\n").unwrap();
+        git(&dir, &["add", "orders.md"]);
+        git(&dir, &["commit", "-qm", "seed"]);
+        let vault = dir.to_string_lossy().into_owned();
+
+        let before = git_status(vault.clone()).unwrap();
+        assert!(!before.has_origin, "no remote is registered yet");
+        assert!(before.upstream.is_none());
+
+        git_set_remote(vault.clone(), remote.to_string_lossy().into_owned()).unwrap();
+        let saved = git_status(vault.clone()).unwrap();
+        assert!(saved.has_origin, "a registered origin reads as a remote");
+        assert!(
+            saved.upstream.is_none(),
+            "registering an address sends nothing"
+        );
+
+        // A plain push still refuses and names the command: the upstream is set only when asked.
+        let plain = git_snapshot(vault.clone(), None, Some(true), None).unwrap();
+        let refused = plain.push.expect("a push was asked for");
+        assert!(!refused.pushed);
+        assert!(refused.message.unwrap().starts_with("push-no-upstream"));
+
+        // Nothing to record, and the first send still goes.
+        let first = git_snapshot(vault.clone(), None, Some(true), Some(true)).unwrap();
+        assert!(!first.committed);
+        let sent = first.push.expect("a push was asked for");
+        assert!(sent.pushed, "{:?}", sent.message);
+        let after = git_status(vault.clone()).unwrap();
+        let branch = after.branch.clone().expect("a branch is checked out");
+        assert_eq!(
+            after.upstream.as_deref(),
+            Some(format!("origin/{branch}").as_str())
+        );
+        assert_eq!((after.ahead, after.behind), (Some(0), Some(0)));
+        assert_eq!(
+            git(&remote, &["rev-parse", &format!("refs/heads/{branch}")]),
+            git(&dir, &["rev-parse", "HEAD"]),
+            "the remote holds the step that was sent"
+        );
+
+        // A detached HEAD has no branch to send, so the first send is refused by name.
+        git(&dir, &["checkout", "-q", "--detach"]);
+        let detached = git_snapshot(vault, None, Some(true), Some(true)).unwrap();
+        let refused = detached.push.expect("a push was asked for");
+        assert!(!refused.pushed);
+        assert!(refused.message.unwrap().starts_with("push-detached-head"));
+        let _ = fs::remove_dir_all(&base);
+    }
 }

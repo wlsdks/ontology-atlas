@@ -8,8 +8,8 @@ import { type NativeErrorLookup, nativeErrorMessage } from './native-error';
  *
  * - `git_status(vault_path)` → `GitStatusResult` — outside a repo it returns
  *   `initialized: false`, not an error
- * - `git_snapshot(vault_path, message?, push?)` → `GitSnapshotResult` — with no
- *   changes, `committed: false` / `reason: "no-changes"`
+ * - `git_snapshot(vault_path, message?, push?, set_upstream?)` → `GitSnapshotResult` —
+ *   with no changes, `committed: false` / `reason: "no-changes"`
  * - `git_history(vault_path, limit?, path?)` → `GitCommitInfo[]` — empty array when
  *   there are no commits
  * - `git_diff(vault_path)` → `GitDiffResult`

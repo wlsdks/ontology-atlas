@@ -106,6 +106,12 @@ export interface DesktopRuntimeOptions {
    */
   scopeHistoryByPath?: boolean;
   /**
+   * Fields laid over the `git_status` answer, e.g. a saved origin that was never sent
+   * (`{ upstream: null, ahead: null, behind: null, hasOrigin: true }`). Without it every spec
+   * keeps the tracked `origin/main` it always had.
+   */
+  gitStatus?: Record<string, unknown>;
+  /**
    * The models tab's native answers (2026-09-25): Keychain state, local runners by address, the
    * experimental Jev bridge, and the sent log. Without it only `secret_status` answers (no key),
    * as before. Every stubbed transfer appends a line to `.ontology-atlas/llm-audit.jsonl` in the
@@ -154,6 +160,7 @@ export async function installDesktopRailRuntime(
       diff: string;
       documentDiffs?: Record<string, string>;
       scopeHistoryByPath?: boolean;
+      gitStatus?: Record<string, unknown>;
       runtimeResponses?: { fast: unknown[]; probed: unknown[] };
       gitPathChanges?: Record<string, { exists: boolean; isDir: boolean; lastChangedAt: string | null }>;
       models?: {
@@ -205,6 +212,7 @@ export async function installDesktopRailRuntime(
         ahead: 0,
         behind: 0,
         stagedOutsideVault: [],
+        ...(input.gitStatus ?? {}),
       };
 
       const answer = (command: string, args: Record<string, unknown>): Promise<unknown> | null => {
@@ -460,6 +468,7 @@ export async function installDesktopRailRuntime(
       diff: options.diff ?? DIFF,
       documentDiffs: options.documentDiffs,
       scopeHistoryByPath: options.scopeHistoryByPath,
+      gitStatus: options.gitStatus,
       runtimeResponses,
       gitPathChanges: options.gitPathChanges,
       models: options.models,
