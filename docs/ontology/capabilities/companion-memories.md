@@ -38,6 +38,8 @@ A person develops a project and records its ontology and wiki, then sees those r
 - Existing once-per-UID reading and reflection rewards remain 5 and 15 XP. Corrections and uncertainty receive equal credit, and repeated edits grant no extra XP. The draft is scoped to the project; no curriculum store or mastery score is introduced.
 - Recorded direct dependencies are review candidates, not verified runtime effects. Association, containment, missing edges, and transitive paths do not establish impact. Completing a lesson records activity and a personal explanation, not understanding or accepted meaning.
 
+- Saved field notes open directly from marked learning topics with their original recording date and reflection kind. Viewing a note triggers no source read or reward write. An open historical note remains readable if its current source disappears, without inventing a replacement destination. Explicit re-exploration reads current evidence again and retains the prior explanation; unfinished edits take priority over stored text. The existing once-per-UID XP contract remains unchanged.
+
 ## Persistence and motion contract
 
 - Project-UID-scoped device-local saves, deterministic automatic combat, and at most four hours of once-consumed away progress. Catch-up uses previously saved power before applying new project observations. Receipts follow successful persistence; failures preserve the prior save.
