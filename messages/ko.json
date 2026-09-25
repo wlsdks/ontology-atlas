@@ -6111,6 +6111,7 @@
       "declined": "전에 넘긴 파일 {count, number}개는 숨겼어요",
       "forgetDeclined": "다시 보기",
       "cancel": "취소",
+      "close": "닫기",
       "add": "{count, plural, =0 {고른 것 넣기} other {# 개 넣기}}",
       "webGetApp": "앱 받기",
       "emptyAllDeclined": "여기 남은 것은 전에 넘긴 {count, number}개뿐이에요."
@@ -6537,7 +6538,8 @@
         "held": "바뀐 것 없는 실행 {count, number}번",
         "refused": "요청 {count, number}개 거부됨",
         "failed": "끝내지 못한 실행 {count, number}번",
-        "openPage": "{page} 위키에서 열기"
+        "openPage": "{page} 위키에서 열기",
+        "showRefused": "기록에서 보기"
       },
       "ledger": {
         "title": "실행 기록",

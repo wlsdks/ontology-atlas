@@ -230,3 +230,39 @@ describe("LibraryStatusStrip — the next file is the home's press", () => {
     expect(screen.getByTestId("library-status-strip").textContent).toContain("서식 벗어남 1개");
   });
 });
+
+/**
+ * **One file named by the lead clause is not counted again beside it** (2026-09-25).
+ *
+ * The page header read *Compile next: new-uncompiled-notes.md · 1 not compiled*, the same
+ * single file twice, while the home strip a press away named it once.
+ */
+describe("LibraryStatusStrip — the named file is said once", () => {
+  const withNotCompiled = (notCompiled: number) => {
+    const sources = [
+      { path: "sources/new-uncompiled-notes.md", state: "not-compiled" },
+      ...Array.from({ length: notCompiled - 1 }, (_, i) => ({ path: `sources/other-${i}.md`, state: "not-compiled" })),
+      { path: "sources/done.md", state: "compiled" },
+    ];
+    const value = {
+      ...model({ "wiki/a": [] }, { needsCompileCount: notCompiled, notCompiledCount: notCompiled }),
+      sources,
+    } as unknown as LibraryUiModel;
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <Harness value={value} />
+      </NextIntlClientProvider>,
+    );
+    return screen.getByTestId("library-status-strip").textContent ?? "";
+  };
+
+  it("drops the not-compiled count when it is the one file already named", () => {
+    const text = withNotCompiled(1);
+    expect(text).toContain("정리 다음: new-uncompiled-notes.md");
+    expect(text).not.toContain("정리 전 1개");
+  });
+
+  it("keeps the count when it says more than the name", () => {
+    expect(withNotCompiled(3)).toContain("정리 전 3개");
+  });
+});
