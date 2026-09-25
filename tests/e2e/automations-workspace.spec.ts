@@ -122,6 +122,53 @@ test('new schedules start fresh after cancellation and save, including rapid reo
   await page.keyboard.press('Escape');
 });
 
+test('a pass that had no agent says why in its run history, on the history column start line', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true });
+  // The local check's newest pass found a stale page, and no agent was ready to redraft it.
+  await page.addInitScript(() => {
+    const files = (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles;
+    const path = '.ontology-atlas/rounds-ledger.jsonl';
+    const endedAt = new Date().toISOString();
+    files[path] += `${JSON.stringify({ v: 1, id: 'p-no-agent', roundId: 'r-consistency', roundName: 'Pages still match',
+      kind: 'consistency', startedAt: endedAt, endedAt, outcome: 'stale', checked: 4, stale: ['wiki/design-system'],
+      written: [], refused: [], called: [], agentTurns: 0, summary: '', trigger: 'manual', note: 'no-agent' })}\n`;
+  });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/automations/?guides=off&kind=documents');
+  const report = page.getByTestId('automations-last-run').filter({ visible: true });
+  await expect(report).toContainText('Checked 4 documents');
+  // The Library ledger's own sentence for the same stored fact.
+  const note = report.locator('[data-run-note="no-agent"]');
+  await expect(note).toHaveText('No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again.');
+
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 800 });
+    const row = page.locator('li', { has: page.getByTestId('automation-r-consistency') });
+    const geometry = await row.evaluate((li) => {
+      const noteEl = li.querySelector('[data-run-note="no-agent"]') as HTMLElement;
+      const caption = li.querySelector('[data-testid="automations-history"] h3') as HTMLElement;
+      const actions = (li.querySelector('[data-testid="automations-run-now"]') as HTMLElement).parentElement as HTMLElement;
+      const box = noteEl.getBoundingClientRect();
+      const hits = [0.1, 0.5, 0.9].map((fx) => {
+        const hit = document.elementFromPoint(box.left + box.width * fx, box.top + 6);
+        return !!hit && (hit === noteEl || noteEl.contains(hit));
+      });
+      return {
+        startOffset: Math.abs(box.left - caption.getBoundingClientRect().left),
+        gapToActions: actions.getBoundingClientRect().top - box.bottom,
+        overhang: box.right - li.getBoundingClientRect().right,
+        hits,
+      };
+    });
+    expect(geometry.startOffset, `${width}: one text start line`).toBeLessThanOrEqual(0.5);
+    expect(geometry.gapToActions, `${width}: the note ends above the actions`).toBeGreaterThanOrEqual(0);
+    expect(geometry.overhang, `${width}: the note stays inside its card`).toBeLessThanOrEqual(0);
+    expect(geometry.hits, `${width}: nothing covers the note`).toEqual([true, true, true]);
+  }
+});
+
 for (const lane of ['documents', 'ontology'] as const) {
   test(`${lane} save blocks dismissal while pending and recovers from a disk failure`, async ({ page }) => {
     await installDesktopBridge(page, { seedRounds: true });

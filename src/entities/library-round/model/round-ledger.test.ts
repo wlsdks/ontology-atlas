@@ -90,6 +90,17 @@ describe('round ledger', () => {
     expect(entry?.outcome).toBe('reviewed');
   });
 
+  it("reads the old builds' English filler on an ontology pass as no summary, and keeps the agent's own words", () => {
+    // Written through 2026-09-25 for a pass that never had an agent: "Failed" above a sentence claiming completion.
+    const filler = 'Read-only refinement review completed.';
+    const legacy = parseRoundPassEntry(JSON.stringify(pass({ kind: 'ontology', outcome: 'failed', note: 'no-agent', summary: filler })));
+    expect(legacy?.summary).toBe('');
+    expect(legacy?.note).toBe('no-agent');
+    expect(parseRoundPassEntry(JSON.stringify(pass({ kind: 'ontology', outcome: 'reviewed', summary: 'One binding gap' })))?.summary).toBe('One binding gap');
+    // Only the ontology lane ever wrote that filler; another kind's summary is left as written.
+    expect(parseRoundPassEntry(JSON.stringify(pass({ kind: 'service', summary: filler })))?.summary).toBe(filler);
+  });
+
   it('rejects an entry with an outcome it does not know', () => {
     expect(parseRoundPassEntry(JSON.stringify(pass({ outcome: 'exploded' as RoundPassEntry['outcome'] })))).toBeNull();
   });

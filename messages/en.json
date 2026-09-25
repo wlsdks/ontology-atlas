@@ -5763,6 +5763,8 @@
     "historyTitle": "Run history",
     "noRuns": "No pass has run yet.",
     "noSummary": "The pass finished without a stored summary.",
+    "failedNoResult": "The agent turn did not finish, so this run left no result.",
+    "noAgentReview": "No coding agent was ready on this Mac, so this review did not run. Open Agents to sign in, then run it again.",
     "refused": "Refused: {tools}",
     "called": "Read: {tools}",
     "saving": "Scheduling…",
