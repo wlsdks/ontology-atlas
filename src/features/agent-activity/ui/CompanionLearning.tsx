@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {useTranslations} from 'next-intl';
 import {useLocalVault} from '@/entities/vault-session';
 import {Button,RowButton,Textarea} from '@/shared/ui';
@@ -31,7 +31,7 @@ export function CompanionLearning({topics,draft,onDraft,growth,record,revise,dis
  },[camp,ready,topic,topicHandle,originHandle,doc?.mtime,doc?.frontmatter,origin?.mtime,origin?.frontmatter,vault.handle]);
  const current=read?.signature===topic?.signature&&read?.root===vault.handle?read:null;
  // Handle objects can be renewed without changing the saved evidence or cancelling its verified save.
- useEffect(()=>{const counter=request.current;const epoch=++counter.epoch;queueMicrotask(()=>{if(counter.epoch===epoch)setSaving(false);});return()=>{counter.epoch++;};},[topic?.signature,vault.handle,ready,current?.error]);
+ useLayoutEffect(()=>{const counter=request.current;const epoch=++counter.epoch;queueMicrotask(()=>{if(counter.epoch===epoch)setSaving(false);});return()=>{counter.epoch++;};},[topic?.signature,vault.handle,ready,current?.error]);
  const changed=Boolean(topic&&draft.signature&&draft.signature!==topic.signature);const canAdvance=Boolean(ready&&topic&&current&&!current.error&&!changed&&!disabled);
  const text=useMemo(()=>learningPassage(current?.body??'',passage),[current?.body,passage]);const pages=useMemo(()=>companionSourcePages(text,compact?80:120),[text,compact]);const page=Math.min(readPage,pages.length-1);
  const unsaved=Boolean(draft.note.trim())&&!growth.entries.some(entry=>entry.kind==='reflected'&&entry.target.uid===draft.uid&&entry.note===draft.note.trim());
