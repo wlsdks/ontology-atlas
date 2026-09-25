@@ -27,6 +27,55 @@ it('keeps another project isolated and stops the simulation timer on inactive su
  expect(parseCompanionGame(localStorage.getItem(GAME_PREFIX+'other'))?.gold).toBe(50);
  h.rerender({active:false,project:'other'});expect(h.result.current.game.gold).toBe(50);expect(localStorage.getItem('ontology-atlas:companion-game:v1:other')).toBe(JSON.stringify(game));
 });
+it('freezes a menu without spending turns, then resumes from the unfinished turn',()=>{
+ const started=actCompanionGame({...newCompanionGame(61000),knowledge:5},{type:'depart',area},61000);
+ localStorage.setItem(GAME_PREFIX+'project',JSON.stringify(started));
+ const h=renderHook(({paused})=>useCompanionGame('project',5,true,'area',undefined,null,paused),{initialProps:{paused:false}});
+ act(()=>vi.advanceTimersByTime(TURN_MS));
+ const before=h.result.current.game;
+ h.rerender({paused:true});
+ act(()=>vi.advanceTimersByTime(TURN_MS*60));
+ expect(h.result.current.game).toEqual(before);
+ act(()=>expect(h.result.current.act({type:'plan-path',path:'elite',run:before.run.number,floor:1})).toBe(true));
+ expect(h.result.current.game).toMatchObject({turn:before.turn,hp:before.hp,enemyHp:before.enemyHp,gold:before.gold});
+ h.rerender({paused:false});
+ expect(h.result.current.game.turn).toBe(before.turn);
+ act(()=>vi.advanceTimersByTime(TURN_MS-1));
+ expect(h.result.current.game.turn).toBe(before.turn);
+ act(()=>vi.advanceTimersByTime(1));
+ expect(h.result.current.game.turn).toBe(before.turn+1);
+ h.unmount();
+});
+it('does not catch up a menu after a failed resume save, but still catches up after closing the game',()=>{
+ const started=actCompanionGame({...newCompanionGame(61000),knowledge:5},{type:'depart',area},61000);
+ localStorage.setItem(GAME_PREFIX+'project',JSON.stringify(started));
+ const h=renderHook(({paused})=>useCompanionGame('project',5,true,'area',undefined,null,paused),{initialProps:{paused:false}});
+ h.rerender({paused:true});
+ const before=h.result.current.game;
+ act(()=>vi.advanceTimersByTime(TURN_MS*5));
+ const fail=vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw Error('quota');});
+ h.rerender({paused:false});
+ expect(h.result.current.failed).toBe(true);
+ expect(h.result.current.game).toEqual(before);
+ act(()=>vi.advanceTimersByTime(TURN_MS*2));
+ expect(h.result.current.game).toEqual(before);
+ fail.mockRestore();
+ act(()=>vi.advanceTimersByTime(TURN_MS));
+ expect(h.result.current.failed).toBe(false);
+ expect(h.result.current.game.turn).toBe(before.turn);
+ h.unmount();
+ act(()=>vi.advanceTimersByTime(TURN_MS*3));
+ const reopened=renderHook(()=>useCompanionGame('project',5,true,'area'));
+ expect(reopened.result.current.game.turn).toBeGreaterThan(before.turn);
+});
+it('does not move a paused save clock backwards when system time rewinds',()=>{
+ const started=actCompanionGame({...newCompanionGame(61000),knowledge:5},{type:'depart',area},61000);
+ localStorage.setItem(GAME_PREFIX+'project',JSON.stringify(started));
+ const h=renderHook(({paused})=>useCompanionGame('project',5,true,'area',undefined,null,paused),{initialProps:{paused:false}});
+ h.rerender({paused:true});vi.setSystemTime(60000);h.rerender({paused:false});
+ expect(h.result.current.game.lastAt).toBeGreaterThanOrEqual(started.lastAt);
+ expect(h.result.current.game.turn).toBe(started.turn);
+});
 
 it('applies construction once after old-power catch-up and announces it only after persistence',()=>{
  const current=actCompanionGame({...newCompanionGame(1000),knowledge:5},{type:'depart',area},1000);localStorage.setItem(GAME_PREFIX+'project',JSON.stringify(current));

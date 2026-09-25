@@ -90,6 +90,23 @@ test('combat cues expose the dodge window, stop behind panels, and respect reduc
  await page.keyboard.press('Space');await expect(world.getByTestId('companion-dodge-telegraph')).toHaveCount(0);
 });
 
+test('opening an expedition panel holds the saved battle until it closes',async({page})=>{
+ await page.clock.install({time:new Date('2026-09-26T00:00:00Z')});
+ await openProject(page);const dialog=await home(page);
+ await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();
+ const state=()=>page.evaluate(()=>{const key=Object.keys(localStorage).find(value=>value.startsWith('ontology-atlas:companion-game:v1:'))!;return JSON.parse(localStorage.getItem(key)!);});
+ await page.keyboard.press('i');await expect(dialog.getByText('Battle paused')).toBeVisible();
+ const frozen=await state();await page.clock.runFor(10000);
+ expect(await state()).toMatchObject({turn:frozen.turn,hp:frozen.hp,enemyHp:frozen.enemyHp,gold:frozen.gold});
+ await page.keyboard.press('Escape');await expect(dialog.getByTestId('companion-overlay')).toBeHidden();
+ expect((await state()).turn).toBe(frozen.turn);
+ // Surface exit can finish partway through the next scheduled tick. The hook
+ // test covers the exact fractional turn; this rendered path proves resumption.
+ await page.clock.runFor(3000);const resumed=await state();
+ expect(resumed.turn).toBeGreaterThan(frozen.turn);
+ expect(resumed.turn).toBeLessThanOrEqual(frozen.turn+3);
+});
+
 test('clicking a creature spends one ready wave and shows its remaining cooldown',async({page})=>{
  await openProject(page,'en',false);const dialog=await home(page);await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();
  await page.clock.pauseAt(new Date());

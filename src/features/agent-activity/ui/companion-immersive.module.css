@@ -105,11 +105,15 @@
 .worldViewport[data-mode='expedition'] .worldEnemy{transform:translate(-50%,-95%)}
 .worldViewport[data-mode='expedition'] .worldEnemy{pointer-events:auto}
 .worldEnemy[data-targetable='true']{cursor:crosshair}
-.worldEnemy[data-targetable='true']::after{content:'';position:absolute;left:-10px;right:-10px;bottom:-9px;height:28px;border:2px solid var(--color-indigo-accent);border-radius:50%;box-shadow:0 0 0 2px var(--color-canvas),inset 0 0 0 2px var(--color-text-primary);pointer-events:none;opacity:.85;transition:opacity var(--motion-fast)}
-.worldEnemy[data-targetable='true']:hover::after{opacity:1}
+.worldEnemy[data-targetable='true']::after{content:'';position:absolute;left:50%;top:-16px;width:24px;height:14px;transform:translateX(-50%);background:var(--color-amber-source-text-a95);clip-path:polygon(0 0,50% 55%,100% 0,100% 42%,50% 100%,0 42%);filter:drop-shadow(0 2px 1px var(--color-canvas));pointer-events:none;opacity:.72;transition:opacity var(--motion-fast),translate var(--motion-fast)}
+.worldEnemy[data-targetable='true']:hover::after{opacity:1;translate:0 -3px}
 .worldViewport[data-mode='expedition'] .worldEnemy > .creature{width:130px;height:130px}
+.worldViewport[data-mode='expedition'] .worldEnemy > .creature[data-grove-v2='true']{width:150px;height:150px}
+.worldViewport[data-mode='expedition'] .worldEnemy > .creature[data-grove-guardian='true']{width:170px;height:170px}
 .worldViewport[data-mode='expedition'] .worldEnemy::before{content:'';position:absolute;left:50%;bottom:0;width:72px;height:14px;border-radius:50%;background:var(--overlay-scrim);opacity:.55;transform:translateX(-50%)}
 .creature{display:inline-block;flex-shrink:0;width:56px;height:56px;background-size:600% 300%;background-repeat:no-repeat;image-rendering:pixelated;transform-origin:50% 100%}
+.groveCreature{position:absolute;inset:0;background-size:300% 200%;background-repeat:no-repeat;image-rendering:pixelated;clip-path:inset(0 8% 0 8%)}
+.guardianCreature{position:absolute;inset:0;background-size:contain;background-position:center bottom;background-repeat:no-repeat;image-rendering:pixelated}
 .creature[data-large='true']{width:100px;height:100px}
 .creature[data-unknown='true']{filter:brightness(.1);opacity:.65}
 .worldEnemy > .creature{animation:creatureBreathe 1.8s steps(4,end) infinite}
@@ -217,6 +221,7 @@
 .overlayPanel{border:16px solid transparent;border-image-slice:96;border-image-repeat:stretch;padding:10px;background:linear-gradient(115deg,var(--color-indigo-a12),transparent 50%),var(--color-canvas);box-shadow:var(--shadow-elevation-3);gap:12px}
 .overlayHeader{border-bottom:1px solid var(--color-amber-source-a30);padding-bottom:8px}
 .overlayHeader h3{font-size:var(--text-display);line-height:var(--leading-display);color:var(--color-text-primary)}
+.combatPaused{margin-left:auto;white-space:nowrap;color:var(--color-amber-source-text-a95);font-size:var(--text-label);line-height:var(--leading-label);font-family:var(--font-mono)}
 .overlayPanel[data-panel='quests'],.overlayPanel[data-panel='map']{width:min(62rem,calc(100% - 32px))}
 .overlayPanel button{border-radius:var(--radius-micro)}
 .overlayPanel button:focus-visible{outline:2px solid var(--color-indigo-accent);outline-offset:2px}
@@ -429,9 +434,10 @@
 @keyframes creatureWindup{0%{scale:1 1}35%{scale:1.08 .93}76%{scale:.94 1.07}100%{scale:1 1}}
 .worldEnemy[data-phase='attack'],.worldEnemy[data-phase='attack'] .damage{animation-delay:var(--motion-settle)}
 @keyframes creatureStrike{0%,100%{translate:0 0;scale:1}36%{translate:-38px 0;scale:1.1}68%{translate:-18px 0;scale:1.04}}
-.dodgeTelegraph{position:absolute;left:-60px;top:-23px;z-index:2;width:120px;height:34px;border:3px solid var(--color-danger-text-strong);border-radius:50%;box-shadow:0 0 0 2px var(--color-canvas),inset 0 0 0 2px var(--color-text-primary);pointer-events:none;animation:dodgeWarning var(--companion-turn-ms) steps(8,end) both}
-.dodgeTelegraph::after{content:'';position:absolute;inset:5px;border:2px solid var(--color-danger-a50);border-radius:50%}
-@keyframes dodgeWarning{0%{scale:1.2;opacity:.4}75%{scale:.9;opacity:1}100%{scale:.75;opacity:1}}
+.dodgeTelegraph{position:absolute;left:-10px;top:-151px;z-index:4;width:20px;height:30px;pointer-events:none;filter:drop-shadow(0 2px 1px var(--color-canvas));animation:dodgeWarning var(--companion-turn-ms) steps(3,end) both}
+.dodgeTelegraph::before{content:'';position:absolute;left:7px;top:0;width:6px;height:19px;background:var(--color-danger-text-strong);clip-path:polygon(0 0,100% 0,80% 100%,20% 100%)}
+.dodgeTelegraph::after{content:'';position:absolute;left:6px;bottom:0;width:8px;height:8px;background:var(--color-danger-text-strong);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+@keyframes dodgeWarning{0%,100%{translate:0 0;opacity:1}50%{translate:0 -3px;opacity:.7}}
 .worldActor[data-phase='hurt'] .damage{color:var(--color-danger-text-strong)}
 .gameRoot[data-incoming='true'] .actionBar > button:first-child:not(:disabled){border-color:var(--color-danger-text-strong);box-shadow:inset 0 0 0 1px var(--color-danger-a50)}
 .gameRoot[data-incoming='true'] .actionBar > button:first-child:not(:disabled) > .itemArt{animation:dodgeIcon calc(var(--motion-settle)*3) ease-in-out infinite alternate}

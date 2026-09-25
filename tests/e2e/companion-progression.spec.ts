@@ -85,7 +85,11 @@ for(const locale of ['en','ko'])test(`saved source paging remains reachable at n
 
 test('the next path applies at the floor boundary while current-floor effects remain fixed',async({page})=>{
  const dialog=await boot(page);await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();await dialog.getByTestId('companion-journey-progress').click();const journey=dialog.getByTestId('companion-journey');await expect(journey).toBeVisible();await journey.getByRole('radio',{name:/Supply trail/}).click();expect((await state(page)).run.plan).toBe('cache');
+ await expect(dialog.getByTestId('companion-current-path')).toContainText('Standard encounter');
+ await page.keyboard.press('Escape');await expect(dialog.getByTestId('companion-overlay')).toBeHidden();
  await page.evaluate(()=>{const key=Object.keys(localStorage).find(key=>key.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);Object.assign(game,{encounter:2,phase:'loot',enemyHp:0,lastAt:Date.now()-1500});localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});
+ await expect.poll(async()=>(await state(page)).encounter).toBe(3);
+ await dialog.getByTestId('companion-journey-progress').click();await expect(journey).toBeVisible();
  await expect(dialog.getByTestId('companion-current-path')).toContainText('Supply trail');await journey.getByRole('radio',{name:/Elite hunt/}).click();await expect(dialog.getByTestId('companion-current-path')).toContainText('Supply trail');await expect(dialog.getByTestId('companion-path-timing')).toContainText('Floor 3: Elite hunt');await dialog.getByRole('button',{name:'Return to camp',exact:true}).click();await expect(dialog.getByTestId('companion-world')).toHaveAttribute('data-mode','camp');
 });
 

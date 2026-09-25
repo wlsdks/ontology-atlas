@@ -45,8 +45,8 @@ const content=[
     "ko": "도토리 젤리"
    },
    {
-    "en": "Inkcap mushroom imp",
-    "ko": "먹물버섯 꼬마"
+    "en": "Inkcap stalker",
+    "ko": "먹물갓 추적자"
    },
    {
     "en": "Fern shelled beetle",
