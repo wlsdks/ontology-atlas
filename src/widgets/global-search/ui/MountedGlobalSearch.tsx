@@ -40,6 +40,8 @@ export interface MountedGlobalSearchProps {
    * with the dialog instead.
    */
   bindHotkey?: boolean;
+  /** The map's own mount: there the dialog may speak of "this map" (`GlobalSearch`'s `onMap`). */
+  onMap?: boolean;
 }
 
 /**
@@ -55,6 +57,7 @@ export function MountedGlobalSearch({
   open: controlledOpen,
   onOpenChange,
   bindHotkey = false,
+  onMap = false,
 }: MountedGlobalSearchProps) {
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -78,6 +81,7 @@ export function MountedGlobalSearch({
   return (
     <GlobalSearch
       onSelectionFocus={onSelectionFocus}
+      onMap={onMap}
       open={open}
       onOpenChange={setOpen}
       nodes={nodes}

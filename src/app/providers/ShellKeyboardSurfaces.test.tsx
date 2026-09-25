@@ -3,11 +3,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useClaimShellKey, type ShellKey } from "@/shared/lib/shell-key-claims";
 
-const mocks = vi.hoisted(() => ({ blocking: false }));
+const mocks = vi.hoisted(() => ({ blocking: false, realGuard: false }));
 
-vi.mock("@/shared/lib/use-destination-shortcuts", () => ({
-  blockingSurfaceOpen: () => mocks.blocking,
-}));
+vi.mock("@/shared/lib/use-destination-shortcuts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/shared/lib/use-destination-shortcuts")>();
+  return {
+    blockingSurfaceOpen: () => (mocks.realGuard ? actual.blockingSurfaceOpen() : mocks.blocking),
+  };
+});
 
 vi.mock("@/widgets/shortcut-sheet", () => ({
   ShortcutSheet: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
@@ -41,7 +44,21 @@ function ClaimingScreen({ keys }: { keys: ShellKey[] }) {
 
 afterEach(() => {
   mocks.blocking = false;
+  mocks.realGuard = false;
+  document.querySelectorAll("[data-test-dialog]").forEach((el) => el.remove());
 });
+
+/** Another screen's dialog, drawn and laid out; `leaving` marks it the way its exit frames do. */
+function otherDialog({ leaving }: { leaving: boolean }) {
+  const el = document.createElement("div");
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-modal", "true");
+  el.setAttribute("data-test-dialog", "");
+  el.getClientRects = (() => [{}] as unknown as DOMRectList) as typeof el.getClientRects;
+  // `useExitLockout` pins this on the first frame of a framer exit (the `Dialog` primitive).
+  if (leaving) el.style.pointerEvents = "none";
+  document.body.append(el);
+}
 
 /**
  * 2026-09-25, against a real folder: `?` and ⌘K did nothing on Library, Git, Automations, Agents
@@ -61,6 +78,26 @@ describe("ShellKeyboardSurfaces", () => {
 
   it("does not stack the sheet over another open dialog", () => {
     mocks.blocking = true;
+    render(<ShellKeyboardSurfaces disabled={false} />);
+    press({ key: "?", code: "Slash", shiftKey: true });
+    expect(screen.queryByTestId("shell-sheet")).toBeNull();
+  });
+
+  /*
+   * 2026-09-26, real folder: `?` right after Esc closed the Automations sheet opened nothing,
+   * because the guard still counted that sheet during its exit motion.
+   */
+  it("opens the sheet at once while another dialog is only leaving", async () => {
+    mocks.realGuard = true;
+    otherDialog({ leaving: true });
+    render(<ShellKeyboardSurfaces disabled={false} />);
+    press({ key: "?", code: "Slash", shiftKey: true });
+    expect(await screen.findByTestId("shell-sheet")).toBeInTheDocument();
+  });
+
+  it("still keeps the sheet off a dialog that is really open", () => {
+    mocks.realGuard = true;
+    otherDialog({ leaving: false });
     render(<ShellKeyboardSurfaces disabled={false} />);
     press({ key: "?", code: "Slash", shiftKey: true });
     expect(screen.queryByTestId("shell-sheet")).toBeNull();
