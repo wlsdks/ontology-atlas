@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Moon, Play } from "lucide-react";
+import { FileText, Moon, Play, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
@@ -49,6 +49,36 @@ const ENTER = "motion-safe:animate-[atlasStatusIn_var(--motion-settle)_var(--mot
 export function pageName(path: string): string {
   return path.replace(/^wiki\//, "").replace(/\.md$/, "");
 }
+/**
+ * **One chip for every press a pass names** — the morning card and the ledger alike.
+ *
+ * The morning card drew a stale page as bare text and a redraft with a document glyph: two
+ * shapes for one press ("open this page in Wiki"), measured side by side on 2026-09-25. Every
+ * page press is now this chip, the same glyph, type step and padding; the line beside it
+ * already carries whether the page went stale or was rewritten. A press that goes somewhere
+ * other than a page (the refused line → its ledger entry) passes its own glyph.
+ */
+export function RoundChip({
+  label,
+  ariaLabel,
+  onClick,
+  icon: Icon = FileText,
+  testId,
+}: {
+  label: string;
+  ariaLabel?: string;
+  onClick: () => void;
+  icon?: LucideIcon;
+  testId?: string;
+}) {
+  return (
+    <Chip size="sm" onClick={onClick} aria-label={ariaLabel} data-testid={testId} data-round-chip="">
+      <Icon size={ICON_SIZE.sm} aria-hidden />
+      {label}
+    </Chip>
+  );
+}
+
 const pagesWritten = (entry: RoundPassEntry) => entry.written.filter((path) => path.startsWith("wiki/"));
 /** A page that went stale and was redrafted in the same pass is one chip, the redraft. */
 const staleNotRedrafted = (entry: RoundPassEntry) => {
@@ -189,8 +219,10 @@ export function RoundsLedger({
             {day.entries.map((entry) => (
               <li
                 key={entry.id}
+                id={`library-rounds-pass-${entry.id}`}
                 data-testid={`library-rounds-pass-${entry.id}`}
                 data-outcome={entry.outcome}
+                tabIndex={-1}
                 className={cn("grid grid-cols-[3.5rem_1rem_minmax(0,1fr)] items-start gap-x-3", arrived.has(entry.id) && ENTER)}
               >
                 {entry.outcome === "asleep" ? (
@@ -256,21 +288,12 @@ export function RoundsLedger({
                       {entry.stale.length > 0 || pagesWritten(entry).length > 0 ? (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {staleNotRedrafted(entry).map((slug) => (
-                            <Chip key={`stale-${slug}`} size="sm" onClick={() => onOpenPage(slug)} aria-label={t("since.openPage", { page: pageTitle(slug) })}>
-                              <span className={cn("rounded-full", DOT.stale)} aria-hidden />
-                              {pageTitle(slug)}
-                            </Chip>
+                            <RoundChip key={`stale-${slug}`} onClick={() => onOpenPage(slug)} label={pageTitle(slug)}
+                              ariaLabel={t("since.openPage", { page: pageTitle(slug) })} />
                           ))}
                           {pagesWritten(entry).map((path) => (
-                            <Chip
-                              key={`written-${path}`}
-                              size="sm"
-                              onClick={() => onOpenPage(path.replace(/\.md$/, ""))}
-                              aria-label={t("since.openPage", { page: pageTitle(path) })}
-                            >
-                              <FileText size={ICON_SIZE.sm} aria-hidden />
-                              {pageTitle(path)}
-                            </Chip>
+                            <RoundChip key={`written-${path}`} onClick={() => onOpenPage(path.replace(/\.md$/, ""))}
+                              label={pageTitle(path)} ariaLabel={t("since.openPage", { page: pageTitle(path) })} />
                           ))}
                         </div>
                       ) : null}

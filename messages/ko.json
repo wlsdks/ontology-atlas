@@ -6470,7 +6470,8 @@
         "refused": "요청 {count, number}개 거부됨",
         "failed": "끝내지 못한 실행 {count, number}번",
         "asleep": "잠듦 {from} → {to}",
-        "openPage": "{page} 위키에서 열기"
+        "openPage": "{page} 위키에서 열기",
+        "showRefused": "기록에서 보기"
       },
       "ledger": {
         "title": "실행 기록",

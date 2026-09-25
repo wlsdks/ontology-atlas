@@ -43,6 +43,9 @@ export interface SinceSummary {
   held: number;
   failed: number;
   refused: number;
+  /** Ids of the passes whose agent turn had a request refused, newest last, so the card can
+   *  point at the ledger entry that names the refused tool. */
+  refusedIn: string[];
   /** Page slugs that went stale, in first-seen order. */
   stale: string[];
   /** Pages written by a pass (vault-relative `wiki/…` paths), in first-seen order. */
@@ -51,7 +54,7 @@ export interface SinceSummary {
 }
 
 export function summarizeSince(entries: readonly RoundPassEntry[], span: SinceSpan): SinceSummary {
-  const summary: SinceSummary = { passes: 0, held: 0, failed: 0, refused: 0, stale: [], redrafted: [], asleep: [] };
+  const summary: SinceSummary = { passes: 0, held: 0, failed: 0, refused: 0, refusedIn: [], stale: [], redrafted: [], asleep: [] };
   const seenStale = new Set<string>();
   const seenWritten = new Set<string>();
   for (const entry of entries) {
@@ -68,6 +71,7 @@ export function summarizeSince(entries: readonly RoundPassEntry[], span: SinceSp
     if (entry.outcome === "held") summary.held += 1;
     if (entry.outcome === "failed") summary.failed += 1;
     summary.refused += entry.refused.length;
+    if (entry.refused.length > 0) summary.refusedIn.push(entry.id);
     for (const slug of entry.stale) {
       if (!seenStale.has(slug)) {
         seenStale.add(slug);

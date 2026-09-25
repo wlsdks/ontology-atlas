@@ -69,7 +69,7 @@ describe("since summary", () => {
       pass({ startedAt: "2026-09-16T20:00:00Z", endedAt: "2026-09-16T20:00:09Z", outcome: "stale", stale: ["wiki/plan", "wiki/budget"] }),
       pass({ startedAt: "2026-09-16T21:00:00Z", endedAt: "2026-09-16T21:01:00Z", outcome: "redrafted", stale: ["wiki/plan"], written: ["wiki/plan.md", "sources/x.md"], agentTurns: 1 }),
       pass({ startedAt: "2026-09-17T01:12:00Z", endedAt: "2026-09-17T08:55:00Z", outcome: "asleep", roundId: undefined }),
-      pass({ startedAt: "2026-09-17T09:00:00Z", endedAt: "2026-09-17T09:00:03Z", outcome: "refused", refused: ["Bash", "mcp__notion__search"] }),
+      pass({ id: "refusing", startedAt: "2026-09-17T09:00:00Z", endedAt: "2026-09-17T09:00:03Z", outcome: "refused", refused: ["Bash", "mcp__notion__search"] }),
       pass({ startedAt: "2026-09-17T09:30:00Z", endedAt: "2026-09-17T09:30:03Z" }), // after
     ];
     const summary = summarizeSince(entries, span);
@@ -78,6 +78,8 @@ describe("since summary", () => {
     expect(summary.stale).toEqual(["wiki/plan", "wiki/budget"]);
     expect(summary.redrafted).toEqual(["wiki/plan.md"]);
     expect(summary.refused).toBe(2);
+    // The card's refused press needs the pass that names the tool.
+    expect(summary.refusedIn).toEqual(["refusing"]);
     expect(summary.asleep).toHaveLength(1);
   });
 });

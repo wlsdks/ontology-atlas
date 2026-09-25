@@ -1,14 +1,12 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { History } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/shared/lib/cn";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { Chip } from "@/shared/ui";
 
 import type { SinceSpan, SinceSummary } from "../../lib/round-presentation";
-import { pageName } from "./RoundsLedger";
+import { pageName, RoundChip } from "./RoundsLedger";
 
 /**
  * **The morning card** — the one surface that wins attention on the Rounds tab.
@@ -25,12 +23,15 @@ export function SinceYouLeft({
   summary,
   locale,
   onOpenPage,
+  onShowPass,
   titleFor,
 }: {
   span: SinceSpan;
   summary: SinceSummary;
   locale: string;
   onOpenPage: (slug: string) => void;
+  /** Brings a ledger entry into view — the refused line's press lands on the pass naming the tool. */
+  onShowPass?: (id: string) => void;
   /**
    * The title a person knows a page by. The card named pages by their slug
    * (`meeting-notes-summary`) while the person had named the page "Release readiness sync
@@ -45,6 +46,7 @@ export function SinceYouLeft({
   const crossesDay = span.from.toDateString() !== span.to.toDateString();
   const fromLabel = crossesDay ? dayTime.format(span.from) : time.format(span.from);
   const toLabel = time.format(span.to);
+  const refusedPass = summary.refusedIn.at(-1);
   const changed = summary.stale.length > 0 || summary.redrafted.length > 0 || summary.refused > 0 || summary.failed > 0;
 
   return (
@@ -79,9 +81,8 @@ export function SinceYouLeft({
               </span>
               <span className="flex flex-wrap gap-1.5">
                 {summary.stale.map((slug) => (
-                  <Chip key={slug} size="sm" onClick={() => onOpenPage(slug)} aria-label={t("since.openPage", { page: pageTitle(slug) })}>
-                    {pageTitle(slug)}
-                  </Chip>
+                  <RoundChip key={slug} onClick={() => onOpenPage(slug)} label={pageTitle(slug)}
+                    ariaLabel={t("since.openPage", { page: pageTitle(slug) })} testId="library-rounds-since-chip" />
                 ))}
               </span>
             </li>
@@ -94,23 +95,24 @@ export function SinceYouLeft({
               </span>
               <span className="flex flex-wrap gap-1.5">
                 {summary.redrafted.map((path) => (
-                  <Chip
-                    key={path}
-                    size="sm"
-                    onClick={() => onOpenPage(path.replace(/\.md$/, ""))}
-                    aria-label={t("since.openPage", { page: pageTitle(path) })}
-                  >
-                    <FileText size={ICON_SIZE.sm} aria-hidden />
-                    {pageTitle(path)}
-                  </Chip>
+                  <RoundChip key={path} onClick={() => onOpenPage(path.replace(/\.md$/, ""))} label={pageTitle(path)}
+                    ariaLabel={t("since.openPage", { page: pageTitle(path) })} testId="library-rounds-since-chip" />
                 ))}
               </span>
             </li>
           ) : null}
           {summary.refused > 0 ? (
-            <li className="inline-flex items-center gap-2 text-body leading-body text-[color:var(--color-danger-text)]">
-              <span aria-hidden className="h-2 w-2 rounded-full bg-[color:var(--color-status-danger)]" />
-              {t("since.refused", { count: summary.refused })}
+            <li className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <span className="inline-flex items-center gap-2 text-body leading-body text-[color:var(--color-danger-text)]">
+                <span aria-hidden className="h-2 w-2 rounded-full bg-[color:var(--color-status-danger)]" />
+                {t("since.refused", { count: summary.refused })}
+              </span>
+              {/* The refused tool is named only in its ledger entry; this press is the way there,
+                  so the line is not a dead end (2026-09-25). */}
+              {onShowPass && refusedPass ? (
+                <RoundChip icon={History} onClick={() => onShowPass(refusedPass)}
+                  label={t("since.showRefused")} testId="library-rounds-since-refused" />
+              ) : null}
             </li>
           ) : null}
           {summary.failed > 0 ? (

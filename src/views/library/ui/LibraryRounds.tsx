@@ -93,6 +93,19 @@ export function LibraryRounds() {
     router.push(`/docs/?slug=${encodeURIComponent(bare)}`);
   };
 
+  /* The card's refused press: clear a round filter that would hide the pass, then bring the
+     entry into view and hand it focus so a keyboard reader lands where the tool is named. */
+  const showPass = (id: string) => {
+    setSelectedId(null);
+    requestAnimationFrame(() => {
+      const row = document.getElementById(`library-rounds-pass-${id}`);
+      if (!row) return;
+      const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+      row.scrollIntoView({ block: "center", behavior: still ? "auto" : "smooth" });
+      row.focus({ preventScroll: true });
+    });
+  };
+
   const cadenceWords = (round: RoundRecord) => {
     const key = cadenceKey(round.cadence);
     const at = "daily" in round.cadence ? round.cadence.daily : "";
@@ -320,7 +333,7 @@ export function LibraryRounds() {
               empty={t("historyShape.empty")} />
           ) : (
             <>
-              <SinceYouLeft span={span} summary={summary} locale={locale} onOpenPage={openPage} titleFor={titleFor} />
+              <SinceYouLeft span={span} summary={summary} locale={locale} onOpenPage={openPage} onShowPass={showPass} titleFor={titleFor} />
               <div className="flex flex-col gap-3">
                 <h2 className="text-body-lg leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
                   {t("ledger.title")}

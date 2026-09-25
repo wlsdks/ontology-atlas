@@ -215,17 +215,29 @@ export function LibraryMarkPopover({
       )}
     >
       {/* ── Identity: the same three marks the canvas draws, the name, the kind. ── */}
-      <div className="flex items-center gap-2">
-        <MarkGlyph kind={node.kind} />
-        <p
-          data-testid="library-graph-card-title"
-          className="min-w-0 flex-1 truncate text-body leading-title text-[color:var(--color-text-primary)]"
-        >
-          {node.label}
-        </p>
-        <span className="flex-none text-label leading-body text-[color:var(--color-text-quaternary)]">
-          {t(`graph.kind.${node.kind}`)}
+      {/*
+        The card is where a name the canvas already cut can be read whole, so the title wraps
+        to two lines instead of truncating, and the kind moves under it to give the name the
+        full width beside the glyph (2026-09-25: a long page name was cut mid-word on both
+        the canvas and the card, so the whole name appeared nowhere on screen). The glyph and
+        the close glyph stay on the first line.
+      */}
+      <div className="flex items-start gap-2">
+        <span className="flex h-[var(--leading-title)] flex-none items-center">
+          <MarkGlyph kind={node.kind} />
         </span>
+        <div className="min-w-0 flex-1">
+          <p
+            data-testid="library-graph-card-title"
+            title={node.label}
+            className="line-clamp-2 text-body leading-title text-[color:var(--color-text-primary)] [word-break:keep-all] [overflow-wrap:anywhere]"
+          >
+            {node.label}
+          </p>
+          <span data-testid="library-graph-card-kind" className="block text-label leading-body text-[color:var(--color-text-quaternary)]">
+            {t(`graph.kind.${node.kind}`)}
+          </span>
+        </div>
         <button
           type="button"
           onClick={onClose}

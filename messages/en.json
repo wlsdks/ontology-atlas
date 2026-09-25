@@ -6470,7 +6470,8 @@
         "refused": "{count, plural, one {# request was} other {# requests were}} refused",
         "failed": "{count, plural, one {# pass} other {# passes}} did not finish",
         "asleep": "asleep {from} → {to}",
-        "openPage": "Open {page} in Wiki"
+        "openPage": "Open {page} in Wiki",
+        "showRefused": "See it in the ledger"
       },
       "ledger": {
         "title": "Ledger",

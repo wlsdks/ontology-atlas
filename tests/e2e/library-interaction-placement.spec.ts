@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
 import { installDesktopBridge, openRounds } from "./rounds-desktop-bridge";
+import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
  * **Where the Library's transient surfaces land, and what they cover** (2026-09-25 sweep).
@@ -18,7 +19,9 @@ import { installDesktopBridge, openRounds } from "./rounds-desktop-bridge";
  *   `body`;
  * - the questions popover mixed a 12px/14px button with the 6px/11px chip grammar;
  * - Find documents with nothing to suggest offered a dead primary and no corner close;
- * - the new-page dialog moved its field 9px under the caret on the first keystroke.
+ * - the new-page dialog moved its field 9px under the caret on the first keystroke;
+ * - the graph card cut a long page name to one line, the only place it could be read whole;
+ * - the morning card's page presses wore two shapes, and its refused line had no press.
  *
  * The desktop bridge is the Rounds specs' stub: the installed app is a WKWebView running
  * this same export, and it answers `discover_source_candidates` with nothing, which is
@@ -237,5 +240,99 @@ test.describe("Library interaction placement", () => {
     await page.waitForTimeout(400);
     const after = await box(field);
     expect(Math.abs(after.y - before.y)).toBeLessThan(0.5);
+  });
+
+  test("the morning card's presses share one shape, and the refused line reaches its entry", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 949 });
+    await seedFirstRunSeen(page);
+    await installDesktopBridge(page, { seedRounds: true });
+    await openRounds(page);
+    const since = page.getByTestId("library-rounds-since");
+    await expect(since).toHaveAttribute("data-since-changed", "true");
+
+    const chips = since.locator("ul button");
+    /* One stale page, one redraft, and the refused line's press. */
+    await expect(chips).toHaveCount(3);
+    const shapes = await chips.evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const style = getComputedStyle(node);
+        return {
+          height: Math.round(node.getBoundingClientRect().height),
+          font: style.fontSize,
+          padding: `${style.paddingLeft} ${style.paddingRight}`,
+          radius: style.borderTopLeftRadius,
+          glyph: node.querySelectorAll("svg").length,
+        };
+      }),
+    );
+    for (const shape of shapes) expect(shape).toEqual(shapes[0]);
+    expect(shapes[0]!.glyph).toBe(1);
+
+    await page.getByTestId("library-rounds-since-refused").click();
+    const entry = page.getByTestId("library-rounds-pass-p3");
+    await expect(entry).toBeFocused();
+    await expect(entry).toContainText("mcp__confluence__create_page");
+    await expect(entry).toBeInViewport();
+  });
+
+  test("the graph card reads a long page name whole, beside no kind label", async ({ page }) => {
+    const title = "Settlement schedules and fees, a page with a rather long name";
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await seedFirstRunSeen(page);
+    await stubDirectoryPicker(page, {
+      "project.md": ["---", "kind: project", "slug: card-name", "title: Card name", "---", "", "# Card name", ""].join("\n"),
+      "sources/fees.md": "fees\n",
+      "wiki/settlement.md": [
+        "---",
+        `title: ${title}`,
+        "created_by: agent:claude",
+        "compiled_at: 2026-09-12T04:20:00Z",
+        "sources:",
+        "  - sources/fees.md",
+        "status: draft",
+        "summary: Fees in one line.",
+        "---",
+        "",
+        "## Summary",
+        "",
+        "Fees settle nightly.",
+        "",
+        "## Facts",
+        "",
+        "- Recorded in [[src:sources/fees.md]].",
+        "",
+      ].join("\n"),
+    });
+    await page.goto("/en/library/?guides=off&e2e=1");
+    await page.getByTestId("library-open-vault").click();
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+    await expect
+      .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.arriving() ?? true), { timeout: 20_000 })
+      .toBe(false);
+    const mark = await page.evaluate(() => window.__atlasLibraryGraph!.nodes().find((node) => node.kind === "page")!);
+    const canvas = await box(page.getByTestId("library-graph-canvas"));
+    await page.mouse.click(canvas.x + mark.x, canvas.y + mark.y);
+
+    const card = page.getByTestId("library-graph-card");
+    const name = page.getByTestId("library-graph-card-title");
+    await expect(card).toBeVisible();
+    await expect(name).toHaveText(title);
+    const fit = await name.evaluate((node) => ({
+      clippedX: node.scrollWidth > node.clientWidth + 1,
+      clippedY: node.scrollHeight > node.clientHeight + 1,
+      lines: Math.round(node.getBoundingClientRect().height / parseFloat(getComputedStyle(node).lineHeight)),
+    }));
+    expect(fit.clippedX, "the name was cut sideways").toBe(false);
+    expect(fit.clippedY, "the name was cut below its lines").toBe(false);
+    expect(fit.lines).toBeLessThanOrEqual(2);
+    /* The kind sits under the name, not beside it, so the name has the row's width. Both
+       rects are read in one frame: the card enters with a transform, and two reads a frame
+       apart disagree by a pixel. */
+    const stack = await card.evaluate((element) => {
+      const nameRect = element.querySelector('[data-testid="library-graph-card-title"]')!.getBoundingClientRect();
+      const kindRect = element.querySelector('[data-testid="library-graph-card-kind"]')!.getBoundingClientRect();
+      return { nameBottom: nameRect.bottom, kindTop: kindRect.top };
+    });
+    expect(stack.kindTop).toBeGreaterThanOrEqual(stack.nameBottom - 0.5);
   });
 });
