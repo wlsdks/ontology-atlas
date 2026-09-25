@@ -16,11 +16,13 @@ export function CopyAgentTextButton({
   copiedLabel,
   text,
   compact = false,
+  testId,
 }: {
   label: string;
   copiedLabel: string;
   text: string;
   compact?: boolean;
+  testId?: string;
 }) {
   const t = useTranslations("ontologyPages.insights");
   const { state: copyState, copy } = useCopyFeedback();
@@ -64,6 +66,7 @@ export function CopyAgentTextButton({
           ].join(" "),
         })}
         aria-label={ariaLabel}
+        data-testid={testId}
       >
         {copyState === "copied" ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
         {label}

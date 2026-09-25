@@ -1201,7 +1201,7 @@ export function VaultAgentSetupPanel({
           </ul>
           {hasMissingAgentConfig && canEditCurrent ? (
             <Chip
-              size="sm"
+              size="md"
               /* The message is already on screen; this catch only stops an unhandled rejection
                  from the re-throw that tells the per-tool buttons their write failed. */
               onClick={() => void handleEnsureAgentConfigs().catch(() => undefined)}
@@ -1406,7 +1406,7 @@ export function VaultAgentSetupPanel({
           </details>
           <div className="flex flex-wrap gap-1.5">
             <Chip
-              size="sm"
+              size="md"
               onClick={onOpenWorkflowGuide}
               title={t('agentSetup.openWorkflowGuideTitle')}
               tone="accentOnTint"
@@ -1416,7 +1416,7 @@ export function VaultAgentSetupPanel({
               {t('agentSetup.openWorkflowGuide')}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentSetupPacket()}
               title={t('agentSetup.copyPacketTitle')}
               tone="secondary"
@@ -1426,7 +1426,7 @@ export function VaultAgentSetupPanel({
               {copyPacketLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentVerifyPrompt()}
               title={t('agentSetup.copyPromptTitle')}
               tone="secondary"
@@ -1490,7 +1490,7 @@ export function VaultAgentSetupPanel({
           </ol>
           <div className="flex flex-wrap gap-1.5">
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentJsonGate()}
               title={t('agentSetup.copyJsonGateTitle')}
               tone="secondary"
@@ -1500,7 +1500,7 @@ export function VaultAgentSetupPanel({
               {copyJsonGateLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentVerifyCli()}
               title={t('agentSetup.copyCliTitle')}
               tone="secondary"
@@ -1510,7 +1510,7 @@ export function VaultAgentSetupPanel({
               {copyCliLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentFirstContactProof()}
               title={t('agentSetup.copyFirstContactProofTitle')}
               tone="secondary"
@@ -1528,7 +1528,7 @@ export function VaultAgentSetupPanel({
               {t('agentSetup.syncAfterChangeDesc')}
             </p>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentPostChangeSyncGate()}
               title={t('agentSetup.copyPostChangeSyncTitle')}
               tone="secondary"
@@ -1560,7 +1560,7 @@ export function VaultAgentSetupPanel({
           </dl>
           <div className="flex flex-wrap gap-1.5">
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentSetupCheckCliCommand()}
               title={t('agentSetup.copySetupCheckCliTitle')}
               tone="secondary"
@@ -1570,7 +1570,7 @@ export function VaultAgentSetupPanel({
               {copySetupCheckCliLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentSetupCliCommand()}
               title={t('agentSetup.copySetupCliTitle')}
               tone="secondary"
@@ -1580,7 +1580,7 @@ export function VaultAgentSetupPanel({
               {copySetupCliLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyAgentConfigTemplate()}
               title={t('agentSetup.copyTemplateTitle')}
               tone="secondary"
@@ -1590,7 +1590,7 @@ export function VaultAgentSetupPanel({
               {copyTemplateLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyCodexConfigTemplate()}
               title={t('agentSetup.copyCodexTemplateTitle')}
               tone="secondary"
@@ -1600,7 +1600,7 @@ export function VaultAgentSetupPanel({
               {copyCodexTemplateLabel}
             </Chip>
             <Chip
-              size="sm"
+              size="md"
               onClick={() => void handleCopyCodexMcpAddCommand()}
               title={t('agentSetup.copyCodexCliTitle')}
               tone="secondary"

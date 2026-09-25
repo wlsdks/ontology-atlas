@@ -151,9 +151,18 @@ export function computeFreeArea(canvas: Rect, obstacles: readonly Rect[]): Rect 
  * camera never has to make room for one; `data-topology-camera-obstacle="none"`
  * opts a non-modal transient surface out the same way.
  */
-export function collectCanvasObstacles(canvas: Element, canvasRect: Rect): Rect[] {
+export function collectCanvasObstacles(
+  canvas: Element,
+  canvasRect: Rect,
+  /**
+   * The smallest side counted. 40 keeps the camera to panels and bars; a router that must keep
+   * a line out from under every control (the hex board) asks for the small ones too — the
+   * folded INDEX tab is 26 px wide.
+   */
+  { minSide = 40 }: { minSide?: number } = {},
+): Rect[] {
   const out: Rect[] = [];
-  const MIN_SIDE = 40;
+  const MIN_SIDE = minSide;
   for (const el of canvas.ownerDocument.querySelectorAll('body *')) {
     if (el === canvas || canvas.contains(el) || el.contains(canvas)) continue;
     const box = el.getBoundingClientRect();
@@ -161,6 +170,9 @@ export function collectCanvasObstacles(canvas: Element, canvasRect: Rect): Rect[
     if (box.right <= canvasRect.x || box.left >= canvasRect.x + canvasRect.width) continue;
     if (box.bottom <= canvasRect.y || box.top >= canvasRect.y + canvasRect.height) continue;
     if (el.closest('details:not([open])')) continue;
+    // Screen-reader-only content is clipped to a pixel: its children report their full boxes
+    // but cover nothing (the hex board's tile list is 40 buttons down the canvas's left edge).
+    if (el.closest('.sr-only')) continue;
     if (el.closest('[aria-hidden="true"]')) continue;
     if (el.closest('[aria-modal="true"], [data-topology-camera-obstacle="none"]')) continue;
     const style = getComputedStyle(el);
@@ -240,4 +252,29 @@ export function measureCanvasInsets(canvas: Element, canvasRect: Rect): CanvasIn
     }
   }
   return { left: Math.round(left), right: Math.round(right) };
+}
+
+/** Air the fit keeps between the drawing and a bottom strip. */
+const BOTTOM_OBSTACLE_GAP_PX = 8;
+
+/**
+ * **How much of the canvas's bottom a declared strip takes** (`data-map-fit-obstacle="bottom"`,
+ * such as the lit 3D map's legend), in px from the canvas's bottom edge, or 0.
+ *
+ * Unlike a side panel this is not recognised by shape: a strip is too short to read as a
+ * panel, and the label reservation along the bottom must not be confused with one. So the
+ * strip's owner says what it is, and the fit keeps the drawing above it (the lit legend used to
+ * stand over nine drawn nodes at 1040 — interaction audit, 2026-09-25).
+ */
+export function measureBottomFitObstacle(canvas: Element): number {
+  const c = canvas.getBoundingClientRect();
+  if (c.width <= 0 || c.height <= 0) return 0;
+  let reserve = 0;
+  for (const el of canvas.ownerDocument.querySelectorAll('[data-map-fit-obstacle="bottom"]')) {
+    const box = el.getBoundingClientRect();
+    if (box.width <= 0 || box.height <= 0) continue;
+    if (box.right <= c.left || box.left >= c.right || box.bottom <= c.top || box.top >= c.bottom) continue;
+    reserve = Math.max(reserve, c.bottom - box.top + BOTTOM_OBSTACLE_GAP_PX);
+  }
+  return Math.round(reserve);
 }

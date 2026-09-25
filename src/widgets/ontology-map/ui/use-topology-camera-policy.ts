@@ -6,6 +6,7 @@ import {
 } from "react";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import {
+  measureBottomFitObstacle,
   measureCanvasInsets
 } from "../interaction/free-area";
 import { cameraTransitionDurationMs, type CameraKeyframe, type CameraTween } from "../model/camera-easing";
@@ -163,7 +164,12 @@ export function useTopologyCameraPolicy({
         bounds,
         width,
         height,
-        { left, right: Math.max(right, legendRight), top: tokens.domeFitInsetTop, bottom: tokens.domeFitInsetBottom },
+        {
+          left,
+          right: Math.max(right, legendRight),
+          top: tokens.domeFitInsetTop,
+          bottom: Math.max(tokens.domeFitInsetBottom, canvasEl ? measureBottomFitObstacle(canvasEl) : 0),
+        },
         DOME_NODE_FIT_ALLOWANCE_PX,
         tokens,
       );

@@ -45,7 +45,7 @@ import { useTranslations } from "next-intl";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useAcpRuntimeController } from "../model/use-acp-runtime-controller";
 import { useHomeRouteState } from "../model/use-home-route-state";
-import { useTerritoriesViewSync } from "../model/use-territories-view-sync";
+import { useMapViewSync } from "../model/use-map-view-sync";
 import { useHomeWorkbenchController } from "../model/use-home-workbench-controller";
 import { useNodeDatasheetModel } from "../model/use-node-datasheet-model";
 import { useTopologyGraphProjection } from "../model/use-topology-graph-projection";
@@ -176,7 +176,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   /* The alert text is held across its exit window too; a primitive needs no key. */
   const heldProjectsError = useHeldValue(projectsError);
   const [routeState, setRouteState] = useHomeRouteState();
-  useTerritoriesViewSync(routeState.mapView, setRouteState);
+  useMapViewSync(routeState.mapView, setRouteState);
   /**
    * The agent panel — a vertical dock the map makes room for on its right.
    *

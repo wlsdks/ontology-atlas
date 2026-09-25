@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useSyncExternalStore, type ReactNode } from 'react';
 import { RowDisclosure } from '@/shared/ui/row-disclosure';
 import { controlClass } from '@/shared/ui/control-class';
-import { InfoHint } from '@/shared/ui/info-hint';
+import { PlacedInfoHint } from './PlacedInfoHint';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { AnatomyBand, AnatomySlot } from '../model/harness-anatomy';
 import styles from './harness-structure-diagram.module.css';
@@ -91,12 +91,14 @@ export function HarnessStructureDiagram({ slots, sourceRoot, selectedId, detailI
           <div className={styles.core} data-testid="harness-anatomy-band-tool">
             <CircleHelp size={ICON_SIZE.lg} aria-hidden />
             <span data-testid="harness-anatomy-slot-loop" data-status={loopSlot?.status ?? 'tool-owned'}><strong className="font-[var(--font-weight-emphasis)]">{t('anatomySlots.loop.title')}</strong><small>{t('anatomyToolBand')}</small></span>
-            <InfoHint align="center" className="ml-auto" label={t('anatomyToolBand')} panelClassName="max-w-full max-h-[35dvh] overflow-y-auto">
+            {/* No `max-w-full`: on a panel hung from the 24px button it capped the explanation at the
+                button's width, one syllable per line (34×332px at 1512, 2026-09-25). */}
+            <PlacedInfoHint preferred="right" className="ml-auto" label={t('anatomyToolBand')}>
               <span className="flex flex-col gap-2">
                 <span>{t('anatomyToolCaption')}</span>
                 <span>{t('anatomySlots.loop.body')}</span>
               </span>
-            </InfoHint>
+            </PlacedInfoHint>
           </div>
           {band('gates')}
         </div>

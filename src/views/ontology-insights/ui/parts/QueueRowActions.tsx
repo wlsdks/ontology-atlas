@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { Check, Copy, FileText, GitBranch, MessageCircle, MoreHorizontal } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -112,6 +112,36 @@ export function RowActionMenu({
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const [menuNode, setMenuNode] = useState<HTMLElement | null>(null);
+  const [placeAbove, setPlaceAbove] = useState(false);
+
+  /**
+   * ⚠️ **The usable bottom is the tab bar's top, not the window's.** At 900×900 the menu hung
+   * under a low row to y=864 and the bottom tab bar (from y≈843) cut its last item in half —
+   * `elementFromPoint` at both lower corners returned a tab link (2026-09-25). The menu now
+   * measures its own height against the room between the trigger and that edge and opens
+   * upward when it would not fit below and there is more room above.
+   */
+  useLayoutEffect(() => {
+    if (!open) return;
+    const measure = () => {
+      const trigger = triggerRef.current?.getBoundingClientRect();
+      const menuHeight = menuNode?.offsetHeight ?? 0;
+      if (!trigger || menuHeight === 0) return;
+      const nav = document.querySelector<HTMLElement>('[data-tabbar="primary"]')?.getBoundingClientRect();
+      const usableBottom = nav && nav.width > 0 && nav.height > 0 ? nav.top : window.innerHeight;
+      const roomBelow = usableBottom - 8 - (trigger.bottom + 4);
+      const roomAbove = trigger.top - 4 - 8;
+      setPlaceAbove(roomBelow < menuHeight && roomAbove > roomBelow);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [open, menuNode]);
 
   useEffect(() => {
     if (!open) return;
@@ -142,13 +172,17 @@ export function RowActionMenu({
    *
    * `row` carries `w-full`, but this menu is already `flex-col` (i.e. stretch), so the width is
    * unchanged.
+   *
+   * ⚠️ **One line per item, one height.** In a 160px menu the handoff item wrapped to two lines,
+   * so the two items stood 28 and 44px tall (2026-09-25). The menu now sizes to its longest item
+   * (`w-max`, at least 16rem) and every item is one 32px line.
    */
   const menuItemClass = controlClass({
     shape: "row",
-    size: "sm",
+    size: "md",
     tone: "secondary",
     className:
-      "hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]",
+      "whitespace-nowrap hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]",
   });
 
   return (
@@ -165,13 +199,16 @@ export function RowActionMenu({
       >
         <MoreHorizontal size={ICON_SIZE.md} aria-hidden />
       </button>
-      {/* Right-aligned under the «⋯» at the end of the row — its entrance origin is that corner too. */}
+      {/* Right-aligned under (or, near the bottom edge, over) the «⋯» at the end of the row — its
+          entrance origin is that corner too. */}
       <Surface
+        ref={setMenuNode}
         open={open}
-        origin="top right"
+        origin={placeAbove ? "bottom right" : "top right"}
         role="menu"
         data-testid="do-next-row-menu-popover"
-        className="absolute right-0 z-20 mt-1 flex min-w-[10rem] flex-col gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
+        data-placement={placeAbove ? "above" : "below"}
+        className={`absolute right-0 z-20 ${placeAbove ? "bottom-full mb-1" : "top-full mt-1"} flex w-max min-w-[16rem] max-w-[calc(100vw-2rem)] flex-col gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]`}
       >
           {sourceHref ? (
             <Link

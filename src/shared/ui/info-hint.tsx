@@ -1,4 +1,6 @@
-import { useId } from "react";
+"use client";
+
+import { useId, useState, type KeyboardEvent } from "react";
 import { CircleHelp } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
@@ -54,8 +56,27 @@ export function InfoHint({
   // `aria-describedby` ties the button to the tooltip so assistive tech reads
   // the body on focus or hover. A `role=tooltip` div alone left it unreachable.
   const tooltipId = useId();
+  /*
+   * **Escape puts the panel away** (interaction sweep, 2026-09-25). The panel is shown by
+   * `group-focus-within`, so a keyboard user who reached the button had no way to close a
+   * 288px panel covering the rows under it short of leaving the button. Escape now hides it
+   * until focus or the pointer leaves, and the next visit shows it again.
+   */
+  const [dismissed, setDismissed] = useState(false);
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Escape" || dismissed) return;
+    // Only the panel closes: a dialog around the hint keeps its own Escape for the next press.
+    event.stopPropagation();
+    setDismissed(true);
+  };
   return (
-    <div className={cn("group relative inline-flex", className)}>
+    <div
+      className={cn("group relative inline-flex", className)}
+      data-dismissed={dismissed ? "true" : undefined}
+      onKeyDown={onKeyDown}
+      onBlur={() => setDismissed(false)}
+      onMouseLeave={() => setDismissed(false)}
+    >
       <button
         type="button"
         aria-label={label}
@@ -72,7 +93,11 @@ export function InfoHint({
           // default: this transition is a surface appearing and leaving
           // (opacity plus rise), which is the ramp's "move" step. At the 120ms
           // default it reads as a pop.
-          "pointer-events-none absolute top-full z-30 mt-2 w-72 max-w-[min(18rem,calc(100vw-2rem))] rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-3 text-left opacity-0 shadow-[var(--shadow-elevation-1)] transition-[opacity,transform] duration-[var(--motion-fast)] group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100",
+          // Focus shows the panel without letting it catch the pointer: a panel shown only because
+          // the button holds focus must not swallow clicks on the rows it covers.
+          "pointer-events-none absolute top-full z-30 mt-2 w-72 max-w-[min(18rem,calc(100vw-2rem))] rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-3 text-left opacity-0 shadow-[var(--shadow-elevation-1)] transition-[opacity,transform] duration-[var(--motion-base)]",
+          !dismissed &&
+            "group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100",
           HINT_ALIGN[align],
           panelClassName,
         )}

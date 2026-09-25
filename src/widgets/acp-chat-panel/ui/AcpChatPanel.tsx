@@ -90,7 +90,7 @@ import { AcpPermissionCard } from './AcpPermissionCard';
 import { AcpPresentationPanel } from './AcpPresentationPanel';
 import { groupEvents } from './group-events';
 import { splitAppRequest } from './request-parts';
-import { isVaultTool, labelWithoutRepeatedPath, toolLabel } from './tool-label';
+import { isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback } from './tool-label';
 import { composerStatusLive, toolRowPhase, workingShimmer } from './working-ink';
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useMeaningTransitionCapture } from '../model/use-meaning-transition-capture';
@@ -329,6 +329,7 @@ export function AcpChatPanel({
   prefillRequest,
   openingRequest,
   requestScopeKey,
+  draftStore,
   onOpeningRequestSent,
   judgeWrite,
   autoDecide,
@@ -400,6 +401,15 @@ export function AcpChatPanel({
   openingRequest?: { text: string; nonce: number; scopeKey?: string } | null;
   requestScopeKey?: string;
   onOpeningRequestSent?: (nonce: number) => void;
+  /**
+   * Where the unsent sentence lives when this panel does not outlive its dock.
+   *
+   * ⚠️ The map's dock unmounts an idle conversation when it closes, and the draft was this
+   * panel's own state, so a sentence typed and then put away was gone when the dock opened again
+   * (measured 2026-09-25; the Library's dock stays mounted while put away and kept it). A host
+   * that unmounts the panel hands it this store, read once on mount and written on every change.
+   */
+  draftStore?: { read: () => string; write: (draft: string) => void };
   /**
    * Judges a file write before the person decides, from the screen that knows the folder's
    * contract (the Library judges wiki pages). Null for a request it has no opinion on.
@@ -770,7 +780,11 @@ export function AcpChatPanel({
     : `trouble.${trouble?.kind ?? 'unknown'}.hint`;
   const doctor = useAgentDoctor(runtimeId);
   const showDoctor = Boolean(runtimeId) && isAgentDoctorAvailable();
-  const [draft, setDraft] = useState('');
+  // The unsent sentence survives the panel being unmounted by its host (`draftStore`).
+  const [draft, setDraft] = useState(() => draftStore?.read() ?? '');
+  useEffect(() => {
+    draftStore?.write(draft);
+  }, [draftStore, draft]);
   const draftPresent = draft.trim().length > 0;
   useEffect(() => {
     onDraftPresenceChange?.(draftPresent);
@@ -1021,6 +1035,49 @@ export function AcpChatPanel({
   const livePendingRef = useRef(pending);
   useLayoutEffect(() => { livePendingRef.current = pending; }, [pending]);
   const permissionDeferred = pending !== null && deferredPermission === pending;
+  /*
+   * ⚠️ **A write the person declined is not a write that failed** (measured 2026-09-25). After
+   * "Don't" the row kept "running" until the turn ended and then said "failed": the adapter
+   * reports a declined call as `failed`, and the row repeated it, so the person's own answer was
+   * shown back to them as a fault. The panel is the only place that knows which calls were
+   * declined, so it keeps them, and the row says so from the moment the answer is given.
+   */
+  const [declinedToolIds, setDeclinedToolIds] = useState<ReadonlySet<string>>(() => new Set());
+  /*
+   * **After Stop, a new conversation, or an answer to the card, focus goes to the composer.**
+   * Each of those controls leaves the screen or changes under the pointer, and focus fell to
+   * `<body>` with it (measured 2026-09-25). A request is a state bump, not a ref call, so the
+   * handlers that ask for it close over no ref; the effect below does the focusing a frame later,
+   * once the composer is enabled again.
+   */
+  const [composerFocusRequest, setComposerFocusRequest] = useState(0);
+  const requestComposerFocus = useCallback(() => setComposerFocusRequest((count) => count + 1), []);
+  const noteVerdict = useCallback(
+    (request: { toolCallId?: string | null; options: ReadonlyArray<{ optionId: string; kind: string }> }, optionId: string | null) => {
+      const chosen = request.options.find((option) => option.optionId === optionId);
+      const declined = optionId === null || chosen?.kind === 'reject_once' || chosen?.kind === 'reject_always';
+      const id = request.toolCallId;
+      if (declined && id) setDeclinedToolIds((current) => (current.has(id) ? current : new Set(current).add(id)));
+      /*
+       * The next thing to do after answering is in the composer — correct the request, or ask
+       * what comes next. Focus used to fall to `<body>` with the card it had been on.
+       */
+      requestComposerFocus();
+    },
+    [requestComposerFocus],
+  );
+  const pendingForCard = useMemo(
+    () => (pendingHeld
+      ? {
+          ...pendingHeld,
+          resolve: (optionId: string | null) => {
+            noteVerdict(pendingHeld.request, optionId);
+            pendingHeld.resolve(optionId);
+          },
+        }
+      : null),
+    [noteVerdict, pendingHeld],
+  );
   const requestCorrection = () => {
     // An exiting card must never answer a replacement request or overwrite its draft.
     if (!pendingHeld || livePendingRef.current !== pendingHeld) return;
@@ -1031,6 +1088,7 @@ export function AcpChatPanel({
       requestId: String(pendingHeld.request.requestId ?? pendingHeld.request.toolCallId ?? ''),
     });
     livePendingRef.current = null;
+    noteVerdict(pendingHeld.request, rejected?.optionId ?? null);
     pendingHeld.resolve(rejected?.optionId ?? null);
     setDeferredPermission(null);
     setDraft((existing) => existing.trim() ? `${existing}\n\n${correction}` : correction);
@@ -1124,6 +1182,28 @@ export function AcpChatPanel({
     list.style.scrollBehavior = glide ? 'smooth' : 'auto';
     list.scrollTop = list.scrollHeight;
   }, [events, pending, postTurnSuggestionKey, showPostTurnSuggestions]);
+  /*
+   * **The tail stays in view when the transcript is squeezed from below.** The follow above runs
+   * when content arrives, but a permission card growing in under the transcript shrinks it after
+   * that, and a shrinking box keeps its `scrollTop` — so the rows at the bottom, including the call
+   * the card is asking about, slid out of view (measured 2026-09-25 at 1040×720). A person who was
+   * following the tail is kept on it; one who had scrolled up is left where they were.
+   */
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || typeof ResizeObserver === 'undefined') return;
+    let last = list.clientHeight;
+    const observer = new ResizeObserver(() => {
+      const height = list.clientHeight;
+      if (height < last && transcriptPinnedToBottomRef.current) {
+        list.style.scrollBehavior = 'auto';
+        list.scrollTop = list.scrollHeight;
+      }
+      last = height;
+    });
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, []);
 
   /**
    * The composer **grows with the text** (owner instruction 2026-08-16: *"It should also lengthen like this after
@@ -1167,10 +1247,17 @@ export function AcpChatPanel({
     input.style.height = `${growth.height}px`;
     input.scrollTop = snapScrollTop(input.scrollTop, lineHeight);
   }, [draft]);
+  // Serves `requestComposerFocus` (declared with the permission state above).
+  useEffect(() => {
+    if (composerFocusRequest === 0) return;
+    const frame = window.requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [composerFocusRequest]);
 
   const submit = useCallback(() => {
     const lead = draft.trim();
-    if (!lead || status === 'thinking') return;
+    // Only a ready session can take a turn; before that the draft simply stays in the box.
+    if (!lead || status !== 'ready') return;
     /*
      * The seated half travels with the sentence it was seated beside. Untouched, the caller's
      * own bytes go out verbatim — a re-joined copy would differ by whatever whitespace the split
@@ -1204,11 +1291,25 @@ export function AcpChatPanel({
       ? choices.models.map((model) => ({ value: `model:${model.id}`, label: `${r.label} · ${model.name}` }))
       : [{ value: `runtime:${r.id}`, label: r.label }],
   );
+  /*
+   * Whether the tool's name is drawn as a picker. The picker has a floor the plain name does not
+   * (a chevron needs its word), so the footer's stand-down widths depend on which one is here.
+   */
+  const toolIsPicker = canChooseAnotherTool || toolPicker.length > 1;
+  const busy = status === 'thinking';
+  /*
+   * ⚠️ **While a turn runs, the two session doors stand down at the narrowest composers.**
+   * Measured 2026-09-25 with the mode and tool already gone: a waiting turn's status and clock
+   * (「Waiting for you · 0s」, 94px), Stop and Send still needed 269px in English beside these two,
+   * and the composer at the documented minimum has 228. The status is the live thing a person reads
+   * mid-turn and Stop is the way out; opening an older conversation or starting a new one is not
+   * the next move while this one is running. Both come back the moment the turn ends.
+   */
+  const sessionButtonStandDown = busy ? 'hidden @min-[296px]/composer:inline-flex' : undefined;
   // No model chosen yet: the trigger reads the tool's name alone, as the placeholder.
   const toolPickerValue =
     choices.models.length > 0 ? (choices.currentModelId ? `model:${choices.currentModelId}` : '') : `runtime:${runtimeId}`;
 
-  const busy = status === 'thinking';
   const choicesRow =
     choices.models.length > 0 || choices.modes.length > 0 ? (
         /*
@@ -1266,12 +1367,24 @@ export function AcpChatPanel({
          * the status and its clock are live, and Stop is the way out. It comes back the moment the
          * turn ends. 308 is the footer width at which the Korean mode name and the running group
          * both measured whole; Korean decides, as it did for the name.
+         *
+         * ⚠️ **308 held only beside the plain name.** With two tools the name is a picker with a
+         * 48px floor, and the pair was measured drawing the mode over the status word from the
+         * narrowest drag up to a 348px composer (2026-09-25, two runtimes and five modes, both
+         * locales; the old spec only ever rendered the single-runtime name). Beside the picker, a
+         * row holding the mode, the tool's whole name and a waiting turn's group measured 460px in
+         * English, so it stands down below 464. Between the two widths it would only cut the tool's
+         * name to its first letters, and during a turn the mode is the one that cannot act.
          */
         <div
           data-testid="acp-chat-choices"
           className={cn(
             'min-w-0 items-center gap-0.5',
-            busy ? 'hidden @min-[308px]/composer:flex' : 'flex',
+            busy
+              ? toolIsPicker
+                ? 'hidden @min-[464px]/composer:flex'
+                : 'hidden @min-[308px]/composer:flex'
+              : 'flex',
           )}
         >
           {choices.modes.length > 0 ? (
@@ -1368,7 +1481,16 @@ export function AcpChatPanel({
     if (minutes > 0) return t('elapsedMinutes', { minutes, seconds });
     return t('elapsedSeconds', { seconds });
   })();
-  const canType = status === 'ready' || status === 'thinking';
+  /*
+   * ⚠️ **A composer that is still connecting takes a draft; it only cannot send it yet**
+   * (measured 2026-09-25). It was disabled while the tool started, under a placeholder inviting
+   * the person to type, so the first keys pressed into a freshly opened dock went nowhere. Typing
+   * is now open from the moment the dock is, and sending waits for the session, with the send
+   * button's tooltip saying why. After an error or an exit there is no session to send to, so the
+   * box stays shut there, as before.
+   */
+  const canType = status === 'ready' || status === 'thinking' || status === 'idle' || status === 'starting';
+  const canSend = status === 'ready';
   /*
    * ⚠️ A turn that stopped answering looks exactly like one still working, because `prompt` is given
    * no timeout on purpose (`turn-liveness.ts`). Measured in the installed rc.11 build: nine steps
@@ -1769,6 +1891,7 @@ export function AcpChatPanel({
                     noticeActions={noticeActions}
                     liveToolIds={liveToolIds}
                     awaitingToolId={awaitingToolId}
+                    declinedToolIds={declinedToolIds}
                   />
                 ))}
               </div>
@@ -1783,6 +1906,7 @@ export function AcpChatPanel({
                 onHoverSlug={onHoverSlug}
                 liveToolIds={liveToolIds}
                 awaitingToolId={awaitingToolId}
+                declinedToolIds={declinedToolIds}
               />
             );
           /*
@@ -1815,6 +1939,7 @@ export function AcpChatPanel({
                 streaming={busy && index === transcriptItems.length - 1}
                 liveToolIds={liveToolIds}
                 awaitingToolId={awaitingToolId}
+                declinedToolIds={declinedToolIds}
               />
             </div>
           );
@@ -2088,7 +2213,14 @@ export function AcpChatPanel({
         open={Boolean(pending)}
         origin="bottom center"
         motion="overlay"
-        className="max-h-[70%] shrink-0"
+        /*
+         * ⚠️ **Half, on a short window** (measured 2026-09-25 at 1040×720). At 70% the card's
+         * natural 360px fit under its ceiling, so nothing bounded it, and the transcript above was
+         * left 62–96px: the request cut mid-line and the very row the card is asking about out of
+         * view. Below 800px of height the card takes at most half the panel and its body scrolls
+         * (`acp-permission-body-scroll`); the header, the answers and the transcript's tail stay.
+         */
+        className="max-h-[70%] shrink-0 [@media(max-height:800px)]:max-h-[50%]"
       >
         {permissionDeferred ? (
           <div className="flex items-center gap-2 rounded-panel border border-[color:var(--color-divider)] p-[var(--card-pad)]" data-testid="acp-permission-deferred">
@@ -2100,7 +2232,7 @@ export function AcpChatPanel({
         ) : pendingHeld ? (
           <AcpPermissionCard
             vaultPath={vaultRoot}
-            pending={pendingHeld}
+            pending={pendingForCard ?? pendingHeld}
             taskReview={taskMeaningReview}
             onRequestCorrection={pendingHeld.request.reviewKind === 'ontology-write' ? requestCorrection : undefined}
             onDefer={pendingHeld.request.reviewKind === 'ontology-write' ? () => {
@@ -2297,6 +2429,17 @@ export function AcpChatPanel({
                   return;
                 }
               }
+              /*
+               * ⚠️ **Escape in a composer holding a sentence belongs to the sentence.** On the map it
+               * bubbled to the dock and closed it, taking the draft with it; the Library dock
+               * ignored it. One rule for both hosts now: with text here the key is claimed (the
+               * hosts' close handlers stand down on `defaultPrevented`), and from an empty composer
+               * it closes the dock as it does from anywhere else in it.
+               */
+              if (e.key === 'Escape') {
+                if (draft.trim().length > 0) e.preventDefault();
+                return;
+              }
               if (e.key !== 'Enter') return;
               /*
                * Enter sends and ⇧Enter breaks the line — the chat convention, and what
@@ -2355,16 +2498,24 @@ export function AcpChatPanel({
           data-testid="acp-chat-footer"
           className="mt-2 flex min-w-0 items-center gap-1"
         >
+          {/*
+            ⚠️ **This group clips; it never paints into the buttons beside it.** Its pickers have
+            floors, and a floor that does not fit used to overflow the group and land on the status
+            word — `elementFromPoint` over "Waiting for you" returned the mode picker (2026-09-25).
+            The stand-down widths below decide what shows; this is the guarantee that a width nobody
+            measured (a longer adapter mode name, a clock past a minute) still cannot overlap.
+            The 2px padding, cancelled by the margin, is room for a picker's focus ring inside it.
+          */}
           <span
             data-testid="acp-chat-pickers"
-            className="flex min-w-0 flex-1 items-center gap-0.5"
+            className="-m-0.5 flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden p-0.5"
           >
             {/*
               With two or more usable tools, **the name slot becomes the picker** — it is already
               there to show the name, so no new chrome appears. With just one there is nothing to
               choose, so it stays text (a one-option dropdown only pretends to be a choice).
             */}
-            {(runtimes.length > 1 && onRuntimeChange) || toolPicker.length > 1 ? (
+            {toolIsPicker ? (
               /*
                * **One picker for the tool and its model.** The owner saw three boxes — tool,
                * model, mode — at 32px each, stacked when the dock was narrow, and asked who
@@ -2385,7 +2536,21 @@ export function AcpChatPanel({
                 options={toolPicker}
                 data-testid="acp-chat-runtime"
                 quiet
-                className={cn(PICKER_MIN_WIDTH_CLASS, PICKER_MAX_WIDTH_CLASS, 'shrink')}
+                /*
+                 * It yields first, like the plain name (`shrink-[99]`), and below the widths that
+                 * leave it most of its word it stands down the way the name does, rather than
+                 * showing 「C…」 beside a chevron (measured at a 288px composer, 2026-09-25). Idle,
+                 * the rest of the row takes 227px in English with the history button, so from 320
+                 * the name keeps at least 92 of its 101px. A running turn adds Stop and a longer
+                 * status (274px while waiting), so during a turn it shows from 368. The panel's
+                 * accessible name still names the tool.
+                 */
+                className={cn(
+                  PICKER_MIN_WIDTH_CLASS,
+                  PICKER_MAX_WIDTH_CLASS,
+                  'shrink-[99]',
+                  busy ? 'hidden @min-[368px]/composer:block' : 'hidden @min-[320px]/composer:block',
+                )}
               />
             ) : (
               /*
@@ -2432,7 +2597,7 @@ export function AcpChatPanel({
           </span>
           <span
             data-testid="acp-chat-session-actions"
-            className="flex shrink-0 items-center gap-1"
+            className="flex min-w-0 items-center gap-1"
           >
             {/*
               The status is a **sentence-weight word, not a chip**. Up in the header it was a
@@ -2448,7 +2613,7 @@ export function AcpChatPanel({
                 free space goes into this margin and the buttons stay at the right edge. On one
                 row the group is already content-sized and the margin has nothing to absorb.
               */
-              className="flex shrink-0 items-center gap-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
+              className="flex min-w-0 items-center gap-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
             >
               {/*
                 The same sweep as a running tool row, over the word and its clock together, so
@@ -2457,10 +2622,15 @@ export function AcpChatPanel({
               */}
               <span
                 data-testid="acp-status-words"
-                className={cn('flex items-center gap-1', workingShimmer(composerStatusLive(footerStatus, turnSilent)))}
+                className={cn('min-w-0 truncate', workingShimmer(composerStatusLive(footerStatus, turnSilent)))}
               >
+                {/*
+                  Inline, so the words can end in an ellipsis. It is the row's last resort: at the
+                  narrowest drag a waiting turn's group is wider than the composer, and this word
+                  truncating is what keeps it from being pushed out of the box or under a picker.
+                */}
                 {t(`status.${footerStatus}`)}
-                {turnElapsedLabel ? <span data-testid="acp-turn-elapsed" className="tabular-nums">· {turnElapsedLabel}</span> : null}
+                {turnElapsedLabel ? <> <span data-testid="acp-turn-elapsed" className="tabular-nums">· {turnElapsedLabel}</span></> : null}
               </span>
             </span>
             <TooltipProvider delayDuration={200}>
@@ -2474,6 +2644,7 @@ export function AcpChatPanel({
               {sessions.length > 0 ? (
                 <Tooltip content={t('history')} withProvider={false} side="top">
                   <IconButton
+                    className={sessionButtonStandDown}
                     size="lg"
                     label={t('history')}
                     data-testid="acp-chat-history"
@@ -2484,10 +2655,18 @@ export function AcpChatPanel({
                   </IconButton>
                 </Tooltip>
               ) : null}
-              <Tooltip content={t('newChat')} withProvider={false} side="top">
+              <Tooltip
+                content={displayStatus === 'starting' ? t('newChatWhenReady') : t('newChat')}
+                withProvider={false}
+                side="top"
+              >
+                {/*
+                  The finger floor is the coarse-pointer classes, not an inline style. Written inline it
+                  applied to a mouse too, so this button's plate was 44px beside a 32px history button
+                  on the same row (measured 2026-09-25): two sizes for one kind of control.
+                */}
                 <IconButton
-                  className="atlas-touch-floor"
-                  style={{ minWidth: 'var(--touch-target-min)', minHeight: 'var(--touch-target-min)' }}
+                  className={cn('atlas-touch-floor atlas-touch-floor-wide', sessionButtonStandDown)}
                   size="lg"
                   label={t('newChat')}
                   data-testid="acp-chat-new"
@@ -2496,13 +2675,15 @@ export function AcpChatPanel({
                     setHistoryOpen(false);
                     setPresentationOpen(false);
                     void switchSession(null);
+                    // A new conversation starts in the box it will be typed into, not on `<body>`.
+                    requestComposerFocus();
                   }}
                 >
                   <SquarePen size={ICON_SIZE.md} aria-hidden />
                 </IconButton>
               </Tooltip>
             </TooltipProvider>
-            <span data-testid="acp-chat-send-group" className="flex items-center gap-1">
+            <span data-testid="acp-chat-send-group" className="flex shrink-0 items-center gap-1">
             {busy ? (
               <Chip size="md" tone="secondary" data-testid="acp-chat-stop" onClick={() => {
                 // Cancellation is requested now; protocol completion still waits for the adapter.
@@ -2514,17 +2695,23 @@ export function AcpChatPanel({
                 request?.resolve(null);
                 setDeferredPermission(null);
                 cancel();
+                /*
+                 * Stop unmounts itself, and focus fell to `<body>` with it (2026-09-25). What a
+                 * person does after stopping is say what to do instead, so focus goes there.
+                 */
+                requestComposerFocus();
               }}>
                 <Square size={ICON_SIZE.sm} aria-hidden />
                 {t('stop')}
               </Chip>
             ) : null}
-            <Tooltip content={t('send')} side="top">
+            {/* A disabled control says why, not only what it would do (2026-09-25). */}
+            <Tooltip content={displayStatus === 'starting' ? t('sendWhenReady') : t('send')} side="top">
               <button
                 type="button"
                 aria-label={t('send')}
                 data-testid="acp-chat-send"
-                disabled={!canType || busy || draft.trim().length === 0}
+                disabled={!canSend || busy || draft.trim().length === 0}
                 onClick={submit}
                 className={controlClass({
                   /*
@@ -2725,6 +2912,7 @@ function WorkGroup({
   onHoverSlug,
   liveToolIds,
   awaitingToolId,
+  declinedToolIds,
 }: {
   events: Extract<AcpEvent, { kind: 'thought' | 'tool' }>[];
   active: boolean;
@@ -2734,6 +2922,8 @@ function WorkGroup({
   liveToolIds: ReadonlySet<string>;
   /** The call waiting on the person's permission; see `TranscriptEntry`. */
   awaitingToolId: string | null;
+  /** The calls the person declined at the permission card; their rows say so, not 「failed」. */
+  declinedToolIds: ReadonlySet<string>;
 }) {
   const t = useTranslations('acpChat');
   const [open, setOpen] = useState(false);
@@ -2806,6 +2996,7 @@ function WorkGroup({
                 onHoverSlug={onHoverSlug}
                 liveToolIds={liveToolIds}
                 awaitingToolId={awaitingToolId}
+                declinedToolIds={declinedToolIds}
               />
             ))}
           </div>
@@ -3054,6 +3245,7 @@ function TranscriptEntry({
   fold = null,
   liveToolIds,
   awaitingToolId,
+  declinedToolIds,
 }: {
   event: AcpEvent;
   knownSlugs?: ReadonlySet<string>;
@@ -3069,6 +3261,8 @@ function TranscriptEntry({
    * `liveToolIds`: only the panel holds the pending request.
    */
   awaitingToolId: string | null;
+  /** The calls the person declined at the permission card; their rows say so, not 「failed」. */
+  declinedToolIds: ReadonlySet<string>;
   /** The two doors an `auto-allowed` notice may carry; see `AcpChatPanelProps.noticeActions`. */
   noticeActions?: { openPage: (path: string) => void; askNext: () => void } | null;
   /** Is this the bubble the agent is still writing into? Only that one reveals gradually. */
@@ -3223,13 +3417,26 @@ function TranscriptEntry({
      * something plausible for the unknown makes the screen lie on the day it diverges
      * from what was actually done.
      */
-    const rawLabel = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
-    const outcome = readToolOutcome(
+    const rawLabel = withKindFallback(
+      toolLabel(event.title, VAULT_MCP_SERVER_NAME),
+      event.title,
+      VAULT_MCP_SERVER_NAME,
+      event.toolKind,
+    );
+    const read = readToolOutcome(
       event.rawOutput,
       event.status,
       isVaultTool(event.title, VAULT_MCP_SERVER_NAME),
       liveToolIds.has(event.id),
     );
+    /*
+     * The person's own 「no」 outranks what the adapter reports afterwards, which is `failed`,
+     * and it stops the row claiming the call is still running while the agent reads the answer.
+     * Only a call that did not complete: a declined id that later lands has landed.
+     */
+    const outcome = declinedToolIds.has(event.id) && read.kind === 'status' && read.status !== 'done'
+      ? ({ kind: 'status', status: 'declined' } as const)
+      : read;
     const running = outcome.kind === 'status' && outcome.status === 'running';
     const phase = toolRowPhase(running, event.id === awaitingToolId);
     const broke =
@@ -3317,7 +3524,11 @@ function TranscriptEntry({
           data-tool-label-text
           className={cn('min-w-0 max-w-[45%] shrink truncate', workingShimmer(phase === 'running'))}
         >
-          {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
+          {label.kind === 'known'
+            ? t(`tool.${label.text}`)
+            : label.kind === 'kind'
+              ? t(`toolKind.${label.text}`)
+              : label.text}
         </span>
         {/*
           **How many times the same call happened**, in the label's own column. It is not a badge

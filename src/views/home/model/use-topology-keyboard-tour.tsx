@@ -15,6 +15,14 @@ import { useCallback, useEffect, useEffectEvent, useRef } from "react";
 import { shouldSuppressGlobalShortcuts } from "../lib/blocking-surface";
 import { resolveTourAnchorNodeId } from "../lib/resolve-tour-anchor-node";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
+import { useFocusReturnOnClose } from "./use-focus-return-on-close";
+
+const CANVAS_RETURN = ["ontology-map-canvas"] as const;
+/** The tidy row that opens it on a populated map; the canvas when it came from elsewhere. */
+const BOOTSTRAP_RETURN = ["topology-index-uncataloged-docs", "ontology-map-canvas"] as const;
+/** The popover's own "full detail" button, still there under the closed overlay. */
+const FULL_DETAIL_RETURN = ["map-detail-panel-open-full-detail", "ontology-map-canvas"] as const;
+const TOUR_RETURN = ["topology-tour-button", "ontology-map-canvas"] as const;
 
 interface Options {
   setOntologySearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -318,6 +326,16 @@ export function useTopologyKeyboardTour({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  /*
+   * Where focus lands when a canvas surface closes, by any path (Escape, cancel, backdrop,
+   * finish). Each names the control that opened it first, then the canvas; see
+   * `useFocusReturnOnClose`.
+   */
+  useFocusReturnOnClose(bootstrapOpen, BOOTSTRAP_RETURN);
+  useFocusReturnOnClose(createNodeOpen, CANVAS_RETURN);
+  useFocusReturnOnClose(fullDetailOpen, FULL_DETAIL_RETURN);
+  useFocusReturnOnClose(tour.open, TOUR_RETURN);
 
   const handleSelectImpactMode = useCallback(
     (nextMode: ProjectImpactMode) => {

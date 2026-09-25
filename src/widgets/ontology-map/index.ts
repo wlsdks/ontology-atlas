@@ -41,3 +41,8 @@ export { OntologyMapEdgePanel } from './ui/OntologyMapEdgePanel';
 export { buildDomeModel } from './model/dome-view';
 export type { DomeInputNode, DomeViewKind } from './model/dome-view';
 export { computeGalaxyLayout } from './model/galaxy-layout';
+/**
+ * Where the last frame drew each node's name and disc, for chrome outside the map that must
+ * leave what it explains in view (the guided tour's card).
+ */
+export { readDrawnMapMarks } from './ui/drawn-map-marks';

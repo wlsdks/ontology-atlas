@@ -111,6 +111,23 @@ export interface CardPlacementInput {
    * clamp is where an unchecked "it fits" turns back into an overlap.
    */
   avoidTarget?: boolean;
+  /**
+   * Boxes the card may not cover — the map's top toolbar (2026-09-25). At 1512x949 the
+   * try-click card stood at y 61–309 over the toolbar's second line and cut the path
+   * chip mid-word, because only the target and the window were in its collision
+   * boundary. A placement that would cover one of these moves below it when the card
+   * still fits the window there (and, with `avoidTarget`, still clears the target).
+   */
+  keepClear?: readonly AnchorBox[];
+  /**
+   * **What the step is talking about, drawn on the canvas** — node names and discs the card
+   * should leave in view (interaction audit, 2026-09-25). The "lines are relations" step has no
+   * anchor and centred its card straight onto a domain and its line to the project; the
+   * datasheet step put its card on the node it had just opened. With these given, the card
+   * takes the first place, in its usual order, that covers none of them, or else the place that
+   * covers the least. A target cutout is still never covered.
+   */
+  avoidRects?: readonly AnchorBox[];
 }
 
 export interface CardPlacement {
@@ -137,13 +154,52 @@ export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
   const belowGap = input.belowGap ?? gap;
   const edgeMargin = input.edgeMargin ?? 16;
   const { targetRect, cardWidth, cardHeight, viewportWidth, viewportHeight } = input;
+  const avoid = input.avoidRects ?? [];
+  const covered = (p: { top: number; left: number }) => {
+    let area = 0;
+    for (const r of avoid) {
+      const w = Math.min(p.left + cardWidth, r.left + r.width) - Math.max(p.left, r.left);
+      const h = Math.min(p.top + cardHeight, r.top + r.height) - Math.max(p.top, r.top);
+      if (w > 0 && h > 0) area += w * h;
+    }
+    return area;
+  };
 
   if (!targetRect) {
-    return {
+    const centred = {
       top: clamp((viewportHeight - cardHeight) / 2, edgeMargin, viewportHeight - cardHeight - edgeMargin),
       left: clamp((viewportWidth - cardWidth) / 2, edgeMargin, viewportWidth - cardWidth - edgeMargin),
-      side: "center",
+      side: "center" as const,
     };
+    if (avoid.length === 0 || covered(centred) === 0) return centred;
+    // The centre covers what the step explains: try the other resting places of a free-floating
+    // card — the middle of each edge, then the corners — and keep the clearest, the centre
+    // winning ties so nothing moves without a reason.
+    const top = edgeMargin;
+    const bottom = Math.max(edgeMargin, viewportHeight - cardHeight - edgeMargin);
+    const left = edgeMargin;
+    const right = Math.max(edgeMargin, viewportWidth - cardWidth - edgeMargin);
+    const spots = [
+      { top: bottom, left: centred.left },
+      { top, left: centred.left },
+      { top: centred.top, left: right },
+      { top: centred.top, left },
+      { top: bottom, left: right },
+      { top: bottom, left },
+      { top, left: right },
+      { top, left },
+    ];
+    let best: CardPlacement = centred;
+    let bestArea = covered(centred);
+    for (const spot of spots) {
+      const area = covered(spot);
+      if (area < bestArea) {
+        best = { ...spot, side: "center" };
+        bestArea = area;
+        if (area === 0) break;
+      }
+    }
+    return best;
   }
 
   const centerX = targetRect.left + targetRect.width / 2 - cardWidth / 2;
@@ -178,11 +234,55 @@ export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
     },
   ];
 
-  const place = (candidate: { side: CardPlacementSide; top: number; left: number }): CardPlacement => ({
-    top: clamp(candidate.top, edgeMargin, Math.max(edgeMargin, viewportHeight - cardHeight - edgeMargin)),
-    left: clamp(candidate.left, edgeMargin, Math.max(edgeMargin, viewportWidth - cardWidth - edgeMargin)),
-    side: candidate.side,
-  });
+  const maxTop = Math.max(edgeMargin, viewportHeight - cardHeight - edgeMargin);
+  const keepClear = input.keepClear ?? [];
+  const covers = (top: number, left: number, box: AnchorBox) =>
+    left < box.left + box.width &&
+    left + cardWidth > box.left &&
+    top < box.top + box.height &&
+    top + cardHeight > box.top;
+  const place = (candidate: { side: CardPlacementSide; top: number; left: number }): CardPlacement => {
+    let top = clamp(candidate.top, edgeMargin, maxTop);
+    const left = clamp(candidate.left, edgeMargin, Math.max(edgeMargin, viewportWidth - cardWidth - edgeMargin));
+    // Step below every kept-clear box the card would sit on, as long as the window
+    // still holds it there; otherwise keep the placement (the card stays readable).
+    for (const box of keepClear) {
+      if (!covers(top, left, box)) continue;
+      const below = box.top + box.height + gap;
+      if (below <= maxTop) top = below;
+    }
+    return { top, left, side: candidate.side };
+  };
+
+  if (avoid.length > 0 && !input.avoidTarget) {
+    // Beside a DOM target (a panel cutout): the usual order, but a side that covers what the
+    // step explains yields to one that does not, and among sides that fit, the least covered.
+    // Each side may also slide along the target's edge (to its ends and to the window's), so a
+    // card beside a tall panel can move up or down past the node rather than sit on it.
+    const variants = candidates.flatMap((c) =>
+      c.side === "left" || c.side === "right"
+        ? [
+            c,
+            { ...c, top: targetRect.top },
+            { ...c, top: targetRect.top + targetRect.height - cardHeight },
+            { ...c, top: edgeMargin },
+            { ...c, top: viewportHeight - cardHeight - edgeMargin },
+          ]
+        : [
+            c,
+            { ...c, left: targetRect.left },
+            { ...c, left: targetRect.left + targetRect.width - cardWidth },
+          ],
+    );
+    const scored = variants.map((c, i) => {
+      const placed = place(c);
+      return { placed, fits: c.fits, area: covered(placed), i };
+    });
+    const pick = [...scored].sort((a, b) =>
+      a.fits === b.fits ? a.area - b.area || a.i - b.i : a.fits ? -1 : 1,
+    )[0];
+    if (pick) return pick.placed;
+  }
 
   if (input.avoidTarget) {
     // The target plus the room it needs around it: the plain gap on three sides, and the

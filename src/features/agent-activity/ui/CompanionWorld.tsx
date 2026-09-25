@@ -22,8 +22,8 @@ const MOVE_KEYS=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','Arro
 const visible=()=>document.visibilityState==='visible';const serverVisible=()=>false;
 const subscribe=(listener:()=>void)=>{document.addEventListener('visibilitychange',listener);return()=>document.removeEventListener('visibilitychange',listener);};
 export type CompanionWorldHandle={focus:()=>void;key:(code:string,down:boolean)=>boolean;interact:()=>void;rest:()=>void};
-type Props={game:CompanionGame;construction:ConstructionCounts;active:boolean;blocked:boolean;onInteract:(kind:WorldInteraction)=>void;onStrike:()=>void;onNear:(kind:WorldInteraction|null)=>void};
-export const CompanionWorld=forwardRef<CompanionWorldHandle,Props>(function CompanionWorld({game,construction,active,blocked,onInteract,onStrike,onNear},ref){
+type Props={game:CompanionGame;construction:ConstructionCounts;available?:boolean;active:boolean;blocked:boolean;onInteract:(kind:WorldInteraction)=>void;onStrike:()=>void;onNear:(kind:WorldInteraction|null)=>void};
+export const CompanionWorld=forwardRef<CompanionWorldHandle,Props>(function CompanionWorld({game,construction,available=true,active,blocked,onInteract,onStrike,onNear},ref){
  const t=useTranslations('companion.world');const reduced=usePrefersReducedMotion();const pageVisible=useSyncExternalStore(subscribe,visible,serverVisible);
  const viewport=useRef<HTMLDivElement>(null);const callbacks=useRef({onInteract,onStrike,onNear});
  useEffect(()=>{callbacks.current={onInteract,onStrike,onNear};},[onInteract,onStrike,onNear]);
@@ -77,7 +77,7 @@ export const CompanionWorld=forwardRef<CompanionWorldHandle,Props>(function Comp
   <link rel="preload" as="image" href={withBasePath('/brand/companion-fox-walk.webp')}/>
   <motion.div className={styles.worldPlane} style={{width:WORLD_WIDTH,height:WORLD_HEIGHT,x:cameraX,y:cameraY,scale:zoom,transformOrigin:'0 0'}}>
    {game.mode==='expedition'&&scene?<div className={styles.adventureBackground} data-map={game.area} style={{backgroundImage:`url(${withBasePath(scene.file)})`,backgroundPosition:scene.position}}/>:<Image src={withBasePath(game.mode==='camp'?'/brand/companion-workshop.webp':'/brand/companion-expedition.webp')} alt="" fill unoptimized sizes="1200px" className={styles.worldBackground}/>}
-   {game.mode==='camp'?<CompanionGrowthSigil counts={construction}/>:null}
+   {game.mode==='camp'?<CompanionGrowthSigil counts={construction} available={available}/>:null}
    {game.mode==='camp'?WORLD_SPOTS.map(spot=><div key={spot.id} className={styles.worldSpot} style={{left:spot.anchor.x,top:spot.anchor.y}}><motion.div style={{scale:markerScale}}><RowButton tabIndex={-1} aria-label={t(`spot.${spot.id}`)} disabled={blocked} onClick={()=>walkTo(spot)} className="relative atlas-touch-floor atlas-touch-floor-wide"><span className={styles.interactionMarker} data-near={near===spot.id}>{spot.id==='expedition'?<CompanionItem index={7}/>:<span aria-hidden="true">◆</span>}<span>{t(`spot.${spot.id}`)}</span></span></RowButton></motion.div></div>):null}
    <motion.div className={styles.worldActor} style={{x,y}} data-testid="companion-player" data-pose={shownPose}>
     <span className={styles.actorShadow} data-testid="companion-contact-shadow"/><span className={styles.actorFacing} data-gear-tier={Math.max(...Object.values(game.upgrades).map(equipmentTier))} style={{transform:(pose==='walk'?direction<0:game.mode==='expedition'&&x.get()>760)?'scaleX(-1)':undefined}}><CompanionSprite key={shownPose==='attack'?`${shownPose}-${game.attackId}`:shownPose} pose={shownPose} walkFrame={walkStep} large playing={active&&pageVisible&&!reduced}/></span>

@@ -858,12 +858,17 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
       expect(screen.getByTestId('connectors-found-item')).toHaveTextContent('notion'),
     );
 
-    // Nothing anywhere: one line for the whole dialog, and the by-hand row still under it.
+    // Nothing anywhere: one card for the whole dialog, carrying the one door to the by-hand
+    // form; the fold's own toggle waits until that door has been used.
     fireEvent.change(screen.getByTestId('connectors-search'), { target: { value: 'zzz' } });
     await waitFor(() => expect(screen.getByTestId('connectors-add-none')).toBeInTheDocument());
     expect(screen.queryByTestId('connectors-found-section')).toBeNull();
     expect(screen.queryByTestId('connectors-catalogue-section')).toBeNull();
-    expect(screen.getByTestId('connectors-custom-toggle')).toBeInTheDocument();
+    expect(screen.queryByTestId('connectors-custom-toggle')).toBeNull();
+    fireEvent.click(screen.getByTestId('connectors-add-none-custom'));
+    await waitFor(() => expect(screen.getByTestId('connectors-custom-name')).toHaveFocus());
+    expect(screen.queryByTestId('connectors-add-none-custom')).toBeNull();
+    expect(screen.getByTestId('connectors-custom-toggle')).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('묻는 게 없는 카탈로그 줄은 한 번 눌러 붙고, 꺼진 채로 들어가며, 어디서 왔는지 적힌다', async () => {

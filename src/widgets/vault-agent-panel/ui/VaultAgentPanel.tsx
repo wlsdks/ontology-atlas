@@ -47,6 +47,7 @@ import { AgentPromptText } from './AgentPromptDisclosure';
 import { AgentScopeSheet } from './AgentScopeSheet';
 import { AgentTranscript } from './AgentTranscript';
 import { josa } from '@/shared/lib/ko-josa';
+import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent-panel';
 
 /**
  * The agent panel — a vertical dock the map yields space to on the right.
@@ -161,6 +162,57 @@ export function VaultAgentPanel({
    * below, and this value is only the trigger that re-runs that effect.
    */
   const [secretNonce, setSecretNonce] = useState(0);
+
+  /*
+   * **Escape closes, and every close gives focus back** (2026-09-25). The dock was the
+   * one surface in the map's toolbar that ignored Escape (it stayed open at full
+   * opacity), and closing it with its ✕ dropped focus to BODY while the width
+   * animated to 0, because the focused ✕ went with it. Every other toolbar surface
+   * (view picker, trail, inbox, palette, shortcut sheet, companion) returns focus to
+   * its trigger.
+   *
+   * Escape counts only from inside the panel, and not while an IME is composing in
+   * the composer (Korean input ends a syllable with it); a nested surface that used
+   * the key first marks it with `preventDefault`.
+   */
+  const panelRef = useRef<HTMLElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+  useEffect(() => {
+    if (!open) return undefined;
+    // The aside is always rendered (a closed panel is 0 wide), so this node is the one
+    // the cleanup below will see.
+    const panel = panelRef.current;
+    const active = document.activeElement;
+    openerRef.current =
+      active instanceof HTMLElement && active !== document.body && !panel?.contains(active) ? active : null;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.isComposing || event.defaultPrevented) return;
+      if (!panel || !(event.target instanceof Node) || !panel.contains(event.target)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      onCloseRef.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      const focused = document.activeElement;
+      // Only when focus was in the panel (or already lost): a close pressed on the
+      // toolbar toggle leaves focus on that toggle, where it belongs.
+      if (focused && focused !== document.body && !panel?.contains(focused)) return;
+      // The control that opened it; WebKit does not focus a pressed button, so the
+      // toggle that names this panel in `aria-controls` stands in for it.
+      const opener =
+        openerRef.current?.isConnected
+          ? openerRef.current
+          : document.querySelector<HTMLElement>(`[aria-controls="${VAULT_AGENT_PANEL_ID}"]`);
+      opener?.focus({ preventScroll: true });
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open || !bridgeAvailable) return undefined;
     const bump = () => setSecretNonce((value) => value + 1);
@@ -492,6 +544,8 @@ export function VaultAgentPanel({
 
   return (
     <aside
+      ref={panelRef}
+      id={VAULT_AGENT_PANEL_ID}
       data-testid="vault-agent-panel"
       /*
        * What stands at the screen's right — notifications (toasts) step aside by this

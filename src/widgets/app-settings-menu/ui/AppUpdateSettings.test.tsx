@@ -33,6 +33,11 @@ vi.mock('@/features/app-update', () => ({
   readUpdateMemory: () => memory,
 }));
 
+let versionRead: () => Promise<string> = () => Promise.resolve('1.2.6');
+vi.mock('@tauri-apps/api/app', () => ({
+  getVersion: () => versionRead(),
+}));
+
 vi.mock('@/shared/lib/desktop-shell', () => ({
   isDesktopShell: () => desktop,
 }));
@@ -55,6 +60,7 @@ beforeEach(() => {
   desktop = true;
   contextValue = null;
   memory = { lastCheckedAt: null, dismissedVersion: null };
+  versionRead = () => Promise.resolve('1.2.6');
 });
 
 describe('업데이트 확인 절', () => {
@@ -81,12 +87,18 @@ describe('업데이트 확인 절', () => {
 
   it('아직 안 눌렀으면 결과를 말하지 않는다', () => {
     renderAt({ kind: 'idle' });
-    expect(screen.queryByTestId('app-settings-update-result')).toBeNull();
+    // The live region stands empty so the first result is announced when it arrives.
+    expect(screen.getByTestId('app-settings-update-result').textContent).toBe('');
   });
 
   it('확인 중에는 두 번 누르지 못한다', () => {
     renderAt({ kind: 'checking' });
-    expect(screen.getByTestId('app-settings-update-check')).toBeDisabled();
+    const check = screen.getByTestId('app-settings-update-check');
+    // aria-disabled rather than disabled: a disabled button drops the focus it holds.
+    expect(check).toHaveAttribute('aria-disabled', 'true');
+    expect(check).not.toBeDisabled();
+    fireEvent.click(check);
+    expect(checkNow).not.toHaveBeenCalled();
   });
 
   it('최신이면 최신이라고 말한다 — 토스트가 못 하던 말이다', () => {
@@ -129,5 +141,25 @@ describe('업데이트 확인 절', () => {
       </NextIntlClientProvider>,
     );
     expect(container.firstChild).toBeNull();
+  });
+
+  it('a failed check after a failed version read leaves one warning line, not two', async () => {
+    versionRead = () => Promise.reject(new Error('ipc'));
+    const view = renderAt({ kind: 'idle' });
+    const row = screen.getByTestId('app-settings-update-version');
+    const copy = ko.nav.settingsMenu.appUpdate;
+    await screen.findByText(copy.versionUnknown);
+    fireEvent.click(screen.getByTestId('app-settings-update-check'));
+    contextValue = makeValue({ kind: 'failed', operation: 'check', message: 'network' });
+    view.rerender(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <AppUpdateSettings />
+      </NextIntlClientProvider>,
+    );
+    await screen.findByText(copy.versionUnknownRetried);
+    // The row no longer promises the retry that just ran, and only the result line warns.
+    expect(row.textContent).not.toContain(copy.versionUnknown);
+    const warnings = Array.from(view.container.querySelectorAll('[class*="status-warning"]'));
+    expect(warnings.map((node) => node.textContent)).toEqual([copy.resultFailed]);
   });
 });

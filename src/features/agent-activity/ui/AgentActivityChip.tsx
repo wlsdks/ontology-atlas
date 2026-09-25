@@ -218,6 +218,9 @@ export function AgentActivityChip({
             ? t('lastWorkedAtAgent', { agent: feed.agentName, age: age ?? '' })
             : t('lastWorkedAt', { age: age ?? '' });
   const targetPrefix = feed.work.mode === 'live' ? t('currentTarget') : t('lastTarget');
+  // The short step word a folded status keeps beside its dot — only while live, and
+  // only when the elapsed time is not already standing there.
+  const foldedPhase = feed.work.mode === 'live' && !elapsed ? phase : null;
   const openPanel = (trigger: 'status' | 'bell') => {
     const surface = trigger === 'status' ? 'status' : 'notifications';
     if (openSurface === surface) {
@@ -284,9 +287,10 @@ export function AgentActivityChip({
                   // Joined to the bell: one outline; the bell's own left border is the seam.
                   showBell && 'rounded-r-none border-r-0',
                   // With nothing but the dot left to show, the segment is a tile.
-                  compact && !elapsed && 'w-[var(--chrome-tile-size)] justify-center px-0',
+                  compact && !elapsed && !foldedPhase && 'w-[var(--chrome-tile-size)] justify-center px-0',
                   !compact &&
                     !elapsed &&
+                    !foldedPhase &&
                     'max-xl:w-[var(--chrome-tile-size)] max-xl:justify-center max-xl:px-0',
                 ),
               })}
@@ -315,6 +319,23 @@ export function AgentActivityChip({
               >
                 <AgentWorkFact text={feed.work.mode === 'live' ? liveLabel : statusLabel} />
               </span>
+              {/*
+                The step word stays beside the dot where the sentence folds away
+                (2026-09-25): at 1040 the segment was a bare 36px dot, so "Codex ·
+                verifying" lived only in the accessible name and the native title.
+              */}
+              {foldedPhase ? (
+                <span
+                  data-testid="agent-activity-phase"
+                  aria-hidden
+                  className={cn(
+                    'shrink-0 whitespace-nowrap text-[color:var(--color-text-primary)]',
+                    compact ? undefined : 'xl:hidden',
+                  )}
+                >
+                  {foldedPhase}
+                </span>
+              ) : null}
               {feed.work.mode === 'live' && elapsed ? (
                 <span
                   data-testid="agent-activity-elapsed"

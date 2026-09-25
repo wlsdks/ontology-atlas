@@ -5,14 +5,21 @@ import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
-const EDIT_RELATION_ACTION_CLASS = controlClass({
-  shape: "chip",
-  className:
-    "h-8 justify-center border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] text-label text-[color:var(--map-panel-text-secondary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-primary)]",
-});
 import { Link } from "@/i18n/navigation";
-import { IconButton, RowButton } from "@/shared/ui";
+import { Button, buttonVariants, IconButton, RowButton } from "@/shared/ui";
 import { controlClass } from '@/shared/ui/control-class';
+import { cn } from "@/shared/lib/cn";
+
+/**
+ * The edge panel's one action, in **the node panel's primary grammar** (interaction audit,
+ * 2026-09-25): the same `Button` sm (32, body type, signature weight) on the map panel's chip
+ * radius. It was a 266x32 chip in 11px regular type beside a node panel whose primary is a
+ * filled Button — the same docked slot spoke two dialects. A `<Link>` cannot be a `<Button>`,
+ * so both branches wear the Button's own variant string.
+ */
+const EDIT_RELATION_ACTION_TRIM = "atlas-touch-floor w-full rounded-chip";
+/** The same class for the `<Link>` branch, which cannot be a `<Button>`. */
+const EDIT_RELATION_ACTION_CLASS = cn(buttonVariants({ variant: "primary", size: "sm" }), EDIT_RELATION_ACTION_TRIM);
 
 /**
  * P3b — the edge popover. Built from the same material as the node datasheet
@@ -104,7 +111,7 @@ export function OntologyMapEdgePanel({
       aria-label={sentence}
       tabIndex={-1}
       data-testid="map-edge-panel"
-      className={`topology-chrome-in flex w-[300px] flex-col gap-3 rounded-[var(--map-panel-radius)] outline-none focus-visible:outline-none border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-4 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
+      className={`topology-chrome-in flex w-[var(--map-panel-width)] flex-col gap-3 rounded-[var(--map-panel-radius)] outline-none focus-visible:outline-none border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-4 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--map-panel-text-tertiary)]">
@@ -196,14 +203,14 @@ export function OntologyMapEdgePanel({
       ) : null}
 
       {onEditRelation ? (
-        <button
-          type="button"
+        <Button
+          size="sm"
           onClick={onEditRelation}
           data-testid="map-edge-edit"
-          className={EDIT_RELATION_ACTION_CLASS}
+          className={EDIT_RELATION_ACTION_TRIM}
         >
           {labels.editRelation}
-        </button>
+        </Button>
       ) : meaningEditHref ? (
         <Link
           href={meaningEditHref}

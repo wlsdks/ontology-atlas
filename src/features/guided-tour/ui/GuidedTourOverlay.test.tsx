@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GuidedTourOverlay } from "./GuidedTourOverlay";
 import { useGuidedTour } from "../model/use-guided-tour";
 import { GUIDED_TOUR_STATUS_KEY } from "../model/tour-storage";
+import { EXIT_WINDOW_MS } from "@/shared/lib/use-presence";
 
 vi.mock("next-intl", () => ({
   useLocale: () => 'en',
@@ -71,9 +72,17 @@ describe("GuidedTourOverlay", () => {
     });
     expect(document.activeElement).toBe(screen.getByTestId("guided-tour-card"));
 
+    vi.useFakeTimers();
     act(() => screen.getByTestId("guided-tour-skip").click());
-    expect(screen.queryByTestId("guided-tour-overlay")).not.toBeInTheDocument();
+    // Focus returns at once; the overlay leaves through an inert exit window.
     expect(document.activeElement).toBe(startBtn);
+    const leaving = screen.getByTestId("guided-tour-overlay");
+    expect(leaving).toHaveAttribute("data-state", "closed");
+    expect(leaving).toHaveAttribute("inert");
+    act(() => {
+      vi.advanceTimersByTime(EXIT_WINDOW_MS);
+    });
+    expect(screen.queryByTestId("guided-tour-overlay")).not.toBeInTheDocument();
   });
 
   it("traps Tab and Shift+Tab inside the current tour card", () => {
@@ -257,9 +266,15 @@ describe("GuidedTourOverlay", () => {
       const stepId = overlay.getAttribute("data-tour-step") ?? "?";
       seen.push(stepId);
 
-    // Only the first step is disabled; after that it must exist on every step.
+    // The first step has nowhere to go back to, so it holds [back]'s slot empty; after that
+    // [back] must exist on every step.
       const back = screen.queryByTestId("guided-tour-back");
-      expect(back, `단계 "${stepId}" 에 「이전」이 없다`).toBeInTheDocument();
+      if (seen.length === 1) {
+        expect(back, "the first step shows a dead [back]").not.toBeInTheDocument();
+        expect(screen.getByTestId("guided-tour-back-slot")).toBeInTheDocument();
+      } else {
+        expect(back, `단계 "${stepId}" 에 「이전」이 없다`).toBeInTheDocument();
+      }
 
       const next = screen.queryByTestId("guided-tour-next");
       if (next) {

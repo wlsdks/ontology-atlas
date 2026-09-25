@@ -966,8 +966,15 @@ test.describe("하네스 탭", () => {
     try {
       await installHarnessRuntime(touchPage);
       await touchPage.goto('/ko/?guides=off');
+      await touchPage.waitForLoadState('networkidle');
       await touchPage.getByTestId('first-run-open').click();
+      /* At 390 the gateway already draws the primary tab bar, so it proves nothing about the
+         folder: wait for the gateway itself to leave before navigating away from it. */
+      await expect(touchPage.getByTestId('first-run-open')).toHaveCount(0, { timeout: 60_000 });
       await expect(touchPage.locator('[data-tabbar="primary"]')).toBeVisible();
+      /* The drawn map is the folder read and remembered; a reload before it lands on the gateway. */
+      await touchPage.getByTestId('ontology-map-canvas').waitFor({ state: 'attached', timeout: 60_000 });
+      await touchPage.waitForLoadState('networkidle');
       await touchPage.goto('/ko/ontology/insights/?tab=harness&guides=off');
       const touchOverview = touchPage.getByTestId('harness-coverage-overview');
       await expect(touchOverview).toBeVisible();
@@ -1137,6 +1144,11 @@ test.describe("하네스 탭", () => {
       const el = document.getElementById(id)!;
       const box = el.getBoundingClientRect();
       const hits: string[] = [];
+      /* A panel shown by focus lets the pointer through (`InfoHint`, 2026-09-25), and
+         `elementFromPoint` skips what the pointer skips. Paint order is the question here,
+         so the probe makes the panel hit-testable for the length of the reading. */
+      const previous = el.style.pointerEvents;
+      el.style.pointerEvents = "auto";
       for (let i = 1; i <= 9; i += 1) {
         const y = box.top + (box.height * i) / 10;
         const at = document.elementFromPoint(box.left + box.width / 2, y);
@@ -1144,6 +1156,7 @@ test.describe("하네스 탭", () => {
           hits.push(`${i}/10 → ${at ? `${at.tagName}.${at.className}`.slice(0, 60) : "null"}`);
         }
       }
+      el.style.pointerEvents = previous;
       return hits;
     }, panelId);
     expect(covered, `설명 말풍선이 아래 본문에 덮였다: ${covered.join(" | ")}`).toEqual([]);

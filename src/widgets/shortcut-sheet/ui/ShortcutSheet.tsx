@@ -339,6 +339,15 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
       }),
     [scope, currentSurface, onScreen],
   );
+  /*
+   * **One answer is offered under one name.** On the map, "This screen" and "Map" listed the
+   * same sections (inspection, 2026-09-25: NAVIGATION and MAP under both, scrollHeight 672/673),
+   * so the tab named after the surface the person is already on is dropped - "This screen"
+   * already is it. On a screen with no surface of its own every tab stays.
+   */
+  const scopes = SHORTCUT_SCOPES.filter((key) => key !== currentSurface);
+  const showRelationGuide =
+    currentSurface === "topology" && (scope === "current" || scope === "topology" || scope === "all");
   /** On the current-screen tab with nothing but global sections — say so quietly. */
   const currentHasOwnSections =
     scope !== "current" || visibleSections.some((s) => s.surface !== "global");
@@ -546,7 +555,7 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
               data-testid="shortcut-sheet-scope-tabs"
               className="flex shrink-0 items-center gap-1 border-b border-[color:var(--color-border-soft)] px-5 py-2.5"
             >
-              {SHORTCUT_SCOPES.map((key) => (
+              {scopes.map((key) => (
                 <button
                   key={key}
                   type="button"
@@ -623,14 +632,13 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
               {/* From sm upward it expands into a 2-column grid to cut vertical length.
                   Small viewports use a single column plus internal scroll to avoid overflow. */}
               <div className="grid grid-cols-1 gap-x-6 divide-y divide-[color:var(--color-overlay-2)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-                {visibleSections.map((section, idx) => (
+                {visibleSections.map((section) => (
                   <section
                     key={section.titleKey}
-                    className={
-                      idx % 2 === 1
-                        ? "px-5 py-4 sm:border-t sm:border-t-[color:var(--color-overlay-2)]"
-                        : "px-5 py-4"
-                    }
+                    // No column-local top hairline: the tab row's full-width border already
+                    // closes the header, and a second line over the right column alone read as
+                    // a tab underline that stopped halfway (inspection, 2026-09-25).
+                    className="px-5 py-4"
                   >
                     <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                       {t(`sections.${section.titleKey}`)}
@@ -671,6 +679,41 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                     {t("scope.emptyCurrent")}
                   </p>
                 ) : null}
+                {/*
+                  **The words live under the keys, inside the scroll** (2026-09-25). They sat in
+                  the fixed footer, which took about 330px of a 672px sheet at 1040x720 and left
+                  the shortcut list 233px - five rows and a fade (inspection, `i-1040-sheet.png`).
+                  Reference text that is read once belongs after the list it explains, not
+                  pinned over it.
+                */}
+                <div
+                  data-testid="shortcut-sheet-words"
+                  className="border-t border-[color:var(--color-overlay-2)] px-5 py-4"
+                >
+                  {showRelationGuide ? (
+                    <ShortcutRelationGuide title={t("glossary.relationsTitle")} />
+                  ) : null}
+                  <p
+                    className={cn(
+                      "font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]",
+                      showRelationGuide ? "mt-3" : undefined,
+                    )}
+                  >
+                    {t("glossary.title")}
+                  </p>
+                  <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                    {GLOSSARY_TERMS.map((term) => (
+                      <div key={term} className="flex items-baseline gap-1.5 text-body">
+                        <dt className="shrink-0 font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                          {t(`glossary.${term}Term`)}
+                        </dt>
+                        <dd className="text-[color:var(--color-text-tertiary)]">
+                          {t(`glossary.${term}Definition`)}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
               </div>
               <div
                 aria-hidden
@@ -684,34 +727,7 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
             </div>
 
             <footer className="shrink-0 border-t border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-5 py-3">
-              {currentSurface === "topology" &&
-              (scope === "current" || scope === "topology" || scope === "all") ? (
-                <ShortcutRelationGuide title={t("glossary.relationsTitle")} />
-              ) : null}
-              <p
-                className={cn(
-                  "font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]",
-                  currentSurface === "topology" &&
-                    (scope === "current" || scope === "topology" || scope === "all")
-                    ? "mt-3"
-                    : undefined,
-                )}
-              >
-                {t("glossary.title")}
-              </p>
-              <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
-                {GLOSSARY_TERMS.map((term) => (
-                  <div key={term} className="flex items-baseline gap-1.5 text-body">
-                    <dt className="shrink-0 font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-                      {t(`glossary.${term}Term`)}
-                    </dt>
-                    <dd className="text-[color:var(--color-text-tertiary)]">
-                      {t(`glossary.${term}Definition`)}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="mt-2.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+              <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                 <kbd className="rounded-micro border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">
                   ?
                 </kbd>{" "}

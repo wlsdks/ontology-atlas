@@ -198,6 +198,9 @@ function selectionNodeId(selection: LibraryGraphSelection | null): string | null
   return selection.kind === "wiki" ? `page:${selection.ref}` : `source:${selection.ref}`;
 }
 
+/** The clause separator both locales' caption messages use. */
+const CAPTION_SEPARATOR = " · ";
+
 export function LibraryGraph({
   docs,
   wikiPages,
@@ -537,12 +540,29 @@ export function LibraryGraph({
           counts are the one child that truncates cleanly, so they shrink first and keep the
           whole sentence in their `title`; below `lg` the row still wraps as before.
         */}
+        {/*
+          ⚠️ **Whole clauses give way, never half of one** (2026-09-25). A single truncating
+          line cut at 1040 to *3 sources · 4 pages …*, hiding the concept, cite and mention
+          counts behind an ellipsis. Each clause is now its own unbreakable item on a
+          one-line wrapping row whose second line is clipped, so what does not fit leaves
+          whole, from the end — mentions, then cites, then concepts — and the first clause
+          alone may still ellipsize when even it cannot fit. `textContent` is the caption
+          itself, so assistive technology and `title` still read every count.
+        */}
         <p
           data-testid="library-graph-counts"
           title={caption}
-          className="min-w-0 truncate text-label leading-body text-[color:var(--color-text-tertiary)] lg:shrink-[20]"
+          className="flex max-h-[1lh] min-w-0 flex-wrap overflow-hidden text-label leading-body text-[color:var(--color-text-tertiary)] lg:shrink-[20]"
         >
-          {caption}
+          {caption.split(CAPTION_SEPARATOR).map((clause, index) => (
+            <span
+              key={index}
+              data-counts-clause=""
+              className={index === 0 ? "min-w-0 truncate" : "whitespace-pre"}
+            >
+              {index === 0 ? clause : `${CAPTION_SEPARATOR}${clause}`}
+            </span>
+          ))}
         </p>
         {/*
           Whatever the screen wants to hang on this row — the step-fact clauses and the
