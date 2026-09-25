@@ -3,9 +3,9 @@
  *
  * In a product where an AI agent keeps updating the vault, a person cannot tell
  * changes apart without the time dimension on screen (owner, 2026-07-20).
- * Reduces a document's `updatedAt` (`file.lastModified` locally, build time for
- * the static manifest) to an i18n key plus a count; the caller's next-intl
- * assembles the string.
+ * Reduces a document's change date (`useVaultDocDates`: Git's last commit where
+ * Git knows, `file.lastModified` otherwise, build time for the static manifest)
+ * to an i18n key plus a count; the caller's next-intl assembles the string.
  */
 
 export interface UpdatedAgo {

@@ -297,8 +297,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     selectedSlug, projectsQuery, toast, topologyRouteControls, topologyPreferences
   });
   const {
-    vault, selectedOntologyNode, ontologyInsight, recentChanges, docFreshnessIndex, updatedAgoNowMs,
-    spotlightOn, changedSlugs, dustySlugs, deeplinkSourceReady, handoffSource, vaultIdentity
+    vault, selectedOntologyNode, ontologyInsight, recentChanges, docFreshnessIndex, docFileDateIndex, docDatesReading,
+    updatedAgoNowMs, spotlightOn, changedSlugs, dustySlugs, deeplinkSourceReady, handoffSource, vaultIdentity
   } = topologyVaultReadModel;
   // `AppNavRail` lives in the layout, so this page cannot mount it. It registers the
   // node the rail should render through context instead (`useNavRailSettingsSlot`),
@@ -475,6 +475,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     handoffSource,
     authoredSignificance,
     docFreshnessIndex,
+    docFileDateIndex,
+    docDatesReading,
     editBaselineScopeKey: deeplinkSourceReady ? vaultIdentity : null,
     updatedAgoNowMs,
     formatUpdatedLabel,

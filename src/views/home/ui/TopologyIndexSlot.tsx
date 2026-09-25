@@ -292,13 +292,18 @@ export function TopologyIndexSlot({
                     emptyHint: t("index.emptyHint"),
                     segmentAll: t("index.segmentAll"),
                     // Exposes the adaptive window's actual span (7d → 3d → 1d) in the
-                    // label.
-                    segmentRecent: t("index.segmentRecent", {
-                      count: recentChanges.recentNodeIds.size,
-                      days: recentChanges.windowDays,
-                    }),
+                    // label. While Git is still dating the documents the lens has no
+                    // window and no count yet, so it says its name and claims nothing.
+                    segmentRecent: recentChanges.reading
+                      ? t("controls.spotlightLabel")
+                      : t("index.segmentRecent", {
+                          count: recentChanges.recentNodeIds.size,
+                          days: recentChanges.windowDays,
+                        }),
                     segmentRecentAria: t("index.segmentRecentAria"),
-                    recentEmptyHint: t("index.recentEmptyHint", { days: recentChanges.windowDays }),
+                    recentEmptyHint: recentChanges.reading
+                      ? ""
+                      : t("index.recentEmptyHint", { days: recentChanges.windowDays }),
                     // Spotlight window preset chips.
                     windowChipAuto: t("index.windowChipAuto"),
                     windowChip1: t("index.windowChipDays", { days: 1 }),

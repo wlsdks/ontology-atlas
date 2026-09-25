@@ -4,7 +4,7 @@ import type { useTopologyRouteControls } from "./use-topology-route-controls";
 import { computeOntologyChangeset, useChangeBaseline } from "@/entities/knowledge-graph";
 import { useLocalVault, useSummaryFreshness, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { useProjects } from "@/features/project-data-source";
-import { useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex, useVaultValidationSummary } from "@/features/vault-ontology";
+import { useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocDates, useVaultDocFileDates, useVaultValidationSummary } from "@/features/vault-ontology";
 import { useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
@@ -69,9 +69,13 @@ export function useTopologyVaultReadModel({
    * the insight queue read. */
   const vaultConceptFacts = useVaultConceptFacts();
   const { insight: ontologyInsight } = useOntologyInsight();
-  // "When did this change" for the node datasheet (mode-aware manifest updatedAt).
-  const docFreshnessIndex = useVaultDocFreshnessIndex();
-  // The recent-changes spotlight lens over an mtime window. A numeric `?recent=`
+  // "When did this change" for the node datasheet: from Git where Git knows, the file's
+  // date elsewhere (`useVaultDocDates`), and whether Git is still being asked.
+  const { index: docFreshnessIndex, reading: docDatesReading } = useVaultDocDates();
+  // The files' own dates, for the one question a commit must not answer: was the document
+  // on screen written since it was opened (the datasheet's conflict baseline).
+  const docFileDateIndex = useVaultDocFileDates();
+  // The recent-changes spotlight lens over the same change dates. A numeric `?recent=`
   // preset pins that window; "auto" and off use the adaptive ramp. The map's
   // sinking and the INDEX lens share this one hook as their single source.
   const spotlightOn = recentWindow !== null;
@@ -165,7 +169,7 @@ export function useTopologyVaultReadModel({
     [changeBaseline, ontologyInsight],
   );
   const changedSlugs = ontologyChangeset.touchedNodeIds;
-  // Long-untouched nodes, judged from vault mtime, sink through the engine's
+  // Long-untouched nodes, judged from the same change dates, sink through the engine's
   // existing stale channel (dash + opaque token). Reuses the session snapshot
   // instant so the judgement does not shift mid-session, same as the datasheet's
   // "N days ago" labels.
@@ -325,7 +329,7 @@ export function useTopologyVaultReadModel({
     vault.status === "loaded" ? "loaded-vault" : "read-only-sample";
   return {
     vault, selectedOntologyNode, ontologyInsight, setNeedsVaultReason, recentChanges, docFreshnessIndex,
-    updatedAgoNowMs, spotlightOn, changedSlugs, dustySlugs, deeplinkSourceReady, handoffSource, vaultIdentity,
+    docFileDateIndex, docDatesReading, updatedAgoNowMs, spotlightOn, changedSlugs, dustySlugs, deeplinkSourceReady, handoffSource, vaultIdentity,
     llmBridgeAvailable, gitVaultPath, tAgent, vaultConceptFacts, handleToggleSpotlight, spotlightNeedsVault,
     ontologyChangeset, brokenDocCount, spotlightFitToken, recentNeedsVaultOpen, setRecentNeedsVaultOpen,
     needsVaultReason, summaryFreshness

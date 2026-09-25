@@ -664,7 +664,7 @@ export function TopologyCommandChrome({
                     content={
                       vault.status !== 'loaded'
                         ? t('controls.spotlightSampleTooltip')
-                        : spotlightOn || recentChanges.recentNodeIds.size > 0
+                        : spotlightOn || recentChanges.recentNodeIds.size > 0 || recentChanges.reading
                           ? t('controls.spotlightTooltip', { days: recentChanges.windowDays })
                           : t('controls.spotlightEmptyTooltip')
                     }
@@ -697,10 +697,13 @@ export function TopologyCommandChrome({
                                                                    * On the sample it is **not disabled** — pressing it opens the
                                                                    * folder guidance. Disabled is only for "my folder is open and
                                                                    * there are no recent changes", where there really is nothing to
-                                                                   * show.
+                                                                   * show — known only once Git has dated the documents.
                                                                    */
                       disabled={
-                        !spotlightNeedsVault && !spotlightOn && recentChanges.recentNodeIds.size === 0
+                        !spotlightNeedsVault &&
+                        !spotlightOn &&
+                        !recentChanges.reading &&
+                        recentChanges.recentNodeIds.size === 0
                       }
                       aria-pressed={spotlightOn}
                       aria-label={t('controls.spotlightAriaLabel')}
@@ -748,16 +751,25 @@ export function TopologyCommandChrome({
                             data-surface-token="--topology-utility-lane-count-surface"
                             data-text-token="--topology-utility-lane-count-text"
                             className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-label tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
-                            aria-label={t('controls.spotlightWindowSummary', {
-                              days: recentChanges.windowDays,
-                              count: recentChanges.recentNodeIds.size,
-                            })}
-                            title={t('controls.spotlightWindowSummary', {
-                              days: recentChanges.windowDays,
-                              count: recentChanges.recentNodeIds.size,
-                            })}
+                            // No count is claimed while Git is still dating the documents.
+                            aria-label={
+                              recentChanges.reading
+                                ? undefined
+                                : t('controls.spotlightWindowSummary', {
+                                    days: recentChanges.windowDays,
+                                    count: recentChanges.recentNodeIds.size,
+                                  })
+                            }
+                            title={
+                              recentChanges.reading
+                                ? undefined
+                                : t('controls.spotlightWindowSummary', {
+                                    days: recentChanges.windowDays,
+                                    count: recentChanges.recentNodeIds.size,
+                                  })
+                            }
                           >
-                            {recentChanges.recentNodeIds.size}
+                            {recentChanges.reading ? null : recentChanges.recentNodeIds.size}
                           </span>
                         ) : null
                       }
