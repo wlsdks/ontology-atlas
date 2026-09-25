@@ -10040,6 +10040,51 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
   }
 });
 
+/*
+ * 2026-09-26 map-edit review: a reclassify rewrote each referrer to the new address but kept the
+ * entry in the list for the OLD kind, so a domain read `capabilities: [elements/...]` — an element
+ * counted as a capability, resolving, flagged by nothing. The list now follows the kind, and an
+ * entry the referrer's kind keeps no list for stays and is named in `warnings`.
+ */
+await test("reclassify_concept — typed list entries follow the new kind, or are named in warnings", async () => {
+  const root = makeVault([
+    { slug: "domains/workbench", content: "---\nkind: domain\ntitle: Workbench\ncapabilities: [capabilities/memories, capabilities/map]\nelements: [elements/camera]\n---\n" },
+    { slug: "capabilities/map", content: "---\nkind: capability\ntitle: Map\ndomain: domains/workbench\n---\n" },
+    { slug: "elements/camera", content: "---\nkind: element\ntitle: Camera\ndomain: domains/workbench\n---\n" },
+    { slug: "capabilities/memories", content: "---\nslug: capabilities/memories\nkind: capability\ntitle: Memories\ndomain: domains/workbench\n---\n" },
+    { slug: "capabilities/recall", content: "---\nkind: capability\ntitle: Recall\ndomain: domains/workbench\nelements: [elements/recall-index]\n---\n" },
+    { slug: "elements/recall-index", content: "---\nkind: element\ntitle: Recall index\ndomain: domains/workbench\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "reclassify_concept", {
+        slug: "capabilities/memories", newSlug: "elements/memories",
+        newKind: "element", domain: "domains/workbench", confirm: true,
+      }),
+      // In place, and into a kind the referring capability keeps no list for.
+      callTool(3, "reclassify_concept", {
+        slug: "elements/recall-index", newKind: "capability", domain: "domains/workbench",
+      }),
+    ]);
+    const moved = getCallParsed(responses, 2);
+    assert.equal(moved.changed, true);
+    assert.equal(moved.warnings, undefined);
+    const workbench = readFileSync(join(root, "domains/workbench.md"), "utf8");
+    assert.match(workbench, /capabilities: \[capabilities\/map\]\n/);
+    assert.match(workbench, /elements: \[elements\/camera, elements\/memories\]\n/);
+
+    const kept = getCallParsed(responses, 3);
+    assert.equal(kept.dryRun, true);
+    assert.deepEqual(kept.backlinkUpdates, { updates: [], totalUpdated: 0 });
+    assert.equal(kept.warnings.length, 1);
+    assert.match(kept.warnings[0], /"capabilities\/recall" still lists "elements\/recall-index" under elements:/);
+    assert.match(kept.warnings[0], /remove_relation\(\{from:"capabilities\/recall", to:"elements\/recall-index", type:"elements"\}\)/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 // 2026-08-01 — an agent handed only the vault ended its answer with "there may be
 // more in the body but I could not confirm". The construction rules require the
 // evidence to be written in the body, and the read tool returned the first

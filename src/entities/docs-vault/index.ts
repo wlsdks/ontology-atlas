@@ -93,8 +93,14 @@ export { applyFrontmatterUpdates } from './lib/frontmatter-updates';
 export type { FrontmatterUpdateValue } from './lib/frontmatter-updates';
 export {
   computeRenameRefContext,
+  planKindChangeReferrers,
+  planReferrerRewrite,
   rewriteMovedDocSelf,
-  rewriteRenamedDocRefs,
+} from './lib/rename-ref-rewrites';
+export type {
+  KindChangeReferrer,
+  ReferrerListKept,
+  ReferrerListMove,
 } from './lib/rename-ref-rewrites';
 export { fetchServerDocContent, buildDocsVaultAssetCandidates } from './lib/server-doc-content';
 export { buildReviewQueue, reviewDigest } from './lib/review';

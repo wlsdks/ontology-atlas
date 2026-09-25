@@ -323,6 +323,93 @@ describe("DocFrontmatterBlock", () => {
     await vi.waitFor(() => expect(onPatch).toHaveBeenCalledWith({ kind: "element" }));
   });
 
+  /*
+   * 2026-09-26 map-edit review: after a reclassify, the domain read
+   * `capabilities: [..., elements/companion-memories]`. The entry resolved, so the dangling warning
+   * never fired and no screen said anything, while the map counted it as a capability.
+   */
+  it("flags an entry listed under a list for another kind, which the dangling warning cannot see", () => {
+    const domain: VaultDoc = {
+      ...doc,
+      slug: "domains/human-workbench",
+      frontmatter: {
+        kind: "domain",
+        slug: "domains/human-workbench",
+        title: "Human workbench",
+        uid: "0f0e5f1a-6c53-4a1b-9c2f-2f0f7b6a1d34",
+        capabilities: ["capabilities/agent-work-visibility", "elements/companion-memories"],
+        elements: ["elements/map-camera", "src/widgets/map/camera.ts"],
+      },
+    };
+    const kinds: Record<string, string> = {
+      "capabilities/agent-work-visibility": "capability",
+      "elements/companion-memories": "element",
+      "elements/map-camera": "element",
+    };
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <DocFrontmatterBlock
+          doc={domain}
+          onNavigate={vi.fn()}
+          resolveRef={(token) => (token in kinds ? token : null)}
+          kindOf={(slug) => kinds[slug] ?? null}
+        />
+      </NextIntlClientProvider>,
+    );
+    const rows = screen.getAllByTestId("doc-frontmatter-issue");
+    const row = rows.find((el) => el.getAttribute("data-issue-code") === "kind-list-mismatch");
+    expect(row).toBeDefined();
+    expect(row).toHaveAttribute("data-severity", "warning");
+    expect(row).toHaveTextContent("elements/companion-memories (Element, in capabilities)");
+    expect(row?.textContent).not.toContain("agent-work-visibility");
+    expect(row?.textContent).not.toContain("map-camera");
+    // It resolves, so it is not also reported as missing.
+    expect(rows.some((el) => el.getAttribute("data-issue-code") === "dangling-graph-reference")).toBe(false);
+  });
+
+  it("names, before Save, each document whose list a kind change moves or leaves", () => {
+    const kindChangeReferrers = vi.fn((newKind: string, newSlug: string) =>
+      newKind === "element"
+        ? [
+            {
+              slug: "domains/developer-experience",
+              name: "Developer experience",
+              moved: [{ ref: newSlug, from: "capabilities" as const, to: "elements" as const }],
+              kept: [],
+            },
+            {
+              // A document keeps no list of elements, so its entry stays (spec §5).
+              slug: "cli-decision-record",
+              name: "CLI decision record",
+              moved: [],
+              kept: [{ ref: newSlug, key: "capabilities" as const }],
+            },
+          ]
+        : [],
+    );
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={doc} canEdit onPatch={vi.fn()} kindChangeReferrers={kindChangeReferrers} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
+    expect(screen.queryByTestId("doc-frontmatter-kind-referrers")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("doc-frontmatter-kind-select"), { target: { value: "element" } });
+    // Asked about the address the file will have, not the one it has.
+    expect(kindChangeReferrers).toHaveBeenLastCalledWith("element", "elements/cli-developer-entry");
+    const lines = screen.getAllByTestId("doc-frontmatter-kind-referrer");
+    expect(lines.map((line) => line.getAttribute("data-outcome"))).toEqual(["moved", "kept"]);
+    expect(lines[0]).toHaveTextContent("Developer experience: 역량 목록에 있는 이 문서를 저장하면 요소 목록으로 옮겨요.");
+    expect(lines[1]).toHaveTextContent(
+      "CLI decision record: 역량 목록에 그대로 남아요. CLI decision record에는 요소 목록을 둘 수 없어서",
+    );
+    expect(screen.getByTestId("doc-frontmatter-kind-select").getAttribute("aria-describedby")).toContain(
+      "doc-frontmatter-kind-referrers-capabilities/cli-developer-entry",
+    );
+  });
+
   it("offers the move the folder warning asks for", () => {
     const onMoveToKindFolder = vi.fn();
     const misfiled: VaultDoc = {

@@ -539,6 +539,46 @@ export const VAULT_KIND_SCHEMA = {
   },
 };
 
+/**
+ * The lists named for a kind — spec §5's "project domains", "contained capabilities" and
+ * "contained elements" rows. Each list's name says what its entries ARE, and only some kinds may
+ * keep each one: a project keeps domains, a project or domain keeps capabilities, and a project,
+ * domain or capability keeps elements.
+ *
+ * **Why it is written down here** (2026-09-26, map-edit review). A kind change used to rewrite a
+ * referrer's entry to the node's new address in the SAME list, so reclassifying a capability into
+ * an element left a domain reading `capabilities: [..., elements/companion-memories]`. The entry
+ * resolved, so nothing warned, and the dense-parent check in `vault.mjs` counted an element among
+ * the domain's capabilities. Every rewriter that follows a kind change (`redirectBacklinks` in
+ * `vault.mjs`, the app's `rename-ref-rewrites.ts`) asks this table where the entry belongs now.
+ *
+ * The same-kind bridge spec §5 also allows (a capability grouping capabilities) is deliberately
+ * absent: a bridge is earned by a person's decision, so a rewriter never creates one. When the
+ * referrer's kind keeps no list for the new kind, `containmentKeyFor` answers null and the entry
+ * stays where it is, reported rather than guessed into another relation.
+ *
+ * The app keeps a copy (`src/shared/lib/containment-keys.ts`, no cross-package imports);
+ * `tests/contract/vault-schema.contract.test.ts` compares the two over every kind pair.
+ */
+export const CONTAINMENT_KEY_FOR_KIND = Object.freeze({
+  domain: 'domains',
+  capability: 'capabilities',
+  element: 'elements',
+});
+
+const CONTAINMENT_HOLDER_KINDS = Object.freeze({
+  domains: Object.freeze(['project']),
+  capabilities: Object.freeze(['project', 'domain']),
+  elements: Object.freeze(['project', 'domain', 'capability']),
+});
+
+/** The list a node of `holderKind` keeps a `childKind` node in, or null when it keeps none. */
+export function containmentKeyFor(holderKind, childKind) {
+  const key = CONTAINMENT_KEY_FOR_KIND[childKind];
+  if (!key) return null;
+  return CONTAINMENT_HOLDER_KINDS[key].includes(holderKind) ? key : null;
+}
+
 const GRAPH_ARRAY_KEYS = new Set([
   'domains',
   'capabilities',

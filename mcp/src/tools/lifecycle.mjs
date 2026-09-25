@@ -8,6 +8,7 @@ import {
   buildMarkdown,
   parseFrontmatter,
 } from '../parser.mjs';
+import { containmentEntryKeptMessage } from '../construction-rules.mjs';
 import {
   defaultBody,
   flatSlugIssue,
@@ -48,6 +49,15 @@ function publicBacklinkUpdates(result) {
     updates: result.updates,
     totalUpdated: result.totalUpdated,
   };
+}
+
+/**
+ * One sentence per entry a kind change left in its list (`redirectBacklinks` `keptInPlace`).
+ * Omitted from the result when there are none, like every other `warnings` field.
+ */
+function keptEntryWarnings(result, newKind) {
+  const kept = Array.isArray(result?.keptInPlace) ? result.keptInPlace : [];
+  return kept.map((entry) => containmentEntryKeptMessage({ ...entry, newKind }));
 }
 
 function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, expected_mtime }) {
@@ -275,9 +285,20 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
     nextBody = defaultBody(newKind, title);
     bodyAction = 'regenerated_starter';
   }
-  const backlinkUpdates = canonicalNew === canonicalOld
-    ? { updates: [], totalUpdated: 0 }
-    : redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: true });
+  /*
+   * A kind change also moves each referrer's entry from the list for the old kind to the list
+   * for the new one (2026-09-26, map-edit review: a domain was left reading
+   * `capabilities: [elements/x]`). That holds when the slug stays too, so the referrers are
+   * visited whenever either the address or the kind changes. An entry the referrer's kind keeps
+   * no list for stays where it was and is named in `warnings`.
+   */
+  const kindChanges = oldKind !== newKind;
+  const rewritesReferrers = canonicalNew !== canonicalOld || kindChanges;
+  const kindOption = kindChanges ? { targetKind: newKind } : {};
+  const backlinkUpdates = rewritesReferrers
+    ? redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: true, ...kindOption })
+    : { updates: [], totalUpdated: 0 };
+  const previewWarnings = keptEntryWarnings(backlinkUpdates, newKind);
   const dryRun = !confirm;
   const base = {
     ok: false,
@@ -294,7 +315,7 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
     bodyAction,
     backlinkUpdates: publicBacklinkUpdates(backlinkUpdates),
   };
-  if (!confirm) return base;
+  if (!confirm) return { ...base, ...(previewWarnings.length > 0 ? { warnings: previewWarnings } : {}) };
   const nextFrontmatter = { ...sourceDoc.frontmatter, kind: newKind };
   // Same alias rule as rename_concept: only a `slug:` mirroring the file slug
   // follows the move; a differing value is a referenced user-facing alias.
@@ -306,9 +327,10 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   // One plan, for the same reason as rename: this tool also creates a file,
   // rewrites backlinks, and deletes the old file, and stopping midway left a
   // half-vault with a forked kind.
-  const appliedBacklinks = canonicalNew === canonicalOld
-    ? backlinkUpdates
-    : redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: false, deferWrite: true });
+  const appliedBacklinks = rewritesReferrers
+    ? redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: false, deferWrite: true, ...kindOption })
+    : backlinkUpdates;
+  const appliedWarnings = keptEntryWarnings(appliedBacklinks, newKind);
   applyAllOrNothing([
     {
       op: 'write',
@@ -334,6 +356,7 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
     dryRun: false,
     changed: true,
     backlinkUpdates: publicBacklinkUpdates(appliedBacklinks),
+    ...(appliedWarnings.length > 0 ? { warnings: appliedWarnings } : {}),
     postWriteMaintenance: compactPostWriteMaintenance(),
   };
 }
@@ -384,7 +407,14 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
     throw new VaultConflictError(intoSlug, expected_into_mtime, intoDoc.mtime);
   }
 
-  const preview = redirectBacklinks(VAULT_ROOT, fromSlug, intoSlug, { dryRun: true });
+  // Folding a node into one of another kind is a kind change for every referrer: an entry in
+  // the list for the absorbed node's kind moves to the list for the survivor's (the same rule as
+  // reclassify_concept), and one the referrer's kind keeps no list for is named in `warnings`.
+  const intoKind = typeof intoDoc.frontmatter?.kind === 'string' ? intoDoc.frontmatter.kind.trim() : '';
+  const fromKind = typeof fromDoc.frontmatter?.kind === 'string' ? fromDoc.frontmatter.kind.trim() : '';
+  const kindOption = intoKind && fromKind && intoKind !== fromKind ? { targetKind: intoKind } : {};
+  const preview = redirectBacklinks(VAULT_ROOT, fromSlug, intoSlug, { dryRun: true, ...kindOption });
+  const previewWarnings = keptEntryWarnings(preview, intoKind);
 
   if (!confirm) {
     return {
@@ -399,6 +429,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
       fromPath,
       deleted: false,
       backlinkUpdates: publicBacklinkUpdates(preview),
+      ...(previewWarnings.length > 0 ? { warnings: previewWarnings } : {}),
       capturedFrom: {
         frontmatter: fromDoc.frontmatter,
         bodyExcerpt: extractSummaryExcerpt(fromDoc.body, 200),
@@ -414,6 +445,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   const result = redirectBacklinks(VAULT_ROOT, fromSlug, intoSlug, {
     dryRun: false,
     deferWrite: true,
+    ...kindOption,
   });
   const intoPlanIndex = result.plan.findIndex((operation) => operation.path === intoPath);
   const redirectedInto = intoPlanIndex >= 0
@@ -444,6 +476,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
       expectedMtime: fromDoc.mtime,
     },
   ], { requireRevisions: true });
+  const appliedWarnings = keptEntryWarnings(result, intoKind);
 
   return {
     ok: true,
@@ -457,6 +490,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
     fromPath,
     deleted: true,
     backlinkUpdates: publicBacklinkUpdates(result),
+    ...(appliedWarnings.length > 0 ? { warnings: appliedWarnings } : {}),
     changed: true,
     capturedFrom: {
       frontmatter: fromDoc.frontmatter,

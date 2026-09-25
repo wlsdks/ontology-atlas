@@ -2751,6 +2751,27 @@
       "danglingRefs": "가리키는 문서가 이 폴더에 없어요: {names}{more}. 지도에는 그 연결선이 그려지지 않아요. 편집에서 지우거나 있는 개념으로 바꿔 주세요.",
       "danglingRefsMore": " 외 {count}개",
       "danglingRefTitle": "이 폴더에 이 이름의 문서가 없어요",
+      "misfiledRefs": "다른 종류의 목록에 들어 있는 문서가 있어요: {names}{more}. 지도와 개수는 이 항목을 실제 종류가 아니라 들어 있는 목록대로 셉니다. 편집에서 맞는 목록으로 옮기거나 지워 주세요.",
+      "misfiledRefName": "{ref} ({kind}, {list} 목록)",
+      "referrerLists": {
+        "listName": {
+          "domains": "도메인",
+          "capabilities": "역량",
+          "elements": "요소",
+          "domain": "도메인"
+        },
+        "movedPreview": "{name}: {from} 목록에 있는 이 문서를 저장하면 {to} 목록으로 옮겨요.",
+        "keptPreview": "{name}: {list} 목록에 그대로 남아요. {name}에는 {to} 목록을 둘 수 없어서 그 문서에 경고가 떠요.",
+        "keptNoListPreview": "{name}: {list} 목록에 그대로 남아요. 이 종류를 담는 목록은 어느 문서에도 없어서 그 문서에 경고가 떠요.",
+        "keptDomainPreview": "{name}: 이 문서를 도메인으로 적어 두었는데, 저장하면 더 이상 도메인이 아니에요. 그대로 남고 그 문서에 경고가 떠요.",
+        "previewMore": "그 밖에 문서 {count}개도 같은 방식으로 바뀌어요.",
+        "movedReceipt": "{names}에서 이 문서를 {from} 목록 대신 {to} 목록에 적었어요.",
+        "movedReceiptMixed": "{names}에서 이 문서를 {to} 목록으로 옮겨 적었어요.",
+        "movedEffect": "이제 지도와 모든 개수에서 그 문서의 {to} 항목으로 셉니다.",
+        "keptReceipt": "{names}에는 다른 종류의 목록에 그대로 남아 있어요. 그 문서에 경고가 떠요.",
+        "failedReceipt": "쓰지 못해 그대로인 문서: {names}.",
+        "namesMore": " 외 {count}개"
+      },
       "moveToKindFolder": "{folder}로 옮기기",
       "validatorWarningsAriaLabel": "온톨로지 검증 경고",
       "validatorIssues": {
