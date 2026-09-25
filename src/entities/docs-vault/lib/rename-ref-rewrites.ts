@@ -118,6 +118,38 @@ function resolveMdTarget(target: string, referrerSlug: string): string {
   return stack.join('/').replace(/\.md$/, '');
 }
 
+/**
+ * The moved document's own bytes, as they are written at the new address.
+ *
+ * **Why it exists** (2026-09-26, map-edit QA). A rename rewrote every referrer byte for byte
+ * and then copied the moved file verbatim, so the file living at
+ * `capabilities/mcp-tool-server-renamed.md` still declared
+ * `slug: capabilities/mcp-tool-server` — the one document in the folder whose `slug:`
+ * disagreed with its own path.
+ *
+ * The rule is MCP `rename_concept`'s (`mcp/src/tools/lifecycle.mjs`): `slug:` follows the
+ * move **only when it mirrors the old file slug**. A different value is a user-facing alias
+ * that other documents reference by that spelling (the dogfood project carries
+ * `slug: ontology-atlas`), and a document with no `slug:` gains none — its path is its
+ * address. `updates` carries any other frontmatter change that belongs to the same move (a
+ * reclassify changes `kind:` in the same bytes), so the new file is written once and never
+ * exists in a half-moved state.
+ */
+export function rewriteMovedDocSelf(
+  raw: string,
+  args: {
+    oldSlug: string;
+    newSlug: string;
+    updates?: Record<string, FrontmatterUpdateValue>;
+  },
+): string {
+  const { frontmatter } = parseFrontmatter(raw);
+  const updates: Record<string, FrontmatterUpdateValue> = { ...(args.updates ?? {}) };
+  const declared = typeof frontmatter.slug === 'string' ? frontmatter.slug.trim() : null;
+  if (declared === args.oldSlug) updates.slug = args.newSlug;
+  return Object.keys(updates).length > 0 ? applyFrontmatterUpdates(raw, updates) : raw;
+}
+
 export function rewriteRenamedDocRefs(
   raw: string,
   args: {

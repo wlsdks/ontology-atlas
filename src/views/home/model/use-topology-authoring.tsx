@@ -2,8 +2,8 @@ import type { useTopologyPreferences } from "./use-topology-preferences";
 import type { useTopologyVaultReadModel } from "./use-topology-vault-read-model";
 
 import { buildNewNodeDoc } from "@/entities/docs-vault";
-import { buildOntologyChangeSet, type MeaningEditRelation, meaningEditRelationForEdgeType, type OntologyChangeSet, type OntologyRelationEditPlan, parseOntologyMeaningEditParam, resolveNodeAgentTarget, resolveOntologyBuilderNodeSlug } from "@/entities/knowledge-graph";
-import { useAgentServer } from "@/entities/vault-session";
+import { buildOntologyChangeSet, type MeaningEditRelation, meaningEditRelationForEdgeType, type OntologyChangeSet, type OntologyRelationEditPlan, parseOntologyMeaningEditParam } from "@/entities/knowledge-graph";
+import { useAgentServer, VaultConflictError } from "@/entities/vault-session";
 import type { AcpTurnActivity } from "@/features/acp-session";
 import { type MeaningEditorPreview } from "@/features/ontology-meaning-editor";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
@@ -14,7 +14,7 @@ import { useToast } from "@/shared/ui";
 import { type AcpOntologyRelationPreview } from "@/widgets/acp-chat-panel";
 import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveAgentFocusNodeId, resolveOntologyRelationPreview } from "../lib/resolve-agent-focus-node";
-import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
+import { resolveNodeVaultRef, resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { type CreateNodeKind } from "../ui/CreateNodeForm";
 import { selectTopologyNodeRouteState } from "./url-state";
 import { useAgentConnectModel } from "./use-agent-connect-model";
@@ -86,10 +86,7 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
         .filter((node) => ["project", "domain", "capability", "element"].includes(node.kind))
         .map((node) => ({
           id: node.id,
-          slug: (resolveNodeAgentTarget(node)?.ref ?? resolveOntologyBuilderNodeSlug(node)).replace(
-            /^ontology\//,
-            "",
-          ),
+          slug: resolveNodeVaultRef(node),
           title: node.display ?? node.title,
           kind: node.kind,
         }))
@@ -369,15 +366,18 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     }
   }, [closeCreateNode, createNodeConfirming, createNodeProposal, setRouteState, t, toast, vault]);
   // Domain picker options for "add concept": pick an existing domain node by name
-  // rather than typing a slug. `value` is the bare tail slug (`domain:auth` →
-  // `auth`); `buildNewNodeDoc` normalises it again through `canonicalizeDomainRef`
-  // on save.
+  // rather than typing a slug. `value` is **the domain document's own address**
+  // (`domains/agent-access`), resolved the way the meaning editor resolves a relation
+  // target — the spelling every agent-written `domain:` in the vault already uses.
+  // It used to be the node id's bare tail (`agent-access`), the one writer in the
+  // vault that dropped the folder (map-edit QA D10, 2026-09-26). `buildNewNodeDoc`
+  // passes it through `canonicalizeDomainRef` on save, which keeps the folder.
   const createNodeDomainOptions = useMemo(
     () =>
       (ontologyInsight?.nodes ?? [])
         .filter((node) => node.kind === "domain")
         .map((node) => ({
-          value: node.id.includes(":") ? node.id.slice(node.id.indexOf(":") + 1) : node.id,
+          value: resolveNodeVaultRef(node),
           label: node.display ?? node.title,
         }))
         .sort((a, b) => a.label.localeCompare(b.label)),
@@ -465,8 +465,22 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
           expectedMtime: nodeEditTarget.mtime,
         });
         toast.show(t("explanationEdit.saved"), "success");
-      } catch {
-        toast.show(t("explanationEdit.error"), "error");
+      } catch (error) {
+        /*
+         * **A conflict says what happened and what the next save does** (2026-09-26, map-edit
+         * QA D3). Every failure here used to read «Could not save the explanation», so the one
+         * refusal that is working as designed — the file changed elsewhere first, and writing
+         * over it would have lost that change — was indistinguishable from a broken disk. The
+         * docs page's quick patch already told the two apart; this is the same split.
+         *
+         * Rethrown so the editor keeps the person's draft (`NodeExplanationEdit` stays open on
+         * a rejection): the sentence promises the text is still there.
+         */
+        toast.show(
+          t(error instanceof VaultConflictError ? "explanationEdit.conflict" : "explanationEdit.error"),
+          "error",
+        );
+        throw error;
       }
     },
     [nodeEditTarget, nodeBody, vault, toast, t],

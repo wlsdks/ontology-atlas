@@ -241,7 +241,9 @@ describe("buildMeaningGapRows — 검사 소견 줄", () => {
 });
 
 describe("buildDomainChoices", () => {
-  it("문서가 있는 도메인만, tail-slug 형태로, 이름순", () => {
+  // Values are the domain document's own address since 2026-09-26 (map-edit QA D10): the
+  // bare tail was a second spelling of the relation every agent-written node qualifies.
+  it("offers only domains with a document, by that document's address, in name order", () => {
     const choices = buildDomainChoices([
       node({
         id: "domain:z",
@@ -270,8 +272,8 @@ describe("buildDomainChoices", () => {
     // By name — that latin sorts before Korean is ICU's decision; the property needed here is that
     // opening the same folder twice gives the same order.
     expect(choices).toEqual([
-      { value: "zeta", label: "Zeta" },
-      { value: "alpha", label: "알파" },
+      { value: "domains/zeta", label: "Zeta" },
+      { value: "ontology/domains/alpha", label: "알파" },
     ]);
   });
 });

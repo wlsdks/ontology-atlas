@@ -14,8 +14,13 @@ const localVaultMocks = vi.hoisted(() => ({
   useLocalVault: vi.fn(),
 }));
 
+// A session with no refused save has nothing on its conflict record; the D5 case below
+// supplies its own.
 vi.mock('./local-vault-context', () => ({
-  useLocalVault: localVaultMocks.useLocalVault,
+  useLocalVault: () => ({
+    consumeReportedConflicts: () => new Set<string>(),
+    ...localVaultMocks.useLocalVault(),
+  }),
 }));
 
 const toastMocks = vi.hoisted(() => ({
@@ -219,6 +224,52 @@ describe('VaultDiffToaster', () => {
     rerender(<VaultDiffToaster />);
     expect(toastMocks.show).toHaveBeenCalledTimes(2);
     expect(toastMocks.show).toHaveBeenLastCalledWith('편집 — answer', 'success');
+  });
+
+  /*
+   * Map-edit QA D5 (2026-09-26): a save refused as a conflict raised its own honest notice,
+   * then this watcher reported the same outside write as a green «edited» toast that took the
+   * front of the stack. The refusal already said it; the watcher stays quiet for exactly that
+   * change and reports the next one.
+   */
+  it('a change a refused save already reported raises no second notice; the next one does', () => {
+    const conflicts = new Map([['capabilities/doctor', 2000]]);
+    const consumeReportedConflicts = (observed: ReadonlyMap<string, number | null>) => {
+      const reported = new Set<string>();
+      for (const [slug, mtime] of observed) {
+        const at = conflicts.get(slug);
+        if (at === undefined) continue;
+        conflicts.delete(slug);
+        if (at === mtime) reported.add(slug);
+      }
+      return reported;
+    };
+    const doctor = { title: '에이전트 환경 진단', frontmatter: { kind: 'capability' } };
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      manifest: manifestWith([{ slug: 'capabilities/doctor', mtime: 1000, ...doctor }]),
+      consumeSelfWrittenSlugs: () => new Set(),
+      consumeReportedConflicts,
+    });
+    const { rerender } = render(<VaultDiffToaster />);
+
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      manifest: manifestWith([{ slug: 'capabilities/doctor', mtime: 2000, ...doctor }]),
+      consumeSelfWrittenSlugs: () => new Set(),
+      consumeReportedConflicts,
+    });
+    rerender(<VaultDiffToaster />);
+    expect(toastMocks.show).not.toHaveBeenCalled();
+
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      manifest: manifestWith([{ slug: 'capabilities/doctor', mtime: 3000, ...doctor }]),
+      consumeSelfWrittenSlugs: () => new Set(),
+      consumeReportedConflicts,
+    });
+    rerender(<VaultDiffToaster />);
+    expect(toastMocks.show).toHaveBeenCalledWith('역량 편집 — 에이전트 환경 진단', 'success');
   });
 
   it('자체 쓰기 예약은 빈 diff에서 살아남고, 해당 파일 도착 때만 한 번 소비된다', () => {

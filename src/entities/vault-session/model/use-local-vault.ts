@@ -22,6 +22,7 @@ import {
   applyFrontmatterUpdates,
   type FrontmatterUpdateValue,
   computeRenameRefContext,
+  rewriteMovedDocSelf,
   rewriteRenamedDocRefs,
 } from '@/entities/docs-vault';
 import {
@@ -1572,6 +1573,47 @@ export function useLocalVaultInternal() {
     }
     return consumed;
   }, []);
+  /*
+   * **A refused save has already told the person about the outside change** (2026-09-26,
+   * map-edit QA D5). A save refused as a conflict raises the one message the person needs:
+   * the file changed elsewhere, refresh and save again. The watcher then picks the same
+   * outside write up a moment later and reported it again as a green «Capability edited»
+   * notice, which took the front of the stack and pushed the refusal behind it — read right
+   * after pressing Save, it looks like the save landed.
+   *
+   * So a refusal records **which change it reported**: the slug and the modification time
+   * the disk showed at that moment. The diff toaster drops a modification only when it
+   * observes that same slug at that same time (`consumeReportedConflicts`); a later outside
+   * edit carries a newer time and is reported as usual. Observing the slug at any time
+   * clears the record, so nothing lingers to swallow a notice that is owed.
+   */
+  const reportedConflictsRef = useRef<Map<string, number>>(new Map());
+  const guardExpectedMtime = useCallback(
+    (slug: string, expectedMtime: number | undefined, currentMtime: number) => {
+      try {
+        assertExpectedMtime(slug, expectedMtime, currentMtime);
+      } catch (error) {
+        if (error instanceof VaultConflictError) {
+          reportedConflictsRef.current.set(error.slug, error.currentMtime);
+        }
+        throw error;
+      }
+    },
+    [],
+  );
+  const consumeReportedConflicts = useCallback(
+    (observed: ReadonlyMap<string, number | null>): ReadonlySet<string> => {
+      const reported = new Set<string>();
+      for (const [slug, mtime] of observed) {
+        const conflictMtime = reportedConflictsRef.current.get(slug);
+        if (conflictMtime === undefined) continue;
+        reportedConflictsRef.current.delete(slug);
+        if (conflictMtime === mtime) reported.add(slug);
+      }
+      return reported;
+    },
+    [],
+  );
 
   const saveDoc = useCallback(
     async (
@@ -1583,7 +1625,7 @@ export function useLocalVaultInternal() {
       if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
       await requireWritePermission(fh);
       const file = await fh.getFile();
-      assertExpectedMtime(slug, options.expectedMtime, file.lastModified);
+      guardExpectedMtime(slug, options.expectedMtime, file.lastModified);
       assertIdentityTransition(await file.text(), content);
       assertNodeIdentityContent(slug, content, state.manifest?.docs ?? []);
       const writable = await fh.createWritable();
@@ -1593,7 +1635,7 @@ export function useLocalVaultInternal() {
       // Rescan the whole manifest after a successful save so backlinks and headings follow.
       if (state.handle) await load(state.handle);
     },
-    [state.fileHandles, state.handle, state.manifest, load, requireWritePermission, markSelfWrite],
+    [state.fileHandles, state.handle, state.manifest, load, requireWritePermission, markSelfWrite, guardExpectedMtime],
   );
 
   /**
@@ -1636,15 +1678,26 @@ export function useLocalVaultInternal() {
   /**
    * Deletes the file for a slug from local disk. Intermediate directories are deliberately
    * left in place even when empty, since other files may land there.
+   *
+   * `options.expectedMtime` is the same guard as `saveDoc`'s: the person confirmed deleting
+   * the version they were shown, so a file an agent or an editor changed since then is
+   * refused rather than removed along with that change (MCP `delete_concept` takes the
+   * same `expected_mtime`).
    */
   const deleteDoc = useCallback(
-    async (slug: string) => {
+    async (slug: string, options: { expectedMtime?: number } = {}) => {
+      if (typeof options.expectedMtime === 'number') {
+        const fh = state.fileHandles.get(slug);
+        if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
+        const file = await fh.getFile();
+        guardExpectedMtime(slug, options.expectedMtime, file.lastModified);
+      }
       const resolved = await getParentAndName(slug, false);
       if (!resolved) throw new Error('Vault is not open');
       await resolved.parent.removeEntry(resolved.fileName);
       if (state.handle) await load(state.handle);
     },
-    [state.handle, getParentAndName, load],
+    [state.fileHandles, state.handle, getParentAndName, load, guardExpectedMtime],
   );
 
   /**
@@ -1669,7 +1722,7 @@ export function useLocalVaultInternal() {
       if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
       await requireWritePermission(fh);
       const file = await fh.getFile();
-      assertExpectedMtime(slug, opts.expectedMtime, file.lastModified);
+      guardExpectedMtime(slug, opts.expectedMtime, file.lastModified);
       const raw = await file.text();
       assertIdentityPatch(raw, updates);
       const next = applyFrontmatterUpdates(raw, updates);
@@ -1681,7 +1734,7 @@ export function useLocalVaultInternal() {
       markSelfWrite(slug);
       if (!opts.skipRefresh && state.handle) await load(state.handle);
     },
-    [state.fileHandles, state.handle, state.manifest, load, requireWritePermission, markSelfWrite],
+    [state.fileHandles, state.handle, state.manifest, load, requireWritePermission, markSelfWrite, guardExpectedMtime],
   );
 
   /**
@@ -1691,12 +1744,21 @@ export function useLocalVaultInternal() {
    * With `rewriteBacklinks=true`, references to `oldSlug` in other markdown bodies
    * (`[[oldSlug]]`, `[text](...oldSlug.md)`) are rewritten to `newSlug`. Best effort — a
    * failure there does not undo the rename.
+   *
+   * The moved file is not copied verbatim: `rewriteMovedDocSelf` moves its own `slug:` when
+   * that mirrors the old address (the MCP `rename_concept` rule) and applies
+   * `frontmatterUpdates` in the same bytes, which is how a reclassify changes `kind:` and
+   * folder in one write. `expectedMtime` is `saveDoc`'s conflict guard, on the source.
    */
   const renameDoc = useCallback(
     async (
       oldSlug: string,
       newSlug: string,
-      opts: { rewriteBacklinks?: boolean } = {},
+      opts: {
+        rewriteBacklinks?: boolean;
+        expectedMtime?: number;
+        frontmatterUpdates?: Record<string, FrontmatterUpdateValue>;
+      } = {},
     ) => {
       if (oldSlug === newSlug) return;
       /*
@@ -1719,7 +1781,14 @@ export function useLocalVaultInternal() {
       const oldFh = state.fileHandles.get(oldSlug);
       if (!oldFh) throw new Error(`Local vault: no file handle for "${oldSlug}"`);
       const file = await oldFh.getFile();
-      const content = await file.text();
+      guardExpectedMtime(oldSlug, opts.expectedMtime, file.lastModified);
+      const raw = await file.text();
+      if (opts.frontmatterUpdates) assertIdentityPatch(raw, opts.frontmatterUpdates);
+      const content = rewriteMovedDocSelf(raw, {
+        oldSlug,
+        newSlug,
+        updates: opts.frontmatterUpdates,
+      });
       const newResolved = await getParentAndName(newSlug, true);
       if (!newResolved) throw new Error('Vault is not open');
       const newFh = await newResolved.parent.getFileHandle(
@@ -1785,7 +1854,7 @@ export function useLocalVaultInternal() {
       markSelfWrite(newSlug);
       if (state.handle) await load(state.handle);
     },
-    [state.fileHandles, state.handle, state.manifest, getParentAndName, load, markSelfWrite],
+    [state.fileHandles, state.handle, state.manifest, getParentAndName, load, markSelfWrite, guardExpectedMtime],
   );
 
   // Once on mount: try to restore the handle from IDB, and switch to 'unsupported' when the
@@ -2110,6 +2179,7 @@ export function useLocalVaultInternal() {
     markSelfWrite,
     unmarkSelfWrite,
     consumeSelfWrittenSlugs,
+    consumeReportedConflicts,
     selfEditTimestamps,
   };
 }

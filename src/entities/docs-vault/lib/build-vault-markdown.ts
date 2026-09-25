@@ -96,8 +96,9 @@ export function buildVaultMarkdown(args: {
   lines.push(`uid: ${generateNodeUid(args.uid)}`);
   lines.push(`slug: ${args.slug}`);
   lines.push(`kind: ${args.kind}`);
-  // One canonical `domain:` serialization (the bare tail slug) so every writer
-  // agrees and analytics do not split one domain across two keys.
+  // One canonical `domain:` serialization (the domain document's own address,
+  // `domains/<name>`) so every writer agrees and analytics do not split one domain
+  // across two keys.
   const domain = canonicalizeDomainRef(args.domain);
   if (domain) lines.push(`domain: ${quoteYamlScalar(domain)}`);
   lines.push(`title: ${quoteYamlScalar(args.title)}`);

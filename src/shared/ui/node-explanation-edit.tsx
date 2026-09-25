@@ -56,11 +56,19 @@ export function NodeExplanationEdit({
     setEditing(false);
     setDraft(value);
   };
+  /*
+   * **A refused save keeps the draft** (2026-09-26, map-edit QA D3). The editor closed on any
+   * settled save, so a save the vault refused — the file changed elsewhere first — dropped the
+   * person's text along with the editor. A rejection now leaves the editor open with the draft
+   * intact; the caller owns the sentence that says why (this primitive has no strings of its own).
+   */
   const commit = async () => {
     setSaving(true);
     try {
       await onSave(draft);
       setEditing(false);
+    } catch {
+      // Stay in the editor: the draft is still the person's, and the caller has reported the refusal.
     } finally {
       setSaving(false);
     }

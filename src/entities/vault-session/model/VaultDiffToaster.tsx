@@ -42,7 +42,8 @@ import { useLocalVault } from './local-vault-context';
  * (a command like delete_concept raises one), and repeating it from a polling result is noise.
  */
 export function VaultDiffToaster() {
-  const { status, manifest, consumeSelfWrittenSlugs, agentActivityLog } = useLocalVault();
+  const { status, manifest, consumeSelfWrittenSlugs, consumeReportedConflicts, agentActivityLog } =
+    useLocalVault();
   const toast = useToast();
   const t = useTranslations('featuresMisc.vaultDiffToaster');
   const kindLabel = useOntologyKindLabel();
@@ -86,8 +87,18 @@ export function VaultDiffToaster() {
     // itself; re-reporting them from a polling diff is a burst of noise.
     const observedSlugs = new Set([...added, ...modified]);
     const selfWritten = consumeSelfWrittenSlugs(observedSlugs);
+    // A save this session refused as a conflict already said the file changed elsewhere, and
+    // that refusal is the message the person needs in front: a second, green notice for the
+    // same outside write would bury it and read as the save having landed (map-edit QA D5,
+    // 2026-09-26). Only the exact change the refusal reported is dropped — the same slug at
+    // the same modification time.
+    const alreadyReported = consumeReportedConflicts(
+      new Map(modified.map((slug) => [slug, currentMap.get(slug) ?? null])),
+    );
     const externalAdded = added.filter((slug) => !selfWritten.has(slug));
-    const externalModified = modified.filter((slug) => !selfWritten.has(slug));
+    const externalModified = modified.filter(
+      (slug) => !selfWritten.has(slug) && !alreadyReported.has(slug),
+    );
 
     // Deletions cannot be counted from the manifest — a rename or merge looks like "deleted +
     // added" (measured, see the diff-manifest.ts comment). A tool name knows the intent, so only
@@ -110,7 +121,7 @@ export function VaultDiffToaster() {
     })) {
       toast.show(formatVaultDiffToastMessage(planned, t, kindLabel), planned.variant);
     }
-  }, [status, manifest, toast, t, kindLabel, locale, consumeSelfWrittenSlugs, agentActivityLog]);
+  }, [status, manifest, toast, t, kindLabel, locale, consumeSelfWrittenSlugs, consumeReportedConflicts, agentActivityLog]);
 
   return null;
 }

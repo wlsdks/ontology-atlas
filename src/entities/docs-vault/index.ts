@@ -93,6 +93,7 @@ export { applyFrontmatterUpdates } from './lib/frontmatter-updates';
 export type { FrontmatterUpdateValue } from './lib/frontmatter-updates';
 export {
   computeRenameRefContext,
+  rewriteMovedDocSelf,
   rewriteRenamedDocRefs,
 } from './lib/rename-ref-rewrites';
 export { fetchServerDocContent, buildDocsVaultAssetCandidates } from './lib/server-doc-content';

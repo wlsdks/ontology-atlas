@@ -67,6 +67,18 @@ describe("NodeExplanationEdit", () => {
     await waitFor(() => expect(screen.queryByTestId("node-explanation-input")).not.toBeInTheDocument());
   });
 
+  // Map-edit QA D3 (2026-09-26): a save the vault refused closed the editor and dropped the text.
+  it("a refused save keeps the editor open with the person's draft", async () => {
+    const onSave = vi.fn().mockRejectedValue(new Error("refused"));
+    render(<NodeExplanationEdit value="old" onSave={onSave} labels={labels} />);
+    fireEvent.click(screen.getByTestId("node-explanation-edit-button"));
+    fireEvent.change(screen.getByTestId("node-explanation-input"), { target: { value: "my draft" } });
+    fireEvent.click(screen.getByTestId("node-explanation-save"));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith("my draft"));
+    await waitFor(() => expect(screen.getByTestId("node-explanation-save")).toBeEnabled());
+    expect(screen.getByTestId("node-explanation-input")).toHaveValue("my draft");
+  });
+
   it("취소 → onSave 미호출, 원래 본문 복귀", () => {
     const onSave = vi.fn();
     render(<NodeExplanationEdit value="old" onSave={onSave} labels={labels} />);
