@@ -135,23 +135,46 @@ export async function loadProjectSourceSnapshot(input: {
     return { view: invalidReadView(input.projectSlug), bindings: [], readStatus: result.status };
   }
   const bindings = result.status === "ok" ? result.bindings : [];
+  const unprobed = deriveProjectSourceView({
+    projectSlug: input.projectSlug,
+    bindings,
+    graphHash: input.graphHash,
+    probe: null,
+  });
+  /*
+   * **The folder is asked only when its answer can change the receipt.** Currentness is
+   * the one thing a probe decides, and only a stored receipt whose currentness is still
+   * open has anything to compare: with no folder, no receipt, or a receipt the ontology
+   * has already outdated, the view is final without it. Probing anyway walked the whole
+   * repository (a git inventory plus a fingerprint of every file) and threw the answer
+   * away, every time the project was opened: measured 2026-09-26 on a bound folder with
+   * no receipt, two walks of 156–474 ms each before the panel could say "measure the
+   * code", and longer on a larger repository.
+   */
+  const probeCanDecide =
+    bindings.length === 1
+    && unprobed.receipt !== null
+    && unprobed.currentness === "unavailable";
+  if (!probeCanDecide || !input.inspect) {
+    return { view: unprobed, bindings, readStatus: result.status };
+  }
   let probe: ProjectSourceProbe | null = null;
-  if (bindings.length === 1 && input.inspect) {
-    try {
-      const inspection = await input.inspect(bindings[0].rootPath);
-      probe = inspection ? probeFromInspection(inspection) : null;
-    } catch {
-      // Passive refresh must not erase a valid receipt. Currentness becomes
-      // unavailable until an explicit remeasure can explain the failure.
-    }
+  try {
+    const inspection = await input.inspect(bindings[0].rootPath);
+    probe = inspection ? probeFromInspection(inspection) : null;
+  } catch {
+    // Passive refresh must not erase a valid receipt. Currentness becomes
+    // unavailable until an explicit remeasure can explain the failure.
   }
   return {
-    view: deriveProjectSourceView({
-      projectSlug: input.projectSlug,
-      bindings,
-      graphHash: input.graphHash,
-      probe,
-    }),
+    view: probe
+      ? deriveProjectSourceView({
+          projectSlug: input.projectSlug,
+          bindings,
+          graphHash: input.graphHash,
+          probe,
+        })
+      : unprobed,
     bindings,
     readStatus: result.status,
   };
@@ -445,6 +468,16 @@ export function useProjectSourceModel(input: {
   const snapshotMatchesProject = Boolean(
     snapshot && snapshot.view.projectSlug === input.projectSlug,
   );
+  /*
+   * **"Not read yet" is its own state, not the absence of a receipt.** `view` is null both
+   * while this project's receipt is being read and where no receipt can exist (no folder
+   * open, not a project), and the inspector could not tell the two apart: it drew a
+   * non-project layout first and rebuilt itself when the receipt arrived — a new block, a
+   * new meta line, the relations folding and every button pushed down, with nothing on
+   * screen saying anything was still coming (2026-09-25 sweep, 710 ms after the panel
+   * looked finished). With this the panel keeps the receipt's place from its first frame.
+   */
+  const loading = Boolean(store && input.projectSlug && graphHash) && !snapshotMatchesProject;
   const canRunSourceAction = Boolean(
     runtimeAvailable
     && snapshot
@@ -456,6 +489,8 @@ export function useProjectSourceModel(input: {
 
   return {
     view: snapshotMatchesProject ? snapshot?.view ?? null : null,
+    /** This project's receipt is being read; `view` is null until it lands. */
+    loading,
     busy,
     error: snapshotMatchesProject ? error : null,
     runtimeAvailable,

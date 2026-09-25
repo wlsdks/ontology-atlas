@@ -3206,6 +3206,7 @@
       "updated_weeksAgo": "changed {count}w ago",
       "updated_monthsAgo": "changed {count}mo ago",
       "sourceHeading": "Code evidence",
+      "sourcePending": "Reading the analysis receipt",
       "sourceKind_git": "Git repository",
       "sourceKind_folder": "Local folder",
       "sourceStatus_not_measured": "Code evidence not measured",

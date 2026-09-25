@@ -33,7 +33,7 @@ export {
   getProjectRuntimeDetailUrl,
   resolveProjectFallbackRoute,
 } from "./lib/detail-href";
-export { getTopologyFocusHref, getTopologyProjectHref } from "./lib/topology-href";
+export { getTopologyFocusHref, getTopologyProjectHref, getTopologyProjectNodeHref } from "./lib/topology-href";
 export { ProjectCard } from "./ui/ProjectCard";
 export { ProjectMetaGrid } from "./ui/ProjectMetaGrid";
 export { projectToInput } from "./model/to-input";

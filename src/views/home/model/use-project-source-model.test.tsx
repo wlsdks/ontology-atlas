@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { VaultDoc } from "@/entities/docs-vault";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { buildProjectSourceReceipt, serializeProjectSourceState } from "@/shared/lib/project-source-receipt";
 import { createMemoryProjectSourceStore } from "@/shared/lib/project-source-store";
 import type { ProjectSourceInspection } from "@/shared/lib/tauri-vault-fs";
 import {
@@ -141,6 +142,125 @@ describe("project source model", () => {
       bindingCardinality: 0,
     });
     expect(JSON.stringify(snapshot.view)).not.toMatch(/percent|confidence|score/i);
+  });
+
+  /*
+   * 2026-09-25 sweep: every open of a bound project walked the whole repository (a git
+   * inventory plus a fingerprint per file) and threw the answer away when there was no
+   * receipt to compare it with. The folder is asked only when it can change the receipt.
+   */
+  const { rootPath: _rootPath, ...probe } = inspection;
+  const binding = {
+    projectSlug: "music",
+    sourceId: inspection.sourceId,
+    rootPath: inspection.rootPath,
+    kind: "git" as const,
+    boundAt: "2026-08-02T12:00:00.000Z",
+  };
+
+  it("reads a bound folder with no receipt without walking it", async () => {
+    const inspect = vi.fn(async () => inspection);
+    const snapshot = await loadProjectSourceSnapshot({
+      store: createMemoryProjectSourceStore(serializeProjectSourceState({ bindings: [binding] })),
+      projectSlug: "music",
+      graphHash: "project-graph-v1:test",
+      inspect,
+    });
+
+    expect(inspect).not.toHaveBeenCalled();
+    expect(snapshot.view).toMatchObject({
+      status: "needs_evidence",
+      topGap: { id: "receipt_missing" },
+      nextAction: { id: "measure_source" },
+      bindingCardinality: 1,
+    });
+  });
+
+  it("does not walk the folder for a receipt the ontology has already outdated", async () => {
+    const inspect = vi.fn(async () => inspection);
+    const receipt = buildProjectSourceReceipt({
+      projectSlug: "music",
+      graphHash: "project-graph-v1:before",
+      probe,
+      witnesses: [],
+      measuredAt: "2026-08-02T12:00:00.000Z",
+    });
+    const snapshot = await loadProjectSourceSnapshot({
+      store: createMemoryProjectSourceStore(serializeProjectSourceState({ bindings: [{ ...binding, receipt }] })),
+      projectSlug: "music",
+      graphHash: "project-graph-v1:after",
+      inspect,
+    });
+
+    expect(inspect).not.toHaveBeenCalled();
+    expect(snapshot.view).toMatchObject({ topGap: { id: "ontology_changed" }, currentness: "stale" });
+  });
+
+  it("walks the folder once to settle a current receipt's currentness", async () => {
+    const inspect = vi.fn(async () => inspection);
+    const receipt = buildProjectSourceReceipt({
+      projectSlug: "music",
+      graphHash: "project-graph-v1:test",
+      probe,
+      witnesses: [],
+      measuredAt: "2026-08-02T12:00:00.000Z",
+    });
+    const snapshot = await loadProjectSourceSnapshot({
+      store: createMemoryProjectSourceStore(serializeProjectSourceState({ bindings: [{ ...binding, receipt }] })),
+      projectSlug: "music",
+      graphHash: "project-graph-v1:test",
+      inspect,
+    });
+
+    expect(inspect).toHaveBeenCalledTimes(1);
+    expect(inspect).toHaveBeenCalledWith(inspection.rootPath);
+    expect(snapshot.view.currentness).toBe("current");
+  });
+
+  // The inspector keeps the project layout while this is true (2026-09-25 sweep).
+  it("says the receipt is being read until it is, and never where no receipt can exist", async () => {
+    const vault = createFakeVaultHandle();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const read = vault.handle.getDirectoryHandle.bind(vault.handle);
+    const slowHandle = {
+      getDirectoryHandle: async (name: string, options?: { create?: boolean }) => {
+        await gate;
+        return read(name, options);
+      },
+    } as unknown as FileSystemDirectoryHandle;
+    // One runtime per hook: a fresh object each render would restart the read forever.
+    const sourceRuntime = runtime();
+    const { result } = renderHook(() => useProjectSourceModel({
+      projectSlug: "music",
+      vaultHandle: slowHandle,
+      nodes,
+      docs,
+      runtime: sourceRuntime,
+    }));
+
+    expect(result.current.loading).toBe(true);
+    expect(result.current.view).toBeNull();
+    await act(async () => { release(); });
+    await waitFor(() => expect(result.current.view?.status).toBe("not_measured"));
+    expect(result.current.loading).toBe(false);
+
+    const noFolder = renderHook(() => useProjectSourceModel({
+      projectSlug: "music",
+      vaultHandle: null,
+      nodes,
+      docs,
+      runtime: sourceRuntime,
+    }));
+    expect(noFolder.result.current.loading).toBe(false);
+    const notAProject = renderHook(() => useProjectSourceModel({
+      projectSlug: null,
+      vaultHandle: vault.handle,
+      nodes,
+      docs,
+      runtime: sourceRuntime,
+    }));
+    expect(notAProject.result.current.loading).toBe(false);
   });
 
   it("keeps cancellation silent, preserves the receipt view, and restores trigger focus", async () => {

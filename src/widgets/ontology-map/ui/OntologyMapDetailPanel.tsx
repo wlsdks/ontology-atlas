@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type RefObject,
@@ -15,6 +16,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  CircleDashed,
   CircleHelp,
   Clipboard,
   Copy,
@@ -31,6 +33,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import type { ProjectSourceStatus, ProjectSourceView } from "@/shared/lib/project-source-receipt";
+import { useDelayedVisible, useHeldValue } from "@/shared/lib/use-presence";
 import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
@@ -206,6 +209,8 @@ interface OntologyMapDetailPanelLabels {
   summaryFreshnessAction?: string;
   /** Project-only source receipt copy, preformatted by the caller. */
   sourceHeading?: string;
+  /** The status line while the receipt is still being read (`projectSourceLoading`). */
+  sourcePending?: string;
   sourceKind?: string;
   sourceStatus?: string;
   sourceMeasuredAt?: string;
@@ -410,6 +415,13 @@ export interface OntologyMapDetailPanelProps {
   showSourcePath?: boolean;
   /** Project-only 0/1 source binding receipt. Other kinds ignore it. */
   projectSource?: ProjectSourceView | null;
+  /**
+   * The receipt is still being read. `projectSource` is null both while it is read and
+   * where no receipt can exist (no folder open); only this tells the panel to keep the
+   * project layout and hold the receipt's place, instead of drawing another layout first
+   * and rebuilding itself when the receipt lands.
+   */
+  projectSourceLoading?: boolean;
   /** Executes the receipt's already-bounded next action (connect or remeasure). */
   onProjectSourceAction?: () => void | Promise<void>;
   /** Keeps the prior receipt visible while a replacement is measured. */
@@ -622,6 +634,41 @@ function ProjectSourceRemedy({
         </>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * **The receipt's place while it is read** — its two standing rows (status, then when it
+ * was measured) on the same lines and at the same heights the answer will take, so the
+ * answer changes words, not layout.
+ *
+ * The line says so only once the read outlives `SKELETON_DELAY_MS`: an unbound project's
+ * record answers in a few milliseconds, and a "reading" line flashed for one frame would
+ * announce a wait that never happened. Until then the rows keep their height and show
+ * nothing. The measured row has no honest content before the answer, so it only holds
+ * its line.
+ */
+function ProjectSourcePendingRows({ label }: { label?: string }) {
+  const announced = useDelayedVisible(true);
+  return (
+    <>
+      <div
+        data-testid="map-project-source-pending-line"
+        data-pending-announced={announced}
+        className={[
+          "flex min-w-0 items-center gap-1.5 text-[color:var(--map-panel-text-tertiary)]",
+          announced ? "ai-row-swap" : "invisible",
+        ].join(" ")}
+      >
+        <span className="flex shrink-0 items-center justify-center">
+          <CircleDashed size={ICON_SIZE.md} aria-hidden="true" />
+        </span>
+        <span className="truncate">{label}</span>
+      </div>
+      <div aria-hidden="true" className="invisible flex items-center justify-between gap-3">
+        <span>&nbsp;</span>
+      </div>
+    </>
   );
 }
 
@@ -956,6 +1003,7 @@ export function OntologyMapDetailPanel({
   showHandoff = true,
   showSourcePath = true,
   projectSource = null,
+  projectSourceLoading = false,
   onProjectSourceAction,
   projectSourceBusy = false,
   projectSourceError = null,
@@ -965,6 +1013,20 @@ export function OntologyMapDetailPanel({
 }: OntologyMapDetailPanelProps) {
   const isProject = kind === "project";
   const showProjectSource = isProject && projectSource !== null;
+  /**
+   * **The layout is decided by the kind, not by when the receipt lands** (2026-09-25 sweep).
+   *
+   * Everything a project draws differently — the receipt block, the "Concept document"
+   * meta line, the hairline over the actions, the folded relations, the footer without a
+   * slug — used to wait for `projectSource`, which arrives a native read (and on a bound
+   * folder, a repository walk) after the panel. So the panel opened looking finished in
+   * another layout and, 710 ms later, rebuilt itself: a block inserted above the buttons,
+   * the meta line rewritten, the relations folded, every button pushed down. While the
+   * receipt is read the panel is already the project's, and the receipt's place is held
+   * by its own heading and a pending line (`ProjectSourcePendingRows`).
+   */
+  const projectSourcePending = isProject && projectSource === null && projectSourceLoading;
+  const projectLayout = showProjectSource || projectSourcePending;
   /**
    * **The prescription attaches to the diagnosis.** The diagnosis
    * ("No connected code folder" — no code folder is connected) used to sit at
@@ -1002,6 +1064,21 @@ export function OntologyMapDetailPanel({
     boxRef: remedyBoxRef,
     contentRef: remedyContentRef,
   } = useRowDisclosure(showSourceRemedy);
+  /*
+   * The diagnosis above the remedy arrives with it, so it arrives the same way. Once the
+   * pending line holds the receipt's place, this sentence is the one part of the arrival
+   * that still pushes the actions down; drawn outright it would move them by its one or
+   * two lines in a single frame while the remedy under it eased in. The text is held
+   * through the exit, so a gap that closes (a measurement that settled it) leaves as
+   * itself, not as "no follow-up needed".
+   */
+  const showSourceGap = Boolean(showProjectSource && projectSource.topGap && labels.sourceGap);
+  const heldSourceGap = useHeldValue(showSourceGap ? labels.sourceGap : null);
+  const {
+    mounted: gapMounted,
+    boxRef: gapBoxRef,
+    contentRef: gapContentRef,
+  } = useRowDisclosure(showSourceGap);
   const showInlineHandoff = showHandoff && !(
     showProjectSource && projectSource.nextAction.id === "use_current_evidence"
   );
@@ -1065,7 +1142,7 @@ export function OntologyMapDetailPanel({
       : []),
   ];
   const compactProjectRelations = useViewportBelow(1513);
-  const collapseProjectRelations = showProjectSource && compactProjectRelations;
+  const collapseProjectRelations = projectLayout && compactProjectRelations;
   // Mockup redesign (2026-07-24) — the top stats is one aggregate line. The
   // per-type breakdown belongs to each relation group header's count chip below
   // (one fact, once).
@@ -1479,9 +1556,9 @@ export function OntologyMapDetailPanel({
             </div>
           ) : null}
           {/* For a project source, the OPS rail below takes over the meta position as well. */}
-          {!showProjectSource || domain || updatedAtLabel ? (
+          {!projectLayout || domain || updatedAtLabel ? (
             <div className="flex items-center justify-between gap-3">
-              {!showProjectSource ? (
+              {!projectLayout ? (
                 updatedAtLabel ? (
                   <span
                     data-testid="map-datasheet-updated-at"
@@ -1567,20 +1644,24 @@ export function OntologyMapDetailPanel({
           ) : null}
 
           {/* A project replaces the same position with the receipt rail. Everything
-              else keeps the existing plain stats (one aggregate line). */}
-          {showProjectSource ? (
+              else keeps the existing plain stats (one aggregate line). While the receipt is
+              read the same element holds its place — heading, a pending status line and the
+              measured line's height — so the rows arrive where they will stay, and the live
+              region announcing them is the one that was already there. */}
+          {projectLayout ? (
             <div
-              data-testid="map-project-source-receipt"
-              data-source-status={projectSource.status}
-              data-source-version={projectSource.contractVersion}
-              data-source-measured-at={projectSource.measuredAt ?? "unmeasured"}
-              data-source-top-gap={projectSource.topGap?.id ?? "none"}
-              data-source-action={projectSource.nextAction.id}
-              data-source-currentness={projectSource.currentness}
-              data-source-cardinality={projectSource.bindingCardinality}
+              data-testid={showProjectSource ? "map-project-source-receipt" : "map-project-source-pending"}
+              data-source-status={showProjectSource ? projectSource.status : undefined}
+              data-source-version={showProjectSource ? projectSource.contractVersion : undefined}
+              data-source-measured-at={showProjectSource ? projectSource.measuredAt ?? "unmeasured" : undefined}
+              data-source-top-gap={showProjectSource ? projectSource.topGap?.id ?? "none" : undefined}
+              data-source-action={showProjectSource ? projectSource.nextAction.id : undefined}
+              data-source-currentness={showProjectSource ? projectSource.currentness : undefined}
+              data-source-cardinality={showProjectSource ? projectSource.bindingCardinality : undefined}
               data-source-layout="status-action-separated"
-              data-source-gap-visible={projectSource.topGap !== null}
+              data-source-gap-visible={showProjectSource ? projectSource.topGap !== null : undefined}
               aria-live="polite"
+              aria-busy={showProjectSource ? undefined : true}
               className="flex flex-col gap-2 text-body text-[color:var(--map-panel-text-tertiary)]"
             >
               {labels.sourceHeading ? (
@@ -1591,58 +1672,80 @@ export function OntologyMapDetailPanel({
                   {labels.sourceHeading}
                 </span>
               ) : null}
-              <div className="flex min-w-0 items-center gap-1.5 text-[color:var(--map-panel-text-secondary)]">
-                <ProjectSourceStatusIcon status={projectSource.status} />
-                <span className="truncate font-[var(--font-weight-signature)]">{labels.sourceStatus}</span>
-                {labels.sourceKind ? (
-                  <span className="ml-auto shrink-0 font-mono text-label text-[color:var(--map-panel-text-quaternary)]">
-                    {labels.sourceKind}
-                  </span>
-                ) : null}
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>{labels.sourceMeasuredAt}</span>
-                <span className="shrink-0">{labels.sourceCurrentness}</span>
-              </div>
-              {projectSource.topGap && labels.sourceGap ? (
-                <span
-                  data-testid="map-project-source-gap"
-                  className="text-[color:var(--map-panel-text-secondary)]"
-                >
-                  {labels.sourceGapLabel ? (
-                    <span className="font-[var(--font-weight-signature)]">{labels.sourceGapLabel}: </span>
-                  ) : null}
-                  {labels.sourceGap}
-                </span>
-              ) : null}
-              <div
-                ref={remedyBoxRef}
-                className="ai-row-disclosure"
-                data-state={showSourceRemedy ? "open" : "closed"}
-                // It stays in the DOM while collapsing, so it is disabled immediately
-                // to keep an invisible button out of tab order and the screen reader.
-                inert={!showSourceRemedy}
-              >
-                {remedyMounted ? (
-                  /*
-                    The card's 2px lead-in is padding on the measured body, not a margin on the
-                    card: a child's top margin collapses through the body, so the disclosure
-                    sized itself 2px short and its `overflow: hidden` cut the card's bottom
-                    border off (2026-09-25 sweep, at 1512 and 1040).
-                  */
-                  <div ref={remedyContentRef} className="ai-row-disclosure-body pt-0.5">
-                    <ProjectSourceRemedy
-                      why={labels.sourceWhy}
-                      actionLabel={labels.sourceAction}
-                      busyLabel={labels.sourceBusy}
-                      busy={projectSourceBusy}
-                      onAction={onProjectSourceAction}
-                      degraded={projectSourceDegraded}
-                      proposal={projectSourceProposal}
-                      onConfirmProposal={onProjectSourceConfirmProposal}
-                    />
+              {showProjectSource ? (
+                /* Keyed apart from the pending rows, so these mount fresh and `ai-row-swap`
+                   crossfades them in: the line that said "reading" becomes the answer in place. */
+                <Fragment key="read">
+                  <div className="ai-row-swap flex min-w-0 items-center gap-1.5 text-[color:var(--map-panel-text-secondary)]">
+                    <ProjectSourceStatusIcon status={projectSource.status} />
+                    <span className="truncate font-[var(--font-weight-signature)]">{labels.sourceStatus}</span>
+                    {labels.sourceKind ? (
+                      <span className="ml-auto shrink-0 font-mono text-label text-[color:var(--map-panel-text-quaternary)]">
+                        {labels.sourceKind}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="ai-row-swap flex items-center justify-between gap-3">
+                    <span>{labels.sourceMeasuredAt}</span>
+                    <span className="shrink-0">{labels.sourceCurrentness}</span>
+                  </div>
+                </Fragment>
+              ) : (
+                <ProjectSourcePendingRows key="pending" label={labels.sourcePending} />
+              )}
+              {/* One flex item for the diagnosis and its remedy: the column's 8px gap is paid
+                  once, by this item, whether or not either has arrived. The gap line's own
+                  spacing rides inside its disclosure (`pb-2`), so it opens from zero instead of
+                  a new flex item adding 8px in one frame before any easing starts. */}
+              <div>
+                {gapMounted ? (
+                  <div
+                    ref={gapBoxRef}
+                    className="ai-row-disclosure"
+                    data-state={showSourceGap ? "open" : "closed"}
+                  >
+                    <div ref={gapContentRef} className="ai-row-disclosure-body pb-2">
+                      <p
+                        data-testid="map-project-source-gap"
+                        className="text-[color:var(--map-panel-text-secondary)]"
+                      >
+                        {labels.sourceGapLabel ? (
+                          <span className="font-[var(--font-weight-signature)]">{labels.sourceGapLabel}: </span>
+                        ) : null}
+                        {heldSourceGap}
+                      </p>
+                    </div>
                   </div>
                 ) : null}
+                <div
+                  ref={remedyBoxRef}
+                  className="ai-row-disclosure"
+                  data-state={showSourceRemedy ? "open" : "closed"}
+                  // It stays in the DOM while collapsing, so it is disabled immediately
+                  // to keep an invisible button out of tab order and the screen reader.
+                  inert={!showSourceRemedy}
+                >
+                  {remedyMounted ? (
+                    /*
+                      The card's 2px lead-in is padding on the measured body, not a margin on the
+                      card: a child's top margin collapses through the body, so the disclosure
+                      sized itself 2px short and its `overflow: hidden` cut the card's bottom
+                      border off (2026-09-25 sweep, at 1512 and 1040).
+                    */
+                    <div ref={remedyContentRef} className="ai-row-disclosure-body pt-0.5">
+                      <ProjectSourceRemedy
+                        why={labels.sourceWhy}
+                        actionLabel={labels.sourceAction}
+                        busyLabel={labels.sourceBusy}
+                        busy={projectSourceBusy}
+                        onAction={onProjectSourceAction}
+                        degraded={projectSourceDegraded}
+                        proposal={projectSourceProposal}
+                        onConfirmProposal={onProjectSourceConfirmProposal}
+                      />
+                    </div>
+                  ) : null}
+                </div>
               </div>
               {/* The failure answers the press, so it stands under the button that was pressed
                   (2026-09-25 sweep). Inserted above the remedy it pushed the button down from
@@ -1665,7 +1768,7 @@ export function OntologyMapDetailPanel({
             aria-label={labels.actionsGroupLabel}
             data-testid="map-detail-panel-actions"
             data-primary-action-suppressed={suppressPrimaryAction ? "true" : undefined}
-            className={showProjectSource
+            className={projectLayout
               ? "flex items-center gap-1.5 border-t border-[color:var(--map-panel-zone-divider)] pt-3"
               : "flex items-center gap-1.5"}
           >
@@ -1814,7 +1917,7 @@ export function OntologyMapDetailPanel({
           data-testid="map-detail-panel-footer"
           className="sticky bottom-0 flex items-center gap-2.5 rounded-b-[var(--map-panel-radius)] border-t border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-[var(--map-panel-pad)] py-[11px]"
         >
-          {!showProjectSource ? (
+          {!projectLayout ? (
             <span
               data-testid="map-detail-panel-slug"
               title={slug}
@@ -1842,7 +1945,7 @@ export function OntologyMapDetailPanel({
               className={controlClass({
                 shape: "chip",
                 size: "lg",
-                className: showProjectSource
+                className: projectLayout
                   ? "atlas-touch-floor shrink-0 border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] text-[color:var(--map-panel-text-tertiary)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)]"
                   : "atlas-touch-floor shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--map-panel-primary-border)] bg-[color:var(--map-panel-primary-surface)] text-[color:var(--map-panel-primary-text)] hover:border-[color:var(--map-panel-primary-border-hover)] hover:bg-[color:var(--map-panel-primary-surface-hover)]",
               })}

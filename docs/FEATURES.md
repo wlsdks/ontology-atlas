@@ -320,7 +320,7 @@ had become false).
   - **Health** — enters via the maintenance queue count chip on the view rail; `mode=health` deep links preserved
 
 #### Canvas (`ontology-map` — custom canvas-2D engine + Graphology ForceAtlas2 physics)
-- **Click node** → right-side panel opens (`ProjectDrawer` for project nodes, the 352px node datasheet for domain/capability/element nodes — see "Node datasheet" below)
+- **Click node** → right-side panel opens: the 352px node datasheet for every kind, a project node's carrying its code-evidence receipt (see "Node datasheet" below). The `ProjectDrawer` opens only for a bare project slug (`?p=<slug>`, the hub rail and a document's project link); the Projects list and a project's page address the project's own node (`?p=project:<slug>`) instead (2026-09-25)
 - **Drag node** → reposition (releases back to physics)
 - **Double-click node** → opens or folds its children, the same act as its `+N` chip, and keeps it selected (the "local graph" mode this line once described does not exist; 2026-09-19)
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
@@ -768,6 +768,17 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   bound folder and matches its source identity, revision, and fingerprint to the
   receipt. If that recheck cannot run, the saved receipt remains visible but
   currentness is `unavailable`; an observed source or ontology change is `stale`.
+  The recheck walks the folder only when a saved receipt's currentness is still
+  open; with no binding, no receipt, or a receipt the ontology already outdated
+  the answer is final without it (2026-09-25 — every open used to walk the whole
+  repository and discard the result).
+- **While the receipt is read** → the datasheet is already the project's: the
+  concept-document meta line, the folded relations below `1513px`, the quiet
+  footer. The code-evidence heading and its status line hold the receipt's place,
+  the line saying it is reading only once the read outlives 150 ms, so the answer
+  changes words rather than layout; the gap line and the remedy then open through
+  the row disclosure (2026-09-25 — the panel used to open in another layout and
+  rebuild itself 710 ms later, every button pushed down in one frame).
 - **Domain / capability / element node click** → `OntologyMapDetailPanel`, the 352px datasheet (scaled up from 288px, 2026-07-18): single engraved metric line ("N items used · N items needed · N evidence docs"), typed groups for **Sub-items**, **Super-items**, **Items Used**, and **Items Needed**, each capped with a "+N more" overflow; a promoted **Evidence Docs** group listing `evidenceIds` rows; an **Copy Item Info to Send to AI** action with MCP/CLI-style context; **View Details** opens the full detail panel. Relation role stays explicit so the same edge is not counted twice.
 
 #### Mobile-only
@@ -2220,7 +2231,7 @@ in-page filtering.
 - Project name linked to its detail page. The name is the locale's `display_<locale>` when the document carries one, the canonical `title`/`name` otherwise (`projectDisplayName`, 2026-09-19, decision "A project is drawn by its locale display name on every screen"): the map, the INDEX and the Library already drew the project by that word, and the list and the page said the canonical title beside them
 - One-line explicitly authored frontmatter description, with neutral fallback when missing
 - Relative last-updated time
-- Clearly labelled "View details" primary action and "View on map" secondary action
+- Clearly labelled "View details" primary action and "View on map" secondary action. "View on map" opens the project's own node (`?p=project:<slug>`), whose datasheet carries the code evidence and the control that connects the code folder (2026-09-25 — it sent the bare slug, which opens the project drawer, where neither exists)
 
 #### Empty state
 - No projects at all → guidance to create a project document; the header's "New project" action remains available
@@ -2236,8 +2247,8 @@ has built on each Atlas surface, then the domains, then what its document says.
 - Breadcrumb: Home → Projects → `{Name|Slug}` · documents door · copy-link button · global census (concepts/relations, md+). The documents door opens **this project's own Markdown file** (`/docs/?slug=<doc>`) when the file is found in the open folder or the loaded sample, and the vault root otherwise (2026-09-19 — the page had no door to the one file it is drawn from)
 
 #### Zone 1 — hero band
-- Project kind glyph + inline-editable name (`InlineEditable`, when `canManageProject`; the word shown is the locale's `display_<locale>` when present, and editing it in place edits that key, otherwise the canonical name with starter displays following) + hero meta (Hub label or plain label · status) + updated date + inline-editable description. The heading's accessible name is the project name; the field label ("Project name") is only the input's label in edit mode and the button's description in editable view (2026-09-19 — an `aria-label` on the `h1` used to replace the name for screen readers). The description's cap is the reading-column box (`--measure-doc-column`), not a per-line `ch` count
-- "View topology" link + `ProjectQuickEditPanel` (quick-edit: name / description / owner / tags — the fast path; stack/links/dependencies/dates stay in the full editor). The action cluster stands beside the name only when the hero band itself is at least 64rem wide (`@5xl` of the `project-hero` container); below that it takes its own row under the description (2026-09-19 — at 1024 the name column was 250px and at 768 80px while the four controls kept their width; a viewport breakpoint then failed the same way with the agent dock open at 1280)
+- Project kind glyph + inline-editable name (`InlineEditable`, when `canManageProject`; the word shown is the locale's `display_<locale>` when present, and editing it in place edits that key, otherwise the canonical name with starter displays following) + hero meta (Hub label or plain label · status) + updated date + inline-editable description. The heading's accessible name is the project name; the field label ("Project name") is only the input's label in edit mode and the button's description in editable view (2026-09-19 — an `aria-label` on the `h1` used to replace the name for screen readers). Editable, it stays the page's level-1 heading and the press that edits it is a block inside it (2026-09-25 — the button role sat on the `h1` and left the page with no level-1 heading for the people who can edit it). The description's cap is the reading-column box (`--measure-doc-column`), not a per-line `ch` count
+- "View topology" link, which opens the project's own node on the map (`?p=project:<slug>`, 2026-09-25), + `ProjectQuickEditPanel` (quick-edit: name / description / owner / tags — the fast path; stack/links/dependencies/dates stay in the full editor). The action cluster stands beside the name only when the hero band itself is at least 64rem wide (`@5xl` of the `project-hero` container); below that it takes its own row under the description (2026-09-19 — at 1024 the name column was 250px and at 768 80px while the four controls kept their width; a viewport breakpoint then failed the same way with the agent dock open at 1280)
 - **Construction review** — `Open verification results` reads one local qualification envelope into React session state only and places a full-width review directly below the hero. The default depth keeps purpose, current/next decision, first blocker/diagnostic, red/unknown/conflict, human approval, and exact plan counts visible. `View rationale/diagnostics` expands the same artifact's CQs, source-bound witnesses and citations, examples/counterexamples, seven quality axes, diagnostics, exact review/write plans, and digest equality. The same disclosure also exposes a session-only expert draft for CQ wording, witness source references, and the exact plan; edits are visibly dirty, can be restored, never mutate the receipt/vault/localStorage, and require qualification again before any write. Malformed, wrong-project, digest-mismatched, or unequal-plan envelopes fail closed; post-write maintenance is shown separately and never rewrites the completed qualification verdict. Nothing is uploaded, remembered, or written to the vault.
 - **No figures in the hero** (2026-09-19) — the engraved metric strip left, because the composition board one block below said the same five numbers again. The hero keeps identity: glyph, name, kind, updated, definition
 - **Action order and weight** — "View topology" stands first and filled as the page's primary action; the construction-review picker and the quick-edit trigger follow in outline, so the row is one filled control and its outline siblings rather than three weights (2026-09-19; the quick-edit trigger was `ghost` and the row read as crooked)
