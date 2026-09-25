@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeCanonicalCensus } from '@/entities/knowledge-graph';
-import { buildOntologyBrief } from './ontology-brief';
+import { buildOntologyBrief, evidenceAvailability } from './ontology-brief';
 
 const anchorMs = Date.parse('2026-09-18T00:00:00Z');
 
@@ -110,5 +110,28 @@ describe('the card and the strip count the same thing', () => {
     expect(lineSum, 'the lines themselves still each answer their own question').toBe(6);
     expect(brief.headlineTotals?.unknown).toBe(5);
     expect(brief.headlineTotals?.unknown).toBeLessThanOrEqual(brief.headline ?? 0);
+  });
+});
+
+/*
+ * A folder with Git and no bound project said "no repository" while its Git walk was still running,
+ * then turned into measured lines and a different headline when the walk landed, with nothing in
+ * between (real bridge, 2026-09-25). A walk in flight is reading, whatever else is known.
+ */
+describe('evidenceAvailability', () => {
+  const base = { bridge: true, walkPending: false, walkFailed: false, noSource: false };
+
+  it('reads while the walk is in flight, even with no project bound', () => {
+    expect(evidenceAvailability({ ...base, walkPending: true, noSource: true })).toBe('reading');
+    expect(evidenceAvailability({ ...base, walkPending: true })).toBe('reading');
+  });
+
+  it('asks for a repository once the walk has answered with nothing and none is bound', () => {
+    expect(evidenceAvailability({ ...base, walkFailed: true, noSource: true })).toBe('no-source');
+    expect(evidenceAvailability({ ...base, walkFailed: true })).toBe('unreadable');
+  });
+
+  it('never tells a browser it is reading', () => {
+    expect(evidenceAvailability({ ...base, bridge: false, walkPending: true })).toBe('app-only');
   });
 });

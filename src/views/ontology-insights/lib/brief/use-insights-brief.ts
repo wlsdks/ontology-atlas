@@ -23,7 +23,14 @@ import {
   resolveEvidenceStates,
   type EvidenceConceptInput,
 } from '@/shared/lib/evidence-states';
-import type { BriefLineDetail } from './brief-model';
+import {
+  briefCounting,
+  briefTotals,
+  type BriefCoreKey,
+  type BriefLineDetail,
+  type BriefTotals,
+} from './brief-model';
+import { useLastSettled } from './use-last-settled';
 import {
   canUndoBriefSeenAt,
   resolveBriefAnchor,
@@ -33,7 +40,7 @@ import {
 import { buildEvidenceDetails } from './evidence-details';
 import { buildAgentBrief } from './agent-brief';
 import { buildHarnessBrief } from './harness-brief';
-import { buildOntologyBrief, type OntologyBriefNode } from './ontology-brief';
+import { buildOntologyBrief, evidenceAvailability, type OntologyBriefNode } from './ontology-brief';
 import { buildWikiBrief } from './wiki-brief';
 import { buildSinceList, type SinceRow } from './since-list';
 import type { BriefCore } from './brief-model';
@@ -67,9 +74,26 @@ export interface InsightsBrief {
   wiki: BriefCore;
   harness: BriefCore;
   agent: BriefCore;
+  /**
+   * The cores whose numbers are still arriving (the harness scan, the ontology's Git walk). While
+   * this is not empty, `totals` and the since list are either absent or the last settled ones,
+   * and the screen says they are being counted.
+   */
+  counting: readonly BriefCoreKey[];
+  /**
+   * The headline's two sums. `null` until every core has reported for this folder and visit:
+   * the first read never shows a partial sum. After that, a recount (a reload restarting the Git
+   * walk, a rescan) keeps the last settled pair rather than blanking the line; see
+   * `useLastSettled`.
+   */
+  totals: BriefTotals | null;
   /** What happened after the anchor, newest first, bounded; `sinceTotal` is the whole count. */
   since: readonly SinceRow[];
-  sinceTotal: number;
+  /**
+   * `null` until the list is final: guide files come from the harness scan, concept dates from
+   * the Git walk, wiki entries from the folder's log. Held like `totals` during a recount.
+   */
+  sinceTotal: number | null;
   /** The one kind every row after the anchor shares, or null when they differ or there are none. */
   sinceKind: SinceRow['kind'] | null;
   /**
@@ -114,6 +138,7 @@ function isWikiRoundPass(entry: RoundPassEntry): entry is WikiRoundPass {
   return entry.kind !== 'ontology' && entry.outcome !== 'reviewed';
 }
 const EMPTY_LOG: readonly WikiLogEntry[] = [];
+const EMPTY_SINCE: readonly SinceRow[] = [];
 
 /** `disagreement 3 · superseded 1 · …` — the log line `describeLintTurn` writes, in every locale. */
 function lintCountsFromSummary(summary: string | undefined): { disagreement: number; superseded: number } | null {
@@ -276,13 +301,19 @@ export function useInsightsBrief({
     if (!evidenceChanges?.changes || evidenceChanges.key !== evidenceKey) return null;
     return resolveEvidenceStates(evidenceConcepts, evidenceChanges.changes);
   }, [evidenceChanges, evidenceKey, evidenceConcepts, nativeRootPath]);
-  const evidenceAvailability = !isGitBridgeAvailable()
-    ? 'app-only'
-    : harnessState.status === 'no-source'
-      ? 'no-source'
-      : evidenceChanges?.key === evidenceKey && evidenceChanges.changes === null
-        ? 'unreadable'
-        : 'reading';
+  // The walk above runs under exactly these conditions; until it answers for this load, it is in flight.
+  const evidenceWalkPending =
+    enabled &&
+    nativeRootPath !== null &&
+    isGitBridgeAvailable() &&
+    evidenceConcepts.some((concept) => concept.evidencePaths.length > 0) &&
+    evidenceChanges?.key !== evidenceKey;
+  const ontologyEvidenceAvailability = evidenceAvailability({
+    bridge: isGitBridgeAvailable(),
+    walkPending: evidenceWalkPending,
+    walkFailed: evidenceChanges?.key === evidenceKey && evidenceChanges.changes === null,
+    noSource: harnessState.status === 'no-source',
+  });
 
   /*
    * When this concept document last changed — from Git where the walk reached it, from the
@@ -318,12 +349,12 @@ export function useInsightsBrief({
         nodes,
         docs: docFacts,
         evidence,
-        evidenceAvailability,
+        evidenceAvailability: ontologyEvidenceAvailability,
         repairCount,
         unmatchedCount,
         anchorMs: anchor.anchorMs,
       }),
-    [nodes, docFacts, evidence, evidenceAvailability, repairCount, unmatchedCount, anchor.anchorMs],
+    [nodes, docFacts, evidence, ontologyEvidenceAvailability, repairCount, unmatchedCount, anchor.anchorMs],
   );
 
   const libraryDetail = useMemo(() => {
@@ -490,6 +521,29 @@ export function useInsightsBrief({
     [docs, docChangedAt, log, harnessReport, locale, mode, vault.agentActivityLog, anchor.anchorMs],
   );
 
+  /*
+   * ⚠️ **Nothing is summed until every core has reported.** The harness scan lands seconds after
+   * the rest, and the headline and the since card used to paint the other cores' sum as final and
+   * change it silently when the scan arrived (98 · 99 became 142 · 101, and 98 changed documents
+   * became 228 changes, on the real bridge, 2026-09-25). `briefTotals` refuses to sum while a core
+   * reads; the since list waits for the same reads plus the folder's own log.
+   *
+   * A disabled brief is not a settled one: with no tab drawing it, the harness hook stands down
+   * and reports "unsupported", so a sum taken then would be a partial sum held as settled.
+   */
+  const cores = useMemo(() => [ontology, wiki, harness, agent] as const, [ontology, wiki, harness, agent]);
+  const counting = useMemo(() => briefCounting(cores), [cores]);
+  const settledTotals = useMemo(() => (enabled ? briefTotals(cores) : null), [enabled, cores]);
+  const sidecarPending = enabled && handle !== null && sidecar.handle !== handle;
+  const settledSince = enabled && counting.length === 0 && !sidecarPending ? sinceList : null;
+  /*
+   * What a held value answers: this folder and this recorded visit. Not `anchorMs`: in the default
+   * window it moves with every read of the clock, which happens on every reload.
+   */
+  const settleScope = `${sessionScope}\0${seenAt ?? ''}`;
+  const totals = useLastSettled(settledTotals, settleScope);
+  const since = useLastSettled(settledSince, settleScope);
+
   return {
     anchor,
     sinceDays,
@@ -501,9 +555,11 @@ export function useInsightsBrief({
     wiki,
     harness,
     agent,
-    since: sinceList.rows,
-    sinceTotal: sinceList.total,
-    sinceKind: sinceList.soleKind,
+    counting,
+    totals,
+    since: since?.rows ?? EMPTY_SINCE,
+    sinceTotal: since?.total ?? null,
+    sinceKind: since?.soleKind ?? null,
     details,
     library: libraryDetail,
     harnessDetail,

@@ -56,6 +56,32 @@ export interface OntologyBriefInput {
  * rule this broke: every count that uses the word "concept" goes through it.
  */
 
+/**
+ * Why the concepts' evidence has no verdict yet, in the order the facts outrank each other.
+ *
+ * ⚠️ **A walk in flight is a read in flight, whatever else is known.** The unbound-repository answer
+ * used to outrank it, so a folder with Git but no bound project said "no repository" while the walk
+ * ran and then, when it landed, turned into measured lines and a different headline with nothing in
+ * between: the same silent change the harness scan made (real bridge, 2026-09-25). And a folder
+ * whose walk failed but has no bound project still says "connect a repository", the one fix that
+ * helps there.
+ */
+export function evidenceAvailability(input: {
+  /** The installed app's Git bridge exists here. */
+  bridge: boolean;
+  /** A walk for this load of the folder has been asked and has not answered. */
+  walkPending: boolean;
+  /** The walk for this load answered with nothing. */
+  walkFailed: boolean;
+  /** No project source is bound, so no repository is known to read. */
+  noSource: boolean;
+}): NonNullable<OntologyBriefInput['evidenceAvailability']> {
+  if (!input.bridge) return 'app-only';
+  if (input.walkPending) return 'reading';
+  if (input.noSource) return 'no-source';
+  return input.walkFailed ? 'unreadable' : 'reading';
+}
+
 function isAgentWritten(createdBy: string | null | undefined): boolean {
   return typeof createdBy === 'string' && (createdBy.startsWith('agent:') || createdBy.startsWith('model:'));
 }

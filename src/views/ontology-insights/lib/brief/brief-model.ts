@@ -67,6 +67,21 @@ export interface BriefCore {
   headlineTotals?: { stale: number; unknown: number };
 }
 
+/** The headline's two sums. */
+export interface BriefTotals {
+  stale: number;
+  unknown: number;
+}
+
+/**
+ * The cores whose numbers are still arriving: the harness scan or the ontology's Git walk is in
+ * flight. A core in this state contributes nothing yet, which is not the same as contributing
+ * zero, so no sum that includes it is a number a reader may take as final.
+ */
+export function briefCounting(cores: readonly BriefCore[]): BriefCoreKey[] {
+  return cores.filter((core) => core.availability === 'reading').map((core) => core.core);
+}
+
 /**
  * The one line above the cards: what a reader now has to learn (items in the stale state)
  * and what could not be checked (items in the unknown state). Two sums of named things,
@@ -77,8 +92,16 @@ export interface BriefCore {
  * unconditionally put 205 unchecked items over a folder holding 108 concepts, because the
  * ontology card names some of the same concepts on three lines (measured on this repository's
  * own vault, 2026-09-21). A reader cannot place a count larger than the thing it counts.
+ *
+ * ⚠️ **No sum while a core is still reading.** `null` until every core has reported. The harness
+ * scan finishes seconds after the rest, and a reading core has no lines, so the sum painted
+ * "98 to learn · 99 not checked" with full confidence and turned into 142 · 101 two seconds later
+ * with no mark in between: the 44 mirror findings and 2 unguarded areas the scan then found were
+ * missing, not zero (real bridge, 2026-09-25). A partial sum is not even a lower bound — the
+ * ontology's unchecked count falls when its walk lands — so the screen waits instead of guessing.
  */
-export function briefTotals(cores: readonly BriefCore[]): { stale: number; unknown: number } {
+export function briefTotals(cores: readonly BriefCore[]): BriefTotals | null {
+  if (briefCounting(cores).length > 0) return null;
   let stale = 0;
   let unknown = 0;
   for (const core of cores) {

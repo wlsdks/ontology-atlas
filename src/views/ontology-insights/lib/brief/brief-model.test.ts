@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { briefTotals, type BriefCore } from './brief-model';
+import { briefCounting, briefTotals, type BriefCore } from './brief-model';
 
 function core(partial: Partial<BriefCore> & Pick<BriefCore, 'core'>): BriefCore {
   return {
@@ -36,8 +36,8 @@ describe('briefTotals', () => {
         { id: 'ontology-evidence-unchecked', count: 3, state: 'unknown' },
       ],
     });
-    expect(briefTotals([ontology]).unknown).toBe(3);
-    expect(briefTotals([ontology]).unknown).toBeLessThanOrEqual(ontology.headline ?? 0);
+    expect(briefTotals([ontology])?.unknown).toBe(3);
+    expect(briefTotals([ontology])?.unknown).toBeLessThanOrEqual(ontology.headline ?? 0);
   });
 
   it('adds up the lines of a core whose lines are separate things', () => {
@@ -55,5 +55,58 @@ describe('briefTotals', () => {
       ],
     });
     expect(briefTotals([harness])).toEqual({ stale: 1, unknown: 5 });
+  });
+});
+
+/**
+ * **A core that is still reading has not said zero.**
+ *
+ * The harness scan lands seconds after every other core. While it read, the headline summed the
+ * other three and painted "98 to learn · 99 not checked" as if final; the scan then added 44 mirror
+ * findings and two unguarded areas and the same line silently became 142 · 101 (real bridge,
+ * 2026-09-25). The sum waits for every core instead.
+ */
+describe('a sum while a core is still reading', () => {
+  const ontology = core({
+    core: 'ontology',
+    headline: 98,
+    headlineTotals: { stale: 98, unknown: 99 },
+    lines: [{ id: 'ontology-evidence-missing', count: 98, state: 'stale' }],
+  });
+  const wiki = core({ core: 'wiki', headline: 4, lines: [{ id: 'wiki-stale-pages', count: 1, state: 'stale' }] });
+  const agent = core({ core: 'agent', availability: 'no-data', headline: 0 });
+  const reading = core({ core: 'harness', availability: 'reading', headline: null, current: null, stale: null, unknown: null });
+
+  it('is not a number until the harness scan has reported', () => {
+    expect(briefTotals([ontology, wiki, reading, agent])).toBeNull();
+    expect(briefCounting([ontology, wiki, reading, agent])).toEqual(['harness']);
+  });
+
+  it('waits for the ontology walk the same way', () => {
+    const walking = core({ ...ontology, availability: 'reading' });
+    expect(briefTotals([walking, wiki, agent])).toBeNull();
+    expect(briefCounting([walking, wiki, agent])).toEqual(['ontology']);
+  });
+
+  it('is the whole sum once every core has reported', () => {
+    const measured = core({
+      core: 'harness',
+      headline: 106,
+      lines: [
+        { id: 'harness-ungated-areas', count: 1, state: 'unknown' },
+        { id: 'harness-unwatched-areas', count: 1, state: 'unknown' },
+        { id: 'harness-mirror-drift', count: 44, state: 'stale' },
+      ],
+    });
+    expect(briefCounting([ontology, wiki, measured, agent])).toEqual([]);
+    expect(briefTotals([ontology, wiki, measured, agent])).toEqual({ stale: 98 + 1 + 44, unknown: 99 + 2 });
+  });
+
+  it.each(['app-only', 'no-source', 'unreadable', 'no-data'] as const)('does not wait on a core that cannot be counted here: %s', (availability) => {
+    // These are final answers about this session, not reads in flight: waiting on them would hold
+    // the headline back forever.
+    const stopped = core({ core: 'harness', availability, headline: null, current: null, stale: null, unknown: null });
+    expect(briefCounting([ontology, stopped])).toEqual([]);
+    expect(briefTotals([ontology, stopped])).toEqual({ stale: 98, unknown: 99 });
   });
 });
