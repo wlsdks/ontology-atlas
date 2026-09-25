@@ -1,19 +1,30 @@
-//! Escape for input sources that keep it from the page.
+//! Escape, told to the page once per press, with one log line that says where it went.
 //!
-//! Under the macOS Korean input source (2-Set Korean, the owner's), a plain Escape reaches a
-//! WKWebView page late or not at all. Measured on 2026-09-25 with bare WKWebViews under that
-//! source: one got no key event at all for Escape, text field focused or not, while arrows,
-//! Enter, Tab and Space arrived; another got the `keydown` only after the input method had
-//! answered, behind its own `keyup`. A password field, whose secure input bypasses the input
-//! method, got it at once. Every palette, sheet, inbox and dialog in this app closes on Escape,
-//! so for a person typing Korean they could stay open.
+//! Under the macOS Korean input source (2-Set Korean, the owner's), WebKit gives a plain Escape to
+//! the input method before the page, and the page's `keydown` arrives once the input method has
+//! answered: measured on 2026-09-26 in a build of this code launched both ways the app is, at
+//! most 18 ms after the native signal below over 29 presses. Every palette, sheet, inbox and
+//! dialog in this app closes on Escape, so a press the page never got would leave one open.
 //!
 //! The app therefore watches its own key-downs with an AppKit local monitor. The monitor never
 //! consumes the event — the input method still needs it to finish or cancel a composition — and
 //! only after the event has gone on to the window does it tell that window's page that one
 //! Escape press happened. The page decides whether its own `keydown` arrived or is still coming
-//! (`src/shared/lib/tauri-native-escape.ts`), so an input source that does deliver Escape is
-//! never handled twice.
+//! (`src/shared/lib/tauri-native-escape.ts`), so a press WebKit delivers is never handled twice.
+//!
+//! What no code in the app can see is a press that never reaches it. A tool that taps Escape for
+//! the whole session takes every press before any app does: Claude Code's Computer Use MCP does
+//! this while it holds its lock (`EscHotkey.swift`, "user escape with no CU call in flight;
+//! consumed only"), except in a password field, whose secure input hides keys from event taps.
+//! The measurements this module was first written from — no Escape at all, text field focused or
+//! not, while a password field got it — were taken with that tap on (2026-09-25, 2026-09-26), so
+//! they measured the tap, not the input method.
+//!
+//! Every press the monitor sees leaves one line in the app log: which window it was in, which
+//! page was told, and what that page did with it. A press with no line never reached the app.
+//! Nothing else about the keyboard is logged — no other key, no text.
+
+use std::time::Duration;
 
 /// `kVK_Escape` in `HIToolbox/Events.h`.
 const ESCAPE_KEY_CODE: u16 = 53;
@@ -25,7 +36,53 @@ const CHORD_MODIFIER_FLAGS: usize = (1 << 17) | (1 << 18) | (1 << 19) | (1 << 20
 /// What the page listens for (`NATIVE_ESCAPE_EVENT` in the page bridge). A DOM event rather
 /// than a Tauri event: it needs no listener registered over IPC and no capability, and a page
 /// that is not listening simply ignores it.
-const NATIVE_ESCAPE_SCRIPT: &str = "window.dispatchEvent(new CustomEvent('atlas:native-escape'))";
+const NATIVE_ESCAPE_EVENT: &str = "atlas:native-escape";
+
+/// What the page is asked afterwards (`NATIVE_ESCAPE_VERDICT_EVENT` in the page bridge): the
+/// bridge writes what it did with that press into the event's `detail.verdict`.
+const NATIVE_ESCAPE_VERDICT_EVENT: &str = "atlas:native-escape-verdict";
+
+/// How long after the signal the page is asked what it did: past the bridge's wait for a late
+/// key-down (`LATE_KEYDOWN_GRACE_MS`, 80 ms), with room for a busy frame.
+const VERDICT_DELAY: Duration = Duration::from_millis(300);
+
+/// How long the log waits for the page's answer before saying there was none.
+const VERDICT_TIMEOUT: Duration = Duration::from_millis(1000);
+
+/// The script that tells the page about one press.
+fn signal_script(press: u64) -> String {
+    format!(
+        "window.dispatchEvent(new CustomEvent('{NATIVE_ESCAPE_EVENT}', {{ detail: {{ press: {press} }} }}))"
+    )
+}
+
+/// The script that asks the page what it did with one press. It always returns a string, so a
+/// page with no bridge reads as that rather than as silence.
+fn verdict_script(press: u64) -> String {
+    format!(
+        "(() => {{ const detail = {{ press: {press} }}; \
+         window.dispatchEvent(new CustomEvent('{NATIVE_ESCAPE_VERDICT_EVENT}', {{ detail }})); \
+         return typeof detail.verdict === 'string' ? detail.verdict : 'no bridge answered'; }})()"
+    )
+}
+
+/// The page's answer as the WebView hands it back: a JSON string, or nothing when the script
+/// failed. Clipped, because the log is not the place for whatever a broken page returns.
+fn page_answer(raw: &str) -> String {
+    const MAX_CHARS: usize = 160;
+    let text = serde_json::from_str::<String>(raw).unwrap_or_else(|_| {
+        if raw.trim().is_empty() {
+            "the script returned nothing".to_string()
+        } else {
+            raw.trim().to_string()
+        }
+    });
+    if text.chars().count() <= MAX_CHARS {
+        return text;
+    }
+    let kept: String = text.chars().take(MAX_CHARS).collect();
+    format!("{kept}…")
+}
 
 /// One plain press of Escape: the key itself, no chord modifier, and not the auto-repeat of a
 /// held key — so the page is told once per press, however long the key stays down.
@@ -54,6 +111,18 @@ impl PressLedger {
     }
 }
 
+/// One press as the monitor saw it, handed to the worker that tells the page.
+struct Press {
+    /// Counted from launch, so the page's answer can be matched to its press.
+    number: u64,
+    /// `NSEvent.timestamp`: seconds since boot.
+    timestamp: f64,
+    /// The window the event names, as a pointer, when it names one.
+    window: Option<usize>,
+    /// `NSEvent.windowNumber`, which the log shows when the window is not one of ours.
+    window_number: isize,
+}
+
 /// Installs the monitor once for the life of the app.
 ///
 /// Everything the monitor itself does is a read of the event it was handed; the matching of
@@ -68,8 +137,9 @@ pub(crate) fn install(app: &tauri::AppHandle) {
     use std::ptr::NonNull;
 
     let app = app.clone();
-    // Only the main thread runs the monitor, so a `Cell` is all the ledger needs.
+    // Only the main thread runs the monitor, so a `Cell` is all the ledger and the count need.
     let told = PressLedger::default();
+    let presses = std::cell::Cell::new(0_u64);
     let handler = RcBlock::new(move |event: NonNull<NSEvent>| -> *mut NSEvent {
         // A panic must not unwind into AppKit, and whatever happens the event goes on exactly
         // as it arrived.
@@ -84,15 +154,18 @@ pub(crate) fn install(app: &tauri::AppHandle) {
             {
                 return;
             }
-            let Some(mtm) = MainThreadMarker::new() else {
-                return;
+            presses.set(presses.get() + 1);
+            let window = MainThreadMarker::new()
+                .and_then(|mtm| event.window(mtm))
+                .map(|window| Retained::as_ptr(&window) as usize);
+            let press = Press {
+                number: presses.get(),
+                timestamp: event.timestamp(),
+                window,
+                window_number: event.windowNumber(),
             };
-            let Some(window) = event.window(mtm) else {
-                return;
-            };
-            let target = Retained::as_ptr(&window) as usize;
             let app = app.clone();
-            tauri::async_runtime::spawn_blocking(move || tell_page(&app, target));
+            tauri::async_runtime::spawn_blocking(move || tell_page(&app, press));
         }));
         event.as_ptr()
     });
@@ -113,17 +186,51 @@ pub(crate) fn install(app: &tauri::AppHandle) {
     }
 }
 
-/// Tells the page in the window that received the press. A key-down in any other window — a
-/// system panel, an alert — belongs to that window and is left alone.
-fn tell_page(app: &tauri::AppHandle, ns_window: usize) {
+/// Tells the page in the window that received the press, then asks it what it did and writes
+/// the one log line for the press. A key-down in any other window — a system panel, an alert —
+/// belongs to that window and is left alone.
+fn tell_page(app: &tauri::AppHandle, press: Press) {
     use tauri::Manager;
 
-    for window in app.webview_windows().into_values() {
-        if matches!(window.ns_window(), Ok(pointer) if pointer as usize == ns_window) {
-            let _ = window.eval(NATIVE_ESCAPE_SCRIPT);
-            return;
-        }
+    let head = format!(
+        "[native-escape] press {} (t={:.3}",
+        press.number, press.timestamp
+    );
+    let windows = app.webview_windows();
+    let Some(window_pointer) = press.window else {
+        log::info!("{head}): the event names no window; nothing signalled");
+        return;
+    };
+    let Some(window) = windows.values().find(
+        |window| matches!(window.ns_window(), Ok(pointer) if pointer as usize == window_pointer),
+    ) else {
+        log::info!(
+            "{head}, window #{}): not a webview window; nothing signalled",
+            press.window_number
+        );
+        return;
+    };
+    let head = format!("{head}, window {})", window.label());
+    if let Err(error) = window.eval(signal_script(press.number)) {
+        log::info!("{head}: the signal could not be sent ({error})");
+        return;
     }
+    std::thread::sleep(VERDICT_DELAY);
+    let (answer_tx, answer_rx) = std::sync::mpsc::channel::<String>();
+    let asked = window.eval_with_callback(verdict_script(press.number), move |raw| {
+        let _ = answer_tx.send(raw);
+    });
+    let verdict = match asked {
+        Err(error) => format!("the page could not be asked ({error})"),
+        Ok(()) => match answer_rx.recv_timeout(VERDICT_TIMEOUT) {
+            Ok(raw) => page_answer(&raw),
+            Err(_) => format!(
+                "no answer from the page within {} ms",
+                (VERDICT_DELAY + VERDICT_TIMEOUT).as_millis()
+            ),
+        },
+    };
+    log::info!("{head}: {verdict}");
 }
 
 #[cfg(test)]
@@ -176,5 +283,29 @@ mod tests {
         for key_code in [36u16, 48, 49, 126, 40] {
             assert!(!is_plain_escape_press(key_code, 0, false), "{key_code}");
         }
+    }
+
+    #[test]
+    fn the_signal_names_its_press_so_the_answer_can_be_matched() {
+        assert_eq!(
+            signal_script(7),
+            "window.dispatchEvent(new CustomEvent('atlas:native-escape', { detail: { press: 7 } }))"
+        );
+        let question = verdict_script(7);
+        assert!(question.contains("new CustomEvent('atlas:native-escape-verdict', { detail })"));
+        assert!(question.contains("const detail = { press: 7 };"));
+        assert!(question.contains("'no bridge answered'"));
+    }
+
+    #[test]
+    fn the_page_answer_is_read_as_the_string_it_returned() {
+        assert_eq!(
+            page_answer("\"stood in on INPUT after 81 ms\""),
+            "stood in on INPUT after 81 ms"
+        );
+        assert_eq!(page_answer(""), "the script returned nothing");
+        assert_eq!(page_answer("42"), "42");
+        let long = format!("\"{}\"", "x".repeat(400));
+        assert_eq!(page_answer(&long).chars().count(), 161);
     }
 }

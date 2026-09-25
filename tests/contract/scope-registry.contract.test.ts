@@ -392,6 +392,12 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     scope: "global",
     note: "One plain Escape press the native key monitor saw in this window (src-tauri/src/native_escape.rs → shared/lib/tauri-native-escape.ts); not storage",
   },
+  {
+    key: "atlas:native-escape-verdict",
+    kind: "event",
+    scope: "global",
+    note: "The native side asking what the page did with one Escape press, for its one app-log line per press (src-tauri/src/native_escape.rs → shared/lib/tauri-native-escape.ts); not storage",
+  },
   { key: "ontology-atlas:verify-edge-selected", kind: "event", scope: "global", note: "e2e 검증 훅" },
   { key: "ontology-atlas:verify-select-edge", kind: "event", scope: "global", note: "e2e 검증 훅" },
 ];

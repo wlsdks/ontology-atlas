@@ -3369,7 +3369,7 @@ the chip's top and bottom edge, because a clipped control still measures full si
 | `D` | Home / Topology | Toggle docs drawer |
 | `?` | Every screen with the rail | Toggle shortcut sheet |
 | `⌘O` | Home / Topology static sample | Open a local Markdown folder |
-| `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state. In the installed app one press closes one thing under every macOS input source: Korean 2-Set can keep Escape from the WebView, so the app notices the press natively and the page stands in for the missing key-down, never for one it already received (`src/shared/lib/tauri-native-escape.ts`, `src-tauri/src/native_escape.rs`, 2026-09-25) |
+| `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state. In the installed app one press closes one thing under every macOS input source: the app notices each press natively, the page stands in only for a key-down WebKit never delivered (Korean 2-Set delivers it after the input method answers), and the app log gets one line per press saying where it went; a press with no line never reached the app (`src/shared/lib/tauri-native-escape.ts`, `src-tauri/src/native_escape.rs`, 2026-09-26) |
 | `Enter` | Workshop relation picker | Choose the first filtered relation candidate |
 | `↑↓` | Hub rail | Cycle hubs |
 | `Home` / `End` | Hub rail | First / last hub |
