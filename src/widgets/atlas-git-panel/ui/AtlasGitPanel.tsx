@@ -7,6 +7,7 @@ import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
 import { useRovingRows } from "@/shared/lib/use-roving-rows";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { stepFileNames, stripConventionalPrefix } from "../lib/step-title";
+import type { DocumentFollow } from "../lib/document-follow";
 import { useFormatter, useTranslations } from "next-intl";
 // `History as HistoryIcon` — usability review P0 (2026-07-23): under certain
 // HMR/bundle states the bare `History` identifier resolved to the global DOM
@@ -744,24 +745,37 @@ export function AtlasGitPanel({
   }, [desktop, vaultPath, historyLimit, historyShort]);
 
   /**
+   * The document a jump from its own history is following, and the step it jumped to. Only that
+   * step's detail reads it (`CommitDetail`'s `follow`); any other selection ends it.
+   */
+  const [followed, setFollowed] = useState<(DocumentFollow & { hash: string }) | null>(null);
+  /**
    * Jump to a step named by a document's own history. The step is in the repository, but it
    * may sit below the depth the list has read; then the list reads on, a page at a time,
    * until the row exists — the person asked for that step, not for a blank right column.
+   *
+   * **The document goes with the jump** (real-bridge QA, 2026-09-25). This used to clear the
+   * focused concept, so the older step opened on its first document — `README.md` in a vault's
+   * first commit — and the restore door beneath it named and restored `README.md`, not the
+   * document the person was following. The concept stays focused and the path rides along, so
+   * the step opens on that same document in the same lens, or says its file list does not hold it.
    */
   const jumpToCommit = useCallback(
-    (hash: string) => {
+    (hash: string, follow: DocumentFollow) => {
       setSelectionChoice({ kind: "commit", hash });
-      setFocusedConceptId(null);
+      setFollowed({ ...follow, hash });
+      if (follow.conceptId) setFocusedConceptId(follow.conceptId);
       const loaded = history.some((commit) => commit.hash === hash);
       setJumpHash(loaded ? null : hash);
       if (!loaded && historyHasMore && !historyShort) setHistoryLimit(historyLimit + HISTORY_PAGE);
     },
     [history, historyHasMore, historyShort, historyLimit, setHistoryLimit],
   );
-  /** A plain selection from the list ends any jump still reading on. */
+  /** A plain selection from the list ends any jump still reading on, and the follow with it. */
   const selectStep = useCallback((next: WorkbenchSelection) => {
     setSelectionChoice(next);
     setJumpHash(null);
+    setFollowed(null);
   }, []);
 
   // Split what the user judges (concepts) from the files that ride along. What
@@ -870,6 +884,7 @@ export function AtlasGitPanel({
        */
       setSelectionChoice(null);
       setSelectedPath(null);
+      setFollowed(null);
       await refresh();
     } catch (err) {
       setSnapshotError(gitErrorMessage(err, nativeErrors));
@@ -967,6 +982,7 @@ export function AtlasGitPanel({
           setSelectionChoice({ kind: "pending" });
           setSelectedPath(path);
           setJumpHash(null);
+          setFollowed(null);
         }
         await refresh();
         return true;
@@ -1203,6 +1219,7 @@ export function AtlasGitPanel({
             onMoreHistory={loadMoreHistory}
             onRestoreDocument={restoreDocument}
             onJumpToCommit={jumpToCommit}
+            followed={followed}
             whenOf={(isoTime: string) => {
               const instant = new Date(isoTime);
               if (Number.isNaN(instant.getTime())) return isoTime;
@@ -3017,6 +3034,7 @@ function DesktopBody({
   onMoreHistory,
   onRestoreDocument,
   onJumpToCommit,
+  followed,
   whenOf,
   restoreBusy,
   restoreNotice,
@@ -3085,8 +3103,13 @@ function DesktopBody({
   onMoreHistory: () => void;
   /** Restores one document to `source` (`HEAD` or a hash); resolves true when git did it. */
   onRestoreDocument: (relativePath: string, source: string, others: number) => Promise<boolean>;
-  /** Selects a step by hash, reading deeper into the list when it is not loaded yet. */
-  onJumpToCommit: (hash: string) => void;
+  /**
+   * Selects a step by hash, reading deeper into the list when it is not loaded yet, and keeps
+   * following the document the jump was made from.
+   */
+  onJumpToCommit: (hash: string, follow: DocumentFollow) => void;
+  /** The document a jump is following, and the step it jumped to. */
+  followed: (DocumentFollow & { hash: string }) | null;
   /** The list's own relative-time wording for an ISO instant. */
   whenOf: (isoTime: string) => string;
   restoreBusy: boolean;
@@ -3614,6 +3637,7 @@ function DesktopBody({
                     onRestore={(path, others) => onRestoreDocument(path, picked.hash, others)}
                     restoreBusy={restoreBusy}
                     onJumpToCommit={onJumpToCommit}
+                    follow={followed?.hash === picked.hash ? followed : null}
                     whenOf={whenOf}
                     stepTitleOf={stepTitleOf}
                     focusedConceptId={focusedConceptId}
