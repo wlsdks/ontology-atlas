@@ -28,15 +28,18 @@ export interface MountedGlobalSearchProps {
   onSelectProject?: (project: Project) => void;
   onSelectionFocus?: (keyboard: boolean) => void;
   /**
-   * Move the default hotkey to ⇧⌘K when coexisting with the home topology's SearchPalette (⌘K).
-   */
-  hotkeyShift?: boolean;
-  /**
    * For managing the open state externally (another hotkey, a button …). Unset means
    * self-managed.
    */
   open?: boolean;
   onOpenChange?: (next: boolean) => void;
+  /**
+   * Bind ⌘K here even though the open state is the caller's (2026-09-26). The shell holds the
+   * state so its shortcut sheet can close as the search opens, but it loads this widget lazily
+   * and must not pull it into every route's first chunk to bind one key; the binding travels
+   * with the dialog instead.
+   */
+  bindHotkey?: boolean;
 }
 
 /**
@@ -49,9 +52,9 @@ export function MountedGlobalSearch({
   onSelectNode,
   onSelectProject,
   onSelectionFocus,
-  hotkeyShift = false,
   open: controlledOpen,
   onOpenChange,
+  bindHotkey = false,
 }: MountedGlobalSearchProps) {
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -68,11 +71,9 @@ export function MountedGlobalSearch({
   const nodes = insight?.nodes ?? EMPTY_NODES;
   const { projects } = useProjects();
 
-  // The hotkey is inactive on a controlled mount — the caller manages open with another hotkey.
-  useGlobalSearchHotkey(open, setOpen, {
-    shift: hotkeyShift,
-    disabled: isControlled,
-  });
+  // The hotkey is inactive on a controlled mount — the caller manages open with another hotkey —
+  // unless the caller asked for it to travel with the dialog (`bindHotkey`).
+  useGlobalSearchHotkey(open, setOpen, { disabled: isControlled && !bindHotkey });
 
   return (
     <GlobalSearch

@@ -1236,7 +1236,7 @@
     "shortcuts": {
       "dialogAriaLabel": "키보드 단축키",
       "title": "키보드 단축키",
-      "subtitle": "마우스 없이도 맵을 훑을 수 있어요.",
+      "subtitle": "마우스 없이도 Atlas 곳곳을 오갈 수 있어요.",
       "help": "탐색에 사용할 수 있는 키보드 단축키 목록이에요.",
       "closeAriaLabel": "단축키 안내 닫기",
       "footer": "를 다시 눌러도 닫혀요",
@@ -1289,8 +1289,7 @@
         "goTo_agents": "에이전트로",
         "goTo_mcp": "MCP로",
         "goTo_git": "Git 기록으로",
-        "openProjectPalette": "검색 팔레트 열기",
-        "openGlobalPalette": "개념 · 문서 · 프로젝트 통합 검색",
+        "openSearchPalette": "검색 팔레트 열기",
         "toggleDocsDrawer": "온톨로지 문서 빠른 보기 열기/닫기 (편집 권한 시)",
         "showShortcuts": "키보드 단축키 보기·닫기",
         "stepCloseOverlays": "열린 패널을 한 단계씩 닫기",
@@ -4035,8 +4034,6 @@
     "wikiWriteModeAskCaption": "문서를 쓸 때마다 허락 카드에서 멈춰요."
   },
   "copyProjectLink": {
-    "toastSuccess": "링크가 복사됐어요",
-    "toastError": "복사에 실패했어요",
     "labelCopied": "링크 복사됨",
     "labelError": "복사 실패",
     "labelIdle": "링크 복사"
@@ -4834,7 +4831,8 @@
       "thinking": "생각 중",
       "awaiting": "답 기다리는 중",
       "error": "문제 있음",
-      "exited": "끝남"
+      "exited": "끝남",
+      "stopped": "멈춤"
     },
     "firstRun": {
       "title": "도구를 준비하고 있어요",
@@ -4844,6 +4842,11 @@
     "starting": {
       "title": "도구에 연결하는 중이에요",
       "body": "이 컴퓨터에서 도구를 띄우고 있어요. 준비되면 바로 물어볼 수 있어요."
+    },
+    "connectStopped": {
+      "title": "연결을 멈췄어요",
+      "body": "도구를 띄우지 않았고, 보낸 것도 없어요.",
+      "again": "다시 연결"
     },
     "permission": {
       "title": "이 폴더 밖을 건드리려고 해요",

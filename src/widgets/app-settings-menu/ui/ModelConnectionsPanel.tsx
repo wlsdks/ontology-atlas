@@ -45,7 +45,6 @@ import { EmptyState } from '@/shared/ui/empty-state';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { Download } from 'lucide-react';
 import { Select } from '@/shared/ui/select';
-import { useToast } from '@/shared/ui/toast';
 import { cn } from '@/shared/lib/cn';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
@@ -186,6 +185,15 @@ export function ModelConnectionsPanel({
     }, 0);
   }, []);
 
+  /**
+   * **Every outcome on this tab is said by its row, and read out here — never in a toast**
+   * (2026-09-26). Saving, replacing or removing a key and choosing or dropping a runner each
+   * change the row they were pressed in (its status, its last four, its buttons). They also
+   * raised a toast repeating it, and on this tall page the toast had no free place to stand:
+   * measured on a real folder it covered the sent-log caption at 1512x949, and the Jev row's name
+   * and caption at 1280x800. The row is the confirmation; the announcer carries it to a screen
+   * reader.
+   */
   const announce = useCallback<Announce>((message) => {
     // Cleared first, so the same sentence twice in a row is still read twice.
     setAnnouncement('');
@@ -308,6 +316,7 @@ export function ModelConnectionsPanel({
             collapse('jev:key');
           }}
           onSent={refreshAudit}
+          announce={announce}
         />
       </ModelGroup>
 
@@ -560,7 +569,6 @@ function KeyRow({
 }) {
   const t = useTranslations('agents.models');
   const nativeErrors = useNativeErrorLookup();
-  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [verify, setVerify] = useState<VerifyState>({ kind: 'idle' });
   const verifyRef = useRef<HTMLButtonElement | null>(null);
@@ -685,7 +693,8 @@ function KeyRow({
               if (next) {
                 setVerify({ kind: 'idle' });
                 onStatus(next);
-                toast.show(t('saved'));
+                // The row now shows the key's last four; the announcer reads the same fact out.
+                announce(`${label} · ${t('saved')}`);
               }
             }}
             onError={setError}
@@ -701,7 +710,7 @@ function KeyRow({
                       const next = await secretClear(provider);
                       setVerify({ kind: 'idle' });
                       if (next) onStatus(next);
-                      toast.show(t('cleared'));
+                      announce(`${label} · ${t('cleared')}`);
                     } catch (err) {
                       setError(secretErrorMessage(err, nativeErrors));
                     }
@@ -889,7 +898,6 @@ function LocalRunnerRow({
 }) {
   const t = useTranslations('agents.models');
   const nativeErrors = useNativeErrorLookup();
-  const toast = useToast();
   const active = activeRunner === runner.id;
   const savedHere = runnerForBaseUrl(local.baseUrl) === runner.id;
   /** The row's own address: the saved one when it is this row's, else the runner's default. */
@@ -967,7 +975,7 @@ function LocalRunnerRow({
     const next = { baseUrl: draftUrl.trim(), model };
     onSettings(next);
     writeLocalEndpoint(next);
-    toast.show(t('localSaved'));
+    announce(`${label} · ${t('localSaved')}`);
     onCollapse();
   };
 
@@ -975,7 +983,7 @@ function LocalRunnerRow({
     clearLocalEndpoint();
     onSettings(readLocalEndpoint());
     setVerify({ kind: 'idle' });
-    toast.show(t('localDisconnected'));
+    announce(`${label} · ${t('localDisconnected')}`);
     onCollapse();
   };
 
@@ -1234,6 +1242,7 @@ function JevRow({
   onCollapse,
   onStatus,
   onSent,
+  announce,
 }: {
   status: JevSecretStatus | null;
   read: boolean;
@@ -1243,11 +1252,11 @@ function JevRow({
   onCollapse: (mode: 'key' | 'check') => void;
   onStatus: (next: JevSecretStatus) => void;
   onSent: () => void;
+  announce: Announce;
 }) {
   const t = useTranslations('agents.models');
   const tJev = useTranslations('agents.models.jev');
   const nativeErrors = useNativeErrorLookup();
-  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const stored = status?.stored === true;
 
@@ -1322,7 +1331,7 @@ function JevRow({
                 const next = await jevSecretSet(value);
                 if (next) {
                   onStatus(next);
-                  toast.show(t('saved'));
+                  announce(`${tJev('name')} · ${t('saved')}`);
                 }
               }}
               onError={setError}
@@ -1337,7 +1346,7 @@ function JevRow({
                       try {
                         const next = await jevSecretClear();
                         if (next) onStatus(next);
-                        toast.show(t('cleared'));
+                        announce(`${tJev('name')} · ${t('cleared')}`);
                       } catch (err) {
                         setError(secretErrorMessage(err, nativeErrors));
                       }

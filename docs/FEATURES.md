@@ -623,6 +623,7 @@ had become false).
 - Clicking the **「Agent」** button in the top toolbar opens a tall vertical panel on the right side of the map. When the panel opens, the map and node info areas shift together to adjust their width. This feature is exclusive to the desktop app — browsers lack a secure place to store API keys and a valid path for requests, so the button is not rendered at all if it would do nothing.
 - The outer dock continues to yield space to the map width, but the actual conversation surface stands as a panel with 12px spacing on the top, bottom, and right sides. Its borders, radius, and shadows share existing panel tokens used by INDEX and node details, with ACP and API-key conversations sharing the same form. The top and vertical map controls on the left side of the panel are attached 12px from each side of the seam, totaling a 24px gap, moving in sync with the dock's timing and curvature.
 - From the first frame of opening the panel, the header, empty conversation prompt, current folder recommendations, and input box are all visible in their final positions. While waiting for connection, only the small spinner and "Connecting" status in the header move; when ready, only the text changes to "Ready." Session start occurs after the dock width movement and camera's final landing complete, ensuring map motion and process booting do not compete for the same frame.
+- **A connection that does not finish starting can be stopped (2026-09-26).** While the tool starts, **Stop** stands beside Send, as it does during a turn. It ends the attempt through the same path closing the dock takes (a process the attempt launched is stopped even if it answers later), keeps the draft in the composer, and the well says the tool was not started and nothing was sent, with **Connect again**. A stopped conversation does not reconnect on its own: the Library's dock, which is put away rather than closed, reopens on the stopped state; Connect again, New chat, or a door that brings a new request starts it.
 - When a non-empty turn completes, the same maximum-three current-vault recommendations return directly after the latest answer under **Useful next steps**. They appear only while the session is ready, no permission review or error is present, and the composer is empty. Starting a draft makes them yield; choosing one only fills the composer and never sends or writes automatically. An implementation-evidence recommendation matches the MCP maintenance boundary (`path:` or a resolved `elements:` relation) and says only that the capability is not yet linked to code, never that code is absent.
 - Those recommendations remain continuous while the same vault is re-read after a save: the last current health and source handle stay usable until the replacement manifest arrives, but never while switching folders. A completed ACP `connect_project_source` or `disconnect_project_source` receipt invalidates the project-source sidecar summary even though no ontology Markdown changed, so a finished source action is replaced by the next applicable prompt instead of being recommended again.
 - While the agent panel is open, the left INDEX temporarily collapses without changing its saved default state, yielding map width. Closing the conversation restores the original INDEX preference; opening the collapsed INDEX tab directly closes the agent panel so both auxiliary panels do not compress the map simultaneously.
@@ -675,7 +676,11 @@ had become false).
   each box hugs its sentence up to `--dialog-w-md`. One neutral box
   (`--color-elevated`, `--radius-card`, `--shadow-elevation-1`) serves four tones —
   neutral, success, warning, error — told apart by a small glyph in the tone's ink, never a
-  coloured fill. The Library keeps its pane-corner claim.
+  coloured fill. The Library keeps its pane-corner claim. An outcome the pressed control
+  already shows is not repeated in a toast (2026-09-26): saving, replacing or removing a
+  model key and choosing or dropping a local runner change their row in Agents → Models,
+  and copying a project's link changes its button; each is read out by a polite live region
+  instead. On those tall pages the toast had stood over the page's own text.
 - Target links visibly state `Current Target:`/`Last Change:`
   and directly update node selection for `HomePage` on the map already. Route remount
   does not temporarily switch current vault to sample graph; independent consumers only
@@ -792,8 +797,8 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 #### Global keyboard shortcuts (all `useTypingShortcuts`-gated)
 | Key | Action |
 |---|---|
-| `⌘K` / `⇧⌘K` | Unified ontology-node + project search |
-| `D` | Toggle source drawer |
+| `⌘K` (Shift optional) | Unified ontology-node + project search |
+| `D` | Toggle source drawer (the map only) |
 | `?` | Toggle shortcut sheet |
 | `⌘O` | Open a local Markdown folder from the static sample |
 | `Esc` | Close the highest-priority open layer or addressed map state |
@@ -2279,7 +2284,7 @@ Domain rows (one per domain, uniform height), in a card in the left track beside
 
 #### Mobile / narrow
 - `ProjectQuickEditPanel` doubles as the mobile quick-edit entry (hamburger menu context)
-- Search palette (`⌘K`) and shortcut sheet (`?`) open as page-local overlays (not a route change) so context isn't lost
+- Search palette (`⌘K`, this page's own project palette) and shortcut sheet (`?`, the shell's) open as overlays (not a route change) so context isn't lost
 
 #### Empty / not-found
 - Invalid slug → "Project not found" panel + back-to-workspace button
@@ -3223,8 +3228,8 @@ The phone tabs and the `G` keys read the same verdict.
   vault is the gateway; after a vault loads, root shares the map destination.
 
 ### Search palettes (separate by design — R5 skip merge)
-- **`⌘K` `SearchPalette`** — projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
-- **`⇧⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized)
+- **`⌘K` `SearchPalette`** — a project page's own palette: projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
+- **`⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized). The map mounts its own (a pick selects on the canvas); every other screen with the rail gets the shell's (`ShellKeyboardSurfaces`, 2026-09-26), mounted on the first ⌘K. Shift is accepted and changes nothing, so the shortcut sheet lists ⌘K once. The ontology documents workspace keeps ⌘K for its unified palette.
 - Both palettes share keyboard: `↑↓` navigate · `↵` select · `Esc` close
 
 **The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised
@@ -3321,8 +3326,9 @@ The box now reads `--control-h-sm`, and the gate for it asks the document what i
 the chip's top and bottom edge, because a clipped control still measures full size.
 
 ### `ShortcutSheet` (`?` to open)
-- 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio
+- 8 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions
 - 2-column grid on sm+, focus trap, `Esc` closes
+- Opens with `?` on every screen the rail stands on (2026-09-26): the map keeps its own, and the shell draws it everywhere else (`ShellKeyboardSurfaces`, with screens that answer a key themselves claiming it through `shared/lib/shell-key-claims.ts`). It does not open over another dialog. Navigation — the section every tab shows — lists only keys every screen answers; `D` moved to the map's section.
 
 ### `LocaleSwitch`
 - Two-button toggle EN / KO
@@ -3344,9 +3350,9 @@ the chip's top and bottom edge, because a clipped control still measures full si
 
 | Key | Surface | Action |
 |---|---|---|
-| `⌘K` / `⇧⌘K` | Home / Topology | Unified node + project search |
+| `⌘K` (Shift optional) | Every screen with the rail | Unified node + project search (a project page: its project palette; ontology documents: the unified palette) |
 | `D` | Home / Topology | Toggle docs drawer |
-| `?` | Home / Topology | Toggle shortcut sheet |
+| `?` | Every screen with the rail | Toggle shortcut sheet |
 | `⌘O` | Home / Topology static sample | Open a local Markdown folder |
 | `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state. In the installed app one press closes one thing under every macOS input source: Korean 2-Set can keep Escape from the WebView, so the app notices the press natively and the page stands in for the missing key-down, never for one it already received (`src/shared/lib/tauri-native-escape.ts`, `src-tauri/src/native_escape.rs`, 2026-09-25) |
 | `Enter` | Workshop relation picker | Choose the first filtered relation candidate |

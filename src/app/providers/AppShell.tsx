@@ -37,6 +37,7 @@ import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { useSoleProjectHref } from "@/features/project-data-source";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
+import { ShellKeyboardSurfaces } from "./ShellKeyboardSurfaces";
 import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/map-navigation-pending";
 import { useHydrated } from "@/shared/lib/use-hydrated";
 import { LibraryRoundsProvider } from "@/views/library";
@@ -517,26 +518,35 @@ function AppNavRailSlot() {
   // caused. The uncommitted-change count moved to the destination icon's warning badge.
   const utilityTier =
     settingsSlot ?? <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />;
+  const railHidden = hidden || gateway || desktopWithoutVault;
 
   return (
-    <AppNavRail
-      /*
-       * Registered by the shell rather than by each page, for the reason the tile exists:
-       * the folder's name must not depend on which destination is open. A page-level
-       * registration would leave it missing from exactly the destinations a wiki-only
-       * vault has (`library`, `agents`, `mcp`, `git`), which is the state the report came
-       * from.
-       */
-      vaultSlot={<VaultSwitchRailTile />}
-      settingsSlot={utilityTier}
-      hidden={hidden || gateway || desktopWithoutVault}
-      contextHrefs={
-        soleProjectHref ? { ...contextHrefs, projects: soleProjectHref } : contextHrefs
-      }
-      gitDirtyCount={gitDirtyCount}
-      agentsNoticeCount={installNotice.count}
-      visibleDestinations={visibleDestinations}
-    />
+    <>
+      <AppNavRail
+        /*
+         * Registered by the shell rather than by each page, for the reason the tile exists:
+         * the folder's name must not depend on which destination is open. A page-level
+         * registration would leave it missing from exactly the destinations a wiki-only
+         * vault has (`library`, `agents`, `mcp`, `git`), which is the state the report came
+         * from.
+         */
+        vaultSlot={<VaultSwitchRailTile />}
+        settingsSlot={utilityTier}
+        hidden={railHidden}
+        contextHrefs={
+          soleProjectHref ? { ...contextHrefs, projects: soleProjectHref } : contextHrefs
+        }
+        gitDirtyCount={gitDirtyCount}
+        agentsNoticeCount={installNotice.count}
+        visibleDestinations={visibleDestinations}
+      />
+      {/*
+        `?` and ⌘K follow the rail, for the reason the `G` keys do above: the keys the shortcut
+        sheet teaches on every screen are answered wherever the rail stands, and nowhere it does
+        not. Screens that answer a key themselves claim it (`ShellKeyboardSurfaces`).
+      */}
+      <ShellKeyboardSurfaces disabled={railHidden} />
+    </>
   );
 }
 

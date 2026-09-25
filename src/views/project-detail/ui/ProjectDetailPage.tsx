@@ -10,6 +10,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
+import { useClaimShellKey } from "@/shared/lib/shell-key-claims";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { formatDate } from "@/shared/lib/format-date";
 import { MOTION } from "@/shared/motion";
@@ -66,10 +67,6 @@ import { ConstructionReviewPanel } from "./construction-review/ConstructionRevie
 
 const SearchPalette = dynamic(
   () => import("@/widgets/search-palette").then((m) => m.SearchPalette),
-  { ssr: false },
-);
-const ShortcutSheet = dynamic(
-  () => import("@/widgets/shortcut-sheet").then((m) => m.ShortcutSheet),
   { ssr: false },
 );
 
@@ -291,18 +288,15 @@ export function ProjectDetailPage({
   const statusLabel = (id: string | undefined): string =>
     id === "active" ? t("statusActive") : rawStatusLabel(id);
 
-  // On the detail page, Cmd+K and ? both open as overlays on the current page — bouncing to home
-  // would dismiss the overlay and lose the "you are here" context.
+  // On the detail page, Cmd+K opens this page's own palette as an overlay on the current page —
+  // bouncing to home would dismiss the overlay and lose the "you are here" context — so the
+  // shell's search stands aside here. `?` is the shell's: the same sheet as on every other screen.
   const [searchOpen, setSearchOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  useClaimShellKey("search");
   useTypingShortcuts([
     {
       combo: { key: "k", meta: true },
       onFire: () => setSearchOpen((v) => !v),
-    },
-    {
-      combo: { key: "?" },
-      onFire: () => setShortcutsOpen((v) => !v),
     },
   ]);
   const handleSearchSelect = useCallback(
@@ -1216,10 +1210,6 @@ export function ProjectDetailPage({
         projects={related}
         onSelect={handleSearchSelect}
         containerLabel={null}
-      />
-      <ShortcutSheet
-        open={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
       />
     </ProjectDetailShell>
   );

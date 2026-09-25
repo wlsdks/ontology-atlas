@@ -52,8 +52,11 @@ import {
  *
  * So scan them all and block only if one is rendered — the test is what is on
  * screen, not what is in the tree.
+ *
+ * Exported for the shell's `?` (2026-09-26): the shortcut sheet must not stack over a dialog the
+ * way a destination key must not move the screen behind one, and one test keeps them agreeing.
  */
-function blockingSurfaceOpen(): boolean {
+export function blockingSurfaceOpen(): boolean {
   for (const el of document.querySelectorAll('[aria-modal="true"]')) {
     if (el.closest('[aria-hidden="true"]')) continue;
     if (el.getClientRects().length === 0) continue;

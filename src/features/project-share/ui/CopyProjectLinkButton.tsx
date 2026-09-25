@@ -6,13 +6,23 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { getProjectRuntimeDetailUrl } from "@/entities/project";
 import { BASE_PATH } from "@/shared/lib/base-path";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
-import { Button, type ButtonProps, useToast } from "@/shared/ui";
+import { Button, type ButtonProps } from "@/shared/ui";
 
 interface Props extends Omit<ButtonProps, "onClick"> {
   slug: string;
   testId?: string;
 }
 
+/**
+ * **The button says what happened, and nothing else does** (2026-09-26).
+ *
+ * It also raised a toast repeating its own label — in English the two were the same words,
+ * "Link copied" — so the outcome was said twice, once where the press happened and once in a
+ * box at the bottom of the window. On a project page that box stood over the page's own text
+ * (measured at 1512x949: the Includes and Excludes bullets under it). This is
+ * the copy-button pattern the other copy controls already keep (`CopyAgentTextButton`): the label
+ * changes where the eye is, and a polite live region reads it out.
+ */
 export function CopyProjectLinkButton({
   slug,
   testId,
@@ -21,9 +31,7 @@ export function CopyProjectLinkButton({
   size = "sm",
   ...props
 }: Props) {
-  // Copy state (idle/copied/failed) comes from the shared `useCopyFeedback`; the toast is separate.
-  const { state, copy } = useCopyFeedback(2000);
-  const toast = useToast();
+  const { state, copy, fail } = useCopyFeedback(2000);
   const t = useTranslations("copyProjectLink");
   const locale = useLocale();
 
@@ -35,11 +43,11 @@ export function CopyProjectLinkButton({
         basePath: BASE_PATH,
       });
     } catch {
-      toast.show(t("toastError"), "error");
+      // An address that cannot be built is a copy that failed: the button says so.
+      fail();
       return;
     }
-    const copied = await copy(url);
-    toast.show(copied ? t("toastSuccess") : t("toastError"), copied ? "success" : "error");
+    await copy(url);
   };
 
   const icon = state === "copied" ? <Check size={ICON_SIZE.md} /> : <Link2 size={ICON_SIZE.md} />;

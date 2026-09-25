@@ -42,7 +42,6 @@ import {
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
-import { MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { Button, EmptyState, TabBar, useToast } from "@/shared/ui";
@@ -356,10 +355,9 @@ export function OntologyInsightsPage() {
   // Settings moved from a top-right header pill to the same nav-rail gear the map
   // uses (see `useNavRailSettingsSlot` below). `AppSettingsMenu` closes its own
   // sheet on ⌘K ("one overlay owns one Escape"), so the search palette (a modal
-  // with a scrim) and settings can never be open at once — the old controlled
-  // mutual-exclusion state is unnecessary.
-  const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
-  useGlobalSearchHotkey(searchPaletteOpen, setSearchPaletteOpen);
+  // with a scrim) and settings can never be open at once. The palette itself is the
+  // shell's since 2026-09-26 (`ShellKeyboardSurfaces`): the same search this page drew,
+  // now drawn once for every screen that has none of its own.
 
   // Stamp the origin marker (`via=insights:<tab>`) onto map deeplinks. The map
   // (HomePage) reads it to render a "back to insights" chip that returns to this
@@ -1404,8 +1402,6 @@ export function OntologyInsightsPage() {
           // below-`lg` tab-bar reserve, which is the page's to decide.
           className={`${PAGE_FRAME} flex flex-col max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] ${measuredHarness ? 'h-full min-h-0 flex-1 overflow-hidden' : 'min-h-full shrink-0'}`}
         >
-        <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />
-
         <header className={PAGE_HEADER_ROW}>
           <div className={PAGE_TITLE_ROW}>
             <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">

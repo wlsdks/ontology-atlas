@@ -1,14 +1,70 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+const route = vi.hoisted(() => ({ pathname: "/topology" }));
 vi.mock("@/i18n/navigation", () => ({
-  usePathname: () => "/topology",
+  usePathname: () => route.pathname,
 }));
 import enMessages from "../../../../messages/en.json";
 import { ShortcutSheet } from "./ShortcutSheet";
 
 const glossary = enMessages.searchWidgets.shortcuts.glossary;
+const rows = enMessages.searchWidgets.shortcuts.rows;
+const sections = enMessages.searchWidgets.shortcuts.sections;
+
+afterEach(() => {
+  route.pathname = "/topology";
+});
+
+/** The sheet's section with this title, as the element holding its rows. */
+function section(title: string): HTMLElement {
+  const heading = screen.getByText(title, { selector: "p" });
+  return heading.closest("section") as HTMLElement;
+}
+
+/** Each row of a section as "label: keys". */
+function rowsOf(title: string): string[] {
+  return Array.from(section(title).querySelectorAll("dl > div")).map((row) => {
+    const label = row.querySelector("dt")?.textContent ?? "";
+    const keys = Array.from(row.querySelectorAll("kbd")).map((kbd) => kbd.textContent).join(" ");
+    return `${label}: ${keys}`;
+  });
+}
+
+/**
+ * The Navigation section is shown on every tab of every screen the sheet opens on, so each of its
+ * rows has to work everywhere (2026-09-26). Measured before: ⌘K and ⇧⌘K were two rows with two
+ * descriptions for one dialog, and `D` was listed on a project page where only the map binds it.
+ */
+describe("ShortcutSheet — the rows every screen shows", () => {
+  it("teaches one search key, not two searches", () => {
+    renderSheet();
+    const navigation = rowsOf(sections.navigation);
+    expect(navigation.filter((row) => row.endsWith("⌘ K"))).toEqual([`${rows.openSearchPalette}: ⌘ K`]);
+    expect(navigation.some((row) => row.includes("⇧"))).toBe(false);
+    expect(screen.queryByText("Search concepts, docs, and projects together")).toBeNull();
+  });
+
+  it("keeps D, which only the map binds, out of Navigation and in the map's own section", () => {
+    renderSheet();
+    expect(rowsOf(sections.navigation).some((row) => row.endsWith(": D"))).toBe(false);
+    expect(rowsOf(sections.topology)).toContain(`${rows.toggleDocsDrawer}: D`);
+  });
+
+  it("does not offer D on a screen without the map", () => {
+    route.pathname = "/ko/project/ontology-atlas/";
+    renderSheet();
+    expect(screen.queryByText(rows.toggleDocsDrawer)).toBeNull();
+  });
+
+  it("lists a key once on the map's own tab, not in Navigation and again under Map", () => {
+    renderSheet();
+    const all = [...rowsOf(sections.navigation), ...rowsOf(sections.topology)];
+    expect(all.filter((row) => row === `${rows.openSearchPalette}: ⌘ K`)).toHaveLength(1);
+    expect(all.filter((row) => row === `${rows.stepCloseOverlays}: Esc`)).toHaveLength(1);
+  });
+});
 
 /**
  * W2-C — the "Terrain Map"/"Relief" (topology) section used to list interactions the v2

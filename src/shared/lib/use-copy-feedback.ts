@@ -29,6 +29,11 @@ export const COPY_FEEDBACK_RESET_MS = 1500;
 export function useCopyFeedback(resetMs = COPY_FEEDBACK_RESET_MS): {
   state: CopyFeedbackState;
   copy: (text: string) => Promise<boolean>;
+  /**
+   * A copy that could not be attempted — the text itself could not be built — reads as the
+   * failed copy it is, with the same dwell, so the control that was pressed says so (2026-09-26).
+   */
+  fail: () => void;
 } {
   const [state, setState] = useState<CopyFeedbackState>("idle");
   const resetTimer = useRef<number | null>(null);
@@ -41,18 +46,27 @@ export function useCopyFeedback(resetMs = COPY_FEEDBACK_RESET_MS): {
     };
   }, []);
 
-  const copy = useCallback(
-    async (text: string): Promise<boolean> => {
-      const ok = await copyText(text);
+  const settle = useCallback(
+    (next: Exclude<CopyFeedbackState, "idle">) => {
       if (resetTimer.current !== null) {
         window.clearTimeout(resetTimer.current);
       }
-      setState(ok ? "copied" : "failed");
+      setState(next);
       resetTimer.current = window.setTimeout(() => setState("idle"), resetMs);
-      return ok;
     },
     [resetMs],
   );
 
-  return { state, copy };
+  const copy = useCallback(
+    async (text: string): Promise<boolean> => {
+      const ok = await copyText(text);
+      settle(ok ? "copied" : "failed");
+      return ok;
+    },
+    [settle],
+  );
+
+  const fail = useCallback(() => settle("failed"), [settle]);
+
+  return { state, copy, fail };
 }

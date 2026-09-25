@@ -62,4 +62,17 @@ describe("useCopyFeedback", () => {
     });
     expect(result.current.state).toBe("copied"); // restarted, so still copied
   });
+
+  it("a copy that could not be attempted reads as failed, with the same dwell", () => {
+    const { result } = renderHook(() => useCopyFeedback(1500));
+    act(() => {
+      result.current.fail();
+    });
+    expect(copyMock).not.toHaveBeenCalled();
+    expect(result.current.state).toBe("failed");
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(result.current.state).toBe("idle");
+  });
 });

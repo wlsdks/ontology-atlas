@@ -1236,7 +1236,7 @@
     "shortcuts": {
       "dialogAriaLabel": "Keyboard shortcuts",
       "title": "Keyboard shortcuts",
-      "subtitle": "Navigate the map without a mouse.",
+      "subtitle": "Move around Atlas without a mouse.",
       "help": "List of keyboard shortcuts available for navigation.",
       "closeAriaLabel": "Close shortcuts",
       "footer": "Press again to close",
@@ -1289,8 +1289,7 @@
         "goTo_agents": "Go to Agents",
         "goTo_mcp": "Go to MCP",
         "goTo_git": "Go to git history",
-        "openProjectPalette": "Open the search palette",
-        "openGlobalPalette": "Search concepts, docs, and projects together",
+        "openSearchPalette": "Open the search palette",
         "toggleDocsDrawer": "Open or close the quick document preview (with edit access)",
         "showShortcuts": "Show or hide keyboard shortcuts",
         "stepCloseOverlays": "Close open panels one step at a time",
@@ -4035,8 +4034,6 @@
     "wikiWriteModeAskCaption": "Every page stops at the permission card."
   },
   "copyProjectLink": {
-    "toastSuccess": "Link copied",
-    "toastError": "Copy failed",
     "labelCopied": "Link copied",
     "labelError": "Copy failed",
     "labelIdle": "Copy link"
@@ -4834,7 +4831,8 @@
       "thinking": "Thinking",
       "awaiting": "Waiting for you",
       "error": "Problem",
-      "exited": "Ended"
+      "exited": "Ended",
+      "stopped": "Stopped"
     },
     "firstRun": {
       "title": "Getting this tool ready",
@@ -4844,6 +4842,11 @@
     "starting": {
       "title": "Connecting to the tool",
       "body": "The tool is starting on this computer. You can ask as soon as it is ready."
+    },
+    "connectStopped": {
+      "title": "Stopped connecting",
+      "body": "The tool was not started, and nothing was sent.",
+      "again": "Connect again"
     },
     "permission": {
       "title": "It wants to touch something outside this folder",
