@@ -1,3 +1,5 @@
+import {Profiler} from 'react';
+import {motionValue} from 'framer-motion';
 import {act,render} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
 import {CompanionSprite} from './CompanionSprite';
@@ -16,9 +18,11 @@ it('a strike plays once and a static sleep pose preserves its identity',()=>{
  rerender(<CompanionSprite pose="sleep"/>);expect(container.querySelector('[data-frame]')).toHaveAttribute('data-frame','14');
 });
 it('uses traveled distance for controlled walking and does not animate a stationary frame',()=>{
- vi.useFakeTimers();const {container,rerender}=render(<CompanionSprite pose="walk" playing walkFrame={2}/>);
+ vi.useFakeTimers();const walkFrame=motionValue(2);let commits=0;
+ const {container,rerender}=render(<Profiler id="walking-sprite" onRender={()=>{commits++;}}><CompanionSprite pose="walk" playing walkFrame={walkFrame}/></Profiler>);
  const sprite=()=>container.querySelector('[data-frame]')!;
  expect(sprite()).toHaveAttribute('data-frame','2');act(()=>vi.advanceTimersByTime(1200));expect(sprite()).toHaveAttribute('data-frame','2');
- rerender(<CompanionSprite pose="walk" playing walkFrame={5}/>);expect(sprite()).toHaveAttribute('data-frame','5');
- rerender(<CompanionSprite pose="walk" playing={false} walkFrame={6}/>);expect(sprite()).toHaveAttribute('data-frame','0');
+ const before=commits;act(()=>walkFrame.set(5));expect(sprite()).toHaveAttribute('data-frame','5');expect(commits).toBe(before);
+ rerender(<Profiler id="walking-sprite" onRender={()=>{commits++;}}><CompanionSprite pose="walk" playing={false} walkFrame={walkFrame}/></Profiler>);
+ act(()=>walkFrame.set(6));expect(sprite()).toHaveAttribute('data-frame','0');
 });
