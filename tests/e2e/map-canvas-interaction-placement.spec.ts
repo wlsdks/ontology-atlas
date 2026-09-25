@@ -226,12 +226,20 @@ test.describe("map canvas interactions on the dogfood vault", () => {
       const actions = document.querySelector('[data-testid="map-detail-panel-actions"]')!;
       return [...actions.querySelectorAll<HTMLElement>(":scope > button, :scope > div > button")].map((b) => {
         const r = b.getBoundingClientRect();
-        return { h: Math.round(r.height), radius: getComputedStyle(b).borderTopLeftRadius };
+        const text = b.textContent?.trim() ? getComputedStyle(b).fontSize : null;
+        return { h: Math.round(r.height), radius: getComputedStyle(b).borderTopLeftRadius, text };
       });
     });
     expect(row.length).toBeGreaterThanOrEqual(2);
     expect(new Set(row.map((r) => r.h)).size, `heights ${JSON.stringify(row)}`).toBe(1);
     expect(new Set(row.map((r) => r.radius)).size, `radii ${JSON.stringify(row)}`).toBe(1);
+    // Round 2: the labelled controls set their words in one size ("Edit" was 11px beside a
+    // 14px primary), and the footer's full-detail control wears the row's radius, not 9px.
+    expect(new Set(row.map((r) => r.text).filter(Boolean)).size, `type sizes ${JSON.stringify(row)}`).toBe(1);
+    const fullDetailRadius = await page
+      .getByTestId("map-detail-panel-open-full-detail")
+      .evaluate((el) => getComputedStyle(el).borderTopLeftRadius);
+    expect(fullDetailRadius).toBe(row[0]!.radius);
     const more = page.locator('[data-testid^="map-group-more-"]').first();
     if (await more.count()) {
       // The words, not the control box: the control spans the row, its label sits on the text column.
@@ -356,6 +364,12 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     await expect(panel).toBeVisible();
     await expect(panel).toHaveAttribute("aria-label", "지도에 추가");
     await expect(page.getByTestId("ontology-bootstrap-title")).toHaveCount(0);
+    // Round 2: with the name field gone, focus still opens inside the dialog, on the first
+    // folder choice, never on <body> with the backdrop as the first Tab stop.
+    await expect
+      .poll(() => page.evaluate(() => !!document.activeElement?.closest('[data-testid="ontology-bootstrap-panel"]')))
+      .toBe(true);
+    expect(await activeTestId(page)).toMatch(/^ontology-bootstrap-domain-/);
     const confirm = page.getByTestId("ontology-bootstrap-confirm");
     await expect(confirm).toContainText("지도에 추가");
     expect(Math.round((await rectOf(page, "ontology-bootstrap-confirm"))!.h)).toBe(40);
@@ -407,6 +421,75 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     });
   }
 
+  /*
+   * Round 2 (2026-09-25). Escape closes the inspector and keeps the selection; INDEX unfolds
+   * again. The map must measure again: the legend stretches back between the panels, and the
+   * camera returns to the room so no drawn name stands under INDEX. With INDEX folded and the
+   * inspector open, the dependency the selection's arrow points at is drawn whole, not cut by
+   * the canvas edge.
+   */
+  test("MC-02/MC-03 round 2: Territories measures again when the chrome moves", async ({ page }) => {
+    await arrive(page, { width: 1040, height: 720 });
+    await page.getByTestId("topology-view-3d").click();
+    await page.getByTestId("topology-view-3d-choice-territories").click();
+    await expect(page.getByTestId("territories-map")).toHaveAttribute("data-territories-ready", "true", { timeout: 60_000 });
+    await page.waitForTimeout(800);
+    const legendAtRest = await page.evaluate(() => {
+      const r = document.querySelector("[data-territories-legend-pill]")!.getBoundingClientRect();
+      return { x: r.x, y: r.y, w: r.width, h: r.height };
+    });
+    /** Names drawn (always shown, or lit under the selection) that are not the canvas at a corner. */
+    const unreadable = (litOnly: boolean) =>
+      page.evaluate((onlyLit) => {
+        const wrap = document.querySelector<HTMLElement>('[data-testid="territories-map"]')!;
+        const c = wrap.getBoundingClientRect();
+        const out: string[] = [];
+        for (const el of document.querySelectorAll<HTMLElement>("[data-territory-id]")) {
+          if (!el.dataset.labelBox) continue;
+          const lit = el.dataset.lit === "true";
+          if (onlyLit ? !lit : el.dataset.labelShown === "on-focus" && !lit) continue;
+          const [x, y, w, h] = el.dataset.labelBox.split(",").map(Number) as [number, number, number, number];
+          for (const [px, py] of [[x + 2, y + 2], [x + w - 2, y + 2], [x + 2, y + h - 2], [x + w - 2, y + h - 2]] as [number, number][]) {
+            const X = c.x + px;
+            const Y = c.y + py;
+            const hit = X >= c.x && Y >= c.y && X <= c.right && Y <= c.bottom ? document.elementFromPoint(X, Y) : null;
+            if (!hit || hit.tagName !== "CANVAS") {
+              out.push(`${el.textContent} at ${Math.round(X)},${Math.round(Y)} under ${hit?.closest("[data-testid]")?.getAttribute("data-testid") ?? "the canvas edge"}`);
+              break;
+            }
+          }
+        }
+        return out;
+      }, litOnly);
+    const target = await page.evaluate(() => {
+      const el = [...document.querySelectorAll<HTMLElement>('[data-territory-kind="capability"]')].find((c) =>
+        c.textContent?.includes("라이브러리 작업대"),
+      )!;
+      const [x, y, w, h] = (el.dataset.labelBox ?? "").split(",").map(Number);
+      const c = document.querySelector('[data-testid="territories-map"]')!.getBoundingClientRect();
+      return { x: c.x + x! + w! / 2, y: c.y + y! + h! / 2 };
+    });
+    await page.mouse.click(target.x, target.y);
+    await expect(page.getByTestId("map-detail-panel")).toBeVisible();
+    await page.waitForTimeout(1200);
+    expect(await unreadable(true), "a lit name cut by the canvas edge or chrome").toEqual([]);
+    await capture(page, "mc02-r2-territories-selected-1040");
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
+    await page.waitForTimeout(1500);
+    expect(await unreadable(false), "a drawn name under INDEX after Escape").toEqual([]);
+    const legendAfter = await page.evaluate(() => {
+      const r = document.querySelector("[data-territories-legend-pill]")!.getBoundingClientRect();
+      return { x: r.x, y: r.y, w: r.width, h: r.height };
+    });
+    expect(Math.abs(legendAfter.w - legendAtRest.w), `legend ${JSON.stringify(legendAfter)} vs rest ${JSON.stringify(legendAtRest)}`).toBeLessThanOrEqual(1);
+    expect(Math.abs(legendAfter.x - legendAtRest.x)).toBeLessThanOrEqual(1);
+    const index = await rectOf(page, "topology-index-panel");
+    if (index) expect(legendAfter.x, "legend under INDEX").toBeGreaterThanOrEqual(index.x + index.w);
+    await capture(page, "mc02-r2-territories-escape-1040");
+  });
+
   test("MC-06: in Strata the selected domain's lit neighbourhood stays clear of its panel", async ({ page }) => {
     await arrive(page, { width: 1040, height: 720 });
     await page.getByTestId("topology-view-3d").click();
@@ -447,7 +530,7 @@ test.describe("map canvas interactions on the dogfood vault", () => {
 
   test("MC-17: every picker view is kept in the address", async ({ page }) => {
     await arrive(page, { width: 1512, height: 949 });
-    for (const view of ["strata", "coupling", "galaxy", "territories"] as const) {
+    for (const view of ["strata", "coupling", "galaxy", "hex", "territories"] as const) {
       await page.getByTestId("topology-view-3d").click();
       await page.getByTestId(`topology-view-3d-choice-${view}`).click();
       await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBe(view);

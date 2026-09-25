@@ -726,12 +726,17 @@ function DetailActionMenu({
          * The icon-only "more" trigger is the 32px icon step (`lg`), not `md` (28px): it sits in
          * one row with the 32px `Button sm` and the 32px `Edit` chip, and at 28px it was the one
          * control in the row that stood short (captured at 1512, 2026-09-25).
+         *
+         * The labelled trigger sets its word in the primary `Button sm`'s type (`text-body-lg`,
+         * 14px): at the chip's 11px, "Edit" read two steps smaller than the primary beside it
+         * (interaction audit round 2, 2026-09-25).
          */
         className={controlClass({
           shape: iconOnly ? "icon" : "chip",
           size: iconOnly ? "lg" : "md",
           tone: "muted",
           className:
+            (iconOnly ? "" : "py-1 text-body-lg ") +
             "atlas-touch-floor atlas-touch-floor-wide border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)]",
         })}
       >
@@ -1821,10 +1826,12 @@ export function OntologyMapDetailPanel({
                * link, so the same action changed shape by kind and the footer its height. Shape
                * and size are now one; only the emphasis steps down on the project, whose source
                * action (in the footer or beside the gap) is the filled control, so two never compete.
+               * It is the chip `lg` its footer neighbour (the project's source action) wears: one
+               * 32px height and the 6px chip radius, not the card's 9px (round 2, 2026-09-25).
                */
               className={controlClass({
-                shape: "card",
-                size: "sm",
+                shape: "chip",
+                size: "lg",
                 className: showProjectSource
                   ? "atlas-touch-floor shrink-0 border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] text-[color:var(--map-panel-text-tertiary)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)]"
                   : "atlas-touch-floor shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--map-panel-primary-border)] bg-[color:var(--map-panel-primary-surface)] text-[color:var(--map-panel-primary-text)] hover:border-[color:var(--map-panel-primary-border-hover)] hover:bg-[color:var(--map-panel-primary-surface-hover)]",

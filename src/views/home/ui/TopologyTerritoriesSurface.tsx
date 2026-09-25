@@ -21,6 +21,8 @@ export function TopologyTerritoriesSurface({
   onPaneClick,
   onDrawnCountChange,
   reducedMotion,
+  inspectorOpen,
+  indexExpanded,
 }: {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
@@ -30,6 +32,10 @@ export function TopologyTerritoriesSurface({
   onPaneClick: () => void;
   onDrawnCountChange?: (drawn: number) => void;
   reducedMotion: boolean;
+  /** The node inspector is standing on the canvas. */
+  inspectorOpen: boolean;
+  /** INDEX is unfolded over the canvas's left side. */
+  indexExpanded: boolean;
 }) {
   const t = useTranslations("topology.territories");
   const evidence = useMapEvidenceStates({ nodes: insightNodes, enabled: true });
@@ -89,7 +95,7 @@ export function TopologyTerritoriesSurface({
         <span aria-hidden className="h-3 w-px shrink-0 bg-[color:var(--map-panel-border)]" />
         <span className="whitespace-nowrap">{t("legendSize")}</span>
         <span className="whitespace-nowrap">{t("legendRollup")}</span>
-        <span data-testid="territories-evidence-note" className="text-center text-[color:var(--map-territory-title)] [word-break:keep-all]">
+        <span data-testid="territories-evidence-note" className="text-center text-[color:var(--map-territory-title)]">
           {note[evidence.availability]}
         </span>
       </p>
@@ -111,6 +117,8 @@ export function TopologyTerritoriesSurface({
       listLabel={t("listLabel")}
       legend={legend}
       reducedMotion={reducedMotion}
+      inspectorOpen={inspectorOpen}
+      chromeKey={`${indexExpanded ? "index" : "rail"}:${inspectorOpen ? "inspector" : "free"}`}
     />
   );
 }

@@ -178,9 +178,12 @@ export function OntologyBootstrapForm({
               {labels.folders}
             </legend>
             <div className="mt-1 flex max-h-40 flex-col gap-0.5 overflow-y-auto">
-              {plan.domains.map((d) => (
+              {plan.domains.map((d, index) => (
                 <Checkbox
                   key={d.name}
+                  // With no name field (adding to a map), focus starts on the first choice so
+                  // the dialog opens with focus inside it, as the create branch does.
+                  autoFocus={addingToMap && index === 0}
                   className="rounded-[var(--radius-chip)] px-1.5 py-1 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
                   checked={accepted.has(d.name)}
                   disabled={busy}
@@ -264,6 +267,7 @@ export function OntologyBootstrapForm({
           onClick={() => void submit()}
           disabled={!canConfirm}
           data-testid="ontology-bootstrap-confirm"
+          autoFocus={addingToMap && plan.domains.length === 0}
           // The create-node dialog's submit, class for class: two dialogs in the same slot on
           // the same map keep one control height (40) and one type size.
           className={controlClass({

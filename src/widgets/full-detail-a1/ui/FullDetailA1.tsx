@@ -389,7 +389,7 @@ export function FullDetailA1({
           width. */}
       <div
         data-fulldetail-metric="engraved"
-        className="mt-4.5 flex flex-wrap items-baseline gap-x-4.5 gap-y-1 rounded-chip border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-metric-surface)] px-3.5 py-2.5 text-body tabular-nums tracking-[var(--tracking-label)] text-[color:var(--map-panel-metric-text)] [word-break:keep-all]"
+        className="mt-4.5 flex flex-wrap items-baseline gap-x-4.5 gap-y-1 rounded-chip border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-metric-surface)] px-3.5 py-2.5 text-body tabular-nums tracking-[var(--tracking-label)] text-[color:var(--map-panel-metric-text)]"
       >
         {metricLine}
       </div>

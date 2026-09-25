@@ -102,7 +102,7 @@ export function TopologyLightLegend({
         {evidence.availability !== "measured" ? (
           <span
             data-testid="topology-light-legend-note"
-            className="text-center text-[color:var(--map-panel-text-tertiary)] [word-break:keep-all]"
+            className="text-center text-[color:var(--map-panel-text-tertiary)]"
           >
             {note[evidence.availability]}
           </span>
