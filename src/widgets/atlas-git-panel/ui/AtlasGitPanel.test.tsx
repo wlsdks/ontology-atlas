@@ -887,8 +887,8 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
      */
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-    expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("Push 2");
-    expect(screen.getByTestId("atlas-git-remote-pull")).toHaveTextContent("Pull 1");
+    expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("보내기 2");
+    expect(screen.getByTestId("atlas-git-remote-pull")).toHaveTextContent("받아오기 1");
     // The numbers themselves stay for assistive technology (losing the visual chip does not lose the fact).
     expect(screen.getByTestId("atlas-git-divergence")).toHaveTextContent("2");
   });
@@ -2124,8 +2124,12 @@ describe("AtlasGitPanel — confirms that swap in take and return focus (2026-09
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     const push = await screen.findByTestId("atlas-git-remote-push");
-    expect(push.getAttribute("title")).toContain("커밋");
-    push.focus();
+    // The hint is the shared tooltip, not a native `title`: it opens on keyboard focus.
+    expect(push.getAttribute("title")).toBeNull();
+    act(() => push.focus());
+    const hints = await screen.findAllByTestId("atlas-git-remote-push-hint");
+    expect(hints[0]).toHaveTextContent("커밋");
+    expect(hints[0]).toHaveTextContent("git push");
     fireEvent.click(push);
     const step = await screen.findByTestId("atlas-git-confirm-step");
     expect(

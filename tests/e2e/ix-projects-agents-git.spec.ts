@@ -158,6 +158,28 @@ test.describe("interaction sweep — projects, agents, git", () => {
     expect(snapshots, "Push committed without a confirm").toBe(0);
   });
 
+  test("remote actions read in Korean on /ko and explain themselves on keyboard focus", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1512, height: 949 });
+    await page.goto("/ko/git/?guides=off");
+    const fetch = page.getByTestId("atlas-git-remote-fetch");
+    await expect(fetch).toBeVisible({ timeout: 30_000 });
+    for (const id of ["fetch", "pull", "push"]) {
+      await expect(page.getByTestId(`atlas-git-remote-${id}`)).not.toContainText(/Fetch|Pull|Push/);
+      expect(await page.getByTestId(`atlas-git-remote-${id}`).getAttribute("title")).toBeNull();
+    }
+    await fetch.focus();
+    const hint = page.getByTestId("atlas-git-remote-fetch-hint").first();
+    await expect(hint).toBeVisible();
+    await expect(hint).toContainText("git fetch");
+    // The hint panel hangs below the header and never covers the button it explains.
+    const [button, panel] = [await box(fetch), await box(hint)];
+    expect(panel.y, "hint covers its own button").toBeGreaterThanOrEqual(button.y + button.height);
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("atlas-git-remote-fetch-hint")).toHaveCount(0);
+  });
+
   test("commit detail shows the reader's clock, not the ISO instant", async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 949 });
     await page.goto("/ko/git/?guides=off");

@@ -58,6 +58,7 @@ import type { OntologyChangeset, KnowledgeGraphEdge, KnowledgeGraphNode } from "
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { Checkbox, controlClass } from "@/shared/ui";
+import { Tooltip } from "@/shared/ui/tooltip";
 import { buildConceptEgo, matchNodeId, type ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
 import {
@@ -1823,7 +1824,14 @@ function NoVaultSetup({ t }: { t: Translator }) {
  * quaternary), the action a quiet button beside it. The input arrives only when
  * pressed.
  */
-/** One remote action — the label keeps the original term, and the tooltip carries what it does. */
+/**
+ * One remote action — the label is the reader's word in the reader's locale, and
+ * the shared tooltip carries what it does plus the git verb it runs, as secondary text.
+ *
+ * The hint used to be a native `title`: no styled panel on hover and nothing at all for a
+ * keyboard reader, while the ko label was the untranslated verb. The Radix tooltip opens
+ * on focus as well as hover and describes the button while open.
+ */
 function RemoteActionButton({
   id,
   label,
@@ -1840,10 +1848,19 @@ function RemoteActionButton({
   onClick: (kind: "fetch" | "pull" | "push") => void;
 }) {
   return (
+    <Tooltip
+      side="bottom"
+      align="end"
+      content={
+        <span className="flex flex-col gap-0.5" data-testid={`atlas-git-remote-${id}-hint`}>
+          <span>{hint}</span>
+          <span className="font-mono text-[color:var(--color-text-tertiary)]">git {id}</span>
+        </span>
+      }
+    >
     <button
       type="button"
       data-testid={`atlas-git-remote-${id}`}
-      title={hint}
       disabled={disabled}
       onClick={() => onClick(id)}
       /*
@@ -1868,6 +1885,7 @@ function RemoteActionButton({
     >
       {busy ? "…" : label}
     </button>
+    </Tooltip>
   );
 }
 
