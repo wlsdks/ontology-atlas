@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { RoundPassEntry, RoundRecord } from "@/entities/library-round";
 
-import { groupLedgerByDay, lastOutcome, lastPass, nextRound, sinceSpan, summarizeSince } from "./round-presentation";
+import { groupLedgerByDay, lastOutcome, nextRound, sinceSpan, summarizeSince } from "./round-presentation";
 
 function pass(overrides: Partial<RoundPassEntry> = {}): RoundPassEntry {
   return {
@@ -61,7 +61,7 @@ describe("since span", () => {
 });
 
 describe("since summary", () => {
-  it("counts passes in the span, names stale and redrafted pages once, and keeps gaps", () => {
+  it("counts passes in the span, names stale and redrafted pages once, and leaves gaps to the ledger", () => {
     const span = { kind: "away" as const, from: new Date("2026-09-16T18:30:00Z"), to: new Date("2026-09-17T09:02:00Z") };
     const entries = [
       pass({ startedAt: "2026-09-16T17:00:00Z", endedAt: "2026-09-16T17:00:03Z" }), // before
@@ -78,7 +78,8 @@ describe("since summary", () => {
     expect(summary.stale).toEqual(["wiki/plan", "wiki/budget"]);
     expect(summary.redrafted).toEqual(["wiki/plan.md"]);
     expect(summary.refused).toBe(2);
-    expect(summary.asleep).toHaveLength(1);
+    // The asleep gap is in the span but is not a pass: it is not counted.
+    expect(summary).not.toHaveProperty("asleep");
   });
 });
 
@@ -91,13 +92,11 @@ describe("ledger grouping and header facts", () => {
     expect(days.map((day) => day.entries.map((entry) => entry.id))).toEqual([["b", "c"], ["a"]]);
   });
 
-  it("names a round's latest pass, the latest pass of all, and the round due soonest", () => {
+  it("names a round's latest pass and the round due soonest", () => {
     const early = pass({ id: "e", roundId: "r1", endedAt: "2026-09-17T01:00:00Z" });
     const late = pass({ id: "l", roundId: "r1", endedAt: "2026-09-17T02:00:00Z" });
     const other = pass({ id: "o", roundId: "r2", endedAt: "2026-09-17T03:00:00Z" });
-    const gap = pass({ id: "g", roundId: undefined, outcome: "asleep", endedAt: "2026-09-17T04:00:00Z" });
     expect(lastOutcome(round(), [early, late, other])?.id).toBe("l");
-    expect(lastPass([early, late, other, gap])?.id).toBe("o");
     const paused = round({ id: "p", enabled: false, nextDueAt: "2026-09-17T05:00:00Z" });
     const soon = round({ id: "s", nextDueAt: "2026-09-17T06:00:00Z" });
     expect(nextRound([round(), paused, soon])?.id).toBe("s");

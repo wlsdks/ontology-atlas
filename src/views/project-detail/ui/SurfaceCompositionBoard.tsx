@@ -27,8 +27,15 @@ export function SurfaceCompositionBoard({
 }: {
   cells: readonly SurfaceCell[];
   titles: Record<SurfaceCell["id"], string>;
-  openLabels: Record<SurfaceCell["id"], string>;
+  /**
+   * A cell without a label draws no door. The ontology cell's door would be the map, which the
+   * hero's primary action already opens one block above (2026-09-25, round three: "View on the
+   * map" and "Open on the map" stood ~100px apart on one address).
+   */
+  openLabels: Partial<Record<SurfaceCell["id"], string>>;
 }) {
+  const closesOnNote = (cell: SurfaceCell) =>
+    Boolean(cell.note) && cell.figures.length > 0 && !openLabels[cell.id];
   return (
     <ul
       data-testid="project-detail-surface-board"
@@ -45,7 +52,7 @@ export function SurfaceCompositionBoard({
           key={cell.id}
           data-testid="project-detail-surface-cell"
           data-surface={cell.id}
-          className="grid grid-rows-[auto_1fr_auto] gap-3 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
+          className="grid grid-rows-[auto_1fr_auto] gap-3 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)]"
         >
           <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
             {titles[cell.id]}
@@ -70,7 +77,7 @@ export function SurfaceCompositionBoard({
                 ))}
               </dl>
             ) : null}
-            {cell.note ? (
+            {cell.note && !closesOnNote(cell) ? (
               <p
                 data-testid="project-detail-surface-note"
                 className={`${cell.figures.length > 0 ? "mt-2" : ""} break-keep text-body leading-body text-[color:var(--color-text-tertiary)]`}
@@ -79,6 +86,18 @@ export function SurfaceCompositionBoard({
               </p>
             ) : null}
           </div>
+          {/* A cell with figures and no door closes on its note, on the line where its neighbours'
+              doors stand (round four): the ontology cell's "N relations among these concepts" used
+              to sit under the figures with the cell's lower half bare beneath it. */}
+          {closesOnNote(cell) ? (
+            <p
+              data-testid="project-detail-surface-note"
+              className="self-end text-body leading-body text-[color:var(--color-text-tertiary)]"
+            >
+              {cell.note}
+            </p>
+          ) : null}
+          {openLabels[cell.id] ? (
           <Link
             href={cell.href}
             prefetch={false}
@@ -95,6 +114,7 @@ export function SurfaceCompositionBoard({
           >
             {openLabels[cell.id]}
           </Link>
+          ) : null}
         </li>
       ))}
     </ul>

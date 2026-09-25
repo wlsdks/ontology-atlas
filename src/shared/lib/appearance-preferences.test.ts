@@ -8,6 +8,7 @@ import {
   FOOTPRINT_RANGES,
   resolveCanvasBackground,
   resolveFootprint,
+  resolveStoredMapArrangement,
   DEFAULT_GLYPH_SET,
   GLYPH_SETS,
   readCanvasBackground,
@@ -140,5 +141,20 @@ describe("발자국 설정 정규화", () => {
       placement: "both",
     });
     expect(out).toEqual({ size: 17, gap: 4, opacity: 0.95, tone: "indigo" });
+  });
+});
+
+describe("map arrangement — the retired Cone", () => {
+  /**
+   * The Cone left the picker on 2026-09-25. A reader who had it stored lands on the
+   * containment view that replaced it, never on a value the picker cannot show as chosen.
+   */
+  it("a stored Cone opens Strata, and today's two values pass through", () => {
+    expect(resolveStoredMapArrangement("ownership")).toBe("strata");
+    expect(resolveStoredMapArrangement("cone")).toBe("strata");
+    expect(resolveStoredMapArrangement("strata")).toBe("strata");
+    expect(resolveStoredMapArrangement("coupling")).toBe("coupling");
+    expect(resolveStoredMapArrangement(null)).toBe("strata");
+    expect(resolveStoredMapArrangement("toString")).toBe("strata");
   });
 });

@@ -22,6 +22,12 @@ export function StateBadge({
   children,
   testId,
 }: {
+  /*
+   * ⚠️ **No third, dashed `quiet` tone** (design sweep round 2, 2026-09-25). It was added
+   * for a source still `checking`, and at 1x on the captures its dashed edge could not be
+   * told from the solid one — a variant nobody could see. `checking` wears `neutral`, and
+   * the word tells it from `not compiled`, which is the fact rather than a texture.
+   */
   tone: "neutral" | "warning";
   children: ReactNode;
   testId?: string;

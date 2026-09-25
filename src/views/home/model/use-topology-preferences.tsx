@@ -1,6 +1,6 @@
 
 import { useRelationVocabulary } from "@/entities/knowledge-graph";
-import { useCanvasBackground, useExpand, useFootprint, useGalaxy, useGlyphSet, useMapArrangement, useView3d } from "@/shared/lib/appearance-preferences";
+import { useCanvasBackground, useExpand, useFootprint, useGalaxy, useGlyphSet, useHexBoard, useMapArrangement, useTerritories, useView3d } from "@/shared/lib/appearance-preferences";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -54,6 +54,10 @@ export function useTopologyPreferences() {
   // 3D view (2026-08-18, opt-in): either the ownership Cone tree or the relation-driven Cloud.
   const view3d = useView3d();
   const galaxy = useGalaxy();
+  /** Territories — every capability named around its domain (`OntologyTerritoriesMap`). */
+  const territories = useTerritories();
+  /** Hex board — one tile per capability, regions per domain (`OntologyHexBoardMap`). */
+  const hexBoard = useHexBoard();
   /** Which structural question places nodes in 3D — see the `MapArrangement` doc-block. */
   const mapArrangement = useMapArrangement();
   const footprint = useFootprint();
@@ -74,7 +78,7 @@ export function useTopologyPreferences() {
   );
   return {
     expand, t, audiencePlain, setAudiencePlain, reducedMotion, tMeaningEditor, relationVocabulary,
-    relationRegister, siteT, relationLabelInRegister, activeLocale, view3d, galaxy, businessFlowRequestText,
+    relationRegister, siteT, relationLabelInRegister, activeLocale, view3d, galaxy, territories, hexBoard, businessFlowRequestText,
     tKinds, tWorkbench, tAtlasGit, kindCountsTitle, tTopologyKeyboardWalk, glyphSet, canvasBackground,
     mapArrangement, footprint
   };

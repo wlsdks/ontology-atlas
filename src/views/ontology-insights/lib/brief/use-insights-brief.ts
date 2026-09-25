@@ -18,7 +18,11 @@ import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/tauri-git';
-import { resolveEvidenceStates, type EvidenceConceptInput } from './evidence-states';
+import {
+  buildEvidenceConcepts,
+  resolveEvidenceStates,
+  type EvidenceConceptInput,
+} from '@/shared/lib/evidence-states';
 import type { BriefLineDetail } from './brief-model';
 import {
   canUndoBriefSeenAt,
@@ -66,6 +70,8 @@ export interface InsightsBrief {
   /** What happened after the anchor, newest first, bounded; `sinceTotal` is the whole count. */
   since: readonly SinceRow[];
   sinceTotal: number;
+  /** The one kind every row after the anchor shares, or null when they differ or there are none. */
+  sinceKind: SinceRow['kind'] | null;
   /**
    * What a line counts, by name: concept, the exact path that moved, and when. Keyed by the
    * line id, so a count and the rows under it can never come from different calculations.
@@ -234,31 +240,10 @@ export function useInsightsBrief({
    * `path:` of every element it lists. The Git bridge then answers, in one walk, when each of
    * those and the concept's own document last changed.
    */
-  const evidenceConcepts = useMemo<EvidenceConceptInput[]>(() => {
-    const pathBySlug = new Map<string, string>();
-    for (const doc of docs) {
-      const path = doc.frontmatter.path;
-      if (typeof path === 'string' && path.length > 0) pathBySlug.set(doc.slug, path);
-    }
-    const out: EvidenceConceptInput[] = [];
-    for (const node of nodes) {
-      if (!node.docSlug) continue;
-      const doc = docs.find((candidate) => candidate.slug === node.docSlug);
-      if (!doc) continue;
-      const own = pathBySlug.get(doc.slug);
-      const elements = Array.isArray(doc.frontmatter.elements)
-        ? (doc.frontmatter.elements as unknown[]).filter((slug): slug is string => typeof slug === 'string')
-        : [];
-      const paths = new Set<string>();
-      if (own) paths.add(own);
-      for (const slug of elements) {
-        const path = pathBySlug.get(slug);
-        if (path) paths.add(path);
-      }
-      out.push({ id: node.id, docPath: `${doc.slug}.md`, evidencePaths: [...paths] });
-    }
-    return out;
-  }, [docs, nodes]);
+  const evidenceConcepts = useMemo<EvidenceConceptInput[]>(
+    () => buildEvidenceConcepts(docs, nodes),
+    [docs, nodes],
+  );
 
   const [evidenceChanges, setEvidenceChanges] = useState<{
     key: string;
@@ -518,6 +503,7 @@ export function useInsightsBrief({
     agent,
     since: sinceList.rows,
     sinceTotal: sinceList.total,
+    sinceKind: sinceList.soleKind,
     details,
     library: libraryDetail,
     harnessDetail,

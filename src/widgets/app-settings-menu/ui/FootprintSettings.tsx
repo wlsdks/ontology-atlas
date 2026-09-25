@@ -193,9 +193,7 @@ export function FootprintSettings() {
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-footprint">
-      <p className="break-keep text-label text-[color:var(--color-text-tertiary)]">
-        {t('caption')}
-      </p>
+      {/* What this pane does is said once, by the pane head (`SettingsPaneHead`). */}
       <FootprintPreview pref={pref} />
 
       {/*

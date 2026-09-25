@@ -26,6 +26,17 @@ import { groupLedgerByDay, passDurationSeconds } from "../../lib/round-presentat
  * draws them still.
  */
 
+/**
+ * A minute and more reads in minutes: "180 s" asked the reader to divide by sixty (2026-09-25).
+ * Under a minute keeps its seconds, because there the seconds are the information.
+ */
+function useDurationWords() {
+  const t = useTranslations("library.rounds");
+  return (seconds: number) => seconds >= 60
+    ? t("ledger.durationMinutes", { minutes: Math.round(seconds / 60) })
+    : t("ledger.duration", { seconds });
+}
+
 const DOT: Record<Exclude<RoundPassOutcome, "asleep">, string> = {
   held: "h-1.5 w-1.5 bg-[color:var(--color-text-quaternary)]",
   reviewed: "h-2 w-2 bg-[color:var(--color-indigo-text-soft)]",
@@ -138,6 +149,7 @@ export function RoundsLedger({
   allPaused: boolean;
 }) {
   const t = useTranslations("library.rounds");
+  const durationWords = useDurationWords();
   const pageTitle = (slug: string) => titleFor?.(slug) ?? pageName(slug);
   const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
   const dayFormat = new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric" });
@@ -244,7 +256,7 @@ export function RoundsLedger({
                         {/* A pass under a second says nothing about its length: "0 s" is not a
                             duration a person can use, and it read as a defect beside a real one. */}
                         <span className="text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">
-                          {passDurationSeconds(entry) > 0 ? `${t("ledger.duration", { seconds: passDurationSeconds(entry) })} · ` : null}
+                          {passDurationSeconds(entry) > 0 ? `${durationWords(passDurationSeconds(entry))} · ` : null}
                           {entry.agentTurns === 1 ? t("ledger.agentTurn") : t("ledger.noAgentTurn")}
                           {entry.trigger !== "clock" ? ` · ${entry.trigger === "manual" ? t("ledger.manual") : t("ledger.catchUp")}` : null}
                         </span>

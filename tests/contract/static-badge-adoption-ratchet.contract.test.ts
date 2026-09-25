@@ -72,11 +72,10 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx", 3],
   ["src/widgets/docs-vault/ui/DocsVaultEditor.tsx", 3],
   ["src/widgets/docs-vault/ui/DocsVaultViewer.tsx", 1],
-  ["src/widgets/gateway-chrome/ui/GatewayNav.tsx", 1],
   ["src/widgets/global-search/ui/GlobalSearch.tsx", 2],
   ["src/widgets/project-drawer/ui/ProjectDrawer.tsx", 3],
   ["src/widgets/search-palette/ui/SearchPalette.tsx", 1],
-  ["src/widgets/ontology-map/ui/OntologyMapDetailPanel.tsx", 2],
+  ["src/widgets/ontology-map/ui/OntologyMapDetailPanel.tsx", 1],
   ["src/widgets/vault-agent-panel/ui/AgentLockedState.tsx", 1],
 ];
 

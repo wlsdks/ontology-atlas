@@ -38,9 +38,21 @@ test.describe("Library rounds", () => {
     await expect(since).toContainText("1 page went stale");
     await expect(since).toContainText("1 redraft waits for you");
     await expect(since).toContainText("1 request was refused");
-    await expect(since).toContainText("3 passes held");
+    await expect(since).toContainText("3 passes with no change");
     // The chip names the page the way the person named it, not the file it lives in.
     await expect(since.getByRole("button", { name: "Open Design system in Wiki" })).toBeVisible();
+    // The sleep gap is the ledger's row; the card above it does not say it again.
+    await expect(since).not.toContainText("asleep");
+
+    // The rounds are a section of the page's one centred frame, not a column beside it: the
+    // headline starts where Work scope's does, and the section sits above the ledger it filters.
+    const index = page.getByTestId("library-rounds-index");
+    await expect(index).toContainText("Scheduled checks");
+    const headline = await page.locator("#main h1").boundingBox();
+    const indexBox = await index.boundingBox();
+    const ledgerBox = await page.getByTestId("library-rounds-ledger").boundingBox();
+    expect(indexBox && headline && Math.abs(indexBox.x - headline.x)).toBeLessThanOrEqual(1);
+    expect(indexBox && ledgerBox && indexBox.y < ledgerBox.y).toBe(true);
 
     const ledger = page.getByTestId("library-rounds-ledger");
     await expect(ledger.locator("[data-outcome='held']")).toHaveCount(3);
@@ -54,10 +66,12 @@ test.describe("Library rounds", () => {
     const cardHeight = await ledger.locator("[data-outcome='redrafted']").first().evaluate((el) => el.getBoundingClientRect().height);
     expect(cardHeight).toBeGreaterThan(heldHeight * 2);
 
-    // Selecting a round filters the axis; its schedule is managed in Automations.
+    // Selecting a round filters the axis; its schedule is managed in Automations, through the
+    // rounds section's one door — the stage does not add a second link to the same place.
     await page.getByTestId("library-round-r-confluence").click();
     await expect(page.getByTestId("library-rounds-run-now")).toHaveCount(0);
-    await expect(page.getByTestId("library-rounds-manage-automations")).toBeVisible();
+    await expect(page.getByTestId("library-rounds-new")).toBeVisible();
+    await expect(page.getByTestId("library-rounds-manage-automations")).toHaveCount(0);
     await expect(ledger.locator("[data-outcome='held']")).toHaveCount(0);
     await expect(ledger.locator("[data-outcome='redrafted']")).toHaveCount(1);
   });
@@ -68,6 +82,8 @@ test.describe("Library rounds", () => {
     await openRounds(page);
 
     await expect(page.getByTestId("library-rounds")).toHaveAttribute("data-rounds-state", "empty");
+    // Before the first round there is no rounds section: the empty sheet holds the one door.
+    await expect(page.getByTestId("library-rounds-index")).toHaveCount(0);
     await openNewDocumentSchedule(page);
     const sheet = page.getByTestId("library-rounds-sheet");
     await expect(sheet).toBeVisible();

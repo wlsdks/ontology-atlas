@@ -76,10 +76,42 @@ index 1111111..2222222 100644
  * Everything is defined inside the init script's own scope: `addInitScript` serializes the
  * function, so a reference to a module-level constant here would be `undefined` in the page.
  */
+/** When one path last changed, as the native `git_paths_last_change` walk answers it. */
+export interface StubPathChange {
+  exists: boolean;
+  isDir: boolean;
+  lastChangedAt: string | null;
+}
+
+export interface DesktopRuntimeOptions {
+  /** Serve only `extraFiles`, without the shared fixture vault underneath them. */
+  replaceFixture?: boolean;
+  /**
+   * Answers for `git_paths_last_change`, keyed by the path exactly as the app passes it. Without
+   * this the command stays unstubbed and rejects, as it always has.
+   */
+  gitPathChanges?: Record<string, StubPathChange>;
+  /** A longer history than the two default steps, for layouts that only break with a real list. */
+  commits?: readonly unknown[];
+  /** The patch every diff command answers with, for a reader that shows a whole document. */
+  diff?: string;
+  /**
+   * Per-document patches for `git_document_diff`, keyed by vault-relative path. A path not
+   * listed falls back to `diff`. Without it every document read back one document's body.
+   */
+  documentDiffs?: Record<string, string>;
+  /**
+   * Answer a path-scoped `git_history` with only the steps that touched that path, as git
+   * does. Off by default so existing specs keep their one shared history.
+   */
+  scopeHistoryByPath?: boolean;
+}
+
 export async function installDesktopRailRuntime(
   page: Page,
   extraFiles: Record<string, string> = {},
   runtimeResponses?: { fast: unknown[]; probed: unknown[] },
+  options: DesktopRuntimeOptions = {},
 ): Promise<void> {
   await seedFirstRunSeen(page);
   await page.addInitScript(
@@ -90,7 +122,10 @@ export async function installDesktopRailRuntime(
       commits: unknown[];
       pending: unknown[];
       diff: string;
+      documentDiffs?: Record<string, string>;
+      scopeHistoryByPath?: boolean;
       runtimeResponses?: { fast: unknown[]; probed: unknown[] };
+      gitPathChanges?: Record<string, { exists: boolean; isDir: boolean; lastChangedAt: string | null }>;
     }) => {
       const { root, latency, files, commits, pending, diff } = input;
       const mtime = Date.now();
@@ -126,14 +161,32 @@ export async function installDesktopRailRuntime(
             return slow({ installed: true, version: "git version 2.49.0", path: "/usr/bin/git" });
           case "git_status":
             return slow(status);
-          case "git_history":
-            return slow(commits);
+          case "git_history": {
+            const path = typeof args.path === "string" ? args.path : null;
+            if (!path || !input.scopeHistoryByPath) return slow(commits);
+            return slow(
+              commits.filter((commit) =>
+                ((commit as { files?: { path: string }[] }).files ?? []).some((file) => file.path === path),
+              ),
+            );
+          }
           case "git_diff":
             return slow({ count: pending.length, files: pending, diff, truncated: false });
           case "git_document_diff":
-            return slow({ path: args.relativePath, diff, untracked: false, tooLarge: false });
+            return slow({
+              path: args.relativePath,
+              diff: input.documentDiffs?.[String(args.relativePath)] ?? diff,
+              untracked: false,
+              tooLarge: false,
+            });
           case "git_commit_diff":
             return slow({ count: 1, files: commits[0] ? (commits[0] as { files: unknown[] }).files : [], diff, truncated: false });
+          case "git_paths_last_change": {
+            if (!input.gitPathChanges) return null;
+            const changes = input.gitPathChanges;
+            const asked = [...((args.repoPaths as string[]) ?? []), ...((args.vaultPaths as string[]) ?? [])];
+            return slow(asked.map((path) => ({ path, ...(changes[path] ?? { exists: false, isDir: false, lastChangedAt: null }) })));
+          }
           case "pick_vault_directory":
             return slow(root);
           case "vault_path_exists": {
@@ -165,6 +218,19 @@ export async function installDesktopRailRuntime(
             const path = relative(args.relativePath);
             if (!(path in files)) return Promise.reject(new Error(`missing ${path}`));
             return slow({ bytes: [...new TextEncoder().encode(files[path])], lastModified: mtime });
+          }
+          // The native answer for a vault that never saved a constellation is `null`
+          // (`read_library_collections` returns `Ok(None)` for an absent sidecar or file).
+          // Left unstubbed it rejected, and every capture through this harness showed the
+          // map's constellation popover in its read-failure state.
+          case "read_library_collections":
+            return slow(files[".ontology-atlas/library-collections.json"] ?? null);
+          case "write_library_collections": {
+            const key = ".ontology-atlas/library-collections.json";
+            const current = files[key] ?? null;
+            if (current !== (args.expectedContent ?? null)) return slow({ written: false, currentContent: current });
+            files[key] = String(args.content);
+            return slow({ written: true, currentContent: files[key] });
           }
           case "vault_fingerprint":
             return slow(`fixture-${Object.keys(files).length}`);
@@ -228,11 +294,14 @@ export async function installDesktopRailRuntime(
     {
       root: DESKTOP_VAULT_ROOT,
       latency: NATIVE_LATENCY_MS,
-      files: { ...FIXTURE_VAULT, ...extraFiles },
-      commits: COMMITS,
+      files: options.replaceFixture ? { ...extraFiles } : { ...FIXTURE_VAULT, ...extraFiles },
+      commits: [...(options.commits ?? COMMITS)],
       pending: PENDING,
-      diff: DIFF,
+      diff: options.diff ?? DIFF,
+      documentDiffs: options.documentDiffs,
+      scopeHistoryByPath: options.scopeHistoryByPath,
       runtimeResponses,
+      gitPathChanges: options.gitPathChanges,
     },
   );
 }

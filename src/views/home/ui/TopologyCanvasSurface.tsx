@@ -28,8 +28,13 @@ import { FrameMeter } from "@/shared/ui/frame-meter";
 import { OntologyMap, PLAIN_TIER_REVEAL } from "@/widgets/ontology-map";
 import { Compass, HelpCircle, Play } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useState } from "react";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
+import { TopologyLightLegend } from "./TopologyLightLegend";
+import { useMapEvidenceStates } from "../model/use-map-evidence-states";
+import { TopologyTerritoriesSurface } from "./TopologyTerritoriesSurface";
+import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 const VaultStartSteps = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.VaultStartSteps),
   { ssr: false },
@@ -103,6 +108,9 @@ interface TopologyCanvasSurfaceProps {
     | "t"
     | "tTopologyKeyboardWalk"
     | "galaxy"
+    | "territories"
+    | "hexBoard"
+    | "reducedMotion"
     | "audiencePlain"
     | "glyphSet"
     | "canvasBackground"
@@ -124,6 +132,7 @@ interface TopologyCanvasSurfaceProps {
     | "setRecentNeedsVaultOpen"
     | "needsVaultReason"
     | "setNeedsVaultReason"
+    | "ontologyInsight"
   >;
   acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpRuntime">;
   topologyAuthoring: Pick<
@@ -223,10 +232,19 @@ export function TopologyCanvasSurface({
   const { acpRuntime } = acpRuntimeController;
   const {
     vault, deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, changedSlugs,
-    recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason
+    recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason, ontologyInsight
   } = topologyVaultReadModel;
+  /*
+   * Lit 3D (2026-09-25): the evidence states the light is drawn from — the same rule and the
+   * same Git walk the insights brief uses. Walked only while 3D is on; no other view here
+   * reads it.
+   */
+  const view3dOn = topologyPreferences.view3d;
+  const mapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3dOn });
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
-  const { t, tTopologyKeyboardWalk, galaxy, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
+  const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
+  /** The hex board threw: this session falls back to the flat map and says so in one line. */
+  const [hexFailed, setHexFailed] = useState(false);
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug, localGraphProjects, resolvedSelectionSlug } = topologyGraphProjection;
   const { mapRelationCaptions, mapReviewQuestionIds } = topologyAnalysisReview;
   const { handleClose, handleSelect } = topologyNavigationActions;
@@ -412,6 +430,55 @@ export function TopologyCanvasSurface({
                 />
               )}
             >
+              {territories ? (
+                /* Territories (owner decision, 2026-09-24): the flat plane with nothing
+                   folded. It shares the selection contract — a click selects through the
+                   same handler, so the same inspector opens — and owns its own canvas. */
+                <TopologyTerritoriesSurface
+                  nodes={ontologyMapGraph.nodes}
+                  edges={ontologyMapGraph.edges}
+                  insightNodes={ontologyInsight?.nodes}
+                  selectedId={canvasSelectedSlug}
+                  onSelect={(slug) => {
+                    setMeaningEditorState(null);
+                    setSelectedEdge(null);
+                    handleSelect(slug);
+                  }}
+                  onPaneClick={() => {
+                    setMeaningEditorState(null);
+                    setSelectedEdge(null);
+                    handleClose();
+                  }}
+                  onDrawnCountChange={handleMapFrameDrawn}
+                  reducedMotion={reducedMotion}
+                />
+              ) : hexBoard && !hexFailed ? (
+                /* Hex board (owner decision, 2026-09-25): one tile per capability. The same
+                   selection contract as Territories — a click selects, the inspector opens.
+                   Its own boundary: a throw in the board falls back to the flat map with a
+                   one-line note, never the whole route or the map-level retry screen. */
+                <ErrorBoundary onError={() => setHexFailed(true)} fallback={() => null}>
+                <TopologyHexBoardSurface
+                  nodes={ontologyMapGraph.nodes}
+                  edges={ontologyMapGraph.edges}
+                  insightNodes={ontologyInsight?.nodes}
+                  vaultKey={vaultIdentity}
+                  selectedId={canvasSelectedSlug}
+                  onSelect={(slug) => {
+                    setMeaningEditorState(null);
+                    setSelectedEdge(null);
+                    handleSelect(slug);
+                  }}
+                  onPaneClick={() => {
+                    setMeaningEditorState(null);
+                    setSelectedEdge(null);
+                    handleClose();
+                  }}
+                  onDrawnCountChange={handleMapFrameDrawn}
+                  reducedMotion={reducedMotion}
+                />
+                </ErrorBoundary>
+              ) : (
               <OntologyMap
                 nodes={ontologyMapGraph.nodes}
                 edges={ontologyMapGraph.edges}
@@ -535,6 +602,14 @@ export function TopologyCanvasSurface({
                 view3d={view3d}
                 galaxy={galaxy}
                 mapArrangement={mapArrangement}
+                domeEvidence={mapEvidence.availability === "measured" ? mapEvidence.states : null}
+                domeLightLegend={
+                  <TopologyLightLegend
+                    evidence={mapEvidence}
+                    nodeIds={ontologyMapGraph.nodes.map((node) => node.id)}
+                    kindLabels={domeTierLabels}
+                  />
+                }
                 // The "the viewport changed" event for the 3D selection reframe: true
                 // while the detail panel actually covers the screen, false once its
                 // exit animation ends. On each flip the dome reframes smoothly against
@@ -543,6 +618,16 @@ export function TopologyCanvasSurface({
                 footprint={footprint}
                 expand={expand}
               />
+              )}
+              {hexBoard && hexFailed ? (
+                <p
+                  role="status"
+                  data-testid="hex-board-failed-note"
+                  className="pointer-events-none absolute left-1/2 top-24 -translate-x-1/2 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-1.5 text-label text-[color:var(--map-panel-text-secondary)]"
+                >
+                  {t("hexBoard.failed")}
+                </p>
+              ) : null}
             </ErrorBoundary>
           ) : null}
           {topologyRenderState.renderCanvas ? (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
@@ -110,6 +110,8 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
             .filter((e) => kept.has(e.source) && kept.has(e.target))
             .map((e) => ({ a: e.source, b: e.target, y: e.kind as 'contains' | 'depends' })),
         },
+        // Wide draws from 5.2 radii (6.1 until 2026-09-25): the canvas is the hero's own height
+        // now that it no longer claims the fold, and the object shrank with it.
         // Two placements, one breakpoint — the same pair the 2D engine had. Wide: the object
         // stands beside the decision block, seen across. Narrow: the block spans the stage, so the
         // object is the ground under it — anchored low, seen from above, and the type stays clear
@@ -118,7 +120,7 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
         // (the plinth band under the facts strip measures 352px; 210 keeps the near rim inside the stage), at a fixed width, seen from
         // higher up. A phone's band is shorter, so the object is smaller and sits lower.
         wide
-          ? { onHover: setHover, anchor: { x: 0.72, y: 0.52 }, dim: 0.9, distance: 6.1 }
+          ? { onHover: setHover, anchor: { x: 0.72, y: 0.52 }, dim: 0.9, distance: 5.2 }
           : phone
             ? { onHover: setHover, anchor: { x: 0.5, bottomPx: 140 }, dim: 0.75, fitPx: 300, pitch: 0.75 }
             : { onHover: setHover, anchor: { x: 0.5, bottomPx: 210 }, dim: 0.75, fitPx: 440, pitch: 0.75 },
@@ -148,7 +150,8 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
     };
   }, [graph, wide, phone, mode]);
 
-  useEffect(() => {
+  // Layout, not passive — the same frame as the character (`HeroObject`).
+  useLayoutEffect(() => {
     if (total > 0) handleRef.current?.setTyping(typed, total);
   }, [typed, total]);
 

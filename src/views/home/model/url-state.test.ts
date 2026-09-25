@@ -46,6 +46,7 @@ describe("parseHomeRouteState", () => {
       realmSlug: null,
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
   });
 
@@ -103,10 +104,12 @@ describe("parseHomeRouteState", () => {
     expect(parseHomeRouteState(new URLSearchParams("recent=90"))).toMatchObject({
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
     expect(parseHomeRouteState(new URLSearchParams("recent=yesterday"))).toMatchObject({
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
   });
 
@@ -272,6 +275,7 @@ describe("applyHomeRouteState", () => {
       realmSlug: null,
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
 
     expect(params.toString()).toBe(
@@ -301,6 +305,7 @@ describe("applyHomeRouteState", () => {
       realmSlug: null,
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
 
     expect(params.toString()).toBe(
@@ -328,6 +333,7 @@ describe("applyHomeRouteState", () => {
       realmSlug: null,
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
 
     expect(hidden.toString()).toBe("");
@@ -357,6 +363,7 @@ describe("applyHomeRouteState", () => {
         realmSlug: null,
         recentWindow: null,
       constellationIntent: null,
+      mapView: null,
       },
     );
 
@@ -383,6 +390,7 @@ describe("applyHomeRouteState", () => {
       ...DEFAULT_HOME_ROUTE_STATE,
       recentWindow: null,
       constellationIntent: null,
+      mapView: null,
     });
     expect(off.toString()).toBe("");
   });
@@ -1023,5 +1031,15 @@ describe("business-flow ask value", () => {
 
     expect(state.askIntent).toBe("missing-definition");
     expect(state.askBusinessFlow).toBe(false);
+  });
+});
+
+describe("map view in the address", () => {
+  it("names Territories and the hex board, and drops anything else", () => {
+    expect(parseHomeRouteState(new URLSearchParams("view=territories")).mapView).toBe("territories");
+    expect(parseHomeRouteState(new URLSearchParams("view=hex")).mapView).toBe("hex");
+    expect(parseHomeRouteState(new URLSearchParams("view=honeycomb")).mapView).toBeNull();
+    const params = applyHomeRouteState(new URLSearchParams(), { ...DEFAULT_HOME_ROUTE_STATE, mapView: "hex" });
+    expect(params.get("view")).toBe("hex");
   });
 });

@@ -8,10 +8,10 @@ import remarkGfm from 'remark-gfm';
 import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compareAnalysisBasis, latestFindingReview, readAnalysisHistory, serializeAnalysisRecord, verifyAnalysisEvidence, type AnalysisCompatibility, type AnalysisFinding, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
 import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
-import { Checkbox, Chip, Disclosure, IconButton, Select, TabBar, Textarea, useToast } from '@/shared/ui';
-import { RotateCcw, X } from 'lucide-react';
+import { Checkbox, Chip, Disclosure, EmptyState, IconButton, OntologyMapKindGlyph, Select, TabBar, Textarea, useToast } from '@/shared/ui';
+import { History as HistoryIcon, RotateCcw, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { MeaningTransitionHistory } from './MeaningTransitionHistory';
+import { MeaningTransitionHistory, type MeaningTransitionArchiveState } from './MeaningTransitionHistory';
 
 /**
  * Hairline between groups (owner, 2026-09-06) — **now only where a label does not already
@@ -38,6 +38,7 @@ const DIVIDED = 'border-t border-[color:var(--color-divider)] pt-4';
 const SECTION_LABEL = 'text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]';
 
 type Tab = 'meaning' | 'history' | 'conversation';
+const KNOWN_KINDS = ['project', 'domain', 'capability', 'element', 'document', 'vault-readme'];
 const EMPTY_RECORDS: AnalysisRecord[] = [];
 
 /** One context slot beside the canvas. Hiding conversation never unmounts its ACP session. */
@@ -50,12 +51,30 @@ const EMPTY_RECORDS: AnalysisRecord[] = [];
  */
 const announcedSaveIds = new Set<string>();
 
-export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, sectionRequest, onSectionChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
+/**
+ * An error in this panel, drawn as the app's inline alert box (the danger hairline over a faint
+ * danger wash) rather than bare red caption text, which read as a stray line of copy.
+ */
+function InlineAlert({ children }: { children: ReactNode }) {
+  return <p role="alert" className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{children}</p>;
+}
+
+export function AnalysisWorkbench({ context, contextLabel, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, onFitContentChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
   context: AnalysisCaptureContext;
   contextLabel: string;
+  /**
+   * The picked node's kind, shown in the header's eyebrow line beside the view name. The body
+   * used to repeat the kind and the name as a second headline; the header now carries both.
+   */
+  contextKind?: string | null;
   open: boolean;
   requestNonce?: number;
   sectionRequest?: { tab: Tab; nonce: number };
+  /**
+   * True while the open view is only a short designed state — today the empty history archive —
+   * so the host surface can end under it instead of leaving a bare column below.
+   */
+  onFitContentChange?: (fits: boolean) => void;
   onSectionChange?: (tab: Tab) => void;
   initialTab?: Tab;
   facts?: ReactNode;
@@ -76,6 +95,7 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
 }) {
   const t = useTranslations('analysisWorkbench');
   const glossary = useTranslations('searchWidgets.shortcuts.glossary');
+  const kindLabel = useTranslations('kinds');
   const locale = useLocale();
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -137,6 +157,7 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
   const [loaded, setLoaded] = useState<{ handle: FileSystemDirectoryHandle; records: AnalysisRecord[]; cursor: string | null; problems: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [readPending, setReadPending] = useState(false);
+  const [decisionArchive, setDecisionArchive] = useState<MeaningTransitionArchiveState>('pending');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -153,7 +174,11 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
     && record.mode === context.mode && record.scope.projectSlug === context.scope.projectSlug
     && record.scope.profileSlug === context.scope.profileSlug), [records, context.mode, context.scope.projectSlug, context.scope.profileSlug]);
   const selected = runs.find((run) => run.id === selectedId) ?? runs[0] ?? null;
+  const emptyArchive = !runs.length && Boolean(context.handle) && loaded?.handle === context.handle && !readPending && !error;
   const saved = saveState?.handle === context.handle ? saveState : null;
+  const fitsContent = open && tab === 'history' && emptyArchive;
+  useEffect(() => { onFitContentChange?.(fitsContent); }, [fitsContent, onFitContentChange]);
+  useEffect(() => () => onFitContentChange?.(false), [onFitContentChange]);
   /*
    * **A saved analysis is news, not furniture** (owner, 2026-09-06). The report used to
    * stand at the foot of the panel for as long as the record stayed selected, taking a
@@ -269,7 +294,7 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
       it was before. It never truncates the subject to keep the tabs beside it.
     */}
     <header className="flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-2">
-      <div className="min-w-0 flex-1 basis-36"><p className="text-caption text-[color:var(--color-text-secondary)]">{t(context.mode === 'meaning' ? 'meaningTitle' : 'architectureTitle')}</p><h2 className="break-words text-title font-[var(--font-weight-strong)]">{contextLabel}</h2></div>
+      <div className="min-w-0 flex-1 basis-36"><p data-testid="analysis-workbench-eyebrow" className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-label leading-label text-[color:var(--color-text-secondary)]"><span>{t(context.mode === 'meaning' ? 'meaningTitle' : 'architectureTitle')}</span>{contextKind ? <><span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span><span className="inline-flex items-center gap-1 text-[color:var(--color-text-tertiary)]"><OntologyMapKindGlyph kind={contextKind} size={11} />{kindLabel(KNOWN_KINDS.includes(contextKind) ? contextKind : 'unknown')}</span></> : null}</p><h2 className="break-words text-title font-[var(--font-weight-strong)]">{contextLabel}</h2></div>
       {/*
         ⚠️ **The tab bar, not a segmented control** (2026-09-06). A `SegmentedControl` is an
         exclusive *value* picker and reaches the accessibility tree as a radiogroup — these are
@@ -285,8 +310,8 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
         <IconButton ref={closeRef} label={t('close')} onClick={onClose}><X size={ICON_SIZE.sm} /></IconButton>
       </div>
     </header>
-    {error ? <p role="alert" className="text-caption text-[color:var(--color-danger-text)]">{error}</p> : null}
-    {notice ? <p role="status" className="text-caption text-[color:var(--color-text-secondary)]">{notice}</p> : null}
+    {error ? <InlineAlert>{error}</InlineAlert> : null}
+    {notice ? <p role="status" className="text-label leading-label text-[color:var(--color-text-secondary)]">{notice}</p> : null}
     {/*
       **Action first, reference last** (owner, 2026-09-06: "messy" / "nothing is set apart"). The
       view opened on the glossary and put the one thing a person can do here — ask the agent —
@@ -308,13 +333,15 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
         {onRequest ? <div className="flex flex-wrap items-center gap-2">
           <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip>
           {relationNoteGaps > 0 && context.mode === 'meaning' ? <Chip size="lg" data-testid="workbench-fill-notes" onClick={requestNotes}>{t('fillNotes', { count: relationNoteGaps })}</Chip> : null}
-        </div> : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
-        <p className="text-caption text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p>
+        </div> : <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
+        {/* A full sentence a person reads before pressing Analyze: the label step, not the
+            9.5px caption the token file reserves for micro labels and timestamps. */}
+        <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p>
       </div>
       <div className={DIVIDED}>{facts ?? <p>{context.mode === 'architecture' ? t('architectureCriteria') : glossary('ontologyDefinition')}</p>}</div>
     </div> : null}
     {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1" aria-busy={busy || readPending}>
-      <MeaningTransitionHistory handle={context.handle} open={open && tab === 'history'} />
+      <MeaningTransitionHistory handle={context.handle} open={open && tab === 'history'} foldWhenQuiet={!runs.length} onStateChange={setDecisionArchive} />
       {/* One control row: which version, reread, ask again. The two chips that led the tab
           looked like every other chip below them; the version picker is the row's subject. */}
       {/*
@@ -330,14 +357,50 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
         machine identity — it moves into the option's description line, in front of the request it
         answered, where the list has room to print it whole.
       */}
-      <div className="flex flex-wrap items-center gap-2">
-        {runs.length ? <Select size="md" ariaLabel={t('version')} value={selected?.id ?? ''} onChange={setSelectedId} className="min-w-0 flex-1 basis-48" options={runs.map((run, index) => ({ value: run.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(run.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`, description: `${run.id.slice(0, 8)} · ${run.request.text.slice(0, 80)}` }))} /> : null}
-        {context.handle ? <IconButton size="lg" label={t('refresh')} onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden /></IconButton> : null}
+      {/*
+        ⚠️ **An empty archive is a designed state, not a bare sentence** (measured 2026-09-25, 1512
+        wide). With no analysis yet the tab was an unlabeled refresh icon, the primary action and
+        one grey line, over roughly 670px of empty panel — and the refresh stood in front of the
+        primary. The empty archive now uses the shared empty-state card: what is missing, what an
+        analysis leaves behind, and Analyze as its one action. The version row appears only when
+        there are versions to pick, primary first, and the reread control says what it does.
+      */}
+      {runs.length ? <div className="agent-panel-stage-swap flex flex-wrap items-center gap-2">
+        <Select size="md" ariaLabel={t('version')} value={selected?.id ?? ''} onChange={setSelectedId} className="min-w-0 flex-1 basis-48" options={runs.map((run, index) => ({ value: run.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(run.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`, description: `${run.id.slice(0, 8)} · ${run.request.text.slice(0, 80)}` }))} />
         {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('reanalyze')}</Chip> : null}
-      </div>
+        {context.handle ? <Chip size="lg" onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden />{t('refresh')}</Chip> : null}
+      </div> : null}
       {!context.handle ? <p>{t('openFolder')}</p> : null}
       {context.handle && readPending ? <p role="status">{t('loadingHistory')}</p> : null}
-      {!runs.length && context.handle && loaded?.handle === context.handle && !readPending && !error ? <p>{t('empty')}</p> : null}
+      {/*
+        ⚠️ **One empty state, at the top** (round three, 2026-09-25, 1512 wide). The tab said
+        "nothing here" twice: a solid meaning-decision card ("no decision records in this folder"),
+        then about 200px lower a dashed card centred in a 699px well ("nothing analyzed yet") — two
+        messages, two surfaces and a dead band between them. The decision archive now folds away
+        while it is quiet and its fact joins this card: the title names both archives when both
+        are empty, and a line says where decisions can be read when this build cannot read them.
+        The card starts where the free space starts instead of floating in its middle.
+      */}
+      {emptyArchive ? <div data-testid="analysis-history-empty" className="agent-panel-stage-swap"><EmptyState
+        size="compact"
+        align="center"
+        icon={<HistoryIcon aria-hidden />}
+        title={<span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t(decisionArchive === 'empty' ? 'emptyWithDecisions' : 'empty')}</span>}
+        description={<span className="mx-auto block max-w-[46ch]">
+          {t('emptyEffect')}
+          {onRequest
+            ? decisionArchive === 'unavailable' ? <span className="mt-2 block">{t('meaningTransitions.unavailable')}</span> : null
+            : <span className="mt-2 block">{t(decisionArchive === 'unavailable' ? 'agentUnavailableWithDecisions' : 'agentUnavailable')}</span>}
+        </span>}
+        action={<>
+          {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip> : null}
+          <Chip size="lg" onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden />{t('refresh')}</Chip>
+          {onRequest ? <p className="basis-full text-balance pt-1 text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
+        </>}
+      /></div> : null}
+      {/* The caveat stands once, beside the action it qualifies — it used to close the tab as a
+          footer, repeating the meaning tab's copy at the far end of the scroll. */}
+      {runs.length ? <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
       {selected ? <>
         {selected === runs[0] && earlierQuestions.length ? <Disclosure summary={t('earlierQuestions', { count: earlierQuestions.length })}>
           <p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('earlierQuestionsNote')}</p>
@@ -387,7 +450,6 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
       </> : null}
       {loaded?.handle === context.handle && loaded?.cursor ? <Chip size="lg" onClick={() => void refresh(loaded.cursor)}>{t('loadOlder')}</Chip> : null}
       {loaded?.handle === context.handle && loaded?.problems.length ? <Disclosure summary={t('recordProblems', { count: loaded.problems.length })}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{loaded.problems.join('\n')}</pre></Disclosure> : null}
-      <p className="mt-auto pt-2 text-caption text-[color:var(--color-text-quaternary)]">{t('diagnosticOnly')}</p>
     </div> : null}
     {conversation ? <div role="tabpanel" id="workbench-tabpanel-conversation" aria-labelledby="workbench-tab-conversation" className={cn('min-h-0 flex-1 flex-col', tab === 'conversation' ? 'flex' : 'hidden')} inert={tab !== 'conversation'}>{conversation}</div> : null}
     {/*

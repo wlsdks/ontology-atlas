@@ -18,7 +18,6 @@ import {
   EmptyState,
   InlineEditable,
   OntologyMapKindGlyph,
-  OntologyMapTraceMark,
   controlClass,
   useToast,
 } from "@/shared/ui";
@@ -39,7 +38,7 @@ import {
 } from "@/features/project-data-source";
 import { buildDocsVaultHref, findProjectDocInList, hasSeveralProjectDocs } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
-import { computeCanonicalCensus, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
+import { buildProjectOntologyMetrics, computeCanonicalCensus, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { useProjectAgent } from "../lib/use-project-agent";
@@ -54,7 +53,6 @@ import { useConstructionReviewSession } from "@/features/construction-review-loc
 import { resolveSubscribeUpdate } from "../model/resolve-subscribe-update";
 import { resolveProjectTagline } from "../model/project-tagline";
 import { stripDuplicateHeading } from "../model/strip-duplicate-heading";
-import { buildProjectOntologyMetrics } from "../model/project-ontology-metrics";
 import { buildProjectDomainComposition } from "../model/domain-composition";
 import { buildSurfaceComposition } from "../model/surface-composition";
 import { buildConnectedProjects, findRelatesGraphProjectSlugs } from "../model/connected-projects";
@@ -91,14 +89,19 @@ function ProjectDetailShell({ children, dock = null }: { children: ReactNode; do
           before `md:py-14` in the stylesheet and silently lost between 768 and 1023, leaving the
           content end 1px from the tab bar's top (measured 968.1 against a top of 967 at 768×1024).
           Replaced with a deterministic composition that does not depend on variant order. */}
-      <main id="main" tabIndex={-1} className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10 md:pt-12 lg:pb-[max(3.5rem,env(safe-area-inset-bottom))] xl:px-12">
+      {/* **One frame with the list** (2026-09-25). The inset used to live on `main` (40, then 48
+          from `xl`) with the 1600 cap inside it, while `/projects` wears `PAGE_FRAME`: the cap
+          outside and the 40 inset inside. The two sibling screens started 8px apart at 1512
+          (104 vs 112) and 40px apart at 1920 (232 vs 192). The column now carries the inset
+          inside the cap exactly as the frame does, still fed by the safe-area insets. */}
+      <main id="main" tabIndex={-1} className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-0 md:pt-12 lg:pb-[max(3.5rem,env(safe-area-inset-bottom))]">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={MOTION.base}
           // The page column is a named container: with the agent dock open the column is
           // narrower than the viewport says, and the two-track zone below reads the column.
-          className="@container/project-page mx-auto w-full max-w-[var(--page-max)]"
+          className="@container/project-page mx-auto w-full max-w-[var(--page-max)] md:pr-[max(2.5rem,env(safe-area-inset-right))] md:pl-[max(2.5rem,env(safe-area-inset-left))]"
         >
           {children}
         </motion.div>
@@ -162,14 +165,17 @@ function ProjectDetailTopBar({
       </span>
       <Link
         href={projectsListHref}
-        className={controlClass({ shape: "link", tone: "muted", className: "font-mono uppercase tracking-[var(--tracking-caps-12)] hover:text-[color:var(--color-text-primary)]" })}
+        className={controlClass({ shape: "link", size: "lg", tone: "muted", className: "hover:text-[color:var(--color-text-primary)]" })}
       >
         {t("topBarProjectsLabel")}
       </Link>
       <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
         ▸
       </span>
-      <span className="max-w-[240px] truncate font-mono text-label text-[color:var(--color-text-primary)]">
+      {/* The name in the words the page draws it, not a mono slug: the mono face drew
+          a Korean name with a double gap between its words (measured 2026-09-25). It takes what
+          the row leaves beside the right-hand doors and truncates there, not at a fixed cap. */}
+      <span aria-current="page" className="min-w-0 flex-1 basis-32 truncate text-body text-[color:var(--color-text-primary)]">
         {projectName ?? slug ?? t("topBarProjectFallback")}
       </span>
 
@@ -215,7 +221,17 @@ function ProjectDetailState({
           tone="solid"
           align="center"
           icon={<FolderSearch size={ICON_SIZE.lg} aria-hidden />}
-          title={<span data-testid={testId}>{title}</span>}
+          /* The centred pattern draws its title as body text, which is right for a one-sentence
+             state. This one has a sentence under it, so the title takes the heading step and the
+             primary ink, one step above the 14px tertiary body it sat level with. */
+          title={
+            <span
+              data-testid={testId}
+              className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+            >
+              {title}
+            </span>
+          }
           description={description}
           action={
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -227,7 +243,7 @@ function ProjectDetailState({
               </Link>
               {/* The label says "open the map" — `/` is the gateway, not the map. */}
               <Link href={'/topology/'}>
-                <Button type="button" variant="ghost" size="sm">
+                <Button type="button" variant="outline" size="sm">
                   {t("stateBackToMap")}
                 </Button>
               </Link>
@@ -520,9 +536,13 @@ export function ProjectDetailPage({
     column was widened and centred (`docs/DECISIONS.md`, "The reading column is worth more of
     its pane than the measure was buying"). The card keeps its track; the column inside it is
     the same box the Library's open page reads.
+
+    Since 2026-09-25 the card is a summary under a hero that carries the definition, so it reads
+    one step down, at body-lg, in that same column box. The size lives in this class rather than
+    being string-patched at the call site, where a renamed token would have silently done nothing.
   */
   const storyMarkdownClassName =
-    "text-reading leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[var(--font-weight-strong)] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[var(--font-weight-strong)] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[var(--font-weight-strong)] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
+    "text-body-lg leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[var(--font-weight-strong)] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[var(--font-weight-strong)] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[var(--font-weight-strong)] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-5.5 [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-5.5";
   const projectFullEditHref = getProjectEditHref(project.slug, {
     returnTo: getProjectRuntimeDetailHref(project.slug),
   });
@@ -574,7 +594,7 @@ export function ProjectDetailPage({
       {/* zone 1 — hero band: glyph, title, and description plus the engraved metric strip and the
           topology/edit actions. **The right column is deliberately empty** — see the comment below
           about removing the radial map. */}
-      <header className="@container/project-hero mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[18px_20px] shadow-[inset_0_1px_0_var(--color-overlay-1)] lg:p-[18px_26px]">
+      <header className="@container/project-hero mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)]">
         <div className="flex min-w-0 flex-1 flex-col">
           {/*
             The action cluster stands beside the name only when the hero band itself is wide
@@ -587,17 +607,29 @@ export function ProjectDetailPage({
             band's own width is the fact; a name and its definition outrank four buttons, so the
             buttons are the ones that move.
           */}
-          <div className="flex flex-wrap items-start gap-3.5 @5xl/project-hero:flex-nowrap">
-            <OntologyMapKindGlyph kind="project" size={30} className="mt-1 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <InlineEditable
-                as="h1"
-                value={displayName ?? project.name}
-                editable={canManageProject}
-                onSave={(next) => saveProjectField("name", next)}
-                ariaLabel={t("inlineNameAria")}
-                className="text-display leading-display-tight font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-pretty text-[color:var(--color-text-primary)]"
-              />
+          {/*
+            **One start line for the hero and the cards under it** (2026-09-25, round two). The
+            glyph used to stand in a column of its own, so the name, meta and definition started
+            at x=175 while every card below started its words at x=123 (1512): two left edges in
+            one page column. The glyph now leads the name inside its line, the way the list's cards
+            draw it, and the band wears the cards' own inset, so the glyph, the meta, the
+            definition and the wrapped buttons start where the cards' titles do.
+          */}
+          <div className="flex min-w-0 flex-wrap items-start gap-x-8 gap-y-4 @5xl/project-hero:flex-nowrap">
+            <div className="min-w-0 flex-1 basis-96">
+              {/* The glyph is on the icon ramp's top step, the one the list's cards draw beside
+                  their names; a size of its own (22) was an off-ramp value (round four). */}
+              <div className="flex min-w-0 items-center gap-2.5">
+                <OntologyMapKindGlyph kind="project" size={ICON_SIZE.lg} className="shrink-0" />
+                <InlineEditable
+                  as="h1"
+                  value={displayName ?? project.name}
+                  editable={canManageProject}
+                  onSave={(next) => saveProjectField("name", next)}
+                  ariaLabel={t("inlineNameAria")}
+                  className="min-w-0 text-display leading-display-tight font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-pretty text-[color:var(--color-text-primary)]"
+                />
+              </div>
               {/*
                 The meta row ends here. The description used to flow **into** this dot row, so a
                 paragraph-length text was treated as 13px tertiary meta — half of the "it feels
@@ -625,7 +657,12 @@ export function ProjectDetailPage({
                 // The cap is the column box, not a per-line `ch` count: `64ch` resolved at this
                 // element's own 14px to 534px inside a 1350px band (2026-09-19), the same three-
                 // right-edges defect the Library removed on 2026-09-19 (#1667).
-                className="mt-2.5 max-w-[var(--measure-doc-column)] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
+                // 2026-09-25: the hero carries the whole first sentence, and the overview below
+                // starts after it (it used to repeat the paragraph one step larger). Round two put it
+                // back at body-lg: at the title step a three-line paragraph competed with the name
+                // above it. Its cap is the overview prose's own box, so the hero's words and the
+                // cards' words share one left edge and one right edge.
+                className="mt-2.5 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-body-lg leading-body-lg text-pretty text-[color:var(--color-text-secondary)]"
               />
             </div>
             {/* `flex-none` created horizontal overflow at a 390px viewport, the read-only badge and
@@ -662,35 +699,35 @@ export function ProjectDetailPage({
               </Button>
               {canManageProject ? (
                 <ProjectQuickEditPanel project={project} settingsHref={projectFullEditHref} triggerVariant="outline" />
-              ) : (
-                // With no vault chosen (static/dogfood) there was no edit entry point at all and
-                // nothing explaining why — this badge states the reason and the next action in one
-                // line. It is not an action but a typed fact about state.
-                //
-                // 2026-08-07: that "next action" existed **only as words**. The badge said *"open a
-                // folder to edit"* while this screen had zero controls that open a folder (measured
-                // exhaustively) — a dead CTA. The badge keeps stating the state, and the path that
-                // does the job is placed beside it. Not overlaying state and action on one element
-                // preserves the earlier comment's judgement.
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <span
-                    data-testid="project-detail-readonly-badge"
-                    // `flex-none` created horizontal page overflow at 390px (an overflow-sweep
-                    // regression) — when narrow, the badge text wraps instead.
-                    // 2026-09-20: it wore the outline button's own surface — `--color-overlay-1`,
-                    // a border and the chip radius (`button.tsx`, the `outline` variant) — so the row
-                    // drew four boxes of which one could not be pressed, and the difference was a
-                    // border colour. A state fact is drawn as a fact here: the folder census over the
-                    // composition board is engraved text with no box, and so is this.
-                    className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-mono text-label text-[color:var(--color-text-tertiary)]"
-                  >
-                    {t("readOnlyBadge")}
-                  </span>
-                  <OpenVaultCta testId="project-detail-open-vault" />
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
+
+          {/*
+            **The view-only state is a line of its own under the definition** (2026-09-25, round
+            three). It used to ride the action row: a filled button, an outline button, an 11px
+            fact and a label-size folder chip on one line, two control sizes and three weights, so
+            the row read as four equals of different sizes. The row now holds the page's actions at
+            one size, and the state stands where it applies: under the words that could be edited,
+            with the one control that makes them editable, fact and door at one type size.
+
+            With no vault chosen (static/dogfood) there was no edit entry point at all and nothing
+            explaining why, so this states the reason and the next action together. 2026-08-07:
+            that "next action" existed only as words while the screen had zero controls that open a
+            folder, a dead CTA, which is why `OpenVaultCta` stands beside the fact. 2026-09-20: the
+            fact wore the outline button's surface and read as a fourth control; it is engraved text.
+          */}
+          {canManageProject ? null : (
+            <div className="mt-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+              <span
+                data-testid="project-detail-readonly-badge"
+                className="min-w-0 break-keep text-label leading-body text-[color:var(--color-text-tertiary)]"
+              >
+                {t("readOnlyBadge")}
+              </span>
+              <OpenVaultCta testId="project-detail-open-vault" />
+            </div>
+          )}
 
           {/*
             **The figures left the hero on 2026-09-19.** They were five quiet chips here and then the
@@ -775,11 +812,15 @@ export function ProjectDetailPage({
           {/* One folder, one number. `computeCanonicalCensus` is the single rule behind every count
               that says "concept" — the map's INDEX row reads it too. The raw node array counts the
               vault readme as well, so the same folder said 109 here and 108 one click away. */}
+          {/* Concepts only (2026-09-25, round three). It also gave the folder's relations (245)
+              about 100px from the ontology cell's "241 relations among these concepts": two
+              relation counts of different scopes side by side, with nothing saying why they
+              differ. The cell's count is this project's, which is what the page is about. */}
           <span
             data-testid="project-detail-global-census"
-            className="ml-auto hidden font-mono text-label tracking-[var(--tracking-caps-08)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] md:inline"
+            className="ml-auto hidden text-label tabular-nums text-[color:var(--color-text-tertiary)] md:inline"
           >
-            {t("globalCensus", { concepts: folderCensus.conceptCount, relations: folderCensus.relationCount })}
+            {t("globalCensus", { concepts: folderCensus.conceptCount })}
           </span>
         </div>
         <SurfaceCompositionBoard
@@ -789,135 +830,215 @@ export function ProjectDetailPage({
             library: t("surfaceLibrary"),
             harness: t("surfaceHarness"),
           }}
+          // The ontology cell has no door of its own: its door is the map, and the hero's primary
+          // action opens that one block above. Two labels for one address is the said-twice defect.
           openLabels={{
-            ontology: t("surfaceOpenOntology"),
             library: t("surfaceOpenLibrary"),
             harness: t("surfaceOpenHarness"),
           }}
         />
       </section>
 
-      {/* zone 3 — left: what the project is made of and what is written about it; right: the
-          cross-project context and the agent handoff.
-          Two tracks from `@3xl` (48rem) of the page column, not from the `lg` viewport: with the
-          agent dock open at 1280 the column is about 600px under an `xl` viewport, and the
-          viewport rule squeezed the left card to 170px beside a 400px rail (captured 2026-09-19).
-          **64rem, not 48rem**: at 1024 the split left the domain card 420px, where every row broke
-          its number column onto a third line (measured 2026-09-19). The rows want the column.
-          **Both columns are cards now.** The domain rows used to sit bare in a tab panel while the
-          right rail drew cards, so the two columns started on different lines and the grid read as
-          crooked — the owner's word for it on 2026-09-19, and the reason a section header was
-          already deleted here once. */}
-      <section className="mt-[var(--section-gap)] grid grid-cols-1 items-start gap-[var(--card-gap)] @5xl/project-page:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="flex min-w-0 flex-col gap-[var(--card-gap)]">
-          <section
-            data-testid="project-detail-domains"
-            className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
-          >
-            <div className="mb-2.5 flex items-baseline gap-2">
-              <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                {t("domainsCardTitle")}
-              </span>
-              <span className="font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                {domainComposition.domains.length}
-              </span>
-            </div>
-            {domainComposition.domains.length > 0 ? (
-              <DomainCompositionRows
-                domains={domainComposition.domains}
-                labels={{
-                  capabilityUnit: t("domainCapabilityLabel"),
-                  elementUnit: t("domainElementLabel"),
-                  legendCaption: t("domainRowsLegendCaption"),
-                  overlapNote: t("domainOverlapNote"),
-                  rowToggleAria: (row) =>
-                    t("domainRowToggleAria", {
-                      title: row.title,
-                      total: row.total,
-                      capabilities: row.capabilityCount,
-                      elements: row.elementCount,
-                    }),
-                  mapLinkLabel: t("domainRowMapLink"),
-                  capabilityLinkAria: (title) => t("domainCapabilityLinkAria", { name: title }),
-                  capabilitiesEmpty: t("domainRowCapabilitiesEmpty"),
-                }}
-              />
-            ) : (
-              <div data-testid="project-detail-composition-empty">
-                <EmptyState
-                  size="compact"
-                  icon={<Layers size={ICON_SIZE.lg} aria-hidden />}
-                  title={t("domainEmptyTitle")}
-                  description={t("domainEmptyHint")}
-                  /* The hint said where to do it — "connect a domain on the map" — and then made
-                     the reader go find the map. One door, the same address the insights empty
-                     states use. */
-                  action={
-                    <Link
-                      href="/topology/?workbench=create"
-                      data-testid="project-detail-composition-empty-action"
-                      className={controlClass({
-                        shape: "link",
-                        tone: "accent",
-                        hoverInk: "strong",
-                        className: "rounded-chip hover:underline",
-                      })}
-                    >
-                      {t("domainEmptyAction")}
-                    </Link>
-                  }
-                />
-              </div>
-            )}
-          </section>
-
-          <article
-            data-testid="project-detail-body"
-            className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
-          >
-            <div className="mb-2.5 flex items-baseline gap-2">
-              <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                {t("bodyCardTitle")}
-              </span>
-            </div>
-            {bodyContent ? (
-              <>
-                <ProjectBriefSummary
-                  body={dedupedBodyContent ?? bodyContent}
-                  // The line is the column (`docs/DECISIONS.md`, 2026-09-12): the measure spent at
-                  // the reading size. Left-aligned rather than centred, because heading, prose,
-                  // contents line and door all start on one line inside a card.
-                  proseClassName={`${storyMarkdownClassName} max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))]`}
-                  coversLabel={t("bodyCovers")}
-                />
-                <Link
-                  href={projectDoc ? buildDocsVaultHref({ slug: projectDoc.slug }) : "/docs/"}
-                  data-testid="project-detail-body-continue"
-                  className={controlClass({ shape: "link", tone: "accent", className: "mt-4" })}
-                >
-                  {t("bodyContinue")}
-                </Link>
-              </>
-            ) : (
-              <div data-testid="project-detail-body-empty">
-                <EmptyState
-                  size="compact"
-                  icon={<FileText size={ICON_SIZE.lg} aria-hidden />}
-                  title={t("bodyEmptyHint")}
-                />
-              </div>
-            )}
-          </article>
+      {/* zone 3 — what the project is made of, what is written about it, and where it goes next.
+          **Three bands, one column** (2026-09-25, round four). Round three stood a 400px rail
+          beside the domain rows and stretched its agent card to their height: at nine domains
+          (storefront, 1920) ~220px of the card stood empty between its second button and its
+          preview. The rail kept moving the void rather than removing it, because nothing beside a
+          list of unknown length has a matching length. So each block takes the column:
+          - the domain rows, whose bars take the width the words do not need;
+          - the overview, with the ask that rewrites it on its own footer line. The ask is about
+            this card's words (2026-09-19, "The project page opens the agent that lays its
+            overview out": the ask on the overview), so it stands under them instead of beside a
+            second, look-alike button in the rail;
+          - the one agent card (2026-09-19, composition board: "One agent card") as a closing band,
+            beside the connected-projects card when the folder holds another project.
+          The hero's "View on map" stays the page's one filled control; the agent's copy is outline. */}
+      <section
+        data-testid="project-detail-domains"
+        className="mt-[var(--section-gap)] min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)]"
+      >
+        <div className="mb-2.5 flex items-baseline gap-2">
+          <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+            {t("domainsCardTitle")}
+          </span>
+          <span className="text-body tabular-nums text-[color:var(--color-text-tertiary)]">
+            {domainComposition.domains.length}
+          </span>
         </div>
+        {domainComposition.domains.length > 0 ? (
+          <DomainCompositionRows
+            domains={domainComposition.domains}
+            labels={{
+              capabilityUnit: t("domainCapabilityLabel"),
+              elementUnit: t("domainElementLabel"),
+              legendCaption: t("domainRowsLegendCaption"),
+              overlapNote: t("domainOverlapNote"),
+              rowToggleAria: (row) =>
+                t("domainRowToggleAria", {
+                  title: row.title,
+                  total: row.total,
+                  capabilities: row.capabilityCount,
+                  elements: row.elementCount,
+                }),
+              mapLinkLabel: t("domainRowMapLink"),
+              capabilityLinkAria: (title) => t("domainCapabilityLinkAria", { name: title }),
+              capabilitiesEmpty: t("domainRowCapabilitiesEmpty"),
+            }}
+          />
+        ) : (
+          <div data-testid="project-detail-composition-empty">
+            <EmptyState
+              size="compact"
+              icon={<Layers size={ICON_SIZE.lg} aria-hidden />}
+              title={t("domainEmptyTitle")}
+              description={t("domainEmptyHint")}
+              /* The hint said where to do it — "connect a domain on the map" — and then made
+                 the reader go find the map. One door, the same address the insights empty
+                 states use. */
+              action={
+                <Link
+                  href="/topology/?workbench=create"
+                  data-testid="project-detail-composition-empty-action"
+                  className={controlClass({
+                    shape: "link",
+                    tone: "accent",
+                    hoverInk: "strong",
+                    className: "rounded-chip hover:underline",
+                  })}
+                >
+                  {t("domainEmptyAction")}
+                </Link>
+              }
+            />
+          </div>
+        )}
+      </section>
 
-        {/* The right rail sits **outside the tabs** — it is context valid from any tab, and "connected
-            projects" is the first surface of treating project-to-project relations as ontology, so it
-            must not be hidden behind a tab. */}
-        <aside data-testid="project-detail-connected" className="flex flex-col gap-[var(--card-gap)]">
-          {connectedProjects.length > 0 || folderHasSeveralProjects ? (
-          <section data-testid="project-detail-connected-card" className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
+      <article
+        data-testid="project-detail-body"
+        className="mt-[var(--section-gap)] min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[inset_0_1px_0_var(--color-overlay-1)]"
+      >
+        <div className="p-[var(--card-pad)]">
+          {/* The door to the whole document stands on the heading's line, where a card names what
+              it summarises; under the tracks it closed a band that was empty above it. */}
+          <div className="mb-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+              {t("bodyCardTitle")}
+            </span>
+            {bodyContent ? (
+              <Link
+                href={projectDoc ? buildDocsVaultHref({ slug: projectDoc.slug }) : "/docs/"}
+                data-testid="project-detail-body-continue"
+                className={controlClass({ shape: "link", tone: "accent", className: "ml-auto" })}
+              >
+                {t("bodyContinue")}
+              </Link>
+            ) : null}
+          </div>
+          {bodyContent ? (
+            <ProjectBriefSummary
+              body={dedupedBodyContent ?? bodyContent}
+              // The line is the column (`docs/DECISIONS.md`, 2026-09-12): the measure spent at
+              // the reading size. Left-aligned rather than centred, because heading, prose,
+              // contents and boundary all start on one line inside a card.
+              // The summary reads at the hero definition's step (body-lg): at the reading size (16)
+              // the card outranked the hero (14) it follows (2026-09-25).
+              proseClassName={`${storyMarkdownClassName} max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))]`}
+              coversLabel={t("bodyCovers")}
+              leadSentence={heroTagline}
+              sectionNames={{
+                includes: t("bodySectionIncludes"),
+                excludes: t("bodySectionExcludes"),
+                uncertainty: t("bodySectionUncertainty"),
+                competencyAnswers: t("bodySectionCompetencyAnswers"),
+              }}
+            />
+          ) : (
+            <div data-testid="project-detail-body-empty">
+              <EmptyState
+                size="compact"
+                icon={<FileText size={ICON_SIZE.lg} aria-hidden />}
+                title={t("bodyEmptyHint")}
+              />
+            </div>
+          )}
+        </div>
+        {/*
+          **The ask that rewrites this overview is the card's footer** (round four). One sentence
+          saying what the agent does and where the result is reviewed, one control, and the text it
+          hands over behind a disclosure. `break-keep`: Korean trips the reader when it breaks
+          mid-word (measured 2026-08-12).
+        */}
+        <div
+          data-testid="project-detail-brief-ask"
+          data-brief-state={briefIsStructured ? "structured" : "unstructured"}
+          data-agent-route={agent.route}
+          className="border-t border-[color:var(--color-divider)] px-[var(--card-pad)] py-3"
+        >
+          <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2.5">
+            <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] flex-1 basis-80 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+              {agent.route === "agent"
+                ? t("briefAskAgent")
+                : briefIsStructured
+                  ? t("briefAskStructured")
+                  : t("briefAskUnstructured")}
+            </p>
+            {agent.route === "agent" ? (
+              <Button
+                type="button"
+                variant={briefIsStructured ? "outline" : "primary"}
+                size="sm"
+                onClick={() => agent.start(briefPrompt)}
+                data-testid="project-detail-brief-ask-open"
+                className="ml-auto"
+              >
+                {t("briefAskOpen")}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant={briefIsStructured ? "outline" : "primary"}
+                size="sm"
+                onClick={() => void briefCopy.copy(briefPrompt)}
+                data-testid="project-detail-brief-ask-copy"
+                className="ml-auto"
+              >
+                {briefCopyLabel}
+              </Button>
+            )}
+          </div>
+          <details className="mt-2">
+            <summary className="w-fit select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+              {t("handoffHumanCaption")}
+            </summary>
+            <pre className="mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap break-keep text-[color:var(--color-text-quaternary)]">
+              {briefPrompt}
+            </pre>
+          </details>
+        </div>
+      </article>
+
+      {/* The closing band: where this project goes next. The connected-projects card stands beside
+          the agent card only when the folder holds another project; alone, the agent card spans
+          the column with its words and its control on one line. */}
+      <aside
+        data-testid="project-detail-connected"
+        className={`mt-[var(--section-gap)] grid min-w-0 grid-cols-1 gap-[var(--card-gap)] ${
+          connectedProjects.length > 0 || folderHasSeveralProjects ? "@3xl/project-page:grid-cols-2" : ""
+        }`}
+      >
+        {connectedProjects.length > 0 || folderHasSeveralProjects ? (
+          <section
+            data-testid="project-detail-connected-card"
+            className="min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)]"
+          >
+            {/* No relation trace mark before this heading. The mark is not broken: it is the
+                canvas edge in miniature, dashed for a non-containment relation, and its own
+                contract (`map-kind-glyph.tsx`) is "one per row, not a group-header marker". The
+                insights Connections tab and the full-detail groups panel use it that way. As a
+                card heading it read as a stray "--" (2026-09-25); the rows below carry the
+                relation, and the caption beside the title names it. */}
             <div className="mb-2.5 flex items-baseline gap-2">
-              <OntologyMapTraceMark containment={false} />
               <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {t("connectedTitle")}
               </span>
@@ -936,14 +1057,11 @@ export function ProjectDetailPage({
                     {/* No decorative arrow after a label — this link navigates inside the app (it is
                         not `target="_blank"`). `↗` is used only as a leading warning on links that
                         **leave** the app, and that something is pressable is already said by the
-                        border and hover. The hover translate that accompanied it carried no
-                        information and was removed too. */}
+                        border and hover. */}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                         {/* The same name the rest of this page, the map label and the INDEX row draw
-                            (`display_<locale>` when the folder carries one) — a card that names the
-                            neighbour by its canonical title sends a reader looking for a project the
-                            screen calls something else. */}
+                            (`display_<locale>` when the folder carries one). */}
                         {projectDisplayName(candidate, locale)}
                       </p>
                       <p className="mt-1 truncate text-body text-[color:var(--color-text-tertiary)]">
@@ -990,99 +1108,48 @@ export function ProjectDetailPage({
               </div>
             )}
           </section>
-          ) : null}
+        ) : null}
 
-          <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
-            {/*
-              What this card actually does is "copy a starting prompt so my AI can pick up reading this
-              project". Yet it was named "agent handoff" with the caption "a person does not need to
-              read this — it is for an AI agent". Owner's verdict: *"Too AI-ish."* (too AI-ish). Both
-              were right — it is internal jargon, and a negative framing ("you don't need to read this")
-              pushes the reader away while never actually saying what it does.
-
-              The order is now explanation → button → (collapsed) preview. Say what it does first, and
-              let whoever wants the code expand it.
-            */}
-            {/*
-              **One place for agents on this page** (2026-09-19). The overview's "hand it to an
-              agent" ask stood in the body card while this card stood in the rail, so the page had
-              two agent hand-offs with near-identical names a column apart. They are one card now:
-              the specific job first, the general "read this project's map" snippet under it.
-            */}
-            <div className="mb-2">
-              <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+        {/*
+          **One agent card, one job** (2026-09-19 "One agent card"; round four). It hands a connected
+          AI the starter that reads this project's map. Rewriting the overview moved to the overview's
+          own footer, so the card no longer holds two look-alike buttons with no winner between them.
+          Its words and its control share one line once the card is wide enough (`@2xl` of the card).
+        */}
+        <section
+          data-testid="project-detail-handoff"
+          className="@container/handoff min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)]"
+        >
+          <div className="flex min-w-0 flex-col gap-3 @2xl/handoff:flex-row @2xl/handoff:items-center @2xl/handoff:gap-6">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {t("handoffTitle")}
-              </span>
-            </div>
-            <div
-              data-testid="project-detail-brief-ask"
-              data-brief-state={briefIsStructured ? "structured" : "unstructured"}
-              data-agent-route={agent.route}
-              className="mb-4 border-b border-[color:var(--color-divider)] pb-4"
-            >
-              <p className="mb-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-                {agent.route === "agent"
-                  ? t("briefAskAgent")
-                  : briefIsStructured
-                    ? t("briefAskStructured")
-                    : t("briefAskUnstructured")}
+              </h2>
+              <p className="mt-1.5 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+                {t("handoffDesc")}
               </p>
-              {agent.route === "agent" ? (
-                <Button
-                  type="button"
-                  variant={briefIsStructured ? "outline" : "primary"}
-                  size="sm"
-                  onClick={() => agent.start(briefPrompt)}
-                  data-testid="project-detail-brief-ask-open"
-                >
-                  {t("briefAskOpen")}
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant={briefIsStructured ? "outline" : "primary"}
-                  size="sm"
-                  onClick={() => void briefCopy.copy(briefPrompt)}
-                  data-testid="project-detail-brief-ask-copy"
-                >
-                  {briefCopyLabel}
-                </Button>
-              )}
-              <details className="mt-3">
-                <summary className="select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-                  {t("handoffHumanCaption")}
-                </summary>
-                <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap break-keep text-[color:var(--color-text-quaternary)]">
-                  {briefPrompt}
-                </pre>
-              </details>
             </div>
-            {/*
-             * `break-keep` — **Korean trips the reader when it breaks mid-word** (measured 2026-08-12).
-             *
-             * This paragraph broke as 「i peurojeok|iteo-ui map-eul」 in the 400px rail (362px real width).
-             * Instrument: a `Range` per character reveals the characters on either side of the line
-             * break — both Korean with no space means mid-word. The cause is `word-break: normal`, and
-             * this repository already used `break-keep` elsewhere.
-             */}
-            <p className="mb-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-              {t("handoffDesc")}
-            </p>
-            <Button type="button" variant="outline" size="sm" onClick={handleCopyHandoff}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCopyHandoff}
+              data-testid="project-detail-handoff-copy"
+              className="self-start @2xl/handoff:self-center"
+            >
               {handoffCopyLabel}
             </Button>
-            <details className="mt-3">
-              <summary className=" select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-                {t("handoffHumanCaption")}
-              </summary>
-              <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
-                {handoffSnippet}
-              </pre>
-            </details>
-          </section>
-        </aside>
-      </section>
-
+          </div>
+          <details className="mt-3 border-t border-[color:var(--color-divider)] pt-3">
+            <summary className="w-fit select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+              {t("handoffHumanCaption")}
+            </summary>
+            <pre className="mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
+              {handoffSnippet}
+            </pre>
+          </details>
+        </section>
+      </aside>
       <footer className="mt-[var(--section-gap)] border-t border-[color:var(--color-overlay-2)] pt-6 pb-[var(--page-bottom-breath)]">
         {/*
           The footer names the file: slug and the Markdown path this page is drawn from, the two

@@ -18,7 +18,23 @@ async function textDigest(text: string): Promise<string> {
   return `sha256:${[...hash].map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
 }
 
-export function MeaningTransitionHistory({ handle, open }: { handle: FileSystemDirectoryHandle | null; open: boolean }) {
+/**
+ * What the archive has to say. Everything but `records` and `error` is a quiet state: nothing to
+ * pick, only a sentence about why.
+ */
+export type MeaningTransitionArchiveState = 'no-folder' | 'unavailable' | 'pending' | 'empty' | 'records' | 'error';
+
+export function MeaningTransitionHistory({ handle, open, foldWhenQuiet = false, onStateChange }: {
+  handle: FileSystemDirectoryHandle | null;
+  open: boolean;
+  /**
+   * Draw nothing while the archive is quiet, because the caller already says so in its own empty
+   * state. Round three (2026-09-25): an empty history tab carried two "nothing here" messages on
+   * two surfaces with a dead band between them.
+   */
+  foldWhenQuiet?: boolean;
+  onStateChange?: (state: MeaningTransitionArchiveState) => void;
+}) {
   const t = useTranslations('analysisWorkbench.meaningTransitions');
   const locale = useLocale();
   const latestHandle = useRef(handle);
@@ -93,6 +109,10 @@ export function MeaningTransitionHistory({ handle, open }: { handle: FileSystemD
     return () => { artifactGeneration.current += 1; };
   }, [available, handle, open, rootPath, selected, t]);
 
+  const archiveState: MeaningTransitionArchiveState = !handle ? 'no-folder' : !available ? 'unavailable' : error ? 'error'
+    : records.length ? 'records' : !pending && loaded?.handle === handle ? 'empty' : 'pending';
+  useEffect(() => { onStateChange?.(archiveState); }, [archiveState, onStateChange]);
+
   const selectedArtifacts = artifacts?.record === selected ? artifacts.rows : [];
   const previousLoaded = selected?.schema === 'atlas-meaning-transition/v2' && selected.previous
     ? records.find((record) => record.eventId === selected.previous?.eventId) ?? null : null;
@@ -100,14 +120,15 @@ export function MeaningTransitionHistory({ handle, open }: { handle: FileSystemD
     ? { action: selected.meaningDecision.action, at: selected.meaningDecision.actionAt, task: selected.task.label }
     : selected ? { action: selected.decision.disposition, at: selected.createdAt, task: selected.task.label } : null, [selected]);
 
+  if (foldWhenQuiet && archiveState !== 'records' && archiveState !== 'error') return null;
   return <section aria-labelledby="meaning-transition-history-title" className="space-y-3 rounded-card border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
     <div className="space-y-1">
       <h3 id="meaning-transition-history-title" className="text-body-lg font-[var(--font-weight-strong)]">{t('title')}</h3>
-      <p className="text-caption text-[color:var(--color-text-secondary)]">{t('boundary')}</p>
+      <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('boundary')}</p>
     </div>
     {!handle ? <p>{t('openFolder')}</p> : !available ? <p>{t('unavailable')}</p> : null}
     {pending ? <p role="status">{t('loading')}</p> : null}
-    {error ? <p role="alert" className="text-caption text-[color:var(--color-danger-text)]">{error}</p> : null}
+    {error ? <p role="alert" className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{error}</p> : null}
     {available && !pending && loaded?.handle === handle && records.length === 0 && !error ? <p>{t('empty')}</p> : null}
     {records.length ? <div className="space-y-2" aria-label={t('listLabel')}>{records.map((record) => <RowButton key={record.eventId} active={record === selected} aria-pressed={record === selected} className="w-full" onClick={() => setSelectedId(record.eventId)}>
       <span className="min-w-0 flex-1 text-left"><span className="block truncate font-[var(--font-weight-emphasis)]">{record.task.label}</span><span className="block text-caption text-[color:var(--color-text-secondary)]">{new Date(record.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })} · {record.schema === 'atlas-meaning-transition/v2' ? t(`phase.${record.phase}`) : t('legacy')}</span></span>

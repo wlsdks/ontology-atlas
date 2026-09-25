@@ -96,8 +96,15 @@ const ROOT = process.cwd();
  * 299 → 295 (2026-09-14): the compact project index removed three card-local hover
  * declarations with its metric dashboard, then moved the project-name hover ink onto
  * `controlClass({ hoverInk: "strong" })`. Four hand declarations are now owned by the axis.
+ *
+ * 292 → 290 (2026-09-25): the root error screen's hand-built pills (indigo hover border and
+ * fill) became the standard `Button` and `buttonVariants` outline.
+ * 290 → 289 (2026-09-25): the settings sheet's row actions moved onto one chip grammar and
+ * the shared `DETAIL_TOGGLE_CHIP` ink, a net one fewer hand-written hover declaration.
+ * 289 → 288 (2026-09-25): the insights hub rows left the `chip` shape for a bare `row` with
+ * `hoverSurface: "lift"`, so their hand-written overlay hover is owned by the axis.
  */
-const CEILING = 292;
+const CEILING = 288;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

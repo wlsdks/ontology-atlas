@@ -19,9 +19,21 @@ export class LibraryCollectionsStaleCompletionError extends Error {
 
 const queues = new WeakMap<FileSystemDirectoryHandle, Promise<void>>();
 
-function missing(error: unknown): boolean {
-  return error instanceof DOMException ? error.name === 'NotFoundError' : error instanceof Error && /not found|no such file/i.test(error.message);
+/**
+ * Whether a read failure only means "nothing was saved here yet".
+ *
+ * The installed app rejects with the native command's **string**, never an `Error`, so a
+ * check that only looked at `Error#message` classified every native not-found as a read
+ * failure and the map answered a vault that never saved a constellation with "could not
+ * read your saved constellations".
+ */
+export function isMissingLibraryCollectionsError(error: unknown): boolean {
+  if (error instanceof DOMException) return error.name === 'NotFoundError';
+  const message = typeof error === 'string' ? error : error instanceof Error ? error.message : null;
+  return message !== null && /not found|no such file|os error 2\b|ENOENT/i.test(message);
 }
+
+const missing = isMissingLibraryCollectionsError;
 
 async function readBrowser(handle: FileSystemDirectoryHandle): Promise<string | null> {
   try {

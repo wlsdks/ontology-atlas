@@ -1,7 +1,7 @@
 "use client";
 
 import type { useTranslations } from "next-intl";
-import { BookText, FileText, FolderOpen, Download, Sparkles } from "lucide-react";
+import { BookText, FolderOpen, Download, Hash, Sparkles } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import {
@@ -29,6 +29,15 @@ import { AgentDoor } from "./AgentDoor";
  * hook that lies about having a consumer.
  */
 const SOURCE_PASSAGE_HEADING_ID = "library-source-passage-heading";
+
+/**
+ * A source's format is its extension (`vaultSourceFormat`), so a name that ends in it
+ * already says it in the headline. Only a file with no extension leaves the format a fact
+ * the headline does not state.
+ */
+function nameCarriesFormat(row: LibrarySourceRow): boolean {
+  return row.format !== "" && row.name.toLowerCase().endsWith(`.${row.format.toLowerCase()}`);
+}
 
 /*
  * `passageLabel` moved to `../../lib/passage-label.ts` in slice U2: the index column's
@@ -177,6 +186,7 @@ export function SourceSummary({
   compileNote,
   compileBlocked,
   agentDoor,
+  indexShowsState = false,
   busy,
   t,
 }: {
@@ -241,6 +251,11 @@ export function SourceSummary({
    * and while an agent is still being looked for.
    */
   agentDoor: boolean;
+  /**
+   * The index beside this pane is the Sources list, whose row for this file already
+   * wears its state badge at `lg` and up; the pane's own state fact steps aside there.
+   */
+  indexShowsState?: boolean;
   busy: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
@@ -257,18 +272,33 @@ export function SourceSummary({
     mono?: boolean;
     oneLine?: boolean;
     title?: string;
+    wideHidden?: boolean;
   }> = [
     { key: "path", label: t("source.path"), value: row.path, mono: true },
-    {
-      key: "format",
-      label: t("source.format"),
-      value: row.format ? row.format.toUpperCase() : t("sources.noFormat"),
-    },
+    /*
+     * ⚠️ **Each fact once on the screen** (2026-09-25). The format row printed *MD* under
+     * a headline ending in `.md`, and the state row printed *Checking* beside the index
+     * row's own *Checking* badge 300px to the left: the repetition the list row lost for
+     * saying one fact twice. So the format is a row only where the name does not already
+     * carry it, and the state row steps aside at `lg` while the Sources list, and so the
+     * badge, is beside this pane. Below `lg` the index yields to this pane, and a source
+     * opened from the wiki half has cards beside it, not badges, so there it stays.
+     */
+    ...(nameCarriesFormat(row)
+      ? []
+      : [
+          {
+            key: "format",
+            label: t("source.format"),
+            value: row.format ? row.format.toUpperCase() : t("sources.noFormat"),
+          },
+        ]),
     { key: "size", label: t("source.size"), value: formatSourceBytes(row.bytes) },
     {
       key: "state",
       label: t("source.state"),
       value: t(`sources.state.${row.state}.label`),
+      wideHidden: indexShowsState,
     },
     {
       key: "hash",
@@ -412,16 +442,21 @@ export function SourceSummary({
        */
       className="mx-auto w-full max-w-[var(--measure-doc-column)] px-6 pb-8 pt-8 md:px-10"
     >
-      <div className="flex items-start gap-2">
-        <FileText
-          size={ICON_SIZE.md}
-          aria-hidden
-          className="mt-1 flex-none text-[color:var(--color-text-quaternary)]"
-        />
-        <h2 className="min-w-0 break-all text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
-          {row.name}
-        </h2>
-      </div>
+      {/*
+        **The document's headline, at the step a wiki page's headline uses** (design sweep,
+        2026-09-25). The file name was 14px while a wiki page's title was 23px, so an open
+        source had no headline and the key-value table below it was the loudest ink in the
+        pane. Both reader kinds now open on `text-display` with its own leading.
+
+        ⚠️ **No glyph before the name** (2026-09-25). A file glyph hung at the line put the
+        title's first letter 26px right of the sentence, the facts and the Finder door
+        below it (410 against 384 at 1040), and the wiki reader beside it starts its title
+        on the body line. One header grammar for both readers: the name is the headline,
+        the extension already says it is a file.
+      */}
+      <h2 className="break-all text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+        {row.name}
+      </h2>
       {/* The column is the line. `--measure-doc-column` is the measure spent at the reading
           size plus one gutter each side, so every line in this pane already ends where the
           body's would. Wearing `max-w-[var(--measure-prose)]` here as well cut a line short:
@@ -437,7 +472,11 @@ export function SourceSummary({
 
       <dl className="mt-5 flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] pt-4">
         {facts.map((fact) => (
-          <div key={fact.key} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+          <div
+            key={fact.key}
+            data-fact={fact.key}
+            className={cn("flex flex-wrap items-baseline gap-x-3 gap-y-0.5", fact.wideHidden && "lg:hidden")}
+          >
             {/* The **same label column as the shelf's steps** (2026-09-06): both are
                 label/value pairs in this one pane, and they measured 132 here against 148
                 there — two rhythms a person reads one after the other by pressing a row.
@@ -666,11 +705,12 @@ export function SourceSummary({
                      * leaving it as text made the outline the one list on this screen whose
                      * addresses a person could read and not follow.
                      *
-                     * Accent ink, like the index caption's address and unlike the counted
-                     * rows beside it: at rest that is what separates *a place you can go*
-                     * from *a number about this file*, and a row whose rest state equals
-                     * its neighbours' is the false negative this repository has already
-                     * ruled on twice.
+                     * ⚠️ **Neutral ink with a leading glyph, not accent** (design sweep,
+                     * 2026-09-25). Accent on every heading spread the one primary colour over
+                     * five rows, directly under the write-up rows that do the same job in
+                     * grey. What separates *a place you can go* from *a number about this
+                     * file* is now the `#` glyph in the slot the write-ups' book glyph uses,
+                     * plus the row's hover and focus — the write-ups' own grammar.
                      */
                     <button
                       type="button"
@@ -680,12 +720,13 @@ export function SourceSummary({
                       className={controlClass({
                         shape: "row",
                         size: "xs",
-                        tone: "accent",
+                        tone: "muted",
                         hoverInk: "strong",
                         hoverSurface: "lift",
-                        className: `atlas-touch-floor w-full ${PANE_ROW_INSET} text-body`,
+                        className: `atlas-touch-floor w-full gap-2 ${PANE_ROW_INSET} text-body`,
                       })}
                     >
+                      <Hash size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
                       <span className="min-w-0 flex-1 truncate text-left">{line.text}</span>
                     </button>
                   ) : (

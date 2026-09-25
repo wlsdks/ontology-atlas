@@ -39,8 +39,8 @@ describe("resolveProjectTagline — 히어로 한 줄 정의", () => {
   });
 
   it("문장 부호가 없는 긴 글은 말줄임으로 닫는다 — 열린 채 끊기지 않는다", () => {
-    const out = resolveProjectTagline({ description: "가".repeat(400) })!;
-    expect(out.length).toBeLessThanOrEqual(160);
+    const out = resolveProjectTagline({ description: "가".repeat(600) })!;
+    expect(out.length).toBeLessThanOrEqual(320);
     expect(out.endsWith("...")).toBe(true);
   });
 

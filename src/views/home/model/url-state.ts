@@ -127,6 +127,19 @@ export interface HomeRouteState {
   recentWindow: RecentSpotlightWindow | null;
   /** Saved constellation id, or `new` to open its editor. This value belongs to one vault. */
   constellationIntent: string | null;
+  /**
+   * The flat map drawn as Territories (`?view=territories`). The view picker's stored choice
+   * is mirrored here so a link opens the same view and a reload keeps it; any other value is
+   * dropped at parse time. `null` = the stored choice decides.
+   */
+  mapView: HomeMapView | null;
+}
+
+/** The map views an address can name: Territories and the hex board. */
+type HomeMapView = "territories" | "hex";
+
+function parseMapViewParam(value: string | null): HomeMapView | null {
+  return value === "territories" || value === "hex" ? value : null;
 }
 
 /** Spotlight window — "auto" (adaptive) or an explicit day preset. */
@@ -163,6 +176,7 @@ export const HOME_QUERY_KEYS = {
   via: ONTOLOGY_DEEPLINK_VIA_KEY,
   review: ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ask: ONTOLOGY_DEEPLINK_ASK_KEY,
+  view: "view",
 } as const;
 
 /**
@@ -273,6 +287,7 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   realmSlug: null,
   recentWindow: null,
   constellationIntent: null,
+  mapView: null,
 };
 
 /**
@@ -560,6 +575,7 @@ export function parseHomeRouteState(
     realmSlug: searchParams.get(HOME_QUERY_KEYS.realm) || null,
     recentWindow: parseRecentWindowParam(searchParams.get(HOME_QUERY_KEYS.recent)),
     constellationIntent: searchParams.get(HOME_QUERY_KEYS.constellation) || null,
+    mapView: parseMapViewParam(searchParams.get(HOME_QUERY_KEYS.view)),
   };
 }
 
@@ -706,6 +722,7 @@ export function applyHomeRouteState(
   setOrDelete(next, HOME_QUERY_KEYS.realm, state.realmSlug);
   setOrDelete(next, HOME_QUERY_KEYS.recent, serializeRecentWindowParam(state.recentWindow));
   setOrDelete(next, HOME_QUERY_KEYS.constellation, state.constellationIntent);
+  setOrDelete(next, HOME_QUERY_KEYS.view, state.mapView);
   setOrDelete(
     next,
     HOME_QUERY_KEYS.ask,

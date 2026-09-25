@@ -6,27 +6,59 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  /*
+   * The 4px inline inset keeps the chips' inset focus ring clear of the scroller's clip edge;
+   * the matching negative margin puts the header, chips and rows back on the page's start line
+   * (they sat 4px right of the title and the tab row).
+   */
   padding: 12px 4px 20px;
+  margin-inline: -4px;
 }
 
+/*
+ * The field fills the pane; the grid fills what the header leaves, and each row takes an equal
+ * share of it. Each domain then fills its cell (its stems stretch, see `.domain`), so the space
+ * becomes the drawing rather than gaps between rows. When the rows need more than the field has,
+ * `auto` wins and the field scrolls.
+ */
 .domainGrid {
   display: grid;
+  flex: 1 0 auto;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-rows: max-content;
-  align-content: start;
-  gap: 22px 28px;
+  grid-auto-rows: minmax(auto, 1fr);
+  align-content: stretch;
+  gap: calc(var(--card-gap) * 2) calc(var(--card-gap) + 8px);
+}
+
+/*
+ * The folder-wide collections (separate guides, outside the domains, unreached entrypoints,
+ * findings) are a control strip, not the first row of the diagram: they used the same chip
+ * grammar 13px above the first tree-top chips and read as part of the first domain. A rule and
+ * a clear gap end the strip before the domains begin, in both readings.
+ */
+.collectionStrip {
+  padding-bottom: 16px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--color-divider);
 }
 
 .textList {
   display: flex;
   flex-direction: column;
   gap: 0;
-  border-block: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
 }
 
 .textRow {
   display: grid;
-  grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
+  /*
+   * Name and purpose at a bounded measure, then one column per role right beside it, so every
+   * chip starts on the same line down the list and sits next to the domain it counts rather than
+   * a page-width away. Chips keep their own width; the column only fixes where they start.
+   */
+  grid-template-columns: minmax(12rem, 32rem) repeat(3, minmax(max-content, 10rem));
+  justify-content: start;
+  justify-items: start;
   align-items: center;
   gap: 16px;
   padding-block: 12px;
@@ -35,12 +67,19 @@
 
 .textRow:last-child { border-bottom: 0; }
 
+/*
+ * The stems take the cell's spare height, so a domain is as tall as its row, up to a cap that keeps
+ * them short enough to read as connectors (about 4rem each at 1920x1080) rather than bare line; the
+ * name and the sentence saying what the domain is for carry the rest of the cell. The cap never
+ * clips: when the content needs more (large text, a long name), the content minimum outranks it and
+ * the row grows instead of the chips riding over the name.
+ */
 .domain {
   display: grid;
-  grid-template-rows: auto 12px minmax(48px, max-content) 14px auto;
+  grid-template-rows: auto minmax(24px, 1fr) minmax(48px, max-content) minmax(24px, 1fr) auto;
   min-width: 0;
-  min-height: 184px;
-  align-content: start;
+  min-height: min-content;
+  max-height: 18.5rem;
 }
 
 .topRole {
@@ -52,11 +91,10 @@
 .lowerConnections {
   display: block;
   width: 100%;
+  height: 100%;
+  min-height: 0;
   overflow: visible;
 }
-
-.topConnection { height: 12px; }
-.lowerConnections { height: 14px; }
 
 .topConnection path,
 .lowerConnections path {
@@ -66,20 +104,43 @@
   vector-effect: non-scaling-stroke;
 }
 
-.domainName {
+/* A branch with nothing declared is still drawn, dashed and neutral, so it reads as "none" rather than as a missing line. */
+.topConnection path[data-empty],
+.lowerConnections path[data-empty] {
+  stroke: var(--color-border-strong);
+  stroke-dasharray: 3 3;
+}
+
+.domainHeading {
   display: flex;
-  min-height: 48px;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
-  max-width: 15rem;
+  gap: 4px;
+  min-height: 48px;
+  max-width: 17rem;
   justify-self: center;
   text-align: center;
+}
+
+.domainName {
   text-wrap: balance;
   overflow-wrap: anywhere;
   font-size: var(--text-body-lg);
   line-height: var(--leading-body-lg);
   font-weight: var(--font-weight-emphasis);
   color: var(--color-text-primary);
+}
+
+.domainPurpose {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  color: var(--color-text-tertiary);
 }
 
 .lowerRoles {
@@ -108,15 +169,21 @@
 }
 
 .role[data-state='filled'] .roleMark { border-color: var(--color-indigo-text-soft); background: var(--color-indigo-text-soft); }
-.role[data-state='empty'] .roleMark { border-color: var(--color-amber-source-a90); background: transparent; }
+/* "None declared" is a plain hollow ring: no dash, so it cannot be read as a busy spinner. */
+.role[data-state='empty'] .roleMark { border-color: var(--color-text-quaternary); background: transparent; }
+.role[data-weakest] .roleMark { border-color: var(--color-status-warning); }
+.role[data-weakest] .roleCount { color: var(--color-status-warning); }
 
 @media (max-width: 1279px) {
   .domainGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Below the four-column band the name takes its own line and the three counts share the row, so
+     large text never pushes a fixed column past the pane. */
+  .textRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .textRow > :first-child { flex-basis: 100%; }
 }
 
 @media (max-width: 767px) {
-  .field { padding-inline: 0; }
+  .field { padding-inline: 0; margin-inline: 0; }
   .domainGrid { grid-template-columns: 1fr; gap: 12px; }
-  .domain { min-height: 176px; }
-  .textRow { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .textRow { gap: 8px; }
 }

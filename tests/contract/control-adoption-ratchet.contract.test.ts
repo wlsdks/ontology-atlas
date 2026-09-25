@@ -185,7 +185,7 @@ import { describe, expect, it } from 'vitest';
  *
  * | Category | Count | What's missing / Why outside? |
  * |---|---:|---|
- * | **[Registration] `standard-button`** | 11 | Shape yielded by value layer. DownloadPage 7 · AgentClientButtons 1 · Architecture empty-state exit 1 · Two 404 files 2. |
+ * | **[Registration] `standard-button`** | 10 | Shape yielded by value layer. DownloadPage 7 · Architecture empty-state exit 1 · Two 404 files 2. |
  * | **[Registration] `chrome-token`** | 3 | AtlasGitPanel 2(`--git-setup-action-height`) · TopologyReviewLink 1(`--chrome-tile-size`). Both have multiple declarations, passing token check. |
  * | **[Registration] `no-spec`** | 3 | MacosDownloadLink(passthrough) · PublicQuickActions 2(`inline-flex` wrapper). |
  * | **[Registration] `value-layer-peer`** | 1 | `<Link>` branch of `ChromeTile`. |
@@ -1106,7 +1106,15 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // button-styled Link to Map. The destination count and the verified registration both fall by one.
 // 2026-09-11 (slice U2): the Library's blocked steps gained a door to `/agents` —
 // `AgentDoor` is one `<Link>` through `buttonVariants`, so `Link` 18→19.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 19, a: 8 };
+// 2026-09-25: the two 404 files and the error boundary became one shared terminal-state view.
+// The 404's two `<Link>`s moved with it, and the error screen's home became a plain `<a>`
+// through `buttonVariants` (a full reload after a render failure), so `a` 8→9.
+// 2026-09-25: Automations' "Get the app" and "Open Library check history" became standard
+// buttons (primary, ghost sm) instead of text links, so `Link` 19→21.
+// 2026-09-25: Check history's first-run door to Automations is one `<Link>` through
+// `buttonVariants`, so `Link` 21→22.
+// 2026-09-25 (agents polish): AgentClientButtons' outline anchor became a `<Button>`, so `a` 9→8.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 22, a: 8 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1175,11 +1183,18 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
       '그건 이 게이트가 아니라 다음 디자인 라운드의 일이다 — 등재가 그 결함을 승인하지는 않는다.',
   },
   {
-    file: 'src/features/docs-vault-local/ui/AgentClientButtons.tsx',
-    count: 1,
+    file: 'src/views/automations/ui/AutomationsPage.tsx',
+    count: 2,
     claim: 'standard-button',
     proof: 'buttonVariants',
-    why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
+    why:
+      'Two navigating actions on Automations (2026-09-25). "Get the app" is the app-required ' +
+      "stage's one primary action and must match the empty lane's `<Button>` primary " +
+      "(`buttonVariants({ variant: \"primary\" })`); \"Open Library check history\" sits in the " +
+      "lane header beside the outline `<Button>` CTA as `buttonVariants({ variant: \"ghost\", " +
+      'size: "sm" })`. As 11-12.5px `shape: "link"` text they read as captions, not actions. ' +
+      'Both are `<Link>` because they navigate, and `control-class.ts` does not replace ' +
+      'standard buttons.',
   },
   {
     file: 'src/views/library/ui/parts/AgentDoor.tsx',
@@ -1195,18 +1210,35 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
       'moving this to `controlClass` would break that rule rather than honour it.',
   },
   {
-    file: 'app/[locale]/not-found.tsx',
+    file: 'src/views/library/ui/LibraryRounds.tsx',
     count: 1,
     claim: 'standard-button',
     proof: 'buttonVariants',
-    why: '2026-08-04 버튼 라운드가 손 `rounded-full` 방언에서 정규화한 그 자리. `cn` 병합까지 되어 있다.',
+    why:
+      'Check history before any round exists (2026-09-25): the page\'s one next step, ' +
+      '"Schedule in Automations". It is a `<Link>` because it navigates, and ' +
+      '`cn(buttonVariants(), …)` because it stands in Work scope\'s starting-point frame ' +
+      'where the same moment is a primary `<Button>`; the two empty tabs must press alike. ' +
+      'The value layer yields the standard button, so `controlClass` cannot make it.',
   },
   {
-    file: 'app/not-found.tsx',
+    file: 'src/views/terminal-state/ui/NotFoundScreen.tsx',
+    count: 2,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The 404 exits (both not-found files render this one view since 2026-09-25): home is a ' +
+      '`<Link>` through `cn(buttonVariants(...))` as primary on the web and outline in the app, ' +
+      'beside `<Button>` siblings. Same normalization as the 2026-08-04 button round.',
+  },
+  {
+    file: 'src/views/terminal-state/ui/RouteErrorScreen.tsx',
     count: 1,
     claim: 'standard-button',
     proof: 'buttonVariants',
-    why: '같음(루트 404).',
+    why:
+      'The error screen\'s "home" beside the `<Button>` retry. A plain `<a>` on purpose: a full ' +
+      'navigation is the reset after a render failure, and the screen sits outside the locale router.',
   },
   {
     file: 'src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx',
@@ -1307,9 +1339,17 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // 26 → 27 (2026-09-11, slice U2): `AgentDoor`, the one control that follows each of the
 // Library's agent-availability sentences. Registered rather than moved, for the reason its
 // row states — it is the standard-button shape the value layer itself yields.
-const BASELINE_ANCHOR_REGISTERED = 27;
+// 27 → 28 (2026-09-25): the render-error screen's "home" moved off a hand-built pill onto the
+// standard button beside its `<Button>` retry, so its dead ends match the 404's. The value layer
+// has no standard-button anchor shape, so the row is registered like the 404's own.
+// 28 → 30 (2026-09-25): Automations' two navigating actions, registered for the reason their
+// row states — the standard-button shape, at the two tags a navigating button needs.
+// 30 → 31 (2026-09-25): Check history's first-run door, the standard-button shape again.
+// 31 → 30 (2026-09-25, agents polish): `AgentClientButtons` left the anchor census — its
+// control is a `<Button>` now, so its row is gone.
+const BASELINE_ANCHOR_REGISTERED = 30;
 
-/** **Only this number may fall.** The current anchor total (28) minus registered (28). */
+/** **Only this number may fall.** The current anchor total (30) minus registered (30). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

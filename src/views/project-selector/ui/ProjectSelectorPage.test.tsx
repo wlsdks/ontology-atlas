@@ -199,12 +199,29 @@ describe("ProjectSelectorPage", () => {
     );
   });
 
+  // Round four (2026-09-25): the header's "New project" and the tile's agent request were two add
+  // entries with no rule between them. Both paths live in the tile now, and nowhere else.
+  it("offers both ways to add a project in one tile, and only there", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    renderPage();
+    const tile = screen.getByTestId("project-selector-next-slot");
+    expect(screen.getAllByTestId("project-selector-new-cta")).toHaveLength(1);
+    expect(within(tile).getByTestId("project-selector-new-cta")).toBeInTheDocument();
+    expect(document.querySelector("header [data-testid='project-selector-new-cta']")).toBeNull();
+    within(tile).getByTestId("project-selector-next-copy").click();
+    await vi.waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(enMessages.projectPages.selector.nextSlotPrompt),
+    );
+  });
+
   // Audit finding: the English screen shipped "1 project · 1 domains". A plural at a count of 1 reads as
   // a sentence that was generated automatically.
   it("agrees in number with the count it labels", () => {
     renderPage();
     const header = screen.getByRole("main").textContent ?? "";
-    expect(header).toContain("1 project");
+    // The sample is the loaded folder here (static mode), and the count says so itself.
+    expect(screen.getByTestId("project-selector-count")).toHaveTextContent(/^1 sample project$/);
     expect(header).not.toContain("domain");
     expect(header).not.toContain("1 CONCEPTS");
     expect(header).not.toContain("1 RELATIONS");

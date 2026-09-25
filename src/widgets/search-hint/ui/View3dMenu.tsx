@@ -9,10 +9,14 @@ import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from '@/shared/ui/transient-surface';
 import {
   useGalaxy,
+  useHexBoard,
   useMapArrangement,
+  useTerritories,
   useView3d,
   writeGalaxy,
+  writeHexBoard,
   writeMapArrangement,
+  writeTerritories,
   writeView3d,
   type MapArrangement,
 } from '@/shared/lib/appearance-preferences';
@@ -59,16 +63,21 @@ import {
  * the owner went looking for it (2026-09-10, superseded spatial direction
  * selected 2026-09-15).
  */
-type View3dChoice = 'flat' | 'galaxy' | MapArrangement;
+type View3dChoice = 'flat' | 'territories' | 'hex' | 'galaxy' | MapArrangement;
 
 /*
- * Cone before Strata before Cloud. The order is how far each moves from the flat
- * map above it: Cone and Strata both draw containment (Cone as nested shapes,
- * Strata as stacked levels) and Cloud drops containment altogether, so reading
- * down the list is one continuous step away from the default rather than a jump
- * out and back.
+ * Strata before Neural. The order is how far each moves from the flat map above
+ * it: Strata still draws containment, as stacked levels, and Neural drops it
+ * altogether, so reading down the list is one continuous step away from the
+ * default. The Cone left this list on 2026-09-25; a stored Cone opens Strata
+ * (`resolveStoredMapArrangement`).
  */
-const CHOICES: readonly View3dChoice[] = ['flat', 'galaxy', 'ownership', 'strata', 'coupling'];
+/*
+ * Territories sits directly under Flat: it is the same flat plane with nothing folded, so it
+ * is the smallest step away from the default (owner decision, 2026-09-24).
+ */
+/* The hex board follows Territories: the same flat plane, one tile per capability (2026-09-25). */
+const CHOICES: readonly View3dChoice[] = ['flat', 'territories', 'hex', 'galaxy', 'strata', 'coupling'];
 
 /**
  * Is this press on the map itself? The picker floats over the canvas, so the
@@ -98,7 +107,9 @@ export function View3dMenu({
   const view3d = useView3d();
   const arrangement = useMapArrangement();
   const galaxy = useGalaxy();
-  const value: View3dChoice = view3d ? arrangement : galaxy ? 'galaxy' : 'flat';
+  const territories = useTerritories();
+  const hexBoard = useHexBoard();
+  const value: View3dChoice = view3d ? arrangement : hexBoard ? 'hex' : territories ? 'territories' : galaxy ? 'galaxy' : 'flat';
   const boxRef = useRef<HTMLDivElement | null>(null);
   /*
    * The way out — a surface that appears conditionally **is born owing a way to
@@ -108,8 +119,11 @@ export function View3dMenu({
   const presence = usePanelPresence(open);
 
   const apply = (next: View3dChoice) => {
-    if (next === 'flat' || next === 'galaxy') {
-      // Both 2D views turn the dome off; the Galaxy choice also selects its
+    // At most one of the three flags is on; each row writes all of them.
+    writeTerritories(next === 'territories');
+    writeHexBoard(next === 'hex');
+    if (next === 'flat' || next === 'galaxy' || next === 'territories' || next === 'hex') {
+      // The 2D views turn the dome off; the Galaxy choice also selects its
       // dedicated stable sky coordinates while Flat restores its prior map.
       writeGalaxy(next === 'galaxy');
       writeView3d(false);
