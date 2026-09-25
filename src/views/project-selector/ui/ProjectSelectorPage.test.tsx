@@ -185,9 +185,11 @@ describe("ProjectSelectorPage", () => {
     expect(
       within(card).getByRole("link", { name: "Open ontology-atlas details" }),
     ).toHaveAttribute("href", "/project/fallback/?slug=ontology-atlas");
+    // The project's own node, not the bare slug: the bare slug opens the project drawer, which
+    // cannot connect the project's code folder (2026-09-25 sweep); the node's inspector can.
     expect(within(card).getByRole("link", { name: "View on map" })).toHaveAttribute(
       "href",
-      expect.stringContaining("ontology-atlas"),
+      `/topology/?p=${encodeURIComponent("project:ontology-atlas")}`,
     );
   });
 

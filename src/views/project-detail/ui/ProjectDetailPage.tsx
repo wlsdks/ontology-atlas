@@ -24,7 +24,7 @@ import {
 import {
   getProjectEditHref,
   getProjectRuntimeDetailHref,
-  getTopologyProjectHref,
+  getTopologyProjectNodeHref,
   projectDisplayName,
   projectHasDisplayName,
   type Project,
@@ -461,7 +461,7 @@ export function ProjectDetailPage({
       harnessHolds: t("surfaceHarnessHolds"),
     },
     hrefs: {
-      ontology: getTopologyProjectHref(project.slug),
+      ontology: getTopologyProjectNodeHref(project.slug),
       library: "/library/",
       harness: "/architecture/",
     },
@@ -686,7 +686,7 @@ export function ProjectDetailPage({
                 reviewer's tool and stands second in outline. Until 2026-09-19 the picker was first
                 and both were outline, so the page's primary action read as one of two equals.
               */}
-              <Link href={getTopologyProjectHref(project.slug)} data-testid="project-detail-topology-link">
+              <Link href={getTopologyProjectNodeHref(project.slug)} data-testid="project-detail-topology-link">
                 <Button type="button" variant="primary" size="sm">
                   {t("topBarTopologyView")}
                 </Button>

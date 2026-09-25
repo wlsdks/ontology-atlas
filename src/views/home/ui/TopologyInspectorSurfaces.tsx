@@ -334,7 +334,10 @@ export function TopologyInspectorSurfaces({
                 // Result-description tooltip (owner approved) — plain text explaining "what happens when pressed"
                 // rather than label repetition. Area expansion reuses existing orbit button tooltips.
                 actionAskAgentTip: t("nodeDatasheet.actionAskAgentTip"),
-                sourceHeading: projectSourceLabels?.heading,
+                // The heading names the section before its receipt is read, so it does not
+                // wait for the receipt's labels.
+                sourceHeading: t("nodeDatasheet.sourceHeading"),
+                sourcePending: t("nodeDatasheet.sourcePending"),
                 sourceKind: projectSourceLabels?.sourceKind,
                 sourceStatus: projectSourceLabels?.status,
                 sourceMeasuredAt: projectSourceLabels?.measuredAt,
@@ -410,6 +413,7 @@ export function TopologyInspectorSurfaces({
               suppressPrimaryAction={acpPresentationVisible}
               onClose={handleDatasheetClose}
               projectSource={projectSource.view}
+              projectSourceLoading={projectSource.loading}
               projectSourceBusy={projectSource.busy}
               projectSourceError={projectSourceErrorLabel}
               projectSourceDegraded={projectSourceDegraded}

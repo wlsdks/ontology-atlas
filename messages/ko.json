@@ -3212,6 +3212,7 @@
       "updated_weeksAgo": "{count}주 전 바뀜",
       "updated_monthsAgo": "{count}달 전 바뀜",
       "sourceHeading": "연결된 코드",
+      "sourcePending": "코드 확인 기록을 읽는 중",
       "sourceKind_git": "Git 저장소",
       "sourceKind_folder": "로컬 폴더",
       "sourceStatus_not_measured": "아직 코드 확인 전",

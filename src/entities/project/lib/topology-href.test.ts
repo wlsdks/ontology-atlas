@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getTopologyFocusHref, getTopologyProjectHref } from "./topology-href";
+import { getTopologyFocusHref, getTopologyProjectHref, getTopologyProjectNodeHref } from "./topology-href";
 
 describe("getTopologyProjectHref", () => {
   it("/topology/?p=<slug> 형식으로 반환 — R3 dual-surface 후 / 가 아닌 /topology/ 로 보낸다", () => {
@@ -16,6 +16,19 @@ describe("getTopologyProjectHref", () => {
 
   it("빈 slug 도 그대로 — caller 가 비어있는 slug 전달 안 하는 게 contract", () => {
     expect(getTopologyProjectHref("")).toBe("/topology/?p=");
+  });
+});
+
+describe("getTopologyProjectNodeHref", () => {
+  it("addresses the project's own node — the id a click on it selects — so the inspector opens", () => {
+    expect(getTopologyProjectNodeHref("ontology-atlas")).toBe("/topology/?p=project%3Aontology-atlas");
+    expect(new URLSearchParams(getTopologyProjectNodeHref("ontology-atlas").split("?")[1]).get("p")).toBe(
+      "project:ontology-atlas",
+    );
+  });
+
+  it("escapes the slug inside the node id", () => {
+    expect(getTopologyProjectNodeHref("a b")).toBe(`/topology/?p=${encodeURIComponent("project:a b")}`);
   });
 });
 
