@@ -1740,6 +1740,7 @@
         "sinceDefault": "The last 7 days",
         "sinceGloss": "Expand a line to see the concepts it counts; the link at the end of a line opens where to fix them.",
         "headline": "<learn>{stale, plural, one {# thing} other {# things}} to learn</learn><sep> · </sep><unchecked>{unknown, plural, one {# thing} other {# things}} not checked</unchecked>",
+        "headlineCounting": "Counting <learn>things to learn</learn> and <unchecked>things not checked</unchecked>",
         "unit": {
           "ontology": "",
           "wiki": "pages",

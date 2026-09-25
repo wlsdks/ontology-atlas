@@ -1740,6 +1740,7 @@
         "sinceDefault": "최근 7일 기준",
         "sinceGloss": "줄을 펴면 해당 개념이, 문장 끝 링크를 누르면 고치는 곳이 열려요.",
         "headline": "<learn>새로 알아야 할 것 {stale}개</learn><sep> · </sep><unchecked>확인 못 한 것 {unknown}개</unchecked>",
+        "headlineCounting": "<learn>새로 알아야 할 것</learn>과 <unchecked>확인 못 한 것</unchecked>을 세고 있어요",
         "unit": {
           "ontology": "",
           "wiki": "페이지",

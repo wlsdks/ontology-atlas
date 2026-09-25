@@ -73,6 +73,9 @@ describe('briefRows — one list across the four cores', () => {
     const ids = (rows: ReturnType<typeof briefRows>) => rows.map((row) => (row.kind === 'line' ? row.line.id : `${row.kind}`));
     expect(ids(briefRows(cores))).toEqual(['ontology-changed-since', 'ontology-repair', 'wiki-written-since', 'harness-changed-since', 'agent-calls-since']);
     expect(ids(briefRows(cores, { namedSince: ['concept-doc', 'agent-call'] }))).toEqual(['ontology-repair', 'wiki-written-since', 'harness-changed-since']);
+    // While the card is still being counted it names nothing yet, and its lines wait for it
+    // instead of standing here for a second and folding away when it lands.
+    expect(ids(briefRows(cores, { sinceCounting: true }))).toEqual(['ontology-repair']);
   });
 
   it('puts the no-repository row in the unchecked line\'s place and does not draw the line', () => {

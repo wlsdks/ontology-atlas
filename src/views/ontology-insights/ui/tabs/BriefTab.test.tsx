@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import ko from "../../../../../messages/ko.json";
 import { BriefTab } from "./BriefTab";
 import type { InsightsBrief } from "../../lib/brief/use-insights-brief";
-import type { BriefCore } from "../../lib/brief/brief-model";
+import { briefCounting, briefTotals, type BriefCore } from "../../lib/brief/brief-model";
+import { SKELETON_DELAY_MS } from "@/shared/lib/use-presence";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
@@ -24,7 +25,21 @@ const core = (partial: Partial<BriefCore> & Pick<BriefCore, "core">): BriefCore 
   ...partial,
 });
 
+/**
+ * The hook's shape. `counting` and `totals` follow the cores unless a test states them, so a
+ * fixture whose cores changed cannot keep a headline computed for other cores.
+ */
 function brief(overrides: Partial<InsightsBrief> = {}): InsightsBrief {
+  const value = briefFixture(overrides);
+  const cores = [value.ontology, value.wiki, value.harness, value.agent];
+  return {
+    ...value,
+    counting: overrides.counting ?? briefCounting(cores),
+    totals: "totals" in overrides ? (overrides.totals ?? null) : briefTotals(cores),
+  };
+}
+
+function briefFixture(overrides: Partial<InsightsBrief>): Omit<InsightsBrief, "counting" | "totals"> & Partial<Pick<InsightsBrief, "counting" | "totals">> {
   return {
     anchor: { anchorMs: Date.parse("2026-09-17T00:00:00Z"), isDefaultWindow: false },
     sinceDays: 2,
@@ -464,5 +479,80 @@ describe("no repository", () => {
     expect(screen.getByTestId("brief-band")).not.toHaveTextContent("저장소 연결 전");
     expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("모름");
     expect(screen.getAllByText(/저장소를 연결하면/)).toHaveLength(1);
+  });
+});
+
+describe("a count that has not landed", () => {
+  /*
+   * Real bridge, 2026-09-25: the harness scan lands seconds after the other cores, and the headline
+   * painted their sum — "98 to learn · 99 not checked" — as final, then silently became 142 · 101
+   * when the scan arrived; the since card said "98 concept documents" and then "228 changes". The
+   * line now says it is counting, and the card waits.
+   */
+  const reading = core({ core: "harness", availability: "reading", headline: null, current: null, stale: null, unknown: null });
+
+  it("says what it is counting, with no number, until every core has reported", () => {
+    vi.useFakeTimers();
+    try {
+      mount(brief({ harness: reading, sinceTotal: null, since: [], sinceKind: null }));
+      const headline = screen.getByTestId("brief-headline");
+      expect(headline).toHaveAttribute("data-brief-headline-state", "counting");
+      expect(headline).toHaveAttribute("aria-busy", "true");
+      expect(headline.textContent).not.toMatch(/\d/);
+      expect(headline).toHaveTextContent("새로 알아야 할 것과 확인 못 한 것을 세고 있어요");
+      // The two marks it keys stay in front of the words they count.
+      expect(headline.querySelector('[data-brief-counting-part="stale"]')).toHaveTextContent("새로 알아야 할 것");
+      expect(headline.querySelector('[data-brief-counting-part="unknown"]')).toHaveTextContent("확인 못 한 것");
+      // Inside the loading beat it is heard, not drawn: a read that lands in time shows nothing.
+      const drawn = headline.firstElementChild as HTMLElement;
+      expect(drawn).toHaveClass("opacity-0");
+      expect(headline.querySelector(".acp-working-shimmer")).toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(SKELETON_DELAY_MS);
+      });
+      expect(drawn).not.toHaveClass("opacity-0");
+      expect(headline.querySelector(".acp-working-shimmer")).not.toBeNull();
+      // The since card is not drawn from a partial read.
+      expect(screen.queryByTestId("brief-since")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps the happened lines for the since card while it is still counted", () => {
+    const withCalls = core({ core: "agent", headline: 12, lines: [{ id: "agent-calls-since", count: 12, state: "current" }] });
+    const { container } = mount(brief({ harness: reading, agent: withCalls, sinceTotal: null, since: [], sinceKind: null }));
+    // Drawn here now, it would fold away a moment later when the card lands and names the calls.
+    expect(container.querySelector('[data-brief-line="agent-calls-since"]')).toBeNull();
+  });
+
+  it("keeps the last settled count while a later read runs, and marks it as being recounted", () => {
+    vi.useFakeTimers();
+    try {
+      mount(brief({ harness: reading, totals: { stale: 142, unknown: 101 } }));
+      const headline = screen.getByTestId("brief-headline");
+      expect(headline).toHaveAttribute("data-brief-headline-state", "recounting");
+      expect(headline).toHaveAttribute("aria-busy", "true");
+      expect(headline).toHaveTextContent("새로 알아야 할 것 142개 · 확인 못 한 것 101개");
+      const since = screen.getByTestId("brief-since");
+      expect(since).toHaveAttribute("aria-busy", "true");
+      expect(headline.querySelector(".acp-working-shimmer")).toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(SKELETON_DELAY_MS);
+      });
+      expect(headline.querySelector(".acp-working-shimmer")).not.toBeNull();
+      expect(since.querySelector("h3 .acp-working-shimmer")).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("is still and final once every core has reported", () => {
+    mount(brief());
+    const headline = screen.getByTestId("brief-headline");
+    expect(headline).toHaveAttribute("data-brief-headline-state", "settled");
+    expect(headline).not.toHaveAttribute("aria-busy");
+    expect(headline.querySelector(".acp-working-shimmer")).toBeNull();
+    expect(screen.getByTestId("brief-since")).not.toHaveAttribute("aria-busy");
   });
 });
