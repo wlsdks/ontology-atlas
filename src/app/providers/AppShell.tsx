@@ -6,6 +6,7 @@ import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts"
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
 import { settleRouteViewTransition } from "@/shared/lib/route-view-transition";
 import { installExternalLinkOpener } from "@/shared/lib/tauri-external-link";
+import { installNativeEscapeBridge } from "@/shared/lib/tauri-native-escape";
 import { useToast } from "@/shared/ui";
 import { BrandWaitingMark } from "@/shared/ui/brand-waiting-mark";
 import { useTranslations } from "next-intl";
@@ -90,6 +91,14 @@ export function AppShell({ children }: { children: ReactNode }) {
    * already opens them).
    */
   useEffect(() => installExternalLinkOpener(), []);
+  /*
+   * **Escape reaches the page under every input source** (2026-09-25). The Korean input source
+   * can keep a plain Escape from the WebView, and then no sheet, palette or dialog closes from
+   * the keyboard. The native side signals each press and this bridge stands in for a key-down
+   * the WebView never sent — once, and never for a press it did send. Like the link opener, it
+   * attaches nothing on the web.
+   */
+  useEffect(() => installNativeEscapeBridge(), []);
   return (
     <NavRailShellProvider>
       <GuideReplayProvider>

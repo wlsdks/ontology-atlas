@@ -65,9 +65,16 @@ tauri-plugin-single-instance = { version = "2.4.3", features = ["deep-link"] }
 tauri-plugin-deep-link = "2.4.10"
 
 # objc2 is a transitive dep already pulled by tauri — zero new supply-chain surface.
-# Used only for WKWebView's 60fps rAF release (ProMotion 120Hz).
+# Used for WKWebView's 60fps rAF release (ProMotion 120Hz) and the Escape key monitor.
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
+# block2 and objc2-app-kit are transitive deps already pulled by tauri (tao, wry, rfd,
+# tauri-runtime-wry), each a single version in Cargo.lock, and every feature named here is
+# already enabled by one of them — zero new supply-chain surface and no new code compiled
+# (same rationale as objc2). Used only by `native_escape.rs`: an AppKit local key monitor
+# takes a block, and the typed binding keeps its signature from being written by hand.
+block2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "block2", "NSEvent", "NSResponder", "NSWindow"] }
 keyring = { version = "3", features = ["apple-native"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
