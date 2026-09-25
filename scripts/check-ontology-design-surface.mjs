@@ -173,8 +173,9 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       'data-testid="flow-tab"',
       'data-testid="flow-prefill"',
       "onClick={() => onPrefill?.(request)}",
-      "navigator.clipboard.writeText(request)",
-      'data-testid="flow-copy"',
+      // The browser copy fallback is the page's shared copy control carrying the whole request.
+      "text={request}",
+      'testId="flow-copy"',
       "InsightsHandoffRow",
       'data-insights-handoff="tab-query"',
       "CopyAgentTextButton",

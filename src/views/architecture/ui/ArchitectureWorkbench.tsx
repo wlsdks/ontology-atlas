@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Boxes, ChevronDown, PanelRight, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Bot, Boxes, Check, ChevronDown, PanelRight, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import {
@@ -33,7 +33,7 @@ import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 /** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
 const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
 const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
-import { Button, Chip, EmptyState, RowButton, Surface } from '@/shared/ui';
+import { Button, Chip, EmptyState, IconButton, RowButton, Surface } from '@/shared/ui';
 import { ArchitectureFlow } from './ArchitectureFlow';
 import { ArchitectureEvidencePlane } from './ArchitectureEvidencePlane';
 import { ArchitectureEvidenceRail } from './ArchitectureEvidenceRail';
@@ -298,13 +298,26 @@ export function ArchitectureWorkbench({
     return () => window.removeEventListener('keydown', onKey);
   }, [closeEvidence, evidenceOpen]);
 
-  useLayoutEffect(() => {
-    if (!evidenceOpen || typeof window === 'undefined') return;
+  /*
+   * ⚠️ **Reveal when the panel exists, not when the flag flips.** Below `xl` the evidence is a
+   * section after the canvas. The reveal used to run from a layout effect on `evidenceOpen`, but
+   * `Surface` mounts its node one commit later (its presence gate is an effect), so the frame
+   * that scrolled found no node: at 900x900 the rail said expanded while the panel sat at
+   * y=892..1218 with its close button off-screen (2026-09-25). The press arms the reveal and the
+   * panel's own ref fires it once the node is attached.
+   */
+  const revealEvidence = useRef(false);
+  const attachEvidencePanel = useCallback((node: HTMLElement | null) => {
+    evidencePanelRef.current = node;
+    if (!node || !revealEvidence.current) return;
+    revealEvidence.current = false;
     if (window.matchMedia('(min-width: 1280px)').matches) return;
     window.requestAnimationFrame(() => {
-      evidencePanelRef.current?.scrollIntoView({ block: 'nearest' });
+      const scroller = node.closest<HTMLElement>('.architecture-workbench-grid');
+      const tall = scroller ? node.offsetHeight > scroller.clientHeight : false;
+      node.scrollIntoView?.({ block: tall ? 'start' : 'nearest' });
     });
-  }, [evidenceOpen]);
+  }, []);
 
   /*
    * ⚠️ **One button, one derived default, and a chooser for the rest.** The button used to be
@@ -392,6 +405,12 @@ export function ArchitectureWorkbench({
     { kind: 'change', label: t('planChangeAction'), hint: t('agentTaskHints.change') },
     { kind: 'improve', label: t('findImprovementsAction'), hint: t('agentTaskHints.improve') },
   ];
+  const requestedAgentLabel = agentTasks.find((task) => task.kind === requestedAgentKind)?.label;
+  /* The label the button rests on, and so the width it keeps through every copy state. */
+  const idleAgentLabel =
+    agentRoute === 'clipboard'
+      ? t('copyTaskSentence', { task: requestedAgentLabel ?? '' })
+      : requestedAgentLabel ?? t('inspectSourceAction');
 
   /*
    * What the detail panel needs about the chosen role, derived from the same layout the canvas
@@ -418,6 +437,23 @@ export function ArchitectureWorkbench({
    * cascade. The address stays as the sender wrote it; only the screen declines to honour it.
    */
   const activeRole = selectedRole && roleOrder.includes(selectedRole) ? selectedRole : null;
+
+  /*
+   * ⚠️ **Below `xl` a pressed role has to be brought to its answer.** The dock is a column only at
+   * `xl`; under it the role's detail is a stacked section after the canvas, and at 1040×720 it
+   * landed at y=1009 in a scroller 632px tall — the box took the selected ring and the screen
+   * showed nothing else (2026-09-25). The reveal is armed by the press, so a `?role=` link that
+   * opens on the canvas does not jump.
+   */
+  const roleDetailRef = useRef<HTMLDivElement>(null);
+  const rulesSectionRef = useRef<HTMLElement>(null);
+  const revealRoleDetail = useRef(false);
+  useEffect(() => {
+    if (!revealRoleDetail.current || activeRole === null) return;
+    revealRoleDetail.current = false;
+    if (window.matchMedia('(min-width: 1280px)').matches) return;
+    window.requestAnimationFrame(() => roleDetailRef.current?.scrollIntoView({ block: 'nearest' }));
+  }, [activeRole]);
   const roleIndexOf = new Map(roleOrder.map((id, index) => [id, index + 1]));
   const rolePathsOf = new Map((selected?.roles ?? []).map((role) => [role.id, role.paths]));
   const roleSummaryOf = new Map(
@@ -781,8 +817,13 @@ export function ArchitectureWorkbench({
                   <h2 className="min-w-0 shrink truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                     {selected.title}
                   </h2>
+                  {/* The same `Button` md as every other control in this row: as a `Chip` it was
+                      the one 32px / 11px / r6 control beside four at 40px (2026-09-25). */}
                   {onOpenReview ? (
-                    <Chip
+                    <Button
+                      variant="outline"
+                      size="md"
+                      className="atlas-touch-floor shrink-0"
                       data-testid="architecture-review-open"
                       onClick={() => {
                         setInspector(null);
@@ -791,7 +832,7 @@ export function ArchitectureWorkbench({
                       }}
                     >
                       {tReview('history')}
-                    </Chip>
+                    </Button>
                   ) : null}
                 </div>
               ) : null}
@@ -805,6 +846,7 @@ export function ArchitectureWorkbench({
                     closeEvidence();
                     return;
                   }
+                  revealEvidence.current = true;
                   setEvidenceOpen(true);
                   setInspector(null);
                 }}
@@ -862,23 +904,44 @@ export function ArchitectureWorkbench({
                     )
                   }
                 >
-                  <Bot size={ICON_SIZE.sm} aria-hidden />
-                  {agentRoute === 'checking'
-                    ? t('checkingAgent')
-                    : agentRoute === 'clipboard'
-                      ? copyState === 'pending'
-                        ? t('copyingHandoff')
-                        : copyState === 'copied'
-                          ? copiedTaskLabel
-                            ? t('copiedTaskHandoff', { task: copiedTaskLabel })
-                            : t('copiedHandoff')
-                          : copyState === 'error'
-                            ? t('copyHandoffError')
-                            : t('copyTaskSentence', {
-                                task: agentTasks.find((task) => task.kind === requestedAgentKind)?.label ?? '',
-                              })
-                      : agentTasks.find((task) => task.kind === requestedAgentKind)?.label ??
-                        t('inspectSourceAction')}
+                  {agentRoute === 'clipboard' && copyState === 'copied' ? (
+                    <Check size={ICON_SIZE.sm} aria-hidden />
+                  ) : (
+                    <Bot size={ICON_SIZE.sm} aria-hidden />
+                  )}
+                  {/*
+                    ⚠️ **A confirmation does not resize the toolbar.** The whole sentence used to
+                    replace the label, and at 1280 the button went 178 → 373px, squeezing the
+                    evidence rail until it dropped its status text, then snapping back 4s later
+                    (2026-09-25). The idle label stays in the box, invisible, so the width is the
+                    idle label's; the short state sits over it, and the full sentence goes to the
+                    polite status region beside this button, where a screen reader hears it.
+                  */}
+                  <span className="inline-grid">
+                    <span aria-hidden className="invisible col-start-1 row-start-1">
+                      {idleAgentLabel}
+                    </span>
+                    {/* Every transient label reserves its width too: the Korean error line is
+                        wider than some idle labels and would still resize the button. */}
+                    {agentRoute === 'clipboard'
+                      ? [t('copyingHandoff'), t('copiedShort'), t('copyHandoffError')].map((reserve) => (
+                          <span key={reserve} aria-hidden className="invisible col-start-1 row-start-1">
+                            {reserve}
+                          </span>
+                        ))
+                      : null}
+                    <span className="col-start-1 row-start-1">
+                      {agentRoute === 'checking'
+                        ? t('checkingAgent')
+                        : agentRoute === 'clipboard' && copyState === 'pending'
+                          ? t('copyingHandoff')
+                          : agentRoute === 'clipboard' && copyState === 'copied'
+                            ? t('copiedShort')
+                            : agentRoute === 'clipboard' && copyState === 'error'
+                              ? t('copyHandoffError')
+                              : idleAgentLabel}
+                    </span>
+                  </span>
                 </Button>
                 <Button
                   ref={taskMenuTriggerRef}
@@ -958,20 +1021,32 @@ export function ArchitectureWorkbench({
                     ? t('copyHandoffError')
                   : ''}
               </span>
+              {/*
+                Present at every width. Below `xl` the rules are a section further down the same
+                scroller rather than a dock, so the button takes the reader there instead of
+                opening anything, and folds to its icon so it does not squeeze the evidence rail;
+                it used to be `hidden` there, leaving no control that reached the rules at all
+                (1040×720, 2026-09-25).
+              */}
               <Button
                 variant="outline"
                 size="md"
-                className="atlas-touch-floor hidden shrink-0 xl:inline-flex"
-                onClick={(event) =>
-                  inspector === 'rules'
-                    ? closeInspector()
-                    : openInspector('rules', event.currentTarget)
-                }
+                className="atlas-touch-floor shrink-0 max-xl:w-10 max-xl:px-0"
+                onClick={(event) => {
+                  if (!window.matchMedia('(min-width: 1280px)').matches) {
+                    rulesSectionRef.current?.scrollIntoView({ block: 'start' });
+                    rulesSectionRef.current?.focus({ preventScroll: true });
+                    return;
+                  }
+                  if (inspector === 'rules') closeInspector();
+                  else openInspector('rules', event.currentTarget);
+                }}
                 aria-expanded={inspector === 'rules'}
+                aria-controls="architecture-blueprint"
                 data-testid="architecture-inspector-toggle"
               >
                 <PanelRight size={ICON_SIZE.sm} aria-hidden />
-                {t('inspectorTitle')}
+                <span className="max-xl:sr-only">{t('inspectorTitle')}</span>
               </Button>
           </div>
           <div className="relative flex min-h-0 flex-1">
@@ -1027,6 +1102,7 @@ export function ArchitectureWorkbench({
                   const shouldClear = selectedRole === id && inspector === 'role';
                   const next = shouldClear ? null : id;
                   setSelectedRole(next);
+                  if (next !== null) revealRoleDetail.current = true;
                   /* Choosing a role is the question the dock answers, so it opens with the
                      choice; clicking the same role again clears both. */
                   if (next === null) setInspector(null);
@@ -1047,7 +1123,7 @@ export function ArchitectureWorkbench({
         </div>
 
         <Surface
-          ref={evidencePanelRef}
+          ref={attachEvidencePanel}
           open={evidenceOpen}
           as="aside"
           motion="overlay"
@@ -1071,19 +1147,22 @@ export function ArchitectureWorkbench({
                 <span>{t('deltaLabel')}</span>
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="atlas-touch-floor shrink-0"
-              onClick={closeEvidence}
-              aria-label={t('evidenceClose')}
-              data-testid="architecture-evidence-close"
-            >
+            {/* One close for the three sibling panels — this, the rules dock and the review
+                workbench — the same `IconButton`, with the Esc hint beside it rather than inside
+                it (it was 65×32 here, 42×32 there and 28×28 on the review panel, 2026-09-25). */}
+            <div className="flex shrink-0 items-center gap-1">
               <span className="text-caption text-[color:var(--color-text-quaternary)]">
                 {t('inspectorEscHint')}
               </span>
-              <X size={ICON_SIZE.sm} aria-hidden />
-            </Button>
+              <IconButton
+                className="atlas-touch-floor"
+                onClick={closeEvidence}
+                label={t('evidenceClose')}
+                data-testid="architecture-evidence-close"
+              >
+                <X size={ICON_SIZE.sm} aria-hidden />
+              </IconButton>
+            </div>
           </div>
           <div className="min-w-0 p-3 xl:flex-1 xl:p-4">
             <ArchitectureEvidencePlane
@@ -1144,16 +1223,14 @@ export function ArchitectureWorkbench({
               <span className="text-caption text-[color:var(--color-text-quaternary)]">
                 {t('inspectorEscHint')}
               </span>
-              <Button
-                variant="ghost"
-                size="sm"
+              <IconButton
                 className="atlas-touch-floor"
                 onClick={closeInspector}
-                aria-label={t('inspectorClose')}
+                label={t('inspectorClose')}
                 data-testid="architecture-inspector-close"
               >
                 <X size={ICON_SIZE.sm} aria-hidden />
-              </Button>
+              </IconButton>
             </div>
           </div>
 
@@ -1163,8 +1240,10 @@ export function ArchitectureWorkbench({
             reader chose, and the density the removed bands were good at survives here.
           */}
           <div
+            ref={roleDetailRef}
+            data-testid="architecture-role-detail-slot"
             className={cn(
-              'mt-5 lg:col-span-2 xl:mt-0 xl:shrink-0 xl:px-4 xl:py-3',
+              'mt-5 scroll-mt-3 lg:col-span-2 xl:mt-0 xl:shrink-0 xl:px-4 xl:py-3',
               inspector === 'role' ? undefined : 'xl:hidden',
             )}
           >
@@ -1280,8 +1359,8 @@ export function ArchitectureWorkbench({
             below its own content, and the prose then paints straight through the list beneath it
             (measured 2026-08-30 at 1512 — "Source organization says which folder…" ran across the
             edge sentences). The dock scrolls; its sections keep their natural height. */}
-        <section className={cn(
-          'min-w-0 p-5 md:p-8 lg:col-span-2 xl:shrink-0 xl:px-4 xl:py-3',
+        <section ref={rulesSectionRef} id="architecture-blueprint" className={cn(
+          'min-w-0 scroll-mt-3 p-5 md:p-8 lg:col-span-2 xl:shrink-0 xl:px-4 xl:py-3',
           inspector === 'rules' ? undefined : 'xl:hidden',
         )} aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
           <div className="mx-auto flex w-full max-w-5xl flex-col xl:max-w-none">

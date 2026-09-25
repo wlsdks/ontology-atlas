@@ -1,7 +1,17 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render as baseRender, screen } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import type { ReactElement, ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import en from "../../../../../messages/en.json";
 import { FlowTab, type FlowTabLabels } from "./FlowTab";
+
+/* The request's copy button is the page's shared `CopyAgentTextButton`, which reads its failure
+   line from the message catalogue. */
+function Messages({ children }: { children: ReactNode }) {
+  return <NextIntlClientProvider locale="en" messages={en}>{children}</NextIntlClientProvider>;
+}
+const render = (ui: ReactElement) => baseRender(ui, { wrapper: Messages });
 
 /**
  * The tab's whole job is to hand over a request a person can check, so these

@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useId, useMemo, useState } from 'react';
+import { Fragment, useCallback, useId, useMemo, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { ShieldQuestion, TriangleAlert } from 'lucide-react';
 
 import type { HarnessReport } from '@/entities/agent-files';
-import { CompactCopyButton, InfoHint } from '@/shared/ui';
+import { CompactCopyButton } from '@/shared/ui';
+import { PlacedInfoHint } from './PlacedInfoHint';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { HarnessStructureDiagram } from './HarnessStructureDiagram';
@@ -65,6 +66,42 @@ const BAND_CAPTION: Readonly<Record<AnatomyBand, string>> = Object.freeze({
 });
 
 type TranslateFn = ReturnType<typeof useTranslations<'harness'>>;
+
+/**
+ * A path or config key that breaks only after `/` and `.`. With `break-words` alone the text view
+ * split `.claude/settings.json → hooks.PostToolUse` as `hooks.PostToo` / `lUse` at 1040
+ * (2026-09-25); `<wbr>` after each separator gives the line a place to break first, and the
+ * overflow fallback is left for a segment longer than the whole line.
+ */
+function breakAtSeparators(text: string): ReactNode {
+  return text.split(/(?<=[/.])/).map((part, index) => (
+    <Fragment key={index}>
+      {index > 0 ? <wbr /> : null}
+      {part}
+    </Fragment>
+  ));
+}
+
+/**
+ * A sentence with its hint button, where the button never lands alone on a line: the sentence's
+ * last word and the button share a `nowrap` span. As a separate flex item the hint wrapped onto a
+ * line of its own under the "kept out of the agent's view" and "attached by path" rows (2026-09-25).
+ */
+function SentenceWithHint({ text, hint }: { text: string; hint: ReactNode }) {
+  const cut = text.lastIndexOf(' ');
+  const head = cut < 0 ? '' : text.slice(0, cut + 1);
+  const tail = cut < 0 ? text : text.slice(cut + 1);
+  return (
+    <>
+      {head}
+      <span className="whitespace-nowrap">
+        {tail}
+        {' '}
+        {hint}
+      </span>
+    </>
+  );
+}
 
 function SlotRow({
   slot,
@@ -129,10 +166,7 @@ function SlotRow({
             : t(`anatomyUnits.${slot.id}`, { count: slot.count })}
         </span>
       </div>
-      <div className={cn('flex max-w-prose flex-wrap items-baseline gap-x-1', !hideTitle && 'mt-1')}>
-        <p className="min-w-0 text-label text-[color:var(--color-text-tertiary)]">
-          {t(`anatomySlots.${slot.id}.body`)}
-        </p>
+      <div className={cn('max-w-prose text-label text-[color:var(--color-text-tertiary)]', !hideTitle && 'mt-1')}>
         {/*
           ⚠️ **A row's body is one sentence, and a row that needed five product names was four
           lines long** while every other row was one or two (measured 1512×949, 2026-09-20). The
@@ -141,29 +175,47 @@ function SlotRow({
           the limit that matters — the repository writes the file, the tool decides.
         */}
         {bodyHint ? (
-          <InfoHint align="left" className="static" panelClassName="max-w-full max-h-[35dvh] overflow-y-auto" label={t(`anatomySlots.${slot.id}.hintLabel`)}>
-            {bodyHint}
-          </InfoHint>
-        ) : null}
+          <SentenceWithHint
+            text={t(`anatomySlots.${slot.id}.body`)}
+            hint={
+              <PlacedInfoHint preferred="left" className="align-middle" label={t(`anatomySlots.${slot.id}.hintLabel`)}>
+                {bodyHint}
+              </PlacedInfoHint>
+            }
+          />
+        ) : (
+          t(`anatomySlots.${slot.id}.body`)
+        )}
       </div>
       {extra ? (
         /* ⚠️ A `div`, not a `p`. `InfoHint` renders its panel as a `div`, and a `div` inside a `p`
            is invalid HTML that React reports as a hydration error — which is exactly what the
            dev overlay's issue counter was showing after this line was added (2026-09-20). */
-        <div className="mt-1 flex flex-wrap items-center gap-x-1 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
-          <span>{extra}</span>
+        <div className="mt-1 break-words text-label tabular-nums text-[color:var(--color-text-tertiary)]">
           {extraHint ? (
-            <InfoHint align="left" className="static" panelClassName="max-w-full max-h-[35dvh] overflow-y-auto" label={extraHintLabel ?? t('anatomyAlwaysWeightLabel')}>
-              {extraHint}
-            </InfoHint>
-          ) : null}
+            <SentenceWithHint
+              text={extra}
+              hint={
+                <PlacedInfoHint preferred="left" className="align-middle" label={extraHintLabel ?? t('anatomyAlwaysWeightLabel')}>
+                  {extraHint}
+                </PlacedInfoHint>
+              }
+            />
+          ) : (
+            extra
+          )}
         </div>
       ) : null}
       {slot.items.length > 0 ? (
         /* The names are the citation: a reader who doubts the count opens one of them. Monospace,
            because every one of them is a path or a server key that can be typed. */
         <p className="mt-1.5 break-words font-mono text-label text-[color:var(--color-text-quaternary)]">
-          {slot.items.join(' · ')}
+          {slot.items.map((item, index) => (
+            <Fragment key={`${item}-${index}`}>
+              {index > 0 ? ' · ' : null}
+              {breakAtSeparators(item)}
+            </Fragment>
+          ))}
           {slot.overflow > 0 ? ` · ${t('anatomyMore', { count: slot.overflow })}` : ''}
         </p>
       ) : null}
@@ -183,10 +235,13 @@ function SlotRow({
           <span className="text-label text-[color:var(--color-text-quaternary)]">
             {t('anatomyFillHere')}
           </span>
-          <code className="min-w-0 break-all font-mono text-label text-[color:var(--color-text-tertiary)]">
-            {slot.fillPath}
+          <code className="min-w-0 break-words font-mono text-label text-[color:var(--color-text-tertiary)]">
+            {breakAtSeparators(slot.fillPath)}
           </code>
+          {/* `min-h-8`: the 32px of the view toggle and the handoff button in the same header,
+              not the copy pill's own 36 (2026-09-25). */}
           <CompactCopyButton
+            className="min-h-8"
             data-testid={`harness-anatomy-copy-${slot.id}`}
             copied={copied}
             label={copied ? t('anatomyFillCopied') : t('anatomyFillCopy')}

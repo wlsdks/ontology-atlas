@@ -17,7 +17,8 @@ import {
 } from '@/entities/agent-files';
 import { ChevronRight } from 'lucide-react';
 
-import { Chip, EmptyState, InfoHint } from '@/shared/ui';
+import { Chip, EmptyState } from '@/shared/ui';
+import { PlacedInfoHint } from './PlacedInfoHint';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
@@ -497,7 +498,7 @@ export function HarnessGuidesView({
                 >
                   <span className="inline-flex items-center gap-1">
                     {t(key)}
-                    {hint ? <InfoHint label={t(key)}>{t(hint)}</InfoHint> : null}
+                    {hint ? <PlacedInfoHint label={t(key)}>{t(hint)}</PlacedInfoHint> : null}
                   </span>
                 </th>
               ))}

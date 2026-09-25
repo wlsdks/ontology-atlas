@@ -1116,7 +1116,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // 2026-09-25 (agents polish): AgentClientButtons' outline anchor became a `<Button>`, so `a` 9→8.
 // 2026-09-25: the map's edge panel "fix this relation on the map" link took the node panel's
 // primary `Button` grammar, so its `<Link>` branch goes through `buttonVariants`, `Link` 22→23.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 23, a: 8 };
+// 2026-09-25: the Wiki and Guidance preview footers' three pill links became standard sm
+// buttons, entering the census as `buttonVariants` anchors, so `Link` 23→26.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 26, a: 8 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1194,6 +1196,27 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
       'the node panel\'s action row uses; the `<Link>` branch (navigating to the editor) wears the ' +
       'same `buttonVariants({ variant: "primary", size: "sm" })` so the docked slot speaks one ' +
       'grammar whichever branch renders. `control-class.ts` does not replace standard buttons.',
+  },
+  {
+    file: 'src/views/ontology-insights/ui/tabs/HarnessTab.tsx',
+    count: 2,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The Guidance preview footer (2026-09-25): "Open Harness" as `buttonVariants({ variant: ' +
+      '"primary", size: "sm" })` and "Get the app" as outline sm. They were fully round `pill` ' +
+      'links at 32px beside the Analysis views\' 32px rounded-panel buttons, two shapes for one ' +
+      'kind of panel action. Both navigate, so they stay `<Link>`, and `control-class.ts` does ' +
+      'not replace standard buttons.',
+  },
+  {
+    file: 'src/views/ontology-insights/ui/tabs/LibraryTab.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The Wiki preview footer\'s "Start from the Library" (2026-09-25), the same primary sm ' +
+      'standard button as the Guidance footer beside it, for the same reason.',
   },
   {
     file: 'src/views/automations/ui/AutomationsPage.tsx',
@@ -1363,9 +1386,11 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // 30 → 31 (2026-09-25): the edge panel's one action, a `<Link>` when it navigates to the
 // editor. It is the panel's primary and must match the node panel's primary `<Button>`; a
 // 6px 11px chip there was the second grammar the interaction audit measured.
-const BASELINE_ANCHOR_REGISTERED = 31;
+// 31 → 34 (2026-09-25): the Analysis preview footers' three actions left the `pill` shape for the
+// standard sm button the Analysis views use for panel actions.
+const BASELINE_ANCHOR_REGISTERED = 34;
 
-/** **Only this number may fall.** The current anchor total (31) minus registered (31). */
+/** **Only this number may fall.** The current anchor total (34) minus registered (34). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
