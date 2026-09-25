@@ -52,6 +52,7 @@ function brief(overrides: Partial<InsightsBrief> = {}): InsightsBrief {
       { core: "agent", at: "2026-09-18T06:00:00Z", kind: "agent-call", label: "add_concept · capabilities/refund", href: "/agents/" },
     ],
     sinceTotal: 5,
+    sinceKind: null,
     library: {
       availability: "no-data",
       pageCount: 0,
@@ -103,16 +104,17 @@ describe("BriefTab", () => {
     mount(brief());
     const list = screen.getByTestId("brief-lines");
     const lines = list.querySelectorAll("[data-brief-line]");
+    // "agent-calls-since" is not here: the since card under the list names those calls one by
+    // one, so counting them in the list too said one fact twice (review, 2026-09-25, round 4).
     expect([...lines].map((line) => line.getAttribute("data-brief-line"))).toEqual([
       "ontology-evidence-moved",
       "ontology-agent-unreviewed",
       "ontology-repair",
-      "agent-calls-since",
     ]);
     expect(lines[0]).toHaveAttribute("data-brief-state", "stale");
     expect(lines[0]).toHaveAttribute("data-brief-core", "ontology");
-    // Every row names its core, so a reader never looks back at the band to place it.
-    expect(lines[3]).toHaveTextContent("에이전트");
+    // Every row names its core, the run's later rows too, so the column is one start line.
+    for (const line of lines) expect(line).toHaveTextContent("개념");
     expect(list.querySelector('a[href="/ontology/insights/?tab=do-next"]')).not.toBeNull();
     fireEvent.click(screen.getByTestId("brief-line-open-ontology-evidence-moved"));
     // The stale line names what it counts: concept, the file, and both dates — never a bare number.
@@ -122,6 +124,24 @@ describe("BriefTab", () => {
     expect(rows[0]).toHaveTextContent("src/pay.ts");
     expect(list.querySelector('a[href="/topology/?p=capabilities%2Fpay"]')).not.toBeNull();
     expect(list.querySelectorAll('[data-brief-line][data-brief-core="wiki"]')).toHaveLength(0);
+  });
+
+  it("ends each sentence with its door, and makes each changed name its own door", () => {
+    mount(brief());
+    // The door is in the sentence's flow, so it follows the last word at every width instead
+    // of standing in a column hundreds of pixels away (review, 2026-09-25, round 4).
+    const repair = screen.getByTestId("brief-lines").querySelector('[data-brief-line="ontology-repair"] a[href="/ontology/insights/?tab=do-next"]');
+    expect(repair?.parentElement).toHaveTextContent(/58|\d+개/);
+    expect(repair?.parentElement?.tagName).toBe("SPAN");
+    // A changed row is one link carrying its name; there is no separate "open" word per row.
+    const since = screen.getByTestId("brief-since");
+    for (const row of since.querySelectorAll("li[data-since-core]")) {
+      const links = row.querySelectorAll("a");
+      if (links.length === 0) continue;
+      expect(links).toHaveLength(1);
+      expect(links[0]).not.toHaveTextContent(/^열기$/);
+    }
+    expect(since).not.toHaveTextContent(/열기/);
   });
 
   it("makes exiting evidence inert and reopens the same rows on interruption", () => {
@@ -144,9 +164,11 @@ describe("BriefTab", () => {
 
   it("says where a core cannot be measured instead of showing zeros as fine", () => {
     mount(brief());
-    // The band says it in words where the counts would be, never as three dashes.
-    expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("앱에서 재요");
-    expect(screen.getByTestId("brief-core-state-wiki")).toHaveTextContent("아직 없음");
+    // The band shows the ring where no magnitude exists, never three dashes; the reason is the
+    // list's to say, once.
+    expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("모름");
+    expect(screen.getByTestId("brief-band")).not.toHaveTextContent("앱에서 재요");
+    expect(screen.getByTestId("brief-core-wiki")).not.toHaveTextContent("아직 없음");
     // The list says why and where to go, one row per core.
     const wiki = screen.getByTestId("brief-core-empty-wiki");
     expect(wiki).toHaveTextContent("이 폴더엔 아직 위키 페이지가 없어요");
@@ -175,11 +197,29 @@ describe("BriefTab", () => {
     expect(screen.getByTestId("brief-core-quiet-agent")).toHaveTextContent("그 뒤로 새로 알아야 할 것이 없어요");
   });
 
+  it("keys the list's two marks in the headline and marks nothing that merely happened", () => {
+    const { container } = mount(brief());
+    const headline = screen.getByTestId("brief-headline");
+    expect(headline.querySelector('[data-brief-headline-part="stale"]')).toHaveTextContent("새로 알아야 할 것 69개");
+    expect(headline.querySelector('[data-brief-headline-part="unknown"]')).toHaveTextContent("확인 못 한 것 3개");
+    const repair = container.querySelector('[data-brief-line="ontology-repair"] [aria-hidden="true"] > span');
+    expect(repair?.className ?? "").toBe("");
+  });
+
+  it("says a kind every row shares once, in the title, not on every row", () => {
+    mount(brief({ since: [{ core: "ontology", at: "2026-09-18T03:00:00Z", kind: "concept-doc", label: "Payments", href: "/topology/?p=a" }, { core: "ontology", at: "2026-09-18T02:00:00Z", kind: "concept-doc", label: "Refund", href: "/topology/?p=b" }], sinceTotal: 2, sinceKind: "concept-doc" }));
+    const since = screen.getByTestId("brief-since");
+    expect(since).toHaveTextContent("그 뒤로 바뀐 개념 문서 2건");
+    expect(screen.queryAllByTestId("brief-since-kind")).toHaveLength(0);
+  });
+
   it("names what changed since, newest first, and counts the rest", () => {
     mount(brief());
     const since = screen.getByTestId("brief-since");
     expect(since).toHaveTextContent("그 뒤로 바뀐 것 5건");
     expect(since.querySelectorAll("li")).toHaveLength(2);
+    // Mixed kinds: each row names its own.
+    expect(screen.getAllByTestId("brief-since-kind")).toHaveLength(2);
     expect(screen.getByTestId("hidden-count-line")).toHaveAttribute("data-hidden-count", "3");
   });
 
@@ -279,7 +319,8 @@ describe("a marked visit folds what it cleared", () => {
   it("keeps a departing line for one fold, hidden from assistive technology, then drops it", async () => {
     vi.useFakeTimers();
     try {
-      const first = brief();
+      // Without an agent call in the since card, the list counts the calls itself.
+      const first = brief({ since: [{ core: "ontology", at: "2026-09-18T03:00:00Z", kind: "concept-doc", label: "Payments", href: "/topology/?p=capabilities%2Fpay" }] });
       const { rerender } = render(
         <NextIntlClientProvider locale="ko" messages={ko}>
           <BriefTab brief={first} />
@@ -367,7 +408,7 @@ describe("taking the visit mark back", () => {
 });
 
 describe("a line that cannot be checked", () => {
-  it.each(["measured", "reading", "unreadable", "no-source"] as const)("offers the app in a browser and never inside it: %s", (availability) => {
+  it.each(["measured", "reading", "unreadable"] as const)("offers the app in a browser and never inside it: %s", (availability) => {
     /*
      * Measured in the installed app at 1040x720 on this repository's own vault: "50 concepts
      * whose code could not be checked · Get the app", inside the app. In a browser the same line
@@ -392,5 +433,36 @@ describe("a line that cannot be checked", () => {
     const inApp = app.container.querySelector('[data-brief-line="ontology-evidence-unchecked"] a');
     expect(app.container.querySelector('a[href="/download/"]'), "앱 안에서 앱을 받으라고 한다").toBeNull();
     expect(inApp?.getAttribute("href")).toContain("/topology/");
+  });
+});
+
+describe("no repository", () => {
+  /*
+   * Round 4 review, 2026-09-25: with no repository every concept is unchecked, and the unchecked
+   * line and the connect row stood one above the other with two doors to the same map.
+   */
+  it("is one row in the unchecked line's place, with its ring and the one connect door", () => {
+    const { container } = render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <BriefTab
+          brief={brief({
+            ontology: core({ core: "ontology", availability: "no-source", headline: 20, current: null, stale: null, unknown: null, lines: [{ id: "ontology-evidence-unchecked", count: 20, state: "unknown" }, { id: "ontology-repair", count: 5, state: "current" }] }),
+            harness: core({ core: "harness", availability: "no-source", headline: null, current: null, stale: null, unknown: null }),
+          })}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(container.querySelector('[data-brief-line="ontology-evidence-unchecked"]')).toBeNull();
+    const rows = [...container.querySelectorAll('[data-testid="brief-lines"] > li')];
+    const connect = screen.getByTestId("brief-core-no-source-ontology");
+    expect(rows[0]).toBe(connect);
+    expect(connect).toHaveTextContent("개념 · 지침");
+    expect(connect.querySelector('a[href="/topology/"]')).not.toBeNull();
+    expect(container.querySelectorAll('[data-testid="brief-lines"] a[href="/topology/"]')).toHaveLength(1);
+    // The band states no reason at all: the one row above says it once (round 5 review found
+    // "no repository" three times, twice in the band and once in this row).
+    expect(screen.getByTestId("brief-band")).not.toHaveTextContent("저장소 연결 전");
+    expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("모름");
+    expect(screen.getAllByText(/저장소를 연결하면/)).toHaveLength(1);
   });
 });

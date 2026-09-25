@@ -9,10 +9,12 @@ import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from '@/shared/ui/transient-surface';
 import {
   useGalaxy,
+  useHexBoard,
   useMapArrangement,
   useTerritories,
   useView3d,
   writeGalaxy,
+  writeHexBoard,
   writeMapArrangement,
   writeTerritories,
   writeView3d,
@@ -61,7 +63,7 @@ import {
  * the owner went looking for it (2026-09-10, superseded spatial direction
  * selected 2026-09-15).
  */
-type View3dChoice = 'flat' | 'territories' | 'galaxy' | MapArrangement;
+type View3dChoice = 'flat' | 'territories' | 'hex' | 'galaxy' | MapArrangement;
 
 /*
  * Strata before Neural. The order is how far each moves from the flat map above
@@ -74,7 +76,8 @@ type View3dChoice = 'flat' | 'territories' | 'galaxy' | MapArrangement;
  * Territories sits directly under Flat: it is the same flat plane with nothing folded, so it
  * is the smallest step away from the default (owner decision, 2026-09-24).
  */
-const CHOICES: readonly View3dChoice[] = ['flat', 'territories', 'galaxy', 'strata', 'coupling'];
+/* The hex board follows Territories: the same flat plane, one tile per capability (2026-09-25). */
+const CHOICES: readonly View3dChoice[] = ['flat', 'territories', 'hex', 'galaxy', 'strata', 'coupling'];
 
 /**
  * Is this press on the map itself? The picker floats over the canvas, so the
@@ -109,7 +112,8 @@ export function View3dMenu({
   const arrangement = useMapArrangement();
   const galaxy = useGalaxy();
   const territories = useTerritories();
-  const value: View3dChoice = view3d ? arrangement : territories ? 'territories' : galaxy ? 'galaxy' : 'flat';
+  const hexBoard = useHexBoard();
+  const value: View3dChoice = view3d ? arrangement : hexBoard ? 'hex' : territories ? 'territories' : galaxy ? 'galaxy' : 'flat';
   const boxRef = useRef<HTMLDivElement | null>(null);
   /*
    * The way out — a surface that appears conditionally **is born owing a way to
@@ -121,7 +125,8 @@ export function View3dMenu({
   const write = (next: View3dChoice) => {
     // At most one of the three flags is on; each row writes all of them.
     writeTerritories(next === 'territories');
-    if (next === 'flat' || next === 'galaxy' || next === 'territories') {
+    writeHexBoard(next === 'hex');
+    if (next === 'flat' || next === 'galaxy' || next === 'territories' || next === 'hex') {
       // The 2D views turn the dome off; the Galaxy choice also selects its
       // dedicated stable sky coordinates while Flat restores its prior map.
       writeGalaxy(next === 'galaxy');

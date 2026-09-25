@@ -101,10 +101,12 @@ const ROOT = process.cwd();
  * fill) became the standard `Button` and `buttonVariants` outline.
  * 290 → 289 (2026-09-25): the settings sheet's row actions moved onto one chip grammar and
  * the shared `DETAIL_TOGGLE_CHIP` ink, a net one fewer hand-written hover declaration.
- * 289 → 285 (2026-09-25): the guided tour card's actions became `Button` variants and the
+ * 289 → 288 (2026-09-25): the insights hub rows left the `chip` shape for a bare `row` with
+ * `hoverSurface: "lift"`, so their hand-written overlay hover is owned by the axis.
+ * 288 → 284 (2026-09-25): the guided tour card's actions became `Button` variants and the
  * path chip's copy action the chip's own icon button, four fewer hand hovers.
  */
-const CEILING = 285;
+const CEILING = 284;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

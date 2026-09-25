@@ -379,7 +379,10 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     url: "/ko/agents/",
     card: "app-settings-runtimes-web",
     reason: /브라우저는[\s\S]*권한이 없어요/,
-    destinationText: /맥 앱을 받으면/,
+    // ⚠️ **A press, not a sentence** (2026-09-25). The card said "get the Mac app" in prose
+    // only; it now carries the download press itself, and the page lede says what the app
+    // changes, so the destination is checked as a visible link to /download/.
+    destination: "app-settings-runtimes-get-app",
     // ⚠️ **Re-aimed 2026-09-05.** The sentence used to name a section of this same
     // screen; MCP became its own destination, so the row now names the place *and*
     // carries a link to it. A name with no way there is the dead pointer this whole

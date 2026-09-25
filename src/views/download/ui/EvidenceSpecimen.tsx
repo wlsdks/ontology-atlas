@@ -83,7 +83,7 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
     <div data-testid="evidence-specimen" className="flex min-w-0 flex-col gap-5">
       {/* ── The file, verbatim ─────────────────────────────────────────────── */}
       <div className="min-w-0">
-        <h3 className="break-keep text-caption font-[var(--font-weight-emphasis)] leading-caption text-[color:var(--color-text-secondary)]">
+        <h3 className="text-caption font-[var(--font-weight-emphasis)] leading-caption text-[color:var(--color-text-secondary)]">
           {t('specimenFileHeading')}
         </h3>
         <div className="mt-3 min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
@@ -138,7 +138,7 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
          * it states how many were left out. The second half is not optional — showing a subset as
          * if it were the whole file is the same untruth this section exists to disprove.
          */}
-        <p className="mt-2 break-keep text-caption leading-caption text-[color:var(--color-text-tertiary)]">
+        <p className="mt-2 text-caption leading-caption text-[color:var(--color-text-tertiary)]">
           {omitted > 0
             ? t('specimenElided', { shown: frontmatter.length, count: omitted })
             : t('specimenComplete', { shown: frontmatter.length })}

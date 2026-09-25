@@ -292,7 +292,9 @@ export function TopologyCommandChrome({
               activityInboxOpen ? "z-30" : "z-20 has-[[data-lane-popover=open]]:z-30",
             )}
             data-testid="topology-top-toolbar"
-            // The free map: what a lane's popover may grow into (`resolveTrailPopoverAlign`).
+            // The free map, as far as a popover hanging from this row is concerned: the box
+            // already reserves INDEX, the node inspector and the dock seam, so anything that
+            // opens from a lane clamps to it (`SavedConstellationsControl`).
             data-popover-boundary="free-map"
             // The guided tour's card stands clear of the toolbar (`GuidedTourOverlay`).
             data-tour-keep-clear="map-toolbar"

@@ -65,4 +65,19 @@ describe('useSavedConstellations vault scope', () => {
     expect(result.current.status).toBe('ready');
     expect(result.current.error).toBeNull();
   });
+
+  it('keeps the list readable when a save fails, so the popover never reports a read failure for it', async () => {
+    mocks.load.mockResolvedValue(snapshot());
+    mocks.save.mockRejectedValueOnce(new Error('disk full'));
+    const only = handle('only');
+    const { result } = renderHook(() => useSavedConstellations(only));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    await act(async () => {
+      await expect(result.current.saveConstellation({
+        name: 'Review', purpose: '', members: [{ uid: '11111111-1111-4111-8111-111111111111', lastKnownPath: 'capabilities/review', label: 'Review' }],
+      })).rejects.toThrow('disk full');
+    });
+    expect(result.current.status).toBe('ready');
+    expect(result.current.error).toBeNull();
+  });
 });

@@ -124,6 +124,8 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
               to align.
             */}
             <Chip
+              tone="secondary"
+              hoverInk="strong"
               data-testid="agents-terminal-setup-copy"
               onClick={() => void copy(CLI_TERMINAL_SETUP)}
             >
@@ -144,11 +146,13 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
                 onClick={onBeforeNavigate}
                 data-testid="agents-terminal-setup-download"
                 /* Secondary now: the folder above is what this card is asking for. */
+                /* A bordered chip like the copy chip beside it (2026-09-25): a bare 11px link
+                   next to a boxed button read as two kinds of control on one row. Still neutral —
+                   the folder above is what this card asks for. */
                 className={controlClass({
-                  shape: 'link',
-                  tone: 'muted',
+                  shape: 'chip',
+                  tone: 'secondary',
                   hoverInk: 'strong',
-                  className: 'h-8',
                 })}
               >
                 {t('agentTerminalAppLink')}

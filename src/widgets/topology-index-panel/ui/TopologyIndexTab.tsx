@@ -4,6 +4,12 @@ import { ChevronRight } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 interface TopologyIndexTabLabels {
+  /**
+   * The panel's own name, from the same message as the expanded header. It was the literal
+   * `Index` here, so the Korean screen read 「INDEX」 open and 「Index」 folded. One key now
+   * names the panel in both states (a brand word in both locales).
+   */
+  label?: string;
   expandAria: string;
   agentSyncTitle: string;
 }
@@ -38,7 +44,7 @@ export function TopologyIndexTab({ onExpand, labels, className }: TopologyIndexT
         className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-tertiary)]"
         style={{ writingMode: "vertical-rl" }}
       >
-        Index
+        {labels.label ?? "Index"}
       </span>
       {/* ChevronRight 13 rather than 9px `›` text — the symmetric pair of the expanded `‹`. */}
       <span aria-hidden="true" className="inline-flex text-[color:var(--map-panel-text-quaternary)]">

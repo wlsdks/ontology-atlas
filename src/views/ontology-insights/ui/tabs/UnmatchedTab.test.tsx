@@ -28,6 +28,7 @@ const labels: UnmatchedTabLabels = {
   footnote: "an invented relation type is recorded nowhere",
   emptyTitle: "Every name here resolves",
   emptyDescription: "nothing missing",
+  emptyAction: "Open the map",
 };
 
 const ASKS = [

@@ -321,7 +321,7 @@ function HarnessPageInner() {
         drops to body and this rises to `text-title` without the emphasis weight — one step above
         everything around it, and still lighter than the cards' display numerals below.
       */}
-      <div className="flex max-w-prose flex-wrap items-center gap-x-1 break-keep text-title text-[color:var(--color-text-primary)]">
+      <div className="flex max-w-prose flex-wrap items-center gap-x-1 text-title text-[color:var(--color-text-primary)]">
         <span className="tabular-nums">
           {t('sentence', {
             documents: report.guideDocumentCount,
@@ -361,7 +361,7 @@ function HarnessPageInner() {
    */
   const structureSentence = structureCount ? (
     <div data-testid="harness-structure-sentence" className="architecture-result-arrive relative z-10">
-      <p className="max-w-prose break-keep text-title tabular-nums text-[color:var(--color-text-primary)]">
+      <p className="max-w-prose text-title tabular-nums text-[color:var(--color-text-primary)]">
         {t('structureSentence', structureCount)}
       </p>
       {/* Inline flow rather than flex: as a flex item the caption took the whole measure and

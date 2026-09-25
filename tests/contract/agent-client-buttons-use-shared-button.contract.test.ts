@@ -40,10 +40,16 @@ const source = readFileSync(SOURCE, "utf8");
  */
 const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
-describe("AgentClientButtons 는 shared/ui/button 을 통과한다", () => {
-  it("imports the shared button primitive", () => {
-    expect(source).toMatch(/from ["']@\/shared\/ui\/button["']/);
-    expect(source).toMatch(/\bbuttonVariants\b/);
+describe("AgentClientButtons goes through a shared control primitive", () => {
+  /*
+   * Round 3 (2026-09-25): the primitive moved from `Button` to `Chip`. These are now row actions on
+   * the Agents destination, where every sibling row and heading action is a `Chip` at `lg`; the
+   * rule this gate exists for (go through a shared primitive, do not reimplement one) is unchanged,
+   * and the value layer both primitives share (`controlClass`) is what carries the focus ring.
+   */
+  it("imports the shared control primitive", () => {
+    expect(source).toMatch(/from ["']@\/shared\/ui\/controls["']/);
+    expect(code).toMatch(/<Chip\b/);
   });
 
   it("no longer declares the bespoke ClientButton reimplementation", () => {
@@ -59,9 +65,9 @@ describe("AgentClientButtons 는 shared/ui/button 을 통과한다", () => {
   });
 
   it("gets the app's focus ring from the primitive rather than the browser default", () => {
-    const primitive = readFileSync("src/shared/ui/button.tsx", "utf8");
+    const primitive = readFileSync("src/shared/ui/control-class.ts", "utf8");
     expect(primitive).toContain("focus-visible:ring-2");
-    expect(primitive).toContain("--color-indigo-accent");
+    expect(primitive).toContain("--color-indigo-focus-ring");
     // A consumer rewriting its own focus style defeats the point of going through the primitive.
     expect(code).not.toContain("focus-visible:outline-none");
   });

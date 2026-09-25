@@ -10,6 +10,7 @@ import { controlClass } from "@/shared/ui/control-class";
 import type { ImpactRankingRow } from "../../lib/impact-ranking";
 import { InsightsBar } from "../parts/InsightsBar";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { INSIGHTS_LIST_TWO_COLUMN, insightsTwoColumnCell } from "../parts/insights-list";
 
 export interface ImpactRankingLabels {
   title: string;
@@ -152,7 +153,7 @@ export function ImpactRankingCard({
           Stretched to one column the row measure doubles and the gap between name and bar widens,
           so the width is folded to keep the same measure as the hub card next to it. Ranks read in
           DOM order, left→right then top→bottom (reading order). */}
-      <div className="mt-2 grid flex-1 auto-rows-min content-start gap-x-6 @min-[960px]/insights:grid-cols-2">
+      <div className={`mt-2 flex-1 ${INSIGHTS_LIST_TWO_COLUMN}`}>
         {rows.length === 0 ? (
           <div className="@min-[960px]/insights:col-span-2">
             <EmptyState
@@ -229,7 +230,7 @@ export function ImpactRankingCard({
             // `--motion-fast`). Under prefers-reduced-motion the base layer disables it globally,
             // so it degrades to an instant swap.
             <div className="insights-disclosure-in">
-              <div className="grid auto-rows-min content-start gap-x-6 lg:grid-cols-2">
+              <div className={INSIGHTS_LIST_TWO_COLUMN}>
                 {evidenceRows.map((row, i) => (
                   <ImpactRow
                     key={row.id}
@@ -297,6 +298,9 @@ function ImpactRow({
   const directPct =
     max > 0 && row.direct > 0 ? Math.max(3, Math.round((row.direct / max) * 100)) : 0;
   return (
+    // The divider sits on the cell, on the card's padding line; the row inside bleeds 6px for
+    // its hover surface only (`insights-list.ts`). The first row of each column drops it.
+    <div className={insightsTwoColumnCell(index)}>
     <Link
       href={href}
       aria-label={ariaLabel}
@@ -304,13 +308,7 @@ function ImpactRow({
       className={controlClass({
         shape: "row",
         size: "sm",
-        className: cn(
-          "-mx-1.5 gap-3 border-t border-[color:var(--color-divider)] px-1.5 py-2.5 hover:bg-[color:var(--color-overlay-1)]",
-        // The first row of each column drops its divider — with two columns the second column's
-        // first row (i=1) is also a column head, and a line above it reads as a truncated table.
-          index === 0 && "border-t-0",
-          index === 1 && "lg:border-t-0",
-        ),
+        className: "-mx-1.5 gap-3 px-1.5 py-2.5 hover:bg-[color:var(--color-overlay-1)]",
       })}
     >
       <OntologyMapKindGlyph kind={row.kind} size={16} className="flex-none" />
@@ -341,6 +339,7 @@ function ImpactRow({
         {row.total}
       </span>
     </Link>
+    </div>
   );
 }
 

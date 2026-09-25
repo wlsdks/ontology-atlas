@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useLayoutEffect, useRef } from "react";
-import { EyeOff } from "lucide-react";
+import { EyeOff, Link2 } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
 import { EmptyState } from "@/shared/ui";
@@ -34,6 +34,8 @@ export interface UnmatchedTabLabels {
   footnote: string;
   emptyTitle: string;
   emptyDescription: string;
+  /** The empty state's way on: the map every resolved name belongs to. */
+  emptyAction: string;
 }
 
 export interface UnmatchedTabProps {
@@ -152,12 +154,30 @@ export function UnmatchedTab({
   }
 
   if (board.totalCount === 0) {
+    /*
+     * **The empty tab is a stage, not a strip** (2026-09-25). Two centred grey lines in a 134px
+     * box left the rest of the tab as plain background down to the handoff row. The shared
+     * shape carries the parts an empty state owes: a glyph for the fact, one sentence, and the
+     * way on — every name already resolves, so the useful next place is the map those names
+     * belong to. The stage takes a fixed floor so the tab reads as answered, not unfinished.
+     */
     return (
       <EmptyState
         tone="solid"
         align="center"
+        icon={<Link2 aria-hidden />}
         title={labels.emptyTitle}
         description={labels.emptyDescription}
+        action={
+          <Link
+            href="/topology/"
+            data-testid="unmatched-empty-action"
+            className={controlClass({ shape: "link", tone: "accent", hoverInk: "strong", className: "rounded-chip hover:underline" })}
+          >
+            {labels.emptyAction}
+          </Link>
+        }
+        className="flex min-h-80 flex-col items-center justify-center"
       />
     );
   }
