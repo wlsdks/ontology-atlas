@@ -688,6 +688,115 @@ describe('useLocalVaultInternal — 기존 파일 보호 (createDoc / renameDoc)
     expect(target.state.text).toBe('target content');
   });
 
+  /*
+   * 2026-09-26 map-edit QA D6: every referrer was rewritten, but the moved file itself kept
+   * `slug: <old address>` because its bytes were copied verbatim.
+   */
+  it('renameDoc: the moved file declares its new address when its slug mirrored the old one', async () => {
+    const source = fakeFileHandle({
+      text:
+        '---\nuid: 292f0e3a-23a8-4bad-9f87-7a38e1f1a01c\nslug: capabilities/a\nkind: capability\n' +
+        'title: A\n---\n\nBody stays.\n',
+      lastModified: 1000,
+    });
+    const created = fakeFileHandle({ text: '', lastModified: 0 });
+    const removeEntry = vi.fn(async () => {});
+    const capabilities = {
+      kind: 'directory',
+      name: 'capabilities',
+      getFileHandle: vi.fn(async () => created.handle),
+      removeEntry,
+    };
+    const root = {
+      kind: 'directory',
+      name: 'my-vault',
+      getDirectoryHandle: vi.fn(async () => capabilities),
+    } as unknown as FileSystemDirectoryHandle;
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(
+      makeBuildResult({ fileHandles: new Map([['capabilities/a', source.handle]]) }),
+    );
+    entitiesMocks.rebuildLocalManifestIncremental.mockResolvedValue(makeBuildResult());
+
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    await act(async () => {
+      await result.current.renameDoc('capabilities/a', 'capabilities/b', { expectedMtime: 1000 });
+    });
+
+    expect(created.state.text).toContain('slug: capabilities/b\n');
+    expect(created.state.text).not.toContain('capabilities/a');
+    expect(created.state.text).toContain('Body stays.');
+    expect(removeEntry).toHaveBeenCalledWith('a.md');
+  });
+
+  it('renameDoc: an outside change since the move was offered is refused, and nothing moves', async () => {
+    const source = fakeFileHandle({
+      text: '---\nslug: capabilities/a\nkind: capability\ntitle: A\n---\n',
+      lastModified: 2000,
+    });
+    const getDirectoryHandle = vi.fn();
+    const root = { kind: 'directory', name: 'my-vault', getDirectoryHandle } as unknown as FileSystemDirectoryHandle;
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(
+      makeBuildResult({ fileHandles: new Map([['capabilities/a', source.handle]]) }),
+    );
+
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    await expect(
+      act(async () => {
+        await result.current.renameDoc('capabilities/a', 'capabilities/b', { expectedMtime: 1000 });
+      }),
+    ).rejects.toThrow(VaultConflictError);
+    // The sidecar readers look up `.codex` and friends on load; the move never reached its folder.
+    expect(getDirectoryHandle).not.toHaveBeenCalledWith('capabilities', expect.anything());
+    expect(source.write).not.toHaveBeenCalled();
+  });
+
+  /*
+   * 2026-09-26 map-edit QA D5: a refused save reported the outside change, then the watcher
+   * reported the same change again as a green notice that buried the refusal.
+   */
+  it('a refused save records the outside change it reported, and only that change', async () => {
+    const fh = fakeFileHandle({ text: 'disk content after external edit', lastModified: 2000 });
+    const root = fakeRootHandle('my-vault');
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(
+      makeBuildResult({ fileHandles: new Map([['note', fh.handle]]) }),
+    );
+
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    await expect(
+      act(async () => {
+        await result.current.updateFrontmatter('note', { title: 'Mine' }, { expectedMtime: 1000 });
+      }),
+    ).rejects.toThrow(VaultConflictError);
+
+    // A later outside edit (a newer time) is still owed its notice, and clears the record.
+    expect(result.current.consumeReportedConflicts(new Map([['note', 3000]]))).toEqual(new Set());
+    expect(result.current.consumeReportedConflicts(new Map([['note', 2000]]))).toEqual(new Set());
+
+    await expect(
+      act(async () => {
+        await result.current.saveDoc('note', 'mine', { expectedMtime: 1000 });
+      }),
+    ).rejects.toThrow(VaultConflictError);
+    expect(result.current.consumeReportedConflicts(new Map([['other', 2000]]))).toEqual(new Set());
+    expect(result.current.consumeReportedConflicts(new Map([['note', 2000]]))).toEqual(
+      new Set(['note']),
+    );
+    // Reported once: the record is gone after that observation.
+    expect(result.current.consumeReportedConflicts(new Map([['note', 2000]]))).toEqual(new Set());
+  });
+
   it('자체 쓰기 예약은 관찰된 slug에서만 소비되고 실패하면 되돌릴 수 있다', async () => {
     const root = fakeRootHandle('my-vault');
     fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));

@@ -1,4 +1,24 @@
-import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import {
+  type KnowledgeGraphNode,
+  resolveNodeAgentTarget,
+  resolveOntologyBuilderNodeSlug,
+} from "@/entities/knowledge-graph";
+
+/**
+ * The address a relation written **from the map** names a node by — the node's own document
+ * slug, the spelling MCP writes and every agent-authored relation in the vault uses
+ * (`domains/agent-access`, `capabilities/mcp-tool-server`).
+ *
+ * The meaning editor already resolved its targets this way; the "add under this domain"
+ * composer used the graph id's bare tail instead (`agent-access`), so one relation reached
+ * disk in two spellings (map-edit QA D10, 2026-09-26). One function, so the two writers
+ * cannot drift apart again. `ontology/` is the bundled dogfood manifest's root segment, not
+ * part of any address a vault holds.
+ */
+export function resolveNodeVaultRef(node: KnowledgeGraphNode): string {
+  const target = resolveNodeAgentTarget(node);
+  return (target.ref ?? resolveOntologyBuilderNodeSlug(node)).replace(/^ontology\//, "");
+}
 
 /**
  * Pure model behind inline editing of a topology node: resolves the selected

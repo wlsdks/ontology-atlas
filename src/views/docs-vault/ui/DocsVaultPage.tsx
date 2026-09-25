@@ -28,6 +28,7 @@ import {
   Save,
   Search,
   Star,
+  TextCursorInput,
   Trash2,
   X,
 } from 'lucide-react';
@@ -45,6 +46,8 @@ import {
 import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { useNavRailSettingsSlot } from '@/widgets/app-nav-rail';
 import { copyText } from '@/shared/lib/copy-text';
+import { codedFailure } from '@/shared/lib/failure-code';
+import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
 import { cn } from '@/shared/lib/cn';
@@ -123,6 +126,7 @@ import {
   resolveStaticVaultSource,
   type StaticVaultHeadings,
   reviewDigest,
+  type FrontmatterUpdateValue,
 } from '@/entities/docs-vault';
 import type { VaultCommand } from '@/widgets/docs-vault';
 
@@ -160,6 +164,9 @@ import { DocsVaultVaultChip } from "./parts/DocsVaultVaultChip";
 import { DocsVaultAuditModal } from "./parts/DocsVaultAuditModal";
 import { DocsVaultTabStrip } from "./parts/DocsVaultTabStrip";
 import { NewDocKindDialog, type NewDocKind } from "./parts/NewDocKindDialog";
+import { RenameDocDialog, type RenameDocTarget } from "./parts/RenameDocDialog";
+import { DeleteDocDialog, type DeleteDocTarget } from "./parts/DeleteDocDialog";
+import { reclassifyMoveTarget } from "../lib/kind-folder-move";
 import { useOpenDocTabs } from "../lib/use-open-doc-tabs";
 import { resolveVaultChipIdentity } from "../lib/vault-chip-identity";
 import {
@@ -867,51 +874,140 @@ function DocsVaultContent({
   useEffect(() => {
   }, [selectedSlug]);
 
-  const handleDeleteCurrent = useCallback(async () => {
-    if (!canEditCurrent || !selectedSlug) return;
-    const slug = selectedSlug;
-    const title =
-      manifest.docs.find((d) => d.slug === slug)?.title ?? slug;
-    if (typeof window === 'undefined') return;
-    const ok = window.confirm(t('dialog.deleteConfirm', { title, slug }));
-    if (!ok) return;
-    try {
-      await localVault.deleteDoc(slug);
-      // Delete succeeded — clean up selection, address, pinned, and recent. Leaving the
-      // address in place makes the "requested document is missing" verdict catch the slug
-      // that was just deleted the moment the manifest updates, raising a false warning
-      // (measured in a 2026-08-13 walkthrough — the same illness as rename).
-      appTouchedSlugsRef.current = new Set([slug]);
-      setSelectedSlug(null);
-      replaceUrlState({ slug: null });
-      setEditing(false);
-      setRecentSlugs((list) => list.filter((s) => s !== slug));
-      setPinnedSlugs((list) => {
-        const next = list.filter((s) => s !== slug);
-        if (next.length !== list.length) {
-          // Sync localStorage only when something was actually removed. An updater function
-          // can run during render (the 2026-08-13 draft-save incident), so the write is
-          // pushed out of render into a microtask. The write is idempotent, so a double call
-          // is harmless.
-          queueMicrotask(() => {
-            try {
-              window.localStorage.setItem(
-                `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
-                JSON.stringify(next),
-              );
-            } catch {
-              /* ignore */
-            }
-          });
-        }
-        return next;
+  /*
+   * **Rename and delete are dialogs a person can see, not browser prompts** (2026-09-26,
+   * map-edit QA D7/D9). Both lived only in the command palette and answered through
+   * `window.prompt` / `window.confirm`: unstyled light boxes outside the product's dialog
+   * system, a raw slug to type, and a delete confirmation that never mentioned the documents
+   * still pointing at the one being removed. They are now `RenameDocDialog` and
+   * `DeleteDocDialog`, opened from the document header and from the palette alike.
+   */
+  const failureSentence = useFailureSentence();
+  // The documents that point at `slug`, by the name each one is shown by — the manifest's
+  // backlink index already joins frontmatter relations and body links for exactly this.
+  const referrersOf = useCallback(
+    (slug: string) => {
+      const seen = new Set<string>();
+      const referrers: Array<{ slug: string; title: string }> = [];
+      for (const entry of manifest.backlinksDetail?.[slug] ?? []) {
+        if (entry.fromSlug === slug || seen.has(entry.fromSlug)) continue;
+        seen.add(entry.fromSlug);
+        const doc = manifest.docs.find((d) => d.slug === entry.fromSlug);
+        referrers.push({
+          slug: entry.fromSlug,
+          title: doc ? resolveLocaleDisplayName(doc.frontmatter, locale, doc.title) : entry.fromSlug,
+        });
+      }
+      return referrers;
+    },
+    [manifest, locale],
+  );
+  /*
+   * One move, three doors: a rename, a kind change that files the document under its new
+   * kind (D8), and the move the folder warning offers. The file moves with its referrers
+   * rewritten, and everything that named the old address — the selection, the URL, recents
+   * and pins — follows it. Leaving the address behind makes the "the URL requests a missing
+   * document" verdict catch the old address the moment the manifest updates, raising a false
+   * warning (walkthrough 2026-08-13); the new name is deferred as "not known yet" until it
+   * appears in the manifest.
+   */
+  const moveDoc = useCallback(
+    async (
+      fromSlug: string,
+      toSlug: string,
+      options: { expectedMtime?: number; frontmatterUpdates?: Record<string, FrontmatterUpdateValue> } = {},
+    ) => {
+      if (manifest.docs.some((d) => d.slug === toSlug)) {
+        throw codedFailure('already-exists', `${toSlug}.md`);
+      }
+      await localVault.renameDoc(fromSlug, toSlug, { rewriteBacklinks: true, ...options });
+      appTouchedSlugsRef.current = new Set([fromSlug, toSlug]);
+      setSelectedSlug(toSlug);
+      replaceUrlState({ slug: toSlug });
+      setRecentSlugs((list) => {
+        const mapped = list.map((s) => (s === fromSlug ? toSlug : s));
+        // No direct writes inside an updater function — an updater can run during render
+        // (the 2026-08-13 draft-save incident), so the write is pushed into a microtask.
+        queueMicrotask(() => {
+          try {
+            window.localStorage.setItem(
+              `${RECENT_DOCS_STORAGE_PREFIX}${recentKey}`,
+              JSON.stringify(mapped),
+            );
+          } catch {
+            /* ignore */
+          }
+        });
+        return mapped;
       });
-    } catch (err) {
-      window.alert(
-        t('dialog.deleteFailed', { message: err instanceof Error ? err.message : String(err) }),
-      );
-    }
-  }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, replaceUrlState, setPinnedSlugs, setRecentSlugs, t]);
+      setPinnedSlugs((list) => {
+        const mapped = list.map((s) => (s === fromSlug ? toSlug : s));
+        queueMicrotask(() => {
+          try {
+            window.localStorage.setItem(
+              `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
+              JSON.stringify(mapped),
+            );
+          } catch {
+            /* ignore */
+          }
+        });
+        return mapped;
+      });
+    },
+    [manifest, localVault, recentKey, replaceUrlState, setPinnedSlugs, setRecentSlugs],
+  );
+
+  const [deleteTarget, setDeleteTarget] = useState<DeleteDocTarget | null>(null);
+  const handleDeleteCurrent = useCallback(() => {
+    if (!canEditCurrent || !selectedSlug) return;
+    const doc = manifest.docs.find((d) => d.slug === selectedSlug);
+    if (!doc) return;
+    // A blocking surface is about to open: clear what would stand above its scrim.
+    toast.dismiss();
+    setDeleteTarget({
+      slug: doc.slug,
+      title: resolveLocaleDisplayName(doc.frontmatter, locale, doc.title),
+      referrers: referrersOf(doc.slug),
+    });
+  }, [canEditCurrent, selectedSlug, manifest, locale, referrersOf, toast]);
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    const slug = deleteTarget.slug;
+    // The version the person was shown is the one they agreed to remove.
+    const expectedMtime = manifest.docs.find((d) => d.slug === slug)?.mtime;
+    await localVault.deleteDoc(slug, { expectedMtime });
+    setDeleteTarget(null);
+    // Delete succeeded — clean up selection, address, pinned, and recent. Leaving the
+    // address in place makes the "requested document is missing" verdict catch the slug
+    // that was just deleted the moment the manifest updates, raising a false warning
+    // (measured in a 2026-08-13 walkthrough — the same illness as rename).
+    appTouchedSlugsRef.current = new Set([slug]);
+    setSelectedSlug(null);
+    replaceUrlState({ slug: null });
+    setEditing(false);
+    setRecentSlugs((list) => list.filter((s) => s !== slug));
+    setPinnedSlugs((list) => {
+      const next = list.filter((s) => s !== slug);
+      if (next.length !== list.length) {
+        // Sync localStorage only when something was actually removed. An updater function
+        // can run during render (the 2026-08-13 draft-save incident), so the write is
+        // pushed out of render into a microtask. The write is idempotent, so a double call
+        // is harmless.
+        queueMicrotask(() => {
+          try {
+            window.localStorage.setItem(
+              `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
+              JSON.stringify(next),
+            );
+          } catch {
+            /* ignore */
+          }
+        });
+      }
+      return next;
+    });
+  }, [deleteTarget, manifest, localVault, recentKey, replaceUrlState, setPinnedSlugs, setRecentSlugs]);
 
   const handleScaffoldOntologyStarter = useCallback(async () => {
       // A vault created from a screen in one language should read in that language.
@@ -952,8 +1048,10 @@ function DocsVaultContent({
     const headings = doc.headings.filter(
       (h) => h.depth >= 2 && h.depth <= 3,
     );
+    // Feedback is a toast, like every other outcome on this page — not a browser alert box
+    // outside the product's surfaces (map-edit QA D9, 2026-09-26).
     if (headings.length === 0) {
-      window.alert(t('dialog.noHeadings'));
+      toast.show(t('dialog.noHeadings'), 'info');
       return;
     }
       // TOC markdown — h2 has no indent, h3 gets two spaces.
@@ -970,7 +1068,7 @@ function DocsVaultContent({
     ].join('\n');
     const fh = localVault.fileHandles.get(selectedSlug);
     if (!fh) {
-      window.alert(t('dialog.notLocalFile'));
+      toast.show(t('dialog.notLocalFile'), 'error');
       return;
     }
     try {
@@ -996,11 +1094,15 @@ function DocsVaultContent({
         expectedMtime: file.lastModified,
       });
     } catch (err) {
-      window.alert(
-        t('dialog.tocFailed', { message: err instanceof Error ? err.message : String(err) }),
+      // The reader's sentence, never the thrown English (the D4 class of defect).
+      toast.show(
+        err instanceof VaultConflictError
+          ? t('dialog.vaultConflict')
+          : failureSentence(err, t('dialog.tocFailed')).sentence,
+        'error',
       );
     }
-  }, [canEditCurrent, selectedSlug, manifest, localVault, t]);
+  }, [canEditCurrent, selectedSlug, manifest, localVault, t, toast, failureSentence]);
 
   const handleExportDocHtml = useCallback(() => {
     if (!selectedSlug || typeof window === 'undefined') return;
@@ -1008,7 +1110,7 @@ function DocsVaultContent({
     if (!doc) return;
     const article = document.querySelector('[data-docs-viewer]');
     if (!article) {
-      window.alert(t('dialog.notRendered'));
+      toast.show(t('dialog.notRendered'), 'info');
       return;
     }
     const html = buildDocsVaultPopoutHtml(doc.title, article.outerHTML);
@@ -1022,69 +1124,37 @@ function DocsVaultContent({
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }, [selectedSlug, manifest, t]);
+  }, [selectedSlug, manifest, t, toast]);
 
-  const handleRenameCurrent = useCallback(async () => {
+  const [renameTarget, setRenameTarget] = useState<RenameDocTarget | null>(null);
+  const handleRenameCurrent = useCallback(() => {
     if (!canEditCurrent || !selectedSlug) return;
-    if (typeof window === 'undefined') return;
-    const input = window.prompt(t('dialog.renamePrompt'), selectedSlug);
-    if (!input) return;
-    const nextSlug = input
-      .trim()
-      .replace(/^\/+|\/+$/g, '')
-      .replace(/\.md$/, '');
-    if (!nextSlug || nextSlug === selectedSlug) return;
-    if (manifest.docs.some((d) => d.slug === nextSlug)) {
-      window.alert(t('dialog.renameAlreadyExists', { slug: nextSlug }));
-      return;
-    }
-    try {
-      await localVault.renameDoc(selectedSlug, nextSlug, {
-        rewriteBacklinks: true,
-      });
-      // Migrate selection, address, active memory, and recent/pinned. Leaving the address
-      // behind makes the "the URL requests a missing document" verdict catch the old address
-      // the moment the manifest updates, raising a false warning (walkthrough 2026-08-13).
-      // The new name is deferred as "not known yet" until it appears in the manifest.
-      const prev = selectedSlug;
-      appTouchedSlugsRef.current = new Set([prev, nextSlug]);
-      setSelectedSlug(nextSlug);
-      replaceUrlState({ slug: nextSlug });
-      setRecentSlugs((list) => {
-        const mapped = list.map((s) => (s === prev ? nextSlug : s));
-      // No direct writes inside an updater function — same reason as the delete path above.
-        queueMicrotask(() => {
-          try {
-            window.localStorage.setItem(
-              `${RECENT_DOCS_STORAGE_PREFIX}${recentKey}`,
-              JSON.stringify(mapped),
-            );
-          } catch {
-            /* ignore */
-          }
-        });
-        return mapped;
-      });
-      setPinnedSlugs((list) => {
-        const mapped = list.map((s) => (s === prev ? nextSlug : s));
-        queueMicrotask(() => {
-          try {
-            window.localStorage.setItem(
-              `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
-              JSON.stringify(mapped),
-            );
-          } catch {
-            /* ignore */
-          }
-        });
-        return mapped;
-      });
-    } catch (err) {
-      window.alert(
-        t('dialog.renameFailed', { message: err instanceof Error ? err.message : String(err) }),
-      );
-    }
-  }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, replaceUrlState, setPinnedSlugs, setRecentSlugs, t]);
+    const doc = manifest.docs.find((d) => d.slug === selectedSlug);
+    if (!doc) return;
+    toast.dismiss();
+    setRenameTarget({
+      slug: doc.slug,
+      title: resolveLocaleDisplayName(doc.frontmatter, locale, doc.title),
+      referrerCount: referrersOf(doc.slug).length,
+    });
+  }, [canEditCurrent, selectedSlug, manifest, locale, referrersOf, toast]);
+  const confirmRename = useCallback(
+    async (nextSlug: string) => {
+      if (!renameTarget) return;
+      const expectedMtime = manifest.docs.find((d) => d.slug === renameTarget.slug)?.mtime;
+      await moveDoc(renameTarget.slug, nextSlug, { expectedMtime });
+      setRenameTarget(null);
+    },
+    [renameTarget, manifest, moveDoc],
+  );
+  // Letter case is ignored: macOS and Windows keep one file for `Auth.md` and `auth.md`.
+  const isSlugTaken = useCallback(
+    (slug: string) => {
+      const wanted = slug.toLowerCase();
+      return manifest.docs.some((d) => d.slug.toLowerCase() === wanted);
+    },
+    [manifest],
+  );
 
   // "New document" asks for the kind first (domain / capability / element / document). There
   // is no generic `title:` template, which forces "a document in this vault is a node" at the
@@ -1493,26 +1563,54 @@ function DocsVaultContent({
         .sort((a, b) => a.title.localeCompare(b.title)),
     [manifest],
   );
+  /*
+   * The quick patch's write. A rejection is **not** toasted here any more: the form shows it
+   * in place, in the reader's language (`DocFrontmatterBlock`, map-edit QA D4), and a second
+   * copy of the same sentence in a toast was the message said twice.
+   *
+   * A kind change files the document under its new kind when it was filed under its old one
+   * (D8): `kind:` and the address change in one move, with every referrer rewritten, rather
+   * than leaving the file in a folder the validator then asks the person to leave.
+   */
   const handlePatchDocFrontmatter = useCallback(
     async (patch: DocFrontmatterPatch) => {
       if (!selectedDoc) return;
-      try {
-        // `DocFrontmatterPatch` is a narrow shape of kind/domain/title. It is structurally
-        // compatible with `updateFrontmatter`'s index-signature parameter (every value is
-        // `string | null`), but TS separately requires the index signature, hence the cast.
-        await localVault.updateFrontmatter(
-          selectedDoc.slug,
-          patch as Record<string, string | null>,
-          { expectedMtime: selectedDoc.mtime },
-        );
-      } catch (err) {
-        if (err instanceof VaultConflictError) {
-          toast.show(t('dialog.vaultConflict'), 'error');
-        }
-        throw err;
+      const updates: Record<string, string | null> = {};
+      for (const [key, value] of Object.entries(patch)) {
+        if (value !== undefined) updates[key] = value;
       }
+      const currentKind =
+        typeof selectedDoc.frontmatter?.kind === 'string' ? selectedDoc.frontmatter.kind.trim() : null;
+      const moveTarget = updates.kind
+        ? reclassifyMoveTarget(selectedDoc.slug, currentKind, updates.kind)
+        : null;
+      if (moveTarget) {
+        await moveDoc(selectedDoc.slug, moveTarget, {
+          expectedMtime: selectedDoc.mtime,
+          frontmatterUpdates: updates,
+        });
+        return;
+      }
+      await localVault.updateFrontmatter(selectedDoc.slug, updates, {
+        expectedMtime: selectedDoc.mtime,
+      });
     },
-    [selectedDoc, localVault, toast, t],
+    [selectedDoc, localVault, moveDoc],
+  );
+  // The remedy beside the folder warning: the same move, with nothing else changed.
+  const handleMoveToKindFolder = useCallback(
+    (target: string) => {
+      if (!selectedDoc) return;
+      moveDoc(selectedDoc.slug, target, { expectedMtime: selectedDoc.mtime }).catch((err: unknown) => {
+        toast.show(
+          err instanceof VaultConflictError
+            ? t('dialog.vaultConflict')
+            : failureSentence(err, t('dialog.moveFailed')).sentence,
+          'error',
+        );
+      });
+    },
+    [selectedDoc, moveDoc, toast, t, failureSentence],
   );
   // Client-side dynamic title. Static export metadata cannot be pre-built per slug (the vault
   // is the user's local folder), so the selected document's title is applied here, composed the
@@ -2689,11 +2787,40 @@ function DocsVaultContent({
                   the body's H1: four times within about 250px. The tab and the H1 keep it; this
                   row says the one thing neither does, where the file lives. */}
               <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-[color:var(--color-border-soft)] px-4 py-2">
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span data-testid="docs-editor-path" className="truncate font-mono text-label text-[color:var(--color-text-tertiary)]">
+                <div className="flex min-w-0 flex-1 items-center gap-1">
+                  <span data-testid="docs-editor-path" className="min-w-0 truncate font-mono text-label text-[color:var(--color-text-tertiary)]">
                     <span>{splitVaultSlugPath(selectedDoc.slug).dir}</span>
                     {splitVaultSlugPath(selectedDoc.slug).name}.md
                   </span>
+                  {/* **The file's own actions stand beside the file's address** (map-edit QA D9,
+                      2026-09-26). Renaming and deleting were palette-only, so a person looking
+                      at the page had no way to know either existed. They sit next to the path
+                      they change, only where the folder is writable and the body is not being
+                      edited (a move under an open editor would strand its unsaved text). */}
+                  {canEditCurrent && !editing ? (
+                    <span data-testid="docs-file-actions" className="flex flex-none items-center gap-0.5">
+                      <IconButton
+                        label={t('fileActions.rename')}
+                        tone="muted"
+                        hoverInk="strong"
+                        hoverSurface="lift"
+                        onClick={handleRenameCurrent}
+                        data-testid="docs-file-rename"
+                      >
+                        <TextCursorInput size={ICON_SIZE.sm} aria-hidden />
+                      </IconButton>
+                      <IconButton
+                        label={t('fileActions.delete')}
+                        tone="muted"
+                        hoverInk="strong"
+                        hoverSurface="lift"
+                        onClick={handleDeleteCurrent}
+                        data-testid="docs-file-delete"
+                      >
+                        <Trash2 size={ICON_SIZE.sm} aria-hidden />
+                      </IconButton>
+                    </span>
+                  ) : null}
                 </div>
                 {/* The sample notice — why it is read-only and how to switch. It used to be its own
                     53px band above the title. The fact it states belongs to the **vault**, so there
@@ -2804,6 +2931,7 @@ function DocsVaultContent({
                             canEdit={canEditCurrent}
                             domainOptions={domainOptions}
                             onPatch={handlePatchDocFrontmatter}
+                            onMoveToKindFolder={handleMoveToKindFolder}
                             onNavigate={handleSelect}
                             resolveRef={(token) => refSlugResolver.get(token) ?? null}
                             // The real data behind the last-editor and conflict badges. Both use only
@@ -2970,6 +3098,17 @@ function DocsVaultContent({
         open={newDocKindDialogOpen}
         onSelect={(kind) => void handleCreateNewDocWithKind(kind)}
         onClose={() => setNewDocKindDialogOpen(false)}
+      />
+      <RenameDocDialog
+        target={renameTarget}
+        isTaken={isSlugTaken}
+        onCancel={() => setRenameTarget(null)}
+        onConfirm={confirmRename}
+      />
+      <DeleteDocDialog
+        target={deleteTarget}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
       />
 
 

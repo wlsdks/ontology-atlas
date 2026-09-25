@@ -30,6 +30,10 @@ const CONFIRM_ROWS: Record<string, { uses: number; row: string }> = {
     uses: 1,
     row: "Remove or reset companion memories — the confirmation page, beside Cancel.",
   },
+  "src/views/docs-vault/ui/parts/DeleteDocDialog.tsx": {
+    uses: 1,
+    row: "Delete a document — the alert dialog opened by the page's delete door or the palette, beside Cancel.",
+  },
 };
 
 const ROOT = process.cwd();

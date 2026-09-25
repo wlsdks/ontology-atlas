@@ -25,6 +25,7 @@ import { ProjectDrawer } from "@/widgets/project-drawer";
 import { useTranslations } from "next-intl";
 import { normalizeKindLabelKey } from "../lib/topology-node-significance";
 import { returnFocusIfDropped } from "../lib/topology-focus-return";
+import { resolveNodeVaultRef } from "../lib/topology-node-edit";
 
 
 interface TopologyInspectorSurfacesProps {
@@ -394,10 +395,10 @@ export function TopologyInspectorSurfaces({
                   ? () => setNeedsVaultReason("createNeedsVault")
                   : canCreateNode && canvasSelectedGraphNode?.kind === "domain"
                     ? () => {
-                      const tail = canvasSelectedGraphNode.id.includes(":")
-                        ? canvasSelectedGraphNode.id.slice(canvasSelectedGraphNode.id.indexOf(":") + 1)
-                        : canvasSelectedGraphNode.id;
-                      setCreateNodeSeedDomain(tail);
+                      // The domain's own address, the value the composer's picker offers
+                      // for it — the graph id's bare tail wrote a second spelling of the
+                      // same relation (map-edit QA D10, 2026-09-26).
+                      setCreateNodeSeedDomain(resolveNodeVaultRef(canvasSelectedGraphNode));
                       setCreateNodeDefaultKind("capability");
                       openCreateNode();
                     }

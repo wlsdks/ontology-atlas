@@ -162,7 +162,7 @@ describe("DocFrontmatterBlock", () => {
   it("hides the quick-patch action when canEdit/onPatch are not supplied (read-only default)", () => {
     renderBlock();
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
-    expect(screen.queryByText("kind / domain / title 수정")).not.toBeInTheDocument();
+    expect(screen.queryByText("kind / domain / title / 이름 수정")).not.toBeInTheDocument();
   });
 
   it("shows a quick-patch action for a writable local vault and saves kind/domain/title edits", async () => {
@@ -181,7 +181,7 @@ describe("DocFrontmatterBlock", () => {
       </NextIntlClientProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
-    fireEvent.click(screen.getByText("kind / domain / title 수정"));
+    fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
 
     fireEvent.change(screen.getByLabelText("Domain", { exact: false }), {
       target: { value: "graph-quality" },
@@ -191,6 +191,153 @@ describe("DocFrontmatterBlock", () => {
     await vi.waitFor(() => {
       expect(onPatch).toHaveBeenCalledWith({ domain: "graph-quality" });
     });
+  });
+
+  /*
+   * Map-edit QA D2 (2026-09-26): `display_ko` / `display_en` were set once at creation and had
+   * no door afterwards — the block did not even list them.
+   */
+  it("lists the per-language names beside the title and edits them in the quick patch", async () => {
+    const onPatch = vi.fn().mockResolvedValue(undefined);
+    const named: VaultDoc = {
+      ...doc,
+      frontmatter: { ...doc.frontmatter, display_ko: "CLI 개발자 입구", display_en: "CLI developer entry" },
+    };
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={named} canEdit onPatch={onPatch} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    expect(screen.getByText("display_ko:")).toBeInTheDocument();
+    expect(screen.getByText("CLI 개발자 입구")).toBeInTheDocument();
+    expect(screen.getByText("display_en:")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
+    // The reader's own language first, then the other one.
+    const koField = screen.getByTestId("doc-frontmatter-display-name-ko");
+    const enField = screen.getByTestId("doc-frontmatter-display-name-en");
+    expect(koField).toHaveValue("CLI 개발자 입구");
+    expect(koField.compareDocumentPosition(enField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.change(koField, { target: { value: "CLI 입구" } });
+    fireEvent.change(enField, { target: { value: "  " } });
+    fireEvent.click(screen.getByText("저장"));
+    await vi.waitFor(() => {
+      // An emptied name is removed, so screens fall back to the title.
+      expect(onPatch).toHaveBeenCalledWith({ display_ko: "CLI 입구", display_en: null });
+    });
+  });
+
+  /*
+   * Map-edit QA D4 (2026-09-26): a refused save printed the vault layer's English
+   * (`Vault conflict — "…" was modified externally between read and write.`) under Title.
+   */
+  it("says a refused save in the reader's language and keeps the thrown English off the page", async () => {
+    const { VaultConflictError } = await import("@/entities/vault-session");
+    const onPatch = vi
+      .fn()
+      .mockRejectedValueOnce(new VaultConflictError(doc.slug, 1000, 2000))
+      .mockRejectedValueOnce(new Error("EIO: i/o error, write"));
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={doc} canEdit onPatch={onPatch} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
+    fireEvent.change(screen.getByDisplayValue("CLI Developer Entry"), { target: { value: "CLI entry" } });
+
+    fireEvent.click(screen.getByText("저장"));
+    const conflict = await screen.findByTestId("doc-frontmatter-save-error");
+    expect(conflict).toHaveTextContent(koMessages.docsVault.frontmatterBlock.saveConflict);
+    expect(conflict.textContent).not.toMatch(/Vault conflict|modified externally/);
+    // The form stays open with what was typed.
+    expect(screen.getByDisplayValue("CLI entry")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("저장"));
+    await vi.waitFor(() =>
+      expect(screen.getByTestId("doc-frontmatter-save-error")).toHaveTextContent(
+        koMessages.docsVault.frontmatterBlock.saveFailed,
+      ),
+    );
+    const failed = screen.getByTestId("doc-frontmatter-save-error");
+    expect(failed.textContent).not.toContain("EIO");
+    expect(failed).toHaveAttribute("data-failure-detail", "EIO: i/o error, write");
+  });
+
+  /*
+   * Map-edit QA D7 (2026-09-26): after a delete, the referrer still listed the removed slug and
+   * its own page said nothing.
+   */
+  it("flags a reference the folder has no document for, on the referrer's own page", () => {
+    const referrer: VaultDoc = {
+      ...doc,
+      frontmatter: {
+        ...doc.frontmatter,
+        dependencies: ["capabilities/mcp-server", "capabilities/qa-probe-delete-me"],
+      },
+    };
+    const resolveRef = (token: string) =>
+      token === "developer-experience" || token === "mcp-server" || token === "capabilities/mcp-server"
+        ? token
+        : null;
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={referrer} onNavigate={vi.fn()} resolveRef={resolveRef} />
+      </NextIntlClientProvider>,
+    );
+    const row = screen
+      .getAllByTestId("doc-frontmatter-issue")
+      .find((el) => el.getAttribute("data-issue-code") === "dangling-graph-reference");
+    expect(row).toBeDefined();
+    expect(row).toHaveAttribute("data-severity", "warning");
+    expect(row).toHaveTextContent("capabilities/qa-probe-delete-me");
+    expect(row?.textContent).not.toContain("capabilities/mcp-server");
+  });
+
+  it("accuses nothing when there is no folder to resolve against", () => {
+    renderBlock();
+    expect(screen.queryByTestId("doc-frontmatter-validator-warnings")).not.toBeInTheDocument();
+  });
+
+  /*
+   * Map-edit QA D8 (2026-09-26): reclassifying rewrote `kind:` and left the file in the old
+   * kind's folder, and the warning that followed had no remedy beside it.
+   */
+  it("says before Save that a kind change files the document under its new kind", async () => {
+    const onPatch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={doc} canEdit onPatch={onPatch} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
+    expect(screen.queryByTestId("doc-frontmatter-move-hint")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByTestId("doc-frontmatter-kind-select"), { target: { value: "element" } });
+    expect(screen.getByTestId("doc-frontmatter-move-hint")).toHaveTextContent(
+      "elements/cli-developer-entry.md",
+    );
+    fireEvent.click(screen.getByText("저장"));
+    await vi.waitFor(() => expect(onPatch).toHaveBeenCalledWith({ kind: "element" }));
+  });
+
+  it("offers the move the folder warning asks for", () => {
+    const onMoveToKindFolder = vi.fn();
+    const misfiled: VaultDoc = {
+      ...doc,
+      frontmatter: { ...doc.frontmatter, kind: "element" },
+    };
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={misfiled} canEdit onPatch={vi.fn()} onMoveToKindFolder={onMoveToKindFolder} />
+      </NextIntlClientProvider>,
+    );
+    const move = screen.getByTestId("doc-frontmatter-move-to-kind-folder");
+    expect(move).toHaveTextContent("elements/");
+    fireEvent.click(move);
+    expect(onMoveToKindFolder).toHaveBeenCalledWith("elements/cli-developer-entry");
   });
 
   it("does not offer the quick-patch action for a non-editable sentinel kind", () => {
@@ -204,7 +351,7 @@ describe("DocFrontmatterBlock", () => {
       </NextIntlClientProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
-    expect(screen.queryByText("kind / domain / title 수정")).not.toBeInTheDocument();
+    expect(screen.queryByText("kind / domain / title / 이름 수정")).not.toBeInTheDocument();
   });
 
   it("renders no validator-warnings row when the frontmatter is clean", () => {

@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   computeRenameRefContext,
+  rewriteMovedDocSelf,
   rewriteRenamedDocRefs,
 } from './rename-ref-rewrites';
 
@@ -150,5 +151,47 @@ describe('rewriteRenamedDocRefs — 2026-09-01 review regressions', () => {
       canRewriteTail: false,
     });
     expect(rootRename, 'a nested link to a different node must not be redirected').toBe(nestedBody);
+  });
+});
+
+/*
+ * The moved document's own bytes (2026-09-26, map-edit QA D6). A rename moved the file and
+ * rewrote every referrer, then wrote the old bytes verbatim at the new path — so the moved
+ * file still declared `slug: <old path>` while it lived at the new one. The rule is MCP
+ * `rename_concept`'s: `slug:` follows the move only when it mirrors the old file slug.
+ */
+describe('rewriteMovedDocSelf', () => {
+  const moved = { oldSlug: 'capabilities/mcp-tool-server', newSlug: 'capabilities/mcp-tool-host' };
+
+  it('moves a `slug:` that mirrors the old file slug, touching no other line', () => {
+    const raw =
+      '---\nuid: 292f0e3a-23a8-4bad-9f87-7a38e1f1a01c\nslug: capabilities/mcp-tool-server\n' +
+      'kind: capability\ntitle: MCP tool server\n---\n\nBody stays.\n';
+    const next = rewriteMovedDocSelf(raw, moved);
+    expect(next).toBe(
+      raw.replace('slug: capabilities/mcp-tool-server', 'slug: capabilities/mcp-tool-host'),
+    );
+  });
+
+  it('keeps a `slug:` that is a user-facing alias rather than the file slug', () => {
+    const raw = '---\nslug: ontology-atlas\nkind: project\ntitle: Atlas\n---\n';
+    expect(
+      rewriteMovedDocSelf(raw, { oldSlug: 'projects/atlas', newSlug: 'projects/atlas-2' }),
+    ).toBe(raw);
+  });
+
+  it('adds no `slug:` to a document that never declared one', () => {
+    const raw = '---\nkind: capability\ntitle: A\n---\n\nBody\n';
+    expect(rewriteMovedDocSelf(raw, moved)).toBe(raw);
+  });
+
+  it("applies the caller's frontmatter changes in the same bytes (a reclassify move)", () => {
+    const raw = '---\nslug: capabilities/x\nkind: capability\ntitle: X\n---\n\nBody\n';
+    const next = rewriteMovedDocSelf(raw, {
+      oldSlug: 'capabilities/x',
+      newSlug: 'elements/x',
+      updates: { kind: 'element' },
+    });
+    expect(next).toBe('---\nslug: elements/x\nkind: element\ntitle: X\n---\n\nBody\n');
   });
 });
