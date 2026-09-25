@@ -42,7 +42,8 @@ test('schedule rows expose result evidence, collapse, and keep creation cancella
   await expect(reviewPage).toHaveAttribute('href', '/en/docs/?slug=wiki%2Fdesign-system');
   await reviewPage.click();
   await expect(page).toHaveURL(/\/en\/docs\/\?slug=wiki%2Fdesign-system/);
-  await expect(page.getByRole('article')).toContainText('Design system src:sources/design-system.pdf#p1.');
+  // The page's unlabelled citation reads as its file and place, not as the raw `src:` address.
+  await expect(page.getByRole('article')).toContainText('Design system design-system.pdf · page 1.');
   await page.goBack();
   await page.getByTestId('automation-r-consistency').press('Enter');
   await expect(page.getByTestId('automation-r-consistency')).toHaveAttribute('aria-expanded', 'false');

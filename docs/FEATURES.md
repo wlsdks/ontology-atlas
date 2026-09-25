@@ -1157,7 +1157,7 @@ view-doc · pin · unpin · copy URL · print · edit · new doc · rename · de
 
 A vault holds three kinds of file and **only one is the graph**. Library keeps their distinct
 meaning and adds a fourth presentation tab: Ontology draws the explicitly typed graph nodes,
-Sources and Wiki draw the other two file kinds, and Collections lists saved Galaxy constellations.
+Sources and Wiki draw the other two file kinds, and Work scopes lists saved Galaxy constellations.
 
 The Library supports general knowledge as well as documents associated with code.
 Sources remain original files; write-ups and filed answers remain wiki pages.
@@ -1198,7 +1198,8 @@ draft state, and five required section headings before creation. The current loc
 receipt remains primary while earlier receipts are available from History; an app write's
 matching folder-watch event is consumed instead of producing a second notification.
 
-**Saved constellation task scope (2026-09-15).** Collections lists each saved
+**Saved constellation task scope (2026-09-15).** Work scopes (named Collections until
+2026-09-25, when the English name followed the Korean one) lists each saved
 constellation's name, purpose, and ontology concept count. Expanding a row resolves
 members by immutable UID against the current manifest; resolved names open the actual
 Ontology document, unresolved members stay visible, and the whole set opens in Galaxy.

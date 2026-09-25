@@ -19,6 +19,7 @@ import {
   type WikiProblemWords,
 } from "@/features/library";
 import { localizeWikiLogSummary } from "../../lib/wiki-log-summary";
+import { AgentMissingNotice } from "./AgentMissingNotice";
 import { WikiProblemSentence, type WikiProblemDoors } from "./WikiTemplateProblems";
 
 /**
@@ -464,6 +465,7 @@ export function LibraryCheckReport({
   running,
   onLint,
   lintBlockedReason,
+  agentMissing = false,
   onFix,
   onPropose,
   onOpenPage,
@@ -497,6 +499,12 @@ export function LibraryCheckReport({
   onLint: (() => void) | null;
   /** Why it cannot run here, for the disabled chip. Null when it can. */
   lintBlockedReason?: string | null;
+  /**
+   * The installed app looked for a coding agent and found none. The chip then gives way to
+   * the notice the index draws for the same state (`AgentMissingNotice`), so one missing
+   * agent reads one way on both sides of the press that opens this page (2026-09-25).
+   */
+  agentMissing?: boolean;
   onFix: ((finding: LintFinding) => void) | null;
   onPropose: ((candidate: LintNodeCandidate) => void) | null;
   onOpenPage: (slug: string) => void;
@@ -775,11 +783,21 @@ export function LibraryCheckReport({
           </div>
         ) : null}
 
-        {/* Present and disabled rather than absent: a feature the product has is always on
-            screen and availability is a state with its reason (`docs/DECISIONS.md`
-            2026-09-11). The computed half above needs no agent, so this is the only control
-            on the page that can be blocked, and the reason belongs beside it. */}
-        {onLint || lintBlockedReason ? (
+        {/* A feature the product has is always on screen and availability is a state with its
+            reason (`docs/DECISIONS.md` 2026-09-11). The computed half above needs no agent, so
+            this is the only control on the page that can be blocked. With no coding agent on
+            this computer at all, the state is the index's own notice, naming what Check would
+            do and ending in the door to connect one — not a dead chip over a caption with no
+            way out (2026-09-25). While an agent is still being looked for, or where a local
+            model can only compile, the chip stays drawn beside its reason. */}
+        {onLint === null && agentMissing ? (
+          <AgentMissingNotice
+            testId="library-check-report-agent-missing"
+            doorTestId="library-check-report-agent-missing-door"
+            className="mt-4 w-fit max-w-full"
+            t={t}
+          />
+        ) : onLint || lintBlockedReason ? (
           <div className="mt-4 flex flex-col items-start gap-1.5">
             <Chip
               data-testid="library-check-report-lint"

@@ -238,6 +238,24 @@ test.describe("the structural check is the app's own", () => {
     await expect(page.getByTestId("library-check-structural")).not.toContainText("has not read these pages yet");
     await expect(page.getByTestId("library-check-semantic")).toContainText("has not read these pages yet");
 
+    /*
+     * **One missing agent reads one way on both sides of the press** (2026-09-25). The
+     * index row that opened this page sits under the notice; this page kept its own Check
+     * on screen, dead, over a caption with no way out. It now draws the index's notice,
+     * with its door, and no dead Check — and the two cards are one component, box for box.
+     */
+    const reportNotice = page.getByTestId("library-check-report-agent-missing");
+    await expect(reportNotice).toBeVisible();
+    await expect(reportNotice).toContainText("check page format");
+    await expect(reportNotice.getByTestId("library-check-report-agent-missing-door")).toHaveAttribute("href", /\/agents/);
+    await expect(page.getByTestId("library-check-report-lint")).toHaveCount(0);
+    const card = (testId: string) =>
+      page.getByTestId(testId).evaluate((node) => {
+        const style = getComputedStyle(node);
+        return [style.borderTopLeftRadius, style.borderTopColor, style.backgroundColor, style.paddingLeft, style.paddingTop, style.fontSize];
+      });
+    expect(await card("library-check-report-agent-missing")).toEqual(await card("library-agent-missing"));
+
     // A structural row's door is the page name, and it opens that page. No Fix, no Propose:
     // those write, so they stay on the agent's half (owner decision 4).
     await expect(page.getByTestId("library-finding-fix")).toHaveCount(0);

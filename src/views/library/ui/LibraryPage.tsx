@@ -8,7 +8,7 @@ import { Info, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useLocalVault, useVaultIdentityScope, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { isWikiPage } from "@/entities/docs-vault";
 import type { LibraryWorkActivity, LibraryWorkEvent, LintFinding, LintNodeCandidate } from "@/features/library";
-import type { LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
+import type { LibraryOriginalLink, LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
 import { useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { OpenVaultCta } from "@/features/docs-vault-local";
@@ -451,6 +451,10 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     if (opened?.kind !== "wiki") return null;
     return manifest?.docs.find((doc) => doc.slug === opened.slug) ?? null;
   }, [manifest, opened]);
+  /** The originals the open page's header names — and so the ones its body need not repeat. */
+  const selectedOriginals: readonly LibraryOriginalLink[] = selectedWikiDoc
+    ? model.pairing.originalsByWiki.get(selectedWikiDoc.slug) ?? EMPTY_ORIGINALS
+    : EMPTY_ORIGINALS;
   const selectedSource = useMemo(() => {
     if (opened?.kind !== "source") return null;
     return model.sources.find((row) => row.path === opened.path) ?? null;
@@ -2917,6 +2921,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                 running={lintRunning}
                 onLint={agent.route === "agent" ? handleLint : null}
                 lintBlockedReason={agentOnlyReason}
+                /* The index's own condition for its notice, so the page it opens agrees. */
+                agentMissing={nativeVaultRootPath !== null && agent.route === "unavailable"}
                 onJumpToSection={handleReportHeadingNavigate}
                 advisoryOpen={reportAdvisoryOpen}
                 onAdvisoryOpenChange={setReportAdvisoryOpen}
@@ -2947,7 +2953,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
             >
               <WikiPageHeader
                 doc={selectedWikiDoc}
-                originals={model.pairing.originalsByWiki.get(selectedWikiDoc.slug) ?? EMPTY_ORIGINALS}
+                originals={selectedOriginals}
                 onOpenSource={(path) => choose({ kind: "source", path })}
                 compactTop={selectedAnswer !== null}
                 /* The open problem card names a missing citation in its own sentence; the
@@ -3007,6 +3013,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                   getDocContent={getDocContent}
                   resolveImage={resolveImage}
                   knownOriginalPaths={knownOriginalPaths}
+                  /* The header above names a page's one original, so the body's citations of
+                     it say only where in the file; with several, each citation names its file. */
+                  namedSourcePath={selectedOriginals.length === 1 ? selectedOriginals[0]!.path : undefined}
                   compactTop={selectedAnswer !== null}
                   /* The passage owns the landing, so the pane does not take focus from
                      it — `skipReaderFocusRef` is the existing seam for "this pane was

@@ -47,7 +47,9 @@ import { controlClass } from "@/shared/ui/control-class";
  * `answers.refreshUnavailable` on a screen of its own. The source pane's own
  * `compileNote` is the third site and follows the same rule. The index column's no-agent
  * notice (2026-09-25) is the fourth: it replaces the two dead Check and Compile doors in
- * the installed app once detection has found no runtime, and ends in this door.
+ * the installed app once detection has found no runtime, and ends in this door. The
+ * Check-results page draws the same notice (`AgentMissingNotice`) in the same state, in
+ * place of its own dead Check (2026-09-25).
  *
  * ## The fourth site is a sentence's last line, so it wears a link and says its press
  *

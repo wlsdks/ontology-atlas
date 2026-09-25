@@ -11,6 +11,14 @@ function encodeWikilinkPart(value: string): string {
   );
 }
 
+/**
+ * Marks a wikilink whose author wrote no `|label`. Its text is then the target itself, which
+ * for a `[[src:…]]` citation is an address (`src:sources/budget.md#l5`), not words — so the
+ * renderer has to know the text is only a stand-in. An encoded slug never contains a bare
+ * `&`, so the mark cannot collide with one.
+ */
+const UNLABELLED_MARK = '&unlabelled';
+
 /** Turn Obsidian-style wikilinks into markdown links that ReactMarkdown can render. */
 export function rewriteWikilinks(markdown: string): string {
   return markdown.replace(
@@ -21,9 +29,37 @@ export function rewriteWikilinks(markdown: string): string {
       const [rawSlug, rawAnchor] = clean.split('#');
       const slug = decodeWikilinkSlug(rawSlug);
       const anchor = rawAnchor ? decodeWikilinkSlug(rawAnchor) : undefined;
-      return `[${text}](${WIKILINK_SENTINEL}${encodeWikilinkPart(slug)}${anchor ? `#${encodeWikilinkPart(anchor)}` : ''})`;
+      const mark = label === undefined ? UNLABELLED_MARK : '';
+      return `[${text}](${WIKILINK_SENTINEL}${encodeWikilinkPart(slug)}${mark}${anchor ? `#${encodeWikilinkPart(anchor)}` : ''})`;
     },
   );
+}
+
+export interface WikilinkHref {
+  /** The target before `#`, still percent-encoded as the markdown renderer hands it over. */
+  rawSlug: string;
+  /** The part after `#`, still percent-encoded. */
+  rawAnchor?: string;
+  /** `false` when the author wrote no `|label`, so the link's text is the target itself. */
+  labelled: boolean;
+}
+
+/**
+ * Read back a destination `rewriteWikilinks` wrote. Every renderer of the rewritten Markdown
+ * parses it here, so the unlabelled mark is stripped before a slug is resolved.
+ */
+export function parseWikilinkHref(href: string): WikilinkHref | null {
+  if (!href.startsWith(WIKILINK_SENTINEL)) return null;
+  const spec = href.slice(WIKILINK_SENTINEL.length);
+  const hash = spec.indexOf('#');
+  const head = hash < 0 ? spec : spec.slice(0, hash);
+  const rawAnchor = hash < 0 ? undefined : spec.slice(hash + 1);
+  const labelled = !head.endsWith(UNLABELLED_MARK);
+  return {
+    rawSlug: labelled ? head : head.slice(0, -UNLABELLED_MARK.length),
+    rawAnchor: rawAnchor || undefined,
+    labelled,
+  };
 }
 
 /** Decode one wikilink segment and use the filesystem-safe NFC representation. */
