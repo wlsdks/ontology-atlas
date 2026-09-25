@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
@@ -150,7 +150,8 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
     };
   }, [graph, wide, phone, mode]);
 
-  useEffect(() => {
+  // Layout, not passive — the same frame as the character (`HeroObject`).
+  useLayoutEffect(() => {
     if (total > 0) handleRef.current?.setTyping(typed, total);
   }, [typed, total]);
 

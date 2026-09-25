@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { cn } from '@/shared/lib/cn';
 
@@ -128,7 +128,15 @@ export function HeroTypewriter({
   budgetMs?: number;
 }) {
   const reduced = usePrefersReducedMotion();
-  const [typedState, setTypedState] = useState(0);
+  /**
+   * How many characters are on, plus the ones that came on **without a landing**: every character
+   * but the newest of a catch-up (the typing effect below). They missed their moment on a late
+   * tick, so they appear already settled and only the newest one lands — one keystroke landing at
+   * a time, as on a healthy frame rate.
+   */
+  const [progress, setProgress] = useState<{ typed: number; settled: ReadonlySet<number> }>(
+    () => ({ typed: 0, settled: new Set() }),
+  );
 
   /**
    * The characters with their absolute position across both lines, computed once per sentence.
@@ -174,27 +182,40 @@ export function HeroTypewriter({
    * effect body is a cascading render, and needlessly: whether the sentence is complete is a
    * pure function of a preference that is already known while rendering.
    */
-  const typed = reduced ? total : typedState;
+  const typed = reduced ? total : progress.typed;
 
-  useEffect(() => {
+  /*
+   * A **layout** effect, so the echo lands in the same frame as the characters (2026-09-25). The
+   * listener sets state, and a state update from a layout effect renders synchronously, so the
+   * hero object's own layout effect lights its dots before the browser paints. With a passive
+   * effect the dots trailed the headline by a render; that was one keystroke while the timer
+   * could only admit one character per tick, and became a whole catch-up once a late tick shows
+   * every character the clock has earned (the typing effect below).
+   */
+  useLayoutEffect(() => {
     onProgress?.(typed, total);
   }, [onProgress, typed, total]);
 
   /*
-   * **The count follows the wall clock, not the number of ticks delivered** (2026-09-25). The
-   * interval used to add one character per callback at the full step, so every late callback made
-   * the rest of the sentence later: while the hero stage mounts, a headless 1920 run delivered the
-   * 38ms ticks at ~57ms and the 31-character Korean headline took 1.77s to type instead of 1.18s,
-   * still unfinished at the moment it is read. Now the timer polls at half the step and each tick
-   * shows one more character only when the elapsed time has earned it, so a late tick is followed
-   * by an early one instead of pushing the whole sentence back.
+   * **The count is a function of the wall clock, not of how many callbacks arrived** (2026-09-25).
+   * Each tick shows every character the elapsed time has earned, so the headline finishes at its
+   * budget whatever the frame rate. Two earlier versions counted callbacks instead: the first added
+   * one character per tick at the full step, the second polled at half the step but still admitted
+   * only one character per tick. Both are the same defect on a slow machine — when the main thread
+   * delivers a callback every ~110ms (4× CPU throttle, the hero canvas drawing beside it), a
+   * one-per-tick typewriter types the 31-character Korean headline in 5.0s against a 1.8s budget,
+   * and CI measured 1.9–2.9s. A person on that machine reads a sentence that is still typing.
    *
-   * Still **one character per tick**, never a burst: the hero object lights its dots from this
-   * count a render later (`HeroObject`), and a burst leaves it visibly behind its cause; several
-   * characters landing at once also stack their weight landings and widen the line while it types
-   * (`download-gateway-grid.spec.ts`, "does not wander"). Both were measured when a catch-up of two
-   * per tick was tried. `Date.now()` rather than `performance.now()` because it is the clock the
-   * tests' fake timers drive.
+   * On a healthy frame rate nothing changes: the timer polls at half the step, so the clock earns
+   * at most one character between ticks and the sentence still types one keystroke at a time. A
+   * catch-up of several characters only happens on a tick that arrived late, where the only
+   * alternative is to be late for the rest of the sentence. In a catch-up only the newest
+   * character lands; the ones before it appear settled (`progress.settled`). Several landing
+   * together would stack their weight landings, and each landing glyph is narrower than at rest,
+   * so the line would narrow while it types (`download-gateway-grid.spec.ts`, "does not wander").
+   *
+   * `Date.now()` rather than `performance.now()` because it is the clock the tests' fake timers
+   * drive.
    */
   useEffect(() => {
     if (!start || reduced) return;
@@ -206,8 +227,14 @@ export function HeroTypewriter({
       // step lands a fraction short of n steps and a floor would show one character fewer.
       const earned = Math.min(total, Math.round((Date.now() - startedAt) / step));
       if (earned <= shown) return;
-      shown += 1;
-      setTypedState(shown);
+      const from = shown;
+      shown = earned;
+      setProgress((prev) => {
+        if (earned - from < 2) return { typed: earned, settled: prev.settled };
+        const settled = new Set(prev.settled);
+        for (let at = from; at < earned - 1; at += 1) settled.add(at);
+        return { typed: earned, settled };
+      });
       if (shown >= total) window.clearInterval(id);
     }, step / 2);
     return () => window.clearInterval(id);
@@ -217,7 +244,12 @@ export function HeroTypewriter({
   // out of existence for one tick every time it crossed a word boundary (measured 2026-08-23).
   const cursorAt = (at: number) => typed === at && start && !reduced;
   const chClass = (at: number) =>
-    cn('gateway-type-ch', typed > at && 'is-on gateway-type-land', cursorAt(at) && 'is-cursor');
+    cn(
+      'gateway-type-ch',
+      typed > at && 'is-on',
+      typed > at && !progress.settled.has(at) && 'gateway-type-land',
+      cursorAt(at) && 'is-cursor',
+    );
 
   return (
     <span className={className} aria-hidden="true">
