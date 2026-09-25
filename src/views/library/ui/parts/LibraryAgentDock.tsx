@@ -75,6 +75,9 @@ export interface LibraryAgentOpeningRequest {
   nonce: number;
 }
 
+/** Where focus goes back to when the opener itself is gone: the Library's own conversation door. */
+const LIBRARY_CONVERSATION_DOOR = '[data-testid="library-open-conversation"]';
+
 export interface LibraryAgentRuntime {
   id: string;
   label: string;
@@ -281,7 +284,8 @@ export function LibraryAgentDock({
     const visible = (candidate: Element | null): candidate is HTMLElement =>
       candidate instanceof HTMLElement && candidate.isConnected && candidate.getClientRects().length > 0;
     const again = testId ? document.querySelector(`[data-testid="${CSS.escape(testId)}"]`) : null;
-    const target = visible(node) ? node : visible(again) ? again : document.querySelector<HTMLElement>('[data-testid="library-reader"]');
+    const door = document.querySelector(LIBRARY_CONVERSATION_DOOR);
+    const target = visible(node) ? node : visible(again) ? again : visible(door) ? door : document.querySelector<HTMLElement>('[data-testid="library-reader"]');
     target?.focus({ preventScroll: true });
   }, [open]);
 
@@ -311,6 +315,17 @@ export function LibraryAgentDock({
     <div
       ref={frameRef}
       data-testid="library-agent-dock-frame"
+      /*
+       * **One Escape rule for both docks.** Escape anywhere in the dock puts it away, as it closes
+       * the map's; a composer holding a sentence claims the key first (`defaultPrevented`), so an
+       * unsent draft is never what Escape takes. This dock used to ignore the key entirely.
+       */
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || event.defaultPrevented || !open) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+      }}
       data-right-dock={open || presence.mounted ? "library-agent" : undefined}
       data-dock-state={open ? "open" : standing ? "put-away" : "empty"}
       /*

@@ -103,10 +103,40 @@ export const VAULT_TOOL_LABEL_KEYS: readonly string[] = [
 export const LABELLED_VAULT_TOOLS: readonly string[] = Object.keys(VAULT_TOOL_KEYS);
 
 export interface ToolLabel {
-  /** Words a person reads. An i18n key (when `kind` is `known`) or the raw name. */
+  /**
+   * Words a person reads. An i18n key under `acpChat.tool` (`known`), under
+   * `acpChat.toolKind` (`kind`), or the raw name.
+   */
   text: string;
-  /** `known` = a tool whose meaning we know · `raw` = only the name is shown. */
-  kind: 'known' | 'raw';
+  /**
+   * `known` = a tool whose meaning we know · `kind` = only the protocol's kind of the call is
+   * known · `raw` = only the name is shown.
+   */
+  kind: 'known' | 'kind' | 'raw';
+}
+
+/** The ACP `ToolKind`s that name an action a person can read, in `acpChat.toolKind`. */
+const ACP_TOOL_KIND_WORDS = ['read', 'edit', 'delete', 'move', 'search', 'execute', 'fetch'] as const;
+
+/**
+ * **A call on our own server that this table does not know reads as its kind, not its name.**
+ *
+ * Measured 2026-09-25: a write on the vault server's prefix that the table did not list drew
+ * `write_wiki_file · wiki/architecture.md · Waiting for you` — a function name as the one thing a
+ * permission wait says it is waiting on, in both locales. The adapter does state the call's
+ * `kind` (`edit` here), which is the protocol's own word, not one invented here, so the row says
+ * that much and nothing more. Someone else's tools keep their own names, as before: their names
+ * are all a person has to recognise them by.
+ */
+export function withKindFallback(
+  label: ToolLabel,
+  title: string,
+  vaultServerName: string,
+  toolKind: string | null | undefined,
+): ToolLabel {
+  if (label.kind !== 'raw' || !isVaultTool(title, vaultServerName)) return label;
+  const kind = (ACP_TOOL_KIND_WORDS as readonly string[]).includes(toolKind ?? '') ? toolKind! : null;
+  return kind ? { kind: 'kind', text: kind } : label;
 }
 
 /**

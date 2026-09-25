@@ -55,8 +55,8 @@ const announcedSaveIds = new Set<string>();
  * An error in this panel, drawn as the app's inline alert box (the danger hairline over a faint
  * danger wash) rather than bare red caption text, which read as a stray line of copy.
  */
-function InlineAlert({ children }: { children: ReactNode }) {
-  return <p role="alert" className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{children}</p>;
+function InlineAlert({ children, testId }: { children: ReactNode; testId?: string }) {
+  return <div role="alert" data-testid={testId} className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{children}</div>;
 }
 
 export function AnalysisWorkbench({ context, contextLabel, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, onFitContentChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
@@ -158,7 +158,16 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
   const [busy, setBusy] = useState(false);
   const [readPending, setReadPending] = useState(false);
   const [decisionArchive, setDecisionArchive] = useState<MeaningTransitionArchiveState>('pending');
-  const [error, setError] = useState<string | null>(null);
+  /*
+   * ⚠️ **A failure is one sentence a person reads, and the exception text folded under it**
+   * (measured 2026-09-25 on /ko). The raw `message` was the whole line — "Could not save the
+   * analysis  no stub for append_analysis_record" — so any real write failure printed an English
+   * exception into the Korean screen. The sentence says what did not happen; the detail stays one
+   * press away for whoever has to diagnose it, as the conversation's own error card does.
+   */
+  const [error, setError] = useState<{ sentence: string; detail: string | null } | null>(null);
+  const failWith = (sentence: string, failure: unknown) =>
+    setError({ sentence, detail: failure instanceof Error ? failure.message : String(failure) });
   const [notice, setNotice] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const saveState = capture?.state ?? null;
@@ -215,9 +224,9 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
         problems: [...(cursor && previous?.handle === handle ? previous.problems : []), ...page.problems.map((problem) => `${problem.fileName}: ${problem.reason}`)],
       }));
     }).catch((failure) => {
-      if (generation === loadGeneration.current) setError(failure instanceof Error ? failure.message : String(failure));
+      if (generation === loadGeneration.current) setError({ sentence: t('readFailed'), detail: failure instanceof Error ? failure.message : String(failure) });
     }).finally(() => { if (generation === loadGeneration.current) setReadPending(false); });
-  }, [context.handle, open]);
+  }, [context.handle, open, t]);
 
   useEffect(() => {
     if (!open || !context.handle) return;
@@ -270,7 +279,7 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
     try {
       await appendAnalysisRecord(handle, { schema: 'atlas-analysis/v1', recordType: 'review', id: crypto.randomUUID(), createdAt: new Date().toISOString(), runId: selected.id, findingId, disposition, actor: 'user-action', rationale: reviewText.trim() }, context.writable);
       setReviewing(null); setReviewText('');
-    } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)); }
+    } catch (failure) { failWith(t('reviewFailed'), failure); }
     finally { setBusy(false); }
   }
   function exportMarkdown(markdown: string, id: string) {
@@ -293,8 +302,8 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
       panel the tab strip drops to its own line and the header is two bands again, which is what
       it was before. It never truncates the subject to keep the tabs beside it.
     */}
-    <header className="flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-2">
-      <div className="min-w-0 flex-1 basis-36"><p data-testid="analysis-workbench-eyebrow" className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-label leading-label text-[color:var(--color-text-secondary)]"><span>{t(context.mode === 'meaning' ? 'meaningTitle' : 'architectureTitle')}</span>{contextKind ? <><span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span><span className="inline-flex items-center gap-1 text-[color:var(--color-text-tertiary)]"><OntologyMapKindGlyph kind={contextKind} size={11} />{kindLabel(KNOWN_KINDS.includes(contextKind) ? contextKind : 'unknown')}</span></> : null}</p><h2 className="break-words text-title font-[var(--font-weight-strong)]">{contextLabel}</h2></div>
+    <header className="relative flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-2 pr-8">
+      <div className="min-w-0 flex-1 basis-36"><p data-testid="analysis-workbench-eyebrow" className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-label leading-label text-[color:var(--color-text-secondary)]"><span>{t(tab === 'conversation' ? 'conversationTitle' : context.mode === 'meaning' ? 'meaningTitle' : 'architectureTitle')}</span>{contextKind ? <><span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span><span className="inline-flex items-center gap-1 text-[color:var(--color-text-tertiary)]"><OntologyMapKindGlyph kind={contextKind} size={11} />{kindLabel(KNOWN_KINDS.includes(contextKind) ? contextKind : 'unknown')}</span></> : null}</p><h2 className="break-words text-title font-[var(--font-weight-strong)]">{contextLabel}</h2></div>
       {/*
         ⚠️ **The tab bar, not a segmented control** (2026-09-06). A `SegmentedControl` is an
         exclusive *value* picker and reaches the accessibility tree as a radiogroup — these are
@@ -303,14 +312,17 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
         matching `workbench-tabpanel-*` id, which is the half of its contract a consumer can skip
         and silently break.
       */}
-      <div className="flex min-w-0 shrink-0 items-end gap-1">
+      <div data-testid="analysis-workbench-tabs" className="flex min-w-0 shrink-0 items-end">
         <TabBar idPrefix="workbench" ariaLabel={t('section')} activeKey={tab} onSelect={(key) => setTab(key as Tab)} items={[
           { key: 'meaning', label: t('meaning') }, { key: 'history', label: t('history') }, ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []),
         ]} />
-        <IconButton ref={closeRef} label={t('close')} onClick={onClose}><X size={ICON_SIZE.sm} /></IconButton>
       </div>
+      <IconButton ref={closeRef} data-testid="analysis-workbench-close" className="absolute right-0 top-0" label={t(tab === 'conversation' ? 'closeConversation' : 'close')} onClick={onClose}><X size={ICON_SIZE.sm} /></IconButton>
     </header>
-    {error ? <InlineAlert>{error}</InlineAlert> : null}
+    {error ? <InlineAlert testId="analysis-workbench-error">
+      <p>{error.sentence}</p>
+      {error.detail ? <FailureDetail summary={t('errorDetails')} detail={error.detail} /> : null}
+    </InlineAlert> : null}
     {notice ? <p role="status" className="text-label leading-label text-[color:var(--color-text-secondary)]">{notice}</p> : null}
     {/*
       **Action first, reference last** (owner, 2026-09-06: "messy" / "nothing is set apart"). The
@@ -429,7 +441,7 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
             <h4 className="text-body font-[var(--font-weight-strong)]">? {finding.title}</h4><p className="whitespace-pre-wrap">{finding.detail}</p>
             {latestReview ? <p className="text-caption">{t(`review.${latestReview.disposition}`)} · {latestReview.rationale}</p> : null}
             <div className="flex flex-wrap gap-2">{onFinding ? <Chip size="lg" onClick={() => {
-              if (!onFinding(finding, selected)) { setNotice(null); setError(t('targetUnavailable')); }
+              if (!onFinding(finding, selected)) { setNotice(null); setError({ sentence: t('targetUnavailable'), detail: null }); }
               else { setError(null); setNotice(t(window.matchMedia('(min-width: 1024px)').matches ? 'targetSelected' : 'targetSelectedSheet')); }
             }}>{t('showOnMap')}</Chip> : null}{writable ? <Chip size="lg" onClick={() => { setReviewing(finding.id); setReviewText(''); }}>{t('reviewAction')}</Chip> : null}</div>
             {finding.evidenceSlugs.map((slug) => <Disclosure key={slug} summary={<span className="break-all">{t('evidence')} · {slug}</span>}><div className="mt-2 space-y-2">{onEvidence ? <Chip size="lg" onClick={() => onEvidence(slug)}>{t('openCurrent')}</Chip> : null}<pre className="atlas-scroll-quiet whitespace-pre-wrap break-words text-caption">{selected.evidence.find((item) => item.slug === slug)?.body ?? t('evidenceMissing')}</pre></div></Disclosure>)}
@@ -463,11 +475,18 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
     {saved && saved.status !== 'saved' ? <div role="status" data-testid="analysis-workbench-save" className="flex shrink-0 flex-wrap items-center gap-2 text-caption text-[color:var(--color-text-secondary)]">
       <span className="min-w-0 break-keep">{t(`save.${saved.status}`)}</span>
       {saved.status === 'error' ? <>
-        <span className="min-w-0 break-keep">{saved.error}</span>
-        {saved.record ? <>{writable && !saved.record.qualification.reasons.includes('turn_origin_mismatch') ? <Chip size="lg" onClick={() => { if (context.handle && saved.record) void appendAnalysisRecord(context.handle, saved.record, context.writable).then(() => setSaveState?.({ ...saved, status: 'saved', error: null })).catch((failure: Error) => setError(failure.message)); }}>{t('retrySave')}</Chip> : null}<Chip size="lg" onClick={() => exportMarkdown(serializeAnalysisRecord(saved.record!), saved.record!.id)}>{t('export')}</Chip></> : saved.rawAnswer ? <Chip size="lg" onClick={() => exportMarkdown(saved.rawAnswer!, saved.id)}>{t('export')}</Chip> : null}
+        {saved.error ? <FailureDetail summary={t('errorDetails')} detail={saved.error} /> : null}
+        {saved.record ? <>{writable && !saved.record.qualification.reasons.includes('turn_origin_mismatch') ? <Chip size="lg" onClick={() => { if (context.handle && saved.record) void appendAnalysisRecord(context.handle, saved.record, context.writable).then(() => setSaveState?.({ ...saved, status: 'saved', error: null })).catch((failure: unknown) => failWith(t('save.error'), failure)); }}>{t('retrySave')}</Chip> : null}<Chip size="lg" onClick={() => exportMarkdown(serializeAnalysisRecord(saved.record!), saved.record!.id)}>{t('export')}</Chip></> : saved.rawAnswer ? <Chip size="lg" onClick={() => exportMarkdown(saved.rawAnswer!, saved.id)}>{t('export')}</Chip> : null}
       </> : null}
     </div> : null}
   </section>;
+}
+
+/** The exception text behind a failure sentence, folded; see the `error` state above. */
+function FailureDetail({ summary, detail }: { summary: string; detail: string }) {
+  return <Disclosure summary={summary} className="min-w-0 text-[color:var(--color-text-tertiary)]">
+    <pre className="mt-1 whitespace-pre-wrap break-all font-mono text-caption leading-caption">{detail}</pre>
+  </Disclosure>;
 }
 
 function ArchitectureObservation({ result }: { result: Record<string, unknown> }) {

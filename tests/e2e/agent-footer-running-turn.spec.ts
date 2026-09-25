@@ -21,13 +21,18 @@ const MIN = 320;
 const BELOW_FIT = 380;
 const FITS = 400;
 
-async function open(page: Page, width: number, locale: 'en' | 'ko') {
+async function open(
+  page: Page,
+  width: number,
+  locale: 'en' | 'ko',
+  options: Parameters<typeof installLibraryWorkHarness>[1] = {},
+) {
   await page.setViewportSize({ width: 1512, height: 982 });
   await seedFirstRunSeen(page);
   await page.addInitScript((stored) => {
     window.localStorage.setItem('atlas.acp-chat.width', String(stored));
   }, width);
-  const harness = await installLibraryWorkHarness(page, {});
+  const harness = await installLibraryWorkHarness(page, options);
   await openFolderFromFirstRun(page, locale);
   await page.goto(`/${locale}/library/?guides=off&e2e=1`);
   await page.getByTestId('library-workspace-wiki').click();
@@ -151,4 +156,85 @@ for (const locale of ['en', 'ko'] as const) {
     const backFit = await modeWordIsWhole(page);
     expect(backFit?.whole, `it came back cut: ${JSON.stringify(backFit)}`).toBe(true);
   });
+}
+
+/*
+ * ⚠️ **Two tools make the name a picker, and every case above renders only the plain name.**
+ *
+ * Measured 2026-09-25 with two runtimes, five modes and a past conversation (so the history button
+ * is on the row too): the tool picker has a 48px floor the plain name does not, and the pair drew
+ * the mode over the status word idle at the narrowest drag, and over "Waiting for you" while a
+ * turn waited on the person at every composer width up to 348px. The cases above stayed green the
+ * whole time because their fixture could not produce the picker.
+ *
+ * So these walk the drag range in all three footer states — idle, thinking, and waiting on a
+ * permission card, which has the longest status — and demand what a person would: nothing drawn
+ * over anything, and every word that is shown is shown whole.
+ */
+const TWO_TOOLS = {
+  runtimeIds: ['claude-acp', 'codex-acp'],
+  modes: [
+    { id: 'default', name: 'Default' },
+    { id: 'plan', name: 'Plan' },
+    { id: 'auto', name: 'Auto' },
+    { id: 'dontAsk', name: "Don't ask" },
+    { id: 'read-only', name: 'Read only' },
+  ],
+  currentModeId: 'read-only',
+  /*
+   * The Library dock resumes the newest past conversation, and the harness speaks for one session
+   * id, so the listed conversation is that one: a different id would be resumed and every update
+   * after it dropped as another session's.
+   */
+  pastSessions: [{ sessionId: 'library-acp-session', title: 'Earlier', updatedAt: '2026-09-20T00:00:00.000Z' }],
+} satisfies Parameters<typeof installLibraryWorkHarness>[1];
+
+/** Every shown word on the row, measured as drawn text against its own box. */
+const cutWords = (page: Page) => page.evaluate(() => {
+  const pieces: Array<[string, Element | null]> = [
+    ['runtime', document.querySelector('[data-testid="acp-chat-runtime"]')],
+    ['mode', document.querySelector('[data-testid="acp-chat-mode"]')],
+    ['status', document.querySelector('[data-testid="acp-status-words"]')],
+  ];
+  return pieces.flatMap(([name, el]) => {
+    if (!el) return [];
+    const label = el.matches('[role="combobox"]')
+      ? [...el.querySelectorAll('span')].find((span) => span.getBoundingClientRect().width > 0)
+      : el;
+    if (!label || label.getBoundingClientRect().width < 1) return [];
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    const text = range.getBoundingClientRect().width;
+    const box = label.getBoundingClientRect().width;
+    return text > box + 1 ? [`${name} ${Math.round(text)}/${Math.round(box)}`] : [];
+  });
+});
+
+async function expectRowClean(page: Page, state: string) {
+  await page.evaluate(() => document.fonts.ready);
+  const clashes = await covered(page);
+  expect(
+    clashes,
+    `${state}: drawn over: ${clashes.map((c) => `${c.name} by ${c.over.join('/')}`).join(', ')}`,
+  ).toEqual([]);
+  expect(await cutWords(page), `${state}: shown cut instead of standing down`).toEqual([]);
+}
+
+for (const locale of ['en', 'ko'] as const) {
+  // 480 is the width the overlap was first reported at (a 462px panel in a 1512 window).
+  for (const width of [MIN, BELOW_FIT, 440, 480]) {
+    test(`with two tools and a mode, nothing on the row is drawn over or cut at ${width} (${locale})`, async ({ page }) => {
+      const harness = await open(page, width, locale, TWO_TOOLS);
+      await expect(page.getByTestId('acp-chat-history')).toBeVisible();
+      await expectRowClean(page, 'idle');
+
+      await startTurn(page, harness);
+      await expectRowClean(page, 'thinking');
+
+      await harness.wait(page);
+      await expect(page.getByTestId('acp-chat-panel').getByTestId('acp-permission-card').first()).toBeVisible();
+      await expect(page.locator('[data-acp-status-badge="awaiting"]')).toBeVisible();
+      await expectRowClean(page, 'waiting on the person');
+    });
+  }
 }
