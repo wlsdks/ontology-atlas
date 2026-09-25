@@ -68,6 +68,8 @@ export const DEFAULT_ROUTES = [
   // MCP (added 2026-09-05) — the folder's own connection and the connectors split off
   // `/agents` into their own destination.
   "/ko/agents/?tab=mcp",
+  // Models (added 2026-09-25) — the API Key pane moved here from the settings sheet.
+  "/ko/agents/?tab=models",
   "/ko/library/",
   "/ko/automations/",
   // 404 is **two pages** — with and without a locale prefix. This is exactly where

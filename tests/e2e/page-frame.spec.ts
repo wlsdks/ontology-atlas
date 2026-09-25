@@ -34,6 +34,8 @@ const MEMBERS = [
   // not on this list is a screen free to pick its own top spacing again, which is the
   // exact defect this spec exists for.
   { route: "/ko/agents/?tab=mcp", title: "에이전트" },
+  // Models (2026-09-25) — the third tab of the same destination.
+  { route: "/ko/agents/?tab=models", title: "에이전트" },
 ] as const;
 
 async function measureHeader(

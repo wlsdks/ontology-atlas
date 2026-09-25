@@ -2675,8 +2675,6 @@ Widths have **no shared unit; that is the specification.** All widths in this re
 
 | `--git-single-measure` | 920px | Single column when evidence column is absent |
 
-| `--settings-content-measure` | 658px | Sheet 880 − border 2 − LNB 180 − p-5 40 (contract test verifies derivation) |
-
 | `--agent-panel-width` | `clamp(320px, 26vw, 420px)` | Viewport function |
 
 | `--map-panel-width` | `min(352px, calc(100vw − 28px))` | Viewport function |
@@ -3278,19 +3276,9 @@ Three rules:
 2. **The upper bound when nothing is constrained is not «measured content height».** Doing so means the box scrolls its own content the moment a row grows 1px due to subpixels or late fonts — verified in practice (all 7 items visible but `scrollHeight > clientHeight` so affordance falsely enabled). If unconstrained, the upper bound is **remaining space**.
 3. **Affordance only appears when actually clipped by the upper bound.** `listboxTopIsHidden` / `listboxBottomIsHidden` — same judgment as composer's `composerTopIsHidden`, syntax intentionally matched (if two surfaces solve the same problem differently, the next person won't know which to copy). If upper bound is not reached, there is no scrollbar at all due to `overflow: hidden`.
 
-### Settings Sheet Row Measurement Width (`--settings-content-measure`, 2026-08-02)
+### Settings Sheet Row Measurement Width (retired 2026-09-25)
 
-| Token | Value | What it defines |
-|---|---|---|
-| `--settings-content-measure` | 658px | Maximum row width on **any face** of the settings sheet |
-
-The sheet is fixed at 880×672, but row widths differed per face: root (LNB 2-tier) was `880 − 2 borders − 180 LNB − 40 right gap p-5 = 658px`; AI drill-in was `880 − 2 − 32 p-4 = 846px`. **As the drill-in detached from LNB, that 180px was consumed by content.** The increased 188px (+28.6%) carries 0 information, but `justify-between` rows spread ends further as width increases, making the gap between «Anthropic ‥‥‥ [Key Register]» entirely empty space (owner flagged twice).
-
-**Constrain the row, not the sheet.** Sheet size is owner-confirmed fixed value (2026-07-29); reducing it breaks root LNB 2-tier and «Expand» section together. And merely reducing width does not prevent recurrence — widening the sheet next time brings the same bug back.
-
-The value is not preference but **the exact derived value from the root face**; if derivation drifts, `tests/contract/settings-sheet-content-measure.contract.test.ts` catches it (token must follow regardless of changes to sheet width·LNB width·padding).
-
-**Prose is narrower than this** — reuse `--git-setup-measure` (520px). Measurement widths for reading and manipulating differ; do not create new tokens with the same value.
+The settings row-measure token (658px) bound the API Key drill-in's rows to the root face's row width. The pane moved to the Agents destination's models tab on 2026-09-25, where rows take the destination frame's width like the tab beside it, so the token had no consumer and was removed with its contract. Prose in settings still takes `--git-setup-measure` (520px) through `SettingsPaneHead`.
 
 ### EmptyState (#16)
 

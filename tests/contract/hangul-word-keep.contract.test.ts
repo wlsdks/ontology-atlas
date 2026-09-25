@@ -96,8 +96,11 @@ describe("<html lang> is right before the first paint", () => {
  * was dropped from its new line, which also took seven sites on moved or rewritten lines.
  * 357 → 356 (2026-09-25): a settings-sheet caption rewritten by the chrome interaction fix
  * dropped its per-element site; the root `:lang(ko)` rule covers it.
+ *
+ * 356 → 342 (2026-09-25, models tab): the API Key pane moved from the settings sheet to the
+ * Agents destination and was rewritten without per-element sites.
  */
-const BREAK_KEEP_CEILING = 356;
+const BREAK_KEEP_CEILING = 342;
 
 function stripComments(source: string): string {
   return source

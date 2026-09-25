@@ -69,7 +69,6 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/views/project-detail/ui/ProjectDetailPage.tsx", 1],
   ["src/views/project-editor/ui/ProjectEditorPage.tsx", 2],
   ["src/views/project-selector/ui/ProjectSelectorPage.tsx", 0],
-  ["src/widgets/app-settings-menu/ui/AiConnectionPanel.tsx", 1],
   // 2026-08-21: the executor and MCP-connect sections moved out to the Agents
   // destination, taking two hand cards from this file with them (ledger 90). What was
   // recovered comes down in the ledger — a ledger more generous than the measurement

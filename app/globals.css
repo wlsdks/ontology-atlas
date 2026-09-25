@@ -869,29 +869,6 @@
   --git-ego-facts-w: clamp(220px, 22vw, 320px);
 
   /*
-   * **Row measure width** for the settings sheet — two faces per sheet are unacceptable
-   * (2026-08-02 owner re-instruction: *"The AI connection popup is too wide."*).
-   *
-   * This sheet is fixed at 880×672, but row width varied per face:
-   *
-   * | Face | Induction | Row Width |
-   * |---|---|---|
-   * | Root (LNB 2-stage) | 880 − 2 borders − 180 LNB − 40 right `p-5` | **658px** |
-   * | AI Drill-in | 880 − 2 borders − 32 `p-4` | 846px |
-   *
-   * As Drill-in detached from LNB, **content filled that space**. The extra 188px carries
-   * zero information, only widening the gap between 「Anthropic ‥‥‥ [Key Registration]」 —
-   * `justify-between` spreads ends further as width grows, so this bug returns whenever the sheet widens without binding. Thus, we bind **the row**, not the sheet
-   * (sheet size is fixed by owner; shrinking it breaks Root LNB 2-stage).
-   *
-   * The value is not preference but **the exact induction value of the Root face** — it must match the row width on the just-shown screen to read as the same sheet. Misaligned induction triggers contract tests:
-   * `tests/contract/settings-sheet-content-measure.contract.test.ts`.
-   *
-   * Prose is narrower (`--git-setup-measure` 520px) — measure width for reading differs from that for manipulation.
-   */
-  --settings-content-measure: 658px;
-
-  /*
    * Setup action height — one level for primary/secondary buttons in the connection flow.
    *
    * Why a token: The page's purpose is "connecting," so if its button fails, the whole page fails. 36px matches fixed scale contracts (Chrome tile

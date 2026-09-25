@@ -324,11 +324,20 @@ test.describe("lit 3D map on the dogfood vault", () => {
     const moving = samples.filter((x, i) => i > 0 && Math.abs(x.s - samples[i - 1]!.s) > 1e-5);
     expect(moving.length, "the camera never moved on the fly-to").toBeGreaterThan(5);
     const t0 = moving[0]!.t;
-    const arrived = samples.find((x) => x.t > t0 && Math.abs(x.s - end) <= Math.abs(end) * 0.01)!;
+    const startScale = samples.find((x) => x.t >= t0 - 1)!.s;
+    /*
+     * "Arrived" is within 1% of **the travel**, not of the final scale. Measured against |end| the
+     * gate only held while the domain nearest the centre happened to need a large zoom: when the
+     * dogfood vault grew two nodes (2026-09-25) the pick became `meaning-layer`, a 6% zoom, and 1%
+     * of the end scale was a sixth of the whole travel — the same ~750 ms ease-out read as 422 ms
+     * with 44% done at "half time". The flight's duration and shape are the claim; which domain the
+     * layout puts in the middle is not.
+     */
+    const travel = Math.abs(end - startScale);
+    const arrived = samples.find((x) => x.t > t0 && Math.abs(x.s - end) <= travel * 0.01)!;
     const duration = arrived.t - t0;
     // Ease-out: most of the travel happens in the first half of the flight.
     const mid = samples.reduce((best, x) => (Math.abs(x.t - (t0 + duration / 2)) < Math.abs(best.t - (t0 + duration / 2)) ? x : best));
-    const startScale = samples.find((x) => x.t >= t0 - 1)!.s;
     const firstHalf = Math.abs(mid.s - startScale) / Math.max(1e-6, Math.abs(end - startScale));
     console.log(`[fly-to] ${duration.toFixed(0)} ms to within 1%, ${(firstHalf * 100).toFixed(0)}% of the zoom done at half time`);
     expect(duration).toBeGreaterThan(450);
