@@ -321,7 +321,7 @@ export function HarnessCoverageOverview({
           {evidenceAction({ kind: 'outside' }, t('collection.outside.action'), evidence.outsideAreas.length)}
           {evidenceAction({ kind: 'unreached' }, t('collection.unreached.action'), evidence.unreachedCapabilities.length)}
           {evidenceAction({ kind: 'findings' }, t('collection.findings.action'), drift.length)}
-          <Link href="/architecture/?view=guides" className={controlClass({ shape: 'link', size: 'md', className: 'px-1 text-[color:var(--color-indigo-text-strong)]' })}>{t('findingSummary')}</Link>
+          <Link href="/architecture/?view=guides" className={controlClass({ shape: 'link', size: 'md', className: 'min-h-8 px-1 text-[color:var(--color-indigo-text-strong)]' })}>{t('findingSummary')}</Link>
         </div>
         {mode === 'diagram' ? (
           <div className={styles.domainGrid} data-guidance-domain-grid>

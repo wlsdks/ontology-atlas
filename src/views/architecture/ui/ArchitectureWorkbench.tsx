@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Bot, Boxes, Check, ChevronDown, PanelRight, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
@@ -298,13 +298,26 @@ export function ArchitectureWorkbench({
     return () => window.removeEventListener('keydown', onKey);
   }, [closeEvidence, evidenceOpen]);
 
-  useLayoutEffect(() => {
-    if (!evidenceOpen || typeof window === 'undefined') return;
+  /*
+   * ⚠️ **Reveal when the panel exists, not when the flag flips.** Below `xl` the evidence is a
+   * section after the canvas. The reveal used to run from a layout effect on `evidenceOpen`, but
+   * `Surface` mounts its node one commit later (its presence gate is an effect), so the frame
+   * that scrolled found no node: at 900x900 the rail said expanded while the panel sat at
+   * y=892..1218 with its close button off-screen (2026-09-25). The press arms the reveal and the
+   * panel's own ref fires it once the node is attached.
+   */
+  const revealEvidence = useRef(false);
+  const attachEvidencePanel = useCallback((node: HTMLElement | null) => {
+    evidencePanelRef.current = node;
+    if (!node || !revealEvidence.current) return;
+    revealEvidence.current = false;
     if (window.matchMedia('(min-width: 1280px)').matches) return;
     window.requestAnimationFrame(() => {
-      evidencePanelRef.current?.scrollIntoView({ block: 'nearest' });
+      const scroller = node.closest<HTMLElement>('.architecture-workbench-grid');
+      const tall = scroller ? node.offsetHeight > scroller.clientHeight : false;
+      node.scrollIntoView?.({ block: tall ? 'start' : 'nearest' });
     });
-  }, [evidenceOpen]);
+  }, []);
 
   /*
    * ⚠️ **One button, one derived default, and a chooser for the rest.** The button used to be
@@ -833,6 +846,7 @@ export function ArchitectureWorkbench({
                     closeEvidence();
                     return;
                   }
+                  revealEvidence.current = true;
                   setEvidenceOpen(true);
                   setInspector(null);
                 }}
@@ -1109,7 +1123,7 @@ export function ArchitectureWorkbench({
         </div>
 
         <Surface
-          ref={evidencePanelRef}
+          ref={attachEvidencePanel}
           open={evidenceOpen}
           as="aside"
           motion="overlay"

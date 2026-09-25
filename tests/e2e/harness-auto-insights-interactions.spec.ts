@@ -451,3 +451,67 @@ test.describe('Architecture copy failure', () => {
     expect(Math.abs(after.rail - before.rail), 'the error label squeezed the evidence rail').toBeLessThanOrEqual(1);
   });
 });
+
+test.describe('Surfaces near the bottom tab bar and below xl', () => {
+  test('a row menu near the tab bar opens upward instead of under it', async ({ page }) => {
+    await page.setViewportSize({ width: 900, height: 900 });
+    await page.goto('/ko/ontology/insights/?tab=do-next&guides=off', { waitUntil: 'domcontentloaded' });
+    const trigger = page.getByTestId('do-next-row-menu').first();
+    await expect(trigger).toBeVisible({ timeout: 30_000 });
+    const nav = await box(page.locator('[data-tabbar="primary"]'));
+    /* Park the kebab 40px above the tab bar, where the menu hung to y=864 across a bar at y≈843. */
+    await trigger.evaluate((node, navTop) => {
+      let scroller: HTMLElement | null = node.parentElement;
+      while (scroller && !(/(auto|scroll)/.test(getComputedStyle(scroller).overflowY) && scroller.scrollHeight > scroller.clientHeight + 1)) {
+        scroller = scroller.parentElement;
+      }
+      const target = scroller ?? document.scrollingElement!;
+      target.scrollTop += node.getBoundingClientRect().bottom - (navTop - 40);
+    }, nav.y);
+    const parked = await box(trigger);
+    expect(nav.y - (parked.y + parked.height), 'could not park the kebab near the tab bar').toBeLessThan(120);
+    await trigger.click();
+    const menu = page.getByTestId('do-next-row-menu-popover');
+    await expect(menu).toHaveAttribute('data-placement', 'above');
+    await expect(menu).toHaveCSS('opacity', '1');
+    const rect = await box(menu);
+    expect(rect.y + rect.height, 'the menu ran under the tab bar').toBeLessThanOrEqual(nav.y);
+    const covered = await menu.evaluate((node) => {
+      const r = node.getBoundingClientRect();
+      return [[r.left + 4, r.bottom - 4], [r.right - 4, r.bottom - 4]]
+        .map(([x, y]) => document.elementFromPoint(x, y))
+        .filter((hit) => !hit || !node.contains(hit)).length;
+    });
+    expect(covered, 'a lower corner of the menu is covered').toBe(0);
+    await page.keyboard.press('Escape');
+    await expect(trigger).toBeFocused();
+  });
+
+  test('below xl the evidence rail brings its panel on screen', async ({ page }) => {
+    await installHarnessRuntime(page);
+    await mountHarnessVault(page);
+    for (const [width, height] of [[900, 900], [1040, 720]] as const) {
+      await page.setViewportSize({ width, height });
+      await page.goto('/ko/architecture/?view=architecture&guides=off');
+      const rail = page.getByTestId('architecture-evidence-rail');
+      await expect(rail).toBeVisible({ timeout: 30_000 });
+      await rail.click();
+      await expect(rail).toHaveAttribute('aria-expanded', 'true');
+      const close = page.getByTestId('architecture-evidence-close');
+      /* Before: the panel opened at y=892..1218 in a 900px window and nothing moved. */
+      await expect
+        .poll(async () => {
+          const rect = await close.boundingBox();
+          return rect ? rect.y >= 0 && rect.y + rect.height <= height : false;
+        }, { message: `${width}×${height}: the evidence close stayed off-screen` })
+        .toBe(true);
+      await expect
+        .poll(() => close.evaluate((node) => {
+          const r = node.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return !!hit && node.contains(hit);
+        }))
+        .toBe(true);
+    }
+  });
+});
