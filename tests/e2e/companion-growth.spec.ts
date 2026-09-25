@@ -102,6 +102,14 @@ test('clicking a creature spends one ready wave and shows its remaining cooldown
  await enemy.click();await expect.poll(()=>page.evaluate(()=>{const key=Object.keys(localStorage).find(value=>value.startsWith('ontology-atlas:companion-game:v1:'))!;return JSON.parse(localStorage.getItem(key)!).attackId;})).toBe(before+1);
 });
 
+test('a failed game save removes the ready pointer attack affordance',async({page})=>{
+ await openProject(page,'en',false);const dialog=await home(page);await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();await page.clock.pauseAt(new Date());
+ const enemy=dialog.getByTestId('companion-enemy');await expect(enemy).toHaveAttribute('data-targetable','true');
+ await page.evaluate(()=>{const original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key.startsWith('ontology-atlas:companion-game:v1:'))throw Error('full');return original.call(this,key,value);};});
+ await enemy.click();await expect(dialog.getByRole('alert')).toBeVisible();await expect(enemy).toHaveAttribute('data-targetable','false');
+ await expect(dialog.getByRole('button',{name:'Knowledge wave ×3',exact:true})).toBeDisabled();
+});
+
 test('Space visibly moves the fox as soon as the dodge is armed',async({page})=>{
  await openProject(page,'en',false);const dialog=await home(page);await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();await page.clock.pauseAt(new Date());
  await page.evaluate(()=>{const key=Object.keys(localStorage).find(value=>value.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.phase='attack';game.guard=0;game.dodgeCooldown=0;game.attackId++;game.lastAt=Date.now();localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});
