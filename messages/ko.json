@@ -7498,7 +7498,17 @@
       "declarationShort": "선언 원문",
       "checking": "현재 근거 확인 중…",
       "verifyFailed": "근거 확인에 실패해 저장하지 않았어요. 초안은 그대로예요.",
-      "refreshEvidence": "근거를 새로고쳐 다시 읽기"
+      "refreshEvidence": "근거를 새로고쳐 다시 읽기",
+      "noteBadge": "내 메모",
+      "noteHint": "이전에 저장한 탐구 메모를 열어요.",
+      "recallTitle": "내 탐구 메모",
+      "recordedOn": "처음 기록한 날: {date}",
+      "dateUnavailable": "날짜 미상",
+      "recallBoundary": "지난 탐구에서 남긴 개인 메모예요. 지금의 근거로 판단하려면 현재 원문을 다시 살펴보세요.",
+      "reexplore": "다시 탐구하기",
+      "reexploreHint": "현재 저장된 원문을 읽고 메모를 다시 다듬어요.",
+      "currentUnavailable": "현재 원문을 찾을 수 없어요. 메모는 남아 있어요.",
+      "noteUnavailable": "수첩에서 이 메모를 읽을 수 없어요."
     }
   }
 }

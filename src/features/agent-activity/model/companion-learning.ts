@@ -3,7 +3,7 @@ import type {GrowthTarget,ReflectionKind} from './companion-growth';
 
 type Graph=ReturnType<typeof deriveOntologyFromVault>;
 export type LearningTopic={target:GrowthTarget;kind:string;signature:string;dependent:GrowthTarget|null;declaration:GrowthTarget|null;reason:string|null;options:GrowthTarget[]};
-export type LearningDraft={uid:string|null;signature:string|null;step:'choose'|'read'|'relation'|'impact'|'reflect'|'done';choice:string|null;checked:boolean;note:string;reflection:ReflectionKind};
+export type LearningDraft={uid:string|null;signature:string|null;step:'choose'|'read'|'relation'|'impact'|'reflect'|'done'|'recall';choice:string|null;checked:boolean;note:string;reflection:ReflectionKind};
 export const emptyLearningDraft=():LearningDraft=>({uid:null,signature:null,step:'choose',choice:null,checked:false,note:'',reflection:'uncertain'});
 
 /** Quote authored sections only; missing headings are a visible gap, not invented teaching text. */
