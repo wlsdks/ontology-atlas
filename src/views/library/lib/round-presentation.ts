@@ -47,22 +47,20 @@ export interface SinceSummary {
   stale: string[];
   /** Pages written by a pass (vault-relative `wiki/…` paths), in first-seen order. */
   redrafted: string[];
-  asleep: { from: Date; to: Date }[];
 }
 
 export function summarizeSince(entries: readonly RoundPassEntry[], span: SinceSpan): SinceSummary {
-  const summary: SinceSummary = { passes: 0, held: 0, failed: 0, refused: 0, stale: [], redrafted: [], asleep: [] };
+  const summary: SinceSummary = { passes: 0, held: 0, failed: 0, refused: 0, stale: [], redrafted: [] };
   const seenStale = new Set<string>();
   const seenWritten = new Set<string>();
   for (const entry of entries) {
     const started = new Date(entry.startedAt).getTime();
-    const ended = new Date(entry.endedAt).getTime();
-    if (entry.outcome === "asleep") {
-      if (ended >= span.from.getTime() && started <= span.to.getTime()) {
-        summary.asleep.push({ from: new Date(entry.startedAt), to: new Date(entry.endedAt) });
-      }
-      continue;
-    }
+    /*
+     * A gap is not a pass, and the card does not name it: the ledger right below draws the same
+     * gap as a hatched band at its time (2026-09-25, round three — the card ended on
+     * "asleep 01:12 → 07:28" directly above the ledger row saying the same).
+     */
+    if (entry.outcome === "asleep") continue;
     if (started < span.from.getTime() || started > span.to.getTime()) continue;
     summary.passes += 1;
     if (entry.outcome === "held") summary.held += 1;
@@ -116,16 +114,6 @@ export function lastOutcome(round: RoundRecord, entries: readonly RoundPassEntry
   let latest: RoundPassEntry | null = null;
   for (const entry of entries) {
     if (entry.roundId !== round.id) continue;
-    if (!latest || new Date(entry.endedAt) > new Date(latest.endedAt)) latest = entry;
-  }
-  return latest;
-}
-
-/** The last pass of any round, for the header. */
-export function lastPass(entries: readonly RoundPassEntry[]): RoundPassEntry | null {
-  let latest: RoundPassEntry | null = null;
-  for (const entry of entries) {
-    if (entry.outcome === "asleep") continue;
     if (!latest || new Date(entry.endedAt) > new Date(latest.endedAt)) latest = entry;
   }
   return latest;

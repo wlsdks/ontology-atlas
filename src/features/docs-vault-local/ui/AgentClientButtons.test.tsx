@@ -76,18 +76,21 @@ describe("AgentClientButtons — 넷은 같은 무게다", () => {
   });
 
   /**
-   * The four `>_` terminal glyphs were removed. The same slot draws Check (done), Copy (copied), and
-   * Loader (in progress) depending on state, while Terminal carried no state at all — ink is spent on
-   * data (Tufte).
+   * The four `>_` terminal glyphs were removed once (Tufte: Terminal carried no state). Round 3
+   * (2026-09-25) overturns the "no glyph at rest" half of that: these are now row chips on the
+   * Agents destination, where every other row and heading chip leads with its verb's glyph, and a
+   * bare "Connect" was the one control that read as a different object. What survives is the part
+   * that was about ink: **one** glyph per control, and the state glyph (check, copy, alert, the
+   * waiting mark) replaces the resting one rather than joining it.
    */
-  it("draws no glyph on the connect action — only state carries one", () => {
+  it("draws exactly one glyph on each connect action", () => {
     renderButtons();
     for (const client of AGENT_CLIENTS) {
       const control = screen.getByTestId(CLIENT_TESTID[client.id]);
       expect(
         control.querySelectorAll("svg").length,
-        `${client.id} 연결 버튼에 상태 없는 글리프가 있다`,
-      ).toBe(0);
+        `${client.id} 연결 버튼의 글리프 수`,
+      ).toBe(1);
     }
   });
 });

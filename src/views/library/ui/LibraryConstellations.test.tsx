@@ -124,10 +124,27 @@ describe('LibraryConstellations', () => {
       deleteConstellation: vi.fn(),
     });
 
-    renderView([]);
+    renderView();
     fireEvent.click(screen.getByRole('button', { name: 'Pick on the map' }));
 
     expect(mocks.useSavedConstellations).toHaveBeenCalledWith(HANDLE);
     expect(mocks.push).toHaveBeenCalledWith('/topology/?constellation=new');
+  });
+
+  it('with no concept to pick, the primary door adds concepts on the map instead', () => {
+    mocks.useSavedConstellations.mockReturnValue({
+      status: 'ready',
+      constellations: [],
+      error: null,
+      reload: mocks.reload,
+      saveConstellation: vi.fn(),
+      deleteConstellation: vi.fn(),
+    });
+
+    renderView([]);
+    expect(screen.queryByRole('button', { name: 'Pick on the map' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Add concepts on the map' }));
+
+    expect(mocks.push).toHaveBeenCalledWith('/topology/');
   });
 });

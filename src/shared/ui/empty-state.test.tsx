@@ -89,6 +89,28 @@ describe('EmptyState — align variant', () => {
   });
 });
 
+describe('EmptyState — heading and action lines', () => {
+  it('align=center with a description keeps the title at the heading step', () => {
+    render(<EmptyState title="이 프로젝트가 없어요" description="다른 프로젝트를 고르세요." align="center" />);
+    const titleEl = screen.getByText('이 프로젝트가 없어요');
+    expect(titleEl.className).toContain('text-title');
+    expect(titleEl.className).toContain('text-[color:var(--color-text-primary)]');
+    expect(titleEl.className).not.toContain('font-normal');
+  });
+
+  it('with a left icon, the action row sits in the text column, not under the icon', () => {
+    const { container } = render(
+      <EmptyState title="t" description="d" icon={<svg />} action={<button type="button">go</button>} />,
+    );
+    const actionRow = container.querySelector('[data-empty-action]');
+    const icon = container.querySelector('[data-empty-icon]');
+    expect(actionRow).not.toBeNull();
+    // The icon's sibling column holds the title, the description and the action.
+    expect(icon?.nextElementSibling?.contains(actionRow)).toBe(true);
+    expect(icon?.nextElementSibling?.contains(screen.getByText('t'))).toBe(true);
+  });
+});
+
 describe('EmptyState — size variant', () => {
   it('size=compact uses smaller padding (left align)', () => {
     const { container } = render(<EmptyState title="t" size="compact" />);

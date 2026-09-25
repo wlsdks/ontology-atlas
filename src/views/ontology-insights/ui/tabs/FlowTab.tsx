@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Disclosure } from "@/shared/ui";
 import { CopyAgentTextButton } from "../parts/CopyAgentTextButton";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
@@ -119,11 +120,63 @@ export function FlowTab({
   const previous = versions?.[1] ?? null;
   const changes = latest && previous ? flowHeadingChanges(latest.answer, previous.answer) : [];
 
+  const actionBlock = agentChecking ? (
+    <p role="status" className="text-label text-[color:var(--color-text-tertiary)]">
+      {labels.checking}
+    </p>
+  ) : pressable ? (
+    <div className="flex flex-wrap items-center gap-3">
+      {/* The insights views' panel action: `Button` sm, the 32px rounded-panel control. */}
+      <Button
+        variant="primary"
+        size="sm"
+        className="atlas-touch-floor"
+        data-testid="flow-prefill"
+        onClick={() => onPrefill?.(request)}
+      >
+        {latest ? labels.rewrite : labels.action}
+      </Button>
+      <span className="text-label text-[color:var(--color-text-tertiary)]">{labels.actionHint}</span>
+    </div>
+  ) : (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+        {labels.unavailableTitle}
+      </p>
+      <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">
+        {labels.unavailableBody}
+      </p>
+    </div>
+  );
+
+  /* The footer's copy grammar, so one panel copies one way: it was a 24px chip at 9.5px
+     beside the footer's 32px "copy next action" (2026-09-25). */
+  const copyButton = (
+    <CopyAgentTextButton
+      label={labels.copy}
+      copiedLabel={labels.copied}
+      text={request}
+      compact
+      testId="flow-copy"
+    />
+  );
+
+  const requestFold = (
+    <Disclosure summary={labels.requestLabel} summaryTestId="flow-request-open">
+      <div className="mt-2 flex flex-col gap-2">
+        <div className="flex justify-end">{copyButton}</div>
+        <pre className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)]">
+          {request}
+        </pre>
+      </div>
+    </Disclosure>
+  );
+
   return (
     <section className="flex flex-col gap-4" data-testid="flow-tab">
       <div className="flex flex-col gap-2">
         <InsightsSectionTitle level={2}>{labels.title}</InsightsSectionTitle>
-        <p className="max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{labels.lead}</p>
+        <p className="text-body text-[color:var(--color-text-secondary)]">{labels.lead}</p>
       </div>
 
       {/*
@@ -165,60 +218,130 @@ export function FlowTab({
             <p className="text-label text-[color:var(--color-text-quaternary)]">{labels.versionsLabel(versions.length)}</p>
           ) : null}
         </article>
-      ) : (
-        <div className="flex flex-col gap-1.5 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]" data-testid="flow-no-version">
-          <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{labels.noVersionTitle}</p>
-          <p className="max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{labels.noVersionBody}</p>
-        </div>
-      )}
+      ) : null}
 
-      {agentChecking ? (
-        <p role="status" className="text-label text-[color:var(--color-text-tertiary)]">
-          {labels.checking}
-        </p>
-      ) : pressable ? (
-        <div className="flex flex-wrap items-center gap-3">
-          {/* The insights views' panel action: `Button` sm, the 32px rounded-panel control. */}
-          <Button
-            variant="primary"
-            size="sm"
-            className="atlas-touch-floor"
-            data-testid="flow-prefill"
-            onClick={() => onPrefill?.(request)}
-          >
-            {latest ? labels.rewrite : labels.action}
-          </Button>
-          <span className="text-label text-[color:var(--color-text-tertiary)]">{labels.actionHint}</span>
-        </div>
+      {latest ? (
+        <>
+          {actionBlock}
+          {requestFold}
+        </>
       ) : (
-        <div className="flex flex-col gap-1.5">
-          <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-            {labels.unavailableTitle}
-          </p>
-          <p className="max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">
-            {labels.unavailableBody}
-          </p>
-        </div>
-      )}
-
-      <Disclosure summary={labels.requestLabel} summaryTestId="flow-request-open">
-        <div className="mt-2 flex flex-col gap-2">
-          {/* The footer's copy grammar, so one panel copies one way: it was a 24px chip at 9.5px
-              beside the footer's 32px "copy next action" (2026-09-25). */}
-          <div className="flex justify-end">
-            <CopyAgentTextButton
-              label={labels.copy}
-              copiedLabel={labels.copied}
-              text={request}
-              compact
-              testId="flow-copy"
-            />
+        /*
+         * ⚠️ **Before the first writing, the request is the tab's only real object.** Three
+         * 62ch paragraphs stacked down a 1368px column left two thirds of the band empty
+         * (1512x949, 2026-09-25), with the one thing worth checking folded away at the foot.
+         * With nothing written yet, the two halves of the decision sit side by side: what
+         * would appear here and how to start it, and the exact text the agent would receive.
+         */
+        <div className="grid grid-cols-1 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-2">
+          <div className="flex flex-col gap-4 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]" data-testid="flow-no-version">
+            <div className="flex flex-col gap-1.5">
+              <p className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{labels.noVersionTitle}</p>
+              <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{labels.noVersionBody}</p>
+            </div>
+            <div className="border-t border-[color:var(--color-divider)] pt-4">{actionBlock}</div>
           </div>
-          <pre className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 text-label leading-prose text-[color:var(--color-text-secondary)]">
-            {request}
-          </pre>
+          {/*
+            * ⚠️ **The explanation sets the row's height; the request scrolls inside it.** With the
+            * 256px request sizing the row, the explanation card stretched to it and carried ~160px
+            * of empty middle at 1512 (review, 2026-09-25). The request text now fills whatever
+            * height the explanation takes, out of flow, so neither card holds a blank band; on a
+            * single column it keeps a 16rem floor.
+            */}
+          <section aria-label={labels.requestLabel} data-testid="flow-request" className="flex min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-body text-[color:var(--color-text-secondary)]">{labels.requestLabel}</h3>
+              {copyButton}
+            </div>
+            <RequestScroller request={request} />
+          </section>
         </div>
-      </Disclosure>
+      )}
     </section>
+  );
+}
+
+/**
+ * The request text as a designed scroll region beside the explanation.
+ *
+ * ⚠️ **A clipped line reads as a bug** (review, 2026-09-25). The box ended wherever the row did,
+ * so its last visible line was cut through the middle of its glyphs with nothing saying the text
+ * went on. The frame (border and surface) now stays still while the text scrolls inside it, and
+ * the edge that has more text fades out over `--tabbar-edge-fade`, the same width and the same
+ * four-state mask the library index and the tab strips use. The fade appears only while there is
+ * text past that edge, so a request that fits keeps its last line whole.
+ *
+ * ⚠️ **The text face, not the monospace one** (review, 2026-09-25, round 5). `<pre>` defaults to
+ * monospace, and Hangul in it fell back glyph by glyph with word-wide gaps. What is copied is
+ * the string, never the face it is drawn in, so the preview reads as the sentences it is while
+ * `pre-wrap` still keeps its line breaks and numbered list exactly as sent.
+ */
+function RequestScroller({ request }: { request: string }) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLPreElement>(null);
+  const [edge, setEdge] = useState({ top: false, bottom: false });
+  /*
+   * ⚠️ **The viewport ends between two lines, not through one** (review, 2026-09-25, round 4).
+   * With the text filling the frame, the last visible line was cut through its glyphs and a 22px
+   * fade over a 19px line could not hide it. The scroll viewport is now snapped to a whole number
+   * of lines under the top padding, so at rest the last line shown is whole and the fade dims it
+   * as "more below"; the frame keeps its full height and the remainder reads as its padding.
+   */
+  const [viewport, setViewport] = useState<number | null>(null);
+  const measure = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const top = el.scrollTop > 1;
+    const bottom = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+    setEdge((prev) => (prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
+  }, []);
+  const snap = useCallback(() => {
+    const frame = frameRef.current;
+    const el = ref.current;
+    if (!frame || !el) return;
+    const style = getComputedStyle(el);
+    const line = Number.parseFloat(style.lineHeight);
+    const padTop = Number.parseFloat(style.paddingTop) || 0;
+    const available = frame.clientHeight;
+    if (!Number.isFinite(line) || line <= 0 || available <= 0) return;
+    const lines = Math.max(1, Math.floor((available - padTop * 2) / line));
+    const snapped = Math.round(padTop + lines * line);
+    setViewport((prev) => (el.scrollHeight <= available ? null : prev === snapped ? prev : snapped));
+    measure();
+  }, [measure]);
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    snap();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(snap);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [snap, request]);
+  const fade = "var(--tabbar-edge-fade)";
+  const mask =
+    edge.top && edge.bottom
+      ? `linear-gradient(to bottom, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`
+      : edge.bottom
+        ? `linear-gradient(to bottom, black calc(100% - ${fade}), transparent 100%)`
+        : edge.top
+          ? `linear-gradient(to bottom, transparent 0, black ${fade})`
+          : undefined;
+  return (
+    <div ref={frameRef} className="relative min-h-64 flex-1 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] @min-[960px]/insights:min-h-32">
+      <pre
+        ref={ref}
+        data-testid="flow-request-text"
+        data-fade-bottom={edge.bottom ? "" : undefined}
+        onScroll={measure}
+        style={{
+          ...(mask ? { maskImage: mask, WebkitMaskImage: mask } : null),
+          ...(viewport != null ? { height: viewport, bottom: "auto" } : null),
+        }}
+        className="atlas-scroll-quiet absolute inset-0 overflow-auto whitespace-pre-wrap break-words p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)]"
+      >
+        {request}
+      </pre>
+    </div>
   );
 }

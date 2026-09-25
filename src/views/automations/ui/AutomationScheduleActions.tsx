@@ -60,27 +60,29 @@ export function AutomationScheduleActions({ round, runner }: {
       {confirmRemove ? (
         <div id={`${detailId}-remove`} role="group" aria-labelledby={`${detailId}-question`}
           data-testid="automations-remove-confirm"
-          className="flex flex-wrap items-center gap-2"
+          className="flex flex-wrap items-center gap-x-3 gap-y-2"
           onKeyDown={(event) => {
             if (event.key !== 'Escape' || pending) return;
             event.stopPropagation();
             closeConfirm();
           }}>
-          <p id={`${detailId}-question`} className="mr-1 min-w-0 break-keep text-body text-[color:var(--color-text-primary)]">
+          <p id={`${detailId}-question`} className="min-w-0 text-body text-[color:var(--color-text-primary)]">
             {t('removeQuestion', { name: round.name })}
           </p>
-          <Button ref={cancelButton} variant="ghost" size="sm" disabled={pending} className="atlas-touch-floor"
-            onClick={closeConfirm}>{t('cancel')}</Button>
-          {/* The one irreversible step wears the danger tone; its trigger stays neutral because it
-              only asks. Same 32px outline geometry as the row, danger ink and edge. */}
-          <Button variant="outline" size="sm" disabled={pending}
-            className="atlas-touch-floor border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-danger-text)] hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)] active:bg-[color:var(--color-danger-a12)]"
-            data-testid="automations-confirm-remove"
-            onClick={() => void change(async () => {
-              const removed = await runner.remove(round.id);
-              if (removed) document.getElementById('main')?.focus();
-              return removed;
-            })}><Trash2 size={ICON_SIZE.sm} aria-hidden />{t('removeConfirm')}</Button>
+          {/* ⚠️ The answer pair is one unit and never splits: at 390 the danger button wrapped alone
+              to a second line, below and left of its Cancel (2026-09-25). The pair moves as one —
+              beside the question where it fits, under it where it does not. */}
+          <div className="flex shrink-0 items-center gap-2" data-testid="automations-remove-answers">
+            <Button ref={cancelButton} variant="outline" size="sm" disabled={pending} className="atlas-touch-floor"
+              onClick={closeConfirm}>{t('cancel')}</Button>
+            <Button variant="danger" size="sm" disabled={pending} className="atlas-touch-floor" data-confirm-step
+              data-testid="automations-confirm-remove"
+              onClick={() => void change(async () => {
+                const removed = await runner.remove(round.id);
+                if (removed) document.getElementById('main')?.focus();
+                return removed;
+              })}><Trash2 size={ICON_SIZE.sm} aria-hidden />{t('removeConfirm')}</Button>
+          </div>
         </div>
       ) : (
         /* One control grammar: three outline sm buttons (32px, one radius, one surface). */

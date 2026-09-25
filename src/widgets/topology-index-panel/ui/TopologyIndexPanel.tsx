@@ -489,10 +489,21 @@ export function TopologyIndexPanel({
   }
   const tidyHeadingId = useId();
   return (
+    /*
+     * ⚠️ **The panel ends under its last row, not at the floor** (measured 2026-09-25). `h-full`
+     * stretched the surface to the window's bottom inset whatever it held, so a three-domain tree
+     * left 54% of the panel empty at 1512x949 and 60% at 1920x1080: a tall slab of surface with
+     * nothing on it, beside a map that could have used the room. The box now takes its content's
+     * height and stops at the slot (`max-h-full`); a tree longer than the slot still shrinks and
+     * scrolls inside it, so large vaults keep the old behaviour.
+     *
+     * The first-run card is the exception: it is designed against the full height (its reference
+     * block stands at the foot through `mt-auto`), so while it is in the panel the panel stays tall.
+     */
     <aside
       aria-label={labels.label}
       data-testid="topology-index-panel"
-      className={`flex h-full flex-col rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
+      className={`flex max-h-full flex-col has-[[data-testid=first-run-starter]]:h-full rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-width)" }}
     >
       {/* The "get started" module (root-first-open v3, `first-run-v3-flagship.html`).

@@ -50,10 +50,7 @@ export { InlineEditable } from './inline-editable';
 export { Tooltip, TooltipProvider } from './tooltip';
 export { StaggeredFadeIn } from './staggered-fade-in';
 export { HighlightedText } from './highlighted-text';
-export {
-  OntologyMapKindGlyph,
-  OntologyMapTraceMark,
-} from './map-kind-glyph';
+export { OntologyMapKindGlyph } from './map-kind-glyph';
 export { TabBar } from './tab-bar';
 export { ChromeTile } from './chrome-tile';
 export { ChromeChip, CHROME_STATUS_CHIP_CLASS, CHROME_CHIP_COMPACT_BELOW_XL } from './chrome-chip';

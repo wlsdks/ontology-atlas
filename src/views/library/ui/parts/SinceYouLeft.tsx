@@ -130,11 +130,6 @@ export function SinceYouLeft({
           ) : null}
         </ul>
       )}
-      {summary.asleep.length > 0 ? (
-        <p className="mt-3 text-label leading-label text-[color:var(--color-text-quaternary)]">
-          {summary.asleep.map((gap) => t("since.asleep", { from: time.format(gap.from), to: time.format(gap.to) })).join(" · ")}
-        </p>
-      ) : null}
     </section>
   );
 }

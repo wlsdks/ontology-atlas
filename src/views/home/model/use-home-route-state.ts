@@ -8,6 +8,7 @@ import {
   parseHomeRouteState,
   type HomeRouteState,
 } from './url-state';
+import { guardedHistoryWrite } from '@/shared/lib/history-write-guard';
 
 /** Custom event dispatched right after history.pushState. */
 const HOME_URL_CHANGE_EVENT = 'app:urlchange';
@@ -120,11 +121,9 @@ export function useHomeRouteState(): [
       if (nextUrl === `${window.location.pathname}${window.location.search}`) {
         return;
       }
-      if (options?.replace) {
-        window.history.replaceState({}, '', nextUrl);
-      } else {
-        window.history.pushState({}, '', nextUrl);
-      }
+      // Through the shared budget: a runaway loop must not reach WebKit's 100-per-10s limit,
+      // which throws and takes the whole route down (`shared/lib/history-write-guard.ts`).
+      if (!guardedHistoryWrite(options?.replace ? 'replace' : 'push', nextUrl)) return;
       window.dispatchEvent(new Event(HOME_URL_CHANGE_EVENT));
     },
     [],

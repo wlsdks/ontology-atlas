@@ -75,7 +75,7 @@ export function DocsVaultVaultChip({
            by its localized label ("Workspace info menu"). That is a seam where
            editing a translation silently kills a spec — give it a locale-independent handle. */
         data-testid="vault-chip-menu-trigger"
-        className="min-w-0 max-w-[200px] flex-none font-mono hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+        className="min-w-0 max-w-[200px] flex-none hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
         {/* The chip's icon states the source — this one glyph replaces the radio pair removed
             from the right (2026-08-08). */}
@@ -84,10 +84,14 @@ export function DocsVaultVaultChip({
         ) : (
           <HardDrive size={ICON_SIZE.sm} aria-hidden className="flex-none" />
         )}
+        {/* One face for the whole chip (2026-09-25, round four). The folder's name is the name
+            the person gave their work, not a path: the rail's vault label draws it in the sans
+            face, and a mono name beside a sans count read as two families in one control. Paths
+            keep mono where they appear (the editor head); DESIGN-SYSTEM "Machine strings". */}
         <span className="hidden min-w-0 truncate text-[color:var(--color-text-secondary)] sm:inline">
           {label}
         </span>
-        <span className="flex-none text-[color:var(--color-text-secondary)]">
+        <span className="flex-none tabular-nums text-[color:var(--color-text-secondary)]">
           {docCount === null ? null : t("header.docCount", { count: docCount })}
         </span>
         <ChevronDown

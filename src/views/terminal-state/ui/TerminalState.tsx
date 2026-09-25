@@ -109,7 +109,7 @@ export function TerminalState({
           aria-hidden
           className={cn('pointer-events-none absolute inset-0 -z-10', GLOW_TONE[tone])}
         />
-        <div className="flex w-full max-w-[var(--measure-note-column)] flex-col items-center text-center [word-break:keep-all] motion-safe:animate-[atlasStatusIn_var(--motion-settle)_var(--motion-ease)_both]">
+        <div className="flex w-full max-w-[var(--measure-note-column)] flex-col items-center text-center motion-safe:animate-[atlasStatusIn_var(--motion-settle)_var(--motion-ease)_both]">
           <span
             aria-hidden
             className={cn(

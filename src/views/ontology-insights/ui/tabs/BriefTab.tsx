@@ -20,6 +20,7 @@ import { parseInsightsTabHref, type InsightsTab } from '../../lib/insights-tab-s
 import { briefTotals, type BriefCore, type BriefLine, type BriefLineDetail, type BriefState } from '../../lib/brief/brief-model';
 import { briefRows, type BriefRow } from '../../lib/brief/brief-rows';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
+import { BRIEF_TWO_COLUMN, INSIGHTS_LIST_ROW, insightsTwoColumnCell } from '../parts/insights-list';
 
 /**
  * Where each line opens. A line is a count of named things; the destination is the screen
@@ -78,15 +79,35 @@ const COLUMNS: Record<BriefCore['core'], readonly [string, string, string]> = {
 
 /**
  * One shape per state, so a reader scanning marks alone is never reading colour: a filled
- * dot is something to learn, a hollow ring is something nobody checked, and a dash is
- * something that merely happened. Two filled circles 1.48:1 apart failed that test
- * (design-infoviz, 2026-09-19).
+ * dot is something to learn and a hollow ring is something nobody checked. Two filled circles
+ * 1.48:1 apart failed that test (design-infoviz, 2026-09-19).
+ *
+ * ⚠️ **Only the two states the headline counts wear a mark, and the headline is their key**
+ * (review, 2026-09-25, round 5). A third mark, a dash for "merely happened", was explained
+ * nowhere and made the column read ○, —, blank, blank. The headline now draws the dot and the
+ * ring in front of the two numbers it sums, so every mark in the list has a legend one glance
+ * up, and a row that is neither is left unmarked, the way an unread dot is absent when read.
  */
 const STATE_MARK: Record<BriefState, string> = {
-  current: 'mt-[10px] h-0.5 w-2.5 rounded-full bg-[color:var(--color-text-tertiary)]',
+  current: '',
   stale: 'mt-[7px] size-2 rounded-full bg-[color:var(--color-amber-source-a90)]',
   unknown: 'mt-[7px] size-2 rounded-full border border-[color:var(--color-text-tertiary)] bg-transparent',
 };
+
+/** The headline's key marks: the list's dot and ring, centred on the hero line's x-height. */
+const HEADLINE_MARK: Record<'stale' | 'unknown', string> = {
+  stale: 'size-2.5 rounded-full bg-[color:var(--color-amber-source-a90)]',
+  unknown: 'size-2.5 rounded-full border-[1.5px] border-[color:var(--color-text-tertiary)]',
+};
+
+function HeadlinePart({ state, children }: { state: 'stale' | 'unknown'; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-2.5 whitespace-nowrap" data-brief-headline-part={state}>
+      <span aria-hidden="true" className={cn('shrink-0', HEADLINE_MARK[state])} />
+      <span>{children}</span>
+    </span>
+  );
+}
 
 export function BriefTab({
   brief,
@@ -115,11 +136,16 @@ export function BriefTab({
   const [seenMarked, setSeenMarked] = useState(brief.canUndoSeen);
   return (
     <section data-testid="brief-tab" className="flex flex-col gap-[var(--section-gap)]">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <div className="min-w-0">
+      <div className="flex min-w-0 flex-col">
           <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             {brief.anchor.isDefaultWindow ? t('sinceDefault') : t('sinceSeen', { days: brief.sinceDays })}
           </p>
+        {/*
+          * **The visit mark sits on the headline's row.** Bottom-aligned to the gloss at the far
+          * right it stood ~780px from the sentence it acts on and read as an orphan at 1512 and
+          * 1920 (design sweep, 2026-09-25). On the headline's row it is that sentence's control.
+          */}
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           {/*
             * **The line this screen exists for has to win.** It wore the same step as the page
             * title 144px above it, same size and same weight, so the title read first and did no
@@ -128,11 +154,16 @@ export function BriefTab({
             * screens use that step for their h1 and two go larger, so shrinking this one alone
             * would trade an attention problem for an inconsistency across the product.
             */}
-          <h2 className="mt-1 text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]" data-testid="brief-headline">
-            {t('headline', { stale: totals.stale, unknown: totals.unknown })}
+          <h2 className="flex min-w-0 flex-wrap items-center gap-x-8 gap-y-1 text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]" data-testid="brief-headline">
+            {t.rich('headline', {
+              stale: totals.stale,
+              unknown: totals.unknown,
+              learn: (chunks) => <HeadlinePart state="stale">{chunks}</HeadlinePart>,
+              unchecked: (chunks) => <HeadlinePart state="unknown">{chunks}</HeadlinePart>,
+              // The marks part the two counts on screen; a listener still hears the pause.
+              sep: (chunks) => <span className="sr-only">{chunks}</span>,
+            })}
           </h2>
-          <p className="mt-2 text-body text-[color:var(--color-text-tertiary)]">{t('sinceGloss')}</p>
-        </div>
         <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
           <p
             role="status"
@@ -173,6 +204,8 @@ export function BriefTab({
             {t('markSeen')}
           </Button>
         </div>
+        </div>
+        <p className="mt-2 text-body text-[color:var(--color-text-tertiary)]">{t('sinceGloss')}</p>
       </div>
       {/*
         * **One band of counts, one list of lines** (owner's direction C, 2026-09-23). Four equal
@@ -182,8 +215,8 @@ export function BriefTab({
         * magnitude in one glance; the list under it is where the eye goes next.
         */}
       <BriefBand cores={cores} />
-      <BriefLineList rows={briefRows(cores)} details={brief.details} nowMs={brief.nowMs} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
-      <BriefSinceList rows={brief.since} total={brief.sinceTotal} nowMs={brief.nowMs} />
+      <BriefLineList rows={briefRows(cores, { namedSince: brief.since.map((row) => row.kind) })} details={brief.details} nowMs={brief.nowMs} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
+      <BriefSinceList rows={brief.since} total={brief.sinceTotal} soleKind={brief.sinceKind} nowMs={brief.nowMs} />
     </section>
   );
 }
@@ -212,6 +245,8 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
       {cores.map((core) => {
         const [c1, c2, c3] = COLUMNS[core.core];
         const measured = core.availability === 'measured';
+        // Nothing to count and nothing still arriving: the ring, whose reason the list row gives.
+        const unknowable = core.availability === 'no-source' || core.availability === 'app-only' || core.availability === 'unreadable';
         const unit = t(`unit.${core.core}`);
         return (
           <div
@@ -225,35 +260,55 @@ function BriefBand({ cores }: { cores: readonly BriefCore[] }) {
             </span>
             {/*
               * The magnitude is the cell's answer, so it sits under the name at the title step in
-              * primary ink (the display step tied the page title and `screen-hierarchy` refused it). At the far end of a 340px cell at the title step it read as a footnote
+              * primary ink (the display step tied the page title and `screen-hierarchy` refused it).
+              * At the far end of a 340px cell at the title step it read as a footnote
               * the eye had to travel to (checkpoint, 2026-09-23). A core with no magnitude keeps the
               * row's height so four cells share one baseline.
               */}
             <span className="flex min-h-[var(--leading-title)] items-baseline gap-1.5">
               {core.headline != null ? (
                 <BandNumber value={core.headline} unit={unit} />
+              ) : unknowable ? (
+                /* The value line wears the title step like its peers' numerals, so the band
+                   reads as four answers of one weight rather than three and a footnote. */
+                <UnknownMark label={t('col.unknown')} testId={`brief-core-state-${core.core}`} word={t('col.unknown')} />
               ) : (
                 <span className="text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-state-${core.core}`}>
                   {t(`bandState.${core.availability}`)}
                 </span>
               )}
             </span>
+            {/*
+              * ⚠️ **The band counts; the list says why** (review, 2026-09-25, round 5). A cell that
+              * could not count used to add a caption ("before a repository", "none yet", "measured
+              * in the app") while the list row under the band said the same fact as a sentence, so "no
+              * repository" stood three times on one screen. The band now carries magnitudes only,
+              * and the ring where there is none (one anatomy: name, value, then the three counts
+              * when they exist); the reason and its door are the list's, said once there.
+              */}
             {measured ? (
               <div className="flex flex-wrap gap-x-4 gap-y-1" data-testid="brief-core-columns">
                 <CensusSubStat label={t(`col.${c1}`)} value={core.current ?? 0} />
                 <CensusSubStat label={t(`col.${c2}`)} value={core.stale ?? 0} tone={core.stale ? 'warning' : 'numeral'} />
                 <CensusSubStat label={t(`col.${c3}`)} value={core.unknown ?? 0} />
               </div>
-            ) : core.headline != null ? (
-              <span className="text-label text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-state-${core.core}`}>
-                {t(`bandState.${core.availability}`)}
-              </span>
             ) : null}
           </div>
         );
       })}
       </div>
     </div>
+  );
+}
+
+/** The band's "unknown" value: the list's hollow ring and one word at the magnitude's step. */
+function UnknownMark({ label, word, testId }: { label: string; word: string; testId: string }) {
+  return (
+    <span className="inline-flex items-center gap-2 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-tertiary)]" data-testid={testId}>
+      <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full border border-[color:var(--color-text-tertiary)]" />
+      <span aria-hidden="true">{word}</span>
+      <span className="sr-only">{label}</span>
+    </span>
   );
 }
 
@@ -288,19 +343,60 @@ function BriefLineList({
   const t = useTranslations('ontologyPages.insights.brief');
   const appRow = rows.some((row) => row.kind === 'app-only');
   const leaving = useLeavingRows(rows);
+  /*
+   * ⚠️ **One missing repository is one line.** The concepts core and the guides core each
+   * wrote their own "no code repository is connected" row, so the same fact and the same fix
+   * stood twice in one list (design sweep, 2026-09-25). When both cores are stopped by it,
+   * the first row speaks for both, names both cores, and carries the one connect action.
+   */
+  const noSourceCores = rows.flatMap((row) => (row.kind === 'status' && row.status === 'no-source' ? [row.core] : []));
+  const sharedNoSource = noSourceCores.length > 1;
+  /*
+   * ⚠️ **Every row names its core.** Blanking the name on a run's later rows left the column
+   * ragged (a name, two gaps, names again), and it read as grouping rather than as one start
+   * line down the list (review, 2026-09-25, round 4). The since card's kind column follows the
+   * same rule.
+   */
+  /*
+   * ⚠️ **Two columns once the slot holds them, and the door ends the sentence.** One column with a
+   * bounded measure left the card's right 39% hollow at 1920 and a 600px trip from a short
+   * sentence to its link (review, 2026-09-25, round 4). The rows now fill both halves of the
+   * card on the band's own middle line, and each link sits in the sentence's flow, on its
+   * baseline, at every width.
+   */
+  const listed = withLeaving(rows, leaving).filter(
+    ({ row, leaving: isLeaving }) => isLeaving || !(row.kind === 'status' && row.status === 'no-source' && sharedNoSource && row.core !== noSourceCores[0]),
+  );
   return (
     <ol
       data-testid="brief-lines"
-      className="flex flex-col divide-y divide-[color:var(--color-divider)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-[var(--card-pad)]"
+      className={cn(BRIEF_TWO_COLUMN, 'rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-[var(--card-pad)]')}
     >
-      {withLeaving(rows, leaving).map(({ row, leaving: isLeaving }) => {
+      {listed.map(({ row, leaving: isLeaving }, index) => {
+        const cell = insightsTwoColumnCell(index, listed.length);
         if (isLeaving) {
-          return <LeavingRow key={`leaving-${rowKey(row)}`} label={leavingLabel(row, t)} />;
+          return <LeavingRow key={`leaving-${rowKey(row)}`} label={leavingLabel(row, t)} className={cell} />;
+        }
+        if (row.kind === 'status' && row.status === 'no-source' && sharedNoSource) {
+          return (
+            <li key="status-no-source" className={cn(ROW, cell)} data-testid={`brief-core-no-source-${row.core}`} data-brief-core={noSourceCores.join(' ')}>
+              <NoSourceMark unchecked={row.unchecked === true} />
+              <span className={CORE_LABEL}>{noSourceCores.map((key) => t(`core.${key}`)).join(t('coreJoin'))}</span>
+              <span className={cn(SENTENCE, 'text-[color:var(--color-text-tertiary)]')}>
+                {t('noSourceShared')}
+                {DOOR_GAP}
+                <DestinationLink href={CORE_NEXT_HREF.ontology} className={LINE_LINK} onOpenTab={onOpenTab}>
+                  {t('emptyAction.ontology')}
+                </DestinationLink>
+              </span>
+            </li>
+          );
         }
         if (row.kind === 'line') {
           return (
             <BriefLineRow
               key={row.line.id}
+              className={cell}
               line={row.line}
               core={row.core}
               availability={row.availability}
@@ -323,28 +419,37 @@ function BriefLineList({
                   : t(row.core === 'ontology' && row.status === 'unreadable' ? 'evidenceUnreadable' : row.status);
           const door = row.status === 'no-data' || row.status === 'no-source';
           return (
-            <li key={`status-${row.core}`} className={ROW} data-testid={`brief-core-${row.status === 'quiet' ? 'quiet' : row.status === 'no-data' ? 'empty' : row.status}-${row.core}`} data-brief-core={row.core}>
+            <li key={`status-${row.core}`} className={cn(ROW, cell)} data-testid={`brief-core-${row.status === 'quiet' ? 'quiet' : row.status === 'no-data' ? 'empty' : row.status}-${row.core}`} data-brief-core={row.core}>
               {/* A status row counts nothing, so it wears no state mark: the dash means "happened"
-                  and a row saying "nothing here yet" is not an event (design-infoviz, 2026-09-23). */}
-              <span aria-hidden="true" className={MARK_SLOT} />
+                  and a row saying "nothing here yet" is not an event (design-infoviz, 2026-09-23).
+                  The one exception stands for the unchecked-evidence line; see `briefRows`. */}
+              <NoSourceMark unchecked={row.kind === 'status' && row.unchecked === true} />
               <span className={CORE_LABEL}>{t(`core.${row.core}`)}</span>
-              <span className="min-w-0 flex-1 break-keep text-[color:var(--color-text-tertiary)]">{sentence}</span>
-              {door ? (
-                <DestinationLink href={CORE_NEXT_HREF[row.core]} className={LINE_LINK} onOpenTab={onOpenTab}>
-                  {t(`emptyAction.${row.core}`)}
-                </DestinationLink>
-              ) : null}
+              <span className={cn(SENTENCE, 'text-[color:var(--color-text-tertiary)]')}>
+                {sentence}
+                {door ? (
+                  <>
+                    {DOOR_GAP}
+                    <DestinationLink href={CORE_NEXT_HREF[row.core]} className={LINE_LINK} onOpenTab={onOpenTab}>
+                      {t(`emptyAction.${row.core}`)}
+                    </DestinationLink>
+                  </>
+                ) : null}
+              </span>
             </li>
           );
         }
         return (
-          <li key="app-only" className={ROW} data-testid="brief-app-only" data-brief-core={row.cores.join(' ')}>
+          <li key="app-only" className={cn(ROW, cell)} data-testid="brief-app-only" data-brief-core={row.cores.join(' ')}>
             <span aria-hidden="true" className={MARK_SLOT}><span className={STATE_MARK.unknown} /></span>
             <span className={CORE_LABEL}>{row.cores.map((key) => t(`core.${key}`)).join(t('coreJoin'))}</span>
-            <span className="min-w-0 flex-1 break-keep text-[color:var(--color-text-tertiary)]">{t('appOnly')}</span>
-            <DestinationLink href="/download/" className={LINE_LINK} onOpenTab={onOpenTab}>
-              {t('getApp')}
-            </DestinationLink>
+            <span className={cn(SENTENCE, 'text-[color:var(--color-text-tertiary)]')}>
+              {t('appOnly')}
+              {DOOR_GAP}
+              <DestinationLink href="/download/" className={LINE_LINK} onOpenTab={onOpenTab}>
+                {t('getApp')}
+              </DestinationLink>
+            </span>
           </li>
         );
       })}
@@ -417,7 +522,7 @@ function withLeaving(rows: readonly BriefRow[], leaving: ReadonlyArray<{ row: Br
 }
 
 /** A departing line: drawn open for one frame, then folded by the shared row disclosure. */
-function LeavingRow({ label }: { label: { core: string; sentence: string } }) {
+function LeavingRow({ label, className }: { label: { core: string; sentence: string }; className?: string }) {
   const [open, setOpen] = useState(true);
   const id = useId();
   useEffect(() => {
@@ -425,15 +530,14 @@ function LeavingRow({ label }: { label: { core: string; sentence: string } }) {
     return () => cancelAnimationFrame(raf);
   }, []);
   return (
-    <li aria-hidden="true" data-brief-leaving="" className="text-body">
+    <li aria-hidden="true" data-brief-leaving="" className={cn('text-body', className)}>
       <RowDisclosure open={open} id={id}>
         <div className="flex flex-wrap items-start gap-x-3 gap-y-1 py-3 text-[color:var(--color-text-tertiary)] sm:flex-nowrap">
           <span className={MARK_SLOT}><span className={STATE_MARK.current} /></span>
           <span className={CORE_LABEL}>{label.core}</span>
-          <span className="min-w-0 flex-1 break-keep">{label.sentence}</span>
-          {/* The door's height without the door, so the copy starts as tall as the line it
-              replaces: without it the rows below stepped up 8px in the first frame. */}
-          <span className="min-h-7 w-0 shrink-0" />
+          {/* The door's line box without the door, so the copy starts as tall as the line it
+              replaces: without it the rows below stepped up in the first frame. */}
+          <span className={SENTENCE}>{label.sentence}{DOOR_GAP}<span className={cn(LINE_LINK, 'invisible')}>{'\u00a0'}</span></span>
         </div>
       </RowDisclosure>
     </li>
@@ -442,8 +546,26 @@ function LeavingRow({ label }: { label: { core: string; sentence: string } }) {
 
 /** One row of the list: mark, core, sentence, door. `flex-wrap` lets the core name sit above at 390. */
 const ROW = 'flex flex-wrap items-start gap-x-3 gap-y-1 py-3 text-body sm:flex-nowrap';
+/**
+ * The sentence, bounded to the reading measure, with its door inside it.
+ *
+ * ⚠️ **The door ends the sentence** (review, 2026-09-25, rounds 5 and 4). At the card's edge a
+ * link sat 1,300px from its sentence; in a column after the measure it still sat 600px from a
+ * short one, moved to the card edge below 1280, and hung 4px under the sentence because the
+ * row top-aligned a 28px link box with a 20px line. In the sentence's flow it is one word-gap
+ * after the last word, on the same baseline, in the same place at every width.
+ */
+const SENTENCE = 'min-w-0 flex-1 break-keep sm:max-w-[var(--measure-doc-column)]';
 /** A fixed column so every sentence starts on one line down the list, whatever the core's name. */
 const CORE_LABEL = 'shrink-0 break-keep text-label leading-body text-[color:var(--color-text-tertiary)] sm:w-24';
+/** A status row's mark slot: empty, or the hollow ring when it stands for the unchecked line. */
+function NoSourceMark({ unchecked }: { unchecked: boolean }) {
+  return (
+    <span aria-hidden="true" className={MARK_SLOT}>
+      {unchecked ? <span className={STATE_MARK.unknown} /> : null}
+    </span>
+  );
+}
 /** A fixed slot for the state mark, so a ring, a dot and a dash all leave the sentence on one line. */
 const MARK_SLOT = 'flex w-2.5 shrink-0 justify-center';
 
@@ -494,7 +616,17 @@ function lineHref(lineId: string, availability: BriefCore['availability'], appRo
   return href;
 }
 
-const LINE_LINK = 'atlas-touch-floor atlas-touch-floor-wide shrink-0 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]';
+/**
+ * A door inside a sentence: whole, on the text's baseline, after `DOOR_GAP`. It carries no side
+ * margin or padding: a margin also indented the door when it wrapped to a line of its own, 12px
+ * off the sentence's start line (1920, the long first row).
+ */
+const LINE_LINK = 'atlas-touch-floor atlas-touch-floor-wide whitespace-nowrap align-baseline text-[color:var(--color-indigo-text-strong)]';
+/**
+ * The gap before a door: one em space. Unlike a margin it stays at the end of the line it
+ * follows when the door wraps, so a wrapped door starts on the sentence's own start line.
+ */
+const DOOR_GAP = '\u2003';
 
 /**
  * A destination link that knows when it is not leaving.
@@ -553,7 +685,7 @@ function DestinationLink({
  * rests on. A count whose only destination is another screen counting something else is
  * the falsifier this decision wrote down for itself (PO evidence seat, 2026-09-19).
  */
-function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs, onAskAgent, onOpenTab }: { line: BriefLine; core: BriefCore['core']; availability: BriefCore['availability']; appRowPresent: boolean; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
+function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs, onAskAgent, onOpenTab, className }: { className?: string; line: BriefLine; core: BriefCore['core']; availability: BriefCore['availability']; appRowPresent: boolean; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
   const [open, setOpen] = useState(false);
   const detailId = useId();
   const t = useTranslations('ontologyPages.insights.brief');
@@ -569,12 +701,12 @@ function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs,
    */
   const handoff = line.id === 'ontology-evidence-moved' ? buildDriftHandoff({ rows: details, locale }) : null;
   return (
-    <li className="py-3 text-body text-[color:var(--color-text-primary)]" data-brief-line={line.id} data-brief-state={line.state} data-brief-core={core}>
+    <li className={cn('py-3 text-body text-[color:var(--color-text-primary)]', className)} data-brief-line={line.id} data-brief-state={line.state} data-brief-core={core}>
       <div className="flex flex-wrap items-start gap-x-3 gap-y-1 sm:flex-nowrap">
         <span aria-hidden="true" className={MARK_SLOT}><span className={STATE_MARK[line.state]} /></span>
         <span className={CORE_LABEL}>{t(`core.${core}`)}</span>
         {shown.length > 0 ? (
-          <div className="min-w-0 flex-1">
+          <div className={SENTENCE}>
             <button
               type="button"
               aria-expanded={open}
@@ -626,14 +758,17 @@ function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs,
             </RowDisclosure>
           </div>
         ) : (
-          <>
-            <span className="min-w-0 flex-1 break-keep">{sentence}</span>
+          <span className={SENTENCE}>
+            {sentence}
             {href ? (
-              <DestinationLink href={href} className={LINE_LINK} onOpenTab={onOpenTab}>
-                {destinationLabel(href, t)}
-              </DestinationLink>
+              <>
+                {DOOR_GAP}
+                <DestinationLink href={href} className={LINE_LINK} onOpenTab={onOpenTab}>
+                  {destinationLabel(href, t)}
+                </DestinationLink>
+              </>
             ) : null}
-          </>
+          </span>
         )}
       </div>
     </li>
@@ -644,35 +779,71 @@ function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs,
  * The cards count; this names. Everything that happened after the anchor, newest first,
  * from the dates the folder already carries — no list is invented and none is copied.
  */
-function BriefSinceList({ rows, total, nowMs }: { rows: readonly SinceRow[]; total: number; nowMs: number }) {
+function BriefSinceList({ rows, total, soleKind, nowMs }: { rows: readonly SinceRow[]; total: number; soleKind: SinceRow['kind'] | null; nowMs: number }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const format = useFormatter();
   if (total === 0) return null;
   return (
     <section data-testid="brief-since" className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-      <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-        {t('sinceTitle', { count: total })}
+      {/*
+        * ⚠️ **A kind every row shares is said once, in the title** (review, 2026-09-25, round 5).
+        * On a folder where only concept documents moved, "concept document" stood on all twenty rows: a
+        * column whose every value is the same is noise. The title names the kind when every
+        * row after the anchor has it (judged over all of them, not only the shown twelve), and
+        * a row names its own kind only when the list mixes kinds.
+        */}
+      <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]" data-since-sole-kind={soleKind ?? undefined}>
+        {soleKind ? t(`sinceTitleKind.${soleKind}`, { count: total }) : t('sinceTitle', { count: total })}
       </h3>
-      <ol className="mt-3 flex flex-col divide-y divide-[color:var(--color-divider)]">
-        {rows.map((row, index) => (
-          <li key={`${row.core}-${row.at}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-3 text-body sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:py-2" data-since-core={row.core}>
-            <span className="col-span-2 min-h-10 min-w-0 line-clamp-2 break-words text-[color:var(--color-text-primary)] sm:col-span-1 sm:min-h-0 sm:line-clamp-1" title={row.label}>
-              <span className="text-[color:var(--color-text-tertiary)]">{t(`since.${row.kind}`)}</span>
-              {' '}
-              {row.label}
-            </span>
-            <time dateTime={row.at} className="font-mono tabular-nums text-label text-[color:var(--color-text-tertiary)]">
-              {format.relativeTime(new Date(row.at), nowMs)}
-            </time>
-            {row.href ? (
-              <Link href={row.href} className={controlClass({ shape: 'link', className: LINE_LINK })}>
-                {t('open')}
-              </Link>
-            ) : (
-              <span />
-            )}
-          </li>
-        ))}
+      {/*
+        * **Newest first, in the list above's columns.** The mark slot, then the time where that list
+        * names the core, then what moved. Time leads because the list is a chronology.
+        *
+        * ⚠️ **The name is the door.** A separate "open" column sat 600px from names that end
+        * near their start at 1920, and one bounded column left 39% of the card hollow (review,
+        * 2026-09-25, round 4). Each row is now the hub rows' pressable row, split into the same
+        * two halves as the list above; a row with nowhere to go is the same row, unpressable.
+        */}
+      <ol className={cn(BRIEF_TWO_COLUMN, 'mt-2')}>
+        {rows.map((row, index) => {
+          const body = (
+            <>
+              <span aria-hidden="true" className={cn(MARK_SLOT, 'hidden sm:flex')} />
+              {/* Tabular figures in the text face: the relative time carries Hangul in Korean,
+                  and the monospace face fell back glyph by glyph with word-wide gaps. */}
+              <time dateTime={row.at} className="w-20 shrink-0 break-keep tabular-nums text-label leading-body text-[color:var(--color-text-tertiary)] sm:w-24">
+                {format.relativeTime(new Date(row.at), nowMs)}
+              </time>
+              <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]" title={row.label}>
+                {row.label}
+              </span>
+              {soleKind ? null : (
+                <span className="shrink-0 break-keep text-label text-[color:var(--color-text-tertiary)]" data-testid="brief-since-kind">
+                  {t(`since.${row.kind}`)}
+                </span>
+              )}
+            </>
+          );
+          return (
+            <li
+              key={`${row.core}-${row.at}-${index}`}
+              className={insightsTwoColumnCell(index, rows.length)}
+              data-since-core={row.core}
+              data-since-kind={row.kind}
+            >
+              {row.href ? (
+                <Link
+                  href={row.href}
+                  className={controlClass({ shape: 'row', size: 'md', hoverSurface: 'lift', className: `-mx-1.5 w-auto gap-3 px-1.5 text-body ${INSIGHTS_LIST_ROW}` })}
+                >
+                  {body}
+                </Link>
+              ) : (
+                <div className={`flex items-center gap-3 text-body ${INSIGHTS_LIST_ROW}`}>{body}</div>
+              )}
+            </li>
+          );
+        })}
       </ol>
       <HiddenCountLine
         total={total}

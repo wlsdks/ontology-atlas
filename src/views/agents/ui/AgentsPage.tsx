@@ -9,6 +9,7 @@ import { TabBar } from '@/shared/ui';
 import { useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
+import { isAcpBridgeAvailable } from '@/shared/lib/tauri-acp';
 import { useSwapHeight } from '@/shared/lib/use-presence';
 import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
 
@@ -164,7 +165,9 @@ export function AgentsPage({
         data-testid="agents-lede"
         className="mt-2 max-w-2xl break-keep text-body-lg leading-title text-[color:var(--color-text-tertiary)]"
       >
-        {tab === 'mcp' ? tMcp('lede') : t('lede')}
+        {/* On the web the agents lede cannot say "Atlas finds": the card right under it says a
+            browser cannot start programs. The app is the subject there (2026-09-25). */}
+        {tab === 'mcp' ? tMcp('lede') : isAcpBridgeAvailable() ? t('lede') : t('ledeWeb')}
       </p>
 
       <nav className="mt-5" data-testid="agents-tabs">

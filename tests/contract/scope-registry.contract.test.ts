@@ -156,6 +156,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D 보기(지도 돔 뷰) 선호 — 기본 꺼짐(2D)" },
   { key: "atlas.appearance.galaxy", kind: "storage", scope: "global", note: "갤럭시 보기(평면 지도를 별하늘로) 선호 — 기본 꺼짐" },
   { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "영역 보기(모든 역량을 도메인별로 펼친 평면 지도) 선호 — 기본 꺼짐" },
+  { key: "atlas.appearance.hex-board", kind: "storage", scope: "global", note: "Hex board view preference (one tile per capability) — off by default" },
   { key: "atlas.appearance.map-arrangement", kind: "storage", scope: "global", note: "3D 배치 기준: 소유(돔, 기본)/결합(힘 구름)" },
   { key: "atlas.agentActivity.status", kind: "storage", scope: "global", note: "상태 칩 on/off 선호" },
   { key: "atlas.agentActivity.notifications", kind: "storage", scope: "global", note: "알림함 on/off 선호" },
@@ -269,6 +270,15 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     kind: "event",
     scope: "global",
     note: "같은 탭 안에서 기준 시각 변경을 알리는 이벤트 — 저장 키가 아니다",
+  },
+  {
+    key: "atlas.map.hex-board.v1:",
+    kind: "storage",
+    scope: "vault-scoped",
+    scopedBy: "useVaultIdentityScope",
+    file: "src/views/home/model/hex-board-placement-store.ts",
+    provenBy: "src/views/home/model/hex-board-placement-store.test.ts",
+    note: "Hex board placement (append-only tile cells) per folder — view state, never meaning",
   },
   {
     key: "atlas.agentActivity.readAt:",

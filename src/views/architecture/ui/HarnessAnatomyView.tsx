@@ -166,7 +166,7 @@ function SlotRow({
             : t(`anatomyUnits.${slot.id}`, { count: slot.count })}
         </span>
       </div>
-      <div className={cn('max-w-prose break-keep text-label text-[color:var(--color-text-tertiary)]', !hideTitle && 'mt-1')}>
+      <div className={cn('max-w-prose text-label text-[color:var(--color-text-tertiary)]', !hideTitle && 'mt-1')}>
         {/*
           ⚠️ **A row's body is one sentence, and a row that needed five product names was four
           lines long** while every other row was one or two (measured 1512×949, 2026-09-20). The
