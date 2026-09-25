@@ -1,0 +1,15 @@
+{
+  "created": "2026-09-25",
+  "tool": "OpenAI built-in image_gen",
+  "scope": "Original foreground combat platform shared by the optional fictional expeditions; project facts, creatures, labels and controls are rendered by code.",
+  "assets": [
+    {
+      "file": "companion-battle-stage.webp",
+      "generation": "exec-e5c2e7da-4af0-4fa8-8d8d-10e28755fb5f",
+      "sourcePngSha256": "4c33f018cbb1671b362d2b2fc18ca350972cf725ae8993dc36790342a6820594",
+      "webpSha256": "61dacfc9fd879f4c4f103d176c54843a8b41ee245bc39a18ba79afc92f56c59b",
+      "conversion": "Lossless WebP; source and encoded alpha and all visible RGBA pixels were checked equal.",
+      "prompt": "Generate one original production game asset, a wide 2D pixel-art foreground battlefield overlay for a small indie action RPG. Transparent PNG background. Canvas composition 3:2 landscape. LOWER 45 PERCENT: an expansive ancient stone combat floor seen in a gentle side-on three-quarter perspective, broad continuous walkable central platform from left to right, clear flat footing band at 67-77% height, dark blue slate stones with irregular pixel clusters, muted teal moss and a few restrained warm amber cracks, slight battle scuffs, sparse broken geometric ruins at the far edges. UPPER 55 PERCENT: genuinely fully transparent, absolutely no sky, trees, castle, moon, horizon, or background. This art will overlay different existing environment paintings; it must read as a grounded combat plane without masking the changing environment above. Silhouette: no character, enemy, weapon, text, logos, UI frame or copied franchise symbols. Fine but unmistakably hard-edged pixel-art clusters, deliberately limited 24-color palette, crisp 1:1 pixel rhythm, no painterly brush strokes, no photographic texture, no gradients or anti-aliased glow. Independent original visual direction, not resembling any identifiable commercial game's map or iconography. Preserve alpha channel so invisible regions are actually transparent."
+    }
+  ]
+}

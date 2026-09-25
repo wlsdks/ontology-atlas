@@ -22,6 +22,7 @@ A person develops a project and records its ontology and wiki, then sees those r
 
 - Six fictional regions contain 36 distinct scene destinations, with route-specific rosters, guardians, difficulty, and reward or threat conditions. Their game IDs are separate from canonical ontology UIDs. Construction and reading unlock them; combat XP alone does not.
 - 108 original species, including 18 guardians, share six disclosed combat trait families: armor, fierce attacks, regeneration, siphon, double strikes, and wave resistance. The field guide records observed sightings and defeats, while maps retain individual completion counts.
+- Expedition encounters frame the fox and creature together on an original foreground platform over the destination art. Walking remains on that visible floor; attack, enemy windup, dodge warning, and hit response show the current automatic combat phase without changing saved rewards or ontology authority.
 - Legacy saves default to empty catalog records without inventing discovery. A removed domain destination returns to camp, retaining accumulated progress. Final-guardian clear rewards are banked once even when returning during the loot display.
 
 ## Quests, personal equipment, and path planning

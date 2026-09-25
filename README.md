@@ -62,7 +62,9 @@ Move with WASD, interact with E, and open inventory (I), skills (K), the expedit
 map (M), your journal (J), quests (L), or the creature field guide (N) over the persistent world. The fox studies, rests,
 and travels through 36 destinations across six fictional regions, meeting 108 original
 creatures. Five-floor expeditions offer three-way blessings, an active dodge,
-and a final guardian. Plan a rest, supply, or elite path for the next floor. Twelve
+and a final guardian. A closer pixel combat floor keeps the fox and creature on
+the same ground; a visible incoming strike gives Space dodge a timing cue.
+Plan a rest, supply, or elite path for the next floor. Twelve
 one-time quests reward recorded project work with materials for guaranteed personal
 equipment enhancement. Ordinary activities can unlock every forge tier; verified
 ACP work offers optional quests with explicit assistance requests. Quest completion

@@ -4,6 +4,8 @@ export const WORLD_WIDTH=1000;
 export const WALK_SPEED=84;
 export const WALK_FRAME_DISTANCE=7;
 export const WORLD_HEIGHT=2000/3;
+/** Expedition feet stay on the foreground platform instead of the painted distance. */
+const FIELD_BACK_EDGE=480;
 export const WORLD_SPOTS:ReadonlyArray<{id:WorldInteraction;point:WorldPoint;anchor:WorldPoint}>=[
  {id:'study',point:{x:820,y:480},anchor:{x:845,y:370}},
  {id:'skills',point:{x:630,y:350},anchor:{x:640,y:270}},
@@ -15,10 +17,10 @@ export const WORLD_SPOTS:ReadonlyArray<{id:WorldInteraction;point:WorldPoint;anc
 const obstacles=[{left:40,right:285,top:275,bottom:435},{left:740,right:980,top:230,bottom:450},{left:35,right:155,top:505,bottom:630}];
 const clamp=(v:number,min:number,max:number)=>Math.max(min,Math.min(max,v));
 export function worldWalkable(point:WorldPoint,field=false):boolean{
- return point.x>=55&&point.x<=945&&point.y>=(field?410:342)&&point.y<=600&&(field||!obstacles.some(r=>point.x>r.left-8&&point.x<r.right+8&&point.y>r.top-8&&point.y<r.bottom+8));
+ return point.x>=55&&point.x<=945&&point.y>=(field?FIELD_BACK_EDGE:342)&&point.y<=600&&(field||!obstacles.some(r=>point.x>r.left-8&&point.x<r.right+8&&point.y>r.top-8&&point.y<r.bottom+8));
 }
 export function moveInWorld(point:WorldPoint,dx:number,dy:number,field=false):WorldPoint{
- const x=clamp(point.x+dx,55,945),y=clamp(point.y+dy,field?410:342,600);
+ const x=clamp(point.x+dx,55,945),y=clamp(point.y+dy,field?FIELD_BACK_EDGE:342,600);
  const next={...point};if(worldWalkable({x,y:next.y},field))next.x=x;if(worldWalkable({x:next.x,y},field))next.y=y;return next;
 }
 export function nearbyWorldSpot(point:WorldPoint):WorldInteraction|null{
