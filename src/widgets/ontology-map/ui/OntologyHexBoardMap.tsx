@@ -20,6 +20,7 @@ import {
   HEX_MIN_RADIUS,
   type HexBand,
   type HexBoardLayout,
+  type HexMeasure,
   type HexPlacementRecord,
   type HexTextRole,
   type HexWalkDirection,
@@ -30,7 +31,7 @@ import { buildHexLattice, HexRouter, pickPillSpot } from "../model/hex-router";
 import {
   drawHexBoard,
   hexArrivalDuration,
-  HEX_FONTS,
+  hexFonts,
   type HexDrawRoute,
   type HexEvidenceState,
   type HexTextBox,
@@ -109,8 +110,30 @@ function measureText(text: string, role: HexTextRole): number {
   if (typeof document === "undefined") return text.length * 7;
   measureContext ??= document.createElement("canvas").getContext("2d");
   if (!measureContext) return text.length * 7;
-  measureContext.font = HEX_FONTS[role];
+  measureContext.font = hexFonts()[role];
   return measureContext.measureText(text).width;
+}
+
+/**
+ * The board's text measure, as a new function once the product face it measures in has loaded
+ * (see `hexFonts`). Until then the names are measured in the system stack behind it; the new
+ * identity re-measures the names floor and repaints, so the band is decided in the face drawn.
+ */
+function useHexMeasure(): HexMeasure {
+  const [ready, setReady] = useState(() => typeof document === "undefined" || !document.fonts || document.fonts.check(hexFonts().capability));
+  useEffect(() => {
+    if (ready || typeof document === "undefined" || !document.fonts) return;
+    let live = true;
+    const done = () => {
+      if (live) setReady(true);
+    };
+    const fonts = hexFonts();
+    void Promise.all([fonts.capability, fonts.capabilityStrong, fonts.domain, fonts.plate].map((font) => document.fonts.load(font))).then(done, done);
+    return () => {
+      live = false;
+    };
+  }, [ready]);
+  return useMemo<HexMeasure>(() => (ready ? (text, role) => measureText(text, role) : measureText), [ready]);
 }
 
 function freeAreaOf(canvas: HTMLCanvasElement | null): Rect | null {
@@ -225,16 +248,17 @@ export function OntologyHexBoardMap({
    * Names are drawn from the smallest cell size at which every name fits its face. A title
    * tile's counts are not part of that floor: they join the name when there is room.
    */
-  const namesFrom = useMemo(() => (layout ? (minNamesRadius(layout, measureText) ?? HEX_BAND_NAMES) : HEX_BAND_NAMES), [layout]);
+  const measure = useHexMeasure();
+  const namesFrom = useMemo(() => (layout ? (minNamesRadius(layout, measure) ?? HEX_BAND_NAMES) : HEX_BAND_NAMES), [layout, measure]);
   /** Which names set that floor (they would spill one pixel below it) — for measurement. */
   const namesDrivers = useMemo(() => {
     if (!layout || namesFrom <= HEX_BAND_NAMES) return "";
     const R = namesFrom - 1;
     return layout.tiles
-      .filter((t) => hexLineSpills(hexTileLines(t, R, measureText), R, measureText).length > 0)
+      .filter((t) => hexLineSpills(hexTileLines(t, R, measure), R, measure).length > 0)
       .map((t) => t.id)
       .join(" ");
-  }, [layout, namesFrom]);
+  }, [layout, namesFrom, measure]);
 
   const lattice = useMemo(() => (layout ? buildHexLattice(layout) : null), [layout]);
 
@@ -477,7 +501,7 @@ export function OntologyHexBoardMap({
           arrivalMs,
           reducedMotion,
           sweep,
-          measure: measureText,
+          measure,
         },
         T,
       );
@@ -489,7 +513,7 @@ export function OntologyHexBoardMap({
       if (hoverRef.current) placeTipRef.current(hoverRef.current);
       return again;
     },
-    [size, layout, lattice, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, reducedMotion, arrivalKey, band, drawnR, writeMirror],
+    [size, layout, lattice, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivalKey, band, drawnR, writeMirror],
   );
 
   const paintRef = useRef(paint);

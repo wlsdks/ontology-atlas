@@ -28,20 +28,51 @@ import type { HexBoardTokens } from "../tokens/read-hex-board-tokens";
 
 export type HexEvidenceState = "current" | "stale" | "unknown";
 
-const FAMILY = "-apple-system, 'SF Pro Text', 'Apple SD Gothic Neo', sans-serif";
+/*
+ * ⚠️ **Names are measured in the face the page ships, not in whatever the platform has**
+ * (2026-09-25). The board's names band starts at the smallest cell every name fits
+ * (`minNamesRadius`), so the font decides whether a board opens named. With a macOS-only stack
+ * (`-apple-system, 'Apple SD Gothic Neo'`) every other platform fell to its own `sans-serif`:
+ * on the Linux CI runner the dogfood vault's widest name needed R 48 where macOS needed 46, and
+ * the same board at 1280 opened as pips there (R 47) while it opened named on the Mac that
+ * proved it. The product's own Pretendard is self-hosted and measured within a pixel of the
+ * Apple stack (125 vs 126 px for the widest dogfood name), so the band is the same on macOS,
+ * Linux and the Windows beta. The system stack stays behind it for the frames before the
+ * webfont arrives; the board re-measures once it has (`useHexFontsReady`).
+ */
+const SYSTEM_FAMILY = "-apple-system, 'SF Pro Text', 'Apple SD Gothic Neo', sans-serif";
 const MONO = "ui-monospace, 'SF Mono', Menlo, monospace";
 
-/** Fonts per text role, on the product's weight ramp (510 signature, 560 emphasis, 650 strong). */
-export const HEX_FONTS: Record<HexTextRole, string> = {
-  capability: `510 ${HEX_TYPE.capability}px ${FAMILY}`,
-  capabilityStrong: `650 ${HEX_TYPE.capability}px ${FAMILY}`,
-  domain: `650 ${HEX_TYPE.domain}px ${FAMILY}`,
-  meta: `400 ${HEX_TYPE.meta}px ${FAMILY}`,
-  project: `650 ${HEX_TYPE.project}px ${FAMILY}`,
-  mono: `400 ${HEX_TYPE.mono}px ${MONO}`,
-  plate: `650 ${HEX_TYPE.plate}px ${FAMILY}`,
-  plateMeta: `510 ${HEX_TYPE.plateMeta}px ${FAMILY}`,
-};
+function fontsFor(family: string): Record<HexTextRole, string> {
+  return {
+    capability: `510 ${HEX_TYPE.capability}px ${family}`,
+    capabilityStrong: `650 ${HEX_TYPE.capability}px ${family}`,
+    domain: `650 ${HEX_TYPE.domain}px ${family}`,
+    meta: `400 ${HEX_TYPE.meta}px ${family}`,
+    project: `650 ${HEX_TYPE.project}px ${family}`,
+    mono: `400 ${HEX_TYPE.mono}px ${MONO}`,
+    plate: `650 ${HEX_TYPE.plate}px ${family}`,
+    plateMeta: `510 ${HEX_TYPE.plateMeta}px ${family}`,
+  };
+}
+
+let resolvedFonts: Record<HexTextRole, string> | null = null;
+
+/**
+ * Fonts per text role, on the product's weight ramp (510 signature, 560 emphasis, 650 strong).
+ * The product face is read from `--font-pretendard` (the generated family name belongs to
+ * `next/font`, so it is resolved, never spelled here).
+ */
+export function hexFonts(): Record<HexTextRole, string> {
+  if (resolvedFonts) return resolvedFonts;
+  const product =
+    typeof document === "undefined"
+      ? ""
+      : getComputedStyle(document.documentElement).getPropertyValue("--font-pretendard").trim();
+  if (!product) return fontsFor(SYSTEM_FAMILY);
+  resolvedFonts = fontsFor(`${product}, ${SYSTEM_FAMILY}`);
+  return resolvedFonts;
+}
 
 /** A route to draw, in unit space, already searched by `model/hex-router.ts`. */
 export interface HexDrawRoute {
@@ -701,7 +732,7 @@ export function drawHexBoard(
       const x = sx(c.pill.x);
       const y = sy(c.pill.y);
       const text = String(c.count ?? 0);
-      ctx.font = HEX_FONTS.plateMeta;
+      ctx.font = hexFonts().plateMeta;
       const w = Math.max(26, ctx.measureText(text).width + 14);
       ctx.beginPath();
       ctx.roundRect(x - w / 2, y - 10, w, 20, 10);
@@ -744,7 +775,7 @@ export function drawHexBoard(
       let y0 = Infinity;
       let y1 = -Infinity;
       for (const line of lines) {
-        ctx.font = HEX_FONTS[line.role];
+        ctx.font = hexFonts()[line.role];
         let color: string;
         if (t.kind === "project") color = line.role === "meta" ? T.inkMeta : T.hub;
         else if (t.kind === "domain") {
@@ -791,7 +822,7 @@ export function drawHexBoard(
       }
       if (n > 8 && band === "names") {
         ctx.globalAlpha = alphaOf(t.id) * arr.a;
-        ctx.font = HEX_FONTS.meta;
+        ctx.font = hexFonts().meta;
         ctx.fillStyle = T.inkMeta;
         ctx.textAlign = "left";
         ctx.fillText(`+${n - show}`, x - w / 2 + show * sp - 2, py + 3.5);
@@ -807,9 +838,9 @@ export function drawHexBoard(
       tileRects.some((r) => r.x1 > b.x0 && r.x0 < b.x1 && r.y1 > b.y0 && r.y0 < b.y1) ||
       plateBoxes.some((p) => p.x < b.x1 && b.x0 < p.x + p.w && p.y < b.y1 && b.y0 < p.y + p.h);
     const plate = (id: string, name: string, sub: string, cells: readonly { x: number; y: number }[], warm: boolean) => {
-      ctx.font = HEX_FONTS.plate;
+      ctx.font = hexFonts().plate;
       const nw = ctx.measureText(name).width;
-      ctx.font = HEX_FONTS.plateMeta;
+      ctx.font = hexFonts().plateMeta;
       const subW = sub ? ctx.measureText(sub).width : 0;
       const w = nw + (sub ? subW + 10 : 0) + 24;
       const h = 24;
@@ -842,11 +873,11 @@ export function drawHexBoard(
       ctx.stroke();
       ctx.textBaseline = "alphabetic";
       ctx.textAlign = "left";
-      ctx.font = HEX_FONTS.plate;
+      ctx.font = hexFonts().plate;
       ctx.fillStyle = warm ? T.hub : T.inkHi;
       ctx.fillText(name, x0 + 12, pick.y + 4.5);
       if (sub) {
-        ctx.font = HEX_FONTS.plateMeta;
+        ctx.font = hexFonts().plateMeta;
         ctx.fillStyle = sub.includes("◐") ? T.staleInk : T.ink;
         ctx.textAlign = "right";
         ctx.fillText(sub, x0 + w - 12, pick.y + 4.5);
