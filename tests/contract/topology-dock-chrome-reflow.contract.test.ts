@@ -29,8 +29,9 @@ describe("14-inch map chrome reflows around the agent dock and node inspector", 
     expect(css).toContain(
       "[data-testid='topology-top-toolbar'][data-right-inspector-reserve='recenter-in-remaining-map']",
     );
+    // The last term is the toolbar's own inset, the chrome inset (2026-09-25).
     expect(css).toMatch(
-      /right:\s*calc\(\s*var\(--map-panel-width\)\s*\+\s*var\(--topology-node-popover-right-inset\)\s*\+\s*2rem\s*\)/,
+      /right:\s*calc\(\s*var\(--map-panel-width\)\s*\+\s*var\(--topology-node-popover-right-inset\)\s*\+\s*var\(--chrome-inset\)\s*\)/,
     );
   });
 

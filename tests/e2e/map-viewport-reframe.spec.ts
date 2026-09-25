@@ -127,7 +127,16 @@ test("390px의 넓은 하단 시트는 수평 카메라 인셋으로 오인되�
  */
 test("우측 도크로 지도 폭이 줄면 현재 overview를 새 가용영역에 다시 맞춘다", async ({ page }) => {
   test.setTimeout(90_000);
-  await page.setViewportSize({ width: 1512, height: 900 });
+  /*
+   * A narrower map moves the camera only when the frame is width-bound: a
+   * height-bound overview keeps its camera and stays centred through the canvas's
+   * own centre, which needs no reframe. At 1512×900 the dogfood spine is
+   * height-bound all the way to a 420 px dock once the overview frames only what it
+   * draws; this passed there only while the viewport was measured 0.5% small
+   * through the entry fade, so the dock's first resize corrected the scale
+   * (2026-09-25). A tall window makes the width bind from the dock's fifth step.
+   */
+  await page.setViewportSize({ width: 1512, height: 1400 });
   await seedFirstRunSeen(page);
   await page.addInitScript(() => {
     window.localStorage.setItem("demo:sample-source:v1", "dogfood");

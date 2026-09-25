@@ -688,7 +688,7 @@ export function TopologyCanvasSurface({
                 onClick={openGuidedTour}
                 data-testid="topology-tour-button"
                 data-agent-dock-adjacent-rail="true"
-                className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-6 md:top-[var(--topology-tour-help-desktop-top)] md:inline-flex xl:right-8"
+                className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-tour-help-desktop-top)] md:inline-flex"
               />
             </Tooltip>
           )}
@@ -735,7 +735,7 @@ export function TopologyCanvasSurface({
                 className={`topology-ui-scale pointer-events-auto absolute right-4 ${selectedNodeFocusActive
                   ? "top-[var(--topology-shortcuts-help-focus-phone-top)]"
                   : "top-[var(--topology-shortcuts-help-phone-top)]"
-                  } z-20 md:right-6 md:top-[var(--topology-shortcuts-help-desktop-top)] md:inline-flex xl:right-8 ${
+                  } z-20 md:right-[var(--chrome-inset)] md:top-[var(--topology-shortcuts-help-desktop-top)] md:inline-flex ${
                   // Below `md`, while the expanded INDEX is a full-bleed sheet, the "?"
                   // tile floated on top of it and overlapped (measured at 600×900,
                   // y188). The sheet is the primary surface, so the chrome demotes. At
@@ -756,7 +756,7 @@ export function TopologyCanvasSurface({
             topologyBlockingOverlayActive ||
             selectedNodeFocusActive ? null : (
             <div
-              className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-6 md:top-[var(--topology-growth-replay-desktop-top)] md:block xl:right-8"
+              className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-growth-replay-desktop-top)] md:block"
               data-agent-dock-adjacent-rail="true"
             >
               {/* A toggle, not a hold. One bump of the token starts the replay and
@@ -861,9 +861,8 @@ export function TopologyCanvasSurface({
         ) : null}
 
         {/* Bottom-right instrument stack — root-first-open v3 reading (FirstRunReadout).
-                  The corner inset connects to the existing
-                  `--topology-relation-legend-inset` token (base 24px, ≥1920 32px) — when the rest of the chrome grows by 1.15 at ≥1920, this stack moves further from the corner
-                  so it does not collide with map labels. */}
+                  The corner inset is `--topology-relation-legend-inset`, the chrome inset,
+                  so the stack's right edge stays on the utility rail's column above it. */}
         {/* Inspection round 1 defect 2 (2026-07-23) — when the right datasheet opened, this
                   corner reading appeared fragmented behind and to the left of the panel
                   (reproduced across all 4 locales × resolutions). Since it is ambient info and unnecessary during investigation,

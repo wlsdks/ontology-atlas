@@ -2986,7 +2986,11 @@
        relation-legend max-width/border/shadow are remnants of the legacy SigmaTopology
        minimap(deleted in #344) and have been removed — only surface/width/inset/minimap-gap/
        bottom remain as the living subset still verified by tests/e2e. */
-    --topology-relation-legend-inset: 24px;
+    /* The readout's corner stands on the chrome inset like the utility rail above it,
+       so its right edge stays on the rail's column at every width. It used to step to
+       32px at ≥1920 for a 1.15 chrome zoom that was since retired, while the rail stepped
+       to 32px at 1280, so the two columns sat 8px apart from 1280 to 1919. */
+    --topology-relation-legend-inset: var(--chrome-inset);
     /* Bottom-only inset for the bottom-right readout stack — default matches left/right, but shifts upward above <lg
        (BottomTabBar section) to avoid overlap(owner measurement 2026-07-23,
        tablet bottom overlap — readout hidden behind tab bar). */
@@ -4140,10 +4144,18 @@ camera rejection). Equivalent v2 of the deleted TopologyMapCanvas px string vers
 
 RATIO-SYSTEM §4 datasheet 352px scale-up gratitude: safeInsetRight is
 only read in `computeOverviewFitScale`/`computeOverviewCameraTarget` (fit when no node selected) — `computeFocusCameraTarget` (the only time the datasheet is actually visible, i.e., node selected) does not reference safeInset at all (`topology-camera-math.ts`). Thus even if the datasheet width increases, there is no reason for the "safe area when invisible" value to change, so it remains 120 — we did not mechanically expand left/right padding just because the panel widened. Verified no actual collision via live check on 1512/1920 (`.qa-scratch/datasheet-gear/`). */
-    /* feat/chrome-system §4 — After inset 18→24px, 300 + 24 + 26 = 350
-(previously 344 = 300 + 18 + 26). Canvas 2D consumes this number as a JS constant and cannot auto-follow CSS vars, so always update it together when changing insets. */
-    --map-safe-inset-left: 350;
-    --map-safe-inset-right: 120;
+    /* The side lanes are the chrome standing on that side plus one air, the same on both
+       sides (2026-09-25), because the fit centres the drawing between them: left =
+       INDEX inset 24 + INDEX 300 + air 52 = 376; right = utility rail inset 24 +
+       tile 36 + air 52 = 112. They used to be 350 and 120 — 26 px of air past INDEX
+       against 52 past the rail at `xl` — so even a correctly bounded overview sat 13 px
+       left of the free map's centre at 1512. The collapsed tab and the rail beside the
+       agent dock set their own values below with the same air. Canvas 2D reads these
+       as unitless numbers and cannot follow the chrome tokens, so
+       `tests/contract/map-fit-side-air.contract.test.ts` derives every lane from the
+       tokens and classes that place the chrome and fails when one drifts. */
+    --map-safe-inset-left: 376;
+    --map-safe-inset-right: 112;
     --map-safe-inset-top: 148; /* 96 Chrome + top docking cluster chip (+N) height/gap — QA-A D1: Defect where chips were hidden behind the search bar on first paint */
     --map-safe-inset-bottom: 96;
 
@@ -4288,11 +4300,11 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
        (`--map-panel-*`) as-is — the approved spec's core requirement is that both
        dashboards on the map read as the same material (machined instrument), so only
        width/tab-width/inset are newly created.
-       expanded width (300) + inset (18) + gap (26) = 344 already matches the
-       `--map-safe-inset-left` default above — that token already codified the
-       premise that INDEX is the default expanded state. On collapse,
-       the `html[data-topology-index="collapsed"]` rule below narrows the safe area to
-       tab width (26) + inset (18) + gap (28) = 72. HomePage toggles `data-topology-index`
+       The `--map-safe-inset-left` default above is inset (24) + expanded width (300)
+       + the fit's side air (52) = 376 — that token codifies the premise that INDEX is
+       the default expanded state. On collapse, the
+       `html[data-topology-index="collapsed"]` rule below narrows the safe area to the
+       tab, which stands on the map's edge: tab width (26) + air (52) = 78. HomePage toggles `data-topology-index`
        on INDEX expand/collapse + invalidates cached tokens (`clearOntologyMapTokensCache`) +
        forces camera re-fit.
 
@@ -4345,9 +4357,20 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
   }
 
   html[data-topology-index="collapsed"] {
-    /* feat/chrome-system §4 — tab-width(26) + inset(24) + gap(28) = 78
-       (old 72 = 26 + 18 + 28). */
+    /* The collapsed tab stands on the map's edge (`left: 0`): tab width (26) + the
+       fit's side air (52) = 78, the same air the open INDEX and the rail keep. */
     --map-safe-inset-left: 78;
+  }
+
+  /* The agent dock pulls the utility rail to half an inset from the map's edge (the
+     dock-adjacent rail rule, `calc(var(--chrome-inset) / 2)`), so the right lane
+     follows it: 12 + tile 36 + air 52 = 100. Keyed on the attribute that moves the
+     rail, so the lane and the rail change in the same style pass; the viewport
+     commit the dock's reflow causes re-reads it (`refreshIndexDependentTokens`). */
+  @media (min-width: 768px) {
+    :root:has(main[data-agent-panel-open="true"]) {
+      --map-safe-inset-right: 100;
+    }
   }
 
   html {
@@ -4647,7 +4670,6 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
 
   @media (min-width: 1920px) {
     :root {
-      --topology-relation-legend-inset: 32px;
       /* Owner re-report (2026-07-23 2nd): Even reducing to 1.08, "still large and font
          looks weird" — non-integer zoom rasterizes text at fractional scales, creating blurry
          "weird fonts" and lingering size perception. Remove ≥1920 zoom → native 1:1 —
@@ -5242,13 +5264,14 @@ body *::-webkit-scrollbar {
    balance fix of 2026-09-24; it used to centre it) while the node inspector owns the
    right rail (the utility lane is not mounted then). Pulling the right edge in by the
    inspector's width plus its inset keeps a wrapped or truncating lane clear of the
-   inspector, and the 2rem is the toolbar's own `xl` inset. The toolbar also carries
+   inspector, and the last term is the toolbar's own inset, the chrome inset (it was
+   `2rem` while the toolbar stood 32px in at `xl`). The toolbar also carries
    `data-agent-dock-adjacent-rail`; its `left` moves when INDEX opens or closes, so
    the transition list below names `left` as well as `right`. */
 @media (min-width: 1280px) {
   [data-testid='topology-top-toolbar'][data-right-inspector-reserve='recenter-in-remaining-map'] {
     right: calc(
-      var(--map-panel-width) + var(--topology-node-popover-right-inset) + 2rem
+      var(--map-panel-width) + var(--topology-node-popover-right-inset) + var(--chrome-inset)
     );
   }
 }

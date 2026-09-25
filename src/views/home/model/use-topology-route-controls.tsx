@@ -139,7 +139,7 @@ export function useTopologyRouteControls({
     [setIndexPreference],
   );
   // The map's safe-inset-left assumes INDEX's width by default
-  // (`--map-safe-inset-left: 344` = 18 inset + 300 width + 26 gap).
+  // (`--map-safe-inset-left: 376` = 24 inset + 300 width + 52 air).
   // Collapsing INDEX narrows that reserved space — flip the DOM attribute
   // `app/globals.css` keys off of, invalidate the cached token read (canvas
   // reads CSS vars once per `read-map-tokens.ts`'s own contract),

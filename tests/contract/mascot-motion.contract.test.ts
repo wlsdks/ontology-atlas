@@ -104,7 +104,8 @@ describe('mascot motion continuity', () => {
     const safeRight = Number(CSS.match(/--map-safe-inset-right:\s*(\d+)/)?.[1]);
     expect({ chromeInset, safeRight }).toEqual({
       chromeInset: 24,
-      safeRight: 120,
+      // Rail inset 24 + tile 36 + the fit's side air 52 (map-fit-side-air contract).
+      safeRight: 112,
     });
 
     const leaks: string[] = [];

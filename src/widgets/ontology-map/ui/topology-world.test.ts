@@ -6,6 +6,8 @@ import {
   computeMagnitudeScale,
   computeEgoBounds,
   computeClusterDiscBounds,
+  computeDrawnSpineBounds,
+  computeFoldedIds,
   computeRevealedBounds,
   computeSpineBounds,
   isSpineNode,
@@ -398,5 +400,62 @@ describe("computeRevealedBounds", () => {
     const before = { ...world.spineBounds };
     computeRevealedBounds(world, tokens, new Set(["d"]), null);
     expect(world.spineBounds).toEqual(before);
+  });
+});
+
+/**
+ * **The overview frames the spine it draws** (2026-09-25). The one hub is spine, but
+ * the density gate folds it behind its parent's chip like any sibling once that parent
+ * holds more than twelve children, and the fit went on framing it: on the dogfood
+ * ontology the folded hub stood 166 world units left of the drawn cross and the drawing
+ * landed 77 px right of the free map's centre at 1512×949.
+ */
+describe("the drawn spine — a hub folded behind a crowded parent", () => {
+  const p = node({ id: "p", kind: "project", x: 0, y: 0 });
+  const left = node({ id: "dl", kind: "domain", x: -250, y: 0, parentId: "p" });
+  const right = node({ id: "dr", kind: "domain", x: 250, y: 0, parentId: "p" });
+  // Thirteen capabilities: one over the fold threshold, so the left domain collapses.
+  const folded = Array.from({ length: 13 }, (_, i) =>
+    node({ id: `c${i}`, kind: "capability", x: -395, y: -60 + i * 10, parentId: "dl", isHub: i === 0 }),
+  );
+  const crowded = {
+    spineBounds: computeSpineBounds([p, left, right, ...folded], tokens),
+    childrenByParent: new Map([["p", ["dl", "dr"]], ["dl", folded.map((c) => c.id)]]),
+    nodeById: new Map([p, left, right, ...folded].map((n) => [n.id, n] as const)),
+  };
+  // The same hub under a parent with three children: nothing folds, the hub is drawn.
+  const few = folded.slice(0, 3);
+  const open = {
+    spineBounds: computeSpineBounds([p, left, right, ...few], tokens),
+    childrenByParent: new Map([["p", ["dl", "dr"]], ["dl", few.map((c) => c.id)]]),
+    nodeById: new Map([p, left, right, ...few].map((n) => [n.id, n] as const)),
+  };
+
+  it("still counts the hub in the whole spine (pan clamp, fallbacks)", () => {
+    expect(crowded.spineBounds.minX).toBe(-403);
+  });
+
+  it("leaves the folded hub out of the overview frame", () => {
+    const bounds = computeRevealedBounds(crowded, tokens, new Set(), null);
+    // Only the drawn spine: domains r14 at ±250, so the frame is centred on the cross.
+    expect(bounds).toEqual({ minX: -264, minY: -20, maxX: 264, maxY: 20 });
+    expect(computeDrawnSpineBounds(crowded, tokens, new Set())).toEqual(bounds);
+  });
+
+  it("frames the hub again once expanding its parent draws it", () => {
+    expect(computeRevealedBounds(crowded, tokens, new Set(["dl"]), null).minX).toBe(-403);
+    expect(computeDrawnSpineBounds(crowded, tokens, new Set(["dl"])).minX).toBe(-403);
+  });
+
+  it("frames a hub nothing folds", () => {
+    expect(computeRevealedBounds(open, tokens, new Set(), null).minX).toBe(-403);
+  });
+
+  it("names the folded nodes from the gate itself, not from a frame's published set", () => {
+    // The initial snap runs before any frame has published `clusteredIds`, so the
+    // fit must not depend on it to know the hub is folded.
+    expect([...computeFoldedIds(crowded, new Set())].sort()).toEqual(folded.map((c) => c.id).sort());
+    expect(computeFoldedIds(crowded, new Set(["dl"])).size).toBe(0);
+    expect(computeFoldedIds(open, new Set()).size).toBe(0);
   });
 });
