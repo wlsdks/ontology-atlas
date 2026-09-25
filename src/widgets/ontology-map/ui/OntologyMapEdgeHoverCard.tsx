@@ -97,6 +97,9 @@ export function OntologyMapEdgeHoverCard({ sentence, typeLabel, why, clickHint, 
       data-corner={corner}
       {...transientSurface("hint")}
       data-testid="map-edge-hover-card"
+      // Not chrome and not a panel: without this the card's first-paint rect was read back as
+      // chrome and the card fled its own shadow onto the drawn nodes.
+      data-topology-camera-obstacle="none"
       role="status"
       className="pointer-events-none fixed z-40 flex max-w-[280px] flex-col gap-1 rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-3 py-2 shadow-[var(--map-panel-shadow)]"
       style={{ left, top }}

@@ -290,6 +290,28 @@ export function LibraryAgentDock({
   }, [open]);
 
   /*
+   * **Focus that entered the dock does not fall out of it by itself.** The composer can be
+   * disabled a moment after it took focus (the runtime check settles after the dock opens),
+   * and a disabled control drops focus to `body`. While the dock is open, a focus that left
+   * for nowhere lands on the dock itself instead.
+   */
+  useEffect(() => {
+    if (!open) return;
+    const onFocusOut = (event: FocusEvent) => {
+      const surface = surfaceRef.current;
+      if (!surface || event.relatedTarget || !surface.contains(event.target as Node)) return;
+      window.requestAnimationFrame(() => {
+        const active = document.activeElement;
+        if (surfaceRef.current && (active === null || active === document.body)) {
+          surfaceRef.current.focus({ preventScroll: true });
+        }
+      });
+    };
+    document.addEventListener("focusout", onFocusOut, true);
+    return () => document.removeEventListener("focusout", onFocusOut, true);
+  }, [open]);
+
+  /*
    * **Escape puts the overlay away.** Only below `xl`, where the dock covers the reader:
    * there it is a surface on top of the page and owes the key every other surface answers.
    * At `xl` it is a column beside the reader, and Escape stays with whatever else claims it.
