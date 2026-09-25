@@ -5782,6 +5782,8 @@
     "historyTitle": "실행 기록",
     "noRuns": "아직 실행한 적이 없어요.",
     "noSummary": "실행은 끝났지만 저장된 요약이 없어요.",
+    "failedNoResult": "에이전트 턴이 끝나지 않아 이번 실행은 결과를 남기지 못했어요.",
+    "noAgentReview": "이 맥에 준비된 코딩 에이전트가 없어 검토하지 못했어요. 에이전트 화면에서 로그인한 뒤 다시 실행하세요.",
     "refused": "거부됨: {tools}",
     "called": "읽은 도구: {tools}",
     "saving": "예약 중…",

@@ -71,6 +71,14 @@ export interface RoundPassEntry {
 
 const OUTCOMES: readonly RoundPassOutcome[] = ['held', 'reviewed', 'stale', 'redrafted', 'refused', 'failed', 'asleep'];
 
+/**
+ * Builds through 2026-09-25 stored this sentence as the summary of every ontology pass that came
+ * back without answer text — failed and no-agent passes included, in English on every locale.
+ * It is Atlas's own filler, never the agent's words, so it reads as no summary and the screen
+ * says what happened from `outcome` and `note` instead. The file keeps the line as written.
+ */
+const LEGACY_ONTOLOGY_FILLER = 'Read-only refinement review completed.';
+
 function stringList(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
@@ -106,6 +114,7 @@ export function parseRoundPassEntry(line: string): RoundPassEntry | null {
   if (typeof record.roundName === 'string') entry.roundName = record.roundName;
   if (record.kind === 'consistency' || record.kind === 'service' || record.kind === 'ontology')
     entry.kind = record.kind;
+  if (entry.kind === 'ontology' && entry.summary === LEGACY_ONTOLOGY_FILLER) entry.summary = '';
   if (record.note === 'no-agent' || record.note === 'stopped') entry.note = record.note;
   const places = stringList(record.places);
   if (places.length > 0) entry.places = places;

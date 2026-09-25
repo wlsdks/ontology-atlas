@@ -213,6 +213,41 @@ describe('Automations manager', () => {
     expect(screen.getByRole('button', { name: 'Earlier runs · 1' })).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it('says why a document pass redrafted nothing, in the sentence the Library ledger uses', () => {
+    search = 'kind=documents';
+    const round: RoundRecord = { id: 'docs', kind: 'consistency', name: 'Pages match sources', enabled: true, onStale: 'redraft',
+      cadence: { every: 'hour' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T01:00:00Z' };
+    const entry: RoundPassEntry = { v: 1, id: 'no-agent', roundId: round.id, roundName: round.name, kind: 'consistency',
+      startedAt: '2026-09-25T15:08:00Z', endedAt: '2026-09-25T15:08:01Z', outcome: 'stale', checked: 4, stale: ['wiki/budget'],
+      written: [], refused: [], called: [], agentTurns: 0, summary: '', trigger: 'manual', note: 'no-agent' };
+    renderPage(runner({ rounds: [round], ledger: [entry] }));
+    const last = screen.getByTestId('automations-last-run');
+    expect(last).toHaveTextContent('Checked 4 documents.');
+    expect(within(last).getByText(en.library.rounds.ledger.noAgent)).toHaveAttribute('data-run-note', 'no-agent');
+  });
+
+  it('leads a review that never ran with the reason, and never with a sentence claiming it finished', () => {
+    const round: RoundRecord = { id: 'review', kind: 'ontology', name: 'Ontology refinement', enabled: true,
+      cadence: { every: '6h' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T06:00:00Z' };
+    const base: RoundPassEntry = { v: 1, id: 'stopped', roundId: round.id, roundName: round.name, kind: 'ontology',
+      startedAt: '2026-09-25T10:00:00Z', endedAt: '2026-09-25T10:00:30Z', outcome: 'failed', checked: 0, stale: [],
+      written: [], refused: [], called: [], agentTurns: 1, summary: '', trigger: 'manual', note: 'stopped' };
+    const ledger: RoundPassEntry[] = [
+      base,
+      { ...base, id: 'turn-failed', note: undefined, endedAt: '2026-09-25T12:00:00Z' },
+      { ...base, id: 'no-agent', note: 'no-agent', agentTurns: 0, endedAt: '2026-09-25T14:00:00Z' },
+    ];
+    renderPage(runner({ rounds: [round], ledger }));
+    const last = screen.getByTestId('automations-last-run');
+    expect(last).toHaveTextContent(en.automations.noAgentReview);
+    expect(last).not.toHaveTextContent(en.automations.noSummary);
+    fireEvent.click(screen.getByText('Earlier runs · 2'));
+    const history = screen.getByTestId('automations-history');
+    expect(within(history).getByText(en.automations.failedNoResult)).toBeInTheDocument();
+    expect(within(history).getByText(en.library.rounds.ledger.stopped)).toHaveAttribute('data-run-note', 'stopped');
+    expect(history).not.toHaveTextContent('completed');
+  });
+
   it('requires confirmation to remove the selected schedule and reports failed changes', async () => {
     const round: RoundRecord = { id: 'confirmed', kind: 'ontology', name: 'Confirm me', enabled: true,
       cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };

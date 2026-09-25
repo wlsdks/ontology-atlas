@@ -52,6 +52,8 @@ import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { selectOpenVaultHandle } from "@/shared/lib/select-open-vault-handle";
 import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
 
+import { runHeadlessTurn } from "./headless-turn";
+
 /**
  * **The clock and the hands** — the one place a round actually runs.
  *
@@ -75,10 +77,6 @@ import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
  * carry all four across the bridge, and it would only buy running with the window closed, which
  * this slice does not promise (§5, "only while open").
  */
-
-const PASS_TIMEOUT_MS = 20 * 60_000;
-const READY_POLL_MS = 250;
-const READY_WAIT_MS = 90_000;
 
 interface PassData {
   sources: readonly VaultSourceFile[];
@@ -258,7 +256,8 @@ export function useRoundsRunner(): RoundsRunnerValue {
    * round whose pass is in flight used to leave the header saying "running now · <name>" for a
    * round that no longer existed, and, worse, `runningRef` stayed set, so every other round's
    * pass was blocked until `PASS_TIMEOUT_MS`. The resolver below is what `remove` and a pause
-   * pull: it cancels the agent turn and the pass writes one ledger line noting it was stopped.
+   * pull: it ends the agent turn at whatever step it is in — the handshake included
+   * (`runHeadlessTurn`) — and the pass writes one ledger line noting it was stopped.
    */
   const abortRef = useRef<{ roundId: string; stop: () => void } | null>(null);
 
@@ -274,50 +273,17 @@ export function useRoundsRunner(): RoundsRunnerValue {
     brief: string,
     aborted: Promise<void>,
   ): Promise<{ failed: boolean; written: string[]; refused: string[]; called: string[]; answer: string | null }> => {
-    const current = sessionRef.current;
     const done = new Promise<AcpTurnCompletion | null>((resolve) => {
       completionRef.current = resolve;
     });
-    let failed = false;
-    let stopped = false;
-    void aborted.then(() => {
-      stopped = true;
-      try {
-        sessionRef.current.cancel();
-      } catch {
-        /* A session already gone cannot be cancelled twice; the stop below still runs. */
-      }
+    const { failed, completion } = await runHeadlessTurn({
+      session: () => sessionRef.current,
+      status: () => statusRef.current,
+      brief,
+      aborted,
+      completion: done,
     });
-    try {
-      await current.start();
-      const deadline = Date.now() + READY_WAIT_MS;
-      while (statusRef.current !== "ready") {
-        if (stopped || statusRef.current === "error" || statusRef.current === "exited" || Date.now() > deadline) {
-          failed = true;
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, READY_POLL_MS));
-      }
-      if (!failed) {
-        const timeout = setTimeout(() => sessionRef.current.cancel(), PASS_TIMEOUT_MS);
-        try {
-          // The abort wins the race so the pass returns at once; the cancelled turn's own
-          // rejection is swallowed by the catch below, and `stop()` still runs after it.
-          await Promise.race([sessionRef.current.send(brief), aborted]);
-        } finally {
-          clearTimeout(timeout);
-        }
-      }
-    } catch {
-      failed = true;
-    }
-    const completion = failed || stopped ? null : await Promise.race([done, new Promise<null>((resolve) => setTimeout(() => resolve(null), 5_000))]);
     completionRef.current = null;
-    try {
-      await sessionRef.current.stop();
-    } catch {
-      /* A session that would not stop is reported by the next start; nothing to do here. */
-    }
     const written: string[] = [];
     const refused: string[] = [];
     const called: string[] = [];
@@ -337,7 +303,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       if (event.text === "auto-refused" && event.detail) refused.push(event.detail);
     }
     return {
-      failed: stopped || failed || !completion || completion.outcome !== "completed",
+      failed,
       written: [...new Set(written)],
       refused: [...new Set(refused)],
       called: [...new Set(called)],
@@ -542,7 +508,15 @@ export function useRoundsRunner(): RoundsRunnerValue {
         called,
         places: roundPlaceLabels(places),
         agentTurns,
-        summary: round.kind === "ontology" ? answer ?? "Read-only refinement review completed." : "",
+        /*
+         * **Only a finished review leaves a summary.** Every ontology pass without answer text
+         * used to be stored as "Read-only refinement review completed." — a failed or no-agent
+         * pass included, and in English whatever the locale (probe, 2026-09-25: the row read
+         * "Failed" above a sentence claiming completion). The ledger keeps what the agent said;
+         * what Atlas says about a pass is chosen on screen from `outcome` and `note`, in the
+         * reader's locale.
+         */
+        summary: round.kind === "ontology" && !failed ? answer ?? "" : "",
         trigger,
       };
       if (stoppedByPerson) entry.note = "stopped";
@@ -574,7 +548,15 @@ export function useRoundsRunner(): RoundsRunnerValue {
     }
     try {
       await ledger.append(entry);
-      await store.patch(round.id, afterPass(round, new Date()));
+      /*
+       * **A pass writes back only the two fields it owns.** It used to write the whole record as
+       * it stood when the pass began, so a Pause pressed mid-pass was undone the moment the
+       * stopped pass finished (`enabled: true` from that old copy), along with anything else
+       * changed meanwhile. A removed round is not written back at all: `patch` skips an id it
+       * no longer finds.
+       */
+      const next = afterPass(round, new Date());
+      await store.patch(round.id, { lastPassAt: next.lastPassAt, nextDueAt: next.nextDueAt });
       /*
        * The wiki's own record stays complete (spec §8): a page a round wrote is a compile
        * event in `wiki/_log.md` like any other, with the round as the writer, so a person
