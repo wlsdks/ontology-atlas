@@ -2225,3 +2225,226 @@ describe("AtlasGitPanel — confirms that swap in take and return focus (2026-09
     expect(document.activeElement).toBe(screen.getByTestId("atlas-git-discard"));
   });
 });
+
+describe("AtlasGitPanel — a jump along one document's history keeps that document (2026-09-25)", () => {
+  /*
+   * Found with the real-bridge QA harness on a real git vault: in a step's detail, "Other steps
+   * that changed this document" → a press on a step opened that step with its FIRST document
+   * selected (the vault's README), because the jump cleared the focused concept. "Restore this
+   * version" there then restored README.md — not the document the person was following.
+   */
+  const node = (id: string, kind: string, slug: string, display: string) => ({
+    id,
+    title: display,
+    display,
+    kind,
+    projectIds: [],
+    evidenceIds: [slug],
+    hasOwnDocument: true,
+    agentSlug: slug,
+    ref: null,
+    lastApprovedAt: "",
+    lastApprovedBy: "",
+    summary: null,
+  });
+  const GRAPH = {
+    nodes: [
+      node("vault-readme:README", "vault-readme", "README", "볼트 안내"),
+      node("capability:foo", "capability", "capabilities/foo", "푸 기능"),
+      node("element:bar", "element", "elements/bar", "바 요소"),
+    ],
+    edges: [],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+
+  const entry = (path: string, status: string, kind: string | null, slug: string) => ({
+    path,
+    status,
+    kind,
+    slug,
+    renamedFrom: null,
+  });
+  const README = entry("docs/README.md", "added", "vault-readme", "README");
+  const FOO = entry("docs/capabilities/foo.md", "modified", "capability", "capabilities/foo");
+  const BAR = entry("docs/elements/bar.md", "modified", "element", "elements/bar");
+  const commit = (n: number, subject: string, files: unknown[]) => ({
+    shortHash: `f${n}00000`,
+    hash: `f${n}${"0".repeat(38)}`,
+    subject,
+    relativeTime: `${n} days ago`,
+    isoTime: new Date(Date.parse("2026-09-25T08:00:00Z") - n * 86_400_000).toISOString(),
+    files,
+  });
+  // Newest first: a step that sharpened two documents, then the import that added every document.
+  const NEWER = commit(1, "docs: sharpen the bar element", [FOO, BAR]);
+  const IMPORT = commit(3, "docs: import the vault", [
+    README,
+    { ...FOO, status: "added" },
+    { ...BAR, status: "added" },
+  ]);
+  const CLEAN = { ...STATUS_WITH_CHANGES, changedCount: 0, ahead: 0, behind: 0 };
+  const NO_DIFF = { count: 0, files: [], diff: "" };
+  const restoreCalls = () =>
+    tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_restore_file");
+  const chips = () => screen.getAllByTestId("atlas-git-concept-chip");
+  const chip = (label: string) => chips().find((c) => c.textContent === label)!;
+  const selectedRow = () =>
+    screen.getAllByTestId("atlas-git-history-item").find((row) => row.getAttribute("aria-expanded") === "true");
+
+  /** A history whose path-scoped reads answer with the steps that touched that path, as git does. */
+  function installHistory(steps: Array<ReturnType<typeof commit>>) {
+    installDesktopGit({
+      status: CLEAN,
+      diff: NO_DIFF,
+      history: (limit: number, path?: string) =>
+        (path ? steps.filter((step) => step.files.some((file) => (file as { path: string }).path === path)) : steps).slice(0, limit),
+    });
+  }
+
+  /** jsdom has no `scrollIntoView`; record what was brought into view. */
+  function recordReveals() {
+    const reveal = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, writable: true, value: reveal });
+    return reveal;
+  }
+  afterEach(() => {
+    delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("concepts lens: the older step opens with the same concept pressed, in view, and restore puts back that document", async () => {
+    const reveal = recordReveals();
+    installHistory([NEWER, IMPORT]);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(chip("바 요소"));
+    const steps = await screen.findAllByTestId("atlas-git-document-step");
+    expect(steps).toHaveLength(1);
+    reveal.mockClear();
+
+    fireEvent.click(steps[0]);
+    await waitFor(() => expect(selectedRow()).toHaveTextContent("Import the vault"));
+    await waitFor(() => expect(chips()).toHaveLength(3));
+    // The import lists the vault guide first; the jump must not fall back to it.
+    expect(chips()[0]).toHaveTextContent("볼트 안내");
+    expect(chip("바 요소")).toHaveAttribute("aria-checked", "true");
+    expect(chips().filter((c) => c.getAttribute("aria-checked") === "true")).toHaveLength(1);
+    expect(reveal.mock.contexts, "the followed chip was not brought into view").toContain(chip("바 요소"));
+
+    // The door names the file it puts back before it is pressed, and the confirm names its path.
+    const door = await screen.findByTestId("atlas-git-restore");
+    expect(door).toHaveTextContent("bar.md");
+    expect(door).not.toHaveTextContent("README");
+    fireEvent.click(door);
+    expect(await screen.findByTestId("atlas-git-restore-step")).toHaveTextContent("docs/elements/bar.md");
+    fireEvent.click(screen.getByTestId("atlas-git-restore-confirm"));
+    await waitFor(() => expect(restoreCalls()).toHaveLength(1));
+    expect(restoreCalls()[0][1]).toEqual({
+      vaultPath: "/repo/vault",
+      relativePath: "docs/elements/bar.md",
+      source: IMPORT.hash,
+    });
+  });
+
+  it("files lens: the older step opens in the files lens on the same file, in view, and restore puts back that file", async () => {
+    const reveal = recordReveals();
+    installHistory([NEWER, IMPORT]);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+    fireEvent.click(
+      (await screen.findAllByTestId("atlas-git-commit-file")).find((row) => row.textContent?.includes("bar.md"))!,
+    );
+    await waitFor(() => expect(screen.getByTestId("atlas-git-commit-diff")).toHaveTextContent("바 요소"));
+    reveal.mockClear();
+
+    fireEvent.click((await screen.findAllByTestId("atlas-git-document-step"))[0]);
+    await waitFor(() => expect(selectedRow()).toHaveTextContent("Import the vault"));
+    expect(screen.getByTestId("atlas-git-lens-files")).toHaveAttribute("aria-selected", "true");
+    const current = screen
+      .getAllByTestId("atlas-git-commit-file")
+      .filter((row) => row.getAttribute("aria-current") === "true");
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveTextContent("docs/elements/bar.md");
+    expect(reveal.mock.contexts, "the followed file row was not brought into view").toContain(current[0]);
+    expect(screen.getByTestId("atlas-git-commit-diff")).toHaveTextContent("바 요소");
+
+    const door = await screen.findByTestId("atlas-git-restore");
+    expect(door).toHaveTextContent("bar.md");
+    fireEvent.click(door);
+    fireEvent.click(await screen.findByTestId("atlas-git-restore-confirm"));
+    await waitFor(() => expect(restoreCalls()).toHaveLength(1));
+    expect(restoreCalls()[0][1]).toMatchObject({ relativePath: "docs/elements/bar.md", source: IMPORT.hash });
+  });
+
+  it("a step whose files do not hold the followed document says so, selects no other document, and offers no door", async () => {
+    // A merge git lists in a document's own history carries no file list of its own; whatever
+    // the step holds, another document must never stand in for the one being followed.
+    const MERGE = commit(2, "Merge branch 'drafts'", [FOO]);
+    installDesktopGit({
+      status: CLEAN,
+      diff: NO_DIFF,
+      history: (limit: number, path?: string) =>
+        (path === BAR.path ? [NEWER, MERGE] : [NEWER, MERGE, IMPORT]).slice(0, limit),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(chip("바 요소"));
+    fireEvent.click((await screen.findAllByTestId("atlas-git-document-step"))[0]);
+    await waitFor(() => expect(selectedRow()).toHaveTextContent("Merge branch 'drafts'"));
+
+    const notice = await screen.findByTestId("atlas-git-doc-not-in-step");
+    expect(notice).toHaveTextContent("bar.md");
+    expect(chips().filter((c) => c.getAttribute("aria-checked") === "true")).toHaveLength(0);
+    expect(screen.queryByTestId("atlas-git-restore")).toBeNull();
+    // The followed document's own steps stay one press away: the newer step that did change it.
+    await screen.findByTestId("atlas-git-document-history");
+    const own = screen.getAllByTestId("atlas-git-document-step");
+    expect(own).toHaveLength(1);
+    expect(own[0].querySelector("[title]")).toHaveAttribute("title", NEWER.subject);
+
+    // Choosing another document is the person's own press, and only then does its door open.
+    fireEvent.click(chip("푸 기능"));
+    expect(screen.queryByTestId("atlas-git-doc-not-in-step")).toBeNull();
+    expect(await screen.findByTestId("atlas-git-restore")).toHaveTextContent("foo.md");
+  });
+
+  it("a jump to the step that deleted the followed document opens it where the missing door is explained", async () => {
+    const DELETED = commit(2, "chore: retire the bar element", [{ ...BAR, status: "deleted", kind: null }]);
+    installHistory([NEWER, DELETED, IMPORT]);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(chip("바 요소"));
+    // The document's own steps, newest first, without the one on screen: [retire, import].
+    const steps = await screen.findAllByTestId("atlas-git-document-step");
+    expect(steps).toHaveLength(2);
+    fireEvent.click(steps[0]);
+    await waitFor(() => expect(selectedRow()).toHaveTextContent("Retire the bar element"));
+
+    expect(screen.getByTestId("atlas-git-lens-files")).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.getAllByTestId("atlas-git-commit-file").find((row) => row.getAttribute("aria-current") === "true"),
+    ).toHaveTextContent("docs/elements/bar.md");
+    expect(await screen.findByTestId("atlas-git-restore-absent")).toBeInTheDocument();
+    expect(screen.queryByTestId("atlas-git-restore")).toBeNull();
+  });
+
+  it("a plain press on a step in the list is not a jump: it ends the follow and opens that step as usual", async () => {
+    const MERGE = commit(2, "Merge branch 'drafts'", [FOO]);
+    installDesktopGit({
+      status: CLEAN,
+      diff: NO_DIFF,
+      history: (limit: number, path?: string) =>
+        (path === BAR.path ? [NEWER, MERGE] : [NEWER, MERGE, IMPORT]).slice(0, limit),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(chip("바 요소"));
+    fireEvent.click((await screen.findAllByTestId("atlas-git-document-step"))[0]);
+    await screen.findByTestId("atlas-git-doc-not-in-step");
+
+    fireEvent.click(screen.getAllByTestId("atlas-git-history-item").find((row) => row.textContent?.includes("Import the vault"))!);
+    await waitFor(() => expect(selectedRow()).toHaveTextContent("Import the vault"));
+    expect(screen.queryByTestId("atlas-git-doc-not-in-step")).toBeNull();
+    // The concept being read is still the pressed one where the step changed it.
+    await waitFor(() => expect(chip("바 요소")).toHaveAttribute("aria-checked", "true"));
+  });
+});
