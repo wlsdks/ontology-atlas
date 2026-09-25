@@ -280,7 +280,10 @@ export function TopologyCommandChrome({
               // `end` is the top of the line. With `items-start` there, the utility lane
               // sank to the bottom of a line the search lane made two rows tall (its status
               // chips under its tools) and landed on the right rail's fit tile.
-              "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 transition-[left,right] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-6 md:top-6 xl:right-8 xl:top-8 xl:flex-row xl:flex-wrap-reverse",
+              // From `md` it stands on the chrome inset, one line with INDEX's top and left
+              // edges and the utility rail; it used to step to 32px at `xl`, 8px below
+              // INDEX's top edge (owner screenshot, 2026-09-25, 1512×949).
+              "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 transition-[left,right] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-[var(--chrome-inset)] md:top-[var(--chrome-inset)] xl:flex-row xl:flex-wrap-reverse",
               // The free map starts one inset past INDEX: past the panel when it is
               // open, past the collapsed tab when it is folded. The tab stands at the
               // map's left edge from y=84, so at `md:left-6` the search lane's first

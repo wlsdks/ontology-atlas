@@ -183,13 +183,15 @@ export function useTopologyGalaxyTransition({
         );
       const measuredTokens = overviewFitTokens(cameraTokens(tokens), galaxy);
       const fitBounds = galaxy ? layout.bounds : flatOverview!.bounds;
-      const visibleCount = galaxy ? world.nodes.length : flatOverview!.visibleCount;
+      // The small-graph clamp counts the vault, as every other overview fit does; a
+      // count of the drawn spine put five-domain vaults under it on this path alone.
+      const nodeCount = world.nodes.length;
       const fittedTarget = computeOverviewCameraTarget(
         fitBounds,
         width,
         height,
         measuredTokens,
-        visibleCount,
+        nodeCount,
       );
       const savedCamera = galaxy
         ? galaxyModeCameraRef.current.galaxy
@@ -200,7 +202,7 @@ export function useTopologyGalaxyTransition({
         width,
         height,
         measuredTokens,
-        visibleCount,
+        nodeCount,
       );
       if (galaxy) {
         overviewScaleRef.current = overviewScale;

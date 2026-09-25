@@ -218,8 +218,8 @@ export function OntologyMapTierLegend({ anchors, labels, onRaise, onFitChange, p
        */
       className={
         corner
-          ? "pointer-events-none absolute right-4 z-20 mb-3 hidden w-16 flex-col items-end md:right-6 md:flex xl:right-8"
-          : "pointer-events-none absolute right-4 z-20 mt-3 hidden w-16 md:right-6 md:block xl:right-8"
+          ? "pointer-events-none absolute right-4 z-20 mb-3 hidden w-16 flex-col items-end md:right-[var(--chrome-inset)] md:flex"
+          : "pointer-events-none absolute right-4 z-20 mt-3 hidden w-16 md:right-[var(--chrome-inset)] md:block"
       }
       style={
         corner
