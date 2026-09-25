@@ -56,11 +56,18 @@ test.describe("interaction sweep — projects, agents, git", () => {
     await mountDesktopVault(page);
   });
 
+  // Below `xl` (1280) the dock is a full-width overlay; it used to be `absolute top-0` against a
+  // row as tall as the page (1389 at 1040x806), so it never fitted the window there either.
   for (const viewport of [
+    { width: 1920, height: 1080 },
     { width: 1512, height: 949 },
     { width: 1280, height: 800 },
+    { width: 1279, height: 800 },
+    { width: 1040, height: 806 },
+    { width: 900, height: 800 },
   ]) {
     test(`project agent dock is one window tall at ${viewport.width}, header and composer both on screen`, async ({ page }) => {
+      const overlay = viewport.width < 1280;
       await page.setViewportSize(viewport);
       await page.goto("/ko/project/fallback/?slug=storefront&guides=off");
       const open = page.getByTestId("project-detail-brief-ask-open");
@@ -82,6 +89,7 @@ test.describe("interaction sweep — projects, agents, git", () => {
       });
       const onOpen = await measure();
       expect(onOpen.frame.height, "the dock frame is taller than the window").toBeLessThanOrEqual(viewport.height);
+      expect(onOpen.frame.y, "the dock frame starts above the window").toBeGreaterThanOrEqual(0);
       expect(onOpen.composer.y + onOpen.composer.height, "the composer starts below the fold").toBeLessThanOrEqual(viewport.height);
       expect(onOpen.close.y, "the close button is above the window").toBeGreaterThanOrEqual(0);
       await page.screenshot({ path: `output/ix/dock-${viewport.width}.png` });
@@ -94,6 +102,20 @@ test.describe("interaction sweep — projects, agents, git", () => {
       expect(scrolled.composer.y + scrolled.composer.height).toBeLessThanOrEqual(viewport.height);
       await page.screenshot({ path: `output/ix/dock-scrolled-${viewport.width}.png` });
 
+      if (overlay) {
+        // The overlay hides the opener, so the keyboard goes into the dock, and Escape puts it away.
+        await expect
+          .poll(() => frame.evaluate((el) => el.contains(document.activeElement)), {
+            message: "focus stayed on the opener the overlay now covers",
+          })
+          .toBe(true);
+        // The page the overlay covers is out of the Tab order while it is covered.
+        expect(await page.locator("main#main").evaluate((el) => (el as HTMLElement).inert)).toBe(true);
+        await page.keyboard.press("Escape");
+        await expect(frame).toHaveAttribute("data-dock-state", "put-away");
+        expect(await activeTestId(page), "Escape dropped focus").toBe("project-detail-brief-ask-open");
+        return;
+      }
       await close.click();
       await expect(frame).toHaveAttribute("data-dock-state", "put-away");
       expect(await activeTestId(page), "closing the dock dropped focus").toBe("project-detail-brief-ask-open");
@@ -140,14 +162,16 @@ test.describe("interaction sweep — projects, agents, git", () => {
     await expect(step).toHaveCount(0);
     expect(await activeTestId(page), "Escape dropped focus").toBe("atlas-git-discard");
 
-    // The commit step: the same pair, the message at the field's own type size.
+    // The commit step: the same pair, the message at the field's own type size, and the door
+    // that turns into it on the same step (it was 36px against the pair's 32).
+    const commitDoor = await box(page.getByTestId("atlas-git-snapshot-button"));
     await page.getByTestId("atlas-git-snapshot-button").click();
     const input = page.getByTestId("atlas-git-message-input");
     await expect(input).toBeFocused();
     const commitConfirm = await box(page.getByTestId("atlas-git-confirm-button"));
     const commitCancel = await box(page.getByTestId("atlas-git-cancel-button"));
-    expect([commitConfirm.height, commitCancel.height]).toEqual([32, 32]);
-    expect([commitConfirm.fontSize, commitCancel.fontSize]).toEqual([12.5, 12.5]);
+    expect([commitDoor.height, commitConfirm.height, commitCancel.height]).toEqual([32, 32, 32]);
+    expect([commitDoor.fontSize, commitConfirm.fontSize, commitCancel.fontSize]).toEqual([12.5, 12.5, 12.5]);
     expect((await box(input)).fontSize, "the commit message is set smaller than the field").toBeGreaterThan(11);
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("atlas-git-confirm-step")).toHaveCount(0);
@@ -239,6 +263,21 @@ test.describe("interaction sweep — projects, agents, git", () => {
     // The hint panel hangs below the header and never covers the button it explains.
     const [button, panel] = [await box(fetch), await box(hint)];
     expect(panel.y, "hint covers its own button").toBeGreaterThanOrEqual(button.y + button.height);
+    // Shown by focus, it lies across the "now" row and must not catch clicks meant for it.
+    const hitsHint = await hint.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const points = [
+        [r.left + 4, r.top + 4],
+        [r.left + r.width / 2, r.top + r.height / 2],
+        [r.right - 4, r.bottom - 4],
+      ];
+      const tooltip = el.closest("[data-radix-popper-content-wrapper]") ?? el;
+      return points.some(([x, y]) => {
+        const hit = document.elementFromPoint(x, y);
+        return hit !== null && tooltip.contains(hit);
+      });
+    });
+    expect(hitsHint, "the focus-shown hint catches the pointer over the row beneath it").toBe(false);
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("atlas-git-remote-fetch-hint")).toHaveCount(0);
   });
@@ -290,6 +329,18 @@ test.describe("interaction sweep — projects, agents, git", () => {
     await expect(button, "Escape moved focus off the hint").toBeFocused();
   });
 
+  test("a catalogue card's add and its other ways in stand on one step", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/ko/agents/?tab=mcp&mcp=connectors&guides=off");
+    await page.getByTestId("connectors-add-open").click({ timeout: 30_000 });
+    await page.getByTestId("connectors-search").fill("context7");
+    const row = page.locator('[data-testid="connectors-catalogue-item"][data-catalogue-id="context7"]');
+    await expect(row).toBeVisible();
+    const add = await box(row.getByTestId("connectors-catalogue-add"));
+    const other = await box(row.getByTestId("connectors-catalogue-other").first());
+    expect([other.height, other.fontSize], "one card, two type sizes at one height").toEqual([add.height, add.fontSize]);
+  });
+
   test("the add-connector dialog hands focus back to its opener, and an empty search answers first", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/ko/agents/?tab=mcp&mcp=connectors&guides=off");
@@ -303,6 +354,8 @@ test.describe("interaction sweep — projects, agents, git", () => {
     await search.fill("zzzqq");
     const none = page.getByTestId("connectors-add-none");
     await expect(none).toBeVisible();
+    // No particle that fits only vowel-final queries: the sentence reads right after any word.
+    await expect(none).toContainText("「zzzqq」에 맞는 게 없어요");
     await expect(page.getByTestId("connectors-found-section")).toHaveCount(0);
     await expect(page.getByTestId("connectors-discovery-unavailable")).toHaveCount(0);
     const groups = await box(page.getByTestId("connectors-add-groups"));
@@ -318,6 +371,11 @@ test.describe("interaction sweep — projects, agents, git", () => {
     await expect(page.getByTestId("connectors-custom-name"), "the door left the keyboard behind").toBeFocused();
     await expect(noneCustom, "the used door stayed on screen").toHaveCount(0);
     await expect(page.getByTestId("connectors-custom-toggle")).toHaveAttribute("aria-expanded", "true");
+    // The form's two adds are one step, and it speaks in the dialog's own register.
+    const variableAdd = await box(page.getByTestId("connectors-custom-variable-add"));
+    const customAdd = await box(page.getByTestId("connectors-custom-add"));
+    expect([variableAdd.height, variableAdd.fontSize]).toEqual([customAdd.height, customAdd.fontSize]);
+    await expect(page.getByTestId("connectors-add-dialog")).not.toContainText("십시오");
 
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("connectors-add-dialog")).toHaveCount(0);

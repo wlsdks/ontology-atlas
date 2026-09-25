@@ -46,6 +46,7 @@ import { ProjectAgentDock } from "./parts/ProjectAgentDock";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { CopyProjectLinkButton } from "@/features/project-share";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
+import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
 import { useTaxonomy } from "@/features/taxonomy";
 import { ProjectQuickEditPanel } from "@/features/project-quick-edit";
@@ -78,11 +79,21 @@ interface Props {
   initialRelated?: Project[];
 }
 
-function ProjectDetailShell({ children, dock = null }: { children: ReactNode; dock?: ReactNode }) {
+function ProjectDetailShell({
+  children,
+  dock = null,
+  dockOpen = false,
+}: {
+  children: ReactNode;
+  dock?: ReactNode;
+  dockOpen?: boolean;
+}) {
+  // Below `xl` the open dock is a full-width overlay: the page under it is out of reach, so it
+  // is out of the Tab order too (2026-09-25 sweep: Tab walked the covered page's controls).
+  const dockCoversPage = useViewportBelow(1280) && dockOpen;
   return (
-    // `relative` because the agent dock below `xl` is absolutely positioned against this row; at
-    // `xl` it is a sibling of `main` and takes its width from the row, the placement the Library
-    // measured on 2026-09-05 (a frame whose only child is absolute collapses inside a column).
+    // The agent dock is a sticky sibling of `main` in this row at every width: a column at `xl`
+    // and, below it, an overlay that takes no space in the row (see `ProjectAgentDock`).
     <div className="relative flex min-h-full w-full">
       {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
       {/* The bottom reserve is a base `pb` plus an `lg:` override — `max-lg:pb-[...]` is emitted
@@ -94,7 +105,7 @@ function ProjectDetailShell({ children, dock = null }: { children: ReactNode; do
           outside and the 40 inset inside. The two sibling screens started 8px apart at 1512
           (104 vs 112) and 40px apart at 1920 (232 vs 192). The column now carries the inset
           inside the cap exactly as the frame does, still fed by the safe-area insets. */}
-      <main id="main" tabIndex={-1} className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-0 md:pt-12 lg:pb-[max(3.5rem,env(safe-area-inset-bottom))]">
+      <main id="main" tabIndex={-1} inert={dockCoversPage} className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-0 md:pt-12 lg:pb-[max(3.5rem,env(safe-area-inset-bottom))]">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -567,6 +578,7 @@ export function ProjectDetailPage({
 
   return (
     <ProjectDetailShell
+      dockOpen={agent.route === "agent" && Boolean(agent.runtime && nativeVaultRootPath) && agent.open}
       dock={
         agent.route === "agent" && agent.runtime && nativeVaultRootPath ? (
           <ProjectAgentDock

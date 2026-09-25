@@ -1013,7 +1013,7 @@ function CatalogueSection({
                       {others.map((variant) => (
                         <Chip
                           key={variantKey(variant)}
-                          size="md"
+                          size="lg"
                           data-testid={`${testIdPrefix}-catalogue-other`}
                           data-variant-kind={variant.kind}
                           data-press={pressOutcome(variant)}
@@ -1576,6 +1576,7 @@ function CustomConnectorForm({
             })}
           </ul>
           <Chip
+            size="lg"
             data-testid={`${testIdPrefix}-custom-variable-add`}
             className="mt-2"
             onClick={() =>

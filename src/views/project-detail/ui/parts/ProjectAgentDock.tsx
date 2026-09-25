@@ -98,14 +98,43 @@ export function ProjectAgentDock({
       const frame = window.requestAnimationFrame(() => setSettled(false));
       return () => window.cancelAnimationFrame(frame);
     }
-    const wide =
-      typeof window === "undefined" || typeof window.matchMedia !== "function"
-        ? true
-        : window.matchMedia("(min-width: 1280px)").matches;
-    if (wide && !bornOpenRef.current) return;
+    if (!isBelowDockColumn() && !bornOpenRef.current) return;
     const frame = window.requestAnimationFrame(() => setSettled(true));
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
+
+  /*
+   * **Below `xl` the dock covers the page, so the keyboard goes into it** (2026-09-25 sweep).
+   * There the frame is a full-width overlay: focus left on the opener sat on a control the dock
+   * now hides, and Tab walked the covered page. Once the frame has settled, focus moves to the
+   * composer when it can take text, otherwise to the header's close button; Escape (handled on
+   * the frame) puts the dock away and the layout effect above returns focus to the opener. At
+   * `xl` the dock is a column beside the page, the opener stays visible, and focus stays put.
+   *
+   * The surface's enter keyframes start at `visibility: hidden`, where `focus()` is a silent
+   * no-op (measured at 1040: the first attempt landed nowhere), so the move is retried each
+   * frame until it lands, for at most a second, and stops if the person moved focus meanwhile.
+   */
+  useEffect(() => {
+    if (!open || !settled || !isBelowDockColumn()) return;
+    const startedOn = document.activeElement;
+    let frameId = 0;
+    let tries = 0;
+    const attempt = () => {
+      const frame = frameRef.current;
+      if (!frame || frame.contains(document.activeElement) || document.activeElement !== startedOn) return;
+      const target = [
+        frame.querySelector<HTMLElement>("[data-acp-composer] textarea:not(:disabled)"),
+        frame.querySelector<HTMLElement>('[data-testid="acp-dock-close"]'),
+      ].find((el) => el && (el.checkVisibility?.({ visibilityProperty: true }) ?? true));
+      target?.focus({ preventScroll: true });
+      if ((!target || document.activeElement !== target) && tries++ < 60) {
+        frameId = window.requestAnimationFrame(attempt);
+      }
+    };
+    attempt();
+    return () => window.cancelAnimationFrame(frameId);
+  }, [open, settled]);
 
   return (
     <div
@@ -115,6 +144,12 @@ export function ProjectAgentDock({
       data-dock-state={open ? "open" : standing ? "put-away" : "empty"}
       inert={!open}
       aria-hidden={!open || undefined}
+      onKeyDown={(event) => {
+        // Nested surfaces (the history list, the slash menu) take Escape first and stop it.
+        if (event.key !== "Escape" || event.defaultPrevented || !open || !isBelowDockColumn()) return;
+        event.preventDefault();
+        onClose();
+      }}
       onTransitionEnd={(event) => {
         if (event.target === event.currentTarget && event.propertyName === "width" && open) {
           setSettled(true);
@@ -123,25 +158,29 @@ export function ProjectAgentDock({
       style={
         {
           "--project-agent-chat-width": `${chatWidth.width}px`,
-          transitionProperty: "width",
+          transitionProperty: "width, margin-left",
           transitionDuration: "var(--agent-panel-reflow-duration)",
           transitionTimingFunction: "var(--topology-motion-ease-out)",
         } as React.CSSProperties
       }
       className={cn(
-        "absolute right-0 top-0 z-30 min-h-0 overflow-hidden bg-[color:var(--color-canvas)]",
-        "bottom-[calc(var(--topology-mobile-bottom-tab-reserve)+0.75rem)] lg:bottom-0",
         /*
-         * At `xl` the frame is a flex sibling of `main` inside the shell's scrolling body slot.
-         * As a plain `relative` child it stretched to the row, which is as tall as the page:
-         * 1389px against a 949px window at 1512, so the composer and send button started below
-         * the fold and the header scrolled away with the page (the close button and the composer
-         * were never on screen together). Sticky to the slot's top at the slot's own height
-         * (the shell's `h-dvh` column, with no bottom tab bar at `xl`), the dock stays one
-         * window tall and stays put while the page scrolls beside it.
+         * **One window tall at every width** (2026-09-25 sweep). The frame lives in the shell's
+         * scrolling body slot beside `main`, and the page row is as tall as the page. At `xl` it
+         * used to be a plain `relative` sibling and below `xl` an `absolute top-0` overlay: both
+         * stretched to the row, 1389px against a 949px window at 1512 and 1389 against 806 at
+         * 1040, so after the page had scrolled the close button sat above the window and, at the
+         * top, the composer sat below it; the two were never on screen together. The frame is now
+         * sticky to the slot's top at the window's height (less the bottom tab bar below `lg`).
+         * Below `xl` it is still an overlay over `main`: a full-width flex item with an equal
+         * negative left margin takes no space in the row, and width and margin move together,
+         * so it still grows in from the right edge.
          */
-        "xl:sticky xl:inset-auto xl:top-0 xl:z-auto xl:h-dvh xl:shrink-0 xl:self-start",
-        open ? "w-full xl:w-[var(--project-agent-chat-width)]" : "pointer-events-none w-0 xl:w-0",
+        "sticky top-0 z-30 min-h-0 shrink-0 self-start overflow-hidden bg-[color:var(--color-canvas)]",
+        "h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve)-0.75rem)] lg:h-dvh xl:z-auto",
+        open
+          ? "-ml-[100%] w-full xl:ml-0 xl:w-[var(--project-agent-chat-width)]"
+          : "pointer-events-none ml-0 w-0 xl:w-0",
       )}
     >
       {standing ? (
@@ -185,4 +224,10 @@ export function ProjectAgentDock({
       ) : null}
     </div>
   );
+}
+
+/** Below `xl` the dock is an overlay over the page rather than a column beside it. */
+function isBelowDockColumn(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return !window.matchMedia("(min-width: 1280px)").matches;
 }

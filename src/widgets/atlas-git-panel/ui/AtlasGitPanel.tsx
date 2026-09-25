@@ -234,9 +234,15 @@ const SECONDARY_ACTION_CLASS =
  * at 60% opacity reads as a broken primary button, so in this state it becomes a
  * quiet shape that says "done". The screen's attention winner moves to past
  * steps then.
+ *
+ * The commit door and this done state stand on the chip `lg` step (32px at
+ * `text-body`, 2026-09-25 interaction review). The door is replaced in place by the confirm
+ * step it opens, whose pair and the remote buttons beside it are all `lg`; at the setup
+ * actions' 36px the door was the one control on the workbench a step taller than the pair it
+ * turned into. The setup screens keep `PRIMARY_ACTION_CLASS`.
  */
-const DOCK_INERT_CLASS =
-  "inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] px-3.5 text-body text-[color:var(--color-text-quaternary)]";
+const SNAPSHOT_INERT_CLASS =
+  "inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] px-3 py-1 text-body text-[color:var(--color-text-quaternary)]";
 
 const noopSubscribe = () => () => {};
 
@@ -1868,6 +1874,10 @@ function RemoteActionButton({
     <Tooltip
       side="bottom"
       align="end"
+      // The hint opens under the button across the "now / uncommitted changes" row (246x34
+      // at every width). It holds nothing to press, so it never catches the pointer: shown by
+      // keyboard focus it swallowed clicks on that row (2026-09-25 interaction review).
+      panelClassName="pointer-events-none"
       content={
         <span className="flex flex-col gap-0.5" data-testid={`atlas-git-remote-${id}-hint`}>
           <span>{hint}</span>
@@ -2907,7 +2917,7 @@ function ActionDock({
           data-testid="atlas-git-snapshot-button"
           disabled={!hasChanges}
           onClick={() => setConfirming(true)}
-          className={cn(hasChanges ? PRIMARY_ACTION_CLASS : DOCK_INERT_CLASS, "self-start")}
+          className={cn(hasChanges ? CONFIRM_PRIMARY_CLASS : SNAPSHOT_INERT_CLASS, "self-start")}
         >
           {hasChanges ? null : <Check size={ICON_SIZE.sm} aria-hidden />}
           {hasChanges ? t("snapshotButton", { count: changeCount }) : t("noChanges")}
