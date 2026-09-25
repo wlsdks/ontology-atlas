@@ -207,19 +207,26 @@ export function GuidedTourCard({
       ) : null}
 
       <div className="mt-1 flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={back}
-          disabled={isFirst}
-          data-testid="guided-tour-back"
-          className={controlClass({
-            shape: "segment",
-            size: "lg",
-            className: "hover:text-[color:var(--color-text-primary)]",
-          })}
-        >
-          {t("prevLabel")}
-        </button>
+        {/* On the first step there is nowhere to go back to, so there is no [back] — a
+            disabled one was a dead control with no reason given (interaction audit,
+            2026-09-25). An empty slot holds its place, so [next] does not move between
+            step 1 and step 2, and from step 2 on [back] stands where it always does. */}
+        {isFirst ? (
+          <span aria-hidden data-testid="guided-tour-back-slot" />
+        ) : (
+          <button
+            type="button"
+            onClick={back}
+            data-testid="guided-tour-back"
+            className={controlClass({
+              shape: "segment",
+              size: "lg",
+              className: "hover:text-[color:var(--color-text-primary)]",
+            })}
+          >
+            {t("prevLabel")}
+          </button>
+        )}
         {/* Only the forward control is chosen by the step — on an interactive step the
             anchor click does that job, and on the branch step the two choices above do. */}
         {!isInteractive && !isBranchStep ? (

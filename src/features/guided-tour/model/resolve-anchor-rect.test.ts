@@ -247,3 +247,37 @@ describe("computeCardPlacement · avoidTarget (the card clears the lit node)", (
     expect(withoutFlag.side).toBe("below");
   });
 });
+
+describe("computeCardPlacement · avoidRects (the card leaves what it explains in view)", () => {
+  const viewport = { viewportWidth: 1512, viewportHeight: 949 };
+  const card = { cardWidth: 360, cardHeight: 205 };
+  const overlaps = (
+    p: { top: number; left: number },
+    r: { top: number; left: number; width: number; height: number },
+  ) =>
+    p.left < r.left + r.width &&
+    r.left < p.left + card.cardWidth &&
+    p.top < r.top + r.height &&
+    r.top < p.top + card.cardHeight;
+
+  it("moves a free-floating card off the centre when the centre covers a drawn domain", () => {
+    // Interaction audit, 2026-09-25: "lines are relations" centred its card on a domain.
+    const domain = { top: 450, left: 660, width: 80, height: 60 };
+    const placed = computeCardPlacement({ targetRect: null, ...card, ...viewport, avoidRects: [domain] });
+    expect(overlaps(placed, domain)).toBe(false);
+  });
+
+  it("stays centred when nothing it explains is under the centre", () => {
+    const far = { top: 20, left: 20, width: 40, height: 20 };
+    const placed = computeCardPlacement({ targetRect: null, ...card, ...viewport, avoidRects: [far] });
+    expect(placed).toEqual(computeCardPlacement({ targetRect: null, ...card, ...viewport }));
+  });
+
+  it("beside a panel cutout, takes the side that leaves the opened node in view", () => {
+    const panel = { top: 32, left: 1128, width: 352, height: 740 };
+    const node = { top: 300, left: 900, width: 90, height: 60 };
+    const placed = computeCardPlacement({ targetRect: panel, ...card, ...viewport, avoidRects: [node] });
+    expect(overlaps(placed, node)).toBe(false);
+    expect(overlaps(placed, panel)).toBe(false);
+  });
+});

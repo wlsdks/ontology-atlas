@@ -1111,7 +1111,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // through `buttonVariants` (a full reload after a render failure), so `a` 8→9.
 // 2026-09-25: Automations' "Get the app" and "Open Library check history" became standard
 // buttons (primary, ghost sm) instead of text links, so `Link` 19→21.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 21, a: 9 };
+// 2026-09-25: the map's edge panel "fix this relation on the map" link took the node panel's
+// primary `Button` grammar, so its `<Link>` branch goes through `buttonVariants`, `Link` 21→22.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 22, a: 9 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1178,6 +1180,17 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     conditional:
       '⚠️ 이 중 둘은 `className` 이 프리미티브의 반경·인셋을 덮는다(`rounded-chip px-4 sm:px-6`). ' +
       '그건 이 게이트가 아니라 다음 디자인 라운드의 일이다 — 등재가 그 결함을 승인하지는 않는다.',
+  },
+  {
+    file: 'src/widgets/ontology-map/ui/OntologyMapEdgePanel.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The edge panel\'s one action (2026-09-25). Its `<button>` branch is the primary `<Button>` ' +
+      'the node panel\'s action row uses; the `<Link>` branch (navigating to the editor) wears the ' +
+      'same `buttonVariants({ variant: "primary", size: "sm" })` so the docked slot speaks one ' +
+      'grammar whichever branch renders. `control-class.ts` does not replace standard buttons.',
   },
   {
     file: 'src/features/docs-vault-local/ui/AgentClientButtons.tsx',
@@ -1336,7 +1349,10 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // has no standard-button anchor shape, so the row is registered like the 404's own.
 // 28 → 30 (2026-09-25): Automations' two navigating actions, registered for the reason their
 // row states — the standard-button shape, at the two tags a navigating button needs.
-const BASELINE_ANCHOR_REGISTERED = 30;
+// 30 → 31 (2026-09-25): the edge panel's one action, a `<Link>` when it navigates to the
+// editor. It is the panel's primary and must match the node panel's primary `<Button>`; a
+// 6px 11px chip there was the second grammar the interaction audit measured.
+const BASELINE_ANCHOR_REGISTERED = 31;
 
 /** **Only this number may fall.** The current anchor total (30) minus registered (30). */
 const BASELINE_ANCHOR_DEBT = 0;

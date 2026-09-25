@@ -78,7 +78,16 @@ export interface GuidedTourOverlayProps {
    * covers the screen.
    */
   onBlockedInteraction?: () => void;
+  /**
+   * What the card must leave in view on a step, in client px — the drawn nodes the step
+   * explains (`computeCardPlacement`'s `avoidRects`). The map supplies it; the feature does not
+   * know how a map is drawn.
+   */
+  readAvoidRects?: (stepId: string) => readonly AnchorBox[];
 }
+
+/** Read again once the camera and a freshly opened panel have settled. */
+const AVOID_SETTLE_MS = 450;
 
 /**
  * Draws the scrim, cutout, blocker, card, and progress dots. Every step's scrim
@@ -93,8 +102,27 @@ export function GuidedTourOverlay({
   canvasAnchorRef,
   onActivateAnchor,
   onBlockedInteraction,
+  readAvoidRects,
 }: GuidedTourOverlayProps) {
   const { open, step } = tour;
+  /*
+   * The drawn marks the card must not cover, keyed by step so a stale read from the previous
+   * step never places this one. Read on arrival and again after the camera has settled.
+   */
+  const [avoid, setAvoid] = useState<{ step: string | null; rects: readonly AnchorBox[] }>({ step: null, rects: [] });
+  const avoidStepId = open ? (step?.id ?? null) : null;
+  useEffect(() => {
+    if (!avoidStepId || !readAvoidRects) return undefined;
+    const read = () => setAvoid({ step: avoidStepId, rects: readAvoidRects(avoidStepId) });
+    const first = window.requestAnimationFrame(read);
+    const settled = window.setTimeout(read, AVOID_SETTLE_MS);
+    window.addEventListener("resize", read);
+    return () => {
+      window.cancelAnimationFrame(first);
+      window.clearTimeout(settled);
+      window.removeEventListener("resize", read);
+    };
+  }, [avoidStepId, readAvoidRects]);
   const overlayRef = useDialogFocusTrap<HTMLDivElement>({
     open,
     initialFocus: "none",
@@ -236,6 +264,7 @@ export function GuidedTourOverlay({
     // And the card must clear the node itself, not only its name: this step asks the person to
     // look at that dot and press it.
     avoidTarget: step.anchor?.type === "canvas-node",
+    avoidRects: avoid.step === step.id ? avoid.rects : undefined,
   });
 
   const isInteractive = Boolean(step.interactive);

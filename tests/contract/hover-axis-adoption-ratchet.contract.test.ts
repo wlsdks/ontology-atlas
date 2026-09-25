@@ -101,8 +101,10 @@ const ROOT = process.cwd();
  * fill) became the standard `Button` and `buttonVariants` outline.
  * 290 → 289 (2026-09-25): the settings sheet's row actions moved onto one chip grammar and
  * the shared `DETAIL_TOGGLE_CHIP` ink, a net one fewer hand-written hover declaration.
+ * 289 → 288 (2026-09-25): the map edge panel's hand-built edit chip became the node panel's
+ * primary `buttonVariants`, so its hover rides the standard button.
  */
-const CEILING = 289;
+const CEILING = 288;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

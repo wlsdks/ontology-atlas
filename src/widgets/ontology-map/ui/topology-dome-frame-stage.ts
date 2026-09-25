@@ -529,10 +529,36 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               const at = projectDomeCoord(dome.model, coord, dome.yaw, dome.pitch);
               const measured = cameraTokens(tokens);
               const current = cameraTargetRef.current;
-              const sx = (at.wx - current.tx) * current.tscale + vw / 2;
+              const toScreenX = (wx: number) => (wx - current.tx) * current.tscale + vw / 2;
+              const sx = toScreenX(at.wx);
               const lo = measured.safeInsetLeft + DOME_NUDGE_MARGIN_PX;
               const hi = vw - measured.safeInsetRight - DOME_NUDGE_MARGIN_PX;
-              const shift = hi <= lo ? 0 : sx > hi ? sx - hi : sx < lo ? sx - lo : 0;
+              /*
+               * The node and what it lights up. Clearing only the node left a domain's own
+               * capabilities spreading right, under the panel it had just opened (interaction
+               * audit, 2026-09-25: two of its capability names were cut at the panel's edge in
+               * Strata at 1040). The slide takes the lit neighbourhood into the free area when it
+               * fits, centres it when it does not, and always keeps the node itself clear.
+               */
+              let eMin = sx;
+              let eMax = sx;
+              for (const id of world.neighborMap.get(request.slug) ?? []) {
+                const c = dome.model.coords.get(id);
+                if (c === undefined) continue;
+                const x = toScreenX(projectDomeCoord(dome.model, c, dome.yaw, dome.pitch).wx);
+                eMin = Math.min(eMin, x);
+                eMax = Math.max(eMax, x);
+              }
+              let shift = 0;
+              if (hi > lo) {
+                const needAtLeast = eMax - hi;
+                const allowAtMost = eMin - lo;
+                shift =
+                  needAtLeast <= allowAtMost
+                    ? Math.min(allowAtMost, Math.max(needAtLeast, 0))
+                    : (eMin + eMax) / 2 - (lo + hi) / 2;
+                shift = Math.min(sx - lo, Math.max(sx - hi, shift));
+              }
               if (Math.abs(shift) > 0.5) {
                 const target = { tx: current.tx + shift / current.tscale, ty: current.ty, tscale: current.tscale };
                 // Chained nudges keep the first view as the one a deselect returns to.

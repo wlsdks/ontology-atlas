@@ -174,6 +174,11 @@ export interface TopologyIndexPanelProps {
   brokenDocCount?: number;
   /** The node id of a project with no code folder bound. null means the row does not exist. */
   unboundProjectNodeId?: string | null;
+  /**
+   * The unbound-project row's action: open that project so its code folder can be connected.
+   * Falls back to `onSelect`; the caller supplies this to also carry focus to the action.
+   */
+  onOpenUnboundSource?: (id: string) => void;
   /** The vault holds no project node at all — distinct from "every project already has code bound". */
   noProjectsYet?: boolean;
   /** Truthy when "open a folder" opened the map inside the folder that was picked. */
@@ -283,6 +288,7 @@ export function TopologyIndexPanel({
   dustyNodeCount,
   brokenDocCount,
   unboundProjectNodeId = null,
+  onOpenUnboundSource,
   noProjectsYet = false,
   sourceName = null,
   sourceDocumentCount = null,
@@ -484,7 +490,7 @@ export function TopologyIndexPanel({
       testId: "topology-index-source-unbound",
       label: labels.sourceUnboundLabel,
       action: labels.sourceUnboundAction,
-      onClick: () => onSelect(unboundId),
+      onClick: () => (onOpenUnboundSource ?? onSelect)(unboundId),
     });
   }
   const tidyHeadingId = useId();
@@ -635,15 +641,18 @@ export function TopologyIndexPanel({
           onKeyDown={(event) => {
             // M-10 — Escape in the INDEX search is a search-scoped clear (the
             // macOS workbench convention), NOT a canvas deselect. When there
-            // IS a query, rung 1 clears it + blurs and stops the keypress so
-            // the window-level topology Esc ladder doesn't ALSO deselect the
-            // node underneath on the same press. An empty field lets Escape
-            // bubble through to that ladder unchanged.
+            // IS a query, rung 1 clears it and stops the keypress so the
+            // window-level topology Esc ladder doesn't ALSO deselect the node
+            // underneath on the same press. An empty field lets Escape bubble
+            // through to that ladder unchanged.
+            //
+            // The caret stays in the field: clearing is a step inside the
+            // search, and blurring dropped focus on <body> so the next key
+            // started from the top of the page (interaction audit, 2026-09-25).
             if (event.key === "Escape" && query.length > 0) {
               event.preventDefault();
               event.stopPropagation();
               setQuery("");
-              event.currentTarget.blur();
             }
           }}
           placeholder={labels.searchPlaceholder}

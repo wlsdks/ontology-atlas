@@ -9,7 +9,15 @@
  * tried; the first that overlaps nothing wins, in a fixed order so the card
  * does not wander between renders. When every corner overlaps something, the
  * least overlap wins.
+ *
+ * Chrome counts for far more than a drawn node (interaction audit, 2026-09-25):
+ * at 1040 the card landed on the INDEX panel's counts and at 1280 on the
+ * utility tiles, because only discs and names were avoided. A card over a node
+ * hides a name for a moment; a card over a control hides the control.
  */
+
+/** How much worse a px² of covered chrome is than a px² of covered drawing. */
+const CHROME_OVERLAP_WEIGHT = 50;
 
 export interface Rect {
   x: number;
@@ -69,12 +77,14 @@ export function placeHoverCard(
   avoid: readonly Rect[],
   bounds: Rect,
   offset = 14,
+  chrome: readonly Rect[] = [],
 ): HoverCardPlacement {
   let best: HoverCardPlacement | null = null;
   for (const corner of CORNER_ORDER) {
     const rect = clampInto(cornerRect(anchor, size, offset, corner), bounds);
     let overlap = 0;
     for (const item of avoid) overlap += overlapArea(rect, item);
+    for (const item of chrome) overlap += CHROME_OVERLAP_WEIGHT * overlapArea(rect, item);
     const coversPointer =
       anchor.x >= rect.x && anchor.x <= rect.x + rect.w && anchor.y >= rect.y && anchor.y <= rect.y + rect.h;
     // Covering the pointer hides the very line being read; count it as a full card.

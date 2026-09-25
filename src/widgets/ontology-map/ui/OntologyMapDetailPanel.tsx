@@ -507,7 +507,11 @@ function ProjectSourceRemedy({
       // line breaking a word splits down the middle, as in "Here / Found it".
       // (The action strip already uses the same grammar for the same reason —
       // zero values added.)
-      className="mt-0.5 flex flex-col gap-2 rounded-chip border border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] px-2.5 py-2 [word-break:keep-all]"
+      //
+      // No top margin: inside a `RowDisclosure` a child's margin collapses out of the
+      // measured body, so the pinned height came up 2px short and clipped this box's
+      // bottom border (interaction audit, 2026-09-25).
+      className="flex flex-col gap-2 rounded-chip border border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] px-2.5 py-2 [word-break:keep-all]"
     >
       {why ? (
         <p
@@ -651,6 +655,15 @@ interface DetailActionItem {
   onSelect?: () => void;
 }
 
+/**
+ * The action row's primary. **One radius for the row** (interaction audit, 2026-09-25): the
+ * primary was the Button's `rounded-panel` (12) in one branch and `rounded-card` in two others,
+ * beside chip-radius menu triggers (6), so one row drew three corners. The map panel's controls
+ * are chip-radius (`--map-panel-row-radius`), so the primary joins them — the fill carries the
+ * emphasis, not the corner.
+ */
+const PRIMARY_ACTION_CLASS = "atlas-touch-floor min-w-0 flex-1 rounded-chip";
+
 function DetailActionMenu({
   label,
   triggerTestId,
@@ -710,7 +723,9 @@ function DetailActionMenu({
         onClick={() => onOpenChange(!open)}
         className={controlClass({
           shape: iconOnly ? "icon" : "chip",
-          size: "md",
+          // One height across the action row: the icon ramp's 32 is `lg` (its `md` is 28),
+          // the chip ramp's is `md` — so the trigger stands level with the primary Button.
+          size: iconOnly ? "lg" : "md",
           tone: "muted",
           className:
             "atlas-touch-floor atlas-touch-floor-wide border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)]",
@@ -1214,8 +1229,15 @@ export function OntologyMapDetailPanel({
           // rejection of "N more capabilities" in the project detail (the 2026-08-12 option B
           // rationale): showing a number with no route to it makes the user leave the
           // map and search again.
-          <button
-            type="button"
+          /*
+           * **A row of the list, not a caption under it** (interaction audit, 2026-09-25). It
+           * was a mono link pushed in by a hand-tuned `ml-[34px]`: Korean in JetBrains Mono
+           * spread its "+17 more" label to monospace width and started 34px off the rows' text column. It is now the
+           * rows' own control, with an invisible glyph in the glyph's place, so its words start
+           * exactly where the names above start; only the count keeps tabular figures.
+           */
+          <RowButton
+            size="md"
             aria-expanded={expanded}
             data-datasheet-group-overflow={group}
             data-testid={`map-group-more-${group}`}
@@ -1227,21 +1249,21 @@ export function OntologyMapDetailPanel({
                 return next;
               })
             }
-            className={controlClass({
-              shape: "link",
-              size: "sm",
-              className:
-                // `atlas-touch-floor`, not `touch-hit-expand`: measured 302×24 under a
-                // coarse pointer (2026-09-05), and the row above it is `mt-0.5` — two
-                // pixels away. A transparent 44px hit area there would reach 18px into
-                // that row and a later element in DOM order steals the earlier one's
-                // tap, which is the trade `globals.css` already rejected for the other
-                // 21 dense places. Growing the box actually pushes its neighbours apart.
-                "atlas-touch-floor ml-[34px] mt-0.5 font-mono text-label text-[color:var(--map-panel-text-tertiary)] hover:text-[color:var(--map-panel-text-secondary)]",
-            })}
+            className="rounded-chip hover:bg-[color:var(--map-panel-row-hover)] active:bg-[color:var(--map-panel-row-active)]"
           >
-            {expanded ? labels.groupShowFewer : `+${overflow} ${labels.groupShowMore}`}
-          </button>
+            <span aria-hidden className="invisible">
+              <OntologyMapKindGlyph kind="element" />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-label text-[color:var(--map-panel-text-tertiary)]">
+              {expanded ? (
+                labels.groupShowFewer
+              ) : (
+                <>
+                  <span className="tabular-nums">+{overflow}</span> {labels.groupShowMore}
+                </>
+              )}
+            </span>
+          </RowButton>
         ) : null}
       </RelationGroupShell>
     );
@@ -1616,7 +1638,7 @@ export function OntologyMapDetailPanel({
               : "flex items-center gap-1.5"}
           >
             {!suppressPrimaryAction && meaningReview ? (
-              <Button size="sm" onClick={meaningReview.onOpen} data-testid="map-detail-panel-action-meaning" data-action-role="primary" className="atlas-touch-floor min-w-0 flex-1">
+              <Button size="sm" onClick={meaningReview.onOpen} data-testid="map-detail-panel-action-meaning" data-action-role="primary" className={PRIMARY_ACTION_CLASS}>
                 <ScanSearch size={ICON_SIZE.sm} aria-hidden />
                 <span className="truncate">{meaningReview.label}</span>
               </Button>
@@ -1628,7 +1650,7 @@ export function OntologyMapDetailPanel({
                 title={labels.actionAskAgentTip}
                 data-testid="map-detail-panel-action-ask-agent"
                 data-action-role="primary"
-                className="atlas-touch-floor min-w-0 flex-1 rounded-card"
+                className={PRIMARY_ACTION_CLASS}
               >
                 <MessageCircle size={ICON_SIZE.sm} aria-hidden />
                 <span className="truncate">{labels.actionAskAgent}</span>
@@ -1640,7 +1662,7 @@ export function OntologyMapDetailPanel({
                 aria-label={labels.handoff}
                 data-testid="map-detail-panel-action-handoff"
                 data-action-role="primary"
-                className="atlas-touch-floor min-w-0 flex-1 rounded-card"
+                className={PRIMARY_ACTION_CLASS}
               >
                 <Copy size={ICON_SIZE.sm} aria-hidden />
                 <span className="truncate">{labels.actionCopyHandoff}</span>
@@ -1776,19 +1798,20 @@ export function OntologyMapDetailPanel({
               type="button"
               onClick={onOpenFullDetail}
               data-testid="map-detail-panel-open-full-detail"
-              className={showProjectSource
-                ? controlClass({
-                    shape: "link",
-                    size: "lg",
-                    className:
-                      "touch-hit-expand shrink-0 text-[color:var(--map-panel-text-tertiary)] hover:text-[color:var(--map-panel-text-secondary)]",
-                  })
-                : controlClass({
-                    shape: "card",
-                    size: "sm",
-                    className:
-                      "atlas-touch-floor shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--map-panel-primary-border)] bg-[color:var(--map-panel-primary-surface)] text-[color:var(--map-panel-primary-text)] hover:border-[color:var(--map-panel-primary-border-hover)] hover:bg-[color:var(--map-panel-primary-surface-hover)]",
-                  })}
+              /*
+               * **One grammar for "full detail" on every kind** (interaction audit, 2026-09-25):
+               * domains and capabilities drew a 32px bordered card here, the project a 24px ghost
+               * link, so the same action changed shape by kind and the footer its height. Shape
+               * and size are now one; only the emphasis steps down on the project, whose source
+               * action (in the footer or beside the gap) is the filled control, so two never compete.
+               */
+              className={controlClass({
+                shape: "card",
+                size: "sm",
+                className: showProjectSource
+                  ? "atlas-touch-floor shrink-0 border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] text-[color:var(--map-panel-text-tertiary)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)]"
+                  : "atlas-touch-floor shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--map-panel-primary-border)] bg-[color:var(--map-panel-primary-surface)] text-[color:var(--map-panel-primary-text)] hover:border-[color:var(--map-panel-primary-border-hover)] hover:bg-[color:var(--map-panel-primary-surface-hover)]",
+              })}
             >
               {labels.openFullDetail}
             </button>

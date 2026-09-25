@@ -3,6 +3,8 @@ import { deriveOntologyFromVault, resolveStaticVaultSource } from "@/entities/do
 import {
   boxesOverlap,
   computeTerritoryLayout,
+  placeTerritoryCluster,
+  territoryClusterAvoid,
   territorySatellites,
   TERRITORY_GEOMETRY,
   type TerritoryInputEdge,
@@ -160,6 +162,56 @@ describe("computeTerritoryLayout", () => {
     expect(cramped.fitsRoom).toBe(false);
     expect(cramped.capabilities).toHaveLength(fitted.capabilities.length);
     expect(overlaps(cramped)).toEqual([]);
+  });
+
+  it.each([
+    ["1280x800 with INDEX open", { x: -407, y: -330, w: 834, h: 640 }],
+    ["1040x720 with INDEX open", { x: -287, y: -290, w: 594, h: 560 }],
+  ])("keeps every disc and every name it draws at rest inside a %s room", (_label, room) => {
+    // Interaction audit, 2026-09-25: past the room the drawing went under INDEX, the tiles and
+    // the bottom of the window. Inside a smaller room the rings draw in first; names that still
+    // do not fit wait for hover — but nothing drawn at rest may leave the room.
+    const { nodes, edges } = dogfoodGraph();
+    const layout = computeTerritoryLayout(nodes, edges, { ...options, room });
+    const inRoom = (b: { x: number; y: number; w: number; h: number }) =>
+      b.x >= room.x && b.y >= room.y && b.x + b.w <= room.x + room.w && b.y + b.h <= room.y + room.h;
+    expect(layout.fitsRoom).toBe(true);
+    expect(layout.capabilities).toHaveLength(nodes.filter((n) => n.kind === "capability").length);
+    for (const c of layout.capabilities) {
+      expect(inRoom({ x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }), `${c.id} disc outside the room`).toBe(true);
+      if (c.labelReserved) expect(inRoom(c.label.box), `${c.id} name outside the room`).toBe(true);
+    }
+    expect(overlaps(layout)).toEqual([]);
+  });
+
+  it("slides a capability's element list off its domain's title", () => {
+    const { nodes, edges } = dogfoodGraph();
+    const layout = computeTerritoryLayout(nodes, edges, options);
+    let checked = 0;
+    for (const cap of layout.capabilities.filter((c) => c.elementIds.length > 0)) {
+      const avoid = territoryClusterAvoid(layout, cap);
+      const { plate } = placeTerritoryCluster(cap, 120, avoid);
+      // Any place the list may take — beside the disc, one end still level with it.
+      const n = cap.elementIds.length;
+      const row = TERRITORY_GEOMETRY.satelliteRow;
+      const reach = ((n - 1) / 2) * row + row;
+      const shifts: number[] = [];
+      for (let d = 0; d <= reach; d += row) shifts.push(d, -d);
+      const clearPlaceExists = [1, -1].some((side) =>
+        shifts.some((shift) => {
+          const x = cap.x + side * (cap.r + TERRITORY_GEOMETRY.satelliteGap + 16);
+          const top = cap.y + shift - ((n - 1) / 2) * TERRITORY_GEOMETRY.satelliteRow;
+          const near = x - side * 15;
+          const far = x + side * (9 + 120 + 10);
+          const box = { x: Math.min(near, far), y: top - 12, w: Math.abs(far - near), h: (n - 1) * TERRITORY_GEOMETRY.satelliteRow + 24 };
+          return !avoid.some((b) => boxesOverlap(box, b));
+        }),
+      );
+      if (!clearPlaceExists) continue;
+      checked += 1;
+      for (const b of avoid) expect(boxesOverlap(plate, b), `${cap.id}'s list covers its name or its domain's title`).toBe(false);
+    }
+    expect(checked).toBeGreaterThan(5);
   });
 
   it("is deterministic: the same graph draws the same picture", () => {

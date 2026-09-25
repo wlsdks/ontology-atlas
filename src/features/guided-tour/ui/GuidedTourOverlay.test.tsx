@@ -257,9 +257,15 @@ describe("GuidedTourOverlay", () => {
       const stepId = overlay.getAttribute("data-tour-step") ?? "?";
       seen.push(stepId);
 
-    // Only the first step is disabled; after that it must exist on every step.
+    // The first step has nowhere to go back to, so it holds [back]'s slot empty; after that
+    // [back] must exist on every step.
       const back = screen.queryByTestId("guided-tour-back");
-      expect(back, `단계 "${stepId}" 에 「이전」이 없다`).toBeInTheDocument();
+      if (seen.length === 1) {
+        expect(back, "the first step shows a dead [back]").not.toBeInTheDocument();
+        expect(screen.getByTestId("guided-tour-back-slot")).toBeInTheDocument();
+      } else {
+        expect(back, `단계 "${stepId}" 에 「이전」이 없다`).toBeInTheDocument();
+      }
 
       const next = screen.queryByTestId("guided-tour-next");
       if (next) {

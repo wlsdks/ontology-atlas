@@ -128,15 +128,20 @@ export interface HomeRouteState {
   /** Saved constellation id, or `new` to open its editor. This value belongs to one vault. */
   constellationIntent: string | null;
   /**
-   * The flat map drawn as Territories (`?view=territories`). The view picker's stored choice
+   * The map view (`?view=territories|galaxy|strata|coupling`). The view picker's stored choice
    * is mirrored here so a link opens the same view and a reload keeps it; any other value is
-   * dropped at parse time. `null` = the stored choice decides.
+   * dropped at parse time. `null` = the flat map, or on arrival the stored choice decides.
    */
   mapView: HomeMapView | null;
 }
 
-/** The map views an address can name. Only Territories has one so far. */
-type HomeMapView = "territories";
+/** The map views an address can name: every view the picker offers but the flat map, which is the parameter's absence. */
+const HOME_MAP_VIEWS = ["territories", "galaxy", "strata", "coupling"] as const;
+export type HomeMapView = (typeof HOME_MAP_VIEWS)[number];
+
+function parseHomeMapView(value: string | null): HomeMapView | null {
+  return value !== null && (HOME_MAP_VIEWS as readonly string[]).includes(value) ? (value as HomeMapView) : null;
+}
 
 /** Spotlight window — "auto" (adaptive) or an explicit day preset. */
 type RecentSpotlightWindow = "auto" | 1 | 7 | 30;
@@ -571,7 +576,7 @@ export function parseHomeRouteState(
     realmSlug: searchParams.get(HOME_QUERY_KEYS.realm) || null,
     recentWindow: parseRecentWindowParam(searchParams.get(HOME_QUERY_KEYS.recent)),
     constellationIntent: searchParams.get(HOME_QUERY_KEYS.constellation) || null,
-    mapView: searchParams.get(HOME_QUERY_KEYS.view) === "territories" ? "territories" : null,
+    mapView: parseHomeMapView(searchParams.get(HOME_QUERY_KEYS.view)),
   };
 }
 

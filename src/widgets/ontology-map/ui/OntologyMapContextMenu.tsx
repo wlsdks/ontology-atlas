@@ -62,6 +62,8 @@ export interface OntologyMapContextMenuProps {
   onSetPathSource: () => void;
   onOpenFullDetail: () => void;
   onClose: () => void;
+  /** The menu's accessible name — it names the node the actions apply to. */
+  ariaLabel: string;
 }
 
 /** Static estimate of the menu's own footprint (5 items + 1 divider, `p-1` padding) — good enough for the edge clamp below without a measure-then-reposition double-render. */
@@ -104,6 +106,28 @@ const MENU_ITEM_CLASS = controlClass({ shape: "row", size: "md", className: MENU
 // in `CONTROL_DISABLED_CLASS`). This is where it had drifted to 40.
 const MENU_ITEM_DISABLED_CLASS = "pointer-events-none opacity-55";
 
+const ENABLED_ITEM_SELECTOR = '[role="menuitem"]:not([aria-disabled="true"])';
+
+/**
+ * The next item for a menu key, or null when the key is not the menu's. Roving is
+ * cyclic, the WAI-ARIA menu pattern: past the last item comes the first.
+ */
+function nextContextMenuItemIndex(key: string, current: number, count: number): number | null {
+  if (count === 0) return null;
+  switch (key) {
+    case "ArrowDown":
+      return current < 0 ? 0 : (current + 1) % count;
+    case "ArrowUp":
+      return current < 0 ? count - 1 : (current - 1 + count) % count;
+    case "Home":
+      return 0;
+    case "End":
+      return count - 1;
+    default:
+      return null;
+  }
+}
+
 export function OntologyMapContextMenu({
   open,
   onExited,
@@ -116,8 +140,48 @@ export function OntologyMapContextMenu({
   onSetPathSource,
   onOpenFullDetail,
   onClose,
+  ariaLabel,
 }: OntologyMapContextMenuProps) {
   const menuRef = useRef<HTMLElement | null>(null);
+
+  /*
+   * ★ **The menu takes focus when it opens** (interaction audit, 2026-09-25).
+   *   Focus used to stay on the canvas, so the first ArrowDown walked the map's
+   *   selection instead — it opened the next domain's panel and left this menu
+   *   floating over that panel, anchored to a node that had moved away. Focus on
+   *   the first item makes the arrow keys the menu's, and the canvas's keyboard
+   *   walk (bound to the canvas element) never hears them.
+   */
+  useEffect(() => {
+    if (!open) return;
+    const frame = requestAnimationFrame(() => {
+      menuRef.current?.querySelector<HTMLElement>(ENABLED_ITEM_SELECTOR)?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open]);
+
+  // Bound natively: `Surface` passes no key handlers through, and the listener
+  // only lives while the menu is open.
+  useEffect(() => {
+    const menu = menuRef.current;
+    if (!open || !menu) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        // A menu is one stop: Tab leaves it, and leaving closes it.
+        onClose();
+        return;
+      }
+      const items = [...menu.querySelectorAll<HTMLElement>(ENABLED_ITEM_SELECTOR)];
+      const current = items.findIndex((item) => item === document.activeElement);
+      const next = nextContextMenuItemIndex(event.key, current, items.length);
+      if (next === null) return;
+      event.preventDefault();
+      event.stopPropagation();
+      items[next]?.focus({ preventScroll: true });
+    };
+    menu.addEventListener("keydown", handleKeyDown);
+    return () => menu.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, open]);
 
   // Outside-click closes — Esc is owned by the window-level dismissal order
   // (`HomePage.tsx`'s keydown effect + the `close-context-menu` tier) so both
@@ -165,6 +229,7 @@ export function OntologyMapContextMenu({
       ref={menuRef}
       {...transientSurface("menu")}
       role="menu"
+      aria-label={ariaLabel}
       data-testid="map-context-menu"
       className="fixed z-50 flex w-[200px] flex-col gap-0.5 rounded-[var(--map-panel-row-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-1 shadow-[var(--map-panel-shadow)]"
       style={{ left: anchor.x, top: anchor.y }}

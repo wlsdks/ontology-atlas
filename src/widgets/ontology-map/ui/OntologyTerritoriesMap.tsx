@@ -7,7 +7,8 @@ import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { collectCanvasObstacles, computeFreeArea, type Rect } from "../interaction/free-area";
 import {
   computeTerritoryLayout,
-  territorySatellites,
+  placeTerritoryCluster,
+  territoryClusterAvoid,
   type Box,
   type TerritoryLayout,
   type TerritoryTextRole,
@@ -16,6 +17,7 @@ import {
   drawTerritories,
   focusCapability as focusCapabilityOf,
   TERRITORY_FONTS,
+  territoryElementNameWidth,
   type TerritoryEvidenceState,
   type TerritoryInks,
 } from "../render/territories";
@@ -62,6 +64,8 @@ const PAN_KEEP = 160;
 /** Room the chrome leaves free at rest: below the tool lane, above the legend, beside the tiles. */
 const ROOM_TOP = 96;
 const ROOM_BOTTOM = 64;
+/** Air kept between the drawing and the legend above it. */
+const LEGEND_GAP = 8;
 const ROOM_RIGHT = 80;
 const ROOM_LEFT_PAD = 16;
 
@@ -98,12 +102,34 @@ function readTerritoryInks(): TerritoryInks | null {
   return { title, count, stale, staleFill, rimLight, rollupAlpha, glowAlpha, arrivalMs };
 }
 
-function freeAreaOf(canvas: HTMLCanvasElement | null): Rect | null {
+/**
+ * The map's free area in canvas px: the canvas minus the chrome standing on it (INDEX, the
+ * inspector), and minus the legend along the bottom. The legend is the view's own and too short
+ * to count as a panel, but a name drawn under it is just as unreadable.
+ */
+function freeAreaOf(canvas: HTMLCanvasElement | null, legend: Element | null = null): Rect | null {
   if (!canvas) return null;
   const r = canvas.getBoundingClientRect();
   const canvasRect = { x: r.x, y: r.y, width: r.width, height: r.height };
   const free = computeFreeArea(canvasRect, collectCanvasObstacles(canvas, canvasRect));
-  return { x: free.x - r.x, y: free.y - r.y, width: free.width, height: free.height };
+  let bottom = free.y + free.height;
+  const legendBox = legend?.getBoundingClientRect();
+  if (legendBox && legendBox.height > 0 && legendBox.top > free.y) bottom = Math.min(bottom, legendBox.top - LEGEND_GAP);
+  return { x: free.x - r.x, y: free.y - r.y, width: free.width, height: bottom - free.y };
+}
+
+/** The legend's visible pill, the part that takes room. */
+const legendOf = (wrap: HTMLElement | null) => wrap?.querySelector('[data-territories-legend-pill]') ?? null;
+
+/**
+ * Publishes the free area's side edges on the wrapper, so the legend stands between the panels
+ * rather than under whichever one is open.
+ */
+function publishFreeEdges(wrap: HTMLElement | null, free: Rect | null) {
+  if (!wrap || !free) return;
+  const width = wrap.getBoundingClientRect().width;
+  wrap.style.setProperty("--territories-free-left", `${Math.max(0, Math.round(free.x))}px`);
+  wrap.style.setProperty("--territories-free-right", `${Math.max(0, Math.round(width - (free.x + free.width)))}px`);
 }
 
 const boxAttr = (b: Box, o: { x: number; y: number }) =>
@@ -170,6 +196,12 @@ export function OntologyTerritoriesMap({
   }, [nodes, edges, domainStats, evidence, evidenceMeasured, room, hub]);
   const projectCount = useMemo(() => nodes.find((n) => n.kind === "project")?.descendantCount ?? null, [nodes]);
   const elementNames = useMemo(() => new Map(nodes.filter((n) => n.kind === "element").map((n) => [n.id, n.label])), [nodes]);
+  /** The element list's widest name, set in the font the paint uses, so hit test and paint agree. */
+  const clusterWidest = useCallback(
+    (cap: Pick<TerritoryLayout["capabilities"][number], "elementIds">) =>
+      territoryElementNameWidth(cap, elementNames, (text) => measureText(text, "element")),
+    [elementNames],
+  );
 
   /** Who stays lit under the selection: itself, its territory's head, what it touches. */
   const lit = useMemo(() => {
@@ -318,8 +350,9 @@ export function OntologyTerritoriesMap({
     const read = () => {
       const r = wrap.getBoundingClientRect();
       setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
+      publishFreeEdges(wrap, freeAreaOf(canvasRef.current));
       if (selectedRef.current) return;
-      const free = freeAreaOf(canvasRef.current) ?? { x: 0, y: 0, width: r.width, height: r.height };
+      const free = freeAreaOf(canvasRef.current, legendOf(wrap)) ?? { x: 0, y: 0, width: r.width, height: r.height };
       const x = free.x + ROOM_LEFT_PAD;
       const y = Math.max(free.y, ROOM_TOP);
       const right = Math.min(free.x + free.width, r.width - ROOM_RIGHT);
@@ -399,18 +432,39 @@ export function OntologyTerritoriesMap({
     requestDraw();
     if (!selectedId) {
       if (restRef.current) moveCamera(restRef.current);
-      return;
+      // The inspector has left: the legend may stretch back once it has finished leaving.
+      const released = window.setTimeout(() => publishFreeEdges(wrapRef.current, freeAreaOf(canvasRef.current)), 420);
+      return () => window.clearTimeout(released);
     }
     const target = focusCapabilityOf(layout, selectedId);
     const domain = layout.domains.find((d) => d.id === selectedId) ?? null;
-    const focus = target
-      ? { x: target.x, y: target.y, reach: target.r + 40 }
+    /*
+     * What has to be seen whole: the disc with its name and its element list, or the domain's
+     * mark with its title and counts. Bringing only the disc's centre into view left the selected
+     * name cut at the inspector's edge (interaction audit, 2026-09-25).
+     */
+    const union = (boxes: readonly Box[]) => {
+      const x = Math.min(...boxes.map((b) => b.x));
+      const y = Math.min(...boxes.map((b) => b.y));
+      return { x, y, w: Math.max(...boxes.map((b) => b.x + b.w)) - x, h: Math.max(...boxes.map((b) => b.y + b.h)) - y };
+    };
+    const focusBox: Box | null = target
+      ? union([
+          { x: target.x - target.r - 8, y: target.y - target.r - 8, w: 2 * target.r + 16, h: 2 * target.r + 16 },
+          target.label.box,
+          placeTerritoryCluster(target, clusterWidest(target), territoryClusterAvoid(layout, target)).plate,
+        ])
       : domain
-        ? { x: domain.x, y: domain.y, reach: 60 }
+        ? union([
+            { x: domain.x - domain.half - 8, y: domain.y - domain.half - 8, w: 2 * domain.half + 16, h: 2 * domain.half + 16 },
+            domain.label.box,
+            domain.stats.box,
+          ])
         : null;
     const makeRoom = () => {
       const o = offsetRef.current;
-      const free = freeAreaOf(canvasRef.current);
+      const free = freeAreaOf(canvasRef.current, legendOf(wrapRef.current));
+      publishFreeEdges(wrapRef.current, freeAreaOf(canvasRef.current));
       if (!o || !free) return;
       const margin = 12;
       const b = layout.bounds;
@@ -423,9 +477,9 @@ export function OntologyTerritoriesMap({
       let dx = 0;
       let dy = 0;
       if (b.w <= free.width - 2 * margin) dx = shift(b.x, b.w, free.x, free.width, o.x);
-      else if (focus) dx = shift(focus.x - focus.reach, 2 * focus.reach, free.x, free.width, o.x);
+      else if (focusBox) dx = shift(focusBox.x, focusBox.w, free.x, free.width, o.x);
       if (b.h <= free.height - 2 * margin) dy = shift(b.y, b.h, free.y, free.height, o.y);
-      else if (focus) dy = shift(focus.y - focus.reach, 2 * focus.reach, free.y, free.height, o.y);
+      else if (focusBox) dy = shift(focusBox.y, focusBox.h, free.y, free.height, o.y);
       if (dx !== 0 || dy !== 0) moveCamera(clampOffset({ x: o.x + dx, y: o.y + dy }));
     };
     // Once the inspector has mounted, and again once the panels have finished moving.
@@ -435,7 +489,7 @@ export function OntologyTerritoriesMap({
       window.clearTimeout(first);
       window.clearTimeout(settled);
     };
-  }, [selectedId, layout, clampOffset, moveCamera, requestDraw]);
+  }, [selectedId, layout, clampOffset, moveCamera, requestDraw, clusterWidest]);
 
   useEffect(() => {
     onDrawnCountChange?.((layout.project ? 1 : 0) + layout.domains.length + layout.capabilities.length);
@@ -461,7 +515,8 @@ export function OntologyTerritoriesMap({
       const inBox = (b: Box) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
       const focusCap = focusCapabilityOf(layout, selectedId);
       if (focusCap) {
-        for (const s of territorySatellites(focusCap)) if (Math.hypot(x - s.x, y - s.y) <= 7) return s.id;
+        const { satellites } = placeTerritoryCluster(focusCap, clusterWidest(focusCap), territoryClusterAvoid(layout, focusCap));
+        for (const s of satellites) if (Math.hypot(x - s.x, y - s.y) <= 7) return s.id;
       }
       for (const c of layout.capabilities) {
         if (Math.hypot(x - c.x, y - c.y) <= c.r + 4 || (c.labelReserved && inBox(c.label.box))) return c.id;
@@ -474,7 +529,7 @@ export function OntologyTerritoriesMap({
       if (p && (Math.hypot(x - p.x, y - p.y) <= p.r + 4 || inBox(p.label.box))) return p.id;
       return null;
     },
-    [layout, selectedId],
+    [layout, selectedId, clusterWidest],
   );
 
   const dragRef = useRef<{ x: number; y: number; ox: number; oy: number; moved: boolean; id: number } | null>(null);
