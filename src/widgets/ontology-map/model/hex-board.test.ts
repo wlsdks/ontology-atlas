@@ -16,7 +16,7 @@ import {
   type HexTextRole,
 } from "./hex-board";
 import { axialRound, axialToUnit, hexDistance, hexKey, hexSpiral, HEX_NEIGHBORS, insideHex, ringsFor, unitToAxial } from "./hex-grid";
-import { buildHexLattice, HexRouter, pickPillSpot } from "./hex-router";
+import { buildHexLattice, closedNodes, HexRouter, pickPillSpot } from "./hex-router";
 
 /** A conservative width model: Hangul full-width, Latin a little over half an em. */
 function measure(text: string, role: HexTextRole): number {
@@ -406,6 +406,53 @@ describe("hex board router", () => {
       return [...edgesOf(b)].filter((e) => ea.has(e)).length;
     };
     expect(shared("T")).toBeGreaterThanOrEqual(shared("other"));
+  });
+
+  it("never enters a closed node: with the strip above the board closed, routes stay under it", () => {
+    const { nodes, edges } = dogfoodGraph();
+    const layout = computeHexBoard(nodes, edges);
+    const lattice = buildHexLattice(layout);
+    const b = layout.bounds;
+    // The strip above the board's top row is chrome (the tool lane): closed.
+    const top = b.minY + 0.5;
+    const closed = closedNodes(lattice, (_x, y) => y >= top);
+    const open = new HexRouter(lattice, 1.15);
+    const shut = new HexRouter(lattice, 1.15, closed);
+    let aboveBefore = 0;
+    let routed = 0;
+    for (const d of layout.dependencies) {
+      const before = open.route([d.from], [d.to], "x");
+      if (before && before.points.some((p) => p.y < top)) aboveBefore += 1;
+      const r = shut.route([d.from], [d.to], "x");
+      if (!r) continue;
+      routed += 1;
+      expect(r.nodes.every((n) => !closed[n]), `${d.from} -> ${d.to} entered a closed node`).toBe(true);
+      expect(r.points.every((p) => p.y >= top)).toBe(true);
+      expect(offFaces(layout, r, 30)).toEqual([]);
+    }
+    // The open lattice does use that strip (the defect's shape), and closing it still routes.
+    expect(aboveBefore).toBeGreaterThan(0);
+    expect(routed).toBeGreaterThan(layout.dependencies.length * 0.8);
+  });
+
+  it("runs a stub toward a target it cannot reach, never an arrival", () => {
+    const { nodes, edges } = dogfoodGraph();
+    const layout = computeHexBoard(nodes, edges);
+    const lattice = buildHexLattice(layout);
+    // Close the right third of the board, as an inspector would cover it.
+    const cut = layout.bounds.maxX - (layout.bounds.maxX - layout.bounds.minX) / 3;
+    const closed = closedNodes(lattice, (x) => x <= cut);
+    const dep = layout.dependencies.find((d) => layout.byId.get(d.from)!.x < cut - 4 && layout.byId.get(d.to)!.x > cut + 1.5);
+    expect(dep, "a dependency crossing the cut").toBeTruthy();
+    const r = new HexRouter(lattice, 1.15, closed).route([dep!.from], [dep!.to], "x");
+    expect(r).not.toBeNull();
+    expect(r!.stub).toBe(true);
+    expect(r!.targetId).toBe(dep!.to);
+    expect(r!.nodes.every((n) => !closed[n])).toBe(true);
+    const target = layout.byId.get(dep!.to)!;
+    const first = r!.points[0]!;
+    const last = r!.points[r!.points.length - 1]!;
+    expect(Math.hypot(last.x - target.x, last.y - target.y)).toBeLessThan(Math.hypot(first.x - target.x, first.y - target.y) - 1);
   });
 
   it("builds the dogfood lattice quickly", () => {

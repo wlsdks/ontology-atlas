@@ -27,7 +27,7 @@ import {
   hexGutter,
 } from "../model/hex-board";
 import { SQRT3 } from "../model/hex-grid";
-import { buildHexLattice, HexRouter, pickPillSpot } from "../model/hex-router";
+import { buildHexLattice, closedNodes, HexRouter, pickPillSpot } from "../model/hex-router";
 import {
   drawHexBoard,
   hexArrivalDuration,
@@ -97,6 +97,8 @@ const SWEEP_MS = 420;
 const PAN_KEEP = 160;
 /** Room the chrome leaves free at rest: below the tool lane, above the legend. */
 const ROOM_TOP = 96;
+/** The board's top edge keeps at least this much air under the tool lane's real bottom. */
+const ROOM_UNDER_TOOLBAR = 24;
 const ROOM_BOTTOM = 96;
 const ROOM_RIGHT = 72;
 const ROOM_LEFT_PAD = 16;
@@ -136,12 +138,88 @@ function useHexMeasure(): HexMeasure {
   return useMemo<HexMeasure>(() => (ready ? (text, role) => measureText(text, role) : measureText), [ready]);
 }
 
-function freeAreaOf(canvas: HTMLCanvasElement | null): Rect | null {
+/** A route keeps this far (CSS px) from the free map's edges and from every piece of chrome. */
+const ROUTE_CLEAR = 10;
+/** Chrome whose top is this close to the canvas's top edge belongs to the top lane. */
+const TOP_LANE_REACH = 48;
+/** Chrome whose left is this close to the free map's left edge is attached to it (the INDEX tab). */
+const EDGE_REACH = 8;
+
+interface MapChrome {
+  /** The free map, canvas-relative. */
+  free: Rect;
+  /** Every other piece of chrome over the canvas, canvas-relative. */
+  blocks: Rect[];
+}
+
+/**
+ * The free map and the chrome over it, measured from the DOM (`interaction/free-area`).
+ *
+ * `computeFreeArea` subtracts panels and bars: INDEX open, the inspector, the dock, the footer.
+ * The pieces too small to count as a panel still cover the map, and a route must not run
+ * under them: the tool lane is a bar only while it spans 60 % of the canvas (with INDEX open
+ * it may not), and the folded INDEX tab is 26 px wide. So the top edge also comes down to the
+ * lowest chrome in the top lane, the left edge moves right of chrome attached to it, and every
+ * piece of chrome is returned as a block for the router to keep out of.
+ */
+function mapChromeOf(canvas: HTMLCanvasElement | null): MapChrome | null {
   if (!canvas) return null;
   const r = canvas.getBoundingClientRect();
   const canvasRect = { x: r.x, y: r.y, width: r.width, height: r.height };
   const free = computeFreeArea(canvasRect, collectCanvasObstacles(canvas, canvasRect));
-  return { x: free.x - r.x, y: free.y - r.y, width: free.width, height: free.height };
+  const small = collectCanvasObstacles(canvas, canvasRect, { minSide: 12 });
+  let left = free.x;
+  let top = free.y;
+  const right = free.x + free.width;
+  const bottom = free.y + free.height;
+  for (const b of small) {
+    if (b.height >= canvasRect.height * 0.6 || b.width >= canvasRect.width * 0.6) continue;
+    if (b.y <= canvasRect.y + TOP_LANE_REACH) top = Math.max(top, b.y + b.height);
+  }
+  for (const b of small) {
+    if (b.height >= canvasRect.height * 0.6 || b.width >= canvasRect.width * 0.6) continue;
+    if (b.y + b.height <= top) continue;
+    if (b.x <= left + EDGE_REACH && b.x + b.width > left) left = Math.max(left, b.x + b.width);
+  }
+  const rel = (b: Rect): Rect => ({ x: b.x - r.x, y: b.y - r.y, width: b.width, height: b.height });
+  const out =
+    right - left > 80 && bottom - top > 80 ? { x: left, y: top, width: right - left, height: bottom - top } : free;
+  return { free: rel(out), blocks: small.map(rel) };
+}
+
+function freeAreaOf(canvas: HTMLCanvasElement | null): Rect | null {
+  return mapChromeOf(canvas)?.free ?? null;
+}
+
+/** Where routes may run, in the board's unit space, for one camera. */
+interface RouteFrame {
+  key: string;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  blocks: { x0: number; y0: number; x1: number; y1: number }[];
+}
+
+function routeFrameOf(canvas: HTMLCanvasElement | null, cam: Camera): RouteFrame | null {
+  const chrome = mapChromeOf(canvas);
+  if (!chrome) return null;
+  const ux = (px: number) => (px - cam.ox) / cam.R;
+  const uy = (py: number) => (py - cam.oy) / cam.R;
+  const f = chrome.free;
+  const frame = {
+    x0: ux(f.x + ROUTE_CLEAR),
+    y0: uy(f.y + ROUTE_CLEAR),
+    x1: ux(f.x + f.width - ROUTE_CLEAR),
+    y1: uy(f.y + f.height - ROUTE_CLEAR),
+    blocks: chrome.blocks
+      // Chrome wholly outside the free map is already kept out by its edges.
+      .filter((b) => b.x < f.x + f.width && b.x + b.width > f.x && b.y < f.y + f.height && b.y + b.height > f.y)
+      .map((b) => ({ x0: ux(b.x - ROUTE_CLEAR), y0: uy(b.y - ROUTE_CLEAR), x1: ux(b.x + b.width + ROUTE_CLEAR), y1: uy(b.y + b.height + ROUTE_CLEAR) })),
+  };
+  const q = (v: number) => Math.round(v * 20);
+  const key = [frame.x0, frame.y0, frame.x1, frame.y1, ...frame.blocks.flatMap((b) => [b.x0, b.y0, b.x1, b.y1])].map(q).join(",");
+  return { key, ...frame };
 }
 
 interface Camera {
@@ -261,11 +339,31 @@ export function OntologyHexBoardMap({
   }, [layout, namesFrom, measure]);
 
   const lattice = useMemo(() => (layout ? buildHexLattice(layout) : null), [layout]);
+  /**
+   * Where routes may run for the camera the board is resting on (or moving to): the free map
+   * less its chrome, in unit space. Set when the camera is decided, not on every frame, so a
+   * route does not re-route while the camera travels.
+   */
+  const [routeFrame, setRouteFrame] = useState<RouteFrame | null>(null);
+  const frameRoutes = useCallback((cam: Camera | null) => {
+    if (!cam) return;
+    const next = routeFrameOf(canvasRef.current, cam);
+    if (next) setRouteFrame((prev) => (prev && prev.key === next.key ? prev : next));
+  }, []);
+  const frameRoutesRef = useRef(frameRoutes);
+  const blocked = useMemo(() => {
+    if (!lattice || !routeFrame) return null;
+    const { x0, y0, x1, y1, blocks } = routeFrame;
+    return closedNodes(
+      lattice,
+      (x, y) => x >= x0 && x <= x1 && y >= y0 && y <= y1 && !blocks.some((b) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1),
+    );
+  }, [lattice, routeFrame]);
 
   /** Canals at rest, routed once per board. */
   const canalRoutes = useMemo(() => {
     if (!layout || !lattice) return [];
-    const router = new HexRouter(lattice, 1.8);
+    const router = new HexRouter(lattice, 1.8, blocked);
     const regionById = new Map(layout.regions.map((r) => [r.domainId, r] as const));
     const out: HexDrawRoute[] = [];
     for (const canal of layout.canals) {
@@ -274,10 +372,10 @@ export function OntologyHexBoardMap({
       if (!a || !b) continue;
       const route = router.route([a.domainId, ...a.capabilityIds], [b.domainId, ...b.capabilityIds], `${a.domainId}>${b.domainId}`);
       if (!route) continue;
-      out.push({ points: route.points, nodes: route.nodes, sourceId: route.sourceId, targetId: route.targetId, role: "canal", count: canal.count, twoWay: canal.twoWay });
+      out.push({ points: route.points, nodes: route.nodes, sourceId: route.sourceId, targetId: route.targetId, role: "canal", count: canal.count, twoWay: canal.twoWay, stub: route.stub });
     }
     return out;
-  }, [layout, lattice]);
+  }, [layout, lattice, blocked]);
 
   /** Edge ticks: a capability's notch toward each region it relies on. */
   const ports = useMemo(() => {
@@ -315,7 +413,7 @@ export function OntologyHexBoardMap({
     if (!subject) return { lit: null, routes: [], region: null };
     const tile = layout.byId.get(subject);
     if (!tile) return { lit: null, routes: [], region: null };
-    const router = new HexRouter(lattice, 1.15);
+    const router = new HexRouter(lattice, 1.15, blocked);
     const routes: HexDrawRoute[] = [];
     const lit = new Set<string>([subject]);
     if (tile.kind === "capability") {
@@ -324,12 +422,12 @@ export function OntologyHexBoardMap({
       for (const d of needs) {
         lit.add(d.to);
         const r = router.route([subject], [d.to], `need:${layout.byId.get(d.to)?.domainId}`);
-        if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: "need" });
+        if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: "need", stub: r.stub });
       }
       for (const d of layout.dependencies.filter((x) => x.to === subject)) {
         lit.add(d.from);
         const r = router.route([d.from], [subject], "use");
-        if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: "use" });
+        if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: "use", stub: r.stub });
       }
     } else if (tile.kind === "domain") {
       const region = layout.regions.find((r) => r.domainId === subject);
@@ -346,7 +444,7 @@ export function OntologyHexBoardMap({
       if (id) {
         for (const j of jobs) {
           const r = router.route([j.from], [j.to], j.inside ? "inside" : `need:${layout.byId.get(j.to)?.domainId}`);
-          if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: j.inside ? "need-inside" : "need" });
+          if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: j.inside ? "need-inside" : "need", stub: r.stub });
         }
       }
       return { lit: id ? lit : null, routes, region: id ? subject : null };
@@ -354,7 +452,7 @@ export function OntologyHexBoardMap({
       return { lit: null, routes: [], region: null };
     }
     return { lit: id ? lit : null, routes, region: null };
-  }, [layout, lattice, selectedId, hoverId, staleOnly, evidence]);
+  }, [layout, lattice, blocked, selectedId, hoverId, staleOnly, evidence]);
 
   /* ── camera ─────────────────────────────────────────────────────────── */
   const restCamera = useCallback((): Camera | null => {
@@ -507,6 +605,12 @@ export function OntologyHexBoardMap({
       );
       textBoxesRef.current = textBoxes;
       canvas.dataset.frame = JSON.stringify({ ...stats, namesFrom, staleOnly });
+      // Every drawn route in canvas px, once the frame is still, so a check can hold each one
+      // to the free map (`map-hex-routes-free-area.spec.ts`).
+      if (!again)
+        canvas.dataset.routePaths = JSON.stringify(
+          routes.map((r) => ({ role: r.role, stub: r.stub === true, pts: r.points.map((p) => [Math.round(cam.ox + p.x * cam.R), Math.round(cam.oy + p.y * cam.R)]) })),
+        );
       if (currentBand !== band) setBand(currentBand);
       if (Math.round(cam.R) !== drawnR) setDrawnR(Math.round(cam.R));
       if (!again) writeMirror(cam, currentBand, plateBoxes);
@@ -544,7 +648,8 @@ export function OntologyHexBoardMap({
       if (selectedRef.current) return;
       const free = freeAreaOf(canvasRef.current) ?? { x: 0, y: 0, width: r.width, height: r.height };
       const x = free.x + ROOM_LEFT_PAD;
-      const y = Math.max(free.y, ROOM_TOP);
+      // `free.y` is the tool lane's real bottom (it wraps to two lines on a narrow free map).
+      const y = Math.max(free.y + ROOM_UNDER_TOOLBAR, ROOM_TOP);
       const right = Math.min(free.x + free.width, r.width - ROOM_RIGHT);
       const bottom = Math.min(free.y + free.height, r.height - ROOM_BOTTOM);
       const next = { x: Math.round(x), y: Math.round(y), width: Math.max(80, Math.round(right - x)), height: Math.max(80, Math.round(bottom - y)) };
@@ -554,7 +659,25 @@ export function OntologyHexBoardMap({
     read();
     const ro = new ResizeObserver(read);
     ro.observe(wrap);
-    return () => ro.disconnect();
+    /*
+     * INDEX folding or opening changes the free map without resizing the board (it floats
+     * over it). Once its transition is over, re-read the room and lay the routes again.
+     */
+    let settle: number | null = null;
+    const mo = new MutationObserver(() => {
+      if (settle != null) window.clearTimeout(settle);
+      settle = window.setTimeout(() => {
+        settle = null;
+        read();
+        frameRoutesRef.current(animRef.current?.to ?? camRef.current);
+      }, 450);
+    });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-topology-index"] });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+      if (settle != null) window.clearTimeout(settle);
+    };
   }, []);
 
   useEffect(() => {
@@ -571,20 +694,25 @@ export function OntologyHexBoardMap({
     const rest = restCamera();
     if (!rest) return;
     restRef.current = rest;
-    if (!selectedRef.current || !camRef.current) camRef.current = rest;
+    if (!selectedRef.current || !camRef.current) {
+      camRef.current = rest;
+      frameRoutes(rest);
+    }
     requestDraw();
-  }, [restCamera, requestDraw]);
+  }, [restCamera, requestDraw, frameRoutes]);
 
   const moveCamera = useCallback(
     (to: Camera) => {
       const from = camRef.current;
       if (!from) return;
+      // Routes are laid for where the camera is going, so they do not re-route on arrival.
+      frameRoutes(to);
       if (Math.abs(from.ox - to.ox) < 0.5 && Math.abs(from.oy - to.oy) < 0.5 && Math.abs(from.R - to.R) < 0.01) return;
       if (reducedMotion) camRef.current = to;
       else animRef.current = { from, to, start: performance.now() };
       requestDraw();
     },
-    [reducedMotion, requestDraw],
+    [reducedMotion, requestDraw, frameRoutes],
   );
 
   /*
@@ -635,6 +763,9 @@ export function OntologyHexBoardMap({
       const dx = shift(sx(x0), sx(x1), free.x, free.width, [sx(sel.x - 1), sx(sel.x + 1)]);
       const dy = shift(sy(y0), sy(y1), free.y, free.height, [sy(sel.y - 1), sy(sel.y + 1)]);
       if (dx !== 0 || dy !== 0) moveCamera(clampCamera({ R, ox: cam.ox + dx, oy: cam.oy + dy }));
+      // The chrome changed with the selection (inspector in, INDEX folded) even when the
+      // camera did not move: lay the routes in the free map as it is now.
+      else frameRoutes(animRef.current?.to ?? cam);
     };
     const first = window.setTimeout(makeRoom, 60);
     const settled = window.setTimeout(makeRoom, 420);
@@ -644,7 +775,7 @@ export function OntologyHexBoardMap({
     };
     // `focus.lit` follows `selectedId`; reading it here must not re-run on hover.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, staleOnly, layout, clampCamera, moveCamera, requestDraw]);
+  }, [selectedId, staleOnly, layout, clampCamera, moveCamera, requestDraw, frameRoutes]);
 
   useEffect(() => {
     if (!layout) return;
@@ -751,6 +882,7 @@ export function OntologyHexBoardMap({
   }, [hoverId, selectedId, placeTip]);
 
   const dragRef = useRef<{ x: number; y: number; cam: Camera; moved: boolean; id: number } | null>(null);
+  const wheelFrameRef = useRef<number | null>(null);
   const local = (e: { clientX: number; clientY: number; currentTarget: Element }) => {
     const r = e.currentTarget.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -786,6 +918,7 @@ export function OntologyHexBoardMap({
   const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const drag = dragRef.current;
     dragRef.current = null;
+    if (drag && drag.id === e.pointerId && drag.moved) frameRoutes(camRef.current);
     if (!drag || drag.id !== e.pointerId || drag.moved) return;
     const p = local(e);
     const hit = hitTest(p.x, p.y);
@@ -804,6 +937,11 @@ export function OntologyHexBoardMap({
     camRef.current = clampCamera({ R, ox: p.x - (p.x - cam.ox) * k, oy: p.y - (p.y - cam.oy) * k });
     setHoverId(null);
     requestDraw();
+    if (wheelFrameRef.current != null) window.clearTimeout(wheelFrameRef.current);
+    wheelFrameRef.current = window.setTimeout(() => {
+      wheelFrameRef.current = null;
+      frameRoutes(camRef.current);
+    }, 160);
   };
   const onDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const hit = hitTest(local(e).x, local(e).y);
@@ -904,7 +1042,10 @@ export function OntologyHexBoardMap({
           {labels.widened}
         </p>
       ) : null}
-      <div className="absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px)] right-[calc(var(--map-safe-inset-right)*1px)] flex flex-col items-center gap-2">
+      <div
+        data-testid="hex-board-footer"
+        className="absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px)] right-[calc(var(--map-safe-inset-right)*1px)] flex flex-col items-center gap-2"
+      >
         {/* The board's two states, on a surface of their own so they read over any tile. */}
         <div className="pointer-events-auto flex gap-1 rounded-chip bg-[color:var(--chrome-surface)] p-1">
           <Chip
