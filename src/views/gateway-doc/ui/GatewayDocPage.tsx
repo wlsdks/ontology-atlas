@@ -274,7 +274,7 @@ export function GatewayDocPage({
               <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">{notice}</p>
             </aside>
           ) : null}
-          <header className="w-full max-w-[var(--measure-prose)] [word-break:keep-all]">
+          <header className="w-full max-w-[var(--measure-prose)]">
             <h1
               data-testid="gateway-doc-title"
               /*

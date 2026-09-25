@@ -217,7 +217,7 @@ export function TopologyIndexTreeRow({
         // number two pixels under it. Rows with a subcount line stay taller: two
         // vertical axes mean content decides, the same exemption the nav rail's 62px
         // outer height takes.
-        className={`atlas-touch-floor grid min-h-9 grid-cols-[22px_15px_1fr_auto] items-center gap-x-2 rounded-chip border py-1 pl-1 pr-2 text-body transition-colors ${
+        className={`atlas-touch-floor grid min-h-9 grid-cols-[24px_15px_1fr_auto] items-center gap-x-2 rounded-chip border py-1 pl-1 pr-2 text-body transition-colors ${
           selected
             ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--map-panel-metric-surface)] text-[color:var(--map-panel-text-primary)]"
             : "border-transparent text-[color:var(--map-panel-text-secondary)] hover:border-[color:var(--map-panel-action-border)] hover:text-[color:var(--map-panel-text-primary)]"
@@ -238,7 +238,8 @@ export function TopologyIndexTreeRow({
           // focus order either, so hiding it as presentational is right.
           aria-hidden="true"
           tabIndex={-1}
-          // The hit area is the full row height × a 22px column — the icon stays 11px.
+          // The hit area is the full row height × a 24px column (the fine-pointer target
+          // floor; it measured 22 wide before 2026-09-25) — the icon stays 11px.
           // `self-stretch` rather than the old fixed `34px`: the row is 36 on one line
           // and 47.5 with a subcount, so a fixed number was the full row height in
           // neither case (measured 22×34 in both, 2026-09-05) and it was off the height
@@ -276,7 +277,10 @@ export function TopologyIndexTreeRow({
               <span
                 title={labels.subcountsTitle}
                 data-testid="topology-index-subcounts"
-                className="shrink-0 font-mono text-caption text-[color:var(--map-panel-text-quaternary)]"
+                // Label step, sans with tabular figures (2026-09-25): at the 9.5px caption in
+                // mono it measured 4.69:1 and the fixed-advance face pushed the Hangul kind
+                // names apart — a count line a person reads, not a micro legend.
+                className="shrink-0 text-label leading-label tabular-nums text-[color:var(--map-panel-text-tertiary)]"
               >
                 {labels.capabilitiesShort} {subcounts.capabilityCount} · {labels.elementsShort}{" "}
                 {subcounts.elementCount}

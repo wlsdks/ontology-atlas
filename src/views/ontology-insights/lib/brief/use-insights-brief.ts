@@ -70,6 +70,8 @@ export interface InsightsBrief {
   /** What happened after the anchor, newest first, bounded; `sinceTotal` is the whole count. */
   since: readonly SinceRow[];
   sinceTotal: number;
+  /** The one kind every row after the anchor shares, or null when they differ or there are none. */
+  sinceKind: SinceRow['kind'] | null;
   /**
    * What a line counts, by name: concept, the exact path that moved, and when. Keyed by the
    * line id, so a count and the rows under it can never come from different calculations.
@@ -501,6 +503,7 @@ export function useInsightsBrief({
     agent,
     since: sinceList.rows,
     sinceTotal: sinceList.total,
+    sinceKind: sinceList.soleKind,
     details,
     library: libraryDetail,
     harnessDetail,

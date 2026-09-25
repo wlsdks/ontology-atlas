@@ -171,8 +171,10 @@ describe("ImpactRankingCard", () => {
     const links = screen.getAllByTestId("insights-impact-row-link");
     // Row 1 is always a column head; row 2 is the second column's head only on a wide screen —
     // without these two resets a line appears above each column like a truncated table.
-    expect(links[0].className).toContain("border-t-0");
-    expect(links[1].className).toContain("lg:border-t-0");
+    // The line lives on the cell around the row, never on the row that bleeds for its hover.
+    expect(links[0].parentElement?.className ?? "").not.toContain("border-t");
+    expect(links[1].parentElement?.className).toContain("@min-[960px]/insights:border-t-0");
+    expect(links[0].className).not.toContain("border-t");
   });
 
   describe("근거 계층", () => {

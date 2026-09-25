@@ -178,7 +178,10 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
          right edges of the video and the caption. */
       className="mt-4 min-w-0"
     >
-      <div className="relative min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)]">
+      {/* The ordinary panel (`border-soft + panel`), as every rounded panel on these screens.
+          With the demo now starting inside the first viewport, a canvas-filled frame was a
+          surface combination the surface-vocabulary ratchet counts as new (2026-09-25). */}
+      <div className="relative min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
         {/*
          * `preload="none"` — the gateway's first bytes belong to the map and the download button.
          * `muted` + `playsInline` are the conditions for silent autoplay, and the sound is **zero,

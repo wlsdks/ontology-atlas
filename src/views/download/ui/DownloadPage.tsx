@@ -299,11 +299,11 @@ function SectionIntro({
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
         {eyebrow}
       </p>
-      <h2 className="mt-4 break-keep text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
+      <h2 className="mt-4 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
         {title}
       </h2>
       {sub ? (
-        <p className="mt-3 max-w-[40rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]">
+        <p className="mt-3 max-w-[40rem] text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]">
           {sub}
         </p>
       ) : null}
@@ -503,7 +503,7 @@ function HeroSection({
                   <a
                     href={windowsInstaller!.downloadUrl}
                     data-testid="gateway-hero-cta"
-                    className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
+                    className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
                   >
                     <Download size={ICON_SIZE.lg} aria-hidden />
                     {t('windowsDownloadCta')}
@@ -520,7 +520,7 @@ function HeroSection({
                     <a
                       href={windowsInstaller.downloadUrl}
                       data-testid="gateway-hero-windows"
-                      className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-4 sm:px-6', HERO_CTA_WRAP)}
+                      className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'px-4 sm:px-6', HERO_CTA_WRAP)}
                     >
                       <Download size={ICON_SIZE.lg} aria-hidden />
                       {t('heroWindowsCta')}
@@ -537,7 +537,7 @@ function HeroSection({
               <Link
                 href="/topology"
                 data-testid="gateway-hero-cta"
-                className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
+                className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
               >
                 {t('webCta')}
               </Link>
@@ -547,7 +547,7 @@ function HeroSection({
               <Link
                 href="/topology"
                 data-testid="gateway-hero-web-cta"
-                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-4 sm:px-6', HERO_CTA_WRAP)}
+                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'px-4 sm:px-6', HERO_CTA_WRAP)}
               >
                 {t('heroPlaygroundCta')}
               </Link>
@@ -1331,7 +1331,7 @@ function ClosingBand({
             <a
               href={subject.downloadUrl}
               data-testid="download-closing-cta"
-              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), HERO_CTA_WRAP)}
             >
               <Download size={ICON_SIZE.lg} aria-hidden />
               {subjectIsWindows ? t('windowsDownloadCta') : t('primaryCtaPublished')}
@@ -1341,7 +1341,7 @@ function ClosingBand({
             <Link
               href="/topology"
               data-testid="download-closing-cta"
-              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), HERO_CTA_WRAP)}
             >
               {t('webCta')}
             </Link>

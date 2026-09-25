@@ -28,8 +28,13 @@ import { AnimatedDisclosure } from './row-disclosure';
  */
 export function Disclosure({ summary, children, open, className, summaryTestId, animated = false }: { animated?: boolean; summary: ReactNode; children: ReactNode; open?: boolean; className?: string; summaryTestId?: string }) {
   if (animated) return <div className={className}><AnimatedDisclosure label={summary} defaultOpen={open} testId={summaryTestId}>{children}</AnimatedDisclosure></div>;
+  /*
+   * `md` (11px, `text-label`), not `sm` (9.5px, `text-caption`), since 2026-09-25: a summary is
+   * read and pressed — often a whole question ("What goes in each kind?") — and 9.5px is the
+   * decoration step. `text-label` is the smallest step this app gives an actionable word.
+   */
   return <details open={open} className={cn('group', className)}>
-    <summary data-testid={summaryTestId} className={controlClass({ shape: 'link', size: 'sm', tone: 'muted', hoverInk: 'strong', className: 'list-none gap-1.5 text-left [&::-webkit-details-marker]:hidden' })}>
+    <summary data-testid={summaryTestId} className={controlClass({ shape: 'link', size: 'md', tone: 'muted', hoverInk: 'strong', className: 'list-none gap-1.5 text-left [&::-webkit-details-marker]:hidden' })}>
       <ChevronRight size={ICON_SIZE.sm} aria-hidden className="shrink-0 transition-transform group-open:rotate-90" />
       <span className="min-w-0">{summary}</span>
     </summary>

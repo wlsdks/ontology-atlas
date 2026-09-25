@@ -84,10 +84,11 @@ test("브리핑은 연 폴더의 위키·에이전트를 이름으로 말하고,
   // 2026-09-23 every core's lines share one list, and each row carries its core.
   await expect(page.locator('[data-brief-core="wiki"][data-brief-line="wiki-stale-pages"]')).toHaveText(/1/, { timeout: 30_000 });
 
-  // The agent core counts what happened since, including the write.
+  // The agent core counts the write in the list. The calls themselves are named one by one in
+  // the since card under it, so the list does not count them a second time (review, 2026-09-25).
   const agent = page.getByTestId("brief-lines");
-  await expect(agent.locator('[data-brief-core="agent"][data-brief-line="agent-calls-since"]')).toHaveText(/2/);
   await expect(agent.locator('[data-brief-core="agent"][data-brief-line="agent-writes-since"]')).toHaveText(/1/);
+  await expect(agent.locator('[data-brief-line="agent-calls-since"]')).toHaveCount(0);
 
   // A concept an agent wrote that nobody has reviewed is named as unknown, not as fine.
   const ontology = page.getByTestId("brief-lines");
@@ -109,7 +110,7 @@ test("브리핑은 연 폴더의 위키·에이전트를 이름으로 말하고,
   await expect(brief).toContainText("최근 7일 기준");
   await page.getByTestId("brief-mark-seen").click();
   await expect(brief).toContainText("오늘 본 뒤로");
-  await expect(agent.locator('[data-brief-line="agent-calls-since"]')).toHaveCount(0);
+  await expect(agent.locator('[data-brief-line="agent-writes-since"]')).toHaveCount(0);
   await expect(page.getByTestId("brief-since")).toHaveCount(0);
 
 });

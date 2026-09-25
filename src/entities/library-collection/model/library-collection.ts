@@ -107,7 +107,12 @@ function validate(value: unknown): LibraryCollections {
 }
 
 export function parseLibraryCollections(raw: string | null): LibraryCollectionsParseResult {
-  if (raw === null) return { status: 'missing', value: emptyLibraryCollections() };
+  // A zero-byte or whitespace-only file holds no collection to lose: it is what an interrupted
+  // first save or a `create: true` file handle leaves behind. Reading it as corrupt locked the
+  // person out of saving anything (the create action waits for a readable file), so it is the
+  // same empty state as an absent file. The exact bytes still travel in the snapshot, so the
+  // next save compares against them and cannot overwrite a concurrent writer.
+  if (raw === null || raw.trim() === '') return { status: 'missing', value: emptyLibraryCollections() };
   if (new TextEncoder().encode(raw).byteLength > LIBRARY_COLLECTIONS_MAX_BYTES) return { status: 'corrupt', raw, reason: 'The collection file exceeds the 1 MiB limit.' };
   let parsed: unknown;
   try { parsed = JSON.parse(raw); } catch { return { status: 'corrupt', raw, reason: 'The collection file is not valid JSON.' }; }

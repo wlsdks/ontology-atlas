@@ -242,6 +242,20 @@ test.describe("the Library on its first day, with no agent", () => {
      * (design-interaction, council 2026-09-11). The line's height is reserved at rest.
      */
     const list = page.getByTestId("library-source-list");
+    /*
+     * The tab panel arrives with a short 4px rise (`library-workspace.module.css`). That entry
+     * is not the keystroke shift this test guards, so the rest position is read after every
+     * animation on the list's ancestors has finished; measured mid-rise, `before` read 230.95
+     * against a settled 230 on CI.
+     */
+    await list.evaluate(async (el) => {
+      const running: Animation[] = [];
+      for (let node: Element | null = el; node; node = node.parentElement) {
+        // A looping animation never finishes; only the finite entries can move the rest position.
+        running.push(...node.getAnimations().filter((a) => a.effect?.getComputedTiming().endTime !== Infinity));
+      }
+      await Promise.all(running.map((animation) => animation.finished.catch(() => undefined)));
+    });
     const before = await list.boundingBox();
 
     /*

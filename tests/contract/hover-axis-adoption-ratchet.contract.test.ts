@@ -101,6 +101,8 @@ const ROOT = process.cwd();
  * fill) became the standard `Button` and `buttonVariants` outline.
  * 290 → 289 (2026-09-25): the settings sheet's row actions moved onto one chip grammar and
  * the shared `DETAIL_TOGGLE_CHIP` ink, a net one fewer hand-written hover declaration.
+ * 289 → 288 (2026-09-25): the insights hub rows left the `chip` shape for a bare `row` with
+ * `hoverSurface: "lift"`, so their hand-written overlay hover is owned by the axis.
  */
 const CEILING = 288;
 

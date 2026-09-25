@@ -130,7 +130,7 @@ function SlotRow({
         </span>
       </div>
       <div className={cn('flex max-w-prose flex-wrap items-baseline gap-x-1', !hideTitle && 'mt-1')}>
-        <p className="min-w-0 break-keep text-label text-[color:var(--color-text-tertiary)]">
+        <p className="min-w-0 text-label text-[color:var(--color-text-tertiary)]">
           {t(`anatomySlots.${slot.id}.body`)}
         </p>
         {/*
