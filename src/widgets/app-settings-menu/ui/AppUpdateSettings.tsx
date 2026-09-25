@@ -116,10 +116,18 @@ export function AppUpdateSettings() {
             version
               ? t('versionValue', { version })
               : version === null
-                ? t('versionUnknown')
+                ? readAttempt > 0
+                  ? t('versionUnknownRetried')
+                  : t('versionUnknown')
                 : t('versionReading')
           }
-          captionTone={version === null ? 'warning' : 'neutral'}
+          /*
+           * **One failure, one warning line.** After a check that also failed, the row promised a
+           * retry that had just run, in warning tone, stacked over the result line's warning about
+           * the same press (review, 2026-09-25). Once the re-read has been tried the row states the
+           * fact only, and the warning tone stays with the result line when that line has one.
+           */
+          captionTone={version === null && phase.kind !== 'failed' ? 'warning' : 'neutral'}
           testId="app-settings-update-version"
           control={
             <Chip

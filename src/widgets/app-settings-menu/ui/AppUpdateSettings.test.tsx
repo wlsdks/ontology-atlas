@@ -33,6 +33,11 @@ vi.mock('@/features/app-update', () => ({
   readUpdateMemory: () => memory,
 }));
 
+let versionRead: () => Promise<string> = () => Promise.resolve('1.2.6');
+vi.mock('@tauri-apps/api/app', () => ({
+  getVersion: () => versionRead(),
+}));
+
 vi.mock('@/shared/lib/desktop-shell', () => ({
   isDesktopShell: () => desktop,
 }));
@@ -55,6 +60,7 @@ beforeEach(() => {
   desktop = true;
   contextValue = null;
   memory = { lastCheckedAt: null, dismissedVersion: null };
+  versionRead = () => Promise.resolve('1.2.6');
 });
 
 describe('업데이트 확인 절', () => {
@@ -135,5 +141,25 @@ describe('업데이트 확인 절', () => {
       </NextIntlClientProvider>,
     );
     expect(container.firstChild).toBeNull();
+  });
+
+  it('a failed check after a failed version read leaves one warning line, not two', async () => {
+    versionRead = () => Promise.reject(new Error('ipc'));
+    const view = renderAt({ kind: 'idle' });
+    const row = screen.getByTestId('app-settings-update-version');
+    const copy = ko.nav.settingsMenu.appUpdate;
+    await screen.findByText(copy.versionUnknown);
+    fireEvent.click(screen.getByTestId('app-settings-update-check'));
+    contextValue = makeValue({ kind: 'failed', operation: 'check', message: 'network' });
+    view.rerender(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <AppUpdateSettings />
+      </NextIntlClientProvider>,
+    );
+    await screen.findByText(copy.versionUnknownRetried);
+    // The row no longer promises the retry that just ran, and only the result line warns.
+    expect(row.textContent).not.toContain(copy.versionUnknown);
+    const warnings = Array.from(view.container.querySelectorAll('[class*="status-warning"]'));
+    expect(warnings.map((node) => node.textContent)).toEqual([copy.resultFailed]);
   });
 });

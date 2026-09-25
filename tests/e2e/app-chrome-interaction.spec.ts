@@ -12,7 +12,8 @@ import { seedFirstRunSeen } from './first-run-seed';
  * rather than a class name, because every one of these passed a class-name check.
  */
 
-const SHOTS = '/Users/jinan/scratch/ix/chrome/after';
+/** Screenshots land in this test's own output folder, never a fixed path outside the repo. */
+const shot = (name: string) => test.info().outputPath(name);
 
 async function openSwitcher(page: Page) {
   await page.getByTestId('vault-switch-rail-tile').click();
@@ -57,7 +58,7 @@ test.describe('the vault switcher', () => {
     });
     await page.getByTestId('vault-switch-pick-other').click();
     await page.waitForTimeout(400);
-    await page.screenshot({ path: `${SHOTS}/ch1-switching-400.png` });
+    await page.screenshot({ path: shot('ch1-switching-400.png') });
     await page.waitForTimeout(5800);
     const samples = await page.evaluate(
       () => (window as unknown as { __chromeSamples: Array<{ at: number; tile: boolean; mapTop: number | null; pending: boolean; pendingText: string }> }).__chromeSamples,
@@ -218,93 +219,157 @@ test.describe('the vault switcher', () => {
       return { caption: range.getBoundingClientRect().left, pick: pick.getBoundingClientRect().left };
     });
     expect(Math.abs(lines.caption - lines.pick), 'caption and picker glyph start on different lines').toBeLessThanOrEqual(1);
-    await page.screenshot({ path: `${SHOTS}/ch3-popover.png` });
+    await page.screenshot({ path: shot('ch3-popover.png') });
   });
 
   /*
-   * **The popover opens in the free map: it covers neither INDEX nor the map toolbar.**
-   * Review, 2026-09-25: hung from the chip's corner it stood at x69-485 y70-186 at every width,
-   * over the whole INDEX search field and folder line (49/49 samples) or the collapsed INDEX
-   * tab (42/49), with its edge straddling the INDEX card's. Sampled by elementFromPoint on a
-   * 7x7 grid over INDEX and at every toolbar control's centre and corners, at each rail width,
-   * with INDEX open and folded.
+   * **The popover belongs to its chip, and what it stands on is dimmed, not collided with.**
+   *
+   * Two placements failed review (2026-09-25). Hung from the chip's corner with nothing dimmed it
+   * lay over the INDEX search field and folder line, edge straddling the INDEX card's. Stepped
+   * into the "free map" (x412-828) it covered the fitted graph's top node and its label at 1040
+   * and 1280, stood ~350px from the chip under the toolbar's Expand all / Auto-arrange buttons,
+   * and its gap to INDEX was 8px at one width and 6px at the others.
+   *
+   * Measured here at each rail width, INDEX open and folded, en and ko:
+   * - anchored: one gap past the rail, top on the chip's top, the same rect at every width;
+   * - every INDEX, toolbar and on-screen node point outside the popover hits the scrim, so
+   *   nothing under it reads as live chrome, and the rail itself stays lit;
+   * - a press on the dimmed map closes the popover and does not reach the map.
    */
-  test('the popover covers neither INDEX nor the map toolbar, open or folded, at every rail width', async ({ page }) => {
-    test.setTimeout(240_000);
+  test('the popover stands beside its chip over a dimmed workspace, at every rail width', async ({ page }) => {
+    test.setTimeout(300_000);
     await installDesktopRailRuntime(page);
     await mountDesktopVault(page);
     const failures: string[] = [];
-    for (const index of ['expanded', 'collapsed'] as const) {
-      await page.goto(`/en/topology/?guides=off&e2e=1${index === 'collapsed' ? '&index=collapsed' : ''}`, {
-        waitUntil: 'domcontentloaded',
-      });
-      const indexTestId = index === 'expanded' ? 'topology-index-panel' : 'topology-index-tab';
-      await expect(page.getByTestId(indexTestId)).toBeVisible({ timeout: 60_000 });
+    const rects = new Set<string>();
+    for (const [locale, index] of [
+      ['en', 'expanded'],
+      ['en', 'collapsed'],
+      ['ko', 'expanded'],
+    ] as const) {
       for (const viewport of [
         { width: 1040, height: 720 },
-        { width: 1280, height: 949 },
+        { width: 1280, height: 800 },
         { width: 1512, height: 949 },
         { width: 1920, height: 1080 },
       ]) {
         await page.setViewportSize(viewport);
+        await page.goto(`/${locale}/topology/?guides=off&e2e=1${index === 'collapsed' ? '&index=collapsed' : ''}`, {
+          waitUntil: 'domcontentloaded',
+        });
+        const indexTestId = index === 'expanded' ? 'topology-index-panel' : 'topology-index-tab';
+        await expect(page.getByTestId(indexTestId)).toBeVisible({ timeout: 60_000 });
         await expect(page.getByTestId('topology-top-toolbar')).toBeVisible();
+        await expect
+          .poll(() => page.evaluate(() => ((window as unknown as { __atlasMap?: { nodes: () => unknown[] } }).__atlasMap?.nodes().length ?? 0)))
+          .toBeGreaterThan(0);
         const popover = await openSwitcher(page);
-        const where = `${viewport.width} index=${index}`;
+        await expect
+          .poll(() => page.getByTestId('vault-switch-scrim').evaluate((el) => Number(getComputedStyle(el).opacity)))
+          .toBe(1);
+        const where = `${locale} ${viewport.width} index=${index}`;
         const m = await page.evaluate((indexSelector) => {
           const pop = document.querySelector('[data-testid="vault-switch-popover"]')!;
-          const covered = (x: number, y: number) => {
+          const scrim = document.querySelector('[data-testid="vault-switch-scrim"]')!;
+          const hit = (x: number, y: number) => {
             const top = document.elementFromPoint(x, y);
-            return top !== null && pop.contains(top);
+            if (top === null) return 'none';
+            if (pop.contains(top)) return 'popover';
+            return top === scrim ? 'scrim' : 'live';
           };
-          const indexEl = document.querySelector(indexSelector)!;
-          const ir = indexEl.getBoundingClientRect();
-          let indexHits = 0;
+          const pr = pop.getBoundingClientRect();
+          const inPopover = (x: number, y: number) => x >= pr.left && x <= pr.right && y >= pr.top && y <= pr.bottom;
+          const live: string[] = [];
+          const probe = (label: string, x: number, y: number) => {
+            if (inPopover(x, y) || x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return;
+            if (hit(x, y) !== 'scrim') live.push(`${label}@${Math.round(x)},${Math.round(y)}`);
+          };
+          const ir = document.querySelector(indexSelector)!.getBoundingClientRect();
           for (let i = 0; i < 7; i += 1) {
-            for (let j = 0; j < 7; j += 1) {
-              if (covered(ir.left + (ir.width * (i + 0.5)) / 7, ir.top + (ir.height * (j + 0.5)) / 7)) indexHits += 1;
-            }
+            for (let j = 0; j < 7; j += 1) probe('INDEX', ir.left + (ir.width * (i + 0.5)) / 7, ir.top + (ir.height * (j + 0.5)) / 7);
           }
-          const toolbarHits: string[] = [];
           const toolbar = document.querySelector('[data-testid="topology-top-toolbar"]')!;
           for (const control of toolbar.querySelectorAll('button, a, input')) {
             const r = control.getBoundingClientRect();
-            if (r.width === 0 || r.height === 0) continue;
-            const points = [
-              [r.left + r.width / 2, r.top + r.height / 2],
-              [r.left + 3, r.top + 3],
-              [r.right - 3, r.top + 3],
-              [r.left + 3, r.bottom - 3],
-              [r.right - 3, r.bottom - 3],
-            ];
-            if (points.some(([x, y]) => covered(x, y))) {
-              toolbarHits.push(control.getAttribute('aria-label') ?? control.textContent ?? '?');
-            }
+            if (r.width > 0 && r.height > 0) probe(control.getAttribute('aria-label') ?? 'toolbar', r.left + r.width / 2, r.top + r.height / 2);
           }
-          const pr = pop.getBoundingClientRect();
+          const canvas = document.querySelector('canvas')!.getBoundingClientRect();
+          const nodes = (window as unknown as { __atlasMap: { nodes: () => Array<{ id: string; x: number; y: number; hidden?: boolean }> } }).__atlasMap.nodes();
+          for (const node of nodes) if (!node.hidden) probe(node.id, canvas.left + node.x, canvas.top + node.y);
+          const rail = document.querySelector('[data-testid="app-nav-rail"]')!.getBoundingClientRect();
+          const chip = document.querySelector('[data-testid="vault-switch-rail-tile"]')!.getBoundingClientRect();
+          const destination = document.querySelector('[data-testid^="app-nav-rail-item-"]')!.getBoundingClientRect();
           return {
-            indexHits,
-            toolbarHits,
-            gapToIndex: pr.left - ir.right,
+            live,
+            railLit: hit(destination.left + destination.width / 2, destination.top + destination.height / 2) === 'live',
+            gapToRail: pr.left - rail.right,
+            topToChip: pr.top - chip.top,
             popover: { left: pr.left, top: pr.top, right: pr.right, bottom: pr.bottom },
-            toolbarBottom: toolbar.getBoundingClientRect().bottom,
             viewport: { width: innerWidth, height: innerHeight },
           };
         }, `[data-testid="${indexTestId}"]`);
-        if (m.indexHits > 0) failures.push(`${where}: the popover covers INDEX (${m.indexHits}/49 samples)`);
-        // Beside INDEX, not straddling its edge.
-        if (m.gapToIndex < 0) failures.push(`${where}: the popover starts ${Math.round(-m.gapToIndex)}px inside INDEX`);
-        if (m.toolbarHits.length > 0) failures.push(`${where}: the popover covers toolbar controls ${m.toolbarHits.join(', ')}`);
-        if (m.popover.top < m.toolbarBottom) failures.push(`${where}: the popover starts inside the toolbar band`);
+        if (m.live.length > 0) failures.push(`${where}: live chrome or map beside the popover, not dimmed: ${m.live.join(', ')}`);
+        if (!m.railLit) failures.push(`${where}: the rail is dimmed with the workspace`);
+        if (Math.round(m.gapToRail) !== 8) failures.push(`${where}: the popover stands ${m.gapToRail}px from the rail, not 8`);
+        if (Math.round(m.topToChip) !== 0) failures.push(`${where}: the popover's top is ${m.topToChip}px off the chip's`);
         if (m.popover.right > m.viewport.width || m.popover.bottom > m.viewport.height) {
           failures.push(`${where}: the popover leaves the window`);
         }
-        await page.screenshot({ path: `${SHOTS}/ch3-popover-${index}-${viewport.width}.png` }).catch(() => {});
+        rects.add(`${Math.round(m.popover.left)},${Math.round(m.popover.top)}`);
+        await page.screenshot({ path: shot(`ch3-popover-${locale}-${index}-${viewport.width}.png`) }).catch(() => {});
         await page.keyboard.press('Escape');
         await expect(popover).toHaveCount(0);
+        await expect(page.getByTestId('vault-switch-scrim')).toHaveCount(0);
         await expect(page.getByTestId('vault-switch-rail-tile')).toBeFocused();
       }
     }
     expect(failures, failures.join('\n')).toEqual([]);
+    expect([...rects], 'the popover moved between widths').toHaveLength(1);
+  });
+
+  test('a press on the dimmed map closes the popover and does not reach the map', async ({ page }) => {
+    test.setTimeout(120_000);
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page);
+    await page.goto('/en/topology/?guides=off&e2e=1', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('topology-index-panel')).toBeVisible({ timeout: 60_000 });
+    type Node = { id: string; x: number; y: number; hidden?: boolean };
+    await expect
+      .poll(() => page.evaluate(() => ((window as unknown as { __atlasMap?: { nodes: () => unknown[] } }).__atlasMap?.nodes().length ?? 0)))
+      .toBeGreaterThan(0);
+    await page.waitForTimeout(1500);
+    const target = await page.evaluate(() => {
+      const canvas = document.querySelector('canvas')!.getBoundingClientRect();
+      const nodes = (window as unknown as { __atlasMap: { nodes: () => Node[] } }).__atlasMap.nodes();
+      const onScreen = nodes
+        .filter((n) => !n.hidden)
+        .map((n) => ({ id: n.id, x: canvas.left + n.x, y: canvas.top + n.y }))
+        .filter((n) => n.x > 520 && n.x < innerWidth - 80 && n.y > 140 && n.y < innerHeight - 80);
+      return onScreen[0] ?? null;
+    });
+    expect(target, 'no node on screen to press').not.toBeNull();
+    const popover = await openSwitcher(page);
+    await expect(page.getByTestId('topology-node-popover-positioner')).toHaveCount(0);
+    await page.mouse.click(target!.x, target!.y);
+    await expect(popover).toHaveCount(0);
+    await page.waitForTimeout(400);
+    // The press closed the popover; it did not also focus the node under it.
+    await expect(page.getByTestId('topology-node-popover-positioner')).toHaveCount(0);
+  });
+
+  test('under reduced motion the popover fades in place instead of growing', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page);
+    await page.getByTestId('vault-switch-rail-tile').click();
+    const motion = await page.getByTestId('vault-switch-popover').evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { name: style.animationName, transform: style.transform };
+    });
+    expect(motion.name, 'the growing entrance still runs').not.toContain('topologyChromeIn');
+    expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(motion.transform);
   });
 });
 
@@ -351,7 +416,7 @@ test.describe('the keyboard shortcut sheet', () => {
       return region.height / dialog.height;
     });
     expect(shares, 'the shortcut list is squeezed under a fixed footer').toBeGreaterThan(0.6);
-    await page.screenshot({ path: `${SHOTS}/ch5-sheet-1040.png` });
+    await page.screenshot({ path: shot('ch5-sheet-1040.png') });
   });
 });
 
@@ -386,7 +451,7 @@ test.describe('settings', () => {
       };
     });
     expect(Math.abs(lines.label - lines.result), 'result line is off the row start').toBeLessThanOrEqual(1);
-    await page.screenshot({ path: `${SHOTS}/ch6-update.png` });
+    await page.screenshot({ path: shot('ch6-update.png') });
   });
 
   test('an inline key form uses one control size', async ({ page }) => {
@@ -405,7 +470,7 @@ test.describe('settings', () => {
     );
     expect(new Set(faces.map((f) => f.size)).size, JSON.stringify(faces)).toBe(1);
     expect(new Set(faces.map((f) => Math.round(f.height))).size, JSON.stringify(faces)).toBe(1);
-    await page.screenshot({ path: `${SHOTS}/ch7-key-form.png` });
+    await page.screenshot({ path: shot('ch7-key-form.png') });
   });
 
   test('neutral row actions read in one text tone across the Workspace and AI panes', async ({ page }) => {
@@ -462,6 +527,6 @@ test.describe('settings', () => {
         }),
       )
       .toBe(true);
-    await page.screenshot({ path: `${SHOTS}/ch10-locale.png` });
+    await page.screenshot({ path: shot('ch10-locale.png') });
   });
 });

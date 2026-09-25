@@ -263,6 +263,7 @@
         "versionValue": "{version}",
         "versionReading": "Reading the version…",
         "versionUnknown": "Could not read the version. Checking for updates reads it again.",
+        "versionUnknownRetried": "Could not read the version.",
         "autoLabel": "Automatic check",
         "autoLast": "Checks once a day when the app opens. Last checked {when}.",
         "autoNever": "Checks once a day when the app opens. It has not checked on this computer yet.",

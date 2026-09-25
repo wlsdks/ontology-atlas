@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { useLocalVault } from '@/entities/vault-session';
 import { useDismissibleMenu } from '@/shared/lib/use-dismissible-menu';
+import { usePanelPresence } from '@/shared/lib/use-presence';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -74,6 +75,30 @@ function tabbables(root: ParentNode): HTMLElement[] {
  * placement shrinks it when the free map is narrower.
  */
 const POPOVER_WIDTH_PX = 416;
+
+/**
+ * **What the popover stands on is dimmed and takes no input while it is open.**
+ *
+ * The popover beside the chip necessarily lies over INDEX (or its folded tab) and the map's left
+ * edge - there is no free room next to the rail. Undimmed, that read as two panels colliding;
+ * dimmed, it reads as one surface owning the action, the design system's rule for anything that
+ * sits on top of the workbench. It starts at the rail's right edge so the chip stays lit beside
+ * its popover. A press on it closes the popover through `useDismissibleMenu`'s outside press, and
+ * because it sits over the map, that press never reaches a node. Opacity-only, on the settings
+ * scrim's classes, so reduced motion keeps the same fade the settings sheet has.
+ */
+function SwitcherScrim({ open, left }: { open: boolean; left: number }) {
+  const { mounted, exiting } = usePanelPresence(open);
+  if (!mounted) return null;
+  return (
+    <div
+      aria-hidden
+      data-testid="vault-switch-scrim"
+      style={{ left }}
+      className={`fixed inset-y-0 right-0 z-40 bg-[color:var(--color-backdrop-medium)] ${exiting ? 'app-settings-scrim-out' : 'app-settings-scrim-in'}`}
+    />
+  );
+}
 const POPOVER_MAX_HEIGHT_PX = 640;
 
 export function VaultSwitchRailTile() {
@@ -90,11 +115,12 @@ export function VaultSwitchRailTile() {
    * (inspection, 2026-09-13). `AppNavRail`'s own note already says why: the rail is narrow,
    * so surfaces that hang off it open through a portal, exactly as the settings sheet does.
    *
-   * **It opens in the free map, not over INDEX.** Hung from the chip's corner it covered the
-   * INDEX search field and folder line, or the collapsed INDEX tab, at every width, and its edge
-   * straddled the INDEX card's (review, 2026-09-25). `switcher-placement.ts` steps it past INDEX
-   * and under the map toolbar, onto the toolbar's own start line; off the map it stays beside
-   * the chip. `app-chrome-interaction.spec.ts` samples INDEX and the toolbar by elementFromPoint.
+   * **It opens beside its chip, over a dimmed workspace.** Stepped past INDEX into the free map it
+   * covered the fitted graph's top node and stood ~350px from the chip under the toolbar's own
+   * buttons, reading as their dropdown; hung over INDEX with nothing dimmed it collided with the
+   * INDEX card at equal weight (reviews, 2026-09-25). `switcher-placement.ts` keeps it one gap past
+   * the rail, top aligned with the chip, and `SwitcherScrim` dims and blocks everything right of the
+   * rail while it is open. `app-chrome-interaction.spec.ts` measures both by elementFromPoint.
    */
   const [anchor, setAnchor] = useState<SwitcherPlacement | null>(null);
   const place = useCallback(() => {
@@ -333,6 +359,8 @@ export function VaultSwitchRailTile() {
       */}
       {anchor && typeof document !== 'undefined'
         ? createPortal(
+      <>
+      <SwitcherScrim open={open} left={anchor.scrimLeft} />
       <Surface
         open={open}
         origin="top left"
@@ -410,7 +438,8 @@ export function VaultSwitchRailTile() {
           </span>
         </button>
         </div>
-      </Surface>,
+      </Surface>
+      </>,
             document.body,
           )
         : null}

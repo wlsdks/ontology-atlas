@@ -33,8 +33,6 @@ export function TopologyIndexTab({ onExpand, labels, className }: TopologyIndexT
       onClick={onExpand}
       aria-label={labels.expandAria}
       data-testid="topology-index-tab"
-      // Chrome that opens from outside the map (the rail's folder switcher) stands clear of this.
-      data-popover-obstacle="index"
       className={`flex flex-col items-center gap-2.5 rounded-r-chip border border-l-0 border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] py-2.5 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-tab-width)" }}
     >

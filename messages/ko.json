@@ -263,6 +263,7 @@
         "versionValue": "{version}",
         "versionReading": "버전을 읽는 중이에요.",
         "versionUnknown": "버전을 읽지 못했어요. 업데이트 확인을 누르면 다시 읽어요.",
+        "versionUnknownRetried": "버전을 읽지 못했어요.",
         "autoLabel": "자동 확인",
         "autoLast": "앱을 열면 하루에 한 번 확인해요. 마지막으로 확인한 때는 {when}이에요.",
         "autoNever": "앱을 열면 하루에 한 번 확인해요. 이 컴퓨터에서는 아직 확인한 적이 없어요.",
