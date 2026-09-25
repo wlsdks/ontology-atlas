@@ -3101,6 +3101,7 @@
       "edit": "이 파일 편집",
       "newDoc": "새 문서 만들기",
       "rename": "이 문서 이름 바꾸기",
+      "renameKeywords": "이름 변경 주소 변경 경로 옮기기",
       "insertToc": "현재 문서에 목차 삽입",
       "deleteDoc": "이 문서 삭제",
       "exportDocHtml": "현재 문서 HTML로 저장",

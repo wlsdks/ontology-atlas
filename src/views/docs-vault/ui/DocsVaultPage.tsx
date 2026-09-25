@@ -2203,6 +2203,7 @@ function DocsVaultContent({
       {
         id: 'rename',
         label: t('commands.rename'),
+        keywords: t('commands.renameKeywords'),
         icon: '✎',
         visible: canEditCurrent && selectedDocExists,
         onRun: () => void handleRenameCurrent(),

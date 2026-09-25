@@ -3101,6 +3101,7 @@
       "edit": "Edit this file",
       "newDoc": "Create new doc",
       "rename": "Rename this doc",
+      "renameKeywords": "change name move address path",
       "insertToc": "Insert table of contents",
       "deleteDoc": "Delete this doc",
       "exportDocHtml": "Save current doc as HTML",
