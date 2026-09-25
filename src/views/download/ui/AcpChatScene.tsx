@@ -179,7 +179,7 @@ export function AcpChatScene() {
 
         {/* ② The agent's tool call — the name verbatim, the `why` in the screen's language. */}
         <div className={cn('gateway-term-line', shown >= 2 && 'is-on', 'min-w-0')}>
-          <p className="break-keep text-caption leading-caption text-[color:var(--color-text-tertiary)]">
+          <p className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">
             {t('acpToolCaption')}
           </p>
           {/*

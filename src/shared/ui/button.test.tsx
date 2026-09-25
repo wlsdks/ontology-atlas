@@ -43,6 +43,34 @@ describe('Button', () => {
     expect(screen.getByRole('button').className).toContain('h-11');
   });
 
+  it('radius follows the box: 32px and the 44px hero wear the chip radius, 40px the panel', () => {
+    // A 32px Button beside a 32px controlClass chip or fieldClass field wears their radius (6px).
+    // Type stays 14px at every size, the step a 32px field sets its value in.
+    for (const size of ['sm', 'md', 'lg'] as const) {
+      const cls = buttonVariants({ size });
+      expect(cls).toMatch(/\btext-body-lg\b/);
+      expect(cls).not.toMatch(/\btext-body(?!-)\b/);
+      expect(cls.match(/\brounded-(chip|panel)\b/g)).toHaveLength(1);
+    }
+    expect(buttonVariants({ size: 'sm' })).toMatch(/\brounded-chip\b/);
+    expect(buttonVariants({ size: 'md' })).toMatch(/\brounded-panel\b/);
+    expect(buttonVariants({ size: 'lg' })).toMatch(/\brounded-chip\b/);
+  });
+
+  it('variant=danger draws the danger ramp on the plane, the rule and the ink', () => {
+    const cls = buttonVariants({ variant: 'danger' });
+    expect(cls).toContain('bg-[color:var(--color-danger-a08)]');
+    expect(cls).toContain('border-[color:var(--color-danger-a32)]');
+    expect(cls).toContain('text-[color:var(--color-danger-text)]');
+  });
+
+  it('variant=danger drops the hue while disabled (the danger ink at opacity-55 measured 2.42:1)', () => {
+    const cls = buttonVariants({ variant: 'danger' });
+    expect(cls).toContain('disabled:text-[color:var(--color-text-primary)]');
+    expect(cls).toContain('disabled:bg-[color:var(--color-overlay-1)]');
+    expect(cls).toContain('disabled:border-[color:var(--color-overlay-3)]');
+  });
+
   it('disabled state has cursor-not-allowed + opacity reduction', () => {
     render(<Button disabled>비활성</Button>);
     const btn = screen.getByRole('button');
@@ -56,6 +84,7 @@ describe('Button', () => {
       buttonVariants({ variant: 'primary' }),
       buttonVariants({ variant: 'ghost' }),
       buttonVariants({ variant: 'outline' }),
+      buttonVariants({ variant: 'danger' }),
     ];
 
     for (const cls of variants) {

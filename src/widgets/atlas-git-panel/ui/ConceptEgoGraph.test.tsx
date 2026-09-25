@@ -60,4 +60,24 @@ describe("ConceptEgoGraph — 그린 이웃 수", () => {
       expect(new Set(centers).size).toBe(centers.length);
     });
   }
+
+  /*
+   * Round four: the relation table carries every name, so the drawing names a neighbour only
+   * while it is pointed at, with a canvas halo so no spoke strikes it; the centre's name is
+   * the card header and is not drawn again.
+   */
+  it("draws no name at rest and exactly the pointed-at neighbour's name with a halo", () => {
+    const { rerender } = render(
+      <ConceptEgoGraph ego={ego(4)} bearingLabel={() => "담고 있는 것"} moreLabel={(n) => `외 ${n}`} />,
+    );
+    const svg = screen.getAllByRole("img")[0];
+    expect(svg.querySelectorAll("text")).toHaveLength(0);
+
+    rerender(
+      <ConceptEgoGraph ego={ego(4)} bearingLabel={() => "담고 있는 것"} moreLabel={(n) => `외 ${n}`} activeId="n2" />,
+    );
+    const labels = screen.getAllByTestId("atlas-git-ego-label");
+    expect(labels.map((el) => el.textContent)).toEqual(["이웃 2"]);
+    expect(labels[0].style.paintOrder).toBe("stroke");
+  });
 });

@@ -140,7 +140,7 @@ describe('VaultAgentSetupPanel', () => {
     // it, and that is the single statement.
     expect(screen.queryByText('누락')).toBeNull();
     expect(screen.getByText('Claude Code · Codex 연결 파일 1/2개 준비됨')).toBeInTheDocument();
-    expect(screen.getByText('· 다음: .mcp.json 만들기')).toBeInTheDocument();
+    expect(screen.getByTestId('agent-setup-status-next')).toHaveTextContent('다음: .mcp.json 만들기');
     expect(
       screen.getByText('이 폴더 기준으로 설정돼요 · 다른 코드 폴더에서 열려면 절대경로가 필요해요'),
     ).toBeInTheDocument();
@@ -451,9 +451,9 @@ describe('VaultAgentSetupPanel', () => {
     // it, and that is the single statement.
     expect(screen.queryByText('누락')).toBeNull();
     expect(screen.getByText('Claude Code · Codex 연결 파일 1/2개 준비됨')).toBeInTheDocument();
-    expect(
-      screen.getByText('· 점검: .codex/config.toml는 Ontology Atlas 연결 설정이 아니에요'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('agent-setup-status-next')).toHaveTextContent(
+      '점검: .codex/config.toml는 Ontology Atlas 연결 설정이 아니에요',
+    );
     expect(screen.getByText('점검 필요')).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -1387,8 +1387,8 @@ describe('VaultAgentSetupPanel', () => {
     expect(headings.filter((h) => h === title)).toHaveLength(1);
 
     /*
-     * "N/M connection files ready" is the subtitle's job; the section below states what to do
-     * about the missing ones. Matched on the **shape** rather than the sentence, so the
+     * "N/M connection files ready" is the status box's job (round 3: the subtitle that also said
+     * it is gone); the line under it states what to do about the missing one. Matched on the **shape** rather than the sentence, so the
      * catalogue can be reworded and the rule still reads "said once".
      */
     const countShape = /\d+\/\d+개 준비됨/;
@@ -1400,6 +1400,36 @@ describe('VaultAgentSetupPanel', () => {
       (el) => !saidTheCount.some((other) => other !== el && el.contains(other)),
     );
     expect(owners).toHaveLength(1);
+  });
+
+  it('with no connection file yet, the dialog skips the restart step and states zero once', () => {
+    renderPanel({
+      agentConfigStatus: {
+        mcpJson: false,
+        mcpJsonValid: false,
+        codexConfig: false,
+        codexConfigValid: false,
+        mcpExample: false,
+        mcpExampleValid: false,
+      },
+    });
+    const dialog = screen.getByTestId('agent-setup-verify-dialog');
+    // Restarting "the tool you just connected" means nothing before anything is connected.
+    expect(within(dialog).queryByTestId('agent-setup-step-2')).toBeNull();
+    // The count names whose files it counts, so "0/2" cannot be read against the four tool rows.
+    expect(within(dialog).getByTestId('agent-setup-status-summary')).toHaveTextContent(
+      'Claude Code · Codex 연결 파일 0/2개 준비됨',
+    );
+    // The next step is the line under the count, not a second sentence restating zero.
+    expect(within(dialog).getByTestId('agent-setup-status-next')).toHaveTextContent('.mcp.json');
+    expect(within(dialog).queryByText(/아직 연결 파일이 없어요/)).toBeNull();
+  });
+
+  it('once one file exists the restart step returns and the next line names the missing file', () => {
+    renderPanel();
+    const dialog = screen.getByTestId('agent-setup-verify-dialog');
+    expect(within(dialog).getByTestId('agent-setup-step-2')).toBeInTheDocument();
+    expect(within(dialog).getByTestId('agent-setup-status-next')).toBeInTheDocument();
   });
 
   it('missing 설정은 생성 버튼이고 이미 유효한 설정은 준비 상태다', () => {

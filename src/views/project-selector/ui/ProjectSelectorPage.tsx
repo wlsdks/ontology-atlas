@@ -171,7 +171,7 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
             a one-line purpose (round four); cards in a row still end on one line because the row
             stretches them and the footer is pinned to the bottom. The sentence is whole
             (`resolveAuthoredDescription` never cuts mid-clause); the clamp is the last resort. */}
-        <p className="mt-2.5 line-clamp-4 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+        <p className="mt-2.5 line-clamp-4 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
           {description ?? (
             <span className="text-[color:var(--color-text-tertiary)]">{t("cardDescriptionFallback")}</span>
           )}
@@ -241,15 +241,15 @@ function NextProjectTile({ t, description }: { t: SelectorTranslator; descriptio
           {t("nextSlotTitle")}
         </h2>
         {description ? (
-          <p className="mt-2.5 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-pretty text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+          <p className="mt-2.5 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] text-pretty text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
             {description}
           </p>
         ) : null}
         <div className={`mt-2.5 ${columns}`}>
-          <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]">
+          <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t("nextSlotFormSub")}
           </p>
-          <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]">
+          <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t("nextSlotSub")}
           </p>
         </div>

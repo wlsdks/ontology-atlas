@@ -260,11 +260,16 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(step).not.toHaveTextContent("abc1234");
     expect(step).not.toHaveTextContent("ontology snapshot");
 
-    // The raw text does not disappear — expanding shows it as the audit trail.
+    // The raw text does not disappear — the detail's headline carries it as the audit
+    // trail (its title), while the words on screen are the reader's.
     fireEvent.click(step);
-    expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
+    await screen.findByTestId("atlas-git-history-detail");
+    expect(screen.getByTestId("atlas-git-detail-headline")).toHaveAttribute(
+      "title",
       "ontology snapshot: +1 concept (capabilities/foo)",
     );
+    // A short id to copy, never the forty-character hash as text.
+    expect(screen.getByTestId("atlas-git-detail-hash")).toHaveTextContent(/^abc1234$/);
   });
 
   it("localizes step time from the ISO instant and falls back to the raw bridge text", async () => {
@@ -299,9 +304,9 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
       fireEvent.click(steps[0]);
       const detail = await screen.findByTestId("atlas-git-history-detail");
-      // The reader's clock, not git's wire format; the instant stays in `dateTime`.
+      // The instant is machine-readable on the `<time>`, and the text is a local date.
+      expect(detail.querySelector("time")).toHaveAttribute("datetime", isoTime);
       expect(detail).not.toHaveTextContent(isoTime);
-      expect(detail.querySelector(`time[datetime="${isoTime}"]`)).not.toBeNull();
       expect(detail).toHaveTextContent("2시간 전");
     } finally {
       nowSpy.mockRestore();
@@ -640,15 +645,17 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(steps).toHaveTextContent("capabilities/foo");
   });
 
-  it("expands a history item to its full hash + iso time on click", async () => {
+  it("opens a step with a short id that names and copies the full hash", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     await screen.findByTestId("atlas-git-steps");
     fireEvent.click(screen.getByTestId("atlas-git-history-item"));
-    expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
-      "abc1234def5678",
-    );
+    await screen.findByTestId("atlas-git-history-detail");
+    const hash = screen.getByTestId("atlas-git-detail-hash");
+    expect(hash).toHaveTextContent(/^abc1234$/);
+    // The full id stays reachable: the control's name carries it, and a press copies it.
+    expect(hash).toHaveAccessibleName(expect.stringContaining("abc1234def5678"));
   });
 
   it("목적지에는 닫기가 없다 — 제목은 페이지 헤드라인이다", async () => {
@@ -1256,6 +1263,23 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
     // Relations are **names, not counts** — 「1」 cannot say what the 1 is.
     const neighbors = screen.getAllByTestId("atlas-git-ego-neighbor");
     expect(neighbors.map((el) => el.textContent).join(" ")).toContain("온보딩·배포·앱 셸");
+
+    /*
+     * Said once (round four). The owning domain is the "Belongs to" neighbour, so a "Domain"
+     * cell above it printed the same name twice; and the names live in the table, so the
+     * drawing names nobody until a name is pointed at.
+     */
+    expect(ego).not.toHaveTextContent("도메인");
+    // The mark's `<title>` is its tooltip and accessible name, not printed text.
+    const printed = ego.cloneNode(true) as HTMLElement;
+    printed.querySelectorAll("title").forEach((title) => title.remove());
+    expect(printed.textContent?.match(/온보딩·배포·앱 셸/g)).toHaveLength(1);
+    fireEvent.pointerEnter(neighbors[0]);
+    expect(screen.getAllByTestId("atlas-git-ego-label").map((el) => el.textContent)).toEqual(["온보딩·배포·앱 셸"]);
+
+    // A person's sentence is the headline; the concept names are the chips, not a second title.
+    expect(screen.getByTestId("atlas-git-detail-headline")).toHaveTextContent(/^무언가 고쳤다$/);
+    expect(screen.queryByTestId("atlas-git-detail-byline")).toBeNull();
   });
 
   it("그래프가 없으면 (웹·미로드) 카드를 아예 안 그린다 — 빈 상자를 두지 않는다", async () => {
@@ -1282,9 +1306,7 @@ describe("AtlasGitPanel — 2단 작업대의 선택", () => {
     expect(screen.queryByTestId("atlas-git-history-detail")).toBeNull();
 
     fireEvent.click(screen.getByTestId("atlas-git-history-item"));
-    expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
-      "abc1234def5678",
-    );
+    expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent("abc1234");
     // Choosing a commit releases the uncommitted row — the two never open at once.
     // An unselected row carries no attribute at all: `aria-current="false"` is
     // noise that tells a screen reader "not current" for no reason (WAI-ARIA: the
@@ -1476,10 +1498,15 @@ describe("AtlasGitPanel — 자동 제목은 그래프가 있어도 원문으로
 
     fireEvent.click(row);
     const detail = await screen.findByTestId("atlas-git-history-detail");
-    expect(screen.getByTestId("atlas-git-detail-headline")).toHaveTextContent("수정 1");
-    expect(screen.getByTestId("atlas-git-detail-headline")).not.toHaveTextContent("ontology snapshot");
-    // The audit trail stays: the raw subject is still on screen, one step down.
-    expect(detail).toHaveTextContent("ontology snapshot: ~1 updated (domains/orders)");
+    // The headline names the step the way its row does — by concept — and the reason in
+    // the reader's words sits under it.
+    const headline = screen.getByTestId("atlas-git-detail-headline");
+    expect(headline).toHaveTextContent("주문");
+    expect(headline).not.toHaveTextContent("ontology snapshot");
+    expect(screen.getByTestId("atlas-git-detail-byline")).toHaveTextContent("수정 1");
+    // The audit trail stays: the raw subject is the headline's title, not body text.
+    expect(headline).toHaveAttribute("title", "ontology snapshot: ~1 updated (domains/orders)");
+    expect(detail).not.toHaveTextContent("ontology snapshot");
   });
 });
 
@@ -1809,7 +1836,9 @@ describe("AtlasGitPanel — 문서 하나의 이력", () => {
     expect(list).toHaveTextContent("이 문서를 바꾼 다른 커밋");
     const rows = screen.getAllByTestId("atlas-git-document-step");
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toHaveTextContent("docs: step 25");
+    // The author's sentence, without its conventional-commit code.
+    expect(rows[0]).toHaveTextContent("Step 25");
+    expect(rows[0]).not.toHaveTextContent("docs:");
     // Scoped read: git was asked for this document's path.
     const scoped = tauriApiMock.invoke.mock.calls.filter(
       ([command, args]) => command === "git_history" && (args as { path?: string }).path === "docs/capabilities/foo.md",
@@ -1823,11 +1852,30 @@ describe("AtlasGitPanel — 문서 하나의 이력", () => {
         const selected = screen
           .getAllByTestId("atlas-git-history-item")
           .find((row) => row.getAttribute("aria-expanded") === "true");
-        expect(selected).toHaveTextContent("docs: step 25");
+        expect(selected).toHaveTextContent("Step 25");
       },
       { timeout: 4000 },
     );
-    expect(screen.getByTestId("atlas-git-detail-headline")).toHaveTextContent("docs: step 25");
+    expect(screen.getByTestId("atlas-git-detail-headline")).toHaveTextContent(/^Step 25$/);
+  });
+
+  it("그 문서의 다른 커밋은 셋까지 보이고, 나머지는 세어서 한 번에 펼친다", async () => {
+    const touched = [all[0], all[3], all[7], all[11], all[15], all[19]];
+    installDesktopGit({
+      history: (limit: number, path?: string) => (path ? touched.slice(0, limit) : all.slice(0, limit)),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click((await screen.findAllByTestId("atlas-git-history-item"))[0]);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+
+    await screen.findByTestId("atlas-git-document-history");
+    expect(screen.getAllByTestId("atlas-git-document-step")).toHaveLength(3);
+    const more = screen.getByTestId("atlas-git-document-history-more");
+    expect(more).toHaveTextContent("2개 더 보기");
+    fireEvent.click(more);
+    expect(screen.getAllByTestId("atlas-git-document-step")).toHaveLength(5);
+    expect(screen.getByTestId("atlas-git-document-history-more")).toHaveAttribute("aria-expanded", "true");
   });
 
   it("그 문서를 바꾼 커밋이 이것뿐이면 그렇게 말한다", async () => {

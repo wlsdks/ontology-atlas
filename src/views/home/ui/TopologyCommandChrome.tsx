@@ -282,6 +282,10 @@ export function TopologyCommandChrome({
               activityInboxOpen ? "z-30" : "z-20",
             )}
             data-testid="topology-top-toolbar"
+            // The free map, as far as a popover hanging from this row is concerned: the box
+            // already reserves INDEX, the node inspector and the dock seam, so anything that
+            // opens from a lane clamps to it (`SavedConstellationsControl`).
+            data-popover-boundary="free-map"
             data-agent-dock-adjacent-rail="true"
             data-right-inspector-reserve={
               nodePanelMounted ? "recenter-in-remaining-map" : undefined

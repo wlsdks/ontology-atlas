@@ -44,6 +44,7 @@ import {
   type V2EvidenceRow,
 } from "./map-datasheet";
 import { Button, controlClass, IconButton, LastEditSubjectRow, MtimeConflictBadge, RowButton, Surface, SummaryFreshnessRow } from "@/shared/ui";
+import { badgeClass } from "@/shared/ui/badge-class";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { transientSurface } from "@/shared/ui/transient-surface";
 
@@ -708,9 +709,14 @@ function DetailActionMenu({
         aria-label={label}
         data-testid={triggerTestId}
         onClick={() => onOpenChange(!open)}
+        /*
+         * The icon-only "more" trigger is the 32px icon step (`lg`), not `md` (28px): it sits in
+         * one row with the 32px `Button sm` and the 32px `Edit` chip, and at 28px it was the one
+         * control in the row that stood short (captured at 1512, 2026-09-25).
+         */
         className={controlClass({
           shape: iconOnly ? "icon" : "chip",
-          size: "md",
+          size: iconOnly ? "lg" : "md",
           tone: "muted",
           className:
             "atlas-touch-floor atlas-touch-floor-wide border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)]",
@@ -1410,18 +1416,31 @@ export function OntologyMapDetailPanel({
             <h2 className="min-w-0 flex-1 truncate text-title font-[var(--font-weight-strong)] leading-title tracking-title text-[color:var(--map-panel-text-primary)]">
               {title}
             </h2>
-            {/* kind = a badge you read (glyph plus word), the counterweight on the right */}
-            <span className="flex shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--map-panel-kind-badge-border)] bg-[color:var(--map-panel-kind-badge-surface)] py-[3px] pl-[7px] pr-[9px] text-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] text-[color:var(--map-panel-text-secondary)]">
+            {/* kind = a badge you read (glyph plus word), the counterweight on the right.
+                **One chip grammar with the domain chip below** (owner report, 2026-09-25):
+                this badge was 24px at a 6px radius and the domain chip 34px at the card's
+                9px, so the header's right column read as two unrelated shapes. Both are now
+                the chip `md` step (32px, `rounded-chip`, `text-label`), the close button is
+                the 32px icon step, and every row ends on the same right edge.
+                Gate: tests/e2e/map-inspector-header-chips.spec.ts */}
+            <span
+              data-testid="map-detail-panel-kind"
+              className={badgeClass({
+                shape: "tag",
+                className:
+                  "min-h-8 shrink-0 gap-1.5 border border-[color:var(--map-panel-kind-badge-border)] bg-[color:var(--map-panel-kind-badge-surface)] px-2.5 font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] text-[color:var(--map-panel-text-secondary)]",
+              })}
+            >
               <OntologyMapKindGlyph kind={kind} size={12} />
               {labels.kindLabel}
             </span>
             <IconButton
               ref={closeButtonRef}
               label={labels.close}
-              size="sm"
+              size="lg"
               onClick={onClose}
               data-testid="map-detail-panel-close"
-              className="atlas-touch-floor atlas-touch-floor-wide -mr-1 text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)] active:bg-[color:var(--map-panel-row-active)]"
+              className="atlas-touch-floor atlas-touch-floor-wide text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)] active:bg-[color:var(--map-panel-row-active)]"
             >
               <X size={ICON_SIZE.lg} />
             </IconButton>
@@ -1471,16 +1490,16 @@ export function OntologyMapDetailPanel({
                   aria-label={`${labels.domainLabel} ${domain.title}`}
                   data-testid="map-detail-panel-domain"
                   className={controlClass({
-                    shape: "card",
-                    size: "sm",
+                    shape: "chip",
+                    size: "md",
                     className:
-                      "atlas-touch-floor min-w-0 text-left border-[color:var(--map-panel-domain-border)] bg-[color:var(--map-panel-domain-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-domain-surface-hover)]",
+                      "min-w-0 text-left border-[color:var(--map-panel-domain-border)] bg-[color:var(--map-panel-domain-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-domain-surface-hover)]",
                   })}
                 >
-                  <span className="shrink-0 text-label text-[color:var(--map-panel-text-tertiary)]">
+                  <span className="shrink-0 text-[color:var(--map-panel-text-tertiary)]">
                     {labels.domainLabel}
                   </span>
-                  <span className="truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--map-panel-domain-text)]">
+                  <span className="truncate font-[var(--font-weight-emphasis)] text-[color:var(--map-panel-domain-text)]">
                     {domain.title}
                   </span>
                   <ChevronRight

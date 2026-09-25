@@ -165,7 +165,7 @@ function ProjectDetailTopBar({
       </span>
       <Link
         href={projectsListHref}
-        className={controlClass({ shape: "link", size: "lg", tone: "muted", className: "break-keep hover:text-[color:var(--color-text-primary)]" })}
+        className={controlClass({ shape: "link", size: "lg", tone: "muted", className: "hover:text-[color:var(--color-text-primary)]" })}
       >
         {t("topBarProjectsLabel")}
       </Link>

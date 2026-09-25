@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowUpRight, Check, CircleAlert, Copy, Info } from "lucide-react";
+import { ArrowUpRight, Check, CircleAlert, Copy, Info, Plug } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { BrandMark } from '@/shared/ui/brand-mark';
 import { Link } from "@/i18n/navigation";
 import { AGENT_GRAPH_WORKFLOW_HREF, type AgentServerAvailability } from "@/shared/config";
 import { copyText } from "@/shared/lib/copy-text";
 import { cn } from "@/shared/lib/cn";
-import { Button, buttonVariants } from "@/shared/ui/button";
+import { badgeClass } from "@/shared/ui/badge-class";
+import { Chip } from "@/shared/ui/controls";
 import { useToast } from "@/shared/ui";
 
 /**
@@ -443,25 +444,63 @@ export interface AgentClientControls {
 }
 
 /**
- * This column's surface is **decided by `shared/ui/button`** (2026-08-02, design council).
+ * **The row grammar of the Agents destination** (2026-09-25, round 3).
  *
- * Three fragments (`ClientStatus` / `ClientButton` / `ClientLink`) used to rewrite the same class
- * string by hand, and one of them imitated the primitive's opaque `primary` (#5e6ad2) with a
- * translucent `--color-indigo-a24` wash. An inventory found that wash in 24 places across 19
- * files while **zero** went through the `Button` primitive — a spec nobody uses is documentation,
- * not a spec.
+ * These controls used to be the `Button` primitive's `outline/sm` stretched to a fixed 144px slot
+ * (`w-full` inside `w-36`), bold and on its own fill, while every other row and heading action on
+ * the same destination (open a chat, check the connection, install guide, check again, confirm
+ * the connection) is a 32px `Chip` at `lg`, natural width, a glyph before its verb. Two grammars
+ * one tab apart read as two products. They now wear the chip the rows of the agents tab wear; the
+ * four are still peers (the 2026-08-02 council's "no right answer" call holds: same tone on all
+ * four, no accent).
  *
- * Using the primitive brings the focus-visible ring with it. Measured: these buttons alone had no
- * `focus-visible:ring`, so the browser default `outline: rgb(208,214,224) auto 1px` appeared,
- * while nine or more other places in the app used the indigo ring token.
- *
- * Only this surface's three dialects are overridden — full width (`w-full`), this sheet's radius
- * (`rounded-chip`), and the settings-sheet type dialect (`text-body`). Everything else (colour,
- * state, press, disabled, focus ring) is owned by the primitive. `size="sm"`'s `h-8` is exactly
- * `--control-h-md` (32px), so the height is unchanged.
+ * The primitive (`controlClass`) owns the focus ring, the press and the disabled state; what is written here
+ * is only the border step `DETAIL_TOGGLE_CHIP` gives the sibling chips (that constant lives in a
+ * widget this feature cannot import).
  */
-function clientControlClass(extra?: string) {
-  return cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full rounded-chip text-body", extra);
+const ROW_CHIP_EDGE =
+  'shrink-0 whitespace-nowrap border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]';
+
+/**
+ * **A settled state is a badge, the same one the agents tab uses** (round 3). "Ready" used to be
+ * drawn as a button-shaped box with a check, so on the MCP tab a finished row looked pressable,
+ * while the agents tab one press away says the same word as a dot and a tag. One word, one shape.
+ * Exported so the runtime rows read it from here rather than keeping a second copy.
+ */
+export function RowStateBadge({
+  ready,
+  children,
+  className,
+  ...rest
+}: {
+  ready: boolean;
+  children: React.ReactNode;
+  className?: string;
+} & Omit<React.HTMLAttributes<HTMLSpanElement>, 'children' | 'className'>) {
+  return (
+    <span
+      {...rest}
+      className={badgeClass({
+        shape: "tag",
+        /* A fixed floor with the word centred, so the badges form one column down a list
+           instead of ending wherever their word does. */
+        className: cn(
+          "inline-flex min-w-18 shrink-0 items-center justify-center gap-1.5 py-0.5 bg-[color:var(--color-overlay-2)]",
+          ready ? "text-[color:var(--color-text-secondary)]" : "text-[color:var(--color-text-tertiary)]",
+          className,
+        ),
+      })}
+    >
+      {ready ? (
+        <span
+          aria-hidden
+          data-testid="row-state-ready-dot"
+          className="size-1.5 shrink-0 rounded-full bg-[color:var(--color-status-success)]"
+        />
+      ) : null}
+      {children}
+    </span>
+  );
 }
 
 function ClientStatus({
@@ -472,21 +511,9 @@ function ClientStatus({
   label: Wording;
 }) {
   return (
-    <div
-      role="status"
-      aria-label={label.full}
-      data-testid={testId}
-      data-state="ready"
-      // A status is not pressable — only the primitive's press affordance is reverted.
-      className={clientControlClass("active:translate-y-0")}
-    >
-      <Check
-        size={ICON_SIZE.md}
-        aria-hidden
-        className="text-[color:var(--color-status-success)]"
-      />
+    <RowStateBadge ready role="status" aria-label={label.full} data-testid={testId} data-state="ready">
       {label.short}
-    </div>
+    </RowStateBadge>
   );
 }
 
@@ -501,7 +528,11 @@ function ClientAction({
   onClick,
 }: {
   testId: string;
-  /** Only a glyph that carries state is passed — decoration with no state gets no space. */
+  /**
+   * The verb's glyph. Every row action on this destination leads with one (round 3), so a write
+   * without its own glyph falls back to the plug rather than standing bare beside chips that
+   * carry theirs.
+   */
   icon?: React.ReactNode;
   label: Wording;
   feedback: Feedback;
@@ -528,7 +559,7 @@ function ClientAction({
   ) : isFailed ? (
     <CircleAlert size={ICON_SIZE.md} aria-hidden />
   ) : (
-    icon
+    icon ?? <Plug size={ICON_SIZE.md} aria-hidden />
   );
   const shownLabel: Wording = isBusy
     ? (busyLabel ?? label)
@@ -540,10 +571,10 @@ function ClientAction({
           ? { full: t("actionFailed"), short: ts("failed") }
           : label;
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
+    <Chip
+      size="lg"
+      tone="secondary"
+      hoverInk="strong"
       data-testid={testId}
       data-state={feedback}
       /*
@@ -558,11 +589,11 @@ function ClientAction({
       /* The row beside this button already names the tool and its file, so only the verb is
          drawn; the sentence stays as the accessible name (see `Wording`). */
       aria-label={shownLabel.full}
-      className={clientControlClass()}
+      className={ROW_CHIP_EDGE}
     >
       {shownIcon}
       {shownLabel.short}
-    </Button>
+    </Chip>
   );
 }
 
@@ -584,7 +615,13 @@ function ClientLink({
       href={href}
       data-testid={testId}
       aria-label={label.full}
-      className={clientControlClass()}
+      className={controlClass({
+        shape: "chip",
+        size: "lg",
+        tone: "secondary",
+        hoverInk: "strong",
+        className: ROW_CHIP_EDGE,
+      })}
     >
       {icon}
       {label.short}

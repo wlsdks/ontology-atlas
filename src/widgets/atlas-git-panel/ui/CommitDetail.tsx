@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useFormatter } from "next-intl";
 import { cn } from "@/shared/lib/cn";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { shortHash, stripConventionalPrefix } from "../lib/step-title";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { controlClass } from "@/shared/ui";
@@ -47,6 +49,9 @@ export interface CommitConcept {
 }
 
 type Lens = "concepts" | "files";
+
+/** Concept names the headline spells out before it counts the rest. */
+const HEADLINE_CONCEPTS = 2;
 
 /**
  * Does this changed file carry that concept? `matchNodeId` builds a node id as
@@ -102,7 +107,7 @@ export function CommitDetail({
   restoreBusy,
   onJumpToCommit,
   whenOf,
-  headlineOf,
+  stepTitleOf,
   focusedConceptId,
   setFocusedConceptId,
   egoFor,
@@ -132,8 +137,8 @@ export function CommitDetail({
   onJumpToCommit: (hash: string) => void;
   /** Relative-time wording in the reader's language. */
   whenOf: (isoTime: string) => string;
-  /** Human wording for an automatic subject, `null` when a person wrote it. */
-  headlineOf: (subject: string) => string | null;
+  /** What another step changed, in words: its concepts, else its documents, else its author's sentence. */
+  stepTitleOf: (commit: GitCommitInfo) => string;
   focusedConceptId: string | null;
   setFocusedConceptId: (id: string) => void;
   egoFor: (nodeId: string) => ConceptEgo | null;
@@ -141,14 +146,41 @@ export function CommitDetail({
 }) {
   const focused = focusedConceptId ?? concepts[0]?.id ?? null;
   const format = useFormatter();
-  const absoluteTime = useMemo(() => {
-    const instant = new Date(isoTime);
-    if (Number.isNaN(instant.getTime())) return isoTime;
-    try {
-      return format.dateTime(instant, { dateStyle: "medium", timeStyle: "short" });
-    } catch {
-      return isoTime;
-    }
+  const { state: hashState, copy: copyHash } = useCopyFeedback();
+  const authored = stripConventionalPrefix(subject);
+  const reason = headline ? t("stepAutoSubject", { summary: headline }) : authored;
+  /*
+   * Round four (2026-09-25): the headline is the step's sentence whenever a person wrote one.
+   * "Payment approval, Payment service and 1 more" put a list of names and an overflow count on the screen's
+   * largest line and demoted the sentence that says what the step did — and the concept chips
+   * a few lines down print those same names again. Only an automatic subject, which has no
+   * sentence of its own, is named by its concepts, with the reader's-language summary under it.
+   */
+  const conceptTitle =
+    headline && concepts.length > 0
+      ? `${concepts
+          .slice(0, HEADLINE_CONCEPTS)
+          .map((concept) => concept.label)
+          .join(", ")}${concepts.length > HEADLINE_CONCEPTS ? ` ${t("moreSlugs", { count: concepts.length - HEADLINE_CONCEPTS })}` : ""}`
+      : null;
+  const title = conceptTitle ?? headline ?? authored;
+  // With a concept title, the author's reason is the second line; without one the reason
+  // already is the title and is not said twice.
+  const byline = conceptTitle ? reason : null;
+  const dateLabel = useMemo(() => {
+    const at = new Date(isoTime);
+    if (Number.isNaN(at.getTime())) return "";
+    const sameYear = at.getFullYear() === new Date().getFullYear();
+    return format.dateTime(at, {
+      ...(sameYear ? {} : { year: "numeric" }),
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      // The reader's own clock: the step happened at their local time, and no global
+      // default is configured for the static export.
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
   }, [format, isoTime]);
 
   /*
@@ -244,26 +276,101 @@ export function CommitDetail({
     return files.find((file) => fileCarriesNode(file, focused)) ?? null;
   }, [files, focused]);
 
+  /*
+   * One door per document, drawn in one place in both lenses: on the heading of the
+   * document's own history. A step that deleted the document holds no content to put back,
+   * so the door is not drawn — but its absence is said, not left silent: the person would
+   * otherwise read the missing door as a missing feature (installed-app walk, 2026-09-19).
+   */
+  const restoreDoor = (file: GitChangeEntry) =>
+    file.status === "deleted" ? (
+      <p
+        data-testid="atlas-git-restore-absent"
+        className="text-caption leading-label text-[color:var(--color-text-quaternary)]"
+      >
+        {t("restoreAbsentDeleted")}
+      </p>
+    ) : (
+      <RestoreDock
+        // Keyed by document: an armed confirm must not survive a file change and re-aim at
+        // another document (interaction seat, 2026-09-19).
+        key={file.path}
+        t={t}
+        path={file.path}
+        when={relativeTime}
+        pending={pendingDelta.get(file.path) ?? null}
+        others={Math.max(0, files.length - 1)}
+        busy={restoreBusy}
+        onRestore={onRestore}
+      />
+    );
+
   return (
     <div
       className="git-fade-in flex min-h-0 flex-1 flex-col"
       data-testid="atlas-git-history-detail"
     >
-      {/* Identity — survives either lens. */}
-      <header className="flex flex-none flex-col gap-1 px-5 pt-4 pb-3">
-        <p
+      {/*
+        Identity — survives either lens, and is the pane's one headline (review 2026-09-25).
+        It was a 14px line, the same size as every list row, under a 23px page title and above
+        a 23px file title: the thing the person picked was the smallest heading on screen. The
+        page title stepped down to a destination label, the file title inside a step stepped
+        down to `text-title`, and this line took the display step.
+
+        It names the step the way its list row does — concepts first — so the row and the
+        pane agree on what was picked. The author's words follow as the second line without
+        their conventional-commit code, and the meta line carries a short id to copy and a
+        date in the reader's locale instead of a 40-character hash and an ISO timestamp.
+
+        Round three (2026-09-25): the page title went back to the display step every
+        destination's h1 uses, which left two 23px lines 50px apart and no winner. The
+        selection now wins by size, one ramp step above the page title — `text-hero`, the
+        step the Insights brief headline already takes under its own display-size page title
+        (BriefTab.tsx) — at the signature weight, so the larger line does not also shout.
+      */}
+      <header className="flex flex-none flex-col gap-1.5 px-5 pt-5 pb-4">
+        <h2
           data-testid="atlas-git-detail-headline"
-          className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
+          title={subject}
+          /* Bounded by the document column's measure, balanced so a two-line sentence does not
+             leave one word alone on its second line. */
+          className="max-w-[var(--measure-doc-column)] text-balance text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
         >
-          {headline ?? subject}
-        </p>
-        <p className="font-mono text-caption break-all text-[color:var(--color-text-quaternary)]">
-          {headline ? <>{subject} · </> : null}
-          {t("historyItemDetail", { hash })} ·{" "}
-          {/* The reader's clock, not git's wire format: `2026-09-12T06:00:00.000Z` sat on
-              /ko as the only English-shaped line on the screen. The instant itself stays
-              machine-readable in `dateTime`. */}
-          <time dateTime={isoTime}>{absoluteTime}</time> · {relativeTime}
+          {title}
+        </h2>
+        {byline ? (
+          <p
+            data-testid="atlas-git-detail-byline"
+            className="text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
+          >
+            {byline}
+          </p>
+        ) : null}
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-[color:var(--color-text-tertiary)]">
+          <button
+            type="button"
+            data-testid="atlas-git-detail-hash"
+            onClick={() => void copyHash(hash)}
+            aria-label={t("hashCopy", { hash })}
+            title={t("hashCopy", { hash })}
+            className={controlClass({
+              // `md`, the size of every other door in this pane; `-ml-2.5` cancels its
+              // inline padding so the id starts on the headline's line.
+              shape: "chip",
+              size: "md",
+              tone: "secondary",
+              hoverInk: "strong",
+              hoverBorder: "strong",
+              className: "-ml-2.5 border-transparent font-mono tabular-nums",
+            })}
+          >
+            {hashState === "copied" ? t("webCopied") : shortHash(hash)}
+          </button>
+          <time dateTime={isoTime} className="tabular-nums">
+            {dateLabel}
+          </time>
+          <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+          <span>{relativeTime}</span>
         </p>
       </header>
 
@@ -282,6 +389,10 @@ export function CommitDetail({
             type="button"
             data-testid={`atlas-git-lens-${id}`}
             aria-selected={lens === id}
+            /* A lens with nothing in it is a count, not a place to go (review 2026-09-25:
+               "Concepts changed 0" stayed pressable and opened onto one empty sentence).
+               It stays in the strip, so the zero is still said, but it cannot be chosen. */
+            disabled={(id === "concepts" ? concepts.length : files.length) === 0}
             onClick={() => setLens(id)}
             className={controlClass({ shape: "segment", size: "md", tone: "muted", className: "-mb-px min-h-9 gap-1.5 rounded-none border-b-2 border-transparent px-2.5 hover:text-[color:var(--color-text-primary)] aria-selected:border-[color:var(--color-indigo-brand)] aria-selected:font-[var(--font-weight-signature)] aria-selected:text-[color:var(--color-text-primary)]" })}
           >
@@ -327,44 +438,15 @@ export function CommitDetail({
                   ))}
                 </div>
               </div>
-              {focusedFile ? (
-                <div className="px-5 pt-3">
-                  {/* A step that deleted the document holds no content to put back, so the
-                      door is not drawn — but its absence is said, not left silent: the person
-                      is looking at a concept and would otherwise read the missing door as a
-                      missing feature (installed-app walk, 2026-09-19). The document's own
-                      steps below still hold its content. */}
-                  {focusedFile.status === "deleted" ? (
-                    <p
-                      data-testid="atlas-git-restore-absent"
-                      className="text-caption leading-label text-[color:var(--color-text-quaternary)]"
-                    >
-                      {t("restoreAbsentDeleted")}
-                    </p>
-                  ) : null}
-                  {focusedFile.status !== "deleted" ? (
-                  <RestoreDock
-                    t={t}
-                    path={focusedFile.path}
-                    label={t("restoreConceptDoc", { path: focusedFile.path })}
-                    when={relativeTime}
-                    pending={pendingDelta.get(focusedFile.path) ?? null}
-                    others={Math.max(0, files.length - 1)}
-                    busy={restoreBusy}
-                    onRestore={onRestore}
-                  />
-                  ) : null}
-                  <DocumentHistory
-                    t={t}
-                    vaultPath={vaultPath}
-                    path={focusedFile.path}
-                    currentHash={hash}
-                    whenOf={whenOf}
-                    headlineOf={headlineOf}
-                    onJump={onJumpToCommit}
-                  />
-                </div>
-              ) : null}
+              {/*
+                Card first, then the document's own timeline (round three, 2026-09-25). The
+                card names the concept and where it is written down — once. The line that used
+                to sit above the history ("This concept's document capabilities/checkout.md")
+                printed the same slug the card's two fact cells printed again, three times on
+                the screen's main view; it is gone, and the restore door moved onto the
+                history's own heading, beside the versions it chooses between. The files lens
+                draws the door in exactly the same place.
+              */}
               {focused ? (
                 <Section label={t("egoHeading")} note={t("egoHint")}>
                   <ConceptEgoCard
@@ -374,6 +456,20 @@ export function CommitDetail({
                     onSelect={setFocusedConceptId}
                   />
                 </Section>
+              ) : null}
+              {focusedFile ? (
+                <div className="px-5 pb-4">
+                  <DocumentHistory
+                    t={t}
+                    vaultPath={vaultPath}
+                    path={focusedFile.path}
+                    currentHash={hash}
+                    whenOf={whenOf}
+                    stepTitleOf={stepTitleOf}
+                    onJump={onJumpToCommit}
+                    action={restoreDoor(focusedFile)}
+                  />
+                </div>
               ) : null}
             </>
           ) : (
@@ -416,35 +512,6 @@ export function CommitDetail({
               ))}
             </ul>
 
-            {/* A file this commit deleted has no content at this commit to restore; the door
-                would only open on a refusal, so it is not drawn. The document's own history
-                still lists the steps that hold its content. */}
-            {activeFile ? (
-              <div className="px-5 pt-3">
-                {files.find((file) => file.path === activeFile)?.status !== "deleted" ? (
-                <RestoreDock
-                  t={t}
-                  path={activeFile}
-                  label={null}
-                  when={relativeTime}
-                  pending={pendingDelta.get(activeFile) ?? null}
-                  others={Math.max(0, files.length - 1)}
-                  busy={restoreBusy}
-                  onRestore={onRestore}
-                />
-                ) : null}
-                <DocumentHistory
-                  t={t}
-                  vaultPath={vaultPath}
-                  path={activeFile}
-                  currentHash={hash}
-                  whenOf={whenOf}
-                  headlineOf={headlineOf}
-                  onJump={onJumpToCommit}
-                />
-              </div>
-            ) : null}
-
             {activeDocument ? (
               /*
                * Keyed by hash and path: a new step or a new file is a new document, so the
@@ -455,7 +522,7 @@ export function CommitDetail({
               <div
                 key={`${hash}:${activeDocument.entry.path}:${diff === null ? "reading" : "read"}`}
                 data-testid="atlas-git-commit-diff"
-                className="flex min-h-0 flex-1 flex-col"
+                className="flex min-h-0 flex-none flex-col"
               >
                 <DocumentChangeReader
                   t={t}
@@ -463,6 +530,26 @@ export function CommitDetail({
                   document={activeDocument}
                   fallback={activeFallback}
                   source={hash}
+                />
+              </div>
+            ) : null}
+            {/* Subject first, then its history (round four, 2026-09-25). The document's other
+                steps and the restore door sat between the chooser and the document they refer
+                to, so the timeline was read before its subject and the reader's own title sat
+                further down as a smaller heading. The reader now follows its chooser, and the
+                history with its door closes the document — the door restores what was just
+                read. The concepts lens keeps the same order: card, then history. */}
+            {activeEntry ? (
+              <div className="px-5 pb-4">
+                <DocumentHistory
+                  t={t}
+                  vaultPath={vaultPath}
+                  path={activeEntry.path}
+                  currentHash={hash}
+                  whenOf={whenOf}
+                  stepTitleOf={stepTitleOf}
+                  onJump={onJumpToCommit}
+                  action={restoreDoor(activeEntry)}
                 />
               </div>
             ) : null}
@@ -483,7 +570,6 @@ export function CommitDetail({
 function RestoreDock({
   t,
   path,
-  label,
   when,
   pending,
   others,
@@ -492,8 +578,6 @@ function RestoreDock({
 }: {
   t: (key: string, values?: Record<string, string | number>) => string;
   path: string;
-  /** A lead-in naming whose document this is, or `null` when the file list already says. */
-  label: string | null;
   when: string;
   pending: { added: number; removed: number } | null;
   others: number;
@@ -501,17 +585,14 @@ function RestoreDock({
   onRestore: (path: string, others: number) => Promise<boolean>;
 }) {
   return (
-    <div className="flex flex-col gap-2" data-testid="atlas-git-restore-dock">
+    // Armed, the confirm takes the heading row's full width, under the heading it belongs to.
+    <div
+      className="flex min-w-0 flex-col gap-2 has-[[data-testid=atlas-git-restore-step]]:basis-full"
+      data-testid="atlas-git-restore-dock"
+    >
       <DocumentConfirmStep
         testIdPrefix="atlas-git-restore"
         doorLabel={t("restoreAction")}
-        lead={
-          label ? (
-            <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-              {label}
-            </span>
-          ) : null
-        }
         confirmLabel={t("restoreButton")}
         busyLabel={t("restoreRunning")}
         cancelLabel={t("cancelButton")}
@@ -538,6 +619,8 @@ function RestoreDock({
 
 /** How many of a document's other steps are read; one more tells whether older ones exist. */
 const DOCUMENT_HISTORY_LIMIT = 12;
+/** Rows a document's history shows before "N more". */
+const DOCUMENT_HISTORY_PREVIEW = 3;
 
 /**
  * The other steps that changed this one document — a meaning's own timeline, read from git
@@ -550,16 +633,19 @@ function DocumentHistory({
   path,
   currentHash,
   whenOf,
-  headlineOf,
+  stepTitleOf,
   onJump,
+  action = null,
 }: {
   t: (key: string, values?: Record<string, string | number>) => string;
   vaultPath: string | null;
   path: string;
   currentHash: string;
   whenOf: (isoTime: string) => string;
-  headlineOf: (subject: string) => string | null;
+  stepTitleOf: (commit: GitCommitInfo) => string;
   onJump: (hash: string) => void;
+  /** The document's restore door, drawn on the heading beside the versions it chooses between. */
+  action?: React.ReactNode;
 }) {
   const [rows, setRows] = useState<GitCommitInfo[] | null>(null);
   const [older, setOlder] = useState(false);
@@ -583,19 +669,68 @@ function DocumentHistory({
   }, [vaultPath, path]);
 
   const others = useMemo(() => (rows ?? []).filter((commit) => commit.hash !== currentHash), [rows, currentHash]);
-  if (rows === null) return null;
+  /*
+   * Three by default (review 2026-09-25): eleven 28px rows pushed the concept's ego drawing,
+   * the richest part of this pane, below the fold on a 949px window. The rest are one press
+   * away and counted, never silently dropped.
+   */
+  const [expanded, setExpanded] = useState(false);
+  const listRef = useRef<HTMLUListElement>(null);
+  /*
+   * "Show fewer" leaves the way "Show N more" arrived (round four, 2026-09-25): the rows it
+   * removes fade out on the same fast curve before the list shortens, instead of vanishing in
+   * one frame. Opacity only, so the reduced-motion reading is the same fade without the
+   * stagger; where the Web Animations API is missing, the list simply shortens.
+   */
+  const collapse = () => {
+    const leaving = [...(listRef.current?.querySelectorAll<HTMLLIElement>("li[data-extra]") ?? [])];
+    if (leaving.length === 0 || typeof leaving[0].animate !== "function") {
+      setExpanded(false);
+      return;
+    }
+    const style = getComputedStyle(leaving[0]);
+    // The token computes as ".12s" in the browser, not "120ms"; read either unit.
+    const raw = style.getPropertyValue("--motion-fast").trim();
+    const value = Number.parseFloat(raw);
+    const duration = Number.isFinite(value) ? (raw.endsWith("ms") ? value : value * 1000) : 120;
+    const easing = style.getPropertyValue("--motion-ease").trim() || "ease";
+    const runs = leaving.map((row) =>
+      row.animate([{ opacity: 1 }, { opacity: 0 }], { duration, easing, fill: "forwards" }).finished,
+    );
+    void Promise.allSettled(runs).then(() => setExpanded(false));
+  };
+  // Until the history is read (or where it cannot be, on the web) the door still stands.
+  if (rows === null) return action ? <div className="flex pt-4">{action}</div> : null;
+  const shown = expanded ? others : others.slice(0, DOCUMENT_HISTORY_PREVIEW);
+  const hidden = others.length - shown.length;
   return (
-    <section className="flex flex-col gap-1.5 pt-3" data-testid="atlas-git-document-history">
-      <h3 className="flex items-baseline gap-2 text-label text-[color:var(--color-text-tertiary)]">
-        {others.length > 0 ? t("docHistoryTitle") : t("docHistoryOnly")}
-        {others.length > 0 ? (
-          <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">{others.length}</b>
-        ) : null}
-      </h3>
+    <section className="flex flex-col gap-1 pt-4" data-testid="atlas-git-document-history">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h3 className="flex items-baseline gap-2 text-label text-[color:var(--color-text-tertiary)]">
+          {others.length > 0 ? t("docHistoryTitle") : t("docHistoryOnly")}
+          {others.length > 0 ? (
+            <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">{others.length}</b>
+          ) : null}
+        </h3>
+        {action}
+      </div>
       {others.length > 0 ? (
-        <ul className="flex flex-col">
-          {others.map((commit) => (
-            <li key={commit.hash}>
+        <ul ref={listRef} className="flex flex-col">
+          {shown.map((commit, index) => (
+            <li
+              key={commit.hash}
+              data-extra={index >= DOCUMENT_HISTORY_PREVIEW ? "true" : undefined}
+              /* "Show N more" was a hard cut (review 2026-09-25). The rows it adds arrive on
+                 the screen's one arrival curve, staggered and capped at eight like the step
+                 list; under reduced motion they crossfade together with no stagger. The first
+                 three rows were already there and do not replay. */
+              className={index >= DOCUMENT_HISTORY_PREVIEW ? "git-fade-in" : undefined}
+              style={
+                index >= DOCUMENT_HISTORY_PREVIEW
+                  ? ({ ["--git-row-index" as string]: Math.min(index - DOCUMENT_HISTORY_PREVIEW, 7) } as CSSProperties)
+                  : undefined
+              }
+            >
               <button
                 type="button"
                 data-testid="atlas-git-document-step"
@@ -607,20 +742,43 @@ function DocumentHistory({
                   tone: "secondary",
                   hoverInk: "strong",
                   hoverSurface: "lift",
-                  className: "grid w-full grid-cols-[6rem_minmax(0,1fr)] items-center gap-3 rounded-none px-0",
+                  /* The time column is the list's own `--git-when-w`, so a step reads with the
+                     same rhythm here as on the left; the old 6rem left a 93px hole before the
+                     name. */
+                  className: "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1fr)] items-center gap-3 rounded-none px-0",
                 })}
               >
                 <span className="truncate text-label tabular-nums text-[color:var(--color-text-tertiary)]">
                   {whenOf(commit.isoTime)}
                 </span>
-                <span className="min-w-0 truncate text-label">{headlineOf(commit.subject) ?? commit.subject}</span>
+                <span className="min-w-0 truncate text-body" title={commit.subject}>
+                  {stepTitleOf(commit)}
+                </span>
               </button>
             </li>
           ))}
         </ul>
       ) : null}
-      {older ? (
-        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">{t("docHistoryOlder")}</p>
+      {hidden > 0 || (expanded && others.length > DOCUMENT_HISTORY_PREVIEW) ? (
+        <button
+          type="button"
+          data-testid="atlas-git-document-history-more"
+          aria-expanded={expanded}
+          onClick={() => (expanded ? collapse() : setExpanded(true))}
+          className={controlClass({
+            shape: "chip",
+            size: "md",
+            tone: "secondary",
+            hoverInk: "strong",
+            hoverBorder: "strong",
+            className: "-ml-2.5 self-start border-transparent",
+          })}
+        >
+          {expanded ? t("docHistoryLess") : t("docHistoryMore", { count: hidden })}
+        </button>
+      ) : null}
+      {older && (expanded || others.length <= DOCUMENT_HISTORY_PREVIEW) ? (
+        <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">{t("docHistoryOlder")}</p>
       ) : null}
     </section>
   );

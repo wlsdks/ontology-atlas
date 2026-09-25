@@ -185,7 +185,7 @@ import { describe, expect, it } from 'vitest';
  *
  * | Category | Count | What's missing / Why outside? |
  * |---|---:|---|
- * | **[Registration] `standard-button`** | 11 | Shape yielded by value layer. DownloadPage 7 · AgentClientButtons 1 · Architecture empty-state exit 1 · Two 404 files 2. |
+ * | **[Registration] `standard-button`** | 10 | Shape yielded by value layer. DownloadPage 7 · Architecture empty-state exit 1 · Two 404 files 2. |
  * | **[Registration] `chrome-token`** | 3 | AtlasGitPanel 2(`--git-setup-action-height`) · TopologyReviewLink 1(`--chrome-tile-size`). Both have multiple declarations, passing token check. |
  * | **[Registration] `no-spec`** | 3 | MacosDownloadLink(passthrough) · PublicQuickActions 2(`inline-flex` wrapper). |
  * | **[Registration] `value-layer-peer`** | 1 | `<Link>` branch of `ChromeTile`. |
@@ -1111,7 +1111,10 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // through `buttonVariants` (a full reload after a render failure), so `a` 8→9.
 // 2026-09-25: Automations' "Get the app" and "Open Library check history" became standard
 // buttons (primary, ghost sm) instead of text links, so `Link` 19→21.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 21, a: 9 };
+// 2026-09-25: Check history's first-run door to Automations is one `<Link>` through
+// `buttonVariants`, so `Link` 21→22.
+// 2026-09-25 (agents polish): AgentClientButtons' outline anchor became a `<Button>`, so `a` 9→8.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 22, a: 8 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1180,13 +1183,6 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
       '그건 이 게이트가 아니라 다음 디자인 라운드의 일이다 — 등재가 그 결함을 승인하지는 않는다.',
   },
   {
-    file: 'src/features/docs-vault-local/ui/AgentClientButtons.tsx',
-    count: 1,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
-  },
-  {
     file: 'src/views/automations/ui/AutomationsPage.tsx',
     count: 2,
     claim: 'standard-button',
@@ -1212,6 +1208,18 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
       '`<Button variant="outline" size="sm">` — the two must be one control at two ' +
       'tags. `control-class.ts` declares it "does not replace standard buttons", so ' +
       'moving this to `controlClass` would break that rule rather than honour it.',
+  },
+  {
+    file: 'src/views/library/ui/LibraryRounds.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'Check history before any round exists (2026-09-25): the page\'s one next step, ' +
+      '"Schedule in Automations". It is a `<Link>` because it navigates, and ' +
+      '`cn(buttonVariants(), …)` because it stands in Work scope\'s starting-point frame ' +
+      'where the same moment is a primary `<Button>`; the two empty tabs must press alike. ' +
+      'The value layer yields the standard button, so `controlClass` cannot make it.',
   },
   {
     file: 'src/views/terminal-state/ui/NotFoundScreen.tsx',
@@ -1336,6 +1344,9 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // has no standard-button anchor shape, so the row is registered like the 404's own.
 // 28 → 30 (2026-09-25): Automations' two navigating actions, registered for the reason their
 // row states — the standard-button shape, at the two tags a navigating button needs.
+// 30 → 31 (2026-09-25): Check history's first-run door, the standard-button shape again.
+// 31 → 30 (2026-09-25, agents polish): `AgentClientButtons` left the anchor census — its
+// control is a `<Button>` now, so its row is gone.
 const BASELINE_ANCHOR_REGISTERED = 30;
 
 /** **Only this number may fall.** The current anchor total (30) minus registered (30). */

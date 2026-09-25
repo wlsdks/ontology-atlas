@@ -159,7 +159,7 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
         <div data-library-clear className="self-start rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
           <ul className={cn('flex flex-wrap gap-x-6 gap-y-2', beside && 'xl:flex-col xl:gap-3')}>
             {clear.map((card) => (
-              <li key={card.key} data-library-clear-item={card.key} className="flex items-baseline gap-2 break-keep text-body tabular-nums text-[color:var(--color-text-secondary)]">
+              <li key={card.key} data-library-clear-item={card.key} className="flex items-baseline gap-2 text-body tabular-nums text-[color:var(--color-text-secondary)]">
                 <span aria-hidden className="h-1.5 w-1.5 flex-none translate-y-[-0.15em] rounded-full bg-[color:var(--color-text-quaternary)]" />
                 <span className="min-w-0">{card.none}</span>
               </li>
@@ -167,7 +167,7 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
           </ul>
         </div>
       ) : null}
-      {complete ? <p data-library-end className="col-span-full flex items-center gap-3 pt-2 break-keep text-label text-[color:var(--color-text-tertiary)]">
+      {complete ? <p data-library-end className="col-span-full flex items-center gap-3 pt-2 text-label text-[color:var(--color-text-tertiary)]">
         <span aria-hidden className="h-px w-6 flex-none bg-[color:var(--color-border-strong)]" />
         <span className="min-w-0">{t('end')}</span>
       </p> : null}
@@ -205,7 +205,7 @@ function StagePreview({ kind }: { kind: 'source' | 'page' | 'check' }) {
     return (
       <span data-relationship-port className="relative flex min-h-24 w-full max-w-48 flex-col gap-3 rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-4 text-left shadow-[var(--shadow-elevation-1)] max-sm:max-w-none">
         <span className="text-label text-[color:var(--color-text-tertiary)]">{t('stages.source.example')}</span>
-        <span className="break-keep text-body leading-prose text-[color:var(--color-text-secondary)] [overflow-wrap:anywhere]">{t('sourceExcerpt')}</span>
+        <span className="text-body leading-prose text-[color:var(--color-text-secondary)] [overflow-wrap:anywhere]">{t('sourceExcerpt')}</span>
       </span>
     );
   }
@@ -214,7 +214,7 @@ function StagePreview({ kind }: { kind: 'source' | 'page' | 'check' }) {
       <span data-relationship-port className="flex min-w-0 w-full max-w-80 flex-col rounded-panel border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-elevated)] p-4 text-left shadow-[var(--shadow-elevation-2)] sm:p-5">
         <span className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]">{t('pageEyebrow')}</span>
         <span className="mt-3 break-words text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] sm:text-display">{t('pageExampleTitle')}</span>
-        <span className="mt-3 break-keep text-body-lg text-[color:var(--color-text-secondary)] [overflow-wrap:anywhere]">{t('pageExampleBody')}</span>
+        <span className="mt-3 text-body-lg text-[color:var(--color-text-secondary)] [overflow-wrap:anywhere]">{t('pageExampleBody')}</span>
         <span className="mt-5 h-px w-full bg-[color:var(--color-divider)]" />
         <span className="mt-3 border-l-2 border-[color:var(--color-indigo-line-a32)] pl-3 text-body text-[color:var(--color-indigo-text-soft)]">{t('stages.page.citation')}</span>
       </span>
@@ -245,7 +245,7 @@ function Card({ card, lead, wide, footer }: { card: LibraryCard; lead: boolean; 
       )}
     >
       <h3 className="text-body-lg font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-primary)]">{card.title}</h3>
-      <p className="mt-1 break-keep text-label text-[color:var(--color-text-tertiary)]">{card.caption}</p>
+      <p className="mt-1 text-label text-[color:var(--color-text-tertiary)]">{card.caption}</p>
       <div className="mt-3">{card.body}</div>
       <div className="mt-auto pt-3">{footer}</div>
     </div>

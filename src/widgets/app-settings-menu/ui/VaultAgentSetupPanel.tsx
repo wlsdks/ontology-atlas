@@ -898,9 +898,9 @@ export function VaultAgentSetupPanel({
                     : t('agentSetup.rootSummaryMissing')}
                 </p>
               </InfoHint>
-              {/* The header slot's one action wears the Agents tab's grammar for the same slot
-                  (`Chip lg` + `DETAIL_TOGGLE_CHIP`, as "check again"): it was a 24px chip at 9.5px
-                  beside a 32px, 12.5px button in the sibling tab (2026-09-25 sweep). */}
+              {/* The same control as the agents tab's 「check again」 in the same slot
+                  (2026-09-25): a 24px/9.5px chip here made the heading's action visibly shrink
+                  when the tab changed, and 9.5px is below this sheet's type floor. */}
               <Chip
                 size="lg"
                 tone="secondary"
@@ -951,11 +951,12 @@ export function VaultAgentSetupPanel({
                   : client.files.join(' · ')
               }
               captionTone={foreignConfig ? 'warning' : 'neutral'}
-              /* One column: every control is `w-full` inside the same fixed slot, so the four
-                 buttons share a left edge instead of a ragged one (owner detail rule, 2026-09-12:
-                 a group of controls fills a grid). 144px since the labels became verbs alone
-                 (2026-09-19); the row's own label and file carry the tool's name. */
-              control={<span className="flex w-36 max-w-full">{clientRows[client.id]}</span>}
+              /* The control stands at its natural width, right-aligned like every runtime row on
+                 the agents tab (round 3, 2026-09-25). The fixed 144px slot this replaced kept
+                 the four edges flush only by stretching a bold, filled button across it — a
+                 second control grammar one tab away from the first. Four resting "Connect" chips
+                 carry the same verb and glyph, so they still share both edges. */
+              control={clientRows[client.id]}
             />
             );
           })
@@ -991,25 +992,10 @@ export function VaultAgentSetupPanel({
           >
             {tc('step3Title')}
           </h2>
-          <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
-            {/* The count names its scope (2026-09-25 sweep): "0/2" under a panel that lists four
-                tools read as two of the four being counted. Atlas reads back only these files;
-                the other tools' files it writes and never reads, which the footnote below says. */}
-            {t('agentSetup.statusSummary', {
-              tools: agentSetupConnections.map(({ label }) => label).join(' · '),
-              ready: agentSetupReadyCount,
-              total: agentSetupFiles.length,
-            })}
-            {nextMissingAgentConfig ? (
-              <span className="text-[color:var(--color-amber-source-text-a95)]">
-                {' · '}
-                {agentStatus[nextMissingAgentConfig.key]
-                  ? t('agentSetup.nextInvalid', { path: nextMissingAgentConfig.path })
-                  : t('agentSetup.nextMissing', { path: nextMissingAgentConfig.path })}
-              </span>
-            ) : null}
-          </p>
 
+          {/* Restarting "the tool you just connected" means nothing while no file exists yet, so
+              the step waits for the first one (2026-09-25). */}
+          {agentSetupReadyCount > 0 ? (
           <section data-testid="agent-setup-step-2" className="mt-4">
             <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               {tc('step2Title')}
@@ -1018,6 +1004,7 @@ export function VaultAgentSetupPanel({
               {tc('step2Desc')}
             </p>
           </section>
+          ) : null}
 
           {/*
             ⚠️ **A section may not be named after the dialog it is in** (2026-09-20). This heading
@@ -1033,17 +1020,49 @@ export function VaultAgentSetupPanel({
               {t('agentSetup.connectionStatusHeading')}
             </h3>
               <div className="divide-y divide-[color:var(--color-divider)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)]">
-                {agentSetupReady ? (
-                  <div className="flex items-center gap-2 px-2.5 py-2">
-                    <span
-                      aria-hidden
-                      className="h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-status-success)]"
-                    />
-                    <span className="min-w-0 flex-1 break-keep text-body text-[color:var(--color-text-secondary)]">
-                      {t('agentSetup.connectionCheckReady')}
-                    </span>
+                {/*
+                  ⚠️ **One statement of the state, in the box that is about it** (round 3,
+                  2026-09-25). The dialog used to open with an 11px subtitle stacking three facts
+                  (whose files, how many, what next) and then this row said the zero state again
+                  in a sentence 70px lower. The count now lives here once, naming whose files it
+                  counts (Atlas reads back only Claude Code's and Codex's, so a bare "0/2" would
+                  disagree with the four tools behind the dialog), and the next step is the line
+                  under it. When nothing is missing there is no second line: the restart step
+                  above already says what comes after a file exists.
+                */}
+                <div className="flex items-start gap-2 px-2.5 py-2">
+                  <span
+                    aria-hidden
+                    className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                    style={{
+                      backgroundColor: agentSetupReady
+                        ? 'var(--color-status-success)'
+                        : 'var(--color-text-quaternary)',
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p
+                      data-testid="agent-setup-status-summary"
+                      className="break-keep text-body text-[color:var(--color-text-secondary)]"
+                    >
+                      {t('agentSetup.statusSummary', {
+                        ready: agentSetupReadyCount,
+                        total: agentSetupFiles.length,
+                        tools: agentSetupConnections.map((connection) => connection.label).join(' · '),
+                      })}
+                    </p>
+                    {nextMissingAgentConfig ? (
+                      <p
+                        data-testid="agent-setup-status-next"
+                        className="mt-0.5 break-keep text-label leading-prose text-[color:var(--color-amber-source-text-a95)]"
+                      >
+                        {agentStatus[nextMissingAgentConfig.key]
+                          ? t('agentSetup.nextInvalid', { path: nextMissingAgentConfig.path })
+                          : t('agentSetup.nextMissing', { path: nextMissingAgentConfig.path })}
+                      </p>
+                    ) : null}
                   </div>
-                ) : null}
+                </div>
                 <dl className="grid gap-1 px-2.5 py-2">
                   {agentSetupConnections.map(({ key, label, check }) => (
                     <div key={key} className="flex items-baseline justify-between gap-2">
