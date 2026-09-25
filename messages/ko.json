@@ -7143,7 +7143,7 @@
       "journalSections": "기록 종류",
       "knowledgeBook": "읽기 기록",
       "personalBook": "함께한 기억",
-      "controls": "WASD / 방향키로 이동 · 바닥 클릭으로 걷기 · E 상호작용 · I 가방 · K 스킬 · M 지도 · J 기록 · Q 지식 파동 · 1 물약 · R 휴식 · Esc 창 닫기 · B 축복 · Space 회피 · N 몬스터 도감 · L 의뢰 · T 학습 원정",
+      "controls": "WASD / 방향키로 이동 · 바닥 클릭으로 걷기 · 몬스터 클릭으로 준비된 지식 파동 사용 · E 상호작용 · I 가방 · K 스킬 · M 지도 · J 기록 · Q 지식 파동 · 1 물약 · R 휴식 · Esc 창 닫기 · B 축복 · Space 회피 · N 몬스터 도감 · L 의뢰 · T 학습 원정",
       "panel": {
         "inventory": "여행자의 가방",
         "skills": "별빛의 기술",
@@ -7299,6 +7299,7 @@
       },
       "dodge": "공격 회피 (Space)",
       "dodgeHint": "다음 공격을 피합니다. 다시 사용하려면 4턴을 기다려요.",
+      "cooldownTurns": "{count}턴 후 사용 가능",
       "waveHint": "공격력 ×{multiplier} 피해 · 재사용 {cooldown}턴",
       "incoming": "공격 예고 · Space 회피",
       "cleared": "지난 원정 · 수호자 격파! 보상을 간직했어요. M으로 다음 원정을 정해요.",

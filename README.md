@@ -64,6 +64,8 @@ and travels through 36 destinations across six fictional regions, meeting 108 or
 creatures. Five-floor expeditions offer three-way blessings, an active dodge,
 and a final guardian. A closer pixel combat floor keeps the fox and creature on
 the same ground; a visible incoming strike gives Space dodge a timing cue.
+Click or tap a creature to cast a ready knowledge wave; action slots show the
+remaining cooldown turns, and Space moves the fox immediately during a warning.
 Plan a rest, supply, or elite path for the next floor. Twelve
 one-time quests reward recorded project work with materials for guaranteed personal
 equipment enhancement. Ordinary activities can unlock every forge tier; verified

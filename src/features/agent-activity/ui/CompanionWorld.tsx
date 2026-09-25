@@ -23,8 +23,8 @@ const ENEMY_X=620,ENEMY_Y=535,FIELD_X=420,MOBILE_FIELD_X=500;
 const visible=()=>document.visibilityState==='visible';const serverVisible=()=>false;
 const subscribe=(listener:()=>void)=>{document.addEventListener('visibilitychange',listener);return()=>document.removeEventListener('visibilitychange',listener);};
 export type CompanionWorldHandle={focus:()=>void;key:(code:string,down:boolean)=>boolean;interact:()=>void;rest:()=>void};
-type Props={game:CompanionGame;construction:ConstructionCounts;available?:boolean;active:boolean;blocked:boolean;onInteract:(kind:WorldInteraction)=>void;onStrike:()=>void;onNear:(kind:WorldInteraction|null)=>void};
-export const CompanionWorld=forwardRef<CompanionWorldHandle,Props>(function CompanionWorld({game,construction,available=true,active,blocked,onInteract,onStrike,onNear},ref){
+type Props={game:CompanionGame;construction:ConstructionCounts;available?:boolean;active:boolean;blocked:boolean;strikeBlocked:boolean;onInteract:(kind:WorldInteraction)=>void;onStrike:()=>void;onNear:(kind:WorldInteraction|null)=>void};
+export const CompanionWorld=forwardRef<CompanionWorldHandle,Props>(function CompanionWorld({game,construction,available=true,active,blocked,strikeBlocked,onInteract,onStrike,onNear},ref){
  const t=useTranslations('companion.world');const reduced=usePrefersReducedMotion();const pageVisible=useSyncExternalStore(subscribe,visible,serverVisible);
  const viewport=useRef<HTMLDivElement>(null);const callbacks=useRef({onInteract,onStrike,onNear});
  useEffect(()=>{callbacks.current={onInteract,onStrike,onNear};},[onInteract,onStrike,onNear]);
@@ -72,10 +72,13 @@ export const CompanionWorld=forwardRef<CompanionWorldHandle,Props>(function Comp
  const map=adventureMap(game.area);const scene=map?mapBackground(map):null;const species=currentSpecies(game);
  const shownPose=game.mode==='expedition'&&pose!=='walk'?battlePose:pose;
  const combatMotion=game.mode==='expedition'&&active&&pageVisible&&!reduced&&!blocked;
+ const canStrike=game.mode==='expedition'&&!blocked&&!strikeBlocked&&game.cooldown===0&&game.phase!=='rest'&&game.phase!=='loot';
  const strikeDirection=x.get()>ENEMY_X?-1:1;
  const attackOrigin={x:x.get()+strikeDirection*35,y:y.get()-52};
- return <div ref={viewport} className={styles.worldViewport} role="application" tabIndex={0} aria-label={t('controls')} data-testid="companion-world" data-near={near??''} data-mode={game.mode} data-guard={game.guard>0} data-playing={active&&pageVisible&&!reduced&&!blocked} style={{'--companion-turn-ms':`${TURN_MS}ms`} as CSSProperties} onPointerDown={event=>{
-  if(blocked||(event.target as HTMLElement).closest('button'))return;viewport.current?.focus();const r=event.currentTarget.getBoundingClientRect();const point={x:(event.clientX-r.left-cameraX.get())/zoom.get(),y:(event.clientY-r.top-cameraY.get())/zoom.get()};const safe=moveInWorld({x:x.get(),y:y.get()},point.x-x.get(),point.y-y.get(),game.mode==='expedition');lastInput.current=performance.now();goal.current={point:safe};begin.current();
+ return <div ref={viewport} className={styles.worldViewport} role="application" tabIndex={0} aria-label={t('controls')} data-testid="companion-world" data-near={near??''} data-mode={game.mode} data-guard={game.guard>0} data-playing={active&&pageVisible&&!reduced&&!blocked} style={{'--companion-turn-ms':`${TURN_MS}ms`,'--strike-direction':strikeDirection} as CSSProperties} onPointerDown={event=>{
+  if(event.button!==0||blocked||(event.target as HTMLElement).closest('button'))return;viewport.current?.focus();lastInput.current=performance.now();
+  if(game.mode==='expedition'&&(event.target as HTMLElement).closest('[data-companion-target]')){if(canStrike)callbacks.current.onStrike();return;}
+  const r=event.currentTarget.getBoundingClientRect();const point={x:(event.clientX-r.left-cameraX.get())/zoom.get(),y:(event.clientY-r.top-cameraY.get())/zoom.get()};const safe=moveInWorld({x:x.get(),y:y.get()},point.x-x.get(),point.y-y.get(),game.mode==='expedition');goal.current={point:safe};begin.current();
  }}>
   <link rel="preload" as="image" href={withBasePath('/brand/companion-fox-walk.webp')}/>
   <motion.div className={styles.worldPlane} style={{width:WORLD_WIDTH,height:WORLD_HEIGHT,x:cameraX,y:cameraY,scale:zoom,transformOrigin:'0 0'}}>
@@ -95,7 +98,7 @@ export const CompanionWorld=forwardRef<CompanionWorldHandle,Props>(function Comp
     <span key={`impact-${game.attackId}`} className={styles.impactBurst} style={{left:ENEMY_X,top:ENEMY_Y-56}} aria-hidden="true"/>
    </>:null}
    {game.mode==='expedition'&&game.phase==='loot'?<div key={game.attackId} className={styles.lootReward} style={{left:ENEMY_X,top:ENEMY_Y-60}} aria-hidden="true"><CompanionItem index={6}/><span>+{victoryReward(game).gold} G · +{victoryReward(game).xp} XP</span></div>:null}
-   {game.mode==='expedition'?<div key={`${game.encounter}-${game.attackId}`} data-testid="companion-enemy" className={styles.worldEnemy} style={{left:ENEMY_X,top:ENEMY_Y}} data-phase={game.phase} data-trait={species?.trait}>{species?<CompanionCreature species={species} large/>:<span className={spriteStyles.monster} data-kind={monsterKind(game)} data-boss={isBoss(game)} aria-hidden="true" style={{backgroundImage:`url(${withBasePath('/brand/companion-monsters.webp')})`}}/>}{game.phase==='attack'?<span key={game.attackId} className={spriteStyles.damage}>−{game.lastDamage}</span>:null}</div>:null}
+   {game.mode==='expedition'?<div key={`${game.encounter}-${game.attackId}`} data-companion-target="" data-testid="companion-enemy" className={styles.worldEnemy} style={{left:ENEMY_X,top:ENEMY_Y}} data-phase={game.phase} data-trait={species?.trait} data-targetable={canStrike}>{species?<CompanionCreature species={species} large/>:<span className={spriteStyles.monster} data-kind={monsterKind(game)} data-boss={isBoss(game)} aria-hidden="true" style={{backgroundImage:`url(${withBasePath('/brand/companion-monsters.webp')})`}}/>}{game.phase==='attack'?<span key={game.attackId} className={spriteStyles.damage}>−{game.lastDamage}</span>:null}</div>:null}
   </motion.div>
  </div>;
 });

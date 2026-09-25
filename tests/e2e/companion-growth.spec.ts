@@ -90,6 +90,37 @@ test('combat cues expose the dodge window, stop behind panels, and respect reduc
  await page.keyboard.press('Space');await expect(world.getByTestId('companion-dodge-telegraph')).toHaveCount(0);
 });
 
+test('clicking a creature spends one ready wave and shows its remaining cooldown',async({page})=>{
+ await openProject(page,'en',false);const dialog=await home(page);await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();
+ await page.clock.pauseAt(new Date());
+ await page.evaluate(()=>{const key=Object.keys(localStorage).find(value=>value.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.phase='approach';game.cooldown=0;game.difficulty=10;game.enemyHp=60;game.lastAt=Date.now();localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});
+ const enemy=dialog.getByTestId('companion-enemy');await expect(enemy).toHaveAttribute('data-targetable','true');
+ const before=await page.evaluate(()=>{const key=Object.keys(localStorage).find(value=>value.startsWith('ontology-atlas:companion-game:v1:'))!;return JSON.parse(localStorage.getItem(key)!).attackId;});
+ await enemy.click();await expect.poll(()=>page.evaluate(()=>{const key=Object.keys(localStorage).find(value=>value.startsWith('ontology-atlas:companion-game:v1:'))!;return JSON.parse(localStorage.getItem(key)!).attackId;})).toBe(before+1);
+ const count=dialog.getByTestId('companion-wave-cooldown');await expect(count).toBeVisible();const first=await count.innerText();expect(Number(first)).toBeGreaterThan(0);
+ await expect(enemy).toHaveAttribute('data-targetable','false');
+ await enemy.click();await expect.poll(()=>page.evaluate(()=>{const key=Object.keys(localStorage).find(value=>value.startsWith('ontology-atlas:companion-game:v1:'))!;return JSON.parse(localStorage.getItem(key)!).attackId;})).toBe(before+1);
+});
+
+test('a failed game save removes the ready pointer attack affordance',async({page})=>{
+ await openProject(page,'en',false);const dialog=await home(page);await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();await page.clock.pauseAt(new Date());
+ const enemy=dialog.getByTestId('companion-enemy');await expect(enemy).toHaveAttribute('data-targetable','true');
+ await page.evaluate(()=>{const original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key.startsWith('ontology-atlas:companion-game:v1:'))throw Error('full');return original.call(this,key,value);};});
+ await enemy.click();await expect(dialog.getByRole('alert')).toBeVisible();await expect(enemy).toHaveAttribute('data-targetable','false');
+ await expect(dialog.getByRole('button',{name:'Knowledge wave ×3',exact:true})).toBeDisabled();
+});
+
+test('Space visibly moves the fox as soon as the dodge is armed',async({page})=>{
+ await openProject(page,'en',false);const dialog=await home(page);await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();await page.clock.pauseAt(new Date());
+ await page.evaluate(()=>{const key=Object.keys(localStorage).find(value=>value.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.phase='attack';game.guard=0;game.dodgeCooldown=0;game.attackId++;game.lastAt=Date.now();localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});
+ const world=dialog.getByTestId('companion-world');await expect(world.getByTestId('companion-dodge-telegraph')).toBeVisible();await world.focus();await page.keyboard.press('Space');
+ await expect(world.getByTestId('companion-dodge-telegraph')).toHaveCount(0);
+ await expect.poll(()=>dialog.getByTestId('companion-player').evaluate(element=>getComputedStyle(element).animationName)).toMatch(/heroEvade$/);
+ await page.emulateMedia({reducedMotion:'reduce'});await page.evaluate(()=>{const key=Object.keys(localStorage).find(value=>value.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.guard=0;game.dodgeCooldown=0;game.lastAt=Date.now();localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});
+ await expect(world.getByTestId('companion-dodge-telegraph')).toBeVisible();await world.focus();await page.keyboard.press('Space');
+ await expect(world.getByTestId('companion-dodge-telegraph')).toHaveCount(0);await expect.poll(()=>dialog.getByTestId('companion-player').evaluate(element=>getComputedStyle(element).animationName)).toBe('none');
+});
+
 test('the game panels retain their controls with doubled text at a desktop viewport',async({page})=>{
  await page.setViewportSize({width:1512,height:900});await openProject(page);const dialog=await home(page);await page.evaluate(()=>document.documentElement.style.fontSize='200%');
  for(const key of ['i','k','m','n','j','e','Shift+Slash','b']){if(key==='b'){await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();}if(key==='e')await study(page);else await page.keyboard.press(key);const content=dialog.getByTestId('companion-content');await expect(content).toBeVisible();const sizes=await content.evaluate(el=>({x:el.scrollWidth-el.clientWidth,y:el.scrollHeight-el.clientHeight}));console.log('DOUBLE_TEXT',key,sizes);expect(sizes.x).toBeLessThanOrEqual(1);expect(sizes.y).toBeLessThanOrEqual(1);await page.keyboard.press('Escape');}
