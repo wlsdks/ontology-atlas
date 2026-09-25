@@ -15,6 +15,7 @@ import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { AcpChatPanel, AcpChatResizeHandle } from "@/widgets/acp-chat-panel";
 import { AnalysisWorkbench, MeaningContext } from "@/widgets/analysis-workbench";
 import dynamic from "next/dynamic";
+import { useMemo, useRef } from "react";
 import { resolveAnalysisFindingTarget } from '../model/analysis-finding-target';
 const VaultAgentPanel = dynamic(
   () => import("@/widgets/vault-agent-panel").then((m) => m.VaultAgentPanel),
@@ -127,6 +128,22 @@ export function TopologyAgentDock({
   } = topologyAnalysisReview;
   const { edgePanelModel, selectedEdge, setAcpRelationPreview } = topologyAuthoring;
   const { chatKnownSlugs, chatKnownRelations, handleChatHoverSlug } = topologyCanvasFocus;
+  /*
+   * The unsent sentence outlives the conversation panel, which this dock unmounts when it closes
+   * idle (to end its agent process). Put away by Escape or the X, a draft used to be gone when
+   * the chip opened the dock again; the Library's dock, which stays mounted, kept it. One folder's
+   * draft, in memory, for this sitting.
+   */
+  const draftRef = useRef<{ folder: string | null; text: string }>({ folder: null, text: "" });
+  const draftStore = useMemo(
+    () => ({
+      read: () => (draftRef.current.folder === gitVaultPath ? draftRef.current.text : ""),
+      write: (text: string) => {
+        draftRef.current = { folder: gitVaultPath, text };
+      },
+    }),
+    [gitVaultPath],
+  );
 
   return (<>
     {llmBridgeAvailable ? (
@@ -327,6 +344,7 @@ export function TopologyAgentDock({
                   prefillRequest={vaultAgentPrefill ?? askPrefill}
                   openingRequest={agentOpeningRequest}
                   requestScopeKey={JSON.stringify([gitVaultPath, 'meaning'])}
+                  draftStore={draftStore}
                   onOpeningRequestSent={(nonce) => setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current)}
                   suggestions={chatSuggestions}
                   onSuggestionAction={handleChatSuggestionAction}

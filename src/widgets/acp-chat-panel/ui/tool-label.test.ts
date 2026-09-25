@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { isVaultTool, labelWithoutRepeatedPath, toolLabel, type ToolLabel } from './tool-label';
+import { isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback, type ToolLabel } from './tool-label';
+import en from '../../../../messages/en.json';
+import ko from '../../../../messages/ko.json';
 
 /**
  * A tool line records **what happened, not a function name.**
@@ -106,5 +108,29 @@ describe('labelWithoutRepeatedPath — 한 줄이 같은 경로를 두 번 찍�
     expect(labelWithoutRepeatedPath(known, '/a/b.md')).toBe(known);
     expect(labelWithoutRepeatedPath(raw('Write /a/b.md'), null)).toEqual(raw('Write /a/b.md'));
     expect(labelWithoutRepeatedPath(raw('Write /a/b.md'), '   ')).toEqual(raw('Write /a/b.md'));
+  });
+});
+
+describe('withKindFallback — an unknown call on our own server reads as its kind', () => {
+  const server = 'atlas-vault';
+  const unknown = `mcp__${server}__write_wiki_file`;
+
+  it('names the protocol kind instead of the function name, in both catalogues', () => {
+    const label = withKindFallback(toolLabel(unknown, server), unknown, server, 'edit');
+    expect(label).toEqual({ kind: 'kind', text: 'edit' });
+    expect(en.acpChat.toolKind).toHaveProperty(label.text);
+    expect(ko.acpChat.toolKind).toHaveProperty(label.text);
+  });
+
+  it("keeps a raw name when the kind names no action, and never renames someone else's tool", () => {
+    expect(withKindFallback(toolLabel(unknown, server), unknown, server, 'other')).toEqual({ kind: 'raw', text: 'write_wiki_file' });
+    expect(withKindFallback(toolLabel(unknown, server), unknown, server, null)).toEqual({ kind: 'raw', text: 'write_wiki_file' });
+    const foreign = 'mcp__github__create_issue';
+    expect(withKindFallback(toolLabel(foreign, server), foreign, server, 'edit')).toEqual({ kind: 'raw', text: 'create_issue' });
+  });
+
+  it('leaves a tool we know by name alone', () => {
+    const known = `mcp__${server}__add_concept`;
+    expect(withKindFallback(toolLabel(known, server), known, server, 'edit')).toEqual({ kind: 'known', text: 'addNode' });
   });
 });

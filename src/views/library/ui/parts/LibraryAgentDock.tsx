@@ -75,6 +75,9 @@ export interface LibraryAgentOpeningRequest {
   nonce: number;
 }
 
+/** Where focus goes back to when the opener itself is gone: the Library's own conversation door. */
+const LIBRARY_CONVERSATION_DOOR = '[data-testid="library-open-conversation"]';
+
 export interface LibraryAgentRuntime {
   id: string;
   label: string;
@@ -221,9 +224,61 @@ export function LibraryAgentDock({
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
 
+  /*
+   * ⚠️ **Focus has a place on the way in and on the way out** (measured 2026-09-25). Opening
+   * left focus on `<body>`, and putting the dock away blurred whatever was inside it (the frame
+   * goes `inert`), which dropped the keyboard on `<body>` again, far from the door that opened
+   * it. The map's dock already did both; this is the same grammar: in, to the composer, which is
+   * the next thing a person does here; out, back to the opener, waiting for it to be reachable and
+   * standing down the moment focus lands anywhere on purpose.
+   */
+  const frameRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const frame = frameRef.current;
+    const active = document.activeElement;
+    const origin =
+      active instanceof HTMLElement && active !== document.body && !frame?.contains(active) ? active : null;
+    const enter = window.requestAnimationFrame(() => {
+      frame
+        ?.querySelector<HTMLTextAreaElement>("[data-acp-composer] textarea:not([aria-hidden])")
+        ?.focus({ preventScroll: true });
+    });
+    return () => {
+      window.cancelAnimationFrame(enter);
+      let frames = 0;
+      const restore = () => {
+        const current = document.activeElement;
+        if (current !== document.body && current?.isConnected && !frame?.contains(current)) return;
+        const target =
+          origin?.isConnected && !origin.closest("[inert]")
+            ? origin
+            : document.querySelector<HTMLElement>(LIBRARY_CONVERSATION_DOOR);
+        if (target?.isConnected && !target.closest("[inert]")) {
+          target.focus({ preventScroll: true });
+          return;
+        }
+        if ((frames += 1) < 40) window.requestAnimationFrame(restore);
+      };
+      window.requestAnimationFrame(restore);
+    };
+  }, [open]);
+
   return (
     <div
+      ref={frameRef}
       data-testid="library-agent-dock-frame"
+      /*
+       * **One Escape rule for both docks.** Escape anywhere in the dock puts it away, as it closes
+       * the map's; a composer holding a sentence claims the key first (`defaultPrevented`), so an
+       * unsent draft is never what Escape takes. This dock used to ignore the key entirely.
+       */
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || event.defaultPrevented || !open) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+      }}
       data-right-dock={open || presence.mounted ? "library-agent" : undefined}
       data-dock-state={open ? "open" : standing ? "put-away" : "empty"}
       /*

@@ -25,7 +25,7 @@ test('Agents opens the requested runner after the login scan completes', async (
   const calls = await page.evaluate(() => (window as unknown as { __nativeCalls: { command: string }[] }).__nativeCalls);
   expect(calls.filter(call => call.command === 'acp_detect_runtimes').length).toBeGreaterThanOrEqual(4);
   expect(calls.some(call => call.command === 'acp_send')).toBe(false);
-  await page.getByTestId('analysis-workbench').getByRole('button', { name: '검토 패널 닫기', exact: true }).click();
+  await page.getByTestId('analysis-workbench').getByRole('button', { name: '대화 닫기', exact: true }).click();
   await expect(panel).toBeHidden();
 });
 

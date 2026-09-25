@@ -128,16 +128,21 @@ export function AcpChatResizeHandle({
       */
       onDoubleClick={() => onCommit(defaultChatWidth(viewport))}
       /*
-       * The grab area straddles the panel's left boundary (`-left-1` plus `w-2`).
-       * All that is visible is one indigo line while focused or dragging; the rest of
-       * the time the panel's existing border stands in for it — no new line is added
-       * to the screen.
+       * The grab area lies **inside** the panel's left edge (`left-0` plus `w-2`), with its
+       * line on that edge. All that is visible is one indigo line while hovered, focused or
+       * dragging; the rest of the time the panel's own border stands in for it.
+       *
+       * ⚠️ It used to straddle the edge (`-left-1`), and the panel it sits in is
+       * `overflow-hidden` (the dock's rounded frame), so the outer half of the grab area and
+       * of its keyboard focus mark were cut away — measured 2026-09-25 in both docks, 3 of
+       * its 8px outside the panel. The focus mark is now the app's own inset outline
+       * (`outline-offset: -2px`, the base-layer floor), which cannot be clipped by the box
+       * it is drawn inside.
        */
-      className={`absolute -left-1 top-0 z-10 h-full w-2 cursor-col-resize bg-transparent
-        transition-colors after:absolute after:inset-y-0 after:left-1 after:w-px
+      className={`absolute left-0 top-0 z-10 h-full w-2 cursor-col-resize bg-transparent
+        transition-colors after:absolute after:inset-y-0 after:left-0 after:w-px
         after:bg-transparent after:transition-colors
         hover:after:bg-[color:var(--color-indigo-a46)]
-        focus-visible:outline-none focus-visible:bg-[color:var(--color-indigo-a22)]
         focus-visible:after:bg-[color:var(--color-indigo-accent)]
         data-[dragging=true]:after:bg-[color:var(--color-indigo-accent)]`}
     />
