@@ -204,7 +204,13 @@ test.describe("ontology view UI", () => {
     expect(linkBox).not.toBeNull();
     expect(linkBox?.height).toBeGreaterThanOrEqual(32);
     await topologyLink.click();
-    await expect(page).toHaveURL(/\/en\/topology\/\?p=ontology-atlas/);
+    // The project's own node, whose inspector carries its code evidence (2026-09-25 sweep);
+    // the bare slug opened the project drawer, which cannot connect the code folder.
+    await expect(page).toHaveURL(/\/en\/topology\/\?p=project%3Aontology-atlas/);
+    await expect(page.getByTestId("map-detail-panel")).toHaveAttribute(
+      "data-selected-node-id",
+      "project:ontology-atlas",
+    );
   });
 
   test("mobile: dogfood tree content is visible without horizontal overflow", async ({ page }) => {

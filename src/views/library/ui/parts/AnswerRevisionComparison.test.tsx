@@ -54,8 +54,9 @@ describe('AnswerRevisionComparison source citations', () => {
     });
 
     const citation = await screen.findByRole('button', {
-      name: 'Open original source sources/설계.md#l2',
+      name: 'Open original source sources/설계.md · line 2',
     });
+    expect(citation).toHaveTextContent(/^원문$/);
     expect(citation).toHaveAttribute('data-source-path', 'sources/설계.md');
     expect(citation).toHaveAttribute('data-source-anchor', 'l2');
 
@@ -73,14 +74,26 @@ describe('AnswerRevisionComparison source citations', () => {
     });
 
     const citations = await screen.findAllByRole('button', {
-      name: 'Open original source sources/Team notes (v2).md#l2',
+      name: 'Open original source sources/Team notes (v2).md · line 2',
     });
     expect(citations).toHaveLength(2);
+    // Unlabelled: the place in words, and the file, since no head names it here.
+    for (const citation of citations) expect(citation).toHaveTextContent(/^Team notes \(v2\)\.md · line 2$/);
 
     fireEvent.click(citations[0]!);
     fireEvent.click(citations[1]!);
     expect(onOpenSource).toHaveBeenNthCalledWith(1, 'sources/Team notes (v2).md', 'l2');
     expect(onOpenSource).toHaveBeenNthCalledWith(2, 'sources/Team notes (v2).md', 'l2');
+  });
+
+  it('says only the place for the one original the column head already names', async () => {
+    renderComparison({
+      after: ['---', 'sources:', '  - sources/plan.md', '---', 'The freeze is on 2026-10-06 [[src:sources/plan.md#l7]]'].join('\n'),
+      knownOriginalPaths: new Set(['sources/plan.md']),
+    });
+
+    const citation = await screen.findByRole('button', { name: 'Open original source sources/plan.md · line 7' });
+    expect(citation).toHaveTextContent(/^line 7$/);
   });
 
   it('marks a citation missing when the allow-list excludes its path', async () => {
@@ -89,7 +102,7 @@ describe('AnswerRevisionComparison source citations', () => {
       knownOriginalPaths: new Set(['sources/storage.md']),
     });
 
-    const citation = await screen.findByText('src:sources/missing.md#l1');
+    const citation = await screen.findByText('missing.md · line 1');
     expect(citation.tagName).toBe('SPAN');
     expect(citation).toHaveAttribute(
       'title',
@@ -104,7 +117,7 @@ describe('AnswerRevisionComparison source citations', () => {
       after: 'A fact [[src:sources/storage.md#l1]]',
     });
 
-    const citation = await screen.findByText('src:sources/storage.md#l1');
+    const citation = await screen.findByText('storage.md · line 1');
     expect(citation.tagName).toBe('SPAN');
     expect(citation).toHaveAttribute(
       'title',

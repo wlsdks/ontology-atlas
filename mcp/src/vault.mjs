@@ -25,10 +25,12 @@ import { join, relative, dirname, resolve, sep } from 'node:path';
 import { parseFrontmatter, buildMarkdown } from './parser.mjs';
 import { previewDocumentPatch } from './document-patch.mjs';
 import {
+  CONTAINMENT_KEY_FOR_KIND,
   NODE_ELIGIBILITY_GATE,
   REVIEW_NOTE_KEY,
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
+  containmentKeyFor,
   flatSlugIssue,
   folderForKind,
   generateNodeUid,
@@ -2413,8 +2415,13 @@ export function applyAllOrNothing(plan, options = {}) {
  *
  * `options.dryRun = true` previews without writing to disk.
  * `options.excludeSlugs` lets the caller skip documents it replaces in the same plan.
+ * `options.targetKind` — pass it **only when the node changes kind** (reclassify_concept): an
+ * entry in a list named for a kind (`domains` / `capabilities` / `elements`) then moves to the
+ * list for `targetKind` when the referrer's kind keeps one (`containmentKeyFor`, spec §5), and
+ * stays where it is otherwise, listed in `keptInPlace`. With it, `targetSlug === nextSlug` is a
+ * kind change in place: no address is rewritten, only lists move.
  *
- * Returns `{ updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated }`.
+ * Returns `{ updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated, keptInPlace }`.
  */
 export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) {
   /**
@@ -2424,7 +2431,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
    * them all-or-nothing. `rename_concept` uses it to bind file creation, backlink
    * rewriting, and old-file deletion into one unit.
    */
-  const { dryRun = false, deferWrite = false, excludeSlugs = [] } = options;
+  const { dryRun = false, deferWrite = false, excludeSlugs = [], targetKind = null } = options;
   const excluded = new Set(Array.isArray(excludeSlugs) ? excludeSlugs : []);
   if (typeof targetSlug !== 'string' || !targetSlug) {
     throw new Error('targetSlug is required.');
@@ -2432,9 +2439,10 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   if (typeof nextSlug !== 'string' || !nextSlug) {
     throw new Error('nextSlug is required.');
   }
-  if (targetSlug === nextSlug) {
+  if (targetSlug === nextSlug && !targetKind) {
     return { updates: [], totalUpdated: 0, plan: [] };
   }
+  const renaming = targetSlug !== nextSlug;
 
   const docs = loadVaultDocs(rootPath);
   const targetTail = targetSlug.split('/').pop();
@@ -2461,6 +2469,8 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   }
 
   const updates = [];
+  /** Typed-list entries a kind change left where they were: the referrer keeps no list for it. */
+  const keptInPlace = [];
   /** The write plan destined for disk: applied in one go once the loop ends. */
   const plan = [];
   for (const doc of docs) {
@@ -2479,7 +2489,10 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     // instead of rewritten; the removal stays visible in beforeKeys/afterKeys.
     const rewritingSelf = doc.slug === nextSlug;
 
-    for (const key of Object.keys(nextFm)) {
+    // A kind change in place (`targetSlug === nextSlug`) rewrites no address: only the list pass
+    // below runs. `rewriteArrayItem` reports a match as `changed`, so running this pass with an
+    // identical address would record no-op updates.
+    for (const key of renaming ? Object.keys(nextFm) : []) {
       const value = nextFm[key];
       if (Array.isArray(value)) {
         const before = [...value];
@@ -2570,6 +2583,70 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
       }
     }
 
+    /*
+     * ⚠️ **A kind change moves the entry between lists, not only its address** (2026-09-26,
+     * map-edit review). The pass above keeps every rewritten entry in the key it was in, so
+     * reclassifying `capabilities/x` into `elements/x` left a domain reading
+     * `capabilities: [elements/x]`: an element in the capability list that resolved, raised no
+     * warning, and was counted by the dense-parent check as one of the domain's capabilities.
+     * A list named for a kind says what its entries are, so the entry follows the node into the
+     * list for its new kind — when the referrer's kind keeps that list (spec §5,
+     * `containmentKeyFor`). When it does not, nothing is guessed: the entry keeps its list and
+     * is returned in `keptInPlace` for the caller to say so. The surviving document of a merge
+     * is skipped: its references to the absorbed node were just dropped as self-references.
+     */
+    if (targetKind && !rewritingSelf) {
+      const holderKind = typeof doc.frontmatter?.kind === 'string' ? doc.frontmatter.kind.trim() : '';
+      const destination = containmentKeyFor(holderKind, targetKind);
+      const namesTarget = (value) => typeof value === 'string' && rewriteArrayItem(value).changed;
+      const recordKeyChange = (key, after) => {
+        if (!beforeKeys.some((row) => row.key === key)) {
+          const before = doc.frontmatter[key];
+          beforeKeys.push(Array.isArray(before) && before.length > 0 ? { key, before: [...before] } : { key });
+        }
+        const row = after.length > 0 ? { key, after } : { key };
+        const index = afterKeys.findIndex((existing) => existing.key === key);
+        if (index === -1) afterKeys.push(row);
+        else afterKeys[index] = row;
+      };
+      for (const key of Object.values(CONTAINMENT_KEY_FOR_KIND)) {
+        const written = doc.frontmatter[key];
+        if (!Array.isArray(written)) continue;
+        const hits = [...new Set(written.filter(namesTarget).map((value) => rewriteArrayItem(value).value))];
+        if (hits.length === 0 || destination === key) continue;
+        // A destination written as something other than a list cannot take the entry
+        // without losing what it holds, so it is kept like a missing list.
+        const destinationWritten = destination ? doc.frontmatter[destination] : undefined;
+        if (!destination || (destinationWritten !== undefined && !Array.isArray(destinationWritten))) {
+          for (const ref of hits) {
+            keptInPlace.push({ slug: doc.slug, title: docTitle(doc), key, ref, holderKind });
+          }
+          continue;
+        }
+        const source = Array.isArray(nextFm[key]) ? nextFm[key] : [];
+        const target = Array.isArray(nextFm[destination]) ? nextFm[destination] : [];
+        const alreadyListed = (destinationWritten ?? []).some(namesTarget);
+        const nextSource = normalizeRelationRefs(source.filter((value) => !hits.includes(value)));
+        const nextTarget = normalizeRelationRefs(alreadyListed ? target : [...target, ...hits]);
+        recordKeyChange(key, nextSource);
+        recordKeyChange(destination, nextTarget);
+        nextFm[key] = nextSource;
+        nextFm[destination] = nextTarget;
+        fmChanged = true;
+      }
+      // A `domain:` parent that is no longer a domain has no list to move to at all.
+      const parent = doc.frontmatter.domain;
+      if (targetKind !== 'domain' && namesTarget(parent)) {
+        keptInPlace.push({
+          slug: doc.slug,
+          title: docTitle(doc),
+          key: 'domain',
+          ref: rewriteArrayItem(parent).value,
+          holderKind,
+        });
+      }
+    }
+
     let nextBody = doc.body;
     let bodyChanged = false;
     /*
@@ -2581,26 +2658,29 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
      * file in the same plan. `rewriteArrayItem` already owns the slug/tail
      * matching rules (including the ambiguous-tail guard), so every form routes
      * through it. Bare prose paths outside a link stay untouched: an evidence
-     * string is not a reference (see the pathDrift note above).
+     * string is not a reference (see the pathDrift note above). A kind change in
+     * place has no new address to write, so it leaves the body alone.
      */
-    nextBody = nextBody.replace(
-      /\[\[([^\][|#\r\n]+)((?:#[^\][|\r\n]*)?(?:\|[^\][\r\n]*)?)\]\]/g,
-      (whole, target, rest) => {
-        const r = rewriteArrayItem(target.trim());
-        if (!r.changed) return whole;
-        bodyChanged = true;
-        return `[[${r.value}${rest}]]`;
-      },
-    );
-    nextBody = nextBody.replace(
-      /\(([^()\s]+)\.md(#[^()\s]*)?\)/g,
-      (whole, target, anchor) => {
-        const r = rewriteArrayItem(target);
-        if (!r.changed) return whole;
-        bodyChanged = true;
-        return `(${r.value}.md${anchor ?? ''})`;
-      },
-    );
+    if (renaming) {
+      nextBody = nextBody.replace(
+        /\[\[([^\][|#\r\n]+)((?:#[^\][|\r\n]*)?(?:\|[^\][\r\n]*)?)\]\]/g,
+        (whole, target, rest) => {
+          const r = rewriteArrayItem(target.trim());
+          if (!r.changed) return whole;
+          bodyChanged = true;
+          return `[[${r.value}${rest}]]`;
+        },
+      );
+      nextBody = nextBody.replace(
+        /\(([^()\s]+)\.md(#[^()\s]*)?\)/g,
+        (whole, target, anchor) => {
+          const r = rewriteArrayItem(target);
+          if (!r.changed) return whole;
+          bodyChanged = true;
+          return `(${r.value}.md${anchor ?? ''})`;
+        },
+      );
+    }
 
     if (!fmChanged && !bodyChanged) continue;
 
@@ -2636,6 +2716,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   return {
     updates,
     totalUpdated: updates.length,
+    keptInPlace,
     ...(deferWrite ? { plan } : {}),
   };
 }

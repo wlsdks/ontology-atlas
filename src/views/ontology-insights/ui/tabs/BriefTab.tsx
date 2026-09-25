@@ -15,9 +15,10 @@ import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
 import type { SinceRow } from '../../lib/brief/since-list';
 import { cn } from '@/shared/lib/cn';
 import { useCountUp } from '@/shared/lib/use-count-up';
+import { useDelayedVisible } from '@/shared/lib/use-presence';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { parseInsightsTabHref, type InsightsTab } from '../../lib/insights-tab-state';
-import { briefTotals, type BriefCore, type BriefLine, type BriefLineDetail, type BriefState } from '../../lib/brief/brief-model';
+import type { BriefCore, BriefLine, BriefLineDetail, BriefState } from '../../lib/brief/brief-model';
 import { briefRows, type BriefRow } from '../../lib/brief/brief-rows';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 import { BRIEF_TWO_COLUMN, INSIGHTS_LIST_ROW, insightsTwoColumnCell } from '../parts/insights-list';
@@ -109,6 +110,90 @@ function HeadlinePart({ state, children }: { state: 'stale' | 'unknown'; childre
   );
 }
 
+/**
+ * The same key mark in front of a phrase that is still being counted, inside one running
+ * sentence: the Korean particles after each phrase follow its words, not a gap between parts.
+ *
+ * ⚠️ **The words stay in the sentence's inline flow.** WebKit — the installed app's engine —
+ * clips the working ink only to text in that flow; an inline-flex pair here left both phrases
+ * transparent over nothing, and only the particles, the ring and the closing verb were painted
+ * (Playwright WebKit, 1512, 2026-09-25). So the mark is the one atomic box, placed where
+ * `HeadlinePart` centres it: top of the 34px hero line plus half of what the 10px mark leaves,
+ * 12px. `align-middle` sat it 3px lower, and it hopped when the numbers landed.
+ */
+function CountingPart({ state, children }: { state: 'stale' | 'unknown'; children: React.ReactNode }) {
+  return (
+    <span className="whitespace-nowrap" data-brief-counting-part={state}>
+      <span aria-hidden="true" className={cn('mr-2.5 mt-3 inline-block align-top', HEADLINE_MARK[state])} />
+      {children}
+    </span>
+  );
+}
+
+/**
+ * The product's one mark for words whose work is still arriving: a light band sweeping through
+ * the glyphs, gone the frame the work lands (owner, 2026-09-24; `app/globals.css`). The agent
+ * panel wears it on a running call; this line wears it while a core it sums is still reading.
+ */
+const WORKING_INK = 'acp-working-shimmer';
+
+/**
+ * The line this screen exists for, in the three states a count can be in.
+ *
+ * ⚠️ **It never paints a partial sum** (real bridge, 2026-09-25). The harness scan lands seconds
+ * after the other cores, and this line used to print their sum — "98 to learn · 99 not checked" —
+ * with full confidence, then turn into 142 · 101 with no mark in between. Now:
+ *
+ * - **counting**: the first read has not landed. The line says in words what it is counting,
+ *   behind the same two marks it keys, and no number at all.
+ * - **recounting**: a later read runs (a reload restarting the Git walk, a rescan after another
+ *   question). The last settled sums stay; blanking them on every file an agent writes would make
+ *   the hero line flicker for the whole of a session.
+ * - **settled**: the two sums.
+ *
+ * Either wait wears the working ink only once it outlasts the loading beat, so a read that lands
+ * inside it draws nothing (`useDelayedVisible`, the rule every loading mark here follows).
+ */
+function BriefHeadline({ totals, counting }: { totals: InsightsBrief['totals']; counting: boolean }) {
+  const t = useTranslations('ontologyPages.insights.brief');
+  const waitShown = useDelayedVisible(counting);
+  return (
+    <h2
+      data-testid="brief-headline"
+      data-brief-headline-state={totals ? (counting ? 'recounting' : 'settled') : 'counting'}
+      aria-busy={counting || undefined}
+      className="min-w-0 text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]"
+    >
+      {totals ? (
+        /* Keyed, so the numbers arriving after the counting line fade in where it stood. */
+        <span key="settled" className="insights-disclosure-in block">
+          <span className={cn('flex flex-wrap items-center gap-x-8 gap-y-1', counting && waitShown && WORKING_INK)}>
+            {t.rich('headline', {
+              stale: totals.stale,
+              unknown: totals.unknown,
+              learn: (chunks) => <HeadlinePart state="stale">{chunks}</HeadlinePart>,
+              unchecked: (chunks) => <HeadlinePart state="unknown">{chunks}</HeadlinePart>,
+              // The marks part the two counts on screen; a listener still hears the pause.
+              sep: (chunks) => <span className="sr-only">{chunks}</span>,
+            })}
+          </span>
+        </span>
+      ) : (
+        /* In the tree from the first frame, so assistive technology hears what is happening;
+           drawn only once the read outlasts the loading beat. */
+        <span key="counting" className={cn('block', waitShown ? 'insights-disclosure-in' : 'opacity-0')}>
+          <span className={cn(waitShown && WORKING_INK)}>
+            {t.rich('headlineCounting', {
+              learn: (chunks) => <CountingPart state="stale">{chunks}</CountingPart>,
+              unchecked: (chunks) => <CountingPart state="unknown">{chunks}</CountingPart>,
+            })}
+          </span>
+        </span>
+      )}
+    </h2>
+  );
+}
+
 export function BriefTab({
   brief,
   onAskAgent,
@@ -122,7 +207,7 @@ export function BriefTab({
 }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const cores = [brief.ontology, brief.wiki, brief.harness, brief.agent] as const;
-  const totals = briefTotals(cores);
+  const counting = brief.counting.length > 0;
   /*
    * **Marking the visit has to say so.** The press moves the anchor, which changes one 12px
    * eyebrow and nothing else on a screen where every other number can legitimately stay the
@@ -154,16 +239,7 @@ export function BriefTab({
             * screens use that step for their h1 and two go larger, so shrinking this one alone
             * would trade an attention problem for an inconsistency across the product.
             */}
-          <h2 className="flex min-w-0 flex-wrap items-center gap-x-8 gap-y-1 text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]" data-testid="brief-headline">
-            {t.rich('headline', {
-              stale: totals.stale,
-              unknown: totals.unknown,
-              learn: (chunks) => <HeadlinePart state="stale">{chunks}</HeadlinePart>,
-              unchecked: (chunks) => <HeadlinePart state="unknown">{chunks}</HeadlinePart>,
-              // The marks part the two counts on screen; a listener still hears the pause.
-              sep: (chunks) => <span className="sr-only">{chunks}</span>,
-            })}
-          </h2>
+          <BriefHeadline totals={brief.totals} counting={counting} />
         <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
           <p
             role="status"
@@ -215,8 +291,18 @@ export function BriefTab({
         * magnitude in one glance; the list under it is where the eye goes next.
         */}
       <BriefBand cores={cores} />
-      <BriefLineList rows={briefRows(cores, { namedSince: brief.since.map((row) => row.kind) })} details={brief.details} nowMs={brief.nowMs} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
-      <BriefSinceList rows={brief.since} total={brief.sinceTotal} soleKind={brief.sinceKind} nowMs={brief.nowMs} />
+      <BriefLineList
+        rows={briefRows(cores, { namedSince: brief.since.map((row) => row.kind), sinceCounting: brief.sinceTotal === null })}
+        details={brief.details}
+        nowMs={brief.nowMs}
+        onAskAgent={onAskAgent}
+        onOpenTab={onOpenTab}
+      />
+      {/* Not drawn until its first count lands: a partial list re-sorts under the reader when the
+          guide files arrive, and its total is the since card's headline. */}
+      {brief.sinceTotal !== null ? (
+        <BriefSinceList rows={brief.since} total={brief.sinceTotal} soleKind={brief.sinceKind} nowMs={brief.nowMs} counting={counting} />
+      ) : null}
     </section>
   );
 }
@@ -779,12 +865,20 @@ function BriefLineRow({ line, core, availability, appRowPresent, details, nowMs,
  * The cards count; this names. Everything that happened after the anchor, newest first,
  * from the dates the folder already carries — no list is invented and none is copied.
  */
-function BriefSinceList({ rows, total, soleKind, nowMs }: { rows: readonly SinceRow[]; total: number; soleKind: SinceRow['kind'] | null; nowMs: number }) {
+function BriefSinceList({ rows, total, soleKind, nowMs, counting }: { rows: readonly SinceRow[]; total: number; soleKind: SinceRow['kind'] | null; nowMs: number; counting: boolean }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const format = useFormatter();
+  // A recount keeps the last settled list, marked the way the headline marks its sums.
+  const waitShown = useDelayedVisible(counting);
   if (total === 0) return null;
   return (
-    <section data-testid="brief-since" className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+    <section
+      data-testid="brief-since"
+      data-brief-since-state={counting ? 'recounting' : 'settled'}
+      aria-busy={counting || undefined}
+      // Its first count lands after the rest of the tab; it arrives rather than appearing.
+      className="insights-disclosure-in rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+    >
       {/*
         * ⚠️ **A kind every row shares is said once, in the title** (review, 2026-09-25, round 5).
         * On a folder where only concept documents moved, "concept document" stood on all twenty rows: a
@@ -793,7 +887,9 @@ function BriefSinceList({ rows, total, soleKind, nowMs }: { rows: readonly Since
         * a row names its own kind only when the list mixes kinds.
         */}
       <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]" data-since-sole-kind={soleKind ?? undefined}>
-        {soleKind ? t(`sinceTitleKind.${soleKind}`, { count: total }) : t('sinceTitle', { count: total })}
+        <span className={cn(counting && waitShown && WORKING_INK)}>
+          {soleKind ? t(`sinceTitleKind.${soleKind}`, { count: total }) : t('sinceTitle', { count: total })}
+        </span>
       </h3>
       {/*
         * **Newest first, in the list above's columns.** The mark slot, then the time where that list

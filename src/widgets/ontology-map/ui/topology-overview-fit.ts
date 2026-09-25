@@ -1,5 +1,6 @@
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import {
+  computeFoldedIds,
   computeRevealedBounds,
   isSpineNode,
   radiusForKind,
@@ -25,6 +26,11 @@ export function overviewFitTokens<T extends { cameraScaleMin: number; }>(
   return galaxyActive ? { ...tokens, cameraScaleMin: 0 } : tokens;
 }
 
+/**
+ * The overview frame at the coordinates a view transition is heading for (the return
+ * from Galaxy), built from the same set `overviewBoundsFor` frames: the spine the map
+ * draws plus the children a person expanded, never a node the density gate folded.
+ */
 export function overviewForPositionTargets(
   fit: "spine" | "full",
   world: TopologyWorld,
@@ -33,15 +39,17 @@ export function overviewForPositionTargets(
   expandedParents: ReadonlySet<string>,
 ): {
   bounds: { minX: number; minY: number; maxX: number; maxY: number; };
-  visibleCount: number;
 } {
   const included = new Set<string>();
   if (fit === "full") {
     for (const node of world.nodes) included.add(node.id);
   } else {
-    for (const node of world.nodes) if (isSpineNode(node)) included.add(node.id);
+    const folded = computeFoldedIds(world, expandedParents);
+    for (const node of world.nodes) if (isSpineNode(node) && !folded.has(node.id)) included.add(node.id);
     for (const parentId of expandedParents) {
-      for (const childId of world.childrenByParent.get(parentId) ?? []) included.add(childId);
+      for (const childId of world.childrenByParent.get(parentId) ?? []) {
+        if (!folded.has(childId)) included.add(childId);
+      }
     }
   }
 
@@ -64,6 +72,5 @@ export function overviewForPositionTargets(
     bounds: Number.isFinite(minX)
       ? { minX, minY, maxX, maxY }
       : world.spineBounds,
-    visibleCount: Math.max(1, included.size),
   };
 }

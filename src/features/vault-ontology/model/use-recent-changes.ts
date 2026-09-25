@@ -8,11 +8,11 @@ import {
   type AdaptiveRecentChangesResult,
 } from '@/entities/knowledge-graph';
 import { useOntologyInsight } from './use-ontology-insight';
-import { useVaultDocFreshnessIndex } from './use-vault-doc-freshness';
+import { useVaultDocDates } from './use-vault-doc-freshness';
 
 /**
- * The mode-aware adapter for the "recent changes" lens. It passes
- * `useVaultDocFreshnessIndex()` (slug → real updatedAt) and `useOntologyInsight()` (the
+ * The mode-aware adapter for the "recent changes" lens. It passes `useVaultDocDates()` (slug →
+ * when the document last changed, from Git where Git knows) and `useOntologyInsight()` (the
  * current graph nodes) straight into the pure `computeAdaptiveRecentChanges`
  * (`@/entities/knowledge-graph/lib/ontology-tree`) — the mode branch and the time arithmetic are already
  * owned by those two hooks and that pure function, so nothing new is built here (the same
@@ -22,6 +22,11 @@ import { useVaultDocFreshnessIndex } from './use-vault-doc-freshness';
  * (`useState(() => Date.now())`) — `Date.now()` is never read during render (render purity,
  * matching this repository's existing convention).
  */
+export interface RecentChangesLens extends AdaptiveRecentChangesResult {
+  /** The dates are still being read (`VaultDocDates.reading`): the lens counts nothing yet. */
+  reading: boolean;
+}
+
 const EMPTY_ADAPTIVE: AdaptiveRecentChangesResult = {
   recentNodeIds: new Set(),
   rows: [],
@@ -41,17 +46,17 @@ const EMPTY_ADAPTIVE: AdaptiveRecentChangesResult = {
  */
 export function useAdaptiveRecentChanges(
   overrideWindowDays?: number,
-): AdaptiveRecentChangesResult {
-  const freshnessIndex = useVaultDocFreshnessIndex();
+): RecentChangesLens {
+  const { index: freshnessIndex, reading } = useVaultDocDates();
   const { insight } = useOntologyInsight();
   const [nowMs] = useState(() => Date.now());
 
   return useMemo(() => {
-    if (!insight) return EMPTY_ADAPTIVE;
+    if (!insight) return { ...EMPTY_ADAPTIVE, reading };
     if (overrideWindowDays !== undefined) {
       const fixed = computeRecentChanges(insight.nodes, freshnessIndex, nowMs, overrideWindowDays);
-      return { ...fixed, windowDays: overrideWindowDays };
+      return { ...fixed, windowDays: overrideWindowDays, reading };
     }
-    return computeAdaptiveRecentChanges(insight.nodes, freshnessIndex, nowMs);
-  }, [insight, freshnessIndex, nowMs, overrideWindowDays]);
+    return { ...computeAdaptiveRecentChanges(insight.nodes, freshnessIndex, nowMs), reading };
+  }, [insight, freshnessIndex, nowMs, overrideWindowDays, reading]);
 }

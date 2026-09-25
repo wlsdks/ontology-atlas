@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { InlineEditable } from './inline-editable';
 
 describe('InlineEditable — readonly', () => {
@@ -38,6 +38,26 @@ describe('InlineEditable — readonly', () => {
     expect(button).toHaveAccessibleName('Online Store');
     expect(button).toHaveAttribute('aria-description', '프로젝트 이름');
     expect(button).not.toHaveAttribute('aria-label');
+  });
+
+  // 2026-09-25 sweep: the button role sat on the `h1` and replaced it, so an editable page title
+  // was no heading at all. The heading keeps its role; the press is a block inside it.
+  it('an editable heading stays a heading of its level, with the press inside it', () => {
+    render(
+      <InlineEditable as="h1" value="Online Store" editable onSave={() => {}} ariaLabel="프로젝트 이름" />,
+    );
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveAccessibleName('Online Store');
+    expect(heading).not.toHaveAttribute('role');
+    expect(heading).not.toHaveAttribute('tabindex');
+    const button = within(heading).getByRole('button', { name: 'Online Store' });
+    fireEvent.keyDown(button, { key: 'Enter' });
+    expect(screen.getByRole('textbox', { name: '프로젝트 이름' })).toHaveValue('Online Store');
+  });
+
+  it('a non-heading host is the button itself, as before', () => {
+    render(<InlineEditable as="p" value="A description" editable onSave={() => {}} />);
+    expect(screen.getByRole('button', { name: 'A description' }).tagName).toBe('P');
   });
 
   it('readonly empty value uses placeholder', () => {

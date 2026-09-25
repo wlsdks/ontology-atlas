@@ -106,6 +106,12 @@ export interface DesktopRuntimeOptions {
    */
   scopeHistoryByPath?: boolean;
   /**
+   * Fields laid over the `git_status` answer, e.g. a saved origin that was never sent
+   * (`{ upstream: null, ahead: null, behind: null, hasOrigin: true }`). Without it every spec
+   * keeps the tracked `origin/main` it always had.
+   */
+  gitStatus?: Record<string, unknown>;
+  /**
    * The models tab's native answers (2026-09-25): Keychain state, local runners by address, the
    * experimental Jev bridge, and the sent log. Without it only `secret_status` answers (no key),
    * as before. Every stubbed transfer appends a line to `.ontology-atlas/llm-audit.jsonl` in the
@@ -113,6 +119,14 @@ export interface DesktopRuntimeOptions {
    * through the same file path the app reads.
    */
   models?: ModelsStubOptions;
+  /**
+   * Let `write_vault_text_file` land in the served files instead of rejecting as unstubbed, and
+   * expose them as `window.__stubFiles`, so a flow that writes (the first-run starter) can be read
+   * back from the "disk" rather than from the screen.
+   */
+  writable?: boolean;
+  /** The answer to `ensure_default_vault_parent_dir` ("Just start"). Unstubbed without it. */
+  defaultVaultParent?: string;
 }
 
 export interface ModelsStubOptions {
@@ -146,6 +160,7 @@ export async function installDesktopRailRuntime(
       diff: string;
       documentDiffs?: Record<string, string>;
       scopeHistoryByPath?: boolean;
+      gitStatus?: Record<string, unknown>;
       runtimeResponses?: { fast: unknown[]; probed: unknown[] };
       gitPathChanges?: Record<string, { exists: boolean; isDir: boolean; lastChangedAt: string | null }>;
       models?: {
@@ -154,8 +169,11 @@ export async function installDesktopRailRuntime(
         runners?: Record<string, { answer: string; models?: string[] }>;
         audit?: Record<string, unknown>[];
       };
+      writable?: boolean;
+      defaultVaultParent?: string;
     }) => {
       const { root, latency, files, commits, pending, diff } = input;
+      if (input.writable) (window as unknown as { __stubFiles: typeof files }).__stubFiles = files;
       const AUDIT = ".ontology-atlas/llm-audit.jsonl";
       const keys: Record<string, string> = { ...(input.models?.keys ?? {}) };
       let jevKey: string | null = input.models?.jevKey ?? null;
@@ -194,6 +212,7 @@ export async function installDesktopRailRuntime(
         ahead: 0,
         behind: 0,
         stagedOutsideVault: [],
+        ...(input.gitStatus ?? {}),
       };
 
       const answer = (command: string, args: Record<string, unknown>): Promise<unknown> | null => {
@@ -402,6 +421,13 @@ export async function installDesktopRailRuntime(
           case "start_vault_watch":
           case "ensure_vault_directory":
             return Promise.resolve(null);
+          case "ensure_default_vault_parent_dir":
+            return input.defaultVaultParent ? slow(input.defaultVaultParent) : null;
+          case "write_vault_text_file": {
+            if (!input.writable) return null;
+            files[relative(args.relativePath)] = String(args.content ?? "");
+            return slow(null);
+          }
           default:
             return null;
         }
@@ -442,9 +468,12 @@ export async function installDesktopRailRuntime(
       diff: options.diff ?? DIFF,
       documentDiffs: options.documentDiffs,
       scopeHistoryByPath: options.scopeHistoryByPath,
+      gitStatus: options.gitStatus,
       runtimeResponses,
       gitPathChanges: options.gitPathChanges,
       models: options.models,
+      writable: options.writable,
+      defaultVaultParent: options.defaultVaultParent,
     },
   );
 }

@@ -159,6 +159,11 @@ for (const width of [1280, 1512]) {
       await page.getByTestId("ai-save-anthropic").click();
       await expect(page.getByTestId("ai-stored-anthropic")).toContainText("····9x7y");
       expect(await page.content()).not.toContain("sk-ant-e2e-secret");
+      // The row says it, and the announcer reads it out. A toast repeating it stood over this
+      // tall page's own text (2026-09-25: the sent-log caption at 1512, the Jev row at 1280),
+      // and it would have been on screen by now, beside the row's new last four.
+      await expect(page.getByTestId("models-announcer")).toContainText("키를 저장했어요");
+      await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
 
       await page.getByTestId("ai-replace-openai").click();
       await page.getByTestId("ai-key-input-openai").fill("sk-openai-new-key-k2m3");
@@ -172,6 +177,8 @@ for (const width of [1280, 1512]) {
       await clear.click();
       await expect(page.getByTestId("ai-status-openai")).toHaveText("키 없음");
       await expect(page.getByTestId("ai-register-openai")).toBeVisible();
+      await expect(page.getByTestId("models-announcer")).toContainText("키를 지웠어요");
+      await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
       await capture(page, `${width}-06-keys-after`, "models-keys");
     });
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { useFrameMeter } from '@/shared/lib/appearance-preferences';
 
@@ -55,6 +56,13 @@ export function FrameMeter({ className }: { className?: string }) {
 }
 
 function FrameMeterLive({ className }: { className?: string }) {
+  /*
+   * The readout's words come from the catalogue, like the switch that turns it on. It printed
+   * "worst" and "dropped" as two Korean literals beside an English "fps", so every screen showed
+   * a mix of two languages (inspection, 2026-09-25, D2). The numbers stay inside the message: word
+   * order is the language's to decide.
+   */
+  const t = useTranslations('nav.settingsMenu');
   const [sample, setSample] = useState<Sample | null>(null);
 
   useEffect(() => {
@@ -117,13 +125,13 @@ function FrameMeterLive({ className }: { className?: string }) {
       aria-hidden="true"
     >
       <div className="flex items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-label tabular-nums">
-        <span className={tone}>{sample.fps} fps</span>
+        <span className={tone}>{t('frameMeterFps', { fps: sample.fps })}</span>
         <span className="text-[color:var(--color-divider)]">·</span>
-        <span className={tone}>최악 {sample.worst}ms</span>
+        <span className={tone}>{t('frameMeterWorst', { ms: sample.worst })}</span>
         {sample.jank > 0 ? (
           <>
             <span className="text-[color:var(--color-divider)]">·</span>
-            <span className={tone}>끊김 {sample.jank}</span>
+            <span className={tone}>{t('frameMeterDropped', { count: sample.jank })}</span>
           </>
         ) : null}
       </div>

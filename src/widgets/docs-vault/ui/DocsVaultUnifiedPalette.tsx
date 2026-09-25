@@ -63,6 +63,12 @@ const paletteOptionId = (idx: number) => `docs-vault-palette-option-${idx}`;
 
 type ResultKind = 'doc' | 'command' | 'tag';
 
+/** A command answers to its label or to any of its unshown keywords; `query` is lowercased. */
+function commandMatches(command: Pick<VaultCommand, 'label' | 'keywords'>, query: string): boolean {
+  if (command.label.toLowerCase().includes(query)) return true;
+  return command.keywords !== undefined && command.keywords.toLowerCase().includes(query);
+}
+
 interface PaletteRow {
   kind: ResultKind;
   key: string;
@@ -263,7 +269,7 @@ export function DocsVaultUnifiedPalette({
       const q = trimmed.slice(1).trim().toLowerCase();
       const cmdRows: PaletteRow[] = commands
         .filter((c) => c.visible !== false)
-        .filter((c) => !q || c.label.toLowerCase().includes(q))
+        .filter((c) => !q || commandMatches(c, q))
         .slice(0, 30)
         .map((c) => {
           const idx = q ? c.label.toLowerCase().indexOf(q) : -1;
@@ -370,7 +376,7 @@ export function DocsVaultUnifiedPalette({
     const qLc = trimmed.toLowerCase();
     const cmdMatches = commands
       .filter((c) => c.visible !== false)
-      .filter((c) => c.label.toLowerCase().includes(qLc))
+      .filter((c) => commandMatches(c, qLc))
       .slice(0, 5);
     if (cmdMatches.length > 0) {
       sections.push({

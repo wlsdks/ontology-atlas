@@ -26,7 +26,7 @@ export function TopologyFitControl({ onFitView, density = 'default', mobileObscu
 
   return (
     <div
-      className={`topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 ${mobileObscured ? 'hidden md:flex' : 'flex'} flex-col gap-2 md:bottom-auto md:right-6 md:top-[var(--topology-floating-control-desktop-top)] xl:right-8`}
+      className={`topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 ${mobileObscured ? 'hidden md:flex' : 'flex'} flex-col gap-2 md:bottom-auto md:right-[var(--chrome-inset)] md:top-[var(--topology-floating-control-desktop-top)]`}
       data-testid="topology-fit-control"
       data-agent-dock-adjacent-rail="true"
       data-controls-density={density}

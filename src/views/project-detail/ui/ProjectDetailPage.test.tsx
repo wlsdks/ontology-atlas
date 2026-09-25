@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 
@@ -43,9 +43,6 @@ vi.mock("@/features/taxonomy", () => ({
 
 vi.mock("@/widgets/search-palette", () => ({
   SearchPalette: () => null,
-}));
-vi.mock("@/widgets/shortcut-sheet", () => ({
-  ShortcutSheet: () => null,
 }));
 vi.mock("@/features/construction-review-local", () => ({
   useConstructionReviewSession: () => mocks.constructionReview,
@@ -489,8 +486,35 @@ describe("ProjectDetailPage", () => {
     // The ontology cell's door would be the map, which the hero's primary action already opens.
     const mapDoors = screen
       .getAllByRole("link")
-      .filter((link) => link.getAttribute("href") === `/topology/?p=${SLUG}`);
+      .filter((link) => link.getAttribute("href") === `/topology/?p=${encodeURIComponent(`project:${SLUG}`)}`);
     expect(mapDoors).toHaveLength(1);
+  });
+
+  // 2026-09-25 sweep: the bare slug opened the project drawer, which has no code evidence, so
+  // connecting the project's code folder was unreachable from this page. The map door lands
+  // on the project's own node, whose inspector carries the evidence and the connect control.
+  it("opens the map on the project's own node, where its code folder is connected", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    renderPage();
+
+    expect(screen.getByTestId("project-detail-topology-link")).toHaveAttribute(
+      "href",
+      `/topology/?p=${encodeURIComponent(`project:${SLUG}`)}`,
+    );
+  });
+
+  // The same sweep: the editable title answered only as a button, so the page had no level-1
+  // heading for the people who can edit it. It is the heading, and the press lives inside it.
+  it("keeps the project name the page's level-1 heading when it is editable", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = true;
+    renderPage();
+
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toHaveAccessibleName("ontology-atlas");
+    expect(within(heading).getByRole("button", { name: "ontology-atlas" })).toBeInTheDocument();
   });
 
   // The Library cell once counted wiki pages out of the chosen sample while counting sources out

@@ -27,7 +27,7 @@ import {
 } from "./topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "./topology-realm-runtime";
-import { type TopologyWorld } from "./topology-world";
+import { computeDrawnSpineBounds, type TopologyWorld } from "./topology-world";
 import {
   type ViewportReframeMotion
 } from "./use-topology-viewport-lifecycle";
@@ -175,9 +175,11 @@ export function useTopologyCameraNavigation({
     // alone put the camera at 1.55× the overview, and the rest of the spine
     // overflowed: three domains under the toolbar, one off the canvas
     // (measured 2026-09-19). The lens dims that ring now, so it is the frame
-    // the path wants, not a crop to cut away.
+    // the path wants, not a crop to cut away. The ring as drawn: a hub folded
+    // behind a crowded parent is not in it, unless the path itself runs
+    // through it, and then the path's own bbox above already holds it.
     if (mapLensKindRef.current === "path" && !galaxyRef.current) {
-      const spine = world.spineBounds;
+      const spine = computeDrawnSpineBounds(world, tokens, expandedParentsRef.current);
       if (spine.minX < minX) minX = spine.minX;
       if (spine.minY < minY) minY = spine.minY;
       if (spine.maxX > maxX) maxX = spine.maxX;
@@ -230,7 +232,7 @@ export function useTopologyCameraNavigation({
     } else if (motion === "follow") cameraTweenRef.current = null;
     else beginCameraTween(target);
     return true;
-  }, [beginCameraTween, cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, cameraTweenRef, constellationCameraRef, constellationFocusId, dampingRef, dataSourceKey, galaxyLayoutRef, galaxyRef, hasInitializedRef, mapLensKindRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
+  }, [beginCameraTween, cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, cameraTweenRef, constellationCameraRef, constellationFocusId, dampingRef, dataSourceKey, expandedParentsRef, galaxyLayoutRef, galaxyRef, hasInitializedRef, mapLensKindRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
 
   const getRunSpotlightFit = useEffectEvent(() => runSpotlightFit);
 

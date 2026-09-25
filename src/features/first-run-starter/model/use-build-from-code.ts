@@ -63,7 +63,7 @@ export interface BuildFromCodeState {
 
 export interface BuildFromCodeDeps {
   /** Registers and loads a vault without reopening a picker — the app's one existing open path. */
-  openRecord: (record: LocalFsHandleRecord) => Promise<void>;
+  openRecord: (record: LocalFsHandleRecord) => Promise<unknown>;
   /** Sends the opening turn once the vault is live. Called with the project root, never the vault. */
   handoff: (location: ProjectVaultLocation) => void;
 }

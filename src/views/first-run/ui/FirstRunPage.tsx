@@ -60,16 +60,29 @@ export function FirstRunPage() {
   // Both creation paths produce a starter in the screen's language — the same action must not produce a
   // vault in a different language depending on the entry path (walkthrough 2026-07-26).
   const locale = useLocale();
+  /*
+   * ⚠️ **What a door says after its folder opens, it says through a toast** (2026-09-25, D1).
+   * This screen is not on the glass by then: the shell swaps it for the opening pane as soon as
+   * the open begins, and the root entry swaps that for the map. State set on it afterwards —
+   * the old `createdPath` effect, an inline starter failure — reached nobody, so "just start"
+   * finished with no word at all. The toast outlives this screen.
+   */
+  const showToast = toast.show;
+  const starterFailed = useCallback(
+    (error: unknown) => showToast(failureSentence(error, t("starterFailed")).sentence, "error"),
+    [showToast, failureSentence, t],
+  );
+  const justStartCreated = useCallback(
+    (path: string) => showToast(t("justStartToast", { path }), "success"),
+    [showToast, t],
+  );
   const { handleCreate, scaffolding, actionError, setActionError } =
-    useVaultCreateFlow(vault, locale);
+    useVaultCreateFlow(vault, locale, { starterFailed });
   const {
     justStart,
     busy: justStartBusy,
-    scaffolding: justStartScaffolding,
     actionError: justStartError,
-    createdPath,
-    clearCreatedPath,
-  } = useJustStartVault(vault, locale);
+  } = useJustStartVault(vault, locale, { created: justStartCreated, starterFailed });
   // A dev build can open this page in an ordinary browser through the `?shell=desktop` override
   // (`isDesktopShell()`), and in that case there is no real Tauri invoke bridge, so "just start" is not
   // rendered. This page itself only renders behind a client-only mount (`RootEntryPage`'s `clientReady`
@@ -109,12 +122,6 @@ export function FirstRunPage() {
     },
     [choosingFor, handleCreate, justStart],
   );
-
-  useEffect(() => {
-    if (!createdPath) return;
-    toast.show(t("justStartToast", { path: createdPath }), "success");
-    clearCreatedPath();
-  }, [createdPath, clearCreatedPath, toast, t]);
 
   /*
    * ⚠️ Both hooks hand over a **failure code**, never a thrown sentence. Until v1.2.2 they handed
@@ -411,11 +418,7 @@ export function FirstRunPage() {
               </span>
               <span className="min-w-0">
                 <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                  {justStartScaffolding
-                    ? t("scaffolding")
-                    : justStartBusy
-                      ? t("justStartBusy")
-                      : t("justStartTitle")}
+                  {justStartBusy ? t("justStartBusy") : t("justStartTitle")}
                 </span>
                 <span className="mt-0.5 block break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
                   {choosingFolderHome ? tSwitch("choose.justStartBody") : t("justStartBody")}

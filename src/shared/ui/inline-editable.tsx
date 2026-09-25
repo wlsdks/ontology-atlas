@@ -174,10 +174,7 @@ export function InlineEditable({
     as,
     content: value || placeholder,
     isEmpty: !value,
-    className: cn(
-      "cursor-text rounded-chip transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a32)]",
-      className,
-    ),
+    className,
     interactive: true,
     onClick: enterEdit,
     onKeyDown: handleKeyDownView,
@@ -185,6 +182,12 @@ export function InlineEditable({
     dataTestId,
   });
 }
+
+/** What makes the view read as editable: the hover wash and the keyboard ring. */
+const EDITABLE_VIEW_CLASS =
+  "cursor-text rounded-chip transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a32)]";
+
+const HEADING_TAGS = new Set<NonNullable<Props["as"]>>(["h1", "h2", "h3"]);
 
 function renderView({
   as,
@@ -213,24 +216,44 @@ function renderView({
   // read-only page too (measured 2026-09-19). The name stays the content. When the view is
   // a button, the field name rides along as the description so a reader still hears which
   // field the button edits.
-  const commonProps = {
-    className,
-    "data-testid": dataTestId,
-    ...(interactive && ariaLabel ? { "aria-description": ariaLabel } : {}),
-    ...(interactive
-      ? {
-          role: "button" as const,
-          tabIndex: 0,
-          onClick,
-          onKeyDown,
-        }
-      : {}),
-  };
+  const buttonProps = interactive
+    ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onClick,
+        onKeyDown,
+        ...(ariaLabel ? { "aria-description": ariaLabel } : {}),
+      }
+    : {};
   const rendered = isEmpty ? (
     <span className="text-[color:var(--color-text-quaternary)]">{content}</span>
   ) : (
     content
   );
+  /*
+   * **A heading stays a heading when its owner may edit it** (2026-09-25 sweep). The button
+   * role used to sit on the host, and on an `h1` it replaced the heading: the project page's
+   * one title answered as `button "Ontology Atlas"`, and heading navigation found no level-1
+   * heading on the page — only for the people who can edit it. Dropping the role would have
+   * traded that for a focusable heading nothing announces as pressable. So the heading keeps
+   * its tag and role, and the pressable surface is one block inside it, filling the same
+   * box: the heading is named by its words, and the button inside it by the same words.
+   */
+  if (interactive && HEADING_TAGS.has(as)) {
+    const Heading = as as "h1" | "h2" | "h3";
+    return (
+      <Heading className={className} data-testid={dataTestId}>
+        <span {...buttonProps} className={cn("block", EDITABLE_VIEW_CLASS)}>
+          {rendered}
+        </span>
+      </Heading>
+    );
+  }
+  const commonProps = {
+    className: interactive ? cn(EDITABLE_VIEW_CLASS, className) : className,
+    "data-testid": dataTestId,
+    ...buttonProps,
+  };
   switch (as) {
     case "h1":
       return <h1 {...commonProps}>{rendered}</h1>;

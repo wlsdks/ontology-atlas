@@ -28,7 +28,13 @@ const VAULT = {
 
 test("이름 변경 뒤 — 경고가 안 뜨고 주소가 새 이름을 가리킨다", async ({ page }) => {
   test.setTimeout(150_000);
-  page.on("dialog", (d) => void d.accept("capabilities/cart-renamed"));
+  // Rename is the in-app dialog now (2026-09-26), never a browser prompt: record any
+  // native dialog so its return fails the test instead of being answered for it.
+  const nativeDialogs: string[] = [];
+  page.on("dialog", (d) => {
+    nativeDialogs.push(d.type());
+    void d.dismiss();
+  });
   await page.setViewportSize({ width: 1512, height: 900 });
   await seedFirstRunSeen(page);
   await stubDirectoryPicker(page, VAULT);
@@ -55,15 +61,23 @@ test("이름 변경 뒤 — 경고가 안 뜨고 주소가 새 이름을 가리�
     .poll(() => new URL(page.url()).searchParams.get("slug"), { timeout: 20_000 })
     .toBe("capabilities/cart");
 
-  // Palette → rename command (the dialog handler above answers the prompt with the new address)
+  // Palette → rename command. People still type the command's old Korean name; the
+  // command answers to it through its keywords although its label changed on 2026-09-26.
   await page.keyboard.press("Meta+k");
   const palette = page.getByRole("dialog").filter({ has: page.locator('input[type="text"]') }).first();
   await expect(palette, "팔레트가 안 열렸다").toBeVisible();
   await page.keyboard.type("이름 변경");
   // Enter takes the **active** row, so the condition is that the active row is the
   // command we typed for — not that 600 ms of this machine has gone by.
-  await expect(palette.locator('[role="option"][aria-selected="true"]')).toContainText("이름 변경");
+  await expect(palette.locator('[role="option"][aria-selected="true"]')).toContainText("이름 바꾸기");
   await page.keyboard.press("Enter");
+
+  // The rename dialog keeps the folder and edits the name part of the address.
+  const nameInput = page.getByTestId("docs-rename-input");
+  await expect(nameInput).toBeVisible();
+  await nameInput.fill("cart-renamed");
+  await page.getByTestId("docs-rename-confirm").click();
+  await expect(page.getByTestId("docs-rename-dialog")).toBeHidden({ timeout: 20_000 });
 
   // A **watch window**, not a wait: the claim is that the banner never appears across
   // the manifest-refresh gap (web polling at 1.5s/5s), and a single frame during that
@@ -78,6 +92,7 @@ test("이름 변경 뒤 — 경고가 안 뜨고 주소가 새 이름을 가리�
   // The address points at the new name, and the document is still open.
   expect(page.url()).toContain("slug=capabilities%2Fcart-renamed");
   await expect(page.getByText("장바구니").first()).toBeVisible();
+  expect(nativeDialogs, "이름 변경이 브라우저 입력창을 띄웠다").toEqual([]);
 });
 
 /**
@@ -88,7 +103,12 @@ test("이름 변경 뒤 — 경고가 안 뜨고 주소가 새 이름을 가리�
  */
 test("삭제 뒤 — 경고가 안 뜨고 주소가 지운 문서를 가리키지 않는다", async ({ page }) => {
   test.setTimeout(150_000);
-  page.on("dialog", (d) => void d.accept());
+  // Delete confirms in the app's own dialog now (2026-09-26), never a browser confirm.
+  const nativeDialogs: string[] = [];
+  page.on("dialog", (d) => {
+    nativeDialogs.push(d.type());
+    void d.dismiss();
+  });
   await page.setViewportSize({ width: 1512, height: 900 });
   await seedFirstRunSeen(page);
   await stubDirectoryPicker(page, VAULT);
@@ -123,6 +143,8 @@ test("삭제 뒤 — 경고가 안 뜨고 주소가 지운 문서를 가리키�
   // command we typed for — not that 600 ms of this machine has gone by.
   await expect(palette.locator('[role="option"][aria-selected="true"]')).toContainText("삭제");
   await page.keyboard.press("Enter");
+  await page.getByTestId("docs-delete-confirm").click();
+  await expect(page.getByTestId("docs-delete-confirm")).toBeHidden({ timeout: 20_000 });
 
   const banner = page.getByText(/못 찾았어요/);
   for (let i = 0; i < 12; i += 1) {
@@ -130,4 +152,5 @@ test("삭제 뒤 — 경고가 안 뜨고 주소가 지운 문서를 가리키�
     expect(await banner.count(), `삭제 ${(i + 1) * 0.5}s 후 거짓 「못 찾았어요」 경고`).toBe(0);
   }
   expect(page.url()).not.toContain("slug=capabilities%2Fcart");
+  expect(nativeDialogs, "삭제가 브라우저 확인창을 띄웠다").toEqual([]);
 });

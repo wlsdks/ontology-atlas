@@ -1,15 +1,27 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Check, ChevronRight, Clipboard, Pencil } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
-import { useTranslations } from "next-intl";
-import { buildNewNodeDoc, isWikiPage, type VaultDoc } from "@/entities/docs-vault";
+import { useLocale, useTranslations } from "next-intl";
+import {
+  buildNewNodeDoc,
+  isWikiPage,
+  type KindChangeReferrer,
+  type VaultDoc,
+} from "@/entities/docs-vault";
+import {
+  CONTAINMENT_KEYS,
+  containmentKeyForKind,
+  kindForContainmentKey,
+} from "@/shared/lib/containment-keys";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
-import type { AgentActivityStatus } from "@/entities/vault-session";
+import { VaultConflictError, type AgentActivityStatus } from "@/entities/vault-session";
+import { routing } from "@/i18n/routing";
 import { computeEditAge } from "@/shared/lib/edit-age";
 import { looksLikeCodePath } from "@/shared/lib/humanize-code-path-title";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { useFailureSentence, type FailureCopy } from "@/shared/lib/use-failure-sentence";
 import {
   validateVaultDocFrontmatter,
   type VaultDocumentIssue,
@@ -23,6 +35,8 @@ import {
   MtimeConflictBadge,
   controlClass,
 } from "@/shared/ui";
+import { Input } from "@/shared/ui/input";
+import { kindFolderAddress, reclassifyMoveTarget } from "../../lib/kind-folder-move";
 import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolve-doc-edit-subject";
 import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
 
@@ -57,6 +71,7 @@ const GRAPH_KEYS = [
   "kind",
   "slug",
   "title",
+  // `display_<locale>` keys are listed right after `title` — see `graphFieldKeys`.
   "domain",
   "category",
   "status",
@@ -66,6 +81,149 @@ const GRAPH_KEYS = [
   "belongs_to",
   "evidence",
 ] as const;
+
+/**
+ * **The per-language names are graph facts too** (2026-09-26, map-edit QA D2). The map, the
+ * tree and the search list call a concept by `display_<locale>` before `title`, yet this block
+ * never listed those keys: `capabilities/analysis-archive.md` carries `display_en` and
+ * `display_ko` on the two lines after `title`, and the expanded block printed kind, slug, title
+ * and domain only. They sit beside `title`, the name they stand in for.
+ */
+const DISPLAY_NAME_KEY = /^display_[a-z]{2}$/;
+
+function graphFieldKeys(frontmatter: Record<string, unknown> | undefined): string[] {
+  const displayKeys = Object.keys(frontmatter ?? {})
+    .filter((key) => DISPLAY_NAME_KEY.test(key))
+    .sort();
+  const titleAt = GRAPH_KEYS.indexOf("title") + 1;
+  return [...GRAPH_KEYS.slice(0, titleAt), ...displayKeys, ...GRAPH_KEYS.slice(titleAt)];
+}
+
+/**
+ * The languages this app writes names in, the reader's own first — the order the "create
+ * concept" form asks them in (screen language, then the other).
+ */
+function nameLocalesFor(current: string): string[] {
+  const all: readonly string[] = routing.locales;
+  return all.includes(current) ? [current, ...all.filter((code) => code !== current)] : [...all];
+}
+
+/**
+ * Every frontmatter key whose value names another node — the MCP neighbour-key family
+ * (`vault-health.ts`, `mcp/src/vault.mjs`) plus the two legacy keys this block lists.
+ * `elements:` also carries code paths, which are evidence rather than references.
+ */
+const DANGLING_CHECK_KEYS = [
+  "domain",
+  "domains",
+  "capabilities",
+  "elements",
+  "dependencies",
+  "depends_on",
+  "relates",
+  "relates_to",
+  "contains",
+  "describes",
+  "broader",
+  "belongs_to",
+] as const;
+
+/**
+ * References this document makes that nothing in the folder answers to — what the compiler
+ * reports as `dangling-graph-reference` (a warning; the write is never refused).
+ *
+ * **Why it is shown here** (2026-09-26, map-edit QA D7). Deleting a document left its
+ * referrers pointing at a name that no longer exists, and the referrer's own page said
+ * nothing: the loss was silent everywhere but the Insights board. `resolveRef` is the page's
+ * resolver — path, declared `slug:`, then unique tail — which never resolves less than the
+ * compiler does, so every name listed here is one the compiler also cannot place.
+ */
+function collectDanglingRefs(
+  frontmatter: Record<string, unknown> | undefined,
+  resolveRef: (token: string) => string | null,
+): string[] {
+  const dangling = new Set<string>();
+  for (const key of DANGLING_CHECK_KEYS) {
+    const { tokens } = toRefTokens(frontmatter?.[key]);
+    for (const token of tokens) {
+      if (key === "elements" && looksLikeCodePath(token)) continue;
+      if (resolveRef(token) == null) dangling.add(token);
+    }
+  }
+  return [...dangling];
+}
+
+/** How many missing names the warning spells out before it counts the rest. */
+const DANGLING_NAMED_MAX = 3;
+
+/**
+ * Entries in a list named for a kind whose document is another kind — an element under
+ * `capabilities:`, or a `domain:` parent that is not a domain.
+ *
+ * **Why it is shown here** (2026-09-26, map-edit review). Reclassifying a capability into an
+ * element used to leave its domain reading `capabilities: [..., elements/companion-memories]`.
+ * The entry resolved, so the dangling warning above never fired and nothing on any screen said
+ * so, while the map and the dense-parent count took it as one of the domain's capabilities. A
+ * kind change now moves such an entry — but only into a list the referrer's kind may keep, so an
+ * entry it may not keep stays, and this is where the person learns about it (as do entries a
+ * hand edit or an older write left behind). Code paths under `elements:` are evidence, not
+ * references, and are skipped like the dangling check skips them.
+ */
+function collectMisfiledRefs(
+  frontmatter: Record<string, unknown> | undefined,
+  resolveRef: (token: string) => string | null,
+  kindOf: (slug: string) => string | null,
+): Array<{ token: string; key: string; kind: string }> {
+  const misfiled: Array<{ token: string; key: string; kind: string }> = [];
+  const seen = new Set<string>();
+  for (const key of [...CONTAINMENT_KEYS, "domain"]) {
+    const expected = key === "domain" ? "domain" : kindForContainmentKey(key);
+    const { tokens } = toRefTokens(frontmatter?.[key]);
+    for (const token of tokens) {
+      if (key === "elements" && looksLikeCodePath(token)) continue;
+      const target = resolveRef(token);
+      const kind = target ? kindOf(target) : null;
+      if (!kind || kind === expected || seen.has(`${key}\0${token}`)) continue;
+      seen.add(`${key}\0${token}`);
+      misfiled.push({ token, key, kind });
+    }
+  }
+  return misfiled;
+}
+
+/** One document a kind change touches, as the page names it (`planKindChangeReferrers`). */
+export interface KindChangeReferrerRow extends KindChangeReferrer {
+  name: string;
+}
+
+/** How many referrers the quick patch names before Save, before it counts the rest. */
+const KIND_CHANGE_ROWS_MAX = 4;
+
+/**
+ * The plain name of a list named for a kind — the reader's word, not the schema key
+ * (`capabilities` → the reader's word for capabilities, in their language). Shared with the
+ * receipt the page shows after Save.
+ */
+export function useReferrerListName(): (key: string) => string {
+  const t = useTranslations("docsVault.frontmatterBlock.referrerLists.listName");
+  return useCallback(
+    (key: string) => {
+      switch (key) {
+        case "domains":
+          return t("domains");
+        case "capabilities":
+          return t("capabilities");
+        case "elements":
+          return t("elements");
+        case "domain":
+          return t("domain");
+        default:
+          return key;
+      }
+    },
+    [t],
+  );
+}
 
 // Only the kinds the vault frontmatter schema treats as editable — sentinel kinds
 // such as vault-readme and unknown are not touched by this select.
@@ -123,6 +281,8 @@ export interface DocFrontmatterPatch {
   kind?: string;
   domain?: string | null;
   title?: string;
+  /** A per-language name (`display_ko`, `display_en`, …); null removes the key. */
+  [displayName: `display_${string}`]: string | null | undefined;
 }
 
 export interface DocFrontmatterBlockProps {
@@ -132,13 +292,24 @@ export interface DocFrontmatterBlockProps {
   /** Domain candidates for a capability or element — the vault's `kind: domain` documents. */
   domainOptions?: Array<{ slug: string; title: string }>;
   /** Called with confirmed fields only. Saving is the caller's responsibility, through the
-   *  conflict-guarded `updateFrontmatter`. */
+   *  conflict-guarded `updateFrontmatter` — or, when the kind change moves the file into its
+   *  new kind's folder (`reclassifyMoveTarget`), through the same guarded rename. A rejection
+   *  is shown in the form in the reader's language. */
   onPatch?: (patch: DocFrontmatterPatch) => Promise<void>;
+  /** Moves this document into its kind's folder — the remedy beside the
+   *  `slug-outside-kind-folder` warning. Without it the warning stands alone. */
+  onMoveToKindFolder?: (target: string) => void;
+  /** The documents that list this one by kind, and what a change to `newKind` (at `newSlug`)
+   *  does to each list — named in the form before Save. Without it nothing is previewed. */
+  kindChangeReferrers?: (newKind: string, newSlug: string) => KindChangeReferrerRow[];
   /** Navigates to a reference slug when clicked — without it, references stay plain text. */
   onNavigate?: (slug: string) => void;
   /** Resolves a bare slug (the frontmatter reference spelling) to a real navigation slug.
    *  Null means the reference is not in the vault, so it is not rendered as a link. */
   resolveRef?: (token: string) => string | null;
+  /** The kind of a resolved document — with `resolveRef`, it finds an entry listed under a
+   *  list for another kind. Without it (a sample or server vault) nothing is judged. */
+  kindOf?: (slug: string) => string | null;
   /** The real data behind the "last edited · AI agent" fact. Without it (a server or sample
    *  vault) the AI subject row is never rendered. */
   agentActivityStatus?: AgentActivityStatus | null;
@@ -154,18 +325,33 @@ export function DocFrontmatterBlock({
   canEdit = false,
   domainOptions = [],
   onPatch,
+  onMoveToKindFolder,
+  kindChangeReferrers,
   onNavigate,
   resolveRef,
+  kindOf,
   agentActivityStatus = null,
   selfEditTimestamps,
 }: DocFrontmatterBlockProps) {
   const t = useTranslations("docsVault.frontmatterBlock");
+  const listName = useReferrerListName();
   const tProvenance = useTranslations("editProvenance");
+  const tLocale = useTranslations("locale");
+  const locale = useLocale();
   const kindLabel = useOntologyKindLabel();
+  const failureSentence = useFailureSentence();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /*
+   * ⚠️ **The failure carries two halves** (2026-09-26, map-edit QA D4). It used to be the
+   * caught error's `.message`, so a refused save printed the vault layer's English —
+   * `Vault conflict — "capabilities/agent-environment-doctor" was modified externally between
+   * read and write.` — in the danger ink under the Title field of a Korean screen. `sentence`
+   * is the reader's language and the only half that reaches the page; `detail` is the machine's
+   * English and only ever reaches `data-failure-detail` (`use-failure-sentence.ts`).
+   */
+  const [error, setError] = useState<FailureCopy | null>(null);
   // The mtime baseline at the moment this document was "opened", plus a "now" snapshot.
   // The lazy `useState(() => Date.now())` matches this app's existing `updatedAgoNowMs`
   // contract — `Date.now()` is never called during render. The caller remounts this
@@ -208,9 +394,27 @@ export function DocFrontmatterBlock({
   const currentKind = formatValue(doc.frontmatter?.kind);
   const currentDomain = formatValue(doc.frontmatter?.domain) ?? "";
   const currentTitle = formatValue(doc.frontmatter?.title) ?? doc.title;
+  // The per-language names this form edits (D2) — one field per language the app writes.
+  const nameLocales = nameLocalesFor(locale);
+  const currentNames = Object.fromEntries(
+    nameLocales.map((code) => [code, formatValue(doc.frontmatter?.[`display_${code}`]) ?? ""]),
+  );
   const [draftKind, setDraftKind] = useState(currentKind ?? "");
   const [draftDomain, setDraftDomain] = useState(currentDomain);
   const [draftTitle, setDraftTitle] = useState(currentTitle);
+  const [draftNames, setDraftNames] = useState<Record<string, string>>(currentNames);
+  // Where saving this kind change moves the file (D8): into the new kind's folder, when the
+  // document is filed under its old kind's folder. Stated in the form before Save is pressed.
+  const moveTarget = editing ? reclassifyMoveTarget(doc.slug, currentKind, draftKind) : null;
+  // What that kind change does to the documents that list this one by kind — named before
+  // Save, from the verdict the write applies (2026-09-26, map-edit review).
+  const kindChangeRows = useMemo(
+    () =>
+      editing && currentKind && draftKind && draftKind !== currentKind && kindChangeReferrers
+        ? kindChangeReferrers(draftKind, moveTarget ?? doc.slug)
+        : [],
+    [editing, currentKind, draftKind, kindChangeReferrers, moveTarget, doc.slug],
+  );
 
   // Inline validator diagnostics — while editing, the draft (kind/domain) is validated;
   // otherwise the saved frontmatter is, after a 400ms debounce.
@@ -225,21 +429,29 @@ export function DocFrontmatterBlock({
   const [debouncedValidation, setDebouncedValidation] = useState({
     kind: activeKind,
     domain: activeDomain,
+    moveTarget: null as string | null,
   });
   useEffect(() => {
     const handle = window.setTimeout(() => {
-      setDebouncedValidation({ kind: activeKind, domain: activeDomain });
+      setDebouncedValidation({ kind: activeKind, domain: activeDomain, moveTarget });
     }, 400);
     return () => window.clearTimeout(handle);
-  }, [activeKind, activeDomain]);
+  }, [activeKind, activeDomain, moveTarget]);
 
   const validationIssues = useMemo<VaultDocumentIssue[]>(() => {
     const stored = doc.frontmatter ?? {};
     // With no kind yet, **the saved frontmatter is validated as-is**. It used to bail out
     // with `if (!kind) return []`, so the screen went silent in exactly the two most common
     // ways a node disappears: a missing kind and an empty one.
+    // A kind change that moves the file is previewed at the address it will have, so the
+    // form does not warn about a folder mismatch its own Save is about to resolve. `slug:`
+    // follows a move only when it mirrors the file's address (`rewriteMovedDocSelf`).
+    const movedSlug =
+      debouncedValidation.moveTarget && stored.slug === doc.slug
+        ? { slug: debouncedValidation.moveTarget }
+        : {};
     const frontmatterForValidation: Record<string, unknown> = debouncedValidation.kind
-      ? { ...stored, kind: debouncedValidation.kind, domain: debouncedValidation.domain }
+      ? { ...stored, kind: debouncedValidation.kind, domain: debouncedValidation.domain, ...movedSlug }
       : stored;
     // The parser's own complaints about this file travel with the doc, so a line it could not
     // read is shown here rather than silently dropped (census state 3e, 2026-08-31).
@@ -252,7 +464,7 @@ export function DocFrontmatterBlock({
       ...issues.filter((issue) => issue.severity === "error"),
       ...issues.filter((issue) => issue.severity !== "error"),
     ];
-  }, [doc.frontmatter, doc.diagnostics, debouncedValidation]);
+  }, [doc.frontmatter, doc.diagnostics, doc.slug, debouncedValidation]);
 
   const issueMessageDict = useMemo<Partial<Record<VaultIssueCode, string>>>(
     () => ({
@@ -306,7 +518,7 @@ export function DocFrontmatterBlock({
     }
   }, [currentKind, domainOptions, kindLabel, t]);
 
-  const fields = GRAPH_KEYS.map((key) => {
+  const fields = graphFieldKeys(doc.frontmatter).map((key) => {
     const raw = doc.frontmatter?.[key];
     const ref = REFERENCE_KEYS.has(key) ? toRefTokens(raw) : null;
     return {
@@ -355,6 +567,15 @@ export function DocFrontmatterBlock({
   const definitionValue = formatValue(doc.frontmatter?.definition);
 
   const kindValue = currentKind;
+  // Only a node's references are checked, and only against a resolver that knows the folder
+  // (a sample or server vault passes none, so it is never accused of anything).
+  const danglingRefs = kindValue && resolveRef ? collectDanglingRefs(doc.frontmatter, resolveRef) : [];
+  const danglingSet = new Set(danglingRefs);
+  const misfiledRefs =
+    kindValue && resolveRef && kindOf ? collectMisfiledRefs(doc.frontmatter, resolveRef, kindOf) : [];
+  // The remedy the folder warning names: move the file into its kind's folder (D8).
+  const kindFolderTarget =
+    kindValue && canEdit && onMoveToKindFolder ? kindFolderAddress(doc.slug, kindValue) : null;
 
   // **A document with no kind states its own problem** (2026-08-04).
   //
@@ -400,6 +621,7 @@ export function DocFrontmatterBlock({
     setDraftKind(currentKind ?? "");
     setDraftDomain(currentDomain);
     setDraftTitle(currentTitle);
+    setDraftNames(currentNames);
     setError(null);
     setEditing(true);
     setOpen(true);
@@ -419,12 +641,22 @@ export function DocFrontmatterBlock({
       if (nextDomain !== currentDomain) {
         patch.domain = nextDomain || null;
       }
+      // An emptied name is removed rather than written blank: with no `display_<locale>`
+      // the screens fall back to `title`, which is what an empty field means.
+      for (const code of nameLocales) {
+        const nextName = (draftNames[code] ?? "").trim();
+        if (nextName !== currentNames[code]) patch[`display_${code}`] = nextName || null;
+      }
       if (Object.keys(patch).length > 0) {
         await onPatch(patch);
       }
       setEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(
+        err instanceof VaultConflictError
+          ? { sentence: t("saveConflict"), detail: err.message }
+          : failureSentence(err, t("saveFailed")),
+      );
     } finally {
       setSaving(false);
     }
@@ -436,34 +668,131 @@ export function DocFrontmatterBlock({
    * Splitting on colour alone would make colour the only distinguishing channel (a charter
    * violation), so an error row also carries a `!` in the icon slot and a label.
    */
+  const issueRowClass = (severity: VaultDocumentIssue["severity"]) =>
+    // Shared geometry stays on one line — **only the tone** varies by severity.
+    // (Copying the whole class string per branch raises the off-ramp utility ratchet.)
+    `flex items-start gap-2 rounded-micro border px-2 py-1.5 text-label leading-label ${
+      severity === "error"
+        ? "border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-status-danger)]"
+        : "border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] text-[color:var(--color-amber-docs-a92)]"
+    }`;
+  const severityTag = (severity: VaultDocumentIssue["severity"]) => (
+    <span className="mr-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)]">
+      {severity === "error" ? t("issueSeverityError") : t("issueSeverityWarning")}
+    </span>
+  );
   const issueRows =
-    validationIssues.length > 0 ? (
+    validationIssues.length > 0 || danglingRefs.length > 0 || misfiledRefs.length > 0 ? (
       <div
         data-testid="doc-frontmatter-validator-warnings"
         aria-label={t("validatorWarningsAriaLabel")}
         className="mt-2 flex flex-col gap-1 font-sans"
       >
         {validationIssues.map((issue, index) => (
-          <p
+          <div
             key={`${issue.code}-${index}`}
             data-testid="doc-frontmatter-issue"
             data-severity={issue.severity}
-            // Shared geometry stays on one line — **only the tone** varies by severity.
-            // (Copying the whole class string per branch raises the off-ramp utility ratchet.)
-            className={`rounded-micro border px-2 py-1.5 text-label leading-label ${
-              issue.severity === "error"
-                ? "border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-status-danger)]"
-                : "border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] text-[color:var(--color-amber-docs-a92)]"
-            }`}
+            data-issue-code={issue.code}
+            className={issueRowClass(issue.severity)}
           >
-            <span className="mr-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)]">
-              {issue.severity === "error" ? t("issueSeverityError") : t("issueSeverityWarning")}
-            </span>
-            {mapVaultIssueCodeToPlainMessage(issue.code, issueMessageDict)}
-          </p>
+            <p className="min-w-0 flex-1">
+              {severityTag(issue.severity)}
+              {mapVaultIssueCodeToPlainMessage(issue.code, issueMessageDict)}
+            </p>
+            {/* The warning names a move; this is the move (D8). The file keeps its name and
+                every document pointing at it is rewritten with it. */}
+            {issue.code === "slug-outside-kind-folder" && kindFolderTarget && !editing ? (
+              <button
+                type="button"
+                onClick={() => onMoveToKindFolder?.(kindFolderTarget)}
+                data-testid="doc-frontmatter-move-to-kind-folder"
+                className={controlClass({
+                  shape: "link",
+                  hoverInk: "strong",
+                  className:
+                    "flex-none font-[var(--font-weight-signature)] text-[color:var(--color-amber-docs-a92)] underline decoration-[color:var(--color-amber-docs-a18)] underline-offset-2",
+                })}
+              >
+                {t("moveToKindFolder", {
+                  folder: `${kindFolderTarget.slice(0, kindFolderTarget.lastIndexOf("/") + 1)}`,
+                })}
+              </button>
+            ) : null}
+          </div>
         ))}
+        {danglingRefs.length > 0 ? (
+          <div
+            data-testid="doc-frontmatter-issue"
+            data-severity="warning"
+            data-issue-code="dangling-graph-reference"
+            className={issueRowClass("warning")}
+          >
+            <p className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+              {severityTag("warning")}
+              {t("danglingRefs", {
+                count: danglingRefs.length,
+                names: danglingRefs.slice(0, DANGLING_NAMED_MAX).join(", "),
+                more:
+                  danglingRefs.length > DANGLING_NAMED_MAX
+                    ? t("danglingRefsMore", { count: danglingRefs.length - DANGLING_NAMED_MAX })
+                    : "",
+              })}
+            </p>
+          </div>
+        ) : null}
+        {/* An entry that resolves but sits in a list for another kind (2026-09-26): the
+            dangling warning never sees it, and the map counts it by its list. */}
+        {misfiledRefs.length > 0 ? (
+          <div
+            data-testid="doc-frontmatter-issue"
+            data-severity="warning"
+            data-issue-code="kind-list-mismatch"
+            className={issueRowClass("warning")}
+          >
+            <p className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+              {severityTag("warning")}
+              {t("misfiledRefs", {
+                count: misfiledRefs.length,
+                names: misfiledRefs
+                  .slice(0, DANGLING_NAMED_MAX)
+                  .map((ref) =>
+                    t("misfiledRefName", {
+                      ref: ref.token,
+                      kind: kindLabel(ref.kind),
+                      list: listName(ref.key),
+                    }),
+                  )
+                  .join(", "),
+                more:
+                  misfiledRefs.length > DANGLING_NAMED_MAX
+                    ? t("danglingRefsMore", { count: misfiledRefs.length - DANGLING_NAMED_MAX })
+                    : "",
+              })}
+            </p>
+          </div>
+        ) : null}
       </div>
     ) : null;
+
+  /** One referrer's line before Save: where its entry moves, or why it stays and is flagged. */
+  function kindChangeSentence(row: KindChangeReferrerRow): string {
+    const move = row.moved[0];
+    if (move) {
+      return t("referrerLists.movedPreview", {
+        name: row.name,
+        from: listName(move.from),
+        to: listName(move.to),
+      });
+    }
+    const kept = row.kept[0];
+    if (!kept) return "";
+    if (kept.key === "domain") return t("referrerLists.keptDomainPreview", { name: row.name });
+    const newList = containmentKeyForKind(draftKind);
+    return newList
+      ? t("referrerLists.keptPreview", { name: row.name, list: listName(kept.key), to: listName(newList) })
+      : t("referrerLists.keptNoListPreview", { name: row.name, list: listName(kept.key) });
+  }
 
   const quickPatchSection = canQuickPatch ? (
     editing ? (
@@ -475,6 +804,14 @@ export function DocFrontmatterBlock({
             onChange={(event) => setDraftKind(event.target.value)}
             disabled={saving}
             data-testid="doc-frontmatter-kind-select"
+            aria-describedby={
+              [
+                moveTarget ? `doc-frontmatter-move-hint-${doc.slug}` : null,
+                kindChangeRows.length > 0 ? `doc-frontmatter-kind-referrers-${doc.slug}` : null,
+              ]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
             className={fieldClass({ size: "xs" })}
           >
             {/* A document with no kind has an empty draft too. Without a placeholder the
@@ -488,6 +825,45 @@ export function DocFrontmatterBlock({
             ))}
           </select>
         </label>
+        {/* Said before Save, not discovered after: a kind change that moves the file names
+            the new address (D8). */}
+        {moveTarget ? (
+          <p
+            id={`doc-frontmatter-move-hint-${doc.slug}`}
+            data-testid="doc-frontmatter-move-hint"
+            className="text-label leading-label text-[color:var(--color-text-tertiary)]"
+          >
+            {t("editKindMoveHint", { path: `${moveTarget}.md` })}
+          </p>
+        ) : null}
+        {/* The documents that list this one by kind, named before Save: which list each entry
+            moves to, or why it stays (2026-09-26, map-edit review). */}
+        {kindChangeRows.length > 0 ? (
+          <ul
+            id={`doc-frontmatter-kind-referrers-${doc.slug}`}
+            data-testid="doc-frontmatter-kind-referrers"
+            className="flex flex-col gap-1 text-label leading-label text-[color:var(--color-text-tertiary)]"
+          >
+            {kindChangeRows.slice(0, KIND_CHANGE_ROWS_MAX).map((row) => (
+              <li
+                key={row.slug}
+                data-testid="doc-frontmatter-kind-referrer"
+                data-referrer={row.slug}
+                data-outcome={row.kept.length > 0 ? "kept" : "moved"}
+                className={row.kept.length > 0 ? "text-[color:var(--color-amber-docs-a92)]" : undefined}
+              >
+                {kindChangeSentence(row)}
+              </li>
+            ))}
+            {kindChangeRows.length > KIND_CHANGE_ROWS_MAX ? (
+              <li>
+                {t("referrerLists.previewMore", {
+                  count: kindChangeRows.length - KIND_CHANGE_ROWS_MAX,
+                })}
+              </li>
+            ) : null}
+          </ul>
+        ) : null}
         <label className={fieldLabel({ className: "flex flex-col gap-1" })}>
           {t("editDomainLabel")}
           <select
@@ -514,9 +890,32 @@ export function DocFrontmatterBlock({
             className={fieldClass({ size: "xs" })}
           />
         </label>
+        {/* The names screens show in each language, beside the canonical title they stand in
+            for (D2). Creating a concept asked for them once; this is where they change. */}
+        {nameLocales.map((code, index) => (
+          <Input
+            key={code}
+            size="xs"
+            label={t("editDisplayNameLabel", {
+              language: code === "ko" ? tLocale("korean") : code === "en" ? tLocale("english") : code,
+            })}
+            value={draftNames[code] ?? ""}
+            onChange={(event) =>
+              setDraftNames((previous) => ({ ...previous, [code]: event.target.value }))
+            }
+            disabled={saving}
+            data-testid={`doc-frontmatter-display-name-${code}`}
+            hint={index === nameLocales.length - 1 ? t("editDisplayNameHint") : undefined}
+          />
+        ))}
         {error ? (
-          <p role="alert" className="text-label text-[color:var(--color-status-danger)]">
-            {error}
+          <p
+            role="alert"
+            data-testid="doc-frontmatter-save-error"
+            data-failure-detail={error.detail ?? undefined}
+            className="text-label leading-label text-[color:var(--color-status-danger)]"
+          >
+            {error.sentence}
           </p>
         ) : null}
         <div className="flex items-center gap-2">
@@ -646,11 +1045,13 @@ export function DocFrontmatterBlock({
             ---
           </div>
           {fields.map(({ key, value, refTokens }) => {
+            // Token by token whenever one of them resolves — or is missing from the folder,
+            // so a name the warning below reports is marked on its own line too (D7).
             const linkable =
               refTokens != null &&
               refTokens.length > 0 &&
               onNavigate != null &&
-              refTokens.some((tok) => resolveRef?.(tok) != null);
+              refTokens.some((tok) => resolveRef?.(tok) != null || danglingSet.has(tok));
             return (
               <div key={key} className="flex min-w-0 flex-wrap gap-x-1.5">
                 <span className="text-[color:var(--color-text-quaternary)]">{key}:</span>
@@ -678,6 +1079,14 @@ export function DocFrontmatterBlock({
                             >
                               {tok}
                             </button>
+                          ) : danglingSet.has(tok) ? (
+                            <span
+                              data-testid={`doc-frontmatter-dangling-${tok}`}
+                              title={t("danglingRefTitle")}
+                              className="text-[color:var(--color-amber-docs-a92)] underline decoration-dotted decoration-[color:var(--color-amber-docs-a18)] underline-offset-2"
+                            >
+                              {tok}
+                            </span>
                           ) : (
                             <span>{tok}</span>
                           )}

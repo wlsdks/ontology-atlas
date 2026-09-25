@@ -272,7 +272,9 @@ export function ConceptEgoGraph({
             </g>
           ) : (
             <g
-              key={slot.id}
+              // One neighbour can stand on two bearings (belongs to it and used by it), so the
+              // id alone is not unique among the marks; the bearing makes it so.
+              key={`${slot.bearing}-${slot.id}`}
               role={onSelect ? "button" : undefined}
               tabIndex={onSelect ? 0 : undefined}
               aria-label={slot.fullLabel}

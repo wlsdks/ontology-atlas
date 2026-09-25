@@ -304,4 +304,24 @@ describe("refreshIndexDependentTokens — 표적 갱신", () => {
     for (const name of Object.keys(FIXTURE_VALUES)) root.style.removeProperty(name);
     clearOntologyMapTokensCache();
   });
+
+  it("re-reads the right lane, which the agent dock moves (2026-09-25)", () => {
+    // The dock pulls the utility rail to half an inset from the map's edge, and
+    // `--map-safe-inset-right` follows it (`app/globals.css`). The dock narrows the
+    // canvas, so the viewport commit is the moment to read it again; a cached 112
+    // held the drawing 6 px left of the free map's centre.
+    clearOntologyMapTokensCache();
+    const root = document.documentElement;
+    for (const [name, value] of Object.entries(FIXTURE_VALUES)) {
+      root.style.setProperty(name, value);
+    }
+    expect(getOntologyMapTokens(root).safeInsetRight).toBe(120);
+
+    root.style.setProperty("--map-safe-inset-right", "100");
+    refreshIndexDependentTokens(root);
+    expect(getOntologyMapTokens(root).safeInsetRight).toBe(100);
+
+    for (const name of Object.keys(FIXTURE_VALUES)) root.style.removeProperty(name);
+    clearOntologyMapTokensCache();
+  });
 });

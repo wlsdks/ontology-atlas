@@ -188,13 +188,24 @@ const DESTINATION_ROWS: ShortcutRow[] = DESTINATION_IDS.map((id) => ({
 
 const SECTIONS: ShortcutSection[] = [
   {
+    /*
+     * **Every row here works on every screen that can open this sheet** (2026-09-26), because
+     * this section is shown on every tab of every screen. Three rows broke that:
+     *
+     * - ⇧⌘K had a row of its own, "search concepts, docs and projects together", beside ⌘K's
+     *   "open the search palette" — two rows, two descriptions, one dialog (measured on the map:
+     *   both keys opened the same search with the same placeholder). ⌘K is the row; Shift is
+     *   accepted wherever ⌘K is, and it is not a second search.
+     * - `D` (the quick document preview) is bound by the map alone, so on a project page it
+     *   listed a dead key. It moved to the map's own section below.
+     * - ⌘K and `?` themselves were wired only where a screen drew its own dialog; the shell now
+     *   answers both elsewhere (`shared/lib/shell-key-claims.ts`).
+     */
     titleKey: "navigation",
     surface: "global",
     rows: [
       ...DESTINATION_ROWS,
-      { keys: ["⌘", "K"], labelKey: "openProjectPalette" },
-      { keys: ["⇧", "⌘", "K"], labelKey: "openGlobalPalette" },
-      { keys: ["D"], labelKey: "toggleDocsDrawer" },
+      { keys: ["⌘", "K"], labelKey: "openSearchPalette" },
       { keys: ["?"], labelKey: "showShortcuts" },
       { keys: ["Esc"], labelKey: "stepCloseOverlays" },
     ],
@@ -205,7 +216,9 @@ const SECTIONS: ShortcutSection[] = [
     // (double-click local · Shift+click path · Tab neighbours · / search · 0 depth)
     // described interactions the v2 canvas never implemented — stale carryover from an
     // earlier design that never shipped. Kept: click to select · drag (pan/move node) ·
-    // wheel zoom · ⌘K search · the Esc dismissal order · right-click menu (W2-B, now real).
+    // wheel zoom · right-click menu (W2-B, now real). ⌘K and the Esc order are the
+    // Navigation section's rows, which every tab that shows this section shows too, so they are
+    // not listed a second time here; `D` is here because only the map binds it.
     titleKey: "topology",
     surface: "topology",
     rows: [
@@ -224,9 +237,8 @@ const SECTIONS: ShortcutSection[] = [
       { keys: [k("scroll")], labelKey: "wheelZoom" },
       { keys: ["+", "−"], labelKey: "keyZoom" },
       { keys: ["0"], labelKey: "keyFit" },
-      { keys: ["⌘", "K"], labelKey: "openProjectPalette" },
-      { keys: ["Esc"], labelKey: "stepCloseOverlays" },
       { keys: [k("rightClick")], labelKey: "rightClickContext" },
+      { keys: ["D"], labelKey: "toggleDocsDrawer" },
     ],
   },
   {

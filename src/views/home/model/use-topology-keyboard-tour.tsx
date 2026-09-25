@@ -10,6 +10,7 @@ import type { useTopologyRouteControls } from "./use-topology-route-controls";
 import { type ProjectImpactMode } from "@/entities/project";
 import { useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 import { canAutoStartGuidedTour, readGuideAutoStart, readGuidedTourStatus, resolveAnchorRect, useGuidedTour, useGuidedTourAutoStartReady, useRegisterGuideReplay, watchGuidedTourAutoStartCancel, type TourAnchor } from "@/features/guided-tour";
+import { useClaimShellKey } from "@/shared/lib/shell-key-claims";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useCallback, useEffect, useEffectEvent, useRef } from "react";
 import { shouldSuppressGlobalShortcuts } from "../lib/blocking-surface";
@@ -359,18 +360,19 @@ export function useTopologyKeyboardTour({
     agentAwaitingDecision: acpTurnActivityFrame?.activity.state === "blocked",
   });
 
-  // ⌘K and ⇧⌘K open the same palette (ontology nodes + projects). ⌘K used to open a
-  // project-only palette in which an ontology node could never be found.
-  // `useTypingShortcuts` returns after the first match, so the shift combination is
-  // listed first by convention (both call the same setter, so order is immaterial).
+  /*
+   * The map answers ⌘K and `?` itself, so the shell's own sheet and search stand aside while it
+   * is mounted (`shell-key-claims.ts`): its search selects on the canvas, its sheet closes the
+   * map's other surfaces, and both take part in the Esc order and the suppression below.
+   */
+  useClaimShellKey("search");
+  useClaimShellKey("shortcuts");
+
+  // ⌘K opens the one palette (ontology nodes + projects); Shift is accepted and changes
+  // nothing, which is why the shortcut sheet lists ⌘K alone (2026-09-26). ⌘K used to open a
+  // project-only palette in which an ontology node could never be found. `useTypingShortcuts`
+  // does not require Shift to be up, so one combo covers both.
   useTypingShortcuts([
-    {
-      combo: { key: "k", meta: true, shift: true },
-      onFire: () => {
-        if (shortcutsSuppressed) return;
-        setOntologySearchOpen((v) => !v);
-      },
-    },
     {
       combo: { key: "k", meta: true },
       onFire: () => {

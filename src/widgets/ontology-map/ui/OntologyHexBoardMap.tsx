@@ -102,6 +102,8 @@ const ROOM_UNDER_TOOLBAR = 24;
 const ROOM_BOTTOM = 96;
 const ROOM_RIGHT = 72;
 const ROOM_LEFT_PAD = 16;
+/** Chrome that moves with a selection (INDEX folding or opening, the inspector) has settled by then. */
+const CHROME_SETTLE_MS = 450;
 /** Canals shown in the far band (spec §7). */
 const FAR_CANALS = 14;
 
@@ -161,6 +163,15 @@ interface MapChrome {
  * it may not), and the folded INDEX tab is 26 px wide. So the top edge also comes down to the
  * lowest chrome in the top lane, the left edge moves right of chrome attached to it, and every
  * piece of chrome is returned as a block for the router to keep out of.
+ *
+ * A panel that declares itself one (`data-topology-camera-obstacle="side-panel"`: INDEX open,
+ * the inspector) is not top-lane chrome, although its top edge stands in that lane:
+ * `computeFreeArea` has already taken it off its side. Read as the lowest chrome in the lane, a
+ * panel shorter than 60% of the canvas pushed the free map's top down to its own bottom edge,
+ * and the board fitted the strip left beneath it. INDEX is one while it fades in — its
+ * full-height slot does not count yet, and the panel inside ends under its last row — and the
+ * board opened by its address read its room just then (measured 2026-09-25 at 1512x949: a room
+ * 277 px tall, the board in the bottom third). The inspector is one whenever its content is short.
  */
 function mapChromeOf(canvas: HTMLCanvasElement | null): MapChrome | null {
   if (!canvas) return null;
@@ -168,16 +179,17 @@ function mapChromeOf(canvas: HTMLCanvasElement | null): MapChrome | null {
   const canvasRect = { x: r.x, y: r.y, width: r.width, height: r.height };
   const free = computeFreeArea(canvasRect, collectCanvasObstacles(canvas, canvasRect));
   const small = collectCanvasObstacles(canvas, canvasRect, { minSide: 12 });
+  const lane = small.filter(
+    (b) => b.cameraObstacle !== "side-panel" && b.height < canvasRect.height * 0.6 && b.width < canvasRect.width * 0.6,
+  );
   let left = free.x;
   let top = free.y;
   const right = free.x + free.width;
   const bottom = free.y + free.height;
-  for (const b of small) {
-    if (b.height >= canvasRect.height * 0.6 || b.width >= canvasRect.width * 0.6) continue;
+  for (const b of lane) {
     if (b.y <= canvasRect.y + TOP_LANE_REACH) top = Math.max(top, b.y + b.height);
   }
-  for (const b of small) {
-    if (b.height >= canvasRect.height * 0.6 || b.width >= canvasRect.width * 0.6) continue;
+  for (const b of lane) {
     if (b.y + b.height <= top) continue;
     if (b.x <= left + EDGE_REACH && b.x + b.width > left) left = Math.max(left, b.x + b.width);
   }
@@ -273,6 +285,10 @@ export function OntologyHexBoardMap({
   const hoverRef = useRef<string | null>(null);
   const placeTipRef = useRef<(id: string | null) => void>(() => {});
   const mirrorKeyRef = useRef("");
+  /** Whether the room has been read yet, and whether a selection's chrome was up when it was. */
+  const roomTakenRef = useRef<"none" | "rest" | "selection">("none");
+  /** Asks for a reading of the room once the chrome has settled (see the room reader). */
+  const readWhenSettledRef = useRef<() => void>(() => {});
 
   /* ── layout ─────────────────────────────────────────────────────────── */
   /*
@@ -516,7 +532,9 @@ export function OntologyHexBoardMap({
       let again = false;
       const anim = animRef.current;
       if (anim) {
-        const t = Math.min(1, (now - anim.start) / CAMERA_MS);
+        // The frame's timestamp can precede the moment the move was asked for in the same
+        // frame; below 0 the ease runs backwards and the board steps the wrong way first.
+        const t = Math.max(0, Math.min(1, (now - anim.start) / CAMERA_MS));
         const e = 1 - Math.pow(1 - t, 3);
         camRef.current = {
           R: anim.from.R + (anim.to.R - anim.from.R) * e,
@@ -638,14 +656,23 @@ export function OntologyHexBoardMap({
     requestDraw();
   }, [paint, selectedId, requestDraw]);
 
-  // Size the backing store, and measure the room while nothing is selected.
+  /*
+   * Size the backing store, and measure the room. The room is the map at rest: while something is
+   * selected the inspector is in and INDEX folds, and the camera makes room by moving (below), so
+   * a selection keeps the room it found. But a board that opens with something already selected —
+   * a `?p=` link, or a switch of view with a node chosen — has found none: with no room it had no
+   * layout and no camera, and drew none of its 37 tiles while the inspector and the footer stood
+   * beside the empty canvas (measured 2026-09-25). So the first reading is taken whatever is
+   * selected, and one taken under a selection is read again once the selection clears.
+   */
   useLayoutEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
     const read = () => {
       const r = wrap.getBoundingClientRect();
       setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
-      if (selectedRef.current) return;
+      if (selectedRef.current && roomTakenRef.current !== "none") return;
+      roomTakenRef.current = selectedRef.current ? "selection" : "rest";
       const free = freeAreaOf(canvasRef.current) ?? { x: 0, y: 0, width: r.width, height: r.height };
       const x = free.x + ROOM_LEFT_PAD;
       // `free.y` is the tool lane's real bottom (it wraps to two lines on a narrow free map).
@@ -661,17 +688,21 @@ export function OntologyHexBoardMap({
     ro.observe(wrap);
     /*
      * INDEX folding or opening changes the free map without resizing the board (it floats
-     * over it). Once its transition is over, re-read the room and lay the routes again.
+     * over it). Once its transition is over, re-read the room and lay the routes again. A
+     * selection clearing asks through the same timer, so the two land as one reading and the
+     * camera takes one path to rest.
      */
     let settle: number | null = null;
-    const mo = new MutationObserver(() => {
+    const readWhenSettled = () => {
       if (settle != null) window.clearTimeout(settle);
       settle = window.setTimeout(() => {
         settle = null;
         read();
         frameRoutesRef.current(animRef.current?.to ?? camRef.current);
-      }, 450);
-    });
+      }, CHROME_SETTLE_MS);
+    };
+    readWhenSettledRef.current = readWhenSettled;
+    const mo = new MutationObserver(readWhenSettled);
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-topology-index"] });
     return () => {
       ro.disconnect();
@@ -689,18 +720,6 @@ export function OntologyHexBoardMap({
     requestDraw();
   }, [size, requestDraw]);
 
-  // Rest camera: the board fitted to the room. A new room or board re-rests unless focused.
-  useEffect(() => {
-    const rest = restCamera();
-    if (!rest) return;
-    restRef.current = rest;
-    if (!selectedRef.current || !camRef.current) {
-      camRef.current = rest;
-      frameRoutes(rest);
-    }
-    requestDraw();
-  }, [restCamera, requestDraw, frameRoutes]);
-
   const moveCamera = useCallback(
     (to: Camera) => {
       const from = camRef.current;
@@ -716,6 +735,23 @@ export function OntologyHexBoardMap({
   );
 
   /*
+   * Rest camera: the board fitted to the room. A new room or board re-rests unless focused. A
+   * board already on screen travels there on the camera's own easing rather than cutting: the
+   * room moves when INDEX folds or opens, and when a room first read under a selection is read
+   * again at rest.
+   */
+  useEffect(() => {
+    const rest = restCamera();
+    if (!rest) return;
+    restRef.current = rest;
+    if (!camRef.current) {
+      camRef.current = rest;
+      frameRoutes(rest);
+    } else if (!selectedRef.current) moveCamera(rest);
+    requestDraw();
+  }, [restCamera, requestDraw, frameRoutes, moveCamera]);
+
+  /*
    * Selection: dim the rest, and bring the selected tile (and what it touches) clear of the
    * inspector. Positions never change — only the camera moves.
    */
@@ -728,6 +764,9 @@ export function OntologyHexBoardMap({
         // Only return to rest if the reader had not zoomed away on their own.
         if (Math.abs(cur.R - restRef.current.R) < 0.5) moveCamera(restRef.current);
       }
+      // A room read with a selection's chrome up is not the map at rest: read it again once
+      // that chrome has gone (INDEX may not change, so its observer cannot be relied on).
+      if (roomTakenRef.current === "selection") readWhenSettledRef.current();
       return;
     }
     const makeRoom = () => {

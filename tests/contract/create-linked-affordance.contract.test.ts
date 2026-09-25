@@ -30,7 +30,10 @@ describe("「이어서 새로 만들기」 — 어포던스 계약", () => {
   });
 
   it("고른 도메인이 미리 골라진다 — 방금 누른 노드를 다시 묻지 않는다", () => {
-    expect(inspector).toMatch(/setCreateNodeSeedDomain\(tail\)/);
+    // Seeded with the domain's own address, the value the picker offers for it (map-edit QA
+    // D10, 2026-09-26): the bare graph-id tail wrote a second spelling of the relation.
+    expect(inspector).toMatch(/setCreateNodeSeedDomain\(resolveNodeVaultRef\(canvasSelectedGraphNode\)\)/);
+    expect(authoring).toMatch(/value: resolveNodeVaultRef\(node\)/);
     expect(composer).toMatch(/defaultDomain=\{props\.createNodeSeedDomain\}/);
     expect(read("src/views/home/ui/CreateNodeForm.tsx")).toMatch(
       /useState\(defaultDomain\)/,

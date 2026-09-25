@@ -6,6 +6,7 @@ import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts"
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
 import { settleRouteViewTransition } from "@/shared/lib/route-view-transition";
 import { installExternalLinkOpener } from "@/shared/lib/tauri-external-link";
+import { installNativeEscapeBridge } from "@/shared/lib/tauri-native-escape";
 import { useToast } from "@/shared/ui";
 import { BrandWaitingMark } from "@/shared/ui/brand-waiting-mark";
 import { useTranslations } from "next-intl";
@@ -36,6 +37,7 @@ import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { useSoleProjectHref } from "@/features/project-data-source";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
+import { ShellKeyboardSurfaces } from "./ShellKeyboardSurfaces";
 import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/map-navigation-pending";
 import { useHydrated } from "@/shared/lib/use-hydrated";
 import { LibraryRoundsProvider } from "@/views/library";
@@ -90,6 +92,14 @@ export function AppShell({ children }: { children: ReactNode }) {
    * already opens them).
    */
   useEffect(() => installExternalLinkOpener(), []);
+  /*
+   * **Escape reaches the page under every input source** (2026-09-25). The Korean input source
+   * can keep a plain Escape from the WebView, and then no sheet, palette or dialog closes from
+   * the keyboard. The native side signals each press and this bridge stands in for a key-down
+   * the WebView never sent — once, and never for a press it did send. Like the link opener, it
+   * attaches nothing on the web.
+   */
+  useEffect(() => installNativeEscapeBridge(), []);
   return (
     <NavRailShellProvider>
       <GuideReplayProvider>
@@ -508,26 +518,35 @@ function AppNavRailSlot() {
   // caused. The uncommitted-change count moved to the destination icon's warning badge.
   const utilityTier =
     settingsSlot ?? <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />;
+  const railHidden = hidden || gateway || desktopWithoutVault;
 
   return (
-    <AppNavRail
-      /*
-       * Registered by the shell rather than by each page, for the reason the tile exists:
-       * the folder's name must not depend on which destination is open. A page-level
-       * registration would leave it missing from exactly the destinations a wiki-only
-       * vault has (`library`, `agents`, `mcp`, `git`), which is the state the report came
-       * from.
-       */
-      vaultSlot={<VaultSwitchRailTile />}
-      settingsSlot={utilityTier}
-      hidden={hidden || gateway || desktopWithoutVault}
-      contextHrefs={
-        soleProjectHref ? { ...contextHrefs, projects: soleProjectHref } : contextHrefs
-      }
-      gitDirtyCount={gitDirtyCount}
-      agentsNoticeCount={installNotice.count}
-      visibleDestinations={visibleDestinations}
-    />
+    <>
+      <AppNavRail
+        /*
+         * Registered by the shell rather than by each page, for the reason the tile exists:
+         * the folder's name must not depend on which destination is open. A page-level
+         * registration would leave it missing from exactly the destinations a wiki-only
+         * vault has (`library`, `agents`, `mcp`, `git`), which is the state the report came
+         * from.
+         */
+        vaultSlot={<VaultSwitchRailTile />}
+        settingsSlot={utilityTier}
+        hidden={railHidden}
+        contextHrefs={
+          soleProjectHref ? { ...contextHrefs, projects: soleProjectHref } : contextHrefs
+        }
+        gitDirtyCount={gitDirtyCount}
+        agentsNoticeCount={installNotice.count}
+        visibleDestinations={visibleDestinations}
+      />
+      {/*
+        `?` and ⌘K follow the rail, for the reason the `G` keys do above: the keys the shortcut
+        sheet teaches on every screen are answered wherever the rail stands, and nowhere it does
+        not. Screens that answer a key themselves claim it (`ShellKeyboardSurfaces`).
+      */}
+      <ShellKeyboardSurfaces disabled={railHidden} />
+    </>
   );
 }
 

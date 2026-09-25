@@ -28,13 +28,20 @@ const bridge = vi.hoisted(() => {
     /** stderr diagnostics — the clues to a corrupt npx cache arrive this way (measured). */
     stderr: null as ((line: string) => void) | null,
     activeSessionId: null as string | null,
+    /** How many times the panel asked for an agent process (`acp_start`). */
+    starts: 0,
+    /** `acp_start` never settles — an agent launch that hangs. */
+    hangStart: false,
   };
   return state;
 });
 
 vi.mock('@/shared/lib/tauri-acp', () => ({
   isAcpBridgeAvailable: () => bridge.available,
-  startAcpSession: async () => 'acp-1-999',
+  startAcpSession: () => {
+    bridge.starts += 1;
+    return bridge.hangStart ? new Promise<string>(() => {}) : Promise.resolve('acp-1-999');
+  },
   sendAcpLine: async (_id: string, line: string) => {
     bridge.sent.push(JSON.parse(line));
   },
@@ -187,6 +194,8 @@ afterEach(() => {
   bridge.verdict = 'ask';
   bridge.stopped = [];
   bridge.activeSessionId = null;
+  bridge.starts = 0;
+  bridge.hangStart = false;
 });
 
 describe('대화 패널 — 일어난 일만 그린다', () => {
@@ -4084,5 +4093,85 @@ describe('대화 패널 — 앉힌 요청은 읽을 문장만 서고, 붙은 지
     const empty = screen.getByTestId('acp-chat-empty');
     expect(empty.getAttribute('data-acp-empty')).toBe('open');
     expect(empty.textContent).toBe('emptyHint');
+  });
+});
+
+/**
+ * 2026-09-25, against the QA bridge's hanging `acp_start`: while the tool started, Send and New
+ * chat waited and Stop was drawn for a running turn alone, so closing the whole dock was the only
+ * way out — and the Library's dock, which is put away rather than closed, reopened on the same
+ * stuck panel (still starting, Send still disabled).
+ */
+describe('AcpChatPanel — a connection that never finishes starting', () => {
+  const props = {
+    runtimeId: 'claude-acp',
+    runtimeLabel: 'Claude Code',
+    vaultRoot: '/vault',
+    mcpServers: [{ name: 'atlas-vault' }],
+  } satisfies ComponentProps<typeof AcpChatPanel>;
+
+  it('offers Stop while the tool starts, and stopping keeps the draft and offers Connect again', async () => {
+    bridge.hangStart = true;
+    render(<AcpChatPanel {...props} />);
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'starting');
+    expect(screen.queryByTestId('acp-chat-stop')).toBeNull();
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Summarise the budget page' } });
+    fireEvent.click(screen.getByTestId('acp-chat-stop-connecting'));
+
+    expect(await screen.findByTestId('acp-connect-stopped')).toHaveTextContent('connectStopped.title');
+    expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'stopped');
+    expect(screen.queryByTestId('acp-starting')).toBeNull();
+    expect(screen.queryByTestId('acp-chat-stop-connecting')).toBeNull();
+    // Nothing was sent and nothing was lost: the draft is still in the box it was typed into.
+    expect(screen.getByRole('textbox')).toHaveValue('Summarise the budget page');
+    expect(screen.getByTestId('acp-chat-send')).toBeDisabled();
+    // New chat is a way back too, now that nothing is starting.
+    expect(screen.getByTestId('acp-chat-new')).not.toBeDisabled();
+
+    fireEvent.click(screen.getByTestId('acp-connect-again'));
+    await waitFor(() => expect(bridge.starts).toBe(2));
+    expect(screen.queryByTestId('acp-connect-stopped')).toBeNull();
+    expect(await screen.findByTestId('acp-starting')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('Summarise the budget page');
+  });
+
+  it('stops the process a start had already launched', async () => {
+    render(<AcpChatPanel {...props} />);
+    // The process is up and the handshake is waiting on an answer that never comes.
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    fireEvent.click(screen.getByTestId('acp-chat-stop-connecting'));
+    await waitFor(() => expect(bridge.stopped).toContain('acp-1-999'));
+    expect(await screen.findByTestId('acp-connect-stopped')).toBeInTheDocument();
+  });
+
+  it('stays stopped when its host puts the dock away and opens it again', async () => {
+    bridge.hangStart = true;
+    const view = render(<AcpChatPanel {...props} sessionEnabled />);
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    fireEvent.click(screen.getByTestId('acp-chat-stop-connecting'));
+    await screen.findByTestId('acp-connect-stopped');
+
+    // The Library's dock: shut (the session is disabled, the panel stays mounted), then opened.
+    view.rerender(<AcpChatPanel {...props} sessionEnabled={false} />);
+    view.rerender(<AcpChatPanel {...props} sessionEnabled />);
+
+    expect(screen.getByTestId('acp-connect-stopped')).toBeInTheDocument();
+    expect(bridge.starts).toBe(1);
+  });
+
+  it('connects again when a door brings a new request after the stop', async () => {
+    bridge.hangStart = true;
+    const view = render(<AcpChatPanel {...props} openingRequest={{ text: 'Compile the wiki', nonce: 1 }} />);
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    fireEvent.click(screen.getByTestId('acp-chat-stop-connecting'));
+    await screen.findByTestId('acp-connect-stopped');
+    // The request that was waiting when Stop was pressed does not restart it on its own.
+    expect(bridge.starts).toBe(1);
+
+    view.rerender(<AcpChatPanel {...props} openingRequest={{ text: 'Check the page format', nonce: 2 }} />);
+    await waitFor(() => expect(bridge.starts).toBe(2));
+    expect(screen.queryByTestId('acp-connect-stopped')).toBeNull();
   });
 });

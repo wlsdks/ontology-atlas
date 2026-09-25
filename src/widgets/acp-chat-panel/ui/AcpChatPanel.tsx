@@ -192,6 +192,12 @@ const PICKER_MIN_WIDTH_CLASS = 'min-w-[3rem]';
  * rule still shares the row between the two pickers; this stops one from swallowing it.
  */
 const PICKER_MAX_WIDTH_CLASS = 'max-w-[16rem]';
+/**
+ * The panel's one "try again" press: Retry on the error card and Connect again on a stopped
+ * connection are the same act, so they are the same tinted chip (2026-09-26).
+ */
+const RETRY_CHIP_CLASS =
+  'shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]';
 
 interface SuggestionRowsProps {
   heading: string;
@@ -574,6 +580,7 @@ export function AcpChatPanel({
     start,
     send,
     cancel,
+    stop,
     switchSession,
   } = useAcpSession({
     runtimeId,
@@ -587,6 +594,34 @@ export function AcpChatPanel({
     autoDecide,
     systemPromptAppendix,
   });
+  /**
+   * **The person stopped a connection that had not finished starting** (2026-09-26).
+   *
+   * While the tool starts, Send and New chat wait for it and Stop — the only other way out — was
+   * drawn for a running turn alone. A start that never answers (an agent launch that hangs, the
+   * bridge's `acp_start` never settling) left one exit: closing the whole dock. On the map that
+   * re-attempts on the next opening; the Library's dock is put away rather than closed, so it
+   * reopened on the same stuck panel (measured: still starting, Send still disabled, after a full
+   * close and reopen) and only a page reload recovered it.
+   *
+   * Stop now stands beside Send while the tool starts too, and it ends the attempt through the
+   * session's own `stop()` — the path closing the dock mid-start already takes, which stops what
+   * the attempt launched even if it answers later. This flag is what the person asked for: while it
+   * is set nothing re-attempts on its own (not the dock reopening, not a changed `start`), the
+   * draft stays in the box, and the well offers the one way back, *Connect again*. Pressing that,
+   * New chat, or a door that brings a request clears it.
+   */
+  const [connectStopped, setConnectStopped] = useState(false);
+  /*
+   * Mirrored in a ref for the two effects that start sessions on their own: they must see the
+   * flag without re-running when it clears, or clearing it for New chat would race New chat's own
+   * fresh start with a resuming one from the effect.
+   */
+  const connectStoppedRef = useRef(false);
+  const markConnectStopped = useCallback((stopped: boolean) => {
+    connectStoppedRef.current = stopped;
+    setConnectStopped(stopped);
+  }, []);
   const taskMeaningReview = useTaskMeaningReview({
     pending,
     runtimeId,
@@ -956,13 +991,19 @@ export function AcpChatPanel({
   useEffect(() => {
     if (openingNonce === null || !openingText) return;
     if (openingScopeMismatch) return;
+    /*
+     * A connection the person stopped counts as broken for a door pressed afterwards: that
+     * press is a new request to connect. The request that was waiting when they pressed Stop is
+     * not — Stop marks it handled (`restartedOpeningNonceRef`), so it waits for Connect again.
+     */
     if (
-      (status === 'error' || status === 'exited') &&
+      (status === 'error' || status === 'exited' || connectStoppedRef.current) &&
       sentOpeningNonceRef.current !== openingNonce &&
       restartedOpeningNonceRef.current !== openingNonce
     ) {
       restartedOpeningNonceRef.current = openingNonce;
       setHistoryOpen(false);
+      markConnectStopped(false);
       void switchSession(null);
       return;
     }
@@ -970,7 +1011,7 @@ export function AcpChatPanel({
     if (sentOpeningNonceRef.current === openingNonce) return;
     sentOpeningNonceRef.current = openingNonce;
     void send(openingText);
-  }, [openingNonce, openingText, openingScopeMismatch, status, send, switchSession]);
+  }, [openingNonce, openingText, openingScopeMismatch, status, send, switchSession, markConnectStopped]);
 
   const prefillNonce = prefillRequest?.nonce ?? null;
   const prefillText = prefillRequest?.text ?? null;
@@ -1096,7 +1137,9 @@ export function AcpChatPanel({
   };
 
   useEffect(() => {
-    if (!sessionEnabled) return;
+    // A connection the person stopped stays stopped — through the Library's dock being put away
+    // and opened again too — until they ask for it (`connectStopped`).
+    if (!sessionEnabled || connectStoppedRef.current) return;
     void start();
   }, [sessionEnabled, start]);
 
@@ -1297,15 +1340,18 @@ export function AcpChatPanel({
    */
   const toolIsPicker = canChooseAnotherTool || toolPicker.length > 1;
   const busy = status === 'thinking';
+  /** The tool is still starting, and Stop can end the attempt (`connectStopped`). */
+  const connecting = status === 'starting' && !connectStopped;
   /*
    * ⚠️ **While a turn runs, the two session doors stand down at the narrowest composers.**
    * Measured 2026-09-25 with the mode and tool already gone: a waiting turn's status and clock
    * (「Waiting for you · 0s」, 94px), Stop and Send still needed 269px in English beside these two,
    * and the composer at the documented minimum has 228. The status is the live thing a person reads
    * mid-turn and Stop is the way out; opening an older conversation or starting a new one is not
-   * the next move while this one is running. Both come back the moment the turn ends.
+   * the next move while this one is running. Both come back the moment the turn ends. The same
+   * holds while the tool starts, now that Stop stands there too; New chat is disabled then anyway.
    */
-  const sessionButtonStandDown = busy ? 'hidden @min-[296px]/composer:inline-flex' : undefined;
+  const sessionButtonStandDown = busy || connecting ? 'hidden @min-[296px]/composer:inline-flex' : undefined;
   // No model chosen yet: the trigger reads the tool's name alone, as the placeholder.
   const toolPickerValue =
     choices.models.length > 0 ? (choices.currentModelId ? `model:${choices.currentModelId}` : '') : `runtime:${runtimeId}`;
@@ -1545,7 +1591,8 @@ export function AcpChatPanel({
   // When the dock's first frame loads and immediately after session replacement,
   // the process effect has not yet started,
   // so the actual state is idle. While this panel is open, the user sees 「Waiting for Connection」 — we project only the screen state as starting without touching the protocol state. As long as sessionEnabled=true, 「Off」 does not flash during render cycles.
-  const displayStatus = status === 'idle' ? 'starting' : status;
+  // A stopped connection is idle underneath, and says so as `stopped` rather than "connecting".
+  const displayStatus = connectStopped ? 'stopped' : status === 'idle' ? 'starting' : status;
   /** What the footer says out loud. The panel's own `data-acp-status` keeps the session's word. */
   const footerStatus = awaitingAnswer ? 'awaiting' : displayStatus;
   const presentationResult = useMemo(
@@ -1747,7 +1794,7 @@ export function AcpChatPanel({
           progress (how many MB so far); the total size is unknown, so no percentage is
           invented.
         */}
-        {status === 'starting' ? (
+        {connecting ? (
           /*
            * ⚠️ **A 12px chip in a corner is not where a person looks while waiting** (owner,
            * 2026-08-24, of the top-right 「connecting」 badge: *"when it first opens it would be
@@ -1812,7 +1859,41 @@ export function AcpChatPanel({
             ) : null}
           </div>
         ) : null}
-        {events.length === 0 && status !== 'starting' ? (
+        {/*
+          **A stopped connection says what happened and offers the way back, in the well the wait
+          stood in** (2026-09-26). Same place and crossfade as the wait it replaces, no waiting
+          mark (nothing is pending), and one press: Connect again, the attention winner here as
+          Retry is on the error card. The draft stays in the box below; nothing was sent.
+        */}
+        {connectStopped ? (
+          <div
+            data-testid="acp-connect-stopped"
+            role="status"
+            aria-live="polite"
+            className="agent-panel-stage-swap m-auto grid w-full max-w-[40ch] justify-items-center gap-2 text-center"
+          >
+            <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">
+              {t('connectStopped.title')}
+            </p>
+            <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">
+              {t('connectStopped.body')}
+            </p>
+            <Chip
+              size="lg"
+              tone="accentOnTint"
+              data-testid="acp-connect-again"
+              onClick={() => {
+                markConnectStopped(false);
+                void start();
+              }}
+              className={cn(RETRY_CHIP_CLASS, 'mt-3')}
+            >
+              <RotateCcw size={ICON_SIZE.md} aria-hidden />
+              {t('connectStopped.again')}
+            </Chip>
+          </div>
+        ) : null}
+        {events.length === 0 && status !== 'starting' && !connectStopped ? (
           // Place the empty conversation guide **in the center of where records will accumulate**. If placed at the top, it reads like the first speech bubble, and the actual place where the conversation starts appears empty.
           <div className="agent-panel-stage-swap m-auto grid max-w-[34ch] gap-3">
             {/*
@@ -2122,9 +2203,10 @@ export function AcpChatPanel({
                 disabled={displayStatus === 'starting'}
                 onClick={() => {
                   setHistoryOpen(false);
+                  markConnectStopped(false);
                   void switchSession(null);
                 }}
-                className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
+                className={RETRY_CHIP_CLASS}
               >
                 <RotateCcw size={ICON_SIZE.md} aria-hidden />
                 {t('trouble.retry')}
@@ -2674,6 +2756,7 @@ export function AcpChatPanel({
                   onClick={() => {
                     setHistoryOpen(false);
                     setPresentationOpen(false);
+                    markConnectStopped(false);
                     void switchSession(null);
                     // A new conversation starts in the box it will be typed into, not on `<body>`.
                     requestComposerFocus();
@@ -2704,9 +2787,30 @@ export function AcpChatPanel({
                 <Square size={ICON_SIZE.sm} aria-hidden />
                 {t('stop')}
               </Chip>
+            ) : connecting ? (
+              /*
+               * The same Stop, in the same place, while the tool is still starting (2026-09-26):
+               * a start that never answers had no way out short of closing the dock. It ends the
+               * attempt, not a turn — there is none yet — and keeps the draft where it is.
+               */
+              <Chip size="md" tone="secondary" data-testid="acp-chat-stop-connecting" onClick={() => {
+                // The request a door was waiting to send is answered by this press: it waits for
+                // Connect again rather than restarting the connection on its own.
+                restartedOpeningNonceRef.current = openingNonce;
+                markConnectStopped(true);
+                void stop();
+                // As after a stopped turn, the hand goes back to the box it was writing in.
+                requestComposerFocus();
+              }}>
+                <Square size={ICON_SIZE.sm} aria-hidden />
+                {t('stop')}
+              </Chip>
             ) : null}
             {/* A disabled control says why, not only what it would do (2026-09-25). */}
-            <Tooltip content={displayStatus === 'starting' ? t('sendWhenReady') : t('send')} side="top">
+            <Tooltip
+              content={displayStatus === 'starting' || displayStatus === 'stopped' ? t('sendWhenReady') : t('send')}
+              side="top"
+            >
               <button
                 type="button"
                 aria-label={t('send')}

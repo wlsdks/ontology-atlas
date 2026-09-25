@@ -552,7 +552,7 @@ export function OntologyMap(props: OntologyMapProps) {
   }, []);
   const tierLegendActive = view3d && mapArrangement === "strata" && tierAnchors !== null && domeTierLabels !== null;
 
-  const { canvasRef, containerRef, raiseDomeTier, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleContextMenu, handleKeyDown } =
+  const { canvasRef, containerRef, raiseDomeTier, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleContextMenu, handleKeyDown } =
     useTopologyLoop({
       nodes,
       edges,
@@ -729,6 +729,7 @@ export function OntologyMap(props: OntologyMapProps) {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
+        onPointerLeave={handlePointerLeave}
         onContextMenu={handleContextMenu}
         /**
          * Walk neighbours with the arrow keys (2026-08-09, option B). The rules are in

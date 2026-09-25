@@ -89,7 +89,7 @@ function makeVault(): MockVault {
     errorMessage: null,
     restoreAttempted: true,
     recentVaults: [],
-    open: vi.fn(async () => undefined),
+    open: vi.fn(async () => ({ opened: false, starterWritten: 0, starterError: null })),
     openRecent: vi.fn(async () => undefined),
     scaffoldOntology: vi.fn(async () => ({ created: 8, skipped: 0 })),
   };
@@ -248,11 +248,8 @@ describe('FirstRunStarterModule', () => {
     expect(mocks.vault.open).toHaveBeenCalledTimes(1);
   });
 
-  it('scaffolds a starter structure after the sheet\'s "start fresh" opens an empty folder', async () => {
-    mocks.vault.open = vi.fn(async () => {
-      mocks.vault.status = 'loaded';
-      mocks.vault.manifest = { docs: [] };
-    });
+  it('the sheet\'s "start fresh" opens a folder that is seeded with the starter when empty', async () => {
+    mocks.vault.open = vi.fn(async () => ({ opened: true, starterWritten: 12, starterError: null }));
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     fireEvent.click(screen.getByTestId('first-run-starter-create'));
@@ -260,7 +257,7 @@ describe('FirstRunStarterModule', () => {
     fireEvent.click(screen.getByTestId('vault-guide-create-new'));
 
     await waitFor(() => {
-      expect(mocks.vault.scaffoldOntology).toHaveBeenCalledTimes(1);
+      expect(mocks.vault.open).toHaveBeenCalledWith({ starter: { locale: 'ko', shape: undefined } });
     });
   });
 

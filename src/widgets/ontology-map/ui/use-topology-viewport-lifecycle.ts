@@ -107,11 +107,32 @@ export function useTopologyViewportLifecycle({
      */
     const measure = () => {
       const rect = container.getBoundingClientRect();
+      /*
+       * **The layout size, not the painted one** (2026-09-25). `getBoundingClientRect`
+       * reports the box after transforms, and the map surface's entry fade scales
+       * its subtree from 0.995 (`topologyFade`), which is exactly when the mount-time
+       * read lands. Nothing measured again once it ended, so the viewport stayed 0.5%
+       * small for the whole session — measured at 1512×949: 1440.76 × 944.26 against
+       * a 1448 × 949 canvas. The bitmap was stretched across the canvas, a drawn node
+       * sat up to 7 px from where the camera and the hit test put it, and every fit
+       * worked in a width the screen did not have. The computed size carries no
+       * transform.
+       */
+      const style = getComputedStyle(container);
+      // A browser resolves a rendered box's width to px; anything else (a DOM without
+      // layout) keeps the painted size.
+      const width = style.width.endsWith("px") ? Number.parseFloat(style.width) : rect.width;
+      const height = style.height.endsWith("px") ? Number.parseFloat(style.height) : rect.height;
       const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-      pendingViewportRef.current = { width: rect.width, height: rect.height, dpr };
+      pendingViewportRef.current = { width, height, dpr };
       // Keep the cached pointer rect fresh whenever layout changes (see
-      // `canvasRectRef` in `topology-pointer-handlers.ts`).
-      canvasRectRef.current = { left: rect.left, top: rect.top };
+      // `canvasRectRef` in `topology-pointer-handlers.ts`). The entry fade scales
+      // about the box's centre, which stays where layout put it, so the laid-out
+      // origin is the painted centre less half the layout size.
+      canvasRectRef.current = {
+        left: rect.left + (rect.width - width) / 2,
+        top: rect.top + (rect.height - height) / 2,
+      };
     };
 
     /** The cheap half, called from inside a frame: backing size and viewport facts only. */

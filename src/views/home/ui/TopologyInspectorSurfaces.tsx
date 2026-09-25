@@ -25,6 +25,7 @@ import { ProjectDrawer } from "@/widgets/project-drawer";
 import { useTranslations } from "next-intl";
 import { normalizeKindLabelKey } from "../lib/topology-node-significance";
 import { returnFocusIfDropped } from "../lib/topology-focus-return";
+import { resolveNodeVaultRef } from "../lib/topology-node-edit";
 
 
 interface TopologyInspectorSurfacesProps {
@@ -334,7 +335,10 @@ export function TopologyInspectorSurfaces({
                 // Result-description tooltip (owner approved) — plain text explaining "what happens when pressed"
                 // rather than label repetition. Area expansion reuses existing orbit button tooltips.
                 actionAskAgentTip: t("nodeDatasheet.actionAskAgentTip"),
-                sourceHeading: projectSourceLabels?.heading,
+                // The heading names the section before its receipt is read, so it does not
+                // wait for the receipt's labels.
+                sourceHeading: t("nodeDatasheet.sourceHeading"),
+                sourcePending: t("nodeDatasheet.sourcePending"),
                 sourceKind: projectSourceLabels?.sourceKind,
                 sourceStatus: projectSourceLabels?.status,
                 sourceMeasuredAt: projectSourceLabels?.measuredAt,
@@ -394,10 +398,10 @@ export function TopologyInspectorSurfaces({
                   ? () => setNeedsVaultReason("createNeedsVault")
                   : canCreateNode && canvasSelectedGraphNode?.kind === "domain"
                     ? () => {
-                      const tail = canvasSelectedGraphNode.id.includes(":")
-                        ? canvasSelectedGraphNode.id.slice(canvasSelectedGraphNode.id.indexOf(":") + 1)
-                        : canvasSelectedGraphNode.id;
-                      setCreateNodeSeedDomain(tail);
+                      // The domain's own address, the value the composer's picker offers
+                      // for it — the graph id's bare tail wrote a second spelling of the
+                      // same relation (map-edit QA D10, 2026-09-26).
+                      setCreateNodeSeedDomain(resolveNodeVaultRef(canvasSelectedGraphNode));
                       setCreateNodeDefaultKind("capability");
                       openCreateNode();
                     }
@@ -410,6 +414,7 @@ export function TopologyInspectorSurfaces({
               suppressPrimaryAction={acpPresentationVisible}
               onClose={handleDatasheetClose}
               projectSource={projectSource.view}
+              projectSourceLoading={projectSource.loading}
               projectSourceBusy={projectSource.busy}
               projectSourceError={projectSourceErrorLabel}
               projectSourceDegraded={projectSourceDegraded}

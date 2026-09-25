@@ -421,6 +421,55 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(last).not.toHaveFocus();
   });
 
+  /*
+   * The installed app is WebKit, where a mouse click does not focus the `<summary>` (2026-09-25).
+   * The sheet has to take focus itself, or its Escape — which listens where focus is — and
+   * Tab's trap start from `<body>`.
+   */
+  it('opened by the mouse, focus lands in the panel; Escape there closes and returns it to the gear', async () => {
+    openSheet();
+    const trigger = screen.getByTestId('app-settings-trigger');
+    const panel = screen.getByTestId('app-settings-popover');
+    await waitFor(() => expect(panel).toHaveFocus());
+
+    fireEvent.keyDown(document.activeElement ?? panel, { key: 'Escape' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  /* A click on the dim beside the panel closes the sheet, as it does for every `<Dialog>`. */
+  it('a click on the dim outside the panel closes the sheet and returns focus to the gear', async () => {
+    openSheet();
+    const trigger = screen.getByTestId('app-settings-trigger');
+    const overlay = screen.getByTestId('app-settings-overlay');
+
+    // The press itself does not move focus out of the panel.
+    expect(fireEvent.mouseDown(overlay)).toBe(false);
+    fireEvent.mouseUp(overlay);
+    fireEvent.click(overlay);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it('a click inside the panel, or a drag from it released over the dim, keeps the sheet open', () => {
+    openSheet();
+    const trigger = screen.getByTestId('app-settings-trigger');
+    const overlay = screen.getByTestId('app-settings-overlay');
+    const panel = screen.getByTestId('app-settings-popover');
+
+    fireEvent.mouseDown(panel);
+    fireEvent.click(panel);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Down in the panel, up over the dim: the browser dispatches the click on their common
+    // ancestor, the scrim.
+    fireEvent.mouseDown(panel);
+    fireEvent.mouseUp(overlay);
+    fireEvent.click(overlay);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
   /**
    * The guide's autostart guard used `aria-modal` to decide "already in conversation
    * with another surface". The settings window lost that attribute, so without a

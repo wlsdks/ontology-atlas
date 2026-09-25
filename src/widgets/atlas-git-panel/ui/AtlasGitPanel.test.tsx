@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
@@ -466,7 +466,8 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
   it("보낼 곳이 없으면 실패를 알리는 대신 그 자리에서 주소를 받는다", async () => {
     installDesktopGit({
-      status: { ...STATUS_WITH_CHANGES, upstream: null },
+      // No `origin` at all: the one state the address form belongs to.
+      status: { ...STATUS_WITH_CHANGES, upstream: null, hasOrigin: false, detached: false },
       diff: { count: 0, files: [], diff: "" },
       history: HISTORY,
     });
@@ -1003,7 +1004,14 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
 
   it("보낼 곳이 없으면 세 버튼을 아예 안 그린다 — 누를 수 없는 것을 보여주지 않는다", async () => {
     installDesktopGit({
-      status: { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null },
+      status: {
+        ...STATUS_WITH_CHANGES,
+        upstream: null,
+        ahead: null,
+        behind: null,
+        hasOrigin: false,
+        detached: false,
+      },
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     await screen.findByTestId("atlas-git-location");
@@ -2223,5 +2231,696 @@ describe("AtlasGitPanel — confirms that swap in take and return focus (2026-09
     fireEvent.click(await screen.findByTestId("atlas-git-discard-cancel"));
     await waitFor(() => expect(screen.queryByTestId("atlas-git-discard-step")).toBeNull());
     expect(document.activeElement).toBe(screen.getByTestId("atlas-git-discard"));
+  });
+});
+
+describe("AtlasGitPanel — a jump along one document's history keeps that document (2026-09-25)", () => {
+  /*
+   * Found with the real-bridge QA harness on a real git vault: in a step's detail, "Other steps
+   * that changed this document" → a press on a step opened that step with its FIRST document
+   * selected (the vault's README), because the jump cleared the focused concept. "Restore this
+   * version" there then restored README.md — not the document the person was following.
+   */
+  const node = (id: string, kind: string, slug: string, display: string) => ({
+    id,
+    title: display,
+    display,
+    kind,
+    projectIds: [],
+    evidenceIds: [slug],
+    hasOwnDocument: true,
+    agentSlug: slug,
+    ref: null,
+    lastApprovedAt: "",
+    lastApprovedBy: "",
+    summary: null,
+  });
+  const GRAPH = {
+    nodes: [
+      node("vault-readme:README", "vault-readme", "README", "볼트 안내"),
+      node("capability:foo", "capability", "capabilities/foo", "푸 기능"),
+      node("element:bar", "element", "elements/bar", "바 요소"),
+    ],
+    edges: [],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+
+  const entry = (path: string, status: string, kind: string | null, slug: string) => ({
+    path,
+    status,
+    kind,
+    slug,
+    renamedFrom: null,
+  });
+  const README = entry("docs/README.md", "added", "vault-readme", "README");
+  const FOO = entry("docs/capabilities/foo.md", "modified", "capability", "capabilities/foo");
+  const BAR = entry("docs/elements/bar.md", "modified", "element", "elements/bar");
+  const commit = (n: number, subject: string, files: unknown[]) => ({
+    shortHash: `f${n}00000`,
+    hash: `f${n}${"0".repeat(38)}`,
+    subject,
+    relativeTime: `${n} days ago`,
+    isoTime: new Date(Date.parse("2026-09-25T08:00:00Z") - n * 86_400_000).toISOString(),
+    files,
+  });
+  // Newest first: a step that sharpened two documents, then the import that added every document.
+  const NEWER = commit(1, "docs: sharpen the bar element", [FOO, BAR]);
+  const IMPORT = commit(3, "docs: import the vault", [
+    README,
+    { ...FOO, status: "added" },
+    { ...BAR, status: "added" },
+  ]);
+  const CLEAN = { ...STATUS_WITH_CHANGES, changedCount: 0, ahead: 0, behind: 0 };
+  const NO_DIFF = { count: 0, files: [], diff: "" };
+  const restoreCalls = () =>
+    tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_restore_file");
+  const chips = () => screen.getAllByTestId("atlas-git-concept-chip");
+  const chip = (label: string) => chips().find((c) => c.textContent === label)!;
+  const selectedRow = () =>
+    screen.getAllByTestId("atlas-git-history-item").find((row) => row.getAttribute("aria-expanded") === "true");
+
+  /** A history whose path-scoped reads answer with the steps that touched that path, as git does. */
+  function installHistory(steps: Array<ReturnType<typeof commit>>) {
+    installDesktopGit({
+      status: CLEAN,
+      diff: NO_DIFF,
+      history: (limit: number, path?: string) =>
+        (path ? steps.filter((step) => step.files.some((file) => (file as { path: string }).path === path)) : steps).slice(0, limit),
+    });
+  }
+
+  /** jsdom has no `scrollIntoView`; record what was brought into view. */
+  function recordReveals() {
+    const reveal = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, writable: true, value: reveal });
+    return reveal;
+  }
+  afterEach(() => {
+    delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("concepts lens: the older step opens with the same concept pressed, in view, and restore puts back that document", async () => {
+    const reveal = recordReveals();
+    installHistory([NEWER, IMPORT]);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(chip("바 요소"));
+    const steps = await screen.findAllByTestId("atlas-git-document-step");
+    expect(steps).toHaveLength(1);
+    reveal.mockClear();
+
+    fireEvent.click(steps[0]);
+    await waitFor(() => expect(selectedRow()).toHaveTextContent("Import the vault"));
+    // The vault guide is a file of the step, never a concept chip (`isCanonicalConcept`), so the
+    // import's chips are its two concepts, the capability first; the jump must not fall back to it.
+    await waitFor(() => expect(chips()).toHaveLength(2));
+    expect(chips()[0]).toHaveTextContent("푸 기능");
+    expect(chip("바 요소")).toHaveAttribute("aria-checked", "true");
+    expect(chips().filter((c) => c.getAttribute("aria-checked") === "true")).toHaveLength(1);
+    expect(reveal.mock.contexts, "the followed chip was not brought into view").toContain(chip("바 요소"));
+
+    // The door names the file it puts back before it is pressed, and the confirm names its path.
+    const door = await screen.findByTestId("atlas-git-restore");
+    expect(door).toHaveTextContent("bar.md");
+    expect(door).not.toHaveTextContent("README");
+    fireEvent.click(door);
+    expect(await screen.findByTestId("atlas-git-restore-step")).toHaveTextContent("docs/elements/bar.md");
+    fireEvent.click(screen.getByTestId("atlas-git-restore-confirm"));
+    await waitFor(() => expect(restoreCalls()).toHaveLength(1));
+    expect(restoreCalls()[0][1]).toEqual({
+      vaultPath: "/repo/vault",
+      relativePath: "docs/elements/bar.md",
+      source: IMPORT.hash,
+    });
+  });
+
+  it("files lens: the older step opens in the files lens on the same file, in view, and restore puts back that file", async () => {
+    const reveal = recordReveals();
+    installHistory([NEWER, IMPORT]);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+    fireEvent.click(
+      (await screen.findAllByTestId("atlas-git-commit-file")).find((row) => row.textContent?.includes("bar.md"))!,
+    );
+    await waitFor(() => expect(screen.getByTestId("atlas-git-commit-diff")).toHaveTextContent("바 요소"));
+    reveal.mockClear();
+
+    fireEvent.click((await screen.findAllByTestId("atlas-git-document-step"))[0]);
+    await waitFor(() => expect(selectedRow()).toHaveTextContent("Import the vault"));
+    expect(screen.getByTestId("atlas-git-lens-files")).toHaveAttribute("aria-selected", "true");
+    const current = screen
+      .getAllByTestId("atlas-git-commit-file")
+      .filter((row) => row.getAttribute("aria-current") === "true");
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveTextContent("docs/elements/bar.md");
+    expect(reveal.mock.contexts, "the followed file row was not brought into view").toContain(current[0]);
+    expect(screen.getByTestId("atlas-git-commit-diff")).toHaveTextContent("바 요소");
+
+    const door = await screen.findByTestId("atlas-git-restore");
+    expect(door).toHaveTextContent("bar.md");
+    fireEvent.click(door);
+    fireEvent.click(await screen.findByTestId("atlas-git-restore-confirm"));
+    await waitFor(() => expect(restoreCalls()).toHaveLength(1));
+    expect(restoreCalls()[0][1]).toMatchObject({ relativePath: "docs/elements/bar.md", source: IMPORT.hash });
+  });
+
+  it("a step whose files do not hold the followed document says so, selects no other document, and offers no door", async () => {
+    // A merge git lists in a document's own history carries no file list of its own; whatever
+    // the step holds, another document must never stand in for the one being followed.
+    const MERGE = commit(2, "Merge branch 'drafts'", [FOO]);
+    installDesktopGit({
+      status: CLEAN,
+      diff: NO_DIFF,
+      history: (limit: number, path?: string) =>
+        (path === BAR.path ? [NEWER, MERGE] : [NEWER, MERGE, IMPORT]).slice(0, limit),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(chip("바 요소"));
+    fireEvent.click((await screen.findAllByTestId("atlas-git-document-step"))[0]);
+    await waitFor(() => expect(selectedRow()).toHaveTextContent("Merge branch 'drafts'"));
+
+    const notice = await screen.findByTestId("atlas-git-doc-not-in-step");
+    expect(notice).toHaveTextContent("bar.md");
+    expect(chips().filter((c) => c.getAttribute("aria-checked") === "true")).toHaveLength(0);
+    expect(screen.queryByTestId("atlas-git-restore")).toBeNull();
+    // The followed document's own steps stay one press away: the newer step that did change it.
+    await screen.findByTestId("atlas-git-document-history");
+    const own = screen.getAllByTestId("atlas-git-document-step");
+    expect(own).toHaveLength(1);
+    expect(own[0].querySelector("[title]")).toHaveAttribute("title", NEWER.subject);
+
+    // Choosing another document is the person's own press, and only then does its door open.
+    fireEvent.click(chip("푸 기능"));
+    expect(screen.queryByTestId("atlas-git-doc-not-in-step")).toBeNull();
+    expect(await screen.findByTestId("atlas-git-restore")).toHaveTextContent("foo.md");
+  });
+
+  it("a jump to the step that deleted the followed document opens it where the missing door is explained", async () => {
+    const DELETED = commit(2, "chore: retire the bar element", [{ ...BAR, status: "deleted", kind: null }]);
+    installHistory([NEWER, DELETED, IMPORT]);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(chip("바 요소"));
+    // The document's own steps, newest first, without the one on screen: [retire, import].
+    const steps = await screen.findAllByTestId("atlas-git-document-step");
+    expect(steps).toHaveLength(2);
+    fireEvent.click(steps[0]);
+    await waitFor(() => expect(selectedRow()).toHaveTextContent("Retire the bar element"));
+
+    expect(screen.getByTestId("atlas-git-lens-files")).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.getAllByTestId("atlas-git-commit-file").find((row) => row.getAttribute("aria-current") === "true"),
+    ).toHaveTextContent("docs/elements/bar.md");
+    expect(await screen.findByTestId("atlas-git-restore-absent")).toBeInTheDocument();
+    expect(screen.queryByTestId("atlas-git-restore")).toBeNull();
+  });
+
+  it("a plain press on a step in the list is not a jump: it ends the follow and opens that step as usual", async () => {
+    const MERGE = commit(2, "Merge branch 'drafts'", [FOO]);
+    installDesktopGit({
+      status: CLEAN,
+      diff: NO_DIFF,
+      history: (limit: number, path?: string) =>
+        (path === BAR.path ? [NEWER, MERGE] : [NEWER, MERGE, IMPORT]).slice(0, limit),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(chip("바 요소"));
+    fireEvent.click((await screen.findAllByTestId("atlas-git-document-step"))[0]);
+    await screen.findByTestId("atlas-git-doc-not-in-step");
+
+    fireEvent.click(screen.getAllByTestId("atlas-git-history-item").find((row) => row.textContent?.includes("Import the vault"))!);
+    await waitFor(() => expect(selectedRow()).toHaveTextContent("Import the vault"));
+    expect(screen.queryByTestId("atlas-git-doc-not-in-step")).toBeNull();
+    // The concept being read is still the pressed one where the step changed it.
+    await waitFor(() => expect(chip("바 요소")).toHaveAttribute("aria-checked", "true"));
+  });
+});
+
+/*
+ * "No remote yet" and "connect a remote" used to stand under every branch without an upstream.
+ * A repository whose `origin` exists but whose branch was never pushed, and the owner's vault
+ * checked out detached at `main`, were both told there was no remote — and "connect" there ran
+ * `git remote set-url origin` over the real one (2026-09-25). Each state now says its own fact.
+ */
+describe("AtlasGitPanel — the remote state is told as it is (2026-09-25)", () => {
+  const CLEAN = { count: 0, files: [], diff: "" };
+  const NEVER_SENT = {
+    ...STATUS_WITH_CHANGES,
+    branch: "feature-x",
+    upstream: null,
+    ahead: null,
+    behind: null,
+    changedCount: 0,
+    hasOrigin: true,
+    detached: false,
+    headShortHash: "1a2b3c4",
+  };
+
+  const setRemoteCalls = () =>
+    tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_set_remote");
+
+  it("origin exists and the branch was never sent: it says so, and its one press sends and sets the upstream", async () => {
+    installDesktopGit({
+      status: NEVER_SENT,
+      diff: CLEAN,
+      snapshot: {
+        committed: false,
+        reason: "no-changes",
+        push: { pushed: true, remoteUrl: "git@github.com:me/repo.git", message: null, guidance: null },
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const location = await screen.findByTestId("atlas-git-location");
+    expect(location).toHaveTextContent("feature-x");
+    expect(location).toHaveTextContent("origin에 아직 보낸 적 없는 브랜치예요");
+    expect(location).not.toHaveTextContent("원격 저장소가 아직 없어요");
+    // Nothing on this screen can reach the form that rewrites `origin`.
+    expect(screen.queryByTestId("atlas-git-remote-toggle")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-dock-connect-remote")).toBeNull();
+    expect(screen.getByTestId("atlas-git-dock-never-sent")).toHaveTextContent("아직 보낸 적이 없어요");
+
+    const push = screen.getByTestId("atlas-git-remote-push");
+    act(() => push.focus());
+    const [hint] = await screen.findAllByTestId("atlas-git-remote-push-hint");
+    expect(hint).toHaveTextContent("feature-x 브랜치를 origin에 처음 보내요");
+    expect(hint).toHaveTextContent("git push -u origin feature-x");
+
+    fireEvent.click(push);
+    await waitFor(() => expect(snapshotInvokeCalls()).toHaveLength(1));
+    expect(snapshotInvokeCalls()[0][1]).toMatchObject({ push: true, setUpstream: true });
+    expect(await screen.findByTestId("atlas-git-remote-notice")).toHaveTextContent(
+      "feature-x 브랜치를 origin에 보냈어요",
+    );
+    expect(setRemoteCalls()).toHaveLength(0);
+  });
+
+  it("with changes pending, the first send opens the commit confirm, ticked, and names what the tick does", async () => {
+    installDesktopGit({ status: { ...NEVER_SENT, changedCount: 2 } });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-push"));
+    await screen.findByTestId("atlas-git-confirm-step");
+    expect(snapshotInvokeCalls()).toHaveLength(0);
+    const tick = screen.getByTestId("atlas-git-push-optin");
+    expect(tick).toBeChecked();
+    expect(tick).toBeEnabled();
+    expect(screen.getByTestId("atlas-git-confirm-step")).toHaveTextContent(
+      "feature-x 브랜치를 처음 보내고",
+    );
+
+    fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
+    await waitFor(() => expect(snapshotInvokeCalls()).toHaveLength(1));
+    expect(snapshotInvokeCalls()[0][1]).toMatchObject({ push: true, setUpstream: true });
+  });
+
+  it("a detached HEAD names the commit, says sending needs a branch, and offers no send and no remote form", async () => {
+    installDesktopGit({
+      status: { ...NEVER_SENT, branch: "HEAD", detached: true, headShortHash: "f3e793f" },
+      diff: CLEAN,
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const location = await screen.findByTestId("atlas-git-location");
+    expect(screen.getByTestId("atlas-git-location-ref")).toHaveTextContent("f3e793f");
+    expect(screen.getByTestId("atlas-git-location-ref")).not.toHaveTextContent("HEAD");
+    expect(location).toHaveTextContent("보내려면 브랜치가 필요해요");
+    expect(location).not.toHaveTextContent("원격 저장소가 아직 없어요");
+    expect(screen.getByTestId("atlas-git-dock-detached")).toHaveTextContent("f3e793f");
+    for (const id of [
+      "atlas-git-remote-push",
+      "atlas-git-remote-toggle",
+      "atlas-git-dock-connect-remote",
+      "atlas-git-dock-send-branch",
+    ]) {
+      expect(screen.queryByTestId(id)).toBeNull();
+    }
+    expect(setRemoteCalls()).toHaveLength(0);
+  });
+
+  it("a bridge that does not report origin is unknown: it claims no remote and offers nothing", async () => {
+    // An older bridge answers without `hasOrigin`; absence is not "no remote".
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null },
+      diff: CLEAN,
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const location = await screen.findByTestId("atlas-git-location");
+    expect(location).toHaveTextContent("이 브랜치는 보낼 곳이 정해지지 않았어요");
+    expect(location).not.toHaveTextContent("원격 저장소가 아직 없어요");
+    expect(screen.queryByTestId("atlas-git-remote-toggle")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-dock-connect-remote")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-remote-push")).toBeNull();
+  });
+
+  it("no origin at all keeps the connect flow in the header and the dock", async () => {
+    installDesktopGit({
+      status: { ...NEVER_SENT, hasOrigin: false },
+      diff: CLEAN,
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    expect(await screen.findByTestId("atlas-git-location")).toHaveTextContent("원격 저장소가 아직 없어요");
+    expect(screen.getByTestId("atlas-git-remote-toggle")).toBeInTheDocument();
+    expect(screen.getByTestId("atlas-git-dock-connect-remote")).toBeInTheDocument();
+    expect(screen.queryByTestId("atlas-git-remote-push")).toBeNull();
+
+    // Connected, the branch is "never sent": the form closes and the result speaks under the
+    // header, where the first send now waits.
+    fireEvent.click(screen.getByTestId("atlas-git-remote-toggle"));
+    fireEvent.change(screen.getByTestId("atlas-git-remote-input"), {
+      target: { value: "git@github.com:me/repo.git" },
+    });
+    fireEvent.click(screen.getByTestId("atlas-git-remote-submit"));
+    expect(await screen.findByTestId("atlas-git-remote-notice")).toHaveTextContent(
+      "원격 저장소를 연결했어요",
+    );
+    expect(screen.queryByTestId("atlas-git-remote-setup")).toBeNull();
+    expect(setRemoteCalls()).toHaveLength(1);
+  });
+});
+
+describe("AtlasGitPanel — a step names only concepts (real-bridge QA, 2026-09-25)", () => {
+  /*
+   * The vault's README carries a kind of its own (`vault-readme`, the reader guide Atlas writes,
+   * never authored) and a node in the graph. It matched like a concept: the founding step of a
+   * real vault read "Concepts changed 99" over 98 concept documents, README stood among the
+   * chips, and it led the "other steps" titles of every document from that step.
+   */
+  const node = (id: string, kind: string, display: string, slug: string) => ({
+    id,
+    title: display,
+    display,
+    kind,
+    projectIds: [],
+    evidenceIds: [slug],
+    hasOwnDocument: true,
+    agentSlug: slug,
+    ref: null,
+    lastApprovedAt: "",
+    lastApprovedBy: "",
+    summary: null,
+  });
+  const GRAPH = {
+    nodes: [
+      node("vault-readme:README", "vault-readme", "아틀라스 자기 볼트", "README"),
+      node("capability:foo", "capability", "첫 실행 안내", "capabilities/foo"),
+    ],
+    edges: [],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+  const FOUNDING = [
+    {
+      shortHash: "f000001",
+      hash: "f000001aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      subject: "docs: map the product",
+      relativeTime: "5 days ago",
+      isoTime: "2026-09-20T10:00:00+09:00",
+      files: [
+        { path: "README.md", status: "added", kind: "vault-readme", slug: "README", renamedFrom: null },
+        { path: "docs/capabilities/foo.md", status: "added", kind: "capability", slug: "capabilities/foo", renamedFrom: null },
+      ],
+    },
+  ];
+
+  it("counts and draws the step's concepts without the vault README", async () => {
+    installDesktopGit({ diff: { count: 0, files: [], diff: "" }, history: FOUNDING });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    const row = await screen.findByTestId("atlas-git-history-item");
+    expect(row).toHaveTextContent("첫 실행 안내");
+    expect(row).not.toHaveTextContent("아틀라스 자기 볼트");
+
+    fireEvent.click(row);
+    await screen.findByTestId("atlas-git-history-detail");
+    expect(screen.getByTestId("atlas-git-lens-concepts")).toHaveTextContent(/바뀐 개념\s*1$/);
+    // The files lens still lists every file the step touched, README among them.
+    expect(screen.getByTestId("atlas-git-lens-files")).toHaveTextContent(/바뀐 파일\s*2$/);
+    const chips = screen.getAllByTestId("atlas-git-concept-chip");
+    expect(chips.map((chip) => chip.textContent)).toEqual(["첫 실행 안내"]);
+    // The chip's glyph is its own kind's.
+    expect(chips[0].querySelector("[data-kind-glyph]")?.getAttribute("data-kind-glyph")).toBe("capability");
+  });
+});
+
+describe("AtlasGitPanel — the concepts lens reads what changed (real-bridge QA, 2026-09-25)", () => {
+  /*
+   * The concepts lens is the default, because it is what only this screen has, yet it drew the
+   * concept's card and its other steps and never the change: the whole document with its changed
+   * lines marked was one lens away, under "Files changed".
+   */
+  const GRAPH = {
+    nodes: [
+      {
+        id: "capability:foo",
+        title: "Foo",
+        display: "첫 실행 안내",
+        kind: "capability",
+        projectIds: [],
+        evidenceIds: ["capabilities/foo"],
+        hasOwnDocument: true,
+        agentSlug: "capabilities/foo",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: "첫 실행에서 볼트를 만들어 준다",
+      },
+    ],
+    edges: [],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+  const STEP = [
+    {
+      shortHash: "abc1234",
+      hash: "abc1234def5678",
+      subject: "fix: 무언가 고쳤다",
+      relativeTime: "2 hours ago",
+      isoTime: "2026-07-23T10:00:00+09:00",
+      files: [
+        { path: "docs/capabilities/foo.md", status: "modified", kind: "capability", slug: "capabilities/foo", renamedFrom: null },
+      ],
+    },
+  ];
+
+  it("draws the focused concept's document with its changed line, between its card and its other steps", async () => {
+    installDesktopGit({ diff: { count: 0, files: [], diff: "" }, history: STEP });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    await screen.findByTestId("atlas-git-history-detail");
+    expect(screen.getByTestId("atlas-git-lens-concepts")).toHaveAttribute("aria-selected", "true");
+
+    const reader = await screen.findByTestId("atlas-git-concept-diff");
+    await waitFor(() => expect(reader).toHaveTextContent("한 줄 새로 씀"));
+    // Read at this step, in the same reader the files lens uses.
+    expect(within(reader).getByTestId("atlas-git-diff-pre")).toHaveAttribute("aria-label", "첫 실행 안내");
+    // The card right above names the concept; the reader opens with a section label like the
+    // sections around it instead of printing the name again.
+    expect(within(reader).queryByRole("heading", { name: "첫 실행 안내" })).toBeNull();
+    expect(within(reader).getByRole("heading", { name: "바뀐 내용" })).toBeInTheDocument();
+
+    // Card, then the change, then the document's other steps with the restore door.
+    const card = screen.getByTestId("atlas-git-concept-ego");
+    const history = await screen.findByTestId("atlas-git-document-history");
+    expect(card.compareDocumentPosition(reader) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(reader.compareDocumentPosition(history) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(history).getByTestId("atlas-git-restore")).toBeInTheDocument();
+    // It asked for that document as that step left it.
+    await waitFor(() =>
+      expect(
+        tauriApiMock.invoke.mock.calls.some(([command, args]) => {
+          const input = (args ?? {}) as { relativePath?: string; source?: string };
+          return (
+            command === "git_document_diff" &&
+            input.relativePath === "docs/capabilities/foo.md" &&
+            input.source === "abc1234def5678"
+          );
+        }),
+      ).toBe(true),
+    );
+  });
+});
+
+describe("AtlasGitPanel — a saved remote is not a dead end (real-bridge QA, 2026-09-25)", () => {
+  /*
+   * Registering a remote stores an address; only a first push creates the upstream that Fetch,
+   * Pull and Push read. The screen used to say "no remote repository yet" right after its own
+   * "Connected the remote repository.", offer nothing but the same connect door, and keep the
+   * "also send" box disabled for good. The saved address now reads as the "never sent" state
+   * (`describeRemoteState`), whose one press is the first send.
+   */
+  const SAVED_NOT_SENT = { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null, hasOrigin: true };
+  const NO_REMOTE = { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null, hasOrigin: false };
+  const PUBLISHED = {
+    committed: false,
+    reason: "no-changes",
+    commitHash: null,
+    subject: null,
+    summary: null,
+    counts: { added: 0, modified: 0, deleted: 0, renamed: 0, total: 0 },
+    files: [],
+    stagedOutsideVault: [],
+    push: { pushed: true, remoteUrl: "git@github.com:me/repo.git", message: null, guidance: null },
+  };
+
+  it("says the branch was never sent and offers the first send, which sets the upstream", async () => {
+    installDesktopGit({ status: SAVED_NOT_SENT, diff: { count: 0, files: [], diff: "" }, snapshot: PUBLISHED });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const location = await screen.findByTestId("atlas-git-location");
+    expect(location).not.toHaveTextContent("원격 저장소가 아직 없어요");
+    expect(within(location).getByTestId("atlas-git-remote-state")).toHaveAttribute(
+      "data-remote-state",
+      "never-sent",
+    );
+    // No door to the address form: with an origin saved it would rewrite that origin.
+    expect(within(location).queryByTestId("atlas-git-remote-toggle")).toBeNull();
+    // The dock's last line names the same next step instead of "connect a remote".
+    expect(screen.queryByTestId("atlas-git-dock-no-remote")).toBeNull();
+    expect(screen.getByTestId("atlas-git-dock-never-sent")).toBeInTheDocument();
+
+    const firstSend = within(location).getByTestId("atlas-git-remote-push");
+    // Once sent, git reports the upstream, and the first send gives way to Fetch, Pull and Push.
+    const answer = tauriApiMock.invoke.getMockImplementation()!;
+    tauriApiMock.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) =>
+      command === "git_status" && snapshotInvokeCalls().length > 0 ? STATUS_WITH_CHANGES : answer(command, args),
+    );
+    act(() => firstSend.focus());
+    fireEvent.click(firstSend);
+    await waitFor(() => {
+      const calls = snapshotInvokeCalls();
+      expect(calls).toHaveLength(1);
+      expect(calls[0][1]).toMatchObject({ push: true, setUpstream: true });
+    });
+    const notice = await screen.findByTestId("atlas-git-remote-notice");
+    expect(notice).toHaveTextContent("main 브랜치를 origin에 보냈어요");
+    // Said with the screen it describes: the three remote actions are already there.
+    expect(within(screen.getByTestId("atlas-git-location")).queryByTestId("atlas-git-remote-state")).toBeNull();
+    expect(screen.getByTestId("atlas-git-remote-fetch")).toBeInTheDocument();
+    expect(screen.getByTestId("atlas-git-remote-pull")).toBeInTheDocument();
+    // The pressed button left with its result, so the result holds focus rather than <body>.
+    // Not on the Pull that took its slot either: a second Enter must not pull.
+    await waitFor(() => expect(document.activeElement).toBe(notice));
+  });
+
+  it("with changes pending, the first send opens the save step with the send ticked and enabled", async () => {
+    installDesktopGit({ status: SAVED_NOT_SENT });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-push"));
+    await screen.findByTestId("atlas-git-confirm-step");
+    expect(snapshotInvokeCalls()).toHaveLength(0);
+    const optIn = screen.getByTestId("atlas-git-push-optin");
+    expect(optIn).toBeEnabled();
+    expect(optIn).toBeChecked();
+    expect(screen.getByTestId("atlas-git-confirm-step")).toHaveTextContent("main 브랜치를 처음 보내고");
+    fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
+    await waitFor(() => {
+      const calls = snapshotInvokeCalls();
+      expect(calls).toHaveLength(1);
+      expect(calls[0][1]).toMatchObject({ push: true, setUpstream: true });
+    });
+  });
+
+  it("a plain save never asks for the upstream", async () => {
+    installDesktopGit({ status: SAVED_NOT_SENT });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-snapshot-button"));
+    fireEvent.click(await screen.findByTestId("atlas-git-confirm-button"));
+    await waitFor(() => expect(snapshotInvokeCalls()).toHaveLength(1));
+    // The bridge always names the flag, so "never asks" reads as `false`.
+    expect(snapshotInvokeCalls()[0][1]).toMatchObject({ push: false, setUpstream: false });
+  });
+
+  it("the connect press ends when its answer lands, and the location says so while the screen re-reads", async () => {
+    installDesktopGit({ status: NO_REMOTE, diff: { count: 0, files: [], diff: "" } });
+    const answer = tauriApiMock.invoke.getMockImplementation()!;
+    let holdReads = false;
+    let release: () => void = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    tauriApiMock.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) => {
+      if (holdReads && command === "git_status") {
+        await held;
+        return SAVED_NOT_SENT;
+      }
+      return answer(command, args);
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-toggle"));
+    fireEvent.change(screen.getByTestId("atlas-git-remote-input"), {
+      target: { value: "git@github.com:me/repo.git" },
+    });
+    holdReads = true;
+    fireEvent.click(screen.getByTestId("atlas-git-remote-submit"));
+
+    // The notice is on screen while the status read is still held.
+    expect(await screen.findByTestId("atlas-git-remote-notice")).toHaveTextContent("원격 저장소를 연결했어요");
+    // The press is over: the form closed with git's answer instead of reading "Connecting…".
+    expect(screen.queryByTestId("atlas-git-remote-submit")).toBeNull();
+    const location = screen.getByTestId("atlas-git-location");
+    expect(location).not.toHaveTextContent("원격 저장소가 아직 없어요");
+    expect(within(location).getByTestId("atlas-git-remote-state")).toHaveAttribute(
+      "data-remote-state",
+      "never-sent",
+    );
+    expect(within(location).getByTestId("atlas-git-remote-push")).toBeInTheDocument();
+
+    await act(async () => {
+      release();
+      await held;
+    });
+    await waitFor(() =>
+      expect(within(screen.getByTestId("atlas-git-location")).getByTestId("atlas-git-remote-state")).toHaveAttribute(
+        "data-remote-state",
+        "never-sent",
+      ),
+    );
+  });
+
+  it("a save that was sent says so once, and a send that failed says git's reason", async () => {
+    const saved = {
+      committed: true,
+      reason: null,
+      commitHash: "abc",
+      subject: "s",
+      summary: "s",
+      counts: { added: 1, modified: 1, deleted: 0, renamed: 0, total: 2 },
+      files: [],
+      stagedOutsideVault: [],
+    };
+    installDesktopGit({
+      snapshot: { ...saved, push: { pushed: true, remoteUrl: "git@github.com:me/repo.git", message: null, guidance: null } },
+    });
+    const sent = renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-push"));
+    fireEvent.click(await screen.findByTestId("atlas-git-confirm-button"));
+    const line = await screen.findByTestId("atlas-git-snapshot-result");
+    // "Saved 2 · Saved 2 and sent to …" said the save twice.
+    expect(line.textContent).toBe("2개 커밋하고 git@github.com:me/repo.git으로 보냈어요");
+    sent.unmount();
+
+    tauriApiMock.invoke.mockReset();
+    installDesktopGit({
+      snapshot: {
+        ...saved,
+        push: { pushed: false, remoteUrl: null, message: "remote-unreachable: fatal: could not read from remote repository.", guidance: "git remote -v" },
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-push"));
+    fireEvent.click(await screen.findByTestId("atlas-git-confirm-button"));
+    const failed = await screen.findByTestId("atlas-git-snapshot-result");
+    expect(failed).toHaveTextContent("2개 커밋했어요 · 원격 저장소에 닿지 못했어요");
+    // An empty remote name ("Couldn't reach .") is not a reason.
+    expect(failed.textContent).not.toMatch(/\s에 닿지 못했어요/);
+  });
+
+  it("without a saved origin the line still says there is no remote, with the connect door", async () => {
+    installDesktopGit({ status: NO_REMOTE });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const location = await screen.findByTestId("atlas-git-location");
+    expect(location).toHaveTextContent("원격 저장소가 아직 없어요");
+    expect(within(location).queryByTestId("atlas-git-remote-push")).toBeNull();
+    expect(within(location).getByTestId("atlas-git-remote-toggle")).toHaveTextContent("원격 저장소 연결");
+    expect(screen.getByTestId("atlas-git-dock-no-remote")).toBeInTheDocument();
   });
 });

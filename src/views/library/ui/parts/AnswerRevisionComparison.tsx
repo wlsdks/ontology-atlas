@@ -5,14 +5,14 @@ import { useTranslations as useViewerTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { answerObservation } from '@/features/library';
+import { answerObservation, sourceCitationWords } from '@/features/library';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
 import {
   normalizeOriginalPaths,
+  parseWikilinkHref,
   resolveSourceCitation,
   rewriteWikilinks,
-  WIKILINK_SENTINEL,
 } from '@/shared/lib/source-citation';
 import { WIKI_SECTION_ORDER } from '@/shared/lib/wiki-page-schema';
 import { Button, controlClass, Dialog, Disclosure } from '@/shared/ui';
@@ -51,22 +51,27 @@ function recordedObservations(text: string): Map<string, string> {
 function RevisionText({
   text,
   knownOriginalPaths,
+  namedSourcePath,
   changedPaths,
   changedLabel,
   onOpenSource,
 }: {
   text: string;
   knownOriginalPaths?: ReadonlySet<string>;
+  /** The one original this column's head already names; its citations say only where. */
+  namedSourcePath?: string;
   /** Cited originals whose bytes moved since the previous answer recorded them. */
   changedPaths: ReadonlySet<string>;
   changedLabel: string;
   onOpenSource: (path: string, anchor?: string) => void;
 }) {
   const sourceT = useViewerTranslations('vaultWidgets.viewer');
+  const libraryT = useViewerTranslations('library');
   const normalizedOriginalPaths = useMemo(
     () => normalizeOriginalPaths(knownOriginalPaths),
     [knownOriginalPaths],
   );
+  const namedSource = namedSourcePath?.normalize('NFC');
 
   return <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
     h1: ({ children }) => <h3 className="mb-3 mt-6 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{children}</h3>,
@@ -77,12 +82,12 @@ function RevisionText({
     ol: ({ children }) => <ol className="my-3 list-decimal pl-5 text-reading leading-prose text-[color:var(--color-text-secondary)]">{children}</ol>,
     li: ({ children }) => <li className="my-2 break-words">{children}</li>,
     a: ({ href, children, ...rest }) => {
-      if (!href || !href.startsWith(WIKILINK_SENTINEL)) {
+      const wikilink = href ? parseWikilinkHref(href) : null;
+      if (!wikilink) {
         return <span className="break-words underline decoration-dotted" {...rest}>{children}</span>;
       }
 
-      const spec = href.slice(WIKILINK_SENTINEL.length);
-      const [rawWikiSlug, rawAnchor] = spec.split('#');
+      const { rawSlug: rawWikiSlug, rawAnchor, labelled } = wikilink;
       const citation = rawWikiSlug
         ? resolveSourceCitation(
             rawWikiSlug,
@@ -96,16 +101,24 @@ function RevisionText({
         return <span className="break-words underline decoration-dotted" {...rest}>{children}</span>;
       }
 
+      /* The same words the page itself shows for an unlabelled citation (`DocsVaultViewer`). */
+      const words = sourceCitationWords(
+        { path: citation.path ?? citation.rawPath, anchor: citation.anchor },
+        { nameFile: citation.rawPath !== namedSource },
+        libraryT,
+      );
+      const shown = labelled ? children : words.text;
       const resolvedPath = citation.path;
       if (citation.status === 'known' && resolvedPath) {
         return (
           <>
             <button
               type="button"
-              aria-label={sourceT('sourceCitationTitle', {
-                path: resolvedPath,
-                anchor: citation.anchor ? `#${citation.anchor}` : '',
-              })}
+              aria-label={
+                words.place
+                  ? sourceT('sourceCitationTitleAt', { path: resolvedPath, place: words.place })
+                  : sourceT('sourceCitationTitle', { path: resolvedPath })
+              }
               data-source-path={resolvedPath}
               data-source-anchor={citation.anchor}
               onClick={() => onOpenSource(resolvedPath, citation.anchor)}
@@ -116,7 +129,7 @@ function RevisionText({
                 className: 'inline align-baseline break-keep whitespace-normal',
               })}
             >
-              {children}
+              {shown}
             </button>
             {changedPaths.has(resolvedPath) ? <ChangedOriginalMark path={resolvedPath} label={changedLabel} /> : null}
           </>
@@ -134,7 +147,7 @@ function RevisionText({
           )}
           {...rest}
         >
-          {children}
+          {shown}
         </span>
       );
     },
@@ -297,6 +310,7 @@ export function AnswerRevisionComparison({ open, question, before, after, proble
           ? <RevisionText
               text={text}
               knownOriginalPaths={knownOriginalPaths}
+              namedSourcePath={pane.sources.length === 1 ? pane.sources[0] : undefined}
               changedPaths={changedPaths}
               changedLabel={changedLabel}
               onOpenSource={onOpenSource}

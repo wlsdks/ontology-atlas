@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
 import enMessages from "../../../../messages/en.json";
 import { GlobalSearch } from "./GlobalSearch";
+
+/** The search field's accessible name, read from the catalogue rather than pinned as prose. */
+const COMMAND_LABEL = enMessages.searchWidgets.globalSearch.commandLabel;
 
 // cmdk (Command) plus @tanstack/react-virtual's project chip row require
 // ResizeObserver, which jsdom lacks — a minimal stub is needed.
@@ -103,7 +106,7 @@ describe("GlobalSearch", () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: COMMAND_LABEL }), {
       target: { value: "mcp server" },
     });
 
@@ -123,7 +126,7 @@ describe("GlobalSearch", () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: COMMAND_LABEL }), {
       target: { value: "mcp server" },
     });
     const option = findOntologyOption("capability:mcp-server");
@@ -146,7 +149,7 @@ describe("GlobalSearch", () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: COMMAND_LABEL }), {
       target: { value: "mcp" },
     });
     // Without a filter, all 2 capabilities and 1 element are visible.
@@ -184,7 +187,7 @@ describe("GlobalSearch", () => {
 
     it("필터 칩 위의 Enter 는 결과를 열지 않는다", () => {
       const onSelectNode = openPalette();
-      fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+      fireEvent.change(screen.getByRole("combobox", { name: COMMAND_LABEL }), {
         target: { value: "mcp" },
       });
       const chip = screen.getByRole("button", { name: "Element" });
@@ -195,7 +198,7 @@ describe("GlobalSearch", () => {
 
     it("닫기 버튼 위의 Enter 도 결과를 열지 않는다", () => {
       const onSelectNode = openPalette();
-      fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+      fireEvent.change(screen.getByRole("combobox", { name: COMMAND_LABEL }), {
         target: { value: "mcp" },
       });
       const close = screen.getByTestId("global-search-close");
@@ -208,7 +211,7 @@ describe("GlobalSearch", () => {
       // The behaviour the guard must not cost: from the field, Enter is exactly
       // "open the highlighted row".
       const onSelectNode = openPalette();
-      const field = screen.getByRole("combobox", { name: "Search this map" });
+      const field = screen.getByRole("combobox", { name: COMMAND_LABEL });
       fireEvent.change(field, { target: { value: "mcp server" } });
       fireEvent.keyDown(field, { key: "Enter" });
       expect(onSelectNode).toHaveBeenCalledTimes(1);
@@ -227,7 +230,7 @@ describe("GlobalSearch", () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: COMMAND_LABEL }), {
       target: { value: "mcp" },
     });
 
@@ -408,7 +411,7 @@ describe("GlobalSearch — 스크림 클릭 닫기 계약", () => {
     const onOpenChange = vi.fn();
     renderPalette(onOpenChange);
 
-    fireEvent.pointerDown(screen.getByRole("combobox", { name: "Search this map" }));
+    fireEvent.pointerDown(screen.getByRole("combobox", { name: COMMAND_LABEL }));
 
     expect(onOpenChange).not.toHaveBeenCalled();
   });
@@ -522,7 +525,7 @@ describe("GlobalSearch — footer names the searched scope", () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: COMMAND_LABEL }), {
       target: { value: "mcp server" },
     });
 
@@ -549,28 +552,204 @@ describe("GlobalSearch — footer names the searched scope", () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: COMMAND_LABEL }), {
       target: { value: "Online Store" },
     });
 
     expect(footerText()).toBe("1 matches · Online Store");
   });
 
-  it("falls back to \"this map\" when no single project names the scope", () => {
-    render(
+  it("falls back to the folder, or on the map to the map, when no single project names the scope", () => {
+    const twoProjects = [
+      project({ slug: "storefront", name: "Online Store" }),
+      project({ slug: "atlas", name: "Ontology Atlas" }),
+    ];
+    const copy = enMessages.searchWidgets.globalSearch;
+    const { unmount } = render(
       <GlobalSearch
         open
         onOpenChange={() => {}}
         nodes={nodes}
         onSelectNode={() => {}}
-        projects={[
-          project({ slug: "storefront", name: "Online Store" }),
-          project({ slug: "atlas", name: "Ontology Atlas" }),
-        ]}
+        projects={twoProjects}
         onSelectProject={() => {}}
       />,
     );
+    expect(footerText()).toBe(`4 indexed · ${copy.scopeFallback}`);
+    unmount();
 
-    expect(footerText()).toBe("4 indexed · this map");
+    render(
+      <GlobalSearch
+        open
+        onMap
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={twoProjects}
+        onSelectProject={() => {}}
+      />,
+    );
+    expect(footerText()).toBe(`4 indexed · ${copy.onMap.scopeFallback}`);
+  });
+});
+
+/**
+ * **The map's words stay on the map** (2026-09-26).
+ *
+ * The shell opens this dialog on Library, Git, Automations, Agents, the harness and Insights, and
+ * a reviewer read `No matches for "…" in this map.` on the Library, under a dialog named "Search
+ * this map". Every string that speaks of the map lives under `onMap`; here each of them is swapped
+ * for a marker, and the dialog is driven through the states that show them. Off the map no marker
+ * may render — in text or in an accessible name — and on the map every one of them must, so the
+ * check cannot pass by rendering nothing.
+ */
+describe("GlobalSearch — says \"map\" only on the map", () => {
+  const MARK = "MAP-ONLY:";
+  const mapOnlyKeys = Object.keys(enMessages.searchWidgets.globalSearch.onMap);
+
+  function marked() {
+    const messages = structuredClone(enMessages);
+    const onMap: Record<string, string> = messages.searchWidgets.globalSearch.onMap;
+    for (const key of mapOnlyKeys) onMap[key] = `${MARK}${key}`;
+    return messages;
+  }
+
+  /** Every state that shows a placed string: the dialog chrome, a miss, and an empty folder. */
+  function renderEveryState(onMap: boolean): string {
+    const messages = marked();
+    const nodes = [node({ id: "capability:checkout", title: "Checkout" })];
+    const twoProjects = [
+      project({ slug: "storefront", name: "Online Store" }),
+      project({ slug: "atlas", name: "Ontology Atlas" }),
+    ];
+    const seen: string[] = [];
+    const miss = rtlRender(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <GlobalSearch
+          open
+          onMap={onMap}
+          onOpenChange={() => {}}
+          nodes={nodes}
+          onSelectNode={() => {}}
+          projects={twoProjects}
+          onSelectProject={() => {}}
+        />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "no-such-thing" } });
+    seen.push(document.body.innerHTML);
+    miss.unmount();
+
+    const empty = rtlRender(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <GlobalSearch open onMap={onMap} onOpenChange={() => {}} nodes={[]} onSelectNode={() => {}} projects={[]} onSelectProject={() => {}} />
+      </NextIntlClientProvider>,
+    );
+    seen.push(document.body.innerHTML);
+    empty.unmount();
+    return seen.join("\n");
+  }
+
+  it("renders no map-only string when it opens off the map", () => {
+    const html = renderEveryState(false);
+    expect(html).not.toContain(MARK);
+  });
+
+  it("renders every map-only string on the map, so the check above can fail", () => {
+    const html = renderEveryState(true);
+    for (const key of mapOnlyKeys) expect(html, key).toContain(`${MARK}${key}`);
+  });
+});
+
+/**
+ * **Focus leaves with the dialog, not after its exit motion** (2026-09-26).
+ *
+ * Measured against a real folder: after Esc the search stayed mounted for its exit animation with
+ * focus still in its field, so `?` pressed at once was taken as typing and opened nothing; and
+ * when focus came back at unmount it was pulled to the opener even if another sheet had opened.
+ *
+ * jsdom plays no CSS, so Radix would unmount at once and there would be no exit to observe. The
+ * dialog content is given the animation names the browser reports (`overlaySpringOut` while
+ * closed), so Radix keeps it mounted with `data-state="closed"` until `animationend`, as it does
+ * on screen.
+ */
+describe("GlobalSearch — focus leaves with the dialog", () => {
+  const nodes = [node({ id: "capability:checkout", title: "Checkout" })];
+
+  beforeEach(() => {
+    const original = window.getComputedStyle.bind(window);
+    vi.spyOn(window, "getComputedStyle").mockImplementation((element, pseudo) => {
+      const style = original(element, pseudo);
+      if (!(element instanceof HTMLElement) || element.getAttribute("role") !== "dialog") return style;
+      return new Proxy(style, {
+        get(target, property) {
+          if (property === "animationName") {
+            return element.getAttribute("data-state") === "closed" ? "overlaySpringOut" : "overlaySpringIn";
+          }
+          const value = Reflect.get(target, property, target);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function Opener() {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        <button type="button" onClick={() => setOpen(true)}>
+          open trigger
+        </button>
+        <button type="button">another sheet</button>
+        <GlobalSearch open={open} onOpenChange={setOpen} nodes={nodes} onSelectNode={() => {}} />
+      </>
+    );
+  }
+
+  function openFromTrigger() {
+    render(<Opener />);
+    const trigger = screen.getByRole("button", { name: "open trigger" });
+    trigger.focus();
+    fireEvent.click(trigger);
+    expect(document.activeElement).toBe(screen.getByRole("combobox"));
+    return trigger;
+  }
+
+  function finishExit(content: Element) {
+    const end = new Event("animationend", { bubbles: true });
+    Object.defineProperty(end, "animationName", { value: "overlaySpringOut" });
+    act(() => {
+      content.dispatchEvent(end);
+    });
+  }
+
+  it("lets go of focus as soon as it closes, while its exit still plays", () => {
+    openFromTrigger();
+    fireEvent.keyDown(document, { key: "Escape" });
+    const content = document.querySelector('[role="dialog"]');
+    expect(content, "the exit should still be playing").toHaveAttribute("data-state", "closed");
+    expect(content?.contains(document.activeElement), "focus stayed in the closed field").toBe(false);
+  });
+
+  it("still returns focus to the opener once the exit ends, when nothing else took it", async () => {
+    const trigger = openFromTrigger();
+    fireEvent.keyDown(document, { key: "Escape" });
+    finishExit(document.querySelector('[role="dialog"]')!);
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
+  it("leaves focus with a surface that took it during the exit", async () => {
+    openFromTrigger();
+    fireEvent.keyDown(document, { key: "Escape" });
+    const sheet = screen.getByRole("button", { name: "another sheet", hidden: true });
+    sheet.focus();
+    finishExit(document.querySelector('[role="dialog"]')!);
+    await waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(document.activeElement, "the closing search pulled focus back to its opener").toBe(sheet);
   });
 });

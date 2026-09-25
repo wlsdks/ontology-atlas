@@ -49,7 +49,7 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "atlas-mascot-sprite":
     "The stepped character frames stop. The final static READ or SUCCESS pose plus the same accessible status preserves the information.",
   "acp-working-shimmer":
-    "Infinite band sweep shown only while an agent tool call, work group or turn is in flight. Reduced motion stops the travel and removes the painted gradient, leaving the words in a still, brighter ink; the running ring, the present-tense outcome word and the ticking clock beside them carry the same fact.",
+    "Infinite band sweep shown only while an agent tool call, work group or turn is in flight, or while the analysis brief's sums are still being counted. Reduced motion stops the travel and removes the painted gradient, leaving the words in a still, brighter ink; the running ring, the present-tense outcome word and the ticking clock beside them carry the same fact, and on the brief the counting line says it in words while the list names the core still reading.",
   "agent-pending-dot":"끝없이 도는 맥박 — 감속의 뜻이 바로 이걸 멈추는 것이다. 상태는 옆의 글자가 말한다.",
   "architecture-observation-scan":
     "Infinite progress travel shown only during a real ACP turn. Reduced motion stops the line while the adjacent planning/editing/verifying/review-wait text preserves the current state.",

@@ -2,26 +2,30 @@ import { describe, expect, it } from "vitest";
 import { canonicalizeDomainRef } from "./canonicalize-domain-ref";
 
 describe("canonicalizeDomainRef", () => {
-  it("collapses both serialization forms to the same canonical slug (C7)", () => {
-    // The map writer's folder-prefixed form and the studio writer's bare form must
-    // canonicalize identically so analytics don't split one domain into two.
-    expect(canonicalizeDomainRef("domains/문의-처리")).toBe("문의-처리");
-    expect(canonicalizeDomainRef("문의-처리")).toBe("문의-처리");
-    expect(canonicalizeDomainRef("domains/문의-처리")).toBe(canonicalizeDomainRef("문의-처리"));
+  /*
+   * Map-edit QA D10 (2026-09-26): the map's "add under this domain" wrote `domain: code-evidence`
+   * while every agent-written node in the same vault — and the dogfood vault, 93 of 93 — writes
+   * `domain: domains/code-evidence`. The domain document's own address is the one spelling.
+   */
+  it("keeps the folder-qualified address every other writer uses", () => {
+    expect(canonicalizeDomainRef("domains/code-evidence")).toBe("domains/code-evidence");
+    expect(canonicalizeDomainRef("domains/문의-처리")).toBe("domains/문의-처리");
   });
 
-  it("preserves the bare dogfood-vault form unchanged (no rewrite churn)", () => {
+  it("does not invent a folder for a domain addressed at the vault root", () => {
     expect(canonicalizeDomainRef("ai-agent-partner")).toBe("ai-agent-partner");
     expect(canonicalizeDomainRef("views")).toBe("views");
   });
 
-  it("slugifies hand-typed values with spaces", () => {
+  it("slugifies only the name, so hand-typed spaces become hyphens", () => {
     expect(canonicalizeDomainRef("문의 처리")).toBe("문의-처리");
     expect(canonicalizeDomainRef("Auth Platform")).toBe("auth-platform");
+    expect(canonicalizeDomainRef("domains/Auth Platform")).toBe("domains/auth-platform");
   });
 
-  it("strips any folder prefix, not just domains/", () => {
-    expect(canonicalizeDomainRef("some/nested/billing")).toBe("billing");
+  it("drops stray slashes and a file extension", () => {
+    expect(canonicalizeDomainRef("/domains/billing/")).toBe("domains/billing");
+    expect(canonicalizeDomainRef("domains/billing.md")).toBe("domains/billing");
   });
 
   it("returns empty for blank / nullish input", () => {

@@ -442,5 +442,93 @@ test("deferred plan은 다시 쓸 바로 그 snapshot 바이트와 mtime을 함�
   rmSync(root, { recursive: true, force: true });
 });
 
+/*
+ * A kind change moves an entry between the lists named for kinds (2026-09-26, map-edit review).
+ * reclassify_concept rewrote a domain's `capabilities: [capabilities/x]` to
+ * `capabilities: [elements/x]` — an element in the capability list, resolving, flagged by
+ * nothing, and counted by the dense-parent check as a capability child.
+ */
+test("targetKind — a typed list entry moves to the list for the new kind", () => {
+  const root = makeVault();
+  writeMd(root, "capabilities/companion-memories", "---\nkind: capability\ntitle: Companion memories\n---\n");
+  writeMd(
+    root,
+    "domains/human-workbench",
+    "---\nkind: domain\ntitle: Human workbench\n" +
+      "capabilities: [capabilities/agent-work-visibility, capabilities/companion-memories]\n" +
+      "relation_notes: { capabilities/companion-memories: kept beside the chooser }\n" +
+      "elements: [elements/map-camera]\n---\n",
+  );
+  const result = redirectBacklinks(root, "capabilities/companion-memories", "elements/companion-memories", {
+    targetKind: "element",
+  });
+  const after = readMd(root, "domains/human-workbench");
+  assert.match(after, /capabilities: \[capabilities\/agent-work-visibility\]\n/);
+  assert.match(after, /elements: \[elements\/companion-memories, elements\/map-camera\]\n/);
+  assert.match(after, /relation_notes: \{ ?elements\/companion-memories: kept beside the chooser ?\}/);
+  assert.deepEqual(result.updates[0].afterKeys.find((row) => row.key === "elements"), {
+    key: "elements",
+    after: ["elements/companion-memories", "elements/map-camera"],
+  });
+  assert.deepEqual(result.keptInPlace, []);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("targetKind — a referrer that mentions the node only in its body keeps its lists", () => {
+  const root = makeVault();
+  writeMd(root, "capabilities/companion-memories", "---\nkind: capability\ntitle: Companion memories\n---\n");
+  writeMd(
+    root,
+    "capabilities/memory-recall",
+    "---\nkind: capability\nelements: [elements/recall-index]\n---\nSee [[capabilities/companion-memories]].\n",
+  );
+  const result = redirectBacklinks(root, "capabilities/companion-memories", "elements/companion-memories", {
+    targetKind: "element",
+  });
+  const after = readMd(root, "capabilities/memory-recall");
+  assert.match(after, /\[\[elements\/companion-memories\]\]/);
+  assert.match(after, /elements: \[elements\/recall-index\]\n/);
+  assert.equal(result.updates[0].bodyChanged, true);
+  assert.deepEqual(result.updates[0].afterKeys, []);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("targetKind — a referrer kind with no list for the new kind keeps the entry and reports it", () => {
+  const root = makeVault();
+  writeMd(root, "elements/x", "---\nkind: element\ntitle: X\n---\n");
+  writeMd(root, "capabilities/recall", "---\nkind: capability\nelements: [elements/recall-index, elements/x]\n---\n");
+  const result = redirectBacklinks(root, "elements/x", "capabilities/x", { targetKind: "capability" });
+  const after = readMd(root, "capabilities/recall");
+  assert.match(after, /elements: \[capabilities\/x, elements\/recall-index\]\n/);
+  assert.doesNotMatch(after, /^capabilities:/m);
+  assert.deepEqual(result.keptInPlace, [
+    { slug: "capabilities/recall", title: "capabilities/recall", key: "elements", ref: "capabilities/x", holderKind: "capability" },
+  ]);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("targetKind — an in-place kind change moves the entry without touching any address", () => {
+  const root = makeVault();
+  writeMd(root, "notes/x", "---\nkind: capability\ntitle: X\n---\n");
+  writeMd(root, "domains/d", "---\nkind: domain\ncapabilities: [capabilities/y, notes/x]\n---\nSee [[notes/x]].\n");
+  writeMd(root, "domains/e", "---\nkind: domain\nrelates: [notes/x]\n---\n");
+  const result = redirectBacklinks(root, "notes/x", "notes/x", { targetKind: "element" });
+  assert.equal(result.totalUpdated, 1);
+  assert.match(readMd(root, "domains/d"), /capabilities: \[capabilities\/y\]\nelements: \[notes\/x\]\n/);
+  assert.match(readMd(root, "domains/d"), /See \[\[notes\/x\]\]\./);
+  assert.equal(readMd(root, "domains/e"), "---\nkind: domain\nrelates: [notes/x]\n---\n");
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("without targetKind a same-slug call stays a no-op, and a rename keeps the list", () => {
+  const root = makeVault();
+  writeMd(root, "capabilities/a", "---\nkind: capability\ntitle: A\n---\n");
+  writeMd(root, "domains/d", "---\nkind: domain\ncapabilities: [capabilities/a]\n---\n");
+  assert.deepEqual(redirectBacklinks(root, "capabilities/a", "capabilities/a"), { updates: [], totalUpdated: 0, plan: [] });
+  redirectBacklinks(root, "capabilities/a", "capabilities/b");
+  assert.match(readMd(root, "domains/d"), /capabilities: \[capabilities\/b\]\n/);
+  rmSync(root, { recursive: true, force: true });
+});
+
 console.log(`\nredirectBacklinks: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

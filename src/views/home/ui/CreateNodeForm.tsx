@@ -82,7 +82,7 @@ export function CreateNodeForm({
    */
   defaultDomain?: string;
   /**
-   * Existing domains (value = bare tail-slug, label = display name). The user
+   * Existing domains (value = the domain document's address, label = display name). The user
    * picks from this list plus "no domain" instead of typing a slug freehand, so
    * a non-developer never has to know what a slug is. An empty list leaves only
    * "no domain" — a fresh vault, where a domain is created first and assigned
@@ -240,8 +240,8 @@ export function CreateNodeForm({
             options={KINDS.map((k) => ({ value: k, label: labels.kindLabels[k] }))}
           />
         </label>
-        {/* The picked value passes through `canonicalizeDomainRef` on save
-            (HomePage glue), so the option values stay bare tail-slugs here. */}
+        {/* Each option's value is the domain document's own address
+            (`domains/agent-access`); `canonicalizeDomainRef` keeps it on save. */}
         <div className="flex flex-col gap-1.5">
           <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
             {labels.domainQuestion}

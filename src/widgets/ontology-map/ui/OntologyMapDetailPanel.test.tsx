@@ -68,6 +68,7 @@ const labels = {
   actionPath: "Path",
   actionRealm: "Expand realm",
   sourceHeading: "Code evidence",
+  sourcePending: "Reading the analysis receipt",
   sourceKind: "Source · Git repository",
   sourceStatus: "Source verified",
   sourceMeasuredAt: "Measured today",
@@ -116,9 +117,21 @@ function renderPanel(
     onProjectSourceConfirmProposal?: () => void | Promise<void>;
     updatedAtLabel?: string | null;
     groups?: OntologyMapDetailPanelProps["groups"];
+    projectSourceLoading?: boolean;
   } = {},
 ) {
-  return render(
+  return render(panelElement(onOpenFullDetail, evidence, overrides));
+}
+
+function panelElement(
+  onOpenFullDetail: (() => void) | undefined,
+  evidence: { rows: { id: string; title: string; path: string | null }[]; total: number } = {
+    rows: [],
+    total: 0,
+  },
+  overrides: Parameters<typeof renderPanel>[2] = {},
+) {
+  return (
     <OntologyMapDetailPanel
       open
       nodeId="domain:views"
@@ -159,6 +172,7 @@ function renderPanel(
       onEnterRealm={overrides.onEnterRealm}
       onOpenFullDetail={onOpenFullDetail}
       projectSource={overrides.projectSource}
+      projectSourceLoading={overrides.projectSourceLoading}
       onProjectSourceAction={overrides.onProjectSourceAction}
       projectSourceBusy={overrides.projectSourceBusy}
       projectSourceError={overrides.projectSourceError}
@@ -167,7 +181,7 @@ function renderPanel(
       onProjectSourceConfirmProposal={overrides.onProjectSourceConfirmProposal}
       showHandoff={overrides.showHandoff}
       showSourcePath={overrides.showSourcePath}
-    />,
+    />
   );
 }
 
@@ -690,6 +704,117 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
     expect(screen.getByTestId("map-project-source-error")).toHaveTextContent(
       "previous binding is unchanged",
     );
+  });
+});
+
+/*
+ * 2026-09-25 sweep: the project inspector opened in another layout while its receipt was read and
+ * rebuilt itself 710 ms later — a block inserted above the buttons, the meta line rewritten, the
+ * relations folded, the footer slug gone, every button pushed down. The layout now follows the
+ * kind from the first frame, and the receipt's place is held while it is read.
+ */
+describe("OntologyMapDetailPanel — project receipt still being read", () => {
+  const gapView: ProjectSourceView = {
+    contractVersion: 1,
+    projectSlug: "views",
+    status: "needs_evidence",
+    currentness: "unavailable",
+    measuredAt: null,
+    topGap: { id: "receipt_missing" },
+    nextAction: { id: "measure_source" },
+    bindingCardinality: 1,
+    receipt: null,
+  };
+
+  it("draws the project's layout from the first frame and holds the receipt's place", () => {
+    renderPanel(vi.fn(), undefined, {
+      kind: "project",
+      projectSource: null,
+      projectSourceLoading: true,
+      updatedAtLabel: "changed today",
+    });
+
+    const pending = screen.getByTestId("map-project-source-pending");
+    expect(pending).toHaveAttribute("aria-busy", "true");
+    expect(pending).toHaveAttribute("aria-live", "polite");
+    expect(pending).not.toHaveAttribute("data-source-action");
+    expect(screen.getByTestId("map-project-source-heading")).toHaveTextContent("Code evidence");
+    expect(screen.queryByTestId("map-project-source-receipt")).not.toBeInTheDocument();
+    // Everything else is already the project's.
+    expect(screen.getByTestId("map-datasheet-updated-at")).toHaveTextContent(
+      "Concept document · changed today",
+    );
+    expect(screen.getByTestId("map-project-relations-summary")).toBeInTheDocument();
+    expect(screen.queryByTestId("map-detail-panel-slug")).not.toBeInTheDocument();
+    expect(screen.getByTestId("map-detail-panel-open-full-detail").className).not.toContain(
+      "--map-panel-primary-surface",
+    );
+    expect(screen.getByTestId("map-detail-panel-actions").className).toContain("border-t");
+  });
+
+  it("says it is reading only once the read outlives a frame's worth of waiting", async () => {
+    renderPanel(vi.fn(), undefined, {
+      kind: "project",
+      projectSource: null,
+      projectSourceLoading: true,
+    });
+
+    const line = screen.getByTestId("map-project-source-pending-line");
+    expect(line).toHaveAttribute("data-pending-announced", "false");
+    expect(line.className).toContain("invisible");
+    await waitFor(() => expect(line).toHaveAttribute("data-pending-announced", "true"));
+    expect(line).toHaveTextContent("Reading the analysis receipt");
+    expect(line.className).not.toContain("invisible");
+  });
+
+  it("turns the same live region into the receipt, and the gap arrives inside a disclosure", () => {
+    const { rerender } = renderPanel(vi.fn(), undefined, {
+      kind: "project",
+      projectSource: null,
+      projectSourceLoading: true,
+    });
+    const slot = screen.getByTestId("map-project-source-pending");
+
+    rerender(panelElement(vi.fn(), undefined, {
+      kind: "project",
+      projectSource: gapView,
+      projectSourceLoading: false,
+      onProjectSourceAction: vi.fn(),
+    }));
+
+    const receipt = screen.getByTestId("map-project-source-receipt");
+    expect(receipt).toBe(slot);
+    expect(receipt).not.toHaveAttribute("aria-busy");
+    expect(receipt).toHaveAttribute("data-source-action", "measure_source");
+    expect(screen.queryByTestId("map-project-source-pending-line")).not.toBeInTheDocument();
+    const gap = screen.getByTestId("map-project-source-gap");
+    expect(gap.closest(".ai-row-disclosure")).toHaveAttribute("data-state", "open");
+    expect(screen.getByTestId("map-project-source-remedy").closest(".ai-row-disclosure")).toHaveAttribute(
+      "data-state",
+      "open",
+    );
+  });
+
+  it("keeps the plain layout where no receipt can exist (nothing is being read)", () => {
+    renderPanel(vi.fn(), undefined, {
+      kind: "project",
+      projectSource: null,
+      projectSourceLoading: false,
+    });
+
+    expect(screen.queryByTestId("map-project-source-pending")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("map-project-source-receipt")).not.toBeInTheDocument();
+    expect(screen.getByTestId("map-detail-panel-slug")).toBeInTheDocument();
+    expect(screen.getByTestId("map-detail-panel-open-full-detail").className).toContain(
+      "--map-panel-primary-surface",
+    );
+  });
+
+  it("never holds a receipt's place for a kind that has none", () => {
+    renderPanel(vi.fn(), undefined, { kind: "domain", projectSourceLoading: true });
+
+    expect(screen.queryByTestId("map-project-source-pending")).not.toBeInTheDocument();
+    expect(screen.getByTestId("map-detail-panel-slug")).toBeInTheDocument();
   });
 });
 

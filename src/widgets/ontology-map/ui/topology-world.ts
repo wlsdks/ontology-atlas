@@ -175,12 +175,15 @@ export interface TopologyWorld {
   /** Bbox of ALL nodes — used for pan clamping and focus-mode context. */
   bounds: Bounds;
   /**
-   * Bbox of just the level-0 SPINE (project + domain + hub) — what the overview
-   * camera fits to. The overview only DRAWS the spine (tier gating in
-   * `model/tier-visibility.ts`), so fitting the full `bounds` — which the
-   * de-pileup deliberately spreads wide across all 295 nodes — zooms the ~8
-   * visible spine nodes down to a dot (the fit regression). Recomputed with
-   * `bounds` whenever geometry changes.
+   * Bbox of just the level-0 SPINE (project + domain + hub). The overview only
+   * DRAWS the spine (tier gating in `model/tier-visibility.ts`), so fitting the
+   * full `bounds` — which the de-pileup deliberately spreads wide across all 295
+   * nodes — zooms the ~8 visible spine nodes down to a dot (the fit regression).
+   * Recomputed with `bounds` whenever geometry changes.
+   *
+   * It holds the hub even when the density gate folds it, so it is the pan
+   * clamp's envelope, not a frame: the overview camera fits the part of it that
+   * is drawn (`computeDrawnSpineBounds`).
    */
   spineBounds: Bounds;
 }
@@ -199,6 +202,8 @@ const FALLBACK_BOUNDS: Bounds = { minX: -100, minY: -100, maxX: 100, maxY: 100 }
  * ratio 1): the project root, every domain, and any hub node. MUST mirror
  * `nodeTierAlpha`'s always-visible branch in `model/tier-visibility.ts` — if
  * that gate changes, this must too, or the fit and the visible set drift apart.
+ * The density gate is the other one a hub passes through: it can still fold one
+ * behind a crowded parent's chip, which `computeDrawnSpineBounds` accounts for.
  */
 export function isSpineNode(node: Pick<WorldNode, "kind" | "isHub">): boolean {
   return node.isHub || node.kind === "project" || node.kind === "domain";
@@ -245,14 +250,69 @@ export function computeSpineBounds(nodes: readonly WorldNode[], tokens: Ontology
 }
 
 /**
- * **Revealed bounds** (2026-09-03): the spine plus the children a person has
+ * **What the density gate folds behind a chip** at this expansion — the nodes the
+ * map does not draw however far the camera zooms, read from the gate itself.
+ *
+ * Not from the frame's published `clusteredIds`: that set is empty until the first
+ * frame runs, and the entry snap runs before it, so a fit reading it would frame one
+ * set on arrival and another on the fit button.
+ */
+export function computeFoldedIds(
+  world: Pick<TopologyWorld, "childrenByParent" | "nodeById">,
+  expandedParents: ReadonlySet<string>,
+): ReadonlySet<string> {
+  return computeDensityGate({
+    childrenByParent: world.childrenByParent,
+    expandedParents,
+    // Only the folded set is read; chip anchors need no geometry here.
+    parentGeometry: EMPTY_PARENT_GEOMETRY,
+    kindOf: (id) => world.nodeById.get(id)?.kind,
+  }).clusteredIds;
+}
+
+/**
+ * **The spine the overview draws** (2026-09-25): `spineBounds` without the nodes the
+ * density gate folds.
+ *
+ * The hub is spine because the tier gate always shows it, but a hub under a parent
+ * holding more than twelve children sits behind that parent's chip like its siblings,
+ * and the overview fit went on framing it. Measured on the dogfood ontology at
+ * 1512×949: the hub (`element:vault-file-store`, folded into the crowded "meaning
+ * layer" domain) stood at world x -416 while the drawn cross spans ±267, so the fit
+ * centred -78 and the drawing landed 82 px right of the free map's centre on screen;
+ * the bundled sample's hub folds on the other side and its ring landed 77 px left.
+ *
+ * Falls back to the whole spine when none of it would be drawn.
+ */
+export function computeDrawnSpineBounds(
+  world: Pick<TopologyWorld, "spineBounds" | "childrenByParent" | "nodeById">,
+  tokens: OntologyMapTokens,
+  expandedParents: ReadonlySet<string>,
+  folded: ReadonlySet<string> = computeFoldedIds(world, expandedParents),
+): Bounds {
+  let bounds: Bounds | null = null;
+  for (const node of world.nodeById.values()) {
+    if (!isSpineNode(node) || folded.has(node.id)) continue;
+    if (bounds === null) {
+      const r = radiusForKind(node.kind, tokens);
+      bounds = { minX: node.x - r, minY: node.y - r, maxX: node.x + r, maxY: node.y + r };
+    } else {
+      growBounds(bounds, node, tokens);
+    }
+  }
+  return bounds ?? { ...world.spineBounds };
+}
+
+/**
+ * **Revealed bounds** (2026-09-03): the drawn spine plus the children a person has
  * expanded. The overview fit frames the spine, and a chip expansion dives to
  * its cluster, but every *other* way back to the overview — a deep link with
  * `open=`, the fit button, the `0` key, auto-arrange, the deselect return, a
  * resize — refitted the spine alone, leaving the expanded children just off
  * the edge (measured: five marketing elements at y 877–895 on an 860 px
- * canvas). Clustered children (past the batch cap) are not drawn, so they do
- * not widen the frame; with nothing expanded this is exactly the spine.
+ * canvas). Folded and clustered children (past the batch cap) are not drawn, so
+ * they do not widen the frame; with nothing expanded this is exactly the drawn
+ * spine.
  */
 export function computeRevealedBounds(
   world: Pick<TopologyWorld, "spineBounds" | "childrenByParent" | "nodeById">,
@@ -260,10 +320,11 @@ export function computeRevealedBounds(
   expandedParents: ReadonlySet<string>,
   clustered: ReadonlySet<string> | null,
 ): Bounds {
-  const bounds: Bounds = { ...world.spineBounds };
+  const folded = computeFoldedIds(world, expandedParents);
+  const bounds = computeDrawnSpineBounds(world, tokens, expandedParents, folded);
   for (const parentId of expandedParents) {
     for (const childId of world.childrenByParent.get(parentId) ?? []) {
-      if (clustered?.has(childId)) continue;
+      if (folded.has(childId) || clustered?.has(childId)) continue;
       const child = world.nodeById.get(childId);
       if (child) growBounds(bounds, child, tokens);
     }

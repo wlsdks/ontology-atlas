@@ -341,6 +341,20 @@ function sampleRefs(refs, limit) {
  * nodes — the metric goes green and the graph is worse. Naming both exits, and
  * leaving the choice with the caller, is the whole point.
  */
+/**
+ * Warning literal for an entry a kind change could not move (2026-09-26, map-edit review).
+ *
+ * reclassify_concept moves an entry in a list named for a kind (`capabilities:` …) into the list
+ * for the node's new kind. When the referrer's kind keeps no such list (spec §5: a capability
+ * keeps elements, not capabilities; nothing keeps documents), the entry stays where it is — it
+ * still resolves, so no compile warning fires, and every reader keeps counting it by its list.
+ * Only the writer knows it happened, so the writer says it, with the call that settles it.
+ */
+export function containmentEntryKeptMessage({ slug, key, ref, holderKind, newKind }) {
+  const holder = holderKind ? `a ${holderKind}` : 'a document with no kind';
+  return `"${slug}" still lists "${ref}" under ${key}:, but "${ref}" is now a ${newKind} and ${holder} keeps no list for a ${newKind}, so the entry was left where it was rather than guessed into another relation. Readers still count it as one of "${slug}"'s ${key}. Decide what "${slug}" means by it: remove_relation({from:"${slug}", to:"${ref}", type:"${key}"}) drops it, and add_relation with the type that fits restates it.`;
+}
+
 export function danglingGraphReferenceMessage({ slug, key, refs, count, sampleLimit }) {
   return `${count} entry/entries in "${slug}".${key} resolve to no vault node: ${sampleRefs(refs, sampleLimit)}. A relation array is a claim that a node exists; an unresolved string is not a child, it is a name with nothing behind it. Either promote it — add_concept({slug, kind, title}) for the concept it names, then keep the reference — or drop it from ${key}: and record what it points at as evidence on this node instead. Do not leave it in a meaning slot.`;
 }

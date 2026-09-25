@@ -233,3 +233,36 @@ describe("엣지 후보 캐시 — 정지한 카메라에서 재계산 0회", ()
     ).toBe(firstPass);
   });
 });
+
+describe("leaving the canvas takes its hover cards with it", () => {
+  it("clears the edge card and the cluster tooltip once, and only once", () => {
+    const onHoverEdge = vi.fn();
+    const onHoverCluster = vi.fn();
+    const hoveredEdgeRef = ref<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>({
+      sourceId: "domain:a",
+      targetId: "domain:b",
+      relationType: "depends_on",
+      declaredBySlug: null,
+    });
+    const hoveredClusterIdRef = ref<string | null>("domain:a");
+    const { handlePointerLeave } = createTopologyPointerHandlers(
+      buildRefs({
+        hoveredEdgeRef: hoveredEdgeRef as unknown as PointerHandlerRefs["hoveredEdgeRef"],
+        onHoverEdge,
+        hoveredClusterIdRef: hoveredClusterIdRef as unknown as PointerHandlerRefs["hoveredClusterIdRef"],
+        onHoverCluster,
+      }),
+    );
+
+    handlePointerLeave();
+
+    expect(hoveredEdgeRef.current).toBeNull();
+    expect(onHoverEdge).toHaveBeenCalledWith(null, null);
+    expect(hoveredClusterIdRef.current).toBeNull();
+    expect(onHoverCluster).toHaveBeenCalledWith(null);
+
+    handlePointerLeave();
+    expect(onHoverEdge).toHaveBeenCalledTimes(1);
+    expect(onHoverCluster).toHaveBeenCalledTimes(1);
+  });
+});

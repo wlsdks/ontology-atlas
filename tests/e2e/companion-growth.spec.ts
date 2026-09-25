@@ -87,7 +87,10 @@ test('combat cues expose the dodge window, stop behind panels, and respect reduc
  await expect(dialog.getByTestId('companion-run-outcome')).toHaveCount(0);
  await page.keyboard.press('m');await expect(world).toHaveAttribute('data-playing','false');await page.keyboard.press('Escape');await expect(world).toHaveAttribute('data-playing','true');
  await page.emulateMedia({reducedMotion:'reduce'});await expect(world.getByTestId('companion-attack-bolt')).toHaveCount(0);await expect(world.getByTestId('companion-dodge-telegraph')).toHaveCSS('animation-name','none');
- await page.keyboard.press('Space');await expect(world.getByTestId('companion-dodge-telegraph')).toHaveCount(0);
+ // The clock is paused here, so the world's own refocus after the closing panel is a race on a slow runner (focus
+ // was on <body> in all three CI attempts, 2026-09-26); the claim is the dodge, so aim the key the way
+ // 'Space visibly moves the fox as soon as the dodge is armed' does.
+ await world.focus();await page.keyboard.press('Space');await expect(world.getByTestId('companion-dodge-telegraph')).toHaveCount(0);
 });
 
 test('opening an expedition panel holds the saved battle until it closes',async({page})=>{

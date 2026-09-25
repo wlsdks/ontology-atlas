@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useFormatter } from "next-intl";
 import { cn } from "@/shared/lib/cn";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { shortHash, stripConventionalPrefix } from "../lib/step-title";
+import { arrivalLens, type DocumentFollow, type Lens } from "../lib/document-follow";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { controlClass } from "@/shared/ui";
 import { gitCommitDiff, gitHistory, type GitChangeEntry, type GitCommitInfo } from "@/shared/lib/tauri-git";
-import { parseUnifiedDiff } from "@/shared/lib/atlas-git-record";
+import { parseUnifiedDiff, type AtlasGitDiffFile } from "@/shared/lib/atlas-git-record";
 import { DocumentChangeReader, type ChangedDocument } from "./PendingDocumentPane";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { ConceptEgoCard } from "./ConceptEgoCard";
@@ -47,8 +48,6 @@ export interface CommitConcept {
   label: string;
   kind: string;
 }
-
-type Lens = "concepts" | "files";
 
 /** Concept names the headline spells out before it counts the rest. */
 const HEADLINE_CONCEPTS = 2;
@@ -106,6 +105,7 @@ export function CommitDetail({
   onRestore,
   restoreBusy,
   onJumpToCommit,
+  follow = null,
   whenOf,
   stepTitleOf,
   focusedConceptId,
@@ -133,8 +133,13 @@ export function CommitDetail({
   /** Restores one of this commit's files to this commit's content; resolves true when git did it. */
   onRestore: (path: string, others: number) => Promise<boolean>;
   restoreBusy: boolean;
-  /** Selects another step by hash. */
-  onJumpToCommit: (hash: string) => void;
+  /**
+   * Selects another step by hash, carrying the document being read there: a jump from a
+   * document's own history keeps following that document.
+   */
+  onJumpToCommit: (hash: string, follow: DocumentFollow) => void;
+  /** The document this step was opened to follow — a jump from its history — or `null`. */
+  follow?: DocumentFollow | null;
   /** Relative-time wording in the reader's language. */
   whenOf: (isoTime: string) => string;
   /** What another step changed, in words: its concepts, else its documents, else its author's sentence. */
@@ -144,7 +149,29 @@ export function CommitDetail({
   egoFor: (nodeId: string) => ConceptEgo | null;
   kindLabel: (kind: string) => string;
 }) {
-  const focused = focusedConceptId ?? concepts[0]?.id ?? null;
+  /*
+   * **A jump keeps the document it was reading** (real-bridge QA, 2026-09-25). Pressing a row of
+   * "Other steps that changed this document" used to clear the focus, so the older step opened
+   * on its first document — in a vault's first commit that is `README.md` — and the restore
+   * door beneath it put back `README.md`. The jump now carries the document's path, and this
+   * step opens on it, in the lens it was read in (`arrivalLens`).
+   *
+   * A step whose file list does not hold the followed document **holds**: nothing is selected
+   * in its place, no door is drawn, and the reader says so. The realistic case is a merge — git
+   * lists a merge that resolved a conflict in the document's own history, but prints no files
+   * for a merge. Only the person's own press on a chip or a file ends the hold: another
+   * document never stands in silently for the one being followed.
+   */
+  const followEntry = follow ? (files.find((file) => file.path === follow.path) ?? null) : null;
+  const followCarried = followEntry !== null && concepts.some((concept) => fileCarriesNode(followEntry, concept.id));
+  const [held, setHeld] = useState(follow !== null && followEntry === null);
+  // A plain press on this same step in the list ends the follow; the hold ends with it.
+  const holding = held && follow !== null;
+  const focused = holding ? null : (focusedConceptId ?? concepts[0]?.id ?? null);
+  const pickConcept = (id: string) => {
+    setHeld(false);
+    setFocusedConceptId(id);
+  };
   const format = useFormatter();
   const { state: hashState, copy: copyHash } = useCopyFeedback();
   const authored = stripConventionalPrefix(subject);
@@ -194,10 +221,13 @@ export function CommitDetail({
    * measurement: never paint over a pressed chip's indigo (decision rule,
    * ledger 2026-08-15 (8)).
    */
-  const conceptGroup = useRovingRadioGroup({
+  const conceptGroup = useRovingRadioGroup<string | null>({
+    // Holding, nothing is pressed; the group then makes its first chip the tab stop (APG).
     value: focused,
     values: concepts.map((c) => c.id),
-    onChange: setFocusedConceptId,
+    onChange: (id) => {
+      if (id) pickConcept(id);
+    },
   });
 
   /*
@@ -205,11 +235,32 @@ export function CommitDetail({
    * parts ways with a git client: every tool has a file list, and "which
    * concepts did this step touch" exists only here. Only a step with no
    * concepts at all (a config-only change, say) opens on files — a default that
-   * renders empty is not a default.
+   * renders empty is not a default. A followed document opens where it was being read.
    */
-  const [lens, setLens] = useState<Lens>(concepts.length > 0 ? "concepts" : "files");
-  const [openFile, setOpenFile] = useState<string | null>(null);
+  const [lens, setLens] = useState<Lens>(() =>
+    arrivalLens({
+      follow,
+      followChanged: followEntry !== null,
+      followCarried,
+      conceptCount: concepts.length,
+      fileCount: files.length,
+    }),
+  );
+  const [openFile, setOpenFile] = useState<string | null>(followEntry?.path ?? null);
   const [diff, setDiff] = useState<string | null>(null);
+  /*
+   * Arriving by a jump, the selection is brought into view once. A step can hold a hundred
+   * documents, and the chip or row that proves the document was kept can sit far below the
+   * point the column was scrolled to; `nearest` never moves one that is already visible.
+   */
+  const detailRef = useRef<HTMLDivElement>(null);
+  const revealOnArrival = useRef(follow !== null);
+  useLayoutEffect(() => {
+    if (!revealOnArrival.current) return;
+    revealOnArrival.current = false;
+    const anchor = detailRef.current?.querySelector<HTMLElement>("[data-document-anchor]");
+    if (anchor && typeof anchor.scrollIntoView === "function") anchor.scrollIntoView({ block: "nearest" });
+  }, []);
 
   // The parent keys this detail by vault + hash + concept count. A step transition
   // therefore creates the correct initial lens, file selection, and loading state
@@ -235,7 +286,7 @@ export function CommitDetail({
    * document cannot be read at this commit (the web, a stub, a refused `git show`).
    */
   const perFile = useMemo(() => parseUnifiedDiff(diff ?? ""), [diff]);
-  const activeFile = openFile ?? files[0]?.path ?? null;
+  const activeFile = holding ? null : (openFile ?? files[0]?.path ?? null);
   const activeEntry = activeFile ? files.find((file) => file.path === activeFile) ?? null : null;
   /*
    * The document the files lens reads, named the way the concept lens names it: the concept
@@ -258,14 +309,7 @@ export function CommitDetail({
       kind: activeEntry.kind,
     };
   }, [activeEntry, concepts]);
-  const activeFallback = useMemo(() => {
-    if (!activeFile) return null;
-    return (
-      perFile.find((file) => file.path === activeFile) ??
-      perFile.find((file) => file.path.endsWith(activeFile) || activeFile.endsWith(file.path)) ??
-      null
-    );
-  }, [perFile, activeFile]);
+  const activeFallback = useMemo(() => patchOf(perFile, activeFile), [perFile, activeFile]);
   /*
    * The focused concept's own document in this commit. The concept lens is the default lens
    * (review, 2026-09-19: an action that lives only under "files" may never be found), so the
@@ -275,6 +319,49 @@ export function CommitDetail({
     if (!focused) return null;
     return files.find((file) => fileCarriesNode(file, focused)) ?? null;
   }, [files, focused]);
+  /*
+   * **What the step changed in that document, read in the concepts lens too** (real-bridge QA,
+   * 2026-09-25). The whole document with its changed lines marked in place is what this screen
+   * has that a git client does not, and the concepts lens is the default because it too exists
+   * only here — yet the lens drew the concept's card and its other steps and never the change
+   * itself; the same document's lines were one lens away. The reader the files lens uses sits
+   * between the card and the document's own steps, so the restore door still closes what was
+   * just read.
+   */
+  const focusedLabel = concepts.find((concept) => concept.id === focused)?.label ?? null;
+  const focusedDocument = useMemo<ChangedDocument | null>(
+    () =>
+      focusedFile && focusedLabel !== null
+        ? { entry: focusedFile, label: focusedLabel, kind: focusedFile.kind }
+        : null,
+    [focusedFile, focusedLabel],
+  );
+  const focusedFallback = useMemo(
+    () => patchOf(perFile, focusedFile?.path ?? null),
+    [perFile, focusedFile],
+  );
+  /*
+   * Keyed by hash and path, as in the files lens: a new concept is a new document, and a later
+   * commit patch replaces the fallback rather than layering on it. The card above already names
+   * the concept, so the reader opens with a section label like the card's and the document's
+   * other steps, rather than naming it a second time.
+   */
+  const conceptReader = focusedDocument ? (
+    <div
+      key={`${hash}:${focusedDocument.entry.path}:${diff === null ? "reading" : "read"}`}
+      data-testid="atlas-git-concept-diff"
+      className="flex min-h-0 flex-none flex-col"
+    >
+      <DocumentChangeReader
+        t={t}
+        vaultPath={vaultPath}
+        document={focusedDocument}
+        fallback={focusedFallback}
+        source={hash}
+        heading={t("changedLines")}
+      />
+    </div>
+  ) : null;
 
   /*
    * One door per document, drawn in one place in both lenses: on the heading of the
@@ -305,8 +392,38 @@ export function CommitDetail({
       />
     );
 
+  /*
+   * The followed document, when this step's file list does not hold it: said in the reader in
+   * place of a document, above that document's own steps — without a door, because nothing on
+   * this step is selected to put back. Drawn the same in both lenses.
+   */
+  const notInStep =
+    holding && follow ? (
+      <div className="flex flex-none flex-col gap-1 px-5 py-4">
+        <p
+          data-testid="atlas-git-doc-not-in-step"
+          data-document-anchor
+          className="max-w-[var(--measure-doc-column)] text-body leading-body text-[color:var(--color-text-secondary)]"
+        >
+          {t("docNotInStep", { path: follow.path })}
+        </p>
+        <DocumentHistory
+          key={follow.path}
+          t={t}
+          vaultPath={vaultPath}
+          path={follow.path}
+          currentHash={hash}
+          changedHere={false}
+          whenOf={whenOf}
+          stepTitleOf={stepTitleOf}
+          onJump={(target) => onJumpToCommit(target, follow)}
+        />
+      </div>
+    ) : null;
+
   return (
     <div
+      ref={detailRef}
       className="git-fade-in flex min-h-0 flex-1 flex-col"
       data-testid="atlas-git-history-detail"
     >
@@ -418,6 +535,7 @@ export function CommitDetail({
                       {...conceptGroup.itemProps(index)}
                       type="button"
                       data-testid="atlas-git-concept-chip"
+                      data-document-anchor={focused === concept.id ? true : undefined}
                       className={controlClass({
                         shape: "chip",
                         size: "md",
@@ -453,29 +571,39 @@ export function CommitDetail({
                     ego={egoFor(focused)}
                     t={t}
                     kindLabel={kindLabel}
-                    onSelect={setFocusedConceptId}
+                    onSelect={pickConcept}
                   />
                 </Section>
               ) : null}
+              {notInStep}
+              {conceptReader}
               {focusedFile ? (
                 <div className="px-5 pb-4">
+                  {/* Keyed by document: a new document is a new timeline, never the last
+                      document's rows under this one's heading while its own read is in flight. */}
                   <DocumentHistory
+                    key={focusedFile.path}
                     t={t}
                     vaultPath={vaultPath}
                     path={focusedFile.path}
                     currentHash={hash}
                     whenOf={whenOf}
                     stepTitleOf={stepTitleOf}
-                    onJump={onJumpToCommit}
+                    onJump={(target) =>
+                      onJumpToCommit(target, { path: focusedFile.path, lens: "concepts", conceptId: focused })
+                    }
                     action={restoreDoor(focusedFile)}
                   />
                 </div>
               ) : null}
             </>
           ) : (
-            <p className="px-5 py-6 text-label text-[color:var(--color-text-quaternary)]">
-              {t("stepNoConcepts")}
-            </p>
+            <>
+              <p className="px-5 py-6 text-label text-[color:var(--color-text-quaternary)]">
+                {t("stepNoConcepts")}
+              </p>
+              {notInStep}
+            </>
           )
         ) : (
           <>
@@ -495,7 +623,11 @@ export function CommitDetail({
                        `aria-selected`, and adding pressed here would put three
                        vocabularies on one screen. */
                     aria-current={activeFile === file.path ? "true" : undefined}
-                    onClick={() => setOpenFile(file.path)}
+                    data-document-anchor={activeFile === file.path ? true : undefined}
+                    onClick={() => {
+                      setHeld(false);
+                      setOpenFile(file.path);
+                    }}
                     className={controlClass({ shape: "row", stacked: true, className: "min-h-8 min-w-0 gap-2.5 border-l-2 border-l-transparent px-5 hover:bg-[color:var(--color-overlay-1)] aria-[current=true]:border-l-[color:var(--color-indigo-brand)] aria-[current=true]:bg-[color:var(--color-overlay-2)]" })}
                   >
                     <span
@@ -542,17 +674,19 @@ export function CommitDetail({
             {activeEntry ? (
               <div className="px-5 pb-4">
                 <DocumentHistory
+                  key={activeEntry.path}
                   t={t}
                   vaultPath={vaultPath}
                   path={activeEntry.path}
                   currentHash={hash}
                   whenOf={whenOf}
                   stepTitleOf={stepTitleOf}
-                  onJump={onJumpToCommit}
+                  onJump={(target) => onJumpToCommit(target, { path: activeEntry.path, lens: "files", conceptId: null })}
                   action={restoreDoor(activeEntry)}
                 />
               </div>
             ) : null}
+            {notInStep}
           </>
         )}
       </div>
@@ -592,7 +726,10 @@ function RestoreDock({
     >
       <DocumentConfirmStep
         testIdPrefix="atlas-git-restore"
-        doorLabel={t("restoreAction")}
+        /* The door names the one file it puts back, before it is pressed (2026-09-25): "Restore
+           this version" under a step with a hundred documents said nothing about which one, and
+           a jump that had silently swapped the selection left it aimed at `README.md`. */
+        doorLabel={t("restoreAction", { path })}
         confirmLabel={t("restoreButton")}
         busyLabel={t("restoreRunning")}
         cancelLabel={t("cancelButton")}
@@ -632,6 +769,7 @@ function DocumentHistory({
   vaultPath,
   path,
   currentHash,
+  changedHere = true,
   whenOf,
   stepTitleOf,
   onJump,
@@ -641,6 +779,11 @@ function DocumentHistory({
   vaultPath: string | null;
   path: string;
   currentHash: string;
+  /**
+   * Whether the step on screen changed this document. When it did not, the list is the steps
+   * that did, and says nothing about this one — "this is the only step" would be false.
+   */
+  changedHere?: boolean;
   whenOf: (isoTime: string) => string;
   stepTitleOf: (commit: GitCommitInfo) => string;
   onJump: (hash: string) => void;
@@ -699,19 +842,28 @@ function DocumentHistory({
     );
     void Promise.allSettled(runs).then(() => setExpanded(false));
   };
-  // Until the history is read (or where it cannot be, on the web) the door still stands.
-  if (rows === null) return action ? <div className="flex pt-4">{action}</div> : null;
+  /*
+   * Until the history is read (or where it cannot be, on the web) the door still stands — in the
+   * same place in the tree it keeps once the rows land. It used to stand in a wrapper of its own
+   * and move into the heading row on arrival, which remounted it: a restore confirm opened in
+   * that window closed by itself when the read landed.
+   */
+  const loaded = rows !== null;
+  if (!loaded && !action) return null;
+  if (loaded && !changedHere && others.length === 0) return null;
   const shown = expanded ? others : others.slice(0, DOCUMENT_HISTORY_PREVIEW);
   const hidden = others.length - shown.length;
   return (
-    <section className="flex flex-col gap-1 pt-4" data-testid="atlas-git-document-history">
+    <section className="flex flex-col gap-1 pt-4" data-testid={loaded ? "atlas-git-document-history" : undefined}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h3 className="flex items-baseline gap-2 text-label text-[color:var(--color-text-tertiary)]">
-          {others.length > 0 ? t("docHistoryTitle") : t("docHistoryOnly")}
-          {others.length > 0 ? (
-            <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">{others.length}</b>
-          ) : null}
-        </h3>
+        {loaded ? (
+          <h3 className="flex items-baseline gap-2 text-label text-[color:var(--color-text-tertiary)]">
+            {!changedHere ? t("docHistoryElsewhere") : others.length > 0 ? t("docHistoryTitle") : t("docHistoryOnly")}
+            {others.length > 0 ? (
+              <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">{others.length}</b>
+            ) : null}
+          </h3>
+        ) : null}
         {action}
       </div>
       {others.length > 0 ? (
@@ -816,4 +968,12 @@ function statusMark(status: string): string {
  * relative, so they differ at the front whenever the vault is a subfolder.
  * Exact match first, tail match second.
  */
+function patchOf(perFile: readonly AtlasGitDiffFile[], path: string | null): AtlasGitDiffFile | null {
+  if (!path) return null;
+  return (
+    perFile.find((file) => file.path === path) ??
+    perFile.find((file) => file.path.endsWith(path) || path.endsWith(file.path)) ??
+    null
+  );
+}
 

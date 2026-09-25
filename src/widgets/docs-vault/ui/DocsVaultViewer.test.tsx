@@ -171,8 +171,9 @@ describe("DocsVaultViewer", () => {
     });
 
     const citation = await screen.findByRole("button", {
-      name: "Open original source sources/storage.md#l1",
+      name: "Open original source sources/storage.md · line 1",
     });
+    expect(citation).toHaveTextContent("storage.md · line 1");
     expect(citation).toHaveAttribute("data-source-path", "sources/storage.md");
     expect(citation).toHaveAttribute("data-source-anchor", "l1");
 
@@ -187,7 +188,7 @@ describe("DocsVaultViewer", () => {
       onSourceNavigate,
     });
 
-    const citation = await screen.findByText("src:sources/missing.md#l1");
+    const citation = await screen.findByText("missing.md · line 1");
     expect(citation.tagName).toBe("SPAN");
     expect(citation).toHaveAttribute(
       "title",
@@ -202,7 +203,7 @@ describe("DocsVaultViewer", () => {
       onSourceNavigate: vi.fn(),
     });
 
-    const citation = await screen.findByText("src:sources/storage.md#l1");
+    const citation = await screen.findByText("storage.md · line 1");
     expect(citation.tagName).toBe("SPAN");
     expect(citation).toHaveAttribute(
       "title",
@@ -216,7 +217,7 @@ describe("DocsVaultViewer", () => {
       knownOriginalPaths: new Set(["sources/storage.md"]),
     });
 
-    const citation = await screen.findByText("src:sources/storage.md#l1");
+    const citation = await screen.findByText("storage.md · line 1");
     expect(citation.tagName).toBe("SPAN");
     expect(citation).toHaveAttribute(
       "title",
@@ -232,7 +233,7 @@ describe("DocsVaultViewer", () => {
       onSourceNavigate,
     });
 
-    const citation = await screen.findByText("src:sources/../private.md#l1");
+    const citation = await screen.findByText("private.md · line 1");
     expect(citation.tagName).toBe("SPAN");
     expect(screen.queryByRole("button")).toBeNull();
     expect(onSourceNavigate).not.toHaveBeenCalled();
@@ -246,10 +247,58 @@ describe("DocsVaultViewer", () => {
     });
 
     const citation = await screen.findByRole("button", {
-      name: "Open original source sources/설계.md#l2",
+      name: "Open original source sources/설계.md · line 2",
     });
+    // A label the author wrote is the author's words, kept as written.
+    expect(citation).toHaveTextContent(/^원문$/);
     fireEvent.click(citation);
     expect(onSourceNavigate).toHaveBeenCalledWith("sources/설계.md", "l2");
+  });
+
+  /*
+   * **A compiled page's citations read as places, not addresses** (2026-09-25). The compile
+   * path writes `[[src:<file>#l<n>]]` with no label, and the page printed the target itself —
+   * `src:sources/budget.md#l5` on every fact — while the Source pane said "line 5".
+   */
+  it("says where an unlabelled citation points, in words, and names the file only when the header does not", async () => {
+    const onSourceNavigate = vi.fn();
+    renderViewer(
+      [
+        "- The budget is 120,000 USD [[src:sources/budget.md#l5]]",
+        "- Hosting was quoted separately [[src:sources/vendor-call-notes.txt#l3]]",
+        "- The plan names the freeze [[src:sources/plan.md]]",
+      ].join("\n"),
+      {
+        knownOriginalPaths: new Set(["sources/budget.md", "sources/vendor-call-notes.txt", "sources/plan.md"]),
+        onSourceNavigate,
+        namedSourcePath: "sources/budget.md",
+      },
+    );
+
+    const named = await screen.findByRole("button", { name: "Open original source sources/budget.md · line 5" });
+    expect(named).toHaveTextContent(/^line 5$/);
+    const other = screen.getByRole("button", { name: "Open original source sources/vendor-call-notes.txt · line 3" });
+    expect(other).toHaveTextContent(/^vendor-call-notes\.txt · line 3$/);
+    // No anchor: the whole file is the place.
+    const whole = screen.getByRole("button", { name: "Open original source sources/plan.md" });
+    expect(whole).toHaveTextContent(/^plan\.md$/);
+    expect(screen.queryByText(/src:/)).toBeNull();
+
+    fireEvent.click(named);
+    expect(onSourceNavigate).toHaveBeenCalledWith("sources/budget.md", "l5");
+  });
+
+  it("keeps an unlabelled ordinary wikilink routable once the unlabelled mark is stripped", async () => {
+    const onNavigate = vi.fn();
+    renderViewer("Read [[README]]", {
+      onNavigate,
+      getDocHref: (slug, hash) => `/docs/${slug}${hash ? `#${hash}` : ""}`,
+    });
+
+    const link = await screen.findByRole("link", { name: "README" });
+    expect(link).toHaveAttribute("href", "/docs/README");
+    fireEvent.click(link);
+    expect(onNavigate).toHaveBeenCalledWith("README");
   });
 
   it("keeps an ordinary wikilink on the existing in-vault navigation path", async () => {

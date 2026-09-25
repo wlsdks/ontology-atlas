@@ -187,15 +187,19 @@ dialog never says "ontology" (map-building framing for non-experts).
 `isDesktopShell()`, `src/shared/lib/desktop-shell.ts`), `/` with no vault
 renders an Obsidian-style **FirstRunPage** (`src/views/first-run/`): local-only
 actions — **just start** (2026-07-23, Tauri runtime only — no folder
-picker at all: creates `~/Documents/Ontology Atlas/<name>` on real disk
-automatically, numbering `-2`/`-3` on a name clash, connects it, then reuses
-the same `scaffoldOntology()` seed as "create new vault", and the success
+picker at all: creates `~/Ontology Atlas/<name>` on real disk
+automatically, numbering `-2`/`-3` on a name clash, connects it with the
+same starter seed as "create new vault", and the success
 toast names the exact path — real disk, not OPFS, so an AI agent/MCP can
 still read it; hidden when the real Tauri invoke bridge is absent, e.g. a dev
 `?shell=desktop` browser override) / open vault folder / create new vault
-(existing `scaffoldOntology()` when the picked folder is empty — 5 markdown
+(the seed is written only when the picked folder is empty — 5 markdown
 seeds + agent configs + the agent guide pair + 3 procedure skills) — plus a local-first trust
 line. Bundled demo vaults are web-only; no demo or download CTA appears inside the installed app.
+Both creation doors hand the seed to the open itself (`open`/`openRecent` with `starter`), so
+it lands before the folder is first shown: the first-run screen is replaced as soon as the open
+begins, and a seed left to it was never written (2026-09-25). A seed that cannot be written is
+said in a toast that points to Settings › Workspace.
 
 **Project-local vault (2026-08-24, supersedes the "just start" location above)**:
 the map now lives **inside the project it describes**, at `<project>/atlas`. One
@@ -320,7 +324,7 @@ had become false).
   - **Health** — enters via the maintenance queue count chip on the view rail; `mode=health` deep links preserved
 
 #### Canvas (`ontology-map` — custom canvas-2D engine + Graphology ForceAtlas2 physics)
-- **Click node** → right-side panel opens (`ProjectDrawer` for project nodes, the 352px node datasheet for domain/capability/element nodes — see "Node datasheet" below)
+- **Click node** → right-side panel opens: the 352px node datasheet for every kind, a project node's carrying its code-evidence receipt (see "Node datasheet" below). The `ProjectDrawer` opens only for a bare project slug (`?p=<slug>`, the hub rail and a document's project link); the Projects list and a project's page address the project's own node (`?p=project:<slug>`) instead (2026-09-25)
 - **Drag node** → reposition (releases back to physics)
 - **Double-click node** → opens or folds its children, the same act as its `+N` chip, and keeps it selected (the "local graph" mode this line once described does not exist; 2026-09-19)
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
@@ -403,6 +407,21 @@ had become false).
   `aria-level` plus `aria-posinset`/`aria-setsize`. Before this a screen reader
   announced the project and its nine domains as ten peers, and an expanded
   domain's capabilities joined that same flat list.
+
+- **The INDEX tree follows the selection** (2026-09-25) → a node selected anywhere
+  but on its own rows — a `?p=` link, the canvas, the palette, or a pick from the
+  INDEX search that was then cleared — opens the rows above it once and scrolls its
+  row into view; a branch folded again stays folded until the next selection.
+
+- **"Recent" is dated by Git in the app** (2026-09-25) → the INDEX recent-changes
+  window, the `?recent=` spotlight, the dusty rows, a node's "changed … ago" and the
+  Analysis Recent changes tab read each concept document's date from one Git walk:
+  its last commit, or its file's
+  date when Git shows it edited or new since (the rule the bundled manifest is built
+  with). A clone, checkout or restored backup stamps every file with the moment it
+  landed, so the file dates alone called 98 of 98 concepts changed today. Until Git
+  answers the lens counts nothing and the date slot stays empty; the web build,
+  which reads no Git, keeps the file dates.
 
 - **The chrome may not eat the map** (2026-09-20) → the camera's side insets are
   absolute pixels (350 for the INDEX panel, 120 for the tool rail), so they did
@@ -619,6 +638,7 @@ had become false).
 - Clicking the **「Agent」** button in the top toolbar opens a tall vertical panel on the right side of the map. When the panel opens, the map and node info areas shift together to adjust their width. This feature is exclusive to the desktop app — browsers lack a secure place to store API keys and a valid path for requests, so the button is not rendered at all if it would do nothing.
 - The outer dock continues to yield space to the map width, but the actual conversation surface stands as a panel with 12px spacing on the top, bottom, and right sides. Its borders, radius, and shadows share existing panel tokens used by INDEX and node details, with ACP and API-key conversations sharing the same form. The top and vertical map controls on the left side of the panel are attached 12px from each side of the seam, totaling a 24px gap, moving in sync with the dock's timing and curvature.
 - From the first frame of opening the panel, the header, empty conversation prompt, current folder recommendations, and input box are all visible in their final positions. While waiting for connection, only the small spinner and "Connecting" status in the header move; when ready, only the text changes to "Ready." Session start occurs after the dock width movement and camera's final landing complete, ensuring map motion and process booting do not compete for the same frame.
+- **A connection that does not finish starting can be stopped (2026-09-26).** While the tool starts, **Stop** stands beside Send, as it does during a turn. It ends the attempt through the same path closing the dock takes (a process the attempt launched is stopped even if it answers later), keeps the draft in the composer, and the well says the tool was not started and nothing was sent, with **Connect again**. A stopped conversation does not reconnect on its own: the Library's dock, which is put away rather than closed, reopens on the stopped state; Connect again, New chat, or a door that brings a new request starts it.
 - When a non-empty turn completes, the same maximum-three current-vault recommendations return directly after the latest answer under **Useful next steps**. They appear only while the session is ready, no permission review or error is present, and the composer is empty. Starting a draft makes them yield; choosing one only fills the composer and never sends or writes automatically. An implementation-evidence recommendation matches the MCP maintenance boundary (`path:` or a resolved `elements:` relation) and says only that the capability is not yet linked to code, never that code is absent.
 - Those recommendations remain continuous while the same vault is re-read after a save: the last current health and source handle stay usable until the replacement manifest arrives, but never while switching folders. A completed ACP `connect_project_source` or `disconnect_project_source` receipt invalidates the project-source sidecar summary even though no ontology Markdown changed, so a finished source action is replaced by the next applicable prompt instead of being recommended again.
 - While the agent panel is open, the left INDEX temporarily collapses without changing its saved default state, yielding map width. Closing the conversation restores the original INDEX preference; opening the collapsed INDEX tab directly closes the agent panel so both auxiliary panels do not compress the map simultaneously.
@@ -671,7 +691,11 @@ had become false).
   each box hugs its sentence up to `--dialog-w-md`. One neutral box
   (`--color-elevated`, `--radius-card`, `--shadow-elevation-1`) serves four tones —
   neutral, success, warning, error — told apart by a small glyph in the tone's ink, never a
-  coloured fill. The Library keeps its pane-corner claim.
+  coloured fill. The Library keeps its pane-corner claim. An outcome the pressed control
+  already shows is not repeated in a toast (2026-09-26): saving, replacing or removing a
+  model key and choosing or dropping a local runner change their row in Agents → Models,
+  and copying a project's link changes its button; each is read out by a polite live region
+  instead. On those tall pages the toast had stood over the page's own text.
 - Target links visibly state `Current Target:`/`Last Change:`
   and directly update node selection for `HomePage` on the map already. Route remount
   does not temporarily switch current vault to sample graph; independent consumers only
@@ -768,6 +792,17 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   bound folder and matches its source identity, revision, and fingerprint to the
   receipt. If that recheck cannot run, the saved receipt remains visible but
   currentness is `unavailable`; an observed source or ontology change is `stale`.
+  The recheck walks the folder only when a saved receipt's currentness is still
+  open; with no binding, no receipt, or a receipt the ontology already outdated
+  the answer is final without it (2026-09-25 — every open used to walk the whole
+  repository and discard the result).
+- **While the receipt is read** → the datasheet is already the project's: the
+  concept-document meta line, the folded relations below `1513px`, the quiet
+  footer. The code-evidence heading and its status line hold the receipt's place,
+  the line saying it is reading only once the read outlives 150 ms, so the answer
+  changes words rather than layout; the gap line and the remedy then open through
+  the row disclosure (2026-09-25 — the panel used to open in another layout and
+  rebuild itself 710 ms later, every button pushed down in one frame).
 - **Domain / capability / element node click** → `OntologyMapDetailPanel`, the 352px datasheet (scaled up from 288px, 2026-07-18): single engraved metric line ("N items used · N items needed · N evidence docs"), typed groups for **Sub-items**, **Super-items**, **Items Used**, and **Items Needed**, each capped with a "+N more" overflow; a promoted **Evidence Docs** group listing `evidenceIds` rows; an **Copy Item Info to Send to AI** action with MCP/CLI-style context; **View Details** opens the full detail panel. Relation role stays explicit so the same edge is not counted twice.
 
 #### Mobile-only
@@ -777,8 +812,8 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 #### Global keyboard shortcuts (all `useTypingShortcuts`-gated)
 | Key | Action |
 |---|---|
-| `⌘K` / `⇧⌘K` | Unified ontology-node + project search |
-| `D` | Toggle source drawer |
+| `⌘K` (Shift optional) | Unified ontology-node + project search |
+| `D` | Toggle source drawer (the map only) |
 | `?` | Toggle shortcut sheet |
 | `⌘O` | Open a local Markdown folder from the static sample |
 | `Esc` | Close the highest-priority open layer or addressed map state |
@@ -1118,7 +1153,8 @@ survive the compatibility hop; the return removes the incompatible slug, view, a
 - Hamburger button → overlay drawer with the same `DocsSidebarBody` contents
 
 #### Content area
-- **view=doc** (only view — folder-topology retired, P5a): editor (when editing) or viewer + `DocMetaBar` (word count, reading minutes, tags, updated date) + `DocFrontmatterBlock` (2026-07-18 — renders `kind`/`slug`/`domain`/`depends_on`/`evidence` directly on the page, only when the doc has a `kind:`; the visible proof that "frontmatter is the graph". In a writable local vault, an inline "Edit kind / domain / title" action turns this into a quick-patch: kind/domain are typed `<select>`s, title an inline input, saved through the same conflict-guarded `updateFrontmatter` path Workshop and other vault writers use — no raw YAML hand-editing for the three most-corrected fields) + optional inspector (`DocsVaultDocOutlinePanel`) + bottom **backlinks strip** (2026-07-18, full pane width, dedup'd single source — replaces the earlier duplicate backlinks surfaces)
+- **view=doc** (only view — folder-topology retired, P5a): editor (when editing) or viewer + `DocMetaBar` (word count, reading minutes, tags, updated date) + `DocFrontmatterBlock` (2026-07-18 — renders `kind`/`slug`/`title`/`display_<locale>`/`domain`/`depends_on`/`evidence` directly on the page, only when the doc has a `kind:`; the visible proof that "frontmatter is the graph". In a writable local vault, an inline "Edit kind / domain / title / names" action turns this into a quick-patch: kind/domain are typed `<select>`s, title and one display name per app language (`display_ko`, `display_en`; an emptied name is removed) are inputs, saved through the same conflict-guarded `updateFrontmatter` path Workshop and other vault writers use — no raw YAML hand-editing for the most-corrected fields. A kind change on a document filed under its old kind's folder moves it into the new kind's folder in the same save, with every referrer rewritten, and says so before Save; the "outside its kind folder" warning carries that move as a one-press remedy. Moved or not, a document that lists it in the list for its old kind (`capabilities:` …) lists it in the list for the new kind instead when its own kind keeps one (spec §5, the same rule as MCP `reclassify_concept`); the form names each such document and what happens to its list before Save, and a notice names them again after. An entry whose referrer keeps no list for the new kind stays where it was, and that referrer's page flags it — as it flags any entry sitting in a list for another kind. A refused save is said in the form in the reader's language, never the thrown English. A reference the folder has no document for — e.g. after a delete — is marked on its line and named in a warning, as the compiler's `dangling-graph-reference` is) + optional inspector (`DocsVaultDocOutlinePanel`) + bottom **backlinks strip** (2026-07-18, full pane width, dedup'd single source — replaces the earlier duplicate backlinks surfaces)
+- **File doors** (2026-09-26): beside the file's address in a writable local vault, **Rename** opens a dialog that asks for a new name (not a slug path), shows the address it becomes and how many referrers are rewritten with it, and moves the file keeping its own `slug:` in step (the MCP `rename_concept` rule); **Delete** opens an alert dialog naming the documents that still point at the file before anything is removed — their references are left in place, as MCP `delete_concept` leaves them with `force`, and flagged on each referrer's page. Both refuse a file changed elsewhere since it was shown (`expectedMtime`). The palette's rename/delete commands open the same dialogs.
 
 #### Unified palette (`⌘K`, `DocsVaultUnifiedPalette`)
 - **Empty query**: pinned → recent → top 5 commands
@@ -1157,7 +1193,7 @@ view-doc · pin · unpin · copy URL · print · edit · new doc · rename · de
 
 A vault holds three kinds of file and **only one is the graph**. Library keeps their distinct
 meaning and adds a fourth presentation tab: Ontology draws the explicitly typed graph nodes,
-Sources and Wiki draw the other two file kinds, and Collections lists saved Galaxy constellations.
+Sources and Wiki draw the other two file kinds, and Work scopes lists saved Galaxy constellations.
 
 The Library supports general knowledge as well as documents associated with code.
 Sources remain original files; write-ups and filed answers remain wiki pages.
@@ -1198,7 +1234,8 @@ draft state, and five required section headings before creation. The current loc
 receipt remains primary while earlier receipts are available from History; an app write's
 matching folder-watch event is consumed instead of producing a second notification.
 
-**Saved constellation task scope (2026-09-15).** Collections lists each saved
+**Saved constellation task scope (2026-09-15).** Work scopes (named Collections until
+2026-09-25, when the English name followed the Korean one) lists each saved
 constellation's name, purpose, and ontology concept count. Expanding a row resolves
 members by immutable UID against the current manifest; resolved names open the actual
 Ontology document, unresolved members stay visible, and the whole set opens in Galaxy.
@@ -2220,7 +2257,7 @@ in-page filtering.
 - Project name linked to its detail page. The name is the locale's `display_<locale>` when the document carries one, the canonical `title`/`name` otherwise (`projectDisplayName`, 2026-09-19, decision "A project is drawn by its locale display name on every screen"): the map, the INDEX and the Library already drew the project by that word, and the list and the page said the canonical title beside them
 - One-line explicitly authored frontmatter description, with neutral fallback when missing
 - Relative last-updated time
-- Clearly labelled "View details" primary action and "View on map" secondary action
+- Clearly labelled "View details" primary action and "View on map" secondary action. "View on map" opens the project's own node (`?p=project:<slug>`), whose datasheet carries the code evidence and the control that connects the code folder (2026-09-25 — it sent the bare slug, which opens the project drawer, where neither exists)
 
 #### Empty state
 - No projects at all → guidance to create a project document; the header's "New project" action remains available
@@ -2236,8 +2273,8 @@ has built on each Atlas surface, then the domains, then what its document says.
 - Breadcrumb: Home → Projects → `{Name|Slug}` · documents door · copy-link button · global census (concepts/relations, md+). The documents door opens **this project's own Markdown file** (`/docs/?slug=<doc>`) when the file is found in the open folder or the loaded sample, and the vault root otherwise (2026-09-19 — the page had no door to the one file it is drawn from)
 
 #### Zone 1 — hero band
-- Project kind glyph + inline-editable name (`InlineEditable`, when `canManageProject`; the word shown is the locale's `display_<locale>` when present, and editing it in place edits that key, otherwise the canonical name with starter displays following) + hero meta (Hub label or plain label · status) + updated date + inline-editable description. The heading's accessible name is the project name; the field label ("Project name") is only the input's label in edit mode and the button's description in editable view (2026-09-19 — an `aria-label` on the `h1` used to replace the name for screen readers). The description's cap is the reading-column box (`--measure-doc-column`), not a per-line `ch` count
-- "View topology" link + `ProjectQuickEditPanel` (quick-edit: name / description / owner / tags — the fast path; stack/links/dependencies/dates stay in the full editor). The action cluster stands beside the name only when the hero band itself is at least 64rem wide (`@5xl` of the `project-hero` container); below that it takes its own row under the description (2026-09-19 — at 1024 the name column was 250px and at 768 80px while the four controls kept their width; a viewport breakpoint then failed the same way with the agent dock open at 1280)
+- Project kind glyph + inline-editable name (`InlineEditable`, when `canManageProject`; the word shown is the locale's `display_<locale>` when present, and editing it in place edits that key, otherwise the canonical name with starter displays following) + hero meta (Hub label or plain label · status) + updated date + inline-editable description. The heading's accessible name is the project name; the field label ("Project name") is only the input's label in edit mode and the button's description in editable view (2026-09-19 — an `aria-label` on the `h1` used to replace the name for screen readers). Editable, it stays the page's level-1 heading and the press that edits it is a block inside it (2026-09-25 — the button role sat on the `h1` and left the page with no level-1 heading for the people who can edit it). The description's cap is the reading-column box (`--measure-doc-column`), not a per-line `ch` count
+- "View topology" link, which opens the project's own node on the map (`?p=project:<slug>`, 2026-09-25), + `ProjectQuickEditPanel` (quick-edit: name / description / owner / tags — the fast path; stack/links/dependencies/dates stay in the full editor). The action cluster stands beside the name only when the hero band itself is at least 64rem wide (`@5xl` of the `project-hero` container); below that it takes its own row under the description (2026-09-19 — at 1024 the name column was 250px and at 768 80px while the four controls kept their width; a viewport breakpoint then failed the same way with the agent dock open at 1280)
 - **Construction review** — `Open verification results` reads one local qualification envelope into React session state only and places a full-width review directly below the hero. The default depth keeps purpose, current/next decision, first blocker/diagnostic, red/unknown/conflict, human approval, and exact plan counts visible. `View rationale/diagnostics` expands the same artifact's CQs, source-bound witnesses and citations, examples/counterexamples, seven quality axes, diagnostics, exact review/write plans, and digest equality. The same disclosure also exposes a session-only expert draft for CQ wording, witness source references, and the exact plan; edits are visibly dirty, can be restored, never mutate the receipt/vault/localStorage, and require qualification again before any write. Malformed, wrong-project, digest-mismatched, or unequal-plan envelopes fail closed; post-write maintenance is shown separately and never rewrites the completed qualification verdict. Nothing is uploaded, remembered, or written to the vault.
 - **No figures in the hero** (2026-09-19) — the engraved metric strip left, because the composition board one block below said the same five numbers again. The hero keeps identity: glyph, name, kind, updated, definition
 - **Action order and weight** — "View topology" stands first and filled as the page's primary action; the construction-review picker and the quick-edit trigger follow in outline, so the row is one filled control and its outline siblings rather than three weights (2026-09-19; the quick-edit trigger was `ghost` and the row read as crooked)
@@ -2262,7 +2299,7 @@ Domain rows (one per domain, uniform height), in a card in the left track beside
 
 #### Mobile / narrow
 - `ProjectQuickEditPanel` doubles as the mobile quick-edit entry (hamburger menu context)
-- Search palette (`⌘K`) and shortcut sheet (`?`) open as page-local overlays (not a route change) so context isn't lost
+- Search palette (`⌘K`, this page's own project palette) and shortcut sheet (`?`, the shell's) open as overlays (not a route change) so context isn't lost
 
 #### Empty / not-found
 - Invalid slug → "Project not found" panel + back-to-workspace button
@@ -2567,12 +2604,28 @@ The screen layout splits into two stages. First, **is this screen even in a stat
 #### Restoring one document (2026-09-19)
 The screen's own copy had promised that earlier content can be brought back (`atlasGit.notInitializedHint`) while no restore existed. Now one Tauri command, `git_restore_file(vault, path, source)`, puts **exactly one document** back to its content at `source` with `git restore --source --worktree --staged -- <path>`, and two doors on screen open it:
 - **Discard** (`source = HEAD`): on the chosen document in the uncommitted list, when it has ever been committed. The confirm says how many added and removed lines go away, that git holds no copy of them so this cannot be undone, and that the other N uncommitted documents stay as they are. A never-committed document gets no door, because discarding it would be deleting it; the Rust side refuses that too (`restore-untracked`).
-- **Restore this version** (`source = <hash>`): in a commit's detail, under the file list for the active file, and in the default concept lens for the focused concept's own document. The confirm names the document and the commit's time, says when the document's own uncommitted lines would go with it, that the result stays an uncommitted change the person can read line by line and discard, and which of the commit's other documents stay untouched.
+- **Restore this version** (`source = <hash>`): in a commit's detail, under the file list for the active file, and in the default concept lens for the focused concept's own document. The door itself names the file it puts back (`Restore <path> to this version`, 2026-09-25), so which document it acts on is readable before it is pressed. The confirm names the document and the commit's time, says when the document's own uncommitted lines would go with it, that the result stays an uncommitted change the person can read line by line and discard, and which of the commit's other documents stay untouched.
 - After a restore from a commit the screen shows the result: the "now" row is selected with that document chosen, so the restored lines are what the right column reads, the same rule as after a commit. After a discard the document simply leaves the list.
 - The command refuses a path outside the vault (`restore-path-invalid`), a source without the document (`restore-source-missing`), and a source whose frontmatter identity differs from the file on disk in `uid`, `slug`, or by dropping `merged_uids` (`restore-identity-mismatch`), because neighbours link to the current identity and `git restore` is identity-blind. Every refusal on screen ends with the sentence that the document was not changed (`atlasGit.restoreFailedSafe`). Decision record: `docs/records/decisions/2026-09-19-record-screen-restores-one-document-*.md`.
 
 #### One document's own timeline (2026-09-19)
 A commit's detail lists **the other steps that changed the focused document** — under the restore door in the concept lens and under the file list in the files lens — read from `git_history` scoped to that path (its optional `path` argument, bounded to the vault like every path the screen hands back). Twelve are read plus one more, so the list can say when older steps exist. Pressing a row jumps to that step; when the step lies below the depth the list has read, the list reads on a page at a time until the row exists, then selects it and scrolls it into view. Before this, "when else did this concept change" meant scanning every row for the concept's name.
+
+**The jump keeps the document** (2026-09-25). The step opens on the same document, in the lens it was read in — the same concept pressed, or the same file open — and that chip or row is brought into view. A step that deleted the document opens it in the files lens, where the missing restore door is explained. A step whose file list does not hold the document (git lists a merge that resolved a conflict in the document's history, but prints no files for a merge) says so in the reader and selects nothing in its place: no other document is chosen for the person, no restore door is drawn, and the document's own steps stay listed beneath. Only a press on another chip or file, or a plain press on a step in the list, moves the selection. Before this the jump cleared the focus, so the older step opened on its first document — the vault guide in a first commit — and the restore door beneath it put back `README.md` instead of the document being followed (found with the real-bridge QA harness on a real git vault).
+
+#### What a step changed, read in its default lens (2026-09-25)
+- "Concepts changed" counts concepts by the census rule (`isCanonicalConcept`): the vault README (`vault-readme`) is a file of the step, listed under "Files changed", never a concept chip, a row's name or a document's "other steps" title. A real vault's founding step read 99 over 98 concept documents. A kind the map does not draw (`document`, `vault-readme`, an unknown kind) wears the vault tree's page mark, never the element's glyph.
+- The concepts lens reads what the step wrote in the focused concept's document, in the same whole-document reader as the files lens, under a "What it wrote" label between the concept's card and the document's other steps with the restore door. It used to draw the card and the history only; the change itself was one lens away.
+
+#### Where the steps can go (2026-09-25)
+The header's location line and the dock's last line say which of four states the branch is in, read from `git_status` without contacting any remote (`hasOrigin` comes from `git remote get-url origin`, plus `detached` and `headShortHash`):
+- **Tracking** — the branch has an upstream: `main → origin/main` with Fetch, Pull and Push.
+- **No remote** — no `origin` at all: "no remote repository yet" and the address form that registers one. This is the only state that form appears in; anywhere else it would have rewritten a real `origin` with `git remote set-url`, which is what it did before for every branch without an upstream.
+- **Never sent** — `origin` exists and this branch was never pushed: the line says so and offers one press that sends the branch and records `origin/<branch>` as its upstream (`git_snapshot(push, setUpstream)` → `git push --set-upstream origin HEAD`). With uncommitted changes the press opens the commit confirm first, like Push, and its hint names the first send.
+- **Detached HEAD** — a commit is checked out: the badge shows its short hash instead of `HEAD`, and both lines say sending needs a branch. No button.
+A bridge that does not report `hasOrigin` is read as unknown, never as "no remote": the line says only that no destination is set, and offers nothing. Push with nothing to commit now sends the steps already recorded; before, `git_snapshot` returned before the push.
+
+Registering a remote stores an address; only the first send creates the upstream Fetch, Pull and Push work from. The connect button stops reading "Connecting…" when git answers, and the header reads "never sent" from that same frame, before the status read lands. A remote action's result is announced with the screen it describes, and a first send's result takes the focus of the button that left. A save that was sent is said once ("Saved 1 and sent to …"); a failed send says git's reason.
 
 #### Nothing is written until the user clicks
 When the screen first opens, only read-only tools are called (`git_status` / `git_diff` / `git_history`). Tools that change something (`git_init` · `git_set_remote` · `git_snapshot` · `git_restore_file`) are executed only when the user presses their button (`onClick`).
@@ -3116,6 +3169,7 @@ folder shows all eight.
 The phone tabs and the `G` keys read the same verdict.
 
 ### `AppSettingsMenu` (app shell + contextual page headers)
+- The sheet is a modal like every `<Dialog>` (2026-09-25): opened by a click it takes focus itself (WebKit does not focus the clicked gear), so Escape and Tab work at once, and a click on the dim beside the panel closes it and returns focus to the gear. A drag that starts in the panel and ends over the dim does not close it.
 - Accent swatches display their own existing palette under either selected app accent. Notification kinds wrap below their full-width explanation instead of compressing that explanation beside six controls.
 - The old 5-tab settings modal is now one compact settings sheet
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
@@ -3189,8 +3243,8 @@ The phone tabs and the `G` keys read the same verdict.
   vault is the gateway; after a vault loads, root shares the map destination.
 
 ### Search palettes (separate by design — R5 skip merge)
-- **`⌘K` `SearchPalette`** — projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
-- **`⇧⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized)
+- **`⌘K` `SearchPalette`** — a project page's own palette: projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
+- **`⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized). The map mounts its own (a pick selects on the canvas); every other screen with the rail gets the shell's (`ShellKeyboardSurfaces`, 2026-09-26), mounted on the first ⌘K. Only the map's mount (`onMap`) calls itself "Search this map"; elsewhere the dialog is named for what it searches ("Search concepts"; a project is one), and its empty state and footer name the loaded project, or "this folder" when there are several. Shift is accepted and changes nothing, so the shortcut sheet lists ⌘K once. The ontology documents workspace keeps ⌘K for its unified palette.
 - Both palettes share keyboard: `↑↓` navigate · `↵` select · `Esc` close
 
 **The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised
@@ -3287,8 +3341,9 @@ The box now reads `--control-h-sm`, and the gate for it asks the document what i
 the chip's top and bottom edge, because a clipped control still measures full size.
 
 ### `ShortcutSheet` (`?` to open)
-- 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio
+- 8 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions
 - 2-column grid on sm+, focus trap, `Esc` closes
+- Opens with `?` on every screen the rail stands on (2026-09-26): the map keeps its own, and the shell draws it everywhere else (`ShellKeyboardSurfaces`, with screens that answer a key themselves claiming it through `shared/lib/shell-key-claims.ts`). It does not open over another dialog. Navigation — the section every tab shows — lists only keys every screen answers; `D` moved to the map's section.
 
 ### `LocaleSwitch`
 - Two-button toggle EN / KO
@@ -3310,11 +3365,11 @@ the chip's top and bottom edge, because a clipped control still measures full si
 
 | Key | Surface | Action |
 |---|---|---|
-| `⌘K` / `⇧⌘K` | Home / Topology | Unified node + project search |
+| `⌘K` (Shift optional) | Every screen with the rail | Unified node + project search (a project page: its project palette; ontology documents: the unified palette) |
 | `D` | Home / Topology | Toggle docs drawer |
-| `?` | Home / Topology | Toggle shortcut sheet |
+| `?` | Every screen with the rail | Toggle shortcut sheet |
 | `⌘O` | Home / Topology static sample | Open a local Markdown folder |
-| `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state |
+| `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state. In the installed app one press closes one thing under every macOS input source: Korean 2-Set can keep Escape from the WebView, so the app notices the press natively and the page stands in for the missing key-down, never for one it already received (`src/shared/lib/tauri-native-escape.ts`, `src-tauri/src/native_escape.rs`, 2026-09-25) |
 | `Enter` | Workshop relation picker | Choose the first filtered relation candidate |
 | `↑↓` | Hub rail | Cycle hubs |
 | `Home` / `End` | Hub rail | First / last hub |

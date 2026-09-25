@@ -10,6 +10,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
+import { useClaimShellKey } from "@/shared/lib/shell-key-claims";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { formatDate } from "@/shared/lib/format-date";
 import { MOTION } from "@/shared/motion";
@@ -24,7 +25,7 @@ import {
 import {
   getProjectEditHref,
   getProjectRuntimeDetailHref,
-  getTopologyProjectHref,
+  getTopologyProjectNodeHref,
   projectDisplayName,
   projectHasDisplayName,
   type Project,
@@ -66,10 +67,6 @@ import { ConstructionReviewPanel } from "./construction-review/ConstructionRevie
 
 const SearchPalette = dynamic(
   () => import("@/widgets/search-palette").then((m) => m.SearchPalette),
-  { ssr: false },
-);
-const ShortcutSheet = dynamic(
-  () => import("@/widgets/shortcut-sheet").then((m) => m.ShortcutSheet),
   { ssr: false },
 );
 
@@ -291,18 +288,15 @@ export function ProjectDetailPage({
   const statusLabel = (id: string | undefined): string =>
     id === "active" ? t("statusActive") : rawStatusLabel(id);
 
-  // On the detail page, Cmd+K and ? both open as overlays on the current page — bouncing to home
-  // would dismiss the overlay and lose the "you are here" context.
+  // On the detail page, Cmd+K opens this page's own palette as an overlay on the current page —
+  // bouncing to home would dismiss the overlay and lose the "you are here" context — so the
+  // shell's search stands aside here. `?` is the shell's: the same sheet as on every other screen.
   const [searchOpen, setSearchOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  useClaimShellKey("search");
   useTypingShortcuts([
     {
       combo: { key: "k", meta: true },
       onFire: () => setSearchOpen((v) => !v),
-    },
-    {
-      combo: { key: "?" },
-      onFire: () => setShortcutsOpen((v) => !v),
     },
   ]);
   const handleSearchSelect = useCallback(
@@ -461,7 +455,7 @@ export function ProjectDetailPage({
       harnessHolds: t("surfaceHarnessHolds"),
     },
     hrefs: {
-      ontology: getTopologyProjectHref(project.slug),
+      ontology: getTopologyProjectNodeHref(project.slug),
       library: "/library/",
       harness: "/architecture/",
     },
@@ -686,7 +680,7 @@ export function ProjectDetailPage({
                 reviewer's tool and stands second in outline. Until 2026-09-19 the picker was first
                 and both were outline, so the page's primary action read as one of two equals.
               */}
-              <Link href={getTopologyProjectHref(project.slug)} data-testid="project-detail-topology-link">
+              <Link href={getTopologyProjectNodeHref(project.slug)} data-testid="project-detail-topology-link">
                 <Button type="button" variant="primary" size="sm">
                   {t("topBarTopologyView")}
                 </Button>
@@ -1216,10 +1210,6 @@ export function ProjectDetailPage({
         projects={related}
         onSelect={handleSearchSelect}
         containerLabel={null}
-      />
-      <ShortcutSheet
-        open={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
       />
     </ProjectDetailShell>
   );

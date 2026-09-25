@@ -15,9 +15,16 @@ import {
   generateNodeUid as generateUidMcp,
   nodeUidIssue as uidIssueMcp,
   mergeNodeIdentityHistory as mergeIdentityMcp,
+  containmentKeyFor as containmentKeyForMcp,
+  CONTAINMENT_KEY_FOR_KIND,
   VAULT_KINDS,
   VAULT_KIND_SCHEMA,
 } from "../../mcp/src/schema.mjs";
+import {
+  CONTAINMENT_KEYS,
+  containmentKeyFor as containmentKeyForApp,
+  kindForContainmentKey as kindForContainmentKeyApp,
+} from "@/shared/lib/containment-keys";
 /*
  * ⚠️ Only the names the CLI runtime actually re-exports are imported here. Since
  * 2026-08-30 `cli/src/lib/schema.mjs` re-exports `mcp/src/schema.mjs` rather than
@@ -100,6 +107,40 @@ describe("vault kind schema contract — mcp & cli agree", () => {
         merged_uids: [from.uid, ...from.merged_uids, ...into.merged_uids].sort(),
       };
       expect(mergeIdentityMcp(from, into)).toEqual(expected);
+    });
+  });
+
+  /*
+   * Which list a kind change moves an entry into (2026-09-26, map-edit review). The app's
+   * reclassify and MCP's reclassify_concept / merge_concepts answer from two copies of one table;
+   * a drift would move an entry on one surface and leave it in place on the other.
+   */
+  describe("containment lists — app and MCP place an entry in the same list", () => {
+    const kinds = [...VAULT_KINDS, "vault-readme", "unknown", ""];
+    for (const holder of kinds) {
+      it(`${holder || "(no kind)"} keeps the same lists`, () => {
+        for (const child of kinds) {
+          expect(containmentKeyForApp(holder, child), `${holder} → ${child}`).toBe(
+            containmentKeyForMcp(holder, child),
+          );
+        }
+      });
+    }
+
+    it("names the same kind for every list, and holds spec §5's rows", () => {
+      const kindForKeyMcp = (key: string) =>
+        Object.entries(CONTAINMENT_KEY_FOR_KIND).find(([, listKey]) => listKey === key)?.[0] ?? null;
+      expect(CONTAINMENT_KEYS).toEqual(Object.values(CONTAINMENT_KEY_FOR_KIND));
+      for (const key of [...CONTAINMENT_KEYS, "contains", "relates", "domain"]) {
+        expect(kindForContainmentKeyApp(key), key).toBe(kindForKeyMcp(key));
+      }
+      // Spec §5: a project or domain keeps capabilities; a capability keeps elements and never
+      // capabilities (a same-kind bridge is a person's decision, not a rewrite's).
+      expect(containmentKeyForMcp("domain", "element")).toBe("elements");
+      expect(containmentKeyForMcp("capability", "capability")).toBeNull();
+      expect(containmentKeyForMcp("domain", "domain")).toBeNull();
+      expect(containmentKeyForMcp("project", "domain")).toBe("domains");
+      expect(containmentKeyForMcp("project", "document")).toBeNull();
     });
   });
 

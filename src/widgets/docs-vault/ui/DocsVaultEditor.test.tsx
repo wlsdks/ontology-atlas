@@ -299,13 +299,14 @@ describe('DocsVaultEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: '저장' }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
 
-    // rejected save → NO phantom "Saved", and a localized conflict message shows
-    expect(screen.queryByText('저장됨')).not.toBeInTheDocument();
+    // rejected save → NO phantom "Saved", and a localized conflict message shows once the
+    // rejection has settled (the same race as the identity-guard case below)
     expect(
-      screen.getByText(
+      await screen.findByText(
         '디스크에서 먼저 변경되어 저장하지 못했어요. 편집 내용은 유지돼요. 내용을 복사한 뒤 새로고침해 최신 파일에 다시 반영하세요.',
       ),
     ).toBeInTheDocument();
+    expect(screen.queryByText('저장됨')).not.toBeInTheDocument();
 
     // buffer must still be dirty → a subsequent poll re-fetch must not clobber it
     rerender(
@@ -335,8 +336,9 @@ describe('DocsVaultEditor', () => {
     fireEvent.change(editor, { target: { value: 'uid deleted' } });
     fireEvent.click(screen.getByRole('button', { name: '저장' }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
+    // The message renders after the rejected save settles, not in the same tick as the call.
     expect(
-      screen.getByText(
+      await screen.findByText(
         '이 줄(uid)은 문서 이름이 바뀌어도 같은 문서임을 알아보게 하는 고유 번호라서 지우거나 바꿀 수 없어요. uid 줄을 원래대로 되돌리면 저장돼요.',
       ),
     ).toBeInTheDocument();

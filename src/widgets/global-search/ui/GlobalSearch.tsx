@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Command } from "cmdk";
 import * as Dialog from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -31,6 +31,17 @@ const RESULT_LIMIT = 20;
 
 const EMPTY_PROJECT_PAGE = { results: [], total: 0 } as const;
 
+/** The copy that depends on where the dialog opened: each key exists plain and under `onMap`. */
+type PlacedCopyKey =
+  | "dialogAriaLabel"
+  | "dialogTitle"
+  | "dialogDescription"
+  | "commandLabel"
+  | "closeAriaLabel"
+  | "emptyNoCorpus"
+  | "emptyNoMatch"
+  | "scopeFallback";
+
 export interface GlobalSearchProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -46,12 +57,25 @@ export interface GlobalSearchProps {
   onSelectProject?: (project: Project) => void;
   /** Inline selection can hand focus to its destination after the dialog releases it. */
   onSelectionFocus?: (keyboard: boolean) => void;
+  /**
+   * **Opened on the map**, whose drawing is exactly what this dialog searches, so there it may
+   * call itself "Search this map" and its scope "this map".
+   *
+   * Off by default (2026-09-26). The shell now opens the same dialog on Library, Git, Automations,
+   * Agents, the harness and Insights, where there is no map on screen; there the copy names what
+   * it searches — concepts, a project being one — and the folder or sample they come from. The
+   * Korean copy keeps the kind's name out of these sentences on purpose: the count of strings that
+   * say it is ratcheted (`user-facing-vocabulary.contract.test.ts`). A reviewer read
+   * `No matches for "…" in this map.` on the Library. Only the caller that is the map says so, so
+   * a new place to open the search cannot inherit the map's words.
+   */
+  onMap?: boolean;
 }
 
 /**
- * The map's search palette (cmdk based). It searches one scope — the vault or
- * sample currently loaded — and says so in the footer beside the count, in every
- * state, as well as in the empty state sentence.
+ * The search palette (cmdk based) for concepts and projects. It searches one scope —
+ * the vault or sample currently loaded — and says so in the footer beside the count,
+ * in every state, as well as in the empty state sentence.
  *
  * Our own matchers (`matchOntologyNodes`, `matchProjects`) do the scoring and
  * sorting, and cmdk handles display and keyboard nav only (`shouldFilter={false}`) —
@@ -69,8 +93,15 @@ export function GlobalSearch({
   projects,
   onSelectProject,
   onSelectionFocus,
+  onMap = false,
 }: GlobalSearchProps) {
   const t = useTranslations("searchWidgets.globalSearch");
+  /*
+   * The strings that speak of the map live under `onMap`, with a counterpart of the same key that
+   * names what is searched instead. Keeping the two sets key for key is what lets a test prove no
+   * map-only string renders off the map.
+   */
+  const placed = (key: PlacedCopyKey) => (onMap ? `onMap.${key}` : key);
   const kindLabel = useOntologyKindLabel();
   const reducedMotion = useReducedMotion();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -81,6 +112,21 @@ export function GlobalSearch({
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const selectedResultRef = useRef(false);
   const keyboardInteractionRef = useRef(false);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  /*
+   * **Focus leaves with the dialog, not after its exit motion** (2026-09-26).
+   *
+   * Radix keeps the content mounted while its exit animation plays and hands focus back only when
+   * it unmounts, so for that stretch focus sat in a field that had already closed. Measured against
+   * a real folder: `?` pressed right after Esc closed the search landed in that field, counted as
+   * typing, and opened nothing. Letting go as soon as `open` turns false sends the next key to the
+   * page; `onCloseAutoFocus` below still decides where focus lands once the content is gone.
+   */
+  useLayoutEffect(() => {
+    if (open) return;
+    const holder = document.activeElement;
+    if (holder instanceof HTMLElement && contentRef.current?.contains(holder)) holder.blur();
+  }, [open]);
   const [query, setQuery] = useState("");
   // Narrow the ontology results with kind and project filter chips. A set-based
   // multi-select (toggle) model, cleared along with the query on close.
@@ -150,7 +196,8 @@ export function GlobalSearch({
    * The scope has a name whenever exactly one project is loaded (the sample, or
    * a single-project vault); it is already on screen as the project chip. With
    * several projects there is no single honest name, so the copy falls back to
-   * "this map".
+   * "this folder" — or "this map" on the map. Both bundled samples hold exactly
+   * one project, so the fallback only ever stands for a folder the person opened.
    */
   const locale = useLocale();
   const scopeName = useMemo(() => {
@@ -164,6 +211,7 @@ export function GlobalSearch({
     const localized = projectNode?.displayLocales?.[locale]?.trim();
     return localized || project.name.trim() || null;
   }, [projects, drawnNodes, locale]);
+  const scope = scopeName ?? t(placed("scopeFallback"));
   // The footer names the scope it searched, so its number is read as a fact about
   // that folder — it has to be what was found, not what fitted (measured 2026-09-19).
   //
@@ -276,7 +324,8 @@ export function GlobalSearch({
           )}
         />
         <Dialog.Content
-          aria-label={t('dialogAriaLabel')}
+          ref={contentRef}
+          aria-label={t(placed("dialogAriaLabel"))}
           // Radix sets `aria-hidden` on sibling nodes rather than adding `aria-modal`
           // itself. But this app's global Esc discipline decides "is a modal open"
           // with `[role="dialog"][aria-modal="true"]` (the first-run card's capture
@@ -316,8 +365,17 @@ export function GlobalSearch({
             event.preventDefault();
             // Cancel returns to the opener; choosing a map result continues the
             // task on the map after Radix has released the modal focus scope.
-            if (selectedResultRef.current && onSelectionFocus) onSelectionFocus(keyboardInteractionRef.current);
-            else if (keyboardInteractionRef.current && previousFocusRef.current?.dataset.surfaceRole === MAP_CANVAS_SURFACE_ROLE) focusMapCanvasWhenReady(undefined, true);
+            if (selectedResultRef.current && onSelectionFocus) {
+              onSelectionFocus(keyboardInteractionRef.current);
+              return;
+            }
+            // Focus left this dialog when it closed (above). If something took it
+            // during the exit — the shortcut sheet, for `?` pressed right after Esc —
+            // it keeps it: pulling focus back to the opener would leave that sheet up
+            // with the keyboard behind it.
+            const holder = document.activeElement;
+            if (holder && holder !== document.body && holder !== document.documentElement) return;
+            if (keyboardInteractionRef.current && previousFocusRef.current?.dataset.surfaceRole === MAP_CANVAS_SURFACE_ROLE) focusMapCanvasWhenReady(undefined, true);
             else previousFocusRef.current?.focus?.({ preventScroll: true });
           }}
           onKeyDownCapture={() => { keyboardInteractionRef.current = true; }}
@@ -339,13 +397,13 @@ export function GlobalSearch({
           }}
         >
           <VisuallyHidden>
-            <Dialog.Title>{t('dialogTitle')}</Dialog.Title>
+            <Dialog.Title>{t(placed("dialogTitle"))}</Dialog.Title>
             <Dialog.Description>
-              {t('dialogDescription')}
+              {t(placed("dialogDescription"), { scope })}
             </Dialog.Description>
           </VisuallyHidden>
           <Command
-            label={t('commandLabel')}
+            label={t(placed("commandLabel"))}
             shouldFilter={false}
             className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-hidden border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-2)] md:h-auto md:max-w-[var(--topology-search-sheet-floating-width)] md:rounded-sheet"
             onClick={(event) => event.stopPropagation()}
@@ -372,7 +430,7 @@ export function GlobalSearch({
           <button
             type="button"
             onClick={closeAndClear}
-            aria-label={t('closeAriaLabel')}
+            aria-label={t(placed("closeAriaLabel"))}
             data-testid="global-search-close"
             data-global-search-close-contract="touch-visible"
             data-global-search-close-size-token="--overlay-close-size"
@@ -508,11 +566,11 @@ export function GlobalSearch({
           <Command.Empty className="px-3 py-6 text-center text-body-lg text-[color:var(--color-text-tertiary)]">
             {isEmptyQuery
               ? totalCorpus === 0
-                ? t('emptyNoCorpus')
+                ? t(placed("emptyNoCorpus"))
                 : t('emptyIndexed', { count: totalCorpus })
               : hasFilter
                 ? t('emptyNoMatchFiltered', { query })
-                : t('emptyNoMatch', { query })}
+                : t(placed("emptyNoMatch"), { query, scope })}
           </Command.Empty>
 
           {ontologyResults.length > 0 ? (
@@ -668,15 +726,16 @@ export function GlobalSearch({
           {/*
            * **The count and the scope travel together** (owner report, 2026-09-04).
            *
-           * The dialog title ("Search this map") is visually hidden for Radix, so the
-           * only place the scope was ever written was the zero-result sentence. A
-           * visitor reading "0 MATCHES" under a palette that names nothing read it as
-           * a broken search rather than as a sample that does not contain the word.
-           * A visible title bar was rejected — it pushes the input down — so the name
-           * joins the number that is already permanent, in every state.
+           * The dialog title is visually hidden for Radix, so the only place the
+           * scope was ever written was the zero-result sentence. A visitor reading
+           * "0 MATCHES" under a palette that names nothing read it as a broken search
+           * rather than as a sample that does not contain the word. A visible title
+           * bar was rejected — it pushes the input down — so the name joins the
+           * number that is already permanent, in every state.
            *
-           * `scopeName` is the loaded project when there is exactly one; with several
-           * there is no honest single name, so the copy falls back to "this map".
+           * `scope` is the loaded project when there is exactly one; with several
+           * there is no honest single name, so the copy falls back to "this folder"
+           * ("this map" on the map).
            */}
           {/* The number never truncates and the hints never shrink; only the
               name yields, and it yields by truncating, not by breaking mid-word
@@ -689,7 +748,7 @@ export function GlobalSearch({
             </span>
             <span aria-hidden className="shrink-0">·</span>
             <span data-testid="global-search-footer-scope" className="min-w-0 truncate">
-              {scopeName ?? t('scopeFallback')}
+              {scope}
             </span>
           </span>
           <span className="flex shrink-0 items-center gap-3">

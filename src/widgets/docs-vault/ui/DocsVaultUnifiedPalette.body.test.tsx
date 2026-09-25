@@ -145,3 +145,45 @@ describe('DocsVaultUnifiedPalette — 본문 검색 결과', () => {
     expect(screen.queryByText(/appears in body too/)).not.toBeInTheDocument();
   });
 });
+
+describe('DocsVaultUnifiedPalette — command keywords', () => {
+  function renderWithCommands(initialQuery: string, onRun: () => void) {
+    return render(
+      <DocsVaultUnifiedPalette
+        onClose={() => {}}
+        docs={[doc('alpha', 'Alpha Doc')]}
+        recentSlugs={[]}
+        pinnedSlugs={[]}
+        commands={[
+          { id: 'rename', label: 'Rename this doc', keywords: 'change name move', icon: '✎', onRun },
+          { id: 'print', label: 'Print', icon: '⎙', onRun: () => {} },
+        ]}
+        tagCounts={[]}
+        onDocSelect={() => {}}
+        onTagSelect={() => {}}
+        initialQuery={initialQuery}
+      />,
+    );
+  }
+
+  it('finds a command by a keyword its label does not contain, in mixed mode', () => {
+    const onRun = vi.fn();
+    renderWithCommands('change name', onRun);
+    expect(screen.getByText('Rename this doc')).toBeInTheDocument();
+    expect(screen.queryByText('Print')).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Enter' });
+    expect(onRun).toHaveBeenCalledTimes(1);
+  });
+
+  it('finds it by keyword in command mode too', () => {
+    renderWithCommands('>move', () => {});
+    expect(screen.getByText('Rename this doc')).toBeInTheDocument();
+    expect(screen.queryByText('Print')).not.toBeInTheDocument();
+  });
+
+  it('keeps matching on the label', () => {
+    renderWithCommands('>print', () => {});
+    expect(screen.getByText('Print')).toBeInTheDocument();
+    expect(screen.queryByText('Rename this doc')).not.toBeInTheDocument();
+  });
+});

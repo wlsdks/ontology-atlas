@@ -70,16 +70,42 @@ test("hovering a line puts the card beside the drawn nodes, not on them", async 
             .labels()
             .map((label) => ({ x: canvas.left + label.minX, y: canvas.top + label.minY, w: label.maxX - label.minX, h: label.maxY - label.minY })),
         ];
-        const hits = (rect: { x: number; y: number; w: number; h: number }) =>
-          drawn.filter((d) => rect.x < d.x + d.w && d.x < rect.x + rect.w && rect.y < d.y + d.h && d.y < rect.y + rect.h).length;
+        type Box = { x: number; y: number; w: number; h: number };
+        const meets = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+        const hits = (rect: Box) => drawn.filter((d) => meets(rect, d)).length;
+        /*
+         * A corner counts as free only on the card's own terms (hover-card-placement.ts and
+         * OntologyMapEdgeHoverCard.tsx): visibly clear of every disc and name (the 6 px margin),
+         * clear of the chrome over the canvas (the INDEX panel and every control), and clamped
+         * into the window. Judged on bare shapes instead, a corner the card rightly refuses —
+         * touching a name, or under the INDEX panel — read as a free corner it ignored, and
+         * the spec failed on Linux CI's font metrics while the card did what it promises.
+         */
+        const margin = 6;
+        const clearOf = drawn.map((d) => ({ x: d.x - margin, y: d.y - margin, w: d.w + 2 * margin, h: d.h + 2 * margin }));
+        const chrome: Box[] = [...document.querySelectorAll('button, a[href], input, select, textarea, [role="tab"], [role="button"], [data-testid="topology-index-panel"]')]
+          .filter((el) => !document.querySelector('[data-testid="ontology-map-canvas"]')!.contains(el) && !el.closest('[aria-hidden="true"], [inert]'))
+          .map((el) => el.getBoundingClientRect())
+          .filter((b) => b.width > 0 && b.height > 0)
+          .map((b) => ({ x: b.left, y: b.top, w: b.width, h: b.height }));
+        const edgeMargin = 8;
+        const clamp = (r: Box): Box => ({
+          ...r,
+          x: Math.min(Math.max(r.x, edgeMargin), window.innerWidth - edgeMargin - r.w),
+          y: Math.min(Math.max(r.y, edgeMargin), window.innerHeight - edgeMargin - r.h),
+        });
         const offset = 14;
         const corners = [
           { x: pointer.x + offset, y: pointer.y + offset },
           { x: pointer.x - offset - cardRect.w, y: pointer.y + offset },
           { x: pointer.x + offset, y: pointer.y - offset - cardRect.h },
           { x: pointer.x - offset - cardRect.w, y: pointer.y - offset - cardRect.h },
-        ].map((corner) => ({ ...corner, w: cardRect.w, h: cardRect.h }));
-        return { cardHits: hits(cardRect), someCornerClear: corners.some((corner) => hits(corner) === 0) };
+        ].map((corner) => clamp({ ...corner, w: cardRect.w, h: cardRect.h }));
+        const coversPointer = (corner: Box) =>
+          pointer.x >= corner.x && pointer.x <= corner.x + corner.w && pointer.y >= corner.y && pointer.y <= corner.y + corner.h;
+        const free = (corner: Box) =>
+          !clearOf.some((d) => meets(corner, d)) && !chrome.some((c) => meets(corner, c)) && !coversPointer(corner);
+        return { cardHits: hits(cardRect), someCornerClear: corners.some(free) };
       },
       { pointer: { x: edge.x, y: edge.y } },
     );

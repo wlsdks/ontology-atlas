@@ -38,11 +38,24 @@ const SINCE_LINE: Record<SinceRow['kind'], string> = {
   'agent-call': 'agent-calls-since',
 };
 
-export function briefRows(cores: readonly BriefCore[], options: { namedSince?: readonly SinceRow['kind'][] } = {}): BriefRow[] {
+export function briefRows(
+  cores: readonly BriefCore[],
+  options: {
+    namedSince?: readonly SinceRow['kind'][];
+    /**
+     * The since card is still being counted and is not drawn yet. Its happened lines wait with it
+     * rather than standing here until it lands and then folding away: one read would say the same
+     * fact in two places, a second apart, and the line's count may be one of the partial ones.
+     */
+    sinceCounting?: boolean;
+  } = {},
+): BriefRow[] {
   const lines: Array<{ row: BriefRow; rank: number; coreIndex: number; lineIndex: number }> = [];
   const statuses: BriefRow[] = [];
   const appOnly: BriefCoreKey[] = [];
-  const namedElsewhere = new Set((options.namedSince ?? []).map((kind) => SINCE_LINE[kind]));
+  const namedElsewhere = new Set(
+    options.sinceCounting ? Object.values(SINCE_LINE) : (options.namedSince ?? []).map((kind) => SINCE_LINE[kind]),
+  );
   cores.forEach((core, coreIndex) => {
     /*
      * ⚠️ **No repository and "could not check the code" are one fact.** With no repository every

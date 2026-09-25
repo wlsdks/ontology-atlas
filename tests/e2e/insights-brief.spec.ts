@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { HARNESS_SOURCE_ROOT, installHarnessRuntime, mountHarnessVault } from "./harness-tab-fixture";
 
 /**
  * **The brief reports the folder a person actually opened.**
@@ -113,4 +114,54 @@ test("브리핑은 연 폴더의 위키·에이전트를 이름으로 말하고,
   await expect(agent.locator('[data-brief-line="agent-writes-since"]')).toHaveCount(0);
   await expect(page.getByTestId("brief-since")).toHaveCount(0);
 
+});
+
+/**
+ * **The headline never paints a partial sum** (real bridge, 2026-09-25).
+ *
+ * In the app the guidance scan lands seconds after the other cores. The headline printed their sum
+ * as final — "98 to learn · 99 not checked" — and turned into 142 · 101 when the scan arrived, with
+ * no mark in between. Here the source repository's reads are held behind a gate, so the "still
+ * reading" window lasts exactly as long as the test says, and the line must say it is counting,
+ * carry no number, and keep its height when the numbers land.
+ */
+test("앱에서 지침을 아직 읽는 동안 헤드라인은 부분 합을 그리지 않고 세는 중이라고 말한다", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.setViewportSize({ width: 1512, height: 949 });
+  await installHarnessRuntime(page);
+  await page.addInitScript((sourceRoot: string) => {
+    const internals = (window as unknown as {
+      __TAURI_INTERNALS__: { invoke(command: string, args?: Record<string, unknown>): Promise<unknown> };
+    }).__TAURI_INTERNALS__;
+    const inner = internals.invoke.bind(internals);
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    (window as unknown as { __releaseGuidanceScan: () => void }).__releaseGuidanceScan = () => release();
+    internals.invoke = (command, args = {}) =>
+      (args as { rootPath?: unknown }).rootPath === sourceRoot ? gate.then(() => inner(command, args)) : inner(command, args);
+  }, HARNESS_SOURCE_ROOT);
+  await mountHarnessVault(page);
+
+  await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+  const headline = page.getByTestId("brief-headline");
+  await expect(page.getByTestId("brief-core-harness")).toHaveAttribute("data-brief-availability", "reading", { timeout: 30_000 });
+  await expect(headline).toHaveAttribute("data-brief-headline-state", "counting");
+  await expect(headline).toHaveAttribute("aria-busy", "true");
+  // Drawn once the read outlasts the loading beat, in the working ink.
+  await expect(headline.locator(".acp-working-shimmer")).toHaveCount(1);
+  await expect(headline).toHaveText("새로 알아야 할 것과 확인 못 한 것을 세고 있어요");
+  const counting = await headline.boundingBox();
+
+  await page.evaluate(() => (window as unknown as { __releaseGuidanceScan: () => void }).__releaseGuidanceScan());
+  await expect(page.getByTestId("brief-core-harness")).toHaveAttribute("data-brief-availability", /measured|no-data/, { timeout: 30_000 });
+  await expect(headline).toHaveAttribute("data-brief-headline-state", "settled");
+  await expect(headline).not.toHaveAttribute("aria-busy", "true");
+  await expect(headline).toHaveText(/새로 알아야 할 것 \d+개 · 확인 못 한 것 \d+개/);
+  await expect(headline.locator(".acp-working-shimmer")).toHaveCount(0);
+  const settled = await headline.boundingBox();
+  // One hero line in both states: nothing under it moves when the numbers land.
+  expect(settled?.height).toBe(counting?.height);
+  expect(settled?.y).toBe(counting?.y);
 });

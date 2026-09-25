@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { findProjectDocInList } from "@/entities/docs-vault";
-import { getProjectRuntimeDetailHref, getTopologyProjectHref, projectDisplayName, type Project } from "@/entities/project";
+import { getProjectRuntimeDetailHref, getTopologyProjectNodeHref, projectDisplayName, type Project } from "@/entities/project";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault } from "@/entities/vault-session";
 import { Link } from "@/i18n/navigation";
@@ -182,7 +182,7 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
           {t("cardUpdatedPrefix")} {ago}
         </span>
         <Link
-          href={getTopologyProjectHref(project.slug)}
+          href={getTopologyProjectNodeHref(project.slug)}
           prefetch={false}
           className={controlClass({ shape: "chip", size: "md", tone: "secondary", className: "relative z-[1]" })}
         >

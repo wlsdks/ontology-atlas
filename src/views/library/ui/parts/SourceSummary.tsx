@@ -9,6 +9,7 @@ import {
   type LibrarySourceRow,
   type LibraryWriteUpLink,
 } from "@/entities/docs-vault";
+import { passageLabelText } from "@/features/library";
 import { cn } from "@/shared/lib/cn";
 import type { SourceOutline, SourceUnit } from "@/shared/lib/source-passage";
 import { RowButton } from "@/shared/ui";
@@ -17,7 +18,6 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { CitedPassageState } from "../../lib/use-cited-passage";
 import type { SourceOutlineState } from "../../lib/use-source-outline";
 import { elideHashMiddle } from "../../lib/elide-hash";
-import { passageLabelText } from "../../lib/passage-label";
 import { AgentDoor } from "./AgentDoor";
 
 /**
@@ -40,9 +40,10 @@ function nameCarriesFormat(row: LibrarySourceRow): boolean {
 }
 
 /*
- * `passageLabel` moved to `../../lib/passage-label.ts` in slice U2: the index column's
- * search caption names the same place this section does, and one fact in two voices is
- * how one locale's "line 11" and another's would end up side by side on one screen.
+ * `passageLabel` moved out of this file in slice U2 (`@/features/library`,
+ * `passageLabelText`): the index column's search caption names the same place this section
+ * does, and one fact in two voices is how one locale's "line 11" and another's would end up
+ * side by side on one screen. The citations inside a page's body use it too.
  */
 
 /** Names the outline section (`source.outline.title`) to a screen reader, through its own `aria-labelledby`. */
@@ -772,8 +773,9 @@ export function SourceSummary({
               {t("source.passage.title")}
             </h3>
             {/*
-             * The address, spelled the way the wiki page spells it, and the extractor's
-             * own name for the place it points at. One statement rather than two: this
+             * The address, spelled the way the page's Markdown file spells it, and the
+             * extractor's own name for the place it points at — the words the page itself
+             * shows for that citation (`sourceCitationWords`). One statement rather than two: this
              * element replaced the separate line the pane used to print above the card,
              * which said the anchor and nothing else.
              */}

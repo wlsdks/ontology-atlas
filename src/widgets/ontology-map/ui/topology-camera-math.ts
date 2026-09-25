@@ -232,14 +232,15 @@ export type SafeInsetTokens = Partial<
 /**
  * The share of an axis the fit may reserve for chrome.
  *
- * The side insets are absolute pixels (350 + 120 by default), so they do not
- * shrink with the window. Measured 2026-09-20: on an 820-wide canvas they take
- * 57% of it and the graph spans 31% of the width; on a 390-wide canvas they
- * total more than the canvas, the free width collapses to one pixel and only
- * `cameraScaleMin` saves the frame — the map draws at its floor zoom, its nodes
- * spanning 118 px of 390. The widest reservation the layout itself asks for is
- * 39% (470 of a 1216-wide canvas), and the widest any test pins is 46%, so a
- * half-canvas ceiling leaves every desktop width untouched and binds only where
+ * The side insets are absolute pixels (376 + 112 by default since 2026-09-25,
+ * 350 + 120 before), so they do not shrink with the window. Measured 2026-09-20:
+ * on an 820-wide canvas they take 57% of it and the graph spans 31% of the width;
+ * on a 390-wide canvas they total more than the canvas, the free width collapses
+ * to one pixel and only `cameraScaleMin` saves the frame — the map draws at its
+ * floor zoom, its nodes spanning 118 px of 390. The pair asks for 40% of a
+ * 1216-wide canvas and exactly half of a 1040 window's 976 px one, where the
+ * ceiling does not yet bind; the widest any test pins is 46%. So a half-canvas
+ * ceiling leaves every desktop width from 1040 up untouched and binds only where
  * the chrome would otherwise take more of the frame than the map.
  */
 export const MAX_FIT_CHROME_SHARE = 0.5;
