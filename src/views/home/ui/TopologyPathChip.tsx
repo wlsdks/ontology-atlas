@@ -64,25 +64,42 @@ export function TopologyPathChip({
   onClear,
 }: TopologyPathChipProps) {
   const fullLabel = outcome ? `${label} · ${outcome}` : label;
+  /*
+   * **In a narrow toolbar the outcome speaks alone** (2026-09-25). Below a 44rem
+   * toolbar (the free map beside an open INDEX under 1130px, or the review panel
+   * narrowing it) the endpoint names had what the tools and the trail chip left:
+   * one or two letters and an ellipsis (at 900 and 1040), which says less than
+   * the outcome by itself. There the names leave the face and stay in the chip's
+   * accessible text and its hover text; wider, they read whole. Before a target is
+   * picked there is no outcome, and the label (the instruction) always shows.
+   */
+  const foldable = Boolean(outcome);
   return (
     <div
       data-testid="topology-path-chip"
+      data-path-chip-label={foldable ? "folds-below-44rem" : "shown"}
       role="status"
       className={CHROME_STATUS_CHIP_CLASS}
     >
-      <Route size={ICON_SIZE.md} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
-      <span data-testid="topology-path-chip-label" title={fullLabel} className="min-w-0 truncate">
-        {label}
-      </span>
-      {outcome ? (
+      <span title={fullLabel} className="flex min-w-0 items-center gap-1.5">
+        <Route size={ICON_SIZE.md} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
         <span
-          data-testid="topology-path-chip-outcome"
-          className="shrink-0 whitespace-nowrap text-[color:var(--color-text-primary)]"
+          data-testid="topology-path-chip-label"
+          className={foldable ? "hidden min-w-0 truncate @min-[44rem]/map-toolbar:block" : "min-w-0 truncate"}
         >
-          <span aria-hidden className="text-[color:var(--color-text-quaternary)]">· </span>
-          {outcome}
+          {label}
         </span>
-      ) : null}
+        {foldable ? <span className="sr-only @min-[44rem]/map-toolbar:hidden">{label}</span> : null}
+        {outcome ? (
+          <span
+            data-testid="topology-path-chip-outcome"
+            className="shrink-0 whitespace-nowrap text-[color:var(--color-text-primary)]"
+          >
+            <span aria-hidden className="hidden text-[color:var(--color-text-quaternary)] @min-[44rem]/map-toolbar:inline">· </span>
+            {outcome}
+          </span>
+        ) : null}
+      </span>
       {resolved ? (
         <Tooltip content={copyPacketLabel} side="bottom">
           <button

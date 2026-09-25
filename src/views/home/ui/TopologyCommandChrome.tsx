@@ -14,7 +14,9 @@ import { SavedConstellationsControl } from "@/widgets/saved-constellations";
 import { SearchHint } from "@/widgets/search-hint";
 import { FolderOpen, History as HistoryIcon, MessageCircle, ScanSearch } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
 import { canCopyTopologyPathPacket } from "../lib/topology-path-chip-state";
+import { useMapToolbarTopReserve } from "../model/use-map-toolbar-top-reserve";
 import type { useHomeWorkbenchController } from "../model/use-home-workbench-controller";
 import type { useTopologyAgentActivity } from "../model/use-topology-agent-activity";
 import type { useTopologyAgentOrchestration } from "../model/use-topology-agent-orchestration";
@@ -150,6 +152,8 @@ export function TopologyCommandChrome({
   const { handleSelect, handleReplayPastWalk } = topologyNavigationActions;
   const { meaningWorkbenchOpen, toggleMeaningWorkbench } = homeWorkbenchController;
   const { acpLiveWork } = topologyAgentActivity;
+  const [toolbarElement, setToolbarElement] = useState<HTMLDivElement | null>(null);
+  useMapToolbarTopReserve(toolbarElement);
 
   return (<>
     <div className="pointer-events-none absolute left-4 top-[22px] z-10 -translate-y-1/2 md:hidden">
@@ -277,9 +281,13 @@ export function TopologyCommandChrome({
               // sank to the bottom of a line the search lane made two rows tall (its status
               // chips under its tools) and landed on the right rail's fit tile.
               "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 transition-[left,right] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-6 md:top-6 xl:right-8 xl:top-8 xl:flex-row xl:flex-wrap-reverse",
+              // The free map starts one inset past INDEX: past the panel when it is
+              // open, past the collapsed tab when it is folded. The tab stands at the
+              // map's left edge from y=84, so at `md:left-6` the search lane's first
+              // tile (its second line, y=76-112) sat 2px under it between md and xl.
               renderedIndexState === "expanded"
                 ? "left-4 md:left-[calc(var(--topology-index-width)+var(--topology-index-inset)*2)]"
-                : "left-4 md:left-6 xl:left-8",
+                : "left-4 md:left-[calc(var(--topology-index-tab-width)+var(--topology-index-inset))]",
               // The agent activity status is a segment of the bell inside the utility
               // row (2026-09-24), so it takes part in this box's own wrap and needs no
               // second-line reserve. The reserve that measured a caption hanging under
@@ -291,6 +299,7 @@ export function TopologyCommandChrome({
               // showing; at z-20 the trail popover was painted under the INDEX panel.
               activityInboxOpen ? "z-30" : "z-20 has-[[data-lane-popover=open]]:z-30",
             )}
+            ref={setToolbarElement}
             data-testid="topology-top-toolbar"
             // The free map, as far as a popover hanging from this row is concerned: the box
             // already reserves INDEX, the node inspector and the dock seam, so anything that

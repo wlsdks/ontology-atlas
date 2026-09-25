@@ -112,7 +112,10 @@ async function measureToolbar(page: Page): Promise<ToolbarReport> {
       overlaps,
       outside,
       offTile,
-      pathLabelWidth: label ? Math.round(label.getBoundingClientRect().width) : null,
+      // A label folded away in a narrow toolbar (the outcome speaks alone,
+      // `TopologyPathChip`) is not a crushed one; a shown label must be readable.
+      pathLabelWidth:
+        label && getComputedStyle(label).display !== "none" ? Math.round(label.getBoundingClientRect().width) : null,
     };
   });
 }
