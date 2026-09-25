@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { chatSuggestions, SUGGESTION_LIMIT } from './chat-suggestions';
+import { chatSuggestions, subjectSuggestions, SUGGESTION_LIMIT } from './chat-suggestions';
 
 /**
  * Locks that a suggestion is **about this folder**.
@@ -154,5 +154,14 @@ describe('추천은 이 볼트에서 관측된 사실에서만 나온다', () =>
       sourceState: 'bound',
     });
     expect(out[0]?.kind).toBe('bootstrap');
+  });
+});
+
+describe('a picked concept', () => {
+  it('asks about that concept, carrying its record slug for the prompt', () => {
+    const out = subjectSuggestions({ slug: 'capabilities/checkout', label: 'Checkout' });
+    expect(out.map((suggestion) => suggestion.kind)).toEqual(['explainSubject', 'subjectImpact']);
+    expect(out.every((suggestion) => suggestion.params.slug === 'capabilities/checkout' && suggestion.params.subject === 'Checkout')).toBe(true);
+    expect(out.length).toBeLessThanOrEqual(SUGGESTION_LIMIT);
   });
 });

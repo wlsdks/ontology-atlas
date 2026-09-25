@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { mountHeroObject, type HeroEngineHandle, type HeroGraphData } from '../lib/hero-object-engine';
 import { echoFact } from '../lib/hero-echo';
@@ -200,7 +200,9 @@ export function HeroObject({
     };
   }, [graph, wide, phone]);
 
-  useEffect(() => {
+  // Layout, not passive: the headline reports from a layout effect so a dot lights in the frame
+  // its character appears (`HeroTypewriter`).
+  useLayoutEffect(() => {
     // Before the headline's first report `total` is 0 and there is nothing to echo yet.
     if (total > 0) handleRef.current?.setTyping(typed, total);
   }, [typed, total]);

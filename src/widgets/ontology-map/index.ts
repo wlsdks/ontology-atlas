@@ -1,5 +1,8 @@
 export { OntologyMap } from './ui/OntologyMap';
 export { OntologyTerritoriesMap } from './ui/OntologyTerritoriesMap';
+export { OntologyHexBoardMap } from './ui/OntologyHexBoardMap';
+export type { HexBoardLabels } from './ui/OntologyHexBoardMap';
+export type { HexPlacementRecord } from './model/hex-board';
 export type {
   OntologyMapNode,
   OntologyMapEdge,

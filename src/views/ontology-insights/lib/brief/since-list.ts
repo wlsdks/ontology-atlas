@@ -30,7 +30,7 @@ const CONCEPT_KINDS = new Set(['domain', 'capability', 'element', 'project']);
  * folder already carries and invents none. `total` says how many there were; the screen shows
  * `limit` and names the rest.
  */
-export function buildSinceList(input: SinceListInput): { rows: SinceRow[]; total: number } {
+export function buildSinceList(input: SinceListInput): { rows: SinceRow[]; total: number; soleKind: SinceRow['kind'] | null } {
   const rows: SinceRow[] = [];
   for (const doc of input.docs) {
     if (!doc.kind || !CONCEPT_KINDS.has(doc.kind) || !isAfter(doc.updatedAt, input.anchorMs)) continue;
@@ -50,5 +50,9 @@ export function buildSinceList(input: SinceListInput): { rows: SinceRow[]; total
   }
   rows.sort((a, b) => (toMs(b.at) ?? 0) - (toMs(a.at) ?? 0));
   const limit = input.limit ?? 12;
-  return { rows: rows.slice(0, limit), total: rows.length };
+  // Judged over every row, not only the shown ones, so a title that names one kind never
+  // hides a different kind among the rows counted but not listed.
+  const kinds = new Set(rows.map((row) => row.kind));
+  const soleKind = kinds.size === 1 ? rows[0]!.kind : null;
+  return { rows: rows.slice(0, limit), total: rows.length, soleKind };
 }

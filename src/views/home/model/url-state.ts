@@ -135,8 +135,12 @@ export interface HomeRouteState {
   mapView: HomeMapView | null;
 }
 
-/** The map views an address can name. Only Territories has one so far. */
-type HomeMapView = "territories";
+/** The map views an address can name: Territories and the hex board. */
+type HomeMapView = "territories" | "hex";
+
+function parseMapViewParam(value: string | null): HomeMapView | null {
+  return value === "territories" || value === "hex" ? value : null;
+}
 
 /** Spotlight window — "auto" (adaptive) or an explicit day preset. */
 type RecentSpotlightWindow = "auto" | 1 | 7 | 30;
@@ -571,7 +575,7 @@ export function parseHomeRouteState(
     realmSlug: searchParams.get(HOME_QUERY_KEYS.realm) || null,
     recentWindow: parseRecentWindowParam(searchParams.get(HOME_QUERY_KEYS.recent)),
     constellationIntent: searchParams.get(HOME_QUERY_KEYS.constellation) || null,
-    mapView: searchParams.get(HOME_QUERY_KEYS.view) === "territories" ? "territories" : null,
+    mapView: parseMapViewParam(searchParams.get(HOME_QUERY_KEYS.view)),
   };
 }
 

@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { LibraryConstellations, LibraryPage, LibraryRounds, useLibraryRounds } from '@/views/library';
 import { useLocalVault } from '@/entities/vault-session';
@@ -12,6 +12,8 @@ import { useRouter } from '@/i18n/navigation';
 import { useLibraryIndexSegment, writeLibraryIndexSegment } from '@/shared/lib/appearance-preferences';
 import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
 import { RouteLoadingFallback, TabBar } from '@/shared/ui';
+
+import styles from './library-workspace.module.css';
 
 // The editor is loaded only when its tab is opened. Composition belongs to the
 // app layer so neither view imports the other or duplicates its state machine.
@@ -45,6 +47,40 @@ export function LibraryWorkspace() {
    * for a 28px field.
    */
   const [toolsHost, setToolsHost] = useState<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const previousTab = useRef(tab);
+  /*
+   * **Sources and Wiki cross-fade too** (2026-09-25, round two). They share one view, so the
+   * key below keeps the panel mounted between them and its CSS enter never replays: the one
+   * tab pair that switched with a hard cut. Remounting would drop the view's selection and
+   * scroll, so the same arrival is played on the mounted panel instead. Opacity only, which
+   * is also the reduced-motion form of the other tabs' enter, and no transform, so no fixed
+   * popover inside the panel changes its containing block. Before paint, so the new list
+   * never shows a full-opacity first frame.
+   */
+  /*
+   * **Reduced motion keeps the fade** (round three). The global reduced-motion rule cuts every
+   * CSS animation to 0.01ms with `!important`, so the panel's CSS enter — travel and fade —
+   * became a hard cut there, and only Sources↔Wiki (played here) still faded. The reduced form
+   * of an arrival is the fade without the travel, not no arrival: under reduced motion every
+   * switch plays it here, opacity only, on the short step.
+   */
+  useLayoutEffect(() => {
+    const from = previousTab.current;
+    previousTab.current = tab;
+    const panel = panelRef.current;
+    if (from === tab || !panel || typeof panel.animate !== 'function') return;
+    const segmentSwitch = (from === 'sources' || from === 'wiki') && (tab === 'sources' || tab === 'wiki');
+    const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!segmentSwitch && !reduced) return;
+    const style = getComputedStyle(panel);
+    // The browser hands the token back normalised (`.18s`, not `180ms`), so read the unit.
+    const raw = style.getPropertyValue(reduced ? '--motion-fast' : '--motion-base').trim();
+    const duration = (Number.parseFloat(raw) || 0) * (raw.endsWith('ms') ? 1 : 1000);
+    if (duration <= 0) return;
+    const easing = style.getPropertyValue('--motion-ease').trim() || undefined;
+    panel.animate([{ opacity: 0 }, { opacity: 1 }], { duration, easing });
+  }, [tab]);
 
   const selectTab = useCallback((next: LibraryTab) => {
     if (next === tab) return;
@@ -115,11 +151,19 @@ export function LibraryWorkspace() {
         */}
         <div ref={setToolsHost} data-testid="library-strip-tools" className="ml-auto flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-1 self-end pr-3" />
       </header>
+      {/*
+        Keyed by the view, so a tab switch remounts the panel and plays its short enter.
+        Sources and Wiki share one view (`LibraryPage` with a segment), so they share one key:
+        switching between them keeps that view's state and does not replay the enter.
+      */}
       <div
+        key={tab === 'sources' || tab === 'wiki' ? 'library' : tab}
         id={'library-workspace-tabpanel-' + tab}
         role="tabpanel"
         aria-labelledby={'library-workspace-tab-' + tab}
-        className="flex min-h-0 flex-1"
+        ref={panelRef}
+        data-testid="library-workspace-panel"
+        className={`flex min-h-0 flex-1 ${styles.panel}`}
       >
         {tab === 'ontology' ? (
           <OntologyPage initialCollection="ontology" documentScope="ontology" />

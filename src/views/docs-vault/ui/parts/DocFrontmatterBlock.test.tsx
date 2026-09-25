@@ -41,16 +41,17 @@ function renderBlock(locale: "en" | "ko" = "ko", override: Partial<VaultDoc> = {
 }
 
 describe("DocFrontmatterBlock", () => {
-  it("starts collapsed with a plain summary of kind, slug, and field count", () => {
+  it("starts collapsed with a plain summary of the kind and the field count", () => {
     renderBlock();
     const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
     expect(details).not.toBeNull();
     expect(details).not.toHaveAttribute("open");
 
-    const summary = within(screen.getByTestId("doc-frontmatter-summary"));
-    expect(summary.getByText("capability")).toBeInTheDocument();
-    expect(summary.getByText("capabilities/cli-developer-entry")).toBeInTheDocument();
-    expect(summary.getByText("속성 6개")).toBeInTheDocument();
+    // The kind in the word the tree uses; the slug stays with the document header's path.
+    const summary = screen.getByTestId("doc-frontmatter-summary");
+    expect(within(summary).getByTestId("doc-frontmatter-summary-kind")).toHaveAttribute("data-kind", "capability");
+    expect(within(summary).queryByText("capabilities/cli-developer-entry")).toBeNull();
+    expect(within(summary).getByText("속성 6개")).toBeInTheDocument();
   });
 
   /**

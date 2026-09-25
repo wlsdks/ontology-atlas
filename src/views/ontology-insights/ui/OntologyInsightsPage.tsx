@@ -710,6 +710,7 @@ export function OntologyInsightsPage() {
       footnote: t("unmatched.footnote"),
       emptyTitle: t("unmatched.emptyTitle"),
       emptyDescription: t("unmatched.emptyDescription"),
+      emptyAction: t("unmatched.emptyAction"),
     }),
     [t],
   );
@@ -1104,6 +1105,15 @@ export function OntologyInsightsPage() {
     enabled: tab === "brief" || tab === "library" || tab === "harness",
   });
   const measuredHarness = tab === "harness" && brief.harnessDetail.availability === "measured";
+  /*
+   * ⚠️ **The handoff row follows the content; it is not the page's floor.** While the panel
+   * grew to fill the frame, a short tab left one strip at the top and the handoff pinned to the
+   * bottom with ~400px of plain background between two unrelated things (1512x949, the empty
+   * Unmatched tab). Where the row is drawn, the panel takes the height its content needs and
+   * the row sits one section gap under it; tabs without the row keep the filling panel.
+   */
+  const handoffShown = coreOfTab(tab) === "ontology" && tab !== "do-next" && !agentOpen;
+  const panelFills = measuredHarness || !handoffShown;
   /**
    * The scale of each finding group — the **same** `InsightsSignalCounts` the verdict is built
    * from, re-keyed. One argument means the ten group counts and the one title count cannot drift
@@ -1567,7 +1577,7 @@ export function OntologyInsightsPage() {
           // The content crossfades in while **the box jumped in one frame** (measured 878.5 →
           // 605px, a 246px jump for the whole document). The height is set one step (base) later
           // so the crossfade wraps the reflow.
-          <div ref={insightsSwapHostRef} className={`flex flex-1 flex-col ${measuredHarness ? 'min-h-0 overflow-hidden' : ''}`}>
+          <div ref={insightsSwapHostRef} className={`flex flex-col ${panelFills ? 'flex-1' : ''} ${measuredHarness ? 'min-h-0 overflow-hidden' : ''}`}>
           <div
             key={tab}
             ref={insightsPanelRef}
@@ -1591,7 +1601,7 @@ export function OntologyInsightsPage() {
               : ({ role: "region", "aria-label": t(`core.${coreOfTab(tab)}`) } as const))}
             id={`insights-tabpanel-${tab}`}
             data-insights-panel={tab}
-            className={`insights-tab-crossfade mt-[var(--section-gap)] flex flex-1 flex-col ${measuredHarness ? 'min-h-0 overflow-hidden' : ''}`}
+            className={`insights-tab-crossfade mt-[var(--section-gap)] flex flex-col ${panelFills ? 'flex-1' : ''} ${measuredHarness ? 'min-h-0 overflow-hidden' : ''}`}
           >
             {tab === "library" ? <LibraryTab detail={brief.library} nowMs={brief.nowMs} /> : null}
             {tab === "harness" ? <HarnessTab detail={brief.harnessDetail} /> : null}
@@ -1859,7 +1869,7 @@ export function OntologyInsightsPage() {
           * at 1040×720, sits over the long Flow request. It returns when the dock closes and remains
           * the browser/copy-only path.
           */}
-        {coreOfTab(tab) !== "ontology" || tab === "do-next" || agentOpen ? null : (
+        {!handoffShown ? null : (
         <InsightsHandoffRow
           label={t("handoffLabel")}
           caption={t("handoffCaption")}

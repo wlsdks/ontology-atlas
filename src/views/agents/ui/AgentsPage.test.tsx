@@ -14,6 +14,11 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(search),
 }));
 
+let bridge = true;
+vi.mock('@/shared/lib/tauri-acp', () => ({
+  isAcpBridgeAvailable: () => bridge,
+}));
+
 vi.mock('@/widgets/app-settings-menu', () => ({
   AcpRuntimeSettings: ({ embedded }: { embedded?: boolean }) => (
     <div data-testid="acp-runtimes" data-embedded={embedded ? 'true' : 'false'} />
@@ -29,6 +34,7 @@ function renderPage(children?: React.ReactNode, mcpCount?: number) {
 }
 
 afterEach(() => {
+  bridge = true;
   search = '';
   window.history.replaceState(null, '', '/ko/agents/');
 });
@@ -38,6 +44,13 @@ describe('에이전트 목적지', () => {
     renderPage();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(ko.agents.title);
     expect(screen.getByText(ko.agents.lede)).toBeInTheDocument();
+  });
+
+  it('웹에서는 설명의 주어가 맥 앱이다 — 바로 아래 카드가 브라우저는 못 띄운다고 말한다', () => {
+    bridge = false;
+    renderPage();
+    expect(screen.getByText(ko.agents.ledeWeb)).toBeInTheDocument();
+    expect(screen.queryByText(ko.agents.lede)).toBeNull();
   });
 
   it('패널에게 자기 소개를 그리지 말라고 말한다 — 페이지가 이미 말했다', () => {
