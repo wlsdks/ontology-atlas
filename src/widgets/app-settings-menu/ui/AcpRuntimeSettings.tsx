@@ -9,8 +9,9 @@ import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 
 import { useArrivalMemory } from '@/shared/lib/route-arrival-memory';
+import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip, Dialog, EmptyState, InfoHint, Surface } from '@/shared/ui';
+import { buttonVariants, Chip, Dialog, EmptyState, InfoHint, Surface } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
@@ -232,24 +233,15 @@ export function AcpRuntimeSettings({
               <Link
                 href="/download/"
                 data-testid="app-settings-runtimes-get-app"
-                /* The pill shape every web-only empty state uses (Harness, Automations), with the
-                   touch floor (round 2). ⚠️ **Filled, on this tab alone** (round 4, 2026-09-25):
-                   there the card is one state among the screen's content, here it is the tab's
-                   only way forward, and an accent-ink pill beside a link weighed barely more than
-                   the link. `onAccent` is the ramp's one filled press — the tone the folder
-                   guide's own 「get the app」 uses — so the winner is said by the ramp, not by a
-                   hand-mixed fill. */
-                className={controlClass({
-                  shape: 'pill',
-                  size: 'lg',
-                  tone: 'onAccent',
-                  // The pill shape carries no gap of its own; the glyph takes the chip's 6px.
-                  // The value layer's focus ring is an inset indigo ring, which vanishes on an
-                  // indigo fill (1.00:1, `focus-ring-contrast.spec.ts`); on this press the inset
-                  // ring takes the primary ink instead.
-                  className:
-                    'atlas-touch-floor atlas-touch-floor-wide gap-1.5 focus-visible:ring-[color:var(--color-text-primary)]',
-                })}
+                /* ⚠️ **Filled, on this tab alone** (round 4, 2026-09-25): there the card is one
+                   state among the screen's content, here it is the tab's only way forward, and an
+                   accent-ink pill beside a link weighed barely more than the link.
+                   **The standard primary `Button`, not a pill** (owner review, 2026-09-26): the
+                   system keeps the pill for a state or a count, and every web-only door (Harness,
+                   Automations, Models) now wears the one primary shape the other screens' first
+                   press wears, 32px on the chip corner. Its focus ring stands outside the fill,
+                   so it no longer needs the inset ring's primary-ink override. */
+                className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor atlas-touch-floor-wide')}
               >
                 <Download size={ICON_SIZE.md} aria-hidden />
                 {t('webGetApp')}

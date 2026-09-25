@@ -290,8 +290,12 @@ export function View3dMenu({
                 {t(`view3dChoice.${choice}`)}
               </span>
               {/* One line for what that row answers. The name alone does not convey
-                  «what is different» — which is why 「Ownership/Combination」 failed. */}
-              <span className="break-keep text-label text-[color:var(--map-panel-text-secondary)]">
+                  «what is different» — which is why 「Ownership/Combination」 failed.
+                  Balanced, because a description that needs a second line in this 240px
+                  picker otherwise leaves one word under a full line: the hex row ended on a
+                  lone one-syllable word ("board") and the English on a lone "domain" (owner
+                  review, 2026-09-26). */}
+              <span className="break-keep text-balance text-label text-[color:var(--map-panel-text-secondary)]">
                 {t(`view3dChoiceHint.${choice}`)}
               </span>
             </button>

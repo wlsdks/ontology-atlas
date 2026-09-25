@@ -1,16 +1,25 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ScanSearch } from 'lucide-react';
 
 import { listboxBottomIsHidden, listboxTopIsHidden } from '@/shared/ui/select-growth';
 
 import { cn } from '@/shared/lib/cn';
 import { badgeClass } from '@/shared/ui/badge-class';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { ArchitectureGraph as Graph, GraphBoxShape } from '../model/graph-layout';
 import type { RoleLedger } from '../model/role-ledger';
 import { placeEdgeSentences, type SentenceEdge } from '../model/edge-sentences';
-import { captionLineRoom, splitSummaryLinesByWidth } from '../model/summary-lines';
+import {
+  balanceLinesByWidthAt,
+  captionLineRoom,
+  estimateCaptionWidth,
+  estimateTextWidthAt,
+  splitLinesByWidthAt,
+  splitSummaryLinesByWidth,
+} from '../model/summary-lines';
 
 /* Geometry. One place, so the drawing can be reasoned about without reading the JSX. */
 /**
@@ -205,12 +214,6 @@ const NARROW_LADDER_EDGE = 16;
  * one continuous line and the stack reads as a solid rather than as separate bands.
  */
 const PLANE_STEP = 14;
-/**
- * The `--leading-label` pair: `text-label` is 11px type on a 16px line, and the two labels in the
- * chrome row above the ladder are both that step. Their spacing is this line box, never a gap
- * chosen by eye — see `ladderPadY` below for what measuring by eye cost.
- */
-const LANE_LABEL_LINE = 16;
 /** How much plane stays visible beyond the outermost face, so a role sits *on* its layer. */
 const PLANE_EDGE = 16;
 /*
@@ -273,6 +276,36 @@ const SENTENCE_LEAD_MAX = 380;
 const SENTENCE_TOP_ROOM = 44;
 const SENTENCE_TRAIL_ROOM = 260;
 const SENTENCE_CHAR_PX = 4.7;
+/** How far an adjacent rule sentence starts past its arrow (`GAP_TO_ARC` in `edge-sentences`). */
+const SENTENCE_ARROW_GAP = 10;
+
+/*
+ * ⚠️ **Before any inspection the two measured columns are one empty state** (owner review,
+ * 2026-09-26). With no receipt the ladder drew seven dashed observation faces and seven hollow
+ * delta marks, fourteen placeholders for one fact, under two column notes that said it twice
+ * more. The columns now hold one dashed panel that states the fact once and names the action that
+ * fills it. The dash is the ladder's own "not measured" grammar, drawn once.
+ *
+ * Geometry, in SVG units (CSS pixels). The panel keeps this much air past the layer planes'
+ * ledge beside the contract faces, and more when a rule sentence beside an arrow reaches further
+ * into the gutter: the approved structure's planes and words are never covered.
+ */
+const EMPTY_PANEL_GAP = 12;
+/** Air between the furthest rule sentence and the panel's edge. */
+const EMPTY_PANEL_SENTENCE_AIR = 12;
+const EMPTY_PANEL_PAD_X = 20;
+/** `text-body` and `text-label`, the two steps the ladder's own role name and chrome use. */
+const EMPTY_TITLE_PX = 12.5;
+const EMPTY_BODY_PX = 11;
+/** The `--leading-body` and `--leading-label` line boxes of those two steps. */
+const EMPTY_TITLE_LINE = 20;
+const EMPTY_BODY_LINE = 16;
+/** The space under the icon, whose own box is `ICON_SIZE.lg`. */
+const EMPTY_ICON_GAP = 10;
+/** Between the fact and the action when an across band sets them on one line. */
+const EMPTY_BAND_GAP = 12;
+const EMPTY_TITLE_MAX_LINES = 2;
+const EMPTY_BODY_MAX_LINES = 5;
 
 /**
  * ⚠️ **Which way the chain runs.** The drawing had one axis, so a seven-role profile was always a
@@ -309,6 +342,16 @@ interface Placed {
   x: number;
   y: number;
   shape: GraphBoxShape;
+}
+
+/** The one empty state of the measured lane: a column on the ladder, a band under an across row. */
+interface EmptyPanel {
+  key: string;
+  layout: 'column' | 'band';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /**
@@ -364,6 +407,126 @@ function ConnectionPort({
 }
 
 /**
+ * The measured lane's one empty state: a dashed panel, the fact, and the action that fills it.
+ *
+ * A ladder column centres an icon, the fact and the action, each wrapped and balanced; an across
+ * band is one face tall, so it sets the fact and the action on one centred line, cutting the
+ * action last. The words are one note for an assistive reader; the lines are only their wrapping.
+ * It takes no pointer events, so a press there neither selects a role nor stops a pan.
+ */
+function ObservationEmptyState({ panel, title, body }: { panel: EmptyPanel; title: string; body: string }) {
+  const innerW = Math.max(0, panel.width - EMPTY_PANEL_PAD_X * 2);
+  const cx = panel.x + panel.width / 2;
+  const frame = (
+    <rect
+      x={panel.x}
+      y={panel.y}
+      width={panel.width}
+      height={panel.height}
+      rx={12}
+      fill="var(--color-overlay-1)"
+      stroke="var(--color-divider)"
+      strokeWidth={1}
+      strokeDasharray="4 4"
+    />
+  );
+  const groupProps = {
+    role: 'note',
+    'aria-label': `${title} ${body}`,
+    pointerEvents: 'none',
+    className: 'architecture-observation-reveal',
+    'data-testid': 'architecture-observation-empty',
+    'data-empty-layout': panel.layout,
+  } as const;
+
+  if (panel.layout === 'band') {
+    const [bodyLine = ''] = splitLinesByWidthAt(
+      body,
+      Math.max(0, innerW - estimateTextWidthAt(title, EMPTY_TITLE_PX) - EMPTY_BAND_GAP),
+      1,
+      EMPTY_BODY_PX,
+    );
+    return (
+      <g {...groupProps}>
+        {frame}
+        <text x={cx} y={panel.y + panel.height / 2 + 4} textAnchor="middle" aria-hidden>
+          <tspan
+            data-testid="architecture-observation-empty-title"
+            className="text-body font-[var(--font-weight-emphasis)] fill-[color:var(--color-text-secondary)]"
+          >
+            {title}
+          </tspan>
+          {bodyLine ? (
+            <tspan
+              dx={EMPTY_BAND_GAP}
+              data-testid="architecture-observation-empty-line"
+              className="text-label fill-[color:var(--color-text-tertiary)]"
+            >
+              {bodyLine}
+            </tspan>
+          ) : null}
+        </text>
+      </g>
+    );
+  }
+
+  /* Balanced, as `text-wrap: balance` would set them: a centred block whose last line is one
+     word under a full one reads as a mistake. */
+  const titleLines = balanceLinesByWidthAt(title, innerW, EMPTY_TITLE_MAX_LINES, EMPTY_TITLE_PX);
+  const bodyLines = balanceLinesByWidthAt(body, innerW, EMPTY_BODY_MAX_LINES, EMPTY_BODY_PX);
+  /* Each line sits on the middle of its own ramp line box; a glyph's visual centre is about
+     0.35em above its baseline. */
+  const blockH =
+    ICON_SIZE.lg +
+    EMPTY_ICON_GAP +
+    titleLines.length * EMPTY_TITLE_LINE +
+    bodyLines.length * EMPTY_BODY_LINE;
+  const blockTop = panel.y + Math.max(EMPTY_PANEL_PAD_X, (panel.height - blockH) / 2);
+  const titleTop = blockTop + ICON_SIZE.lg + EMPTY_ICON_GAP;
+  const bodyTop = titleTop + titleLines.length * EMPTY_TITLE_LINE;
+  return (
+    <g {...groupProps}>
+      {frame}
+      <ScanSearch
+        x={cx - ICON_SIZE.lg / 2}
+        y={blockTop}
+        size={ICON_SIZE.lg}
+        aria-hidden
+        className="text-[color:var(--color-text-quaternary)]"
+      />
+      <text
+        textAnchor="middle"
+        aria-hidden
+        data-testid="architecture-observation-empty-title"
+        className="text-body font-[var(--font-weight-emphasis)] fill-[color:var(--color-text-secondary)]"
+      >
+        {titleLines.map((line, index) => (
+          <tspan
+            key={index}
+            x={cx}
+            y={titleTop + index * EMPTY_TITLE_LINE + EMPTY_TITLE_LINE / 2 + EMPTY_TITLE_PX * 0.35}
+          >
+            {line}
+          </tspan>
+        ))}
+      </text>
+      <text textAnchor="middle" aria-hidden className="text-label fill-[color:var(--color-text-tertiary)]">
+        {bodyLines.map((line, index) => (
+          <tspan
+            key={index}
+            x={cx}
+            y={bodyTop + index * EMPTY_BODY_LINE + EMPTY_BODY_LINE / 2 + EMPTY_BODY_PX * 0.35}
+            data-testid="architecture-observation-empty-line"
+          >
+            {line}
+          </tspan>
+        ))}
+      </text>
+    </g>
+  );
+}
+
+/**
  * The architecture, drawn.
  *
  * ⚠️ **The stroke says where the fact came from.** This screen carries two kinds of claim and has
@@ -400,9 +563,10 @@ export function ArchitectureSketch({
   contractTrackLabel,
   observationTrackLabel,
   deltaTrackLabel,
-  deltaColumnNote,
   deltaColumnHint,
   observationMissingLabel,
+  observationEmptyTitle,
+  observationEmptyBody,
   hiddenRightLabel,
   hiddenLeftLabel,
   hiddenAboveLabel,
@@ -454,11 +618,16 @@ export function ArchitectureSketch({
   contractTrackLabel: string;
   observationTrackLabel: string;
   deltaTrackLabel: string;
-  /** What the delta column has to say when nothing has been compared yet. One line, per column. */
-  deltaColumnNote: string;
-  /** The limit of what a delta mark asserts. A marker's text, never body prose. */
+  /** The limit of what a delta mark asserts: the delta heading's hover text, never body prose. */
   deltaColumnHint: string;
+  /** What a role's own observation face says when only some roles carry a receipt. */
   observationMissingLabel: string;
+  /**
+   * The one empty state that stands in both measured columns before any source was inspected:
+   * the fact, and the action that fills them.
+   */
+  observationEmptyTitle: string;
+  observationEmptyBody: string;
   /** "N more to the right" — the count is derived, so the screen never guesses. */
   hiddenRightLabel: (count: number) => string;
   /** The same for the side a pan pushes roles off. */
@@ -586,6 +755,14 @@ export function ArchitectureSketch({
   const usesTightLadder = usesPairedDown && ladderDensity === 'tight';
   const splitsEvidence = (axis === 'across' && axisWidth > 0) || usesPairedDown;
   /*
+   * Nothing measured anywhere: no role carries a receipt and no measured crossing exists. Then
+   * the measured lane is one empty state instead of a placeholder per role (owner review,
+   * 2026-09-26). A profile where only some roles carry a receipt keeps its per-role faces,
+   * because there the absence is about that role rather than about the whole column.
+   */
+  const observationEmpty =
+    splitsEvidence && !hasLedger && !graph.edges.some((edge) => edge.kind === 'traffic');
+  /*
    * ⚠️ **Ground is reserved for arcs the profile declares, not for arcs it might have had.** The
    * trail lane's 360px cap was subtracted unconditionally, so a profile with no skip on the
    * observation side — every one the dogfood vault ships — held 360px empty beside a sentence lane
@@ -651,17 +828,17 @@ export function ArchitectureSketch({
    * 201, note top 202 — a 1px gap — and note bottom 215 against a face top of 212, so the note
    * **overlapped the dashed face by 3px**. Three spacing sources, none of them agreeing.
    *
-   * The rhythm now comes from one place and from the ramp rather than from a nudge: the note sits
-   * one `--leading-label` line below the heading (11px type on its 16px pair, which is what the
-   * two labels are), and the ladder's own top padding grows by exactly that line when the note is
-   * drawn. Deriving it from the line box rather than from a measured gap is what keeps it correct
-   * in Korean, which runs taller than English at the same size — a gap tuned on one build is the
-   * defect, not the fix.
+   * The rhythm now comes from one place: the headings sit on the ladder's own top padding and the
+   * faces are placed from the same `padY`.
+   *
+   * ⚠️ **The column notes are gone, and their line with them** (owner review, 2026-09-26). They
+   * said "not compared yet" and "not inspected yet" under the headings while the columns under
+   * them drew fourteen placeholders for the same fact. The empty state inside the columns says it
+   * once now, so the ladder no longer pays a `--leading-label` line above the first face for a
+   * note it does not draw.
    */
   const laneHeadingY = ladderPadY + 14;
-  const laneNoteY = laneHeadingY + LANE_LABEL_LINE;
-  const laneBandRoom = usesPairedDown && !hasLedger ? LANE_LABEL_LINE : 0;
-  const padY = ladderPadY + laneBandRoom;
+  const padY = ladderPadY;
   const boxH = usesRoomyBoxes
     ? BOX_H_ROOMY
     : usesPairedDown
@@ -864,6 +1041,90 @@ export function ArchitectureSketch({
       ]),
     );
   }, [boxH, observationBoxH, observationOffset, placed, splitsEvidence, usesPairedDown]);
+
+  /*
+   * Where the one empty state stands, when nothing has been measured.
+   *
+   * On the ladder it is one column-tall panel over the delta gutter and the observation face,
+   * from the first role's top to the last role's bottom: the two columns an inspection fills,
+   * drawn as the one area they are until then. Its left edge yields to the rule sentences that
+   * read into the gutter beside their arrows, so the approved structure keeps every word; it
+   * never gives up the observation column itself. An across chain has a measured lane under each
+   * row of faces instead, so there the panel is one band per row.
+   */
+  const emptyPanels = useMemo((): EmptyPanel[] => {
+    if (!observationEmpty) return [];
+    const faces = [...placed.values()];
+    if (faces.length === 0) return [];
+    if (usesPairedDown) {
+      const contractLeft = Math.min(...faces.map((face) => face.x));
+      const contractRight = contractLeft + contractBoxW;
+      const observationLeft = contractRight + pairedGutterW;
+      const arrowX = contractLeft + contractBoxW / 2;
+      const reach = graph.edges
+        .filter((edge) => edge.kind === 'permitted' && edge.columnSpan <= 1)
+        .reduce(
+          (furthest, edge) =>
+            Math.max(
+              furthest,
+              arrowX + SENTENCE_ARROW_GAP + estimateCaptionWidth(edgeSentence(toSentenceEdge(edge))),
+            ),
+          contractRight,
+        );
+      /* The planes end their ledge (plus the lean of the lit top face) past the contract faces. */
+      const planeLedge = usesLayerPlanes ? planeRoom - planeDrift : 0;
+      const x = Math.min(
+        observationLeft,
+        Math.max(contractRight + planeLedge + EMPTY_PANEL_GAP, reach + EMPTY_PANEL_SENTENCE_AIR),
+      );
+      const top = Math.min(...faces.map((face) => face.y));
+      const bottom = Math.max(...faces.map((face) => face.y)) + boxH;
+      return [
+        {
+          key: 'column',
+          layout: 'column',
+          x,
+          y: top,
+          width: observationLeft + observationBoxW - x,
+          height: bottom - top,
+        },
+      ];
+    }
+    const rows = new Map<number, Placed[]>();
+    for (const face of observedPlaced.values()) {
+      rows.set(face.y, [...(rows.get(face.y) ?? []), face]);
+    }
+    return [...rows].map(([y, row]) => {
+      const x = Math.min(...row.map((face) => face.x));
+      return {
+        key: `band-${y}`,
+        layout: 'band',
+        x,
+        y,
+        width: Math.max(...row.map((face) => face.x)) + observationBoxW - x,
+        height: observationBoxH,
+      };
+    });
+  }, [
+    boxH,
+    contractBoxW,
+    edgeSentence,
+    graph.edges,
+    observationBoxH,
+    observationBoxW,
+    observationEmpty,
+    observedPlaced,
+    pairedGutterW,
+    placed,
+    planeDrift,
+    planeRoom,
+    toSentenceEdge,
+    usesLayerPlanes,
+    usesPairedDown,
+  ]);
+  const emptyColumn = emptyPanels.find((panel) => panel.layout === 'column') ?? null;
+  /** The first x the empty column claims, so a rule sentence beside an arrow stops short of it. */
+  const emptyColumnLeft = emptyColumn?.x ?? null;
 
   /* Where each box ends, in the SVG's own units — which are CSS pixels, because the drawing is no
      longer scaled. Derived, never a ref written during render. */
@@ -1195,7 +1456,19 @@ export function ArchitectureSketch({
         connectorRoom: usesNarrowLadder
           ? contractBoxW / 2 + NARROW_LADDER_EDGE + PAD_X
           : lane === placed
-            ? contractBoxW / 2 + pairedGutterW + observationBoxW / 2 - GAP_BETWEEN_LANE_SENTENCES
+            ? Math.min(
+                contractBoxW / 2 + pairedGutterW + observationBoxW / 2 - GAP_BETWEEN_LANE_SENTENCES,
+                /* Before an inspection the observation half is the empty column, so a rule
+                   sentence stops short of it: `placeEdgeSentences` spends the arrow gap and 12
+                   units of padding out of this room, which puts its end one air short of it.
+                   The arrow runs down the contract faces' centre line. */
+                emptyColumnLeft === null
+                  ? Number.POSITIVE_INFINITY
+                  : emptyColumnLeft -
+                      EMPTY_PANEL_SENTENCE_AIR -
+                      (PAD_X + layoutLeadRoom + contractBoxW / 2) +
+                      12,
+              )
             : observationBoxW / 2 + pairedGutterW - GAP_BETWEEN_LANE_SENTENCES,
         sentenceOf: edgeSentence,
         focus,
@@ -1228,6 +1501,7 @@ export function ArchitectureSketch({
     contractBoxW,
     colGap,
     edgeSentence,
+    emptyColumnLeft,
     focus,
     graph.edges,
     layoutLeadRoom,
@@ -1526,74 +1800,42 @@ export function ArchitectureSketch({
                 nothing but "unknown" markers — a hue with no fact under it, and the loudest
                 label on a screen whose winner is the climbing arc (design council,
                 2026-09-08). State colour belongs to the markers, which carry it. */}
-            <text
-              x={PAD_X + layoutLeadRoom + contractBoxW + pairedGutterW / 2}
-              y={laneHeadingY}
-              textAnchor="middle"
-              className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
-            >
-              {deltaTrackLabel}
-            </text>
+            {/*
+              The limit of what a delta mark asserts rides the column's heading as its hover text,
+              the way the rest of this surface carries its caveats. It used to ride a "nothing
+              compared yet" note that existed only while the column had no marks to explain.
+
+              Before any inspection there is no delta column, only the empty state standing where
+              both measured columns will be, so the delta heading waits for the marks it names and
+              the observation heading centres on the empty state it heads: one heading, one centre
+              line with the words under it (at 1512 the two sat 60px apart).
+            */}
+            {emptyColumn === null ? (
+              <text
+                x={PAD_X + layoutLeadRoom + contractBoxW + pairedGutterW / 2}
+                y={laneHeadingY}
+                textAnchor="middle"
+                pointerEvents="all"
+                data-testid="architecture-delta-heading"
+                className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
+              >
+                <title>{deltaColumnHint}</title>
+                {deltaTrackLabel}
+              </text>
+            ) : null}
             <text
               x={
-                PAD_X +
-                layoutLeadRoom +
-                contractBoxW +
-                pairedGutterW +
-                observationBoxW / 2
+                emptyColumn !== null
+                  ? emptyColumn.x + emptyColumn.width / 2
+                  : PAD_X + layoutLeadRoom + contractBoxW + pairedGutterW + observationBoxW / 2
               }
               y={laneHeadingY}
               textAnchor="middle"
+              data-testid="architecture-observation-heading"
               className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
             >
               {observationTrackLabel}
             </text>
-            {/*
-              ⚠️ **One "not inspected yet" for the column, not one per role** (inspection 122, S8,
-              2026-09-13). With no receipt anywhere, all seven observation faces printed the same
-              four words under a heading that already said the source needed checking — the same
-              fact eight times, and the only thing in the column. It follows the reasoning the
-              across-axis headings above already carry: one heading per row, not one per face.
-              A profile where *some* roles have a receipt keeps the per-face label, because there
-              the absence is about that role rather than about the whole column.
-            */}
-            {!hasLedger ? (
-              <text
-                x={
-                  PAD_X +
-                  layoutLeadRoom +
-                  contractBoxW +
-                  pairedGutterW +
-                  observationBoxW / 2
-                }
-                y={laneNoteY}
-                textAnchor="middle"
-                data-testid="architecture-observation-column-note"
-                className="fill-[color:var(--color-text-quaternary)] text-label"
-              >
-                {observationMissingLabel}
-              </text>
-            ) : null}
-            {/*
-              The delta column's own one-per-column line. Until this slice the column was a heading
-              over seven identical tick marks and nothing else: a reader met the loudest pass mark a
-              screen has with no sentence saying what it was about. The fact is the column's, not
-              each role's — every mark is the same — so it goes in the same slot the observation
-              note occupies, and the limit of what a mark asserts rides a marker rather than a
-              paragraph, the way the rest of this surface now carries its caveats.
-            */}
-            {!hasLedger ? (
-              <text
-                x={PAD_X + layoutLeadRoom + contractBoxW + pairedGutterW / 2}
-                y={laneNoteY}
-                textAnchor="middle"
-                data-testid="architecture-delta-column-note"
-                className="fill-[color:var(--color-text-quaternary)] text-label"
-              >
-                <title>{deltaColumnHint}</title>
-                {deltaColumnNote}
-              </text>
-            ) : null}
           </g>
         ) : null}
 
@@ -1643,10 +1885,12 @@ export function ArchitectureSketch({
               */
               const stagger = (ranks - 1 - box.column) * PLANE_STEP;
               const x = PAD_X + layoutLeadRoom - planeRoom + stagger;
+              /* A plane holds a role's faces. Before an inspection a role has one face, and the
+                 measured columns are the empty panel beside the stack, so the planes end at the
+                 contract faces instead of running under it. */
               const planeW =
                 contractBoxW +
-                pairedGutterW +
-                observationBoxW +
+                (observationEmpty ? 0 : pairedGutterW + observationBoxW) +
                 planeRoom * 2 -
                 planeDrift -
                 planeLean -
@@ -1681,6 +1925,23 @@ export function ArchitectureSketch({
             })}
           </g>
         ) : null}
+
+        {/*
+          ⚠️ **One empty state where the measured columns will be** (owner review, 2026-09-26).
+          Before any inspection there is nothing per role to draw on the measured side, so the
+          drawing says so once and names the action that fills it, in the same dashed outline the
+          per-role placeholders used. The words are one note for an assistive reader; the lines
+          are only their wrapping. It takes no pointer events, so a press there neither selects a
+          role nor stops a pan.
+        */}
+        {emptyPanels.map((panel) => (
+          <ObservationEmptyState
+            key={panel.key}
+            panel={panel}
+            title={observationEmptyTitle}
+            body={observationEmptyBody}
+          />
+        ))}
 
         {graph.edges.map((edge) => {
           const usesObservationLane = splitsEvidence && edge.kind === 'traffic';
@@ -1973,7 +2234,8 @@ export function ArchitectureSketch({
                 counts,
                 ledger ? ledgerStatusLabel(ledger) : null,
                 ledger ? ledgerImportsLabel(ledger.importsOut) : null,
-                splitsEvidence && !ledger ? observationMissingLabel : null,
+                /* Before any inspection the empty state says it once, not in every role's name. */
+                splitsEvidence && !ledger && !observationEmpty ? observationMissingLabel : null,
               ]
                 .filter((part): part is string => part !== null)
                 .join(' · ')}
@@ -2018,12 +2280,12 @@ export function ArchitectureSketch({
                 x={at.x}
                 y={at.y}
                 width={
-                  usesPairedDown
+                  usesPairedDown && !observationEmpty
                     ? contractBoxW + pairedGutterW + observationBoxW
                     : contractBoxW
                 }
                 height={
-                  splitsEvidence && !usesPairedDown
+                  splitsEvidence && !usesPairedDown && !observationEmpty
                     ? observationOffset + observationBoxH
                     : boxH
                 }
@@ -2192,7 +2454,7 @@ export function ArchitectureSketch({
                   </text>
                 </>
               ) : null}
-              {splitsEvidence && observedAt ? (
+              {splitsEvidence && observedAt && !observationEmpty ? (
                 <g
                   className="architecture-observation-reveal"
                 >
@@ -2354,13 +2616,12 @@ export function ArchitectureSketch({
                     }
                     data-ledger-state={ledger?.state}
                   >
+                    {/* Only a role missing from a receipt others carry reaches here: with no
+                        receipt at all the lane is the one empty state instead. */}
                     {ledger
                       ? ledgerImportsLabel(ledger.importsOut)
                       : usesPairedDown
-                        ? /* The column heading states it once when no role has a receipt. */
-                          hasLedger
-                          ? observationMissingLabel
-                          : ''
+                        ? observationMissingLabel
                         : `○ ${observationMissingLabel}`}
                   </text>
                 </g>

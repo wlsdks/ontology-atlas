@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { captionLineBudgets, captionLineRoom, estimateCaptionWidth, splitSummaryLines, splitSummaryLinesByWidth } from './summary-lines';
+import {
+  balanceLinesByWidthAt,
+  captionLineBudgets,
+  captionLineRoom,
+  estimateCaptionWidth,
+  estimateTextWidthAt,
+  splitLinesByWidthAt,
+  splitSummaryLines,
+  splitSummaryLinesByWidth,
+} from './summary-lines';
 
 /*
  * The seven sentences the dogfood profile declares, measured 2026-08-30: 91, 121, 79, 89, 108,
@@ -116,5 +125,72 @@ describe('splitSummaryLinesByWidth', () => {
     const [line] = splitSummaryLinesByWidth('가나다라마바사아자차카타파하가나다라마바사아자차카타파하', 60, 1);
     expect(estimateCaptionWidth(line)).toBeLessThanOrEqual(60);
     expect(line.endsWith('…')).toBe(true);
+  });
+});
+
+describe('splitLinesByWidthAt', () => {
+  /* The architecture canvas's empty observation column sets its sentence at the label step (11px),
+     not the caption step the estimates were measured at, so the room is read at that size. */
+  it('scales the caption estimate linearly with the type size', () => {
+    const text = '소스 검사 import';
+    expect(estimateTextWidthAt(text, 9.5)).toBeCloseTo(estimateCaptionWidth(text));
+    expect(estimateTextWidthAt(text, 19)).toBeCloseTo(estimateCaptionWidth(text) * 2);
+  });
+
+  it('keeps every line inside the room at the larger size, and drops nothing silently', () => {
+    const sentence =
+      '「소스 검사」를 하면 에이전트가 코드의 실제 import를 읽어, 역할마다 관찰한 의존과 차이를 여기에 채워요.';
+    const lines = splitLinesByWidthAt(sentence, 200, 4, 11);
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) expect(estimateTextWidthAt(line, 11)).toBeLessThanOrEqual(200);
+    expect(lines.join(' ')).toBe(sentence);
+  });
+
+  it('wraps a larger size onto more lines than the caption would need', () => {
+    const sentence = 'Inspect source has an agent read the real imports and fill this column in for each role.';
+    const caption = splitSummaryLinesByWidth(sentence, 200, 6);
+    const label = splitLinesByWidthAt(sentence, 200, 6, 11);
+    expect(label.length).toBeGreaterThanOrEqual(caption.length);
+    for (const line of label) expect(estimateTextWidthAt(line, 11)).toBeLessThanOrEqual(200);
+  });
+});
+
+describe('balanceLinesByWidthAt', () => {
+  /* Measured 2026-09-26: the greedy wrap of the empty column's English sentence left "differs."
+     alone on its last line at 1512 and at 1040. */
+  const SENTENCE =
+    '“Inspect source” has an agent read the real imports and fill in, for each role, what it depends on and where that differs.';
+
+  it('keeps the greedy line count and leaves no lone word on the last line', () => {
+    const greedy = splitLinesByWidthAt(SENTENCE, 320, 5, 11);
+    const balanced = balanceLinesByWidthAt(SENTENCE, 320, 5, 11);
+    expect(greedy.at(-1)).toBe('differs.');
+    expect(balanced).toHaveLength(greedy.length);
+    expect(balanced.at(-1)?.split(' ').length).toBeGreaterThan(1);
+    expect(balanced.join(' ')).toBe(SENTENCE);
+    for (const line of balanced) expect(estimateTextWidthAt(line, 11)).toBeLessThanOrEqual(320);
+  });
+
+  it('evens the lines out: the widest balanced line is no wider than the widest greedy one', () => {
+    const widest = (lines: readonly string[]) => Math.max(...lines.map((line) => estimateTextWidthAt(line, 11)));
+    expect(widest(balanceLinesByWidthAt(SENTENCE, 320, 5, 11))).toBeLessThanOrEqual(
+      widest(splitLinesByWidthAt(SENTENCE, 320, 5, 11)),
+    );
+  });
+
+  it('prefers a clause break when it costs only a few pixels of measure', () => {
+    const korean =
+      '「소스 검사」를 하면 에이전트가 실제 import를 읽어, 역할마다 관찰한 의존과 차이를 여기에 채워요.';
+    expect(balanceLinesByWidthAt(korean, 320, 5, 11)).toEqual([
+      '「소스 검사」를 하면 에이전트가 실제 import를 읽어,',
+      '역할마다 관찰한 의존과 차이를 여기에 채워요.',
+    ]);
+  });
+
+  it('returns a one-line or ellipsized wrap untouched', () => {
+    expect(balanceLinesByWidthAt('Short.', 320, 5, 11)).toEqual(['Short.']);
+    const cut = splitLinesByWidthAt(SENTENCE, 120, 2, 11);
+    expect(cut.at(-1)?.endsWith('…')).toBe(true);
+    expect(balanceLinesByWidthAt(SENTENCE, 120, 2, 11)).toEqual(cut);
   });
 });

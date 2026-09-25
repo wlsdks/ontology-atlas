@@ -573,6 +573,8 @@
     "observationRecorded": "검사 기록",
     "observationMissing": "아직 검사하지 않음",
     "observationMissingShort": "아직 검사 안 함",
+    "observationEmptyTitle": "아직 소스를 검사하지 않았어요",
+    "observationEmptyBody": "「소스 검사」를 하면 에이전트가 실제 import를 읽어, 역할마다 관찰한 의존과 차이를 여기에 채워요.",
     "deltaLabel": "차이",
     "deltaUnknown": "검사 전에는 알 수 없음",
     "deltaUnknownBody": "승인된 구조와 비교할 소스 관찰이 아직 없어요.",
@@ -712,7 +714,6 @@
     "agentTaskCopyHint": "고르면 그 작업 문장을 복사해요.",
     "copiedTaskHandoff": "“{task}” 문장을 복사했어요. 에이전트에 붙여 넣으세요",
     "copyTaskSentence": "“{task}” 문장 복사",
-    "deltaColumnNote": "아직 견준 것이 없음",
     "deltaColumnHint": "각 표시는 그 역할이 선언한 규칙에 견준 자기 나가는 의존만 말해요. 역할에 대한 판정이 아니에요."
   },
   "ontologyRelations": {
@@ -1395,7 +1396,7 @@
       "view3dChoiceHint": {
         "flat": "보통의 2D 지도",
         "territories": "도메인마다 모든 역량을 이름과 함께 펼친 모양",
-        "hex": "역량 하나가 한 칸, 도메인 하나가 한 판인 육각 판",
+        "hex": "역량 하나가 한 칸, 도메인 하나가 한 판",
         "galaxy": "별자리처럼 온 지도를 하늘로 보는 모양",
         "strata": "담김 구조를 빛나는 층으로 나눠 읽는 모양",
         "coupling": "관계가 가까운 것끼리 모인 모양"
@@ -4726,8 +4727,8 @@
     "decisionNoChange": "바뀐 것 없음",
     "decisionItems": "변경 {count}건",
     "durationSeconds": "{seconds}초",
-    "durationMinutes": "{minutes}분",
-    "durationHours": "{hours}시간 {minutes}분",
+    "durationMinutes": "{minutes}분{seconds, plural, =0 {} other { #초}}",
+    "durationHours": "{hours}시간{minutes, plural, =0 {} other { #분}}",
     "durationTitle": "첫 변경부터 마지막 변경까지",
     "decidedAllowed": "허용 {count}",
     "decidedRejected": "거절 {count}",
@@ -5822,8 +5823,6 @@
     "earlierRuns": "이전 실행 · {count}건",
     "openFolderTitle": "폴더를 열면 점검을 예약할 수 있어요",
     "openFolderDescription": "예약과 실행 기록은 연 폴더 안에 저장돼요.",
-    "previewEmptyApp": "앱에서 예약하면 여기에 표시돼요",
-    "previewEmptyFolder": "폴더를 열고 예약하면 여기에 표시돼요",
     "staleLabel": "검토가 필요한 문서",
     "writtenLabel": "수정한 파일",
     "scopeLabel": "검토 범위",
@@ -5899,7 +5898,7 @@
       "facts": { "runs": { "title": "무엇을 하나요", "body": "앱 안 코딩 에이전트가 그래프와 코드 연결을 읽고, 범위가 작은 개선안 하나를 남겨요." }, "when": { "title": "언제 실행되나요", "body": "매시간, 6시간마다, 매일처럼 고른 주기로 돌아요. 앱이 닫혀 있어 놓친 실행은 다음에 열 때 한 번만 해요." }, "writes": { "title": "무엇을 바꾸나요", "body": "아무것도 바꾸지 않아요. 개선안은 지도에서 직접 검토하고 적용해요." } },
       "emptyTitle": "아직 예약된 온톨로지 점검이 없어요",
       "emptyDescription": "이름과 주기만 정하면 돼요. 살펴볼 범위는 비워 둬도 괜찮아요.",
-      "preview": { "title": "예약 목록", "empty": "예약하면 여기에 표시돼요", "name": "이름", "cadence": "주기", "next": "다음 실행", "resultLabel": "실행 결과", "resultEmpty": "첫 실행 뒤 이 예약에서 확인할 수 있어요" },
+      "preview": { "title": "예약 목록", "name": "이름", "cadence": "주기", "next": "다음 실행" },
       "defaultName": "온톨로지 정교화",
       "sheet": {
         "title": "온톨로지 검토 예약",
@@ -5923,7 +5922,7 @@
       "facts": { "runs": { "title": "무엇을 하나요", "body": "원문과 위키 페이지가 아직 맞는지 확인하고, 연결한 서비스에서 바뀐 문서를 가져와요." }, "when": { "title": "언제 실행되나요", "body": "매시간, 6시간마다, 매일처럼 고른 주기로 돌아요. 앱이 닫혀 있어 놓친 실행은 다음에 열 때 한 번만 해요." }, "writes": { "title": "무엇을 바꾸나요", "body": "승인한 자료실 범위 안에서만 원문과 위키 초안을 고쳐요. 온톨로지는 건드리지 않아요." } },
       "emptyTitle": "아직 예약된 문서 점검이 없어요",
       "emptyDescription": "페이지별 검토와 전체 실행 기록은 자료실에서 이어서 봐요.",
-      "preview": { "title": "예약 목록", "empty": "예약하면 여기에 표시돼요", "name": "이름", "cadence": "주기", "next": "다음 실행", "resultLabel": "점검 기록", "resultEmpty": "첫 실행 뒤 이 예약에서 확인할 수 있어요" },
+      "preview": { "title": "예약 목록", "name": "이름", "cadence": "주기", "next": "다음 실행" },
       "openRounds": "자료실 점검 기록 열기"
     }
   },

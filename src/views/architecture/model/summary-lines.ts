@@ -121,6 +121,82 @@ export function estimateCaptionWidth(text: string): number {
   return width;
 }
 
+/** The type size the caption estimates above were measured at. */
+const CAPTION_FONT_PX = 9.5;
+
+/**
+ * The caption estimate read at another step of the type ramp. Glyph width grows linearly with
+ * the size, so a line of `fontPx` type is `fontPx / 9.5` times as wide as the same line at the
+ * caption step.
+ */
+export function estimateTextWidthAt(text: string, fontPx: number): number {
+  return (estimateCaptionWidth(text) * fontPx) / CAPTION_FONT_PX;
+}
+
+/**
+ * `splitSummaryLinesByWidth` for text set larger than a caption: the room is converted into
+ * caption units, so the same greedy wrap and the same last-line ellipsis apply at any size.
+ */
+export function splitLinesByWidthAt(
+  text: string,
+  roomPx: number,
+  maxLines: number,
+  fontPx: number,
+): string[] {
+  return splitSummaryLinesByWidth(text, (roomPx * CAPTION_FONT_PX) / fontPx, maxLines);
+}
+
+/** A line that ends a clause: the break a reader expects, in either script. */
+const CLAUSE_END = /[,.;:!?、。，]$/u;
+/** How much wider than the balanced measure a clause break may make the block. */
+const CLAUSE_BREAK_SLACK = 1.08;
+
+/**
+ * `text-wrap: balance` for SVG text, which has no wrapping of its own: the same number of lines
+ * the greedy wrap needs, at the narrowest room that still holds them, so the last line is never a
+ * lone word under a full one ("…where that / differs." measured on the architecture canvas's
+ * empty column, 2026-09-26). Among breaks within a few percent of that measure, the one that ends
+ * lines on a clause wins: the Korean sentence of that empty column balanced 9px narrower with its
+ * verb pushed under its object than with the break after its comma, and read worse. A wrap that
+ * had to ellipsize is returned as it was.
+ */
+export function balanceLinesByWidthAt(
+  text: string,
+  roomPx: number,
+  maxLines: number,
+  fontPx: number,
+): string[] {
+  const greedy = splitLinesByWidthAt(text, roomPx, maxLines, fontPx);
+  const fits = (lines: readonly string[]) =>
+    lines.length === greedy.length && !(lines.at(-1) ?? '').endsWith('…');
+  if (greedy.length <= 1 || !fits(greedy)) return greedy;
+  /* The greedy line count only falls as the room grows, so the narrowest room is a bisection. */
+  let narrow = 0;
+  let wide = roomPx;
+  for (let step = 0; step < 16; step += 1) {
+    const middle = (narrow + wide) / 2;
+    if (fits(splitLinesByWidthAt(text, middle, maxLines, fontPx))) wide = middle;
+    else narrow = middle;
+  }
+  const balanced = splitLinesByWidthAt(text, wide, maxLines, fontPx);
+  const clauseBreaks = (lines: readonly string[]) =>
+    lines.slice(0, -1).filter((line) => CLAUSE_END.test(line)).length;
+  /* Every room at which the greedy wrap changes is the width of some run of words, so those
+     widths are the only candidates worth trying. */
+  const words = text.trim().split(/\s+/);
+  const ceiling = Math.min(roomPx, wide * CLAUSE_BREAK_SLACK);
+  let best = balanced;
+  for (let start = 0; start < words.length; start += 1) {
+    for (let end = start + 1; end <= words.length; end += 1) {
+      const room = estimateTextWidthAt(words.slice(start, end).join(' '), fontPx);
+      if (room < wide || room > ceiling) continue;
+      const lines = splitLinesByWidthAt(text, room, maxLines, fontPx);
+      if (fits(lines) && clauseBreaks(lines) > clauseBreaks(best)) best = lines;
+    }
+  }
+  return best;
+}
+
 /** The straight room a rectangle face leaves a caption line, in SVG units. */
 export function captionLineRoom(boxW: number): number {
   return Math.max(CAPTION_MIN_CHARS * CAPTION_CHAR_PX, boxW - CAPTION_SIDE_PAD * 2);

@@ -80,14 +80,13 @@ export function AutomationsPage({
     setOntologySheetOpen(true);
   } : onOpenDocumentSchedule;
 
-  // Where no schedule can exist yet (the browser, no folder), the preview drops its "0" and says
-  // where schedules come from instead of promising a list this runtime cannot fill.
-  const emptyStage = (title: string, description: string, action: ReactNode, previewEmpty?: string) => (
+  // Where no schedule can exist yet (the browser, no folder), the list drops its "0": it would
+  // count something this runtime cannot hold. The stage's title is the one empty message.
+  const emptyStage = (title: string, description: string, action: ReactNode, canHoldSchedules: boolean) => (
     <AutomationEmptyWorkbench title={title} description={description} action={action}
-      previewTitle={t(`${lane}.preview.title`)} previewEmpty={previewEmpty ?? t(`${lane}.preview.empty`)}
-      count={previewEmpty ? null : 0}
+      previewTitle={t(`${lane}.preview.title`)}
+      count={canHoldSchedules ? 0 : null}
       columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.next`)]}
-      resultLabel={t(`${lane}.preview.resultLabel`)} resultEmpty={t(`${lane}.preview.resultEmpty`)}
       facts={[
         { title: t(`${lane}.facts.runs.title`), body: t(`${lane}.facts.runs.body`) },
         { title: t(`${lane}.facts.when.title`), body: t(`${lane}.facts.when.body`) },
@@ -124,14 +123,16 @@ export function AutomationsPage({
           {state === "app-required" || state === "no-vault" ? (
             // The same stage as an empty lane: the tabs still switch what each lane would do,
             // and one primary action wins, instead of a one-row notice over a blank screen.
+            // Both stages' first press is the 32px primary `Button` most destinations use for
+            // theirs: at 40px its 12px corner read as a pill beside them (owner review, 2026-09-26).
             <div className="flex flex-1 flex-col pt-6 pb-8">
               {emptyStage(
                 state === "app-required" ? t("appRequiredTitle") : t("openFolderTitle"),
                 state === "app-required" ? t("appRequiredDescription") : t("openFolderDescription"),
                 state === "app-required"
-                  ? <Link href="/download/" className={cn(buttonVariants({ variant: "primary" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("getApp")}</Link>
+                  ? <Link href="/download/" className={cn(buttonVariants({ variant: "primary", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("getApp")}</Link>
                   : <OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" />,
-                state === "app-required" ? t("previewEmptyApp") : t("previewEmptyFolder"),
+                false,
               )}
             </div>
           ) : state === "loading" ? (
@@ -160,7 +161,8 @@ export function AutomationsPage({
               {rounds.length === 0 ? (
                 <div className="flex flex-1 flex-col pt-6 pb-8">
                   {emptyStage(t(`${lane}.emptyTitle`), t(`${lane}.emptyDescription`),
-                    <Button onClick={add} disabled={lanePending} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide"><Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}</Button>)}
+                    <Button size="sm" onClick={add} disabled={lanePending} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide"><Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}</Button>,
+                    true)}
                 </div>
               ) : (
                 <ul data-testid="automations-list" className="flex flex-col gap-2">

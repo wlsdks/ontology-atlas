@@ -46,9 +46,10 @@ export function ArchitectureFlow({
   contractTrackLabel,
   observationTrackLabel,
   deltaTrackLabel,
-  deltaColumnNote,
   deltaColumnHint,
   observationMissingLabel,
+  observationEmptyTitle,
+  observationEmptyBody,
   violatedPairs,
   selected,
   roleInspectorOpen,
@@ -93,9 +94,11 @@ export function ArchitectureFlow({
   contractTrackLabel: string;
   observationTrackLabel: string;
   deltaTrackLabel: string;
-  deltaColumnNote: string;
   deltaColumnHint: string;
   observationMissingLabel: string;
+  /** The one empty state the measured columns show before any source was inspected. */
+  observationEmptyTitle: string;
+  observationEmptyBody: string;
   /** The chosen role, owned by the page so the canvas and the detail can sit in different rows. */
   selected: string | null;
   roleInspectorOpen: boolean;
@@ -165,9 +168,10 @@ export function ArchitectureFlow({
           contractTrackLabel={contractTrackLabel}
           observationTrackLabel={observationTrackLabel}
           deltaTrackLabel={deltaTrackLabel}
-          deltaColumnNote={deltaColumnNote}
           deltaColumnHint={deltaColumnHint}
           observationMissingLabel={observationMissingLabel}
+          observationEmptyTitle={observationEmptyTitle}
+          observationEmptyBody={observationEmptyBody}
           moduleCountLabel={moduleCountLabel}
           conceptCountLabel={conceptCountLabel}
           moduleCounts={moduleCounts}
