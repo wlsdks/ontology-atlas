@@ -1,0 +1,7 @@
+{
+  "file": "src/shared/ui/button.tsx",
+  "count": 1,
+  "claim": "value-layer-peer",
+  "proof": "buttonVariants",
+  "why": "표준 버튼 프리미티브 자신. 값 층이 자기를 소비할 수는 없다."
+}

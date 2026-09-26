@@ -721,25 +721,28 @@ be resolved together land through `/land-bundle` as one integration branch.
 
 | Command | What it answers |
 |---|---|
-| `pnpm checks:changed` | Which gates this change actually needs |
-| `pnpm backlog` · `pnpm backlog:check` | Current task records and concurrent-state conflicts; append a UUID record per worktree observation ([guide](docs/BACKLOG.md)) |
-| `pnpm lessons` · `pnpm lessons:check` | Shared harness lessons that are open or verified but not yet fixed; record and review them with `/harness-retro` ([records guide](docs/records/README.md#harness-lessons)) |
 | `pnpm agents:check` | Each harness's instruction integrity; independent Codex and Claude files need not match |
-| `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check`, `pnpm docs:meta` |
+| `pnpm backlog` · `pnpm backlog:check` | Current task records and concurrent-state conflicts; append a UUID record per worktree observation ([guide](docs/BACKLOG.md)) |
+| `pnpm bundle:plan` · `pnpm bundle:prune` | Land several branches as one: plan the merge (which carry work, shared files, trial conflicts) and afterwards prune the component branches main provably contains. See `/land-bundle` |
+| `pnpm checks:changed` | Which gates this change actually needs |
+| `pnpm conflicts:scan` | Which open pull requests (and `-- --match=<glob>` local branches) change the same files as this branch, and whether a trial merge with each conflicts; read-only, one `gh` call |
+| `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision record to cite or overturn, and whether this change owes one |
 | `pnpm doc:new -- --type=<kind> --area=<area> --slug=<slug>` | A new living document from its template in `docs/.templates/`, at the path its kind decides |
+| `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check`, `pnpm docs:meta` |
 | `pnpm docs:meta` · `pnpm doc:history -- <path>` | Whether every living document carries its kind, status and area with pointers that resolve; one document's commits across moves, which is its version |
 | `pnpm docs:move` | Moves the documents listed in `docs/.moved.json` and rewrites every reference; rerun it after merging main into an older branch (`-- --check` only reports) |
-| `pnpm knip` | Dead files, exports and types across every scope |
-| `pnpm messages:build` · `pnpm messages:check` · `pnpm messages:adopt` | Compose the ignored `messages/<locale>.json` from one file per namespace (`messages/<locale>/<Namespace>.json`), prove it current, and carry a pre-split branch's catalogue edits onto the parts while merging main |
-| `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision record to cite or overturn, and whether this change owes one |
-| `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request for the landing train (or merge it on the fast path), and show the queue and the train in flight |
-| `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run what a landing would do without writing to GitHub, and run trains until the queue is empty |
-| `pnpm pr:ci <n>` | Fire CI on a draft now, so a green, disjoint change can take the fast path |
-| `pnpm bundle:plan` · `pnpm bundle:prune` | Land several branches as one: plan the merge (which carry work, shared files, trial conflicts) and afterwards prune the component branches main provably contains. See `/land-bundle` |
 | `pnpm e2e:sleeps:check` | A change may not add a fixed `waitForTimeout` to an e2e spec unless a `// measurement window:` note says why |
-| `pnpm conflicts:scan` | Which open pull requests (and `-- --match=<glob>` local branches) change the same files as this branch, and whether a trial merge with each conflicts; read-only, one `gh` call |
 | `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the six app screens the download page shows, Korean and English (`public/gateway/<screen>.<locale>.png`), from a served `pnpm build`, against this repository's own ontology |
+| `pnpm knip` | Dead files, exports and types across every scope |
+| `pnpm lessons` · `pnpm lessons:check` | Shared harness lessons that are open or verified but not yet fixed; record and review them with `/harness-retro` ([records guide](docs/records/README.md#harness-lessons)) |
+| `pnpm messages:build` · `pnpm messages:check` · `pnpm messages:adopt` | Compose the ignored `messages/<locale>.json` from one file per namespace (`messages/<locale>/<Namespace>.json`), prove it current, and carry a pre-split branch's catalogue edits onto the parts while merging main |
+| `pnpm pr:ci <n>` | Fire CI on a draft now, so a green, disjoint change can take the fast path |
+| `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run what a landing would do without writing to GitHub, and run trains until the queue is empty |
+| `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request for the landing train (or merge it on the fast path), and show the queue and the train in flight |
 
+Rows stay sorted by command, and the reference's entries by area, so two
+branches that each add one land on different lines; `pnpm dev-checks:check`
+names the line to move and `-- --fix` sorts both.
 [Development checks](docs/DEVELOPMENT-CHECKS.md) is the full gate reference, one
 entry per area; [map testability](docs/engineering/map-testability.md) owns canvas
 performance, readability, contrast, and instrumentation.

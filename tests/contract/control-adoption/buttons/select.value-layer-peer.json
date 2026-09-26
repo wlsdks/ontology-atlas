@@ -1,0 +1,7 @@
+{
+  "file": "src/shared/ui/select.tsx",
+  "count": 1,
+  "claim": "value-layer-peer",
+  "proof": "--control-h-md",
+  "why": "select 트리거. **값 층과 같은 컨트롤 높이 사다리**(--control-h-md/lg)를 직접 읽고 w-full · rounded-card 로 폼 필드 계약을 진다."
+}

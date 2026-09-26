@@ -1,0 +1,8 @@
+{
+  "file": "src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx",
+  "count": 4,
+  "claim": "no-spec",
+  "proof": "className=\"block\"",
+  "why": "빠른 편집 시트의 라벨 넷. **`block` 하나뿐인 자리잡기 래퍼**다 — 이름 텍스트는 안쪽 `FieldLabel` 이 그리고, 이 태그는 그것을 세로로 쌓는 일만 한다. `fieldLabel()` 을 씌우면 안쪽 이름과 **둘이 규격을 다툰다**(`DESIGN-SYSTEM.md` 「폼 필드」 절의 셋째 갈래).",
+  "conditional": "이 라벨이 자기 타입·색을 직접 내기 시작하면 부채로 내린다."
+}

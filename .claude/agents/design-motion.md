@@ -2,6 +2,7 @@
 name: design-motion
 description: Motion designer. Use only when design:route selects this seat for a motion change; requires a real recording from /motion-verify in the brief.
 model: opus
+effort: max
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace
 ---
 

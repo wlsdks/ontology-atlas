@@ -17,7 +17,7 @@ import {
   EMPTY_BEFORE_REFIRE,
   LANDED_MARKER,
   QUEUE_LABEL,
-  composeSquashBody,
+  componentCommit,
   conflictComment,
   describeFastPath,
   describeTrain,
@@ -264,18 +264,14 @@ describe('what the train says', () => {
     assert.match(body, /## Summary[\s\S]*## Test plan/);
   });
 
-  it('carries every component title and each co-author once in the squash body', () => {
-    const body = composeSquashBody({ components, trainNumber: 1999 });
-    assert.match(body, /^Landed by train #1999:/);
-    assert.match(body, /- feat: one \(#12, feat\/12@12aaaaaaa\)/);
-    assert.match(body, /- fix: two \(#13, feat\/13@13aaaaaaa\)/);
-    const trailers = body.split('\n').filter((line) => line.startsWith('Co-authored-by: '));
-    assert.deepEqual(trailers, [
-      'Co-authored-by: Ada <ada@example.com>',
-      'Co-authored-by: Claude <noreply@anthropic.com>',
-      'Co-authored-by: Bo <bo@example.com>',
-    ]);
-    assert.doesNotMatch(composeSquashBody({ components: [pr(1)], trainNumber: 2 }), /Co-authored-by/);
+  it('turns one pull request into one commit: its title and number, its author, other authors as trailers', () => {
+    const commit = componentCommit({
+      component: { number: 12, title: 'feat: one' },
+      coAuthors: ['Ada <ada@example.com>', 'Claude <noreply@anthropic.com>', 'ada <ADA@example.com>'],
+    });
+    assert.equal(commit.message, 'feat: one (#12)\n\nCo-authored-by: Claude <noreply@anthropic.com>');
+    assert.deepEqual(commit.author, { name: 'Ada', email: 'ada@example.com' });
+    assert.deepEqual(componentCommit({ component: { number: 3, title: '' } }), { message: 'Pull request #3 (#3)', author: null });
   });
 
   it('reads authors and trailers out of a component log', () => {

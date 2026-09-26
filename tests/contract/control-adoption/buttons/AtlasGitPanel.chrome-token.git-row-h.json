@@ -1,0 +1,7 @@
+{
+  "file": "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
+  "count": 3,
+  "claim": "chrome-token",
+  "proof": "--git-row-h",
+  "why": "변경 행 · 「나머지」 토글 · STEP_ROW 3열 그리드 행 3. 높이가 clamp(38px, 4.2vh, 48px) 이고 좁은 폭에서 26px, coarse 포인터에서 44px 로 재정의된다. 값 층의 높이 어휘는 고정 단뿐이라 **뷰포트 함수를 표현할 수 없다**."
+}

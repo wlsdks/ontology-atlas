@@ -306,6 +306,42 @@ function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
   };
 }
 
+/**
+ * The measurement lane: the Vitest `perf` project, on a runner of its own.
+ *
+ * ⚠️ **It is its own job because a ratio measured beside other work is a lottery.** Train #1928
+ * (2026-09-26) carried a change that touched no matcher code and went red on
+ * `node-name-match.perf.test.ts` at 9.25 against a bar of 10, in the `pnpm test:perf` step that
+ * then ran after `pnpm knip` and a third of the Vitest sweep on the Unit · Contract shard-1
+ * runner. The header had already recorded 6.73 and 9.20 there and prescribed moving the lane,
+ * not the number; the defect it guards reads 2.7-5.3, so the gate stays and the bar stays.
+ *
+ * `full` runs every measurement file. `affected` hands the selection to Vitest's own import graph
+ * (`--changed`), which is the only thing that knows whether a perf file reaches a changed module;
+ * this planner runs before any install and cannot. It is planned only when a changed path could
+ * be in that graph: non-generated app or src code, or a measurement file itself. A plain test
+ * file can never be imported by a measurement, so a test-only change skips the runner entirely.
+ * A deletion under app or src runs everything, because a vanished module is not in anyone's
+ * graph any more and `--changed` would select nothing.
+ */
+const PERF_SOURCE_INPUTS = [/^(?:app|src)\//];
+
+function isPerfFile(path) {
+  return /\.perf\.test\.(?:ts|tsx)$/.test(path);
+}
+
+function perfPlan({ paths, deletedPaths, full }) {
+  if (full || paths.some((path) => matchesAny(path, ROOT_UNIT_FULL_INPUTS))) return { mode: 'full' };
+  if (deletedPaths.some((path) => matchesAny(path, PERF_SOURCE_INPUTS))) return { mode: 'full' };
+  const relevant = paths.some(
+    (path) =>
+      matchesAny(path, PERF_SOURCE_INPUTS) &&
+      !isGenerated(path) &&
+      (isPerfFile(path) || !isSourceTest(path)),
+  );
+  return { mode: relevant ? 'affected' : 'skip' };
+}
+
 function mcpPlan({ suggestions, full }) {
   if (full) {
     return { mode: 'full', commands: [...FULL_LANE_COMMANDS.mcp] };
@@ -413,6 +449,7 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
     full: full || paths.some((path) => matchesAny(path, E2E_FULL_INPUTS)),
   });
   const gates = gatesPlan({ suggestions, full });
+  const perf = perfPlan({ paths, deletedPaths: deleted, full });
 
   return {
     version: 1,
@@ -428,7 +465,7 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
           : unknownPaths.length > 0
             ? `unclassified paths fail closed: ${unknownPaths.slice(0, 3).join(', ')}`
             : 'comparable change — affected evidence only',
-    lanes: { gates, unit, mcp, e2e },
+    lanes: { gates, unit, perf, mcp, e2e },
   };
 }
 
@@ -518,7 +555,7 @@ export function validatePlan(plan) {
   requireStringArray(plan.paths, 'paths');
   requireStringArray(plan.unknownPaths, 'unknownPaths');
 
-  const { gates, unit, mcp, e2e } = plan.lanes;
+  const { gates, unit, perf, mcp, e2e } = plan.lanes;
   const reused = plan.reusedFrom;
   if (reused && (!Number.isSafeInteger(reused.pullRequest) || reused.pullRequest < 1 ||
       !['commit', 'tree', 'reviewedHead'].every((key) => /^[a-f0-9]{40}$/.test(reused[key] ?? '')))) {
@@ -552,6 +589,8 @@ export function validatePlan(plan) {
     reject('focused contract mode has no files');
   }
 
+  if (!perf || !['skip', 'affected', 'full'].includes(perf.mode)) reject('perf verdict');
+
   if (!mcp || !['skip', 'focused', 'full'].includes(mcp.mode)) reject('MCP verdict');
   requireStringArray(mcp.commands, 'mcp.commands');
   if ((mcp.mode === 'skip') !== (mcp.commands.length === 0)) reject('MCP mode/command mismatch');
@@ -580,7 +619,7 @@ export function validatePlan(plan) {
   }
 
   if (reused && (plan.full || gates.run || gates.commands.length || unit.mode !== 'skip' ||
-      mcp.mode !== 'skip' || e2e.mode !== 'skip' || e2e.staticExport || e2e.webSurface)) {
+      perf.mode !== 'skip' || mcp.mode !== 'skip' || e2e.mode !== 'skip' || e2e.staticExport || e2e.webSurface)) {
     reject('reviewed tree reuse contains unverified lane work');
   }
 
@@ -588,6 +627,7 @@ export function validatePlan(plan) {
     plan.full &&
     (gates.commands.length === 0 ||
       unit.mode !== 'full' ||
+      perf.mode !== 'full' ||
       mcp.mode !== 'full' ||
       e2e.mode !== 'full' ||
       !e2e.staticExport ||
@@ -607,9 +647,9 @@ export function decodePlan(encoded) {
 
 function emit(plan) {
   validatePlan(plan);
-  const { gates, unit, mcp, e2e } = plan.lanes;
+  const { gates, unit, perf, mcp, e2e } = plan.lanes;
   const summary =
-    `gates=${gates.run} unit=${unit.mode} mcp=${mcp.mode} ` +
+    `gates=${gates.run} unit=${unit.mode} perf=${perf.mode} mcp=${mcp.mode} ` +
     `playwright=${e2e.mode} static=${e2e.staticExport} web=${e2e.webSurface}`;
   console.log(`[ci-impact] ${summary} — ${plan.reason}`);
   if (e2e.unmappedPaths.length > 0) {
@@ -624,6 +664,7 @@ function emit(plan) {
     unit: unit.mode,
     unit_needs_mcp: unit.needsMcp,
     unit_sharded: unitUsesAllShards(unit),
+    perf: perf.mode,
     mcp: mcp.mode,
     playwright: e2e.mode,
     static: e2e.staticExport,
