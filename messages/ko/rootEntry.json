@@ -1,0 +1,13 @@
+{
+  "openingLocalVaultPicker": "로컬 폴더 선택 화면으로 이동 중",
+  "redirectEyebrow": "로컬 우선 작업공간",
+  "redirectTitle": "로컬 작업공간을 준비해요",
+  "redirectBody": "설치 앱은 공개 웹 소개가 아니라 내 디스크의 폴더 설정 화면에서 시작해요.",
+  "redirectFilesProof": "마크다운 파일은 로컬에 유지",
+  "redirectGraphProof": "파일 맨 위 정보칸이 곧 지도",
+  "redirectAgentProof": "에이전트가 이 폴더 밖을 건드리기 전에 먼저 물어봐요",
+  "lostVaultMissing": "전에 연결했던 폴더 「{name}」, 찾지 못했어요. 이동했거나 지워진 것 같아요. 다시 선택하면 이어서 쓸 수 있어요.",
+  "lostVaultUnreadable": "전에 연결했던 폴더를 다시 열지 못했어요. 폴더를 다시 고르거나, 샘플로 계속 둘러봐도 돼요.",
+  "lostVaultAction": "폴더 다시 고르기",
+  "lostVaultDismiss": "알림 닫기"
+}

@@ -1,0 +1,9 @@
+{
+  "project": "프로젝트",
+  "domain": "도메인",
+  "capability": "역량",
+  "element": "요소",
+  "document": "문서",
+  "vault-readme": "저장소 안내",
+  "unknown": "기타"
+}

@@ -1,0 +1,10 @@
+{
+  "contains": "Contains",
+  "belongs_to": "Belongs to",
+  "depends_on": "Depends on",
+  "implements": "Implements",
+  "uses": "Uses",
+  "describes": "Describes",
+  "related_to": "Related to",
+  "is_a": "Is a kind of"
+}

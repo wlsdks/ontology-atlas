@@ -1,0 +1,10 @@
+{
+  "title": "MCP",
+  "lede": "The agent connection (MCP) is the wire a coding agent uses to read and write this folder. Outside services attach here too.",
+  "tablistAriaLabel": "MCP sections",
+  "shareHeading": "Share this folder",
+  "connectorsHeading": "Connectors",
+  "connectorsHeadingCount": "Connectors · {on} of {total} on",
+  "connectorsNeedFolder": "Connectors are written inside the folder. Open one above and they appear here.",
+  "connectorsCountTitle": "Connectors switched on"
+}

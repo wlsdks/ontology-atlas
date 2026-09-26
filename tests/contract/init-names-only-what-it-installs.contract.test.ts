@@ -1,11 +1,27 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { globSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ROOT = process.cwd();
 const read = (relativePath: string) => readFileSync(join(ROOT, relativePath), "utf8");
 
-const CLI_SOURCE = "cli/src/index.mjs";
+/**
+ * Every file whose text reaches a user of the installed CLI: the sources that
+ * print (tests excluded) and the README. Reading `cli/src/index.mjs` alone let
+ * `bootstrap`, `analyze` and `index` keep sending users to `ontology-bootstrap`
+ * (found 2026-09-26).
+ */
+const CLI_SURFACE = [
+  ...globSync("cli/src/**/*.mjs", { cwd: ROOT }).filter((path) => !path.endsWith(".test.mjs")),
+  "cli/README.md",
+];
+
+/** Tokens shaped like a skill name that are not skills: flags, values, modules, screens. */
+const NOT_SKILLS = new Set(["ontology-focus", "ontology-map", "ontology-compiler", "ontology-editing"]);
+
+/** Comments are for contributors, who have this repository's own skills. */
+const withoutComments = (text: string) =>
+  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/[^\n]*/g, "$1");
 const TEMPLATE_SKILLS = "cli/templates/vault/.claude/skills";
 const TEMPLATE_README = "cli/templates/vault/README.md";
 
@@ -38,22 +54,25 @@ describe("init describes only what it installed", () => {
   });
 
   it("the CLI never sends a new user to a skill init does not install", () => {
-    const cli = read(CLI_SOURCE);
-    // Every `/name` or bare `name` that looks like one of this project's skills.
-    const named = new Set(
-      [...cli.matchAll(/\b(?:\/)?((?:atlas|ontology)-[a-z-]+)\b/g)]
-        .map((match) => match[1])
-        // Not skills. `ontology-atlas` and anything built on it is the command,
-        // package, MCP server, or config key; `atlas-web` is the architecture
-        // profile. Skills are the `atlas-*` set plus the `/ontology-<verb>` ones.
-        .filter((name) => !name.startsWith("ontology-atlas") && name !== "atlas-web"),
-    );
+    expect(CLI_SURFACE.length, "no CLI sources found, so this gate has no subject").toBeGreaterThan(10);
+    for (const path of CLI_SURFACE) {
+      const text = path.endsWith(".md") ? read(path) : withoutComments(read(path));
+      // Every `/name` or bare `name` that looks like one of this project's skills.
+      const named = new Set(
+        [...text.matchAll(/(?<!-)\b(?:\/)?((?:atlas|ontology)-[a-z-]+)\b/g)]
+          .map((match) => match[1])
+          // Not skills. `ontology-atlas` and anything built on it is the command,
+          // package, MCP server, or config key; `atlas-web` is the architecture
+          // profile. Skills are the `atlas-*` set plus the `/ontology-<verb>` ones.
+          .filter((name) => !name.startsWith("ontology-atlas") && name !== "atlas-web" && !NOT_SKILLS.has(name)),
+      );
 
-    for (const name of named) {
-      expect(
-        installedSkills,
-        `cli/src/index.mjs names "${name}" to a user whose init installed only [${installedSkills.join(", ")}]. Name an installed skill, or install this one.`,
-      ).toContain(name);
+      for (const name of named) {
+        expect(
+          installedSkills,
+          `${path} names "${name}" to a user whose init installed only [${installedSkills.join(", ")}]. Name an installed skill, or install this one.`,
+        ).toContain(name);
+      }
     }
   });
 

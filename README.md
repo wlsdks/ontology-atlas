@@ -186,9 +186,10 @@ Not a roadmap. This summarizes behavior documented in the
 
 Each worktree adds its own decision/change/pilot fragments with `pnpm record:new`
 and `pnpm po:record`. `pnpm test:records` checks composition and writer contracts.
-Docs Vault JSON and public copies are ignored build products, materialized by
-installation and checkout/merge hooks; use `pnpm docs-vault:build` after an
-installation with scripts disabled.
+Docs Vault JSON, public copies and the composed `messages/<locale>.json` are
+ignored build products, materialized by installation and checkout/merge hooks;
+use `pnpm docs-vault:build` and `pnpm messages:build` after an installation
+with scripts disabled. Copy is edited in `messages/<locale>/<Namespace>.json`.
 
 **Working today**
 
@@ -729,6 +730,7 @@ be resolved together land through `/land-bundle` as one integration branch.
 | `pnpm docs:meta` · `pnpm doc:history -- <path>` | Whether every living document carries its kind, status and area with pointers that resolve; one document's commits across moves, which is its version |
 | `pnpm docs:move` | Moves the documents listed in `docs/.moved.json` and rewrites every reference; rerun it after merging main into an older branch (`-- --check` only reports) |
 | `pnpm knip` | Dead files, exports and types across every scope |
+| `pnpm messages:build` · `pnpm messages:check` · `pnpm messages:adopt` | Compose the ignored `messages/<locale>.json` from one file per namespace (`messages/<locale>/<Namespace>.json`), prove it current, and carry a pre-split branch's catalogue edits onto the parts while merging main |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision record to cite or overturn, and whether this change owes one |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request for the landing train (or merge it on the fast path), and show the queue and the train in flight |
 | `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run what a landing would do without writing to GitHub, and run trains until the queue is empty |

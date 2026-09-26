@@ -141,14 +141,9 @@ alone. Keep meaning acceptance separate from code, merge, and deployment checks.
 - `solo`: one accountable owner proceeds; unknown evidence means probe first.
 - `review`: invoke `/po-council` with only the returned pair.
 
-If the owner explicitly adds reviewers to a two-way decision, record
-`owner-review` in the pilot so the council-avoidance metric sees the cost.
-
-Routine solo work does not create a decision fragment. Every eligible
-non-mechanical decision creates a UUID run fragment, including its initial pending
-outcome, through `pnpm po:record -- --type=run --input=/tmp/po-run.json`. Later
-evidence uses an update fragment that references that run UUID. Run
-`pnpm po:pilot` to see whether the gate is earning its cost.
+Routine solo work does not create a decision fragment; a significant decision
+creates one with `pnpm record:new -- --kind=decision`. The pilot closed on
+2026-09-26 (routing kept, per-run records retired), so no run fragment is owed.
 
 A green router is not proof of a good product decision. The recovery proof and
 later observed result are.

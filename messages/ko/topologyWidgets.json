@@ -1,0 +1,16 @@
+{
+  "controls": {
+    "fitViewTooltip": "지도 전체 맞추기"
+  },
+  "hubRail": {
+    "label": "허브",
+    "expandTooltip": "허브 바 펼치기",
+    "expandAriaLabel": "허브 바 펼치기",
+    "collapseTooltip": "허브 바 접기",
+    "collapseAriaLabel": "허브 바 접기",
+    "itemTitle": "{name} · 연결 {degree}"
+  },
+  "keyboardWalk": {
+    "deadEnd": "이 방향엔 이어진 노드가 없어요"
+  }
+}

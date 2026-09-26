@@ -1,0 +1,13 @@
+{
+  "openingLocalVaultPicker": "Opening the local workspace setup",
+  "redirectEyebrow": "Local-first workspace",
+  "redirectTitle": "Preparing your local workbench",
+  "redirectBody": "The desktop app starts at local store setup before it shows any hosted introduction.",
+  "redirectFilesProof": "Markdown files stay local",
+  "redirectGraphProof": "The info block at the top becomes the map",
+  "redirectAgentProof": "An agent asks first before touching anything outside this folder",
+  "lostVaultMissing": "We could not find \"{name}\", the folder you connected before. It looks like it was moved or deleted. Pick it again and you can carry on where you left off.",
+  "lostVaultUnreadable": "The folder you connected before could not be reopened. Pick it again, or keep looking around with the sample.",
+  "lostVaultAction": "Pick the folder again",
+  "lostVaultDismiss": "Close this notice"
+}

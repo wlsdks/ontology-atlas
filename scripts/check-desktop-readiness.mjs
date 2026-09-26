@@ -228,10 +228,10 @@ if (/trailingSlash\s*:\s*true/.test(nextConfig)) {
   fail("next.config.ts must keep trailingSlash: true for static out/ routes");
 }
 
-if (pkg.scripts?.build === "pnpm docs-vault:build && next build") {
-  pass("build script refreshes docs-vault before next build");
+if (pkg.scripts?.build === "pnpm docs-vault:build && pnpm messages:build && next build") {
+  pass("build script refreshes docs-vault and composes message catalogues before next build");
 } else {
-  fail("package.json build script must refresh docs-vault before next build");
+  fail("package.json build script must refresh docs-vault and compose message catalogues before next build");
 }
 
 if (tsConfig?.exclude?.includes("src-tauri/target")) {

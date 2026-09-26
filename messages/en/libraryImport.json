@@ -1,0 +1,54 @@
+{
+  "title": "Bring documents from a service",
+  "pickBody": "Pick where your documents already live. Atlas connects it once, then your coding agent fetches them and writes each one into this folder as an ordinary Markdown file you can read and edit.",
+  "absentNote": "Google Drive is not here yet. Google offers no connection that works with a sign-in alone, so today the quickest way is to download from Drive and use Add files.",
+  "close": "Close",
+  "back": "Back",
+  "stepOf": "Step {step} of {total}",
+  "service": {
+    "notion": {
+      "title": "Notion",
+      "body": "Pages and databases from your Notion account.",
+      "example": "the API design pages"
+    },
+    "confluence": {
+      "title": "Confluence",
+      "body": "Pages from a Confluence space.",
+      "example": "everything in the Handbook space"
+    },
+    "jira": {
+      "title": "Jira",
+      "body": "Issues and their descriptions from Jira.",
+      "example": "open issues on the platform board"
+    },
+    "github": {
+      "title": "GitHub",
+      "body": "Issues, pull requests and wiki pages from a repository.",
+      "example": "the design discussions in this repo"
+    },
+    "other": {
+      "title": "Another service",
+      "body": "Set one up by hand in the MCP section of Agents (the agent connection), where the connection details live.",
+      "example": ""
+    }
+  },
+  "connectBrowser": "Connect {service}. A sign-in window opens; press Allow there, and choose what {service} may share.",
+  "connectBrowserWho": "Your coding agent opens that window and keeps what comes back. Atlas never sees it, and removing this connection later does not take the access away.",
+  "connectToken": "Connect {service}. Paste the value it issues you, once.",
+  "connectTokenWho": "The value goes into this computer’s keychain and never into a file in your folder. Your coding agent, not Atlas, uses it to reach the service.",
+  "connectAction": "Connect",
+  "connectFailed": "Nothing was saved. Open a folder first, and check that this folder’s connector file can be read.",
+  "tokenLabel": "Value",
+  "tokenWhere": "Where to get this",
+  "connected": "{service} is connected.",
+  "whatLabel": "What should it bring?",
+  "whatNext": "A conversation opens next. It searches, shows you at most {limit} documents, and waits for you to pick; each one you pick is written under {folder} and asks your permission first. Nothing outside that folder is touched.",
+  "bringAction": "Start bringing them in",
+  "whatRuntime": "This works in a Claude conversation. Codex has not been measured for it yet, so a Codex conversation reaches this folder and nothing else.",
+  "revokeWhere": "Where to take it back in {service}",
+  "noAgentTitle": "The fetching needs a coding tool this app can start",
+  "noAgentGetApp": "Get the app",
+  "noAgentBodyWeb": "A browser cannot start one. The connection is saved and switched on, so any coding tool you point at this folder can already use it; come back to this screen in the app to have the documents fetched and written here for you.",
+  "noAgentBodyRuntime": "None is ready on this computer yet. The connection is saved and switched on, so any coding tool you point at this folder can already use it; set one up and come back to finish here.",
+  "noAgentSeeRuntimes": "See your coding tools"
+}

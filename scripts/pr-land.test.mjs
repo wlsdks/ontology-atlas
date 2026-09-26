@@ -691,6 +691,21 @@ describe('the conductor runs trains', () => {
     assert.equal(world.locks.has(LOCK_REF), false, 'the lock is released when the queue drains');
   });
 
+  it('merges a green train only while holding the fast-path lock, then releases it', () => {
+    const world = fakeWorld({ prs: [component(21)], queued: [21] });
+    const merge = world.deps.gh.mergePr;
+    const heldAtMerge = [];
+    world.deps.gh.mergePr = (...args) => {
+      heldAtMerge.push(world.locks.has(FAST_LOCK_REF));
+      return merge(...args);
+    };
+    const result = runConductor(world);
+
+    assert.deepEqual(result.landed, [21]);
+    assert.deepEqual(heldAtMerge, [true], 'no fast-path merge can land between the drift check and this merge');
+    assert.equal(world.locks.has(FAST_LOCK_REF), false);
+  });
+
   it('bisects a red train and ejects only the breaker', () => {
     const breaker = 3;
     const world = fakeWorld({

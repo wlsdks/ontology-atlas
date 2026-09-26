@@ -1,0 +1,15 @@
+{
+  "prefix": "Last edited",
+  "subjectAgent": "AI agent",
+  "subjectHuman": "me",
+  "conflictMessage": "This document changed elsewhere: check before you overwrite",
+  "age": {
+    "justNow": "just now",
+    "minutesAgo": "{count}m ago",
+    "hoursAgo": "{count}h ago",
+    "yesterday": "yesterday",
+    "daysAgo": "{count}d ago",
+    "weeksAgo": "{count}w ago",
+    "monthsAgo": "{count}mo ago"
+  }
+}

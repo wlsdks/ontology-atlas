@@ -10,8 +10,8 @@ function help() {
 
 Supply every observable design change. Atlas derives directions, council seats,
 and the smallest proof set. Every rendered class includes the iterative Computer
-Use baseline/checkpoint/final loop; motion additionally includes real screen
-recording. Repeat --change or pass a comma-separated list.
+Use baseline/checkpoint/final loop, except copy, which needs one final capture;
+motion additionally includes real screen recording. Repeat --change or pass a comma-separated list.
 
 Changes:
   ${Object.keys(DESIGN_CHANGE_SIGNALS).join('\n  ')}

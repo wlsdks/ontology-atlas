@@ -5,7 +5,7 @@ description: Review an Atlas product decision when po:route returns review or th
 
 # Atlas PO review — two critics, one accountable owner
 
-The active pilot does not summon a standing committee. `pnpm po:route` derives
+Review does not summon a standing committee. `pnpm po:route` derives
 the primary risk from change facts and all four boundary assessments, then selects Evidence plus
 exactly one specialist. The human owner decides.
 
@@ -120,12 +120,10 @@ one; neither the caller role nor a reviewer verdict grants new authority.
 - Choose one proposal or something smaller, never a union.
 - The human owner remains able to accept, overturn, and sign.
 - Record the difference from the pre-review decision. `unchanged` is valid and
-  reviewers must not manufacture a delta for the pilot.
+  reviewers must not manufacture a delta.
 - Record the strongest losing argument, falsifier, revisit condition, review
   footprint, independence limits, and unique contributor.
-- Create significant decisions with `pnpm record:new -- --kind=decision ...`;
-  create the typed UUID run and its initial pending outcome with
-  `pnpm po:record -- --type=run --input=/tmp/po-run.json`.
+- Create significant decisions with `pnpm record:new -- --kind=decision ...`.
 
 ## Owner-facing output
 
@@ -169,4 +167,3 @@ later results go in UUID-referencing update fragments, not in the decision recor
 - Rebuttal occurs only for material disagreement.
 - The result is not a vote or union.
 - Before-state, recovery proof, and decision delta remain visible.
-- `pnpm po:pilot -- --check` forces an evidence-backed sunset.

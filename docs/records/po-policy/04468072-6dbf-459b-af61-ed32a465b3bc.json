@@ -1,0 +1,9 @@
+{
+  "outcome": "adjust",
+  "authority": "owner, 2026-09-26: proceed with every remaining item",
+  "evidence": "102 eligible runs: boundary misses 0, review delta 97%, reversible work kept out of council 100%; proof resolved 68% and owner-clear 51%, so the 2026-09-03 falsifier (proof resolution under 80% after ten more decisions) fired",
+  "change": "keep risk routing (po:route, /po-pass, /po-council, decision fragments for significant decisions); stop requiring a run fragment and follow-up updates for every eligible decision, which were the unresolved half",
+  "schema": "po-pilot-policy/v1",
+  "id": "04468072-6dbf-459b-af61-ed32a465b3bc",
+  "recordedAt": "2026-09-26T08:19:26.718Z"
+}

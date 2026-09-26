@@ -1,0 +1,26 @@
+{
+  "siteName": "Ontology Atlas",
+  "siteTagline": "Shared codebase meaning for people and AI agents",
+  "pages": {
+    "topology": "Map",
+    "docs": "Ontology · Library",
+    "download": "Download",
+    "projects": "Projects",
+    "ontology": "Ontology",
+    "ontologyInsights": "Insights",
+    "projectNew": "New project",
+    "guide": "Guide",
+    "changelog": "Changelog",
+    "agents": "Agents"
+  },
+  "descriptions": {
+    "home": "Keep understanding your system as AI agents change its code. Share task context, inspect recorded meaning and evidence, and decide what to keep in a local Markdown vault.",
+    "download": "Download Ontology Atlas to share codebase context with agents and inspect recorded meaning, evidence, and unknowns. Signed macOS app; unsigned Windows beta; no Atlas backend.",
+    "topology": "See your project's domains, capabilities, elements and their dependencies as one map. The info block at the top of each file is the map, and the files stay on your own disk.",
+    "docs": "Read and edit the markdown folder directly. Change the info block at the top of a file and the map follows.",
+    "projects": "Every project and hub on this map, with the domains and capabilities each one is made of.",
+    "ontologyInsights": "Node census by kind, the hubs with the most connections, and the nodes still attached to nothing. Where to look before you grow the map.",
+    "guide": "Start with a Markdown vault, connect your coding agent, and learn how to inspect recorded meaning, evidence, and unknowns in Ontology Atlas.",
+    "changelog": "Ontology Atlas changelog: user-visible changes, newest first."
+  }
+}

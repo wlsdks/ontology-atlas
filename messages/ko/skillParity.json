@@ -1,0 +1,10 @@
+{
+  "header": "스킬 사본",
+  "copyHandoff": "에이전트에게 넘길 문장 복사",
+  "copied": "복사했어요. 에이전트에게 붙여넣으세요.",
+  "copyFailed": "복사하지 못했어요.",
+  "chip": "읽기 전용",
+  "valueDisagreeing": "스킬 {total}개 · {count}개 어긋남",
+  "valueAgreed": "스킬 {total}개 · 모두 일치",
+  "body": ".claude/skills와 .agents/skills 사본을 파일 단위로 비교해요. 아무것도 고쳐 쓰지 않아요."
+}

@@ -1,0 +1,11 @@
+{
+  "title": "내 폴더를 지도로 켜기",
+  "subtitle": "OS 폴더 선택창이 뜨기 전에, 딱 {count}가지만 알아두세요.",
+  "bulletAnyFolder": "아무 마크다운 폴더나 괜찮아요. 특별한 형식이 없어도 돼요.",
+  "bulletLocal": "Atlas는 이 폴더를 로컬에서 열며 Atlas 백엔드로 업로드하지 않아요. 나중에 연결한 코딩 에이전트는 질문과 문맥을 자기 제공자에게 보낼 수 있어요.",
+  "bulletStarter": "빈 폴더를 고르면 시작 문서를 자동으로 만들어 드려요.",
+  "bulletPermission": "폴더를 고르면 브라우저가 「허용」을 물어요. 이것은 이 화면에 로컬 파일 접근을 주는 것이며 AI 제공자 연결과는 별개예요.",
+  "actionPickExisting": "기존 폴더 선택",
+  "actionCreateNew": "빈 폴더로 새로 시작",
+  "actionCancel": "다음에"
+}

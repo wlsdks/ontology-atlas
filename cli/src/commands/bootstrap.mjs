@@ -155,7 +155,7 @@ async function printApprovalRequiredPlan({
       reason: 'construction-qualification-required',
       qualification: 'constructionQualification:v1',
       recovery:
-        'Use the MCP ontology-bootstrap review → independent qualification → human acceptance flow. No semantic node was written.',
+        'Continue in an agent connected to the Atlas MCP server, whose instructions carry the review → independent qualification → human acceptance flow. No semantic node was written.',
     },
     plan: {
       concepts: concepts.length,
@@ -179,7 +179,7 @@ async function printApprovalRequiredPlan({
     imports: importsResult,
     next: {
       review:
-        'Connect an agent with ontology-bootstrap, inspect the exact reviewPlan, obtain an independent constructionQualification:v1 packet and human acceptance, then write only the returned writePlan.',
+        'In an agent connected to the Atlas MCP server, inspect the exact reviewPlan, obtain an independent constructionQualification:v1 packet and human acceptance, then write only the returned writePlan.',
       writes: 0,
     },
   };

@@ -1,0 +1,117 @@
+{
+  "progressLabel": "{current}/{total}",
+  "prevLabel": "Back",
+  "nextLabel": "Next",
+  "skipLabel": "Skip",
+  "finishLabel": "Finish",
+  "waitingForClickLabel": "Or open that dot from here",
+  "clickSuccessLabel": "Nice: you just opened that dot’s card",
+  "finishTourAction": "Done: back to the map",
+  "devBranchAction": "I'm a developer",
+  "steps": {
+    "welcome": {
+      "title": "This map comes from documents",
+      "body": "Every dot here is either one real markdown file, or something one of those files names. The whole map is a single picture of what our product is made of and how the pieces connect. A picture like this is called an ontology: the name sounds academic, but that one sentence is all it means. Takes about 2 minutes."
+    },
+    "nodes": {
+      "title": "Size and shape of the dots",
+      "body": "The biggest dot is the whole product, the next size down is an area, and the small dots are individual features and parts. A dot's shape tells you what it is."
+    },
+    "relations": {
+      "title": "Lines are relationships",
+      "body": "A solid line means \"contained in\", a dashed line means \"depends on\". Press ? to see it again under Keyboard shortcuts."
+    },
+    "tryClick": {
+      "title": "Try clicking one",
+      "body": "One dot keeps a ring around it and stays lit while the rest of the map dims. Click that one and its story (what it is and what it connects to) opens in a card."
+    },
+    "datasheet": {
+      "title": "The card is the front of the document",
+      "body": "Everything in this card comes straight from that markdown file. Edit here and the file changes; edit the file and this changes."
+    },
+    "index": {
+      "title": "INDEX: the map's table of contents",
+      "body": "If the map is a picture, INDEX is a list. It's the fastest way to find something by name."
+    },
+    "recent": {
+      "title": "What changed recently",
+      "body": "Flip this switch and only the recently changed stuff stays bright. Good place to start when you're coming back after a while."
+    },
+    "agent": {
+      "title": "Growing it together with an AI agent",
+      "body": "Coding agents like Claude Code can read and write this map. One command in the INDEX starter card builds this map from your own codebase."
+    },
+    "docsWhat": {
+      "title": "Open a dot and you land here",
+      "body": "A dot on the map is one piece of writing here. This is where you read it, edit it, and write new ones. What you change here is saved straight into the files on your computer."
+    },
+    "docsList": {
+      "title": "Your folder, listed on the left",
+      "body": "Everything in the folder shows up here. Click to open, and keep several open as tabs. Pick your own folder up top and your own writing shows up instead."
+    },
+    "insightsWhat": {
+      "title": "Where you check the whole thing",
+      "body": "As the pile grows, some pieces end up connected to nothing and some go untouched for months. This finds all of that in one place. Start here when you don't know what to tidy up first."
+    },
+    "insightsHeadline": {
+      "title": "The top line is today's count",
+      "body": "It says how many things there are to learn and how many could not be checked, and the cards below name each one."
+    },
+    "projectsWhat": {
+      "title": "Grouped by product",
+      "body": "Documents that name a product stand as cards here. The bars show how that product splits into areas, and how each area balances claims (capabilities) against evidence (elements)."
+    },
+    "projectsCard": {
+      "title": "One card, one product",
+      "body": "Each bar shows how that area splits between claims (capabilities) and evidence (elements). Size is on the right, as a number. Open the card for detail, or jump straight to that spot on the map."
+    },
+    "architectureWhat": {
+      "title": "How this codebase is allowed to fit together",
+      "body": "The Map explains what the codebase builds. Architecture records implementation roles, allowed dependency directions, and the exact packet a coding agent must read before editing."
+    },
+    "architectureBlueprint": {
+      "title": "Compare the blueprint with what source did",
+      "body": "Choose a role to keep its reviewed contract, observed imports, and difference together. Evidence and role details open beside the same canvas."
+    },
+    "gitWhat": {
+      "title": "A record of what changed, and when",
+      "body": "Every edit you make piles up here. You can also save the whole current state so you can look back later, or go back to it. Only the writing in this folder is touched."
+    },
+    "gitChanges": {
+      "title": "Start with what changed",
+      "body": "Everything you edited is listed here. Look it over, then save it and that moment is on the record. In a browser you can look; install the app and you can save from here too."
+    },
+    "agentsWhat": {
+      "title": "Connect your AI coding tools here",
+      "body": "Atlas finds the coding tools on this computer, and only a tool confirmed to ask before writing opens the in-app chat. The rest can still be set up for the agent connection (MCP), and supported installs use an app-only folder."
+    },
+    "agentsCheck": {
+      "title": "If nothing connects, measure it here",
+      "body": "“Check again” re-scans this computer. Each tool also has its own connection check that measures where things are stuck, step by step, and repairs what it can."
+    },
+    "mcpWhat": {
+      "title": "Everything MCP lives here",
+      "body": "MCP is the wire a coding agent uses. One end reaches this folder, the other reaches the services you attach. It attaches to the folder rather than to a screen, so what you set up here holds wherever Atlas is open."
+    },
+    "mcpTabs": {
+      "title": "Two tabs, two jobs",
+      "body": "“Agents” is the coding tools on this computer. “MCP” is the config that hands them this folder, and the outside servers that agent may also reach. The number beside it counts the connectors switched on."
+    },
+    "libraryWhat": {
+      "title": "Library",
+      "body": "Project documents of any format live here, kept exactly as they arrived, together with the wiki pages written from them. The ontology's own Markdown is one tile up."
+    },
+    "librarySources": {
+      "title": "Sources come first",
+      "body": "Add files, or let Atlas propose what is already in the folders you granted. Each row says whether anybody has written that file up yet."
+    },
+    "automationsWhat": {
+      "title": "Keep repeated work in one place",
+      "body": "Automations holds the schedules. Ontology reviews and document analysis stay separate, while the map and Library remain the places where you inspect and correct their work."
+    },
+    "automationsTabs": {
+      "title": "Two lanes, two boundaries",
+      "body": "Ontology reviews read evidence and leave a review packet. Documents use the Library's existing rounds and writing scope. A schedule never approves ontology meaning."
+    }
+  }
+}

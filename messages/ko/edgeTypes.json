@@ -1,0 +1,10 @@
+{
+  "contains": "포함",
+  "belongs_to": "소속",
+  "depends_on": "의존",
+  "implements": "구현",
+  "uses": "사용",
+  "describes": "설명",
+  "related_to": "연관",
+  "is_a": "상위 개념"
+}

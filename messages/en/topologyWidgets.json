@@ -1,0 +1,16 @@
+{
+  "controls": {
+    "fitViewTooltip": "Fit map to view"
+  },
+  "hubRail": {
+    "label": "Hubs",
+    "expandTooltip": "Expand hub bar",
+    "expandAriaLabel": "Expand hub bar",
+    "collapseTooltip": "Collapse hub bar",
+    "collapseAriaLabel": "Collapse hub bar",
+    "itemTitle": "{name} · {degree} connections"
+  },
+  "keyboardWalk": {
+    "deadEnd": "No connected node this way"
+  }
+}
