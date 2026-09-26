@@ -85,16 +85,9 @@ the current task heads, and append those observations as new UUID records.
 Do not resolve a migration conflict by restoring the whole old central ledger
 or rewriting the historical snapshot.
 
-## CI while another task is landing
+## Landing backlog records
 
-`pnpm pr:land NUMBER --parallel-ci` may start this draft's CI while another PR
-holds the landing lock, only when complete file inventories show that both PRs
-solely add UUID backlog records for different task names. Modified records,
-source/configuration changes, matching task names, incomplete API results, or
-unrecognized paths keep the ordinary queue. The option is off by default.
-
-This gives earlier feedback, not a guarantee of fewer CI runs. The final merge
-still takes the lock, integrates newer main, and waits for checks on the actual
-head. New main content can require another CI run. General file disjointness
-cannot prove source dependency independence; this option does not extend to
-runtime changes or reuse checks from another commit.
+A pull request that only adds backlog records lands like any other: `pnpm pr:land
+NUMBER` queues it for the next train. When its checks are already green (`pnpm
+pr:ci NUMBER`) and its files do not overlap anything main changed since its base,
+the fast path merges it at once without waiting for the train.

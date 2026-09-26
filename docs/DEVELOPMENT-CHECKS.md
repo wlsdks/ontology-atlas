@@ -196,13 +196,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: `tests/contract/cli-output-language.contract.test.ts` to isolate the CLI printed-string language failure
 **Fix**: translate the flagged printed string to English; `cli/src/lib/absorb.mjs` stays the sole allowlisted matcher exception.
 
-### Optional parallel backlog CI
-
-**Run**: `pnpm test:pr:land`
-**Proves**: only complete, added UUID backlog records for disjoint task names may trigger opted-in early CI; final landing keeps its lock and current-head checks.
-**Escalate**: `pnpm pr:queue` to identify the holder; read the candidate and holder file inventories if early CI stays queued
-**Fix**: restore conservative scope or missing evidence; never promote ordinary source changes using path disjointness alone.
-
 ### Backlog records
 
 **Run**: `pnpm test:backlog && pnpm backlog:check`
