@@ -26,7 +26,7 @@ import {
  * ⚠️ **One value for every stroke, named once.** Measured at 1512 on the installed app,
  * translucent indigo at a hairline remained below the 3:1 adjacent-mark threshold on the solid
  * canvas. The brand step clears it, while selection keeps the brighter accent. A legend row must
- * name a mark that is on the screen (`docs/AGENT-DESIGN-METHOD.md`), so both sides read this.
+ * name a mark that is on the screen, so both sides read this.
  */
 export const EDGE_STROKE = 'var(--color-indigo-brand)';
 /**

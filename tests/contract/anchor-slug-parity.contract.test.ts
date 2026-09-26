@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 import { describe, expect, it } from "vitest";
@@ -30,7 +30,9 @@ const GITHUB_RENDERED_IDS: ReadonlyArray<readonly [string, string]> = [
 function docHeadings(): string[] {
   const files = execFileSync("git", ["ls-files", "docs/*.md", "docs/**/*.md"], { encoding: "utf8" })
     .split("\n")
-    .filter((file) => file && !file.startsWith("public/"));
+    .filter((file) => file && !file.startsWith("public/"))
+    // The index still lists a file deleted in the worktree until the deletion is staged.
+    .filter((file) => existsSync(file));
   const headings: string[] = [];
   for (const file of files) {
     for (const line of stripFencedBlocks(readFileSync(file, "utf8")) as string[]) {

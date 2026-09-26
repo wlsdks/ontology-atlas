@@ -76,39 +76,13 @@ technical baseline.
 
 ## Pixel evidence contract
 
-Every route that changes rendered UI includes `computer-use-loop`. This is an
-implementation loop, not one final screenshot:
-
-1. before editing, open the exact state and capture its baseline with Orca
-   Computer Use;
-2. implement one coherent visual slice—one hierarchy, state, or interaction,
-   not a whole screen imagined at once;
-3. render that slice in the actual browser, WebView, or installed app;
-4. request a fresh Computer Use accessibility tree and screenshot and inspect
-   both;
-5. use browser DOM/computed-style/rect measurement when the pixels or tree expose
-   a geometry question;
-6. correct the observed defect before starting the next slice;
-7. repeat and retain a final capture of the completed state.
-
-The accessibility tree is not the DOM. Computer Use proves the actual window,
-pixels, visible labels, and actionable ownership; browser measurement localizes
-DOM geometry and computed styles. Neither replaces the other.
-
-Do not build a whole UI from imagination and inspect it only after the structure
-has ossified.
-
-For the baseline, each material checkpoint, and the final state record:
-
-- app and window identity, route, commit, viewport, and DPR;
-- the exact state and dataset;
-- screenshot path from the Computer Use result;
-- the accessibility element that owns the primary action or selected fact;
-- what was visually confirmed and any defect found.
-
-“Material checkpoint” means the smallest slice whose visual result can be judged
-on its own. It is not every CSS line, and it is never the entire new surface in
-one unobserved batch.
+Every route that changes rendered UI includes `computer-use-loop`. Build
+rendered UI in small slices and look at each slice in the real browser, WebView,
+or installed app, through a fresh Computer Use screenshot and accessibility
+tree, before starting the next; do not build a whole screen unobserved. Use DOM
+rect and computed-style measurement for geometry questions. Keep one final
+capture (app/window, route, viewport) for the pull request. `/design-build` owns
+the step-by-step loop.
 
 Do not claim pass when screenshot capture is unavailable, the target is hidden,
 or the image belongs to a different window. Report the capability blocker.

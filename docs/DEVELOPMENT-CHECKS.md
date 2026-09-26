@@ -19,111 +19,20 @@ Do not hand-pick from its list. Escalate to `pnpm test:run`, `pnpm lint`,
 contract, routing, configuration, release surface, or user workflow requires
 it; the entries below name that condition per area.
 
-## Local result reuse and CI ownership
+## Where CI internals live
 
-A main push reuses its reviewed PR only when the Git trees match exactly and
-GitHub reports every current required check's latest run as successful under
-GitHub Actions. The impact planner records the PR, head and tree as provenance.
-It still checks the calendar-sensitive PO pilot without installing dependencies.
-Direct pushes, API errors/timeouts, incomplete pagination, unknown paths,
-unresolved ruleset policy and changed trees retain normal CI. PR, merge-group,
-daily and manual verification never use this shortcut. The parallel read requests share
-one eight-second deadline; no success result is cached. Protection is read through
-GitHub's ordinary branch and effective-rules APIs, without administrative access.
-A reader change also probes the real Actions credential against the base tree;
-that diagnostic never narrows the PR's own verification.
-
-Pre-push owns quick path-scoped checks; full contract and Knip scans remain in
-impact-planned PR CI. `pr:land` also defers whole unit/contract suites and Knip
-to required PR CI, retaining direct tests, types and generated-file checks
-locally. Main uses the exact previous push tip. Missing, zero, or
-non-ancestor push bases run exhaustive checks. Checks and E2E also run in full
-daily at 19:17 UTC and through manual dispatch; planner and shared-root changes
-still promote to full verification.
-
-`checks:changed` and `pr:land` collapse later exact Node test-file commands
-already covered by an earlier default invocation, alongside the existing Vitest
-contract deduplication. Flags, lifecycle hooks and compound commands are retained.
-Failure of an earlier command stops execution before any covered command is omitted.
-
-Persistent success caching was measured and rejected: dependency fingerprinting
-cost 5.5 seconds each way, against a 13.6-second Knip run. Paying that cost on the
-first run did not amortize over the usual two runs. Cross-run tests always execute;
-no stale-success state or dependency-install assumption is introduced.
-
-Pre-push persists total and lane durations in `.tmp/harness/prepush.jsonl`.
-CI prints each command's duration and adds it to the job summary. Use those
-measurements and reproduced failure causes before deleting a contract test;
-source-reading tests are not automatically redundant.
-
-## Avoid repeated and unrelated work
-
-The full lint command owns the repository scan. Its contract probes the actual
-command with warning, error and valid stdin fixtures; it does not lint the tree
-again. Full architecture verification reuses Vitest, MCP and CLI library lanes,
-with `pnpm integration:cli:architecture` retaining the unique CLI transport case.
-Focused-only Node suites remain discoverable through the actual impact plan.
-
-Vitest source/parser contracts run in the `contract-node` project without browser
-setup. The two contracts that render React components stay in `jsdom` alongside
-app/src tests. The shared config forwards CLI exclusions into both projects
-because Vitest 4 does not inherit that flag automatically. Pre-push targets exact
-files for test-only changes even when package metadata also changed; production
-changes retain dependency-graph selection. A new contract defaults to Node; add a DOM exception in
-`vitest.config.ts` only when it actually renders. `pnpm test:contracts` and exact
-file, changed-file and shard invocations keep the same test inventory.
-
-Browser timing/allocator changes promote browser evidence, not unrelated MCP,
-type or full unit suites. Focused unit work starts only the shard with commands;
-missing distribution metadata conservatively starts all shards.
-
-`pnpm mcp:catalogue:check` compares generation with independently captured inputs
-in `scripts/data/mcp-registry-snapshot.json` without network access. Human refresh
-still fetches registry data. `pnpm mcp:catalogue:check-online` checks live freshness
-on scheduled/manual CI with bounded concurrent requests. Captured inputs and the
-app's catalogue remain tracked, including their provenance.
-
-`pnpm test:mcp:rpc` verifies the response-driven stdio harness. Integration calls
-close stdin after all expected responses and require a clean process exit;
-timeouts are failures and terminated children are reaped. No read/write,
-authorization, UID or modification-time assertion is removed.
-
-## Browser execution
-
-Browser jobs download one static export built in the same workflow run, named
-for the source SHA. An absent or failed build fails every active consumer. Local
-commands retain their build step.
-
-`scripts/run-playwright-ci.mjs` discovers the current Playwright inventory and
-assigns whole files longest-first using advisory measurements in
-`scripts/data/playwright-file-durations.json`. New files receive an estimated
-weight and remain included. File hooks and serial suites stay intact; independent hover audits explicitly
-use both workers inside their assigned file. The runner
-compares the actual report's file/test inventory with its assignment before
-accepting success. Dedicated web/static specs leave the broad shards only when
-the corresponding protected job owns them; otherwise they stay in the suite.
-On CI, a shard stops after its first test still fails following retries. The
-failed shard remains red; a green shard still runs and verifies its complete
-assigned inventory. Local runs continue through all failures for diagnosis.
-
-Assignments and JSON reports are uploaded as `playwright-timings-*` artifacts on
-successful and failed runs. The timing baseline cites its successful source
-runs; stale estimates can affect balance, never test selection. Re-measure from
-first-attempt results before refreshing weights. The PR smoke inventory remains
-unchanged; this optimization does not move behavioral coverage into nightly CI.
-The 2026-09-22 successful run had 734/1,185/1,194 test-seconds across its three
-shards; its refreshed weights assign that same inventory at about 1,038 seconds
-per shard. Actual wall time still depends on runner load and retries.
-
-Layout audits wait for fonts and finite paint transitions instead of fixed
-route delays. Real idle/physics measurement windows remain unchanged. Browser
-infrastructure and helper changes still receive exhaustive CI verification.
+How main reuses a reviewed PR's result, how pre-push and PR CI split the
+lanes, and how browser jobs are sharded belong to the code that does it: the
+headers of `scripts/classify-change.mjs`, `scripts/run-ci-lane.mjs`,
+`scripts/run-playwright-ci.mjs`, `scripts/pr-land.mjs`, and the workflow files
+under `.github/workflows/`.
 
 ## Lane budgets
 
-Every lane costs someone's afternoon, so every lane says what it costs. Measured
-2026-09-12 — locally on a 12-core Apple-silicon machine, in CI over the last 20
-runs.
+Every lane costs someone's afternoon, so every lane says what it costs. The
+**Measured** column is a 2026-09-12 snapshot (locally on a 12-core
+Apple-silicon machine, in CI over the last 20 runs) and goes stale; re-measure
+before relying on it.
 
 | Lane | Budget | Measured | What it guards |
 |---|---|---|---|
@@ -163,31 +72,8 @@ bound.
 To re-measure a CI job: `gh run list --limit 20` then
 `gh run view <id> --json jobs`.
 
-### The Windows install canary, and why a path filter cannot be one
-
-`Checks · Windows install canary` runs `pnpm install --frozen-lockfile` and the
-ledger readers on a native Windows checkout after every push to `main`, and on
-manual dispatch. It is the canary for one fact: **any change can break
-`pnpm install`**, so it carries **no path filter**.
-
-`Windows beta · verify` is path-filtered on purpose and deliberately excludes
-`package.json` and `pnpm-lock.yaml` (its own header carries the measurement:
-one unrelated line in `package.json` fired that 12-minute job five times). That
-filter is correct for a native bundle check and blind to install breakage.
-
-Measured on 2026-09-13. The records migration froze three ledgers and compared
-their raw bytes; a Windows checkout hands the same files back as CRLF, so
-`prepare` failed inside `pnpm install`. `Windows beta · verify` reported the
-failure on `main` and on the release pull request itself, but it produces no
-required status context, so `pnpm pr:land` merged on "every required context is
-green" and two release attempts were spent rediscovering it. Both halves are
-now closed: this canary speaks after every merge whatever changed, and
-`pnpm pr:land` refuses on any failing check rather than only the required ones,
-with `--allow-failing <context>` as the named escape.
-
-The canary stays **non-required**. With the lander reading every check, a red
-canary on `main` stops the next landing without spending Windows minutes on
-each pull request or each merge-group build.
+The Windows install canary carries no path filter because any change can break
+`pnpm install`; its header in `.github/workflows/checks.yml` records why.
 
 ## How to read an entry
 
@@ -244,7 +130,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm test:ci:impact`
 **Proves**: `scripts/classify-change.mjs` and `scripts/run-ci-lane.mjs` route every changed path to evidence or a full-boundary promotion, with no unexplained green skip; main uses the verified push-before range, while scheduled/manual runs are exhaustive.
-**Escalate**: Run the workflow contracts above, inspect all eight required statuses on a narrow PR, then confirm the main push comparison and an exhaustive manual run
+**Escalate**: `pnpm exec vitest run tests/contract/workflow-budgets.contract.test.ts tests/contract/workflow-security.contract.test.ts` when workflow wiring changes
 **Fix**: update `scripts/classify-change.mjs`'s path-to-check rules so the new or moved path is classified instead of falling through as unknown.
 
 ### Landing a pull request
@@ -253,6 +139,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: the landing sequence holds: one shared lock, main merged in, local lanes on the merged source, one CI run per pull request, and no required context read as green when its job was skipped.
 **Escalate**: `pnpm test:claude:hooks` when the landing guard changes, or `pnpm exec vitest run tests/contract/workflow-security.contract.test.ts` when a workflow trigger does
 **Fix**: repair `scripts/pr-land.mjs`, or the draft guard and `ready_for_review` trigger the contract names.
+
+### Landing several branches together
+
+**Run**: `node --test scripts/bundle-branches.test.mjs`
+**Proves**: two or more ready branches land through `/land-bundle` as one integration branch and one `pnpm pr:land`: `pnpm bundle:plan` reports which branches carry work, shared files and trial-merge conflicts without touching a worktree, and `pnpm bundle:prune` removes only component branches `main` provably contains.
+**Escalate**: `pnpm test:pr:land` when the bundle changes how `pnpm pr:land` is called, or none
+**Fix**: repair `scripts/bundle-branches.mjs`.
 
 ### GitHub Pages deploy
 
