@@ -109,7 +109,7 @@ One accurate word per thing. Canonical spellings live in
   `render/node-shapes.ts` and `shared/ui/map-kind-glyph.tsx` aligned
   (`node-kind-shape-parity` contract). Radii 30/17/11/7,
   `DOMAIN_HALF_EXTENT_RATIO`, and any bridge-node visual require reopening the
-  map research with `design-infoviz`.
+  map research through a `reviewer` with the `map-marks` lens.
 - Canvas paint composites `source-over`. `globalCompositeOperation = "lighter"`
   is licensed only where the mark is light: the gateway hero, the walked-path
   star (`shared/lib/star-emission.ts`) inside an opened lens, and Galaxy
