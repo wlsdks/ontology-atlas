@@ -1,0 +1,792 @@
+@layer base {
+  /*
+   * ontology-map (docs/design/ontology-map.md §2) — new token family
+   * extracted 1:1 from B2+ "Circuit × Constellation" prototype (docs/prototypes/topology-b2plus.html). Intentionally
+   * separated from existing 657 --topology-* tokens (prefix --map-) — consumed only behind feature flag `ontology-map`, and when removing the old engine in P6, grepping for `--map-` makes the scope of new/old replacement clear. Canvas 2D cannot read CSS variables directly,
+   * so `src/widgets/ontology-map/tokens/read-map-tokens.ts`
+   * parses them once via `getComputedStyle` and caches — this block is the single source of truth for values.
+   * Dark-only (2026-07-19 decision to fully retire light mode, .claude/rules/design.md).
+   */
+  :root {
+    /* 2.1 Node surface (fill/stroke tier by kind) */
+    --map-node-fill-project: #1c1c22;
+    --map-node-fill-domain: #191920;
+    --map-node-fill-capability: #17171d;
+    --map-node-fill-element: #15151a;
+    /*
+     * The **depth axis** of map ink — single source of truth (2026-07-31, hierarchy stone ruling).
+     *
+     * Node stroke and containment edges are **drawing the same tree depth twice** (element=leaf=l2 · capability=mid=contains · domain=top=l0). Writing them separately caused three pairs to coincidentally converge within 0.02 contrast — that's luck, not contract — if the next person fixes only one side, they'll diverge without any warning.
+     * ("If a value is written in two places, drift has already begun" — Carbon.)
+     *
+     * All values are above WCAG 1.4.11 (non-text 3:1): leaf 3.22 · mid 3.42 · top 3.96.
+     */
+    --map-ink-depth-leaf: #7a7a86;
+    --map-ink-depth-mid: #80808c;
+    --map-ink-depth-top: #8a8a96;
+    /* project is one unit on the depth axis — no corresponding containment edge (no parent above project). So it has its own value, not an alias for the axis. */
+    --map-node-stroke-project: #9898a3;
+    --map-node-stroke-domain: var(--map-ink-depth-top);
+    --map-node-stroke-capability: var(--map-ink-depth-mid);
+    --map-node-stroke-element: var(--map-ink-depth-leaf);
+    /* ── Record screen ego preview (`--git-ego-*`) ───────────────────────
+       A small picture of a concept's 1-depth neighbors, visible right there. **Not a map**
+       — this is not the place to explore 3k nodes, but to query about eight, so using the map ladder (30·17·11·7 = 4.3:1) as-is turns elements into dots. Keep the order, compress only the width.
+
+       The scale is **fixed**. In the mockup, sizing boxes to content caused scales to vary by concept, making same-kind nodes oscillate between 21~37px (measured) — that size change carries no facts. Size is determined by kind, beam carries **ring radius**. */
+    --git-ego-r-self-project: 25;
+    --git-ego-r-self-domain: 21;
+    --git-ego-r-self-capability: 16;
+    --git-ego-r-self-element: 13.5;
+    --git-ego-r-nb-project: 14;
+    --git-ego-r-nb-domain: 12;
+    --git-ego-r-nb-capability: 9.5;
+    --git-ego-r-nb-element: 8;
+    /* Ring radius top/bottom — close if two neighbors, wide if eight. */
+    --git-ego-ring-min: 74;
+    --git-ego-ring-max: 126;
+    /* Ellipse aspect ratio — the picture box is wider. Placing it as a circle fills vertically first, shrinking the whole to 73% (measured fill rate 24% → 42%). */
+    --git-ego-ellipse-x: 1.52;
+    --git-ego-ellipse-y: 0.8;
+    --map-node-fill-dim: #1e1e24;
+    --map-node-stroke-dim: #6a6a74;
+    /* The name of a domain the ego focus dimmed. It used to go to 0 with the
+       disc's colour, which left three of nine domains anonymous grey chips the
+       moment one was selected (measured 2026-09-19); a person deciding where
+       to go next had to hover to learn which chip was which. The value sits
+       with the dim stroke: readable as context, never competing with the
+       selected node's own name. Children stay at 0 — they were unnamed before
+       the selection too. */
+    --map-ego-rest-alpha: 0.42;
+    /* Recent change spotlight rest alpha (council design 2026-07-23). product reason: when the "changes in last N days" lens is ON, sink nodes/edges outside the window to this alpha so change nodes (fresh channel) win by contrast — not "glowing" but "sinking" (prohibited glow/pulse per charter, fulfilling owner's 'at a glance' desire). Lighter than ego dim(0.15): in the full-map lens, remaining structure must remain readable as context (ego is local focus, so sinks deeper). state/layer:
+       map lens. Responsive: value itself is width-agnostic (alpha scalar). Marker: lens state is deterministically reproducible via URL `?recent=`. */
+    --map-spotlight-rest-alpha: 0.65;
+    /* The path lens's own rest. A path is two ends and a line, not a whole-map
+       lens that must keep its context readable: at the spotlight's 0.65 the
+       off-path domain rings measured 123 against 143 on the path and every
+       drawn name the same 185, so a still frame did not say which two the
+       person had asked about (2026-09-19). Deep enough that the path is the
+       only bright thing; the rest stays a legible outline. */
+    --map-path-rest-alpha: 0.3;
+    /* Spotlight change-node ring dash rotation speed (px/ms) — owner directive
+       2026-07-23 "only changed items rotate border": sinking alone doesn't make change nodes readable in element view (actual report Image #14), so during lens ON, rotate amberHub dashed ring on change nodes via lineDashOffset. glow/blur
+       0 — charter prohibits rotation? No precedent: comet=always motion, agent focus ring =amberHub precedent. 0.012 ≈ one dash cycle (9px)/750ms — lens is a persistent mode kept ON *while reading the map*, so initial 500ms (2Hz) felt rushed on multiple rings (motion inspection 2026-07-23 frame evidence). HIG deference
+       (motion must not compete with content) + Toss cognitive load minimization → slow to ~1.3Hz — "aliveness" maintained, urgency removed. reduced-motion is static dash (rotation 0). */
+    --map-spotlight-ring-speed: 0.012;
+    --map-node-fill-stale: #141418;
+    --map-node-stroke-stale: #454549;
+    --map-node-hole-fill: #0c0c10;
+    --map-indigo: var(--color-indigo-brand);
+    --map-indigo-bright: #8890e0;
+    --map-amber-hub: #d4b478;
+    /*
+     * Teal for "Recent Changes" lens only (2026-08-02, owner confirmed — selected after comparing candidate sets applied to actual screen).
+     *
+     * **Why open a new hue**: Previously this lens drew dashed rings with `--map-amber-hub`. But that value already means "**this is the center**" (hub) on the map, so turning on the lens makes "center" and "just changed" share one color. On actual screen, the central hub node and 15 change nodes floated in same amber, indistinguishable.
+     *
+     * No room left: indigo=selection · amber=hub · #e8c47a=path walked · red/green=error/success. Achromatic candidates blended with dim nodes, killing signal; indigo candidates competed with selection. Teal doesn't mix with any of those four.
+     *
+     * **No extension**: This value is used in **only one place** — "change node dashed ring while recent changes lens is ON" — same structure as amber's two named exceptions (agent focus ring · path walked). It disappears from screen when lens is off, so not a permanent color expansion. If other surfaces use this color, reference documentation is required.
+     */
+    --map-recent-change: #3fbfae;
+    /* Footprint trail (path walked) — fourth amber branch (see design.md "Three ambers" section). Does **not share bits with hub amber #d4b478**: on this map, yellow already means "this is the center", so same value makes "center" and "walked" one color. Separate lightness/chroma, keep hue family but different values. Lens (popover open) only notation, not permanent amber expansion. */
+    --color-footprint-trail: #e8c47a;
+    /* Footprint indigo — reason for not using `--color-indigo-accent`(#7170ff) is
+       **contrast**. On canvas (#0a0a0d), the lowest selectable saturation (0.5) yields 2.08:1, failing to reach 3:1, creating "invisible footprint" flaw. Edge selection same pale indigo hits 3.93:1 at same value — not a new hue but another value within charter's "selection color ladder". */
+    --color-footprint-trail-indigo: #c8d2ff;
+    /* Trail starlight (2026-09-10, owner: *"what if it were white light, twinkling, like a
+       constellation"*) — and it is not a new hue, it is **the map's own**. `render/starfield.ts`
+       already paints far-field star dust and diffraction spikes at `rgba(236,236,240,…)`, and
+       its header names the language: "B1 constellation DNA". The walked path was the one mark
+       standing outside that language, on the fourth amber role the 2026-08-02 record itself
+       flagged when it wrote "no room left: indigo=selection · amber=hub · #e8c47a=walked".
+       Star ink collides with none of them: measured 16.78:1 over `--map-canvas-bg-near` at
+       full opacity and 4.69:1 at the lowest intensity a person can select, against amber's
+       3.61 and indigo's 3.93. (An earlier version of this comment claimed 15.7:1, which
+       matched no canvas token — a number in a comment is checked by nothing.)
+
+       ⚠️ It also claimed the walked star and the magnitude spike were "separated by position,
+       beside the node vs on it". Two commits later the mark became the node itself, so that
+       separation was void and a node that was both walked and bright drew two diffraction
+       crosses at one point. Precedence was tried next — the walked star lit, the magnitude
+       spike standing down — and 45-degree rotation after that. Both were arbitration between
+       two marks that meant different things, and the second rendered as an X drawn across the
+       node. The walked star wears **no cross at all** now, so there is nothing to arbitrate and
+       the magnitude spike keeps its fact; `shared/lib/star-emission.ts` carries the reasoning.
+       Gate: `tests/contract/canvas-composite-license.contract.test.ts`. */
+    --color-footprint-trail-star: #ececf0;
+    --map-numeral-shadow: #08080a;
+    --map-numeral-face: #8c8c94;
+    /*
+     * Cluster chip rest ink — **chrome is darker than content** (2026-07-31).
+     *
+     * Chip borrowed `nodeStrokeDomain`(3.96:1) as border, `numeralFace`
+     * (5.83:1) for numbers, `indigo`(4.24:1) for `＋` in rest. All three are **brighter than child node stroke(3.22~3.42:1)**. Hierarchy stone actual measurement:
+     * chip peak luminance 102.5 vs child 28.4 = **3.6x**. Map's job is showing connections and concepts, but summary button was brightest.
+     *
+     * So create a rest tier solely for chips at the **bottom** of the ramp — satisfy WCAG 1.4.11
+     * (UI control 3:1) while being darker than any node:
+     *   chip 3.01/3.14 < element 3.22 < capability 3.42 < domain 3.96 < project 4.63
+     *
+     * hover/focus remains old indigo (`hoverBorder`/`hoverInk`) — touched items must brighten, and at that moment chip is the actual target.
+     * Key is removing indigo from rest: indigo is this app's single accent,
+     * so if chrome uses it constantly, it competes with user-called targets.
+     */
+    --map-cluster-chip-border-rest: #5c5c65;
+    --map-cluster-chip-ink-rest: #5f5f65;
+    /* Node metal sheen: vertical gradient top tint + blend ratio.
+       drawNode uses lerp(fill, tint, blend) at top stop to create machined
+       metal surface. Dissolves in far-field(farT>=0.98)/small(r<=3). */
+    --map-node-sheen-tint: #232329;
+    --map-node-sheen-blend: 0.6;
+    /* Territories view (2026-09-24, `render/territories.ts`). Every value points at an existing
+       ramp; the family exists so the view reads one name per role rather than borrowing roles
+       that mean something else on the flat map.
+       - title/count: a domain's name reads as a territory name, its counts a step quieter
+         (5.49:1 on --map-canvas-bg-near, 4.96:1 on the pill surface).
+       - stale/stale-fill: the product's one warning hue, the same amber the brief uses.
+       - rim-light: the disc's upper inner rim, the canvas twin of the DOM hairline highlight.
+       - rollup-alpha: rolled-up domain strokes sit under the data, never over it.
+       - glow-alpha: the ambient light behind a territory, never a boundary.
+       - arrival: the shelves settle in once per layout, inside the settle clock. */
+    --map-territory-title: var(--color-text-secondary);
+    --map-territory-count: var(--map-panel-text-tertiary);
+    --map-territory-stale: var(--color-status-warning);
+    --map-territory-stale-fill: var(--color-amber-source-a12);
+    --map-territory-rim-light: var(--color-overlay-3);
+    --map-territory-rollup-alpha: 0.55;
+    --map-territory-glow-alpha: 0.12;
+    --map-territory-arrival: var(--motion-settle);
+    /* builder-core (feat/builder-core, docs/prototypes/builder-v2-0{2,3}.html):
+       the ONE DOM surface that draws a real ontology-map node as an HTML card
+       (`AtlasNode`, the `/ontology/edit` builder canvas) instead of canvas-2D
+       draw calls. It borrows this section's kind fill/stroke tokens for its
+       glyph and needs one extra: a hairline top-inset highlight ("machined
+       edge") the canvas-2D sheen has no DOM equivalent for. Dark-only, same
+       precedent as `--map-node-sheen-*` above.
+
+       ⚠️ 2026-07-28 — This token (`--map-builder-node-sheen`) is **deleted**.
+       Zero usage, and its consumer xyflow ERD builder retired on 2026-07-24.
+       While name ("sheen") remains, next person could read it as glow permission — unused tokens are misinformation, not spec. */
+    /* canvas-emphasis slice (owner: "center(project node) must shine differently") — material instead of glow (design.md "material instead of glow"). Project hexagon exclusive double hairline + pincushion color. Outer stroke itself reuses --map-amber-hub (topology-frame-draw.ts#resolveNodeVisual), these two are inner offset hairline + 4-direction pincushion exclusive. rgb(212,180,120) = same hue as amber-hub,
+       only alpha differs (first run v3 flagship mockup, docs/prototypes/first-run-v3-flagship.html
+       §"project hexagon" 1:1 extraction). */
+    --map-project-hairline-inner: rgba(212, 180, 120, 0.35);
+    --map-project-pin-tick: rgba(212, 180, 120, 0.5);
+    /* Static double ring for selected node (not glow, mechanical ring) + hover preview ring.
+       rgb(94,106,210) = same hue as --color-indigo-brand(#5e6ad2), only
+       alpha differs — not violating "no multiple coloring systems" (maintain single indigo). */
+    /* ── Galaxy colour temperature ────────────────────────────────────────────
+       Galaxy is an explicit map-view picker state. It paints borderless light
+       cores in a three-arm field; it does not reuse Flat's kind silhouettes.
+       Kind remains explicit in INDEX and the inspector through their glyph and
+       text. This warm-to-cool containment ramp helps connect the project core,
+       domain neighborhoods, capabilities, and elements without becoming the
+       sole kind channel. Baseline luminance still follows the graph magnitude
+       model; deterministic atmospheric twinkle modulates corona and glints, so
+       instantaneous brightness is not a live activity or recency measurement.
+
+       Measured in the accepted 2026-09-15 actual-window cycle: 105/105 star
+       cores stayed at or above 3:1 (minimum 3.040:1), while all nine overview
+       labels measured 9.32–10.29:1. The selected indigo remains a separate
+       emphasis channel. The owner-selected living-sky and three-arm decisions
+       supersede the 2026-09-10 shared-silhouette/no-toggle direction. */
+    --map-galaxy-project: #f0c77b;
+    --map-galaxy-domain: #f0d4a4;
+    --map-galaxy-capability: #c8dcff;
+    --map-galaxy-element: #91b5ff;
+    /* ── Hex board material (owner decision 2026-09-25, spec "F2") ─────────────
+       Spent only by `render/hex-board.ts` through `tokens/read-hex-board-tokens.ts`,
+       only in the Hex board view. One tile = one capability. The face ladder is
+       the element-count bucket (0, 1–2, 3–4, 5–6, 7+): luminance only, never
+       hue. Stale capabilities trade it for the warm ladder with a rim in the
+       product's one warning hue; unknown evidence is a hatched face with a
+       dashed rim. Domain title tiles wear the indigo face and double rim, the
+       project the hub's warm face. Every face gets the same bevel light (one
+       light, top-left). Ink at rest (text-secondary) on face-4 measures 9:1;
+       the dimmed ink (text-quaternary) on a 30% face stays above 4.5:1, so a
+       dimmed board is still readable. Relations never cross a face: needs in
+       --map-hex-accent, used-by in pale indigo (--map-edge-selected), both on
+       a board-colour casing. */
+    --map-hex-face-0: #141419;
+    --map-hex-face-1: #18181f;
+    --map-hex-face-2: #1d1d25;
+    --map-hex-face-3: #23232c;
+    --map-hex-face-4: #2a2a35;
+    --map-hex-face-stale-0: #18150f;
+    --map-hex-face-stale-1: #1c1812;
+    --map-hex-face-stale-2: #221d15;
+    --map-hex-face-stale-3: #282218;
+    --map-hex-face-stale-4: #2f281b;
+    --map-hex-face-domain-top: #20213a;
+    --map-hex-face-domain-bottom: #16172a;
+    --map-hex-face-selected-top: #2a2c55;
+    --map-hex-face-selected-bottom: #1b1c36;
+    --map-hex-face-project-top: #262219;
+    --map-hex-face-project-bottom: #15130f;
+    --map-hex-riser: #060608;
+    --map-hex-rim: #5e5f6b;
+    --map-hex-rim-domain: #7c80d8;
+    --map-hex-rim-selected: #a5abff;
+    --map-hex-rim-unknown: #6a6a74;
+    --map-hex-hatch: #2a2a33;
+    --map-hex-bevel-light: rgba(255, 255, 255, 0.16);
+    --map-hex-bevel-mid: rgba(255, 255, 255, 0.03);
+    --map-hex-bevel-shade: rgba(0, 0, 0, 0.25);
+    --map-hex-plate: var(--color-indigo-a06);
+    --map-hex-plate-focus: var(--color-indigo-a12);
+    --map-hex-plate-stroke: rgba(136, 144, 224, 0.22);
+    --map-hex-moat: rgba(255, 255, 255, 0.022);
+    --map-hex-glow: var(--color-indigo-a08);
+    --map-hex-accent: #9aa0f0;
+    --map-hex-canal: #4a4c62;
+    --map-hex-canal-head: #6d7090;
+    --map-hex-ink-meta: #a3a6ae;
+    --map-hex-dim-alpha: 0.3;
+    --map-hex-dim-far-alpha: 0.16;
+    --map-selection-ring-indigo: var(--map-indigo-bright);
+    --map-selection-ring-hairline: rgba(94, 106, 210, 0.45);
+    /*
+     * **Pending review** ring for human-written nodes (2026-08-03 owner directive: *"red border... not an error, but a warning"*).
+     *
+     * Must be **different value** from `--color-danger`(error) — using same bits as error makes "human wrote it" read as "wrong". Pink(345°) is brighter and more saturated than danger's red, diverging within warning family.
+     *
+     * ⚠️ **Not glow.** Charter prohibits halo/pulse, this is
+     * a **static dashed ring** running along kind-outline (like footprint trail exception,
+     * does not use `shadowBlur`). No rotation — recent change spotlight's
+     * rotating dashed ring is temporary "while lens is ON", but this ring stays while node is under review, so moving it shakes the whole map.
+     */
+    --map-hover-ring: var(--color-indigo-a55);
+    /* Design Guardian approved prescription L — hover circuit-trace shimmer. Static hover
+       ring (above) with one slowly circulating bright arc (glow 0 — reuse `strokeKindOutline`
+       path + `setLineDash`/`lineDashOffset` time animation only). seg is
+       circumference ratio, period is 1 rotation(ms, linear, clockwise). Pure phase calculation
+       in `model/hover-shimmer.ts`. */
+    --map-hover-shimmer-seg: 0.16;
+    --map-hover-shimmer-period-ms: 2400;
+
+    /* 2.2 Edge · Label · Background */
+    /* B1 ink hierarchy (Guardian 2026-07-20): corrects inversion where decorative particles were 3.2x brighter than data edges. contains is graph backbone, must be readable in overview without hover (1.32 → 1.83:1), depends is highest-value relationship for impact inference, must be clearly above contains (1.78 → 2.42:1). */
+    --map-edge-contains: var(--map-ink-depth-mid);
+    /* P3a ink ladder — containment depth uses lightness×thickness not hue (correct channel for order data, Bertin). L0(project skeleton) darker, L2
+       (capability-element twigs) slightly recessed but darker than pre-B1 value(1.32:1) — establish hierarchy without undoing readability recovery. L1 remains old --map-edge-contains. */
+    --map-edge-contains-l0: var(--map-ink-depth-top);
+    --map-edge-contains-l2: var(--map-ink-depth-leaf);
+    /* B2 remainder (Guardian post-inspection) — penetrating edges with both endpoints off-screen create "show nothing" while turning deep-zoom view into tangled yarn. Culling is geometrically impossible(curve actually passes screen) — instead downgrade ink so structures with endpoints are read first. */
+    --map-edge-passthrough-alpha: 0.3;
+    /* B7 — node minimum separation scale. If overlap less than (rA+rB)×this value, push apart in sim active
+       frame — prevent drag/settling from pushing children above parents via "accidentally touching pixels". */
+    --map-node-min-separation-ratio: 1.35;
+    /* B4 — scale encoding intensity k. Makes mark answer first question of overview("what's big?"). √childCount compression factor in computeMagnitudeScale(topology-world.ts) — 103-domain is ~1.2x 9-domain (1.4 upper clamp), rank clue not bar chart. [2026-08-01 correction: this comment previously said "log compression" but implementation already changed log → √ in S2 Part 2 — example of drift when value written in two places, this token itself shows it. Detailed spec: docs/DESIGN-SYSTEM.md "node spec" section. */
+    --map-radius-magnitude-k: 0.45;
+    /* B3 remainder — dust delay depth range (slower flow vs grid 1.0). */
+    /* Edge selection (pair focus) — indigo pale ladder: same family as node selection (#5e6ad2), distinguished by lighter value (no color system proliferation). */
+    --map-edge-selected: rgba(200, 210, 255, 0.66);
+    /* Expansion cohort (direct children revealed as chips) belonging ring — 3rd step of indigo ladder.
+       Node selection = saturated indigo (#5e6ad2) **solid line**, edge selection = pale indigo,
+       expansion = **desaturated** indigo dashed line. Hue remains on the indigo axis, only saturation
+       drops toward neutral to separate "selection" and "expansion" via solid/dashed + saturation —
+       new brand color 0 (design.md selection color ladder). */
+    --map-expanded-cohort: rgba(146, 156, 194, 0.72);
+    --map-dust-parallax-min: 0.15;
+    --map-dust-parallax-max: 0.45;
+    /*
+     * Constellation background parallax factor (2026-07-28 design council — owner "looks inertial like space").
+     *
+     * The background has always been **welded** to the world by passing `worldToScreen(camera, 0, 0)` directly
+     * (factor 1.0). That's correct for the blueprint grid — that's the ground. But
+     * constellations are a distant layer, so they must move **less** than the ground when the camera moves
+     * for depth to be perceived. That difference is the information that "the map floats above the starfield."
+     *
+     * **Autonomous motion is 0.** This value is only a function of camera position, so if the camera stops,
+     * the background also stops — idle frame cost 0, different axis from `forbidden.md`'s prohibition of
+     * "moving gradient background·aurora" (time-driven decoration), and falls within the
+     * user-initiated exception of WCAG 2.2 §2.3.3.
+     *
+     * Why 0.82: It is much closer to 1 than the 0.15~0.45 already used by stardust. Stardust
+     * is a mid-distance particle so it flows significantly, but constellations are the furthest layer in the background,
+     * so moving less is physically correct and minimizes reading interference.
+     *
+     * In `prefers-reduced-motion`, we revert to **1.0** (not 0) —
+     * creating static stimulation comes from inter-layer **relative motion**, so with 1.0 the background moves
+     * exactly with the content, eliminating relative motion. Setting it to 0 welds the background to the screen,
+     * which actually creates relative motion against the content.
+     */
+    --map-canvas-bg-parallax: 0.82;
+    /*
+     * `depends` is **outside the depth axis** (2026-07-31, system stone determination). Since it's a relationship
+     * **category** rather than hierarchy, it's distinguished by a separate channel (dashed line + indigo
+     * tint) rather than a step on the lightness ladder — same conclusion as P3a's "hierarchy is lightness, relationship type is hue".
+     *
+     * Therefore, we don't impose cross-ladder upper limits like "edge is ≤80% of node stroke".
+     * That rule assumes the two ladders **compete**, but containment
+     * edges are on the same axis as nodes (alias above), while depends is on a completely different axis, so it's not
+     * a comparison target. There are only two constraints: ≥3:1 WCAG (3.61), and not exceeding
+     * the brightest mark in this map (project stroke 4.63) — relationships
+     * do not speak louder than any entity.
+     */
+    --map-edge-depends: #666685;
+    --map-edge-dim: #1e1e22;
+    --map-hull-stroke: #3a3a42;
+    /* canvas-emphasis slice: project labels maintain Layer-0 container amber identity
+       (design.md "Auxiliary tones allowed only for Hub nodes and Layer 0 containers") —
+       previous value (#ececf0, neutral white) was visually indistinguishable from domain/capability. Same hex as amber-hub (project text
+       fill in the first run v3 flagship mockup, 1:1). */
+    --map-label-project: #d4b478;
+    --map-label-domain: #b8b8c1;
+    --map-label-capability: #84848c;
+    /*
+     * 2026-09-05: `#6a6a73` measured **3.69:1** on `--map-canvas-bg-near`,
+     * and the "AA-large" the old comment claimed does not exist at this size —
+     * `LABEL_FONT_SIZE.element` is 9.5px, while the large-text rule starts at
+     * 18.66px bold / 24px regular. An element label is a word someone reads, so it
+     * owes WCAG 1.4.3's 4.5:1.
+     *
+     * The gateway's `#9a9aa4` (7.09:1) was not promoted here: it would put element —
+     * the quietest tier — **above** capability's 5.33:1 and invert the ladder the map
+     * uses to say which tier you are looking at. `#7e7e87` is the dimmest step that
+     * clears the text floor (4.92:1) while staying under capability, so the fix pays
+     * the floor without spending the hierarchy. Gate:
+     * `tests/contract/topology-ink-contrast.contract.test.ts`.
+     */
+    --map-label-element: #7e7e87;
+    /* Max on-screen label width (px) before word-boundary ellipsis — keeps a
+       long element title (file path) from clipping the right edge / colliding
+       with its horizontal neighbor (Design Guardian readability rejection). */
+    --map-label-max-width: 168;
+    --map-canvas-bg-near: #0a0a0d;
+    --map-canvas-bg-far: #050507;
+    --map-grid-minor: #0e0e13;
+    --map-grid-major: #121218;
+    --map-vignette-base-alpha: 0.32;
+    --map-vignette-far-alpha: 0.18;
+
+    /*
+     * **The Library graph's page halo** — the ring of ground a page mark clears around
+     * itself so the citations running underneath stop at the disc instead of crossing it.
+     *
+     * Why a token rather than `--color-canvas` reused: at three hundred documents eight or
+     * ten lines meet one page, and a halo painted in the flat ground colour cuts a visible
+     * hole in the picture there. One step above the ground (#08090a → #0e0f13, the same
+     * distance `--map-grid-minor` stands off it) reads as the page *sitting on* the lines
+     * instead. It is a flat fill of one width, never a glow and never animated; the mark
+     * itself is painted over it, so this colour is only ever seen as a rim.
+     *
+     * Named `--graph-*` rather than `--library-*` because the canvas it belongs to is the
+     * Library's *graph*, and `docs/DESIGN-SYSTEM.md` carries the registration.
+     * Consumer: `src/widgets/library-graph/render/library-graph-ink.ts`.
+     */
+    --graph-page-halo: #0e0f13;
+
+    /*
+     * Latitude ring of the 3D dome — **coordinate system ink drawn only in 3D**.
+     *
+     * Why not `--map-grid-major` (#121218): that value is for a **planar grid**,
+     * and a planar grid covers the entire screen so "there is a coordinate system" is perceived even with very low ink. The ring has only three lines on screen, so the same value would be invisible (measured:
+     * multiplying fog on canvas #0a0a0d results in effectively 0). If the covered area differs,
+     * the value must differ even for the same role.
+     *
+     * The upper bound is the **bottom of data ink** (`--map-ink-depth-leaf` #7a7a86).
+     * If the ring exceeds it, the coordinate system competes with data for attention. This value is below that,
+     * and in actual rendering, base opacity (0.34) and depth fog are further multiplied —
+     * only nearby arcs remain, distant arcs disappear. That asymmetry is "which side is front".
+     */
+    --map-dome-ring: #43434f;
+
+    /* Canvas background set — dots (default, above blueprint grid) + moving trio (flow field·
+       proximity constellation·gravity field, render/animated-background.ts). Former static tiles 2 types
+       (constellation·contour) scrapped by owner confirmation on 2026-07-29.
+       Background always loses to data (Tufte): never exceed the ink upper bound tokens below
+       (no bg may exceed --canvas-bg-ink-max; only near cursor up to the limit).
+       Moving gradients/auroras/glow are still prohibited — all three involve 1px line/point
+       alpha compositing, so they don't apply to this axis. */
+    --canvas-bg-ink-max: 0.08;
+    /* Particle ink RGB — alpha is determined by code within the upper bound, so none here. */
+    --canvas-bg-particle-rgb: 150, 165, 220;
+
+    /* 2.3 Geometry (world unit — consumed by canvas 2D via getComputedStyle) */
+    /* canvas-emphasis slice: 25→30 — ensure visual weight is clearly above surrounding domain chips (17) (ratio 1.47→1.76×). In the first run v3 flagship mockup, project
+       hexagons were drawn much larger than domain chips (that mockup's absolute
+       scale was a separate mockup unrelated to this world-unit system, so 1:1 porting wasn't possible,
+       only porting the "clearly above" relationship). */
+    --map-radius-project: 30;
+    --map-radius-domain: 17;
+    --map-radius-capability: 11;
+    --map-radius-element: 7;
+    --map-layout-ring-domain: 250;
+    --map-layout-ring-capability: 145;
+    --map-layout-ring-element: 90;
+    /* Area expansion depth derived ring — remove shallow subtree empty annulus, owner actual report 2026-07. */
+    --map-realm-fill-radius-1: 130;
+    --map-realm-fill-radius-2: 190;
+    --map-realm-fill-radius-3: 250;
+    --map-edge-bow-contains: 70;
+    --map-edge-bow-depends: 92;
+    --map-edge-blend-contains: 0.46;
+    --map-edge-blend-depends: 0.62;
+    --map-star-count: 4;
+    --map-dust-area-per-point: 5200;
+
+    /* 2.4 Motion · Camera */
+    /* Dive-zoom fix (owner feedback — "zoom in/out feels sluggish"): existing
+       single spring natural frequency (2.941, 95% settle 1.61s) was reused for all camera movements including wheel zoom · dive · overview
+       return · rearrange, causing interactive wheel zoom to settle as slowly as a cinematic dive. Separate interactive (wheel zoom scale axis + pan during wheel zoom) from programmatic transitions (focus dive · focus exit ·
+       rearrange · fit map entirely) — former is crisp (0.40s), latter remains
+       cinematic (1.0s) but faster than before. */
+    /* 12 → 15 (owner actual report 2026-07-24: "zoom is a bit slow, make it slightly faster")
+       — interactive settle 0.40s → ≈0.32s (25% faster). Maintain crispness, no overshoot
+       (damping 1.0 threshold). Programmatic transitions (dive/return) remain at 4.7. */
+    --map-camera-spring-angfreq-interactive: 15;
+    --map-camera-spring-angfreq-transition: 4.7;
+    --map-camera-damping-default: 1.0;
+    --map-camera-damping-flick: 0.82;
+    --map-camera-momentum-decay: 0.998;
+    /* Stop release gate (iOS scroll rule) — sample pointer speed in this window (ms) just before release. If no movement within this window (=stopped then released), momentum is 0. */
+    --map-camera-release-velocity-window-ms: 80;
+    /* Speed below this threshold (px/ms) is considered stopped — stop in place without inertial glide.
+       Approximately 10% of actual flick (≈0.3~0.5px/ms). */
+    --map-camera-flick-min-speed: 0.05;
+    --map-camera-scale-min: 0.24;
+    --map-camera-scale-max: 2.6;
+    /* #11 — overview fit ceiling for a ≤5-node graph (just-onboarded vault),
+       so a lone hexagon renders at a sane size instead of filling half the
+       screen. Only bites for tiny bounds; larger vaults never reach it. */
+    --map-camera-small-graph-scale-max: 1.3;
+    /* C1 A1 (semantic-zoom audit): overview entry scale is viewport-proportional (≈1.5 in 1512×917
+       so using absolute value 2.6 directly as "effective max" caps zoomRatio at max
+       ≈1.8, preventing capability reveal band (1.5~2.0) from completing (max alpha
+       ~40%, hit threshold <0.5 so unclickable) and element band (2.3~2.85) becomes unreachable — worsens with larger viewports. Effective max is now
+       `overviewEntryScale × this ratio` (relative to viewport), and the absolute value above
+       is only a safety fallback when overviewEntryScale is 0/invalid
+       (`topology-camera-math.ts#computeEffectiveCameraScaleMax`). 3.2 is
+       comfortably larger than element fullRatio (2.85) so all tiers reach cursor+element
+       tier in every viewport. */
+    --map-camera-max-zoom-ratio: 3.2;
+    /* C1 A1 follow-up (owner feedback — "wheel zoom in/out" first-try acceptance
+       test): the zoom-OUT floor has the same absolute-vs-ratio problem in
+       reverse — `cameraScaleMin` (0.24) is an absolute floor, so on a large
+       viewport (small overviewEntryScale) the interactive zoom-out range is
+       tiny, while on a small viewport it can shrink the spine to a speck
+       before farLow's constellation view even kicks in. Ratio-based (half the
+       overview entry) keeps "how far can I zoom out interactively" consistent
+       in FEEL across viewports, same as the max-ratio fix above. Deliberately
+       BELOW the constellation threshold's own zoom-ratio (~0.65 at default
+       tokens) so zooming out still crosses into the far-field constellation
+       view instead of stopping short of it. */
+    --map-camera-min-zoom-ratio: 0.5;
+    /* In focus (ego) state, when panning empty space, camera center cannot stray more than this
+       world-unit from the focus node — "can look around but won't lose the subject"
+       (obsidian tactile). If exceeded, rubber-bands back. Even at max focus scale (1.9),
+       180×1.9≈342px < safe zone half-height (354px) so subject doesn't go off-screen.
+       Only applies when zoomed in (full bounds on fit view/focus exit). */
+    --map-camera-focus-pan-margin: 180;
+    /* Pan leash when unfocused (world unit). 0 = no leash = previous envelope (world bbox
+       ± 320). Workbench can always revert via "fit map", so it is 0.
+       Only enable for gate (`html[data-gateway-stage]`) — pan that cannot be reverted on a surface without revertable chrome is a defect. Determination: `computeUnfocusedPanBounds`. */
+    --map-camera-pan-leash: 0;
+    --map-altitude-far-high-ratio: 0.92;
+    --map-altitude-far-low-ratio: 0.62;
+    /* Overview entry scale = tight-fit × this ratio. Kept above the far-high
+       ratio (0.92) so the DEFAULT overview reads as CIRCUIT (farT ≈ 0), while
+       tier visibility rides a separate zoom-ratio signal (model/tier-visibility). */
+    --map-overview-entry-ratio: 0.95;
+    /* Cone (3D) fit — `topology-camera-math.ts#computeDomeFitCameraTarget`.
+       The cone is fitted into the FREE canvas (canvas minus the measured panels)
+       minus these two bands, and then spans this fraction of whichever axis binds.
+       Bottom band = the instrument readout row. There is no second padding term:
+       the 15% pad plus the 0.95 overview ratio the cone used to inherit is what
+       left it at 18.6% of the canvas (measured 2026-09-05).
+       Top band 104, not the tool lane's own 66: the LABEL pipeline culls against
+       `--map-safe-inset-top`(148), and a project label is protected there
+       — it CLAMPS to the inset edge instead of culling, and the clamp shift is
+       then carried into the flipped slot. At 80 the apex centre landed at y=101
+       and y=99, above that line, so the apex ring ran through its own name at
+       1920 and the name sat 43px below its disc at 1440 (guardian measurement,
+       2026-09-05). 104 puts the apex near 125, its below-slot anchor near 159,
+       and it flips above with no clamp — the clean 1024 frame's behaviour at
+       every width. Fill stays over the 60% floor: 62% at 1920, 70% at 1440. */
+    --map-dome-fit-fill: 0.98;
+    --map-dome-fit-inset-top: 104;
+    --map-dome-fit-inset-bottom: 32;
+    --map-focus-fit-max-scale: 1.9;
+    /* Dive-framing fix (owner: "diving too deep on click — over-zoom·label
+       collision") — now MULTIPLICATIVE margin (previously fixed px padding 70): expand ego bbox
+       width/height by this ratio to compute fit-scale — larger clusters get
+       proportionally larger padding (with fixed px, large fans would have been tight). See `topology-camera-math.ts#computeFocusCameraTarget`. */
+    --map-focus-bbox-margin: 1.15;
+    /* Owner actual report (2026-07-24, feature check): when neighbors hide like a spotlight
+       and ego bbox becomes small, click fit shoots up to microscope zoom, requiring
+       repeated wheel reverts. Zoom-in upper limit for selection framing — does not exceed overviewEntryScale ×
+       this ratio (ego members are tier-exempt so all remain visible at this multiplier). No limits on zoom-out direction fit. */
+    --map-focus-max-zoom-ratio: 1.8;
+    --map-hysteresis-px: 7;
+    --map-emphasis-rise-tau: 0.09;
+    --map-emphasis-decay-tau: 0.15;
+    /* Click focus signal motion — time constant for color transition where neighbors=indigo·others=gray ramp-dim
+       on node click (single symmetric rise/decay). Overlaid on the same timeline as camera dive (~200~420ms) so "click pushed back background" causality is read as one gesture rather than a hard cut. On deselect, returns with same τ while background dim·selection ring fade out together. Consumed by `stepFocusRamp` (`model/focus-state.ts`). */
+    --map-focus-dim-tau: 0.16;
+    /* rank7 — time constant for cluster chip expand/collapse ramp (single symmetric rise/decay). When children subtree of collapsed parent expands, interpolate child draw alpha 0→1 with this τ, and 1→0 when collapsing, eliminating "pop in/out" hard cuts. Consistent entrance/exit fade regardless of camera zoom. Slightly longer than emphasis (0.09) (~0.17s) to create rhythm of subtree opening as a single block. Reuses `stepEmphasis` (`focus-state.ts`). */
+    --map-cluster-reveal-tau: 0.17;
+    --map-ripple-stagger-ms: 55;
+    --map-breathe-amplitude: 0.04;
+    --map-breathe-freq-rad: 1.15;
+    --map-pulse-duration-ms: 420;
+    /* canvas-emphasis slice — one-time commit pulse on click (distinct from static selection ring, ring expands 1.0→1.15× with alpha fadeout). Owner upper limit ≤200ms.
+       Distinct token from 420 `--map-pulse-duration-ms` — that's an unused
+       reserved token so this slice doesn't touch it (`model/selection-pulse.ts`). */
+    --map-select-pulse-duration-ms: 180;
+    --map-tip-fade-ms: 120;
+    /* depends edge comet-tail progression speed (t += dt × speed). Default is ambient
+       flow, ego (edges attached to selected node) accelerates with circuit metaphor "current flows more" — B2+ connection highlight (lead spec §2). */
+    /* R6 permanent comet restoration (owner instruction — "bring back the old one"): surrounding (non-ego)
+       depends edges also flow constantly like prototype (topology-b2plus §14 `e.t += dt*0.075`) regardless of focus. Value reverted from 0 (A1 comet tail focus reduction) to prototype's permanent state. Reduced-motion users skip forward in updateParticles (stop), and only then does idle frame gate (A2) determine stop. */
+    --map-edge-pulse-speed: 0.075;
+    /* A3 — max scale delta for selection commit pulse. 0.15 was below JND at element (r=7) with ring movement 1.5px. 0.28 gives 2.8px for r+3=10 — minimum width readable as "click landed" even on smallest node. Duration remains 180ms (owner upper limit ≤200ms). */
+    --map-select-pulse-scale-delta: 0.28;
+    /* A4 — Time budget (ms) for drag-release settling. Switched from frame count (90)-based to time-based — eliminates refresh-rate dependency where the same gesture split into 0.75s at 120Hz and 1.5s at 60Hz. */
+    --map-node-release-settle-ms: 900;
+    /* A5 — Spring angular frequency for auto-align homing. Layout correction must end decisively (ζ=1, ~0.63s), while camera dive is a navigation transition so it can be cinematic (4.7) — different contract, different token. */
+    --map-node-home-spring-angfreq: 7.5;
+    /* A6 — τ for focus ego rebuild. Reusing hover ripple τ (0.09) causes children to pop out at ~0.41s while camera dive is ~1.01s — two motions explaining the same event but misaligned. Entry is slow (0.22) synced to camera landing, exit is fast (0.12). Asymmetry is intentional. */
+    --map-ego-reveal-rise-tau: 0.22;
+    --map-ego-reveal-decay-tau: 0.12;
+    /* A7 — Total budget (ms) for hover ripple stagger. The previous 55+12×i meant the last neighbor in a hub of 40 neighbors started 523ms later — turning it into a slow scan rather than a ripple. Ripples say "these are neighbors," not enumerate them. */
+    --map-ripple-stagger-max-ms: 180;
+    --map-edge-pulse-speed-ego: 0.2;
+    /* C1 B1 (Drag tug gratitude): When dragging a node, relying only on FA2 global relax (1 iter/frame, slowDown 20) makes neighbors barely move — directly propagate the frame-by-frame world-space displacement (Δ) of the dragged node to 1-hop/2-hop neighbors at this ratio so they follow like springs (`interaction/drag-tug.ts`). */
+    --map-drag-tug-1hop: 0.45;
+    --map-drag-tug-2hop: 0.15;
+    /* Tug influence radius (world units). Hop count alone cannot determine "closeness" — in a hub-spoke vault all nodes are within 2 hops, so hop rules alone caused the entire map to move together. Clusters of nodes enclosing the layout ring (domain 250 + competency 145 ≈ 395) retain elasticity, while those outside stop exactly at 0. */
+    --map-drag-tug-radius: 600;
+    /* Mass · drop · press (2026-09-08, direction B "Weighted graph", after the overshoot ban was lifted). A node's mass is its degree on a smoothstep up to `-heavy-degree`; a light node's release spring is critical (ζ=1, snaps), a heavy one is underdamped (`-heavy-zeta`: one overshoot under a radius step, ~450 ms to sit). Every `*-angfreq` token rides `tests/contract/spring-stability.contract.test.ts`, whose proven bound at the 50 ms frame clamp is 16, so mass lives in ζ rather than ω and `-angfreq` is one number for every node — a light/heavy pair holding 16 twice would name a ramp that does not exist (design council, 2026-09-08). A released node carries the hand's velocity past the drop point, capped to `-drop-max-px` world units (`expressive/mass-spring.ts`). */
+    --map-mass-heavy-degree: 12;
+    --map-mass-angfreq: 16;
+    --map-mass-heavy-zeta: 0.55;
+    --map-mass-drop-max-px: 14;
+    /* Ego light — the focused node blooms (a soft indigo disc under it, blurred by `-glow-blur-px`) and its relation lines carry a glow of the same blur, both on the focus ramp; the hovered node carries the bloom at `-node-bloom-alpha` on its emphasis ramp. Light says "this is the one your hand is on"; nothing at rest glows. */
+    --map-ego-glow-blur-px: 22;
+    --map-ego-glow-alpha: 0.55;
+    /* The walked line's glow, stronger than the ego glow it stands in for: a constellation
+       line is light, not an emphasised relation, and at the ego value it read as a slightly
+       brighter dash rather than something lit (owner, 2026-09-10 — "make the lines glow
+       too"). Only ever spent inside an open trail lens. */
+    --map-trail-glow-alpha: 0.85;
+    --map-trail-glow-blur-px: 26;
+    /* The trail lens's reduced-motion crossfade — see `--motion-settle`, whose value this
+       mirrors for a canvas that cannot read a CSS transition. Reduced motion asked for no
+       travel, not for a hard cut; the ramp was snapping 0 -> 1 in a single frame
+       (design-motion, 2026-09-10). */
+    --map-trail-reduced-fade-ms: 240;
+    /* The bloom's own blur, wider than the line glow because a disc under a node has to read past the node's edge while a line's glow must stay a line. Named rather than written as `-ego-glow-blur-px * 1.4` in the canvas: a multiplier in TypeScript is a second blur step nobody can find (design council, 2026-09-08). */
+    --map-node-bloom-blur-px: 31;
+    --map-node-bloom-alpha: 0.35;
+    /* Press — the hovered node swells on an underdamped unit step (peak ≈ 1.31 of the rest swell at ζ=0.35, measured on the sample vault: rest 28.1 px, peak 34.7, settled 34.2) instead of the critical hover ramp, so a hover reads as a press that gives. Reduced motion keeps the ramp. The swell crosses its own rest value at ω_d·t = π/2 → 105 ms, inside `--motion-fast`; what follows is the follow-through, which blocks no input (design council, 2026-09-08). */
+    --map-press-angfreq: 16;
+    --map-press-zeta: 0.35;
+
+    /* 2.5 Safe area (fixed chrome inset — px, consumed as numbers by canvas 2D)
+Left ReaderLens analysis panel + right popover rail + top utility lane +
+bottom hint covering the canvas width. Label culling and camera fit read this value to center the graph in the "visible area" (Design Guardian readability +
+camera rejection). Equivalent v2 of the deleted TopologyMapCanvas px string version — here it is a unitless number (canvas 2D getComputedStyle).
+
+RATIO-SYSTEM §4 datasheet 352px scale-up gratitude: safeInsetRight is
+only read in `computeOverviewFitScale`/`computeOverviewCameraTarget` (fit when no node selected) — `computeFocusCameraTarget` (the only time the datasheet is actually visible, i.e., node selected) does not reference safeInset at all (`topology-camera-math.ts`). Thus even if the datasheet width increases, there is no reason for the "safe area when invisible" value to change, so it remains 120 — we did not mechanically expand left/right padding just because the panel widened. Verified no actual collision via live check on 1512/1920 (`.qa-scratch/datasheet-gear/`). */
+    /* The side lanes are the chrome standing on that side plus one air, the same on both
+       sides (2026-09-25), because the fit centres the drawing between them: left =
+       INDEX inset 24 + INDEX 300 + air 52 = 376; right = utility rail inset 24 +
+       tile 36 + air 52 = 112. They used to be 350 and 120 — 26 px of air past INDEX
+       against 52 past the rail at `xl` — so even a correctly bounded overview sat 13 px
+       left of the free map's centre at 1512. The collapsed tab and the rail beside the
+       agent dock set their own values below with the same air. Canvas 2D reads these
+       as unitless numbers and cannot follow the chrome tokens, so
+       `tests/contract/map-fit-side-air.contract.test.ts` derives every lane from the
+       tokens and classes that place the chrome and fails when one drifts. */
+    --map-safe-inset-left: 376;
+    --map-safe-inset-right: 112;
+    --map-safe-inset-top: 148; /* 96 Chrome + top docking cluster chip (+N) height/gap — QA-A D1: Defect where chips were hidden behind the search bar on first paint */
+    --map-safe-inset-bottom: 96;
+
+    /* 2.6 Component datasheet panel (`OntologyMapDetailPanel`, DOM consumption)
+Instrument detail panel appearing on the right when a node is clicked —
+denser than the old `TopologyNodePopover` (owner rejected "icons too large" +
+"information appears three times"). Colors use neutral 5-step + indigo signal only,
+kind miniatures reuse `--map-node-*` tokens shared with the canvas.
+When removing the old engine in P6, `--map-` grep will remove them together.
+
+RATIO-SYSTEM §4 FINAL scale-up (owner: "Information is good but too small",
+`docs/prototypes/chrome-datasheet-final.html`): 288→352px, padding
+11→14px, group/section gap 10→14px. As width increased, evidence
+groups were promoted to a third group, filling space with information rather than whitespace
+(`map-datasheet.ts#buildV2EvidenceRows`,
+`OntologyMapDetailPanel.tsx`'s `renderEvidenceGroup`). Type sizes
+for each element next to it (individual JSX classes in §2.6 below) increased by one step: title 13.5→15px, row
+12→13px, metric 11.5→12.5px — this file holds only structural
+tokens, type sizes are owned by the component. */
+    /* Responsive audit rank3 (2026-07-23) — Fixed 352px covered 59% of the viewport on tablet portrait (~600px), swallowing the map. Unified with the pattern `min(target, 100vw - gap)` already used by node popovers: on wide screens it stays 352px as is,
+on narrow screens it naturally shrinks to width minus left/right padding (28px). */
+    --map-panel-width: min(352px, calc(100vw - 28px));
+    /* P3-③ (2026-07-21 retention round) — On 1440×900, nodes with many connections had panel content (actions 4-up + contains/usedBy/dependsOn/evidence groups)
+overflow the viewport so the "full details →" footer was pushed off-screen (y=911) and unreachable by mouse. Since the panel is fixed-anchored to `--topology-node-popover-top`,
+clamp it to the remaining viewport height minus that offset and enable internal scrolling —
+the "calc(100vh - top offset)" pattern shared by panel max-height tokens.
+Bottom 8px padding follows the same convention. */
+    /* zoom(--topology-ui-scale) context correction (owner real report 2026-07-23,
+datasheet piercing screen bottom on 1920) — Inside a zoomed subtree,
+100dvh (CSS px) visually scales by the zoom factor, so divide by factor to clamp to the actual visible viewport height. At factor 1 it behaves as before. */
+    /* Responsive audit rank3 (2026-07-23) — bottom reserve is a single knob so the
+`<lg` override (below) can add the fixed BottomTabBar height + safe-area
+and stop the datasheet from underlapping the tab bar on tablet/mobile. */
+    /* Same value as the inset above **so padding is equal on all four sides** (2026-08-02) — previously
+8px was just the minimum padding to "prevent footer from pushing off-screen," so
+the panel appeared stuck to the bottom. The `<lg` override (below) must add BottomTabBar,
+so leave it as is. */
+    --map-panel-bottom-reserve: var(--topology-node-popover-inset);
+    --map-panel-max-height: calc(
+      100dvh / var(--topology-ui-scale-factor) - var(--topology-node-popover-top) -
+        var(--map-panel-bottom-reserve)
+    );
+    /*
+     * The **selected-node inspector's** own ceiling. It is an alias, not a copy: at
+     * `lg` and above the inspector and the meaning editor are the same anchored
+     * popover with the same ceiling, and writing the formula twice would let them
+     * drift the day one moves.
+     *
+     * It exists because the two surfaces stop agreeing below `lg`, where the
+     * inspector becomes a bottom sheet capped so the map keeps its majority (see the
+     * `<lg` override). The editor cannot take that cap: it is a **form**, and a form
+     * that cannot show its own submit row is broken rather than compact. Measured
+     * 2026-09-05 at 600×900 after the shared token was capped — the editor's content
+     * is 505px, the cap gave it 403, and the 「why」 textarea sat at y 756 under the
+     * panel's own sticky footer, which answered its centre instead
+     * (`contextual-meaning-editor.spec.ts`, "every control is reachable"). 768 and
+     * 834 were 46px and 7px from the same failure.
+     */
+    --map-inspector-max-height: var(--map-panel-max-height);
+    /* 9→12px (feat/chrome-system §9, INDEX panel v2.1) — Promote the radius of the shared panel layer between datasheet and INDEX to the final step of the chrome system's 4-layer step
+(keycap4·inner7·tile/chip/field10·panel12). */
+    --map-panel-radius: var(--radius-panel);
+    /* 5px was outside the ramp — rows share corners with chips. */
+    --map-panel-row-radius: var(--radius-chip);
+    --map-panel-pad: 14px;
+    --map-panel-surface: #17171c;
+    --map-panel-border: #2a2a30;
+    --map-panel-divider: #23232a;
+    --map-panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+    --map-panel-row-hover: rgba(255, 255, 255, 0.045);
+    /* rank3 — Press (active) surface for panel actions/rows. Use alpha one step darker than hover (0.045) to give tactile "press" feel via color alone (Toss press-state priority).
+No transform/scale — surface darkens as if pressed during pointer down, returns to hover on release. transition-colors (150ms) prevents hard toggle. */
+    --map-panel-row-active: rgba(255, 255, 255, 0.08);
+    /* One step **darker** block inside panel (unsupported notice · CLI bridge). The metric/action
+surfaces above are the bright side, this is the dark side so it is separate.
+2026-08-04 audit: `rgba(6,6,9,·)` literal appeared in 2 places — listed value as-is. */
+    --map-panel-recess-a35: rgba(6, 6, 9, 0.35);
+    --map-panel-recess-a45: rgba(6, 6, 9, 0.45);
+    /* 2026-08-06 audit: value was `0.028` and the action-surface below is `0.03`
+— alpha difference of 0.002 is imperceptible, and the comment above already referred to both as a pair «metric/action
+surface». Keep names separate (different locations) but derive values from one source. */
+    --map-panel-metric-surface: var(--map-panel-action-surface);
+    --map-panel-metric-text: #b6b6c0;
+    --map-panel-action-surface: rgba(255, 255, 255, 0.03);
+    --map-panel-action-border: #2f2f37;
+    /* "Power" indicator — powered (recently updated)=indigo signal, unpowered=neutral low-chroma */
+    --map-panel-power-on: var(--color-indigo-brand);
+    --map-panel-power-off: #45454d;
+    --map-panel-text-primary: #ececf0;
+    --map-panel-text-secondary: #a3a3ac;
+    /* tertiary = CONTAINS/DEPENDS caps label + kind sublabel. #77777f is 4.02:1 on dark panel (#17171c), failing AA (4.5) for 10px text → nudged to #868690 (≈4.9:1),
+still recedes compared to primary. Guardian follow-up #2. */
+    --map-panel-text-tertiary: #868690;
+    /* quaternary = Low-emphasis info text such as meter sublabels, "document not on map" hints, edge declaration source labels.
+#55555d is ~2.5:1 on dark panel (#17171c), significantly failing AA (4.5) (accessibility audit H3 P1) → raised to #82828a (~4.7:1). Maintains luminance just below tertiary (#868690,
+~4.9:1) to preserve 4-step text ladder order (adjust monochrome luminance only, no new hue). Decorative consumption points like search icons/chevrons brighten slightly but rhythm disruption is minimal. Token change requires dev server (:3107) restart. */
+    --map-panel-text-quaternary: #82828a;
+
+    /* Node popover redesign (2026-07-24 owner-approved proposal — mockup-panel-detail):
+Balanced header (name hero + kind badge + domain chip) · plain stats · quiet action
+strip · relationship groups with direction icon+count chip+underline · indigo primary
+footer. All new surfaces defined only in this `--map-panel-*` namespace,
+primary colors reference global monochrome/single indigo ladder (`--color-indigo-a*`) to avoid creating new hues (charter compliance). */
+    /* Rhythm between groups — much larger than spacing between rows within a group (space encodes grouping) */
+    --map-panel-zone-gap: 28px;
+    /* Full-bleed zone divider — major structural separation (reuse panel divider) */
+    --map-panel-zone-divider: var(--map-panel-divider);
+    /* Kind badge field — quiet elevated surface + thin border */
+    --map-panel-kind-badge-surface: rgba(255, 255, 255, 0.04);
+    --map-panel-kind-badge-border: rgba(255, 255, 255, 0.07);
+    /* Domain chip — single indigo low-chroma tint (navigation affordance) */
+    --map-panel-domain-surface: var(--color-indigo-a08);
+    --map-panel-domain-surface-hover: var(--color-indigo-a12);
+    --map-panel-domain-border: var(--color-indigo-a16);
+    --map-panel-domain-border-hover: var(--color-indigo-a24);
+    --map-panel-domain-text: var(--color-indigo-text-soft);
+    /* Relationship group header underline + direction glyph ink */
+    --map-panel-group-underline: var(--map-panel-divider);
+    --map-panel-group-dir: var(--map-panel-text-tertiary);
+    /* Relationship count chip — indigo low-chroma (same indigo 1st generation) */
+    --map-panel-count-surface: var(--color-indigo-a08);
+    --map-panel-count-text: var(--color-indigo-text-soft);
+    /* Footer primary — Indigo fill (single accent within panel) */
+    --map-panel-primary-surface: var(--color-indigo-a12);
+    --map-panel-primary-surface-hover: var(--color-indigo-a16);
+    --map-panel-primary-border: var(--color-indigo-a34);
+    --map-panel-primary-border-hover: var(--color-indigo-a46);
+    --map-panel-primary-text: var(--color-indigo-text-strong);
+
+    /* Connection group trace mini-line — same family as canvas edges (contains solid / depends dashed) */
+    /* A1 full detail indigo border — tokenizing the two literal rgba(94,106,210,0.5)s
+       (Guardian A1 follow-up P2). */
+    --map-indigo-border: var(--color-indigo-a50);
+
+    --map-edge-contains-mark: #4a4a54;
+    --map-edge-depends-mark: #5c5c72;
+
+    /* 2.7 INDEX panel (B3 hub is the map — `TopologyIndexPanel`/`TopologyIndexTab`,
+       DOM consumption, `docs/prototypes/hub-b3-immersive.html`). Replaces the old `/ontology`
+       tree hub with a left dashboard — always floating above the map. Surface/border/
+       shadow/rounding/padding are not recreated; instead, reuse the 2.6 data sheet tokens
+       (`--map-panel-*`) as-is — the approved spec's core requirement is that both
+       dashboards on the map read as the same material (machined instrument), so only
+       width/tab-width/inset are newly created.
+       The `--map-safe-inset-left` default above is inset (24) + expanded width (300)
+       + the fit's side air (52) = 376 — that token codifies the premise that INDEX is
+       the default expanded state. On collapse, the
+       `html[data-topology-index="collapsed"]` rule below narrows the safe area to the
+       tab, which stands on the map's edge: tab width (26) + air (52) = 78. HomePage toggles `data-topology-index`
+       on INDEX expand/collapse + invalidates cached tokens (`clearOntologyMapTokensCache`) +
+       forces camera re-fit.
+
+       Owner live-QA defect (2026-07-18, v1): The 18px top inset was based on the false
+       assumption that there is no brand pill/chrome row — actually,
+       `topology-top-left-chrome-group` (Relief pill + census + workspace
+       icons) already occupies that space, causing INDEX width (300px) to overflow
+       the pill text behind the panel (for both expanded and collapsed tabs). The first fix
+       reused the clearance (88px) previously used by `TopologyAnalysisBar`.
+
+       Owner chrome-recomposition confirmed spec (2026-07-18, v2,
+       docs/prototypes/chrome-recomposition.html): Formalize the top as a 56px chrome lane
+       (brand pill · embossed census single source · utility rail) and have INDEX/data sheet
+       (`--topology-node-popover-top`)/collapsed tab all start below that
+       lane — structurally preventing overlap. The two tokens must always change together.
+
+       84px (starter-polish empirical fix, 2026-07-19) — Empirical measurement of brand pill
+       (`topology-top-left-chrome-group`) bottom at 1x is 75.5px;
+       the previous 76px value left only a 0.5px gap, meaning it was already touching (today's pill is
+       not the slim 1-line pill assumed in the mockup, but a title+census subtitle 2-line
+       `HeroCollapsed`, making the previous "64px" assumption stale). 84px creates
+       an actual ~8.5px gap at 1x. Empirical `getBoundingClientRect` shows this
+       gap scales proportionally even at zoom breakpoints (1920px 1.15x → 0.9px, 2560px 1.3x → 1.3px)
+       — do not double-calculate with `--topology-ui-scale-factor`, as elements using this value
+       already carry `topology-ui-scale`, meaning zoom applies to its own top offset too. */
+    --topology-index-width: 300px;
+    /* Expanded INDEX bottom inset — default matches left/top chrome insets. In <md sheet mode
+       (media override below), it rises above the BottomTabBar reservation
+       (responsive audit rank7). */
+    --topology-index-bottom-inset: var(--topology-index-inset);
+    --topology-index-tab-width: 26px;
+    /* 18→24px (feat/chrome-system §4) — Converging to the 24px alignment rail
+       of the chrome system. Maintain single source via --chrome-inset reference. */
+    --topology-index-inset: var(--chrome-inset);
+    --topology-index-top: 84px;
+  }
+
+}

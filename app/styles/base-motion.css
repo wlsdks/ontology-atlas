@@ -1,0 +1,730 @@
+@layer base {
+  /*
+   * **Route crossfade** (2026-09-02) — `shared/lib/route-view-transition.ts` runs a rail
+   * navigation inside `document.startViewTransition`, and these rules give the browser's
+   * crossfade this system's time and curve. Measured before it existed, on the static
+   * build: 84-99% of a route change landed in one frame, on the one surface in the app
+   * with no motion at all.
+   *
+   * ⚠️ **The subject of the capture changed on 2026-09-13: the crossfade captures the
+   * pane, not the document.**
+   *
+   * Until then the root element was captured (the UA's own `:root { view-transition-name:
+   * root }`) and the nav rail was named `app-nav-rail` so it would be lifted out of that
+   * snapshot and not fade. In Chromium that works. In WebKit — which is what the installed
+   * app runs — **the root group paints over every other group**, so a named sibling is
+   * covered by the root snapshot for the whole transition and shows nothing at all.
+   *
+   * Measured on the same page in both engines (rail band ink fraction, `::view-transition`
+   * running, 1000x700):
+   *
+   * | rail styling | Chromium | WebKit |
+   * |---|---|---|
+   * | named, `animation: none` on old/new/group (what shipped) | 0.9808 | **0.0000** |
+   * | named, UA defaults, nothing overridden | 0.9808 | **0.0000** |
+   * | named, `z-index` raised on its group | 0.9808 | **0.0000** |
+   * | root pair forced to `opacity: .2` (proves the cover) | — | 0.9808 |
+   * | not named at all | 0.9808 | 0.9808 |
+   *
+   * Nothing about the pair's styling reaches it; only whether the root is captured does.
+   *
+   * ⚠️ **This table is right and the conclusion drawn from it in 2026-09-13 was not.** It
+   * was read as the explanation of the installed app's "every rail navigation blanks the
+   * whole window, rail included" (inspection 122, B1), and the blank survived the change.
+   * The blank was a **full document load**: `connect-src` refused the App Router's fetch of
+   * the arriving route's payload, so every rail press re-booted the app and restored the
+   * folder again (`scripts/lib/desktop-csp.mjs`). With that fixed, a crossing on WKWebView
+   * runs its 180 ms crossfade with **every frame painted** — rail ink 0.0243-0.0307, never
+   * 0, measured on the installed app at 1/120 s. Capturing the pane rather than the root
+   * stays, on the strength of the table above alone.
+   *
+   * So the root is **not** captured during a route change and the shell's body slot is.
+   * The rail, the page frame and everything else the shell owns stay part of the live
+   * document: they are not snapshotted, not covered, and — with the overlay declining
+   * pointer events below — not blocked either. Only the pane, the one box whose content
+   * actually changes, crossfades. `route-view-transition.ts` owns the class, which exists
+   * only while a transition is running, so nothing here changes the document's paint or
+   * containment when the app is sitting still.
+   */
+  html.route-crossfade {
+    view-transition-name: none;
+  }
+
+  html.route-crossfade [data-app-shell-pane] {
+    view-transition-name: app-pane;
+  }
+
+  ::view-transition-old(app-pane),
+  ::view-transition-new(app-pane) {
+    animation-duration: var(--motion-base);
+    animation-timing-function: var(--motion-ease);
+  }
+
+  /*
+   * ⚠️ **The transition may not outlive the crossfade it declares** (2026-09-12).
+   *
+   * The browser runs a *group* animation per captured name at the UA's own 250 ms, and a
+   * transition holds until **every** one of its animations is done. A route change does not
+   * move or resize the pane, so that animation interpolates a rectangle onto itself while
+   * the hold it adds is real: measured at 278-301 ms on three destinations and 480-489 ms on
+   * the Library, against the 180 ms this file declares. Removing it makes the transition
+   * exactly as long as the crossfade somebody chose, plus the arriving route's own first
+   * render, which `shared/lib/route-view-transition.ts` bounds.
+   */
+  ::view-transition-group(app-pane) {
+    animation: none;
+  }
+
+  /*
+   * **The live frame keeps taking presses while the pane crossfades** (2026-09-13).
+   *
+   * `pointer-events: none` here was tried on 2026-09-12 and measured to change nothing,
+   * correctly: with the root captured the whole document was unpainted and therefore
+   * unhit-testable, so the overlay was never what the hit test reached. With only the pane
+   * captured the document *is* painted, and then the overlay is the only thing in the way.
+   * Measured over a full transition, `elementFromPoint` on a rail tile:
+   *
+   * | | Chromium | WebKit |
+   * |---|---|---|
+   * | overlay left alone | `HTML` on 182 of 183 frames | `HTML` on 91 of 93 |
+   * | overlay declining presses | `HTML` on 1 of 183 | `HTML` on 0 of 93 |
+   */
+  ::view-transition {
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(app-pane),
+    ::view-transition-new(app-pane) {
+      animation-duration: var(--motion-base);
+    }
+  }
+  /* Route loading subtitle — most entries finish within 400ms, so we stay silent before that.
+     Rendering immediately causes subtitles to flash on every normal entry, which is worse
+     than the blank screen we aimed to fix.
+     The delay survives global prefers-reduced-motion rules
+     (animation-duration 0.01ms) because it is a delay, not a duration — users with reduced motion
+     see it immediately after 400ms. We do not simulate progress: only opacity fades in once. */
+  @keyframes routeLoadingIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  .route-loading-in {
+    animation: routeLoadingIn var(--motion-fast) var(--motion-ease) both;
+    animation-delay: 400ms;
+  }
+
+  /* ── Insight Motion (Phase 3 #3, 2026-07-25) ──────────────────────────────
+     Tab transition content crossfade — short fade-in for the incoming tab panel. Bar fill and
+     count-up are handled by each component via transition/JS (reusing --motion-* tokens). */
+  .insights-tab-crossfade {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  /* The gateway's screens stage (2026-09-24): pressing a name crossfades one captured screen
+     into the next **in the same slot**. Both pictures are stacked in one grid cell; the arriving
+     one fades in on `--motion-base` while the leaving one fades out on 2/3 of it under its own
+     keyframe name (`overlayFadeOut` — reusing the entrance name in reverse is the silent hard cut
+     recorded above), and `useSurfaceSwap` unmounts nothing, it only holds the leaving picture for
+     `EXIT_WINDOW_MS`. Opacity only: a 1336×860 picture sliding reads as the page moving. New
+     keyframes 0 · new durations 0. Reduced motion keeps the fade on `--motion-fast` (① below). */
+  .gateway-screen-in {
+    animation: panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  .gateway-screen-out {
+    animation: overlayFadeOut calc(var(--motion-base) * 0.67) var(--motion-ease) both;
+    pointer-events: none;
+  }
+
+  /* Keep the settings frame and navigation stationary while its selected content changes. */
+  .settings-section-in {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  /* Disclosure expansion — short fade-in when a previously collapsed lower layer
+     opens, such as for names listed only in references. Uses the same keyframes and tokens
+     as tab transitions on the same surface: similar appearances should look identical. Since it
+     grows downward only, it does not push rows above (layout shift 0). prefers-reduced-motion is
+     downgraded to immediate replacement by the global rule in the base
+     layer. */
+  .insights-disclosure-in {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  /* Instruction strip text swap — **the same strip becomes the next sentence.**
+     Frame measurement (2026-07-29): this area has the largest ink change on screen (diff
+     21.1), yet the transition was a **98.6% hard cut** with no easing, affecting only the progress dot (6px).
+     Uses the same keyframes and tokens — zero new vocabulary. Since `key` replacement
+     triggers playback forward, it avoids the reverse rewind trap. */
+  .practice-step-crossfade {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  /* ── Settings Panel Transition (Phase 3 C14, 2026-07-25) ────────────────────────────
+     The settings sheet mounts the scrim and panel together in the same createPortal commit,
+     not as a lazy chunk. However, without an entry animation, only the scrim background
+     painted first, making the panel appear with a "pop" one frame later (codex ~333ms measurement).
+     We mount the scrim and panel in the same frame using --motion-base to create a single intended
+     motion — opacity and subtle scale only, no decorative movement. reduced-motion is
+     neutralized by the global rule to immediate appearance. */
+  @keyframes settingsPanelIn {
+    from {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .app-settings-scrim-in {
+    animation: panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  .app-settings-panel-in {
+    animation: settingsPanelIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  /* Exit via the same path as entry (2026-07-28 frame measurement). Entry was 8 frames (134ms, peak
+     2.15), but exit was **1 frame**, and that delta was 4.7x the entry peak — `settingsPanelIn`
+     had no pair. New keyframe 0 · new duration 0: rewind the same keyframes in `reverse`, using the
+     same formula this file uses for exits (2/3 of entry time). Exiting is faster than entering. */
+  .app-settings-panel-out {
+    animation: settingsPanelOut calc(var(--motion-base) * 0.67) var(--motion-ease)
+      both;
+    pointer-events: none;
+  }
+
+  .app-settings-scrim-out {
+    animation: overlayFadeOut calc(var(--motion-base) * 0.67) var(--motion-ease)
+      both;
+    pointer-events: none;
+  }
+
+  /* ── Settings Sub-page Push/Pop (2026-07-26) ────────────────────────────────────
+     Navigation to sub-pages like "AI Connection" and "Agent" was a **0ms hard cut**
+     (1 frame, 0 change between pre/post frames). Height and content changed entirely, but with
+     zero directional signal, forward and backward were indistinguishable on screen.
+     As hierarchy deepens, pages enter from the right; returning enters from the left —
+     direction indicates "where you went." We reuse the DOM overlay entry token
+     (`--overlay-enter-translate` 8px) as-is: new value 0. The motion for **opening** the sheet
+     is owned by the panel itself (`.app-settings-panel-in`), so this class is not attached on first
+     mount (no two motions in one action). The reduced-motion equivalent removes only the movement axis,
+     leaving opacity, handled by the base layer below. */
+  @keyframes settingsViewPushIn {
+    from {
+      opacity: 0;
+      transform: translateX(var(--overlay-enter-translate));
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes settingsViewPopIn {
+    from {
+      opacity: 0;
+      transform: translateX(calc(var(--overlay-enter-translate) * -1));
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .settings-view-push-in {
+    animation: settingsViewPushIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  .settings-view-pop-in {
+    animation: settingsViewPopIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  /* ── State Swap on Map Right Dock (2026-07-26) ─────────────────────────────
+     Browser downgrade · no folder · no key · range check · conversation. Five states occupy the **same
+     box**, so swaps must read as crossfades — especially when a user enters a key and returns; a sudden change reads as "went to another screen," while a fade reads as "this opened here." New keyframe 0 (reusing panelCrossfadeIn), new duration 0 (reusing --motion-base). reduced-motion has no shaking axis, so it keeps timing but shortens via --motion-fast (group ① below, #699 policy). */
+  .agent-panel-stage-swap {
+    animation: panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  /* ── Next Step (2026-07-27) ────────────────────────────────────────────
+     The recommendation must arrive **after** the applied change appears on the map — if both events
+     overlap in the same frame, neither is visible; sequence dictates narrative (show reflection first,
+     then recommend next). So only one short fade: new keyframe 0
+     (reusing panelCrossfadeIn) · new duration 0 (reusing --motion-fast) · movement axis
+     0. Attention-grabbing devices (pulse/glow/number rolling) are prohibited here too — the next step is
+     a suggestion, not a notification. */
+  .agent-next-step-in {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  /* ── History Workbench Appearance (2026-07-27) ──────────────────────────────────────
+     Motion was **0** here: whether tabbing, list arriving, or screen state changing after leaving,
+     everything was a 1-frame hard cut. But on this screen, motion is causality, not decoration — if the
+     list disappears and steps appear right after you left, a static screen cannot distinguish "because I left"
+     from "screen redrawn."
+
+     Only one class: all appearances must look identical; multiple classes would give similar appearances different curves. New keyframe 0
+     (reusing `panelCrossfadeIn`) · new duration 0 (reusing `--motion-fast`) ·
+     movement axis 0.
+
+     If the consumer provides `--git-row-index`, arrival is staggered (spacing via
+     `--git-row-stagger` token). Delay survives for reduced-motion users because it is a delay, not duration,
+     but with an 8-row cap, total stays under 112ms, and the base layer below resets that to 0. */
+  .git-fade-in {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+    animation-delay: calc(var(--git-row-index, 0) * var(--git-row-stagger));
+  }
+
+  /* ── Commit Confirmation Signature (2026-07-28 Motion Audit "History" spot) ─────────────────
+     This surface had the most confirmations, yet `--motion-settle` was used **0 times**. Pressing commit
+     hard-swaps five surfaces simultaneously, with only the result line fading in over 120ms — you know it was "written," but nothing shows **"where it was committed."**
+
+     So we anchor only that newly created **line** with a confirmation ramp. Existing history must not regenerate,
+     so other rows are untouched (those rows reuse DOM and do not replay animations — keys are commit hashes).
+
+     Movement axis is within 2px. The signature of confirmation is carried by **opacity and color** — the left
+     border stands indigo then settles to its original color, stating "this just became fact,"
+     which is information lost if turned off (which line was just committed).
+
+     No glow/particles — game exceptions were discarded on 2026-07-24 and none apply here.
+     Addiction comes from loops, not particles. */
+  .git-commit-settle {
+    animation: gitCommitSettle var(--motion-settle) var(--motion-ease) both;
+  }
+
+  /** Reduced-motion equivalent — removes movement axis, keeps opacity/color (does not strip information). */
+  @keyframes gitCommitSettleReduced {
+    from {
+      opacity: 0;
+      border-left-color: var(--color-indigo-brand);
+    }
+    to {
+      opacity: 1;
+      border-left-color: transparent;
+    }
+  }
+
+  @keyframes gitCommitSettle {
+    from {
+      opacity: 0;
+      transform: translateY(-2px);
+      border-left-color: var(--color-indigo-brand);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      border-left-color: transparent;
+    }
+  }
+
+
+  /* ── List Row Expand/Collapse (2026-07-26, [AI Connection] Vendor Row) ────────────────────
+     **The exit path must match the entry path.** If it pops out without collapse motion,
+     "Cancel" reads as "something went wrong" rather than "cancelled" — because there is no clue on screen
+     to distinguish whether the disappearance was intentional or an error. So
+     opening, closing, and content swap (draft → registered) all pass through **the same single height transition**:
+     with only one class, there is no room for different curves per direction.
+
+     Reason for transitioning height in px: `height: auto` does not interpolate,
+     and `grid-template-rows: 0fr↔1fr` only handles open/close, failing to handle **content swap** (input form →
+     registered action, 3-line caption → 1-line). If the consumer continuously writes actual
+     content height via ResizeObserver, these three cases converge into one mechanism.
+
+     The way sibling rows yield space comes from here too — as the expanding row's height
+     grows continuously, pushing down rows also moves continuously, so the fact that all three are siblings in one list is read through motion (a sudden change just looks like a different screen). */
+  .ai-row-disclosure {
+    overflow: hidden;
+    transition: height var(--motion-base) var(--motion-ease);
+  }
+
+  /* Content moves one step faster than height — on open, space appears first then text enters;
+     on close, text clears first so the empty box does not look like it is closing. 2px is
+     just enough to say "came from above" without drawing attention. */
+  .ai-row-disclosure-body {
+    /* A new block formatting context: a child's margin cannot collapse out of the height the
+       disclosure measures, so the row never opens short and clips its last line. */
+    display: flow-root;
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      opacity var(--motion-fast) var(--motion-ease),
+      transform var(--motion-fast) var(--motion-ease);
+  }
+
+  .ai-row-disclosure[data-state='closed'] .ai-row-disclosure-body {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+
+  /* The same row changed state (draft input → registered action). Height is handled by the previous transition,
+     content crossfades here — if both end simultaneously, it reads as "form disappeared and result appeared"
+     rather than "this row became the registered row." This is where saving feels physical. */
+  .ai-row-swap {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  /* S7 "Area Chief" left panel crossfade — short fade-in (<200ms) of the incoming surface
+     when switching between global INDEX ↔ Area Chief. Since both surfaces occupy the same box,
+     the fade-in reads as a crossfade. prefers-reduced-motion is automatically neutralized by the global rule in the base layer below (animation-duration 0.01ms) → immediate swap. */
+  @keyframes panelCrossfadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  /*
+   * Exit-only opacity keyframe (discovered via 2026-07-28 frame measurement).
+   *
+   * **Reusing the name for exit causes a silent hard cut.** CSS animations do not
+   * restart even if only duration/direction change when `animation-name` remains the same —
+   * since the start time is unchanged, an already-finished animation interpreted with `reverse` + `both`
+   * immediately shows the end state (opacity 0) of reverse playback.
+   *
+   * Thus, places where `panelCrossfadeIn` was used for entry and the same name in `reverse` for exit
+   * all vanished in 1 frame. Node popover measurement (same element, class swap only): opacity `1 → 0`
+   * **1 frame**, then transform alone goes 1 → 0.9877 → 0.9829 → 0.9804 **slowly shrinking an already invisible element**. Brightness and movement axes are exactly reversed.
+   *
+   * The prescription is **forward playback under its own name**. New duration/easing values 0 —
+   * consumers reuse the same tokens. Elements remounted every time
+   * (map slots swapped by key) do not have this issue, but reusing names means next developers
+   * fall into the same trap, so all exits are collected under this name.
+   */
+  @keyframes overlayFadeOut {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* Settings sheet exit — replays the reverse trajectory of entry (`settingsPanelIn`) **under its own name**
+     forward. Values match entry (0.98 · --motion-ease), time is 2/3 of entry: exiting is faster than entering. */
+  @keyframes settingsPanelOut {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+  }
+
+  /* R4 "Motion Constitution" (fable design, Apple Designing Fluid Interfaces) — single entry syntax for DOM chrome on map (node popovers · edge panels · status chips). Declared with one value for symmetry between entry and exit paths: opacity 0→1 + translateY 3px→0 + scale 0.98→1. Constitution compliance — no blur/glow, scale is subtle 0.98→1 (not hover scale).
+     transform-origin is specified by consumer toward trigger (anchor node/button) direction.
+     duration/easing uses `--topology-motion-panel-duration` (180ms) +
+     `--topology-motion-ease-out` tokens. prefers-reduced-motion is automatically neutralized by the global rule in the base layer below (animation-duration 0.01ms) → immediate appearance. */
+  /* 2026-07-27 frame measurement — **brightness and movement must not use the same curve.**
+     Binding both in one keyframe let `--topology-motion-ease-out`
+     (cubic-bezier(0.16, 1, 0.3, 1)) dominate opacity too, reaching 47% on the first frame (16.7ms) and 80% at 50ms. In installed app recording,
+     the first frame captured **88.8%** of the luminance ramp — the user-called target
+     effectively popped out as a hard cut, while only the background map smoothed with 100ms easing (motion budget spent on background, not protagonist).
+
+     Movement carries the signal "grows from clicked spot," so its curve is correct. Brightness is
+     **reading time**, so we use app-wide ramp (`--motion-fast` 120ms + `--motion-ease`)
+     — new token 0, new keyframe 0 (reusing `panelCrossfadeIn`). Reduced-motion handling
+     below base layer swaps `animation-name` entirely, so this separation works regardless. */
+  @keyframes topologyChromeIn {
+    from {
+      transform: translateY(3px) scale(0.98);
+    }
+
+    to {
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .topology-chrome-in {
+    animation:
+      topologyChromeIn var(--topology-motion-panel-duration)
+        var(--topology-motion-ease-out) both,
+      panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+    /* Click focus signature — detail popover grows toward the screen coordinate direction of the clicked node;
+     consumer (HomePage positioner) injects node screen coordinates via this variable (px local coordinates). On missing injection, defaults to `center top` — other chrome like edge panels/status chips remain unchanged. CSS variables inherit, so placing on positioner lets internal `.topology-chrome-in` panel read it. */
+    transform-origin: var(--topology-chrome-in-origin, center top);
+  }
+
+  /* Syntax for **large surface swap** on map — full detail (full-screen surface) and INDEX panel
+     collapse/expand share this one. Similar appearances must look identical,
+     both were hard cuts: full detail only closed with ~200ms crossfade, so entry and exit paths differed (exit was better); INDEX 300px width 10 rows
+     toggled existence/non-existence in 1 frame, while the same click's camera took 200ms — three time axes in one action.
+     Movement/scale are not used: surfaces occupying large screen parts read as shaking the screen itself (difference from small chrome `.topology-chrome-in`). New keyframe · new duration 0 — reusing chrome motion family tokens (180ms + ease-out) so popovers/panels/full-screen surface share one clock.
+     reduced-motion equivalent below base layer keeps only opacity. */
+  /* 2026-07-28 frame measurement — this class was **opacity-only** but rode the movement curve
+     (`--topology-motion-ease-out`, expo). That curve reaches 47% on the first frame (measured 45.9%): large surface effectively turned on as a hard cut.
+     Same lesson learned by `.topology-chrome-in` on 2026-07-27 — **brightness and movement must not use the same curve.** Here there is no movement axis at all, so only brightness's curve remains: app-wide ramp (`--motion-ease`). Duration stays (chrome motion family 180ms) — new value 0. */
+  .map-overlay-in {
+    animation: panelCrossfadeIn var(--topology-motion-panel-duration)
+      var(--motion-ease) both;
+  }
+
+  /* **Exit path** of the same syntax (2026-07-28 frame measurement). Only destination surface received time; departing surface was 0 frames — while INDEX collapse's 300px panel clicked by user vanished in 1 frame (delta 13.25 @17ms), the resulting map received 217ms easing. Budget spent on background, not protagonist.
+
+     Exit is reverse playback of entry but faster (2/3) — uses same formula as map chrome exit syntax and overlay close already using, so surfaces on map share one clock. New keyframe 0 ·
+     new duration 0. Movement/scale not used here either (large surface moving reads as shaking screen — see `.map-overlay-in` comment). */
+  .map-overlay-out {
+    animation: overlayFadeOut calc(var(--topology-motion-panel-duration) * 0.67)
+      var(--motion-ease) both;
+    pointer-events: none;
+  }
+
+  /* rank2 — detail panel exit symmetry. Only entry (`topologyChromeIn`) existed; React unmounts immediately on close, reading as "pops out." Reverse trajectory of entry (opacity 1→0 + translateY 0→3px + scale 1→0.98) is created shorter than chrome-in (≈120ms, 2/3 of panel duration), then presence gate unmounts. Constitution compliance — no blur/glow, scale is reverse playback of entry syntax (not hover scale).
+     transform-origin folds to same variable as entry (clicked node direction).
+     prefers-reduced-motion instantly vanishes via base layer global rule below. */
+  @keyframes topologyChromeOut {
+    from {
+      transform: translateY(0) scale(1);
+    }
+
+    to {
+      transform: translateY(3px) scale(0.98);
+    }
+  }
+
+  /* Exit path also uses separation from entry path — brightness reverses app-wide ramp,
+     movement takes the exit family. Separating only one makes exit syntax differ from entry.
+     2026-09-05: movement moved off `--topology-motion-ease-out` (an entry curve: 61.5% of the
+     3px/0.98 travel landed in the first frame, so the panel jumped and then idled) onto
+     `--motion-ease-exit`, the same curve every framer `EXIT_TRANSITION` runs. Brightness stays
+     on `--motion-ease`: `reduced-motion-equivalent` pins it, and a fade that accelerates would
+     hold 79% opacity into its final frame while the movement is already gone. */
+  .topology-chrome-out {
+    animation:
+      topologyChromeOut calc(var(--topology-motion-panel-duration) * 0.67)
+        var(--motion-ease-exit) both,
+      overlayFadeOut var(--motion-fast) var(--motion-ease) both;
+    transform-origin: var(--topology-chrome-in-origin, center top);
+    pointer-events: none;
+  }
+
+  /*
+   * ── The map's utility rail names itself as one group ─────────────────────────
+   *
+   * The rail is four icon-only tiles (fit · tour · shortcuts · replay). Each one
+   * carried its own tooltip, so finding a control meant hovering tiles one at a
+   * time and reading one answer per wait — the rail could not be *scanned*.
+   *
+   * `:hover` and `:focus-within` are on the **group**, not the tile, so touching
+   * any one of them names all four at once and the semantic group reads as a
+   * group. `:focus-within` is not decoration here: it is the only way a keyboard
+   * user ever sees the labels, and it costs nothing because tabbing into the rail
+   * is exactly the moment the names are wanted.
+   *
+   * The group element is `pointer-events: none` with `pointer-events: auto` on the
+   * tiles, so it does not take the map's drag surface away; hover still resolves
+   * to the ancestor of whichever tile the pointer is over.
+   *
+   * Zero new durations: width takes `--motion-base` (a surface changing size) and
+   * brightness takes `--motion-fast` (the ramp's acknowledge step), which is also
+   * why the label is legible before the box has finished growing.
+   *
+   * Reduced motion is already correct through the global kill rule below
+   * (`transition-duration: 0.01ms !important`): the reveal still happens, the
+   * growth does not. That is the equivalent this file asks for — remove the
+   * moving axis, keep the information — so no carve-out is added.
+   */
+  /*
+   * **The rail lingers on the way out** (owner, 2026-09-06: "it blinks as the mouse moves
+   * down"). The four tiles are one `.chrome-rail` group, but the group is `display:
+   * contents`, so the 8px gaps between tiles belong to nobody: a pointer travelling down
+   * the rail left the group between every pair of tiles and the labels collapsed and
+   * re-grew four times. Collapse now waits one `--motion-base` before it starts, long
+   * enough to cross a gap; reveal still starts at once. No new duration: the delay reuses
+   * the same token the growth already takes.
+   */
+  .chrome-tile-label {
+    display: inline-block;
+    overflow: hidden;
+    max-width: 0;
+    margin-inline-start: 0;
+    opacity: 0;
+    white-space: nowrap;
+    transition:
+      max-width var(--motion-base) var(--motion-ease) var(--motion-base),
+      margin-inline-start var(--motion-base) var(--motion-ease) var(--motion-base),
+      opacity var(--motion-fast) var(--motion-ease) var(--motion-base);
+  }
+
+  .chrome-rail:hover .chrome-tile-label,
+  .chrome-rail:focus-within .chrome-tile-label {
+    max-width: var(--chrome-tile-label-max);
+    margin-inline-start: var(--chrome-tile-label-gap);
+    opacity: 1;
+    transition-delay: 0ms;
+  }
+
+  /* W6 LNB agent heartbeat dot — mount feels like "state awakens." Appears by fading in via opacity 0→1 + scale 0.4→1 from center origin instead of sliding (prevents sudden pop). Reuses only chrome motion family tokens
+     (`--topology-motion-panel-duration` 180ms + `--topology-motion-ease-out`) without new duration/easing — token drift 0. prefers-reduced-motion is neutralized to immediate appearance by global rule in base layer below (animation-duration 0.01ms). */
+  @keyframes railStatusDotIn {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .rail-status-dot-in {
+    animation: railStatusDotIn var(--topology-motion-panel-duration)
+      var(--topology-motion-ease-out) both;
+    transform-origin: center;
+  }
+
+  /*
+   * Staggered appearance of guide tour card steps (2026-07-28 — promoted from inline arbitrary animate).
+   *
+   * **Reason for lifting to class is reduced-motion equivalent.** Inline
+   * `animate-[panelCrossfadeIn_…]` had **no name for the reduced-motion section to target**, so it fell under global kill rule (all animations 0.01ms) and received no equivalent — staggered transitions were entirely hard-cut for reduced-motion users. The section is a selector list, and the list defines scope.
+   *
+   * Keyframes are **opacity-only** (`panelCrossfadeIn`), so no reason to disable in reduced mode. Axes touching foreground are movement, but this surface has no movement — disabling it removes "what changed" information with nothing gained (same form as #737 toast: vendor disabled information axis but kept movement axis, that failure).
+   *
+   * Card remounts via `key` per step, so this appearance runs once per step.
+   * Position interpolation is absent here — canvas node anchor steps follow rect every frame,
+   * pulled by camera spring (2026-07-24 ruling, reviewed and rejected then).
+   */
+  .guided-tour-card-in {
+    animation: panelCrossfadeIn var(--topology-tour-transition-ms)
+      var(--topology-motion-ease-out) both;
+  }
+
+  /* rank2 — single entry syntax for 3 DOM overlays (GlobalSearch · SearchPalette · NewDocKindDialog).
+     opacity 0→1 + translateY(--overlay-enter-translate)→0 only — no scale entry (avoid hover:scale-* prohibition confusion, no scale on exit for entry/exit symmetry). transform-origin is trigger direction (--overlay-spring-origin, center top fallback on missing consumer injection). */
+  @keyframes overlaySpringIn {
+    from {
+      opacity: 0;
+      transform: translateY(var(--overlay-enter-translate));
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Exit = reverse trajectory of entry. Do not add new cubic-bezier/duration literals;
+     reference the same formula used by .topology-chrome-out
+     (calc(--topology-motion-panel-duration * 0.67) + --topology-motion-ease-out) as-is — single source, zero inline literal rewrites. */
+  @keyframes overlaySpringOut {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(var(--overlay-enter-translate));
+    }
+  }
+
+  /* Canonical Select popover entry (src/shared/ui/select.tsx). Adhere to the charter's "motions focus on opacity/color, minimize transform" — use only opacity + scale-y.
+     Specify transform-origin inline based on the direction the consumer opens (top if opening downward, bottom if flipping upward). */
+  @keyframes select-pop {
+    from {
+      opacity: 0;
+      transform: scaleY(0.96);
+    }
+
+    to {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+  }
+
+  /* Exit — **play forward under its own name.** Rewinding `select-pop` with `reverse` prevents the animation from restarting on the same element, resulting in a quiet 1-frame pause (`exit-motion-restart.contract.test.ts`). */
+  @keyframes select-unpop {
+    from {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: scaleY(0.96);
+    }
+  }
+
+  /*
+   * List entry/exit (discovered via frame measurement on 2026-08-02).
+   *
+   * The previous implementation had entry but **no exit**. Measurement: the entire list vanished in one frame
+   * (16.7ms) — accounting for 98% of the panel's average luminance delta — while the remaining 2% was consumed by a 16px chevron over 120ms. The object the user requested to remove received 0ms,
+   * while the decoration spent its entire budget (`design.md` "motion budget goes to the protagonist").
+   *
+   * Values follow this repository's existing syntax — **outgoing motions are faster than incoming ones**
+   * (consistent with `settingsPanelOut` and `overlayFadeOut` already using `* 0.67`). New tokens: 0.
+   */
+  .select-listbox[data-state="open"] {
+    animation: select-pop var(--motion-fast) var(--motion-ease) both;
+  }
+
+  .select-listbox[data-state="closed"] {
+    animation: select-unpop calc(var(--motion-fast) * 0.67) var(--motion-ease) both;
+    pointer-events: none;
+  }
+
+  /* The chevron is part of the **same event** as the list — since it stems from the same input, it uses the same duration.
+     Having the list use a hard cut while the chevron used easing was the worst combination observed in measurement. */
+  .select-chevron {
+    transition: transform calc(var(--motion-fast) * 0.67) var(--motion-ease);
+  }
+
+  .overlay-spring-surface[data-state="open"] {
+    animation: overlaySpringIn calc(var(--overlay-spring-response) * 1s)
+      var(--topology-motion-ease-out) both;
+    transform-origin: var(--overlay-spring-origin, center top);
+  }
+
+  .overlay-spring-surface[data-state="closed"] {
+    animation: overlaySpringOut
+      calc(var(--topology-motion-panel-duration) * 0.67)
+      var(--topology-motion-ease-out) both;
+    transform-origin: var(--overlay-spring-origin, center top);
+    pointer-events: none;
+  }
+
+  /* Scream — reuse existing panelCrossfadeIn(opacity-only) keyframes, 0 new keyframes. Closing plays the same keyframes in reverse. */
+  .overlay-spring-scrim[data-state="open"] {
+    animation: panelCrossfadeIn var(--topology-motion-panel-duration)
+      var(--topology-motion-ease-out) both;
+  }
+
+  .overlay-spring-scrim[data-state="closed"] {
+    animation: overlayFadeOut var(--topology-motion-panel-duration)
+      var(--topology-motion-ease-out) both;
+    pointer-events: none;
+  }
+
+  /* Reduced-motion only — remove translate, use opacity crossfade only. The 120ms duration copies --map-tip-fade-ms(120) (this token is scoped to the ontology-map feature flag, so direct var() references in this DOM overlay trio are prohibited per DESIGN-SYSTEM v2 §Scope Caution — we match the value only). GlobalSearch/NewDocKindDialog applies this class instead of .overlay-spring-surface based on useReducedMotion(); SearchPalette/NewDocKindDialog(framer) plays the same 120ms from JS via OVERLAY_SPRING_REDUCED. */
+  .overlay-fade-only[data-state="open"] {
+    animation: panelCrossfadeIn 120ms linear both;
+  }
+
+  .overlay-fade-only[data-state="closed"] {
+    animation: overlayFadeOut 120ms linear both;
+    pointer-events: none;
+  }
+
+}

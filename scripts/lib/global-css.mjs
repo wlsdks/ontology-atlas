@@ -1,7 +1,11 @@
 // app/globals.css is the entry Next imports; its rules live in app/styles/*.css
 // parts pulled in by `@import "./styles/<part>.css";` lines. Gates and tests
 // that read the stylesheet as text read it through here, so they see the same
-// single body the entry used to hold, in the same order.
+// single body the entry used to hold, in the same order. The one difference:
+// where a part boundary falls inside `@layer base`, the parts close and reopen
+// the layer (`}` then `@layer base {`); Tailwind merges them, so the built CSS
+// is unchanged.
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -15,6 +19,38 @@ export function readGlobalCss(root = process.cwd()) {
   return entry.replace(PART_IMPORT, (_line, rel) =>
     readFileSync(path.join(root, 'app', rel), 'utf8'),
   );
+}
+
+/** A repo file's text at a Git ref, or null when it is absent there. */
+export function showFileAt(ref, file, root = process.cwd()) {
+  try {
+    return execFileSync('git', ['show', `${ref}:${file}`], {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * readGlobalCss() as it stood at a Git ref. A ref that predates the split has
+ * no part imports, so its plain entry comes back as is and an old base still
+ * compares. Returns null when the entry or a part is absent at that ref.
+ */
+export function readGlobalCssAt(ref, root = process.cwd()) {
+  const show = (file) => showFileAt(ref, file, root);
+  const entry = show(GLOBAL_CSS_ENTRY);
+  if (entry === null) return null;
+  let missing = false;
+  const joined = entry.replace(PART_IMPORT, (_line, rel) => {
+    const part = show(`app/${rel}`);
+    if (part === null) missing = true;
+    return part ?? '';
+  });
+  return missing ? null : joined;
 }
 
 /**

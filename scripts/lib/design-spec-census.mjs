@@ -54,6 +54,25 @@
 
 import ts from 'typescript';
 
+import { readGlobalCssAt, showFileAt } from './global-css.mjs';
+
+/**
+ * The text of a trigger file at a Git ref, as censusFor() expects it.
+ * `app/globals.css` holds only `@import` lines since the stylesheet was split
+ * into `app/styles/` parts, so its census reads the joined parts; a ref from
+ * before the split returns its plain entry, so an old base still compares.
+ * Null means the file is absent at that ref.
+ */
+export function specTextAt(ref, path, root = process.cwd()) {
+  if (path === 'app/globals.css') return readGlobalCssAt(ref, root);
+  return showFileAt(ref, path, root);
+}
+
+/** A changed stylesheet part counts as a change to the `app/globals.css` trigger. */
+export function specTriggerPath(changedPath) {
+  return /^app\/styles\/[^/]+\.css$/.test(changedPath) ? 'app/globals.css' : changedPath;
+}
+
 /** The authority the gate reads the trigger list from. The list is never duplicated here. */
 export const SPEC_RULE_DOC = '.claude/rules/design.md';
 

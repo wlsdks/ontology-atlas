@@ -1,0 +1,667 @@
+@layer base {
+  /* A short window does not keep tall reservations (2026-09-19). The lanes
+     above were sized for a tall desktop window; on the 14-inch MacBook the
+     browser gives the map 806 px and a 1024x768 window 764, and a third of
+     that went to bands holding nothing that tall — the spine ring filled 64 %
+     and 51 % of the height. Below 880 px the top keeps the tool lane plus one
+     chip row and the bottom the readout plus one name; the camera and the
+     label cull read the same numbers, refreshed on every viewport commit. */
+  @media (max-height: 880px) {
+    :root {
+      --map-safe-inset-top: 112;
+      --map-safe-inset-bottom: 72;
+    }
+  }
+
+  html[data-topology-index="collapsed"] {
+    /* The collapsed tab stands on the map's edge (`left: 0`): tab width (26) + the
+       fit's side air (52) = 78, the same air the open INDEX and the rail keep. */
+    --map-safe-inset-left: 78;
+  }
+
+  /* The agent dock pulls the utility rail to half an inset from the map's edge (the
+     dock-adjacent rail rule, `calc(var(--chrome-inset) / 2)`), so the right lane
+     follows it: 12 + tile 36 + air 52 = 100. Keyed on the attribute that moves the
+     rail, so the lane and the rail change in the same style pass; the viewport
+     commit the dock's reflow causes re-reads it (`refreshIndexDependentTokens`). */
+  @media (min-width: 768px) {
+    :root:has(main[data-agent-panel-open="true"]) {
+      --map-safe-inset-right: 100;
+    }
+  }
+
+  html {
+    background-color: var(--color-canvas);
+    color: var(--color-text-primary);
+    font-feature-settings: "cv01", "ss03";
+    color-scheme: dark;
+  }
+
+  /*
+   * Topology chrome responsive scale — At 27"(2560px) wide resolutions, fixed px
+   * chrome (header pill · analysis panel · legend · popover) looks too small. Zoom is
+   * layout-inclusive scaling, so all internal px values scale proportionally. Graph
+   * cards (JS injected --topology-card-scale) and safe inset also use the same step (1 /
+   * 1.15 / 1.3 — resolveTopologyUiScale): a single baseline for screen size adaptation.
+   */
+  .topology-ui-scale {
+    zoom: 1;
+  }
+
+  .topology-overview-proof-summary {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--topology-overview-proof-summary-lines);
+  }
+
+  /*
+   * Prose link contract — Links within the markdown body flow (2026-08-04 prose foundation).
+   *
+   * Prose links are **not controls**: siblings are text, and line boxes are owned by
+   * the parent's `--leading-prose`, with WCAG 2.5.8 explicitly exempting targets within
+   * sentences ("The target is in a sentence"). Thus, they are not destinations for the
+   * value layer (`controlClass`) but rather the destination themselves — underline geometry
+   * (offset 2px) + one default decoration color. Text color/hover decoration color are
+   * layered by utilities (indigo body/amber project link), which override base values
+   * (utilities beat base, so values here are defaults).
+   *
+   * Discipline set — Gate: tests/contract/prose-link.contract.test.ts
+   * ① Do not declare display (anchor default is inline). Layering flex families kills line
+   *    breaks in prose context — empirical: at 320px, inline-flex links overflow as one rect,
+   *    while the inline counterpart folds into two rects.
+   * ② Do not declare own line-height/font-size — line boxes belong to the prose parent.
+   * ③ Preserve UA default focus — overlaying a 2px indigo box on words within a sentence
+   *    reads as highlight, not focus.
+   */
+  .prose-link {
+    text-decoration-line: underline;
+    text-decoration-color: var(--color-indigo-line-a32);
+    text-underline-offset: 2px;
+  }
+
+  /*
+   * Coarse-pointer (touch) contract — responsive audit rank2 (2026-07-23).
+   * The missing axis: width breakpoints alone can't tell a 1024–1366px display
+   * apart as fine-pointer laptop vs coarse-pointer 12.9" iPad. This block is the
+   * single source that promotes interactive control heights to
+   * `--touch-target-min` (44px) on coarse devices only, resolving both the
+   * band-B defect (32px nav-rail tiles handed to touch users at ≥1024) and the
+   * band-A touch-target shortfall. Fine-pointer devices are untouched and keep
+   * the denser desktop values. Dark-only, color unchanged — height/hit-area only.
+   */
+  @media (pointer: coarse) {
+    :root {
+      /*
+       * **Control height ramp — what this block promised itself but didn't keep** (2026-08-05).
+       *
+       * The header of this block states *"the single source that promotes **interactive
+       * control heights** to `--touch-target-min`"*, but in reality,
+       * it only raises rail/chrome/git tokens (8 total), with **no height
+       * ramp for `controlClass`.** Thus, chips/rows/buttons all remained 28–40px under fingers —
+       * empirical: 38 locations below 44px across 5 routes on mobile 390px.
+       *
+       * ## Why «actually grow» instead of «just widen hit area»?
+       *
+       * We first tried widening transparently with `touch-hit-expand` and **rejected it**:
+       * Of the 38 locations, **21 are within <12px of neighbors** (EN/KO toggle 1px · tab pair 2px),
+       * causing invisible hit areas to overlap. That's not accessibility improvement;
+       * it's an **auto-touch generator**.
+       *
+       * Conversely, growing tokens makes controls **actually expand and push each other apart** —
+       * overlap becomes impossible. The cost is density: fewer items fit on screen. We
+       * captured and accepted that cost (`docs/DECISIONS.md`).
+       *
+       * Reason for `max()`: `lg`(40) rises to 44, but if values are already ≥44,
+       * they don't drop back down. Fine pointer devices are outside this block, so
+       * **desktop density remains unchanged**.
+       */
+      --control-h-sm: max(28px, var(--touch-target-min));
+      --control-h-md: max(32px, var(--touch-target-min));
+      --control-h-lg: max(40px, var(--touch-target-min));
+
+      --app-nav-rail-tile-height: max(
+        calc(32px * var(--topology-ui-scale-factor)),
+        var(--touch-target-min)
+      );
+      --topology-chrome-control-height: var(--touch-target-min);
+      /*
+       * (Promotion of old `--topology-chrome-control-height-compact` was here —
+       * a dead token with 0 references, deleted along with its definition on 2026-07-28.)
+       *
+       * Chrome tiles/chips — the **promotion blind spot** caught by the 2026-07-28 audit.
+       *
+       * The `--topology-chrome-control-height` above rises to 44px here correctly,
+       * but the two shared primitives actually rendering top chrome (`ChromeTile`
+       * `ChromeChip`) don't read that token; they read `--chrome-tile-size`
+       * (17 src usages vs 1). Thus, promotion was **falling into an empty room** —
+       * 「Auto Align」·「Search」·「Switch to My Data」·「History」·
+       * 「Fit Map」·「Start Tour」 all remained at 36px on coarse pointers (empirical).
+       *
+       * "Chrome pill/tile 36px" in the scale fixed contract (design.md) is a **fine pointer**
+       * spec, and this block only raises it for coarse — same `max()` format as
+       * `--app-nav-rail-tile-height` above, so it's not a new spec.
+       */
+      --chrome-tile-size: max(36px, var(--touch-target-min));
+      --topology-shortcut-sheet-close-size: var(--touch-target-min);
+      /* rank2/18 — Same 44px promotion for close buttons of 3 DOM overlay types (SearchPalette ·
+         GlobalSearch, etc.). ⚠️ This comment once stated «GlobalSearch is already covered
+         by --topology-search-sheet-close-size», but that token was **absent** from this block —
+         the defect verification on 2026-08-04 caught the defect where it remained at
+         32px while the comment claimed promotion, and abolished that token so GlobalSearch
+         now reads --overlay-close-size. */
+      --overlay-close-size: var(--touch-target-min);
+      /*
+       * (Promotion of `--docs-header-tile-size` here on 2026-07-29 became **unnecessary** on 2026-08-03
+       * — document hub header tiles directly read the above `--chrome-tile-size`,
+       * automatically inheriting coarse promotion. With two promotion rules,
+       * one defaults to lagging behind, which is why we had to add this
+       * line separately on 2026-07-29.)
+       */
+      /* Connection setup actions for history destination (app install · folder selection · start recording).
+         Since this page's only job is that button, leaving it at 36px on touch
+         means the entire page loses its purpose. */
+      --git-setup-action-height: var(--touch-target-min);
+      /* Change rows in the workbench are **clickable rows** (clicking them brings
+         the changed row of that concept into the evidence column). Passing 26px desktop density
+         directly to touch means hitting adjacent rows — pointer, not width, determines this
+         (design.md touch contract). */
+      --git-row-h: var(--touch-target-min);
+      --git-step-h: max(44px, var(--touch-target-min));
+    }
+
+    /*
+     * Hit area for inline text controls — the rest that tokens couldn't fix (2026-07-28).
+     *
+     * The above promotions only reach controls **that read height tokens**. Buttons that
+     * look like text links (「Create New Document Folder」·「Explore Here」·
+     * 「Turn on Plain Language View」·「For Developers」in the first-run panel) have no height token;
+     * font height is the box height, so they remained 16–18px on coarse — 36–41% of the
+     * 44px contract, and notably the surface strangers encounter first.
+     *
+     * Growing the box changes the entire line layout, so we **keep the visible box as-is**
+     * and widen only the hit area via pseudo-elements. Since it's inside `pointer: coarse`,
+     * mouse users' density doesn't change by 1px.
+     */
+    .touch-hit-expand {
+      position: relative;
+    }
+
+    .touch-hit-expand::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      translate: -50% -50%;
+      width: max(100%, var(--touch-target-min));
+      height: max(100%, var(--touch-target-min));
+      /* The widening is for fingers, not eyes — nothing visible changes. */
+    }
+  }
+
+  /*
+   * `<lg` (BottomTabBar display zone) data sheet max-height — subtract reservation
+   * for bottom fixed tab bar (56px + safe-area) to remove underlap (responsive audit rank3).
+   * At lg(1024)+, the tab bar is `lg:hidden`, so the previous 8px margin remains.
+   */
+  @media (max-width: 1023px) {
+    :root {
+      --map-panel-bottom-reserve: calc(
+        var(--topology-mobile-bottom-tab-reserve) + 8px
+      );
+      /*
+       * `<lg` the selected-node inspector is a **bottom sheet**, and this cap is the
+       * map's share rather than the sheet's appetite (2026-09-05 audit, F1).
+       *
+       * Anchored to the top at `72px` the sheet grew to whatever its content wanted
+       * and measured 366×691 at 390×844 — 93.8% of the width, 76.8% of the canvas,
+       * 93 of 125 nodes buried. That is the `dont:node-click-fullscreen-modal` shape
+       * this repository forbids, and the ego graph the click was about was the thing
+       * it covered.
+       *
+       * **Why not 60dvh.** Two independent ceilings meet here and the lower one wins.
+       * ① The sheet spans the column at phone width, so canvas coverage is almost
+       * exactly its height ratio: 60dvh would still cover 56%. ② The camera's
+       * free-area classifier calls anything at or above `SIDE_PANEL_HEIGHT_RATIO`
+       * (0.6) a panel rather than a bar, and a full-width panel is subtracted from
+       * nothing — at 60dvh the camera would stop making room and the count that
+       * matters would go straight back up. 45dvh clears both: measured 42.2% at
+       * 390×844 and 28.0% at 834×1112, with the sheet still on the bar branch.
+       *
+       * The zoom division is the same correction the desktop token carries — inside a
+       * `zoom`ed subtree `dvh` scales with the factor. Below `lg` the factor is 1, so
+       * this is identity today and stays correct if that ever changes.
+       *
+       * ⚠️ **This caps the inspector, not every panel that shares the anchor.** The
+       * first version of this override moved `--map-panel-max-height`, which
+       * the meaning editor reads too — and the editor is a form, so 405px of ceiling
+       * put its own 「why」 textarea behind its own sticky footer at 600×900 (2026-09-05,
+       * caught by `contextual-meaning-editor.spec.ts`). The reason for the split lives
+       * with the token declaration above.
+       */
+      --map-inspector-max-height: calc(
+        45dvh / var(--topology-ui-scale-factor)
+      );
+      /* Expanded INDEX bottom also rises above reservation in zones where tab bar exists (<lg)
+         — raising only at 767 causes panel footer (AGENT HANDOFF) to penetrate 33px behind
+         the tab bar at 768–1023 (owner empirical report 2026-07-23, tablet bottom overlap). */
+      --topology-index-bottom-inset: calc(
+        var(--topology-mobile-bottom-tab-reserve) + 12px
+      );
+      /* Bottom-right readout (legend + status) same — remove tab bar occlusion. */
+      --topology-relation-legend-bottom-inset: calc(
+        var(--topology-mobile-bottom-tab-reserve) + 12px
+      );
+      /*
+       * The reading pane's «back to top» pill is bottom-anchored inside the pane, and the
+       * pane runs to the bottom of the shell slot — so below `lg` the fixed tab bar stood on
+       * top of it. Measured 2026-09-08 on `/ko/library/` with a wiki page open:
+       * `elementsFromPoint` at the pill's own centre returned the tab bar's `<a>` first at
+       * both 768×950 and 390×844, i.e. the control was neither readable nor pressable. It
+       * takes the same `+ 12px` step above the reserve as the two rows above, and because
+       * the clearance token is derived from this inset the page's reserve follows on its own.
+       */
+      --doc-reading-back-to-top-inset: calc(
+        var(--topology-mobile-bottom-tab-reserve) + 12px
+      );
+    }
+
+    /* rank2/18 — Secure reservation so SearchPalette bottom CTA/footer doesn't penetrate
+       behind BottomTabBar (same pattern as GlobalSearch sheet, single source `--topology-mobile-
+       bottom-tab-reserve`). */
+    [data-search-palette-panel] {
+      padding-bottom: var(--topology-mobile-bottom-tab-reserve);
+    }
+  }
+
+  /*
+   * rank2 — Set transform-origin for SearchPalette in <lg(BottomTabBar zone) + coarse-pointer(touch
+   * devices) to be perceived as a sheet "growing from below". Current entry motion is only
+   * translateY+opacity (no scale/rotate), so this value itself is visually no-op, but we set the
+   * anchor contract now in preparation for future scale/rotation on this surface (require pointer:
+   * coarse alongside width to avoid inferring touch from width alone — design.md touch contract).
+   */
+  @media (max-width: 1023.98px) and (pointer: coarse) {
+    [data-search-palette-panel] {
+      transform-origin: bottom;
+    }
+  }
+
+  /*
+   * `<md` expanded INDEX = full-bleed sheet (responsive audit rank7, answer to Image #8 owner
+   * question). At narrow widths, 300px left overlay permanently encroaches on more than half the
+   * canvas, creating an awkward state that is neither "panel next to map" nor "sheet over map".
+   * On tablet/phone: "one primary view at a time" — expanded INDEX becomes full sheet leaving only
+   * insets (map behind becomes context only), and collapses back to full map.
+   * Bottom rises above BottomTabBar reservation (same pattern as GlobalSearch sheet).
+   * md(768)+ remains old 300px side panel.
+   */
+  @media (max-width: 767px) {
+    :root {
+      --topology-index-width: calc(100vw - 2 * var(--topology-index-inset));
+    }
+  }
+
+  @media (max-width: 640px) {
+    [data-read-layer-surface-restore="phone-read-layer-landmark"] {
+      position: fixed !important;
+      left: 50% !important;
+      top: calc(100vh - var(--topology-floating-control-phone-bottom) - 28px) !important;
+      transform: translate(-50%, -50%) !important;
+    }
+  }
+
+  /*
+   * Overview analysis rail density contract.
+   * At short desktop heights the map's primary copy handoff must remain visible;
+   * secondary notice/tool chrome moves to the accessibility tree only.
+   */
+  
+
+  
+
+  /* [Deleted, 2026-07-18] Old SigmaTopology connector animation
+     (topology-connector-flow / topology-relation-inspector-enter keyframes,
+     .topology-connector-path rule + reduced-motion override) — consumer 0,
+     dead CSS after #344. */
+
+  @media (min-width: 1920px) {
+    :root {
+      /* Owner re-report (2026-07-23 2nd): Even reducing to 1.08, "still large and font
+         looks weird" — non-integer zoom rasterizes text at fractional scales, creating blurry
+         "weird fonts" and lingering size perception. Remove ≥1920 zoom → native 1:1 —
+         same physical size as 1440, sharp text. */
+      --topology-ui-scale-factor: 1;
+    }
+
+    .topology-ui-scale {
+      zoom: 1;
+    }
+  }
+
+  @media (min-width: 2400px) {
+    :root {
+      /* Maintain gentle correction only for 2400+ ultra-wide (reduce steps 1.3→1.2→1.1). */
+      --topology-ui-scale-factor: 1.1;
+    }
+
+    .topology-ui-scale {
+      zoom: 1.1;
+    }
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    [data-harness-detail] {
+      /* Slot swaps retain an opacity-only acknowledgement after the global travel stop. */
+      animation-duration: var(--motion-fast) !important;
+    }
+  }
+
+  /*
+   * **The stopped scan mark must rest somewhere a reader can see.**
+   *
+   * The global rule above stops the travel, which is the decision registered for this class in
+   * `reduced-motion-equivalent.contract.test.ts`. What it does not do is undo the keyframe's
+   * starting transform, and that start is `translateX(-100%)` — measured through a fresh-element
+   * computed-style probe with reduced motion emulated: `matrix(1, 0, 0, 1, -400, 0)`, the bar
+   * parked entirely off the left edge of its own track. An empty track and a stalled read look
+   * identical, which is the confusion the whole waiting screen exists to remove.
+   *
+   * `transform` is not one of the properties the global rule marks `!important`, so this wins
+   * wherever it sits; it lives after that rule anyway, which is the ordering the note below the
+   * list-row equivalent spells out for anything that has to beat it.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .harness-scan-sweep {
+      transform: none !important;
+    }
+  }
+
+  /*
+   * List-row disclosure is a reduced-motion **equivalent**, not an off switch.
+   *
+   * The global rule above cuts every transition to 0.01ms. Here, motion is not
+   * decoration but **evidence of causality**: without feedback, a static screen
+   * cannot distinguish a card removed by the user's Cancel action from a broken
+   * app. Remove only the moving axes (height and translate) and retain the stable
+   * axis (opacity). Size and position changes trigger vestibular response;
+   * brightness changes do not. WCAG 2.3.3 likewise targets motion animation.
+   *
+   * The global rule uses `!important`, so this override must use `!important`
+   * and appear **later** in source order. Reordering it silently disables it.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .ai-row-disclosure {
+      transition-duration: 0ms !important;
+    }
+
+    .ai-row-disclosure-body {
+      transition-duration: var(--motion-fast) !important;
+    }
+
+    .ai-row-disclosure[data-state='closed'] .ai-row-disclosure-body {
+      transform: none;
+    }
+  }
+
+  /*
+   * Apply same principle to **entire crossfade family** (2026-07-26 frame empirical).
+   *
+   * With the above principle declared, only `.ai-row-disclosure` actually adhered to it,
+   * leaving the rest of the app surfaces with hard cuts in reduced-motion — settings sheet
+   * 150ms easing → 0ms, insight tab transition 150ms → 0ms (both measured at 1 frame).
+   * Especially where causality is conveyed **only by motion** (popovers/full details over map),
+   * complete stillness doesn't distinguish "I triggered this" from "screen is broken".
+   *
+   * Method is same as above: remove shaking axes (translate·scale) but keep non-shaking axis
+   * (opacity). **New keyframes 0 · New duration 0** — appearances carrying transform change only
+   * the keyframe **name** to opacity-only (`panelCrossfadeIn`) and ride their own
+   * duration token.
+   *
+   * Absence here is intentional: infinite heartbeat (`.agent-pending-dot`)
+   * and decorative flows remain stopped, which the adjacent
+   * text already states. `.overlay-spring-surface` already has a separate path
+   * that swaps class to `.overlay-fade-only` for consumption.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    /* ① Already opacity-only — revert time only. */
+    .insights-tab-crossfade,
+    .insights-disclosure-in,
+    .gateway-screen-in,
+    .gateway-screen-out,
+    .ai-row-swap,
+    .agent-panel-stage-swap,
+    .agent-next-step-in,
+    .overlay-fade-only[data-state='open'],
+    .overlay-fade-only[data-state='closed'] {
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    /* History workbench — no shaking axis, so keep time but **remove the staircase**.
+       Staircases convey "order", not causality, so for reduced-motion users,
+       it's better if the list arrives all at once. */
+    .git-fade-in {
+      animation-duration: var(--motion-fast) !important;
+      animation-delay: 0ms !important;
+    }
+
+    /* Confirmed signatures are **kept** — which line is the current one is information, and deceleration
+       does not mean taking information away from the user. The axis to remove is translation, so only that is removed while opacity and color remain. Time is
+       lowered to a confirmation ramp. */
+    .git-commit-settle {
+      animation-name: gitCommitSettleReduced !important;
+      animation-duration: var(--motion-fast) !important;
+      animation-delay: 0ms !important;
+    }
+
+    /* ① Already opacity-only — restores time only. */
+    .practice-step-crossfade,
+    .settings-section-in,
+    .route-loading-in {
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    .app-settings-scrim-in,
+    .app-settings-scrim-out {
+      animation-duration: var(--motion-base) !important;
+    }
+
+    .map-overlay-in,
+    .map-overlay-out,
+    .overlay-spring-scrim[data-state='open'],
+    .overlay-spring-scrim[data-state='closed'] {
+      animation-duration: var(--topology-motion-panel-duration) !important;
+    }
+
+    /*
+     * Guide tour card (2026-07-28) — a surface covering the screen on first visit, but it was outside the registry.
+     * There was **no name to point to** for inline arbitrary animate, so for users with reduced motion,
+     * step transitions were entirely hard-cut (scream, card, and ring all).
+     *
+     * Since keyframes are opacity-only, time is **restored** — the axis to remove (translation)
+     * does not exist on this surface, and turning it off would only remove the "what changed" information.
+     * The `transition-[top,left,width,height]` of the cut-out ring remains cut — that is
+     * the true translation axis, so removing it in reduced motion is correct.
+     */
+    .guided-tour-card-in {
+      animation-duration: var(--topology-tour-transition-ms) !important;
+    }
+
+    /*
+     * Toast (sonner) — **not turning it off, but reducing the shake**.
+     *
+     * The vendor turns everything off in their own `@media (prefers-reduced-motion)` with `transition: none
+     * !important`. The measured result was that **only the worse of the two remained**:
+     * the **informational motion** (opacity) of notification arrival disappeared in 1 frame,
+     * but the **position jump** of `--y: translateY(100%)` (toast height = 53.5px)
+     * **remained as is**. This is exactly opposite to this file's discipline.
+     *
+     * ① Remove the movement axis **from the starting point** (both entry/exit start at y=0 → travel
+     * distance 0) ② Restore only opacity with --motion-fast. Do not touch the mounted toast's stack
+     * offset — that is layout, not entry motion; removing it causes
+     * multiple notifications to overlap and stack.
+     *
+     * **It must win here (within the same layer).** Among `!important`s, the cascade
+     * layer order is inverted, so **the one inside the layer wins over the one outside** — when written as an
+     * unlayered rule at the end of the file, specificity becomes (0,3,0), but it loses to the global
+     * kill rule (`*`, 0,0,0), resulting in a calculated value of 0.01ms (verified). Even if the rule exists,
+     * if its position is wrong, it is as if it does not exist.
+     */
+    [data-sonner-toaster] [data-sonner-toast].app-toast {
+      transition-property: opacity !important;
+      transition-duration: var(--motion-fast) !important;
+      transition-timing-function: var(--motion-ease) !important;
+    }
+
+    [data-sonner-toaster] [data-sonner-toast].app-toast:not([data-mounted='true']),
+    [data-sonner-toaster] [data-sonner-toast].app-toast[data-removed='true'] {
+      --y: translateY(0) !important;
+    }
+
+    /* ② Entrance/exit with transform — only changes the keyframe name. */
+    .app-settings-panel-in,
+    .settings-view-push-in,
+    .settings-view-pop-in {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--motion-base) !important;
+    }
+
+    /* Exit is swapped to **the exit name** — reusing the entrance name in reverse
+       prevents animation restart on the same element, resulting in a quiet 1-frame drop. */
+    .app-settings-panel-out {
+      animation-name: overlayFadeOut !important;
+      animation-duration: var(--motion-base) !important;
+    }
+
+    .topology-chrome-in,
+    .rail-status-dot-in {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--topology-motion-panel-duration) !important;
+    }
+
+    .topology-chrome-out {
+      animation-name: overlayFadeOut !important;
+      animation-duration: calc(var(--topology-motion-panel-duration) * 0.67) !important;
+      /* The shorthand above lists the movement first, so the surviving fade would inherit
+         the exit curve; brightness keeps the settling family here as it does with motion on
+         (measured 2026-09-05 on the real recording, r5-motion-verify-C). */
+      animation-timing-function: var(--motion-ease) !important;
+    }
+
+    /* Select list — removes only the shaking axis (scaleY) and restores brightness time.
+       Where the chosen value came from is information for users with reduced motion too. The chevron's rotation is
+       a true translation axis, so the global rule above correctly cuts it. */
+    .select-listbox[data-state="open"] {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    .select-listbox[data-state="closed"] {
+      animation-name: overlayFadeOut !important;
+      animation-duration: calc(var(--motion-fast) * 0.67) !important;
+    }
+
+    /*
+     * Entrance choreography for gateway landing — the equivalent for reduced motion is **always visible** (2026-08-18).
+     *
+     * The rise/headline/caption on this surface are transition-based, so the global kill rule above
+     * has already cut time, but since the initial state is `opacity: 0`, cutting only time leaves
+     * "hidden until JS attaches the in class". For users with reduced motion, the alternative to choreography is **a screen fully visible from the start** — what is lost is decoration (entrance order), and all information remains.
+     *
+     * ⚠️ Must be inside `@layer base`, **after** the global kill rule —
+     * `!important` outside the layer loses to the one inside (measurement in the toast comment above this file). Gate: `tests/contract/gateway-fx-exception.contract.test.ts`.
+     */
+    .gateway-rise,
+    .gateway-map-after {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+
+    /* The headline hides its characters with `visibility`, so this is the axis that has to be
+     * forced back — `opacity: 1` would leave every character hidden. */
+    .gateway-type-ch {
+      visibility: visible !important;
+    }
+
+    .gateway-term-line {
+      opacity: 1 !important;
+    }
+
+    /* The hover caption is opacity-only, so it keeps its 120ms fade instead of the global
+       kill's hard cut — the same rule the toast above follows (council, 2026-09-02). */
+    .gateway-hero-caption {
+      transition-duration: var(--motion-fast) !important;
+    }
+  }
+
+  /*
+   * Accessibility: Support for high contrast mode (Windows High Contrast · Safari Increase Contrast).
+   * On a dark canvas, text is made brighter to increase distance from the canvas.
+   */
+  @media (prefers-contrast: more) {
+    :root {
+      --color-text-tertiary: #b0b5be;
+      --color-text-quaternary: #8f95a0;
+    }
+  }
+
+  /* Selection color */
+  /*
+    ⚠️ Do not manually copy tokens (corrected 2026-08-05). The `rgba(193, 74, 36, 0.4)` here was **byte-identical** to `--color-indigo-a40` —
+    the name already existed 3,600 lines above, so this was just rewriting the value. If the token moved,
+    only the selection highlight would not have followed.
+
+    There are two reasons this passed `check:tokens`: that gate only scans `.ts`/`.tsx` and completely ignores `.css`, and moreover **it is not hooked into any workflow so it has never run in CI**. Both were fixed in the same PR.
+  */
+  ::selection {
+    background-color: var(--color-indigo-a40);
+    color: var(--color-text-primary);
+  }
+
+  a,
+  button,
+  [role="button"] {
+    -webkit-tap-highlight-color: var(--color-tap-highlight);
+    touch-action: manipulation;
+  }
+
+  /* Print — leaves only Docs Vault viewer body and hides UI. Reverses to a light background
+     to improve ink/readability in printer/PDF save. */
+  @media print {
+    body > * {
+      visibility: hidden;
+    }
+    [data-docs-viewer],
+    [data-docs-viewer] * {
+      visibility: visible;
+    }
+    [data-docs-viewer] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      color: #111;
+      background: #fff;
+    }
+    [data-docs-viewer] a {
+      color: #1a1a1a;
+    }
+  }
+}
+

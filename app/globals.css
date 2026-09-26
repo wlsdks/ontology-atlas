@@ -19,7 +19,11 @@
 @source "../src/**/*.{ts,tsx}";
 
 @import "./styles/tokens.css";
-@import "./styles/base.css";
+@import "./styles/base-foundation.css";
+@import "./styles/base-motion.css";
+@import "./styles/base-root-alpha.css";
+@import "./styles/base-map-tokens.css";
+@import "./styles/base-responsive.css";
 @import "./styles/shell.css";
 @import "./styles/gateway.css";
 @import "./styles/gateway-map.css";
