@@ -136,6 +136,14 @@ describe("DocMetaBar", () => {
     expect(screen.queryByRole("link", { name: /의미 지도/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole("link").filter((a) => (a.getAttribute("href") ?? "").includes("/ontology/?node="))).toHaveLength(0);
   });
+
+  it("shows the Git-derived revision only when the manifest carries one", () => {
+    const { unmount } = renderMetaBar({ ...doc, revision: 12 });
+    expect(screen.getByTestId("doc-revision").textContent).toContain("12");
+    unmount();
+    renderMetaBar();
+    expect(screen.queryByTestId("doc-revision")).not.toBeInTheDocument();
+  });
 });
 
 /**

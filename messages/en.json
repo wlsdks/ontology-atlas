@@ -1641,7 +1641,9 @@
         "notOnMapLabel": "Not on the map",
         "notOnMapBody": "This document is not drawn on the map yet. Fill in what the diagnostic above says is missing and it will appear there.",
         "notOnMapWikiBody": "This is a write-up about sources, so it is not on the map. That is the design, not a gap. The map carries concepts; a page like this is read in the Library, beside the document it came from.",
-        "recordTimeTitle": "Last written {at}. That is when the file changed, which is not the same as when someone checked it."
+        "recordTimeTitle": "Last written {at}. That is when the file changed, which is not the same as when someone checked it.",
+        "revisionLabel": "rev {count}",
+        "revisionTitle": "{count, plural, one {# commit has} other {# commits have}} changed this document. Git keeps the count; nobody edits it."
       },
       "sidebar": {
         "treeHeader": "Document list",

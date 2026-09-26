@@ -1,3 +1,10 @@
+---
+title: "What is this?"
+doc_type: guide
+status: current
+area: product
+---
+
 # What is this?
 
 **Keep understanding your system as agents change its code.** Before accepting a

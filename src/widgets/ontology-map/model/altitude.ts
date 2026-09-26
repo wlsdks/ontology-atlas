@@ -2,7 +2,7 @@
  * Altitude tier computation — the B2+ prototype's `farT`/`updateAltitude()`/
  * `renderAltitude()` (`docs/prototypes/topology-b2plus.html` §8b, §11).
  *
- * Contract (`docs/ONTOLOGY-MAP-DESIGN.md` §3.1 — "hard invariant: NO discrete
+ * Contract (`docs/design/ontology-map.md` §3.1 — "hard invariant: NO discrete
  * branch"): a single continuous `farT ∈ [0,1]` drives every visual axis
  * (fill/stroke tier, corner-radius morph, label alpha, edge width). There is
  * no `if (mode === 'far') {...} else {...}` anywhere downstream — only this

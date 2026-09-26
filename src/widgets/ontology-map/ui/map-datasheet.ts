@@ -1,6 +1,6 @@
 /**
  * Pure view-model helpers for the ontology-map "component datasheet" panel
- * (`docs/ONTOLOGY-MAP-DESIGN.md` §5 — agent-handoff differentiation). No React,
+ * (`docs/design/ontology-map.md` §5 — agent-handoff differentiation). No React,
  * no i18n, no DOM — so the grouping / metric line / handoff payload are
  * unit-testable on structure alone and stay locale-agnostic.
  *

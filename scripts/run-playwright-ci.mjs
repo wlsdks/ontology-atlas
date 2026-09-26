@@ -5,6 +5,8 @@ import { readFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const CI_MAX_FAILURES = 5;
+
 export function inventoryFiles(report) {
   if (report.errors?.length) throw new Error('Playwright discovery reported errors');
   const files = new Map();
@@ -70,10 +72,12 @@ export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), 
   const filters = selected.files.map((file) => `/${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
   const reportFile = resolve(cwd, `output/playwright/results-${index}.json`);
   rmSync(reportFile, { force: true });
-  // A red shard cannot become green by running more files. CI retries the failing
-  // test first, then stops this shard so a shared setup regression does not spend
-  // the full matrix budget repeating the same failure in every spec.
-  const failFast = env.CI === 'true' || env.CI === '1' ? ['--max-failures=1'] : [];
+  // A red shard cannot become green by running more files, and a shared setup
+  // regression would repeat in every spec, so CI stops the shard early. Not at
+  // the first failure: that hid the rest of the shard, and bundle #1874 needed
+  // three landings to see three independent failures (lesson 4c50b3c9). Five
+  // still stops a systemic break within minutes.
+  const failFast = env.CI === 'true' || env.CI === '1' ? [`--max-failures=${CI_MAX_FAILURES}`] : [];
   const result = spawn('pnpm', ['exec', 'playwright', 'test', ...project, ...filters, ...failFast, '--reporter=list,json'], {
     cwd, env: { ...env, PLAYWRIGHT_JSON_OUTPUT_NAME: reportFile }, stdio: 'inherit',
   });

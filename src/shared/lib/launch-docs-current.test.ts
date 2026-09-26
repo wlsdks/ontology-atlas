@@ -1,3 +1,4 @@
+import { readdirSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -5,18 +6,28 @@ import { CLI_COMMAND_COUNT } from '../../../cli/src/lib/cli-commands.mjs';
 
 const ROOT = path.resolve(__dirname, '../../..');
 
+/** The feature inventory: `docs/FEATURES.md` and one file per surface under `docs/features/`. */
+const FEATURE_DOCS = [
+  'docs/FEATURES.md',
+  ...readdirSync(path.join(ROOT, 'docs/features'), { recursive: true })
+    .map(String)
+    .filter((file) => file.endsWith('.md'))
+    .map((file) => `docs/features/${file.split(path.sep).join('/')}`)
+    .sort(),
+];
+
 // `docs/archive/PUBLISH-NPM.md` moved to `docs/archive/` when the npm publishing
 // plan was retired (docs/DECISIONS.md 2026-07-27). Archived documents preserve
 // what was true at the time, so they are out of scope for current-surface gates.
 const CURRENT_SURFACE_DOCS = [
   'README.md',
-  'docs/FEATURES.md',
+  ...FEATURE_DOCS,
   'docs/launch/README.md',
   'docs/launch/HN-POST.md',
   'docs/launch/REDDIT-POSTS.md',
   'docs/launch/X-THREAD.md',
   'docs/launch/DEMO-GIF-STORYBOARD.md',
-] as const;
+];
 
 /** Documents checked for demo links that promise the map but point at the site root. */
 const DEMO_LINK_DOCS = [
@@ -39,6 +50,10 @@ const STALE_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
 ];
 
 describe('current-surface launch docs', () => {
+  it('scans the split feature inventory, not an empty folder', () => {
+    expect(FEATURE_DOCS.length).toBeGreaterThan(10);
+  });
+
   it('do not advertise stale MCP or frozen test counts', async () => {
     const findings: string[] = [];
 

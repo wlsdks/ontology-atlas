@@ -2,260 +2,154 @@
 /**
  * `pnpm pr:land <number>` — the only way a pull request reaches `main`.
  *
- * **The measurement this exists for** (2026-09-12). `main` required eight
- * status contexts with the classic "branch must be up to date" policy on, so
- * every merge turned every other open pull request BEHIND. The next agent ran
- * `gh pr update-branch`, paid a full CI round, and the merge after that did the
- * same thing to everyone else. Five pull requests cost roughly four CI rounds
- * each, and two agents racing for the same window lost both rounds.
+ * **The measurement this shape answers** (2026-09-26). `main` requires eight status contexts,
+ * `strict` is off (no "must be up to date"), history is linear, and the owner is a personal
+ * account, so GitHub's merge queue is unavailable (below). One CI run on a pull request costs
+ * `checks.yml` 2-5 minutes and `e2e.yml` 17-21 minutes, fanned out to about eight jobs. The
+ * previous version of this file held **one lock per pull request** across merge main in → local
+ * lanes → mark ready → about 20 minutes of CI → squash merge, and the median gap between merges on
+ * `main` was 55 minutes. The target load is 20 people with 20 agents each: about 400 pull requests
+ * in a burst, which serial landing turns into roughly 200 hours, and one CI run per pull request
+ * at that scale saturates the Actions runners on its own.
  *
- * **The owner's shape** (2026-09-12): most changes overlap anyway, so do not
- * run CI on a branch that is not yet the thing being merged. Open the pull
- * request as a **draft**, which runs nothing; when it is that branch's turn,
- * merge today's `main` into it, then make it ready, which fires **one** CI run
- * on exactly the tree that is about to land. One pull request, one CI run.
+ * So the lock now protects a **train**, not a pull request, and a pull request that does not need
+ * the lock does not wait for it.
  *
- * **Why this script and not GitHub's merge queue.** The merge queue is the
- * right mechanism for this and it is not available here: it requires an
- * organization-owned repository, and `wlsdks/ontology-atlas` is owned by a
- * personal account. Proven twice on 2026-09-12 — `POST /repos/.../rulesets`
- * answers `422 Validation Failed: Invalid rule 'merge_queue'` even with no
- * parameters at all, and GraphQL's `BranchProtectionRule` has no
- * `requiresMergeQueue` field on this account. `docs/DECISIONS.md` carries the
- * record; the workflows already carry the `merge_group` trigger, so an
- * organization transfer turns the queue on and leaves this script a wrapper.
+ *   1. **Enqueue, don't lock.** `pnpm pr:land <n>` refuses what it always refused (closed, fork,
+ *      conflicting), then puts the `landing-queue` label on the pull request. With the default it
+ *      then waits, printing progress, and exits with the pull request's outcome: 0 landed, 1
+ *      ejected or closed. `--no-wait` exits right after enqueueing. Whoever finds the lock free
+ *      becomes the conductor; `pnpm pr:land --conduct` conducts without queueing anything.
+ *   2. **The conductor runs trains.** It takes up to `--batch=<n>` (default 20) queued pull
+ *      requests in queue order, creates `train/<timestamp>-<first>` from `origin/main` through the
+ *      Git refs API, and merges each component's head into it server-side (`POST .../merges`). A
+ *      409 conflict ejects that component with a comment and the train continues without it.
+ *   3. **One CI run per train.** The train branch gets its own pull request, opened ready, so its
+ *      `opened` event fires the required contexts once for every component. Components stay
+ *      drafts and run nothing.
+ *   4. **Green → merge.** Before merging, the conductor checks that `main` moved only in files the
+ *      train never touched (`strict` is off, so GitHub merges onto today's `main`); an overlap
+ *      rebuilds the train. The squash commit lists every component and carries each component's
+ *      authors and `Co-authored-by` trailers. Each component is then closed with a comment linking
+ *      the train, and its branch is deleted only when `origin/main` provably contains it
+ *      (`isContained` from `bundle-branches.mjs`).
+ *   5. **Red → bisect.** A red train of more than one component splits into halves that run as
+ *      successive trains (bors-style); a red train of one ejects that pull request, naming the
+ *      failing contexts and the run. When every failing context is flaky (`--flaky=<name,...>`
+ *      or `--allow-failing`), the failed jobs are rerun once before any split or ejection.
+ *   6. **Lock-free fast path.** Before enqueueing, a pull request merges immediately, without
+ *      the train lock, when all of these hold: every required context is already green on its
+ *      head (it was made ready earlier, e.g. `pnpm pr:ci`); `git merge-tree` onto `origin/main` is
+ *      clean; the files it changes do not intersect the files `main` changed since its merge base;
+ *      no train in flight records a file set that intersects it; and `classify-change` does not
+ *      plan the full lanes for it. Each rule prints pass or FAIL. `--no-fast` forces the train.
+ *      Fast-path merges serialize among themselves on `refs/atlas/landing-fast`, a two-minute
+ *      lease held only for the seconds between the last check and the merge call.
  *
- * **What one landing does.**
+ * **Why merging onto a moved `main` is safe here, and exactly when.** Both the fast path and the
+ * train merge a tree CI never ran: the tested tree plus whatever reached `main` since. That is
+ * sound only when the two differ in files the landing never touched, which is what the disjoint
+ * rule and the train's drift check enforce, and the post-merge `push` run on `main` still runs
+ * (the workflows' `push: branches: [main]` trigger). Anything that shares a file goes through a
+ * train whose CI saw the combination.
  *
- *   0. **Take a place in line.** `refs/atlas/landing-queue` records who asked and when, and a
- *      waiter takes a free lock only when it is the oldest live entry. The create below is a
- *      mutex, not a queue: without this, the winner is whoever happens to be awake in the instant
- *      after a release, and a waiter whose poll phase never lands there waits until it gives up.
- *      Measured on 2026-09-19 — one pull request waited the full `--timeout` while ten landed past
- *      it. The line is advisory and every failure falls back to the old race; `QUEUE_REF` carries
- *      the rules.
- *   1. **Lock.** `refs/atlas/landing-lock` is created through the Git refs API,
- *      whose create is a server-side compare-and-swap: a second creator gets
- *      `422 Reference already exists`. That is the mutex, and while it is held
- *      nothing else can move `main`, which is what makes one CI run enough. The
- *      ref points at a blob naming who holds it, for which pull request, and
- *      since when, so `pnpm pr:queue` can name the holder instead of guessing.
- *      The holder refreshes it every poll; a lock not refreshed for
- *      `LEASE_MINUTES` belongs to a dead process and is taken over, out loud.
- *   2. **Pour main in.** `POST /repos/.../merges` merges `main` into the pull
- *      request's own branch server-side: `201` created a merge commit, `204`
- *      means the branch already contains main, `409` is a conflict only the
- *      author can resolve. No local checkout is touched, so this works from any
- *      worktree, including one that has never seen the branch.
- *   3. **Run the local lanes on the merged source.** `pnpm checks:changed --
- *      --run <changed files>` in the pull request's own worktree, minus the
- *      browser lanes, which CI owns. This is the answer to "green on my branch,
- *      red once main was merged in": it is found here, in minutes, instead of
- *      inside the one CI run.
- *   4. **Fire CI once.** `gh pr ready` turns the draft into a ready pull
- *      request, and `ready_for_review` is what the workflows run on. A draft's
- *      pushes run nothing at all.
- *   5. **Merge, prune, release.** Wait for the required contexts (read from the
- *      branch protection, never listed here), squash merge, delete the remote
- *      branch, prune locally, and always release the lock, including on Ctrl-C.
- *      **No worktree is removed** unless `--cleanup <path>` asks for one:
- *      `--worktree` only says where step 3 runs. See `worktreeToRemove`.
+ * **What the previous version did that this one no longer does, and why.**
+ * - *Local lanes on the merged source.* Every author already ran `pnpm checks:changed`, the train
+ *   runs the full required contexts once, and a bisect finds the breaker. Running the local lanes
+ *   per component would serialize the conductor by minutes per pull request, which is the cost this
+ *   rewrite exists to remove; for the fast path, the disjoint rule already guarantees the merge
+ *   cannot change a file the author's own run did not see. `--worktree` is accepted and ignored.
+ * - *Merging `main` into each pull request.* The train starts from `main`, so components are never
+ *   pushed to, stay drafts, and cost no CI.
+ * - *`--parallel-ci`.* Early CI for backlog-only drafts. `pnpm pr:ci <n>` followed by
+ *   `pnpm pr:land <n>` does the same for any disjoint change through the fast path. Accepted and
+ *   ignored with a note.
+ * - *The `refs/atlas/landing-queue` waiting line.* It ordered waiters racing for a per-PR lock.
+ *   Order now lives in the label, so a waiter that dies stays queued and still lands.
  *
- * One landing, in order: **take a place, lock, merge main, local checks, ready, one CI run,
- * merge, clean.**
+ * **Why a label is the queue, not a ref.** A label is set and removed atomically per pull request,
+ * so two enqueuers can never overwrite each other (the ref was one JSON blob, last write wins,
+ * and a waiter could lose its place — measured 2026-09-19). It survives the enqueuing process,
+ * which `--no-wait` requires. Listing it is one paginated GraphQL query, which spends the GraphQL
+ * budget rather than the REST budget the lock reads already use (2026-09-20: lock and protection
+ * reads cost 2 REST each, and twenty-six landers exhausted 5,000/hour). And a person sees the queue
+ * in GitHub's own pull-request list and can dequeue by removing the label. Arrival order is the
+ * time of the latest `LabeledEvent` for the label.
  *
- * **Marking ready is the one step a failed landing does not undo** (2026-09-19). Everything
- * else here is idempotent or released on exit: the lock, the waiting-line entry, the merge of
- * main into the branch. Step 4 is not — `gh pr ready` is one-way, and a landing that then
- * fails CI, loses the lock, or is stopped leaves the pull request **ready**. From that moment
- * every push to it fires another full CI run, which is the opposite of the "draft runs no CI"
- * economy this file is built on, and nothing on screen says so. Two sessions discovered it the
- * same night by reading `isDraft` on their own pull requests after retrying a landing. **Check
- * `gh pr view <n> --json isDraft` before committing again on a pull request whose landing
- * failed**, and `gh pr ready --undo` puts it back.
+ * **Why this script and not GitHub's merge queue.** The merge queue requires an
+ * organization-owned repository and `wlsdks/ontology-atlas` is owned by a personal account:
+ * `POST /repos/.../rulesets` answers `422 Invalid rule 'merge_queue'` (2026-09-12). The workflows
+ * carry the `merge_group` trigger, so an organization transfer turns the queue on and leaves this
+ * script a wrapper. Train pull requests need no workflow change: `pull_request` has no branch
+ * filter, so `train/**` heads run the same required contexts, once.
  *
- * **The local lanes of step 3 are not the CI plan, and the gap has a name** (measured
- * 2026-09-20). `node scripts/classify-change.mjs --base=origin/main` prints what CI will
- * actually run (`gates=true unit=full …`) in a second. It is worth asking before landing,
- * because the full gates lane runs `pnpm lint` over the **whole repository** at
- * `--max-warnings 0`: once a branch is planned `full` it inherits every warning in the tree,
- * including in files it never touched. Changing the impact authority forces that plan by
- * design — the planner, this file, the workflows, `lib/focused-check-suggestions.mjs` —
- * while touching `tests/e2e/**` alone does not. That night a landing whose own diff was clean
- * failed `Types · Lint · Docs` on an unused declaration left on `main`, because the branch had
- * edited the check advisor two commits earlier; three sessions read it as a repo-wide outage
- * and stood their work down before the plan was read. **When the plan says `gates=true`, run
- * `pnpm lint` before landing, not only `pnpm checks:changed`.**
+ * **What is kept.** Never merge a skipped required context (`requiredCheckState`), refuse any
+ * unnamed red check (`otherCheckState`, `--allow-failing` escapes only unrequired ones), drafts
+ * run no CI, the lock is a Git-refs create (a second creator gets 422), a lease plus the holder's
+ * pid proves a dead conductor, and a read that failed never reads as an open door. Never call
+ * `gh pr merge` or `gh pr update-branch` by hand and never open a pull request without `--draft`:
+ * `.claude/hooks/block-manual-landing.sh` refuses all three. This script is the only caller of the
+ * merge API.
  *
- * **Required is not the same as "what matters"** (2026-09-13). Step 5 waited on the
- * branch protection's list and merged on "every required context is green".
- * `windows-beta-check.yml` produces no required context, had been red on `main` since
- * the records migration, and was red on the v1.2.2 release pull request eight minutes
- * before it landed here. The instrument existed and was correct; nothing surfaced its
- * verdict, and two release attempts were spent rediscovering what it had reported.
- *
- * So every check on the exact tree being merged is read, not just the required ones,
- * and an unnamed failure refuses. The escape is `--allow-failing <context>[,...]`,
- * never a blanket `--force`: a flaky unrequired lane must not block all landing, but
- * accepting a red lane is a decision someone makes by name, and the acceptance is
- * logged in the line printed before the merge. The escape cannot reach a **required**
- * context, which refuses however it is named.
- *
- * Opt-in `--parallel-ci` can start CI while waiting when both pull requests
- * only add UUID backlog records for different task names. This is speculative:
- * acquiring the lock, merging newer main, and checking the resulting head are
- * unchanged. Main advancing can therefore require another CI run. Default
- * landing keeps the one-run policy.
- *
- * Never call `gh pr merge` or `gh pr update-branch` by hand, and never open a
- * pull request without `--draft`: each of those spends a CI round nobody asked
- * for or merges past the agent already landing.
- * `.claude/hooks/block-manual-landing.sh` refuses all three.
+ * **Marking ready is still one-way.** A component that was made ready (`pnpm pr:ci`) fires CI on
+ * every push. Check `gh pr view <n> --json isDraft` before pushing again to one that failed the
+ * fast path, and `gh pr ready --undo` puts it back.
  */
 
 import { execFileSync } from 'node:child_process';
 import { hostname } from 'node:os';
 
-import { formatFocusedCheckSuggestions, suggestFocusedChecks } from './lib/focused-check-suggestions.mjs';
-import { existingPaths, runFocusedChecks } from './suggest-focused-checks.mjs';
+import { isContained, makeGit, planBundle } from './bundle-branches.mjs';
+import { buildImpactPlan } from './classify-change.mjs';
+import {
+  DEFAULT_BATCH,
+  MAX_REBUILDS,
+  QUEUE_LABEL,
+  composeSquashBody,
+  conflictComment,
+  describeFastPath,
+  describeTrain,
+  driftVerdict,
+  ejectComment,
+  fastPathEligibility,
+  landedComment,
+  nextTrain,
+  parseCoAuthors,
+  queueOrder,
+  redTrainPlan,
+  runIdsFromChecks,
+  splitTrain,
+  trainBody,
+  trainBranchName,
+  trainCiStep,
+  trainTitle,
+  waiterOutcome,
+  waiterPollSeconds,
+} from './lib/landing-train.mjs';
 
 export const LOCK_REF = 'refs/atlas/landing-lock';
+
+/** Serializes fast-path merges among themselves, for the seconds between last check and merge. */
+export const FAST_LOCK_REF = 'refs/atlas/landing-fast';
+export const FAST_LEASE_MINUTES = 2;
 
 /**
  * How long a lock survives without a refresh.
  *
- * The holder rewrites the lock on every poll, so this is not "how long a
- * landing may take" but "how long after a crash the next agent waits". Long
- * enough that a live holder inside one slow CI round is never robbed (the
- * exhaustive lane measured 28 minutes on 2026-09-12), short enough that a
- * killed process does not wedge the repository for an afternoon.
+ * The conductor rewrites the lock on every poll, so this is not "how long a train may take" but
+ * "how long after a crash the next lander waits" on another machine; on this machine a dead pid
+ * frees it at once (`classifyHolderLiveness`). Long enough that a live conductor inside one slow
+ * CI round is never robbed (the exhaustive lane measured 28 minutes on 2026-09-12).
  */
 export const LEASE_MINUTES = 45;
 
 export const POLL_SECONDS = 30;
 
 /**
- * **The waiting line**, and why the mutex above needed one.
- *
- * ⚠️ Measured on 2026-09-19. `refs/atlas/landing-lock` is a compare-and-swap create, and every
- * waiter retried it on its own independent `POLL_SECONDS` phase. There is no order in that: the
- * process that happens to be awake in the instant after a release wins, and a process whose phase
- * never lands in that instant can wait forever. One pull request waited the full
- * `GIVE_UP_MINUTES` while ten others landed past it and then exited with
- * 「gave up after 180 minutes; the lock is released and nothing merged」. A second agent reported
- * the same thing independently, in its own words: it kept losing the thirty-second race.
- *
- * So arrival order is written down. `refs/atlas/landing-queue` holds the waiters; a waiter takes
- * the free lock only when it is the oldest live entry, and otherwise yields one poll.
- *
- * **It is advisory on purpose, and every failure falls back to the old race.**
- *
- * - A `pr:land` running the previous version of this file does not know the queue exists and
- *   still races. That is fine and is why the line is advisory: an unlisted waiter never blocks
- *   anyone, so the worst case is exactly today's behaviour, and the fleet converges on order as
- *   sessions restart.
- * - An unreadable or unwritable queue means the waiter races immediately. A fairness layer that
- *   can stop a landing is worse than an unfair one.
- * - A waiter that dies without leaving the line is pruned after `WAIT_LEASE_MINUTES`, which is the
- *   longest anyone can be held up by a corpse.
- *
- * The line is read only when the lock is observed **free**, which is the rare poll, so the common
- * case costs nothing beyond the one lock read it already did.
- *
- * **These two refs are the whole REST cost of waiting, and that is not where anyone looks first.**
- * Measured on 2026-09-20 against `gh api rate_limit` either side of each call: `gh pr view --json`
- * and `gh pr checks` cost **0** — they are GraphQL, which has its own budget — while the branch
- * protection read costs 2 and a lock read (ref plus blob) costs 2. So a waiting poll spends
- * roughly 4 to 6 REST every 30 seconds, about 480 to 720 an hour, and the 5,000/hour account
- * ceiling is therefore **about eight concurrent landers**. Twenty-six of them exhausted it
- * completely that night. Anyone making polling cheaper should widen `POLL_SECONDS` or back off by
- * queue position, not touch the pull-request reads, which are already free.
+ * A train with no verdict after this long is closed and the conductor stops, leaving the queue
+ * intact. Four times the slowest measured run (e2e 21 minutes), so only a stuck run reaches it.
  */
-export const QUEUE_REF = 'refs/atlas/landing-queue';
-
-/**
- * How long a waiting-line entry survives without a refresh. Short, because a dead waiter at the
- * head of the line delays everyone behind it for exactly this long, and nothing else is at stake:
- * a live waiter rewrites its entry every `WAIT_REFRESH_SECONDS`, which is well inside it.
- */
-export const WAIT_LEASE_MINUTES = 4;
-
-/** How often a waiter rewrites its own entry while it waits. */
-export const WAIT_REFRESH_SECONDS = 60;
-
-/** Drop the entries nobody has refreshed inside the lease. */
-export function pruneWaiters(waiters, nowMs, leaseMinutes = WAIT_LEASE_MINUTES) {
-  if (!Array.isArray(waiters)) return [];
-  return waiters.filter((entry) => {
-    if (!entry || typeof entry.token !== 'string' || typeof entry.pr !== 'number') return false;
-    const seen = Date.parse(entry.seenAt ?? entry.since ?? '');
-    if (!Number.isFinite(seen)) return false;
-    return nowMs - seen <= leaseMinutes * 60_000;
-  });
-}
-
-/**
- * Put this waiter in the line, or refresh where it already stands.
- *
- * ⚠️ Rejoining never moves a waiter to the back. `since` is when it first asked, and a refresh
- * that reset it would punish exactly the waiter this whole mechanism exists for.
- *
- * ⚠️ **Which is what it did.** The first version recovered `since` only from the list it had just
- * read, so when a concurrent last-write-wins blob dropped this entry there was no standing row to
- * read it from and the waiter silently went to the back. Reported from another agent's session
- * (2026-09-19) after its lander polled 25 minutes and the queue printed it as fifth, waiting 4 —
- * and the asymmetry is the bad part: the longest waiter has the most polls in which to be dropped,
- * so the ref punished the waiter it exists to protect. `entry.since` is the caller's own memory of
- * when it first asked, and it outlives any blob. A lost entry now costs one poll of order, which
- * is the trade this file already claimed to make.
- */
-export function joinWaitingLine(waiters, entry, nowMs) {
-  const live = pruneWaiters(waiters, nowMs);
-  const standing = live.find((waiter) => waiter.token === entry.token);
-  const since = standing?.since ?? entry.since ?? new Date(nowMs).toISOString();
-  return [
-    ...live.filter((waiter) => waiter.token !== entry.token),
-    { ...entry, since, seenAt: new Date(nowMs).toISOString() },
-  ];
-}
-
-export function leaveWaitingLine(waiters, token, nowMs) {
-  return pruneWaiters(waiters, nowMs).filter((waiter) => waiter.token !== token);
-}
-
-/** Who asked first among the live waiters. */
-export function waitingLineHead(waiters, nowMs) {
-  const live = pruneWaiters(waiters, nowMs);
-  if (live.length === 0) return null;
-  return [...live].sort((a, b) => Date.parse(a.since) - Date.parse(b.since) || a.pr - b.pr)[0];
-}
-
-/**
- * May this waiter take a lock it has just seen free?
- *
- * Yes unless somebody live asked earlier. An empty, unreadable or unknown line is a yes — see the
- * fallback rule on `QUEUE_REF`.
- */
-export function mayTakeLock({ waiters, token, nowMs }) {
-  const head = waitingLineHead(waiters, nowMs);
-  if (!head) return true;
-  if (head.token === token) return true;
-  // Not listed at all: this waiter predates the queue or could not write to it. It races.
-  return !pruneWaiters(waiters, nowMs).some((waiter) => waiter.token === token);
-}
-
-export function describeWaitingLine(waiters, nowMs) {
-  const live = pruneWaiters(waiters, nowMs);
-  if (live.length === 0) return 'nobody is queued';
-  return live
-    .slice()
-    .sort((a, b) => Date.parse(a.since) - Date.parse(b.since) || a.pr - b.pr)
-    .map((waiter, index) => {
-      const minutes = Math.max(0, Math.round((nowMs - Date.parse(waiter.since)) / 60_000));
-      return `${index + 1}. PR #${waiter.pr} (${waiter.holder ?? 'unknown'}@${waiter.host ?? 'unknown'}, waiting ${minutes} min)`;
-    })
-    .join('\n           ');
-}
+export const TRAIN_TIMEOUT_MINUTES = 90;
 
 export const CONFLICT_INSTRUCTION =
   'conflicts with main, and only its author can resolve that:\n'
@@ -263,8 +157,8 @@ export const CONFLICT_INSTRUCTION =
   + '    # resolve the conflict, commit, then push the branch\n'
   + '  If only generated docs-vault JSON, the changelog or the ledger conflict, do not\n'
   + '  resolve those by hand: `pnpm docs-vault:resolve-conflicts -- --dry-run`, then the\n'
-  + '  write command. Then run `pnpm pr:land <number>` again. The landing lock was\n'
-  + '  released, so another pull request can land meanwhile.';
+  + '  write command. Then run `pnpm pr:land <number>` again. It was not queued, so\n'
+  + '  nothing waits on it meanwhile.';
 
 /** A pull request this script refuses to touch, with the reason a person can act on. */
 export function refuseLanding(pr) {
@@ -275,30 +169,12 @@ export function refuseLanding(pr) {
   if (pr.isCrossRepository) {
     return 'comes from a fork. A fork pull request is a security boundary: land it by hand after reading CONTRIBUTING.md.';
   }
+  if (pr.baseRefName && pr.baseRefName !== 'main') return `targets ${pr.baseRefName}, not main.`;
+  if (String(pr.headRefName ?? '').startsWith('train/')) return 'is a landing train; the conductor lands it.';
   if (pr.mergeStateStatus === 'DIRTY' || pr.mergeable === 'CONFLICTING') return CONFLICT_INSTRUCTION;
   return null;
 }
 
-/**
- * What the lock ref says, and whether it still counts.
- *
- * `unreadable` is deliberately not `free`: a lock whose payload cannot be
- * parsed is still a lock somebody took, and treating a shape we do not
- * understand as an open door is how a mutex becomes decoration. It becomes
- * takeable only once it is older than the lease.
- *
- * `unknown` is the same rule one layer down, and it was missing until the
- * fleet proved it. The guard above covers a payload that arrived and made no
- * sense; it does not cover a read that never arrived. Every tolerated read here
- * returned the same `null` whether the ref was genuinely absent or the request
- * failed, so on 2026-09-19, with the shared REST quota at 0/5000, `pnpm
- * pr:queue` printed `nothing is landing` while #1728 held the lock and was
- * refreshing it every minute. Nothing merged twice — `takeLock` creates the ref
- * with POST and a POST over a ref that exists fails — but a status line stated
- * a fact it had failed to fetch, which is the same defect class as an invented
- * answer. A read that did not happen now has its own state and never renders as
- * an open door.
- */
 /**
  * Who a lock's token says holds it: the machine and the process id.
  *
@@ -319,17 +195,12 @@ export function parseLockToken(token) {
  * Is the process that took this lock still running?
  *
  * ⚠️ **A lease is a guess about liveness; the pid is the fact.** Twice on 2026-09-20 a landing
- * process died holding the lock — once killed during the REST outage, once unexplained — and each
- * time the lock sat for its full 45 minutes with nobody behind it. The second was **561 minutes**
- * old when it was found, because the takeover is only consulted on the poll that needs it.
+ * process died holding the lock and it sat for its full 45 minutes with nobody behind it; once it
+ * was **561 minutes** old when found.
  *
  * Three answers, never two: `alive`, `dead`, and `unknown`. `unknown` is the honest answer for a
- * lock taken on another machine, where this process cannot see the process table at all, and it
- * leaves the lease as the only rule there. Claiming `dead` from ignorance is how a mutex becomes
- * decoration.
- *
- * The command line is checked, not only the pid's existence: pids are recycled, and a lock is not
- * free because some unrelated program inherited the number.
+ * lock taken on another machine, and it leaves the lease as the only rule there. The command line
+ * is checked, not only the pid's existence: pids are recycled.
  */
 export function classifyHolderLiveness(payload, {
   host = hostname(),
@@ -337,7 +208,6 @@ export function classifyHolderLiveness(payload, {
     try {
       return execFileSync('ps', ['-p', String(pid), '-o', 'command='], {
         encoding: 'utf-8',
-        // `ps` complains on stderr about a pid it dislikes; the empty answer is the whole message.
         stdio: ['ignore', 'pipe', 'ignore'],
       }).trim();
     } catch {
@@ -354,6 +224,19 @@ export function classifyHolderLiveness(payload, {
   return command.includes('pr-land') ? 'alive' : 'dead';
 }
 
+/**
+ * What the lock ref says, and whether it still counts.
+ *
+ * `unreadable` is deliberately not `free`: a lock whose payload cannot be parsed is still a lock
+ * somebody took. `unknown` is the same rule one layer down: a read that never arrived (on
+ * 2026-09-19, with the REST quota at 0/5000, `pnpm pr:queue` printed `nothing is landing` while a
+ * lock was held and refreshed every minute). A read that did not happen never renders as an open
+ * door.
+ *
+ * A train conductor's payload keeps the numeric `pr` field (the train's pull request, or its first
+ * component while it assembles), so an older `pr:land` still running elsewhere reads it as held
+ * rather than as unreadable and takeable.
+ */
 export function classifyLock({
   payload,
   unreadable = null,
@@ -361,8 +244,6 @@ export function classifyLock({
   leaseMinutes = LEASE_MINUTES,
   liveness = classifyHolderLiveness,
 }) {
-  // A read that did not happen is not an open door, and it is not a dead holder either: there is
-  // no token to ask about, so this answers before liveness is ever consulted.
   if (unreadable) return { state: 'unknown', holder: null, ageMinutes: null, failure: unreadable };
   if (payload === null || payload === undefined) return { state: 'free', holder: null, ageMinutes: null };
   const acquiredMs = Date.parse(payload?.acquiredAt ?? '');
@@ -371,11 +252,6 @@ export function classifyLock({
   }
   const ageMinutes = (nowMs - acquiredMs) / 60_000;
   const lease = typeof payload.leaseMinutes === 'number' ? payload.leaseMinutes : leaseMinutes;
-  /*
-   * The lease is a guess about liveness and the pid is the fact, so a holder this machine can
-   * prove is gone releases the lock now rather than in `lease - ageMinutes` minutes. On another
-   * machine the answer is `unknown` and the lease remains the only rule.
-   */
   const holderLiveness = liveness(payload);
   const state = holderLiveness === 'dead' || ageMinutes > lease ? 'stale' : 'held';
   return {
@@ -387,7 +263,7 @@ export function classifyLock({
   };
 }
 
-export function describeLock(lock) {
+export function describeLock(lock, nowMs = Date.now()) {
   if (lock.state === 'free') return 'nothing is landing';
   if (lock.state === 'unknown') return `the landing lock could not be read: ${lock.failure?.detail ?? 'the read failed'}`;
   if (lock.state === 'unreadable') {
@@ -395,34 +271,19 @@ export function describeLock(lock) {
   }
   const age = `${lock.ageMinutes.toFixed(0)} min ago`;
   const who = `${lock.holder.holder ?? 'unknown'}@${lock.holder.host ?? 'unknown'}`;
-  if (lock.state !== 'stale') return `PR #${lock.holder.pr} held by ${who} since ${age}`;
-  // Say which of the two reasons freed it: a lock two minutes old was not "never refreshed".
+  const subject = 'train' in lock.holder ? describeTrain(lock.holder.train, nowMs) : `PR #${lock.holder.pr}`;
+  if (lock.state !== 'stale') return `${subject} held by ${who} since ${age}`;
   const why = lock.holderLiveness === 'dead' ? 'its process is gone' : 'never refreshed: stale';
-  return `PR #${lock.holder.pr} held by ${who} since ${age} and ${why}`;
+  return `${subject} held by ${who} since ${age} and ${why}`;
 }
 
-/**
- * The required contexts' verdict, read against the protection's own list.
- *
- * **`SKIPPED` is not green here, and that is the whole draft design's safety
- * catch.** A job GitHub skips because the pull request is a draft reports
- * `skipped`, and branch protection counts a skipped job as satisfied. A lander
- * that inherited that reading would merge a draft whose eight required contexts
- * had never executed a line. A genuinely unaffected lane in this repository
- * does not skip its job: it runs, explains the skip, and succeeds
- * (`checks.yml`, "Skip unaffected gate setup"), so refusing `skipped` costs
- * nothing real.
- *
- * A required context that has not reported at all is `missing`, not `pending`:
- * those look identical for the first minute and completely different after ten,
- * and only `missing` means CI was never fired. Both wait, and the printed line
- * says which it is.
+/*
+ * ------------------------------------------------------------------------------------------------
+ * Check verdicts. Shared by the fast path (a component's own head) and the train (its pull request).
+ * ------------------------------------------------------------------------------------------------
  */
-/**
- * How much a rollup entry is worth when a name reports more than once.
- *
- * 2 — completed with a real verdict. 1 — still running. 0 — `SKIPPED`.
- */
+
+/** 2 — completed with a real verdict. 1 — still running. 0 — `SKIPPED`. */
 function verdictRank(run) {
   const status = String(run?.status ?? run?.state ?? '').toUpperCase();
   const conclusion = String(run?.conclusion ?? run?.state ?? '').toUpperCase();
@@ -431,15 +292,9 @@ function verdictRank(run) {
 }
 
 /**
- * When a rollup entry's check run **started**, which is what orders two runs.
- *
- * `startedAt` and not `completedAt`: a superseded run is cancelled *after* the run
- * that superseded it began, so its completion is the later timestamp, and ordering by
- * it puts the corpse in front. Starting time also survives the placeholder GitHub
- * writes as the completion of anything still in flight
- * (`0001-01-01T00:00:00Z`) — `completedAt` is the fallback only for an entry that
- * reports no start, where that placeholder reads as the oldest thing there is, which
- * is the right answer for something that has not finished.
+ * When a rollup entry's check run **started**, which is what orders two runs. `startedAt`, not
+ * `completedAt`: a superseded run is cancelled after its successor began, and GitHub writes
+ * `0001-01-01T00:00:00Z` as the completion of anything in flight.
  */
 function runStamp(run) {
   for (const field of [run?.startedAt, run?.completedAt]) {
@@ -451,27 +306,14 @@ function runStamp(run) {
 }
 
 /**
- * The newest real verdict per context name, resolving the duplicates the draft
- * design creates. Shared by the required gate and the everything-else gate so the
- * two cannot disagree about which run is current.
+ * The newest real verdict per context name.
+ *
+ * ⚠️ One name reports several times: a draft's `SKIPPED`, then the real run after `ready`, then a
+ * rerun. Keeping whichever the API listed last once read a genuine FAILURE as "never ran" and held
+ * the lock 45 minutes (#1578, 2026-09-12); ranking by verdict first then aborted a landing on its
+ * own superseded `CANCELLED` run. The newest run wins; the verdict rank breaks ties without stamps.
  */
 export function latestByName(rollup = []) {
-  /*
-   * ⚠️ **One name, several entries** (measured 2026-09-12, PR #1578).
-   *
-   * The draft design means every context reports **twice**: once as `SKIPPED`
-   * while the pull request was a draft, and once for real after `gh pr ready`.
-   * Both stay in the rollup. A plain `byName.set` keeps whichever the API
-   * happened to list last, and for `Unit · Contract` that was the `SKIPPED`
-   * one — so a context that had genuinely **FAILED** read as "never ran",
-   * which this function treats as `waiting`. The landing then held the lock
-   * for 45 minutes, polling, while the answer had been on the screen the
-   * whole time and no other pull request could land.
-   *
-   * So a duplicate is resolved rather than overwritten: a real verdict beats
-   * `SKIPPED`, a running job beats `SKIPPED`, and between two real verdicts
-   * the later one wins, which is what a re-run means.
-   */
   const byName = new Map();
   for (const run of rollup) {
     const name = run?.name ?? run?.context;
@@ -481,22 +323,6 @@ export function latestByName(rollup = []) {
       byName.set(name, run);
       continue;
     }
-    /*
-     * **The newest run wins, and only then does the verdict matter.**
-     *
-     * Measured 2026-09-12 on this very pull request, twice, in opposite directions.
-     *
-     * Ranking by verdict first fixed the draft twin and then broke the case after
-     * it: the merge push's run set was cancelled 13 s later by the toggle's set
-     * (`concurrency: cancel-in-progress`), and a completed `CANCELLED` outranked the
-     * live `IN_PROGRESS` — `MCP` cancelled at 14:34:27 against `MCP` running from
-     * 14:34:55. The landing then aborted on its **own** superseded run.
-     *
-     * A cancelled verdict is decisive only when nothing newer exists for this head.
-     * Recency settles that in one comparison, and it still settles the draft twin,
-     * whose `SKIPPED` is always older than the real run. The verdict rank remains as
-     * the tie-break for entries that report no usable timestamp at all.
-     */
     const newer = runStamp(run) - runStamp(held);
     const better = newer > 0 || (newer === 0 && verdictRank(run) > verdictRank(held));
     if (better) byName.set(name, run);
@@ -504,10 +330,6 @@ export function latestByName(rollup = []) {
   return byName;
 }
 
-/**
- * A context's completed verdict is a failure: not success, not skipped, not still
- * running. `SKIPPED` is how an inactive lane reports and is never a failure.
- */
 function isFailedRun(run) {
   const status = String(run?.status ?? run?.state ?? '').toUpperCase();
   if (status !== 'COMPLETED') return false;
@@ -518,16 +340,9 @@ function isFailedRun(run) {
 /**
  * **Every check that is not a required context, and whether it failed** (2026-09-13).
  *
- * The measurement that put this here: `windows-beta-check.yml` had been red on `main`
- * since the records migration and was red on the v1.2.2 release pull request itself,
- * 8 minutes before that pull request landed. It produces no required context, so this
- * lander read "every required context is green" and merged. The instrument existed and
- * was correct; nothing surfaced its verdict. Two releases were then spent rediscovering
- * what it had already reported.
- *
- * A flaky non-required lane must not block all landing, so the escape exists — but
- * accepting a red lane is a decision someone makes **by name**, never a blanket
- * `--force`. Named acceptances are logged with the merge.
+ * `windows-beta-check.yml` was red on `main` and on the v1.2.2 release pull request and produces
+ * no required context, so "every required context is green" merged it twice. Accepting a red lane
+ * is a decision made **by name** (`--allow-failing`), never a blanket `--force`.
  */
 export function otherCheckState({ rollup = [], requiredContexts = [], allowFailing = [] }) {
   const required = new Set(requiredContexts);
@@ -547,6 +362,13 @@ export function otherCheckState({ rollup = [], requiredContexts = [], allowFaili
   return { state: failed.length > 0 ? 'failed' : 'clear', failed, accepted, unmatched };
 }
 
+/**
+ * The required contexts' verdict, read against the protection's own list.
+ *
+ * **`SKIPPED` is not green**, and that is the draft design's safety catch: a draft's jobs report
+ * `skipped`, branch protection counts that as satisfied, and a lander inheriting that reading
+ * would merge a tree nothing ran on. `missing` (never reported) and `pending` both wait.
+ */
 export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
   const byName = latestByName(rollup);
   const pending = [];
@@ -577,13 +399,7 @@ export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
   return { state, pending, failed, missing, skipped, unrun, neverRan: pending.length === 0 && unrun.length === requiredContexts.length };
 }
 
-/**
- * Is any check run for this head still queued or running?
- *
- * `neverRan` asks "did the eight required contexts report", which is `true` in the
- * seconds between a push and its run set appearing. This asks the different
- * question that decides whether to ask GitHub for a run at all: is one coming.
- */
+/** Is any check run for this head still queued or running? */
 export function runInFlight(pr) {
   return (pr?.statusCheckRollup ?? []).some((run) => {
     const status = String(run?.status ?? run?.state ?? '').toUpperCase();
@@ -591,198 +407,12 @@ export function runInFlight(pr) {
   });
 }
 
-/**
- * Browser evidence belongs to CI, not to a landing.
- *
- * A Playwright command here would add a production build plus three shards to
- * every landing on a laptop, to produce the same verdict the one CI run is
- * about to produce on three parallel runners. The local lanes exist to catch
- * what *only* the merge of main can break: types, lint, contracts, generated
- * output. Those are seconds to minutes.
+/*
+ * ------------------------------------------------------------------------------------------------
+ * Reads that can fail, and what a failure is allowed to mean.
+ * ------------------------------------------------------------------------------------------------
  */
-export const isBrowserCommand = (command) =>
-  command.startsWith('pnpm exec playwright test') || /^pnpm test:e2e(?::|$)/.test(command);
 
-/**
- * What to run locally on the merged source, and what is left to CI.
- *
- * Built from the repository's own path-to-check authority
- * (`scripts/lib/focused-check-suggestions.mjs`), so a landing never carries a
- * second, drifting idea of which check a path needs.
- */
-export const isCiOwnedCommand = (command) =>
-  isBrowserCommand(command) || ['pnpm knip', 'pnpm test:contracts', 'pnpm test:run'].includes(command);
-
-export function localCheckPlan(paths) {
-  const suggestions = suggestFocusedChecks(paths);
-  return {
-    suggestions,
-    commands: suggestions.commands.filter((row) => !isCiOwnedCommand(row.command)),
-    deferred: suggestions.commands.filter((row) => isCiOwnedCommand(row.command)),
-  };
-}
-
-/**
- * Did merging `main` in already ask GitHub for the one CI run?
- *
- * On a **ready** pull request the push of that merge commit is a `synchronize`
- * event, and `synchronize` is in every workflow's trigger, so CI is already
- * starting. On a **draft** the same push runs nothing, and `gh pr ready` is the
- * request instead.
- *
- * Getting this backwards is not cosmetic. The merge commit is a head with no
- * checks yet, which reads as "no required context ever ran", and the lander
- * would answer by toggling draft and back: that cancels the run that was
- * already starting and pays for a second one, on a pull request whose whole
- * promise is one run. Found by reading the machine against a ready pull request
- * before the first of them was landed.
- */
-export const mergeFiredCi = ({ merged, isDraft }) => merged === true && isDraft !== true;
-
-/**
- * One step of the landing state machine, as a value.
- *
- * Every branch of the landing decision is here and nowhere else, so the whole
- * machine is testable from recorded `gh` JSON with no network at all.
- *
- * `ciRequested` is the shell telling the machine "I have already fired the one
- * CI run for this landing". Without it, a ready pull request whose checks have
- * not appeared yet would be re-fired on every poll.
- */
-export function decideNext({
-  pr,
-  lock,
-  behindBy = 0,
-  requiredContexts,
-  selfLock = null,
-  ciRequested = false,
-  localChecksPassed = false,
-  emptyRollupObservations = 0,
-  allowFailing = [],
-}) {
-  if (pr?.state === 'MERGED') return { action: 'done' };
-  const refusal = refuseLanding(pr);
-  if (refusal) return { action: 'refuse', reason: refusal };
-
-  const holdsLock = selfLock !== null && lock.state !== 'free' && lock.holder?.token === selfLock;
-  if (!holdsLock) {
-    // A lock we could not read may be anyone's, including nobody's. Waiting costs a poll; taking
-    // it on a failed read is the one move that cannot be undone by the next poll.
-    if (lock.state === 'unknown') return { action: 'wait-lock', lock };
-    if (lock.state === 'held') return { action: 'wait-lock', lock };
-    if (lock.state === 'stale' || lock.state === 'unreadable') return { action: 'take-stale-lock', lock };
-    return { action: 'take-lock', lock };
-  }
-
-  // Pour main in first, while the pull request is still a draft and a push
-  // costs nothing. Doing it after `gh pr ready` would spend a second CI run.
-  if (behindBy > 0) return { action: 'merge-main', behindBy };
-
-  // Local lanes run on the merged source, while the pull request is still a
-  // draft, so a break that only the merge could cause is found before the one
-  // CI run rather than inside it. A pull request that is already ready has CI
-  // as its gate and does not pay this twice.
-  if (pr.isDraft && !localChecksPassed) return { action: 'local-checks' };
-  if (pr.isDraft) return { action: 'make-ready' };
-
-  const checks = requiredCheckState({ rollup: pr.statusCheckRollup ?? [], requiredContexts });
-  if (checks.state === 'failed') return { action: 'fail-checks', checks };
-  // A ready pull request whose required contexts never ran (it was made ready
-  // by hand before this repository's draft rule, or its run was cancelled) has
-  // no event left to fire. Toggling draft and back is the only way to ask
-  // GitHub for that one run.
-  /*
-   * ⚠️ **"Nothing ran" has to be observed twice** (measured 2026-09-12).
-   *
-   * Pushing to a **ready** pull request fires `synchronize`, and GitHub registers
-   * that run set a little after the push returns. This machine read the rollup in
-   * that gap, saw an empty one, called it `neverRan`, and toggled draft — firing a
-   * second set whose `cancel-in-progress` killed the first. One wasted run set, and
-   * then an abort on the corpse.
-   *
-   * `runInFlight` is not the guard: a queued entry already makes `pending` non-empty,
-   * so `neverRan` is false and this branch is never reached. The empty rollup is the
-   * whole problem, and the only thing that distinguishes "no run is coming" from "the
-   * run has not appeared yet" is having looked again. So an empty rollup waits once,
-   * and only a second empty reading asks GitHub for the run.
-   */
-  if (!ciRequested && checks.neverRan) {
-    if (runInFlight(pr) || emptyRollupObservations < 2) return { action: 'wait-checks', checks };
-    return { action: 'refire-ci', checks };
-  }
-  if (checks.state === 'waiting') return { action: 'wait-checks', checks };
-
-  /*
-   * The required contexts are green. Everything else on this exact tree is read now,
-   * because "required" is a branch-protection list, not a statement about what matters:
-   * a lane can be correct, red, and unrequired all at once, which is how a Windows
-   * install failure rode into two release attempts. A named acceptance passes through
-   * and is logged with the merge; an unnamed failure refuses.
-   */
-  const other = otherCheckState({ rollup: pr.statusCheckRollup ?? [], requiredContexts, allowFailing });
-  if (other.state === 'failed') return { action: 'fail-other-checks', other };
-  return { action: 'merge', other };
-}
-
-/* ------------------------------------------------------------------ *
- * Everything below is the IO shell: it talks to `gh` and to the clock,
- * and hands the pure functions above their inputs.
- * ------------------------------------------------------------------ */
-
-// Early CI is speculative feedback, never permission to merge an unverified
-// combined tree. Restrict this opt-in to distinct immutable backlog additions.
-export function independentBacklogCi(left, right) {
-  const scopes = [left, right].map((scope) => {
-    if (!Array.isArray(scope?.files) || !scope.files.length || !Number.isInteger(scope.changedFiles) || scope.files.length !== scope.changedFiles) return null;
-    const tasks = new Set(); const paths = new Set();
-    for (const file of scope.files) {
-      if (!file || typeof file !== 'object') return null;
-      const match = /^docs\/records\/backlog\/\d{4}-\d{2}-\d{2}-([a-z0-9]+(?:-[a-z0-9]+)*)-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.md$/.exec(file.filename ?? '');
-      if (!match || file.status !== 'added' || file.previous_filename || paths.has(file.filename)) return null;
-      tasks.add(match[1]); paths.add(file.filename);
-    }
-    return tasks;
-  });
-  return scopes.every(Boolean) && ![...scopes[0]].some((task) => scopes[1].has(task));
-}
-
-export function startParallelBacklogCi({ enabled, pr, holder, io }) {
-  if (!enabled || !pr?.isDraft || !Number.isInteger(holder) || holder === pr.number || refuseLanding(pr)) return false;
-  try {
-    const active = io.readPr(holder);
-    if (refuseLanding(active)) return false;
-    const left = { files: io.readFiles(pr.number), changedFiles: pr.changedFiles };
-    const right = { files: io.readFiles(holder), changedFiles: active.changedFiles };
-    if (!independentBacklogCi(left, right)) return false;
-    io.ready(pr.number);
-    return true;
-  } catch { return false; } // Incomplete evidence keeps the ordinary queue.
-}
-
-function gh(args, { allowFailure = false } = {}) {
-  try {
-    // `stdio` is explicit because `execFileSync` lets the child's stderr reach
-    // this process's stderr by default, and a tolerated 404 (there is no lock)
-    // printing `gh: Not Found` reads as a failure in the middle of a clean run.
-    return execFileSync('gh', args, {
-      encoding: 'utf8',
-      maxBuffer: 64 * 1024 * 1024,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-  } catch (error) {
-    if (allowFailure) return { failed: true, output: `${error.stderr ?? ''}${error.stdout ?? ''}` };
-    const detail = `${error.stderr ?? ''}${error.stdout ?? ''}`.trim();
-    throw new Error(`gh ${args.slice(0, 3).join(' ')} failed: ${detail || error.message}`);
-  }
-}
-
-/**
- * Why a tolerated read came back empty.
- *
- * A 404 is not a failure: it is the answer 「there is no such ref」, which is how this script asks
- * whether a lock exists. Everything else is a read that did not happen, and the two must not share
- * a return value — see `classifyLock`.
- */
 export function describeReadFailure(output) {
   const text = String(output ?? '');
   if (/rate limit exceeded/i.test(text)) {
@@ -796,9 +426,8 @@ export function describeReadFailure(output) {
 }
 
 /**
- * What a tolerated read came back with: `{ value }` when the repository answered — including the
- * 404 that means 「there is no such ref」, which arrives as a null value — or `{ failure }` when the
- * request did not happen at all.
+ * `{ value }` when the repository answered — including the 404 that means 「there is no such
+ * ref」, which arrives as a null value — or `{ failure }` when the request did not happen at all.
  */
 export function readOutcome(out) {
   if (typeof out === 'string') {
@@ -813,31 +442,146 @@ export function readOutcome(out) {
   return { value: null, failure: describeReadFailure(text) };
 }
 
-const ghRead = (args) => readOutcome(gh(args, { allowFailure: true }));
-
-function ghJson(args, options) {
-  const out = gh(args, options);
-  if (out === null || typeof out === 'object') return null;
-  try {
-    return JSON.parse(out);
-  } catch {
-    throw new Error(`gh ${args.slice(0, 3).join(' ')} did not return JSON`);
+/**
+ * The protection's own list, or `null` when the question could not be asked. A 404 here is not an
+ * answer: the endpoint answers a caller without admin rights much as it answers a branch with no
+ * rule, and 「main declares no required status checks」 is the one sentence that invites a person
+ * to go and weaken branch protection.
+ */
+export function protectionFrom(read) {
+  if (read.failure) return { contexts: null, failure: read.failure };
+  if (!read.value) {
+    return {
+      contexts: null,
+      failure: { reason: 'unreadable', detail: "main's protection returned no body; 「no rule」 and 「not allowed to look」 read alike here" },
+    };
   }
+  return { contexts: Array.isArray(read.value.contexts) ? read.value.contexts : [], failure: null };
 }
 
-function git(args, { allowFailure = false } = {}) {
+/**
+ * **Which worktree a landing removes: `--cleanup`'s path, and nothing else.** `--worktree` never
+ * removed anything (2026-09-13, an agent believed it had), and it now does nothing at all.
+ */
+export function worktreeToRemove(args) {
+  return args.cleanup ?? null;
+}
+
+/**
+ * What a removal says **before** it happens. `git status --porcelain` does not count ignored
+ * files, so a worktree holding only gitignored captures reads clean, and the line says so.
+ */
+export function describeCleanup({ path, status }) {
+  if (status === null) return `${path} is not a Git worktree; left alone`;
+  if (status !== '') return `${path} still has uncommitted work; left alone`;
+  return `removing ${path} — tracked files clean (ignored files are not counted, so anything under an ignored path goes with it)`;
+}
+
+const RETIRED_FLAGS = {
+  '--parallel-ci': '--parallel-ci is retired: `pnpm pr:ci <n>` then `pnpm pr:land <n>` lets the fast path merge any disjoint green change',
+  '--worktree': '--worktree is retired: a landing runs no local lanes now (each author ran `pnpm checks:changed`; the train runs CI once)',
+};
+
+export function parseArgs(argv) {
+  const args = {
+    numbers: [],
+    number: null,
+    cleanup: null,
+    queue: false,
+    release: false,
+    ci: false,
+    plan: false,
+    conduct: false,
+    wait: true,
+    fast: true,
+    batch: DEFAULT_BATCH,
+    worktree: null,
+    timeoutMinutes: 180,
+    allowFailing: [],
+    flaky: [],
+    notes: [],
+  };
+  const names = (arg, flag) => {
+    const list = arg.slice(flag.length).split(',').map((name) => name.trim()).filter(Boolean);
+    if (list.length === 0) throw new Error(`${flag.slice(0, -1)} must name at least one check context`);
+    return list;
+  };
+  const retire = (flag) => {
+    if (!args.notes.includes(RETIRED_FLAGS[flag])) args.notes.push(RETIRED_FLAGS[flag]);
+  };
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--' || arg === '') continue;
+    if (arg === '--queue') args.queue = true;
+    else if (arg === '--release') args.release = true;
+    else if (arg === '--ci') args.ci = true;
+    else if (arg === '--plan') args.plan = true;
+    else if (arg === '--conduct') args.conduct = true;
+    else if (arg === '--no-wait') args.wait = false;
+    else if (arg === '--no-fast') args.fast = false;
+    else if (arg === '--parallel-ci') retire(arg);
+    else if (arg.startsWith('--batch=')) {
+      const size = Number(arg.slice('--batch='.length));
+      if (!Number.isInteger(size) || size < 1) throw new Error(`--batch must be a positive integer; received ${arg}`);
+      args.batch = size;
+    } else if (arg === '--cleanup') {
+      args.cleanup = argv[index + 1] ?? null;
+      index += 1;
+      if (!args.cleanup) throw new Error('--cleanup needs a worktree path');
+    } else if (arg.startsWith('--cleanup=')) args.cleanup = arg.slice('--cleanup='.length);
+    else if (arg === '--worktree') {
+      args.worktree = argv[index + 1] ?? null;
+      index += 1;
+      if (!args.worktree) throw new Error('--worktree needs a path');
+      retire('--worktree');
+    } else if (arg.startsWith('--worktree=')) {
+      args.worktree = arg.slice('--worktree='.length);
+      retire('--worktree');
+    } else if (arg.startsWith('--timeout-minutes=')) {
+      const minutes = Number(arg.slice('--timeout-minutes='.length));
+      if (!Number.isFinite(minutes) || minutes <= 0) {
+        throw new Error(`--timeout-minutes must be positive; received ${arg}`);
+      }
+      args.timeoutMinutes = minutes;
+    } else if (arg.startsWith('--allow-failing=')) {
+      args.allowFailing = [...new Set([...args.allowFailing, ...names(arg, '--allow-failing=')])];
+    } else if (arg.startsWith('--flaky=')) {
+      args.flaky = [...new Set([...args.flaky, ...names(arg, '--flaky=')])];
+    } else if (/^#?\d+$/.test(arg)) args.numbers.push(Number(arg.replace('#', '')));
+    else throw new Error(`unknown argument: ${arg}`);
+  }
+  args.number = args.numbers[0] ?? null;
+  const modes = [args.queue, args.release, args.ci, args.plan, args.conduct].filter(Boolean).length;
+  if (modes > 1) throw new Error('--queue, --release, --ci, --plan and --conduct are separate commands');
+  if (args.plan && args.numbers.length === 0) throw new Error('--plan needs at least one pull request number');
+  if (args.ci && args.number === null) throw new Error('pnpm pr:ci needs a pull request number');
+  if (!args.plan && args.numbers.length > 1) throw new Error('land one pull request per command; `--plan` takes several');
+  if (!args.queue && !args.release && !args.conduct && args.number === null) {
+    throw new Error('a pull request number is required: pnpm pr:land <number>');
+  }
+  return args;
+}
+
+/*
+ * ------------------------------------------------------------------------------------------------
+ * The IO shell. Everything below talks to `gh`, `git` and the clock through `deps`, so the tests
+ * drive the whole conductor against a fake GitHub and never reach the real one.
+ * ------------------------------------------------------------------------------------------------
+ */
+
+function ghRun(args, { allowFailure = false } = {}) {
   try {
-    return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    // `stdio` is explicit: a tolerated 404 printing `gh: Not Found` reads as a failure mid-run.
+    return execFileSync('gh', args, {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
   } catch (error) {
-    if (allowFailure) return null;
-    throw error;
+    if (allowFailure) return { failed: true, output: `${error.stderr ?? ''}${error.stdout ?? ''}` };
+    const detail = `${error.stderr ?? ''}${error.stdout ?? ''}`.trim();
+    throw new Error(`gh ${args.slice(0, 3).join(' ')} failed: ${detail || error.message}`);
   }
-}
-
-const log = (line) => process.stdout.write(`[pr-land] ${line}\n`);
-
-function repoSlug() {
-  return ghJson(['repo', 'view', '--json', 'nameWithOwner']).nameWithOwner;
 }
 
 const PR_FIELDS = [
@@ -853,426 +597,838 @@ const PR_FIELDS = [
   'baseRefName',
   'isCrossRepository',
   'statusCheckRollup',
-  'changedFiles',
+  'labels',
 ].join(',');
 
-function readPr(number) {
-  return ghJson(['pr', 'view', String(number), '--json', PR_FIELDS]);
-}
-
-/**
- * The protection's own list, or `null` when the question could not be asked.
- *
- * The difference is not cosmetic. An empty list makes this script print 「main declares no required
- * status checks」, which accuses the repository of having no gate — and the obvious way to act on
- * that accusation is to go and weaken branch protection so a landing can proceed. A rate-limited
- * read must not be able to say that sentence.
- */
-export function protectionFrom(read) {
-  if (read.failure) return { contexts: null, failure: read.failure };
-  /*
-   * Unlike the lock ref, a 404 here is **not** a real answer, and the difference is ownership. The
-   * lock ref belongs to this script — it creates and deletes it — so「no ref」is a fact the script
-   * itself authored. Branch protection belongs to the repository, and its endpoints answer a
-   * caller without admin rights much as they answer a branch with no rule. A scope change, a
-   * re-auth or a different host would therefore make this script print 「main declares no required
-   * status checks」as a measurement, which is the one sentence here that invites a person to go
-   * and weaken branch protection. Both readings refuse to land, so insisting on a body costs
-   * nothing and removes the misleading one.
-   */
-  if (!read.value) {
-    return {
-      contexts: null,
-      failure: { reason: 'unreadable', detail: "main's protection returned no body; 「no rule」 and 「not allowed to look」 read alike here" },
-    };
+const QUEUE_QUERY = `query($owner: String!, $name: String!, $endCursor: String) {
+  repository(owner: $owner, name: $name) {
+    pullRequests(states: OPEN, labels: ["${QUEUE_LABEL}"], first: 50, after: $endCursor) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number title url state isDraft mergeable isCrossRepository headRefName headRefOid baseRefName
+        timelineItems(itemTypes: [LABELED_EVENT], last: 20) { nodes { ... on LabeledEvent { createdAt label { name } } } }
+      }
+    }
   }
-  return { contexts: Array.isArray(read.value.contexts) ? read.value.contexts : [], failure: null };
-}
+}`;
 
-function readRequiredContexts(slug) {
-  return protectionFrom(ghRead(['api', `repos/${slug}/branches/main/protection/required_status_checks`]));
-}
+/** The GitHub side of `deps`, over the `gh` CLI. */
+export function createGithub(slug, run = ghRun) {
+  const read = (args) => readOutcome(run(args, { allowFailure: true }));
+  const json = (args) => {
+    const out = run(args);
+    try {
+      return JSON.parse(out);
+    } catch {
+      throw new Error(`gh ${args.slice(0, 3).join(' ')} did not return JSON`);
+    }
+  };
+  const ok = (args) => typeof run(args, { allowFailure: true }) === 'string';
+  const writeBlob = (body) => json(['api', '-X', 'POST', `repos/${slug}/git/blobs`, '-f', `content=${JSON.stringify(body)}`, '-f', 'encoding=utf-8']).sha;
+  const [owner, name] = slug.split('/');
 
-/**
- * How far `main` has run ahead of this branch since they parted, or `null` when it could not be
- * read. A failed read used to answer `0`, which is 「main has not moved」 — so the landing skipped
- * pouring main in and spent its one CI run on a base it had never checked. That is the opposite of
- * what this step exists for.
- */
-export function distanceFrom(read) {
-  if (read.failure) return { behindBy: null, failure: read.failure };
-  // Unlike the protection read, a 404 answers nothing here: a comparison that returned no body
-  // cannot say main has stayed still.
-  if (!read.value) return { behindBy: null, failure: { reason: 'unreadable', detail: 'the comparison returned no body' } };
-  return { behindBy: read.value.behind_by ?? 0, failure: null };
-}
-
-function readBehindBy(slug, headSha) {
-  return distanceFrom(ghRead(['api', `repos/${slug}/compare/main...${headSha}`]));
-}
-
-/**
- * Merge `main` into the pull request's own branch, server-side.
- *
- * `POST /repos/{owner}/{repo}/merges` is the documented "merge a branch" call:
- * `201` created the merge commit, `204` means the branch already contains
- * main, `409` is a conflict. Nothing local is touched, so a landing works from
- * a worktree that has never fetched this branch.
- */
-function mergeMainInto(slug, branch) {
-  const result = gh(
-    [
-      'api',
-      '-X',
-      'POST',
-      `repos/${slug}/merges`,
-      '-f',
-      `base=${branch}`,
-      '-f',
-      'head=main',
-      '-f',
-      `commit_message=chore: merge main into ${branch} before landing`,
-    ],
-    { allowFailure: true },
-  );
-  if (typeof result === 'string') {
-    return result.trim() === '' ? { state: 'up-to-date' } : { state: 'merged' };
-  }
-  if (/409|[Mm]erge conflict/.test(result.output ?? '')) return { state: 'conflict', detail: result.output };
-  return { state: 'error', detail: result.output };
-}
-
-function readLockPayload(slug) {
-  const ref = ghRead(['api', `repos/${slug}/git/ref/${LOCK_REF.replace('refs/', '')}`]);
-  if (ref.failure) return { payload: null, sha: null, unreadable: ref.failure };
-  const sha = ref.value?.object?.sha ?? null;
-  if (!sha) return { payload: null, sha: null, unreadable: null };
-  const blob = ghRead(['api', `repos/${slug}/git/blobs/${sha}`]);
-  if (blob.failure) return { payload: null, sha, unreadable: blob.failure };
-  if (!blob.value?.content) return { payload: {}, sha, unreadable: null };
-  try {
-    const encoding = blob.value.encoding === 'base64' ? 'base64' : 'utf8';
-    return { payload: JSON.parse(Buffer.from(blob.value.content, encoding).toString('utf8')), sha, unreadable: null };
-  } catch {
-    return { payload: {}, sha, unreadable: null };
-  }
-}
-
-/**
- * The waiting line as the repository currently holds it.
- *
- * A missing ref is an empty line. Anything unreadable is also an empty line — see the fallback
- * rule on `QUEUE_REF`: a waiter that cannot read the order races, it does not stop.
- */
-function readWaitingLine(slug) {
-  const ref = ghJson(['api', `repos/${slug}/git/ref/${QUEUE_REF.replace('refs/', '')}`], { allowFailure: true });
-  if (!ref?.object?.sha) return [];
-  const blob = ghJson(['api', `repos/${slug}/git/blobs/${ref.object.sha}`], { allowFailure: true });
-  if (!blob?.content) return [];
-  try {
-    const raw = Buffer.from(blob.content, blob.encoding === 'base64' ? 'base64' : 'utf8').toString('utf8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed?.waiters) ? parsed.waiters : [];
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Write the line back. Last write wins on purpose: two waiters can lose each other's entry here,
- * and the loser simply rejoins on its next poll keeping its original `since`. A lost entry costs
- * one poll of order, never a landing — which is the trade this ref is allowed to make.
- */
-function writeWaitingLine(slug, waiters) {
-  const sha = writeLockBlob(slug, { waiters });
-  if (!sha) return false;
-  const created = gh(['api', '-X', 'POST', `repos/${slug}/git/refs`, '-f', `ref=${QUEUE_REF}`, '-f', `sha=${sha}`], {
-    allowFailure: true,
-  });
-  if (typeof created === 'string') return true;
-  const patched = gh(
-    ['api', '-X', 'PATCH', `repos/${slug}/git/${QUEUE_REF}`, '-f', `sha=${sha}`, '-F', 'force=true'],
-    { allowFailure: true },
-  );
-  return typeof patched === 'string';
-}
-
-function writeLockBlob(slug, body) {
-  return ghJson([
-    'api',
-    '-X',
-    'POST',
-    `repos/${slug}/git/blobs`,
-    '-f',
-    `content=${JSON.stringify(body)}`,
-    '-f',
-    'encoding=utf-8',
-  ]).sha;
-}
-
-function lockBody({ pr, token }) {
   return {
-    pr,
-    token,
-    holder: (git(['config', 'user.name'], { allowFailure: true }) || process.env.USER || 'unknown').trim(),
-    host: hostname(),
-    acquiredAt: new Date().toISOString(),
-    leaseMinutes: LEASE_MINUTES,
-    via: 'pnpm pr:land',
+    slug,
+    readPr: (number) => json(['pr', 'view', String(number), '--json', PR_FIELDS]),
+    readPrComments: (number) => json(['pr', 'view', String(number), '--json', 'comments']).comments ?? [],
+    listQueue: () => {
+      const out = run(['api', 'graphql', '--paginate', '-F', `owner=${owner}`, '-F', `name=${name}`, '-f', `query=${QUEUE_QUERY}`,
+        '--jq', '.data.repository.pullRequests.nodes[]']);
+      const nodes = String(out).split('\n').filter((line) => line.trim()).map((line) => JSON.parse(line));
+      return queueOrder(nodes);
+    },
+    readRequiredContexts: () => protectionFrom(read(['api', `repos/${slug}/branches/main/protection/required_status_checks`])),
+    readLock: (ref) => {
+      const refRead = read(['api', `repos/${slug}/git/ref/${ref.replace('refs/', '')}`]);
+      if (refRead.failure) return { payload: null, unreadable: refRead.failure };
+      const sha = refRead.value?.object?.sha ?? null;
+      if (!sha) return { payload: null, unreadable: null };
+      const blob = read(['api', `repos/${slug}/git/blobs/${sha}`]);
+      if (blob.failure) return { payload: null, unreadable: blob.failure };
+      if (!blob.value?.content) return { payload: {}, unreadable: null };
+      try {
+        const encoding = blob.value.encoding === 'base64' ? 'base64' : 'utf8';
+        return { payload: JSON.parse(Buffer.from(blob.value.content, encoding).toString('utf8')), unreadable: null };
+      } catch {
+        return { payload: {}, unreadable: null };
+      }
+    },
+    takeLock: (ref, body, { force = false } = {}) => {
+      const sha = writeBlob(body);
+      if (force) return ok(['api', '-X', 'PATCH', `repos/${slug}/git/${ref}`, '-f', `sha=${sha}`, '-F', 'force=true']);
+      return ok(['api', '-X', 'POST', `repos/${slug}/git/refs`, '-f', `ref=${ref}`, '-f', `sha=${sha}`]);
+    },
+    refreshLock: (ref, body) => {
+      const sha = writeBlob(body);
+      ok(['api', '-X', 'PATCH', `repos/${slug}/git/${ref}`, '-f', `sha=${sha}`, '-F', 'force=true']);
+    },
+    releaseLock: (ref) => ok(['api', '-X', 'DELETE', `repos/${slug}/git/${ref}`]),
+    addLabel: (number) => {
+      if (ok(['pr', 'edit', String(number), '--add-label', QUEUE_LABEL])) return true;
+      ok(['label', 'create', QUEUE_LABEL, '--color', '5319e7', '--description', 'Queued for the landing train (pnpm pr:land)']);
+      return ok(['pr', 'edit', String(number), '--add-label', QUEUE_LABEL]);
+    },
+    removeLabel: (number) => ok(['pr', 'edit', String(number), '--remove-label', QUEUE_LABEL]),
+    comment: (number, body) => ok(['pr', 'comment', String(number), '--body', body]),
+    closePr: (number, body) => ok(['pr', 'close', String(number), '--comment', body]),
+    createBranch: (branch, sha) => ok(['api', '-X', 'POST', `repos/${slug}/git/refs`, '-f', `ref=refs/heads/${branch}`, '-f', `sha=${sha}`]),
+    deleteBranch: (branch) => ok(['api', '-X', 'DELETE', `repos/${slug}/git/refs/heads/${branch}`]),
+    /**
+     * `POST /repos/{owner}/{repo}/merges`: `201` created a merge commit, `204` means the base
+     * already contains the head, `409` is a conflict. Server-side; no checkout is touched.
+     */
+    mergeInto: (base, head, message) => {
+      const result = run(['api', '-X', 'POST', `repos/${slug}/merges`, '-f', `base=${base}`, '-f', `head=${head}`, '-f', `commit_message=${message}`],
+        { allowFailure: true });
+      if (typeof result === 'string') return { state: result.trim() === '' ? 'up-to-date' : 'merged' };
+      if (/409|[Mm]erge conflict/.test(result.output ?? '')) return { state: 'conflict', detail: result.output };
+      return { state: 'error', detail: result.output };
+    },
+    openPr: ({ title, head, base, body }) => {
+      const created = json(['api', '-X', 'POST', `repos/${slug}/pulls`, '-f', `title=${title}`, '-f', `head=${head}`, '-f', `base=${base}`, '-f', `body=${body}`, '-F', 'draft=false']);
+      return { number: created.number, url: created.html_url };
+    },
+    /** The only merge call in the repository: squash, pinned to the head sha CI measured. */
+    mergePr: (number, { sha, title, message = null }) => {
+      const args = ['api', '-X', 'PUT', `repos/${slug}/pulls/${number}/merge`, '-f', 'merge_method=squash', '-f', `sha=${sha}`, '-f', `commit_title=${title}`];
+      if (message) args.push('-f', `commit_message=${message}`);
+      const result = run(args, { allowFailure: true });
+      if (typeof result !== 'string') return { ok: false, detail: String(result.output ?? '').trim() };
+      try {
+        return { ok: JSON.parse(result).merged === true, detail: result.trim() };
+      } catch {
+        return { ok: false, detail: result.trim() };
+      }
+    },
+    markReady: (number) => ok(['pr', 'ready', String(number)]),
+    markDraft: (number) => ok(['pr', 'ready', String(number), '--undo']),
+    rerunFailed: (runId) => ok(['run', 'rerun', String(runId), '--failed']),
   };
 }
 
-function takeLock(slug, body, { force = false } = {}) {
-  const sha = writeLockBlob(slug, body);
-  if (force) {
-    gh(['api', '-X', 'PATCH', `repos/${slug}/git/${LOCK_REF}`, '-f', `sha=${sha}`, '-F', 'force=true']);
-    return true;
+/** The local Git side of `deps`. Reads only, apart from `fetch`. */
+export function createGit(cwd) {
+  const git = makeGit(cwd);
+  const lines = (text) => text.split('\n').filter(Boolean);
+  return {
+    fetch: (refs) => git.try('fetch', '--quiet', 'origin', ...refs).status === 0,
+    prune: () => git.try('fetch', '--quiet', '--prune', 'origin').status === 0,
+    revParse: (ref) => {
+      const result = git.try('rev-parse', '--verify', '--quiet', `${ref}^{commit}`);
+      return result.status === 0 ? result.stdout : null;
+    },
+    hasCommit: (sha) => git.try('cat-file', '-e', `${sha}^{commit}`).status === 0,
+    mergeTreeClean: (left, right) => {
+      const result = git.try('merge-tree', '--write-tree', '--no-messages', left, right);
+      if (result.status === 0) return true;
+      return result.status === 1 ? false : null;
+    },
+    mergeBase: (left, right) => {
+      const result = git.try('merge-base', left, right);
+      return result.status === 0 ? result.stdout : null;
+    },
+    diffNames: (from, to) => {
+      const result = git.try('diff', '--name-only', '--no-renames', from, to);
+      return result.status === 0 ? lines(result.stdout) : null;
+    },
+    diffNameStatus: (from, to) => {
+      const result = git.try('diff', '--name-status', '--no-renames', from, to);
+      if (result.status !== 0) return null;
+      return lines(result.stdout).map((line) => {
+        const [status, path] = line.split('\t');
+        return { status: status.charAt(0), path };
+      });
+    },
+    isContained: (base, sha) => isContained(git, base, sha),
+    isAncestor: (ancestor, descendant) => git.try('merge-base', '--is-ancestor', ancestor, descendant).status === 0,
+    coAuthorLog: (base, sha) => git.try('log', '--format=Co-authored-by: %an <%ae>%n%B', `${base}..${sha}`).stdout,
+    /** Trial-merge the shas in order onto `base` with throwaway commits, as `bundle:plan` does. */
+    trialMerge: (base, shas) => {
+      const plan = planBundle(git, base, shas);
+      return plan.rows.map((row) => {
+        const step = plan.steps.find((s) => s.branch === row.branch);
+        return { sha: row.branch, state: row.state, conflicts: step?.conflicts ?? [] };
+      });
+    },
+  };
+}
+
+function worktreeStatus(path) {
+  try {
+    return execFileSync('git', ['-C', path, 'status', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return null;
   }
-  const created = gh(['api', '-X', 'POST', `repos/${slug}/git/refs`, '-f', `ref=${LOCK_REF}`, '-f', `sha=${sha}`], {
-    allowFailure: true,
-  });
-  return typeof created === 'string';
 }
 
-function refreshLock(slug, body) {
-  const sha = writeLockBlob(slug, body);
-  gh(['api', '-X', 'PATCH', `repos/${slug}/git/${LOCK_REF}`, '-f', `sha=${sha}`, '-F', 'force=true'], {
-    allowFailure: true,
-  });
-}
-
-function releaseLock(slug) {
-  gh(['api', '-X', 'DELETE', `repos/${slug}/git/${LOCK_REF}`], { allowFailure: true });
-}
-
-function sleep(seconds) {
-  // A landing waits on GitHub, not in a tight loop. The wait is blocking on
-  // purpose: the only other thing this process does is release the lock on its
-  // way out, and a synchronous main line keeps that the single exit path.
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Math.round(seconds * 1000));
-}
-
-/**
- * **Which worktree a landing removes: `--cleanup`'s path, and nothing else.**
- *
- * ⚠️ Written as a named function of the parsed flags, and exported, because on
- * 2026-09-13 an agent whose landing worktree disappeared read `--worktree` as
- * "the worktree this landing owns" and reported that a successful
- * `pnpm pr:land <n> --worktree <path>` had removed it, taking gitignored
- * evidence with it. It had not: removal has always been `--cleanup`'s alone,
- * and that landing's log carries no `cleanup:` line at all. The two flags
- * answer different questions — `--worktree` is *where the local lanes run*,
- * `--cleanup` is *what to remove when the landing is done* — and the inline
- * `if (args.cleanup)` was true but unprovable. This is the same rule with a
- * name and a recorded test, so the next agent can read the guarantee instead
- * of inferring it from a missing directory.
- *
- * Whatever removed that worktree was outside this script; the flag separation
- * is now pinned so this file can be ruled out by reading rather than by trust.
- */
-export function worktreeToRemove(args) {
-  return args.cleanup ?? null;
-}
-
-/**
- * What a removal says **before** it happens.
- *
- * It announced itself only afterwards, and only on success, so a landing that
- * removed a worktree and a landing that never touched one read identically
- * until the directory was gone. The path and the judgement go out first.
- *
- * ⚠️ The clean/dirty judgement is `git status --porcelain`, which **does not
- * count ignored files**. That is the whole of the trap the 2026-09-13 landing
- * hit: a worktree holding nothing but gitignored captures under `output/` reads
- * clean, so the announcement says so out loud rather than implying the tree was
- * empty.
- */
-export function describeCleanup({ path, status }) {
-  if (status === null) return `${path} is not a Git worktree; left alone`;
-  if (status !== '') return `${path} still has uncommitted work; left alone`;
-  return `removing ${path} — tracked files clean (ignored files are not counted, so anything under an ignored path goes with it)`;
-}
-
-function cleanupWorktree(path) {
-  const status = git(['-C', path, 'status', '--porcelain'], { allowFailure: true });
+function cleanupWorktree(path, log) {
+  const status = worktreeStatus(path);
   log(`cleanup: ${describeCleanup({ path, status })}`);
   if (status === null || status !== '') return;
-  const branch = git(['-C', path, 'rev-parse', '--abbrev-ref', 'HEAD'], { allowFailure: true });
-  git(['worktree', 'remove', path], { allowFailure: true });
+  const git = makeGit(process.cwd());
+  const branch = git.try('-C', path, 'rev-parse', '--abbrev-ref', 'HEAD').stdout;
+  git.try('worktree', 'remove', path);
   if (branch && branch !== 'main' && branch !== 'HEAD') {
-    git(['branch', '-D', branch], { allowFailure: true });
+    git.try('branch', '-D', branch);
     log(`cleanup: removed ${path} and deleted local branch ${branch}`);
   } else {
     log(`cleanup: removed ${path}`);
   }
 }
 
-/**
- * Run the repository's own focused lanes on the merged source.
- *
- * The server-side merge in the step before put a commit on the branch that no
- * local checkout has seen, so the worktree is fast-forwarded onto it first.
- * Fast-forward is the only move allowed: the merge commit's first parent is the
- * branch head this worktree already has, so a refusal here means the worktree
- * is not that branch, or somebody pushed in the meantime, and either is a
- * reason to stop rather than to invent a merge.
- */
-function runLocalChecks({ worktree, pr, io }) {
-  const branch = git(['-C', worktree, 'rev-parse', '--abbrev-ref', 'HEAD'], { allowFailure: true });
-  if (branch === null) {
-    return { ok: false, reason: `${worktree} is not a Git worktree. Pass the branch's checkout with --worktree <path>.` };
-  }
-  if (branch !== pr.headRefName) {
-    return {
-      ok: false,
-      reason:
-        `${worktree} is on ${branch}, not ${pr.headRefName}, so the local lanes would measure the wrong tree.\n`
-        + `  Run this from that branch's worktree, or pass --worktree <path>.`,
-    };
-  }
-  const dirty = git(['-C', worktree, 'status', '--porcelain'], { allowFailure: true });
-  if (dirty !== '') {
-    return {
-      ok: false,
-      reason: `${worktree} has uncommitted work, so the local lanes would measure something that is not landing. Commit or set it aside first.`,
-    };
-  }
-
-  git(['-C', worktree, 'fetch', 'origin', 'main', pr.headRefName], { allowFailure: true });
-  const forwarded = git(['-C', worktree, 'merge', '--ff-only', `origin/${pr.headRefName}`], { allowFailure: true });
-  if (forwarded === null) {
-    return {
-      ok: false,
-      reason:
-        `could not fast-forward ${worktree} onto origin/${pr.headRefName} after merging main in.\n`
-        + '  Someone pushed to that branch during this landing. Reconcile it and run `pnpm pr:land` again.',
-    };
-  }
-
-  const changed = git(['-C', worktree, 'diff', '--name-only', 'origin/main...HEAD'], { allowFailure: true }) ?? '';
-  /*
-   * A path this branch DELETED is still in `git diff --name-only`, and handing it to a
-   * file-reading tool is a malfunction, not a finding — `eslint <deleted file>` dies on
-   * "Please check for typing mistakes in the pattern" and takes the whole landing with it.
-   * `checks:changed` has filtered these since 2026-08-21 and says so in a comment; this
-   * caller was reading the same git output and skipping that filter, so the trap the
-   * repository had already written down was live again on the one path that blocks a
-   * landing. Measured 2026-09-13 on #1604, which deletes one component.
-   */
-  const paths = existingPaths(changed.split('\n').filter(Boolean), { cwd: worktree });
-  if (paths.length === 0) {
-    log('local checks: this branch changes nothing against main');
-    return { ok: true };
-  }
-  const plan = localCheckPlan(paths);
-  log(`local checks on the merged source: ${paths.length} changed file(s)`);
-  process.stdout.write(`${formatFocusedCheckSuggestions(plan.suggestions)}\n`);
-  for (const row of plan.deferred) {
-    log(`left to the one CI run: ${row.command}`);
-  }
-  const code = runFocusedChecks({ commands: plan.commands, cwd: worktree });
-  if (code !== 0) {
-    return {
-      ok: false,
-      reason:
-        `the local lanes are red on the merged source (exit ${code}), so CI was never fired.\n`
-        + '  Fix what the failing lane above named, push, then run `pnpm pr:land` again.',
-    };
-  }
-  io.log('[pr-land] local checks green on the merged source');
-  return { ok: true };
+function sleepBlocking(seconds) {
+  // Blocking on purpose: the only other thing this process does is release the lock on its way
+  // out, and a synchronous main line keeps that the single exit path.
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Math.round(seconds * 1000));
 }
 
-function printQueue(slug, io = console) {
-  const { payload, unreadable } = readLockPayload(slug);
-  const lock = classifyLock({ payload, unreadable, nowMs: Date.now() });
-  io.log(`[pr-queue] landing now: ${describeLock(lock)}`);
-  /*
-   * The order, so a waiter can see its own place instead of guessing why it keeps losing. A
-   * `pr:land` older than the waiting line does not appear here; that is the honest reading, since
-   * it is also not yielding to anyone.
-   */
-  io.log(`[pr-queue] waiting line: ${describeWaitingLine(readWaitingLine(slug), Date.now())}`);
-  const open = ghJson([
-    'pr',
-    'list',
-    '--state',
-    'open',
-    '--json',
-    'number,title,isDraft,mergeStateStatus,mergeable,headRefName',
-  ]);
-  if (open.length === 0) {
-    io.log('[pr-queue] waiting: none');
+export function defaultDeps(io = console) {
+  const slug = JSON.parse(ghRun(['repo', 'view', '--json', 'nameWithOwner'])).nameWithOwner;
+  const exits = new Set();
+  const runExits = () => {
+    for (const fn of [...exits]) {
+      exits.delete(fn);
+      try { fn(); } catch { /* best effort on the way out */ }
+    }
+  };
+  process.on('exit', runExits);
+  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+    process.on(signal, () => {
+      runExits();
+      process.exit(130);
+    });
+  }
+  let user = 'unknown';
+  try {
+    user = execFileSync('git', ['config', 'user.name'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || process.env.USER || 'unknown';
+  } catch {
+    user = process.env.USER || 'unknown';
+  }
+  return {
+    gh: createGithub(slug),
+    git: createGit(process.cwd()),
+    now: () => Date.now(),
+    sleep: sleepBlocking,
+    log: (line) => io.log(`[pr-land] ${line}`),
+    error: (line) => io.error(`[pr-land] ${line}`),
+    host: hostname(),
+    pid: process.pid,
+    user,
+    liveness: classifyHolderLiveness,
+    onExit: (fn) => {
+      exits.add(fn);
+      return () => exits.delete(fn);
+    },
+    cleanupWorktree: (path) => cleanupWorktree(path, (line) => io.log(`[pr-land] ${line}`)),
+  };
+}
+
+const hasQueueLabel = (pr) => (pr?.labels ?? []).some((label) => (label?.name ?? label) === QUEUE_LABEL);
+
+function readLockState(deps, ref = LOCK_REF) {
+  const { payload, unreadable } = deps.gh.readLock(ref);
+  return classifyLock({ payload, unreadable, nowMs: deps.now(), liveness: deps.liveness });
+}
+
+/**
+ * The conductor's hold on the lock. Every wait while holding goes through `hold`, which renews
+ * the lease **before** sleeping: a poll that skipped the refresh would age the lock past its
+ * lease under a live conductor and invite the next lander to force-take it.
+ */
+function makeHolder({ deps, token }) {
+  let train = null;
+  const since = new Date(deps.now()).toISOString();
+  let held = false;
+  let unregister = () => {};
+  const body = () => ({
+    pr: train?.pr ?? train?.components?.[0] ?? 0,
+    token,
+    holder: deps.user,
+    host: deps.host,
+    acquiredAt: new Date(deps.now()).toISOString(),
+    leaseMinutes: LEASE_MINUTES,
+    via: 'pnpm pr:land (train)',
+    conductingSince: since,
+    train,
+  });
+  const holder = {
+    take: ({ force = false } = {}) => {
+      held = deps.gh.takeLock(LOCK_REF, body(), { force });
+      if (held) unregister = deps.onExit(() => holder.release());
+      return held;
+    },
+    refresh: () => deps.gh.refreshLock(LOCK_REF, body()),
+    update: (patch) => {
+      train = patch === null ? null : { ...(train ?? {}), ...patch };
+      holder.refresh();
+    },
+    hold: (seconds) => {
+      holder.refresh();
+      deps.sleep(seconds);
+    },
+    release: () => {
+      if (!held) return;
+      held = false;
+      unregister();
+      deps.gh.releaseLock(LOCK_REF);
+      deps.log('landing lock released');
+    },
+  };
+  return holder;
+}
+
+/*
+ * ------------------------------------------------------------------------------------------------
+ * The fast path.
+ * ------------------------------------------------------------------------------------------------
+ */
+
+export function evaluateFastPath({ pr, deps, requiredContexts, allowFailing = [] }) {
+  const rollup = pr.statusCheckRollup ?? [];
+  const checks = requiredCheckState({ rollup, requiredContexts });
+  const other = otherCheckState({ rollup, requiredContexts, allowFailing });
+  const sha = pr.headRefOid;
+  let mergeClean = null;
+  let prFiles = null;
+  let mainFiles = null;
+  let fullPlan = null;
+  const fetched = deps.git.fetch(['main', pr.headRefName]);
+  const have = fetched && (deps.git.hasCommit(sha) || (deps.git.fetch([sha]) && deps.git.hasCommit(sha)));
+  if (have) {
+    mergeClean = deps.git.mergeTreeClean('origin/main', sha);
+    const base = deps.git.mergeBase('origin/main', sha);
+    if (base) {
+      const changes = deps.git.diffNameStatus(base, sha);
+      mainFiles = deps.git.diffNames(base, 'origin/main');
+      if (changes) {
+        prFiles = changes.map((change) => change.path);
+        fullPlan = buildImpactPlan({
+          files: changes.filter((change) => change.status !== 'D').map((change) => change.path),
+          deletedFiles: changes.filter((change) => change.status === 'D').map((change) => change.path),
+        });
+      }
+    }
+  }
+  const lock = readLockState(deps);
+  return fastPathEligibility({ checks, other, mergeClean, prFiles, mainFiles, lock, fullPlan });
+}
+
+function takeFastLock(deps, token, number) {
+  const body = () => ({
+    pr: number,
+    token,
+    holder: deps.user,
+    host: deps.host,
+    acquiredAt: new Date(deps.now()).toISOString(),
+    leaseMinutes: FAST_LEASE_MINUTES,
+    via: 'pnpm pr:land (fast path)',
+  });
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const lock = readLockState(deps, FAST_LOCK_REF);
+    if (lock.state === 'free' && deps.gh.takeLock(FAST_LOCK_REF, body())) return true;
+    if ((lock.state === 'stale' || lock.state === 'unreadable') && deps.gh.takeLock(FAST_LOCK_REF, body(), { force: true })) return true;
+    deps.sleep(5);
+  }
+  return false;
+}
+
+function tryFastPath({ pr, deps, requiredContexts, args, token }) {
+  const verdict = evaluateFastPath({ pr, deps, requiredContexts, allowFailing: args.allowFailing });
+  deps.log(`fast path for PR #${pr.number}:`);
+  for (const line of describeFastPath(verdict)) deps.log(`  ${line}`);
+  if (!verdict.eligible) {
+    deps.log('not eligible for the fast path; taking the train');
+    return false;
+  }
+  if (!takeFastLock(deps, token, pr.number)) {
+    deps.log(`another fast-path merge kept ${FAST_LOCK_REF} for 30 s; taking the train`);
+    return false;
+  }
+  const releaseFast = deps.onExit(() => deps.gh.releaseLock(FAST_LOCK_REF));
+  try {
+    // Checked again under the fast lock: `main` or the train may have moved since the first read.
+    const again = evaluateFastPath({ pr, deps, requiredContexts, allowFailing: args.allowFailing });
+    if (!again.eligible) {
+      for (const line of describeFastPath(again).filter((l) => l.startsWith('FAIL'))) deps.log(`  now ${line}`);
+      deps.log('no longer eligible; taking the train');
+      return false;
+    }
+    const merged = deps.gh.mergePr(pr.number, { sha: pr.headRefOid, title: `${pr.title} (#${pr.number})` });
+    if (!merged.ok) {
+      deps.log(`GitHub refused the fast-path merge (${merged.detail || 'no detail'}); taking the train`);
+      return false;
+    }
+    deps.log(`PR #${pr.number} merged on the fast path at ${pr.headRefOid.slice(0, 9)}; post-merge CI on main still runs`);
+    deps.gh.deleteBranch(pr.headRefName);
+    if (hasQueueLabel(pr)) deps.gh.removeLabel(pr.number);
+    return true;
+  } finally {
+    releaseFast();
+    deps.gh.releaseLock(FAST_LOCK_REF);
+  }
+}
+
+/*
+ * ------------------------------------------------------------------------------------------------
+ * The conductor.
+ * ------------------------------------------------------------------------------------------------
+ */
+
+function eject(deps, number, body) {
+  deps.gh.comment(number, body);
+  deps.gh.removeLabel(number);
+}
+
+/**
+ * One train, start to finish: cut, merge components, open, wait for CI, then merge, split, rerun,
+ * rebuild or eject. Returns the outcome for `conduct` to schedule the next train.
+ */
+export function runTrain({ batch, deps, holder, requiredContexts, args }) {
+  const { gh, git, log } = deps;
+  git.fetch(['main', ...batch.map((c) => c.headRefName)]);
+  const base = git.revParse('origin/main');
+  if (!base) return { outcome: 'abort', reason: 'could not read origin/main after fetching it' };
+  const branch = trainBranchName(deps.now(), batch[0].number);
+  if (!gh.createBranch(branch, base)) return { outcome: 'abort', reason: `could not create ${branch}` };
+  holder.update({ branch, base, components: batch.map((c) => c.number), files: null, pr: null, startedAt: new Date(deps.now()).toISOString() });
+  log(`train ${branch} from main@${base.slice(0, 9)}: ${batch.map((c) => `#${c.number}`).join(' ')}`);
+
+  const included = [];
+  const errored = [];
+  for (const component of batch) {
+    const merged = gh.mergeInto(branch, component.headRefOid, `chore(train): merge #${component.number} ${component.headRefName}`);
+    if (merged.state === 'merged' || merged.state === 'up-to-date') {
+      included.push({ ...component, empty: merged.state === 'up-to-date' });
+    } else if (merged.state === 'conflict') {
+      log(`#${component.number} conflicts on the train; ejecting it`);
+      eject(deps, component.number, conflictComment({ ahead: included.filter((c) => !c.empty) }));
+    } else {
+      log(`#${component.number} could not be merged onto the train (${String(merged.detail ?? '').trim().split('\n')[0]}); it stays queued`);
+      errored.push(component.number);
+    }
+  }
+  const carrying = included.filter((c) => !c.empty);
+  if (carrying.length === 0) {
+    gh.deleteBranch(branch);
+    if (included.length > 0) finishComponents({ deps, components: included, trainHead: null, trainNumber: null, trainUrl: null });
+    return { outcome: 'nothing', errored };
+  }
+
+  git.fetch([branch]);
+  const head = git.revParse(`origin/${branch}`);
+  const files = head ? git.diffNames(base, head) : null;
+  if (!files) {
+    // Without the file set neither the drift check nor a fast-path lander can reason about this
+    // train, and a train nobody can reason about must not merge.
+    gh.deleteBranch(branch);
+    return { outcome: 'abort', reason: `could not fetch ${branch} to read its files`, errored };
+  }
+  holder.update({ components: included.map((c) => c.number), files });
+  const opened = gh.openPr({ title: trainTitle(included), head: branch, base: 'main', body: trainBody({ components: included, base }) });
+  holder.update({ pr: opened.number, url: opened.url });
+  log(`train #${opened.number} opened ready: one CI run for ${included.length} pull request(s) (${opened.url})`);
+
+  let empty = 0;
+  let refires = 0;
+  let reruns = 0;
+  const giveUpAt = deps.now() + TRAIN_TIMEOUT_MINUTES * 60_000;
+  for (;;) {
+    holder.hold(POLL_SECONDS);
+    if (deps.now() > giveUpAt) {
+      gh.closePr(opened.number, `No verdict after ${TRAIN_TIMEOUT_MINUTES} minutes; closed. The components stay queued.`);
+      gh.deleteBranch(branch);
+      return { outcome: 'abort', reason: `train #${opened.number} had no verdict after ${TRAIN_TIMEOUT_MINUTES} minutes` };
+    }
+    const trainPr = gh.readPr(opened.number);
+    const rollup = trainPr.statusCheckRollup ?? [];
+    empty = rollup.length === 0 ? empty + 1 : 0;
+    const checks = requiredCheckState({ rollup, requiredContexts });
+    const other = otherCheckState({ rollup, requiredContexts, allowFailing: args.allowFailing });
+    const step = trainCiStep({ checks, other, inFlight: runInFlight(trainPr), emptyRollupObservations: empty, refires });
+
+    if (step.action === 'wait') continue;
+    if (step.action === 'refire') {
+      log(`train #${opened.number} reported no run after ${empty} polls; toggling draft to ask GitHub once`);
+      gh.markDraft(opened.number);
+      gh.markReady(opened.number);
+      refires += 1;
+      continue;
+    }
+    if (step.action === 'red') {
+      const plan = redTrainPlan({ components: included.map((c) => c.number), failed: step.failed, flaky: [...args.flaky, ...args.allowFailing], reruns });
+      if (plan.action === 'rerun') {
+        const ids = runIdsFromChecks(step.failed);
+        log(`train #${opened.number} red only on flaky context(s) ${plan.names.join(', ')}; rerunning the failed jobs once`);
+        for (const id of ids) gh.rerunFailed(id);
+        reruns += 1;
+        continue;
+      }
+      const failedLine = step.failed.map((c) => `${c.name} ${c.conclusion}`).join(', ');
+      if (plan.action === 'split') {
+        const halves = plan.halves.map((half) => half.map((n) => `#${n}`).join(' ')).join(' | ');
+        log(`train #${opened.number} is red (${failedLine}); splitting into ${halves}`);
+        gh.closePr(opened.number, `Red on ${failedLine}. Split into ${halves}; each half runs as its own train.`);
+        gh.deleteBranch(branch);
+        return { outcome: 'split', halves: plan.halves };
+      }
+      const [only] = included;
+      log(`train #${opened.number} is red (${failedLine}); ejecting #${only.number}`);
+      gh.closePr(opened.number, `Red on ${failedLine}; #${only.number} is ejected from the queue.`);
+      gh.deleteBranch(branch);
+      const hint = step.failed.some((c) => !requiredContexts.includes(c.name))
+        ? ' An unrequired lane can be accepted by name with `--allow-failing=<context>` by whoever conducts.'
+        : '';
+      eject(deps, only.number, ejectComment({ reason: `train #${opened.number} failed with it alone.${hint}`, failed: step.failed, trainNumber: opened.number }));
+      return { outcome: 'ejected', number: only.number };
+    }
+
+    // Green. Main may have moved while CI ran; only a move into this train's files matters.
+    git.fetch(['main']);
+    const mainNow = git.revParse('origin/main');
+    const drift = driftVerdict({ trainFiles: files, mainFiles: mainNow ? git.diffNames(base, mainNow) : null });
+    if (drift.state === 'unknown') {
+      log('could not compare main with the train base; checking again next poll');
+      continue;
+    }
+    if (drift.state === 'overlap') {
+      log(`main moved into this train's files (${drift.overlap.slice(0, 3).join(', ')}); rebuilding it on today's main`);
+      gh.closePr(opened.number, `Green, but main moved into ${drift.overlap.join(', ')} while CI ran. Rebuilt on the new main.`);
+      gh.deleteBranch(branch);
+      return { outcome: 'rebuild', reason: 'main moved into its files' };
+    }
+    for (const name of other.unmatched) log(`--allow-failing named ${name}, which is not failing on this train`);
+    const accepted = other.accepted.length > 0 ? `, accepting ${other.accepted.map((c) => `${c.name} ${c.conclusion}`).join(', ')}` : '';
+    for (const component of included) component.coAuthors = parseCoAuthors(git.coAuthorLog(base, component.headRefOid));
+    log(`train #${opened.number} is green on ${trainPr.headRefOid.slice(0, 9)}${accepted}; squash merging`);
+    const merged = gh.mergePr(opened.number, {
+      sha: trainPr.headRefOid,
+      title: `${trainTitle(included)} (#${opened.number})`,
+      message: composeSquashBody({ components: included, trainNumber: opened.number }),
+    });
+    if (!merged.ok && gh.readPr(opened.number).state !== 'MERGED') {
+      log(`GitHub refused the train merge (${merged.detail || 'no detail'}); rebuilding`);
+      gh.closePr(opened.number, `The merge was refused: ${merged.detail || 'no detail'}. Rebuilt on the new main.`);
+      gh.deleteBranch(branch);
+      return { outcome: 'rebuild', reason: 'the merge was refused' };
+    }
+    log(`train #${opened.number} merged: ${opened.url}`);
+    git.fetch(['main', branch, ...included.map((c) => c.headRefName)]);
+    finishComponents({ deps, components: included, trainHead: trainPr.headRefOid, trainNumber: opened.number, trainUrl: opened.url });
+    gh.deleteBranch(branch);
+    return { outcome: 'merged', train: opened.number, landed: included.map((c) => c.number) };
+  }
+}
+
+/**
+ * Close every component a merged train carried, and delete a branch only when `origin/main`
+ * provably contains it. Directly (`isContained`), or through the train: the component's sha is an
+ * ancestor of the train head and `main` contains the train head. The second form is what proves
+ * two components that edited the same file, where a three-way merge of one alone against the
+ * squash can conflict.
+ */
+function finishComponents({ deps, components, trainHead, trainNumber, trainUrl }) {
+  const { gh, git, log } = deps;
+  const trainContained = trainHead ? git.isContained('origin/main', trainHead) : false;
+  for (const component of components) {
+    const sha = component.headRefOid;
+    const contained = git.isContained('origin/main', sha) || (trainContained && git.isAncestor(sha, trainHead));
+    if (!contained) {
+      log(`#${component.number}: main does not provably contain ${sha.slice(0, 9)}; left open and queued`);
+      continue;
+    }
+    const current = git.revParse(`origin/${component.headRefName}`);
+    const branchKept = current !== null && current !== sha;
+    gh.closePr(component.number, landedComment({ trainNumber: trainNumber ?? 'none', trainUrl: trainUrl ?? 'main already contained it', sha, branchKept }));
+    gh.removeLabel(component.number);
+    if (!branchKept) gh.deleteBranch(component.headRefName);
+    log(`#${component.number} closed as landed${branchKept ? '; its branch moved after the train took it, so it was kept' : ' and its branch deleted'}`);
+  }
+}
+
+/**
+ * Hold the lock and run trains until the queue is empty or the deadline passes. Never stops
+ * mid-train: the deadline is checked between trains.
+ */
+export function conduct({ deps, args, requiredContexts, token, force = false, deadline }) {
+  const holder = makeHolder({ deps, token });
+  if (!holder.take({ force })) return { state: 'lost' };
+  deps.log('landing lock acquired: this process conducts trains until the queue is empty');
+  let splits = [];
+  const rebuilds = new Map();
+  const errors = new Map();
+  const landed = [];
+  try {
+    while (deps.now() < deadline) {
+      holder.update(null);
+      const queue = [];
+      for (const pr of deps.gh.listQueue()) {
+        const refusal = refuseLanding(pr);
+        if (refusal) {
+          deps.log(`#${pr.number} ${refusal.split('\n')[0]}; taking it out of the queue`);
+          eject(deps, pr.number, refusal === CONFLICT_INSTRUCTION ? conflictComment({}) : ejectComment({ reason: `it ${refusal}` }));
+        } else queue.push(pr);
+      }
+      const next = nextTrain({ queue, splits, batchSize: args.batch });
+      splits = next.splits;
+      if (next.batch.length === 0) {
+        deps.log('the queue is empty');
+        return { state: 'drained', landed };
+      }
+      const result = runTrain({ batch: next.batch, deps, holder, requiredContexts, args });
+      const key = next.batch.map((c) => c.number).join(',');
+      if (result.outcome === 'merged') landed.push(...result.landed);
+      else if (result.outcome === 'split') splits = [...result.halves, ...splits];
+      else if (result.outcome === 'rebuild') {
+        const count = (rebuilds.get(key) ?? 0) + 1;
+        rebuilds.set(key, count);
+        const numbers = next.batch.map((c) => c.number);
+        if (count <= MAX_REBUILDS) splits = [numbers, ...splits];
+        else if (numbers.length > 1) splits = [...splitTrain(numbers), ...splits];
+        else eject(deps, numbers[0], ejectComment({ reason: `main kept moving into its files; ${MAX_REBUILDS} rebuilds did not settle` }));
+      } else if (result.outcome === 'abort') {
+        deps.error(`the train stopped: ${result.reason}`);
+        return { state: 'aborted', landed };
+      }
+      for (const number of result.errored ?? []) {
+        const count = (errors.get(number) ?? 0) + 1;
+        errors.set(number, count);
+        if (count >= 2) eject(deps, number, ejectComment({ reason: 'GitHub refused to merge it onto two trains for a reason other than a conflict' }));
+      }
+    }
+    deps.log('deadline reached between trains; handing the queue to the next lander');
+    return { state: 'deadline', landed };
+  } finally {
+    holder.release();
+  }
+}
+
+/*
+ * ------------------------------------------------------------------------------------------------
+ * Commands.
+ * ------------------------------------------------------------------------------------------------
+ */
+
+function queuePosition(queue, number) {
+  const index = queue.findIndex((pr) => pr.number === number);
+  return index === -1 ? null : index + 1;
+}
+
+function waitForOutcome({ number, sinceIso, deps, args, requiredContexts, token, deadline }) {
+  let lastLine = '';
+  let queue = null;
+  let queueReadAt = Number.NEGATIVE_INFINITY;
+  while (deps.now() < deadline) {
+    const pr = deps.gh.readPr(number);
+    const needsComments = pr.state !== 'OPEN' || !hasQueueLabel(pr);
+    const outcome = waiterOutcome({ pr, comments: needsComments ? deps.gh.readPrComments(number) : [], sinceIso });
+    if (outcome.exitCode !== null) return reportOutcome({ number, outcome, deps, args });
+
+    const lock = readLockState(deps);
+    if (lock.state === 'free' || lock.state === 'stale' || lock.state === 'unreadable') {
+      if (lock.state !== 'free') deps.log(`taking over a lock nobody holds any more: ${describeLock(lock, deps.now())}`);
+      const result = conduct({ deps, args, requiredContexts, token, force: lock.state !== 'free', deadline });
+      if (result.state === 'lost') deps.log('another lander took the lock first; waiting behind it');
+      if (result.state === 'aborted') {
+        deps.error(`PR #${number} stays queued; \`pnpm pr:land --conduct\` resumes once the cause above is fixed`);
+        return 1;
+      }
+      continue;
+    }
+    if (deps.now() - queueReadAt >= 10 * 60_000) {
+      queue = deps.gh.listQueue();
+      queueReadAt = deps.now();
+    }
+    const position = queuePosition(queue ?? [], number);
+    const line = `queued${position ? ` at ${position} of ${queue.length}` : ''}; landing now: ${describeLock(lock, deps.now())}`;
+    if (line !== lastLine) deps.log(line);
+    lastLine = line;
+    deps.sleep(waiterPollSeconds(position, args.batch));
+  }
+  deps.error(`stopped waiting after ${args.timeoutMinutes} minutes. PR #${number} stays queued and the next conductor lands it;`);
+  deps.error(`\`gh pr edit ${number} --remove-label ${QUEUE_LABEL}\` takes it out.`);
+  return 1;
+}
+
+function reportOutcome({ number, outcome, deps, args }) {
+  if (outcome.state === 'merged' || outcome.state === 'landed') {
+    deps.log(`PR #${number} ${outcome.state === 'merged' ? 'is merged' : 'landed through a train'}`);
+    deps.git.prune();
+    const removal = worktreeToRemove(args);
+    if (removal) deps.cleanupWorktree(removal);
     return 0;
   }
-  io.log(`[pr-queue] waiting: ${open.length} open pull request(s)`);
-  for (const pr of open.sort((a, b) => a.number - b.number)) {
-    const held = lock.holder?.pr === pr.number ? ' <- holds the lock' : '';
-    io.log(
-      `[pr-queue]   #${pr.number} ${pr.isDraft ? 'draft' : 'ready'} ${pr.mergeStateStatus}/${pr.mergeable}${held}`
-      + `  ${pr.title.slice(0, 60)}`,
-    );
+  if (outcome.state === 'ejected') {
+    deps.error(`PR #${number} was taken out of the queue:`);
+    for (const line of String(outcome.comment?.body ?? '').split('\n').filter((l) => l && !l.startsWith('<!--'))) deps.error(`  ${line}`);
+    return 1;
   }
-  io.log('[pr-queue] land one with `pnpm pr:land <number>`; never `gh pr merge` by hand.');
+  if (outcome.state === 'closed') deps.error(`PR #${number} was closed without landing`);
+  else deps.error(`PR #${number} lost the \`${QUEUE_LABEL}\` label without a conductor comment; someone dequeued it`);
+  return 1;
+}
+
+function readProtection(deps) {
+  const protection = deps.gh.readRequiredContexts();
+  if (protection.failure) {
+    deps.error(`could not read main's required status checks: ${protection.failure.detail}`);
+    deps.error("this says nothing about main's protection; try again once the read works");
+    return null;
+  }
+  if (protection.contexts.length === 0) {
+    deps.error('main declares no required status checks; refusing to land without a gate');
+    return null;
+  }
+  return protection.contexts;
+}
+
+function landOne({ args, deps }) {
+  const number = args.number;
+  const pr = deps.gh.readPr(number);
+  if (pr?.state === 'MERGED') {
+    deps.log(`PR #${number} is already merged: ${pr.url}`);
+    const removal = worktreeToRemove(args);
+    if (removal) deps.cleanupWorktree(removal);
+    return 0;
+  }
+  const refusal = refuseLanding(pr);
+  if (refusal) {
+    deps.error(`PR #${number} ${refusal}`);
+    return 1;
+  }
+  const requiredContexts = readProtection(deps);
+  if (!requiredContexts) return 1;
+  deps.log(`PR #${number} ${pr.title}`);
+  const token = `${deps.host}-${deps.pid}-${deps.now()}`;
+
+  if (args.fast && tryFastPath({ pr, deps, requiredContexts, args, token })) {
+    return reportOutcome({ number, outcome: { state: 'merged' }, deps, args });
+  }
+
+  const sinceIso = new Date(deps.now()).toISOString();
+  if (!hasQueueLabel(pr) && !deps.gh.addLabel(number)) {
+    deps.error(`could not put the \`${QUEUE_LABEL}\` label on PR #${number}; nothing was queued`);
+    return 1;
+  }
+  deps.log(`PR #${number} is queued for the next train (label \`${QUEUE_LABEL}\`)`);
+  if (!args.wait) {
+    const lock = readLockState(deps);
+    deps.log(lock.state === 'free'
+      ? 'nobody is conducting: run `pnpm pr:land --conduct`, or any waiting `pnpm pr:land`, to start the train'
+      : `landing now: ${describeLock(lock, deps.now())}. \`pnpm pr:queue\` shows the line.`);
+    return 0;
+  }
+  const deadline = deps.now() + args.timeoutMinutes * 60_000;
+  return waitForOutcome({ number, sinceIso, deps, args, requiredContexts, token, deadline });
+}
+
+function conductOnly({ args, deps }) {
+  const requiredContexts = readProtection(deps);
+  if (!requiredContexts) return 1;
+  const lock = readLockState(deps);
+  if (lock.state === 'held' || lock.state === 'unknown') {
+    deps.log(`not conducting: ${describeLock(lock, deps.now())}`);
+    return lock.state === 'held' ? 0 : 1;
+  }
+  const token = `${deps.host}-${deps.pid}-${deps.now()}`;
+  const result = conduct({ deps, args, requiredContexts, token, force: lock.state !== 'free', deadline: deps.now() + args.timeoutMinutes * 60_000 });
+  if (result.state === 'lost') {
+    deps.log('another lander took the lock first; it conducts');
+    return 0;
+  }
+  return result.state === 'aborted' ? 1 : 0;
+}
+
+/**
+ * `pnpm pr:land --plan <n...>`: what would happen, from reads alone. Fetches locally, reads the
+ * pull requests, the protection, the lock and the queue, and trial-merges on throwaway commits.
+ * It never writes to GitHub: no label, ref, comment, pull request or merge.
+ */
+export function planLanding({ args, deps }) {
+  const requiredContexts = readProtection(deps);
+  if (!requiredContexts) return 1;
+  const lock = readLockState(deps);
+  deps.log(`landing now: ${describeLock(lock, deps.now())}`);
+  const joining = [];
+  for (const number of args.numbers) {
+    const pr = deps.gh.readPr(number);
+    if (pr?.state === 'MERGED') {
+      deps.log(`PR #${number}: already merged`);
+      continue;
+    }
+    const refusal = refuseLanding(pr);
+    if (refusal) {
+      deps.log(`PR #${number}: would be refused — ${refusal.split('\n')[0]}`);
+      continue;
+    }
+    if (args.fast) {
+      const verdict = evaluateFastPath({ pr, deps, requiredContexts, allowFailing: args.allowFailing });
+      deps.log(`PR #${number}: fast path ${verdict.eligible ? 'eligible' : 'not eligible'}`);
+      for (const line of describeFastPath(verdict)) deps.log(`  ${line}`);
+      if (verdict.eligible) {
+        deps.log(`PR #${number}: would squash-merge now at ${pr.headRefOid.slice(0, 9)}, without the train lock`);
+        continue;
+      }
+    }
+    deps.log(`PR #${number}: would be queued with the \`${QUEUE_LABEL}\` label`);
+    joining.push({ ...pr, queuedAt: new Date(deps.now()).toISOString() });
+  }
+
+  const queued = deps.gh.listQueue();
+  const combined = [...queued, ...joining.filter((pr) => !queued.some((q) => q.number === pr.number))];
+  const { batch } = nextTrain({ queue: combined, batchSize: args.batch });
+  if (batch.length === 0) {
+    deps.log('no train would run: the queue would be empty');
+    return 0;
+  }
+  if (lock.state === 'held') deps.log('a train is in flight; the train below forms after it');
+  deps.log(`next train (${batch.length} of ${combined.length} queued): ${trainTitle(batch)}`);
+  deps.log(`  branch ${trainBranchName(deps.now(), batch[0].number)} from origin/main`);
+  deps.git.fetch(['main', ...batch.map((c) => c.headRefName)]);
+  const trial = deps.git.trialMerge('origin/main', batch.map((c) => c.headRefOid));
+  for (const component of batch) {
+    const row = trial.find((r) => r.sha === component.headRefOid);
+    const verdict = !row ? 'not measured'
+      : row.conflicts.length > 0 ? `would conflict and be ejected (${row.conflicts.join(', ')})`
+        : row.state === 'pending' ? 'merges cleanly' : `adds nothing (${row.state})`;
+    deps.log(`  #${component.number} ${component.headRefName}@${String(component.headRefOid).slice(0, 9)}: ${verdict}`);
+  }
+  for (const component of batch) component.coAuthors = parseCoAuthors(deps.git.coAuthorLog('origin/main', component.headRefOid));
+  deps.log('squash commit, if green:');
+  for (const line of composeSquashBody({ components: batch, trainNumber: '<train>' }).split('\n')) deps.log(`  | ${line}`);
+  deps.log('dry run: nothing was written to GitHub');
   return 0;
 }
 
-export function parseArgs(argv) {
-  const args = {
-    number: null,
-    cleanup: null,
-    queue: false,
-    release: false,
-    ci: false,
-    parallelCi: false,
-    // The local lanes run where that branch is checked out. The current
-    // directory is the common case: the agent landing a pull request is
-    // standing in the worktree that wrote it.
-    worktree: null,
-    timeoutMinutes: 180,
-    // Check contexts whose failure the operator has accepted, by name. Never a
-    // blanket force: an unnamed red lane still refuses.
-    allowFailing: [],
-  };
-  for (let index = 0; index < argv.length; index += 1) {
-    const arg = argv[index];
-    if (arg === '--' || arg === '') continue;
-    if (arg === '--queue') args.queue = true;
-    else if (arg === '--release') args.release = true;
-    else if (arg === '--ci') args.ci = true;
-    else if (arg === '--parallel-ci') args.parallelCi = true;
-    else if (arg === '--cleanup') {
-      args.cleanup = argv[index + 1] ?? null;
-      index += 1;
-      if (!args.cleanup) throw new Error('--cleanup needs a worktree path');
-    } else if (arg.startsWith('--cleanup=')) args.cleanup = arg.slice('--cleanup='.length);
-    else if (arg === '--worktree') {
-      args.worktree = argv[index + 1] ?? null;
-      index += 1;
-      if (!args.worktree) throw new Error('--worktree needs a path');
-    } else if (arg.startsWith('--worktree=')) args.worktree = arg.slice('--worktree='.length);
-    else if (arg.startsWith('--timeout-minutes=')) {
-      const minutes = Number(arg.slice('--timeout-minutes='.length));
-      if (!Number.isFinite(minutes) || minutes <= 0) {
-        throw new Error(`--timeout-minutes must be positive; received ${arg}`);
-      }
-      args.timeoutMinutes = minutes;
-    } else if (arg.startsWith('--allow-failing=')) {
-      const names = arg.slice('--allow-failing='.length).split(',').map((name) => name.trim()).filter(Boolean);
-      if (names.length === 0) throw new Error('--allow-failing must name at least one check context');
-      args.allowFailing = [...new Set([...(args.allowFailing ?? []), ...names])];
-    } else if (/^#?\d+$/.test(arg)) args.number = Number(arg.replace('#', ''));
-    else throw new Error(`unknown argument: ${arg}`);
+export function printQueue({ deps, io = console }) {
+  const lock = readLockState(deps);
+  io.log(`[pr-queue] landing now: ${describeLock(lock, deps.now())}`);
+  const trainPr = lock.holder?.train?.pr;
+  if (trainPr) {
+    const protection = deps.gh.readRequiredContexts();
+    const pr = deps.gh.readPr(trainPr);
+    if (protection.contexts && pr) {
+      const checks = requiredCheckState({ rollup: pr.statusCheckRollup ?? [], requiredContexts: protection.contexts });
+      const green = protection.contexts.length - checks.pending.length - checks.unrun.length - checks.failed.length;
+      io.log(`[pr-queue]   CI on train #${trainPr}: ${green} green, ${checks.pending.length} running, ${checks.unrun.length} not reported, ${checks.failed.length} failed (${pr.url})`);
+    }
   }
-  if (!args.queue && !args.release && args.number === null) {
-    throw new Error('a pull request number is required: pnpm pr:land <number>');
+  const queue = deps.gh.listQueue();
+  if (queue.length === 0) {
+    io.log('[pr-queue] queue: empty');
+  } else {
+    io.log(`[pr-queue] queue: ${queue.length} pull request(s), oldest first; the next train takes up to ${DEFAULT_BATCH}`);
+    const riding = new Set(lock.holder?.train?.components ?? []);
+    queue.forEach((pr, index) => {
+      const minutes = pr.queuedAt ? Math.max(0, Math.round((deps.now() - Date.parse(pr.queuedAt)) / 60_000)) : null;
+      io.log(`[pr-queue]   ${index + 1}. #${pr.number}${riding.has(pr.number) ? ' (on the train)' : ''}${minutes === null ? '' : ` queued ${minutes} min`}  ${String(pr.title ?? '').slice(0, 60)}`);
+    });
+    if (lock.state === 'free') io.log('[pr-queue] nobody is conducting: `pnpm pr:land --conduct` starts the train');
   }
-  if (args.ci && args.number === null) throw new Error('pnpm pr:ci needs a pull request number');
-  if (args.parallelCi && (args.ci || args.queue || args.release)) throw new Error('--parallel-ci applies only to normal landing, not --ci, --queue, or --release');
-  return args;
+  io.log('[pr-queue] queue one with `pnpm pr:land <number>`; never `gh pr merge` by hand.');
+  return 0;
 }
 
-export function runPrLand(argv, io = console) {
+export function runPrLand(argv, io = console, makeDeps = defaultDeps) {
   let args;
   try {
     args = parseArgs(argv);
@@ -1280,364 +1436,41 @@ export function runPrLand(argv, io = console) {
     io.error(`[pr-land] ${error.message}`);
     return 2;
   }
+  for (const note of args.notes) io.log(`[pr-land] ${note}`);
+  const deps = makeDeps(io);
 
-  const slug = repoSlug();
-  if (args.queue) return printQueue(slug, io);
+  if (args.queue) return printQueue({ deps, io });
 
   if (args.release) {
-    const { payload, unreadable } = readLockPayload(slug);
-    const lock = classifyLock({ payload, unreadable, nowMs: Date.now() });
+    const lock = readLockState(deps);
     if (lock.state === 'unknown') {
-      // Forcing a delete over a lock we could not read would take out whoever is actually landing.
-      io.error(`[pr-land] ${describeLock(lock)}; not releasing a lock nobody can see`);
+      deps.error(`${describeLock(lock, deps.now())}; not releasing a lock nobody can see`);
       return 1;
     }
     if (lock.state === 'free') {
-      io.log('[pr-land] the landing lock is already free');
+      deps.log('the landing lock is already free');
       return 0;
     }
-    io.log(`[pr-land] releasing the landing lock: ${describeLock(lock)}`);
-    releaseLock(slug);
+    deps.log(`releasing the landing lock: ${describeLock(lock, deps.now())}`);
+    deps.gh.releaseLock(LOCK_REF);
     return 0;
   }
-
-  const number = args.number;
-  let pr = readPr(number);
 
   if (args.ci) {
-    // Opt-in early CI: a draft that wants a round now, without landing. It
-    // stays ready afterwards, and `pnpm pr:land` will not fire a second run.
+    // Opt-in early CI: a draft that wants a round now, so the fast path can take it once green.
+    const pr = deps.gh.readPr(args.number);
     if (!pr.isDraft) {
-      io.log(`[pr-land] PR #${number} is already ready; CI has been asked for`);
+      deps.log(`PR #${args.number} is already ready; CI has been asked for`);
       return 0;
     }
-    gh(['pr', 'ready', String(number)]);
-    log(`PR #${number} is ready: one CI run is now firing. Land it with \`pnpm pr:land ${number}\`.`);
+    deps.gh.markReady(args.number);
+    deps.log(`PR #${args.number} is ready: one CI run is now firing. Once green, \`pnpm pr:land ${args.number}\` can take the fast path.`);
     return 0;
   }
 
-  if (pr?.state === 'MERGED') {
-    io.log(`[pr-land] PR #${number} is already merged: ${pr.url}`);
-    const removal = worktreeToRemove(args);
-    if (removal) cleanupWorktree(removal);
-    return 0;
-  }
-  const refusal = refuseLanding(pr);
-  if (refusal) {
-    io.error(`[pr-land] PR #${number} ${refusal}`);
-    return 1;
-  }
-
-  const protection = readRequiredContexts(slug);
-  if (protection.failure) {
-    io.error(`[pr-land] could not read main's required status checks: ${protection.failure.detail}`);
-    io.error("[pr-land] this says nothing about main's protection; try again once the read works");
-    return 1;
-  }
-  const requiredContexts = protection.contexts;
-  if (requiredContexts.length === 0) {
-    io.error('[pr-land] main declares no required status checks; refusing to land without a gate');
-    return 1;
-  }
-  log(`PR #${number} ${pr.title}`);
-  log(`required contexts: ${requiredContexts.length} (${requiredContexts.join(', ')})`);
-
-  const token = `${hostname()}-${process.pid}-${Date.now()}`;
-  let held = false;
-  let standing = false;
-  let lineWrittenAtMs = 0;
-  /** When this process first asked for the lock. Survives a queue entry being overwritten. */
-  let askedAtIso = null;
-  /**
-   * Take a place in the waiting line, or keep the one already held, and hand back the line as it
-   * now stands. `null` means 「the order could not be established」 — an unwritable queue, which by
-   * the fallback rule on `QUEUE_REF` means this waiter races rather than stops.
-   *
-   * Throttled, because a poll that only waits does not need a fresh write: the entry has to stay
-   * inside `WAIT_LEASE_MINUTES`, not be rewritten every thirty seconds by every waiter. The one
-   * caller that needs it current — the decision on a free lock — asks for `{ force: true }`.
-   */
-  const standInLine = ({ force = false } = {}) => {
-    const nowMs = Date.now();
-    if (!force && standing && nowMs - lineWrittenAtMs < WAIT_REFRESH_SECONDS * 1000) return null;
-    // Minted once, in this process. The ref can lose the entry; it cannot lose when we arrived.
-    askedAtIso ??= new Date(nowMs).toISOString();
-    const line = joinWaitingLine(readWaitingLine(slug), { pr: number, token, since: askedAtIso, holder: lockBody({ pr: number, token }).holder, host: hostname() }, nowMs);
-    if (!writeWaitingLine(slug, line)) return null;
-    standing = true;
-    lineWrittenAtMs = nowMs;
-    return line;
-  };
-  const stepOutOfLine = () => {
-    if (!standing) return;
-    standing = false;
-    writeWaitingLine(slug, leaveWaitingLine(readWaitingLine(slug), token, Date.now()));
-  };
-  const release = () => {
-    stepOutOfLine();
-    if (!held) return;
-    held = false;
-    releaseLock(slug);
-    log('landing lock released');
-  };
-  process.on('exit', release);
-  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
-    process.on(signal, () => {
-      release();
-      process.exit(130);
-    });
-  }
-
-  const deadline = Date.now() + args.timeoutMinutes * 60_000;
-  let ciRequested = false;
-  let localChecksPassed = false;
-  let emptyRollupObservations = 0;
-  const parallelAttempts = new Set();
-
-  while (Date.now() < deadline) {
-    const { payload, unreadable } = readLockPayload(slug);
-    const lock = classifyLock({ payload, unreadable, nowMs: Date.now() });
-    /*
-     * ⚠️ **A holder renews its lease before it decides anything.** Every `continue` below this
-     * line is a poll in which the holder does nothing else, and a poll that skips the refresh
-     * stops `acquiredAt` moving, ages the lock past its lease, and invites the next lander to
-     * force-take a lock somebody is still holding. That is the same two-landers-on-one-lock
-     * outcome this file is otherwise about, reached by a quieter road, so the refresh goes first
-     * and unconditionally.
-     */
-    if (held) refreshLock(slug, lockBody({ pr: number, token }));
-
-    const distance = held ? readBehindBy(slug, pr.headRefOid) : { behindBy: 0, failure: null };
-    if (distance.failure) {
-      // Guessing 0 here would skip pouring main in and spend the one CI run on an unchecked base.
-      log(`could not read how far main has moved: ${distance.failure.detail} (retry in ${POLL_SECONDS}s)`);
-      sleep(POLL_SECONDS);
-      pr = readPr(number);
-      continue;
-    }
-    const behindBy = distance.behindBy;
-    // Consecutive readings that found no run at all for this head. One of those is
-    // the gap between a push and its run set appearing; two is a pull request with no
-    // event left to fire.
-    if ((pr.statusCheckRollup ?? []).length === 0) emptyRollupObservations += 1;
-    else emptyRollupObservations = 0;
-
-    const step = decideNext({
-      allowFailing: args.allowFailing,
-      pr,
-      lock,
-      behindBy,
-      requiredContexts,
-      selfLock: held ? token : null,
-      ciRequested,
-      localChecksPassed,
-      emptyRollupObservations,
-    });
-
-    if (step.action === 'refuse') {
-      release();
-      io.error(`[pr-land] PR #${number} ${step.reason}`);
-      return 1;
-    }
-
-    if (step.action === 'wait-lock') {
-      const attempt = `${pr.headRefOid}:${lock.holder?.pr}`;
-      if (args.parallelCi && pr.isDraft && !parallelAttempts.has(attempt)) {
-        parallelAttempts.add(attempt);
-        const started = startParallelBacklogCi({
-          enabled: true, pr, holder: lock.holder?.pr,
-          io: {
-            readPr,
-            readFiles: (id) => ghJson(['api', `repos/${slug}/pulls/${id}/files?per_page=100`, '--paginate', '--slurp'])?.flat(),
-            ready: (id) => gh(['pr', 'ready', String(id)]),
-          },
-        });
-        if (started) {
-          ciRequested = true;
-          log('independent backlog additions: starting CI while queued; final merge and main revalidation remain serialized');
-          pr = readPr(number);
-        } else log('parallel CI scope not proven; keeping the ordinary queue');
-      }
-      standInLine();
-      log(`waiting for the landing ahead: ${describeLock(step.lock)} (retry in ${POLL_SECONDS}s)`);
-      sleep(POLL_SECONDS);
-      pr = readPr(number);
-      continue;
-    }
-
-    if (step.action === 'take-lock' || step.action === 'take-stale-lock') {
-      if (step.action === 'take-stale-lock') {
-        log(`taking over a lock nobody refreshed: ${describeLock(step.lock)}`);
-      }
-      /*
-       * ⚠️ **Order is checked here, at the one moment it costs anything.** The line is read only
-       * on a free lock, which is the rare poll; every other poll pays nothing for it. A waiter
-       * that is not the oldest yields exactly one poll — it does not give up its place, and it
-       * never yields to an entry nobody has refreshed.
-       */
-      const line = standInLine({ force: true });
-      if (line && !mayTakeLock({ waiters: line, token, nowMs: Date.now() })) {
-        const head = waitingLineHead(line, Date.now());
-        log(`PR #${head.pr} asked first; waiting one more turn (retry in ${POLL_SECONDS}s)`);
-        sleep(POLL_SECONDS);
-        pr = readPr(number);
-        continue;
-      }
-      held = takeLock(slug, lockBody({ pr: number, token }), { force: step.action === 'take-stale-lock' });
-      if (!held) {
-        log('another agent took the lock first; waiting');
-        sleep(POLL_SECONDS);
-        pr = readPr(number);
-        continue;
-      }
-      log('landing lock acquired; main cannot move until this landing finishes');
-      stepOutOfLine();
-      continue;
-    }
-
-    if (step.action === 'merge-main') {
-      log(`main moved by ${step.behindBy} commit(s); merging it into ${pr.headRefName} while this is still a draft`);
-      const merged = mergeMainInto(slug, pr.headRefName);
-      if (merged.state === 'conflict') {
-        release();
-        io.error(`[pr-land] PR #${number} ${CONFLICT_INSTRUCTION}`);
-        return 1;
-      }
-      if (merged.state === 'error') {
-        release();
-        io.error(`[pr-land] could not merge main into ${pr.headRefName}: ${merged.detail?.trim()}`);
-        return 1;
-      }
-      log(merged.state === 'merged' ? 'main merged into the branch' : 'the branch already contained main');
-      if (mergeFiredCi({ merged: merged.state === 'merged', isDraft: pr.isDraft })) {
-        ciRequested = true;
-        log('that push is this landing\'s one CI run: the pull request was already ready');
-      }
-      pr = readPr(number);
-      continue;
-    }
-
-    if (step.action === 'local-checks') {
-      const outcome = runLocalChecks({ worktree: args.worktree ?? process.cwd(), pr, io });
-      if (!outcome.ok) {
-        release();
-        io.error(`[pr-land] ${outcome.reason}`);
-        return 1;
-      }
-      localChecksPassed = true;
-      pr = readPr(number);
-      continue;
-    }
-
-    if (step.action === 'make-ready') {
-      gh(['pr', 'ready', String(number)]);
-      ciRequested = true;
-      log('draft marked ready: the one CI run for this landing is firing now');
-      sleep(POLL_SECONDS);
-      pr = readPr(number);
-      continue;
-    }
-
-    if (step.action === 'refire-ci') {
-      log(
-        `PR #${number} is ready but ${step.checks.unrun.length} required context(s) never ran; `
-        + 'toggling draft to ask GitHub for that one run',
-      );
-      gh(['pr', 'ready', String(number), '--undo']);
-      gh(['pr', 'ready', String(number)]);
-      ciRequested = true;
-      sleep(POLL_SECONDS);
-      pr = readPr(number);
-      continue;
-    }
-
-    if (step.action === 'fail-checks') {
-      release();
-      io.error(`[pr-land] PR #${number} has ${step.checks.failed.length} failing required check(s):`);
-      for (const check of step.checks.failed) {
-        io.error(`[pr-land]   ${check.name} ${check.conclusion} ${check.url ?? ''}`.trimEnd());
-      }
-      io.error('[pr-land] fix the failure, push, then run `pnpm pr:land` again.');
-      return 1;
-    }
-
-    if (step.action === 'fail-other-checks') {
-      release();
-      io.error(`[pr-land] PR #${number} has ${step.other.failed.length} failing check(s) that main does not require:`);
-      for (const check of step.other.failed) {
-        io.error(`[pr-land]   ${check.name} ${check.conclusion} ${check.url ?? ''}`.trimEnd());
-      }
-      io.error('[pr-land] a lane can be correct, red, and unrequired at once: windows-beta-check.yml was red on');
-      io.error('[pr-land] main and on the v1.2.2 release pull request, and landing on "required is green" cost');
-      io.error('[pr-land] two release attempts. Fix it, or accept it by name:');
-      io.error(`[pr-land]   pnpm pr:land ${number} --allow-failing=${step.other.failed.map((c) => c.name).join(',')}`);
-      return 1;
-    }
-
-    if (step.action === 'wait-checks') {
-      const { pending, unrun } = step.checks;
-      log(
-        `waiting on required checks: ${pending.length} running, ${unrun.length} not reported yet`
-        + `${pending.length > 0 ? ` (${pending.join(', ')})` : ''}`,
-      );
-      sleep(POLL_SECONDS);
-      pr = readPr(number);
-      continue;
-    }
-
-    if (step.action === 'merge') {
-      for (const name of step.other?.unmatched ?? []) {
-        log(`--allow-failing named ${name}, which is not failing on this tree; it accepted nothing`);
-      }
-      const accepted = step.other?.accepted ?? [];
-      const acceptedNote = accepted.length > 0
-        ? `, accepting ${accepted.length} named failing check(s): ${accepted.map((c) => `${c.name} ${c.conclusion}`).join(', ')}`
-        : '';
-      log(`every required context is green on ${pr.headRefOid.slice(0, 9)}${acceptedNote}; squash merging`);
-      /*
-       * No `--delete-branch`. Measured on the first real landing (#1576, which
-       * merged and then crashed here): that flag makes `gh` do local Git work,
-       * switching the checkout to `main` and deleting the local branch, and in
-       * a worktree setup `main` belongs to another checkout — `fatal: 'main' is
-       * already used by worktree at ...`. The pull request was already merged
-       * by then, so the landing "failed" after succeeding, which is the worst
-       * shape an error can have. The remote branch is deleted below, through
-       * the API, by the repository's own `delete_branch_on_merge` or by us.
-       */
-      gh(['pr', 'merge', String(number), '--squash']);
-      const merged = readPr(number);
-      if (merged.state !== 'MERGED') {
-        release();
-        io.error(`[pr-land] the merge call returned but PR #${number} is ${merged.state}`);
-        return 1;
-      }
-      log(`PR #${number} merged: ${merged.url}`);
-      const remote = gh(['api', `repos/${slug}/git/ref/heads/${pr.headRefName}`], { allowFailure: true });
-      if (typeof remote === 'string') {
-        gh(['api', '-X', 'DELETE', `repos/${slug}/git/refs/heads/${pr.headRefName}`], { allowFailure: true });
-        log(`deleted the remote branch ${pr.headRefName}`);
-      }
-      git(['fetch', '--prune', 'origin'], { allowFailure: true });
-      release();
-      const removal = worktreeToRemove(args);
-      if (removal) cleanupWorktree(removal);
-      log('done. Next agent: `pnpm pr:land <number>`.');
-      return 0;
-    }
-
-    if (step.action === 'done') {
-      log(`PR #${number} is already merged`);
-      release();
-      return 0;
-    }
-
-    release();
-    io.error(`[pr-land] unhandled landing step: ${step.action}`);
-    return 2;
-  }
-
-  io.error(`[pr-land] gave up after ${args.timeoutMinutes} minutes; the lock is released and nothing merged`);
-  return 1;
+  if (args.plan) return planLanding({ args, deps });
+  if (args.conduct) return conductOnly({ args, deps });
+  return landOne({ args, deps });
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {

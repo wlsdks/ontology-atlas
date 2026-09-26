@@ -1,7 +1,7 @@
 /**
  * Builds v2's per-mount "world" — deterministic layout + adjacency + bow
  * control points + brightness ranking — from the adapter's node/edge props
- * (`docs/ONTOLOGY-MAP-DESIGN.md` §4 P2/P3). Recomputed only when the graph
+ * (`docs/design/ontology-map.md` §4 P2/P3). Recomputed only when the graph
  * itself changes (mount, `relayoutToken`, or a new `nodes`/`edges` reference)
  * — never per animation frame, matching the prototype's "layout precomputed
  * once" invariant (`model/layout.ts`'s own contract).

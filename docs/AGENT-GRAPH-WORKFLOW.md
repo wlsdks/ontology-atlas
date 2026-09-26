@@ -1,3 +1,10 @@
+---
+title: Agent Graph Workflow
+doc_type: authority
+status: current
+area: agents
+---
+
 # Agent Graph Workflow
 
 > This is the user-facing guide for running

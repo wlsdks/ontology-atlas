@@ -1,3 +1,10 @@
+---
+title: X / Twitter — launch thread draft
+doc_type: launch
+status: current
+area: product
+---
+
 # X / Twitter — launch thread draft
 
 X's language is **short and visual**. A 5–7 tweet thread is the sweet spot. Each tweet stays within 280 chars. 1 tweet = 1 idea.

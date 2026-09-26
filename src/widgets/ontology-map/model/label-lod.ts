@@ -1,6 +1,6 @@
 /**
  * Label level-of-detail — the top-K label budget for the overview/spine and
- * mid-zoom bands (`docs/ONTOLOGY-MAP-DESIGN.md` semantic-zoom charter; Shneiderman
+ * mid-zoom bands (`docs/design/ontology-map.md` semantic-zoom charter; Shneiderman
  * "overview first, zoom and filter" — `.claude/rules/design.md`).
  *
  * WHY (S3 finishing polish, designed by fable): at the constellation/circuit overview the

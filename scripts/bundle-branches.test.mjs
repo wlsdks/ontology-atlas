@@ -78,3 +78,14 @@ test('prune touches only branches main provably contains', () => fixture(({ root
   assert.match(prunePlan(git, 'main', ['done'], { currentPath: root })[0].keep, /uncommitted changes/);
   assert.ok(existsSync(tree), 'planning deletes nothing');
 }));
+
+test('plan sees through a branch cut from commits that later landed as one squash', () => fixture(({ sh, commit, git }) => {
+  sh('switch', '-q', '-c', 'first', 'main'); commit('a.txt', 'a\n', 'a1'); commit('b.txt', 'b\n', 'a2');
+  sh('switch', '-q', '-c', 'second', 'first'); commit('c.txt', 'c\n', 'follow-up');
+  sh('switch', '-q', 'main'); sh('merge', '-q', '--squash', 'first'); sh('commit', '-q', '-m', 'first, squashed');
+
+  const [row] = planBundle(git, 'main', ['second']).rows;
+  assert.equal(row.state, 'pending');
+  assert.deepEqual(row.files, ['c.txt'], 'only the follow-up is new to main');
+  assert.equal(row.landed, sh('rev-parse', 'first'), 'names the commit to rebase from');
+}));

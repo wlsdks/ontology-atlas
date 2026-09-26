@@ -289,7 +289,7 @@ describe('package contract helpers', () => {
    */
   it('keeps every relation and maintenance enum value documented from the engine', () => {
     const mcpReadme = readFileSync('mcp/README.md', 'utf-8');
-    const features = readFileSync('docs/FEATURES.md', 'utf-8');
+    const features = readFileSync('docs/features/mcp-server.md', 'utf-8');
     const strictInputSection = mcpReadme.split('String-array options are strict too:')[1]?.split('Scalar string options')[0] ?? '';
     const addRelationRow = mcpReadme.split('| `add_relation` |')[1]?.split('\n')[0] ?? '';
     const addRelationsRow = mcpReadme.split('| `add_relations` |')[1]?.split('\n')[0] ?? '';

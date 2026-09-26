@@ -45,7 +45,7 @@ test('executor keeps discovery errors and test failures red, and excludes only s
     assert.equal(runPlaywrightCi(['--shard=1/1','--exclude=web-surface-smoke.spec.ts'],{cwd,spawn,env:{CI:'true'}}),7);
     assert.ok(calls[1].includes('/a\\.spec\\.ts$'));
     assert.ok(!calls[1].some((arg)=>arg.includes('web-surface')));
-    assert.ok(calls[1].includes('--max-failures=1'), 'a red CI shard must stop after its first confirmed failure');
+    assert.ok(calls[1].includes('--max-failures=5'), 'a red CI shard stops early, but late enough to show independent failures together');
     assert.equal(runPlaywrightCi(['--shard=1/1','--exclude=web-surface-smoke.spec.ts'],{cwd,spawn,env:{CI:'false'}}),7);
     assert.ok(!calls[3].some((arg)=>arg.startsWith('--max-failures=')), 'local runs keep their full diagnostic inventory');
     assert.throws(()=>runPlaywrightCi(['--shard=4/3'],{cwd,spawn}),/exceeds/);

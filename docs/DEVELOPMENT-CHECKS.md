@@ -1,3 +1,10 @@
+---
+title: Development checks
+doc_type: runbook
+status: current
+area: process
+---
+
 # Development checks
 
 > Which command to run first for an area of this repository, what a pass
@@ -136,9 +143,9 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Landing a pull request
 
 **Run**: `pnpm test:pr:land`
-**Proves**: the landing sequence holds: one shared lock, main merged in, local lanes on the merged source, one CI run per pull request, and no required context read as green when its job was skipped.
+**Proves**: against a fake GitHub, queued pull requests land behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, and `--plan` writes nothing.
 **Escalate**: `pnpm test:claude:hooks` when the landing guard changes, or `pnpm exec vitest run tests/contract/workflow-security.contract.test.ts` when a workflow trigger does
-**Fix**: repair `scripts/pr-land.mjs`, or the draft guard and `ready_for_review` trigger the contract names.
+**Fix**: repair `scripts/pr-land.mjs` (I/O) or `scripts/lib/landing-train.mjs` (decisions).
 
 ### Landing several branches together
 
@@ -171,7 +178,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Docs vs code surface
 
 **Run**: `pnpm docs:check`
-**Proves**: `docs:surface:check`, `docs:language`, `source:language`, `docs:links`, and `docs:comment-refs` each pass, so the generated MCP/CLI surface inventory, prose language ratchets, and doc/comment links are current and machine-derived.
+**Proves**: `docs:surface:check`, `docs:language`, `source:language`, `docs:links`, `docs:comment-refs`, `docs:meta` and `docs:move -- --check` each pass, so the generated MCP/CLI surface inventory, prose language ratchets, doc/comment links, living-document metadata and moved paths are current and machine-derived.
 **Escalate**: `pnpm test:docs:checks`
 **Fix**: regenerate the surface with `pnpm docs:surface:build`, fix the broken link or comment reference, or lower the reported language baseline.
 
@@ -189,19 +196,19 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: `tests/contract/cli-output-language.contract.test.ts` to isolate the CLI printed-string language failure
 **Fix**: translate the flagged printed string to English; `cli/src/lib/absorb.mjs` stays the sole allowlisted matcher exception.
 
-### Optional parallel backlog CI
-
-**Run**: `pnpm test:pr:land`
-**Proves**: only complete, added UUID backlog records for disjoint task names may trigger opted-in early CI; final landing keeps its lock and current-head checks.
-**Escalate**: `pnpm pr:queue` to identify the holder; read the candidate and holder file inventories if early CI stays queued
-**Fix**: restore conservative scope or missing evidence; never promote ordinary source changes using path disjointness alone.
-
 ### Backlog records
 
 **Run**: `pnpm test:backlog && pnpm backlog:check`
 **Proves**: UUID records compose deterministically; malformed ancestry, concurrent task heads, and rewrites of published records fail.
 **Escalate**: `pnpm backlog -- --task=ID` to inspect all current heads and their evidence
 **Fix**: append a new record referencing all current task heads; never overwrite a published record or select a winner by timestamp.
+
+### Harness lessons
+
+**Run**: `pnpm test:lessons && pnpm lessons:check`
+**Proves**: lesson and verdict records fit the template, verdicts follow reported, verified, fixed order, concurrent verdicts are reconciled, and published lessons are unchanged.
+**Escalate**: `pnpm lessons -- --id=UUID` to read one lesson's full history
+**Fix**: append a new verdict naming every current head; never edit a published lesson.
 
 ### Agent instruction files
 
@@ -345,6 +352,20 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm docs:links`
 **Proves**: Repo-relative markdown links, raw HTML hrefs and repo-anchored .md path citations resolve, including the `#section` half against the target's real headings.
 **Escalate**: `pnpm docs:links:external` to also resolve external http(s) links over the network
+
+### Living-document metadata
+
+**Run**: `pnpm docs:meta`
+**Proves**: Every living document under docs/ carries a kind, status and area that fit its folder, no ontology or hand-versioned key, and pointers (enforced_by, routes, decisions, superseded_by, guide registry) that resolve; a changed contract_version arrives with a decision that cites it. Headings and prose are not checked.
+**Escalate**: `pnpm test:docs:checks` when the kinds in `scripts/lib/doc-types.mjs`, a template or the check itself changes
+**Fix**: Start new documents with `pnpm doc:new`; add the missing key the message names; kinds and areas are listed in `scripts/lib/doc-types.mjs`.
+
+### Moved documents
+
+**Run**: `pnpm docs:move -- --check`
+**Proves**: Every document listed in `docs/.moved.json` sits at its new path and no living file outside frozen history still cites an old path.
+**Escalate**: `pnpm test:docs:checks` when the move script or its rewrite rules change
+**Fix**: Run `pnpm docs:move`, which moves each pending pair and rewrites references; review the bare names it prints.
 
 ### Code-comment doc reference integrity
 

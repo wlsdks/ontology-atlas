@@ -1,3 +1,10 @@
+---
+title: Troubleshooting
+doc_type: runbook
+status: current
+area: desktop
+---
+
 # Troubleshooting
 
 Common issues users hit when starting with `ontology-atlas`. If your case isn't here, open an issue: https://github.com/wlsdks/ontology-atlas/issues

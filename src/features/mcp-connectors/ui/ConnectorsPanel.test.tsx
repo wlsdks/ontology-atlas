@@ -289,7 +289,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
      * ⚠️ **The claim is pinned, not the filename** (design council, 2026-09-05). The two sentences
      * were rewritten to fit the block, and the path `.ontology-atlas/llm-audit.jsonl` left with
      * the longer version — what a person needs before switching a connector on is that the log
-     * does not record this, not where the log lives. `docs/FEATURES.md` still names the file.
+     * does not record this, not where the log lives. `docs/features/agents.md` still names the file.
      *
      * ⚠️ **Two sentences, and the runtime line is not one of them.** The preamble measured 296px —
      * 35% of the 390 first screen — before the first row. What a person cannot act safely without

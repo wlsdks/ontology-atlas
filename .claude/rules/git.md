@@ -26,7 +26,7 @@
 
 | Code change | Documentation that must change with it |
 |---|---|
-| Add or remove a route | `docs/ARCHITECTURE.md` (canonical route list), `docs/FEATURES.md`, and a `docs/records/decisions/` fragment (`decisions:check` enforces this) |
+| Add or remove a route | `docs/ARCHITECTURE.md` (canonical route list), its `docs/features/` file, and a `docs/records/decisions/` fragment (`decisions:check` enforces this) |
 | Add a command or script | `README.md` |
 | Restructure architecture | `docs/ARCHITECTURE.md` and `AGENTS.md` |
 | Add a design token | `docs/DESIGN-SYSTEM.md` and `app/globals.css`; register a ramp step in `cn.ts` too |
@@ -36,18 +36,17 @@
 ## Landing a pull request
 
 - Open every pull request as a draft (`gh pr create --draft`); drafts run no CI.
-- `pnpm pr:land <number>` is the only way to `main`. It serializes landings and
-  fires the one CI run. `pnpm pr:queue` names the lock holder and waiters,
-  `pnpm pr:ci <n>` buys an early run, and `pnpm pr:land --release` frees a
-  wedged lock.
-- Two or more branches (a Workflow, a fan-out, several drafts) land as one
-  integration branch and one draft through `/land-bundle`, never one landing
-  per branch.
+- `pnpm pr:land <number>` is the only way to `main`: it queues the pull request
+  for a train (up to 20 per CI run, bisected when red), or merges it at
+  once when already green and disjoint (fast path). `--plan <n...>` dry-runs;
+  `pnpm pr:queue` shows the train; `--release` frees a wedged lock.
+- Several branches use `/land-bundle`: a draft each for the train, or
+  one integration branch when they must be resolved together.
 - Never run `gh pr merge`, `gh pr update-branch`, or `gh pr create` without
   `--draft`; `.claude/hooks/block-manual-landing.sh` refuses them.
-- The title starts with a conventional prefix. The body has `Summary` and
-  `Test plan` sections and records which checks ran and passed. Visual changes
-  attach dark-mode before/after screenshots (the app has no light mode).
+- Title: a conventional prefix. Body: `Summary` and `Test plan`, naming the
+  checks that passed. Attach dark-mode before/after screenshots of visual
+  changes to the PR; never commit them.
 
 ## Do not
 

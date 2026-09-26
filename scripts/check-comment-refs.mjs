@@ -75,7 +75,7 @@ const SKIP_DIR = new Set(["node_modules", "dist", "build", ".next", "data"]);
  * long allowlist is how this kind of gate quietly stops checking anything.
  */
 const HISTORICAL = new Set([
-  "docs/DEPLOYMENT.md",
+  "docs/engineering/deployment.md",
   "docs/GUIDE.md",
 ]);
 

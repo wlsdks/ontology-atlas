@@ -1,3 +1,10 @@
+---
+title: CLI
+doc_type: guide
+status: current
+area: cli
+---
+
 # CLI
 
 Your daily entry point. Run it from a source checkout.

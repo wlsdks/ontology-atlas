@@ -1,3 +1,10 @@
+---
+title: About Trust
+doc_type: guide
+status: current
+area: product
+---
+
 # About Trust
 
 It involves pulling binaries from anonymous repositories onto your own computer. Therefore, we start by listing what it does not do.

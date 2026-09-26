@@ -14,8 +14,10 @@ import {
   comparableDoc,
   comparableManifest,
   deterministicGeneratedAt,
+  documentRevision,
   extractOutLinksWithContext,
   localDayStamp,
+  movedSlugAliases,
   parseArgs,
   resolveWikilinkTargetSlug,
   scanVaultDir,
@@ -291,6 +293,49 @@ test('virtual ledger keeps its public slug, hides record fragments, and takes th
     assert.equal(result.content.DECISIONS, '# Decisions\n\nComposed.\n');
     assert.equal(result.manifest.docs[0].updatedAt, '2026-03-08');
     assert.deepEqual(result.publicFiles.map((file) => file.relativePath), ['DECISIONS.md', 'records/README.md']);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('a revision counts commits on the path and on the path it had before a move, plus pending edits', () => {
+  const history = {
+    commits: new Map([['docs/area/new.md', 1], ['docs/OLD.md', 4]]),
+    dirty: new Set(),
+  };
+  assert.equal(documentRevision('docs/area/new.md', history, { 'docs/area/new.md': 'docs/OLD.md' }), 5);
+  assert.equal(documentRevision('docs/area/new.md', history), 1);
+  history.dirty.add('docs/area/new.md');
+  assert.equal(documentRevision('docs/area/new.md', history, { 'docs/area/new.md': 'docs/OLD.md' }), 6);
+  assert.equal(documentRevision('docs/NEVER.md', { commits: new Map(), dirty: new Set() }), 0);
+});
+
+test('a moved document keeps its old slug as an alias, but only toward a slug that ships', () => {
+  const aliases = movedSlugAliases(
+    {
+      'docs/LOGO.md': 'docs/design/logo.md',
+      'docs/SHOOT.md': 'docs/launch/shoot.md',
+    },
+    new Set(['design/logo', 'FEATURES']),
+  );
+  assert.deepEqual(aliases, { LOGO: 'design/logo' });
+});
+
+test('dated evidence, drafts, plans and launch copy stay in the repository but leave the app', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-unshipped-'));
+  try {
+    const docs = path.join(root, 'docs');
+    for (const dir of ['archive', 'audits', 'benchmark', 'plans', 'prototypes', 'launch', 'guide/plans']) {
+      await mkdir(path.join(docs, dir), { recursive: true });
+      await writeFile(path.join(docs, dir, 'NOTE.md'), `# ${dir}\n`, 'utf8');
+    }
+    await writeFile(path.join(docs, 'BACKLOG-SNAPSHOT-2026-09-13.md'), '# Snapshot\n', 'utf8');
+    await writeFile(path.join(docs, 'BACKLOG.md'), '# Backlog\n', 'utf8');
+
+    const result = await scanVaultDir(docs, { rootDir: root, check: true, publicOutDir: null });
+    // Only the top-level folder name is excluded; a nested folder that happens to
+    // share the name still ships.
+    assert.deepEqual(Object.keys(result.content).sort(), ['BACKLOG', 'guide/plans/NOTE']);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

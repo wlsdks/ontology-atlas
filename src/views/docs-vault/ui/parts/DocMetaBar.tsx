@@ -294,6 +294,13 @@ export function DocMetaBar({
           >
             {formatDay(updated)}
           </span>
+          {/* The version is Git's count of commits on this file, derived at build
+              time, so nobody bumps it by hand and two branches never collide on it. */}
+          {doc.revision ? (
+            <span data-testid="doc-revision" title={t("revisionTitle", { count: doc.revision })}>
+              {t("revisionLabel", { count: doc.revision })}
+            </span>
+          ) : null}
         </span>
       </div>
     </section>

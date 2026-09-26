@@ -1,3 +1,10 @@
+---
+title: First Five Minutes
+doc_type: guide
+status: current
+area: product
+---
+
 # First Five Minutes
 
 Before deciding whether to install, watch it move first.

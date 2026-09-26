@@ -11,7 +11,7 @@
  * (`docs/prototypes/topology-b2plus.html` §8, §13).
  *
  * Three layered atmospheric effects, all driven by the single `farT` value
- * (no discrete branch, `docs/ONTOLOGY-MAP-DESIGN.md` §3.1):
+ * (no discrete branch, `docs/design/ontology-map.md` §3.1):
  * - background: `lerpColor(canvasBgNear, canvasBgFar, farT)` fill.
  * - blueprint grid: a tiled 24px-minor/120px-major pattern
  *   (`--map-grid-minor`/`-grid-major`), circuit-only —

@@ -1,0 +1,19 @@
+{
+  "docs/ANALYSIS-RECORDS.md": "docs/contracts/analysis-records.md",
+  "docs/RETAINED-ANSWERS.md": "docs/contracts/retained-answers.md",
+  "docs/LIBRARY-COLLECTIONS-FORMAT.md": "docs/contracts/library-collections.md",
+  "docs/TASK-MEANING-REVIEW.md": "docs/contracts/task-meaning-review.md",
+  "docs/MEANING-TRANSITION-EVIDENCE.md": "docs/contracts/meaning-transition-evidence.md",
+  "docs/ONTOLOGY-CONSTRUCTION-QUALIFICATION.md": "docs/contracts/construction-qualification.md",
+  "docs/INTERACTION-DESIGN.md": "docs/design/interaction.md",
+  "docs/TOPOLOGY-FOCUS-AND-SCALE.md": "docs/design/topology-focus-and-scale.md",
+  "docs/ONTOLOGY-MAP-DESIGN.md": "docs/design/ontology-map.md",
+  "docs/BRAND.md": "docs/design/brand.md",
+  "docs/TECH-STACK.md": "docs/engineering/tech-stack.md",
+  "docs/DEPLOYMENT.md": "docs/engineering/deployment.md",
+  "docs/MAP-TESTABILITY.md": "docs/engineering/map-testability.md",
+  "docs/CODEBASE-ONTOLOGY-POSITIONING.md": "docs/launch/positioning.md",
+  "docs/DEMO-SCENARIO.md": "docs/launch/demo-scenario.md",
+  "docs/superpowers/specs/2026-09-17-library-rounds-design.md": "docs/specs/2026-09-17-library-rounds-design.md",
+  "docs/superpowers/specs/2026-09-21-round-cadence-and-scope.md": "docs/specs/2026-09-21-round-cadence-and-scope.md"
+}

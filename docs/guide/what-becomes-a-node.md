@@ -1,3 +1,10 @@
+---
+title: "What Becomes a Node?"
+doc_type: guide
+status: current
+area: ontology-model
+---
+
 # What Becomes a Node?
 
 When building a vault, you inevitably stop at this question.

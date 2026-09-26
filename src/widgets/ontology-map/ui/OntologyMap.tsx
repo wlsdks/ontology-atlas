@@ -104,7 +104,7 @@ interface OntologyMapPreviewEdge {
 }
 
 /**
- * Adapter contract (`docs/ONTOLOGY-MAP-DESIGN.md` §5.3 — v2 only replaces rendering, not
+ * Adapter contract (`docs/design/ontology-map.md` §5.3 — v2 only replaces rendering, not
  * the upstream state/callback contract).
  */
 export interface OntologyMapProps {
