@@ -52,8 +52,7 @@ their own.
 6. Choose one recommendation or something smaller, never a union.
 7. Present the result to the human owner, who accepts or overturns it.
 8. Record the decision delta, dissent, falsifier, review footprint, and unique
-   contributor, and create the typed pilot run with `pnpm po:record`. Run
-   `pnpm po:pilot` to expose unresolved proof, clarity, or boundary state.
+   contributor.
 
 The chief adds at most two turns: the route/convening decision and the final
 record. Reviewer turns belong to their selected seats.
@@ -84,8 +83,5 @@ differences from the request.
 Use the significant-record fields in
 `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` and create a decision fragment with
 `pnpm record:new -- --kind=decision`; routine solo work needs none.
-`docs/DECISIONS.md` and `docs/PO-PILOT.md` are frozen: never edit them. Every
-eligible pilot decision adds one typed run with
-`pnpm po:record -- --type=run --input=<file>` and later outcomes with
-`--type=update` (UUID-referencing the run). `pnpm po:pilot -- --check` owns the
-sunset, so the chief cannot declare the process effective from prose.
+`docs/DECISIONS.md` and `docs/PO-PILOT.md` are frozen: never edit them. The PO pilot
+closed on 2026-09-26; per-run records are no longer created.

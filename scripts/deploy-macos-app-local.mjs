@@ -283,7 +283,11 @@ async function main() {
   const options = parseDeployMacosAppArgs(process.argv.slice(2));
   const plan = buildDeployMacosAppPlan(options);
 
-  if (plan.build) run(plan.build[0], plan.build[1]);
+  if (plan.build) {
+    // Chained after a separate build this builds the app a second time (lesson 612f3882).
+    console.log("[desktop-deploy-app] building the app first; after a separate build, pass --skip-build.");
+    run(plan.build[0], plan.build[1]);
+  }
   if (!fs.existsSync(options.builtAppPath)) {
     console.error(`[desktop-deploy-app] missing built app: ${options.builtAppPath}`);
     console.error("[desktop-deploy-app] run without --skip-build or build the app first.");

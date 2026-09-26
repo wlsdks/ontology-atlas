@@ -43,8 +43,16 @@
  *      clean; the files it changes do not intersect the files `main` changed since its merge base;
  *      no train in flight records a file set that intersects it; and `classify-change` does not
  *      plan the full lanes for it. Each rule prints pass or FAIL. `--no-fast` forces the train.
- *      Fast-path merges serialize among themselves on `refs/atlas/landing-fast`, a two-minute
- *      lease held only for the seconds between the last check and the merge call.
+ *      Fast-path merges serialize on `refs/atlas/landing-fast`, a two-minute lease held only for
+ *      the seconds between the last check and the merge call. A train takes the same lease for its
+ *      drift check and merge, so a fast path and a train can never interleave check and merge.
+ *
+ * **Throughput, measured 2026-09-26.** A train costs one CI run (~20 min, ~10 jobs; a public
+ * repository runs 20 jobs at once, and the lock keeps one train in flight), so the queue drains at
+ * about `--batch` pull requests per 25 minutes: 400 green pull requests in ~8 hours at 20. The
+ * weak point is the per-PR red rate `p`: a train of `n` is red with `1 - (1 - p)^n` (64 % at
+ * p = 5 %, n = 20) and each red train bisects sequentially. Lower `--batch` when bisects dominate
+ * the log; flaky contexts belong in `--flaky`, not in a smaller batch.
  *
  * **Why merging onto a moved `main` is safe here, and exactly when.** Both the fast path and the
  * train merge a tree CI never ran: the tested tree plus whatever reached `main` since. That is
@@ -983,7 +991,7 @@ function eject(deps, number, body) {
  * One train, start to finish: cut, merge components, open, wait for CI, then merge, split, rerun,
  * rebuild or eject. Returns the outcome for `conduct` to schedule the next train.
  */
-export function runTrain({ batch, deps, holder, requiredContexts, args }) {
+export function runTrain({ batch, deps, holder, requiredContexts, args, token = 'train' }) {
   const { gh, git, log } = deps;
   git.fetch(['main', ...batch.map((c) => c.headRefName)]);
   const base = git.revParse('origin/main');
@@ -1082,34 +1090,47 @@ export function runTrain({ batch, deps, holder, requiredContexts, args }) {
       return { outcome: 'ejected', number: only.number };
     }
 
-    // Green. Main may have moved while CI ran; only a move into this train's files matters.
-    git.fetch(['main']);
-    const mainNow = git.revParse('origin/main');
-    const drift = driftVerdict({ trainFiles: files, mainFiles: mainNow ? git.diffNames(base, mainNow) : null });
-    if (drift.state === 'unknown') {
-      log('could not compare main with the train base; checking again next poll');
+    // Green. The drift check and the merge run under the fast-path lock, the same lock a fast-path
+    // merge holds between its last check and its merge, so neither can land between the other's
+    // check and merge (the window left open when only the fast path took it, 2026-09-26).
+    if (!takeFastLock(deps, token, opened.number)) {
+      log(`a fast-path merge is holding ${FAST_LOCK_REF}; checking again next poll`);
       continue;
     }
-    if (drift.state === 'overlap') {
-      log(`main moved into this train's files (${drift.overlap.slice(0, 3).join(', ')}); rebuilding it on today's main`);
-      gh.closePr(opened.number, `Green, but main moved into ${drift.overlap.join(', ')} while CI ran. Rebuilt on the new main.`);
-      gh.deleteBranch(branch);
-      return { outcome: 'rebuild', reason: 'main moved into its files' };
-    }
-    for (const name of other.unmatched) log(`--allow-failing named ${name}, which is not failing on this train`);
-    const accepted = other.accepted.length > 0 ? `, accepting ${other.accepted.map((c) => `${c.name} ${c.conclusion}`).join(', ')}` : '';
-    for (const component of included) component.coAuthors = parseCoAuthors(git.coAuthorLog(base, component.headRefOid));
-    log(`train #${opened.number} is green on ${trainPr.headRefOid.slice(0, 9)}${accepted}; squash merging`);
-    const merged = gh.mergePr(opened.number, {
-      sha: trainPr.headRefOid,
-      title: `${trainTitle(included)} (#${opened.number})`,
-      message: composeSquashBody({ components: included, trainNumber: opened.number }),
-    });
-    if (!merged.ok && gh.readPr(opened.number).state !== 'MERGED') {
-      log(`GitHub refused the train merge (${merged.detail || 'no detail'}); rebuilding`);
-      gh.closePr(opened.number, `The merge was refused: ${merged.detail || 'no detail'}. Rebuilt on the new main.`);
-      gh.deleteBranch(branch);
-      return { outcome: 'rebuild', reason: 'the merge was refused' };
+    const releaseFast = deps.onExit(() => gh.releaseLock(FAST_LOCK_REF));
+    try {
+      // Green. Main may have moved while CI ran; only a move into this train's files matters.
+      git.fetch(['main']);
+      const mainNow = git.revParse('origin/main');
+      const drift = driftVerdict({ trainFiles: files, mainFiles: mainNow ? git.diffNames(base, mainNow) : null });
+      if (drift.state === 'unknown') {
+        log('could not compare main with the train base; checking again next poll');
+        continue;
+      }
+      if (drift.state === 'overlap') {
+        log(`main moved into this train's files (${drift.overlap.slice(0, 3).join(', ')}); rebuilding it on today's main`);
+        gh.closePr(opened.number, `Green, but main moved into ${drift.overlap.join(', ')} while CI ran. Rebuilt on the new main.`);
+        gh.deleteBranch(branch);
+        return { outcome: 'rebuild', reason: 'main moved into its files' };
+      }
+      for (const name of other.unmatched) log(`--allow-failing named ${name}, which is not failing on this train`);
+      const accepted = other.accepted.length > 0 ? `, accepting ${other.accepted.map((c) => `${c.name} ${c.conclusion}`).join(', ')}` : '';
+      for (const component of included) component.coAuthors = parseCoAuthors(git.coAuthorLog(base, component.headRefOid));
+      log(`train #${opened.number} is green on ${trainPr.headRefOid.slice(0, 9)}${accepted}; squash merging`);
+      const merged = gh.mergePr(opened.number, {
+        sha: trainPr.headRefOid,
+        title: `${trainTitle(included)} (#${opened.number})`,
+        message: composeSquashBody({ components: included, trainNumber: opened.number }),
+      });
+      if (!merged.ok && gh.readPr(opened.number).state !== 'MERGED') {
+        log(`GitHub refused the train merge (${merged.detail || 'no detail'}); rebuilding`);
+        gh.closePr(opened.number, `The merge was refused: ${merged.detail || 'no detail'}. Rebuilt on the new main.`);
+        gh.deleteBranch(branch);
+        return { outcome: 'rebuild', reason: 'the merge was refused' };
+      }
+    } finally {
+      releaseFast();
+      gh.releaseLock(FAST_LOCK_REF);
     }
     log(`train #${opened.number} merged: ${opened.url}`);
     git.fetch(['main', branch, ...included.map((c) => c.headRefName)]);
@@ -1174,7 +1195,7 @@ export function conduct({ deps, args, requiredContexts, token, force = false, de
         deps.log('the queue is empty');
         return { state: 'drained', landed };
       }
-      const result = runTrain({ batch: next.batch, deps, holder, requiredContexts, args });
+      const result = runTrain({ batch: next.batch, deps, holder, requiredContexts, args, token });
       const key = next.batch.map((c) => c.number).join(',');
       if (result.outcome === 'merged') landed.push(...result.landed);
       else if (result.outcome === 'split') splits = [...result.halves, ...splits];
