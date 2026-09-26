@@ -8,7 +8,7 @@ used as the parent of another analysis.
 
 These are diagnostic records. They have no ontology `kind`, do not enter the
 graph, and do not approve a meaning or implementation change. The kind and
-relation criteria remain in [the Atlas specification](ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
+relation criteria remain in [the Atlas specification](../ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
 
 ## Reading and acting
 

@@ -405,7 +405,7 @@ export function TopologyCanvasSurface({
             />
           ) : null}
           {topologyRenderState.renderCanvas && mapMountTaskReady ? (
-            // `ontology-map` (`docs/ONTOLOGY-MAP-DESIGN.md`) unifies the map tab,
+            // `ontology-map` (`docs/design/ontology-map.md`) unifies the map tab,
             // the graph tab, and the project-detail neighbour map into one engine;
             // this call site is wired once for all three. `nodes`/`edges` come from
             // `ontologyMapGraph` (`map-adapter.ts`), derived from

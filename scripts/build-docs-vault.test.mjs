@@ -16,6 +16,7 @@ import {
   deterministicGeneratedAt,
   extractOutLinksWithContext,
   localDayStamp,
+  movedSlugAliases,
   parseArgs,
   resolveWikilinkTargetSlug,
   scanVaultDir,
@@ -294,6 +295,17 @@ test('virtual ledger keeps its public slug, hides record fragments, and takes th
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test('a moved document keeps its old slug as an alias, but only toward a slug that ships', () => {
+  const aliases = movedSlugAliases(
+    {
+      'docs/LOGO.md': 'docs/design/logo.md',
+      'docs/SHOOT.md': 'docs/launch/shoot.md',
+    },
+    new Set(['design/logo', 'FEATURES']),
+  );
+  assert.deepEqual(aliases, { LOGO: 'design/logo' });
 });
 
 test('dated evidence, drafts, plans and launch copy stay in the repository but leave the app', async () => {

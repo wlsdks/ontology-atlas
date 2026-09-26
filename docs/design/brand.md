@@ -1,7 +1,7 @@
 # Brand — Ontology Atlas
 
 > The meaning, source contract, and usage rules for the pixel mascot identity.
-> The 2026-08-28 record in [`DECISIONS.md`](./DECISIONS.md) owns the replacement
+> The 2026-08-28 record in [`DECISIONS.md`](../DECISIONS.md) owns the replacement
 > decision; the committed PNG masters own the pixels.
 
 ## Identity Status
@@ -21,7 +21,7 @@ Category — **A local-first codebase ontology workbench.**
 
 Support the human promise with its mechanism: shared Markdown meaning, task
 context for the agent, and evidence and unknowns a person can inspect and
-correct. Follow the [current product thesis](PRODUCT-DIRECTION.md#the-atlas-product-thesis).
+correct. Follow the [current product thesis](../PRODUCT-DIRECTION.md#the-atlas-product-thesis).
 Do not turn control into a guarantee of safe code, complete impact analysis,
 automatic meaning reconstruction, or an enforced review in every external client.
 

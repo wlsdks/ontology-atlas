@@ -109,7 +109,7 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
        *
        * Since 2026-08-22 each locale carries its own take, so the clause admitting they shared one
        * Korean recording is gone. That swap was a file swap plus this sentence — the markup was
-       * untouched, which is what this registry-and-copy split is for (`docs/DEMO-SCENARIO.md`).
+       * untouched, which is what this registry-and-copy split is for (`docs/launch/demo-scenario.md`).
        */}
       <p
         data-testid="demo-provisional-note"

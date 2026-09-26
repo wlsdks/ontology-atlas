@@ -122,6 +122,12 @@ export interface VaultManifest {
   sourceFileCount?: number;
   docs: VaultDoc[];
   /**
+   * `{ oldSlug: newSlug }` for documents the repository moved (`docs/.moved.json`).
+   * Only the bundled product manifest carries it; a saved `?slug=`, pin or recent
+   * entry from before a move still opens the document.
+   */
+  aliases?: Record<string, string>;
+  /**
    * Raw sources under `sources/`, present only when the folder holds any.
    *
    * They are a **sibling of `docs`, never a member of it**: a document here has no

@@ -146,7 +146,7 @@ only the protected dispatched run can.
 
 If you see references to these in older guides, they're from before
 Round 10 (May 2026) when the auth + cloud surface was permanently
-removed. See [`docs/archive/`](./archive/) for the legacy cloud-mode setup.
+removed. See [`docs/archive/`](../archive) for the legacy cloud-mode setup.
 
 ## Future cloud collab
 

@@ -622,7 +622,7 @@ export function computeEffectiveCameraScaleMin(
 /**
  * Camera target for the current focus state — the full-graph overview fit
  * when `focusedSlug` is `null`, or the clicked node + its 1-hop ego bbox
- * (`--map-focus-bbox-margin`) otherwise (`docs/ONTOLOGY-MAP-DESIGN.md`
+ * (`--map-focus-bbox-margin`) otherwise (`docs/design/ontology-map.md`
  * §3.2 "the camera spring-dives to the node plus its 1-hop neighbour bbox"). `null` only if `focusedSlug`
  * doesn't resolve to a known node.
  *

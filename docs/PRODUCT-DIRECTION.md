@@ -259,7 +259,7 @@ leading with "memory" makes Atlas sound like a conversation-memory store and
 hides the product/implementation meaning that distinguishes it.
 
 Canonical internal note:
-[`docs/CODEBASE-ONTOLOGY-POSITIONING.md`](CODEBASE-ONTOLOGY-POSITIONING.md).
+[`docs/launch/positioning.md`](launch/positioning.md).
 
 ### Required product loop
 

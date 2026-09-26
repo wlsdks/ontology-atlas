@@ -538,6 +538,21 @@ export function splitManifestHeadings(manifest) {
   return { manifest: { ...manifest, docs }, headingsBySlug };
 }
 
+/**
+ * `{ oldSlug: newSlug }` for every document `docs/.moved.json` moved to a slug the
+ * app still ships. A `?slug=` deep link, a pin or a recent entry saved before the
+ * move keeps opening the document (`resolveDocsVaultSlugAlias`).
+ */
+export function movedSlugAliases(movedMap, shippedSlugs) {
+  const aliases = {};
+  for (const [from, to] of Object.entries(movedMap ?? {})) {
+    const oldSlug = from.replace(/^docs\//, '').replace(/\.md$/, '');
+    const newSlug = to.replace(/^docs\//, '').replace(/\.md$/, '');
+    if (shippedSlugs.has(newSlug)) aliases[oldSlug] = newSlug;
+  }
+  return Object.fromEntries(Object.entries(aliases).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+
 export function comparableManifest(manifest) {
   return {
     ...manifest,
@@ -1022,7 +1037,13 @@ async function buildDocsVault({ check = false } = {}) {
   const { content, gatewayContent, publicFiles } = scanned;
   // The bundled manifest ships with headings split into a separate file — see the
   // MANIFEST_HEADINGS_OUT comment at the top of this file.
-  const { manifest, headingsBySlug } = splitManifestHeadings(scanned.manifest);
+  const split = splitManifestHeadings(scanned.manifest);
+  const { headingsBySlug } = split;
+  const movedFile = path.join(DOCS_DIR, '.moved.json');
+  const aliases = existsSync(movedFile)
+    ? movedSlugAliases(JSON.parse(await readFile(movedFile, 'utf8')), new Set(split.manifest.docs.map((doc) => doc.slug)))
+    : {};
+  const manifest = Object.keys(aliases).length > 0 ? { ...split.manifest, aliases } : split.manifest;
   const { docs, backlinksDetail, tags } = manifest;
   const changelogRaw = content['CHANGELOG'];
   if (typeof changelogRaw !== 'string') {

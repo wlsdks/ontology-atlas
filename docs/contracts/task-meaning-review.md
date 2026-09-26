@@ -71,6 +71,6 @@ turn refuses the pending write; neither action rolls back code already changed.
 This implementation does not establish exact task-owned source diffs, trusted
 batch semantic acceptance, durable rejection/defer queues, or human decision-quality
 and repeat-use benefits. Those remain explicit work in
-[the canonical V1–V4 plan](MEANING-WORKFLOW-PLAN.md). Browser fixture journeys
+[the canonical V1–V4 plan](../MEANING-WORKFLOW-PLAN.md). Browser fixture journeys
 exercise the real components and protocol controller with disclosed test data;
 they do not prove an installed native bridge or an actual participant's judgment.

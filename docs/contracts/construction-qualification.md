@@ -2,9 +2,9 @@
 
 > Status: executable public input contract for the existing
 > `analyze_repo_structure` MCP tool. The evaluator is implemented by
-> [`mcp/src/construction-qualification.mjs`](../mcp/src/construction-qualification.mjs)
+> [`mcp/src/construction-qualification.mjs`](../../mcp/src/construction-qualification.mjs)
 > and the write-eligibility lifecycle by
-> [`mcp/src/construction-lifecycle.mjs`](../mcp/src/construction-lifecycle.mjs).
+> [`mcp/src/construction-lifecycle.mjs`](../../mcp/src/construction-lifecycle.mjs).
 > It adds no vault kind, frontmatter field, new MCP tool, or UI surface.
 
 ## Why this exists
@@ -16,9 +16,9 @@ ontology supports a named decision for each intended audience, not whether it ha
 many nodes or a high aggregate score.
 
 The research rationale and eight-stage lifecycle live in
-[`FOUNDATIONS.md`](FOUNDATIONS.md#construction-is-a-requirements-and-tests-lifecycle-not-noun-extraction).
+[`FOUNDATIONS.md`](../FOUNDATIONS.md#construction-is-a-requirements-and-tests-lifecycle-not-noun-extraction).
 This file owns the re-executable packet and verdict contract. The vault format
-itself remains owned by [`ONTOLOGY-ATLAS-SPEC.md`](ONTOLOGY-ATLAS-SPEC.md).
+itself remains owned by [`ONTOLOGY-ATLAS-SPEC.md`](../ONTOLOGY-ATLAS-SPEC.md).
 
 ## Qualification packet
 
@@ -53,7 +53,7 @@ exact review-plan and current source SHA-256 digests returned by
     `planRevision`, and every accepted gap id.
 
 The canonical field shape is the executable fixture
-[`tests/fixtures/construction-qualification/qualified.json`](../tests/fixtures/construction-qualification/qualified.json).
+[`tests/fixtures/construction-qualification/qualified.json`](../../tests/fixtures/construction-qualification/qualified.json).
 Future producers must emit that shape rather than inventing a parallel receipt.
 
 The analyzer packet keeps claim admission separate from policy review. A
@@ -181,7 +181,7 @@ node --test mcp/src/construction-qualification.test.mjs mcp/src/construction-lif
 
 The fixture and integration round trip are contract specimens, not evidence that
 Atlas has qualified three real products. `O1.5` in
-[`BACKLOG.md`](BACKLOG-SNAPSHOT-2026-09-13.md#o15--three-product-independent-construction-qualification)
+[`BACKLOG.md`](../BACKLOG-SNAPSHOT-2026-09-13.md#o15--three-product-independent-construction-qualification)
 owns that independent field qualification.
 
 ## Product disclosure boundary

@@ -1,7 +1,7 @@
 /**
  * **A Library round** — a rule the Library keeps on its own while the app is open.
  *
- * Spec: `docs/superpowers/specs/2026-09-17-library-rounds-design.md`. Decision:
+ * Spec: `docs/specs/2026-09-17-library-rounds-design.md`. Decision:
  * `docs/records/decisions/2026-09-17-library-rounds-standing-scope-*.md`.
  *
  * Two kinds exist in this slice. A **consistency** round hashes every cited source and runs the

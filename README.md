@@ -203,7 +203,7 @@ installation with scripts disabled.
   members in Library, or recover the same read-only context through MCP and CLI.
 - **Versioned AI analysis kept as local Markdown**, with its evidence and
   selectable history, and measured violations instead of an invented
-  maintainability score. [Analysis records](docs/ANALYSIS-RECORDS.md).
+  maintainability score. [Analysis records](docs/contracts/analysis-records.md).
 - **Documents of any format gather in the Library**, kept byte for byte, with
   wiki pages required to cite their source on every fact.
 - **External MCP servers attach to the in-app chat** — one switch per server, off
@@ -377,7 +377,7 @@ Library also works without code or ontology nodes. Keep a question and its cited
 answer, inspect source changes, request an updated draft through Claude Code or
 Codex ACP, and compare before saving a new revision. Earlier answers remain
 available. Local Compile has its own read and approval path. See
-[retained answers](docs/RETAINED-ANSWERS.md).
+[retained answers](docs/contracts/retained-answers.md).
 
 Galaxy can also save the current ontology-node selection as a named constellation
 with a purpose. Atlas stores that compatible `v1` task scope in the selected vault,
@@ -396,7 +396,7 @@ resume it. Missing or changed comparison evidence stays explicit.
 For supported single-document patches in the installed app, exact Markdown
 previews and saved meaning decisions can be reopened from the existing History
 tab. Writer readback, code checks, merge and deployment remain separate facts.
-[Supported scope and limits](docs/TASK-MEANING-REVIEW.md).
+[Supported scope and limits](docs/contracts/task-meaning-review.md).
 
 ### 5. Plan against reviewed architecture
 
@@ -714,6 +714,7 @@ through `/land-bundle` as one integration branch and one `pnpm pr:land`.
 | `pnpm backlog` · `pnpm backlog:check` | Current task records and concurrent-state conflicts; append a UUID record per worktree observation ([guide](docs/BACKLOG.md)) |
 | `pnpm agents:check` | Each harness's instruction integrity; independent Codex and Claude files need not match |
 | `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check` |
+| `pnpm docs:move` | Moves the documents listed in `docs/.moved.json` and rewrites every reference; rerun it after merging main into an older branch (`-- --check` only reports) |
 | `pnpm knip` | Dead files, exports and types across every scope |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision record to cite or overturn, and whether this change owes one |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Land a pull request, and who is landing right now |
@@ -725,7 +726,7 @@ For independent backlog-record additions, opt into earlier CI feedback with
 serialized; see [eligibility and rerun limits](docs/BACKLOG.md#ci-while-another-task-is-landing).
 
 [Development checks](docs/DEVELOPMENT-CHECKS.md) is the full gate reference, one
-entry per area; [map testability](docs/MAP-TESTABILITY.md) owns canvas
+entry per area; [map testability](docs/engineering/map-testability.md) owns canvas
 performance, readability, contrast, and instrumentation.
 
 ## License

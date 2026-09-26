@@ -4,14 +4,14 @@
 > preserves the measurements and decisions that led to `ontology-map`; its
 > descriptions of coexisting DOM/Sigma engines and future migration phases are
 > not current runtime instructions. The shipped contract is one canvas-2D
-> engine. Use `docs/TECH-STACK.md`, `docs/TOPOLOGY-FOCUS-AND-SCALE.md`,
+> engine. Use `docs/engineering/tech-stack.md`, `docs/design/topology-focus-and-scale.md`,
 > `docs/FEATURES.md`, and current source for maintenance.
 >
 > Input: `docs/prototypes/topology-b2plus.html` (approved B2+ "Circuit × Constellation"
 > prototype) · the superseded Phase 0 measurement (recoverable from Git; its adapter
 > contract is preserved below) ·
 > `docs/archive/SIGMA-PLAYBOOK.md` (Sigma v3 built-in feature contract — investigated but v2 does not
-> adopt Sigma, archived) · `docs/INTERACTION-DESIGN.md`
+> adopt Sigma, archived) · `docs/design/interaction.md`
 > (fluid interface principles) · `.claude/rules/design.md` · `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`
 > (Design Gate · Graph Engine Fit Gate · Attention Layer Model · State Contract ·
 > 14-inch rule) · design-guardian terrain map verdict (layer (b) item).
@@ -199,7 +199,7 @@ Given that these are "tokens but consumed by canvas," the principle "no hardcodi
 | `--map-altitude-far-low-ratio` | `0.62` | `FAR_LOW = OVERVIEW_SCALE * 0.62` |
 | `--map-focus-fit-max-scale` | `1.9` | `setFocus` focus dive upper bound |
 | `--map-focus-bbox-margin` | `70` | `setFocus` bbox margin |
-| `--map-hysteresis-px` | `7` | Click=safe contract (drag判定 threshold) — INTERACTION-DESIGN §1 recommends "~10px"; prototype measurement adopted 7px (both in safe range, exact value prioritizes prototype) |
+| `--map-hysteresis-px` | `7` | Click=safe contract (drag判定 threshold) — interaction.md §1 recommends "~10px"; prototype measurement adopted 7px (both in safe range, exact value prioritizes prototype) |
 | `--map-emphasis-rise-tau` | `0.09` (s) | hover ripple rise time constant |
 | `--map-emphasis-decay-tau` | `0.15` (s) | hover ripple decay time constant |
 | `--map-ripple-stagger-ms` | `55` (+`12`/neighbor) | `startRipple` neighbor delay |
@@ -274,7 +274,7 @@ The prototype is a single vault fixture and does not handle vault-level drift (`
 
 ### 3.6 Hover/Press State (Click = Safety Contract)
 
-As per INTERACTION-DESIGN §1: press (pointerdown) gives immediate feedback (selection ring/emphasis rise scheduled), commit (focus switch) on pointerup, cancel on drag escape (`HYSTERESIS=7px`). Port prototype `pressedNode`/`pointer.dragging` state machine directly — no new design needed, port as-is in P2.
+As per interaction.md §1: press (pointerdown) gives immediate feedback (selection ring/emphasis rise scheduled), commit (focus switch) on pointerup, cancel on drag escape (`HYSTERESIS=7px`). Port prototype `pressedNode`/`pointer.dragging` state machine directly — no new design needed, port as-is in P2.
 
 ## 4. Implementation Phase Breakdown (strangler, feature flag `ontology-map`)
 

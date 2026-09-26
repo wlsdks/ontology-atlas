@@ -346,6 +346,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: Repo-relative markdown links, raw HTML hrefs and repo-anchored .md path citations resolve, including the `#section` half against the target's real headings.
 **Escalate**: `pnpm docs:links:external` to also resolve external http(s) links over the network
 
+### Moved documents
+
+**Run**: `pnpm docs:move -- --check`
+**Proves**: Every document listed in `docs/.moved.json` sits at its new path and no living file outside frozen history still cites an old path.
+**Escalate**: `pnpm test:docs:checks` when the move script or its rewrite rules change
+**Fix**: Run `pnpm docs:move`, which moves each pending pair and rewrites references; review the bare names it prints.
+
 ### Code-comment doc reference integrity
 
 **Run**: `pnpm docs:comment-refs`

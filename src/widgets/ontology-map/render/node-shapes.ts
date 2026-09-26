@@ -8,7 +8,7 @@
  * (no morph needed), element = square copper-pad-with-drilled-via. Corner
  * rounding grows toward the full radius as `farT → 1`, so every polygon
  * converges into a plain circle at the far-field end
- * (`docs/ONTOLOGY-MAP-DESIGN.md` §3.1 — continuous morph, no shape swap).
+ * (`docs/design/ontology-map.md` §3.1 — continuous morph, no shape swap).
  *
  * Zero React imports (per module contract) — this is pure Canvas 2D drawing
  * plus a few extractable pure-geometry helpers that ARE unit-testable

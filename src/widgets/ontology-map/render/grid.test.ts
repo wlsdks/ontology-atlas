@@ -93,7 +93,7 @@ describe("render/grid draw() — background variant routing (#20)", () => {
  * formulas below (the pattern tile itself needs a real `HTMLCanvasElement`
  * 2D context to build, which jsdom does not implement meaningfully). Those
  * two `test.todo`s are left as-is — P5's production-build screenshot gate
- * (`docs/ONTOLOGY-MAP-DESIGN.md` §4 P5) is the actual verification for visual
+ * (`docs/design/ontology-map.md` §4 P5) is the actual verification for visual
  * correctness there.
  */
 describe("render/grid", () => {

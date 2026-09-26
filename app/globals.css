@@ -3437,7 +3437,7 @@
        the cadence rail owes the hand. Licensed on **a released drag only**, on the moving
        object's own position, over `--motion-settle` (240ms, the spec's clock). Reduced motion
        never reaches it: the consumer drops the transition entirely and the thumb is already
-       there. Spec: `docs/superpowers/specs/2026-09-21-round-cadence-and-scope.md` §2.2. */
+       there. Spec: `docs/specs/2026-09-21-round-cadence-and-scope.md` §2.2. */
     --motion-ease-drag-release: cubic-bezier(0.2, 0.9, 0.3, 1.15);
     /* --topology-card-scale is injected by SigmaSkeletonCards into container based on viewport width — CSS pipeline drops custom property without utility reference, so not declared here. */
 
@@ -3553,7 +3553,7 @@
   }
 
   /*
-   * ontology-map (docs/ONTOLOGY-MAP-DESIGN.md §2) — new token family
+   * ontology-map (docs/design/ontology-map.md §2) — new token family
    * extracted 1:1 from B2+ "Circuit × Constellation" prototype (docs/prototypes/topology-b2plus.html). Intentionally
    * separated from existing 657 --topology-* tokens (prefix --map-) — consumed only behind feature flag `ontology-map`, and when removing the old engine in P6, grepping for `--map-` makes the scope of new/old replacement clear. Canvas 2D cannot read CSS variables directly,
    * so `src/widgets/ontology-map/tokens/read-map-tokens.ts`
