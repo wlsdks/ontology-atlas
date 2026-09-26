@@ -39,6 +39,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:decisions',
     'pnpm test:records',
     'pnpm test:backlog && pnpm backlog:check',
+    'pnpm test:lessons && pnpm lessons:check',
     'pnpm test:changelog',
     'pnpm changelog:check',
     'pnpm dev-checks:check',
@@ -77,6 +78,8 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm source:language',
     'pnpm docs:comment-refs',
     'pnpm docs:links',
+    'pnpm docs:meta',
+    'pnpm docs:move -- --check',
   ]),
   unit: Object.freeze(['pnpm knip', 'pnpm test:run']),
   mcp: Object.freeze([

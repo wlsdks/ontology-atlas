@@ -31,8 +31,8 @@ import { capitalize, serviceExample, unusedRoundName } from "../../lib/round-pre
 /**
  * **New round** — one sentence, one list of places, one rail.
  *
- * Specs: `docs/superpowers/specs/2026-09-17-library-rounds-design.md` §9.3 and
- * `docs/superpowers/specs/2026-09-21-round-cadence-and-scope.md` §2–§3.
+ * Specs: `docs/specs/2026-09-17-library-rounds-design.md` §9.3 and
+ * `docs/specs/2026-09-21-round-cadence-and-scope.md` §2–§3.
  *
  * ## What the owner rejected, and what replaced it
  *

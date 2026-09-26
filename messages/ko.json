@@ -1641,7 +1641,9 @@
         "notOnMapLabel": "지도에 없음",
         "notOnMapBody": "이 문서는 아직 지도에 그려지지 않아요. 위 진단에 나온 빠진 항목을 채우면 지도에 나타나요.",
         "notOnMapWikiBody": "이 문서는 원문을 정리한 글이라 지도에 올라가지 않아요. 그게 정상이에요. 지도에는 개념이 오르고, 이런 글은 자료실에서 원문과 나란히 읽어요.",
-        "recordTimeTitle": "{at}에 마지막으로 저장되었어요. 파일이 바뀐 때이며, 확인한 때와는 달라요"
+        "recordTimeTitle": "{at}에 마지막으로 저장되었어요. 파일이 바뀐 때이며, 확인한 때와는 달라요",
+        "revisionLabel": "{count}판",
+        "revisionTitle": "이 문서는 커밋 {count}번에 걸쳐 바뀌었어요. 이 수는 Git이 세며 손으로 고치지 않아요"
       },
       "sidebar": {
         "treeHeader": "문서 목록",

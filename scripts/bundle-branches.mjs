@@ -102,13 +102,28 @@ export function isContained(git, base, branch) {
   return merged.stdout.split('\n')[0] === git.out('rev-parse', `${base}^{tree}`);
 }
 
+/**
+ * The newest commit of `branch` that `base` already contains. A branch cut from
+ * commits that later landed as one squash still carries them under other shas,
+ * so a three-dot diff lists every file the squash brought to main and reports
+ * conflicts that are not there (measured 2026-09-26: 148 files listed for a
+ * branch that changed 14). Patch ids cannot see it, because a squash joins
+ * several commits into one patch; containment of each commit can.
+ */
+export function landedPoint(git, base, branch) {
+  const commits = git.out('rev-list', '--first-parent', '--max-count=200', `${base}..${branch}`).split('\n').filter(Boolean);
+  return commits.find((sha) => isContained(git, base, sha)) ?? null;
+}
+
 export function planBundle(git, base, branches) {
   const rows = branches.map((branch) => {
     const head = git.out('rev-parse', '--short', branch);
     const ahead = Number(git.out('rev-list', '--count', `${base}..${branch}`));
-    const files = ahead === 0 ? [] : git.out('diff', '--name-only', `${base}...${branch}`).split('\n').filter(Boolean);
+    const landed = ahead === 0 ? null : landedPoint(git, base, branch);
+    const from = landed ?? `${base}...${branch}`;
+    const files = ahead === 0 ? [] : git.out('diff', '--name-only', ...(landed ? [landed, branch] : [from])).split('\n').filter(Boolean);
     const state = ahead === 0 ? 'empty' : isContained(git, base, branch) ? 'contained' : 'pending';
-    return { branch, head, ahead, files, state };
+    return { branch, head, ahead, files, state, landed };
   });
 
   const touchedBy = new Map();
@@ -137,7 +152,10 @@ export function planBundle(git, base, branches) {
 export function formatPlan({ base, rows, overlaps, steps }) {
   const lines = [`Bundle plan against ${base}`, ''];
   for (const row of rows) {
-    lines.push(`  ${row.state.padEnd(9)} ${row.branch} @ ${row.head}  (${row.ahead} commit(s), ${row.files.length} file(s))`);
+    const landed = row.landed && row.state === 'pending'
+      ? `; carries commits ${base} already has, so first run git rebase --onto ${base} ${row.landed.slice(0, 9)} ${row.branch}`
+      : '';
+    lines.push(`  ${row.state.padEnd(9)} ${row.branch} @ ${row.head}  (${row.ahead} commit(s), ${row.files.length} file(s)${landed})`);
   }
   const pending = rows.filter((r) => r.state === 'pending');
   lines.push('', `${pending.length} to merge; ${rows.length - pending.length} already empty or contained in ${base} (leave them out).`);

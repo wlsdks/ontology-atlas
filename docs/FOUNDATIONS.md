@@ -1,3 +1,10 @@
+---
+title: FOUNDATIONS — what grounds ontology-atlas
+doc_type: authority
+status: current
+area: ontology-model
+---
+
 # FOUNDATIONS — what grounds ontology-atlas
 
 > This document ties the product to **public, citable academic/standard/craft references** rather than *feelings*.
@@ -138,7 +145,7 @@ OntoClean can expose modeling pitfalls; LLM graph judges can help triage noisy e
 domain requirements, exact witnesses, counterexamples, or independent task-level evaluation.
 
 The re-executable evaluator packet, categorical verdict, privacy boundary, and representative fixture
-are specified in [Ontology Construction Qualification v1](ONTOLOGY-CONSTRUCTION-QUALIFICATION.md).
+are specified in [Ontology Construction Qualification v1](contracts/construction-qualification.md).
 
 For Atlas, the conservative direct-subsumption test is executable prose, not a reasoner claim: both
 endpoints have the same `domain`/`capability`/`element` kind, every valid narrower example satisfies the

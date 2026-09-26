@@ -58,6 +58,9 @@ sleeping.
 - In e2e, settle conditions live in `tests/e2e/settle.ts`: canvas stillness from
   the `?e2e=1` probe, DOM reveals from `Element.getAnimations()`. A remaining
   sleep states in place why it is a measurement window.
+- Compare canvas pixels inside the page and return one number: a 5-million
+  value `getImageData` array through `page.evaluate` costs 12 s per call
+  (lesson 1250cf7a).
 
 ## What to test
 
@@ -101,6 +104,11 @@ inside a worktree is deleted with the worktree.
 
 A desktop bridge change (`src/shared/lib/tauri-*.ts`, `src-tauri/**`) still runs
 web smoke.
+
+Test keyboard input in the installed app with Computer Use idle, sending keys
+through `osascript` or JXA: a Computer Use session swallows Escape system-wide.
+Before fixing a platform input bug, reproduce it once without the test tool
+(lesson fcc6d81f).
 
 ## Cross-package contract tests
 

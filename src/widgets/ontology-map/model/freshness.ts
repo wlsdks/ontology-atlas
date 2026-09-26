@@ -1,6 +1,6 @@
 /**
  * Freshness derivation — the "powered/unpowered" metaphor
- * (`docs/ONTOLOGY-MAP-DESIGN.md` §3.4, memory `owner-topology-taste`):
+ * (`docs/design/ontology-map.md` §3.4, memory `owner-topology-taste`):
  * operational state is baked into the visual, not a separate legend.
  *
  * | state | visual (B2+) |

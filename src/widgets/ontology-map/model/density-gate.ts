@@ -1,6 +1,6 @@
 /**
  * The child-density threshold — the pure model layer behind "fold a crowded
- * parent into a cluster chip, expand it on click" (`docs/ONTOLOGY-MAP-DESIGN.md`
+ * parent into a cluster chip, expand it on click" (`docs/design/ontology-map.md`
  * semantic-zoom charter, "the rest expands on click" — the rest expands on
  * click — applied to large fan-outs).
  *

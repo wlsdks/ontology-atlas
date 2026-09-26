@@ -109,6 +109,7 @@ import {
   buildTagIndexForDocs,
   filterDocsByCollection,
   isAuthorableOntologyDocument,
+  followMovedSlugs,
   resolveDocsVaultSlugAlias,
   resolveDocsVaultCollection,
   resolveInitialDocsCollection,
@@ -762,8 +763,8 @@ function DocsVaultContent({
       ? localVault.manifest
       : staticVault.manifest;
   const normalizedQuerySlug = useMemo(
-    () => resolveDocsVaultSlugAlias(querySlug, manifest.docs),
-    [manifest.docs, querySlug],
+    () => resolveDocsVaultSlugAlias(querySlug, manifest.docs, manifest.aliases),
+    [manifest.aliases, manifest.docs, querySlug],
   );
   const legacyTargetDoc = useMemo(
     () => legacyEntry && normalizedQuerySlug
@@ -1843,13 +1844,14 @@ function DocsVaultContent({
     }),
     [documentScope, manifest.docs, scopedDocs],
   );
+  // A pin or recent entry saved before a document moved follows it to its new slug.
   const collectionPinnedSlugs = useMemo(
-    () => pinnedSlugs.filter((slug) => collectionDocSlugs.has(slug)),
-    [collectionDocSlugs, pinnedSlugs],
+    () => followMovedSlugs(pinnedSlugs, manifest.aliases).filter((slug) => collectionDocSlugs.has(slug)),
+    [collectionDocSlugs, manifest.aliases, pinnedSlugs],
   );
   const collectionRecentSlugs = useMemo(
-    () => recentSlugs.filter((slug) => collectionDocSlugs.has(slug)),
-    [collectionDocSlugs, recentSlugs],
+    () => followMovedSlugs(recentSlugs, manifest.aliases).filter((slug) => collectionDocSlugs.has(slug)),
+    [collectionDocSlugs, manifest.aliases, recentSlugs],
   );
 
   // The first screen **shows what it actually has** (measured defect 2026-07-28 — the vault pill

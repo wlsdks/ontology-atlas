@@ -28,7 +28,7 @@ integration and the only reason they appear.
 Names are one thing and marks are another. A service's own glyph appears only
 where that service's published brand guideline was read and permits monochrome
 use to show an integration; every other row falls back to a generic connector
-glyph. `docs/FEATURES.md` owns that rule and names which services have been
+glyph. `docs/features/agents.md` owns that rule and names which services have been
 checked. The ACP runtime icons under `public/acp-icons/` are the 16x16 monochrome
 SVGs the ACP registry itself publishes for this purpose, fetched at build time by
 `pnpm acp:registry`, so no brand colour enters the application.

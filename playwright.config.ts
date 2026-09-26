@@ -1,10 +1,16 @@
 import { defineConfig } from '@playwright/test';
 
 import { POST_MERGE_SPECS } from './tests/e2e/post-merge-specs';
+import { foreignServer } from './scripts/lib/playwright-server-owner.mjs';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3100';
 const webServerOrigin = new URL(baseURL).origin;
 const webServerPort = new URL(baseURL).port || '3100';
+
+// Locally Playwright reuses whatever already listens on the port; refuse one
+// that another worktree or project started (lesson 823b9af4).
+const foreignServerMessage = process.env.CI ? null : foreignServer(new URL(baseURL).hostname, webServerPort, process.cwd());
+if (foreignServerMessage) throw new Error(foreignServerMessage);
 
 export function resolvePlaywrightWorkers(
   env: Record<string, string | undefined>,

@@ -53,7 +53,7 @@ import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
  * ontology-map "component datasheet" node panel
- * (`docs/ONTOLOGY-MAP-DESIGN.md` §5). Rendered ONLY when the
+ * (`docs/design/ontology-map.md` §5). Rendered ONLY when the
  * `atlas:feature:ontology-map` flag is on — the flag-off path keeps the
  * shared `TopologyNodePopover` byte-identical, so the Sigma engine is
  * untouched (lead design decision). Re-presents the SAME selection facts the

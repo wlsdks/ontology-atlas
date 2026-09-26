@@ -3,7 +3,7 @@
  * prototype's `nodeEgoState()`/`edgeEgoState()`/`startRipple()`/
  * `updateEmphasis()` (`docs/prototypes/topology-b2plus.html` §9, §11, §13).
  *
- * Contract (`docs/ONTOLOGY-MAP-DESIGN.md` §3.2 "State Contract Mapping" — the state
+ * Contract (`docs/design/ontology-map.md` §3.2 "State Contract Mapping" — the state
  * contract mapping, §3.6 "Click=Safe Contract" — click is a safe action):
  * - **Click** sets a *durable* focus (`focusedNode`) — the ego-set (focused
  *   node + its 1-hop neighbors) reads as `"center"`/`"neighbor"`, everything

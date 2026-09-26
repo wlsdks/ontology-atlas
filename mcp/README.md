@@ -4,7 +4,7 @@ Versioned ACP diagnostic records are available through
 `query_ontology({operation:"analysis_history", analysisMode:"meaning", limit:30})`
 and `query_ontology({operation:"analysis_record", recordId:"<UUID>"})`. They
 retain exact answers and captured evidence, remain outside the ontology graph,
-and never grant approval. [Analysis record contract](../docs/ANALYSIS-RECORDS.md).
+and never grant approval. [Analysis record contract](../docs/contracts/analysis-records.md).
 
 > The agent interface to Ontology Atlas's shared codebase meaning. Claude Code,
 > Cursor, Codex, and other MCP clients read, query, and maintain a Markdown

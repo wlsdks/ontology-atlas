@@ -1,3 +1,10 @@
+---
+title: Product Design Operating System
+doc_type: authority
+status: current
+area: process
+---
+
 # Product Design Operating System
 
 > Atlas-specific design routing. The PO pass decides whether a product slice is

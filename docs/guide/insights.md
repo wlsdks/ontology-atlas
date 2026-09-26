@@ -1,3 +1,10 @@
+---
+title: "Maintenance Board: Analyzing My Folders"
+doc_type: guide
+status: current
+area: analysis
+---
+
 # Maintenance Board: Analyzing My Folders
 
 [After the folder has grown](/guide/growing-vault), you answered "what should I fix now" via CLI. There is a **screen that does the same thing**: "Analysis" in the left rail, at `/ontology/insights`.

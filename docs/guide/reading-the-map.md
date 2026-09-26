@@ -1,3 +1,10 @@
+---
+title: How to Read the Map
+doc_type: guide
+status: current
+area: map
+---
+
 # How to Read the Map
 
 When you select a folder, dots and lines appear. However, most of the dots are the same shade of gray.

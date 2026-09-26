@@ -10,7 +10,7 @@
  * supplies pointer→world conversions via `topology-camera-math.ts#screenToWorld`.
  *
  * The grab offset (node position − pointer world position at grab time) is the
- * "respect the grab point, no center-snap" rule from `docs/INTERACTION-DESIGN.md`
+ * "respect the grab point, no center-snap" rule from `docs/design/interaction.md`
  * §1 (Respect the grab point's offset, no centre snap).
  */
 

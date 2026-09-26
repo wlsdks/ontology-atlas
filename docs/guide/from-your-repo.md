@@ -1,3 +1,10 @@
+---
+title: Starting from My Repository
+doc_type: guide
+status: current
+area: agents
+---
+
 # Starting from My Repository
 
 No one manually enters a hundred nodes into an empty Vault. So, starting means **extracting from what you already have**. You already have code, folder structure,

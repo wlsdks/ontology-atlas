@@ -1,3 +1,10 @@
+---
+title: Independent development records
+doc_type: runbook
+status: current
+area: process
+---
+
 # Independent development records
 
 Each change adds a file; unrelated worktrees never reserve the same next number
@@ -60,6 +67,30 @@ gets a fresh UUID and an explicit worktree label. Status changes append a record
 referencing the current head UUIDs; they never modify another worktree's file.
 Concurrent heads remain visible until an author records an explicit reconciliation.
 See [the backlog guide](../BACKLOG.md) for read, append, and validation commands.
+
+## Harness lessons
+
+A lesson records one harness failure: a mistake, a wasted CI round, a gate that
+did not fire, or a tool pattern that cost real time. `/harness-retro` owns when
+to write one and how open lessons are reviewed. The body is four fields,
+**Observed**, **Cost**, **Suspected cause** and **Proposed change** (starting
+with `skill`, `rule`, `hook`, `script`, `gate` or `none`), within 16 lines and
+1600 bytes:
+
+```sh
+pnpm record:new -- --kind=lesson --type=gate-gap --area=checks-changed --slug=short-subject --input=/tmp/lesson.md
+pnpm record:new -- --kind=lesson-status --lesson=UUID --status=verified --input=/tmp/evidence.md
+```
+
+The writer creates `lessons/YYYY-MM-DD-slug-UUID.md` with status `reported`.
+A verdict (`verified`, `refuted`, `fixed`, `wontfix`, or `reported` to reopen)
+is another file in the same directory naming the lesson and the current heads of
+its history; its body is one **Evidence** line, and `fixed` cites a commit SHA
+or pull request. A lesson is verified before it is fixed. Two worktrees that
+record different verdicts leave two heads until a new record names both.
+`pnpm lessons` lists open and verified-but-unfixed lessons, with `--since=30d`,
+`--kind`, `--status`, `--area` and `--json`; `pnpm lessons:check` validates the
+template and verdict order and refuses edits to published lessons.
 
 ## Worktrees and old branches
 

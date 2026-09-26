@@ -3,7 +3,7 @@
  * ported 1:1 from the B2+ prototype's `stepSpring()`
  * (`docs/prototypes/topology-b2plus.html` §8 "canvas + camera").
  *
- * Contract (`docs/ONTOLOGY-MAP-DESIGN.md` §2.4, §4 P2):
+ * Contract (`docs/design/ontology-map.md` §2.4, §4 P2):
  * ```
  *   f  = -ω² · (value - target) - 2 · ζ · ω · velocity
  *   v' = velocity + f · dt

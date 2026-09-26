@@ -57,7 +57,7 @@ import { runHeadlessTurn } from "./headless-turn";
 /**
  * **The clock and the hands** — the one place a round actually runs.
  *
- * Spec: `docs/superpowers/specs/2026-09-17-library-rounds-design.md` §5, §6. Decision:
+ * Spec: `docs/specs/2026-09-17-library-rounds-design.md` §5, §6. Decision:
  * `docs/records/decisions/2026-09-17-library-rounds-standing-scope-*.md`.
  *
  * Mounted once, app-wide, through `LibraryRoundsProvider`, so a round runs whichever screen

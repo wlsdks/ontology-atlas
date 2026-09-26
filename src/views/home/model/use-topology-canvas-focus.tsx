@@ -85,7 +85,7 @@ export function useTopologyCanvasFocus({ topologyVaultReadModel }: Options) {
   );
 
   // A node click defaults to the compact ego popover; the full-detail overlay is
-  // opt-in (overview first, details on demand — `docs/TOPOLOGY-FOCUS-AND-SCALE.md`).
+  // opt-in (overview first, details on demand — `docs/design/topology-focus-and-scale.md`).
   // This holds the slug whose full detail is open, and the overlay renders only when
   // it matches the current selection, so picking another node falls back to its
   // popover with no effect needed.

@@ -4,7 +4,7 @@
 versioned in-app ACP analysis records. `--record=<UUID> --json` reads one exact
 run or review. These read-only flags use the archive inside the vault; the
 existing legacy `analysis` writer beside the vault is unchanged. See
-[analysis records](../docs/ANALYSIS-RECORDS.md) for cursor pagination and limits.
+[analysis records](../docs/contracts/analysis-records.md) for cursor pagination and limits.
 
 > **Codebase ontology CLI** — scaffold, validate, compile, query, and maintain
 > the shared Markdown meaning that people inspect and coding agents use for

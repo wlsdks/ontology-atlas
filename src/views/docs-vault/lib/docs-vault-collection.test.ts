@@ -4,6 +4,7 @@ import {
   buildTagIndexForDocs,
   filterDocsByCollection,
   isAuthorableOntologyDocument,
+  followMovedSlugs,
   resolveDocsVaultSlugAlias,
   resolveDocsVaultCollection,
   resolveInitialDocsCollection,
@@ -96,6 +97,23 @@ describe('docs vault collections', () => {
         doc('ontology/documents/agent-practice-research'),
       ]),
     ).toBe('ontology/documents/agent-practice-research');
+  });
+
+  it('opens a moved document from the slug it had before the move', () => {
+    const aliases = { 'ANALYSIS-RECORDS': 'contracts/analysis-records' };
+    expect(
+      resolveDocsVaultSlugAlias('ANALYSIS-RECORDS', [doc('contracts/analysis-records')], aliases),
+    ).toBe('contracts/analysis-records');
+    // An alias whose target is not in this vault is not followed.
+    expect(resolveDocsVaultSlugAlias('ANALYSIS-RECORDS', [doc('FEATURES')], aliases)).toBe('ANALYSIS-RECORDS');
+  });
+
+  it('carries saved pins and recents to the moved slug without repeating one', () => {
+    expect(
+      followMovedSlugs(['ANALYSIS-RECORDS', 'FEATURES', 'contracts/analysis-records'], {
+        'ANALYSIS-RECORDS': 'contracts/analysis-records',
+      }),
+    ).toEqual(['contracts/analysis-records', 'FEATURES']);
   });
 
   it('defers default selection while a query slug alias is being applied', () => {
