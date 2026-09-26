@@ -58,6 +58,13 @@
  *      lock records both trains' file sets (`trains`), so the fast path refuses an overlap with
  *      either. `--no-speculate` keeps one train in flight.
  *
+ * **What `main`'s history shows** (2026-09-27). A train used to squash into one commit titled
+ * `chore(train): land #1926 #1913 (#1927)`, which says nothing about the change. Each component's
+ * merge on the train branch is now rewritten server-side as one ordinary commit carrying that pull
+ * request's own title, number and author, and the train lands with `rebase`: one commit per pull
+ * request on `main`, still one CI run per train and still a linear history. A fast-path merge was
+ * already one squash per pull request.
+ *
  * **Throughput, measured 2026-09-26.** A train costs one CI run (~20 min, ~10 jobs). A public
  * repository runs 20 jobs at once, so two trains fit side by side, which is why speculation stops
  * at two (Uber SubmitQueue, Zuul and Mergify all pair batching and bisection with speculation):
@@ -135,7 +142,7 @@ import {
   RED_CLOSE_PREFIX,
   TRAIN_HISTORY_LIMIT,
   adaptiveBatch,
-  composeSquashBody,
+  componentCommit,
   conflictComment,
   describeFastPath,
   describeTrains,
@@ -740,13 +747,29 @@ export function createGithub(slug, run = ghRun) {
       if (/409|[Mm]erge conflict/.test(result.output ?? '')) return { state: 'conflict', detail: result.output };
       return { state: 'error', detail: result.output };
     },
+    /**
+     * Replace the merge commit `mergeInto` just made at `branch`'s head with an ordinary commit of
+     * the same tree on `parent`, carrying the pull request's own message and author (Git Data API,
+     * server-side). The train branch becomes one commit per pull request, which `rebase` lands as is.
+     */
+    squashOnto: (branch, parent, { message, author }) => {
+      const head = json(['api', `repos/${slug}/git/ref/heads/${branch}`])?.object?.sha;
+      const tree = head ? json(['api', `repos/${slug}/git/commits/${head}`])?.tree?.sha : null;
+      if (!tree) return null;
+      const args = ['api', '-X', 'POST', `repos/${slug}/git/commits`, '-f', `message=${message}`, '-f', `tree=${tree}`, '-f', `parents[]=${parent}`];
+      if (author) args.push('-f', `author[name]=${author.name}`, '-f', `author[email]=${author.email}`);
+      const created = json(args)?.sha;
+      if (!created) return null;
+      return ok(['api', '-X', 'PATCH', `repos/${slug}/git/refs/heads/${branch}`, '-f', `sha=${created}`, '-F', 'force=true']) ? created : null;
+    },
     openPr: ({ title, head, base, body }) => {
       const created = json(['api', '-X', 'POST', `repos/${slug}/pulls`, '-f', `title=${title}`, '-f', `head=${head}`, '-f', `base=${base}`, '-f', `body=${body}`, '-F', 'draft=false']);
       return { number: created.number, url: created.html_url };
     },
-    /** The only merge call in the repository: squash, pinned to the head sha CI measured. */
-    mergePr: (number, { sha, title, message = null }) => {
-      const args = ['api', '-X', 'PUT', `repos/${slug}/pulls/${number}/merge`, '-f', 'merge_method=squash', '-f', `sha=${sha}`, '-f', `commit_title=${title}`];
+    /** The only merge call in the repository, pinned to the head sha CI measured: squash for a fast-path pull request, rebase for a train of per-pull-request commits. */
+    mergePr: (number, { sha, title = null, message = null, method = 'squash' }) => {
+      const args = ['api', '-X', 'PUT', `repos/${slug}/pulls/${number}/merge`, '-f', `merge_method=${method}`, '-f', `sha=${sha}`];
+      if (title) args.push('-f', `commit_title=${title}`);
       if (message) args.push('-f', `commit_message=${message}`);
       const result = run(args, { allowFailure: true });
       if (typeof result !== 'string') return { ok: false, detail: String(result.output ?? '').trim() };
@@ -1078,10 +1101,22 @@ function cutTrain({ batch, parent = null, deps, holder, key }) {
 
   const included = [];
   const errored = [];
+  let tip = base;
   for (const component of batch) {
     const merged = gh.mergeInto(branch, component.headRefOid, `chore(train): merge #${component.number} ${component.headRefName}`);
-    if (merged.state === 'merged' || (merged.state === 'up-to-date' && !parent)) {
-      included.push({ ...component, empty: merged.state === 'up-to-date' });
+    if (merged.state === 'merged') {
+      // One ordinary commit per pull request, so main's history reads as the pull requests.
+      const commit = componentCommit({ component, coAuthors: parseCoAuthors(git.coAuthorLog('origin/main', component.headRefOid)) });
+      const squashed = gh.squashOnto(branch, tip, commit);
+      if (!squashed) {
+        gh.deleteBranch(branch);
+        holder.drop(key);
+        return { outcome: 'abort', reason: `could not rewrite #${component.number}'s merge on ${branch} as one commit`, errored };
+      }
+      tip = squashed;
+      included.push({ ...component, empty: false });
+    } else if (merged.state === 'up-to-date' && !parent) {
+      included.push({ ...component, empty: true });
     } else if (merged.state === 'up-to-date' || merged.state === 'conflict') {
       if (parent) {
         log(`#${component.number} ${merged.state === 'conflict' ? 'conflicts' : 'adds nothing'} on top of train #${onTopOf}; it stays queued for a train cut from main`);
@@ -1230,12 +1265,8 @@ function settleHead({ train, deps, requiredContexts, token }) {
     for (const name of other.unmatched) log(`--allow-failing named ${name}, which is not failing on this train`);
     const accepted = other.accepted.length > 0 ? `, accepting ${other.accepted.map((c) => `${c.name} ${c.conclusion}`).join(', ')}` : '';
     for (const component of included) component.coAuthors = parseCoAuthors(git.coAuthorLog(base, component.headRefOid));
-    log(`train #${number} is green on ${trainPr.headRefOid.slice(0, 9)}${accepted}; squash merging`);
-    const merged = gh.mergePr(number, {
-      sha: trainPr.headRefOid,
-      title: `${trainTitle(included)} (#${number})`,
-      message: composeSquashBody({ components: included, trainNumber: number }),
-    });
+    log(`train #${number} is green on ${trainPr.headRefOid.slice(0, 9)}${accepted}; landing its ${included.filter((c) => !c.empty).length} commit(s), one per pull request`);
+    const merged = gh.mergePr(number, { sha: trainPr.headRefOid, method: 'rebase' });
     mergedSha = merged.sha ?? null;
     if (!merged.ok && gh.readPr(number).state !== 'MERGED') {
       log(`GitHub refused the train merge (${merged.detail || 'no detail'}); rebuilding`);
@@ -1670,9 +1701,11 @@ export function planLanding({ args, deps }) {
     deps.log('  cut on top of the train above, CI concurrent; lands only if that train lands, discarded if it does not');
     for (const component of speculative) describeRow(component, true);
   } else if (!args.speculate) deps.log('no speculative train: --no-speculate');
-  for (const component of batch) component.coAuthors = parseCoAuthors(deps.git.coAuthorLog('origin/main', component.headRefOid));
-  deps.log('squash commit, if green:');
-  for (const line of composeSquashBody({ components: batch, trainNumber: '<train>' }).split('\n')) deps.log(`  | ${line}`);
+  deps.log('commits main gets, if green (one per pull request):');
+  for (const component of batch) {
+    const { message, author } = componentCommit({ component, coAuthors: parseCoAuthors(deps.git.coAuthorLog('origin/main', component.headRefOid)) });
+    deps.log(`  | ${message.split('\n')[0]}${author ? `  (${author.name})` : ''}`);
+  }
   deps.log('dry run: nothing was written to GitHub');
   return 0;
 }
