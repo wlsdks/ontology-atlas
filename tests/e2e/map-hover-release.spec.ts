@@ -97,6 +97,13 @@ test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린�
     page.evaluate(() => (window as unknown as { __atlasMap?: AtlasMapProbe }).__atlasMap?.hover() ?? null);
   await expect.poll(hovered, { timeout: 15_000 }).toBe(target!.id);
 
+  // The awake reference for ②: the same sampler over the same 1.5 s span while the
+  // hover holds the idle gate open, so machine load inflates both sides alike.
+  // measurement window: 1.5 s of hovered frames to sample, not a settle.
+  await page.waitForTimeout(1_500);
+  const awake = await idleCost(1500);
+  expect(awake.frames).toBeGreaterThan(20);
+
   /*
    * Move in one step onto chrome layered **over** the canvas — the left nav rail.
    *
@@ -157,6 +164,16 @@ test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린�
   const after = await idleCost(1500);
   // If no frames arrived at all (a backgrounded tab, say) this measurement is void.
   expect(after.frames).toBeGreaterThan(20);
-  // Measured headroom: normal 2.8 vs defective 29.2 ms/s (headless, synth=800).
-  expect(after.cpuMsPerSec).toBeLessThan(12);
+  /*
+   * Relative to the awake reference measured above, so load inflates both sides alike
+   * (the old absolute `< 12` read 15.5-16.2 on a busy machine). Measured 2026-09-27,
+   * 5 runs, headless static build, synth=800: awake 60-69 ms/s, released 3.3-11.9 ms/s,
+   * ratio 0.054-0.176. With the idle gate forced open (`shouldSkipFrame` pinned to
+   * false) the ratio was 0.75-0.77 and this assertion failed. The bound sits 3x over
+   * the worst healthy ratio.
+   */
+  expect(
+    after.cpuMsPerSec,
+    `released ${after.cpuMsPerSec.toFixed(1)} ms/s vs awake ${awake.cpuMsPerSec.toFixed(1)} ms/s`,
+  ).toBeLessThan(awake.cpuMsPerSec * 0.55);
 });

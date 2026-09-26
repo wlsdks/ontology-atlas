@@ -30,9 +30,8 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 30 s of no input plus the 2 s ramp, frame cost reaches the floor ③ one input
  * revives it from the next frame.
  *
- * Measured margins (headless, 1440×900): awake 55–78 ms/s · asleep 1.5–2.2 ms/s ·
- * with the defect reinjected (sleep factor pinned to 1) 55+ ms/s at the 40 s mark.
- * The threshold of 10 sits with no overlap at all between the two states.
+ * The sleep verdict is a ratio against the awake measurement from the same page;
+ * the measured range sits above that assertion.
  */
 test("관문은 무입력이 이어지면 프레임 일을 그만두고, 입력 하나에 되살아난다", async ({ page }) => {
   // 30 s delay + 2 s ramp + measurement window — the default 60 s timeout is not enough.
@@ -94,7 +93,17 @@ test("관문은 무입력이 이어지면 프레임 일을 그만두고, 입력 
   const asleep = await idleCost(4_000);
   // If no frames arrived at all (a backgrounded tab, say), the measurement is void.
   expect(asleep.frames).toBeGreaterThan(20);
-  expect(asleep.cpuMsPerSec).toBeLessThan(10);
+  /*
+   * Relative to the awake measurement ① from this same page, so load inflates both
+   * sides alike (the old absolute `< 10` read 10.2 and 12.2 on a busy machine).
+   * Measured 2026-09-27, 5 runs, headless static build: awake 120-124 ms/s, asleep
+   * 2.6-10.4 ms/s, ratio 0.021-0.086. With the sleep factor pinned to 1 the ratio was
+   * 1.01 and this assertion failed. The bound sits 3x over the worst healthy ratio.
+   */
+  expect(
+    asleep.cpuMsPerSec,
+    `asleep ${asleep.cpuMsPerSec.toFixed(1)} ms/s vs awake ${awake.cpuMsPerSec.toFixed(1)} ms/s`,
+  ).toBeLessThan(awake.cpuMsPerSec * 0.3);
 
   // ③ One input (a mouse move) revives it from the next frame — the absolute
   //    condition that sleeping is not the same as switched off. Measured: 31 busy
