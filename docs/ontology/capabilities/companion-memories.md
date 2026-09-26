@@ -18,6 +18,12 @@ A person develops a project and records its ontology and wiki, then sees those r
 - Current project records yield starting construction XP. Unique concepts, resolved relations, recorded implementation paths, listed wiki pages, and bounded word-count detail contribute to per-category high-water marks. Manifest updates add newly observed growth; cleanup does not remove saved progress. Code work counts when reflected in these records, not through inferred coding hours.
 - Construction, one-time UID-based concept reading, and personal discovery XP contribute to character power and region access. Adventure XP is separate. Levels grant points for six permanent skills. Five-floor expeditions offer one temporary blessing choice per floor, drawn as three alternatives from eight types, with a final guardian, active dodge, optional auto retry, and persistent best-floor/clear records. Run-bound choice validation rejects stale offers. Battles earn equipment gold, potions, supply chests, and guardian relics.
 
+## Direct sector expedition
+
+- The first fictional destination also opens a directly traversed, full-frame top-down pixel sector. WASD or arrows move the fox on collidable tiles; E talks with Curio, follows a friendly signal mote through three locations, reads at a terminal, activates the gate, and leaves through the exit. Q scans toward the next objective, while existing I, T, and L panels stay available. The other 35 destinations retain the established automatic expedition loop.
+- The gate requires those fictional interactions plus a saved reflection whose UID resolves uniquely to a current project concept. It uses the existing reflection quest claim for its personal relic reward. Historical claims, saved gate activation, or a cleared room cannot substitute for current concept identity; the check does not qualify the reflection as correct or up to date with later source changes.
+- Sector position, creature interactions, and clear have their own project-scoped versioned save. They do not change automatic combat turns, creature sightings, gold, XP, or canonical meaning. The static tile layer is drawn once; only visible camera and sprite motion redraw while the game is open. Reduced motion removes walk interpolation.
+
 ## Adventure catalog
 
 - Six fictional regions contain 36 distinct scene destinations, with route-specific rosters, guardians, difficulty, and reward or threat conditions. Their game IDs are separate from canonical ontology UIDs. Construction and reading unlock them; combat XP alone does not.
@@ -51,6 +57,9 @@ A person develops a project and records its ontology and wiki, then sees those r
 ## Excludes
 - Direct canonical writes by the game, automatic agent requests, accepted meaning, semantic quality scores, code-defect detection by monsters, approval-only rewards, cloud accounts, and claims that previewing an excerpt proves understanding.
 - Direct Git-commit, coding-time, or LLM-authorship measurement. An implementation-path record does not establish that the source exists or is correct.
+
+## Direct sector evidence
+- `companion-sector.ts` owns sector collision, interactions, save parsing, and the gate invariant; `CompanionSector.tsx` draws the tile world and contextual controls. `tests/e2e/companion-sector.spec.ts` covers direct traversal, the source-bound gate, and viewport fit.
 
 ## Evidence
 - `src/features/agent-activity/ui/CompanionHome.tsx` owns existing entries and preserved drafts; `CompanionGrowth.tsx` owns the persistent world and keyboard panels.

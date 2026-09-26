@@ -64,6 +64,14 @@ and travels through 36 destinations across six fictional regions, meeting 108 or
 creatures. Five-floor expeditions offer three-way blessings, an active dodge,
 and a final guardian. A closer pixel combat floor keeps the fox and creature on
 the same ground; a visible incoming strike gives Space dodge a timing cue.
+The first destination also has a direct, top-down pixel sector. Choose **Explore on
+foot** on the map, move with WASD or arrows, investigate with E, and scan with Q.
+Meet Curio, follow a friendly signal mote, and read and reflect on a current
+project concept to open the exit. Only this first sector has direct traversal;
+the other destinations retain the existing automatic expedition loop. Sector
+position and encounters save separately by project, while the evidence gate
+rechecks that the saved reflection still names a current, uniquely resolved
+concept rather than trusting an old clear.
 Click or tap a creature to cast a ready knowledge wave; action slots show the
 remaining cooldown turns, and Space moves the fox immediately during a warning.
 Opening an in-game panel pauses combat until it closes; leaving the game still

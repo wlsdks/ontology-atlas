@@ -26,6 +26,7 @@
 .noteForm { display:grid; min-height:0; gap:0.75rem; }
 /* The outer game always stays edge-to-edge, including short landscape windows. */
 .homeDialog {padding:0;gap:0;}
+.homeDialog:has([data-sector-active='true']){max-width:calc(100vw - var(--chrome-inset)*2);height:calc(100dvh - var(--chrome-inset)*2);max-height:none}
 .optionalCopy{flex:none;}
 @media(max-height:650px){.optionalCopy{display:none}.fixedPanel,.panelPage,.noteForm{gap:0.25rem}.compactMemoryForm{display:flex;flex-direction:column;gap:0.5rem}}
 @media(min-width:700px) and (max-height:650px){
