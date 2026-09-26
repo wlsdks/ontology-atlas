@@ -3,6 +3,7 @@ import type {} from './atlas-map-probe';
 
 import { FIXTURE_VAULT } from './fixture-vault';
 import { seedFirstRunSeen } from './first-run-seed';
+import { waitForAnimationsDone, waitForBoxStill, waitForDomQuiet } from './settle';
 import { stubDirectoryPicker } from './vault-picker-stub';
 
 async function mountFixture(page: import('@playwright/test').Page) {
@@ -19,7 +20,9 @@ async function mountFixture(page: import('@playwright/test').Page) {
     timeout: 30_000,
   });
   await indexSearch.fill('');
-  await page.waitForTimeout(500);
+  // The cleared search has re-rendered the whole index before the next step searches again.
+  await expect(indexSearch).toHaveValue('');
+  await waitForDomQuiet(page);
 }
 
 async function openCheckoutEditor(page: import('@playwright/test').Page) {
@@ -195,7 +198,9 @@ test('contextual editor stays inside the responsive workbench and every control 
 
   for (const viewport of matrix) {
     await page.setViewportSize(viewport);
-    await page.waitForTimeout(250);
+    // A rect is a fact that follows layout: read it once the workbench has reflowed.
+    await waitForAnimationsDone(page.locator('html'));
+    await waitForBoxStill(page.getByTestId('meaning-editor-panel'));
     const metrics = await page.evaluate(() => {
       const panel = document.querySelector<HTMLElement>('[data-testid="meaning-editor-panel"]');
       if (!panel) return null;

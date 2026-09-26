@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
 import { DAY_ONE_BINARY_BASE64, DAY_ONE_TEXT, dayOneRuntimes } from "./library-day-one-fixture";
+import { waitForAnimationsDone, waitForDomQuiet, waitFrames } from "./settle";
 
 /**
  * **The Library's first day, with no coding agent — slice U2's three proofs.**
@@ -213,14 +214,14 @@ async function openLibrary(page: Page) {
  * had just passed. A capture that lags the assertion is worse than no capture: it is
  * evidence *against* a change that actually works.
  *
- * Two frames plus a short settle is what closed it. It is not a `waitFor` on content —
- * the content is already asserted above every call site — it is a wait on compositing.
+ * It is not a `waitFor` on content — the content is already asserted above every call
+ * site — it is a wait on the screen catching up: the markup has stopped changing, every
+ * finite transition has run out, and two more frames have been painted from that state.
  */
 async function captureSettled(page: Page, path: string) {
-  await page.evaluate(
-    () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(null)))),
-  );
-  await page.waitForTimeout(700);
+  await waitForDomQuiet(page);
+  await waitForAnimationsDone(page.locator("html"));
+  await waitFrames(page, 2);
   await page.screenshot({ path });
 }
 

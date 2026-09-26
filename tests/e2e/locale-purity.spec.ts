@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForPageSettled } from "./settle";
 
 /**
  * Fails when Korean is **rendered** on an English screen.
@@ -48,8 +49,8 @@ test.describe("영문 화면 어권 순도", () => {
   for (const route of VAULT_FREE_EN_ROUTES) {
     test(`${route} 에 한국어가 렌더되지 않는다`, async ({ page }) => {
       await page.goto(route, { waitUntil: "domcontentloaded" });
-      // The form and preview fill in after hydration.
-      await page.waitForTimeout(1500);
+      // The form and preview fill in after hydration; read them once they have.
+      await waitForPageSettled(page);
 
       const hits = await page.evaluate((hangulSource) => {
         const hangul = new RegExp(hangulSource);

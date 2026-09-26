@@ -3,6 +3,7 @@ import { mkdirSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
 import { installDesktopRailRuntime, type ModelsStubOptions } from "./desktop-rail-arrival-harness";
+import { waitForAnimationsDone, waitForBoxStill } from "./settle";
 
 /**
  * **Agents → Models** (owner, 2026-09-25): API keys, local runners, the experimental Jev check and
@@ -71,7 +72,8 @@ async function capture(page: Page, name: string, focusTestId?: string) {
     await page.getByTestId(focusTestId).evaluate((el) => el.scrollIntoView({ block: "center" }));
   }
   // Let a closing disclosure and a toast settle, so the capture shows the state, not a transition.
-  await page.waitForTimeout(450);
+  await waitForAnimationsDone(page.locator("body"));
+  if (focusTestId) await waitForBoxStill(page.getByTestId(focusTestId));
   await page.screenshot({ path: `${CAPTURE_DIR}/${name}.png` });
 }
 

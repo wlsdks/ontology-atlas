@@ -232,6 +232,7 @@ test.describe("목적지 이동 단축키", () => {
     await page.keyboard.press("g");
     // ⚠️ Kept in milliseconds: this wait **is** the thing under test — it has to be
     // longer than NAV_LEADER_WINDOW_MS for the leader to have expired.
+    // measurement window: real time past the leader's expiry is the claim.
     await page.waitForTimeout(2_000);
     await page.keyboard.press("p");
     await waitFrames(page, 30);

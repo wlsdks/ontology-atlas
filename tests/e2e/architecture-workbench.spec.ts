@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { seedFirstRunSeen } from './first-run-seed';
 import { useDogfoodSample } from './sample-source';
+import { waitForAnimationsDone, waitForBoxStill } from './settle';
 
 test.use({ viewport: { width: 600, height: 900 } });
 
@@ -149,7 +150,9 @@ test('keyboard opens, closes, restores focus, and reopens the selected role', as
   /* The 380px role dock must take unused connector space before it hides a role. This is the
      installed app's 1512px width: previously the final role sat partly behind the dock and the
      toolbar looked fixed while the first real action broke the canvas beneath it. */
-  await page.waitForTimeout(240);
+  await waitForAnimationsDone(page.locator('body'));
+  await waitForBoxStill(page.getByTestId('architecture-graph'));
+  await waitForBoxStill(page.getByTestId('architecture-graph-box-application'));
   const selectedFit = await page.getByTestId('architecture-graph').evaluate((svg) => {
     const viewport = svg.parentElement!.getBoundingClientRect();
     const boxes = [...svg.querySelectorAll('[data-testid^="architecture-graph-box-"]')];

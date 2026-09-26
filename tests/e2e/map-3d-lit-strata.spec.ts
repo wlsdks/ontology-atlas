@@ -186,7 +186,8 @@ test.describe("lit 3D map on the dogfood vault", () => {
     const target = await pickNode(page, "capability");
     await page.mouse.click(target.x, target.y);
     await expect.poll(() => probe(page, (p) => p.selection().nodeId)).toBe(target.id);
-    await page.waitForTimeout(900);
+    // Read once whatever the click set moving (the sideways nudge) has come to rest.
+    await waitForMapStill(page, { what: "camera" });
     const afterClick = await probe(page, (p) => ({ camera: p.camera(), dome: p.dome() }));
     expect(afterClick.dome!.yaw).toBeCloseTo(before.dome!.yaw, 3);
     expect(afterClick.dome!.pitch).toBeCloseTo(before.dome!.pitch, 3);
@@ -294,7 +295,11 @@ test.describe("lit 3D map on the dogfood vault", () => {
   test("Neural: lit by the same evidence, captured at rest and on a focus", async ({ page }) => {
     const { legend } = await openLit(page, "coupling", false);
     await page.mouse.move(2, 2);
-    await page.waitForTimeout(1_200);
+    // At rest: the dome has lit its evidence and the camera has stopped.
+    await expect
+      .poll(() => probe(page, (p) => { const l = p.dome()!.light; return l.current + l.stale + l.unknown; }))
+      .toBeGreaterThan(0);
+    await waitForMapStill(page, { what: "camera" });
     const light = (await probe(page, (p) => p.dome()))!.light;
     expect(light.current + light.stale + light.unknown).toBeGreaterThan(0);
     expect(light.stale).toBeLessThanOrEqual(Number(await legend.getAttribute("data-evidence-stale")));
@@ -306,19 +311,28 @@ test.describe("lit 3D map on the dogfood vault", () => {
     const target = await pickNode(page, "domain");
     // Sample the camera on every frame through the flight: the fly-to is 800 ms and eases out.
     await page.evaluate(() => {
-      const host = window as unknown as { flySamples: { t: number; s: number }[]; __atlasMap: { camera(): { scale: number } } };
+      const host = window as unknown as {
+        flySamples: { t: number; s: number }[];
+        flySamplesDone: boolean;
+        __atlasMap: { camera(): { scale: number } };
+      };
       host.flySamples = [];
+      host.flySamplesDone = false;
       const start = performance.now();
       const tick = () => {
         host.flySamples.push({ t: performance.now() - start, s: host.__atlasMap.camera().scale });
+        // measurement window: the claim is the flight's shape, sampled on every frame for 2 s.
         if (performance.now() - start < 2_000) requestAnimationFrame(tick);
+        else host.flySamplesDone = true;
       };
       requestAnimationFrame(tick);
     });
     await page.mouse.dblclick(target.x, target.y);
     await expect.poll(() => probe(page, (p) => p.dome()!.flight)).toBe(target.id);
     await page.mouse.move(2, 2);
-    await page.waitForTimeout(1_400);
+    await page.waitForFunction(() => (window as unknown as { flySamplesDone?: boolean }).flySamplesDone === true, undefined, {
+      timeout: 30_000,
+    });
     const samples = await page.evaluate(() => (window as unknown as { flySamples: { t: number; s: number }[] }).flySamples);
     const end = samples.at(-1)!.s;
     const moving = samples.filter((x, i) => i > 0 && Math.abs(x.s - samples[i - 1]!.s) > 1e-5);

@@ -102,7 +102,11 @@ test('verified read work appears beside its status in READ and terminal state re
   await expect(mascot).toHaveAttribute('data-state', 'success', { timeout: 30_000 });
   await expect(mascot).toContainText('The verified agent work completed.');
   if (evidenceDir) {
-    await page.waitForTimeout(360);
+    // The capture shows the success pose once its sprite sheet is the one painted.
+    await expect(mascot.locator('[data-mascot-state="success"]')).toHaveCSS(
+      'background-image',
+      /mascot-success-row\.png/,
+    );
     await mascot.screenshot({ path: `${evidenceDir}/success-pose.png` });
   }
   await expect(mascot).toBeHidden({ timeout: 5_000 });
@@ -268,6 +272,8 @@ test('every opaque mascot frame stays clear of dense-map node ink', async ({ pag
         nearestGap,
       };
     }));
+    // measurement window: three samples spread across the dense map's arrival, so a clearance
+    // that holds only at one instant of the layout cannot pass for "every frame".
     await page.waitForTimeout(500);
   }
 
