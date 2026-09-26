@@ -108,12 +108,14 @@
 .worldEnemy[data-targetable='true']::after{content:'';position:absolute;left:50%;top:-16px;width:24px;height:14px;transform:translateX(-50%);background:var(--color-amber-source-text-a95);clip-path:polygon(0 0,50% 55%,100% 0,100% 42%,50% 100%,0 42%);filter:drop-shadow(0 2px 1px var(--color-canvas));pointer-events:none;opacity:.72;transition:opacity var(--motion-fast),translate var(--motion-fast)}
 .worldEnemy[data-targetable='true']:hover::after{opacity:1;translate:0 -3px}
 .worldViewport[data-mode='expedition'] .worldEnemy > .creature{width:130px;height:130px}
-.worldViewport[data-mode='expedition'] .worldEnemy > .creature[data-grove-v2='true']{width:150px;height:150px}
-.worldViewport[data-mode='expedition'] .worldEnemy > .creature[data-grove-guardian='true']{width:170px;height:170px}
+.worldViewport[data-mode='expedition'] .worldEnemy > .creature[data-detailed-v2='true']{width:150px;height:150px}
+.worldViewport[data-mode='expedition'] .worldEnemy > .creature[data-detailed-guardian='true']{width:170px;height:170px}
 .worldViewport[data-mode='expedition'] .worldEnemy::before{content:'';position:absolute;left:50%;bottom:0;width:72px;height:14px;border-radius:50%;background:var(--overlay-scrim);opacity:.55;transform:translateX(-50%)}
 .creature{display:inline-block;flex-shrink:0;width:56px;height:56px;background-size:600% 300%;background-repeat:no-repeat;image-rendering:pixelated;transform-origin:50% 100%}
-.groveCreature{position:absolute;inset:0;background-size:300% 200%;background-repeat:no-repeat;image-rendering:pixelated;clip-path:inset(0 8% 0 8%)}
+.sheetCreature{position:absolute;inset:0;background-size:300% 200%;background-repeat:no-repeat;image-rendering:pixelated}
+.creature[data-region='grove'] .sheetCreature{clip-path:inset(0 8% 0 8%)}
 .guardianCreature{position:absolute;inset:0;background-size:contain;background-position:center bottom;background-repeat:no-repeat;image-rendering:pixelated}
+.worldEnemy > .creature[data-region='foundry'] .sheetCreature,.worldEnemy > .creature[data-region='foundry'] .guardianCreature{translate:0 var(--foundry-ground-offset)}
 .creature[data-large='true']{width:100px;height:100px}
 .creature[data-unknown='true']{filter:brightness(.1);opacity:.65}
 .worldEnemy > .creature{animation:creatureBreathe 1.8s steps(4,end) infinite}
