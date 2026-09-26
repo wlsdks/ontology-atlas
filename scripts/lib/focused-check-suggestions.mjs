@@ -1,1438 +1,113 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 
 import { isSupportedSourcePath } from '../quality/source-language/source-paths.mjs';
 
 /**
- * The one list of files that ARE the CI planner. `classify-change.mjs` imports
- * it as its full-plan trigger (PLANNER_SURFACE), so the "planner changes run
- * exhaustive lanes" promise and this advisor rule can never drift apart — the
- * 2026-09-01 review caught the hand-copied pair disagreeing about
- * setup-playwright/action.yml, which then rode a focused plan built on the
- * assumption the CI infrastructure had not changed.
+ * The changed-path focused-check advisor: which checks a set of changed paths
+ * should run first.
+ *
+ * **To add a check, add a rule file under `scripts/lib/check-rules/<area>.mjs`**
+ * (or append to the area file that already owns the subject). Nothing else
+ * needs an edit: this module reads that directory at load time, so a new file
+ * is picked up without touching an index. The rule table used to live here, a
+ * 1,700-line registry every new check appended to at the same anchor, and two
+ * branches doing that on one day conflicted twice (2026-09-26).
+ *
+ * A rule file exports any of:
+ *
+ * - `rules`: `{ order?, command, reason, matches: RegExp[] }[]`, the first checks.
+ * - `escalations`: the same shape, printed as "escalate when needed".
+ * - `directTests`: `{ mcp?, cli?, script?, focusedCheck?: [source, test][] }`,
+ *   sibling tests run directly when their source or the test itself changes.
+ *
+ * `order` decides the printed order across every file, and, when two rules
+ * name the same command, which rule's reason and paths are shown (the lower
+ * one). Ties, and rules without an `order`, which sort after every ordered
+ * rule, fall back to file name and then position in the file. The existing
+ * rules carry their former position in the one table times ten, so a new rule
+ * can sit between two of them without renumbering anything.
  */
-export const BROWSER_EXECUTION_SURFACE_PATTERNS = Object.freeze([
-  /^scripts\/run-playwright-ci(?:\.test)?\.mjs$/,
-  /^scripts\/data\/playwright-file-durations\.json$/,
-]);
+export const CHECK_RULES_DIRECTORY = new URL('./check-rules/', import.meta.url);
 
-export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
-  /^scripts\/(?:lib\/)?reviewed-main-push(?:\.test)?\.mjs$/,
-  /^scripts\/fixtures\/reviewed-main-push\.json$/,
-  /^scripts\/classify-change(?:\.test)?\.mjs$/,
-  /^scripts\/run-ci-lane(?:\.test)?\.mjs$/,
-  /^scripts\/lib\/focused-check-suggestions(?:\.test)?\.mjs$/,
-  /^scripts\/suggest-focused-checks(?:\.test)?\.mjs$/,
-  /^\.github\/workflows\/(?:checks|e2e)\.yml$/,
-  /^\.github\/actions\/setup-playwright\/action\.yml$/,
-]);
+export { BROWSER_EXECUTION_SURFACE_PATTERNS, CI_PLANNER_SURFACE_PATTERNS } from './check-rules/ci.mjs';
 
-/** An authored message part, `messages/<locale>/<Namespace>.json`. */
-const MESSAGE_PART = /^messages\/[^/]+\/[^/]+\.json$/;
-/** A part, or the composite a pre-split branch still tracks. */
-const MESSAGE_CATALOGUE = /^messages\/(?:[^/]+\/)?[^/]+\.json$/;
+const DIRECT_TEST_KINDS = ['mcp', 'cli', 'script', 'focusedCheck'];
 
-const RULES = [
-  {
-    command: 'pnpm test:backlog && pnpm backlog:check',
-    reason: 'independent backlog records, their writer, or current-state composition changed',
-    matches: [/^scripts\/backlog(?:\.test)?\.mjs$/, /^docs\/records\/backlog\//, /^docs\/BACKLOG(?:-SNAPSHOT-[^/]+)?\.md$/],
-  },
-  {
-    command: 'pnpm test:lessons && pnpm lessons:check',
-    reason: 'harness lessons, their writer, or verdict composition changed',
-    matches: [/^scripts\/(?:lessons|new-record)(?:\.test)?\.mjs$/, /^docs\/records\/lessons\//],
-  },
-  { command: 'pnpm test:mcp:rpc', reason: 'stdio integration harness lifecycle changed', matches: [/^scripts\/lib\/mcp-test-rpc(?:\.test)?\.mjs$/, /^mcp\/src\/integration\.test\.mjs$/] },
-  { command: 'pnpm mcp:catalogue:check', reason: 'captured registry inputs changed', matches: [/^scripts\/data\/mcp-registry-snapshot\.json$/] },
-  {
-    command: 'node --test scripts/run-playwright-ci.test.mjs',
-    reason: 'browser file allocation, coverage verification, or timing estimates changed',
-    matches: [/^scripts\/run-playwright-ci(?:\.test)?\.mjs$/, /^scripts\/data\/playwright-file-durations\.json$/, /^scripts\/run-ci-lane(?:\.test)?\.mjs$/],
-  },
-  { command: 'node --test scripts/prepush.test.mjs', reason: 'pre-push scope or failure propagation changed', matches: [/^scripts\/prepush(?:-unit-plan)?(?:\.test)?\.mjs$/, /^\.githooks\/pre-push$/, /^scripts\/suggest-focused-checks\.mjs$/] },
-  {
-    command: 'pnpm test:ci:impact',
-    reason: 'CI impact planner, executor, or workflow wiring changed',
-    matches: [...CI_PLANNER_SURFACE_PATTERNS, ...BROWSER_EXECUTION_SURFACE_PATTERNS],
-  },
-  {
-    // The lander decides when a pull request is safe to merge; its state
-    // machine is the one place a wrong verdict merges something untested.
-    command: 'pnpm test:pr:land',
-    reason: 'the landing sequence or its state machine changed',
-    matches: [/^scripts\/pr-land(?:\.test)?\.mjs$/, /^scripts\/lib\/landing-train(?:\.test)?\.mjs$/],
-  },
-  {
-    // 2026-09-01 review: check:tokens and design:toc:check were unconditional
-    // CI steps before the impact-aware rework and existed afterwards only in
-    // the push-to-main full lane — a raw color slipping into globals.css or a
-    // stale DESIGN-SYSTEM.md table of contents merged green and turned main
-    // red after the fact.
-    command: 'pnpm check:tokens',
-    reason: 'styles or ramp registries changed — the raw-color and token gates apply',
-    matches: [/^app\/globals\.css$/, /^src\/.+\.css$/, /^src\/shared\/lib\/cn\.ts$/],
-  },
-  {
-    command: 'pnpm design:toc:check',
-    reason: 'the design system document changed and its table of contents is generated',
-    matches: [/^docs\/DESIGN-SYSTEM\.md$/],
-  },
-  {
-    // cli/src/lib has had this aggregate for a while (test:cli:lib below);
-    // cli/src/commands never got its twin, so a command suite whose file name
-    // is not the sibling `<command>.test.mjs` — relate.snapshot-write,
-    // validate.exit-codes — ran only inside `pnpm package:check` on the
-    // push-to-main lane and on no pull request at all (2026-09-01 review).
-    command: 'pnpm test:cli:commands',
-    reason: 'a CLI command implementation changed',
-    matches: [/^cli\/src\/commands\//],
-  },
-  {
-    command: 'pnpm test:mcp:registration',
-    reason: 'MCP source-checkout registration templates changed',
-    matches: [/^\.mcp\.json(?:\.example)?$/, /^\.codex\/config\.toml$/],
-  },
-  {
-    // The ecosystem channel is two artifacts and one metadata entry, and the
-    // pieces verify each other: the image's ownership label must repeat the
-    // registry name, and the release must upload the exact artifact name the
-    // entry points at. Editing any one piece alone is how that agreement breaks.
-    command: 'pnpm test:mcp:bundle && pnpm mcp:registry:check',
-    reason: 'the MCP ecosystem channel changed — bundle build, container image, registry entry, or release upload',
-    matches: [
-      /^scripts\/(?:build-mcp-bundle|build-server-json)\.mjs$/,
-      /^scripts\/lib\/mcp-bundle\.mjs$/,
-      /^scripts\/mcp-bundle\.test\.mjs$/,
-      /^mcp\/Dockerfile$/,
-      /^mcp\/package\.json$/,
-      /^\.github\/workflows\/release-macos\.yml$/,
-    ],
-  },
-  {
-    command: 'pnpm docs-vault:build',
-    reason: 'static docs-vault input or generated output changed',
-    // Every build input and every generated output (bug sweep 2026-09-01): the
-    // storefront sample is a build input, and a hand edit to any generated
-    // file — content.json, headings, gateway-*, sample-storefront.*, the
-    // public copies — is exactly what the check exists to flag. The old list
-    // covered only docs/**.md and manifest.json, so those edits got a green
-    // advisor run before the pre-commit hook's broader grep caught them.
-    matches: [
-      /^docs\/.+\.md$/,
-      /^docs\/records\/.+\.json$/,
-      /^samples\/storefront\/.+\.md$/,
-      /^src\/entities\/docs-vault\/data\//,
-      /^public\/docs-vault\//,
-    ],
-  },
-  {
-    command: 'pnpm test:records',
-    reason: 'immutable record composition or writers changed',
-    matches: [/^scripts\/(?:lib\/(?:record-ledgers|po-pilot-records)|new-record|po-record)(?:\.test)?\.mjs$/, /^docs\/records\//],
-  },
-  {
-    command: 'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
-    reason: 'authored bundled-vault inputs changed — measure generated bytes without a Next build',
-    matches: [/^docs\/.+\.(?:md|json)$/, /^samples\/storefront\/.+\.md$/],
-  },
-  {
-    command: 'pnpm test:docs-vault',
-    reason: 'docs-vault build/check, conflict-recovery helper, or a file the worktree-materialization test copies changed',
-    // The materialization test copies a hand-picked file set into a scratch repository, so a new
-    // import in any of those files breaks it without touching the test (lesson on new-record.mjs
-    // importing lessons.mjs, 2026-09-26).
-    matches: [
-      /^scripts\/(?:build-docs-vault|build-messages|resolve-docs-vault-conflicts|prepare-worktree|new-record|lessons|worktree-materialization)\.(?:mjs|test\.mjs)$/,
-      /^\.githooks\/post-(?:checkout|merge)$/,
-      /^scripts\/lib\/(?:record-ledgers|po-pilot-records|parse-frontmatter)\.(?:mjs|test\.mjs)$/,
-    ],
-  },
-  {
-    command: 'pnpm docs:language',
-    reason: 'authored Markdown must not add unexplained Korean prose',
-    matches: [/\.md$/, /^scripts\/quality\/markdown-language\//],
-  },
-  {
-    command: 'pnpm test:docs:language',
-    reason: 'Markdown language inventory or ratchet implementation changed',
-    matches: [/^scripts\/quality\/markdown-language\//],
-  },
-  {
-    command: 'pnpm test:source:language',
-    reason: 'source-comment language inventory or ratchet implementation changed',
-    matches: [/^scripts\/quality\/source-language\//],
-  },
-  {
-    command: 'pnpm knip',
-    reason: 'dead-code analyzer scope, configuration, package, or implementation changed',
-    matches: [
-      /^(?:app|src)\/.+\.(?:[cm]?[jt]sx?|css)$/,
-      /^scripts\/(?:quality\/dead-code\/.+|.+\.(?:mjs|js))$/,
-      /^cli\/(?:src\/|package(?:-lock)?\.json$|pnpm-lock\.yaml$)/,
-      /^mcp\/(?:src\/|scripts\/|package(?:-lock)?\.json$|pnpm-lock\.yaml$)/,
-      /^(?:package(?:-lock)?\.json|pnpm-lock\.yaml|next\.config\.ts|tsconfig(?:\.[^/]+)?\.json|vitest\.config\.ts|playwright\.config\.ts|postcss\.config\.mjs)$/,
-    ],
-  },
-  {
-    // The accident this net actually catches is "a document moved or the vault was
-    // regenerated but the prose citing it stayed", which only happens in a PR that
-    // touched markdown — so markdown is also the trigger for the suggestion.
-    command: 'pnpm docs:links',
-    reason: 'markdown moved or edited — cited paths and links may have gone stale',
-    matches: [/\.md$/],
-  },
-  {
-    // Living documents carry their kind, status and area; a new or edited one,
-    // a template, the kind table or the move map can each break that.
-    command: 'pnpm docs:meta && pnpm docs:move -- --check',
-    reason: 'a living document, template, document kind or move changed — metadata and moved paths must stay current',
-    matches: [/^docs\/(?!ontology\/|records\/(?!README)|archive\/|audits\/|benchmark\/|prototypes\/|(?:DECISIONS|CHANGELOG|PO-PILOT)\.md$|BACKLOG-SNAPSHOT-).+\.md$/, /^docs\/\.moved\.json$/, /^scripts\/lib\/doc-types\.mjs$/],
-  },
-  {
-    command: 'pnpm test:guide-examples',
-    reason: 'public guide ontology examples and the external judgment probe must satisfy their contracts',
-    matches: [
-      /^docs\/guide\/[^/]+\.md$/,
-      /^examples\/external-judgment\//,
-      /^scripts\/check-guide-frontmatter-examples\.test\.mjs$/,
-    ],
-  },
-  {
-    command: 'pnpm docs:surface:check',
-    reason: 'MCP tool registry, CLI command registry, or their READMEs changed',
-    matches: [
-      /^mcp\/src\/index\.js$/,
-      /^cli\/src\/lib\/cli-commands\.mjs$/,
-      /^mcp\/README\.md$/,
-      /^cli\/README\.md$/,
-      /^docs\/\.generated\/mcp-surface\.json$/,
-    ],
-  },
-  {
-    command: 'pnpm test:docs:checks',
-    reason: 'docs surface, doc-link, doc-metadata or doc-move tooling changed',
-    matches: [
-      /^scripts\/build-docs-surface\.(?:mjs|test\.mjs)$/,
-      /^scripts\/check-doc-links\.(?:mjs|test\.mjs)$/,
-      /^scripts\/(?:check-doc-meta|docs-move|new-doc|doc-history)\.(?:mjs|test\.mjs)$/,
-      /^scripts\/lib\/(?:docs-surface|doc-links|doc-types)\.mjs$/,
-    ],
-  },
-  {
-    command: 'pnpm test:mcp:docs',
-    reason: 'GitHub workflow or community template changed',
-    matches: [
-      /^\.github\/workflows\/release-macos\.yml$/,
-      /^\.github\/PULL_REQUEST_TEMPLATE\.md$/,
-      /^\.github\/DISCUSSIONS-CATEGORIES\.md$/,
-      /^\.github\/ISSUE_TEMPLATE\/[^/]+\.yml$/,
-    ],
-  },
-  {
-    command: 'pnpm test:meaning-corpus',
-    reason: 'business meaning corpus evaluator or its fixtures changed',
-    matches: [
-      /^scripts\/evaluate-meaning-corpus(?:\.test)?\.mjs$/,
-      /^tests\/fixtures\/meaning-corpus\//,
-    ],
-  },
-  {
-    command: 'pnpm test:vault:validate',
-    reason: 'vault validator script changed',
-    matches: [/^scripts\/validate-vault(?:-script)?\.test\.mjs$/, /^scripts\/validate-vault\.mjs$/],
-  },
-  {
-    command: 'pnpm test:vault:audit',
-    reason: 'vault path audit script changed',
-    matches: [/^scripts\/audit-vault-paths\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm test:desktop:check',
-    reason: 'desktop readiness checker contract changed',
-    matches: [
-      /^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/,
-      /^scripts\/desktop-doctor\.(?:mjs|test\.mjs)$/,
-      /^scripts\/desktop-smoke\.(?:mjs|test\.mjs)$/,
-      /^scripts\/verify-macos-app-launch(?:\.[^/]+)?\.mjs$/,
-      /^scripts\/lib\/verify-macos\/[^/]+\.mjs$/,
-      /^scripts\/verify-macos-dmg\.mjs$/,
-      /^scripts\/verify-macos-install-smoke\.mjs$/,
-      /^scripts\/lib\/macos-dmg-layout\.(?:mjs|test\.mjs)$/,
-      /^scripts\/lib\/redact-command\.(?:mjs|test\.mjs)$/,
-      /^scripts\/check-macos-download-release\.mjs$/,
-      /^scripts\/build-updater-manifest\.(?:mjs|test\.mjs)$/,
-      /^scripts\/stage-macos-release-assets\.(?:mjs|test\.mjs)$/,
-      /^\.github\/workflows\/deploy-pages\.yml$/,
-    ],
-  },
-  {
-    /*
-     * The catalogue is committed data with a `--check` mode, exactly like the ACP registry beside
-     * it: a hand edit to the generated file, or a curation change that was never regenerated, is
-     * invisible in review and shows up as a row pointing at a package that does not exist. The
-     * check regenerates and diffs, and runs the generator's own tests in the same breath.
-     */
-    command: 'pnpm mcp:catalogue:check',
-    reason: 'the committed MCP connector catalogue or its generator changed',
-    matches: [
-      /^scripts\/build-mcp-catalogue\.(?:mjs|test\.mjs)$/,
-      /^src\/shared\/config\/mcp-catalogue(?:\.generated)?\.ts$/,
-    ],
-  },
-  {
-    command: 'pnpm acp:registry:check',
-    reason: 'ACP launch identity, isolation boundary, or release wiring changed',
-    matches: [
-      /^scripts\/build-acp-registry\.(?:mjs|test\.mjs)$/,
-      /^src-tauri\/src\/acp-registry\.json$/,
-      /^src-tauri\/src\/acp\.rs$/,
-      /^\.github\/workflows\/release-macos\.yml$/,
-    ],
-  },
-  {
-    // The hard desktop performance budgets used to run only in
-    // `desktop:release-preflight`, and in the meantime the bundled vault data grew
-    // until both budgets were silently exceeded (found during 2026-08-19 release prep:
-    // 1.71MiB against 1.50, 8.42MiB against 8.00). When a path that moves the budget
-    // changes — the bundled data JSON, the generator that produces it, the static
-    // import site, or the budget check itself — the measurement is suggested here. The
-    // half that runs constantly without a build is
-    // `tests/contract/bundled-vault-budget.contract.test.ts`.
-    command: 'pnpm build && pnpm desktop:perf',
-    reason: 'bundled vault data or the desktop performance budget surface changed — re-measure the static budgets',
-    matches: [
-      /^src\/entities\/docs-vault\/data\//,
-      /^scripts\/build-docs-vault\.mjs$/,
-      /^scripts\/check-desktop-performance\.(?:mjs|test\.mjs)$/,
-      /^src\/entities\/docs-vault\/lib\/static-(?:vault-source|headings)\.ts$/,
-    ],
-  },
-  {
-    command: 'pnpm test:desktop:runtime',
-    reason: 'hosted-vs-installed desktop runtime split changed',
-    matches: [
-      /^src\/views\/docs-vault\/lib\/persistence(?:\.test)?\.ts$/,
-      /^src\/views\/root-entry\/ui\/RootEntryPage(?:\.test)?\.tsx$/,
-      /^src\/widgets\/app-settings-menu\/ui\/AppSettingsMenu(?:\.test)?\.tsx$/,
-    ],
-  },
-  {
-    command: 'pnpm design:ontology',
-    reason: 'ontology workbench design surface or its guard changed',
-    matches: [
-      /^scripts\/check-ontology-design-surface\.(?:mjs|test\.mjs)$/,
-      /^src\/views\/ontology-insights\//,
-    ],
-  },
-  /*
-   * The bridge check compiles the Tauri crate, and `tauri.conf.json` names a sidecar
-   * (`src-tauri/binaries/ontology-atlas-mcp-<triple>`) that `.gitignore` excludes. In a
-   * fresh checkout or worktree `cargo test` therefore dies in the build script with
-   * "resource path ... doesn't exist" — a missing prerequisite wearing the costume of a
-   * defect, and the only place the prerequisite was written down was one line of
-   * `docs/DEVELOPMENT-CHECKS.md`. The script now builds the sidecar itself (2.6 s when
-   * it is already current), so the recommendation runs wherever it is given.
-   */
-  {
-    command: 'pnpm test:desktop:bridge',
-    reason: 'native macOS vault bridge changed',
-    matches: [
-      /^src\/shared\/lib\/tauri-vault-fs(?:\.test)?\.ts$/,
-      /^src-tauri\/src\/lib\.rs$/,
-      /^src-tauri\/Cargo\.(?:toml|lock)$/,
-    ],
-  },
-  {
-    command: 'pnpm desktop:check',
-    reason: 'macOS desktop readiness inputs changed',
-    matches: [
-      /^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/,
-      /^scripts\/desktop-doctor\.(?:mjs|test\.mjs)$/,
-      /^scripts\/desktop-smoke\.(?:mjs|test\.mjs)$/,
-      /^scripts\/verify-macos-dmg\.mjs$/,
-      /^scripts\/verify-macos-install-smoke\.mjs$/,
-      /^scripts\/lib\/macos-dmg-layout\.(?:mjs|test\.mjs)$/,
-      /^scripts\/lib\/redact-command\.(?:mjs|test\.mjs)$/,
-      /^scripts\/check-macos-download-release\.mjs$/,
-      /^scripts\/stage-macos-release-assets\.(?:mjs|test\.mjs)$/,
-      /^docs\/DESKTOP-MACOS\.md$/,
-      /^src\/views\/docs-vault\/lib\/persistence(?:\.test)?\.ts$/,
-      /^src\/shared\/lib\/tauri-vault-fs(?:\.test)?\.ts$/,
-      /^src\/views\/root-entry\/ui\/RootEntryPage(?:\.test)?\.tsx$/,
-      /^src\/views\/docs-vault\/ui\/DocsVaultPage\.tsx$/,
-      /^src\/widgets\/app-settings-menu\/ui\/AppSettingsMenu(?:\.test)?\.tsx$/,
-      /^\.github\/workflows\/deploy-pages\.yml$/,
-      /^src-tauri\//,
-      /^package\.json$/,
-      /^next\.config\.ts$/,
-    ],
-  },
-  {
-    command: 'pnpm test:vault:migrate',
-    reason: 'vault migration behavior changed',
-    matches: [
-      /^scripts\/migrate-vault\.(?:mjs|test\.mjs)$/,
-      /^scripts\/migrate-node-uids\.(?:mjs|test\.mjs)$/,
-      /^scripts\/migrations\/[^/]+\.(?:mjs|test\.mjs)$/,
-    ],
-  },
-  {
-    command: 'pnpm vault:migrate --list',
-    reason: 'vault migration inventory or runner changed',
-    matches: [
-      /^scripts\/migrate-vault\.mjs$/,
-      /^scripts\/migrations\/(?:README\.md|[^/]+\.mjs)$/,
-    ],
-  },
-  {
-    command: 'pnpm test:architecture',
-    reason: 'architecture profile, conformance, agent packet, and cross-surface parity changed',
-    matches: [
-      /^docs\/ontology\/architecture\//,
-      /^mcp\/src\/architecture-profile\.(?:mjs|test\.mjs)$/,
-      /^cli\/src\/(?:commands\/architecture|lib\/architecture-results)\.mjs$/,
-      /^src\/entities\/architecture-profile\//,
-      /^src\/views\/architecture\//,
-      /^tests\/contract\/architecture-profile\.contract\.test\.ts$/,
-      /^tests\/fixtures\/architecture-profile-cases\.mjs$/,
-    ],
-  },
-  {
-    command: 'pnpm test:e2e:sleeps && pnpm e2e:sleeps:check',
-    reason: 'an e2e spec or the fixed-sleep gate changed; a spec may not add a waitForTimeout without a measurement-window note',
-    matches: [/^tests\/e2e\/.+\.ts$/, /^scripts\/check-e2e-sleeps(?:\.test)?\.mjs$/],
-  },
-  {
-    // A companion screen edit ran only the spec it touched, so a new sector entry broke the
-    // growth journey's overflow and hit-area contracts in CI instead of locally (lesson 3b68fac4).
-    command: 'pnpm exec playwright test tests/e2e/companion-home.spec.ts tests/e2e/companion-growth.spec.ts tests/e2e/companion-learning.spec.ts tests/e2e/companion-progression.spec.ts tests/e2e/companion-sector.spec.ts',
-    reason: 'a companion screen or its model changed; its journeys share one surface, so all of them run',
-    matches: [
-      /^src\/features\/agent-activity\/(?:ui|model)\/[^/]*[Cc]ompanion[^/]*$/,
-      /^tests\/e2e\/companion-[^/]+\.spec\.ts$/,
-    ],
-  },
-  {
-    command: 'pnpm exec playwright test tests/e2e/architecture-workbench.spec.ts',
-    reason: 'Architecture workflow reachability, scroll anchoring, or mobile navigation changed',
-    matches: [
-      /^src\/views\/architecture\//,
-      /^src\/widgets\/bottom-tab-bar\/ui\/BottomTabBar\.tsx$/,
-      /^tests\/e2e\/architecture-workbench\.spec\.ts$/,
-    ],
-  },
-  {
-    command: 'pnpm test:contracts',
-    reason:
-      'cross-package parser/schema contract, or a UI file the design-system and a11y contracts scan from disk',
-    matches: [
-      // 2026-08-04 — for a new `.tsx` view and a new route this advisor suggested
-      // nothing beyond tsc and i18n. But several gates in `tests/contract/` **read the
-      // file system directly**: ramp coverage, the named-utility ratchet, the control
-      // adoption ratchet, forbidden classes, inline hex, surface motion, label
-      // decoration, and `audited-route-coverage`, which classifies routes. A newly
-      // created UI file is their input, not somebody else's business.
-      /^(?:src|app)\/.*\.tsx$/,
-      /^tests\/contract\//,
-      /^tests\/fixtures\/(?:frontmatter|frontmatter-writer|validate-vault|vault-schema)-cases\.mjs$/,
-      /^mcp\/src\/(?:parser|schema|validate)\.mjs$/,
-      /^cli\/src\/lib\/(?:parse-frontmatter|schema|validate)\.mjs$/,
-      /^cli\/src\/commands\/validate\.mjs$/,
-      /^scripts\/lib\/parse-frontmatter\.mjs$/,
-      /^src\/shared\/lib\/(?:parse-frontmatter|validate-vault-document)\.ts$/,
-      /^scripts\/migrate-vault\.mjs$/,
-      /^scripts\/migrations\/[^/]+\.mjs$/,
-    ],
-  },
-  {
-    command: 'pnpm test:mcp:unit',
-    reason: 'MCP source or unit contract changed',
-    matches: [
-      /^mcp\/src\/(?!integration\.test\.mjs$)[^/]+\.(?:mjs|js)$/,
-      /^tests\/fixtures\/source-hidden-field-trial\/v1\.json$/,
-    ],
-  },
-  {
-    command: 'pnpm integration:mcp:surface',
-    reason: 'MCP JSON-RPC tool registry or handler surface changed',
-    matches: [/^mcp\/src\/index\.js$/],
-  },
-  {
-    command: 'pnpm integration:mcp',
-    reason: 'MCP integration test harness or broad integration contract changed',
-    matches: [/^mcp\/src\/integration\.test\.mjs$/],
-  },
-  {
-    command: 'pnpm integration:mcp:graph',
-    reason: 'MCP graph artifact/query handler surface changed',
-    matches: [/^mcp\/src\/(?:ontology-compiler|ontology-engine)\.mjs$/],
-  },
-  {
-    command: 'pnpm integration:mcp:repo-analysis',
-    reason: 'MCP code-to-vault analysis handler surface changed',
-    matches: [/^mcp\/src\/(?:analyze|architecture-profile|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports)\.mjs$/, /^tsconfig\.json$/],
-  },
-  {
-    command: 'pnpm integration:mcp:vault-read',
-    reason: 'MCP vault/frontmatter read handler surface changed',
-    matches: [/^mcp\/src\/(?:validate|vault)\.mjs$/],
-  },
-  {
-    command: 'pnpm integration:mcp:read',
-    reason: 'MCP read/query tool handler surface changed',
-    matches: [
-      /^mcp\/src\/query\.mjs$/,
-    ],
-  },
-  {
-    command: 'pnpm integration:mcp:write',
-    reason: 'MCP write tool handler surface changed',
-    matches: [/^mcp\/src\/(?:index|vault)\.(?:mjs|js)$/],
-  },
-  {
-    command: 'pnpm test:dogfood:script-refs',
-    reason: 'help text, package-script references, or focused wrapper behavior changed',
-    matches: [
-      /^package\.json$/,
-      /^scripts\/lib\/pnpm-script-refs\.(?:mjs|test\.mjs)$/,
-      /^scripts\/lib\/test-name-pattern\.(?:mjs|test\.mjs)$/,
-      /^scripts\/lib\/check-mcp-source-dependencies\.(?:mjs|test\.mjs)$/,
-      /^scripts\/run-focused-node-test\.(?:mjs|test\.mjs)$/,
-      /^scripts\/dogfood-mcp-walk\.(?:mjs|test\.mjs)$/,
-      /^cli\/src\/commands\/mcp-verify\.mjs$/,
-      /^mcp\/scripts\/verify\.mjs$/,
-      /^README\.md$/,
-      /^docs\/DEVELOPMENT-CHECKS\.md$/,
-      /^docs\/benchmark\/README\.md$/,
-      /^mcp\/README\.md$/,
-      /^cli\/README\.md$/,
-      /^scripts\/migrations\/README\.md$/,
-      /^\.agents\/skills\/[^/]+\/SKILL\.md$/,
-      /^\.claude\/rules\/[^/]+\.md$/,
-      /^\.claude\/skills\/[^/]+\/SKILL\.md$/,
-    ],
-  },
-  {
-    // The finder is the only retrieval the ledger has; its parser is pinned
-    // against the live label census, so its own edits re-run that pin.
-    command: 'pnpm test:decisions',
-    reason: 'the decision-ledger finder, its record template, or the gate that applies them changed',
-    matches: [
-      /^scripts\/decisions-find(?:\.test)?\.mjs$/,
-      /^scripts\/lib\/decision-record-template(?:\.test)?\.mjs$/,
-      /^scripts\/check-decision-record\.mjs$/,
-    ],
-  },
-  {
-    command: 'pnpm changelog:check',
-    reason: 'a changelog entry was added or edited; it must fit the entry template',
-    matches: [/^docs\/CHANGELOG\.md$/, /^docs\/records\/(?:changes|releases)\//],
-  },
-  {
-    command: 'pnpm dev-checks:check',
-    reason: 'the development-checks reference changed; entries must fit the template and name real scripts',
-    matches: [/^docs\/DEVELOPMENT-CHECKS\.md$/],
-  },
-  {
-    command: 'pnpm test:dev-checks',
-    reason: 'the development-checks entry template or its gate changed',
-    matches: [/^scripts\/lib\/dev-checks-template(?:\.test)?\.mjs$/, /^scripts\/check-dev-checks\.mjs$/],
-  },
-  {
-    command: 'pnpm test:changelog',
-    reason: 'the changelog entry template or its gate changed',
-    matches: [/^scripts\/lib\/changelog-entry-template(?:\.test)?\.mjs$/, /^scripts\/check-changelog\.mjs$/],
-  },
-  {
-    command: 'pnpm test:claude:hooks',
-    reason: 'agent hook wiring, a guard, or the commit-message gate changed',
-    /*
-     * This list named two of the four hook scripts, so editing the Git guard or
-     * the generated-output guard recommended nothing that tests them (measured
-     * 2026-08-24). A gate that covers half its own subject set is the shape this
-     * repository keeps finding; match the directories instead of enumerating
-     * files, so a new hook is covered the day it lands.
-     */
-    matches: [
-      /^\.claude\/hooks\/.+\.sh$/,
-      /^\.claude\/settings\.json$/,
-      /^\.codex\/hooks\.json$/,
-      /^\.codex\/hooks\/.+\.sh$/,
-      /^\.githooks\/(?:commit-msg|commit-msg-language\.mjs)$/,
-      /^\.gitignore$/,
-      /^scripts\/claude-hooks\.test\.mjs$/,
-    ],
-  },
-  {
-    command: 'pnpm agents:check',
-    reason: 'agent instructions changed: per-harness integrity, references, MCP grants, and the Codex cap',
-    /*
-     * CI has run this since it existed, but nothing recommended it locally, so
-     * the answer to "did I break the mirror" cost an eight-minute CI round
-     * instead of the fifty milliseconds it actually takes (measured
-     * 2026-08-24).
-     */
-    matches: [
-      /^CLAUDE\.md$/,
-      /^AGENTS\.md$/,
-      /^[^/]+\/AGENTS\.md$/,
-      /^\.claude\/(?:agents|skills|hooks|rules)\/.+/,
-      /^\.claude\/settings\.json$/,
-      /^\.agents\/.+/,
-      /^\.codex\/.+/,
-      /^\.mcp\.json$/,
-      /^cli\/src\/lib\/agent-files\.mjs$/,
-      /^cli\/src\/commands\/agent-files\.mjs$/,
-    ],
-  },
-  {
-    command: 'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
-    reason: 'one side of the agent-files pair, or a rule glob the nested pointers derive from, changed',
-    /*
-     * `cli/src/lib/agent-files.mjs` and `src/views/docs-vault/lib/agent-files.ts`
-     * are two implementations of one contract, and the nested `AGENTS.md`
-     * pointers derive their expected rule set from `.claude/rules/` frontmatter.
-     * Editing either side alone recommended neither contract, which is how a
-     * mirror silently diverged for a full iteration (measured 2026-08-24).
-     */
-    matches: [
-      /^cli\/src\/lib\/agent-files\.mjs$/,
-      /^src\/views\/docs-vault\/lib\/agent-files\.ts$/,
-      /^tests\/fixtures\/agent-files-cases\.mjs$/,
-      /^\.claude\/rules\/[^/]+\.md$/,
-      /^[^/]+\/AGENTS\.md$/,
-      /^AGENTS\.md$/,
-      /^CLAUDE\.md$/,
-      /^\.claude\/skills\/[^/]+\/SKILL\.md$/,
-      /^\.agents\/skills\/[^/]+\/SKILL\.md$/,
-      /^tests\/contract\/rules-path-scope\.contract\.test\.ts$/,
-      /^tests\/contract\/secret-read-guard\.contract\.test\.ts$/,
-      /^\.gitignore$/,
-      /^\.claude\/settings\.json$/,
-      /^package\.json$/,
-      /^\.github\/workflows\/[^/]+\.ya?ml$/,
-      /^tests\/contract\/node-test-reachability\.contract\.test\.ts$/,
-      /^tests\/contract\/agent-file-citations\.contract\.test\.ts$/,
-    ],
-  },
-  {
-    command: 'pnpm test:dogfood:args',
-    reason: 'dogfood shortcut argument helper changed',
-    matches: [/^scripts\/lib\/dogfood-args\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm test:dogfood:compile-fix',
-    reason: 'dogfood compile-fix idempotence helper changed',
-    matches: [/^scripts\/dogfood-compile-fix\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm test:checks:changed',
-    reason: 'changed-path focused-check advisor changed',
-    matches: [
-      /^scripts\/lib\/focused-check-suggestions\.(?:mjs|test\.mjs)$/,
-      /^scripts\/suggest-focused-checks\.(?:mjs|test\.mjs)$/,
-    ],
-  },
-  {
-    command: 'pnpm test:po',
-    reason: 'Atlas outcome routing, reviewer map, or measured pilot contract changed',
-    matches: [
-      /^scripts\/(?:lib\/po-(?:risk-router|pilot)|po-(?:risk-router|pilot))\.mjs$/,
-      /^scripts\/check-decision-record\.mjs$/,
-      /^tests\/contract\/po-council\.contract\.test\.ts$/,
-      /^docs\/(?:PRODUCT-OWNER-OPERATING-SYSTEM|PO-PILOT)\.md$/,
-      /^docs\/records\/po-(?:runs|updates|policy)\//,
-      /^scripts\/(?:lib\/po-pilot-records|po-record)(?:\.test)?\.mjs$/,
-      /^\.(?:claude|agents)\/skills\/po-(?:pass|council)\/SKILL\.md$/,
-      /^\.(?:claude|agents)\/agents\/(?:chief|po-(?:evidence|steward|wedge|leverage|craft))\.md$/,
-      /^AGENTS\.md$/,
-      /^package\.json$/,
-    ],
-  },
-  {
-    command: 'pnpm po:pilot -- --check',
-    reason: 'Atlas PO pilot policy or register changed — validate metrics and the forced sunset',
-    matches: [
-      /^scripts\/(?:lib\/po-(?:risk-router|pilot)|po-(?:risk-router|pilot))\.mjs$/,
-      /^scripts\/check-decision-record\.mjs$/,
-      /^tests\/contract\/po-council\.contract\.test\.ts$/,
-      /^docs\/(?:PRODUCT-OWNER-OPERATING-SYSTEM|PO-PILOT)\.md$/,
-      /^docs\/records\/po-(?:runs|updates|policy)\//,
-      /^scripts\/(?:lib\/po-pilot-records|po-record)(?:\.test)?\.mjs$/,
-      /^\.(?:claude|agents)\/skills\/po-(?:pass|council)\/SKILL\.md$/,
-      /^\.(?:claude|agents)\/agents\/(?:chief|po-(?:evidence|steward|wedge|leverage|craft))\.md$/,
-      /^AGENTS\.md$/,
-      /^package\.json$/,
-    ],
-  },
-  {
-    command: 'pnpm test:design-gates',
-    reason: 'Atlas design proof routing, iterative Computer Use contract, motion evidence, or selected-seat council policy changed',
-    matches: [
-      /^scripts\/(?:lib\/design-proof-router|design-proof-router)\.mjs$/,
-      /^scripts\/(?:lib\/design-spec-census|check-decision-record)\.mjs$/,
-      /^tests\/contract\/design-(?:proof-router|council|spec-ledger)\.contract\.test\.ts$/,
-      /^docs\/PRODUCT-DESIGN-OPERATING-SYSTEM\.md$/,
-      /^\.(?:claude|agents)\/skills\/(?:design-(?:audit|build|council|directions|system-audit)|motion-verify|responsive-sweep|map-perf|user-walkthrough)\/SKILL\.md$/,
-      /^\.(?:claude|agents)\/agents\/(?:chief|design-(?:lead|system|interaction|motion|infoviz|workbench|responsive|handoff|guardian))\.md$/,
-      /^\.claude\/rules\/design\.md$/,
-      /^AGENTS\.md$/,
-      /^package\.json$/,
-    ],
-  },
-  {
-    /*
-     * **The script that decides what CI runs had no suggestion mapping of its own**
-     * (2026-08-08). `pnpm checks:changed -- scripts/classify-change.mjs` returned "no
-     * focused mapping" — the highest-consequence script in this repository had no line
-     * pointing at its own tests. One classification defect in that file actually made
-     * main skip the entire Playwright suite.
-     */
-    command: 'pnpm exec node --test scripts/classify-change.test.mjs',
-    reason: 'the CI change classifier decides what CI runs at all',
-    matches: [/^scripts\/classify-change\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command:
-      'pnpm exec vitest run tests/contract/e2e-change-scope.contract.test.ts tests/contract/e2e-suite-split.contract.test.ts tests/contract/ci-bounded-network.contract.test.ts',
-    reason:
-      'E2E scope, required-check liveness, suite split, or bounded Playwright preparation changed',
-    matches: [
-      /^\.github\/workflows\/e2e\.yml$/,
-      /^\.github\/actions\/setup-playwright\/action\.yml$/,
-      /^tests\/contract\/(?:e2e-change-scope|e2e-suite-split|ci-bounded-network)\.contract\.test\.ts$/,
-    ],
-  },
-  {
-    /*
-     * The skill-integrity instrument. It is a discovery tool rather than a product
-     * feature, but its verdict logic is a pure function and has tests. A check the tool
-     * cannot point at is a check that does not exist.
-     */
-    command: 'pnpm test:skills:audit',
-    reason: 'Claude skill integrity instrument changed',
-    matches: [/^scripts\/audit-claude-skills\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-schema.contract.test.ts',
-    reason: 'Vitest config, setup, or test discovery changed',
-    matches: [/^vitest\.config\.ts$/, /^vitest\.setup\.ts$/],
-  },
-  {
-    command: 'pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts',
-    reason: 'Playwright config or webServer behavior changed',
-    matches: [/^playwright\.config\.ts$/],
-  },
-  {
-    command: 'pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts',
-    reason: 'global CSS, Tailwind, or PostCSS styling behavior changed',
-    matches: [/^app\/globals\.css$/, /^postcss\.config\.mjs$/],
-  },
-  {
-    command: 'pnpm exec playwright test tests/e2e/map-viewport-reframe.spec.ts',
-    reason: 'camera free-area measurement or its selected-inspector owner changed',
-    matches: [
-      /^src\/widgets\/ontology-map\/interaction\/free-area\.ts$/,
-      /^src\/views\/home\/ui\/HomePage\.tsx$/,
-    ],
-  },
-  {
-    // The installed app's probe and its payload contract can drift away from this board in
-    // silence: nothing else runs them against real HTML, so the first sign is a failed
-    // verification eight minutes into a bundle build (measured 2026-09-20, when a pinned tab
-    // count became unreachable). This spec runs both over the rendered screen in seconds.
-    command: 'pnpm exec playwright test tests/e2e/insights-app-contract.spec.ts',
-    reason: 'the insights board, the app DOM probe, or the payload contract that judges it changed',
-    matches: [
-      /^src-tauri\/src\/webview_verify\/dom_marker_probe\.js$/,
-      /^scripts\/lib\/verify-macos\/payload-contract\.mjs$/,
-      /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
-      /^src\/views\/ontology-insights\/lib\/insights-tab-state\.ts$/,
-    ],
-  },
-  {
-    /*
-     * A control that exists on one subject only is invisible to a gate that loads the bare
-     * route. The touch-target contract waited 20 seconds for a tab row the brief correctly does
-     * not draw and went red with no defect behind it (2026-09-20), and nothing recommended it
-     * for a change to this board.
-     */
-    command: 'pnpm exec playwright test tests/e2e/touch-target-contract.spec.ts',
-    reason: 'a control on the insights board, the census strip, or a shared control primitive changed',
-    matches: [
-      /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
-      /^src\/views\/ontology-insights\/ui\/tabs\/BriefTab\.tsx$/,
-      /^src\/views\/ontology-insights\/ui\/parts\/InsightsCensusStrip\.tsx$/,
-      /^src\/shared\/ui\/tab-bar\.tsx$/,
-      /^src\/shared\/ui\/segmented-control\.tsx$/,
-    ],
-  },
-  {
-    // The census strip is drawn for one subject only, so wherever it sits it can push the
-    // control a reader just clicked (measured 2026-09-20: 188px, at both 1512 and 1920).
-    command: 'pnpm exec playwright test tests/e2e/insights-board-stability.spec.ts',
-    reason: 'the insights subject row, its census strip, or the panel between them changed',
-    matches: [
-      /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
-      /^src\/views\/ontology-insights\/ui\/parts\/InsightsCensusStrip\.tsx$/,
-      /^src\/shared\/ui\/segmented-control\.tsx$/,
-    ],
-  },
-  {
-    command: 'pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts',
-    reason: 'insights census rendering or its domain-capacity consumer changed',
-    matches: [
-      /^src\/shared\/lib\/use-count-up\.ts$/,
-      /^src\/views\/ontology-insights\/lib\/census-health\.ts$/,
-      /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
-      /^src\/views\/ontology-insights\/ui\/parts\/InsightsHeroCensus\.tsx$/,
-      /^src\/views\/ontology-insights\/ui\/tabs\/OverviewTab\.tsx$/,
-      /^src\/widgets\/domain-capacity-bar\/ui\/DomainCapacityBar\.tsx$/,
-    ],
-  },
-  {
-    command: 'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
-    reason: 'topology route-state and legacy redirect behavior changed',
-    matches: [/^src\/views\/home\/ui\/HomePage\.tsx$/],
-  },
-  {
-    command: 'pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts',
-    reason: 'ontology change-review rendering changed',
-    matches: [
-      /^src\/features\/ontology-change-review\/ui\/OntologyChangeReview\.tsx$/,
-    ],
-  },
-  {
-    command: 'pnpm exec playwright test tests/e2e/touch-target-contract.spec.ts',
-    reason: 'selected-node panel touch targets changed',
-    matches: [/^src\/widgets\/ontology-map\/ui\/OntologyMapDetailPanel\.tsx$/],
-  },
-  {
-    /*
-     * ⚠️ **Editing the docs surface runs the e2e that drives it** (2026-08-08).
-     *
-     * Missing this mapping caused a real incident. #987 moved the docs header's
-     * "sample | local" radio into the vault chip menu, and
-     * `docs-deeplink.spec.ts` clicks that radio. The advisor **never once pointed at
-     * that spec**, so it was not run locally, and CI stayed red while **six more PRs
-     * merged** (2-minute timeout × 3 retries × two tests).
-     *
-     * `.claude/rules/testing.md` warns about exactly this: delete a screen and sweep
-     * its e2e specs in the same PR. That sweep was left to human memory; the tool does it instead:
-     * **a check the tool cannot point at is a check that does not exist.**
-     */
-    command:
-      'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
-    reason: 'the docs surface changed — its e2e specs drive that screen by role and testid',
-    matches: [
-      /^src\/views\/docs-vault\/.+\.tsx?$/,
-      /^src\/widgets\/docs-vault\/.+\.tsx?$/,
-    ],
-  },
-  {
-    /*
-     * ⚠️ **Editing the Agents destination runs the e2e that drives it** (2026-09-19).
-     *
-     * The same hole the docs rule above was opened for. Measured on this branch: changing
-     * `McpPage.tsx`, `ConnectorsPanel.tsx`, `agents-workspace/index.tsx`, `AgentsPage.tsx` or
-     * `McpRedirectPage.tsx` suggested **no Playwright spec at all**, while three specs drive
-     * exactly those files — including the one that proves `ontology-atlas://mcp?install=…`
-     * still opens the connectors dialog, which is the named falsifier of the 2026-09-19
-     * decision that made MCP a tab of this page. The e2e specs only ran during that work
-     * because the specs themselves were edited; a person changing the screen alone would have
-     * shipped past them.
-     *
-     * All three are true for every path listed: `mcp-connector-add` presses into the
-     * connectors card and arrives through `/mcp/`'s redirect, `agent-connect-panel-census`
-     * reaches the share pane through the rail and the tab strip, and `web-surface-smoke`
-     * registers this screen's degradation cards (`agent-server-unavailable`, the connectors
-     * card) and the tab address they are reached by.
-     */
-    command:
-      'pnpm exec playwright test tests/e2e/mcp-connector-add.spec.ts ' +
-      'tests/e2e/agent-connect-panel-census.spec.ts tests/e2e/web-surface-smoke.spec.ts',
-    reason: 'the Agents destination changed — three e2e specs drive its tabs, its connectors card and its deep link',
-    matches: [
-      /^src\/views\/(?:agents|mcp|mcp-redirect)\/.+\.tsx?$/,
-      /^src\/app\/agents-workspace\/.+\.tsx?$/,
-      /^src\/features\/mcp-connectors\/.+\.tsx?$/,
-      /^src\/widgets\/app-settings-menu\/ui\/(?:AgentSetupSection|VaultAgentSetupPanel)\.tsx$/,
-    ],
-  },
-  {
-    /*
-     * The runtime list is the other half of that destination, and only one of those three
-     * specs reaches it: `web-surface-smoke` registers `app-settings-runtimes-web`, the card a
-     * browser sees instead of the list, and asserts the link it carries. Naming the other two
-     * here would be a mapping that does not measure this file.
-     */
-    command: 'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
-    reason: 'the runtime list changed — the web surface draws its degradation card instead',
-    matches: [/^src\/widgets\/app-settings-menu\/ui\/AcpRuntimeSettings\.tsx$/],
-  },
-  {
-    // Since the surface split (2026-07-27) the web does not follow the app, so anyone
-    // touching a capability bridge easily checks only the app and moves on. The web is
-    // an unattended surface, so that pass becomes decay — touching a bridge also
-    // suggests the web smoke test.
-    command: 'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
-    reason: 'desktop capability bridge or local-vault entry changed — the web surface is unattended',
-    matches: [
-      /^src\/shared\/lib\/tauri-(?:vault-fs|git|secrets|llm)\.ts$/,
-      /^src\/shared\/lib\/desktop-shell\.ts$/,
-      /^src\/features\/docs-vault-local\/model\/use-local-vault\.ts$/,
-      /^src\/features\/first-run-starter\/ui\/FirstRunStarterModule\.tsx$/,
-      /^src-tauri\//,
-    ],
-  },
-  {
-    command: 'pnpm test:dogfood:status',
-    reason: 'dogfood status shortcut changed',
-    matches: [/^scripts\/dogfood-status\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm test:dogfood:graph-db',
-    reason: 'dogfood graph DB pack gate changed',
-    matches: [/^scripts\/dogfood-graph-db-pack\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm benchmark --dry-run',
-    reason: 'Codex benchmark runner config changed',
-    matches: [/^scripts\/benchmark\.mjs$/],
-  },
-  {
-    command: 'pnpm benchmark:change-flow --dry-run',
-    reason: 'end-to-end meaning-to-change benchmark runner config changed',
-    matches: [/^scripts\/benchmark-change-flow(?:\.test)?\.mjs$/],
-  },
-  {
-    command: 'pnpm benchmark:scale --dry-run',
-    reason: 'Codex scale benchmark runner config changed',
-    matches: [/^scripts\/benchmark-scale\.mjs$/],
-  },
-  {
-    command: 'node scripts/perf-vault.mjs 10',
-    reason: 'vault parser perf smoke changed',
-    matches: [/^scripts\/perf-vault\.mjs$/],
-  },
-  {
-    command: 'node --test scripts/perf-graph.test.mjs',
-    reason: 'graph compiler/query perf audit helper contract changed',
-    matches: [/^scripts\/perf-graph\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm perf:graph:check',
-    reason: 'graph compiler/query perf budget changed',
-    matches: [/^scripts\/perf-graph\.mjs$/],
-  },
-  {
-    command: 'pnpm perf:graph:scale',
-    reason: 'graph compiler/query scale budget changed',
-    matches: [/^scripts\/perf-graph\.mjs$/],
-  },
-  {
-    command: 'pnpm smoke:onboarding',
-    reason: 'clean onboarding smoke changed',
-    matches: [/^scripts\/smoke-clean-onboarding\.mjs$/],
-  },
-  {
-    command: 'pnpm smoke:memory-loop',
-    reason: 'fresh repo memory loop smoke changed',
-    matches: [/^scripts\/smoke-memory-loop\.mjs$/],
-  },
-  {
-    command: 'pnpm exec tsc --noEmit',
-    reason: 'TypeScript or Next.js static export config changed',
-    /*
-     * ⚠️ **Do not exclude test files** (corrected 2026-08-21).
-     *
-     * This used to exclude `.test.`/`.spec.` under `src/**` with a negative lookahead
-     * and never looked at `tests/**` at all, presumably on the premise that tests do
-     * not affect product types. But **`tsconfig.json`'s `include` is all of
-     * `**\/*.ts`**, so CI's `tsc --noEmit` checks them — and **vitest does not check
-     * types**. Anyone who edited only tests therefore had no way to meet a type error
-     * locally, and it first went red in the `Types · Lint · Docs` job.
-     *
-     * It broke exactly that way (2026-08-21, `#1180`): a fake `spawn` stub added to a
-     * contract test did not match `SpawnSyncReturns`. All 25 unit tests were green.
-     *
-     * This is what the repository already decided about gates: **wherever the check's
-     * reach differs from the advisor's reach, that difference surfaces only in CI.**
-     */
-    matches: [
-      /^app\/.*\.(?:ts|tsx)$/,
-      /^next\.config\.ts$/,
-      /^next-env\.d\.ts$/,
-      /^src\/.*\.(?:ts|tsx)$/,
-      /^tests\/.*\.(?:ts|tsx)$/,
-      /^tsconfig\.json$/,
-    ],
-  },
-  {
-    // 2026-08-08 — a council fixed copy that falsely claimed a feature was app-only,
-    // and the advisor suggested only `test:i18n:messages` (catalogue consistency). The
-    // gate actually pinning that copy was **`check-desktop-readiness`**, and it went
-    // red only in CI — even though local verification ran everything the tool asked
-    // for.
-    //
-    // A message catalogue is not only the input of the consistency check. It is also
-    // the input of the gates that read "what does this screen claim it can do".
-    command: 'pnpm test:desktop:check',
-    reason: 'message copy changed — the desktop routing gate reads these strings for capability claims',
-    matches: [MESSAGE_CATALOGUE],
-  },
-  {
-    command: 'pnpm test:i18n:messages',
-    reason: 'locale routing or message catalog changed',
-    matches: [
-      MESSAGE_CATALOGUE,
-      /^src\/i18n\/.*\.ts$/,
-      /^scripts\/(?:validate-messages\.test|build-messages(?:\.test)?)\.mjs$/,
-    ],
-  },
-  {
-    // Since 2026-09-26 the catalogue is authored as messages/<locale>/<Namespace>.json
-    // and composed into the ignored messages/<locale>.json. No module imports a part,
-    // so Vitest's `--changed` graph selects nothing for a copy edit; before the split
-    // the same edit selected every test importing the catalogue. This row restores
-    // that selection by naming the composites the tests do import.
-    command: 'pnpm exec vitest related --run messages/en.json messages/ko.json --passWithNoTests',
-    reason: 'message part changed — run the tests that import the composed catalogue',
-    matches: [MESSAGE_PART],
-  },
-  {
-    command: 'pnpm lint',
-    reason: 'ESLint boundary or style rules changed',
-    matches: [/^eslint\.config\.mjs$/],
-  },
-  {
-    // 2026-08-04 — for someone adding a route this advisor suggested only tsc. A route
-    // is the input of three gates: the decision ledger (`decisions:check`), the
-    // accessibility classification (`audited-route-coverage` → `pnpm test:contracts`),
-    // and the actual measurement (the two ratchets). Without the third, a new screen's
-    // contrast shortfall passes **while appearing on no list at all** — on 2026-08-03
-    // two 404 pages were carrying AA 4.42:1 that way.
-    command:
-      'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
-    reason: 'a route was added or changed — it must be classified into the a11y/contrast ratchets',
-    matches: [/^app\/(?:.+\/)?(?:page|not-found|error|global-error)\.tsx$/],
-  },
-  {
-    // 2026-08-08 — for someone editing the gateway's layout this advisor **did not
-    // suggest that layout's grid check**, and a regression went through the gap:
-    // adding one line to the footer turned `download-gateway-grid` red at all eight
-    // widths, nobody ran that spec locally, and it surfaced only in CI.
-    //
-    // This repository's discipline is "point at the tool instead of a hand-written
-    // list", which makes **a check the tool cannot point at a check that does not
-    // exist**. Even with `download-gateway` right there in the spec name, it is
-    // useless without a path↔check link.
-    //
-    // The origin values (`PAGE_COLUMN`/`PAGE_GUTTER`) are included because they are the
-    // baseline the grid measures against — editing them moves all eight widths without
-    // touching the layout.
-    command: 'pnpm exec playwright test tests/e2e/download-gateway-grid.spec.ts',
-    reason: 'the gateway plate or its frame changed — six elements must still share one origin',
-    matches: [
-      /^src\/views\/download\/.*\.tsx?$/,
-      /^src\/widgets\/gateway-chrome\/.*\.tsx?$/,
-      /^src\/shared\/lib\/gateway-frame\.ts$/,
-    ],
-  },
-  {
-    command: 'pnpm decisions:check',
-    reason: 'a route or design-spec surface moved, or a record was appended: the ledger must move with the surface and a new record must fit the template',
-    matches: [/^app\/(?:.+\/)?(?:page|not-found)\.tsx$/, /^docs\/DECISIONS\.md$/],
-  },
-  {
-    command: 'pnpm build',
-    reason: 'static export config changed',
-    matches: [/^next\.config\.ts$/],
-  },
-  {
-    /*
-     * ⚠️ **The shell renders above every page's `Suspense` boundary, so a hook that defers to
-     * the client there breaks the prerender of routes that look untouched** (2026-09-20).
-     *
-     * `AppShell` gained a `useSearchParams` call so the MCP tab could get its own first-visit
-     * guide. Each page already wraps its own content in `Suspense`; the shell did not, because
-     * until then nothing in the shell read the query. Under `output: 'export'` every route is
-     * prerendered, so the bail-out took whole routes with it: `pnpm build` failed on
-     * `/en/agents` **and** `/en/ontology/edit` — a redirect page the change never touched —
-     * and the five Playwright shards that wait on the browser artifact all went red behind
-     * that one broken build. A whole CI round bought nothing but the word "FAILURE" on five
-     * jobs whose own specs were fine.
-     *
-     * Nothing in the changed-path list caught it. The unit, contract and e2e lanes all run
-     * against a dev server, where this never fails; only a real export does. And the existing
-     * build rule watches `next.config.ts`, which is the *configuration* of the export rather
-     * than the code that has to survive it.
-     *
-     * Kept to the providers directory on purpose. `pnpm build` is the slowest thing this
-     * advisor can recommend, and these files change rarely — a per-file content scan for
-     * `useSearchParams` would be the precise rule, but this list matches on paths only, and
-     * the shell is where "renders above every boundary" is actually true.
-     */
-    command: 'pnpm build',
-    reason:
-      'the app shell changed — it renders above every page\'s Suspense boundary, and only a real static export catches a prerender bail-out',
-    matches: [/^src\/app\/providers\/.+\.tsx$/],
-  },
-  {
-    command: 'pnpm test:mcp:dogfood:timeout',
-    reason: 'MCP dogfood timeout/argument diagnostics changed',
-    matches: [/^scripts\/dogfood-mcp-walk\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm test:mcp:dogfood',
-    reason: 'MCP dogfood helper changed',
-    matches: [/^scripts\/dogfood-mcp-walk\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm test:mcp:verify:first-contact',
-    reason: 'MCP verify first-contact helper changed',
-    matches: [/^mcp\/scripts\/verify\.mjs$/, /^mcp\/src\/verify-script\.test\.mjs$/],
-  },
-  {
-    command: 'pnpm test:mcp:verify:timeout',
-    reason: 'MCP verify timeout/startup diagnostics changed',
-    matches: [/^mcp\/scripts\/verify\.mjs$/, /^mcp\/src\/verify-script\.test\.mjs$/],
-  },
-  {
-    command: 'pnpm test:mcp:verify',
-    reason: 'MCP verify helper changed',
-    matches: [/^mcp\/scripts\/verify\.mjs$/, /^mcp\/src\/verify-script\.test\.mjs$/],
-  },
-  {
-    command: 'pnpm test:mcp:maintenance',
-    reason: 'maintenance_plan queue or formatter behavior changed',
-    matches: [/^cli\/src\/commands\/maintenance\.mjs$/, /^scripts\/dogfood-status\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm test:mcp:suggestions',
-    reason: 'MCP enum or argument suggestion behavior changed',
-    matches: [/^mcp\/src\/suggestions\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm test:cli:args',
-    reason: 'CLI argument parser changed',
-    matches: [/^cli\/src\/lib\/cli-args\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm test:cli:mcp-call',
-    reason: 'CLI MCP response wrapper changed',
-    matches: [/^cli\/src\/lib\/mcp-call\.(?:mjs|test\.mjs)$/],
-  },
-  {
-    command: 'pnpm test:cli:lib',
-    reason: 'CLI shared helper changed',
-    matches: [/^cli\/src\/lib\//],
-  },
-  {
-    command: 'pnpm integration:cli:entry',
-    reason: 'CLI entrypoint, help, or init dispatch changed',
-    matches: [/^cli\/src\/index\.mjs$/, /^cli\/src\/lib\/cli-commands\.mjs$/],
-  },
-  {
-    command: 'pnpm integration:cli:setup',
-    reason: 'agent config merge, root rebind, or setup flow changed',
-    matches: [
-      /^cli\/src\/lib\/agent-config\.(?:mjs|test\.mjs)$/,
-      /^cli\/src\/commands\/agent-setup\.mjs$/,
-    ],
-  },
-  {
-    command: 'pnpm integration:cli',
-    reason: 'CLI integration test harness or broad integration contract changed',
-    matches: [/^cli\/src\/integration\.test\.mjs$/],
-  },
-  {
-    command: 'pnpm integration:cli:compile',
-    reason: 'CLI compile command changed',
-    matches: [/^cli\/src\/commands\/compile\.mjs$/],
-  },
-  {
-    command: 'pnpm integration:cli:mcp-verify',
-    reason: 'CLI mcp-verify command changed',
-    matches: [/^cli\/src\/commands\/mcp-verify\.mjs$/],
-  },
-  {
-    command: 'pnpm integration:cli:diagnosis',
-    reason: 'CLI health/agent-brief/workspace-brief diagnosis command changed',
-    matches: [/^cli\/src\/commands\/(?:health|agent-brief|workspace-brief)\.mjs$/],
-  },
-  {
-    command: 'pnpm integration:cli:graph-read',
-    reason: 'CLI graph read command changed',
-    matches: [
-      /^cli\/src\/commands\/(?:backlinks|path|all-paths|relation-check|orphans|query|overview|hubs|blast-radius|cycles|node-profile|similar)\.mjs$/,
-      /^cli\/src\/lib\/query-plan-output\.(?:mjs|test\.mjs)$/,
-    ],
-  },
-  {
-    command: 'pnpm integration:cli:graph-write',
-    reason: 'CLI graph write command changed',
-    matches: [/^cli\/src\/commands\/(?:rename|delete|merge)\.mjs$/],
-  },
-  {
-    command: 'pnpm integration:cli:repo-analysis',
-    reason: 'CLI repo analysis or bootstrap command changed',
-    matches: [/^cli\/src\/commands\/(?:analyze|infer-imports|architecture|bootstrap)\.mjs$/, /^tsconfig\.json$/],
-  },
-  {
-    command: 'pnpm integration:cli:local-vault',
-    reason: 'CLI local vault/frontmatter command changed',
-    matches: [/^cli\/src\/commands\/(?:add|import|list|find|validate)\.mjs$/],
-  },
-  {
-    command: 'pnpm integration:cli:growth',
-    reason: 'CLI growth command changed',
-    matches: [/^cli\/src\/commands\/growth\.mjs$/],
-  },
-  {
-    command: 'pnpm integration:cli:maintenance',
-    reason: 'CLI maintenance command changed',
-    matches: [/^cli\/src\/commands\/maintenance\.mjs$/],
-  },
-  {
-    command: 'pnpm test:mcp:package',
-    reason: 'package or release contract changed',
-    matches: [
-      /^package\.json$/,
-      /^pnpm-lock\.yaml$/,
-      /^mcp\/package\.json$/,
-      /^mcp\/package-lock\.json$/,
-      /^cli\/package\.json$/,
-      /^cli\/package-lock\.json$/,
-      /^\.github\/workflows\/release-macos\.yml$/,
-      /^\.github\/PULL_REQUEST_TEMPLATE\.md$/,
-      /^scripts\/check-package-contracts\.(?:mjs|test\.mjs)$/,
-      /^scripts\/smoke-packed-cli\.mjs$/,
-    ],
-  },
-  {
-    command: 'pnpm test:mcp:docs',
-    reason: 'public docs or dogfood ontology docs changed',
-    matches: [
-      /^README\.md$/,
-      /^AGENTS\.md$/,
-      /^CLAUDE\.md$/,
-      /^docs\/DEVELOPMENT-CHECKS\.md$/,
-      /^docs\/CHANGELOG\.md$/,
-      /^docs\/ontology\//,
-      /^mcp\/README\.md$/,
-      /^cli\/README\.md$/,
-      /^scripts\/check-package-contracts\.test\.mjs$/,
-    ],
-  },
-  {
-    /*
-     * ⚠️ **Do not use a readout as a gate** (corrected by measurement, 2026-08-21).
-     *
-     * What used to be here was `pnpm dogfood:status`. That command exits **1 even when
-     * the graph is merely immature** — its `health` child reports `needs_attention` for
-     * "this project's competency answers are not filled in yet", while the output
-     * itself says ***"Nothing is broken"***.
-     *
-     * Measured: **it is 1 on main too.** So every push that edited the vault was
-     * blocked **for an unrelated reason** (this rule is wired into the pre-push hook,
-     * and it really did block). Clearing that state (`finalize_project_meaning`) is
-     * something the tool itself pins as **not to be done without human approval**, so an
-     * agent cannot quietly step past it either.
-     *
-     * Instead the gate is **a check that only speaks when something is broken**:
-     * `vault:validate` measures frontmatter integrity and graph references and fails
-     * only when they are actually broken (CI uses it too). `dogfood:status` remains a
-     * readout for a person — it is not removed, it is **taken out of the gate slot**.
-     */
-    command: 'pnpm vault:validate',
-    reason: 'dogfood ontology or MCP/CLI dogfood surface changed',
-    matches: [/^docs\/ontology\//, /^mcp\//, /^cli\//, /^scripts\/dogfood/],
-  },
-  {
-    /*
-     * **The gateway shows one vault file verbatim.** `/download`'s evidence section renders the
-     * frontmatter of a pinned node and claims it is a file you can open in this repository. That
-     * claim is only true while the committed generated copy matches the vault, so editing either
-     * side has to re-run the generator.
-     *
-     * The specimen file itself is the obvious trigger, but so is **any** vault edit: the caption
-     * states how many `kind:` nodes exist, which every added or deleted node changes.
-     */
-    command: 'pnpm gateway:specimen:check',
-    reason: 'the vault feeds the gateway evidence specimen (file shown verbatim + node count)',
-    matches: [
-      /^docs\/ontology\//,
-      /^scripts\/generate-evidence-specimen\.mjs$/,
-      /^src\/views\/download\/model\/evidence-specimen\.generated\.ts$/,
-    ],
-  },
-  {
-    /*
-     * **Vault markdown is drawn on screen.** `/docs` renders this folder as is, and so
-     * do `samples/storefront` and `docs/guide`. So the prose written here is **product
-     * copy**, not code, and it is within reach of the copy gate (no em dashes).
-     *
-     * ⚠️ Without this rule it was actually breached (2026-08-21): two vault nodes were
-     * written with em dashes in the prose, `vault:validate` only looks at frontmatter
-     * integrity so it passed, and the pre-push hook passed it too. It went red only
-     * **after CI's Unit · Contract job had run for 7 minutes**. The integrity check and
-     * the copy check **measure different things**, so neither substitutes for the
-     * other.
-     */
-    command: 'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
-    reason: 'rendered doc markdown changed (vault, guide, sample)',
-    matches: [
-      /^docs\/ontology\/.*\.md$/,
-      /^docs\/guide\/.*\.md$/,
-      /^docs\/CHANGELOG\.md$/,
-      /^samples\/storefront\/.*\.md$/,
-    ],
-  },
-  {
-    /*
-     * **A vault section that outgrows its cap is holding more than one idea.**
-     *
-     * Measured 2026-08-25: `capabilities/mcp-server.md` carried a single
-     * `## Core Flow` of 12,865 bytes — five lines of flow followed by twenty-two
-     * paragraphs of hard limits and fail-closed rules. Nothing there was wrong;
-     * an agent simply had to read 12 KB named "Core Flow" to reach any rule.
-     *
-     * `vault:validate` checks frontmatter integrity and the em-dash ratchet
-     * checks copy, so neither can see body shape. This is a third measurement.
-     */
-    command: 'pnpm test:run tests/contract/vault-section-shape.contract.test.ts',
-    reason: 'vault node bodies changed — a section may now hold more than one idea',
-    matches: [/^docs\/ontology\/.*\.md$/],
-  },
-];
+/** Lists the rule files of `directory`, sorted by name; helpers and tests are not rule files. */
+function listCheckRuleFiles(directory = CHECK_RULES_DIRECTORY) {
+  return readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /^[^_.][^/]*\.mjs$/.test(entry.name) && !entry.name.endsWith('.test.mjs'))
+    .map((entry) => entry.name)
+    .sort();
+}
 
-const ESCALATIONS = [
-  {
-    command: 'pnpm package:check',
-    reason: 'package manifests, docs contracts, or release scripts changed',
-    matches: [
-      /^package\.json$/,
-      /^pnpm-lock\.yaml$/,
-      /^mcp\/package\.json$/,
-      /^mcp\/package-lock\.json$/,
-      /^cli\/package\.json$/,
-      /^cli\/package-lock\.json$/,
-      /^\.github\/workflows\/release-macos\.yml$/,
-      /^\.github\/PULL_REQUEST_TEMPLATE\.md$/,
-      /^scripts\/check-package-contracts\.(?:mjs|test\.mjs)$/,
-      /^scripts\/smoke-packed-cli\.mjs$/,
-    ],
-  },
-  {
-    command: 'pnpm dogfood:verify',
-    reason: 'shared MCP/CLI verification surface changed',
-    matches: [/^mcp\//, /^cli\/src\/commands\/mcp-verify\.mjs$/, /^scripts\/smoke-packed-cli\.mjs$/],
-  },
-];
+/** Imports every rule file of `directory` and merges it into one registry. */
+export async function loadCheckRules(directory = CHECK_RULES_DIRECTORY) {
+  const modules = [];
+  for (const name of listCheckRuleFiles(directory)) {
+    modules.push({ name, module: await import(new URL(name, directory).href) });
+  }
+  return composeCheckRules(modules);
+}
 
-const MCP_DIRECT_UNIT_TESTS = new Map([
-  ['mcp/src/analyze.mjs', 'mcp/src/analyze.test.mjs'],
-  ['mcp/src/architecture-profile.mjs', 'mcp/src/architecture-profile.test.mjs'],
-  ['mcp/src/meaning-evaluation.mjs', 'mcp/src/meaning-evaluation.test.mjs'],
-  ['mcp/src/construction-qualification.mjs', 'mcp/src/construction-qualification.test.mjs'],
-  ['mcp/src/construction-lifecycle.mjs', 'mcp/src/construction-lifecycle.test.mjs'],
-  ['mcp/src/infer-imports.mjs', 'mcp/src/infer-imports.test.mjs'],
-  ['mcp/src/ontology-atlas-ignore.mjs', 'mcp/src/ontology-atlas-ignore.test.mjs'],
-  ['mcp/src/ontology-compiler.mjs', 'mcp/src/ontology-compiler.test.mjs'],
-  ['mcp/src/ontology-engine.mjs', 'mcp/src/ontology-engine.test.mjs'],
-  ['mcp/src/parser.mjs', 'mcp/src/parser.test.mjs'],
-  ['mcp/src/query.mjs', 'mcp/src/query.test.mjs'],
-  ['mcp/src/suggestions.mjs', 'mcp/src/suggestions.test.mjs'],
-  ['mcp/src/validate.mjs', 'mcp/src/validate.test.mjs'],
-  ['mcp/src/vault.mjs', 'mcp/src/vault.test.mjs'],
-  ['mcp/scripts/json-rpc-lines.mjs', 'mcp/src/json-rpc-lines.test.mjs'],
-  ['tests/fixtures/source-hidden-field-trial/v1.json', 'mcp/src/source-hidden-field-trial.test.mjs'],
-]);
+/**
+ * Merges `{ name, module }` pairs into sorted rule and escalation lists plus one
+ * source-to-test map per direct-test kind. Throws on a malformed rule or on two
+ * files mapping one source to different tests, so a bad file fails loudly here
+ * rather than silently recommending nothing.
+ */
+export function composeCheckRules(modules) {
+  const collect = (key) => {
+    const entries = [];
+    for (const { name, module } of modules) {
+      const list = module[key] ?? [];
+      if (!Array.isArray(list)) throw new Error(`check-rules/${name}: \`${key}\` must be an array`);
+      list.forEach((rule, index) => {
+        if (
+          typeof rule?.command !== 'string' ||
+          typeof rule.reason !== 'string' ||
+          !Array.isArray(rule.matches) ||
+          rule.matches.length === 0 ||
+          !rule.matches.every((pattern) => pattern instanceof RegExp) ||
+          (rule.order !== undefined && !Number.isFinite(rule.order))
+        ) {
+          throw new Error(`check-rules/${name}: ${key}[${index}] needs command, reason, RegExp matches, and a finite order if any`);
+        }
+        entries.push({ rule, name, index });
+      });
+    }
+    return entries
+      .sort(
+        (a, b) =>
+          (a.rule.order ?? Infinity) - (b.rule.order ?? Infinity) ||
+          (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) ||
+          a.index - b.index,
+      )
+      .map(({ rule }) => rule);
+  };
+  const directTests = Object.fromEntries(DIRECT_TEST_KINDS.map((kind) => [kind, new Map()]));
+  for (const { name, module } of modules) {
+    for (const [kind, pairs] of Object.entries(module.directTests ?? {})) {
+      const map = directTests[kind];
+      if (!map) throw new Error(`check-rules/${name}: unknown directTests kind "${kind}"`);
+      for (const [source, test] of pairs) {
+        if (map.has(source) && map.get(source) !== test) {
+          throw new Error(`check-rules/${name}: ${source} already maps to ${map.get(source)}`);
+        }
+        map.set(source, test);
+      }
+    }
+  }
+  return {
+    rules: collect('rules'),
+    escalations: collect('escalations'),
+    directTests: Object.fromEntries(
+      Object.entries(directTests).map(([kind, map]) => [kind, { bySource: map, testFiles: new Set(map.values()) }]),
+    ),
+  };
+}
 
-const MCP_DIRECT_UNIT_TEST_FILES = new Set([
-  ...MCP_DIRECT_UNIT_TESTS.values(),
-  'mcp/src/redirect-backlinks.test.mjs',
-  'mcp/src/conflict-detection.test.mjs',
-  'mcp/src/json-rpc-lines.test.mjs',
-  'mcp/src/source-hidden-field-trial.test.mjs',
-]);
-
-const CLI_DIRECT_LIB_TESTS = new Map([
-  ['cli/src/lib/captured-summary.mjs', 'cli/src/lib/captured-summary.test.mjs'],
-  ['cli/src/lib/cli-args.mjs', 'cli/src/lib/cli-args.test.mjs'],
-  ['cli/src/lib/cli-commands.mjs', 'cli/src/lib/cli-commands.test.mjs'],
-  ['cli/src/lib/diagnosis-colors.mjs', 'cli/src/lib/diagnosis-colors.test.mjs'],
-  ['cli/src/lib/diagnosis-options.mjs', 'cli/src/lib/diagnosis-options.test.mjs'],
-  ['cli/src/lib/import-analysis-results.mjs', 'cli/src/lib/import-analysis-results.test.mjs'],
-  ['cli/src/lib/mcp-call.mjs', 'cli/src/lib/mcp-call.test.mjs'],
-  ['cli/src/lib/mcp-metadata.mjs', 'cli/src/lib/mcp-metadata.test.mjs'],
-  ['cli/src/lib/mcp-module.mjs', 'cli/src/lib/mcp-module.test.mjs'],
-  ['cli/src/lib/mcp-module.test.mjs', 'cli/src/lib/mcp-module.test.mjs'],
-  ['cli/src/lib/query-plan-output.mjs', 'cli/src/lib/query-plan-output.test.mjs'],
-  ['cli/src/lib/query-plan-output.test.mjs', 'cli/src/lib/query-plan-output.test.mjs'],
-  ['cli/src/lib/query-result-contract.mjs', 'cli/src/lib/query-result-contract.test.mjs'],
-  ['cli/src/lib/repo-analysis-results.mjs', 'cli/src/lib/repo-analysis-results.test.mjs'],
-  ['cli/src/lib/resolve-vault.mjs', 'cli/src/lib/resolve-vault.test.mjs'],
-]);
-
-const CLI_DIRECT_LIB_TEST_FILES = new Set(CLI_DIRECT_LIB_TESTS.values());
-
-const SCRIPT_DIRECT_LIB_TESTS = new Map([
-  ['scripts/lib/run-main-copy.mjs', 'scripts/lib/run-main-copy.test.mjs'],
-  ['scripts/lib/run-main-copy.test.mjs', 'scripts/lib/run-main-copy.test.mjs'],
-  ['scripts/lib/playwright-server-owner.mjs', 'scripts/lib/playwright-server-owner.test.mjs'],
-  ['scripts/lib/playwright-server-owner.test.mjs', 'scripts/lib/playwright-server-owner.test.mjs'],
-  ['scripts/bundle-branches.mjs', 'scripts/bundle-branches.test.mjs'],
-  ['scripts/bundle-branches.test.mjs', 'scripts/bundle-branches.test.mjs'],
-  ['scripts/audit-vault-paths.mjs', 'scripts/audit-vault-paths.test.mjs'],
-  ['scripts/audit-vault-paths.test.mjs', 'scripts/audit-vault-paths.test.mjs'],
-  ['scripts/build-docs-vault.mjs', 'scripts/build-docs-vault.test.mjs'],
-  ['scripts/build-docs-vault.test.mjs', 'scripts/build-docs-vault.test.mjs'],
-  ['scripts/resolve-docs-vault-conflicts.mjs', 'scripts/resolve-docs-vault-conflicts.test.mjs'],
-  ['scripts/resolve-docs-vault-conflicts.test.mjs', 'scripts/resolve-docs-vault-conflicts.test.mjs'],
-  ['scripts/check-desktop-readiness.mjs', 'scripts/check-desktop-readiness.test.mjs'],
-  ['scripts/check-desktop-readiness.test.mjs', 'scripts/check-desktop-readiness.test.mjs'],
-  ['scripts/check-ontology-design-surface.mjs', 'scripts/check-ontology-design-surface.test.mjs'],
-  ['scripts/check-ontology-design-surface.test.mjs', 'scripts/check-ontology-design-surface.test.mjs'],
-  ['scripts/lib/check-mcp-source-dependencies.mjs', 'scripts/lib/check-mcp-source-dependencies.test.mjs'],
-  ['scripts/lib/check-mcp-source-dependencies.test.mjs', 'scripts/lib/check-mcp-source-dependencies.test.mjs'],
-  ['scripts/desktop-doctor.mjs', 'scripts/desktop-doctor.test.mjs'],
-  ['scripts/desktop-doctor.test.mjs', 'scripts/desktop-doctor.test.mjs'],
-  ['scripts/desktop-smoke.mjs', 'scripts/desktop-smoke.test.mjs'],
-  ['scripts/desktop-smoke.test.mjs', 'scripts/desktop-smoke.test.mjs'],
-  ['scripts/lib/macos-dmg-layout.mjs', 'scripts/lib/macos-dmg-layout.test.mjs'],
-  ['scripts/lib/macos-dmg-layout.test.mjs', 'scripts/lib/macos-dmg-layout.test.mjs'],
-  ['scripts/lib/redact-command.mjs', 'scripts/lib/redact-command.test.mjs'],
-  ['scripts/lib/redact-command.test.mjs', 'scripts/lib/redact-command.test.mjs'],
-  ['scripts/dogfood-compile-fix.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
-  ['scripts/dogfood-compile-fix.test.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
-  ['scripts/dogfood-mcp-walk.mjs', 'scripts/dogfood-mcp-walk.test.mjs'],
-  ['scripts/dogfood-mcp-walk.test.mjs', 'scripts/dogfood-mcp-walk.test.mjs'],
-  ['scripts/dogfood-status.mjs', 'scripts/dogfood-status.test.mjs'],
-  ['scripts/dogfood-status.test.mjs', 'scripts/dogfood-status.test.mjs'],
-  ['scripts/dogfood-graph-db-pack.mjs', 'scripts/dogfood-graph-db-pack.test.mjs'],
-  ['scripts/dogfood-graph-db-pack.test.mjs', 'scripts/dogfood-graph-db-pack.test.mjs'],
-  ['scripts/run-focused-node-test.mjs', 'scripts/run-focused-node-test.test.mjs'],
-  ['scripts/run-focused-node-test.test.mjs', 'scripts/run-focused-node-test.test.mjs'],
-  ['scripts/lib/dogfood-args.mjs', 'scripts/lib/dogfood-args.test.mjs'],
-  ['scripts/lib/dogfood-args.test.mjs', 'scripts/lib/dogfood-args.test.mjs'],
-  ['scripts/lib/focused-check-suggestions.mjs', 'scripts/lib/focused-check-suggestions.test.mjs'],
-  ['scripts/lib/pnpm-script-refs.mjs', 'scripts/lib/pnpm-script-refs.test.mjs'],
-  ['scripts/lib/test-name-pattern.mjs', 'scripts/lib/test-name-pattern.test.mjs'],
-  ['scripts/validate-messages.test.mjs', 'scripts/validate-messages.test.mjs'],
-  ['scripts/validate-vault.mjs', 'scripts/validate-vault-script.test.mjs'],
-  ['scripts/validate-vault-script.test.mjs', 'scripts/validate-vault-script.test.mjs'],
-  ['scripts/check-package-contracts.mjs', 'scripts/check-package-contracts.test.mjs'],
-  ['scripts/check-package-contracts.test.mjs', 'scripts/check-package-contracts.test.mjs'],
-]);
-
-const SCRIPT_DIRECT_LIB_TEST_FILES = new Set(SCRIPT_DIRECT_LIB_TESTS.values());
-
-const FOCUSED_CHECK_DIRECT_TESTS = new Map([
-  ['scripts/suggest-focused-checks.mjs', 'scripts/suggest-focused-checks.test.mjs'],
-  ['scripts/suggest-focused-checks.test.mjs', 'scripts/suggest-focused-checks.test.mjs'],
-]);
+const { rules: RULES, escalations: ESCALATIONS, directTests: DIRECT_TESTS } = await loadCheckRules();
 
 export function normalizeChangedPath(path) {
   return String(path || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
@@ -1461,7 +136,7 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
   );
   const withLintDirect = prependSuggestions(
     withPlaywrightDirect,
-    directLintSuggestions(normalizedPaths),
+    [...directLintSuggestions(normalizedPaths), ...directScriptLintSuggestions(normalizedPaths)],
   );
   const withMcpDirect = insertBeforeCommand(
     withLintDirect,
@@ -1470,17 +145,17 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
   );
   const commands = insertBeforeCommand(
     withMcpDirect,
-    directCliLibTestSuggestions(normalizedPaths),
+    directMappedTestSuggestions(normalizedPaths, 'cli', 'direct CLI lib unit test for changed helper'),
     'pnpm test:cli:lib',
   );
   const withScriptDirect = insertBeforeCommand(
     commands,
-    directScriptLibTestSuggestions(normalizedPaths),
+    directMappedTestSuggestions(normalizedPaths, 'script', 'direct script helper unit test for changed helper'),
     'pnpm test:dogfood:script-refs',
   );
   const withFocusedCheckDirect = insertBeforeCommand(
     withScriptDirect,
-    directFocusedCheckTestSuggestions(normalizedPaths),
+    directMappedTestSuggestions(normalizedPaths, 'focusedCheck', 'direct focused-check advisor test for changed helper'),
     'pnpm test:checks:changed',
   );
   const escalations = rulesToSuggestions(ESCALATIONS, rulePaths);
@@ -1564,6 +239,27 @@ function directLintSuggestions(paths) {
   ];
 }
 
+/**
+ * Lints every other changed JavaScript or TypeScript file the full `pnpm lint` covers.
+ * A scripts-only change used to plan no lint at all, so an unused variable in
+ * `scripts/pr-land.test.mjs` reached main and failed the next change whose plan
+ * happened to run the whole-repository lint (train #1921, 2026-09-26).
+ * `--no-warn-ignored` keeps a file the config ignores from counting as a warning.
+ */
+function directScriptLintSuggestions(paths) {
+  const lintable = paths.filter(
+    (path) => /\.(?:ts|tsx|js|jsx|mjs|cjs)$/.test(path) && !/^(?:src|app)\//.test(path),
+  );
+  if (lintable.length === 0) return [];
+  return [
+    {
+      command: `pnpm exec eslint --max-warnings 0 --no-warn-ignored ${lintable.join(' ')}`,
+      reason: 'the full lint lane covers scripts, tests and packages too; lint the changed ones now',
+      paths: lintable,
+    },
+  ];
+}
+
 function directPlaywrightTestSuggestions(paths) {
   return paths
     .filter((path) => /^tests\/e2e\/.+\.spec\.ts$/.test(path))
@@ -1582,9 +278,10 @@ function resolveVitestTestFile(path) {
 }
 
 function resolveMcpUnitTestFile(path, pathSet) {
-  const mapped = MCP_DIRECT_UNIT_TESTS.get(path);
+  const { bySource, testFiles } = DIRECT_TESTS.mcp;
+  const mapped = bySource.get(path);
   if (mapped) return mapped;
-  if (MCP_DIRECT_UNIT_TEST_FILES.has(path)) return path;
+  if (testFiles.has(path)) return path;
   if (/^mcp\/src\/(?!integration\.test\.mjs$)[^/]+\.test\.mjs$/.test(path)) return path;
   if (!/^mcp\/src\/[^/]+\.(?:mjs|js)$/.test(path)) return null;
   const testFile = path.replace(/\.(?:mjs|js)$/, '.test.mjs');
@@ -1592,64 +289,26 @@ function resolveMcpUnitTestFile(path, pathSet) {
 }
 
 function directMcpUnitTestSuggestions(paths) {
-  const byTestFile = new Map();
   const pathSet = new Set(paths);
-  for (const path of paths) {
-    const testFile = resolveMcpUnitTestFile(path, pathSet);
-    if (!testFile) continue;
-    const row = byTestFile.get(testFile) ?? {
-      command: `pnpm exec node --test ${testFile}`,
-      reason: 'direct MCP unit test for changed source or test',
-      paths: [],
-    };
-    row.paths.push(path);
-    byTestFile.set(testFile, row);
-  }
-  return [...byTestFile.values()];
+  return groupByTestFile(
+    paths,
+    (path) => resolveMcpUnitTestFile(path, pathSet),
+    'direct MCP unit test for changed source or test',
+  );
 }
 
-function directCliLibTestSuggestions(paths) {
-  const byTestFile = new Map();
-  for (const path of paths) {
-    const testFile = CLI_DIRECT_LIB_TESTS.get(path) ?? (CLI_DIRECT_LIB_TEST_FILES.has(path) ? path : null);
-    if (!testFile) continue;
-    const row = byTestFile.get(testFile) ?? {
-      command: `pnpm exec node --test ${testFile}`,
-      reason: 'direct CLI lib unit test for changed helper',
-      paths: [],
-    };
-    row.paths.push(path);
-    byTestFile.set(testFile, row);
-  }
-  return [...byTestFile.values()];
+/** A source maps to its declared test; a declared test maps to itself. */
+function directMappedTestSuggestions(paths, kind, reason) {
+  const { bySource, testFiles } = DIRECT_TESTS[kind];
+  return groupByTestFile(paths, (path) => bySource.get(path) ?? (testFiles.has(path) ? path : null), reason);
 }
 
-function directScriptLibTestSuggestions(paths) {
+function groupByTestFile(paths, resolve, reason) {
   const byTestFile = new Map();
   for (const path of paths) {
-    const testFile = SCRIPT_DIRECT_LIB_TESTS.get(path) ?? (SCRIPT_DIRECT_LIB_TEST_FILES.has(path) ? path : null);
+    const testFile = resolve(path);
     if (!testFile) continue;
-    const row = byTestFile.get(testFile) ?? {
-      command: `pnpm exec node --test ${testFile}`,
-      reason: 'direct script helper unit test for changed helper',
-      paths: [],
-    };
-    row.paths.push(path);
-    byTestFile.set(testFile, row);
-  }
-  return [...byTestFile.values()];
-}
-
-function directFocusedCheckTestSuggestions(paths) {
-  const byTestFile = new Map();
-  for (const path of paths) {
-    const testFile = FOCUSED_CHECK_DIRECT_TESTS.get(path);
-    if (!testFile) continue;
-    const row = byTestFile.get(testFile) ?? {
-      command: `pnpm exec node --test ${testFile}`,
-      reason: 'direct focused-check advisor test for changed helper',
-      paths: [],
-    };
+    const row = byTestFile.get(testFile) ?? { command: `pnpm exec node --test ${testFile}`, reason, paths: [] };
     row.paths.push(path);
     byTestFile.set(testFile, row);
   }

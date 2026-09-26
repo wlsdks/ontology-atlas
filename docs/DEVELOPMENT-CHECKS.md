@@ -751,6 +751,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm checks:changed`
 **Proves**: The changed tracked and untracked file set maps to first checks and explicit escalation gates.
 **Escalate**: none.
+**Fix**: To add a check, add a rule file under `scripts/lib/check-rules/<area>.mjs` (or a rule to the area file that owns the subject); the advisor loads that directory itself, so no index or other file changes. The `scripts/lib/focused-check-suggestions.mjs` header owns the rule shape and `order`.
 
 ### Focused-check advisor helper contract
 
