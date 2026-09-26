@@ -62,7 +62,8 @@ Every delegated brief states:
 2. which files are read-only;
 3. no stash, no `git add -A`, no subagent worktree deletion, and the cleanup owner;
 4. the external scratch location;
-5. which baselines must remain green and the commands that prove them;
+5. which baselines must remain green and the commands that prove them, and that
+   the final report quotes each command exactly as it was run;
 6. the primary sources the agent must read instead of trusting a relayed summary;
 7. the landing rule: the agent commits on its own branch in its own worktree and
    never pushes, opens a pull request, or runs `pnpm pr:land`; the coordinating
