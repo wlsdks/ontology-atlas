@@ -35,14 +35,18 @@ Always first:
 - `evidence` — is each claim observed, inferred, or unknown, and what is the
   cheapest proof that would settle it? More review cannot turn an unknown into
   an observation. On a positioning route, the first-contact claim must be
-  observed and specific to Atlas, not a category word.
+  observed and specific to Atlas, not a category word. A recovery proof names
+  the artifact and knowledge state, the forbidden fallback, the task, the
+  cited evidence, and the failure condition, and it tests Atlas rather than
+  the implementation: "the panel shows the new field" is not one.
 
 Product lenses, chosen by the route's risk:
 
 - `boundaries` — truth, transfer, agent-write, human-correction: does canonical
   truth move, does data leave the machine, does an agent gain write or approval
   authority, can a person still inspect, reject, and correct? `unknown` is not
-  `unchanged`.
+  `unchanged`. Agent-proposed meaning stays visibly distinct from observed
+  source fact, and unsupported meaning stays uncertain rather than complete.
 - `smallest-slice` — is this the smallest worthwhile commitment, with a
   credible rollback?
 
@@ -63,7 +67,8 @@ finding, never a reason to judge code by eye.
 - `map-marks` — each topology mark encodes one typed fact; contrast of changed
   mark pairs is measured, and a pair below 3:1 needs a non-colour distinguisher.
 - `responsive-bands` — the affected bands, input mode, and safe area were
-  measured, not assumed.
+  measured, not assumed, including 200% text zoom on a new or restructured
+  surface.
 - `installed-app` — the touched state was proven in the installed app's real
   window, not only in a browser.
 - `agent-action` — the visible state gives a real next MCP or CLI action an

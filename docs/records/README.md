@@ -58,8 +58,9 @@ its own UUID; later observations add update files referencing that UUID (or a
 legacy numeric run). A policy record requires the same owner authority as the
 former outcome edit. `pnpm po:pilot` reports the composed current state.
 
-Fragments whose names start with a UUID (runs, lessons) are unordered on disk:
-any "latest" or "since" claim sorts by the `date` field, never by listing order.
+Fragments whose names start with a UUID (`po-runs`, `po-updates`, `po-policy`)
+are unordered on disk: any "latest" or "since" claim sorts by the `date`
+field, never by listing order.
 
 ## Backlog observations
 

@@ -32,13 +32,16 @@ Every review starts with:
 - `evidence` — mark each claim observed, inferred, or unknown and name the
   cheapest proof that would settle it. Review does not turn an unknown into an
   observation. On a positioning route the first-contact claim must be observed
-  and specific to Atlas.
+  and specific to Atlas. A recovery proof names the artifact and knowledge
+  state, the forbidden fallback, the task, the cited evidence, and the failure
+  condition, and tests Atlas, not the implementation.
 
 Product lenses by risk:
 
 - `boundaries` — does canonical truth move, does data leave the machine, does an
   agent gain write or approval authority, and can a person still inspect,
-  reject, and correct? `unknown` is not `unchanged`.
+  reject, and correct? `unknown` is not `unchanged`. Agent-proposed meaning
+  stays distinct from observed source fact; unsupported meaning stays uncertain.
 - `smallest-slice` — is this the smallest worthwhile commitment, and is its
   rollback credible?
 
@@ -57,7 +60,8 @@ in the brief; a missing capture is itself a finding.
   moves in the first frame and same-input stages start within 120ms.
 - `map-marks` — each topology mark encodes one typed fact; changed mark pairs
   have measured contrast, and a pair below 3:1 needs a non-colour distinguisher.
-- `responsive-bands` — affected bands, input mode, and safe area were measured.
+- `responsive-bands` — affected bands, input mode, and safe area were measured,
+  including 200% text zoom on a new or restructured surface.
 - `installed-app` — the touched state was proven in the installed app's window,
   not only in a browser.
 - `agent-action` — the visible state offers a real next MCP or CLI action bound

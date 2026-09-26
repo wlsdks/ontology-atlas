@@ -7,10 +7,11 @@ area: process
 
 # ATLAS PRODUCT DECISION SYSTEM
 
-> Version 3, piloted from 2026-09-01, closed as `adjust` on 2026-09-03, and
-> adjusted again on 2026-09-26: the routing stays, the per-run pilot records
-> stop (see "Measured pilot"). It keeps the v2 two-reviewer ceiling but removes
-> the builder's ability to declare their own door and risk.
+> Version 4, piloted from 2026-09-01, closed as `adjust` on 2026-09-03,
+> adjusted on 2026-09-26 (the routing stays, the per-run pilot records stop; see
+> "Measured pilot"), and on 2026-09-27 the reviewer pair gave way to one
+> independent `reviewer`. The builder still cannot declare their own door and
+> risk.
 
 Atlas does not need a universal product-management framework. It needs a product
 owner for one unusual failure: coding agents can change a codebase faster than

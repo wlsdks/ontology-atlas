@@ -454,7 +454,7 @@ Full grounding + verified links in [`FOUNDATIONS.md` §4](./FOUNDATIONS.md#4-des
 | Our rule | Descends from |
 |---|---|
 | Neutral greys + indigo protagonist; effects only where they carry a fact (the bans were lifted 2026-09-08, the restraint stays a default) | **Dieter Rams**, *Ten Principles* — "unobtrusive / honest / as little design as possible" ("Less, but better") |
-| Every visual mark encodes a typed fact and asserts no fact the data lacks | **Jock Mackinlay** (ACM TOG 1986) — expressiveness + effectiveness. This is the bench's rejection rule |
+| Every visual mark encodes a typed fact and asserts no fact the data lacks | **Jock Mackinlay** (ACM TOG 1986) — expressiveness + effectiveness. This is the `map-marks` lens's rejection rule |
 | Honest, proportional relation rendering; a legend means the mark cannot explain itself | **Edward Tufte** — graphical integrity + direct labelling. **Not** data-ink as a rule: Inbar 2007 and Bateman 2010 tested it and it did not hold ([FOUNDATIONS](FOUNDATIONS.md#4-design-lineage--restraint-as-craft-cited)) |
 | `@theme` token scale; constrained spacing; "no second coloring system"; hierarchy by de-emphasis | **Wathan & Schoger**, *Refactoring UI* (also the Tailwind authors) |
 | Kind hierarchy + typed relations as the organizing device; lean high-signal vault | **John Maeda**, *Laws of Simplicity* — Reduce / Organize; "subtract the obvious, add the meaningful" |
@@ -982,7 +982,7 @@ that only makes the screen feel busy fails the design system.
 
 ### Motion Syntax (usability motion family, Phase 3 2026-07-25)
 
-The usability motion for "verifying meaning" in the map contextual editor and insights (`/ontology/insights`) is built on the **duration/easing family** below. Since 2026-09-08 overshoot, bounce and glow are allowed on a named token when the motion seat can say what they mean; an ambient loop with no state behind it still fails the "busy" test above.
+The usability motion for "verifying meaning" in the map contextual editor and insights (`/ontology/insights`) is built on the **duration/easing family** below. Since 2026-09-08 overshoot, bounce and glow are allowed on a named token when a review through the `motion` lens can say what they mean; an ambient loop with no state behind it still fails the "busy" test above.
 3-step ramps are ≤240ms (above that, only **exception tokens with a name and reason** — currently 2:
 `--agent-panel-reflow-duration` 260ms panel reflow · `--overlay-spring-response`
 300ms overlay spring. Both have critical damping so their physics are correct; what was misaligned was not the code but this sentence).
@@ -2708,7 +2708,7 @@ or fluid column widths"* — width is **derived** from grid/content, not ramp st
 **When you need a width for a new surface — this path requires no convening or approval:**
 
 1. First find a same-nature measured width in the table above (e.g., reuse `--git-setup-measure` for prose).
-2. If none exists, **create a surface-specific token** in that surface's token block with a derivation comment. ⚠️ This is **neither** a "system" convening target nor an approval target —
+2. If none exists, **create a surface-specific token** in that surface's token block with a derivation comment. ⚠️ This is **neither** a `design-contract` declaration nor an approval target —
    the `design.md` convening trigger and `pnpm decisions:check` sensor only look at **ramp
    tokens** (`scripts/lib/design-spec-census.mjs` `RAMP_TOKEN_PATTERN`,
    explicitly excluding surface-specific tokens). The 2026-08-04 practical test observed that *"the gate made `w-96` cheaper than a single ramp line"*, but that cost model was **factually
@@ -2716,7 +2716,7 @@ or fluid column widths"* — width is **derived** from grid/content, not ramp st
    which is why this section exists.
 3. One-off `max-w-*` values hold the same status as optical corrections — do not enforce them like padding.
 
-**To create a width «ramp»**, that is when ramp listing requires "system" convening + approval. Falsification
+**To create a width «ramp»**, that is when ramp listing requires a `design-contract` declaration + approval. Falsification
 observation: if three or more surface width tokens of the same value repeat **without derivation** (evidence of scale demand), this decision is reconsidered.
 
 ### Box Specifications Table
@@ -3327,7 +3327,7 @@ The settings row-measure token (658px) bound the API Key drill-in's rows to the 
 --dialog-max-h: 44rem;  /* Ceiling before a dialog's own body scrolls (2026-09-05) */
 ```
 
-- **That’s all for Level 2** (approved by the "System" team on 2026-08-15). The old `--dialog-w-lg: 720` was removed because it was a ghost with zero consumers and zero definitions — unused tokens are not specifications, they are misinformation. If a new level is needed, convening the "System" team comes first.
+- **That’s all for Level 2** (approved by the "System" team on 2026-08-15). The old `--dialog-w-lg: 720` was removed because it was a ghost with zero consumers and zero definitions — unused tokens are not specifications, they are misinformation. If a new level is needed, declaring `design-contract` comes first.
 - Single source of truth for centered modal/composer width; primary consumer is `Dialog`
   (`src/shared/ui/dialog.tsx`). Actual application wraps narrow viewports with
   `w-[min(var(--dialog-w-*), calc(100vw - 2rem))]`.
