@@ -706,6 +706,44 @@ describe('the conductor runs trains', () => {
     assert.equal(world.locks.has(FAST_LOCK_REF), false);
   });
 
+  it('waits for main to reach the squash commit before judging a component landed', () => {
+    const world = fakeWorld({ prs: [component(31)], queued: [31] });
+    const merge = world.deps.gh.mergePr;
+    let squash = null;
+    world.deps.gh.mergePr = (number, options) => {
+      const result = merge(number, options);
+      squash = `squash-${number}`;
+      return { ...result, sha: squash };
+    };
+    // GitHub answers the merge before origin/main moves: two stale reads, then the squash.
+    let reads = 0;
+    const revParse = world.deps.git.revParse;
+    world.deps.git.revParse = (ref) => {
+      if (ref !== 'origin/main' || squash === null) return revParse(ref);
+      reads += 1;
+      return reads > 2 ? squash : revParse(ref);
+    };
+    const contained = world.deps.git.isContained;
+    world.deps.git.isContained = (base, sha) => (reads > 2 ? contained(base, sha) : false);
+    const result = runConductor(world);
+
+    assert.deepEqual(result.landed, [31]);
+    assert.equal(called(world, 'openPr').length, 1, 'one train, not a second one for a component that already landed');
+    assert.equal(world.pulls.get(31).state, 'CLOSED');
+  });
+
+  it('never queues a component a merged train carried again, even when containment is unproven', () => {
+    const world = fakeWorld({ prs: [component(32)], queued: [32] });
+    world.deps.git.isContained = () => false;
+    world.deps.git.isAncestor = () => false;
+    runConductor(world);
+
+    assert.equal(called(world, 'openPr').length, 1, 'a second train would land it twice');
+    const pr = world.pulls.get(32);
+    assert.deepEqual(pr.labels, []);
+    assert.match(pr.comments.at(-1).body, /does not provably contain/);
+  });
+
   it('bisects a red train and ejects only the breaker', () => {
     const breaker = 3;
     const world = fakeWorld({
