@@ -11,7 +11,12 @@ import { decodePlan, FULL_LANE_COMMANDS } from './classify-change.mjs';
  * one holding an index when the collector runs. `node-name-match.perf.test.ts` read 6.73, 9.20
  * and 9.20 against a bar of 10 on branches that never touched the matcher, never once near the
  * 2.7-5.3 its defect actually produces. `vitest.config.ts` owns the reasoning; this constant is
- * how the sweeps skip them, and `pnpm test:perf` is where they run instead.
+ * how the sweeps skip them, and the `perf` lane is where they run instead.
+ *
+ * That lane used to be the last command on Unit · Contract shard 1, sequential after `pnpm knip`
+ * and a third of the sweep, and train #1928 (2026-09-26) still read 9.25 there on a change that
+ * never touched the matcher. So it is now a job of its own on a runner of its own
+ * (`checks.yml`, `perf`), and nothing in the unit lane runs a measurement file.
  */
 const MEASURED_LANES_EXCLUDED = "--project=contract-node --project=jsdom";
 
@@ -102,7 +107,7 @@ export function commandsForLane({
     if (unit.mode === 'full') {
       return FULL_LANE_COMMANDS.unit.flatMap((command) => {
         if (command === 'pnpm test:run') {
-          return [sharded(`pnpm exec vitest run ${MEASURED_LANES_EXCLUDED}`), ...(wholeGraphOnly ? ['pnpm test:perf'] : [])];
+          return [sharded(`pnpm exec vitest run ${MEASURED_LANES_EXCLUDED}`)];
         }
         return wholeGraphOnly ? [command] : [];
       });
@@ -116,9 +121,6 @@ export function commandsForLane({
           `pnpm exec vitest run --changed=${shellArgument(base)} --exclude='tests/contract/**' ${MEASURED_LANES_EXCLUDED} --passWithNoTests`,
         ),
       );
-      // The measurement files the sweep just skipped, run by themselves on the one shard that
-      // carries whole-graph work. Sequential within this runner, so nothing competes with a ratio.
-      if (wholeGraphOnly) commands.push('pnpm test:perf');
     }
     if (unit.contract === 'full') commands.push(sharded('pnpm exec vitest run tests/contract'));
     if (unit.contract === 'focused') {
@@ -128,6 +130,20 @@ export function commandsForLane({
     }
     if (wholeGraphOnly) commands.push(...unit.extraCommands);
     return unique(commands);
+  }
+
+  /*
+   * The measurement files the unit sweeps skip, alone on their own runner. `affected` lets
+   * Vitest's import graph choose which of them reach the change; `full` runs them all.
+   */
+  if (lane === 'perf') {
+    const { mode } = plan.lanes.perf;
+    if (mode === 'full') return ['pnpm test:perf'];
+    if (mode === 'affected') {
+      if (!base) throw new Error('affected perf lane requires a comparison base');
+      return [`pnpm test:perf --changed=${shellArgument(base)} --passWithNoTests`];
+    }
+    return [];
   }
 
   if (lane === 'mcp') return [...plan.lanes.mcp.commands];

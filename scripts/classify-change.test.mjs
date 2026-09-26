@@ -21,7 +21,7 @@ test('only a proven main push reuses every lane while retaining changed-path evi
   assert.equal(decoded.full, false);
   assert.deepEqual(decoded.paths, plan.paths);
   assert.equal(decoded.lanes.gates.run, false);
-  for (const lane of ['unit', 'mcp', 'e2e']) assert.equal(decoded.lanes[lane].mode, 'skip');
+  for (const lane of ['unit', 'perf', 'mcp', 'e2e']) assert.equal(decoded.lanes[lane].mode, 'skip');
   assert.equal(decoded.reusedFrom.tree, proof.tree);
   assert.equal(plan.full, true, 'reuse must not mutate the original fallback plan');
   for (const options of [
@@ -45,6 +45,7 @@ test('scheduled runs and missing comparisons run every exhaustive lane', () => {
     const plan = decide(input);
     assert.equal(plan.full, true);
     assert.equal(plan.lanes.unit.mode, 'full');
+    assert.equal(plan.lanes.perf.mode, 'full');
     assert.equal(plan.lanes.mcp.mode, 'full');
     assert.equal(plan.lanes.e2e.mode, 'full');
     assert.equal(plan.lanes.e2e.staticExport, true);
@@ -337,9 +338,9 @@ test('push entrypoint uses the exact ancestor and fails closed for missing or un
     const run = (base) => execFileSync(process.execPath,[script,'--event=push'],{
       cwd, encoding:'utf8', env:{...process.env, GITHUB_OUTPUT:'', PUSH_BEFORE:base},
     });
-    assert.match(run(before), /unit=skip mcp=skip playwright=skip/);
+    assert.match(run(before), /unit=skip perf=skip mcp=skip playwright=skip/);
     for (const base of ['', '0'.repeat(40), 'a'.repeat(40), git('commit-tree',git('rev-parse','HEAD^{tree}'),'-m','unrelated')]) {
-      assert.match(run(base), /unit=full mcp=full playwright=full/);
+      assert.match(run(base), /unit=full perf=full mcp=full playwright=full/);
     }
   } finally { rmSync(cwd,{recursive:true,force:true}); }
 });
@@ -387,4 +388,34 @@ test('exhaustive architecture coverage is owned once across the three lanes', ()
   for(const command of ['pnpm package:check','pnpm integration:cli:architecture']) assert.ok(FULL_LANE_COMMANDS.gates.includes(command));
   for(const command of ['pnpm test:mcp:unit','pnpm integration:mcp']) assert.ok(FULL_LANE_COMMANDS.mcp.includes(command));
   assert.ok(FULL_LANE_COMMANDS.unit.includes('pnpm test:run'));
+});
+
+/*
+ * The performance ratios get a runner of their own (`checks.yml`, `perf`), so the plan says when
+ * that runner is worth starting: only when a changed path could sit in a measurement file's
+ * import graph, which Vitest then resolves with `--changed`. Train #1928 read 9.25 against a bar
+ * of 10 while the ratios still shared the Unit · Contract shard-1 runner.
+ */
+test('the perf lane starts only for code a measurement could import, and on every full plan', () => {
+  const mode = (options) => buildImpactPlan(options).lanes.perf.mode;
+  assert.equal(mode({ files: ['src/shared/lib/node-name-match.ts'] }), 'affected');
+  assert.equal(mode({ files: ['src/shared/lib/node-name-match.perf.test.ts'] }), 'affected');
+  assert.equal(mode({ files: ['app/[locale]/page.tsx'] }), 'affected');
+  // A plain test file is never imported by a measurement file.
+  assert.equal(mode({ files: ['src/shared/lib/cn.test.ts'] }), 'skip');
+  assert.equal(mode({ files: ['docs/DESIGN-SYSTEM.md'] }), 'skip');
+  assert.equal(mode({ files: ['mcp/src/schema.mjs'] }), 'skip');
+  assert.equal(mode({ files: ['tests/contract/workflow-budgets.contract.test.ts'] }), 'skip');
+  // A vanished module is in nobody's import graph, so `--changed` could not find its users.
+  assert.equal(mode({ files: [], deletedFiles: ['src/shared/lib/hangul-match.ts'] }), 'full');
+  // The Vitest configuration decides what the perf project is.
+  assert.equal(mode({ files: ['vitest.config.ts'] }), 'full');
+  assert.equal(mode({ files: [], forceFull: true }), 'full');
+  // The plan survives the encode/validate round trip the workflow performs.
+  const plan = buildImpactPlan({ files: ['src/shared/lib/node-name-match.ts'] });
+  assert.equal(decodePlan(encodePlan(plan)).lanes.perf.mode, 'affected');
+  assert.throws(
+    () => decodePlan(encodePlan({ ...plan, lanes: { ...plan.lanes, perf: { mode: 'sometimes' } } })),
+    /perf verdict/,
+  );
 });

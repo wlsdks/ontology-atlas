@@ -414,6 +414,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: In-process graph compiler and query latency stay within budget on a 1k-node generated vault (3-run medians), covering `agent_brief`, bounded traversal, match_nodes/match_edges query plans, and the 10-call `graph_db_pack` used by /ontology/insights.
 **Escalate**: `pnpm perf:graph:scale` for scale-sensitive changes, using a larger 1k plus 5k vault.
 
+### Vitest performance ratios
+
+**Run**: `pnpm test:perf`
+**Proves**: Each `*.perf.test.*` file's cached path stays ahead of its naive baseline by its measured bar (for example `node-name-match` above 10, where healthy reads 17-25 and the defect 2.7-5.3), one file at a time.
+**Escalate**: Read a local red on a busy machine as noise; CI runs these alone in the `Perf · Ratios` job, which `Unit · Contract` waits for, only when changed app or src code can reach them.
+**Fix**: If the ratio reddens in CI on a change that cannot reach it, isolate the lane further; do not lower the bar.
+
 ### Dogfood MCP smoke
 
 **Run**: `pnpm dogfood:status`
