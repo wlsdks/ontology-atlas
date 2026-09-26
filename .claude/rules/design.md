@@ -131,8 +131,8 @@ size step per role; a size difference must encode hierarchy or state.
 ## Changing the specification requires `design-contract`
 
 When a change alters the specification in a file below, declare
-`design-contract` to `pnpm design:route`; the router convenes `design-system`
-plus a contrasting seat, a system audit, and a gate probe.
+`design-contract` to `pnpm design:route`; the router returns one `reviewer` with
+the `tokens` and `attention` lenses, a system audit, and a gate probe.
 `scripts/lib/design-spec-census.mjs` reads this list (only rows shaped
 `` - `path` — description ``), and `pnpm decisions:check` requires a decision
 record when a listed file's vocabulary or values change. Contract:

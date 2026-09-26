@@ -92,8 +92,10 @@ automation alone does not satisfy the design evidence contract.
 
 ## Where results go
 
-- Stalls become direct-use evidence for `/po-pass` and `po-evidence`.
-- Hierarchy and interaction findings become material for the design bench.
+- Stalls become direct-use evidence for `/po-pass` and the `reviewer`'s
+  `evidence` lens.
+- Hierarchy and interaction findings feed the `reviewer`'s `attention` and
+  `reversibility` lenses.
 - A clean walkthrough does not justify “Build and verify”; it proves only that
   this journey exposed no named stall.
 
