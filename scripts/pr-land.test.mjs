@@ -572,6 +572,7 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
       branchTrain.set(branch, [...(branchTrain.get(branch) ?? []), pr.number]);
       return { state: 'merged' };
     }),
+    squashOnto: write('squashOnto', (branch, parent, { message }) => `squash:${branch}:${message.split('\n')[0]}`),
     openPr: write('openPr', ({ title, head, body }) => {
       const number = (nextNumber += 1);
       trainCount += 1;
@@ -678,9 +679,18 @@ describe('the conductor runs trains', () => {
 
     const [merge] = called(world, 'mergePr');
     assert.equal(merge[2].sha, 'train-head-2001', 'the merge is pinned to the head CI measured');
-    assert.equal(merge[2].title, 'chore(train): land #11 #13 (#2001)');
-    assert.match(merge[2].message, /Co-authored-by: Author 11 <a11@example.com>/);
-    assert.match(merge[2].message, /Co-authored-by: Author 13 <a13@example.com>/);
+    assert.equal(merge[2].method, 'rebase', 'the train lands its per-pull-request commits as they are');
+    assert.equal(merge[2].title, undefined, 'no train-level title reaches main');
+    // main's history reads as the pull requests: one commit each, its own title, its own author.
+    const commits = called(world, 'squashOnto').map(([, , , commit]) => commit);
+    assert.deepEqual(commits.map((c) => c.message), ['feat: change 11 (#11)', 'feat: change 13 (#13)']);
+    assert.deepEqual(commits.map((c) => c.author), [
+      { name: 'Author 11', email: 'a11@example.com' },
+      { name: 'Author 13', email: 'a13@example.com' },
+    ]);
+    const [first, second] = called(world, 'squashOnto');
+    assert.equal(first[2], 'main'.padEnd(40, '0'), 'the first commit sits on the base');
+    assert.equal(second[2], `squash:${first[1]}:feat: change 11 (#11)`, 'each next commit sits on the one before');
 
     const ejected = world.pulls.get(12);
     assert.equal(ejected.state, 'OPEN');
@@ -1015,7 +1025,7 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     assert.match(text, /PR #32: would squash-merge now/);
     assert.match(text, /next train \(2 of 2 queued\): chore\(train\): land #33 #31/);
     assert.match(text, /#31 feat\/change-31@31ccccccc: would conflict and be ejected/);
-    assert.match(text, /\| Co-authored-by: Author 33 <a33@example.com>/);
+    assert.match(text, /\| feat: change 33 \(#33\)  \(Author 33\)/, 'the plan shows the commit main would get for each pull request');
     assert.match(text, /dry run: nothing was written to GitHub/);
     assert.deepEqual(world.calls.filter(([name]) => !['readPr'].includes(name)), [], 'plan made a write call');
   });
