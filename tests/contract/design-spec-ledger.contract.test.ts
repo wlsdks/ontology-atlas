@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+import { readGlobalCss } from "../../scripts/lib/global-css.mjs";
+
 // Calls **the same module** as the gate script. A copy would make the contract check
 // the copy rather than the gate.
 import {
@@ -68,7 +70,7 @@ describe("디자인 규격 → 원장 게이트", () => {
 
   it("각 트리거 파일이 오늘 실제로 규격 항목을 낸다 (탐지기가 공회전하지 않는다)", () => {
     for (const path of parseTriggerFiles(readDoc()) as string[]) {
-      const census = censusFor(path, readFileSync(path, "utf8")) as Map<string, string>;
+      const census = censusFor(path, path === "app/globals.css" ? readGlobalCss() : readFileSync(path, "utf8")) as Map<string, string>;
       expect(
         census.size,
         `${path} 의 센서스가 비었다 — 파일이 옮겨졌거나 추출 규칙이 낡았다. ` +

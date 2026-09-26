@@ -370,7 +370,7 @@ export function diffCensus(before, after) {
   return changes;
 }
 
-export function describeChange(path, change) {
+function describeChange(path, change) {
   if (change.kind === 'added') return `Spec added: ${path} — ${change.key} = ${change.to}`;
   if (change.kind === 'removed') return `Spec removed: ${path} — ${change.key} (was: ${change.from})`;
   return `Spec value changed: ${path} — ${change.key}: ${change.from} → ${change.to}`;

@@ -14,7 +14,7 @@ export const SCOPE_CONFIGS = Object.freeze({
   frontend: Object.freeze({
     cwd: '.',
     runtime: source(
-      ['app/**/{page,layout,template,error,loading,not-found,global-error,default,route}.{ts,tsx}', 'app/**/{icon,apple-icon,opengraph-image,twitter-image,sitemap,robots}.{ts,tsx}'],
+      ['app/**/{page,layout,template,error,loading,not-found,global-error,default,route}.{ts,tsx}', 'app/**/{icon,apple-icon,opengraph-image,twitter-image,sitemap,robots}.{ts,tsx}', 'app/styles/*.css'],
       ['app/**/*.{ts,tsx,css}', 'src/**/*.{ts,tsx}', '!**/*.{test,spec}.{ts,tsx}', '!src/entities/docs-vault/data/**'],
       ALL_ISSUES,
       {},
