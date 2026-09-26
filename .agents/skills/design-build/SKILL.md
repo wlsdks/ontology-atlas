@@ -53,7 +53,9 @@ inside a selected shape do not pay for divergence.
 
 ## 0-B. Render while building
 
-When the route includes `computer-use-loop`, do not finish a whole screen from
+When the route includes `final-capture` (copy only), take one fresh capture of
+the affected state after the change. When it includes `computer-use-loop`, do
+not finish a whole screen from
 code or imagination before looking at it.
 
 1. Capture the exact baseline state through the computer-use capability.
