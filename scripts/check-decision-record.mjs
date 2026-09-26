@@ -41,9 +41,7 @@ import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 import {
-  censusFor,
-  describeChange,
-  diffCensus,
+  designSpecChangesBetween,
   parseTriggerFiles,
   SPEC_RULE_DOC,
 } from "./lib/design-spec-census.mjs";
@@ -228,25 +226,9 @@ function designSpecChanges() {
     process.exit(1);
   }
 
-  const showAt = (ref, path) => {
-    try {
-      return execFileSync("git", ["show", `${ref}:${path}`], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"],
-      });
-    } catch {
-      return null; // A file that did not exist at that point = an empty inventory
-    }
-  };
-
-  const found = [];
-  for (const path of triggerFiles) {
-    if (!changedPaths.has(path)) continue;
-    const before = censusFor(path, showAt(base, path));
-    const after = censusFor(path, showAt("HEAD", path));
-    for (const change of diffCensus(before, after)) found.push(describeChange(path, change));
-  }
-  return found;
+  // A file absent at a ref reads as null = an empty inventory. A change to an
+  // `app/styles/` part counts as a change to the `app/globals.css` trigger.
+  return designSpecChangesBetween(base, "HEAD", changedPaths, triggerFiles);
 }
 
 const specChanges = designSpecChanges();

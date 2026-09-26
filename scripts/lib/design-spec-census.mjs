@@ -73,6 +73,22 @@ export function specTriggerPath(changedPath) {
   return /^app\/styles\/[^/]+\.css$/.test(changedPath) ? 'app/globals.css' : changedPath;
 }
 
+/**
+ * Spec changes between two refs, described one per line, for the trigger files
+ * among the changed paths.
+ */
+export function designSpecChangesBetween(base, head, changedPaths, triggerFiles, root = process.cwd()) {
+  const touched = new Set([...changedPaths].map(specTriggerPath));
+  const found = [];
+  for (const path of triggerFiles) {
+    if (!touched.has(path)) continue;
+    const before = censusFor(path, specTextAt(base, path, root));
+    const after = censusFor(path, specTextAt(head, path, root));
+    for (const change of diffCensus(before, after)) found.push(describeChange(path, change));
+  }
+  return found;
+}
+
 /** The authority the gate reads the trigger list from. The list is never duplicated here. */
 export const SPEC_RULE_DOC = '.claude/rules/design.md';
 

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
 
-import { censusFor, specTextAt, specTriggerPath } from './design-spec-census.mjs';
+import { censusFor, designSpecChangesBetween, specTextAt, specTriggerPath } from './design-spec-census.mjs';
 import { locateGlobalCssLine, readGlobalCss, readGlobalCssAt } from './global-css.mjs';
 
 const repo = mkdtempSync(path.join(tmpdir(), 'global-css-'));
@@ -48,6 +48,30 @@ test('the design-spec census reads ramp tokens through the parts', () => {
   assert.equal(censusFor('app/globals.css', ':root { --text-body: 13px; }').size, 1);
   assert.equal(specTriggerPath('app/styles/one.css'), 'app/globals.css');
   assert.equal(specTriggerPath('src/a.ts'), 'src/a.ts');
+});
+
+test('a ramp change made only in an app/styles part reaches the spec census', () => {
+  write('app/styles/one.css', ':root { --text-body: 13px; }\n');
+  git('add', '.');
+  git('commit', '-qm', 'ramp in a part');
+  write('app/styles/one.css', ':root { --text-body: 14px; }\n');
+  git('add', '.');
+  git('commit', '-qm', 'ramp value change');
+  const found = designSpecChangesBetween(
+    'HEAD~1',
+    'HEAD',
+    new Set(['app/styles/one.css']),
+    ['app/globals.css'],
+    repo,
+  );
+  assert.equal(found.length, 1);
+  assert.match(found[0], /--text-body/);
+  // Before the split, the entry itself held the tokens; that base still compares.
+  assert.equal(
+    designSpecChangesBetween('HEAD~3', 'HEAD', new Set(['app/globals.css']), ['app/globals.css'], repo)
+      .length > 0,
+    true,
+  );
 });
 
 test('maps a joined line back to the part that holds it', () => {
