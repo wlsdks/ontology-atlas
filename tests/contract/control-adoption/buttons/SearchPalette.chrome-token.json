@@ -1,0 +1,9 @@
+{
+  "file": "src/widgets/search-palette/ui/SearchPalette.tsx",
+  "count": 1,
+  "claim": "chrome-token",
+  "proof": "--overlay-close-size",
+  "why": "팔레트 닫기 — 32px 이고 coarse 포인터에서 --touch-target-min(44)으로 승격한다.",
+  "conditional": "값 층이 포인터 승격 축을 얻으면 다시 연다.",
+  "note": "One of the 2026-08-04 combined round's 7 verified chrome-token registrations: tokens that go from 32-36px on fine pointers to 44 on coarse, or ride a scale factor, so a fixed-step ramp cannot express them (tokenIsBeyondFixedSteps verifies this mechanically)."
+}

@@ -1,0 +1,7 @@
+{
+  "file": "src/views/ontology-insights/ui/tabs/LibraryTab.tsx",
+  "count": 1,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "The Wiki preview footer's \"Start from the Library\" (2026-09-25), the same primary sm standard button as the Guidance footer beside it, for the same reason."
+}

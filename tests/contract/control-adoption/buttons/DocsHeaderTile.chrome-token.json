@@ -1,0 +1,7 @@
+{
+  "file": "src/views/docs-vault/ui/parts/DocsHeaderTile.tsx",
+  "count": 1,
+  "claim": "chrome-token",
+  "proof": "--chrome-tile-size",
+  "why": "문서함 헤더 타일 프리미티브 — size-[var(--chrome-tile-size)] 로 크롬 잠금 단(36, coarse 에서 max(36,44))을 그대로 진다. ChromeTile 의 문서함 형제."
+}

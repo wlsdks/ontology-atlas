@@ -1,0 +1,7 @@
+{
+  "file": "src/views/library/ui/parts/AgentDoor.tsx",
+  "count": 1,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "The door out of a blocked Library step (slice U2, 2026-09-11). It is a `<Link>` because it navigates to `/agents`, and `cn(buttonVariants({ variant: \"outline\", size: \"sm\" }), …)` because it stands beside the Ask button that is already `<Button variant=\"outline\" size=\"sm\">` — the two must be one control at two tags. `control-class.ts` declares it \"does not replace standard buttons\", so moving this to `controlClass` would break that rule rather than honour it."
+}

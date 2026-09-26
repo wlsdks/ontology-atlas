@@ -1,0 +1,9 @@
+{
+  "file": "src/views/home/ui/TopologyCommandChrome.tsx",
+  "count": 1,
+  "claim": "chrome-token",
+  "proof": "--chrome-tile-size",
+  "why": "지도 크롬의 git 타일(좁은 폭 전용). `size-[var(--chrome-tile-size)]` 로 36px 이고 coarse 포인터에서 `max(36px, --touch-target-min)` 으로 **승격**한다 — 선언이 둘이라 토큰 검사를 통과한다. 값 층은 포인터 조건부 치수를 못 낸다.",
+  "conditional": "값 층이 포인터 조건부 치수 축을 얻으면 이 줄을 지우고 옮긴다.",
+  "note": "2026-08-06: the last two links. With these, hand-styled links reach 0."
+}

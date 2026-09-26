@@ -1,0 +1,9 @@
+{
+  "file": "src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx",
+  "count": 1,
+  "family": "button",
+  "claim": "click-surface",
+  "proof": "data-testid=\"acp-chat-history-scrim\"",
+  "why": "앱 안 대화의 **지난 대화 목록 뒤 막**. 그 목록은 절대 위치로 떠서 대화를 덮는다 — 흐름에 두면 열 때 대화가 밀려나고 목록이 대화의 일부처럼 보였다(2026-08-16 소유자 실보고). 떠 있는 것에는 「아무 데나 누르면 닫힌다」가 딸려야 하고 그 클릭면이 이 막이다. `absolute inset-0` 과 바탕 한 겹이 전부이고, 값 층의 모양 여덟 중 무엇을 씌워도 **보이는 것이 달라지지 않는다** — 씌울 규격이 없어서다.",
+  "note": "2026-08-16, no-basis 4 -> 5: the scrim behind the past-conversation list. The list floats absolutely over the conversation (in flow it pushed the conversation aside and read as part of it, reported by the owner); anything floating needs click-anywhere-to-dismiss, and this is that click surface. It meets both qualifications: absolute inset-0, and zero ramp-owned properties."
+}

@@ -1,0 +1,9 @@
+{
+  "file": "src/widgets/topology-index-panel/ui/TopologyIndexTab.tsx",
+  "count": 1,
+  "claim": "shape-gap",
+  "proof": "flex-col",
+  "why": "지도 INDEX 패널을 여는 세로 손잡이. 위와 같은 세로 스택 배치다.",
+  "conditional": "세로 스택 컨트롤이 6곳을 넘으면 위와 함께 지운다.",
+  "note": "2026-08-06, a place with a final verdict comes out of debt. Owner: if we decided not to design-system a place, analyse why, and if that is fine remove it from the count; being told how many are left keeps making me order it fixed. Debt is only a progress gauge if it can reach 0. Each such row was opened and verified and carries a conditional that drops it back into debt when the value layer gains that axis."
+}
