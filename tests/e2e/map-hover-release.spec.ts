@@ -28,10 +28,15 @@ import { waitForMapSettled } from "./settle";
  * clearing that. The value holding the gate open was a different ref. In other
  * words, the check was measuring beside the defect.
  *
- * So the **consequence** is measured instead: after the cursor leaves and the grace
- * period (1,200ms) elapses, do the rAF callbacks actually stop working? Frame cost
- * surfaces the same whatever holds the gate open, so this check also catches copies
- * of this defect.
+ * So the **consequence** is measured instead, in two layers:
+ *
+ * - **The proof** reads the map's own e2e record: after the cursor leaves, the idle
+ *   gate's last awake frame (`idleDebug().lastActive.t`) stops advancing. Any flag
+ *   that keeps counting as activity — the stale hover or a copy of it — keeps that
+ *   stamp moving. It does not depend on machine load.
+ * - **A coarse backstop** compares rAF callback time after release with time while
+ *   hovering, in the same run. It catches a broken idle gate that keeps drawing
+ *   without recording activity, which the stamp cannot see.
  */
 test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린다", async ({ page }) => {
   await seedFirstRunSeen(page);
@@ -74,8 +79,8 @@ test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린�
    * Time per second spent in rAF callbacks over the last `ms`. Why time rather than a
    * frame **count**: the "did work" threshold (0.4ms) overlaps ordinary frame cost on a
    * small vault and makes the verdict flaky (measured: a defective build reported
-   * 2/143 on 200 nodes). Time separates the two states with no overlap at all — normal
-   * ≈3, defective ≈29 ms/s.
+   * 2/143 on 200 nodes). Time is only a backstop here; the ratio numbers sit at the
+   * assertion below.
    */
   const idleCost = (ms: number) =>
     page.evaluate((windowMs) => {
@@ -88,24 +93,24 @@ test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린�
       };
     }, ms);
 
-  await page.mouse.move(box!.x + target!.x, box!.y + target!.y);
+  /** When the idle gate last recorded an awake frame, in the page's own clock. */
+  const lastActiveStamp = () =>
+    page.evaluate(() => {
+      const m = (window as unknown as {
+        __atlasMap?: { idleDebug: () => { lastActive: { t: number } | null } };
+      }).__atlasMap;
+      return m?.idleDebug().lastActive?.t ?? 0;
+    });
+
   // The conclusion only means something if the premise holds — pin down that the
   // hover actually took. (Without this line, "the hover never took" and "the gate
   // closed" are the same green.) That is also the condition, so it is polled rather
   // than slept in front of.
   const hovered = () =>
     page.evaluate(() => (window as unknown as { __atlasMap?: AtlasMapProbe }).__atlasMap?.hover() ?? null);
-  await expect.poll(hovered, { timeout: 15_000 }).toBe(target!.id);
-
-  // The awake reference for ②: the same sampler over the same 1.5 s span while the
-  // hover holds the idle gate open, so machine load inflates both sides alike.
-  // measurement window: 1.5 s of hovered frames to sample, not a settle.
-  await page.waitForTimeout(1_500);
-  const awake = await idleCost(1500);
-  expect(awake.frames).toBeGreaterThan(20);
 
   /*
-   * Move in one step onto chrome layered **over** the canvas — the left nav rail.
+   * Leave onto chrome layered **over** the canvas — the left nav rail.
    *
    * Why not "a coordinate outside the canvas": this map's canvas **covers the whole
    * screen** (measured box = viewport). So a coordinate written as "outside" was
@@ -121,59 +126,84 @@ test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린�
   const rail = page.getByTestId("app-nav-rail-item-agents");
   const railBox = await rail.boundingBox();
   expect(railBox).not.toBeNull();
-  await page.mouse.move(railBox!.x + railBox!.width / 2, railBox!.y + railBox!.height / 2);
-  /*
-   * The hover has to be released and the canvas has to fall quiet again. The release
-   * is a state — `hover()` goes null — and the quiet is the idle gate's grace period
-   * elapsing with nothing to draw, which shows up as the picture no longer changing.
-   */
-  await expect.poll(hovered, { message: "레일로 나갔는데 호버가 안 풀렸다" }).toBeNull();
-
-  // ① Was the highlight actually released — the cause side. A verdict with no timing noise.
-  expect(
-    await page.evaluate(
-      () => (window as unknown as { __atlasMap?: AtlasMapProbe }).__atlasMap?.hover() ?? null,
-    ),
-  ).toBeNull();
 
   /*
-   * ② Did the gate actually close — the consequence side. Caught here even if the cause
-   * moves to another ref.
-   *
-   * ⚠️ **This wait stays in milliseconds, and here is the measurement that says why**
-   * (2026-09-13 sweep of the fixed sleeps that gate an assertion; `?synth=800`, against
-   * the 12 ms/s bound below):
-   *
-   * | state waited for instead | cost over the next 1.5 s |
-   * |---|---|
-   * | camera and layout still | 38 ms/s |
-   * | the map's idle gate skipping without waking for 1.5 s | 45 ms/s |
-   * | 3,500 ms after the pointer left | **2.7 ms/s** |
-   *
-   * The map's own gate was skipping every frame of the middle row, so that cost is **not
-   * the map's**: with the pointer parked on a rail tile, roughly one further
-   * `requestAnimationFrame` callback per frame keeps working for about three seconds, and
-   * that loop exposes no state to wait on — `document.getAnimations()` reports nothing,
-   * because it is script-driven rather than WAAPI.
-   *
-   * So this is a measurement window over another subsystem's tail, not a settle this
-   * spec can ask about. Giving that subsystem an observable is its own change; until
-   * then the numbers are written down rather than the duration guessed at.
+   * Three alternating hover / release rounds. Each round yields one awake and one
+   * released frame-cost sample; the backstop compares the minimum of each side
+   * (the duplicate-pairs model), so one noisy window does not decide it.
    */
-  await page.waitForTimeout(3_500);
-  const after = await idleCost(1500);
-  // If no frames arrived at all (a backgrounded tab, say) this measurement is void.
-  expect(after.frames).toBeGreaterThan(20);
+  const awakeSamples: number[] = [];
+  const releasedSamples: number[] = [];
+  for (let round = 0; round < 3; round++) {
+    await page.mouse.move(box!.x + target!.x, box!.y + target!.y);
+    await expect.poll(hovered, { timeout: 15_000 }).toBe(target!.id);
+    // The hover's opening animation runs its first ~500 ms hotter (69-89 vs 48-66
+    // ms/s, 2026-09-27 review), so only the steady last second is sampled.
+    // measurement window: 1.5 s of hovered frames, the last 1 s of which is sampled.
+    await page.waitForTimeout(1_500);
+    const awake = await idleCost(1_000);
+    expect(awake.frames).toBeGreaterThan(20);
+    awakeSamples.push(awake.cpuMsPerSec);
+
+    await page.mouse.move(railBox!.x + railBox!.width / 2, railBox!.y + railBox!.height / 2);
+    // ① Was the highlight actually released — the cause side, no timing noise. With
+    //    the pointerleave release removed (2026-09-27) this poll already fails here.
+    await expect.poll(hovered, { message: "레일로 나갔는데 호버가 안 풀렸다" }).toBeNull();
+
+    /*
+     * ② The proof: the idle gate stops recording awake frames. Poll until two reads
+     * a poll interval apart agree (the gate stamps every awake frame, so equal reads
+     * mean it has gone quiet), then hold for a labelled window and require that no
+     * awake frame was recorded in it. With the hover-never-released defect the stamp
+     * advances every frame and the poll never settles: measured red on 2026-09-27
+   * with the pointerleave release removed and ① disabled.
+     */
+    let previous = -1;
+    await expect
+      .poll(
+        async () => {
+          const now = await lastActiveStamp();
+          const still = now === previous;
+          previous = now;
+          return still;
+        },
+        { message: "커서가 나간 뒤에도 유휴 게이트가 깨어 있는 프레임을 기록한다", timeout: 15_000 },
+      )
+      .toBe(true);
+    const quietFrom = await lastActiveStamp();
+    // measurement window: 1 s in which a sleeping gate must record no awake frame.
+    await page.waitForTimeout(1_000);
+    expect(await lastActiveStamp(), "잠든 지도가 1초 안에 다시 깨어났다").toBe(quietFrom);
+
+    /*
+     * The released cost sample waits out another subsystem's tail (2026-09-13 sweep,
+     * `?synth=800`): with the pointer parked on a rail tile, roughly one further
+     * `requestAnimationFrame` callback per frame keeps working for about three seconds
+     * after the pointer leaves, and that loop exposes no state to wait on —
+     * `document.getAnimations()` reports nothing because it is script-driven. Measured
+     * released cost by what was waited for: camera and layout still 38 ms/s, the
+     * map's gate skipping for 1.5 s 45 ms/s, 3,500 ms after the pointer left 2.7 ms/s.
+     */
+    // measurement window: outlasts the rail's script-driven tail described above.
+    await page.waitForTimeout(3_500);
+    const released = await idleCost(1_000);
+    // If no frames arrived at all (a backgrounded tab, say) this measurement is void.
+    expect(released.frames).toBeGreaterThan(20);
+    releasedSamples.push(released.cpuMsPerSec);
+  }
+
+  const awakeMin = Math.min(...awakeSamples);
+  const releasedMin = Math.min(...releasedSamples);
   /*
-   * Relative to the awake reference measured above, so load inflates both sides alike
-   * (the old absolute `< 12` read 15.5-16.2 on a busy machine). Measured 2026-09-27,
-   * 5 runs, headless static build, synth=800: awake 60-69 ms/s, released 3.3-11.9 ms/s,
-   * ratio 0.054-0.176. With the idle gate forced open (`shouldSkipFrame` pinned to
-   * false) the ratio was 0.75-0.77 and this assertion failed. The bound sits 3x over
-   * the worst healthy ratio.
+   * ③ The coarse backstop, not the proof: it catches an idle gate that keeps drawing
+   * without recording activity (② cannot see that). Relative to awake in the same
+   * run, so load inflates both sides alike. Measured 2026-09-27, 5 runs each,
+   * headless static build, synth=800, min of three rounds: healthy ratio
+   * 0.039-0.243; `shouldSkipFrame` pinned to false 0.855-0.951. The bound sits
+   * between the healthy worst and the forced-awake best; it is not 3x from either.
    */
   expect(
-    after.cpuMsPerSec,
-    `released ${after.cpuMsPerSec.toFixed(1)} ms/s vs awake ${awake.cpuMsPerSec.toFixed(1)} ms/s`,
-  ).toBeLessThan(awake.cpuMsPerSec * 0.55);
+    releasedMin,
+    `released ${releasedSamples.map((v) => v.toFixed(1)).join("/")} ms/s vs awake ${awakeSamples.map((v) => v.toFixed(1)).join("/")} ms/s`,
+  ).toBeLessThan(awakeMin * 0.5);
 });
