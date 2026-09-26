@@ -64,28 +64,28 @@ test('sharding the unit lane splits the file sweeps and keeps whole-graph checks
   assert.deepEqual(commandsForLane({ lane: 'unit', plan: full, shard: '1/3' }), [
     'pnpm knip',
     'pnpm exec vitest run --project=contract-node --project=jsdom --shard=1/3',
-    'pnpm test:perf',
   ]);
 });
 
 /*
- * ⚠️ **A measurement must not ride a shard.** Vitest shards by file, so a ratio gate's verdict
- * otherwise depends on which other files land beside it — and only the cached half of a
- * cached-against-naive ratio pays for that company. `node-name-match.perf.test.ts` read 6.73,
- * 9.20 and 9.20 against a bar of 10 on branches that never touched it. This pins the shape that
- * fixed it rather than the strings: every sweep names the two non-measurement projects, and the
- * measurement files run once, alone, on the shard that already carries whole-graph work.
+ * ⚠️ **A measurement must not ride a shard, nor share a runner.** Vitest shards by file, so a
+ * ratio gate's verdict otherwise depends on which other files land beside it — and only the
+ * cached half of a cached-against-naive ratio pays for that company. `node-name-match.perf.test.ts`
+ * read 6.73, 9.20 and 9.20 against a bar of 10 on branches that never touched it, and 9.25 on
+ * train #1928 while it still ran last on Unit · Contract shard 1. This pins the shape that fixed
+ * it rather than the strings: every sweep names the two non-measurement projects, no unit shard
+ * runs the measurement project, and the `perf` lane runs it once, by itself.
  */
-test('the measurement files never ride a shard, and run once on their own', () => {
+test('the measurement files never ride a unit runner, and run once in their own lane', () => {
   const plans = [
     buildImpactPlan({ files: ['src/shared/lib/node-name-match.ts'] }),
     buildImpactPlan({ files: [], forceFull: true }),
   ];
   for (const plan of plans) {
-    const all = [];
     for (const shard of ['1/3', '2/3', '3/3']) {
-      const commands = commandsForLane({ lane: 'unit', plan, base: 'abc123', shard });
-      for (const command of commands) {
+      for (const command of commandsForLane({ lane: 'unit', plan, base: 'abc123', shard })) {
+        assert.ok(!command.includes('test:perf') && !command.includes('--project=perf'),
+          `a unit shard may not run the measurement project: ${command}`);
         if (command.startsWith('pnpm exec vitest run') && command.includes('--shard=')) {
           assert.ok(
             command.includes('--project=contract-node --project=jsdom'),
@@ -93,18 +93,24 @@ test('the measurement files never ride a shard, and run once on their own', () =
           );
         }
       }
-      all.push(...commands);
     }
-    assert.equal(
-      all.filter((command) => command === 'pnpm test:perf').length,
-      1,
-      'the measurement lane runs exactly once across the three shards',
-    );
-    assert.ok(
-      commandsForLane({ lane: 'unit', plan, base: 'abc123', shard: '1/3' }).includes('pnpm test:perf'),
-      'it runs on the shard that already carries whole-graph work',
-    );
+    const perf = commandsForLane({ lane: 'perf', plan, base: 'abc123' });
+    assert.equal(perf.length, 1, 'the measurement lane is one command');
+    assert.ok(perf[0].startsWith('pnpm test:perf'), perf[0]);
+    assert.ok(!perf[0].includes('--shard'), 'the measurement lane is never sharded');
   }
+});
+
+test('the perf lane lets Vitest choose affected files, and runs all of them on a full plan', () => {
+  const affected = buildImpactPlan({ files: ['src/shared/lib/node-name-match.ts'] });
+  assert.deepEqual(commandsForLane({ lane: 'perf', plan: affected, base: 'abc123' }), [
+    "pnpm test:perf --changed='abc123' --passWithNoTests",
+  ]);
+  assert.throws(() => commandsForLane({ lane: 'perf', plan: affected }), /comparison base/);
+  const full = buildImpactPlan({ files: [], forceFull: true });
+  assert.deepEqual(commandsForLane({ lane: 'perf', plan: full, base: 'abc123' }), ['pnpm test:perf']);
+  const docs = buildImpactPlan({ files: ['docs/DESIGN-SYSTEM.md'] });
+  assert.deepEqual(commandsForLane({ lane: 'perf', plan: docs, base: 'abc123' }), []);
 });
 
 test('a focused contract list is not split three ways', () => {
