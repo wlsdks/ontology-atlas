@@ -7463,7 +7463,7 @@
       "interact": "Interact",
       "movement": "Movement controls",
       "up": "Move up", "down": "Move down", "left": "Move left", "right": "Move right",
-      "target": {"terminal":"Study terminal", "curio":"Talk to Curio", "mote":"Calm signal mote", "gate":"Inspect gate", "exit":"Leave sector"}
+      "target": {"terminal":"Study terminal", "curio":"Talk to Curio", "mote":"Calm signal mote", "gate":"Inspect gate", "exit":"Complete sector"}
     },
     "adventure": {
       "exploreDirectly": "Explore on foot · WASD",

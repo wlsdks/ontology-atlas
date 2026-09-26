@@ -7463,7 +7463,7 @@
       "interact": "조사",
       "movement": "이동 조작",
       "up": "위로 이동", "down": "아래로 이동", "left": "왼쪽으로 이동", "right": "오른쪽으로 이동",
-      "target": {"terminal":"학습 단말기", "curio":"큐리오와 대화", "mote":"신호 모트 진정시키기", "gate":"문 조사", "exit":"섹터 나가기"}
+      "target": {"terminal":"학습 단말기", "curio":"큐리오와 대화", "mote":"신호 모트 진정시키기", "gate":"문 조사", "exit":"섹터 완료"}
     },
     "adventure": {
       "exploreDirectly": "직접 탐험 · WASD",
