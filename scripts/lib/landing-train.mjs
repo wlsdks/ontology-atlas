@@ -385,20 +385,22 @@ export function parseCoAuthors(logText) {
   return [...seen.values()];
 }
 
-export function composeSquashBody({ components, trainNumber }) {
-  const trailers = unique(components.flatMap((c) => c.coAuthors ?? []));
-  const byEmail = new Map();
-  for (const trailer of trailers) {
-    const email = /<([^>]+)>/.exec(trailer)?.[1]?.toLowerCase() ?? trailer;
-    if (!byEmail.has(email)) byEmail.set(email, trailer);
-  }
-  const lines = [
-    `Landed by train #${trainNumber}:`,
-    '',
-    ...components.map((c) => `- ${c.title ?? '(untitled)'} (#${c.number}, ${c.headRefName}@${String(c.headRefOid ?? '').slice(0, 9)})`),
-  ];
-  if (byEmail.size > 0) lines.push('', ...[...byEmail.values()].map((who) => `Co-authored-by: ${who}`));
-  return lines.join('\n');
+/**
+ * The commit one pull request becomes on `main`: its own title and number, its first author as
+ * the commit author, every other author as a trailer. A train lands as one commit per pull
+ * request, so `main`'s history reads like the pull requests, not like the trains that carried them
+ * (owner, 2026-09-27: "chore(train): land #1926 #1913 (#1927)" says nothing about the change).
+ */
+export function componentCommit({ component, coAuthors = [] }) {
+  const parsed = coAuthors
+    .map((trailer) => /^(.+?)\s*<([^>]+)>$/.exec(trailer))
+    .filter(Boolean)
+    .map(([, name, email]) => ({ name: name.trim(), email: email.trim() }));
+  const author = parsed[0] ?? null;
+  const others = parsed.slice(1).filter((who) => who.email.toLowerCase() !== author?.email.toLowerCase());
+  const title = `${String(component.title ?? '').trim() || `Pull request #${component.number}`} (#${component.number})`;
+  const trailers = others.map((who) => `Co-authored-by: ${who.name} <${who.email}>`);
+  return { message: trailers.length > 0 ? `${title}\n\n${trailers.join('\n')}` : title, author };
 }
 
 export function landedComment({ trainNumber, trainUrl, sha, branchKept = false }) {
