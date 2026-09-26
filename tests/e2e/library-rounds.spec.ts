@@ -177,6 +177,6 @@ test.describe("Library rounds", () => {
     await page.goto("/en/library/?tab=rounds");
     await page.waitForLoadState("networkidle");
     await expect(page.getByTestId("library-rounds")).toHaveAttribute("data-rounds-state", "app-required");
-    await expect(page.getByTestId("library-rounds").getByRole("link", { name: "Get the desktop app" })).toHaveAttribute("href", /\/download\/$/);
+    await expect(page.getByTestId("library-rounds").getByRole("link", { name: "Get the app" })).toHaveAttribute("href", /\/download\/$/);
   });
 });

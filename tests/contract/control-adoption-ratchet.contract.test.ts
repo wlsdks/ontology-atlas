@@ -1263,7 +1263,7 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     claim: 'standard-button',
     proof: 'buttonVariants',
     why:
-      'The Models tab\'s web-only door, "Get the desktop app" (2026-09-26), for the same reason ' +
+      'The Models tab\'s web-only door, "Get the app" (2026-09-26), for the same reason ' +
       'as the Agents tab beside it: a filled `pill` became the primary sm standard button.',
   },
   {
