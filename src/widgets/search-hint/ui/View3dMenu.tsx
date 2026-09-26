@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import { usePanelPresence } from '@/shared/lib/use-presence';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
@@ -152,8 +152,14 @@ export function View3dMenu({
   // On open, focus the checked view, so the keyboard lands inside the picker it opened
   // rather than on the chip with one Tab still to go.
   // The box mounts one commit after `open` (the presence gate), so both are awaited.
+  //
+  // A layout effect, so the focus moves in the same task that inserts the box. As a passive
+  // effect it ran a task later, and an input event is dispatched ahead of that task: an
+  // Escape pressed as the picker appeared closed it and focused the chip, then the stale
+  // effect focused the closing radio, and focus fell to <body> when the box unmounted
+  // (measured 2026-09-26: every run with the Escape between the insert and the effect).
   const boxMounted = presence.mounted;
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open || !boxMounted) return;
     boxRef.current?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')?.focus({ preventScroll: true });
   }, [open, boxMounted]);
