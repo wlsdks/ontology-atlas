@@ -50,7 +50,7 @@ const RULES = [
     // machine is the one place a wrong verdict merges something untested.
     command: 'pnpm test:pr:land',
     reason: 'the landing sequence or its state machine changed',
-    matches: [/^scripts\/pr-land(?:\.test)?\.mjs$/],
+    matches: [/^scripts\/pr-land(?:\.test)?\.mjs$/, /^scripts\/lib\/landing-train(?:\.test)?\.mjs$/],
   },
   {
     // 2026-09-01 review: check:tokens and design:toc:check were unconditional

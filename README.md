@@ -704,9 +704,11 @@ rather than a self-declared risk.
 Start with `pnpm checks:changed -- --run`: it picks the focused gates for the
 files you changed, runs every recommendation, and stops at the first failure.
 Open pull requests as drafts and land them with `pnpm pr:land <number>`, which
-serializes landings and fires the single CI run
-([details](docs/DEVELOPMENT-CHECKS.md)). Two or more ready branches land together
-through `/land-bundle` as one integration branch and one `pnpm pr:land`.
+queues them for a landing train: up to 20 queued pull requests merge behind one
+CI run, and a red train is bisected
+([details](docs/DEVELOPMENT-CHECKS.md)). A pull request already green on its own
+head and disjoint from `main` merges at once on the fast path. Branches that must
+be resolved together land through `/land-bundle` as one integration branch.
 
 | Command | What it answers |
 |---|---|
@@ -716,13 +718,11 @@ through `/land-bundle` as one integration branch and one `pnpm pr:land`.
 | `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check` |
 | `pnpm knip` | Dead files, exports and types across every scope |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision record to cite or overturn, and whether this change owes one |
-| `pnpm pr:land <n>` · `pnpm pr:queue` | Land a pull request, and who is landing right now |
+| `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request for the landing train (or merge it on the fast path), and show the queue and the train in flight |
+| `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run what a landing would do without writing to GitHub, and run trains until the queue is empty |
+| `pnpm pr:ci <n>` | Fire CI on a draft now, so a green, disjoint change can take the fast path |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Land several branches as one: plan the merge (which carry work, shared files, trial conflicts) and afterwards prune the component branches main provably contains. See `/land-bundle` |
 | `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the six app screens the download page shows, Korean and English (`public/gateway/<screen>.<locale>.png`), from a served `pnpm build`, against this repository's own ontology |
-
-For independent backlog-record additions, opt into earlier CI feedback with
-`pnpm pr:land <n> --parallel-ci`. Final merge and validation of newer main remain
-serialized; see [eligibility and rerun limits](docs/BACKLOG.md#ci-while-another-task-is-landing).
 
 [Development checks](docs/DEVELOPMENT-CHECKS.md) is the full gate reference, one
 entry per area; [map testability](docs/MAP-TESTABILITY.md) owns canvas
