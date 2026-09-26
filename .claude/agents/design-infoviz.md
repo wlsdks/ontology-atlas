@@ -2,6 +2,7 @@
 name: design-infoviz
 description: Information-visualization designer. Use only when design:route selects this seat; maps each mark to a typed fact and measures contrast, crossings, density.
 model: opus
+effort: max
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script
 ---
 

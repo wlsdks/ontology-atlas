@@ -2,6 +2,7 @@
 name: design-responsive
 description: Responsive and touch designer. Use only when design:route selects this seat; judges /responsive-sweep rects, targets, safe areas, collapse.
 model: opus
+effort: max
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__resize_page
 ---
 

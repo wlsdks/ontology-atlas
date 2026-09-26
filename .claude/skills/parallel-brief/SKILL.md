@@ -60,7 +60,11 @@ Before assigning scopes, run `pnpm conflicts:scan` so no scope includes a file a
 
 ## 6. Eight mandatory lines
 
-Every delegated brief states:
+Spawn each slice as `implementer` (Opus, low effort) and review what returns with
+`reviewer` (Opus, max); a slice that still needs judgment goes back to the
+`planner` first. The Agent tool takes no per-call effort, so the agent type is
+the dial; in a Workflow script pass `effort` to `agent()`. Every delegated brief
+states:
 
 1. the unique server port, or that no server may run;
 2. which files are read-only, and that a slice adding modules loaded at runtime

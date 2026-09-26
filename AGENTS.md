@@ -62,8 +62,9 @@ record a mistake, wasted CI round, or costly tool pattern with `/harness-retro`.
 
 Delegate only large, independent, parallelizable work; finish what a handful of
 tool calls can do yourself, and never delegate to verify or double-check your
-own work. Disclose shared-context reviews. Subagents do not stash, delete
-worktrees, or run `git add -A`.
+own work. Plan, review, and judge at the host's highest effort; build a decided
+slice at its lowest. Disclose shared-context reviews. Subagents do not stash,
+delete worktrees, or run `git add -A`.
 
 Task status: `pnpm backlog -- --task=ID`; `docs/BACKLOG.md` owns the append-only
 record format. Before reversing an existing product or architecture choice, find
