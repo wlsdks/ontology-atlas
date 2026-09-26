@@ -1,4 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { waitForAnimationsDone } from "./settle";
+
+/** The page has loaded and its reveals have finished: the painted test reads opacity. */
+async function settled(page: import("@playwright/test").Page) {
+  await page.waitForLoadState("load");
+  await waitForAnimationsDone(page.locator("body"));
+}
 
 /**
  * **Is the gateway's reading material reachable on narrow screens?**
@@ -95,13 +102,13 @@ test.describe("관문 읽을거리 — 좁은 화면에서도 닿는다", () => 
       for (const route of GATEWAY_ROUTES) {
         await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
         await page.evaluate(() => document.fonts.ready);
-        await page.waitForTimeout(700);
+        await settled(page);
 
         // When a disclosure exists, open it once — reachable in one interaction is not a dead end.
         const summary = page.getByTestId("guide-chapter-picker-summary");
         if ((await summary.count()) > 0 && (await summary.isVisible())) {
           await summary.click();
-          await page.waitForTimeout(250);
+          await settled(page);
         }
 
         const seen = await countReading(page);
@@ -140,14 +147,14 @@ test.describe("관문 읽을거리 — 좁은 화면에서도 닿는다", () => 
 
     await page.setViewportSize({ width: 1512, height: 900 });
     await page.goto("/ko/guide/connect-agent/?guides=off", { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(700);
+    await settled(page);
     const wide = [...new Set(await chapters())].sort();
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/ko/guide/connect-agent/?guides=off", { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(700);
+    await settled(page);
     await page.getByTestId("guide-chapter-picker-summary").click();
-    await page.waitForTimeout(250);
+    await settled(page);
     const narrow = [...new Set(await chapters())].sort();
 
     expect(wide.length, "넓은 폭에서 장을 못 찾았다 — 이 시험이 헛돈다").toBeGreaterThan(5);

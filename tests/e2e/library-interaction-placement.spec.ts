@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { waitForAnimationsDone, waitForBoxStill, waitFrames } from "./settle";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { installDesktopBridge, openRounds } from "./rounds-desktop-bridge";
 import { stubDirectoryPicker } from "./vault-picker-stub";
@@ -118,7 +119,8 @@ test.describe("Library interaction placement", () => {
         await chip.hover();
         const tip = page.locator("[data-radix-popper-content-wrapper]").last();
         await expect(tip).toBeVisible();
-        await page.waitForTimeout(250);
+        await waitForAnimationsDone(tip);
+        await waitForBoxStill(tip.locator("> *").first());
         const tipBox = await box(tip.locator("> *").first());
         expect(tipBox.x, `${id} tooltip lies on the index controls`).toBeGreaterThanOrEqual(controlsEnd);
         expect(intersects(tipBox, rail), `${id} tooltip crosses the nav rail`).toBe(false);
@@ -137,7 +139,8 @@ test.describe("Library interaction placement", () => {
     await page.getByTestId("library-guide-open").click();
     const popover = page.getByTestId("library-guide-popover");
     await expect(popover).toBeVisible();
-    await page.waitForTimeout(400);
+    await waitForAnimationsDone(popover);
+    await waitForBoxStill(popover);
     const index = await box(page.getByTestId("library-index"));
     const panel = await box(popover);
     expect(panel.x, "the guide lies across the index").toBeGreaterThanOrEqual(index.x + index.width);
@@ -185,7 +188,8 @@ test.describe("Library interaction placement", () => {
     await expect
       .poll(() => dock.evaluate((element) => element.contains(document.activeElement)))
       .toBe(true);
-    await page.waitForTimeout(500);
+    await waitForAnimationsDone(page.getByTestId("library-agent-dock-frame"));
+    await waitForBoxStill(page.getByTestId("library-agent-dock-frame"));
     const index = await box(page.getByTestId("library-index"));
     const frame = await box(page.getByTestId("library-agent-dock-frame"));
     expect(frame.x, "the overlay covers the index").toBeGreaterThanOrEqual(index.x + index.width - 1);
@@ -231,10 +235,14 @@ test.describe("Library interaction placement", () => {
     await page.getByTestId("library-new-page").click();
     const field = page.getByTestId("library-new-page-title");
     await expect(field).toBeVisible();
-    await page.waitForTimeout(400);
+    await waitForAnimationsDone(page.getByRole("dialog").filter({ has: field }));
+    await waitForBoxStill(field);
     const before = await box(field);
     await field.pressSequentially("a");
-    await page.waitForTimeout(400);
+    await expect(field).toHaveValue(/a$/);
+    await waitFrames(page, 2);
+    await waitForAnimationsDone(page.getByRole("dialog").filter({ has: field }));
+    await waitForBoxStill(field);
     const after = await box(field);
     expect(Math.abs(after.y - before.y)).toBeLessThan(0.5);
   });

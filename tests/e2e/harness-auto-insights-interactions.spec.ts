@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
+import { waitForAnimationsDone, waitForBoxStill } from './settle';
 import { installHarnessRuntime, mountHarnessVault } from './harness-tab-fixture';
 import { installDesktopBridge } from './rounds-desktop-bridge';
 
@@ -82,9 +83,11 @@ test.describe('Harness hints', () => {
     const rect = await box(panel);
     /* Through the gap between button and panel, then into the panel itself. */
     await page.mouse.move(x, (trigger.y + trigger.height + rect.y) / 2, { steps: 3 });
+    // measurement window: the claim is that the panel stays open for a stretch with the pointer in the gap.
     await page.waitForTimeout(400);
     await expect(panel, 'the panel vanished in the gap under its button').toHaveCSS('opacity', '1');
     await page.mouse.move(x, rect.y + 10, { steps: 3 });
+    // measurement window: the claim is that the panel stays open for a stretch once the pointer is on it.
     await page.waitForTimeout(400);
     await expect(panel, 'the panel vanished before the pointer reached it').toHaveCSS('opacity', '1');
 
@@ -252,13 +255,14 @@ test.describe('Analysis', () => {
     await expect(target).toBeAttached();
     const portY = (await box(target)).y;
     await field.evaluate((element, delta) => { element.scrollTop += delta; }, portY - 408);
-    await page.waitForTimeout(200);
+    await waitForBoxStill(target);
     const settled = (await box(target)).y;
     expect(Math.abs(settled - 408), `port did not reach y≈408 (at ${settled.toFixed(0)})`).toBeLessThanOrEqual(60);
     await target.click();
     const popup = page.getByTestId('harness-role-popup');
     await expect(popup).toBeVisible();
-    await page.waitForTimeout(400);
+    await waitForAnimationsDone(popup);
+    await waitForBoxStill(popup);
     const rect = await box(popup);
     const title = await box(page.getByRole('heading', { level: 1 }).first());
     /* Before: [138,16,503,400], over the page title and the tab switch. */
@@ -359,7 +363,7 @@ test.describe('Harness hints stay whole', () => {
       const bottom = Math.min(innerHeight, scroller.getBoundingClientRect().bottom);
       scroller.scrollTop += element.getBoundingClientRect().bottom - (bottom - 60);
     });
-    await page.waitForTimeout(200);
+    await waitForBoxStill(button);
     await button.hover();
     const panel = await hintPanel(page, button);
     await expect(panel).toHaveCSS('opacity', '1');
