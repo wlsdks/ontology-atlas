@@ -714,6 +714,7 @@ be resolved together land through `/land-bundle` as one integration branch.
 |---|---|
 | `pnpm checks:changed` | Which gates this change actually needs |
 | `pnpm backlog` · `pnpm backlog:check` | Current task records and concurrent-state conflicts; append a UUID record per worktree observation ([guide](docs/BACKLOG.md)) |
+| `pnpm lessons` · `pnpm lessons:check` | Shared harness lessons that are open or verified but not yet fixed; record and review them with `/harness-retro` ([records guide](docs/records/README.md#harness-lessons)) |
 | `pnpm agents:check` | Each harness's instruction integrity; independent Codex and Claude files need not match |
 | `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check` |
 | `pnpm knip` | Dead files, exports and types across every scope |

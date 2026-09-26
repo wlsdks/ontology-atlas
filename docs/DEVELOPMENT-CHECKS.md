@@ -203,6 +203,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: `pnpm backlog -- --task=ID` to inspect all current heads and their evidence
 **Fix**: append a new record referencing all current task heads; never overwrite a published record or select a winner by timestamp.
 
+### Harness lessons
+
+**Run**: `pnpm test:lessons && pnpm lessons:check`
+**Proves**: lesson and verdict records fit the template, verdicts follow reported, verified, fixed order, concurrent verdicts are reconciled, and published lessons are unchanged.
+**Escalate**: `pnpm lessons -- --id=UUID` to read one lesson's full history
+**Fix**: append a new verdict naming every current head; never edit a published lesson.
+
 ### Agent instruction files
 
 **Run**: `pnpm agents:check`
