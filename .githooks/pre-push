@@ -46,6 +46,15 @@
 
 set -e
 
+# Git exports its own location (GIT_DIR and friends) to hooks. Every lane below
+# inherits it, so a test that builds a scratch repository with plain `git init`
+# in a temp directory silently committed to, configured, and branched this
+# repository instead (2026-09-26: a fixture set user.name, created a branch and
+# moved a worktree's HEAD). Resolve the checkout once, then drop the variables;
+# every git call here and in the lanes finds the repository from the cwd.
+cd "$(git rev-parse --show-toplevel)"
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_PREFIX
+
 BASE_REF="origin/main"
 ZERO="0000000000000000000000000000000000000000"
 # Reported, not enforced — see the note beside the summary below.

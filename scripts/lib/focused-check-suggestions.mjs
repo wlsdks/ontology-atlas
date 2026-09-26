@@ -137,11 +137,14 @@ const RULES = [
   },
   {
     command: 'pnpm test:docs-vault',
-    reason: 'docs-vault build/check or conflict-recovery helper changed',
+    reason: 'docs-vault build/check, conflict-recovery helper, or a file the worktree-materialization test copies changed',
+    // The materialization test copies a hand-picked file set into a scratch repository, so a new
+    // import in any of those files breaks it without touching the test (lesson on new-record.mjs
+    // importing lessons.mjs, 2026-09-26).
     matches: [
-      /^scripts\/(?:build-docs-vault|build-messages|resolve-docs-vault-conflicts|prepare-worktree)\.(?:mjs|test\.mjs)$/,
+      /^scripts\/(?:build-docs-vault|build-messages|resolve-docs-vault-conflicts|prepare-worktree|new-record|lessons|worktree-materialization)\.(?:mjs|test\.mjs)$/,
       /^\.githooks\/post-(?:checkout|merge)$/,
-      /^scripts\/lib\/(?:record-ledgers|po-pilot-records)\.(?:mjs|test\.mjs)$/,
+      /^scripts\/lib\/(?:record-ledgers|po-pilot-records|parse-frontmatter)\.(?:mjs|test\.mjs)$/,
     ],
   },
   {

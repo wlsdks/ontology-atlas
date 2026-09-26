@@ -91,6 +91,29 @@ test('planner CLI exits nonzero when the exact Git scope cannot be read', () => 
   } finally {rmSync(cwd,{recursive:true,force:true});}
  });
 
+ test('lanes never inherit the pushing repository through GIT_DIR', () => {
+  // Git exports GIT_DIR to hooks. A lane that builds a scratch repository in a temp
+  // directory then configured and committed to the real one (2026-09-26).
+  const cwd=mkdtempSync(join(tmpdir(),'atlas-hook-env-'));
+  try {
+    const git=(...args)=>execFileSync('git',args,{cwd,stdio:'pipe'}).toString().trim();
+    git('init'); git('config','user.email','test@example.com'); git('config','user.name','Owner');
+    writeFileSync(join(cwd,'README.md'),'before'); git('add','.'); git('commit','-m','base');
+    git('update-ref','refs/remotes/origin/main','HEAD');
+    writeFileSync(join(cwd,'README.md'),'after'); git('add','.'); git('commit','-m','change');
+    const bin=join(cwd,'bin'); mkdirSync(bin);
+    // The docs lane stands in for any fixture test: a fresh repository in a temp dir.
+    writeFileSync(join(bin,'pnpm'),'#!/bin/sh\ncase "$1" in docs:language) d=$(mktemp -d) && cd "$d" && git init -q . && git config user.name Leak ;; esac\nexit 0\n',{mode:0o755});
+    const realNode = "'" + process.execPath.replaceAll("'", "'\"'\"'") + "'";
+    writeFileSync(join(bin,'node'),`#!/bin/sh\nif [ "$1" = "--input-type=module" ]; then exec ${realNode} "$@"; fi\nexit 0\n`,{mode:0o755});
+    const hook=new URL('../.githooks/pre-push',import.meta.url).pathname;
+    const result=spawnSync('sh',[hook],{cwd,encoding:'utf8',input:'refs/heads/test abc refs/heads/test def\n',env:{...process.env,PATH:bin+':'+process.env.PATH,GIT_DIR:join(cwd,'.git')}});
+    assert.equal(result.status,0,result.stdout+result.stderr);
+    assert.match(result.stdout,/Running .*docs/);
+    assert.equal(git('config','user.name'),'Owner','a lane rewrote the pushing repository\'s config');
+  } finally {rmSync(cwd,{recursive:true,force:true});}
+ });
+
  test('message changes keep graph selection even beside a test-only edit', () => {
   const base = 'a'.repeat(40);
   for (const paths of [['messages/ko.json'], ['messages/ko.json', 'src/example.test.ts']]) {

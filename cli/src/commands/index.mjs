@@ -159,7 +159,7 @@ export async function runIndex(args) {
     meaningGate: summarizeMeaningGate(analyzeResult.meaningGate),
     next: {
       apply: null,
-      review: 'Review candidates with ontology-bootstrap, obtain an independent constructionQualification:v1 packet and human acceptance, then write only the exact returned writePlan. CLI preview writes 0.',
+      review: 'Review candidates through the Atlas MCP server, obtain an independent constructionQualification:v1 packet and human acceptance, then write only the exact returned writePlan. CLI preview writes 0.',
     },
   };
 
