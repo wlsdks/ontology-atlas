@@ -248,7 +248,7 @@ export function DownloadPage() {
               </div>
               {/* Nominative use: the names say what Atlas connects to, and the line
                   states that no affiliation is claimed. Marks themselves follow the
-                  stricter rule in docs/FEATURES.md — a service's own glyph only where
+                  stricter rule in docs/features/agents.md — a service's own glyph only where
                   its published brand guideline was read and permits it. */}
               <p className="mt-3 max-w-[var(--measure-doc-column)] break-keep text-[color:var(--color-text-quaternary)]">
                 {tFooter('trademarks')}

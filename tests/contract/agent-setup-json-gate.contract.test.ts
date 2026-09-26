@@ -12,6 +12,11 @@ const EXPLICIT_FILES = [
   "cli/README.md",
   "docs/AGENT-GRAPH-WORKFLOW.md",
   "docs/FEATURES.md",
+  // The feature inventory split into one file per surface.
+  ...readdirSync(join(ROOT, "docs/features"), { recursive: true })
+    .map(String)
+    .filter((file) => file.endsWith(".md"))
+    .map((file) => `docs/features/${file}`),
   "messages/en.json",
   "messages/ko.json",
 ];

@@ -343,7 +343,7 @@ today); notifications outside the app.
 
 ## 15. Documentation to update with the code
 
-`docs/FEATURES.md` (Library section), `docs/ARCHITECTURE.md` (Library tab list and
+`docs/features/library/` (the Library feature files), `docs/ARCHITECTURE.md` (Library tab list and
 the runner mount), `README.md` if a script is added (none planned), `messages/en.json`
 and `messages/ko.json` (`library.rounds.*`), the decision fragment, and a change
 fragment.

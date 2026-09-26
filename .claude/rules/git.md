@@ -26,7 +26,7 @@
 
 | Code change | Documentation that must change with it |
 |---|---|
-| Add or remove a route | `docs/ARCHITECTURE.md` (canonical route list), `docs/FEATURES.md`, and a `docs/records/decisions/` fragment (`decisions:check` enforces this) |
+| Add or remove a route | `docs/ARCHITECTURE.md` (canonical route list), its `docs/features/` file, and a `docs/records/decisions/` fragment (`decisions:check` enforces this) |
 | Add a command or script | `README.md` |
 | Restructure architecture | `docs/ARCHITECTURE.md` and `AGENTS.md` |
 | Add a design token | `docs/DESIGN-SYSTEM.md` and `app/globals.css`; register a ramp step in `cn.ts` too |
