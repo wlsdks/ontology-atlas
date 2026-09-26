@@ -1,5 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+
+import { judgeRatchet } from './lib/ratchet-base';
 
 /**
  * ⚠️ **A string that names the surface the reader is on can only be right on one of them.**
@@ -22,48 +25,27 @@ import { describe, expect, it } from 'vitest';
  * **The number may fall and never rise.** Adding one is not forbidden — the download call to
  * action, the degraded-runtime notes and the unsupported-picker warning all name the browser
  * correctly, because the browser is what their reader is actually in. It is a decision, and this
- * makes it one somebody has to take deliberately by moving the number.
+ * makes it one somebody has to take deliberately by recording the raise.
  */
 
 /**
- * Measured 2026-08-28, after the two defects above were repaired. Lower it when you remove one.
+ * **Judged against the change's merge base, not a literal** (2026-09-26).
  *
- * **17 → 18 on 2026-09-07**, deliberately. The Library's service door cannot start a coding tool
- * on the web, and its card says so; the sentence is drawn only when `agentGap === "browser"`,
- * which is exactly the surface check this ratchet asks for before a number moves. The other half
- * of that same card — the installed app with no verified runtime — states the missing tool
- * instead of a surface and is not counted, because in the app "a browser cannot" would simply be
- * false. Gate for both halves: `LibraryImportDialog.test.tsx`, "names the right absence".
+ * The ceiling was a literal with a dated paragraph for every deliberate raise, and every
+ * one of this file's commits moved it. Two branches that each added a correctly placed
+ * surface name conflicted on that line. Now the count runs on the working tree and on the
+ * merge-base tree (`tests/contract/lib/ratchet-base.ts`); only growth fails, and a removal
+ * is banked by the next branch's base without anyone lowering a number.
  *
- * **18 → 20 on 2026-09-13**, deliberately, for the Harness tab's guides view. Almost the whole
- * harness lives in dot directories, and a browser's folder permission cannot see a dot entry at
- * all — so on the web this view cannot draw a shorter list and call it the inventory. The two
- * strings (`harness.browserOnly`, `harness.browserOnlyBody`) render only when the reading bridge is
- * absent, which is the surface check this ratchet asks for, and in the installed app they are never
- * reached. Gate: `HarnessPage.test.tsx`, "names what a browser cannot reach".
+ * A deliberate addition is a `tests/contract/ratchet-raises/surface-named-strings.<slug>.json`
+ * record whose `why` names the render-site check and the test that holds it, as the
+ * paragraphs here used to (they are in this file's Git history). One record covers both
+ * locales, which must tell the same story (below).
+ *
+ * 25 is the measurement at conversion. It is never edited: it serves a clone with no merge
+ * base, and is a floor for a tree compared with itself.
  */
-/*
- * 20 → 23 (2026-09-13): the folder chooser and its rows, all three behind a runtime check.
- * `docsVault.desktopWelcome.chooseBodyWeb` renders only when the runtime cannot resume a
- * folder on its own, and `vaultSwitch.state.needsPermission` / `vaultSwitch.state.blocked`
- * come from `queryPermission`, which only a browser session consults - the installed app
- * probes the stored path instead. Naming the browser is the point in all three: the brief
- * requires the difference between a runtime that can reopen a folder and one that needs a
- * click to be stated rather than hidden (`AGENTS.md`, honest degradation), and "this step is
- * the browser's, not a choice Atlas added" is not a fact that survives being reworded into
- * the passive.
- */
-/*
- * 23 → 25 (2026-09-19): the analysis brief's two app-only lines. A card whose numbers a browser
- * cannot produce says so on the card (`ontologyPages.insights.brief.appOnly`) and the guidance
- * panel repeats it when it is the whole panel (`ontologyPages.insights.harnessTab.appOnly`).
- * Both render only where `BriefCore.availability` is `app-only`, which is derived from the
- * absence of the native bridge, so the installed app never reaches either string: inside the app
- * the same cards say they are reading, that they could not read, or that no repository is bound.
- * Naming the browser is the point — a reader must be able to tell "this session cannot look" from
- * "there is nothing there". Gate: `BriefTab.test.tsx`, "says where a core cannot be measured".
- */
-const SURFACE_NAMED_CEILING = 25;
+const SURFACE_NAMED_FALLBACK = 25;
 
 const NAMES_A_SURFACE = /브라우저|browser/i;
 
@@ -75,32 +57,45 @@ function strings(value: unknown, path = ''): [string, string][] {
   );
 }
 
+/** Every string in one locale's namespace parts, which compose `messages/<locale>.json` one-to-one. */
+function catalogueStrings(root: string, locale: string): [string, string][] {
+  const dir = join(root, 'messages', locale);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.json'))
+    .sort()
+    .flatMap((name) => strings(JSON.parse(readFileSync(join(dir, name), 'utf8')) as unknown, name.slice(0, -5)));
+}
+
 describe('copy that names the surface the reader is on', () => {
   it.each(['ko', 'en'])('does not grow in %s', (locale) => {
-    const catalogue = JSON.parse(readFileSync(`messages/${locale}.json`, 'utf8')) as unknown;
-    const all = strings(catalogue);
+    const all = catalogueStrings(process.cwd(), locale);
     /* Anti-idle: an empty catalogue would pass while measuring nothing. */
     expect(all.length).toBeGreaterThan(500);
 
     const named = all.filter(([, text]) => NAMES_A_SURFACE.test(text));
+    const verdict = judgeRatchet({
+      gate: 'surface-named-strings',
+      measure: (root) => catalogueStrings(root, locale).filter(([, text]) => NAMES_A_SURFACE.test(text)).length,
+      reads: [`messages/${locale}`],
+      fallback: SURFACE_NAMED_FALLBACK,
+    });
     expect(
       named.length,
-      `${named.length} strings name the reader's surface (ceiling ${SURFACE_NAMED_CEILING}).\n` +
+      `${named.length} strings name the reader's surface (ceiling ${verdict.ceiling}).\n${verdict.explain}\n` +
         'A sentence naming a surface is only right where that surface is the one the reader is on,\n' +
         'and whether that holds depends on the render site rather than on the words. If the new one\n' +
-        'is behind a surface check, raise the ceiling in this file and say so. If it is not, state\n' +
+        'is behind a surface check, record the raise and say which check. If it is not, state\n' +
         'the fact instead of the surface — this screen does not re-measure, the draft is unsaved,\n' +
         'the clipboard was blocked.\n\n' +
         named.map(([key]) => `  ${key}`).join('\n'),
-    ).toBeLessThanOrEqual(SURFACE_NAMED_CEILING);
+    ).toBeLessThanOrEqual(verdict.ceiling);
   });
 
   it('keeps both locales telling the same story', () => {
     /* A surface named in one language and not the other is a translation that lost a condition. */
     const count = (locale: string) =>
-      strings(JSON.parse(readFileSync(`messages/${locale}.json`, 'utf8')) as unknown).filter(
-        ([, text]) => NAMES_A_SURFACE.test(text),
-      ).length;
+      catalogueStrings(process.cwd(), locale).filter(([, text]) => NAMES_A_SURFACE.test(text)).length;
     expect(count('ko')).toBe(count('en'));
   });
 });

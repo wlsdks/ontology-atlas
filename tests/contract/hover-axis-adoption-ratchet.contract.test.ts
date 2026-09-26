@@ -1,9 +1,10 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
+import { judgeRatchet } from "./lib/ratchet-base";
 
 /**
  * **Hover axis adoption ratchet** — hand-written hovers can never grow
@@ -38,83 +39,27 @@ import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
  * falls the floor comes down.
  */
 
-const ROOT = process.cwd();
-
 /**
- * Today's measurement. Growth turns this red; a drop turns the "lower it" test
- * below red.
+ * **Judged against the change's merge base, not a literal** (2026-09-26).
  *
- * 326 → 312 (2026-08-23): retiring the unreachable `LiveActivityIndicator`
- * removed fourteen hand hover declarations with its dead surface. No surviving
- * control changed class or gained an exemption.
+ * This file used to hold `CEILING` plus a dated line for every fall, and the literal
+ * changed in 21 of its 22 commits, ten of them in the two weeks before the conversion.
+ * Parallel branches that each migrated a hover conflicted on that line and on the
+ * history paragraph above it. Now the census runs on the working tree and again on the
+ * merge-base tree (`tests/contract/lib/ratchet-base.ts`), and only growth fails. A fall
+ * is banked by the next branch's base without anyone writing it down; the history of
+ * falls is in this file's Git history.
  *
- * 387 → 386 (2026-08-17): the notification bell moved from a hand-written
- * `controlClass({shape:'segment'})` button to the `IconButton` primitive, dropping
- * one hand hover declaration.
+ * A hover that must be hand-written, with a reason the axis cannot carry, is a
+ * `tests/contract/ratchet-raises/hand-hover-declarations.<slug>.json` record.
  *
- * 381 → 376 (2026-08-21): the connect sheet was retired (ledger 90). With
- * attaching becoming the destination, that widget disappeared entirely and its
- * five hand hovers went with it. Nothing was fixed — the places **ceased to
- * exist** — and that is recorded here so the next person does not go looking for
- * who migrated them to the axis.
- *
- * 383 → 381 (2026-08-21): the settings sheet's LNB row hovers converged into one
- * constant. Adding the milestone row nearly duplicated the same string, and the
- * value layer's `hoverSurface: 'lift'` gives the row `overlay-1`, which disagrees
- * with this sheet's sibling rows (`overlay-2`) — so instead of moving to the axis,
- * **the copy was removed**. Not "did not grow" but genuinely fell.
- *
- * 386 → 383 (2026-08-19): deleting the gateway's install section took its three
- * hand hover declarations with it (`docs/DECISIONS.md` 83). Axis adoption did not
- * rise; **the places disappeared**, so this decrease earns no credit — but the
- * floor still comes down.
- * 312 → 304 (2026-08-31): the "to do" tab became one list (owner decision). The readiness meter,
- * the repair-queue counter band, the activity digest, the group headings and the per-section
- * chrome went with it, and the row actions converged onto three shared ink fragments in
- * `parts/FixRow.tsx` instead of one hand-written hover per row family. Part of this is genuine
- * convergence and part is places that **ceased to exist**; either way the floor comes down.
- *
- * 304 → 303 (2026-09-05): the web connect panel's tool row stopped being a hand-built
- * `role="tablist"` and became `SegmentedControl` — its hand-written `hover:text-*` went with the
- * chips. Genuine adoption: the axis (`hoverInk`) now supplies that ink from the primitive.
- *
- * 303 → 302 (2026-09-13): the folder chooser's recent rows moved out of
- * `DesktopVaultWelcome` into one shared `RecentVaultList`, and the two rows that replaced
- * them (the chooser's and the rail switcher's) take the neutral lift from
- * `hoverSurface: 'lift'` instead of writing it. Three hand declarations became none:
- * genuine adoption, and one fewer place for the lift to drift.
- *
- * 302 → 301 (2026-09-14): full detail's 1/2/3 reach steps were a hand-rolled radiogroup
- * whose inactive chips wrote their own `hover:border-…`, and they are a `SegmentedControl`
- * now. The hand declaration went with the hand-rolled group, which is the adoption this
- * ratchet exists to bank.
- *
- * 301 → 299 (2026-09-14): the ontology starter's JSON-gate action joined its sibling
- * neutral controls. Its literal success hover border and surface declarations disappeared
- * with that one-off skin, so the two-declaration improvement is banked here.
- *
- * 299 → 295 (2026-09-14): the compact project index removed three card-local hover
- * declarations with its metric dashboard, then moved the project-name hover ink onto
- * `controlClass({ hoverInk: "strong" })`. Four hand declarations are now owned by the axis.
- *
- * 292 → 290 (2026-09-25): the root error screen's hand-built pills (indigo hover border and
- * fill) became the standard `Button` and `buttonVariants` outline.
- * 290 → 289 (2026-09-25): the settings sheet's row actions moved onto one chip grammar and
- * the shared `DETAIL_TOGGLE_CHIP` ink, a net one fewer hand-written hover declaration.
- * 289 → 288 (2026-09-25): the insights hub rows left the `chip` shape for a bare `row` with
- * `hoverSurface: "lift"`, so their hand-written overlay hover is owned by the axis.
- * 288 → 284 (2026-09-25): the guided tour card's actions became `Button` variants and the
- * path chip's copy action the chip's own icon button, four fewer hand hovers.
- * 284 → 283 (2026-09-25): the map edge panel's hand-built edit chip became the node panel's
- * primary `buttonVariants`, so its hover rides the standard button.
- * 283 → 282 (2026-09-25): the chrome interaction fix left one hand-written hover fewer in
- * the rail and settings chips it moved onto shared chip grammar.
- * 282 → 280 (2026-09-25): the API Key pane moved to Agents → Models on the chip hover axes
- * (`hoverInk`/`hoverBorder`), dropping its hand-written hover strings.
+ * 280 is the measurement at conversion. It is never edited: it serves a clone with no
+ * merge base, and is a floor for a tree compared with itself.
  */
-const CEILING = 280;
+const FALLBACK_CEILING = 280;
 
 function walk(dir: string, out: string[] = []): string[] {
+  if (!existsSync(dir)) return out;
   for (const name of readdirSync(dir)) {
     const p = path.join(dir, name);
     if (statSync(p).isDirectory()) {
@@ -157,15 +102,15 @@ function callBlocks(src: string): string[] {
 
 const HAND_HOVER = /hover:(?:text|bg|border)-\[color:var\(/g;
 
-function scan() {
+function scan(root = process.cwd()) {
   const byFile = new Map<string, number>();
   let total = 0;
   let callsSeen = 0;
   let axisUsers = 0;
 
   for (const dir of ["src", "app"]) {
-    for (const file of walk(path.join(ROOT, dir))) {
-      const rel = path.relative(ROOT, file).split(path.sep).join("/");
+    for (const file of walk(path.join(root, dir))) {
+      const rel = path.relative(root, file).split(path.sep).join("/");
       const src = stripComments(readFileSync(file, "utf8"));
       for (const block of callBlocks(src)) {
         callsSeen += 1;
@@ -196,21 +141,20 @@ describe("호버 축 채택 래칫", () => {
   });
 
   it("손으로 쓴 호버가 늘지 않는다", () => {
+    const verdict = judgeRatchet({
+      gate: "hand-hover-declarations",
+      measure: (root) => (root === process.cwd() ? census : scan(root)).total,
+      reads: ["src", "app"],
+      fallback: FALLBACK_CEILING,
+    });
     expect(
-      census.total,
-      `손 호버 선언이 ${CEILING} → ${census.total} 로 늘었다.\n` +
+      verdict.current,
+      `손 호버 선언이 ${verdict.current} 로, 기준 ${verdict.ceiling} 을 넘었다.\n${verdict.explain}\n` +
         "값 층이 세 축을 갖고 있다 — `hoverInk`('strong'|'secondary') · " +
         "`hoverSurface`('lift') · `hoverBorder`('strong'). 그 값이면 축을 쓰고,\n" +
         "다른 값이 필요하면 **왜 다른지**를 먼저 대라(인디고 틴트 단은 값이 아니라 위계 판정이다).\n" +
         [...census.byFile.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([f, n]) => `  ${n} ${f}`).join("\n"),
-    ).toBeLessThanOrEqual(CEILING);
-  });
-
-  it("갚았으면 바닥도 내린다 — 여유를 무료로 두지 않는다", () => {
-    expect(
-      census.total,
-      `손 호버 선언이 줄었다(${census.total}) — 위 CEILING 도 ${census.total} 로 내려라.`,
-    ).toBeGreaterThanOrEqual(CEILING);
+    ).toBeLessThanOrEqual(verdict.ceiling);
   });
 
   it("탐지기가 심은 위반을 잡고 축 사용은 안 잡는다", () => {

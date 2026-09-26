@@ -441,8 +441,15 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Copy that names the reader's surface
 
 **Run**: `pnpm exec vitest run tests/contract/surface-naming-ratchet.contract.test.ts`
-**Proves**: Copy names the reader's actual surface rather than an unnamed or wrong one, and the ratchet count only moves down.
+**Proves**: Copy names the reader's actual surface rather than an unnamed or wrong one, and the count does not grow against the merge base (see the next entry).
 **Escalate**: `pnpm test:contracts`.
+
+### Ratchets judged against the merge base
+
+**Run**: `pnpm exec vitest run tests/contract/ratchet-merge-base.contract.test.ts`
+**Proves**: The resident-context, hand-hover, appearing-surface and surface-naming ratchets measure the working tree and the merge-base tree with one census and fail only on growth, so parallel improvements share no baseline line; a deliberate raise is a new `tests/contract/ratchet-raises/<gate>.<slug>.json` record, and a clone with no merge base uses the ceiling recorded at conversion.
+**Escalate**: `pnpm test:contracts`.
+**Fix**: Remove the growth, or add the raise record naming why the growth is deliberate; never edit a fallback ceiling.
 
 ### Markdown table shape (rows vs their header)
 
