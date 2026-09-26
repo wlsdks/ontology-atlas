@@ -6,7 +6,7 @@
  * not replace those facts with "small", "meaningful", or "looks safe".
  */
 
-const DESIGN_POLICY_VERSION = 1;
+const DESIGN_POLICY_VERSION = 2;
 
 const DESIGN_SEAT_ORDER = Object.freeze([
   'design-lead',
@@ -27,7 +27,9 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
     directions: false,
     council: false,
     seats: [],
-    proofs: [proof('computer-use-loop', 'affected-state')],
+    // Words do not need the build-look-correct loop: one fresh capture of the
+    // state that shows them, after the change (policy v2, 2026-09-26).
+    proofs: [proof('final-capture', 'affected-state')],
   }),
   'local-visual': Object.freeze({
     reason: 'rendered colour, type, spacing, radius, shadow, or local hierarchy changed inside the existing system',
@@ -200,6 +202,7 @@ const PROOF_ORDER = Object.freeze([
   'user-walkthrough',
   'installed-app',
   'computer-use-loop',
+  'final-capture',
   'design-system-audit',
   'gate-probe',
 ]);
@@ -250,6 +253,8 @@ const mergeProofs = (contracts) => {
       }
     }
   }
+  // The loop ends in a final capture of its own.
+  if (selected.has('computer-use-loop')) selected.delete('final-capture');
   return Object.freeze(
     PROOF_ORDER.filter((name) => selected.has(name)).map((name) => proof(name, selected.get(name))),
   );

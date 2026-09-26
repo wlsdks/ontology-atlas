@@ -21,7 +21,7 @@ describe('Atlas design proof routing', () => {
       council: { required: false, seats: [] },
       proofs: [
         { name: 'checks:changed', scope: 'changed-paths' },
-        { name: 'computer-use-loop', scope: 'affected-state' },
+        { name: 'final-capture', scope: 'affected-state' },
       ],
     });
     expect(routeDesignProof({ changes: ['local-visual'] })).toMatchObject({
@@ -75,8 +75,11 @@ describe('Atlas design proof routing', () => {
   });
 
   it('requires Computer Use pixels for every rendered class and a recording for motion', () => {
+    // Copy needs one final capture, not the iterative loop.
+    expect(proofNames(['copy'])).toContain('final-capture');
+    expect(proofNames(['copy'])).not.toContain('computer-use-loop');
+    expect(proofNames(['copy', 'layout'])).toContain('computer-use-loop');
     const rendered = [
-      'copy',
       'local-visual',
       'layout',
       'responsive',
@@ -150,7 +153,7 @@ describe('Atlas design proof routing', () => {
       { cwd: ROOT, encoding: 'utf8' },
     );
     expect(JSON.parse(output)).toMatchObject({
-      policyVersion: 1,
+      policyVersion: 2,
       directions: false,
       council: { required: false, seats: [] },
     });

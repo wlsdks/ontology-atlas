@@ -83,7 +83,9 @@ technical baseline.
 
 ## Pixel evidence contract
 
-Every route that changes rendered UI includes `computer-use-loop`. Build
+Every route that changes rendered UI includes `computer-use-loop`, except a
+copy-only route, which includes `final-capture`: one fresh Computer Use capture
+of the affected state after the change, with no baseline or slice loop. Build
 rendered UI in small slices and look at each slice in the real browser, WebView,
 or installed app, through a fresh Computer Use screenshot and accessibility
 tree, before starting the next; do not build a whole screen unobserved. Use DOM
