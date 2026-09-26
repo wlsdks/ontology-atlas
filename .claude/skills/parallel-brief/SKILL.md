@@ -17,6 +17,9 @@ therefore measure different code while both report success.
 - Assign a unique port and explicit `PLAYWRIGHT_BASE_URL`.
 - Use `PLAYWRIGHT_STATIC=1` when proof must cover the exported build.
 - Run one spec at a time so server failure is distinguishable from product failure.
+- `pnpm checks:changed` reaches Playwright only through the environment: run it
+  with the same `PLAYWRIGHT_STATIC=1 PLAYWRIGHT_BASE_URL=...` prefix, or its lane
+  starts a dev server on :3100.
 
 ## 2. One person owns each ratchet baseline
 
