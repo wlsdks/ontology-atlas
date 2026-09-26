@@ -8,8 +8,10 @@ import { describe, expect, it } from 'vitest';
 import {
   PO_BOUNDARY_SIGNALS,
   PO_CHANGE_SIGNALS,
+  PO_BASE_LENSES,
   PO_OUTCOMES,
   PO_REVIEW_RECORD_FIELDS,
+  PO_REVIEWER,
   PO_RISK_ROUTES,
   PO_SOLO_FIELDS,
   routePoDecision,
@@ -32,7 +34,6 @@ const ROOT = process.cwd();
 const PO_OS = 'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md';
 const PILOT = 'docs/PO-PILOT.md';
 const PASS_SKILL = '.claude/skills/po-pass/SKILL.md';
-const COUNCIL_SKILL = '.claude/skills/po-council/SKILL.md';
 const CLI = 'scripts/po-risk-router.mjs';
 const PILOT_CLI = 'scripts/po-pilot.mjs';
 
@@ -47,7 +48,6 @@ const boundaries = (
   ...UNCHANGED_BOUNDARIES,
   ...overrides,
 }) as Record<string, BoundaryState>;
-const SPECIALISTS = Object.values(PO_RISK_ROUTES).map((route) => route.reviewer);
 
 const read = (path: string): string => readFileSync(join(ROOT, path), 'utf8');
 
@@ -63,11 +63,17 @@ function fieldsInTemplate(path: string, anchor: string): string[] {
 }
 
 describe('Atlas PO risk routing', () => {
-  it('keeps a small Atlas outcome set, distinct specialist map, and two-reviewer ceiling', () => {
+  it('keeps a small Atlas outcome set and one independent reviewer with risk lenses', () => {
     expect(Object.keys(PO_OUTCOMES)).toEqual(['orient', 'explain', 'judge', 'correct', 'handoff']);
     expect(Object.keys(PO_RISK_ROUTES)).toEqual(RISK_NAMES);
-    expect(new Set(SPECIALISTS).size).toBe(SPECIALISTS.length);
+    expect(PO_REVIEWER).toBe('reviewer');
+    expect(PO_BASE_LENSES).toEqual(['moment', 'evidence']);
 
+    const expectedLenses = {
+      meaning: ['moment', 'evidence', 'boundaries'],
+      positioning: ['moment', 'evidence'],
+      scope: ['moment', 'evidence', 'smallest-slice'],
+    } as const;
     for (const risk of RISK_NAMES) {
       const signal = Object.entries(PO_CHANGE_SIGNALS).find(([, contract]) => contract.risk === risk)?.[0];
       expect(signal, `${risk} must have a one-way change signal`).toBeTruthy();
@@ -77,14 +83,13 @@ describe('Atlas PO risk routing', () => {
         changes: [signal!],
         boundaries: boundaries(),
       });
-      expect(result.reviewers).toEqual(['po-evidence', PO_RISK_ROUTES[risk].reviewer]);
-      expect(result.reviewers).toHaveLength(2);
-      expect(new Set(result.reviewers).size).toBe(2);
+      expect(result.reviewers).toEqual(['reviewer']);
+      expect(result.lenses, risk).toEqual(expectedLenses[risk]);
       expect(result.rebuttal).toBe('only-on-material-conflict');
     }
   });
 
-  it('replays known controls instead of merely checking that a council exists', () => {
+  it('replays known controls instead of merely checking that a review exists', () => {
     const cases = [
       {
         name: 'unsupported OS URL scheme',
@@ -98,7 +103,8 @@ describe('Atlas PO risk routing', () => {
           door: 'one-way',
           primaryRisk: 'meaning',
           route: 'review',
-          reviewers: ['po-evidence', 'po-steward'],
+          reviewers: ['reviewer'],
+          lenses: ['moment', 'evidence', 'boundaries'],
           nextAction: 'evidence-first-review',
         },
       },
@@ -110,7 +116,7 @@ describe('Atlas PO risk routing', () => {
           changes: ['rollback-cheap'],
           boundaries: boundaries(),
         },
-        expected: { door: 'two-way', route: 'solo', reviewers: [], nextAction: 'probe-first' },
+        expected: { door: 'two-way', route: 'solo', reviewers: [], lenses: [], nextAction: 'probe-first' },
       },
       {
         name: 'first-contact positioning',
@@ -124,7 +130,8 @@ describe('Atlas PO risk routing', () => {
           door: 'one-way',
           primaryRisk: 'positioning',
           route: 'review',
-          reviewers: ['po-evidence', 'po-wedge'],
+          reviewers: ['reviewer'],
+          lenses: ['moment', 'evidence'],
           nextAction: 'evidence-first-review',
         },
       },
@@ -136,7 +143,7 @@ describe('Atlas PO risk routing', () => {
           changes: ['rollback-cheap'],
           boundaries: boundaries(),
         },
-        expected: { door: 'two-way', route: 'solo', reviewers: [], nextAction: 'build-and-verify' },
+        expected: { door: 'two-way', route: 'solo', reviewers: [], lenses: [], nextAction: 'build-and-verify' },
       },
     ] as const;
 
@@ -152,6 +159,7 @@ describe('Atlas PO risk routing', () => {
       route: 'skip',
       record: false,
       reviewers: [],
+      lenses: [],
     });
     expect(() => routePoDecision({ mechanical: true, boundaries: boundaries({ truth: 'affected' }) })).toThrow(
       'mechanical work cannot carry product or sovereignty change signals',
@@ -193,7 +201,8 @@ describe('Atlas PO risk routing', () => {
     ).toMatchObject({
       door: 'one-way',
       primaryRisk: 'meaning',
-      reviewers: ['po-evidence', 'po-steward'],
+      reviewers: ['reviewer'],
+      lenses: ['moment', 'evidence', 'boundaries', 'smallest-slice'],
     });
 
     expect(Object.keys(PO_BOUNDARY_SIGNALS)).toEqual([
@@ -205,28 +214,27 @@ describe('Atlas PO risk routing', () => {
   });
 
   it('routes the command-line entrypoint through the same policy', () => {
-    const output = execFileSync(
-      process.execPath,
-      [
-        CLI,
-        '--evidence=inferred',
-        '--outcome=orient',
-        '--change=positioning',
-        '--boundary=truth:unchanged,transfer:unchanged,agent-write:unchanged,human-correction:unchanged',
-        '--json',
-      ],
-      { cwd: ROOT, encoding: 'utf8' },
-    );
+    const args = [
+      CLI,
+      '--evidence=inferred',
+      '--outcome=orient',
+      '--change=positioning',
+      '--boundary=truth:unchanged,transfer:unchanged,agent-write:unchanged,human-correction:unchanged',
+    ];
+    const output = execFileSync(process.execPath, [...args, '--json'], { cwd: ROOT, encoding: 'utf8' });
     expect(JSON.parse(output)).toMatchObject({
-      policyVersion: 3,
+      policyVersion: 4,
       door: 'one-way',
       outcome: 'orient',
       primaryRisk: 'positioning',
       route: 'review',
       record: true,
-      reviewers: ['po-evidence', 'po-wedge'],
+      reviewers: ['reviewer'],
+      lenses: ['moment', 'evidence'],
       rebuttal: 'only-on-material-conflict',
     });
+    const text = execFileSync(process.execPath, args, { cwd: ROOT, encoding: 'utf8' });
+    expect(text).toContain('reviewers=reviewer · lenses=moment,evidence');
     expect(() =>
       parsePoRouteArgs(['--evidence=observed', '--evidence=unknown']),
     ).toThrow('evidence was supplied more than once');
@@ -462,10 +470,9 @@ describe('Atlas PO pilot can decide its sunset', () => {
 });
 
 describe('Atlas PO written templates match the router policy', () => {
-  it('binds both written templates to fields exported by the router policy', () => {
+  it('binds the written templates to fields exported by the router policy', () => {
     expect(fieldsInTemplate(PO_OS, '## Compact solo pass')).toEqual(PO_SOLO_FIELDS);
     expect(fieldsInTemplate(PASS_SKILL, '## 5. Write one screen')).toEqual(PO_SOLO_FIELDS);
     expect(fieldsInTemplate(PO_OS, '## Significant decision record')).toEqual(PO_REVIEW_RECORD_FIELDS);
-    expect(fieldsInTemplate(COUNCIL_SKILL, '## Significant record')).toEqual(PO_REVIEW_RECORD_FIELDS);
   });
 });

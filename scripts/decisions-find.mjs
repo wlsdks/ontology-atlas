@@ -4,7 +4,7 @@
  * overturn, without reading the ledger.
  *
  * **Why this exists.** `docs/DECISIONS.md` is append-only and, on 2026-09-02,
- * 495 records and 1.98 MB. Every pass and council is told to "search the
+ * 495 records and 1.98 MB. Every pass and review is told to "search the
  * ledger for the same surface and question" and to cite a standing decision
  * or overturn it explicitly, and the only mechanism behind that sentence was
  * grep over two megabytes, which returns lines, not records. A ledger nobody

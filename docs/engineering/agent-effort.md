@@ -22,9 +22,8 @@ quality gain was measured
 | lead session | max, set by you | decide, plan small changes, talk to the owner |
 | `planner` | max | slices a low-effort implementer can build without judgment |
 | `implementer` | low | one planned slice from `/parallel-brief` |
-| `reviewer` | max | an independent review of a returned diff before landing |
-| PO and design seats, `design-guardian` | max | routed judgment |
-| `chief` | medium | coordination only |
+| `reviewer` | max | an independent review of a returned diff, or of a routed product or design decision |
+| `design-guardian` | max | a design verdict with edits, when the owner asks |
 
 ## Steps
 

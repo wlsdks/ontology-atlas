@@ -290,8 +290,7 @@ Intentional deviations between prototype and shipped code (not drift, for refere
 
 **Channel choice is itself part of the specification.** Kind uses shape rather
 than color as its distinguishing visual variable. As Jacques Bertin argues in
-*Sémiologie graphique* (1967), **hue cannot express order**
-(`.claude/agents/design-infoviz.md`). This app already reserves hue for two
+*Sémiologie graphique* (1967), **hue cannot express order**. This app already reserves hue for two
 different meanings: **hierarchy** through the brightness/depth ladder (project
 ⊃ domain ⊃ capability ⊃ element; see "Map Ink Ladder" below), and
 **state** through color itself (three signal tones plus power/pulse). Adding a
@@ -370,7 +369,7 @@ Gate: Display conditions (kind, radius, `farT`) are sourced from constants in `n
 
 ### 5. Bridge Nodes — Placeholder, Value TBD (2026-08)
 
-The data side is currently specifying **bridge nodes** (first-class representation of relationships connecting two projects/domains), while the visual expression (owner request "glowing / red border") seeks alternatives within this charter — **pending design-informatics (`design-infoviz`) review**. Glow is allowed since 2026-09-08 provided it carries a state through a token, so the open question is what fact a bridge's light would state, not whether light is permitted; red borders still overlap with error signal tones, causing misreading. This section defines only **placeholder and gate**, not value:
+The data side is currently specifying **bridge nodes** (first-class representation of relationships connecting two projects/domains), while the visual expression (owner request "glowing / red border") seeks alternatives within this charter — **pending an independent review through the `map-marks` lens**. Glow is allowed since 2026-09-08 provided it carries a state through a token, so the open question is what fact a bridge's light would state, not whether light is permitted; red borders still overlap with error signal tones, causing misreading. This section defines only **placeholder and gate**, not value:
 
 - A fifth row may be needed in the shape mapping table (§1) — whether bridge is a new `kind` or an additional marker on existing kinds (e.g., new emphasis on the edge itself) follows data-side decisions.
 - **Once values are finalized, they will be incorporated into the §1–§4 body, not this section** — do not isolate it as a "bridge-only section." Isolation invites future audits asking "why is bridge treated separately?"
@@ -455,7 +454,7 @@ Full grounding + verified links in [`FOUNDATIONS.md` §4](./FOUNDATIONS.md#4-des
 | Our rule | Descends from |
 |---|---|
 | Neutral greys + indigo protagonist; effects only where they carry a fact (the bans were lifted 2026-09-08, the restraint stays a default) | **Dieter Rams**, *Ten Principles* — "unobtrusive / honest / as little design as possible" ("Less, but better") |
-| Every visual mark encodes a typed fact and asserts no fact the data lacks | **Jock Mackinlay** (ACM TOG 1986) — expressiveness + effectiveness. This is the bench's rejection rule |
+| Every visual mark encodes a typed fact and asserts no fact the data lacks | **Jock Mackinlay** (ACM TOG 1986) — expressiveness + effectiveness. This is the `map-marks` lens's rejection rule |
 | Honest, proportional relation rendering; a legend means the mark cannot explain itself | **Edward Tufte** — graphical integrity + direct labelling. **Not** data-ink as a rule: Inbar 2007 and Bateman 2010 tested it and it did not hold ([FOUNDATIONS](FOUNDATIONS.md#4-design-lineage--restraint-as-craft-cited)) |
 | `@theme` token scale; constrained spacing; "no second coloring system"; hierarchy by de-emphasis | **Wathan & Schoger**, *Refactoring UI* (also the Tailwind authors) |
 | Kind hierarchy + typed relations as the organizing device; lean high-signal vault | **John Maeda**, *Laws of Simplicity* — Reduce / Organize; "subtract the obvious, add the meaningful" |
@@ -983,7 +982,7 @@ that only makes the screen feel busy fails the design system.
 
 ### Motion Syntax (usability motion family, Phase 3 2026-07-25)
 
-The usability motion for "verifying meaning" in the map contextual editor and insights (`/ontology/insights`) is built on the **duration/easing family** below. Since 2026-09-08 overshoot, bounce and glow are allowed on a named token when the motion seat can say what they mean; an ambient loop with no state behind it still fails the "busy" test above.
+The usability motion for "verifying meaning" in the map contextual editor and insights (`/ontology/insights`) is built on the **duration/easing family** below. Since 2026-09-08 overshoot, bounce and glow are allowed on a named token when a review through the `motion` lens can say what they mean; an ambient loop with no state behind it still fails the "busy" test above.
 3-step ramps are ≤240ms (above that, only **exception tokens with a name and reason** — currently 2:
 `--agent-panel-reflow-duration` 260ms panel reflow · `--overlay-spring-response`
 300ms overlay spring. Both have critical damping so their physics are correct; what was misaligned was not the code but this sentence).
@@ -2709,7 +2708,7 @@ or fluid column widths"* — width is **derived** from grid/content, not ramp st
 **When you need a width for a new surface — this path requires no convening or approval:**
 
 1. First find a same-nature measured width in the table above (e.g., reuse `--git-setup-measure` for prose).
-2. If none exists, **create a surface-specific token** in that surface's token block with a derivation comment. ⚠️ This is **neither** a "system" convening target nor an approval target —
+2. If none exists, **create a surface-specific token** in that surface's token block with a derivation comment. ⚠️ This is **neither** a `design-contract` declaration nor an approval target —
    the `design.md` convening trigger and `pnpm decisions:check` sensor only look at **ramp
    tokens** (`scripts/lib/design-spec-census.mjs` `RAMP_TOKEN_PATTERN`,
    explicitly excluding surface-specific tokens). The 2026-08-04 practical test observed that *"the gate made `w-96` cheaper than a single ramp line"*, but that cost model was **factually
@@ -2717,7 +2716,7 @@ or fluid column widths"* — width is **derived** from grid/content, not ramp st
    which is why this section exists.
 3. One-off `max-w-*` values hold the same status as optical corrections — do not enforce them like padding.
 
-**To create a width «ramp»**, that is when ramp listing requires "system" convening + approval. Falsification
+**To create a width «ramp»**, that is when ramp listing requires a `design-contract` declaration + approval. Falsification
 observation: if three or more surface width tokens of the same value repeat **without derivation** (evidence of scale demand), this decision is reconsidered.
 
 ### Box Specifications Table
@@ -3328,7 +3327,7 @@ The settings row-measure token (658px) bound the API Key drill-in's rows to the 
 --dialog-max-h: 44rem;  /* Ceiling before a dialog's own body scrolls (2026-09-05) */
 ```
 
-- **That’s all for Level 2** (approved by the "System" team on 2026-08-15). The old `--dialog-w-lg: 720` was removed because it was a ghost with zero consumers and zero definitions — unused tokens are not specifications, they are misinformation. If a new level is needed, convening the "System" team comes first.
+- **That’s all for Level 2** (approved by the "System" team on 2026-08-15). The old `--dialog-w-lg: 720` was removed because it was a ghost with zero consumers and zero definitions — unused tokens are not specifications, they are misinformation. If a new level is needed, declaring `design-contract` comes first.
 - Single source of truth for centered modal/composer width; primary consumer is `Dialog`
   (`src/shared/ui/dialog.tsx`). Actual application wraps narrow viewports with
   `w-[min(var(--dialog-w-*), calc(100vw - 2rem))]`.

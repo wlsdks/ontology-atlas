@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  DESIGN_BASE_LENSES,
   DESIGN_CHANGE_SIGNALS,
   routeDesignProof,
 } from '../../scripts/lib/design-proof-router.mjs';
@@ -15,10 +16,10 @@ const read = (path: string) => readFileSync(join(ROOT, path), 'utf8');
 const proofNames = (changes: string[]) => routeDesignProof({ changes }).proofs.map((item) => item.name);
 
 describe('Atlas design proof routing', () => {
-  it('keeps copy and local visual work out of council', () => {
+  it('keeps copy and local visual work out of review', () => {
     expect(routeDesignProof({ changes: ['copy'] })).toMatchObject({
       directions: false,
-      council: { required: false, seats: [] },
+      review: { required: false, lenses: [] },
       proofs: [
         { name: 'checks:changed', scope: 'changed-paths' },
         { name: 'final-capture', scope: 'affected-state' },
@@ -26,7 +27,7 @@ describe('Atlas design proof routing', () => {
     });
     expect(routeDesignProof({ changes: ['local-visual'] })).toMatchObject({
       directions: false,
-      council: { required: false, seats: [] },
+      review: { required: false, lenses: [] },
       proofs: [
         { name: 'checks:changed', scope: 'changed-paths' },
         { name: 'design-audit', scope: 'affected-state' },
@@ -102,35 +103,38 @@ describe('Atlas design proof routing', () => {
     expect(proofNames(['design-contract'])).not.toContain('computer-use-loop');
   });
 
-  it('reserves divergence and council for structural commitments', () => {
+  it('reserves divergence and review for structural commitments', () => {
     const result = routeDesignProof({
       changes: ['new-surface', 'desktop-shell', 'motion', 'agent-handoff'],
     });
     expect(result).toMatchObject({
       directions: true,
-      council: {
+      review: {
         required: true,
-        crossCritique: 'only-on-material-conflict',
+        rebuttal: 'only-on-material-conflict',
         record: true,
       },
-      sequence: ['directions', 'build', 'proof', 'council', 'remeasure-changed-proof'],
+      sequence: ['directions', 'build', 'proof', 'review', 'remeasure-changed-proof'],
     });
-    expect(result.council.seats).toEqual([
-      'design-lead',
-      'design-interaction',
-      'design-motion',
-      'design-workbench',
-      'design-responsive',
-      'design-handoff',
+    expect(result.review.lenses).toEqual([
+      'moment',
+      'evidence',
+      'attention',
+      'reversibility',
+      'motion',
+      'installed-app',
+      'responsive-bands',
+      'agent-action',
     ]);
+    expect(DESIGN_BASE_LENSES).toEqual(['moment', 'evidence']);
   });
 
   it('gives a design-contract change system review and a probed gate without a directions ritual', () => {
     expect(routeDesignProof({ changes: ['design-contract'] })).toMatchObject({
       directions: false,
-      council: {
+      review: {
         required: true,
-        seats: ['design-lead', 'design-system'],
+        lenses: ['moment', 'evidence', 'attention', 'tokens'],
       },
       proofs: [
         { name: 'checks:changed', scope: 'changed-paths' },
@@ -153,10 +157,15 @@ describe('Atlas design proof routing', () => {
       { cwd: ROOT, encoding: 'utf8' },
     );
     expect(JSON.parse(output)).toMatchObject({
-      policyVersion: 2,
+      policyVersion: 3,
       directions: false,
-      council: { required: false, seats: [] },
+      review: { required: false, lenses: [] },
     });
+    const text = execFileSync(process.execPath, [CLI, '--change=design-contract'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+    expect(text).toContain('review=yes · lenses=moment,evidence,attention,tokens');
     expect(parseDesignRouteArgs(['--change=motion,responsive'])).toMatchObject({
       changes: ['motion', 'responsive'],
     });

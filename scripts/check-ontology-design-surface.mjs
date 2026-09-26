@@ -191,11 +191,8 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "computer-use-loop",
       "/design-build",
       "real macOS screen",
-      "Design Council",
-      "Atlas Designer Bench",
-      "No seat always attends",
-      "Council utility",
-      "Five consecutive no-delta councils",
+      "Independent review",
+      "No UI lens always applies",
       "No-Human-Designer Working Mode",
       "Source -> Atlas rule -> verifier",
       "Reference Permission Test",
@@ -211,7 +208,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "Computer Use",
     ],
     reason:
-      "Product Design OS must keep fact-derived proof routing, iterative real-window inspection, recorded motion, selected-seat council utility, and Atlas topology/desktop boundaries.",
+      "Product Design OS must keep fact-derived proof routing, iterative real-window inspection, recorded motion, one independent review with routed lenses, and Atlas topology/desktop boundaries.",
   },
   {
     id: "relief-topology-token-contract",

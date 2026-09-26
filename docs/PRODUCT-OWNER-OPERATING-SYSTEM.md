@@ -7,10 +7,11 @@ area: process
 
 # ATLAS PRODUCT DECISION SYSTEM
 
-> Version 3, piloted from 2026-09-01, closed as `adjust` on 2026-09-03, and
-> adjusted again on 2026-09-26: the routing stays, the per-run pilot records
-> stop (see "Measured pilot"). It keeps the v2 two-reviewer ceiling but removes
-> the builder's ability to declare their own door and risk.
+> Version 4, piloted from 2026-09-01, closed as `adjust` on 2026-09-03,
+> adjusted on 2026-09-26 (the routing stays, the per-run pilot records stop; see
+> "Measured pilot"), and on 2026-09-27 the reviewer pair gave way to one
+> independent `reviewer`. The builder still cannot declare their own door and
+> risk.
 
 Atlas does not need a universal product-management framework. It needs a product
 owner for one unusual failure: coding agents can change a codebase faster than
@@ -31,8 +32,8 @@ Atlas PO work starts from the current
 [Atlas product thesis](PRODUCT-DIRECTION.md#the-atlas-product-thesis), not a
 generic feature scorecard. Its connected risks are source-first meaning
 construction, task-aware agent context, evidence-bound human change review,
-and accepted meaning reused in the next task. Each seat judges its part of this
-same product. Do not require every small change to implement the whole loop.
+and accepted meaning reused in the next task. The reviewer judges its part of this
+same product through the lenses the route selects. Do not require every small change to implement the whole loop.
 
 Judge a proposal by the state it helps a person reach, not by its feature count
 or how reassuring it looks. Atlas should help the owner explain relevant system
@@ -101,8 +102,8 @@ convert it into observation.
 
 Run `pnpm po:route -- --help`. The builder supplies an evidence state, one Atlas
 outcome, inspectable change signals, and an explicit state for all four Atlas
-boundaries. The router derives the door, primary risk, and reviewer pair. It
-does not accept `--door` or `--risk`.
+boundaries. The router derives the door, primary risk, and whether one independent
+review is needed. It does not accept `--door` or `--risk`.
 
 ### Mechanical maintenance
 
@@ -158,8 +159,9 @@ pnpm po:route -- --evidence=observed --outcome=correct \
 
 - `skip`: maintenance checks only.
 - `solo`: one accountable pass. Unknown evidence means `probe-first`.
-- `review`: `po-evidence` plus exactly one risk specialist. Meaning selects
-  `po-steward`, positioning selects `po-wedge`, and scope selects `po-leverage`.
+- `review`: one `reviewer` with the lenses the router returns: `moment` and
+  `evidence` always, plus `boundaries` for meaning and `smallest-slice` for
+  scope.
 
 The human owner may request extra review; it does not widen the default router.
 
@@ -202,25 +204,31 @@ Routine solo passes stay in the working plan or pull-request rationale, not the
 decision records. A significant decision gets a decision fragment; per-run pilot
 records are no longer created.
 
-## Selected review protocol
+## Independent review protocol
 
-One-way work gets Evidence plus the specialist returned by the router.
+One-way work gets one `reviewer` that did not write the change, applying the
+lenses the router returns.
 
 1. Search narrowly with `pnpm decisions:find <terms>` for the same surface
    and question. Cite a standing decision or explicitly overturn it; check
    its falsifier.
 2. Record the requested words, intended decision, scope, and recovery proof
    before review. Without a before-state, review cannot claim a causal delta.
-3. Give both reviewers the same primary evidence. Preserve independent first
-   positions. If the execution environment weakens independence, record it.
-4. Rebut only when recommendations materially conflict or one bounded fact can
-   change the decision. At most one round; otherwise record zero turns.
-5. The accountable human owner decides. Reviewers do not vote, average scores,
-   or manufacture a delta to satisfy the pilot.
-6. Record the strongest losing argument, falsifier, review footprint, unique
-   contributor, and later recovery result. `unchanged` is valid data.
+3. Give the reviewer the primary evidence and seal its first judgment before
+   the author answers. If the execution environment weakens independence,
+   record it.
+4. The author answers a finding once, only when it materially conflicts.
+5. If the decision is one-way and author and reviewer still disagree, take one
+   second opinion from a different model: from Claude Code, the Codex
+   `reviewer` brief (`codex exec --sandbox read-only` with
+   `.agents/agents/reviewer.md`); from Codex, the Claude Code `reviewer`. Give it
+   the same evidence and the disputed decision stated neutrally, but neither
+   argument, and no reply round. Send repository content only, never vault or
+   user data. If no different model is available, say so.
+6. The accountable human owner decides; `unchanged` is valid. The decision
+   fragment records the dissent and the falsifier.
 
-Reviewers consume the outputs of `/design-audit`, `/responsive-sweep`,
+The reviewer consumes the outputs of `/design-audit`, `/responsive-sweep`,
 `/motion-verify`, `/map-perf`, and `/user-walkthrough` rather than repeating
 those gates.
 
@@ -276,14 +284,15 @@ recovery proof was resolved in 68% and owner clarity in 51%. The second
 adjustment keeps the router, the two-reviewer default and decision fragments,
 and stops the per-run register whose unresolved half was the failure. The
 composed register stays readable with `pnpm po:pilot`, and
-`pnpm po:pilot -- --check` still validates it in CI. A specialist with five
-calls and no unique material contribution must leave the default map.
+`pnpm po:pilot -- --check` still validates it in CI. On 2026-09-27 the
+two-reviewer default and its seats gave way to one independent `reviewer`; the
+register keeps the seat names it was written with.
 
 The known-control contract also replays:
 
-- unsupported OS URL-scheme authority as one-way Evidence + Steward;
+- unsupported OS URL-scheme authority as one-way review with the `boundaries` lens;
 - an unmeasured internal transport replacement as two-way `probe-first`;
-- first-contact positioning as one-way Evidence + Wedge; and
+- first-contact positioning as one-way review with the `evidence` lens; and
 - reversible visual craft as solo with its proof delegated to design gates.
 
 The pilot measures routing and decision usefulness, not market demand. A real

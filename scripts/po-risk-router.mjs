@@ -21,9 +21,10 @@ function help() {
     --boundary=<name>:<unchanged|affected|unknown>[,<name>:<state>...] [--json]
 
 Supply observable change facts, not a door or risk verdict. Atlas derives the
-door, primary risk, and reviewer pair. Repeat --change or pass a comma-separated
-list. All four boundary names are required; affected or unknown overrides
-rollback-cheap and routes to one-way Evidence + Steward review.
+door, primary risk, and whether one independent reviewer with its lenses is
+needed. Repeat --change or pass a comma-separated list. All four boundary names
+are required; affected or unknown overrides rollback-cheap and routes to one-way
+review by one independent reviewer with its lenses.
 `;
 }
 
@@ -84,6 +85,7 @@ export function formatPoRoute(result) {
     `risk=${result.primaryRisk}`,
     `record=${result.record ? 'yes' : 'no'}`,
     `reviewers=${reviewers}`,
+    `lenses=${result.lenses.length > 0 ? result.lenses.join(',') : 'none'}`,
     `next=${result.nextAction}`,
     `because=${result.routeReasons.join(' + ')}`,
   ].join(' · ');

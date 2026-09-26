@@ -268,14 +268,14 @@ applied reading of public, citable design thinking — not arbitrary taste.
   standard bar graph against its Tufte-minimalist twin and found a clear preference for the
   non-minimalist version; Bateman et al. (CHI 2010) found embellished charts were described no less
   accurately than plain ones and were recalled *significantly better* after two to three weeks.
-  Neither study touches graphical integrity, which is why that half stands. When a seat needs to
+  Neither study touches graphical integrity, which is why that half stands. When a reviewer needs to
   reject a mark, the rule it must cite is Mackinlay's expressiveness, below — "this ink is not data"
   is an assertion those two papers can be pointed at, while "this mark encodes no typed fact" is not.
 - **Jock D. Mackinlay, "Automating the Design of Graphical Presentations of Relational Information"
   (ACM TOG 5(2), 1986)** — **expressiveness** (a graphical language must encode the facts in the set,
   *and no additional facts*) and **effectiveness** (given several expressive encodings, prefer the one
   the human visual system reads best, ranking channels after Cleveland & McGill). → **This is the rule
-  the design bench actually runs**, and it is what the Infovis seat's mark → typed-fact table is: a
+  the `map-marks` review lens runs**, and it is what its mark → typed-fact table is: a
   mark that maps to no fact fails expressiveness, and a mark that asserts a fact the data does not
   contain (a decorative rail implying a category) fails it in the other direction. Effectiveness is
   why `.claude/rules/design.md` sends bar identity to position/length/order/label rather than hue, and
