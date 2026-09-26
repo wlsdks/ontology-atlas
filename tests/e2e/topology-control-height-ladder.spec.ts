@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForAnimationsDone, waitForBoxStill } from "./settle";
 
 /**
  * The map's controls stand on the **control-height ladder**, and the ladder is
@@ -50,7 +51,8 @@ async function openMap(page: Page, width: number, height: number) {
   });
   await page.goto("/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("topology-index-panel")).toBeVisible({ timeout: 30_000 });
-  await page.waitForTimeout(1_000);
+  // The chrome's entrances have finished, so every control is measured at its resting size.
+  await waitForAnimationsDone(page.locator("body"));
 }
 
 /** Height of the first rendered element for each roster entry. */
@@ -138,7 +140,8 @@ test.describe("coarse 포인터", () => {
     await expect(page.getByTestId("map-detail-panel")).toBeVisible({ timeout: 20_000 });
     // The sheet arrives on a scale transition; measuring the frame it becomes visible
     // reads 43.52 for a 44px box and turns this gate into a coin flip.
-    await page.waitForTimeout(800);
+    await waitForAnimationsDone(page.locator("body"));
+    await waitForBoxStill(page.getByTestId("map-detail-panel"));
 
     const measured = await page.evaluate(() => {
       const el = document.querySelector<HTMLElement>(

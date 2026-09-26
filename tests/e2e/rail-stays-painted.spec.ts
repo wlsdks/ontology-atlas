@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { installDesktopRailRuntime, mountDesktopVault } from "./desktop-rail-arrival-harness";
+import { waitForAnimationsDone } from "./settle";
 
 /**
  * **The rail and the page frame are on screen for every frame of a rail navigation.**
@@ -185,7 +186,8 @@ test("the rail stays painted and pressable across every rail navigation", async 
     // Leave, settle, then measure the arrival — a half-finished departure would put its own
     // transition inside the window measured on the way in.
     await rail.getByTestId("app-nav-rail-item-insights").click({ noWaitAfter: true });
-    await page.waitForTimeout(600);
+    await expect(page).toHaveURL(/\/insights\//);
+    await waitForAnimationsDone(page.locator("html"));
     await sampleCrossing(page, MAX_SAMPLE_MS);
     await rail.getByTestId(`app-nav-rail-item-${destination}`).click({ noWaitAfter: true });
     crossings[destination] = await readCrossing(page);
@@ -194,7 +196,7 @@ test("the rail stays painted and pressable across every rail navigation", async 
       await expect(page.locator('canvas[data-surface-role="map-canvas"]')).toBeVisible();
       await expect(page.getByTestId('map-navigation-wait')).toHaveCount(0);
     }
-    await page.waitForTimeout(300);
+    await waitForAnimationsDone(page.locator("html"));
   }
 
   for (const [destination, crossing] of Object.entries(crossings)) {

@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForAnimationsDone } from "./settle";
 
 /**
  * **Surface vocabulary ratchet — stops the number of box appearances growing.**
@@ -174,8 +175,10 @@ test("표면 조합이 늘지 않는다", async ({ page }) => {
         page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
       ).toBeVisible();
     }
-    await page.waitForTimeout(900);
+    // Fetches answered, fonts in, entrances finished: the census reads the settled page.
+    await page.waitForLoadState("networkidle");
     await page.evaluate(() => document.fonts.ready);
+    await waitForAnimationsDone(page.locator("body"));
     const found = await page.evaluate(collectSurfaceVocabulary);
 
     census.push({ route, found });
