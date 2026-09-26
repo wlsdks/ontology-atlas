@@ -68,6 +68,9 @@ sleeping.
 - Behaviour features and regression fixes: write the failing test first, make
   the narrowest scope green, then refactor. A regression fix ships with a test
   that detects that regression.
+- When an interaction moves focus or inert state while it animates, also press
+  the next key immediately, with normal motion, not only after the settled
+  state or under reduced motion (lessons d806ce25, b50c9221).
 - Prose, mechanical edits and isolated visual tweaks need no new test. Never
   write a test that duplicates the implementation or pins prose.
 - Update an e2e baseline only for an intentional rendered change.

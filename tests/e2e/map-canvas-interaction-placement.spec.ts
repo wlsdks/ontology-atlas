@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
 import { dogfoodVaultFiles } from "./dogfood-vault-files";
-import { waitForDomeEntered, waitForMapStill } from "./settle";
+import { waitForAnimationsDone, waitForBoxStill, waitForDomeEntered, waitForMapStill } from "./settle";
 
 /**
  * **Map canvas surfaces stand where they belong, keep one grammar, and hand focus back**
@@ -291,7 +291,12 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     const nextBefore = (await rectOf(page, "guided-tour-next"))!;
     for (let i = 0; i < 12; i++) {
       const step = await page.getByTestId("guided-tour-overlay").getAttribute("data-tour-step");
-      await page.waitForTimeout(700);
+      // Settle on what the step shows, not on a clock: a fixed 700 ms read the card mid-entrance
+      // on a slow CI runner and saw the Next button 74 px off (lesson cb5fbfaf).
+      const tourCard = page.getByTestId("guided-tour-card");
+      await waitForAnimationsDone(tourCard);
+      await waitForBoxStill(tourCard);
+      await waitForMapStill(page);
       const card = (await rectOf(page, "guided-tour-card"))!;
       if (step === "nodes") {
         // [next] did not move between step 1 and step 2.
