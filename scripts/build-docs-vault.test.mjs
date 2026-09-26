@@ -14,6 +14,7 @@ import {
   comparableDoc,
   comparableManifest,
   deterministicGeneratedAt,
+  documentRevision,
   extractOutLinksWithContext,
   localDayStamp,
   movedSlugAliases,
@@ -295,6 +296,18 @@ test('virtual ledger keeps its public slug, hides record fragments, and takes th
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test('a revision counts commits on the path and on the path it had before a move, plus pending edits', () => {
+  const history = {
+    commits: new Map([['docs/area/new.md', 1], ['docs/OLD.md', 4]]),
+    dirty: new Set(),
+  };
+  assert.equal(documentRevision('docs/area/new.md', history, { 'docs/area/new.md': 'docs/OLD.md' }), 5);
+  assert.equal(documentRevision('docs/area/new.md', history), 1);
+  history.dirty.add('docs/area/new.md');
+  assert.equal(documentRevision('docs/area/new.md', history, { 'docs/area/new.md': 'docs/OLD.md' }), 6);
+  assert.equal(documentRevision('docs/NEVER.md', { commits: new Map(), dirty: new Set() }), 0);
 });
 
 test('a moved document keeps its old slug as an alias, but only toward a slug that ships', () => {

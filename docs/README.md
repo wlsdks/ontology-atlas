@@ -61,6 +61,16 @@ Update the authority that owns the change: public behavior in `README.md` and
 `ARCHITECTURE.md`; decisions and user-visible changes as `records/` fragments
 (`pnpm record:new`); and new ontology meaning through the ontology-sync workflow.
 
+Start a new living document with `pnpm doc:new -- --type=<kind> --area=<area>
+--slug=<slug>`: it copies the kind's template from `.templates/` to the path the
+kind decides. Every living document carries `title`, `doc_type`, `status` and
+`area` in frontmatter, which `pnpm docs:meta` checks together with the paths
+the frontmatter points at. A document's version is its Git history: the app
+shows the date and revision derived at build time, and `pnpm doc:history --
+<path>` lists the commits across moves. Nobody writes a version number by hand;
+the one exception is a contract's `contract_version`, whose change needs a
+decision record that cites the contract.
+
 A document that moves is listed in `.moved.json`; `pnpm docs:move` moves it and
 rewrites every reference, and a branch started before the move runs it again
 after merging main.

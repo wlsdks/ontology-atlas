@@ -157,6 +157,9 @@ export function isShallowRepository(rootDir) {
  */
 function gitLastCommitDays(rootDir, scopeDir) {
   const days = new Map();
+  // How many commits touched each path — a document's `revision`. Counted in the
+  // same pass as the dates, so no field is ever hand-bumped.
+  const commits = new Map();
   const dirty = new Set();
   try {
     const scope = path.relative(rootDir, scopeDir).replace(/\\/g, '/') || '.';
@@ -183,6 +186,7 @@ function gitLastCommitDays(rootDir, scopeDir) {
       const file = line.trim();
       if (!file || !currentDay) continue;
       if (!days.has(file)) days.set(file, currentDay);
+      commits.set(file, (commits.get(file) ?? 0) + 1);
     }
     const status = execSync(`git status --porcelain -- "${scope}"`, {
       cwd: rootDir,
@@ -190,13 +194,32 @@ function gitLastCommitDays(rootDir, scopeDir) {
       maxBuffer: 16 * 1024 * 1024,
     });
     for (const line of status.split('\n')) {
-      const file = line.slice(3).trim();
+      // A staged rename reads `old -> new`; the document now lives at the new path.
+      const file = line.slice(3).trim().split(' -> ').pop();
       if (file) dirty.add(file);
     }
   } catch {
     // No git, or not a repository (a release tarball) — fall back to the mtime date.
   }
-  return { days, dirty };
+  return { days, commits, dirty };
+}
+
+/**
+ * A document's revision: the commits that touched its path, plus those that touched
+ * the path it had before a move (`docs/.moved.json`), plus one while it has
+ * uncommitted edits — so the number a pre-commit build writes is the number the
+ * commit then makes true. Git is the counter; two branches never edit one line.
+ */
+export function documentRevision(relPath, { commits, dirty }, movedFrom = {}) {
+  let count = commits.get(relPath) ?? 0;
+  let former = movedFrom[relPath];
+  const seen = new Set([relPath]);
+  while (former && !seen.has(former)) {
+    seen.add(former);
+    count += commits.get(former) ?? 0;
+    former = movedFrom[former];
+  }
+  return count + (dirty.has(relPath) ? 1 : 0);
 }
 
 /**
@@ -559,6 +582,7 @@ export function comparableManifest(manifest) {
     docs: (manifest.docs ?? []).map((doc) => ({
       ...doc,
       updatedAt: '<ignored>',
+      ...('revision' in doc ? { revision: '<ignored>' } : {}),
     })),
     generatedAt: '<ignored>',
   };
@@ -803,6 +827,8 @@ export async function scanVaultDir(
      * every node in the sample is accused of sitting outside its kind folder.
      */
     vaultSlugPrefix = '',
+    /** `{ newRepoPath: oldRepoPath }` from `docs/.moved.json`, so a revision count survives a move. */
+    movedFrom = {},
   } = {},
 ) {
   const files = await walk(dir);
@@ -856,6 +882,8 @@ export async function scanVaultDir(
     }
     const inputPaths = composed?.inputs ?? [relPath];
     const updatedAt = await latestInputDay(inputPaths, rootDir, gitDays);
+    // A composed ledger has many inputs and no single history; it carries no revision.
+    const revision = composed ? null : documentRevision(relPath, gitDays, movedFrom);
     // Asked where the body is already in hand, exactly as `buildMdEntry` does it.
     const vaultSlug =
       vaultSlugPrefix && slug.startsWith(vaultSlugPrefix)
@@ -885,6 +913,7 @@ export async function scanVaultDir(
       // the working tree or still untracked. Both are dates, so the value is stable as
       // long as the edit and its merge land on the same day.
       updatedAt: updatedAt ?? STABLE_GENERATED_AT_FALLBACK,
+      ...(revision ? { revision } : {}),
       linksOut,
     };
     // The stabiliser that carried values over from the previous manifest was
@@ -1028,21 +1057,21 @@ async function buildDocsVault({ check = false } = {}) {
     await ensureDir(path.dirname(MANIFEST_OUT));
   }
 
+  const movedFile = path.join(DOCS_DIR, '.moved.json');
+  const movedMap = existsSync(movedFile) ? JSON.parse(await readFile(movedFile, 'utf8')) : {};
   const scanned = await scanVaultDir(DOCS_DIR, {
     rootDir: ROOT,
     publicOutDir: PUBLIC_OUT,
     check,
     vaultSlugPrefix: 'ontology/',
+    movedFrom: Object.fromEntries(Object.entries(movedMap).map(([from, to]) => [to, from])),
   });
   const { content, gatewayContent, publicFiles } = scanned;
   // The bundled manifest ships with headings split into a separate file — see the
   // MANIFEST_HEADINGS_OUT comment at the top of this file.
   const split = splitManifestHeadings(scanned.manifest);
   const { headingsBySlug } = split;
-  const movedFile = path.join(DOCS_DIR, '.moved.json');
-  const aliases = existsSync(movedFile)
-    ? movedSlugAliases(JSON.parse(await readFile(movedFile, 'utf8')), new Set(split.manifest.docs.map((doc) => doc.slug)))
-    : {};
+  const aliases = movedSlugAliases(movedMap, new Set(split.manifest.docs.map((doc) => doc.slug)));
   const manifest = Object.keys(aliases).length > 0 ? { ...split.manifest, aliases } : split.manifest;
   const { docs, backlinksDetail, tags } = manifest;
   const changelogRaw = content['CHANGELOG'];

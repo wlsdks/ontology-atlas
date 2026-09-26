@@ -168,6 +168,13 @@ const RULES = [
     matches: [/\.md$/],
   },
   {
+    // Living documents carry their kind, status and area; a new or edited one,
+    // a template, the kind table or the move map can each break that.
+    command: 'pnpm docs:meta && pnpm docs:move -- --check',
+    reason: 'a living document, template, document kind or move changed — metadata and moved paths must stay current',
+    matches: [/^docs\/(?!ontology\/|records\/(?!README)|archive\/|audits\/|benchmark\/|prototypes\/|(?:DECISIONS|CHANGELOG|PO-PILOT)\.md$|BACKLOG-SNAPSHOT-).+\.md$/, /^docs\/\.moved\.json$/, /^scripts\/lib\/doc-types\.mjs$/],
+  },
+  {
     command: 'pnpm test:guide-examples',
     reason: 'public guide ontology examples and the external judgment probe must satisfy their contracts',
     matches: [
@@ -189,11 +196,12 @@ const RULES = [
   },
   {
     command: 'pnpm test:docs:checks',
-    reason: 'docs surface or doc-link checker changed',
+    reason: 'docs surface, doc-link, doc-metadata or doc-move tooling changed',
     matches: [
       /^scripts\/build-docs-surface\.(?:mjs|test\.mjs)$/,
       /^scripts\/check-doc-links\.(?:mjs|test\.mjs)$/,
-      /^scripts\/lib\/(?:docs-surface|doc-links)\.mjs$/,
+      /^scripts\/(?:check-doc-meta|docs-move|new-doc|doc-history)\.(?:mjs|test\.mjs)$/,
+      /^scripts\/lib\/(?:docs-surface|doc-links|doc-types)\.mjs$/,
     ],
   },
   {

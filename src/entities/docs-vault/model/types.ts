@@ -51,6 +51,12 @@ export interface VaultDoc {
   meaningFindings?: string[] | null;
   wordCount: number;
   updatedAt: string;
+  /**
+   * How many commits touched this document, counted from Git at build time and
+   * carried across moves (`docs/.moved.json`). Only the bundled product manifest
+   * has it; a local folder and a composed ledger do not.
+   */
+  revision?: number;
   linksOut: string[];
   /**
    * `file.lastModified` (ms), used for conflict detection in local mode. Undefined
