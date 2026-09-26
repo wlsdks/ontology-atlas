@@ -5,7 +5,7 @@ import { readFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const CI_MAX_FAILURES = 5;
+const CI_MAX_FAILURES = 5;
 
 export function inventoryFiles(report) {
   if (report.errors?.length) throw new Error('Playwright discovery reported errors');
