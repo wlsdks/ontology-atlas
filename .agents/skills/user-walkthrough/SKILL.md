@@ -102,6 +102,8 @@ automation alone does not satisfy the design evidence contract.
 ```md
 ## User walkthrough — <task>
 
+**Outcome**: completed | failed at <step> — <what the walker could not do, in one line>
+
 **Walker**: <knowledge · context · concern> · **context isolation**: confirmed
 **Journey**: A agent / B human / both
 **Build**: <URL or installed app · commit>

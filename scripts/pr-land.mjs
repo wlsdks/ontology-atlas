@@ -104,6 +104,7 @@
  * fast path, and `gh pr ready --undo` puts it back.
  */
 
+import { runMainCopyIfStale } from './lib/run-main-copy.mjs';
 import { execFileSync } from 'node:child_process';
 import { hostname } from 'node:os';
 
@@ -1517,5 +1518,7 @@ export function runPrLand(argv, io = console, makeDeps = defaultDeps) {
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
-  process.exitCode = runPrLand(process.argv.slice(2));
+  // The conductor's code is shared infrastructure: run main's copy when this checkout's is older.
+  const argv = process.argv.slice(2);
+  process.exitCode = runMainCopyIfStale({ entry: 'scripts/pr-land.mjs', argv }) ?? runPrLand(argv);
 }
