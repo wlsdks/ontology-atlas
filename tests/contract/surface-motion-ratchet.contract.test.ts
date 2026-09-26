@@ -9,6 +9,7 @@ import {
   MOTION_MECHANISMS,
   walkTsx,
 } from './lib/surface-motion-census';
+import { judgeRatchet } from './lib/ratchet-base';
 
 /**
  * Enter/exit ratchet — **hard-cut surfaces can never grow.**
@@ -129,222 +130,26 @@ const BASELINE_HARD_CUTS = 0;
  * **The total of openable surfaces** — anything that appears conditionally, whether
  * or not it has an exit path.
  *
- * This is the hard-cut denominator, and also the 20 in
- * `tests/e2e/a11y-open-surfaces.spec.ts`'s "measures 5/20". It is a literal for the
- * reason above.
- */
-/*
- * 20 → 22 (2026-08-04, the stepped "connect my agent" flow). The two added are
- * **two collapse branches**: the step body (`AgentSetupStep`) and the "not working?"
- * drawer. Both were born as `<Surface>`, so hard cuts stay 0 — a growing denominator
- * is not itself a defect, and this hand-raised diff is where "what grew" is
- * recorded.
+ * This is the hard-cut denominator, and also the denominator of
+ * `tests/e2e/a11y-open-surfaces.spec.ts`'s "measures N/M". Unlike `BASELINE_HARD_CUTS`
+ * it is **not a literal** (2026-09-26): it grows whenever a product surface is born,
+ * so its literal changed in 34 of this file's 42 commits, fourteen times in the two
+ * weeks before the conversion, and two branches adding a surface on the same day
+ * conflicted on it and had to reconcile the arithmetic by hand. It is now judged
+ * against the change's merge base (`tests/contract/lib/ratchet-base.ts`): the census
+ * runs on the working tree and on the base tree, and only growth this change did not
+ * record fails.
  *
- * 22 → 20 (evening of 2026-08-04, grammar correction for those same two branches).
- * The owner caught it in the installed app — *"it opens strangely and stutters?"*. Both are **in-flow collapses** wearing a floating
- * surface's grammar (`Surface` chrome: scale + fade, occupying layout during the exit
- * window). Frame measurement: on the 1→3 step transition the sibling below jumped
- * +254px in one frame, then −352px in one frame 140ms later (zero transition frames).
- * They moved to the list-row disclosure grammar (`.ai-row-disclosure` +
- * `useRowDisclosure`), and in that grammar the box is always drawn, so they stop
- * being conditional *entering surfaces* at all and leave the denominator — the exit
- * path is carried by the height transition, and `AgentSetupStep.test.tsx` pins that
- * contract (probes: stripping the grammar turns ① and ② red; re-applying the floating
- * grammar turns ③ red).
- */
-/*
- * 20 → 21 (2026-08-08): the editor `@` mention's **relation-picking second step**.
- * This number is paired with the denominator in `a11y-open-surfaces.spec.ts`, so both
- * are raised together — raising one alone breaks that file's self-comparison first
- * (which is why the pair exists).
- */
-/*
- * 25 → 26 (2026-08-16): the **past-conversation list** in the in-app chat. It grows
- * out of the list button in the header, so it was born as
- * `<Surface origin="top right">` and hard cuts stay 0.
+ * A new surface is recorded as `tests/contract/ratchet-raises/appearing-surfaces.<slug>.json`,
+ * whose `why` names the surface and **where its open path is exercised** (an `OPENERS`
+ * entry, or the component or e2e test that opens it when the static sweep cannot).
+ * The notes written before this mechanism, one per surface, are in this file's Git
+ * history.
  *
- * ⚠️ This surface **cannot be opened by a browser sweep** — it only exists after a
- * runtime is found on the desktop and a session is established. So the paired
- * denominator in `a11y-open-surfaces.spec.ts` is raised too, with the reason it
- * cannot join that file's list recorded there (the same path the permission card took
- * on 2026-08-16).
+ * 57 is the measurement at conversion. It is never edited: it serves a clone with no
+ * merge base, and is a floor for a tree compared with itself.
  */
-/*
- * 30 → 31 (2026-08-29): the ACP chat's **post-turn next-step group**. It appears
- * only after a desktop ACP session completes its latest user turn with a nonblank
- * agent answer, and it was born as `<Surface>` with a named `role="group"`.
- * Browser OPENERS cannot create that desktop-runtime state; widget tests cover its
- * state/keyboard contract and installed-app evidence covers the real turn.
- */
-/*
- * 31 → 33 (2026-09-02): Architecture gained two named surfaces. The evidence overlay is opened
- * by the static-browser accessibility sweep; the Architecture ACP dock requires the installed
- * desktop bridge and is covered by its component contract plus actual-window journey evidence.
- */
-/*
- * 33 → 34 (2026-09-04): Analysis > Flow gained one dock-local Ontology DNA
- * presentation mode. Its offer, blocked explanation, and full-dock view are born
- * as `Surface`; the exhaustive census is now 34 with hard cuts still at zero.
- * The state requires a desktop ACP turn, so its accessibility path is covered by
- * `AcpChatPanel.test.tsx` and the denominator note in a11y-open-surfaces.
- */
-/*
- * 35 → 36 (2026-09-05): Docs gained a same-route ACP dock, the surface Compile opens. It
- * is born as a `Surface`, so hard cuts stay at zero; it needs a verified desktop runtime
- * and an absolute vault path, so its accessibility path is carried by `AcpChatPanel`'s
- * own tests and the denominator note in a11y-open-surfaces rather than by the static
- * browser sweep.
- */
-// Analysis owns one additional dock; native walkthrough and dock component tests cover its opening path.
-// 35 → 36: a mismatched queued ACP request now explains why it is held. Its exact
-// request/turn-start path is exercised in AcpChatPanel.test.tsx; native proof is separate.
-// 36 → 37: two branches each added one surface on the same day — the queued-request
-// explanation above and the Docs dock described in the block before it. Both are born as
-// `Surface`, so hard cuts stay at zero, and both need a desktop runtime, so neither joins
-// the static browser sweep.
-/*
- * 37 → 38 (2026-09-06): the Library's guided shelf became a popover when the pane became
- * the graph (`docs/DECISIONS.md`, "The Library pane is the graph; the shelf is a popup").
- * It is born as `Surface` with `transientSurface("anchored")`, so hard cuts stay at zero,
- * and unlike the two above it needs **no** desktop runtime — a folder and one press reach
- * it in a browser — so its open path is measured directly, by the `the Library pane` cases
- * in `tests/e2e/library.spec.ts` (drawn, Escape closes it, focus returns to its chip).
- */
-/*
- * 38 → 39 (2026-09-07): the Library's select-to-ask bar. Selecting a passage in a wiki
- * page raises this `Surface` with `transientSurface("anchored")` just above the first
- * selected line, holding the questions. It needs the desktop ACP bridge (the docked agent answers), so the
- * static browser sweep cannot open it; `SelectionAsk.test.tsx` carries its named aside,
- * its Escape path and the sent question, and the installed app carries the real press.
- */
-/*
- * 39 → 40 (2026-09-08): the gateway's Mac download menu. A browser cannot tell which chip a
- * Mac has, so the hero's winner opens a two-row `Surface` with `transientSurface("menu")`
- * holding Apple Silicon and Intel. It needs no folder and no desktop runtime, so its open path
- * is measured directly — it is an entry in `a11y-open-surfaces.spec.ts`'s `OPENERS`.
- */
-// 40 → 41: the Library's reserved work lane reveals actual tool/file observations.
-// LibraryWorkActivityStrip.test.tsx owns its named section and exact receipt controls;
-// library-work-activity.spec.ts opens it through the ACP bridge, including permission
-// wait, observed revision and rejection. It is not a modal and never takes focus.
-/*
- * 41 → 42 (2026-09-12): the card a press on a Library graph mark opens
- * (`LibraryMarkPopover`, `docs/DECISIONS.md` "a press opens a card beside the mark").
- * `Surface` with `transientSurface("anchored")`, so hard cuts stay at zero. It needs
- * nothing but a folder and one press, so its open path is measured directly and in the
- * browser: `library-graph-card.spec.ts` presses a mark and asserts the card stands beside
- * it, covers neither the mark nor the strip, flips at the edges, and closes on Escape, on a
- * second press and on its own control with the keyboard going back to the canvas.
- */
-/*
- * 42 → 43 (2026-09-13): the Harness tab's scan panel. It used to render for the whole read; it now
- * appears only once the read has passed a one-second threshold, so a 0.6s read shows no wait screen
- * at all and a five-thousand-document one still gets its stages. That made it a conditionally
- * appearing surface for the first time, and it is born as `Surface` with the `overlay` grammar. Its
- * **entrance** is real and measured (180ms of opacity, `map-overlay-in`); its **exit** is
- * unreachable from that call site, because the status ternary around it unmounts the branch in the
- * commit the read finishes. The census classifies the site as a swap — both alternates draw — so
- * hard cuts stay at zero on the strength of the entrance, and the sentence says so rather than
- * implying a crossfade nobody can observe (design-motion, 2026-09-13). It needs the desktop bridge
- * — almost the whole harness lives in dot
- * directories a browser's folder permission cannot see — so the static sweep cannot open it and it
- * is not an `OPENERS` entry. `HarnessPage.test.tsx` owns its open path: nothing at 600ms, the panel
- * at 1000ms, which is also the gate on the threshold itself.
- */
-/*
- * 43 → 44 (2026-09-13): the rail's folder switcher (`features/vault-switch`, the popover the
- * open folder's name opens). `Surface` with `transientSurface("anchored")` and
- * `origin="top left"` aimed at the tile, so it is born where the press landed and hard cuts
- * stay at zero. It renders only while a local vault is loaded, which is why the static sweep
- * on `a11y-open-surfaces.spec.ts` cannot reach it - that sweep runs on the sample source,
- * where the tile does not exist - so it is not an `OPENERS` entry. Its open path is measured
- * in a real browser instead: `vault-launch-chooser.spec.ts` opens a seeded folder through
- * the stubbed picker, presses the tile, and asserts the popover stands and that the folder
- * beside it can be switched to. Dismissal is the same outside-press and Escape contract the
- * docs header's vault chip already uses (`shared/lib/use-dismissible-menu`, promoted from
- * that view for this second consumer); like that chip it does **not** restore focus to the
- * trigger, which is pre-existing behaviour of the shared hook rather than something this
- * surface introduced.
- */
-/*
- * 44 → 45 (2026-09-14): the Library work lane separates its current receipt from a
- * three-item history region. The history is an anchored `Surface`, opened from the
- * receipt count and named by that trigger; it owns Escape and returns focus to the
- * trigger. `a11y-open-surfaces.spec.ts` creates the protocol-level work state, presses
- * the trigger, requires the region to be visible, and measures its content.
- */
-/*
- * 45 -> 46 (2026-09-14): the returning-folder chooser groups creation locations in
- * one anchored Surface. The owner selected this instead of three cards below a
- * nested scrolling list. Its trigger needs multiple local folder records, so
- * folder-chooser-layout.spec.ts seeds five real handles, opens the disclosure,
- * measures it with axe, and verifies Escape plus cancellation back to the list.
- * The source census failed at 45 before this explicit inventory update.
- */
-/*
- * 46 -> 47 (2026-09-14): map navigation now owns a live pending Surface outside
- * the captured route pane. map-navigation-wait.spec.ts proves pending precedes
- * navigation, completion reveals a canvas, keyboard focus survives, and leaving
- * cancels the queued map push. The source census rejected this addition at 46.
- */
-/*
- * 47 -> 49 (2026-09-15): saved constellations add the map's anchored saved-set
- * list and the Library collection row's in-flow member disclosure. Both are born
- * as `Surface`, so hard cuts stay at zero. Their open paths require a real folder
- * handle and sidecar data that the static OPENERS fixture cannot synthesize;
- * actual browser journeys cover both, while widget tests own their state paths.
- * 49 -> 50 (2026-09-18): the Library graph's island bar — the chip back to the islands
- * overview, standing only while an island is opened. Its opener is a press on a painted
- * island of the canvas, which the a11y opener model (a DOM trigger testid) cannot express;
- * `tests/e2e/library-graph-islands.spec.ts` presses the island and holds the bar's own
- * checks (visible, Escape and the chip both return the map).
- * 50 -> 51 (2026-09-19): the project page's agent dock, born as `Surface` like the
- * Library's and Analysis's. It mounts only behind the desktop bridge with a guarded
- * runtime, which the static OPENERS fixture cannot synthesize;
- * `tests/e2e/project-agent-dock.spec.ts` opens it through the bridge stub and holds its
- * own checks (the frame opens, the brief request is seated, closing puts it away).
- * 51 -> 52 (2026-09-19): the MCP tab's verification dialog — restart, check and the
- * "not working?" fold moved off the page into one `Dialog` (born as `Surface`, so hard
- * cuts stay at zero) when the three-step accordion became tool rows. Its opener is
- * `agent-setup-verify-open`, drawn only with a launchable server and an open folder,
- * which the static OPENERS fixture cannot synthesize; `VaultAgentSetupPanel.test.tsx`
- * owns its open path.
- * 52 -> 54 (2026-09-21): the new-round sheet's two menus — "Add a place" (the connectors
- * this folder has attached, plus another folder) and "Choose folders" (the real folder list
- * plus "the documents I wrote"). Both are born as `Surface`, so hard cuts stay at zero, and
- * both live **inside** the registration Dialog: their opener is a press inside a modal that
- * only exists behind the desktop bridge with an open folder, which the static OPENERS fixture
- * cannot synthesize. `NewRoundSheet.test.tsx` opens both and presses through them, and
- * `tests/e2e/library-rounds-cadence-drag.spec.ts` opens the place menu through the bridge stub.
- * 54 stays 54 across the 2026-09-20 Automations merge, and the arithmetic is worth writing
- * down because two branches moved the same sheet in opposite directions. Automations mounts the
- * existing Library `NewRoundSheet` from its Documents lane as `{runner ? <NewRoundSheet/> : null}`
- * (`src/app/automations-workspace/index.tsx`), a conditional named call site, which is why that
- * branch alone measured 53. But the same day this branch gave `NewRoundSheet.tsx` the two menus
- * above, so its definition now contains `<Surface`, and `collect()` drops a named entry whose
- * definition already owns one (otherwise the sheet is counted twice, once by name and again by
- * its own surfaces). Measured on each tree: origin/main 53, this branch 54, the merge 54 — the
- * new call site joins the `at` list of a surface the denominator already holds through its two
- * `<Surface>` sites. The Automations sheet opens only with the desktop bridge and a folder, so
- * it is not an `OPENERS` entry; `AutomationsPage.test.tsx` and the Library sheet contract own
- * its open path, and the web no-vault route correctly keeps it closed.
- */
-/*
- * 54 -> 55 (2026-09-22): measured Guidance adds one logical evidence presentation. Its desktop
- * owner is an anchored Surface and its narrow owner is Dialog, but they are mutually exclusive at
- * one breakpoint and replace the retired measured table rather than stacking two tasks. The actual
- * opening path and both owners are audited in `tests/e2e/harness-tab.spec.ts` (portal/nonmodal and
- * narrow modal, settled axe floor, zero violations). Hard-cut debt remains unchanged.
- */
-// 55 -> 56 (2026-09-24): one in-world companion panel, shared by inventory,
-// skills, map and journals. The desktop bridge opener and nonempty axe audit live
-// in companion-growth.spec.ts; Escape and input scoping are exercised there too.
-// 56 -> 57 (2026-09-25): the agent-doctor result under a runtime row stopped hard-cutting.
-// It was already a conditional block; wrapping it in Surface moved it into this count, so
-// the denominator grows by an existing surface, not a new one. It opens only after the
-// desktop doctor runs a check (native bridge), so it is not an OPENERS entry; its content
-// and states are owned by AgentDoctor.test.tsx.
-const BASELINE_APPEARING_SURFACES = 57;
+const APPEARING_SURFACES_FALLBACK = 57;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';
@@ -487,13 +292,19 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
      * said without knowing how many were never opened.
      */
     const appearing = censusAppearingSurfaces(process.cwd());
+    const verdict = judgeRatchet({
+      gate: 'appearing-surfaces',
+      measure: (root) => (root === process.cwd() ? appearing : censusAppearingSurfaces(root)).length,
+      reads: ['src', 'app'],
+      fallback: APPEARING_SURFACES_FALLBACK,
+    });
     expect(
       appearing.length,
-      `조건부로 나타나는 표면이 ${BASELINE_APPEARING_SURFACES} → ${appearing.length} 로 늘었다.\n` +
+      `조건부로 나타나는 표면이 ${appearing.length} 로, 기준 ${verdict.ceiling} 을 넘었다.\n${verdict.explain}\n` +
         `새 표면을 더했으면 a11y-open-surfaces.spec.ts 의 OPENERS 에 그것을 여는 길이 있는지 보고,\n` +
-        `그 뒤 이 리터럴을 손으로 올려라 — 분모가 조용히 커지면 「5/19」가 「5/30」이 되어 있어도 아무도 모른다.\n` +
+        `그 길을 raise 기록의 why 에 적어라 — 분모가 조용히 커지면 「5/19」가 「5/30」이 되어 있어도 아무도 모른다.\n` +
         appearing.map((c) => `  [${c.kind}] ${c.what} — ${c.at[0]}`).join('\n'),
-    ).toBeLessThanOrEqual(BASELINE_APPEARING_SURFACES);
+    ).toBeLessThanOrEqual(verdict.ceiling);
     expect(appearing.length, '하드컷은 등장 표면의 부분집합이다').toBeGreaterThanOrEqual(census.length);
   });
 
