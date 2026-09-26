@@ -257,7 +257,9 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
   }
   if (newKey === 'domain') patch.domain = canonicalNewTo;
   else {
-    const starting = oldKey === newKey ? patch[newKey] : relationRefsFor(doc, newKey);
+    // The old key's patch is `null` once its only entry is taken out (`relationKeyPatch`), and a
+    // same-key retarget starts from that emptied list, not from a deleted key.
+    const starting = oldKey === newKey ? (patch[newKey] ?? []) : relationRefsFor(doc, newKey);
     Object.assign(patch, relationKeyPatch(doc, newKey, normalizeRelationRefs([...starting, canonicalNewTo])));
   }
   for (const noteKey of oldNoteKeys) delete notes[noteKey];

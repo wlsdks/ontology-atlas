@@ -142,13 +142,13 @@ export function DesktopVaultWelcome({
           onOpen={onOpenRecent}
           onForget={onForgetRecent ?? (() => {})}
           onLocate={onOpen}
+          /* The release valve sits under the list it acts on, and arrives with it. */
+          footnote={choosing ? (
+            <p className="text-caption leading-body text-[color:var(--color-text-quaternary)]">
+              {tSwitch("choose.releaseValve")}
+            </p>
+          ) : null}
         />
-        {/* The release valve sits under the list it acts on. */}
-        {choosing ? (
-          <p className="text-caption leading-body text-[color:var(--color-text-quaternary)]">
-            {tSwitch("choose.releaseValve")}
-          </p>
-        ) : null}
       </section>
     ) : null;
 

@@ -266,8 +266,8 @@ export function VaultSwitchRailTile() {
     [setOpen, vault],
   );
   const handleForget = useCallback(
-    (record: LocalFsHandleRecord) => {
-      void vault.forgetRecent(record);
+    (target: LocalFsHandleRecord | readonly LocalFsHandleRecord[]) => {
+      void vault.forgetRecent(target);
     },
     [vault],
   );
@@ -436,7 +436,10 @@ export function VaultSwitchRailTile() {
               busy={busy}
               onOpen={handleOpenRecent}
               onForget={handleForget}
+              onForgetAll={handleForget}
               onLocate={handlePick}
+              // A dialog would take focus out of this popover, which closes it and the dialog with it.
+              missingReview="inline"
             />
           </>
         ) : null}

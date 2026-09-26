@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
@@ -53,7 +53,7 @@ describe('useRecentVaultReachability on the desktop', () => {
     const hook = renderHook(() => useRecentVaultReachability(records));
 
     await waitFor(() =>
-      expect(hook.result.current['/Users/dana/vaults/atlas']).toBe('ready'),
+      expect(hook.result.current?.['/Users/dana/vaults/atlas']).toBe('ready'),
     );
   });
 
@@ -62,7 +62,7 @@ describe('useRecentVaultReachability on the desktop', () => {
     const records = [record('gone')];
     const hook = renderHook(() => useRecentVaultReachability(records));
 
-    await waitFor(() => expect(hook.result.current['/Users/dana/vaults/gone']).toBe('missing'));
+    await waitFor(() => expect(hook.result.current?.['/Users/dana/vaults/gone']).toBe('missing'));
   });
 
   it('reads a not-found rejection as missing rather than unknown', async () => {
@@ -76,7 +76,7 @@ describe('useRecentVaultReachability on the desktop', () => {
     const hook = renderHook(() => useRecentVaultReachability(records));
 
     await waitFor(() =>
-      expect(hook.result.current['/Users/dana/vaults/renamed']).toBe('missing'),
+      expect(hook.result.current?.['/Users/dana/vaults/renamed']).toBe('missing'),
     );
   });
 
@@ -88,7 +88,70 @@ describe('useRecentVaultReachability on the desktop', () => {
     const hook = renderHook(() => useRecentVaultReachability(records));
 
     await waitFor(() =>
-      expect(hook.result.current['/Users/dana/vaults/walled']).toBe('unknown'),
+      expect(hook.result.current?.['/Users/dana/vaults/walled']).toBe('unknown'),
     );
+  });
+});
+
+/**
+ * **The list is drawn once, from answers** (2026-09-26). Before the probe answered, every row
+ * was drawn `unknown` and redrawn a frame later; once missing folders fold into one line, that
+ * first frame would be a different shape as well — five rows collapsing to two and a line.
+ */
+describe('useRecentVaultReachability draws from the first answer', () => {
+  it('is null until the probe answers', async () => {
+    let answer: (exists: boolean) => void = () => undefined;
+    tauri.tauriVaultPathExists.mockImplementation(
+      () => new Promise<boolean>((resolve) => { answer = resolve; }),
+    );
+    const records = [record('atlas')];
+    const hook = renderHook(() => useRecentVaultReachability(records));
+
+    expect(hook.result.current).toBeNull();
+    answer(false);
+    await waitFor(() => expect(hook.result.current).toEqual({ '/Users/dana/vaults/atlas': 'missing' }));
+  });
+
+  it('draws past the deadline when one folder never answers, and takes its answer later', async () => {
+    vi.useFakeTimers();
+    try {
+      let late: (exists: boolean) => void = () => undefined;
+      tauri.tauriVaultPathExists.mockImplementation(async (rootPath: string) =>
+        rootPath.endsWith('/stalled') ? new Promise<boolean>((resolve) => { late = resolve; }) : true,
+      );
+      const records = [record('atlas'), record('stalled')];
+      const hook = renderHook(() => useRecentVaultReachability(records));
+
+      await act(() => vi.advanceTimersByTimeAsync(100));
+      expect(hook.result.current).toBeNull();
+      await act(() => vi.advanceTimersByTimeAsync(400));
+      // Drawn: the answered folder is ready, the stalled one has no answer (the row reads `unknown`).
+      expect(hook.result.current).toEqual({ '/Users/dana/vaults/atlas': 'ready' });
+
+      await act(async () => {
+        late(false);
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(hook.result.current).toEqual({
+        '/Users/dana/vaults/atlas': 'ready',
+        '/Users/dana/vaults/stalled': 'missing',
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('never goes back to null while the list changes under it', async () => {
+    tauri.tauriVaultPathExists.mockResolvedValue(true);
+    let records = [record('atlas'), record('notes')];
+    const hook = renderHook(() => useRecentVaultReachability(records));
+    await waitFor(() => expect(hook.result.current?.['/Users/dana/vaults/notes']).toBe('ready'));
+
+    // Forgetting a folder re-probes the rest; the list must stay drawn meanwhile.
+    tauri.tauriVaultPathExists.mockImplementation(() => new Promise<boolean>(() => undefined));
+    records = [record('atlas')];
+    hook.rerender();
+    expect(hook.result.current).not.toBeNull();
+    expect(hook.result.current?.['/Users/dana/vaults/atlas']).toBe('ready');
   });
 });

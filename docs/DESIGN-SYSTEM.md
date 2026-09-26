@@ -3340,6 +3340,12 @@ The settings row-measure token (658px) bound the API Key drill-in's rows to the 
 - `--recent-vault-action-reserve` exists so two numbers cannot drift apart: the row's right
   reserve and the `44px` touch floor the forget/locate chips are promoted to. In Korean the
   clearance measured 6.3px from the facts line before the reserve was bound to the floor.
+- Folders that no longer exist are not rows (2026-09-26). They fold into one line at the
+  list's end (`MissingFolderGroup`): a bare glyph in the rows' glyph column, the count in
+  tertiary ink, and a quaternary trailing word on the edge the rows' "Open" ends at. On the
+  centred page seats the review is a `Dialog`: a group that grew in place re-centred the page
+  and slid a forget chip under the pointer (129px at 1512×945). In the top-hung rail popover
+  it opens in place through `RowDisclosure`. A `blocked` folder still exists and keeps its row.
 
 ### Consumption Norms (Hard)
 

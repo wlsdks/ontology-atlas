@@ -12,10 +12,22 @@ import { RowButton } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 
-import { fieldNameKey, sentenceMapChange, stringList } from '../lib/change-summary';
+import {
+  fieldNameKey,
+  sentenceMapChange,
+  stringList,
+  type OntologyChangeSentence,
+} from '../lib/change-summary';
 
-function formatValue(value: unknown): string {
-  if (value === null) return 'null';
+/*
+ * `none` is the plain word for a field that holds nothing: an empty list, or a key the change
+ * deletes (`null`). `[]` and `null` are serialization, not the change — and since 2026-09-26 an
+ * emptied relation key is deleted rather than written as `[]`, so printing the literal would show
+ * the person a value the file never holds (owner inspection: "After []" on a removal).
+ */
+function formatValue(value: unknown, none: string): string {
+  if (value === null || value === undefined) return none;
+  if (Array.isArray(value) && value.length === 0) return none;
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   // A list of slugs is a list, and it reads as one per line. `["a","b"]` is the request's
@@ -149,13 +161,14 @@ function SentenceRow({
   onExpandedChange,
 }: {
   id: string;
-  entry: { target: string; text: string; before?: string };
+  entry: { target: string; text: string; before?: string; change?: OntologyChangeSentence['change'] };
   onExpandedChange?: (expanded: boolean) => void;
 }) {
   const t = useTranslations('ontologyChangeReview');
   return (
     <li
       data-testid="ontology-change-review-entry-row"
+      data-change={entry.change}
       className="grid gap-0.5 border-t border-[color:var(--color-divider)] pt-2 first:border-t-0 first:pt-0"
     >
       <p className="break-words font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
@@ -167,9 +180,20 @@ function SentenceRow({
           {entry.before}
         </p>
       )}
-      <div className="min-w-0">
-        <FoldedText id={id} text={entry.text} tone="sentence" onExpandedChange={onExpandedChange} />
-      </div>
+      {entry.change === 'removed' ? (
+        /*
+          A sentence that is going away says so in the field rows' own words — 「after: none」 —
+          rather than leaving an empty line under the one being removed.
+        */
+        <p className="text-label leading-label text-[color:var(--color-text-secondary)]">
+          <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">{t('afterLabel')}</span>
+          {t('noValue')}
+        </p>
+      ) : (
+        <div className="min-w-0">
+          <FoldedText id={id} text={entry.text} tone="sentence" onExpandedChange={onExpandedChange} />
+        </div>
+      )}
     </li>
   );
 }
@@ -199,7 +223,7 @@ function ChangeDetails({
       return isLongValue(entry.text) ? [id] : [];
     });
     const id = `ontology-change-review-value-${item.key}-${field.key}`;
-    return isLongValue(formatValue(field.after)) ? [id] : [];
+    return isLongValue(formatValue(field.after, t('noValue'))) ? [id] : [];
   });
   const fullScopeAvailable = (!hasFieldOverflow || showAllFields)
     && longValueIds.every((id) => expandedLongValues.has(id));
@@ -290,7 +314,7 @@ function ChangeDetails({
                 </div>
               );
             }
-            const afterText = formatValue(field.after);
+            const afterText = formatValue(field.after, t('noValue'));
             return (
               /* In the 352px relation panel, 6rem keeps the current long keys readable;
                  minmax(0,1fr) plus break-words still lets unbroken paths wrap when needed. */
@@ -315,7 +339,7 @@ function ChangeDetails({
                     <>
                       <span className="mb-1 block whitespace-pre-line break-words text-[color:var(--color-text-quaternary)]">
                         <span className="mr-1.5 text-caption">{t('beforeLabel')}</span>
-                        {formatValue(field.before)}
+                        {formatValue(field.before, t('noValue'))}
                       </span>
                       <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">
                         {t('afterLabel')}

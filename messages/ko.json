@@ -4768,6 +4768,7 @@
     "showLess": "접기",
     "beforeLabel": "지금",
     "afterLabel": "이렇게",
+    "noValue": "없음",
     "allValuesNew": "모두 새로 적히는 값이에요.",
     "afterValuesOnly": "지금 파일에 적힌 값은 이 요청에 없어서, 적힐 값만 보여 드려요.",
     "requestValuesRaw": "이 요청이 전달한 값을 그대로 보여 줘요. 신뢰할 수 있는 이전 값과 제안값은 비교에서 확인하세요.",
@@ -6901,7 +6902,7 @@
     "switcherAriaLabel": "폴더 바꾸기",
     "openFolderLabel": "열린 폴더",
     "switchTo": "바꿀 폴더",
-    "pickAnotherFolder": "Atlas가 모르는 폴더 열기",
+    "pickAnotherFolder": "다른 폴더 열기",
     "openFolder": "{name} 열기",
     "open": "열기",
     "forget": "목록에서 빼기",
@@ -6946,7 +6947,17 @@
     },
     "locate": "다시 찾기",
     "locateFolder": "폴더 선택 창으로 {name}을 다시 찾기",
-    "countedAgo": "{when} 셈"
+    "countedAgo": "{when} 셈",
+    "missing": {
+      "summary": "찾을 수 없는 폴더 {count}개",
+      "review": "살펴보기",
+      "hide": "접기",
+      "body": "Atlas가 기억한 경로에 폴더가 더 이상 없어요. 이름이 바뀌었거나 옮겨졌거나, 마운트되지 않은 볼륨에 있어요. 목록에서 빼도 디스크의 파일은 그대로예요.",
+      "forgetAll": "{count}개 모두 목록에서 빼기",
+      "locate": "옮긴 폴더 찾기",
+      "locateLabel": "폴더 선택 창으로 옮긴 폴더 찾기",
+      "close": "닫기"
+    }
   },
   "constellations": {
     "openTooltip": "저장한 별자리 열기",

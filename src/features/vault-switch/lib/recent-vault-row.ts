@@ -66,6 +66,29 @@ export function recentVaultRowKey(record: LocalFsHandleRecord): string {
   return folderName ? `fsa:${folderName}` : record.id;
 }
 
+/**
+ * The rows a person can act on, and the folders that are gone, **in that order**.
+ *
+ * ⚠️ **Why the missing folders are split off** (owner inspection, 2026-09-26). Temporary folders
+ * from QA runs are the most recently opened, so once they were deleted they sorted above the
+ * folders that still exist: five dead rows, each with a warning and two buttons, stood between the
+ * person and the folder they came for. A missing folder cannot be opened, so it is not an answer
+ * to "which folder do you want to work in" — it is housekeeping. The list keeps every other row
+ * where recency put it and gathers the missing ones into one line at its end.
+ *
+ * Only `missing` is gathered. `blocked` (a browser refusal) is a folder that is still there and
+ * one press on the picker away, so it keeps its row; `unknown` stays pressable by design.
+ */
+export function partitionRecentVaultRows(rows: readonly RecentVaultRow[]): {
+  listed: RecentVaultRow[];
+  missing: RecentVaultRow[];
+} {
+  return {
+    listed: rows.filter((row) => row.reachability !== 'missing'),
+    missing: rows.filter((row) => row.reachability === 'missing'),
+  };
+}
+
 export function buildRecentVaultRows({
   records,
   reachability,

@@ -168,6 +168,45 @@ afterEach(() => {
   fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
 });
 
+/**
+ * The launch chooser's "forget all" for folders that no longer exist (2026-09-26): several folders
+ * leave the known list through the store's own queue, and the list is read back once, so the
+ * chooser redraws once instead of shrinking a row at a time. The folder the session has open, and
+ * everything on disk, are untouched.
+ */
+describe('useLocalVaultInternal — forgetRecent', () => {
+  it('forgets several folders with one read-back and nothing else', async () => {
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(null);
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.restoreAttempted).toBe(true));
+    const readsBefore = fsHandleMocks.listRecentLocalFsHandles.mock.calls.length;
+
+    const gone = [makeRecord(fakeRootHandle('qa-run-a')), makeRecord(fakeRootHandle('qa-run-b'))];
+    await act(async () => {
+      await result.current.forgetRecent(gone);
+    });
+
+    expect(
+      fsHandleMocks.forgetRecentLocalFsHandle.mock.calls.map(([record]) => (record as LocalFsHandleRecord).name),
+    ).toEqual(['qa-run-a', 'qa-run-b']);
+    expect(fsHandleMocks.listRecentLocalFsHandles.mock.calls.length - readsBefore).toBe(1);
+    expect(fsHandleMocks.deleteLocalFsHandle).not.toHaveBeenCalled();
+  });
+
+  it('still forgets a single folder', async () => {
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(null);
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.restoreAttempted).toBe(true));
+
+    await act(async () => {
+      await result.current.forgetRecent(makeRecord(fakeRootHandle('atlas-old')));
+    });
+
+    expect(fsHandleMocks.forgetRecentLocalFsHandle).toHaveBeenCalledTimes(1);
+    expect((fsHandleMocks.forgetRecentLocalFsHandle.mock.calls[0]?.[0] as LocalFsHandleRecord).name).toBe('atlas-old');
+  });
+});
+
 describe('useLocalVaultInternal — mount 시 핸들 복원', () => {
   it('저장된 핸들이 없으면 idle 로 남고 vault 를 빌드하지 않는다', async () => {
     fsHandleMocks.getLocalFsHandle.mockResolvedValue(null);

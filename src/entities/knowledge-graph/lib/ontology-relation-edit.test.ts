@@ -126,3 +126,99 @@ describe('contextual relation edit plan', () => {
     });
   });
 });
+
+/**
+ * Owner inspection, 2026-09-26: removing the only `relates` entry of `capabilities/wiki-pages`
+ * from the map's edge panel left `relates: []` behind, and removing a relation that carried the
+ * only reason left `relation_notes: {  }`. `null` is how `applyFrontmatterUpdates` deletes a key,
+ * so an emptied list or map has to be planned as `null` — the review keeps showing what the list
+ * held and that nothing is left.
+ */
+describe('an emptied relation key is deleted, not written empty', () => {
+  it('deletes the key when the last entry of a list is removed', () => {
+    const plan = buildOntologyRelationRemovalPlan({
+      sourceSlug: 'capabilities/wiki-pages',
+      targetSlug: 'capabilities/library-workspace',
+      relation: 'relates',
+      frontmatter: { relates: ['capabilities/library-workspace'] },
+    });
+
+    expect(plan.updates).toEqual({ relates: null });
+    expect(plan.changeSet.fields).toEqual([
+      { key: 'relates', before: ['capabilities/library-workspace'], after: [] },
+    ]);
+  });
+
+  it('deletes relation_notes with the last reason it held', () => {
+    const plan = buildOntologyRelationRemovalPlan({
+      sourceSlug: 'capabilities/wiki-pages',
+      targetSlug: 'elements/frontmatter-parser',
+      relation: 'dependsOn',
+      frontmatter: {
+        dependencies: ['elements/frontmatter-parser'],
+        relation_notes: { 'elements/frontmatter-parser': 'wiki-schema.mjs imports parser.mjs.' },
+      },
+    });
+
+    expect(plan.updates).toEqual({ dependencies: null, relation_notes: null });
+  });
+
+  it('deletes each of the four keys this editor writes', () => {
+    for (const [relation, key] of [
+      ['isA', 'broader'],
+      ['dependsOn', 'dependencies'],
+      ['contains', 'contains'],
+      ['relates', 'relates'],
+    ] as const) {
+      const plan = buildOntologyRelationRemovalPlan({
+        sourceSlug: 'capabilities/a',
+        targetSlug: 'capabilities/b',
+        relation,
+        frontmatter: { [key]: ['capabilities/b'] },
+      });
+      expect(plan.updates, relation).toEqual({ [key]: null });
+    }
+  });
+
+  it('deletes the old key when changing the type of its only relation', () => {
+    const plan = buildOntologyRelationEditPlan({
+      sourceSlug: 'capabilities/wiki-pages',
+      targetSlug: 'capabilities/library-workspace',
+      fromRelation: 'relates',
+      toRelation: 'dependsOn',
+      why: 'The page contract is read by the library workspace.',
+      frontmatter: { relates: ['capabilities/library-workspace'] },
+    });
+
+    expect(plan.updates.relates).toBeNull();
+    expect(plan.updates.dependencies).toEqual(['capabilities/library-workspace']);
+  });
+
+  it('deletes relation_notes when retargeting drops the only reason and no new one is given', () => {
+    const plan = buildOntologyRelationEditPlan({
+      sourceSlug: 'capabilities/a',
+      targetSlug: 'capabilities/new-target',
+      fromRelation: 'relates',
+      fromTargetSlug: 'capabilities/old-target',
+      toRelation: 'relates',
+      why: '',
+      frontmatter: {
+        relates: ['capabilities/old-target'],
+        relation_notes: { 'capabilities/old-target': 'The old reason.' },
+      },
+    });
+
+    expect(plan.updates).toEqual({ relates: ['capabilities/new-target'], relation_notes: null });
+  });
+
+  it('keeps writing a list that still has entries', () => {
+    const plan = buildOntologyRelationRemovalPlan({
+      sourceSlug: 'capabilities/a',
+      targetSlug: 'capabilities/b',
+      relation: 'relates',
+      frontmatter: { relates: ['capabilities/b', 'capabilities/c'] },
+    });
+
+    expect(plan.updates).toEqual({ relates: ['capabilities/c'] });
+  });
+});

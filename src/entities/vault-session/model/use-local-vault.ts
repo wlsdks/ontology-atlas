@@ -1431,9 +1431,18 @@ export function useLocalVaultInternal() {
     [load, refreshRecentVaults],
   );
 
+  /**
+   * Stops listing one folder, or several, as a known folder. The folders themselves are never
+   * touched: this is the recent list only.
+   *
+   * Several at once is the launch chooser's "forget all" for folders that no longer exist
+   * (2026-09-26): every write goes through the store's queue first and the list is read back once,
+   * so it redraws once instead of shrinking a row at a time.
+   */
   const forgetRecent = useCallback(
-    async (record: LocalFsHandleRecord) => {
-      await forgetRecentLocalFsHandle(record);
+    async (target: LocalFsHandleRecord | readonly LocalFsHandleRecord[]) => {
+      const records = ([] as LocalFsHandleRecord[]).concat(target);
+      for (const record of records) await forgetRecentLocalFsHandle(record);
       await refreshRecentVaults();
     },
     [refreshRecentVaults],
