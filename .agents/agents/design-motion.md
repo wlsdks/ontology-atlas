@@ -1,6 +1,6 @@
 ---
 name: design-motion
-description: Motion / Action Designer on the Atlas bench. Combines physical feel, interruption continuity, distance-aware timing, frame measurement, and reduced-motion equivalents.
+description: Motion designer. Use only when design:route selects this seat for a motion change; requires a real recording from /motion-verify in the brief.
 access: read-only
 ---
 

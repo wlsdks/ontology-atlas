@@ -13,22 +13,16 @@
 #
 # What it runs, by edited file type:
 #   - code (.ts/.tsx/.js/.jsx/.mjs/.cjs)  → `eslint --cache` on that file
-#   - markdown                            → the repo markdown-language gate, and
-#     for user-rendered docs (samples/storefront, docs/guide, docs/ontology,
-#     docs/CHANGELOG.md) a prose em-dash check outside code fences
-#   - messages/{ko,en}.json               → em-dash count over string values
+#   - markdown                            → the repo markdown-language gate
 #
-# The em-dash and language CONTRACTS remain the authority
-# (tests/contract/em-dash-ratchet.contract.test.ts, pnpm docs:language); this
-# hook is an advisory copy of their verdicts at edit time and can never replace
-# them. PostToolUse cannot block and should not — the edit already happened —
+# Measured 2026-09-02 to 2026-09-26: eslint spoke 117 times, the language gate
+# twice, and the em-dash branches this hook used to carry never spoke, so they
+# were removed; their contracts still run in the lanes. This hook is an advisory
+# copy of the lint and language verdicts at edit time, never their authority.
+# PostToolUse cannot block and should not — the edit already happened —
 # so it reports through hookSpecificOutput.additionalContext and stays silent
 # when the file is clean. A hook that speaks on every edit spends context to
 # say nothing.
-#
-# It also appends edited source files to a per-session ledger
-# (.tmp/harness/session-<id>.edits) that the Stop-time verification reminder
-# reads. Ledger append is source code only: a docs edit does not gate a stop.
 #
 # The Codex mirror. Measured 2026-09-01 with codex-cli 0.151.0 rather than
 # assumed: PostToolUse fires for both Bash and edit tools, and an edit arrives
@@ -51,7 +45,7 @@ REPO_ROOT="${ATLAS_HOOK_ROOT:-$(pwd)}"
 
 RESULT="$(
   REPO_ROOT="$REPO_ROOT" node --input-type=module -e '
-import { readFileSync, existsSync, mkdirSync, appendFileSync, realpathSync } from "node:fs";
+import { readFileSync, existsSync, realpathSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 
@@ -97,23 +91,7 @@ const findings = [];
 
 const CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const CODE_ROOTS = ["src/", "app/", "mcp/src/", "cli/src/", "scripts/", "tests/"];
-// The rendered-docs boundary is "does a user read it", copied from the em-dash
-// contract test, which stays the authority for the list.
-const RENDERED_MD = ["samples/storefront/", "docs/guide/", "docs/ontology/"];
-const RENDERED_MD_FILES = ["docs/CHANGELOG.md"];
-
-function proseEmDashLines(text) {
-  let inFence = false;
-  const hits = [];
-  text.split("\n").forEach((line, i) => {
-    if (line.trimStart().startsWith("```")) { inFence = !inFence; return; }
-    if (!inFence && line.includes("—")) hits.push(i + 1);
-  });
-  return hits;
-}
-
 let ranLanguageGate = false;
-const sessionId = typeof payload?.session_id === "string" ? payload.session_id.replace(/[^\w-]/g, "") : "";
 
 for (const p of paths) {
   const r = rel(p);
@@ -124,14 +102,6 @@ for (const p of paths) {
   if (r.startsWith("/") || r.includes("node_modules/") || r.startsWith(".tmp/")) continue;
 
   if (CODE_EXT.test(r) && CODE_ROOTS.some((c) => r.startsWith(c))) {
-    // Session ledger for the Stop-time reminder — source code only.
-    if (sessionId) {
-      try {
-        const dir = join(root, ".tmp", "harness");
-        mkdirSync(dir, { recursive: true });
-        appendFileSync(join(dir, `session-${sessionId}.edits`), `${Date.now()}\t${r}\n`);
-      } catch { /* the ledger is a convenience, never a failure */ }
-    }
     try {
       // --max-warnings 0 matches the CI lint lane: a warning-only file exits 0
       // otherwise, and the planted-defect probe proved that silence (2026-09-01).
@@ -158,76 +128,10 @@ for (const p of paths) {
         if (out) findings.push(`markdown-language gate after editing ${r}:\n${out.split("\n").slice(-6).join("\n")}`);
       }
     }
-    const rendered = RENDERED_MD.some((d) => r.startsWith(d)) || RENDERED_MD_FILES.includes(r);
-    if (rendered) {
-      try {
-        const hits = proseEmDashLines(readFileSync(p, "utf8"));
-        if (hits.length > 0) {
-          findings.push(
-            `em-dash in user-rendered prose ${r} (line${hits.length > 1 ? "s" : ""} ${hits.slice(0, 8).join(", ")}). ` +
-            "Sentence over: full stop. Continuation: colon. Aside: parentheses. Code blocks are exempt.",
-          );
-        }
-      } catch { /* unreadable file: the contract will judge it later */ }
-    }
-    continue;
-  }
-
-  if (/^messages\/(ko|en)\.json$/.test(r)) {
-    try {
-      const raw = JSON.parse(readFileSync(p, "utf8"));
-      let withDash = 0;
-      const walk = (node) => {
-        if (typeof node === "string") {
-          if (node.includes("—") && node.trim() !== "—") withDash += 1;
-          return;
-        }
-        if (Array.isArray(node)) node.forEach(walk);
-        else if (node && typeof node === "object") Object.values(node).forEach(walk);
-      };
-      walk(raw);
-      if (withDash > 0) {
-        findings.push(`${r} carries ${withDash} em-dash string(s); the ratchet baseline is 0 (lone "—" placeholder glyphs are exempt).`);
-      }
-    } catch { /* invalid JSON will fail louder elsewhere */ }
   }
 }
 
 if (findings.length === 0) process.exit(0);
-
-/*
- * Record what was caught, so the lane can be judged instead of trusted.
- * The falsifier in the header above (remove this sensor if two weeks of use
- * catch nothing) needs a count that exists; without this line the hook reports
- * to the agent and forgets, and `pnpm harness:report` reads nothing.
- * Local and gitignored: measurement of our own tooling, never vault data.
- *
- * NOTE: this whole block runs inside a single-quoted bash argument, so an
- * apostrophe here terminates the script. Keep the prose apostrophe-free.
- */
-try {
-  const dir = join(root, ".tmp", "harness");
-  mkdirSync(dir, { recursive: true });
-  appendFileSync(
-    join(dir, "findings.jsonl"),
-    findings
-      .map((finding) =>
-        JSON.stringify({
-          at: new Date().toISOString(),
-          session: sessionId || null,
-          // The first token names the check that spoke; the body can be long.
-          kind: /^eslint/.test(finding)
-            ? "eslint"
-            : /^markdown-language/.test(finding)
-              ? "markdown-language"
-              : /^em-dash/.test(finding)
-                ? "em-dash"
-                : "messages-em-dash",
-        }),
-      )
-      .join("\n") + "\n",
-  );
-} catch { /* a missed record costs a count, never the report to the agent */ }
 
 process.stdout.write(
   [

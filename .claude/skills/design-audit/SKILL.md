@@ -1,6 +1,7 @@
 ---
 name: design-audit
 description: Audit a finished frontend change by measuring rendered rects and computed styles before using screenshots as human-checkable evidence.
+when_to_use: Use when pnpm design:route includes design-audit, after the UI change is built.
 ---
 
 # Measure a finished UI change
@@ -107,17 +108,23 @@ Spec, `node-shapes.test.ts`, `map-kind-glyph.test.tsx`, and
 At maximum scroll, compare the last content bottom with the bottom bar top. Below
 `lg`, reserve both `--topology-mobile-bottom-tab-reserve` and safe-area inset.
 
-## 5. Final Computer Use checkpoint after measurement
+## 4b. Generated drawings and printed numbers
 
-After browser geometry measurement, open the actual browser, WebView, or installed
-app through the computer-use capability. Capture its fresh accessibility tree and screenshot;
-record app/window identity, route, viewport, DPR, state, screenshot path, and the
-element that owns the primary action or selected fact. Browser automation
-screenshots do not replace this required human-checkable capture.
+Applies when the screen draws a diagram, graph or chart from data:
 
-Link this final checkpoint to the baseline and material checkpoints produced by
-`/design-build`. A final screenshot cannot retroactively validate a whole screen
-that was built without the Computer Use render loop.
+- A generated drawing is deterministic: derive variation from a stable id, never `Math.random`.
+- Every mark states itself in readable text, and every legend row names a mark that is on screen.
+- A number the screen prints is checked once against its source by a route that shares no code
+  with the screen (a shell count, a frontmatter scan), not by re-reading the screenshot.
+- Assign a notation symbol (ISO 5807, C4, BPMN) from derived facts, never from a name.
+
+## 5. Final checkpoint after measurement
+
+Include the `/design-build` §0-B render-loop packet (baseline, checkpoints,
+final tree + screenshot paths). Browser screenshots support measurement; they
+do not replace it. The final capture comes after
+measurement and names the element that owns the primary action or selected
+fact; it cannot retroactively validate a screen built without the loop.
 
 Capture the affected viewport for a scoped audit. Use both 1512×900 and 390px
 only when the route requests a full surface or responsive matrix. Visual critique

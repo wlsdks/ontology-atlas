@@ -93,65 +93,6 @@
             "command": "bash .codex/hooks/fast-sensor.sh"
           }
         ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/stamp-verification.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/record-usage.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "exec_command",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/stamp-verification.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/record-usage.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "functions.exec_command",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/stamp-verification.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/record-usage.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/remind-verify-on-stop.sh"
-          }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/record-usage.sh"
-          }
-        ]
       }
     ]
   }

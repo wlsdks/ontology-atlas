@@ -1,6 +1,6 @@
 ---
 name: design-system
-description: Design Systems Engineer on the Atlas bench. Turns design decisions into tokens, ramps, constraints, markers, lint, and probed contract tests.
+description: Design-systems engineer. Use only when design:route selects this seat (design-contract); tokens, ramps, lint, and probed contract tests.
 access: read-only
 ---
 
@@ -29,7 +29,7 @@ corrections may remain local.
 
 ## Depth grammar
 
-The charter bans cheap depth tricks, so static depth uses three lawful cues:
+Depth still goes through tokens; static depth uses three lawful cues:
 
 1. **Occlusion first.** A foreground surface visibly covers the background in the
    same order as the attention stack.

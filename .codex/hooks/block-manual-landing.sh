@@ -25,10 +25,6 @@
 # scripts/pr-land.mjs`, `gh pr create --draft`, and everything else. Exits 0 with no
 # output.
 #
-# Each refusal is appended to `.tmp/harness/refusals.jsonl` so `pnpm harness:report`
-# can say how often this guard fired. A guard nobody counted is the dead gate this
-# repository keeps rediscovering.
-#
 # **If the user explicitly instructed**, the user runs it themselves in the terminal
 # (via `! <command>` for this session) or temporarily disables this hook
 # (`mv block-manual-landing.sh block-manual-landing.sh.off`).
@@ -101,7 +97,9 @@ REASON=""
 RULE=""
 
 # ① gh pr merge — merges without waiting for the landing already in flight.
-if echo "$MATCH" | grep -Eq -- '(^|[^[:alnum:]_-])gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)'; then
+#    The REST merge endpoint is the same act by another spelling.
+if echo "$MATCH" | grep -Eq -- '(^|[^[:alnum:]_-])gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)' \
+  || echo "$MATCH" | grep -Eq -- '(^|[^[:alnum:]_-])gh[[:space:]]+api([[:space:]]+[^;|&]*)?pulls/[0-9]+/merge([[:space:]]|$|[?])'; then
   RULE="gh-pr-merge"
   REASON="\`gh pr merge\` does not wait for the agent already landing, so two of them merge into the same window and both pay another CI round. Run \`pnpm pr:land <number>\` instead: it takes the shared landing lock, waits out the landing ahead, waits for the required checks, merges, deletes the branch and prunes."
 
@@ -119,15 +117,6 @@ elif echo "$MATCH" | grep -Eq -- '(^|[^[:alnum:]_-])gh[[:space:]]+pr[[:space:]]+
 fi
 
 if [[ -n "$REASON" ]]; then
-  # Count the refusal. A failure here costs one report line, never the block.
-  REPO_ROOT="${ATLAS_HOOK_ROOT:-$(pwd)}"
-  (
-    mkdir -p "$REPO_ROOT/.tmp/harness" 2>/dev/null &&
-      printf '{"at":"%s","guard":"block-manual-landing","tree":"codex","rule":"%s"}\n' \
-        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$RULE" \
-        >>"$REPO_ROOT/.tmp/harness/refusals.jsonl"
-  ) 2>/dev/null || true
-
   cat <<JSON
 {
   "hookSpecificOutput": {

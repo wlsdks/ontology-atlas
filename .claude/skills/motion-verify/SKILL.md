@@ -1,14 +1,14 @@
 ---
 name: motion-verify
 description: Verify canvas and UI motion with a real macOS recording, uniform 30fps frames, a visual phase strip, and frame-to-frame pixel-diff statistics.
+when_to_use: Use when pnpm design:route includes motion-verify, or when a canvas or UI animation is suspected of stalls or jank. Not for static layout.
 ---
 
 # Motion verification from a recording
 
 Screenshots prove only that an animation reaches sampled states. Jank and frozen
 frames hide between them. Record the real macOS display, extract uniform frames,
-inspect a phase strip, then measure adjacent-frame change. This method found the
-spotlight ring's speed and braided-orbit defects in 2026-07-23.
+inspect a phase strip, then measure adjacent-frame change.
 
 Run whenever `pnpm design:route` includes `motion-verify`. This is the completion
 proof for temporal output, not an optional craft review.
@@ -21,8 +21,8 @@ proof for temporal output, not an optional craft review.
 - Resolve available `ffmpeg` and `ffprobe` executables; the Homebrew path is
   an example, not a requirement. Report missing instrumentation before recording.
 - Put recordings and frames in an external session scratch directory.
-- Capture the same app/window/state through the computer-use capability so the accessibility
-  owner and screenshot bind the recording to the reviewed surface.
+- Bind the recording to the reviewed surface with the `/design-build` §0-B
+  capture of the same app/window/state (tree + screenshot paths).
 
 ## 1. Prepare a deterministic state
 

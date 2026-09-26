@@ -71,26 +71,29 @@ PY
 )
 
 START='(^|(&&|\|\||;|\|)[[:space:]]+)'
+# `git -C <dir>` and `git -c key=value` come before the subcommand; without this
+# the guard read `git -C ../wt push --force` as something other than a push.
+GIT='git([[:space:]]+-[Cc][[:space:]]+[^[:space:];|&]+)*'
 REASON=""
 
 # ① Hook bypass — --no-verify and its shorthand -n for commit/push.
 #    `-n` has different meanings in other commands, so we only look in git commit/push context.
 if echo "$COMMAND_FOR_MATCH" | grep -Eq -- '--no-verify'; then
   REASON="\`--no-verify\` bypasses git hooks. A gate you can bypass is not a gate — if a hook blocks you, fix what it blocks."
-elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}git[[:space:]]+(commit|push)([[:space:]]+[^;|&]*)?[[:space:]]-n([[:space:]]|$)"; then
+elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}${GIT}[[:space:]]+(commit|push)([[:space:]]+[^;|&]*)?[[:space:]]-n([[:space:]]|$)"; then
   REASON="\`git commit -n\` / \`git push -n\` is shorthand for \`--no-verify\`."
 
 # ② Force push — including lease. While lease is safer, it still has the nature of deleting others' commits,
 #    and this repo allows both only after explicit user instruction.
-elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}git[[:space:]]+push([[:space:]]+[^;|&]*)?[[:space:]](--force|--force-with-lease|-f)([[:space:]]|=|$)"; then
+elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}${GIT}[[:space:]]+push([[:space:]]+[^;|&]*)?[[:space:]](--force|--force-with-lease|-f)([[:space:]]|=|$)"; then
   REASON="A force push deletes other people's commits. Run it only when the user explicitly asked, and never on main."
 
 # ③ Direct push to main/master — This repo always uses PRs.
-elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}git[[:space:]]+push([[:space:]]+[^;|&]*)?[[:space:]](main|master)([[:space:]]|:|$)"; then
+elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}${GIT}[[:space:]]+push([[:space:]]+[^;|&]*)?([[:space:]](main|master)([[:space:]]|:|$)|:(refs/heads/)?(main|master)([[:space:]]|$))"; then
   REASON="This pushes straight to main/master. This repository always goes through a pull request — create a branch and open a PR."
 
 # ④ reset --hard — Uncommitted work in the working tree disappears.
-elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}git[[:space:]]+reset([[:space:]]+[^;|&]*)?[[:space:]]--hard([[:space:]]|$)"; then
+elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}${GIT}[[:space:]]+reset([[:space:]]+[^;|&]*)?[[:space:]]--hard([[:space:]]|$)"; then
   REASON="\`git reset --hard\` irreversibly discards uncommitted work. Run it only when the user explicitly asked."
 fi
 

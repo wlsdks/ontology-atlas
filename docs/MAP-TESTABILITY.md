@@ -6,22 +6,9 @@
 
 ## Why This File Exists
 
-On 2026-07-31, the owner reported node drag lag. I replied **six times in a row**
-that "It's not slow in my environment." Each time, I pushed back the blame.
-
-The cause was not code but **observability**:
-
-| What's seen from outside | What actually happens |
-|---|---|
-| Cursor `grabbing` | Node drag **or** background pan — same text |
-| Cursor `pointer` | Just a hover hit, irrelevant to **whether it's grabbed** |
-| Frame 60fps | App is fast **or** input didn't reach the canvas |
-| rAF interval 8.3ms | App workload **or** just a 120Hz refresh interval |
-
-All four lines were wrong because they looked only at the left and concluded about the right. It ended only after the owner pointed out, looking at the screen,
-*"You're just shaking the background, not the nodes."*
-
-**Things that can only be known by humans looking at the screen are blind spots for automated inspection.** Eliminating these blind spots is the purpose of this hook.
+Canvas state is invisible from outside unless exported; this hook exports it.
+A cursor, a frame rate, or a rAF interval cannot tell a node drag from a
+background pan, so automation that reads only those measures the wrong thing.
 
 ## How to Enable
 
@@ -131,24 +118,10 @@ Because the batch is deterministic, two runs under the same conditions are **byt
 
 **Why trust overlap 0** — because it distinguishes from the detector being idle. Since the calculation is a pure function outside the page (`scripts/lib/graph-readability.mjs`), you can feed in known answers, and `tests/contract/graph-readability.contract.test.ts` does exactly that. We injected four types of defects (current line regression · sweep axis inversion · endpoint-sharing pair miscount · overlap threshold weakening) and confirmed they all turn red.
 
-The full procedure and pitfalls are in the `/map-perf` skill
-(`.claude/skills/map-perf/SKILL.md` · `.agents/skills/map-perf/SKILL.md`).
-
-## Four Measurement Disciplines
-
-These are the things that actually went wrong in this incident.
-
-1. **Use real mouse only** (`page.mouse.*`). `new PointerEvent(...)` created within the page has `isTrusted: false`, causing `setPointerCapture` to be rejected and node capture to break, **drifting into pan mode.**
-2. **`headless: false`.** Headless mode lacks display, so there is no vsync or composite backpressure. **Headless fps does not translate to real devices** — only JS cost translates. Empirical: the same code ran at 44fps headless / 7fps on a real device.
-3. **`work`, not `gap`.** The rAF interval is contaminated by frame rate and harness round-trip (one CDP call ≈ 24ms). The time the callback spends synchronously is our share.
-4. **Measure the control group together.** Placing `synth=31` next to `synth=3000` immediately reveals whether cost scales with node count (empirical: 139.9ms vs 1.0ms).
-
-## Screen Instrument
-
-Settings → "Map Background" → **Frame Instrument** (off by default). Bottom-right of the map shows
-`fps · worst ○○ms · stutter ○`. **The worst interval is more important than fps** — stuttering is in the tail, not the average (empirical: median 16.7ms but worst 150ms). If it's off, the measurement loop doesn't even run — a performance counter that eats performance is a liar.
-
-When something can only be reproduced on the user's device, telling them to turn this on is the fastest path.
+Procedure and pitfalls (real mouse input, headed runs, `work` not `gap`, a
+control group, and the on-screen Frame meter under Settings → Map background):
+the `/map-perf` skill (`.claude/skills/map-perf/SKILL.md` ·
+`.agents/skills/map-perf/SKILL.md`).
 
 ## Final Gate
 

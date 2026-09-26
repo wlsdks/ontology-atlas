@@ -1,6 +1,6 @@
 ---
 name: design-infoviz
-description: Information Visualization Designer on the Atlas bench. Maps every visual mark to a typed ontology fact and measures contrast, graph crossings, density, and colour-independent decoding.
+description: Information-visualization designer. Use only when design:route selects this seat; maps each mark to a typed fact and measures contrast, crossings, density.
 model: opus
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script
 ---

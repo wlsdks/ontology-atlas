@@ -54,7 +54,7 @@ The design-system seat owns new value vocabulary. An implementation agent that
 cannot express a needed value reports and measures the gap; it does not create a
 parallel system. The author of a change does not independently approve it.
 
-## 6. Six mandatory lines
+## 6. Seven mandatory lines
 
 Every delegated brief states:
 
@@ -63,7 +63,11 @@ Every delegated brief states:
 3. no stash, no `git add -A`, no subagent worktree deletion, and the cleanup owner;
 4. the external scratch location;
 5. which baselines must remain green and the commands that prove them;
-6. the primary sources the agent must read instead of trusting a relayed summary.
+6. the primary sources the agent must read instead of trusting a relayed summary;
+7. the landing rule: the agent commits on its own branch in its own worktree and
+   never pushes, opens a pull request, or runs `pnpm pr:land`; the coordinating
+   owner lands every branch together with `/land-bundle` (one integration
+   branch, one draft pull request, one CI run).
 
 ## 7. Do not delegate
 

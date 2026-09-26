@@ -1,6 +1,7 @@
 ---
 name: design-build
 description: Build UI from this repository's primitives and ramps in a deterministic order, then prove the rendered result with the matching instruments and gates.
+when_to_use: Use when implementing or changing rendered UI in this repo, after pnpm design:route has selected the shape. Not for copy-only or non-rendered changes.
 ---
 
 # Build from the design system
@@ -9,15 +10,7 @@ description: Build UI from this repository's primitives and ramps in a determini
 - A **ramp** is the finite set of allowed type, radius, shadow, and motion values.
 - A **hard cut** is a surface appearing or disappearing in one frame.
 
-The 2026-08-03 inventory found that only 1 of 419 raw buttons used the available
-primitive, 11 of 20 conditional surfaces hard-cut, and 143 chips used fifty size
-combinations. Missing parts and an unwritten order—not model taste—were the gap.
-
 ## 0-Z. Search before adding a value
-
-`--control-h-{sm,md,lg}` (28/32/40) already existed when 24/30/34 were invented.
-Conflicts then produced an exception axis and one screen ended with 8–9 control
-heights.
 
 Before proposing a new primitive or ramp value (dimension, colour, or spacing),
 follow this sequence. Reusing an existing value does not require repeating the
@@ -41,9 +34,7 @@ Declare `design-contract` to `pnpm design:route` when changing:
 - the “Fixed scale contract” in `.claude/rules/design.md`.
 
 The router selects `design-system` plus a contrasting seat, a design-system
-audit, and `/gate-probe`. During a 244-control normalization the author alone chose eight tones, seven
-shapes, three axes, and their values. Chip sizes fell from fifty to three but one
-screen retained 8–9 heights. A one-author specification is taste, not a system.
+audit, and `/gate-probe`. A one-author specification is taste, not a system.
 
 ## 0. Choose the shape before building
 
@@ -181,16 +172,10 @@ for rejection.
 
 ## 5. Measure after building
 
-Always begin with:
-
-```bash
-pnpm checks:changed
-pnpm design:route -- --change=<every-observed-class>
-```
-
-Run every recommended technical check plus the proof packet the router returns. Every rendered design class
-includes the completed Computer Use render loop above; the final proof points
-to its baseline, material checkpoints, and final state.
+Run the proof packet `pnpm design:route` returned in §0 (`checks:changed` is
+already required by AGENTS). Every rendered design class includes the completed
+render loop in §0-B; the final proof points to its baseline, material
+checkpoints, and final state.
 
 `motion` always includes `/motion-verify` against a real macOS screen recording.
 Static screenshots, duration tokens, and headless frames do not replace it.
