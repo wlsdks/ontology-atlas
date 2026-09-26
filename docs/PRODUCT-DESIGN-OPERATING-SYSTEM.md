@@ -9,8 +9,8 @@ area: process
 
 > Atlas-specific design routing. The PO pass decides whether a product slice is
 > worth doing. This system derives which design work and runtime evidence that
-> slice needs. It does not grade taste and it does not make every UI edit hold a
-> council.
+> slice needs. It does not grade taste and it does not make every UI edit wait
+> for a review.
 
 ## Outcome
 
@@ -38,8 +38,8 @@ pnpm design:route -- --change=<change> [--change=<change>] --json
 ```
 
 Supply every observable class. Do not supply “small,” “meaningful,” “safe,” or
-a desired proof plan; the router derives directions, council seats, instruments,
-and scope.
+a desired proof plan; the router derives directions, independent review and its lenses,
+instruments, and scope.
 
 | Change fact | Use when | Derived design proof |
 |---|---|---|
@@ -54,11 +54,11 @@ and scope.
 | `journey` | order, destination, next step, or completion signal changes | changed-path `/user-walkthrough` + Computer Use render loop |
 | `desktop-shell` | window, menu, AppKit/Tauri bridge, WKWebView, restoration, or lifecycle changes | touched-state installed-app proof + Computer Use render loop |
 | `agent-handoff` | the visible MCP/CLI next action or state-bound handoff changes | agent-handoff walkthrough + Computer Use render loop |
-| `design-contract` | a token, ramp, primitive, design rule, or enforcement contract changes | selected-seat council + design-system audit + `/gate-probe` |
-| `new-surface` | a primary user-facing surface is added or removed | directions + selected-seat council + full surface, responsive, and journey proof |
-| `information-architecture` | navigation, primary hierarchy, or grouping changes | directions + selected-seat council + full surface, responsive, and journey proof |
-| `interaction-model` | the primary way a person selects, edits, confirms, or reverses work changes | directions + lead/interaction council + full interaction and journey proof |
-| `attention-model` | the Atlas fact or action that wins attention changes across a primary state | directions + lead/infoviz council + full-surface proof |
+| `design-contract` | a token, ramp, primitive, design rule, or enforcement contract changes | one reviewer (`tokens`, `attention`) + design-system audit + `/gate-probe` |
+| `new-surface` | a primary user-facing surface is added or removed | directions + one reviewer + full surface, responsive, and journey proof |
+| `information-architecture` | navigation, primary hierarchy, or grouping changes | directions + one reviewer + full surface, responsive, and journey proof |
+| `interaction-model` | the primary way a person selects, edits, confirms, or reverses work changes | directions + one reviewer (`attention`, `reversibility`) + full interaction and journey proof |
+| `attention-model` | the Atlas fact or action that wins attention changes across a primary state | directions + one reviewer (`attention`, `map-marks`) + full-surface proof |
 
 Signals compose. A topology drag animation can declare
 `topology-gesture,motion`; the result includes map performance and a recording,
@@ -67,7 +67,7 @@ but not responsive or installed-app proof unless those facts also changed.
 Examples:
 
 ```bash
-# Spacing nudge: no directions, council, responsive sweep, or recording.
+# Spacing nudge: no directions, review, responsive sweep, or recording.
 pnpm design:route -- --change=local-visual
 
 # Animation timing: recording is required; a full static audit is not inferred.
@@ -128,58 +128,29 @@ Sketch three structurally different directions including the status quo, let the
 owner select one, then build. Token swaps, copy edits, spacing changes,
 breakpoint fixes, and motion tuning do not pay for divergence by default.
 
-## Design Council
+## Independent review
 
-The Design Council exists for hard-to-reverse structural commitments, not as a
-generic quality layer. It runs only when `design:route` says
-`council.required=true`.
+Review runs only when `design:route` says `review.required=true`; it is not a
+generic quality layer. One `reviewer` that did not build the change judges the
+built artifact and proof packet through the routed lenses. The questions each
+lens asks live in `.claude/agents/reviewer.md` and its Codex brief.
 
-### Atlas Designer Bench
+No UI lens always applies: every review starts with `moment` and `evidence`,
+and the router adds only the UI lenses the change facts implicate.
 
-| Bench seat | Agent | Atlas question |
-|---|---|---|
-| Lead Product Designer | `design-lead` | Which Atlas fact or action wins attention? |
-| Design Systems Engineer | `design-system` | Which token, primitive, marker, and gate preserve the decision? |
-| Interaction Designer | `design-interaction` | Can a person select, inspect, correct, confirm, and reverse it? |
-| Motion / Action Designer | `design-motion` | Does temporal output preserve the selected fact and reduced-motion meaning? |
-| Information Visualization Designer | `design-infoviz` | Which typed fact does each topology mark encode? |
-| macOS Workbench Designer | `design-workbench` | Does the installed workbench state hold in its real window? |
-| Responsive & Touch Designer | `design-responsive` | Which measured band, input mode, or safe area changes? |
-| Agent Handoff Designer | `design-handoff` | Can MCP and CLI agents continue from the visible fact? |
-
-`design-guardian` is **not** a seat. It is the accountable editor and decider.
-No seat always attends. The router selects only seats implicated by the facts;
-structural council routes derive at least two contrasting seats.
-
-Run independent first positions against the same built artifact and proof
-packet. Cross-critique happens only when two positions materially conflict on
-the same decision or a new fact could change one. The guardian chooses one
-proposal or something smaller, applies it, and reruns only the proofs affected
-by that last-mile change.
-
-### Council utility
-
-Every council states, in its pull-request rationale (the ledger record itself
-keeps only the six template fields):
-
-- the decision before review;
-- selected seats and first-position turn count;
-- whether a rebuttal occurred and the material conflict;
-- the exact decision, scope, or proof delta caused by review;
-- the one unique contribution, or `none`;
-- the losing dissent and falsifier.
-
-A council with no delta is allowed but cannot call itself useful.
-Five consecutive no-delta councils trigger owner review of the threshold. This
-is how Atlas learns whether council is earning its cost instead of declaring
-quality from the number of reviewers.
+The reviewer judges from the `/design-build` §0-B captures, and for motion from
+a real recording; a missing capture is a finding. The author answers a finding
+once, only on a material conflict, and a one-way disagreement takes one second
+opinion, as in the PO independent review protocol. The owner decides,
+`design-guardian` applies the chosen correction and reruns only the proofs it
+invalidates, and "unchanged" is a valid verdict.
 
 ## No-Human-Designer Working Mode
 
 When no human designer is present, the accountable builder still cannot approve
 its own unmeasured pixels. The route and instruments provide the independent
-facts; `design-guardian` applies the smallest correction. If independent seats
-cannot run, disclose lost independence. If Computer Use, recording, or a
+facts; the owner chooses and `design-guardian` applies the smallest correction.
+If no independent reviewer can run, disclose lost independence. If Computer Use, recording, or a
 required runtime is unavailable, defer that proof rather than judge a diff by
 eye.
 
@@ -193,9 +164,9 @@ eye.
    each coherent visual slice.
 5. Run the remaining proof packet returned by the router against the final
    observed state.
-6. If directed, run one selected-seat `/design-council` over the built artifact
-   and proof packet.
-7. Apply one decision and remeasure only changed proof.
+6. If directed, give one `reviewer` the built artifact, proof packet, and
+   routed lenses.
+7. The owner decides; apply that one decision and remeasure only changed proof.
 
 The quality bar remains fixed; only irrelevant ceremony is removed.
 
