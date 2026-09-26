@@ -29,7 +29,7 @@ const ROOT = join(__dirname, "..", "..");
 // fixture `git init` or `git config` would then write to the real repository.
 const FIXTURE_ENV = Object.fromEntries(
   Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")),
-);
+) as NodeJS.ProcessEnv;
 const HOOK = join(ROOT, ".githooks", "pre-commit");
 const REFRESH_HOOKS = ["post-checkout", "post-merge"] as const;
 
