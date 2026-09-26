@@ -116,6 +116,7 @@
 .creature[data-region='grove'] .sheetCreature{clip-path:inset(0 8% 0 8%)}
 .guardianCreature{position:absolute;inset:0;background-size:contain;background-position:center bottom;background-repeat:no-repeat;image-rendering:pixelated}
 .worldEnemy > .creature[data-region='foundry'] .sheetCreature,.worldEnemy > .creature[data-region='foundry'] .guardianCreature{translate:0 var(--foundry-ground-offset)}
+.worldEnemy > .creature[data-region='marsh'] .sheetCreature,.worldEnemy > .creature[data-region='marsh'] .guardianCreature{translate:0 var(--marsh-ground-offset)}
 .creature[data-large='true']{width:100px;height:100px}
 .creature[data-unknown='true']{filter:brightness(.1);opacity:.65}
 .worldEnemy > .creature{animation:creatureBreathe 1.8s steps(4,end) infinite}
