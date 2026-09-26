@@ -2841,7 +2841,7 @@
       "empty": "아직 이 문서를 참조한 문서가 없어요"
     },
     "vaultStatus": {
-      "downloadAppCta": "데스크톱 앱 다운로드",
+      "downloadAppCta": "데스크톱 앱 받기",
       "unsupportedTooltip": "로컬 온톨로지 폴더 편집은 설치된 데스크톱 앱에서 사용할 수 있어요.",
       "permissionNeededBanner": "온톨로지 폴더가 잠시 멈췄어요: 폴더 권한을 다시 허용해 주세요. 그동안 샘플 문서를 보여주고 있어요.",
       "errorBanner": "온톨로지 폴더에 접근할 수 없어요 ({message}). 샘플 문서를 대신 보여 줘요. 폴더를 다시 고르거나 새로 고쳐 주세요.",
@@ -3500,7 +3500,7 @@
       "ctaTree": "개념 둘러보기",
       "ctaBuilder": "저장·편집 열기",
       "ctaBuilderNoDeps": "관계 만들기",
-      "ctaOpenVaultDownload": "데스크톱 앱 다운로드",
+      "ctaOpenVaultDownload": "데스크톱 앱 받기",
       "ctaOpenVaultPicker": "내 폴더 열기",
       "kickerDocsFound": "내 폴더 · 문서 {count}개",
       "titleDocsFound": "문서를 찾았어요. 아직 지도에는 없어요",

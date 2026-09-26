@@ -2841,7 +2841,7 @@
       "empty": "No documents link here yet"
     },
     "vaultStatus": {
-      "downloadAppCta": "Download desktop app",
+      "downloadAppCta": "Get the desktop app",
       "unsupportedTooltip": "Local ontology folder editing is available in the installed desktop app.",
       "permissionNeededBanner": "Workspace is paused: re-grant folder access to keep editing. Showing sample docs until then.",
       "errorBanner": "Workspace folder is unavailable ({message}). Showing sample docs: open the picker to re-pick or refresh.",
@@ -3500,7 +3500,7 @@
       "ctaTree": "Browse concepts",
       "ctaBuilder": "Open Save/edit",
       "ctaBuilderNoDeps": "Create relation",
-      "ctaOpenVaultDownload": "Download desktop app",
+      "ctaOpenVaultDownload": "Get the desktop app",
       "ctaOpenVaultPicker": "Open my folder",
       "kickerDocsFound": "Your folder · {count} documents",
       "titleDocsFound": "Found your documents: they are not on the map yet",
