@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForAnimationsDone, waitForBoxStill } from "./settle";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
@@ -87,7 +88,9 @@ test("찾았지만 없는 이름 목록 — 손가락·키보드·숫자가 모�
   // ── Scroll-end clearance at the two narrow widths ────────────────────────
   for (const width of [390, 768]) {
     await page.setViewportSize({ width, height: 844 });
-    await page.waitForTimeout(400);
+    // Measure the board once it has reflowed to this width.
+    await waitForAnimationsDone(page.locator("html"));
+    await waitForBoxStill(page.getByTestId("unmatched-footnote"));
     const clearance = await page.evaluate(() => {
       const footnote = document.querySelector('[data-testid="unmatched-footnote"]');
       if (!footnote) return null;

@@ -361,3 +361,78 @@ export async function waitForTerritoriesStill(
     { polling: "raf", timeout },
   );
 }
+
+/**
+ * Resolve once nothing has been added to, removed from or re-texted in the document for
+ * {@link STILL_FRAMES} consecutive frames.
+ *
+ * For the moment a freshly loaded route has finished filling in — hydration swapping the
+ * server's markup, a sample or vault read landing, a list growing — where no single
+ * element or animation marks the end. Attribute changes are ignored on purpose: a canvas
+ * that writes its frame stats to a `data-*` attribute every frame (Territories) would
+ * otherwise never read as quiet, and those writes change no structure or text.
+ */
+export async function waitForDomQuiet(
+  page: Page,
+  options: { frames?: number; timeout?: number } = {},
+): Promise<void> {
+  const { frames = STILL_FRAMES, timeout = HANG_TIMEOUT_MS } = options;
+  await page.evaluate(
+    (argument) =>
+      new Promise<void>((resolve, reject) => {
+        const deadline = performance.now() + argument.hang;
+        let quiet = 0;
+        const observer = new MutationObserver(() => {
+          quiet = 0;
+        });
+        observer.observe(document.documentElement, { childList: true, characterData: true, subtree: true });
+        const check = () => {
+          quiet += 1;
+          if (quiet > argument.frames) {
+            observer.disconnect();
+            resolve();
+            return;
+          }
+          if (performance.now() > deadline) {
+            observer.disconnect();
+            reject(new Error("the document never stopped changing"));
+            return;
+          }
+          requestAnimationFrame(check);
+        };
+        requestAnimationFrame(check);
+      }),
+    { frames, hang: timeout },
+  );
+}
+
+/**
+ * Resolve once a freshly loaded route has arrived: the document and its fonts have
+ * loaded, nothing on it is `aria-busy`, the markup has stopped filling in
+ * ({@link waitForDomQuiet}), no finite
+ * animation is running, `main` holds its box, and — on an `?e2e=1` map page, where the
+ * probe exists — the map has stopped moving.
+ *
+ * The route-sweep specs (axe, contrast, word-break, cursor) measure the DOM of whatever
+ * screen a route lands on, so "arrived" is the DOM's stillness, not a guess at how long
+ * a map's physics takes to converge on one machine.
+ */
+export async function waitForPageSettled(page: Page, timeout = HANG_TIMEOUT_MS): Promise<void> {
+  await page.waitForLoadState("load", { timeout });
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  // A loading view (a route's Suspense fallback, Insights still counting) says so with
+  // `aria-busy`, and it can hold still for longer than the quiet window while it reads.
+  const notBusy = () =>
+    page.waitForFunction(() => document.querySelector('[aria-busy="true"]') === null, undefined, {
+      polling: "raf",
+      timeout,
+    });
+  await notBusy();
+  await waitForDomQuiet(page, { timeout });
+  await notBusy();
+  // `html`, not `body`: a route change's view transition animates pseudo-elements of the root.
+  await waitForAnimationsDone(page.locator("html"), timeout);
+  const main = page.locator("main").first();
+  if ((await main.count()) > 0) await waitForBoxStill(main, { timeout });
+  if (await page.evaluate(() => "__atlasMap" in window)) await waitForMapStill(page, { timeout });
+}

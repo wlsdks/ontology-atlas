@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitFrames } from "./settle";
 
 /**
  * **The typing echo** (Direction B, owner, 2026-08-30): the hero object assembles as the headline
@@ -63,7 +64,8 @@ test.describe("download hero — the typing echo", () => {
       const s = await readEcho(page);
       samples.push(s);
       if (s.typed >= s.total && s.lit >= s.count) break;
-      await page.waitForTimeout(40);
+      // One sample per painted frame: the typing advances by frames, not by this runner's clock.
+      await waitFrames(page, 1);
     }
     const last = samples.at(-1)!;
     expect(last.total, "the headline has characters").toBeGreaterThan(0);
@@ -145,7 +147,8 @@ test.describe("download hero — the typing echo", () => {
       const s = await readEcho(page);
       seen.push(s);
       if (s.typed === s.total && s.lit === s.count) break;
-      await page.waitForTimeout(25);
+      // One sample per painted frame, so a partial frame cannot fall between two samples.
+      await waitFrames(page, 1);
     }
     const last = seen.at(-1)!;
     expect(last.typed).toBe(last.total);

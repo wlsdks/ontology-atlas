@@ -85,6 +85,7 @@ test("이름 변경 뒤 — 경고가 안 뜨고 주소가 새 이름을 가리�
   // claim, so it is spent deliberately.
   const banner = page.getByText(/못 찾았어요/);
   for (let i = 0; i < 12; i += 1) {
+    // measurement window: the banner must stay absent across the whole manifest-refresh gap.
     await page.waitForTimeout(500);
     expect(await banner.count(), `이름 변경 ${(i + 1) * 0.5}s 후 거짓 「못 찾았어요」 경고`).toBe(0);
   }
@@ -148,6 +149,7 @@ test("삭제 뒤 — 경고가 안 뜨고 주소가 지운 문서를 가리키�
 
   const banner = page.getByText(/못 찾았어요/);
   for (let i = 0; i < 12; i += 1) {
+    // measurement window: the banner must stay absent across the whole manifest-refresh gap.
     await page.waitForTimeout(500);
     expect(await banner.count(), `삭제 ${(i + 1) * 0.5}s 후 거짓 「못 찾았어요」 경고`).toBe(0);
   }

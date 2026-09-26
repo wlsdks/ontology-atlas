@@ -336,6 +336,7 @@ test.describe("문서함 딥링크 — URL 이 이긴다", () => {
 
     await switchToSample(page);
     // The bounce-back is immediate — once the switch takes, it must stay.
+    // measurement window: the defect bounced back within 300-1800 ms, so the switch must hold across that stretch.
     await page.waitForTimeout(1_500);
     await expectSourceIsSample(page);
   });

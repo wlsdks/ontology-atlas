@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { FIXTURE_VAULT, FIXTURE_VAULT_NODE_COUNT } from "./fixture-vault";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
+import { waitForPageSettled } from "./settle";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- Playwright specs load as CJS; using `import.meta` stops the file loading at all.
 const { judgeText } = require("../../scripts/lib/contrast.mjs");
@@ -362,8 +363,8 @@ test("볼트를 물린 접근성·대비 래칫 — 데이터가 있어야 존�
   for (const state of STATES) {
     const url = `${state.url}${state.url.includes("?") ? "&" : "?"}guides=off`;
     await page.goto(url, { waitUntil: "domcontentloaded" });
-    // The map's screen is only settled once the physics simulation converges.
-    await page.waitForTimeout(2500);
+    // Act on and audit the screen the route lands on, not one still filling in.
+    await waitForPageSettled(page);
 
     let openingFailure: string | null = null;
     try {

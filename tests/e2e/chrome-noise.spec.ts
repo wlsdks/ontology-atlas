@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForPageSettled } from "./settle";
 
 /**
  * **The chrome must not summon things it does not draw itself** (added 2026-08-01).
@@ -51,7 +52,8 @@ test.describe("크롬 소음", () => {
     await page.goto("/ko/topology/", { waitUntil: "networkidle" });
     await page.getByTestId("app-nav-rail-item-insights").click();
     await page.waitForURL(/insights/);
-    await page.waitForTimeout(800);
+    // Read the heading once the route has arrived and any focus move on arrival has landed.
+    await waitForPageSettled(page);
 
     const ring = await page.evaluate(() => {
       const h1 = document.querySelector("h1");
