@@ -7,10 +7,10 @@ area: process
 
 # ATLAS PRODUCT DECISION SYSTEM
 
-> Version 3, piloted from 2026-09-01 and closed as `adjust` on 2026-09-03
-> (`docs/DECISIONS.md`). It keeps the v2 two-reviewer ceiling but removes the
-> builder's ability to declare their own door and risk. Git preserves both
-> prior systems; `pnpm po:pilot` reports whether this one still holds.
+> Version 3, piloted from 2026-09-01, closed as `adjust` on 2026-09-03, and
+> adjusted again on 2026-09-26: the routing stays, the per-run pilot records
+> stop (see "Measured pilot"). It keeps the v2 two-reviewer ceiling but removes
+> the builder's ability to declare their own door and risk.
 
 Atlas does not need a universal product-management framework. It needs a product
 owner for one unusual failure: coding agents can change a codebase faster than
@@ -161,9 +161,7 @@ pnpm po:route -- --evidence=observed --outcome=correct \
 - `review`: `po-evidence` plus exactly one risk specialist. Meaning selects
   `po-steward`, positioning selects `po-wedge`, and scope selects `po-leverage`.
 
-The human owner may request extra review. Record a two-way exception as
-`owner-review` in the pilot; it counts against council avoidance but does not
-widen the default router.
+The human owner may request extra review; it does not widen the default router.
 
 ## Recovery proof
 
@@ -201,10 +199,8 @@ Keep this to one screen:
 ```
 
 Routine solo passes stay in the working plan or pull-request rationale, not the
-decision records. Eligible runs are still recorded with
-`pnpm po:record -- --type=run` ([how](records/README.md)), because missing
-reversible cases would make the 80% avoidance denominator meaningless;
-`pnpm po:pilot` composes them.
+decision records. A significant decision gets a decision fragment; per-run pilot
+records are no longer created.
 
 ## Selected review protocol
 
@@ -272,12 +268,15 @@ calculates:
 - owner clarity, boundary misses, reopen/reversal results; and
 - each specialist's calls and unique material contributions.
 
-`pnpm po:pilot -- --check` runs automatically in CI. The pilot reached its
-20-decision target on 2026-09-03 and closed as `adjust`; the router, the
-two-reviewer default, and the typed register stay. The standing falsifier from
-that record reopens the question: a shipped recovery-proof failure, or proof
-resolution still under 80% after the next ten logged decisions. The check
-refuses `keep` unless the declared thresholds pass. A specialist with five
+The pilot reached its 20-decision target on 2026-09-03 and closed as `adjust`.
+Its standing falsifier (proof resolution under 80% after ten more decisions)
+fired by 2026-09-26: across 102 eligible runs boundary misses were 0, review
+changed the decision in 97% and reversible work avoided council in 100%, but
+recovery proof was resolved in 68% and owner clarity in 51%. The second
+adjustment keeps the router, the two-reviewer default and decision fragments,
+and stops the per-run register whose unresolved half was the failure. The
+composed register stays readable with `pnpm po:pilot`, and
+`pnpm po:pilot -- --check` still validates it in CI. A specialist with five
 calls and no unique material contribution must leave the default map.
 
 The known-control contract also replays:
