@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForPageSettled } from "./settle";
 
 /**
  * **A focus indicator has to be visible** (2026-08-18).
@@ -126,7 +127,7 @@ for (const route of ROUTES) {
         page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
       ).toBeVisible();
     }
-    await page.waitForTimeout(900);
+    await waitForPageSettled(page);
     await page.evaluate(KILL_MOTION);
 
     const got = (await page.evaluate(AUDIT)) as {

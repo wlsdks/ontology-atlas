@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { installDesktopRailRuntime, mountDesktopVault } from "./desktop-rail-arrival-harness";
+import { waitForBoxStill } from "./settle";
 
 /**
  * Interaction sweep, 2026-09-25 — Projects, Agents and Git.
@@ -96,7 +97,9 @@ test.describe("interaction sweep — projects, agents, git", () => {
 
       // Scrolling the page beside it does not carry the dock away.
       await page.getByTestId("app-shell-body-slot").evaluate((el) => el.scrollBy(0, 600));
-      await page.waitForTimeout(100);
+      // Measure once the scroll has finished moving the page under the dock.
+      await waitForBoxStill(page.getByTestId("app-shell-body-slot").locator("> *").first());
+      await waitForBoxStill(close);
       const scrolled = await measure();
       expect(scrolled.close.y, "the dock header scrolled away with the page").toBeGreaterThanOrEqual(0);
       expect(scrolled.composer.y + scrolled.composer.height).toBeLessThanOrEqual(viewport.height);

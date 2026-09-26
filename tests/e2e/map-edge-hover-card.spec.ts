@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
-import { waitForMapStill } from "./settle";
+import { waitForAnimationsDone, waitForBoxStill, waitForMapStill } from "./settle";
 
 /**
  * **The edge hover card covers nothing the map drew** (2026-09-19).
@@ -53,7 +53,8 @@ test("hovering a line puts the card beside the drawn nodes, not on them", async 
       continue; // The midpoint missed the line's hit band; the next line will do.
     }
     // Let the measured size settle the corner before reading it.
-    await page.waitForTimeout(80);
+    await waitForAnimationsDone(card);
+    await waitForBoxStill(card);
     const verdict = await page.evaluate(
       ({ pointer }) => {
         const probe = window.__atlasMap!;

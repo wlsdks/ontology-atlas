@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForAnimationsDone, waitForBoxStill } from "./settle";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
@@ -59,8 +60,9 @@ test("center Dialog 는 세 폭에서 스크림·폭 공식·수납을 지킨다
 
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
-    // Wait for the frame that applies the resize — a rect is a fact that follows layout.
-    await page.waitForTimeout(120);
+    // Wait for the layout that applies the resize — a rect is a fact that follows layout.
+    await waitForAnimationsDone(page.getByRole("dialog"));
+    await waitForBoxStill(page.getByRole("dialog"));
 
     const rects = await page.evaluate(() => {
       const panel = document.querySelector<HTMLElement>('[role="dialog"]');

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { AUDITED_ROUTES } from "./audited-routes";
+import { waitForPageSettled } from "./settle";
 
 /**
  * Accessibility ratchet — of axe-core's 105 rules, **WCAG 2.x A/AA** only.
@@ -236,9 +237,8 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
         page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
       ).toBeVisible();
     }
-    // The map's screen is only settled once the physics simulation converges —
-    // measuring earlier measures an intermediate state.
-    await page.waitForTimeout(2500);
+    // Measuring before the route has arrived measures an intermediate state.
+    await waitForPageSettled(page);
     await page.addScriptTag({ path: AXE_PATH });
     const result = await page.evaluate(async (tags) => {
       type Run = {

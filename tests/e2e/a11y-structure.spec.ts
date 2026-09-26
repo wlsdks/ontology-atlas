@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { waitForPageSettled } from "./settle";
 
 /**
  * Measures heading hierarchy and landmarks on the main routes:
@@ -59,7 +60,7 @@ async function collect(page: Page, url: string, width: string, findings: Finding
       page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
     ).toBeVisible();
   }
-  await page.waitForTimeout(700);
+  await waitForPageSettled(page);
 
   const info = await page.evaluate(() => {
     const h1s = Array.from(document.querySelectorAll("h1")).map(

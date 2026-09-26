@@ -130,8 +130,11 @@ test.describe("포커스 반환", () => {
           if (await sheetClose.isVisible().catch(() => false)) return true;
           await opener.focus();
           await page.keyboard.press("Enter");
-          await page.waitForTimeout(250);
-          return sheetClose.isVisible().catch(() => false);
+          // Returns the moment the sheet opens; the ceiling only decides when to press again.
+          return sheetClose
+            .waitFor({ state: "visible", timeout: 1_000 })
+            .then(() => true)
+            .catch(() => false);
         },
         { timeout: 25_000, message: "단축키 시트가 안 열렸다 — Enter 가 아직 안 붙었나" },
       )

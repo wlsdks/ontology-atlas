@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForPageSettled } from "./settle";
 
 /**
  * **Korean sentences must not break mid-word** (2026-08-12).
@@ -140,7 +141,7 @@ test("한국어 문장이 단어 중간에서 끊기지 않는다", async ({ pag
         page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
       ).toBeVisible();
     }
-    await page.waitForTimeout(1_800);
+    await waitForPageSettled(page);
     const result = await scan(page);
     wrappedTotal += result.wrappedTexts;
     for (const hit of result.midWord) {
