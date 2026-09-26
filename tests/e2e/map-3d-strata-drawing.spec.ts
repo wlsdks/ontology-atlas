@@ -71,6 +71,14 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * `xl` the strip now sets its words at the legend size in one row, and the fill counts
  * the strip out of the free canvas the way it counts a side panel. Measured after:
  * **592 × 553 = 73.7%**, 3 overlapping pairs, 0 same-tier. The ceilings did not move.
+ *
+ * **No column for the names, and the rail's only where it is free (2026-09-26).** The
+ * names now stand beside their own rims (`model/tier-names.ts`) and reserve nothing.
+ * The utility rail's column is reserved so the drawing centres between INDEX and the
+ * rail — but at 1040 width binds, the tiles stand beside Strata's narrow top, and
+ * reserving it measured 564 × 528 = 66.9% with two same-tier pairs fused. So the fit
+ * takes the column only where it costs nothing or the tiles would cover a node, and
+ * 1040 keeps 592 × 553 = 73.7%.
  */
 const SCREENS = [
   { width: 1512, height: 982, fillFloor: 0.58, overlapMax: 3, sameTierMax: 1, stolenMax: 1 },
@@ -455,38 +463,23 @@ for (const screen of SCREENS) {
 }
 
 /**
- * **The tier names land on nothing, at either size and in either placement**
- * (2026-09-06, extended 2026-09-07).
+ * **The tier names land on nothing, at either size** (2026-09-06, rewritten 2026-09-26).
  *
- * They used to hang on the plane rims, and at 1040×720 that put them over the
- * graph — the fit takes the widest plane's rim to the canvas edge, so outside the
- * ring there is nowhere to hang a name. What replaces them has to be checked for
- * the same failure it was built to end, plus the two neighbours it could walk
- * into: the utility tiles above it and the selected-node inspector beside it.
- *
- * Since 2026-09-07 there are two placements (`model/tier-legend-rows.ts`): the
- * aligned rail hanging at the canvas's right edge, and the compact corner stack.
- *
- * **Which one appears is not a fact about the size, so this file stopped asserting
- * it** (measured 2026-09-20). It read `corner` at both review sizes on a
- * developer's machine and `rail` at 1512×982 on CI, twice, deterministically —
- * because the choice is made from the projected planes, and the projection moves
- * with whatever the runner's fonts do to the panels beside the canvas. Pinning the
- * outcome of a geometry rule to a viewport constant makes a gate that reports the
- * machine it ran on.
- *
- * The rule itself keeps its gate: `map-strata-tier-scale.spec.ts` reads the same
- * `data-tier-legend-placement`, and where the rail is the shape drawn it holds
- * every row within one row height of the plane it names — losing a plane is what
- * sends the names to the corner, which gives up alignment out loud. What this file
- * owns is the part that must hold under **either** placement: four named rows, in
- * tier order, equal heights, on nothing.
+ * They first hung on the plane rims, drawn on the canvas, and at 1040×720 that put
+ * them over the graph. A rail at the canvas's right edge replaced them, then a corner
+ * stack wherever the rail could not align — four words that named no plane. Since
+ * 2026-09-26 each name stands beside its own plane's rim, only where it lands on
+ * nothing, and a plane with no such place is left to the legend strip
+ * (`model/tier-names.ts`). What this file owns is the part that must hold wherever a
+ * name is drawn: in tier order, equal heights, on nothing — not a disc, not a concept
+ * name, not the utility tiles, not the readout — and gone while the inspector is
+ * docked. `map-strata-tier-scale.spec.ts` owns "beside its own plane".
  */
 for (const legend of [
   { width: 1512, height: 982 },
   { width: 1040, height: 720 },
 ] as const) {
-test(`Strata ${legend.width}x${legend.height} — the tier legend names four planes without landing on anything`, async ({ page }) => {
+test(`Strata ${legend.width}x${legend.height} — the tier names land on nothing`, async ({ page }) => {
   test.setTimeout(120_000);
   await openStrata(page, legend.width, legend.height);
 
@@ -505,9 +498,12 @@ test(`Strata ${legend.width}x${legend.height} — the tier legend names four pla
         rect: local(el)!,
       }));
       const chrome = [
+        "topology-fit-control",
         "topology-tour-button",
         "topology-shortcuts-help-button",
         "topology-replay-growth",
+        "topology-index-panel",
+        "topology-light-legend",
         "map-detail-panel",
         "first-run-readout",
       ]
@@ -543,49 +539,40 @@ test(`Strata ${legend.width}x${legend.height} — the tier legend names four pla
             hits.push(`${row.kind} on a node label`);
         }
       }
-      const rail = document.querySelector('[data-testid="topology-tier-legend"]') as HTMLElement | null;
       return {
         rows,
         hits,
-        placement: rail?.dataset.tierLegendPlacement ?? null,
+        placement: document.querySelector<HTMLElement>('[data-testid="topology-tier-legend"]')?.dataset.tierLegendPlacement ?? null,
         selectedPanel: chrome.some((c) => c.id === "map-detail-panel"),
       };
     });
 
   /*
-   * **The first reading waits for a drawn legend** (2026-09-20).
-   *
-   * Accepting either placement moved CI on to the assertion below it, which then
-   * reported `rows` empty at 1512x982 — the legend element already carried its
-   * placement attribute while it had drawn no row, three attempts in a row. It
-   * draws none until it has measured its band, so a single read can land on that
-   * frame; `map-strata-tier-scale.spec.ts` polls for the same reason and this
-   * file read once.
-   *
-   * Only the first reading. The second one below deliberately expects an empty
-   * legend — the rail steps aside while the inspector is docked — so waiting for
-   * rows there would wait forever.
+   * **The first reading waits for a drawn name** (2026-09-20). The names are measured,
+   * then placed on the next frame, so a single read can land between the two. The
+   * second reading below deliberately expects none — the names step aside while the
+   * inspector is docked — so waiting there would wait forever.
    */
   await page.waitForFunction(
-    () => document.querySelectorAll('[data-testid^="topology-tier-legend-row-"]').length === 4,
+    () => document.querySelectorAll('[data-testid^="topology-tier-legend-row-"]').length > 0,
     undefined,
     { timeout: 30_000 },
   );
 
   const before = await read();
-  // One of the two shapes, never neither: a legend that rendered no placement at
-  // all would otherwise slip through every assertion below it as an empty list.
-  expect(["rail", "corner"], "the legend drew neither placement").toContain(before.placement);
-  expect(before.rows.map((r) => r.kind)).toEqual(["project", "domain", "capability", "element"]);
+  expect(before.placement, "the names are not the anchored shape").toBe("anchored");
+  const order = ["project", "domain", "capability", "element"];
+  const ranks = before.rows.map((r) => order.indexOf(r.kind));
+  expect(ranks, "names out of tier order").toEqual([...ranks].sort((a, b) => a - b));
   expect(before.rows.every((r) => r.text.trim().length > 0)).toBe(true);
-  // Equal row heights — a legend whose rows differ because their words do is the
+  // Equal row heights — names whose rows differ because their words do is the
   // content-decided height defect wearing a legend's clothes.
   expect(new Set(before.rows.map((r) => Math.round(r.rect.h))).size).toBe(1);
-  // Top tier highest, in order, and never two rows on the same line.
+  // Top tier highest, in order, and never two names on the same line.
   for (let i = 1; i < before.rows.length; i += 1) {
     expect(before.rows[i].rect.minY).toBeGreaterThanOrEqual(before.rows[i - 1].rect.maxY - 1e-6);
   }
-  expect(before.hits, `the legend landed on something: ${before.hits.join(", ")}`).toEqual([]);
+  expect(before.hits, `a tier name landed on something: ${before.hits.join(", ")}`).toEqual([]);
 
   // …and the same holds once the inspector is docked at the same edge.
   const target = (await drawnNodes(page)).sort((a, b) => b.radius - a.radius)[0];
@@ -594,16 +581,16 @@ test(`Strata ${legend.width}x${legend.height} — the tier legend names four pla
     return { x: box.x, y: box.y };
   });
   await page.mouse.click(canvasBox.x + target.x, canvasBox.y + target.y);
-  // The legend is measured against the docked inspector, so wait for the inspector
+  // The names are measured against the docked inspector, so wait for the inspector
   // to be there and for the reframe it causes to finish — not for 900 ms of this
   // machine, which is either too little or wasted depending on the machine.
   await expect(page.locator('[data-testid="map-detail-panel"]').first()).toBeVisible();
   await waitForMapStill(page, { what: "camera" });
   const after = await read();
   expect(after.selectedPanel, "the inspector did not open, so this proves nothing").toBe(true);
-  // The inspector owns this edge while it is docked, so the rail steps aside
-  // rather than sharing it — and the rim names do not come back in its place.
-  expect(after.rows, "the legend stayed under the inspector").toEqual([]);
+  // The inspector owns this edge while it is docked, so the names step aside rather
+  // than sharing it.
+  expect(after.rows, "a tier name stayed under the inspector").toEqual([]);
   expect(after.hits).toEqual([]);
 });
 }

@@ -7,6 +7,7 @@ import {
   HEXAGONAL_PROFILE_FRONTMATTER,
 } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
 import { buildArchitectureGraph } from '../model/graph-layout';
+import { estimateCaptionWidth } from '../model/summary-lines';
 import type { RoleLedger } from '../model/role-ledger';
 import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
 import { ArchitectureSketch } from './ArchitectureSketch';
@@ -47,9 +48,10 @@ function draw(
       contractTrackLabel="Contract"
       observationTrackLabel="Observation"
       deltaTrackLabel="Delta"
-      deltaColumnNote="Nothing compared yet"
       deltaColumnHint="Each mark says what that role's own outgoing imports did."
       observationMissingLabel="Not inspected"
+      observationEmptyTitle="Source not inspected yet"
+      observationEmptyBody="Inspect source has an agent read the real imports and fill this in for each role."
       selected={selected}
       roleInspectorOpen={false}
       onSelect={() => {}}
@@ -199,17 +201,31 @@ describe('the evidence split plane', () => {
        */
       expect(graph).toHaveAttribute('width', '1200');
       /* 8 + 20 + 7×72 + 6×24 + 8, plus the 8px head room the top plane's lit edge needs to stop
-         reading as a rule under the lane headings, the 3px ledge under the last role, and — since
-         2026-09-13 — one `--leading-label` line above the first face for the column note, which
-         used to be drawn on top of it. */
-      expect(graph).toHaveAttribute('height', '711');
-      expect(screen.getByTestId('architecture-paired-lane-headings')).toHaveTextContent(
-        'ContractDeltaObservation',
-      );
+         reading as a rule under the lane headings and the 3px ledge under the last role. The
+         column notes' `--leading-label` line (2026-09-13) left with the notes on 2026-09-26. */
+      expect(graph).toHaveAttribute('height', '695');
+      const headings = screen.getByTestId('architecture-paired-lane-headings');
+      expect(headings).toHaveTextContent('Contract');
+      expect(headings).toHaveTextContent('Observation');
+      /* No delta column exists before an inspection, so its heading waits for the marks it names. */
+      expect(screen.queryByTestId('architecture-delta-heading')).toBeNull();
       expect(screen.getAllByTestId(/^architecture-role-index-/)).toHaveLength(7);
-      expect(screen.getAllByTestId(/^architecture-observation-box-/)).toHaveLength(7);
-      expect(screen.getAllByTestId(/^architecture-delta-marker-/)).toHaveLength(7);
-      expect(screen.getByTestId('architecture-delta-marker-widgets')).toHaveTextContent('○');
+      /*
+       * ⚠️ **One empty state, not fourteen placeholders** (owner review, 2026-09-26). Before any
+       * inspection the ladder drew seven dashed observation faces and seven hollow delta marks
+       * for one fact. The measured columns are one panel now, saying it once.
+       */
+      expect(screen.queryAllByTestId(/^architecture-observation-box-/)).toHaveLength(0);
+      expect(screen.queryAllByTestId(/^architecture-delta-marker-/)).toHaveLength(0);
+      expect(screen.queryAllByTestId(/^architecture-delta-connector-/)).toHaveLength(0);
+      const empties = screen.getAllByTestId('architecture-observation-empty');
+      expect(empties).toHaveLength(1);
+      expect(empties[0]).toHaveAttribute('data-empty-layout', 'column');
+      expect(empties[0]).toHaveAttribute('role', 'note');
+      expect(empties[0]).toHaveAttribute(
+        'aria-label',
+        'Source not inspected yet Inspect source has an agent read the real imports and fill this in for each role.',
+      );
       expect(screen.getByTestId('architecture-graph-box-widgets')).toHaveAttribute(
         'data-box-width',
         '560',
@@ -243,32 +259,95 @@ describe('the evidence split plane', () => {
       expect(Math.max(...lefts) - Math.min(...lefts)).toBe(6 * 14);
 
       /*
-       * ⚠️ **The chrome row does not sit on the first face.** Measured on the built export at 1512
-       * in both locales (2026-09-13): the lane heading's box ended at 201 and the column note began
-       * at 202 — 1px — and the note's box ended at 215 against a face top of 212, so the note was
-       * drawn **over** the dashed face by 3px. Three formulas owned that rhythm; one does now, and
-       * it is the `--leading-label` line box rather than a gap chosen by eye, which is what keeps
-       * it right in Korean as well as English.
+       * ⚠️ **The chrome row does not sit on what is under it.** Measured on the built export at 1512
+       * in both locales (2026-09-13): a column note drawn over the first dashed face by 3px. The
+       * notes are gone; the headings sit above the first row of faces and above the panel, which
+       * starts on the first face's top line and ends on the last face's bottom line.
        */
       const laneHeading = container.querySelector('[data-testid="architecture-paired-lane-headings"] text')!;
-      const columnNote = screen.getByTestId('architecture-observation-column-note');
-      const firstFace = container.querySelector('[data-testid^="architecture-observation-box-"]')!;
-      const headingY = Number(laneHeading.getAttribute('y'));
-      const noteY = Number(columnNote.getAttribute('y'));
-      const faceY = Number(firstFace.getAttribute('y'));
-      expect(noteY - headingY).toBe(16);
-      expect(faceY).toBeGreaterThan(noteY);
-
-      /* And the observation column states "not inspected yet" once rather than seven times. */
-      expect(screen.getByTestId('architecture-observation-column-note')).toBeInTheDocument();
-      expect(
-        screen.getByTestId('architecture-role-observation-widgets').textContent,
-      ).toBe('');
-      expect(screen.getByTestId('architecture-observation-box-widgets')).toHaveAttribute(
-        'width',
-        '240',
+      const panel = empties[0].querySelector('rect')!;
+      const faces = [...container.querySelectorAll('[data-graph-box] rect.architecture-node-face')];
+      const faceTops = faces.map((face) => Number(face.getAttribute('y')));
+      const faceBottom = Math.max(...faceTops) + Number(faces[0].getAttribute('height'));
+      const panelX = Number(panel.getAttribute('x'));
+      const panelY = Number(panel.getAttribute('y'));
+      expect(panelY).toBe(Math.min(...faceTops));
+      expect(panelY + Number(panel.getAttribute('height'))).toBe(faceBottom);
+      expect(panelY).toBeGreaterThan(Number(laneHeading.getAttribute('y')));
+      /* It stands where the delta gutter and the observation face stand, and ends on their edge. */
+      const contractRight = Number(faces[0].getAttribute('x')) + 560;
+      expect(panelX + Number(panel.getAttribute('width'))).toBe(contractRight + 160 + 240);
+      /* Clear of the planes' ledge beside the faces, and of every rule sentence's end. */
+      expect(Math.max(...planeEdges.map((edge) => edge.right))).toBeLessThan(panelX);
+      for (const sentence of container.querySelectorAll('[data-edge-sentence-kind="permitted"]')) {
+        const end = Number(sentence.getAttribute('x')) + estimateCaptionWidth(sentence.textContent ?? '');
+        expect(end).toBeLessThanOrEqual(panelX - 12);
+      }
+      /* The panel's words fit inside it, and no role's name repeats "not inspected". */
+      const lines = [...empties[0].querySelectorAll('[data-testid="architecture-observation-empty-line"]')];
+      expect(lines.length).toBeGreaterThan(0);
+      expect(lines.every((line) => !(line.textContent ?? '').endsWith('…'))).toBe(true);
+      expect(screen.queryByTestId('architecture-role-observation-widgets')).toBeNull();
+      expect(screen.getByTestId('architecture-graph-box-widgets').getAttribute('aria-label')).not.toContain(
+        'Not inspected',
       );
-      expect(container.querySelectorAll('[data-architecture-role-hit-area="true"]')).toHaveLength(7);
+      /* The observation heading centres on the empty state it heads, like the words under it. */
+      expect(Number(screen.getByTestId('architecture-observation-heading').getAttribute('x'))).toBe(
+        panelX + Number(panel.getAttribute('width')) / 2,
+      );
+      /* A role's hit area is its contract face: a press on the empty column selects nothing. */
+      const hitAreas = [...container.querySelectorAll('[data-architecture-role-hit-area="true"]')];
+      expect(hitAreas).toHaveLength(7);
+      expect(hitAreas.every((area) => area.getAttribute('width') === '560')).toBe(true);
+      expect(empties[0]).toHaveAttribute('pointer-events', 'none');
+    } finally {
+      for (const [key, descriptor] of Object.entries(originals)) {
+        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
+        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
+      }
+    }
+  });
+
+  /*
+   * Once a receipt exists the ladder is two measured columns again: a face and a mark per role,
+   * the delta heading back over its marks with the limit of what a mark asserts as its hover text.
+   */
+  it('draws the per-role faces and the delta heading once every role carries a receipt', () => {
+    const geometry: Record<string, number> = {
+      clientWidth: 1200,
+      scrollWidth: 1200,
+      clientHeight: 700,
+      scrollHeight: 700,
+    };
+    const originals = Object.fromEntries(
+      Object.keys(geometry).map((key) => [
+        key,
+        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
+      ]),
+    );
+    try {
+      for (const [key, value] of Object.entries(geometry)) {
+        Object.defineProperty(HTMLElement.prototype, key, {
+          configurable: true,
+          get: () => value,
+        });
+      }
+      const receipt: RoleLedger = {
+        state: 'clean',
+        violated: 0,
+        outgoing: 1,
+        sampleLimited: false,
+        importsOut: 12,
+      };
+      const roles = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
+      draw(Object.fromEntries(roles.map((role) => [role, receipt])), new Set(), [], FSD_PROFILE_FRONTMATTER);
+      expect(screen.getByTestId('architecture-graph')).toHaveAttribute('data-evidence-layout', 'paired-ladder');
+      expect(screen.queryByTestId('architecture-observation-empty')).toBeNull();
+      expect(screen.getAllByTestId(/^architecture-observation-box-/)).toHaveLength(7);
+      expect(screen.getAllByTestId(/^architecture-delta-marker-/)).toHaveLength(7);
+      expect(screen.getByTestId('architecture-delta-heading').querySelector('title')).toHaveTextContent(
+        "Each mark says what that role's own outgoing imports did.",
+      );
     } finally {
       for (const [key, descriptor] of Object.entries(originals)) {
         if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
@@ -377,8 +456,10 @@ describe('the evidence split plane', () => {
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
       expect(graph).toHaveAttribute('data-ladder-density', 'tight');
       /* 4 + 20 + 7x58 + 6x22 + 4: one summary line per role, and the gap the sentence needs,
-         plus the layer stack's 8px head room and its 3px bottom ledge. */
-      expect(graph).toHaveAttribute('height', '593');
+         plus the layer stack's 8px head room and its 3px bottom ledge. This is exactly the
+         height the density rule budgets (`pairedTightH`); the column notes' 16px line, which that
+         rule never counted, left with the notes on 2026-09-26. */
+      expect(graph).toHaveAttribute('height', '577');
       const boxes = screen.getAllByTestId(/^architecture-graph-box-/);
       expect(boxes).toHaveLength(7);
       expect(boxes.every((box) => box.getAttribute('data-box-height') === '58')).toBe(true);
@@ -423,8 +504,12 @@ describe('the evidence split plane', () => {
       const graph = screen.getByTestId('architecture-graph');
       expect(graph).toHaveAttribute('data-box-width-mode', 'roomy');
       expect(graph).toHaveAttribute('data-architecture-axis', 'across');
-      expect(screen.getAllByTestId(/^architecture-observation-box-/)).toHaveLength(4);
-      expect(screen.getAllByTestId(/^architecture-delta-connector-/)).toHaveLength(4);
+      /* Nothing measured: the lane under the row is one band that says so, not four faces. */
+      expect(screen.queryAllByTestId(/^architecture-observation-box-/)).toHaveLength(0);
+      expect(screen.queryAllByTestId(/^architecture-delta-connector-/)).toHaveLength(0);
+      const band = screen.getByTestId('architecture-observation-empty');
+      expect(band).toHaveAttribute('data-empty-layout', 'band');
+      expect(band).toHaveTextContent('Source not inspected yet');
       expect(screen.getAllByTestId(/^architecture-role-index-/)).toHaveLength(4);
       expect(screen.getByTestId('architecture-role-index-adapter')).toHaveTextContent('01');
       expect(screen.getByTestId('architecture-role-index-domain')).toHaveTextContent('04');
@@ -454,9 +539,7 @@ describe('the evidence split plane', () => {
         'data-box-height',
         '84',
       );
-      expect(screen.getByTestId('architecture-role-observation-domain')).toHaveTextContent(
-        'Not inspected',
-      );
+      expect(screen.queryByTestId('architecture-role-observation-domain')).toBeNull();
       expect(container.querySelector('[data-testid="architecture-graph-run"]')).toBeNull();
     } finally {
       for (const [key, descriptor] of Object.entries(originals)) {

@@ -44,7 +44,7 @@ import {
   type DomeNodeFrame,
   type DomeViewKind,
 } from "../model/dome-view";
-import { draw as domeRingsDraw, drawTierLabels as domeTierLabelsDraw } from "../render/dome-rings";
+import { draw as domeRingsDraw } from "../render/dome-rings";
 import {
   drawEmissiveHalo,
   drawEvidenceRing,
@@ -80,7 +80,7 @@ import {
   scaledLabelFontSize,
   scaledLabelFont,
 } from "../render/labels";
-import { placeRelationCaptions, relationCaptionText, type PlacedRelationCaption, type RelationCaption } from '../render/relation-captions';
+import { captionWithinFlatBudget, placeRelationCaptions, relationCaptionText, type PlacedRelationCaption, type RelationCaption } from '../render/relation-captions';
 import {
   CLUSTER_CHIP_LABEL_PRIORITY,
   ellipsizeToWidth,
@@ -206,7 +206,6 @@ const domeRingScreenReused: {
   kind: DomeViewKind;
   a: number;
   points: { x: number; y: number; u: number }[];
-  label: { x: number; y: number; text: string } | null;
 }[] = [];
 /**
  * perf 2026-08-19 — one `DomeNodeFrame` lookup per node per frame.
@@ -793,6 +792,13 @@ export interface FrameDrawParams {
   /** Edge selection = pair focus — only the two endpoints stay lit, the rest dims, and the selected edge goes pale indigo. */
   selectedEdge: EdgePairFocus | null;
   relationCaptions?: ReadonlyMap<string, string> | null;
+  /**
+   * In a view that draws every concept (Strata, Neural, Galaxy): what the flat map's density
+   * gate folds at this expansion, so captions keep the flat map's budget
+   * (`render/relation-captions.ts#captionWithinFlatBudget`). Null on the flat map, whose own
+   * drawing already is that budget.
+   */
+  captionFoldedIds?: ReadonlySet<string> | null;
   reviewQuestionIds?: ReadonlySet<string> | null;
   previewEdge: {
     sourceId: string;
@@ -1103,11 +1109,11 @@ export interface FrameDrawParams {
    */
   domeRingAlpha?: number;
   /**
-   * 3D — the tier names Strata writes at its plane rims, already translated. Null
-   * (or a missing entry) draws the ring without a name rather than an English
-   * fallback: a legend in the wrong language is worse than no legend.
+   * Strata's tier names as they stand beside their rims, canvas CSS px
+   * (`model/tier-names.ts`). Concept names and relation captions give way to them,
+   * so a label passing a rim never lands on its plane's name.
    */
-  domeTierLabels?: Readonly<Partial<Record<DomeViewKind, string>>> | null;
+  tierNameBoxes?: readonly { minX: number; maxX: number; minY: number; maxY: number }[] | null;
   /**
    * The Strata tier whose plane ring is raised — the legend row under the pointer
    * (`OntologyMapTierLegend`). Null raises nothing.
@@ -1167,6 +1173,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     hoveredEdge,
     selectedEdge,
     relationCaptions,
+    captionFoldedIds = null,
     reviewQuestionIds,
     previewEdge,
     emphasisById,
@@ -1223,7 +1230,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     domeRamp = 0,
     domeRings = null,
     domeRingAlpha = DOME_RING_ALPHA,
-    domeTierLabels = null,
+    tierNameBoxes = null,
     domeTierRaisedKind = null,
     domeControlFor = null,
     domeLight = null,
@@ -1860,6 +1867,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   edgeAlphaReused.length = 0;
   const captionCandidates: RelationCaption[] = [];
   drawnRelationCaptions = [];
+  const isSpineEndpoint = (id: string): boolean => {
+    const node = world.nodeById.get(id);
+    return node !== undefined && isSpineNode(node);
+  };
   for (let i = 0; i < world.edges.length; i += 1) {
     const edge = world.edges[i];
     edgeAlphaReused.push(
@@ -1988,18 +1999,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             const ring = domeRings[i];
             let out = domeRingScreenReused[i];
             if (!out) {
-              out = { kind: ring.kind, a: 0, points: [], label: null };
+              out = { kind: ring.kind, a: 0, points: [] };
               domeRingScreenReused[i] = out;
             }
             out.kind = ring.kind;
             out.a = ring.a;
-            const tierName = domeTierLabels?.[ring.kind];
-            if (ring.label && tierName) {
-              const at = project(ring.label.wx, ring.label.wy);
-              out.label = { x: at.x, y: at.y, text: tierName };
-            } else {
-              out.label = null;
-            }
             for (let k = 0; k < ring.points.length; k += 1) {
               const point = ring.points[k];
               const screen = project(point.wx, point.wy);
@@ -2024,9 +2028,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         // different brightness and the depth cues would contradict each other.
         fog: domeFogAlpha,
         widthFactor: domeLineWidthFactor,
-        // The same right edge node labels are culled against, so a tier name and
-        // a concept name obey one boundary.
-        labelMaxX: viewportWidth - tokens.safeInsetRight,
         raisedKind: domeTierRaisedKind,
     };
     domeRingsTokens = {
@@ -2034,13 +2035,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         // The hovered plane's ring only — it borrows the application's tertiary
         // text step rather than adding a colour (`domeRingRaised`).
         strokeRaised: tokens.domeRingRaised,
-        // The dimmest node-label ink: a tier name must be read, so it stands a
-        // step above the hairline it names, and it borrows an existing token
-        // rather than introducing a colour for four words.
-        labelFill: tokens.labelElement,
-        // The capability step of the label ramp (`render/labels.ts`) — no larger
-        // than a data label, because the stage never outranks the actors.
-        labelFont: scaledLabelFont("capability", labelScale),
     };
     domeRingsDraw(ctx, domeRingsState, domeRingsTokens);
   }
@@ -2398,7 +2392,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const caption = edge.id ? relationCaptions?.get(edge.id) : null;
       const directionalCaption = isDirectionalRelation(edge.relationType);
       const captionInFocus = selectedEdge ? isSelectedEdge : focusedNodeId ? touches : true;
-      if (caption && captionInFocus && ctx.globalAlpha >= 0.5 && !passthrough && (directionalCaption || isSelectedEdge || touches || hovered)) {
+      const captionBudgeted =
+        captionFoldedIds === null ||
+        captionWithinFlatBudget({
+          attended: isSelectedEdge || hovered || isPathEdge,
+          touchesFocus: touches,
+          spine: isSpineEndpoint(edge.sourceId) && isSpineEndpoint(edge.targetId),
+          folded: captionFoldedIds.has(edge.sourceId) || captionFoldedIds.has(edge.targetId),
+        });
+      if (caption && captionInFocus && captionBudgeted && ctx.globalAlpha >= 0.5 && !passthrough && (directionalCaption || isSelectedEdge || touches || hovered)) {
         captionCandidates.push({ edgeId: edge.id!, text: relationCaptionText(caption, a, b, directionalCaption), x: (a.x + 2 * control.x + b.x) / 4, y: (a.y + 2 * control.y + b.y) / 4, priority: isSelectedEdge ? 5 : touches ? 4 : hovered ? 3 : edge.kind === 'contains' ? 2 : 1 });
       }
       /**
@@ -3497,12 +3499,19 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
 
   /*
-   * Strata's tier names, after the relations and nodes. A ring is the stage and
-   * goes under them; the name of the tier is a legend and has to survive them —
-   * see `drawTierLabels`.
+   * Strata's tier names stand beside their rims as DOM rows over the canvas
+   * (`OntologyMapTierLegend`). They reserve their boxes like a disc does, so a
+   * passive concept name passing a rim flips or yields instead of being covered,
+   * and a relation caption keeps off them too. A name the person is pointing at
+   * (selected or hovered) still draws.
    */
-  if (domeRingsState !== null && domeRingsTokens !== null) {
-    domeTierLabelsDraw(ctx, domeRingsState, domeRingsTokens);
+  if (domeOn && tierNameBoxes !== null) {
+    for (const box of tierNameBoxes) {
+      nodeDiscReservations.push({
+        priority: NODE_DISC_LABEL_PRIORITY,
+        bbox: { minX: box.minX, maxX: box.maxX, minY: box.minY, maxY: box.maxY },
+      });
+    }
   }
 
   // --- labels: viewport/panel cull + priority greedy suppression + ellipsis ---

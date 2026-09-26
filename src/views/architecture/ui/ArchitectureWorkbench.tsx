@@ -1093,9 +1093,10 @@ export function ArchitectureWorkbench({
                 contractTrackLabel={t('contractTrackLabel')}
                 observationTrackLabel={t('observationTrackLabel')}
                 deltaTrackLabel={t('deltaLabel')}
-                deltaColumnNote={t('deltaColumnNote')}
                 deltaColumnHint={t('deltaColumnHint')}
                 observationMissingLabel={t('observationMissingShort')}
+                observationEmptyTitle={t('observationEmptyTitle')}
+                observationEmptyBody={t('observationEmptyBody')}
                 selected={selectedRole}
                 roleInspectorOpen={inspector === 'role'}
                 onSelect={(id, trigger) => {

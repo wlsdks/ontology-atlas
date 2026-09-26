@@ -29,6 +29,9 @@ export function TopologyFitControl({ onFitView, density = 'default', mobileObscu
       className={`topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 ${mobileObscured ? 'hidden md:flex' : 'flex'} flex-col gap-2 md:bottom-auto md:right-[var(--chrome-inset)] md:top-[var(--topology-floating-control-desktop-top)]`}
       data-testid="topology-fit-control"
       data-agent-dock-adjacent-rail="true"
+      // The rail's column is chrome standing on the map: the map's fits keep the drawing
+      // clear of it (`widgets/ontology-map/interaction/free-area.ts#measureEdgeFitObstacle`).
+      data-map-fit-obstacle="right"
       data-controls-density={density}
       data-control-phone-bottom-token="--topology-floating-control-phone-bottom"
       data-control-desktop-top-token="--topology-floating-control-desktop-top"

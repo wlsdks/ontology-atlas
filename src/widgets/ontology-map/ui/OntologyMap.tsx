@@ -7,7 +7,7 @@ import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./use-topology-loop";
 import { OntologyMapTierLegend } from "./OntologyMapTierLegend";
-import type { TierLegendAnchor, TierLegendPlacement } from "../model/tier-legend-rows";
+import type { TierNameAnchor } from "../model/tier-names";
 import type { TierRevealConfig } from "../model/tier-visibility";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import type { ClusterBarLabels } from "../render/cluster-chips";
@@ -259,7 +259,7 @@ export interface OntologyMapProps {
    * catches a broken wiring.
    */
   clusterBarLabels?: ClusterBarLabels | null;
-  /** Translated kind names, written at the rim of each Strata plane ring. */
+  /** Translated kind names, each standing beside its Strata plane's rim (`OntologyMapTierLegend`). */
   domeTierLabels?: Readonly<Partial<Record<DomeViewKind, string>>> | null;
   /**
    * H3 P2 — the canvas accessibility label (i18n, injected by HomePage). A canvas
@@ -531,28 +531,18 @@ export function OntologyMap(props: OntologyMapProps) {
   );
 
   /*
-   * ── Strata's tier-name rail ────────────────────────────────────────────────
+   * ── Strata's tier names ────────────────────────────────────────────────────
    *
-   * The four plane heights, as the frame last projected them, and whether the
-   * rail could place its rows in the band it has. While it can, the canvas draws
-   * no rim names (`domeTierLabels` goes in as null) — the rail and the rims are
-   * the same legend and only one of them is ever on. `OntologyMapTierLegend` owns
-   * the reasoning; this is the wiring.
+   * Where the frame placed each name beside its plane's rim this frame
+   * (`model/tier-names.ts`); `OntologyMapTierLegend` draws them and measures them.
    */
-  const [tierAnchors, setTierAnchors] = useState<readonly TierLegendAnchor[] | null>(null);
-  const [tierLegendFits, setTierLegendFits] = useState(true);
-  /**
-   * Where the four names may sit. The loop derives it from the fit's own free box
-   * and publishes it on change, so the reserved column and the drawn legend read
-   * one predicate (`model/tier-legend-rows.ts#tierLegendPlacement`).
-   */
-  const [tierLegendPlacement, setTierLegendPlacement] = useState<TierLegendPlacement>("rail");
-  const handleTierAnchors = useCallback((next: readonly TierLegendAnchor[] | null) => {
-    setTierAnchors(next);
+  const [tierNames, setTierNames] = useState<readonly TierNameAnchor[] | null>(null);
+  const handleTierNames = useCallback((next: readonly TierNameAnchor[] | null) => {
+    setTierNames(next);
   }, []);
-  const tierLegendActive = view3d && mapArrangement === "strata" && tierAnchors !== null && domeTierLabels !== null;
+  const tierNamesActive = view3d && mapArrangement === "strata" && domeTierLabels !== null;
 
-  const { canvasRef, containerRef, raiseDomeTier, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleContextMenu, handleKeyDown } =
+  const { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleContextMenu, handleKeyDown } =
     useTopologyLoop({
       nodes,
       edges,
@@ -595,10 +585,7 @@ export function OntologyMap(props: OntologyMapProps) {
       realmEnterButtonRef,
       realmCaption,
       clusterBarLabels,
-      // The rim names are the fallback, not the default — see `tierLegendActive`.
-      domeTierLabels: tierLegendActive && tierLegendFits ? null : domeTierLabels,
-      onDomeTierAnchorsChange: handleTierAnchors,
-      onTierLegendPlacementChange: setTierLegendPlacement,
+      onDomeTierAnchorsChange: handleTierNames,
       visitedTrail,
       trailLensActiveRef,
       trailHoverNodeIdRef,
@@ -800,13 +787,14 @@ export function OntologyMap(props: OntologyMapProps) {
         </button>
       ) : null}
       {view3d && props.domeLightLegend ? props.domeLightLegend : null}
-      {tierLegendActive && !detailPanelVisible ? (
+      {/* The inspector docks against the same right edge the names favour, and the
+          reader is looking at one concept, so the names step aside while it is open. */}
+      {tierNamesActive && !detailPanelVisible ? (
         <OntologyMapTierLegend
-          anchors={tierAnchors!}
+          names={tierNames ?? []}
           labels={domeTierLabels!}
           onRaise={raiseDomeTier}
-          onFitChange={setTierLegendFits}
-          placement={tierLegendPlacement}
+          onWidths={setDomeTierNameWidths}
         />
       ) : null}
       {/* The guided tour's canvas node anchor (steps 2 and 4) — the same projection

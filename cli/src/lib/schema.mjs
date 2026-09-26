@@ -14,6 +14,7 @@ export const VAULT_KINDS = schema.VAULT_KINDS;
 export const agentCreatedBy = schema.agentCreatedBy;
 export const buildFrontmatter = schema.buildFrontmatter;
 export const defaultBody = schema.defaultBody;
+export const emptiedRelationListValue = schema.emptiedRelationListValue;
 export const flatSlugIssue = schema.flatSlugIssue;
 export const folderForKind = schema.folderForKind;
 export const generateNodeUid = schema.generateNodeUid;

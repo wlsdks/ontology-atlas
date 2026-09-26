@@ -1,7 +1,10 @@
 import { strict as assert } from 'node:assert';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { planRemoval } from './remove-relation.mjs';
+import { planRemoval, runRemoveRelation } from './remove-relation.mjs';
 
 /**
  * Owner, 2026-08-25: *"make every feature usable from the CLI alone."* Measured the same day: the
@@ -87,5 +90,75 @@ describe('remove-relation — 관계 하나를 정확히 덜어낸다', () => {
       'capabilities/a',
     );
     assert.deepEqual(plan.next, ['capabilities/b']);
+  });
+});
+
+/*
+ * Owner inspection, 2026-09-26: removing the only `relates` entry of capabilities/wiki-pages left
+ * `relates: []` in the file (the map's editor), and this command wrote the same residue plus
+ * `relation_notes: {  }`. The file must read as if the relation had never been written; only a
+ * kind's scaffold list (a capability's `elements`) returns to the `[]` creating the node writes.
+ */
+describe('remove-relation — the bytes it leaves', () => {
+  const doc = (lines) =>
+    [
+      '---',
+      'uid: c9f6fc1b-8321-47ce-bd51-78b1f1c1389f',
+      'slug: capabilities/wiki-pages',
+      'kind: capability',
+      'title: Wiki pages',
+      'domain: domains/meaning',
+      ...lines,
+      '---',
+      '',
+      'Pages that cite their sources.',
+      '',
+    ].join('\n');
+
+  async function removeFrom(content, to, type) {
+    const root = mkdtempSync(join(tmpdir(), 'oatlas-remove-relation-'));
+    try {
+      mkdirSync(join(root, 'capabilities'), { recursive: true });
+      const file = join(root, 'capabilities/wiki-pages.md');
+      writeFileSync(file, content);
+      const code = await runRemoveRelation(['capabilities/wiki-pages', to, type, '--vault', root, '--json'], {
+        recordCliWrite: async () => {},
+      });
+      assert.equal(code, 0);
+      return readFileSync(file, 'utf8');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+
+  it('deletes the key with its only entry', async () => {
+    const written = await removeFrom(
+      doc(['elements: []', 'relates: [capabilities/library]']),
+      'capabilities/library',
+      'relates',
+    );
+    assert.equal(written, doc(['elements: []']));
+  });
+
+  it('deletes relation_notes with the only reason it held', async () => {
+    const written = await removeFrom(
+      doc([
+        'elements: []',
+        'dependencies: [elements/frontmatter-parser]',
+        'relation_notes: { elements/frontmatter-parser: "wiki-schema.mjs imports parser.mjs." }',
+      ]),
+      'elements/frontmatter-parser',
+      'depends_on',
+    );
+    assert.equal(written, doc(['elements: []']));
+  });
+
+  it("returns a kind's scaffold list to []", async () => {
+    const written = await removeFrom(
+      doc(['elements: [elements/page-contract]']),
+      'elements/page-contract',
+      'elements',
+    );
+    assert.equal(written, doc(['elements: []']));
   });
 });

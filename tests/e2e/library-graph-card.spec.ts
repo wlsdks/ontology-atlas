@@ -390,6 +390,14 @@ test.describe("a press on a mark opens a card beside it", () => {
         message: "the breath never let go",
       })
       .toBe(false);
+    /*
+     * The frame that clears the timestamp is not the breath's last paint: the loop draws
+     * the resting picture once more on the next frame and then stops. Measured 2026-09-26:
+     * exactly one paint 5-10ms after `pulsing` turns false, and none in the three seconds
+     * after it. A poll that lands in that one-frame gap counted the breath's own last frame
+     * as a loop (2 of 4 runs), so the window opens once two more frames have passed.
+     */
+    await waitFrames(page, 2);
     await reset();
     // A **measurement window**, not a wait: "the breath became a loop" is a claim about a
     // stretch of real time with no canvas paint, so the stretch has to pass. The graph's

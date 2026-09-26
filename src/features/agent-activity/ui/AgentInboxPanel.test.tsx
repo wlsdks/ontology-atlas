@@ -2,9 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
+import enMessages from '../../../../messages/en.json';
 import koMessages from '../../../../messages/ko.json';
 import { AgentInboxPanel } from './AgentInboxPanel';
-import type { BellInbox, BellResult } from '../model/bell-inbox';
+import type { BellHistoryRow, BellInbox, BellResult } from '../model/bell-inbox';
 import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
 
 const NOW = new Date(2026, 8, 12, 12, 0, 0).getTime();
@@ -180,5 +181,82 @@ describe('패널의 잉크와 숫자 — 주의를 끄는 것만 인디고', () 
     expect(screen.getByRole('tab', { name: '할 일, 0' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '결과, 1' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '기록' })).toBeInTheDocument();
+  });
+});
+
+/**
+ * Owner review, 2026-09-26: a task that wrote once lasted 0 ms from its first change to its last,
+ * and its row read "Claude Code · 0s · 3 days ago". Under a second the duration says nothing and is
+ * left out; above it every size keeps the next unit only when it is not zero.
+ */
+describe('걸린 시간 — 1초 미만은 말하지 않고, 긴 시간은 한 규칙으로', () => {
+  const historyRow = (durationMs: number | null): BellHistoryRow => ({
+    id: `history:${durationMs}`,
+    at: NOW - 3 * MINUTE,
+    kind: 'task-end',
+    agent: 'claude-code',
+    node: null,
+    label: null,
+    counts: { added: 0, edited: 1, removed: 0 },
+    problems: null,
+    childCount: null,
+    durationMs,
+    running: false,
+    decision: null,
+    result: null,
+  });
+
+  function renderDurations(locale: 'ko' | 'en', durations: readonly number[]) {
+    window.localStorage.clear();
+    const results = durations.map((durationMs, index) => ({ ...task, id: `task:${index}`, durationMs }));
+    const next: BellInbox = {
+      todos: [],
+      results,
+      unreadResults: 0,
+      history: [
+        { key: 'today', label: 'today', at: NOW - 3 * MINUTE, rows: durations.map((durationMs) => historyRow(durationMs)) },
+      ],
+    };
+    return render(
+      <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? koMessages : enMessages}>
+        <AgentInboxPanel inbox={next} feed={feed} />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it('leaves a sub-second duration out of the result row and the history row', () => {
+    renderDurations('ko', [0]);
+    fireEvent.click(screen.getByRole('tab', { name: /결과/ }));
+    const row = screen.getByTestId('agent-inbox-result-row');
+    expect(row.textContent).toContain('Claude Code·3분 전·허용 2·거절 0');
+    expect(row.textContent).not.toMatch(/0초/);
+    fireEvent.click(screen.getByRole('tab', { name: '기록' }));
+    const history = screen.getByTestId('agent-inbox-history-row');
+    expect(history.textContent).not.toMatch(/0초/);
+    expect(history.querySelector('[title="첫 변경부터 마지막 변경까지"]')).toBeNull();
+  });
+
+  it.each([
+    ['ko', 45_000, '45초'],
+    ['ko', 125_000, '2분 5초'],
+    ['ko', 120_000, '2분'],
+    ['ko', 3_900_000, '1시간 5분'],
+    ['ko', 3_630_000, '1시간'],
+    ['en', 45_000, '45s'],
+    ['en', 125_000, '2m 5s'],
+    ['en', 120_000, '2m'],
+    ['en', 3_900_000, '1h 5m'],
+    ['en', 3_630_000, '1h'],
+  ] as const)('%s: %d ms reads "%s" in both tabs', (locale, durationMs, words) => {
+    renderDurations(locale, [durationMs]);
+    const title = locale === 'ko' ? '첫 변경부터 마지막 변경까지' : 'From the first change to the last';
+    fireEvent.click(screen.getByRole('tab', { name: locale === 'ko' ? /결과/ : /Results/ }));
+    expect(screen.getByTestId('agent-inbox-result-row').querySelector(`[title="${title}"]`)).toHaveTextContent(
+      new RegExp(`^${words}$`),
+    );
+    fireEvent.click(screen.getByRole('tab', { name: locale === 'ko' ? '기록' : 'History' }));
+    expect(screen.getByTestId('agent-inbox-history-row').querySelector(`[title="${title}"]`)).toHaveTextContent(
+      new RegExp(`^${words}$`),
+    );
   });
 });

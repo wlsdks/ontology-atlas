@@ -5,22 +5,16 @@ import type { OntologyMapProps } from "./OntologyMap";
 import type { CanvasBackground, FootprintPreference } from "@/shared/lib/appearance-preferences";
 import type { FootprintInk } from "@/shared/lib/footprint-glyph";
 import {
-  useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   type RefObject
 } from "react";
-import {
-  type DomeViewKind
-} from "../model/dome-view";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import { type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import type { UseTopologyLoopArgs } from "./topology-loop-contract";
 
 interface Dependencies {
   args: UseTopologyLoopArgs;
-  domeTierLabels: Readonly<Partial<Record<DomeViewKind, string>>> | null;
   previewEdge: NonNullable<OntologyMapProps["previewEdge"]> | null;
   glyphSet: GlyphSet;
   canvasBackground: CanvasBackground;
@@ -43,7 +37,6 @@ interface Dependencies {
 /** Own preview, trail, lens, and appearance inputs consumed by drawing. */
 export function useTopologyPresentationState({
   args,
-  domeTierLabels,
   previewEdge,
   glyphSet,
   canvasBackground,
@@ -64,10 +57,6 @@ export function useTopologyPresentationState({
 }: Dependencies) {
 
   const annotationRef = useRef({ captions: args.relationCaptions, questions: args.reviewQuestionIds });
-
-  const domeTierLabelsRef = useRef(domeTierLabels);
-  useLayoutEffect(() => { domeTierLabelsRef.current = domeTierLabels; }, [domeTierLabels]);
-  const getDomeTierLabels = useCallback(() => domeTierLabelsRef.current, []);
 
   const previewEdgePropRef = useRef(previewEdge);
 
@@ -195,7 +184,7 @@ export function useTopologyPresentationState({
   /** Tier gate config mirror, shared by the rAF closure and the pointer handlers. */
   const tierRevealRef = useRef<TierRevealConfig>(tierReveal);
   return {
-    annotationRef, getDomeTierLabels, previewEdgePropRef, previewEdgeHeldRef, previewSignatureRef,
+    annotationRef, previewEdgePropRef, previewEdgeHeldRef, previewSignatureRef,
     previewAlphaRef, previewCommitRef, previewTransitionRef, glyphStyleRef, canvasBackgroundRef,
     footprintPrefRef, footprintInkRef, footprintStepColorRef, footprintTrailLenRef, footprintAppearAtRef,
     ambientSleepDelayRef, visitedTrailRef, visitedTrailSetRef, drawnTrailLensRef, trailLensPropRef,

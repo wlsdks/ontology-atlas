@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { placeRelationCaptions, relationCaptionText } from './relation-captions';
+import { captionWithinFlatBudget, placeRelationCaptions, relationCaptionText } from './relation-captions';
 
 describe('map relation meaning captions', () => {
   it('preserves subject-to-target direction without inventing direction for association', () => {
@@ -15,5 +15,22 @@ describe('map relation meaning captions', () => {
       { edgeId: 'offscreen', text: 'contains', x: 290, y: 80, priority: 0 },
     ], [{ minX: 60, maxX: 100, minY: 60, maxY: 100 }], { left: 16, right: 284, top: 16, bottom: 180 }, (text) => text.length * 6, 20);
     expect(result.map((item) => item.edgeId)).toEqual(['depends']);
+  });
+});
+
+describe('the flat caption budget in a view that draws every concept', () => {
+  const base = { attended: false, touchesFocus: false, spine: false, folded: false };
+  it('at rest names the spine and nothing else', () => {
+    expect(captionWithinFlatBudget({ ...base, spine: true })).toBe(true);
+    // A capability's "contains" to its element: drawn in Strata, not on the flat overview.
+    expect(captionWithinFlatBudget(base)).toBe(false);
+  });
+  it("names the focused concept's relations, except those the flat map folds behind a chip", () => {
+    expect(captionWithinFlatBudget({ ...base, touchesFocus: true })).toBe(true);
+    expect(captionWithinFlatBudget({ ...base, touchesFocus: true, folded: true })).toBe(false);
+    expect(captionWithinFlatBudget({ ...base, spine: true, folded: true })).toBe(false);
+  });
+  it('always names the relation a person is reading', () => {
+    expect(captionWithinFlatBudget({ ...base, attended: true, folded: true })).toBe(true);
   });
 });

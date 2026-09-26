@@ -565,7 +565,12 @@ export function AppSettingsMenu({
           closePanel(false);
           return;
         }
-        if (event.key !== 'Escape') return;
+        // Only an open sheet owns Escape. The gear keeps focus after it is pressed
+        // and after the sheet hands focus back, and a closed sheet that still took
+        // the key left the page's own dismissal order unreachable from it: on the
+        // map a selected node stayed selected however often Escape was pressed
+        // (measured 2026-09-26).
+        if (event.key !== 'Escape' || !open) return;
         event.preventDefault();
         // This dialog owns Escape so the map's Esc dismissal order (a window
         // keydown) does not react twice to the same keypress — "one overlay owns

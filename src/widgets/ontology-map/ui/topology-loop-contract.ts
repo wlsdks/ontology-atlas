@@ -1,12 +1,7 @@
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
 import type { RefObject } from "react";
-import {
-  type DomeViewKind
-} from "../model/dome-view";
 import type { TopologyMapLensKind } from "../model/path-lens";
-import {
-  type TierLegendPlacement
-} from "../model/tier-legend-rows";
+import { type TierNameAnchor } from "../model/tier-names";
 import { type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import type { ClusterBarLabels } from "../render/cluster-chips";
 import type { HoverAvoidRect } from "./topology-pointer-handlers";
@@ -84,20 +79,12 @@ export interface UseTopologyLoopArgs {
    */
   onDrawnCountChange?: (drawn: number) => void;
   /**
-   * The Strata plane heights this frame, in canvas CSS px, top tier first — what
-   * `OntologyMapTierLegend` aligns its rows to. Emitted only when a value moved by
-   * more than half a pixel, so an idle frame does not re-render the overlay, and
-   * `null` whenever the arrangement is not Strata or its rings are not up yet.
+   * Where each Strata tier name stands this frame, beside its plane's rim, in canvas
+   * CSS px (`model/tier-names.ts`). Emitted only when a name moved by more than half a
+   * pixel, so an idle frame does not re-render the overlay, and `null` whenever the
+   * arrangement is not Strata or its rings are not up yet.
    */
-  onDomeTierAnchorsChange?: (anchors: readonly { kind: DomeViewKind; y: number; }[] | null) => void;
-  /**
-   * Where Strata's tier names may sit — `rail` while the fit has width to spare
-   * at the canvas's right edge, `corner` when taking that column would shrink the
-   * graph (`model/tier-legend-rows.ts#tierLegendPlacement`). Fired on change
-   * only. The fit and the legend read the same predicate, so the column is
-   * reserved exactly when the rail is the thing being drawn.
-   */
-  onTierLegendPlacementChange?: (placement: TierLegendPlacement) => void;
+  onDomeTierAnchorsChange?: (anchors: readonly TierNameAnchor[] | null) => void;
 
   /**
    * The semantic-zoom altitude tier changed (spine → circuit → element). Fires
@@ -197,8 +184,6 @@ export interface UseTopologyLoopArgs {
    * builds user-facing strings — same path `realmCaption` already uses.
    */
   clusterBarLabels?: ClusterBarLabels | null;
-  /** Translated kind names, written at the rim of each Strata plane ring. */
-  domeTierLabels?: Readonly<Partial<Record<DomeViewKind, string>>> | null;
   /**
    * Trail brushing — a **ref** holding the node id of the popover row under
    * hover/focus. While the lens is on, the map borrows its own hover channel

@@ -84,7 +84,7 @@ work here, and where it can.
 | Read / edit / create nodes in that folder | ✅ | ✅ | same parser, same schema, same files |
 | Remember the folder between visits | ❌ pick it again | ✅ | web keeps an FSA handle in its own IndexedDB; a convenience cache, not the source of truth |
 | Resume a single folder on launch | ❌ the browser needs a click for permission, and the chooser says so | ✅ opens it directly | File System Access permission has to come from a gesture, so the web presses something either way |
-| Choose between known folders on launch | ✅ | ✅ | two or more known folders open a centered, content-sized chooser with Open folder and Create new beside the list heading; the list grows with its contents and scrolls internally only when space runs out; names wrap and paths keep their full value on hover; unavailable rows retain recovery/removal actions; constrained height or larger text folds optional guidance into an accessible help dialog so the list stays usable; one folder resumes directly |
+| Choose between known folders on launch | ✅ | ✅ | two or more known folders open a centered, content-sized chooser with Open folder and Create new beside the list heading; the list grows with its contents and scrolls internally only when space runs out; names wrap and paths keep their full value on hover; a folder the browser refused keeps its row with recovery/removal actions, while folders that no longer exist fold into one quiet line at the end of the list, reviewed in a dialog (in place in the rail switcher) that lists each path and forgets one or all of them only when pressed; constrained height or larger text folds optional guidance into an accessible help dialog so the list stays usable; one folder resumes directly |
 | See which folder is open, and leave it | ✅ | ✅ | the folder's name sits at the top of the rail on every destination and opens the switcher; each row carries the folder's contents, its last opening, and whether it opens now |
 | Map entry feedback | ✅ | ✅ | sidebar and G M map entry show a live preparation scene before navigation; the first canvas draw releases it, and another destination or the return action can cancel the pending entry |
 | Work offline | ❌ | ✅ | |
@@ -511,18 +511,17 @@ had become false).
   original return. **Strata** (2026-09-06, the default 3D view since 2026-09-25)
   lays the four kinds out as stacked planes — project on top, then domain,
   capability, element — each drawn as a lit translucent floor, so
-  "which level is this on" is a glance rather than an inference. The four names
-  sit on a **legend rail** at the canvas's right edge (2026-09-06), below the
-  utility tiles: one row per plane, each row aligned to that plane's projected
-  height and re-aligned as you orbit or morph, and hovering a row raises its
-  plane's ring. They used to hang on the rims themselves, which at 1040x720 put
-  them on the graph; the rim names remain only as the fallback on a canvas too
-  short for the rail, and the two are never both on. Where the rail's column would
-  be width the graph wanted, the four names become a **compact stack in the
-  bottom-right corner** instead (2026-09-07), keeping the same words and the same
-  hover: at 1040x720 that took the graph back from 63.6% of the free canvas to
-  73.4% and from two touching same-tier pairs to none, while 1512x982 keeps the
-  aligned rail and its 66.3% unchanged. On a Strata plane
+  "which level is this on" is a glance rather than an inference. Each plane's
+  name stands **beside its own rim** (2026-09-26), just outside the plane's right
+  edge or else its left, re-placed as you orbit or morph, and only where it lands
+  on nothing: no concept, no other name, no other plane and none of the map's
+  chrome. Concept names and relation captions give way to it, and hovering a name
+  raises its plane's ring. A plane with no clear place beside it stays unnamed
+  rather than named somewhere else; the colour key along the bottom names every
+  kind. Measured on the product's own ontology: all four names at 1512x949, three
+  at 1040x720. The names replaced a rail at the right edge (2026-09-06) and a
+  stack in the bottom-right corner (2026-09-07) that named no plane in
+  particular. On a Strata plane
   a node keeps its parent's bearing, which makes every containment drop short,
   near-vertical and unable to cross a sibling's; a node whose parent is not in the
   map falls to the outer rim of its own plane, where "nothing above holds this"
@@ -3170,6 +3169,7 @@ The phone tabs and the `G` keys read the same verdict.
 
 ### `AppSettingsMenu` (app shell + contextual page headers)
 - The sheet is a modal like every `<Dialog>` (2026-09-25): opened by a click it takes focus itself (WebKit does not focus the clicked gear), so Escape and Tab work at once, and a click on the dim beside the panel closes it and returns focus to the gear. A drag that starts in the panel and ends over the dim does not close it.
+- Only the open sheet owns Escape (2026-09-26). With the sheet closed, Escape pressed on the gear reaches the page, so on the map it runs the map's own Escape order as it does from every other map control.
 - Accent swatches display their own existing palette under either selected app accent. Notification kinds wrap below their full-width explanation instead of compressing that explanation beside six controls.
 - The old 5-tab settings modal is now one compact settings sheet
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
@@ -3369,7 +3369,7 @@ the chip's top and bottom edge, because a clipped control still measures full si
 | `D` | Home / Topology | Toggle docs drawer |
 | `?` | Every screen with the rail | Toggle shortcut sheet |
 | `⌘O` | Home / Topology static sample | Open a local Markdown folder |
-| `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state. In the installed app one press closes one thing under every macOS input source: Korean 2-Set can keep Escape from the WebView, so the app notices the press natively and the page stands in for the missing key-down, never for one it already received (`src/shared/lib/tauri-native-escape.ts`, `src-tauri/src/native_escape.rs`, 2026-09-25) |
+| `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state |
 | `Enter` | Workshop relation picker | Choose the first filtered relation candidate |
 | `↑↓` | Hub rail | Cycle hubs |
 | `Home` / `End` | Hub rail | First / last hub |

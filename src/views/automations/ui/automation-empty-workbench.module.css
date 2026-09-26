@@ -25,17 +25,12 @@
 .previewTitle { color: var(--color-text-primary); font-size: var(--text-body-lg); font-weight: var(--font-weight-emphasis); }
 .zero { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; margin-left: auto; border: 1px solid var(--color-border-soft); border-radius: var(--radius-chip); color: var(--color-text-secondary); font: var(--text-label)/var(--leading-label) var(--font-mono); }
 .columnHead { display: grid; grid-template-columns: minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr); gap: .75rem; padding: .75rem 1.25rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
-/* The list body: where rows will land. It takes the card's spare height. */
-/* A quiet placeholder, not a well: a dashed box with a + read as an add button and did nothing when pressed (2026-09-25). The real action is the one above the facts. */
-.emptyRow { display: grid; flex: 1 1 auto; place-items: center; min-height: 4.5rem; margin: 0 1.25rem 1.25rem; padding: 1.5rem 1rem; border-top: 1px solid var(--color-divider); }
-.emptyName { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; color: var(--color-text-tertiary); font-size: var(--text-body); line-height: var(--leading-body); text-align: center; word-break: keep-all; }
-/* The result sits on the card's floor, so a stretched card never shows a gap under it. */
-.result { display: flex; align-items: flex-start; gap: .75rem; margin: 0 1.25rem; padding: 1rem 0 1.25rem; border-top: 1px solid var(--color-divider); color: var(--color-text-secondary); }
-.result > svg { flex: none; margin-top: .125rem; color: var(--color-indigo-text-soft); }
-.result span { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
-.result strong { color: var(--color-text-primary); font-size: var(--text-body); font-weight: var(--font-weight-emphasis); }
-.result small { color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); word-break: keep-all; }
+/* The list body: the ground rows will land on, taking the card's spare height. It holds no
+   sentence: "appears here" under a title that had just said "none yet" was the page's empty
+   message twice more (owner review, 2026-09-26). No dashed box either: one with a + read as an
+   add button and did nothing when pressed (2026-09-25). The real action is above the facts. */
+.rows { flex: 1 1 auto; min-height: 4.5rem; margin: 0 1.25rem; border-top: 1px solid var(--color-divider); }
 @keyframes previewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes rowIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 47.99rem) { .stage { flex: none; } .facts { grid-template-columns: minmax(0,1fr); gap: 1rem; margin-top: 2rem; } .preview { margin-top: 2rem; min-height: 0; } .emptyRow { min-height: 6rem; } .columnHead { grid-template-columns: minmax(0,1fr) 3.5rem 3.5rem; padding-inline: .875rem; } .emptyRow { margin-inline: .875rem; padding-inline: .625rem; } .previewHead { padding-inline: .875rem; } .result { margin-inline: .875rem; } }
+@media (max-width: 47.99rem) { .stage { flex: none; } .facts { grid-template-columns: minmax(0,1fr); gap: 1rem; margin-top: 2rem; } .preview { margin-top: 2rem; min-height: 0; } .rows { min-height: 6rem; margin-inline: .875rem; } .columnHead { grid-template-columns: minmax(0,1fr) 3.5rem 3.5rem; padding-inline: .875rem; } .previewHead { padding-inline: .875rem; } }
 @media (prefers-reduced-motion: reduce) { .preview, .fact { animation: none; } }

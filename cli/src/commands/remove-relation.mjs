@@ -20,6 +20,7 @@
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
+import { emptiedRelationListValue } from '../lib/schema.mjs';
 import { normalizeRelationRefs, readDocFrontmatter, writeFrontmatterKey, writeFrontmatterKeys } from '../lib/write-vault.mjs';
 import { validateRelationTypeList } from '../lib/relation-types.mjs';
 import {
@@ -100,12 +101,17 @@ function removeRelation(rootPath, { from, to, relation }, runtime) {
       : null;
   const hadNote = notes !== null && Object.prototype.hasOwnProperty.call(notes, to);
   if (hadNote) delete notes[to];
+  // An emptied map is deleted, not written as `relation_notes: {  }` (2026-09-26).
+  const nextNotes = notes !== null && Object.keys(notes).length > 0 ? notes : null;
 
   if (plan.key === 'domain') {
-    const patch = hadNote ? { domain: null, relation_notes: notes } : { domain: null };
+    const patch = hadNote ? { domain: null, relation_notes: nextNotes } : { domain: null };
     return { ...runtime.writeFrontmatterKeys(rootPath, from, patch, { expectedRevision: revision }), plan };
   }
-  const patch = hadNote ? { [plan.key]: plan.next, relation_notes: notes } : { [plan.key]: plan.next };
+  // The last entry takes its key with it, except a kind's scaffold list, which goes back to the
+  // `[]` creating the node writes — the MCP writers' rule (`emptiedRelationListValue`).
+  const nextList = plan.next.length > 0 ? plan.next : emptiedRelationListValue(frontmatter.kind, plan.key);
+  const patch = hadNote ? { [plan.key]: nextList, relation_notes: nextNotes } : { [plan.key]: nextList };
   // Consolidate: the surviving refs land under the canonical key and any alias
   // key they were read from is deleted, exactly as the MCP writer does.
   for (const alias of plan.aliasKeys ?? []) patch[alias] = null;

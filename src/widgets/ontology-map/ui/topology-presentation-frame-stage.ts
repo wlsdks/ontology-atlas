@@ -28,10 +28,7 @@ import {
   type DepthParallaxOffset
 } from "../model/realm-depth-parallax";
 import { stepSpotlightPhase } from "../model/spotlight-motion";
-import {
-  tierLegendPlacement,
-  type TierLegendPlacement
-} from "../model/tier-legend-rows";
+import { placeTierNames, sameTierNames, type TierNameAnchor, type TierPlane } from "../model/tier-names";
 import { type TierRevealConfig } from "../model/tier-visibility";
 import { type AnimatedBackground } from "../render/animated-background";
 import type { ClusterBarLabels } from "../render/cluster-chips";
@@ -46,6 +43,15 @@ import { radiusForKind, type TopologyWorld, type WorldEdge } from "./topology-wo
 const EMPTY_DOME_CLUSTERED: ReadonlySet<string> = new Set();
 const EMPTY_DOME_CHIPS: readonly ClusterChip[] = [];
 const DOME_LEGEND_KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
+
+/**
+ * The Strata planes the last frame placed tier names against, canvas CSS px — the
+ * drawn rims, for the `?e2e=1` probe to measure the names against.
+ */
+let lastPlanes: readonly TierPlane[] = [];
+export function lastTierPlanes(): readonly TierPlane[] {
+  return lastPlanes;
+}
 
 interface Dependencies {
   galaxyRef: RefObject<boolean>;
@@ -116,17 +122,15 @@ interface Dependencies {
   expandPrefRef: RefObject<ExpandPreference>;
   getClusterBarLabels: () => ClusterBarLabels | null;
   mapArrangementRef: RefObject<MapArrangement>;
-  getDomeTierLabels: () => Readonly<Partial<Record<DomeViewKind, string>>> | null;
   domeTierRaisedKindRef: RefObject<DomeViewKind | null>;
   drawnTrailLensRef: RefObject<boolean>;
   tourAnchorNodeIdRef: RefObject<string | null>;
   drawnNodeCountRef: RefObject<number>;
   onDrawnCountChangeRef: RefObject<((drawn: number) => void) | undefined>;
-  domeTierAnchorsSentRef: RefObject<{ kind: DomeViewKind; y: number; }[] | null>;
-  onDomeTierAnchorsChangeRef: RefObject<((anchors: readonly { kind: DomeViewKind; y: number; }[] | null) => void) | undefined>;
-  domeFitInsetsRef: RefObject<{ left: number; right: number; } | null>;
-  tierLegendPlacementSentRef: RefObject<TierLegendPlacement | null>;
-  onTierLegendPlacementChangeRef: RefObject<((placement: TierLegendPlacement) => void) | undefined>;
+  domeTierAnchorsSentRef: RefObject<TierNameAnchor[] | null>;
+  onDomeTierAnchorsChangeRef: RefObject<((anchors: readonly TierNameAnchor[] | null) => void) | undefined>;
+  domeTierNameWidthsRef: RefObject<Readonly<Record<string, number>>>;
+  domeFitInsetsRef: RefObject<{ left: number; right: number; top: number; bottom: number; } | null>;
   /** Lit 3D — node id → evidence state from the product's one rule; null when nothing was measured. */
   domeEvidenceRef: RefObject<ReadonlyMap<string, EvidenceLight> | null>;
 }
@@ -201,7 +205,6 @@ export function createPresentationFrameStage({
   expandPrefRef,
   getClusterBarLabels,
   mapArrangementRef,
-  getDomeTierLabels,
   domeTierRaisedKindRef,
   drawnTrailLensRef,
   tourAnchorNodeIdRef,
@@ -209,9 +212,8 @@ export function createPresentationFrameStage({
   onDrawnCountChangeRef,
   domeTierAnchorsSentRef,
   onDomeTierAnchorsChangeRef,
+  domeTierNameWidthsRef,
   domeFitInsetsRef,
-  tierLegendPlacementSentRef,
-  onTierLegendPlacementChangeRef,
   domeEvidenceRef,
 }: Dependencies) {
   /*
@@ -477,6 +479,8 @@ export function createPresentationFrameStage({
       hoveredEdge: hoveredEdgeRef.current,
       selectedEdge: selectedEdgeRef.current,
       relationCaptions: annotationRef.current.captions,
+      // A view that draws every concept still captions only what the flat map would.
+      captionFoldedIds: modeShowsEveryNode ? frameClusteredIds : null,
       reviewQuestionIds: annotationRef.current.questions,
       previewEdge: previewEdgeHeldRef.current && previewAlphaRef.current > 0.001
         ? {
@@ -560,8 +564,9 @@ export function createPresentationFrameStage({
       expand: expandPrefRef.current,
       clusterBarLabels: getClusterBarLabels(),
       domeRingAlpha: domeRingAlphaFor(mapArrangementRef.current),
-      domeTierLabels: getDomeTierLabels(),
       domeTierRaisedKind: domeTierRaisedKindRef.current,
+      // Concept names give way to the tier names placed last frame (`model/tier-names.ts`).
+      tierNameBoxes: domeTierAnchorsSentRef.current,
     });
 
     // Record which lens state this frame drew; the idle gate compares
@@ -602,62 +607,57 @@ export function createPresentationFrameStage({
     }
 
     /*
-     * **Where each Strata plane sits on screen this frame.** The legend rail's
-     * rows line up with these, so they have to come from the same rings the
-     * frame just drew rather than from the model — during an orbit or a morph
-     * the two are different numbers. The anchor is each named ring's own label
-     * point (its screen-rightmost sample), which is where the rim name used to
-     * hang, so moving the name out to the rail does not move it vertically.
+     * **Where each Strata tier name stands this frame** (`model/tier-names.ts`). The
+     * planes are the rings the frame just drew, not the model: during an orbit or a
+     * morph the two are different numbers. The room is the fit's own free box — the
+     * canvas minus the chrome it measured on each side — so a name never lands where
+     * the drawing was kept from.
      */
     {
       const runtime = domeRuntimeRef.current;
-      let anchors: { kind: DomeViewKind; y: number; }[] | null = null;
+      let names: TierNameAnchor[] | null = null;
+      lastPlanes = [];
       if (runtime !== null && runtime.rampClock > 0 && runtime.model.arrangement === "strata") {
-        const strongest = new Map<DomeViewKind, { a: number; y: number; }>();
+        const strongest = new Map<DomeViewKind, (typeof runtime.rings)[number]>();
         for (const ring of runtime.rings) {
           if (ring.label === null || ring.a <= 0.01) continue;
           const seen = strongest.get(ring.kind);
           // A morph draws the old model's rings behind the new ones; the tier
           // belongs to whichever of the two is currently the stronger.
           if (seen && seen.a >= ring.a) continue;
-          strongest.set(ring.kind, {
-            a: ring.a,
-            y: worldToScreen(camera, width, height, ring.label.wx, ring.label.wy).y,
-          });
+          strongest.set(ring.kind, ring);
         }
-        if (strongest.size > 0) {
-          anchors = DOME_LEGEND_KINDS.filter((kind) => strongest.has(kind)).map((kind) => ({
-            kind,
-            y: strongest.get(kind)!.y,
-          }));
+        const planes: TierPlane[] = [];
+        for (const kind of DOME_LEGEND_KINDS) {
+          const ring = strongest.get(kind);
+          if (!ring || ring.label === null) continue;
+          let left = Infinity;
+          let right = -Infinity;
+          let top = Infinity;
+          let bottom = -Infinity;
+          for (const point of ring.points) {
+            const at = worldToScreen(camera, width, height, point.wx, point.wy);
+            if (at.x < left) left = at.x;
+            if (at.x > right) right = at.x;
+            if (at.y < top) top = at.y;
+            if (at.y > bottom) bottom = at.y;
+          }
+          if (!Number.isFinite(left)) continue;
+          const y = worldToScreen(camera, width, height, ring.label.wx, ring.label.wy).y;
+          planes.push({ kind, left, right, top, bottom, y, a: ring.a });
         }
+        lastPlanes = planes;
+        const fit = domeFitInsetsRef.current;
+        names = placeTierNames(planes, domeTierNameWidthsRef.current, {
+          left: fit?.left ?? tokens.safeInsetLeft,
+          right: width - (fit?.right ?? tokens.safeInsetRight),
+          top: fit?.top ?? tokens.domeFitInsetTop,
+          bottom: height - (fit?.bottom ?? tokens.domeFitInsetBottom),
+        });
       }
-      const sent = domeTierAnchorsSentRef.current;
-      const moved =
-        (sent === null) !== (anchors === null) ||
-        (sent !== null &&
-          anchors !== null &&
-          (sent.length !== anchors.length ||
-            anchors.some((a, i) => sent[i].kind !== a.kind || Math.abs(sent[i].y - a.y) > 0.5)));
-      if (moved) {
-        domeTierAnchorsSentRef.current = anchors;
-        onDomeTierAnchorsChangeRef.current?.(anchors);
-      }
-      /*
-       * …and where those names may sit. The same predicate the fit consumes, so
-       * the reserved column and the drawn rail can never disagree. The panel
-       * obstruction comes from the last fit's measurement rather than from a
-       * per-frame DOM read; before the first fit the token insets stand in, and
-       * both answers agree at the two review sizes.
-       */
-      const fitInsets = domeFitInsetsRef.current;
-      const placement = tierLegendPlacement(
-        width - (fitInsets?.left ?? tokens.safeInsetLeft) - (fitInsets?.right ?? tokens.safeInsetRight),
-        height - tokens.domeFitInsetTop - tokens.domeFitInsetBottom,
-      );
-      if (tierLegendPlacementSentRef.current !== placement) {
-        tierLegendPlacementSentRef.current = placement;
-        onTierLegendPlacementChangeRef.current?.(placement);
+      if (!sameTierNames(domeTierAnchorsSentRef.current, names)) {
+        domeTierAnchorsSentRef.current = names;
+        onDomeTierAnchorsChangeRef.current?.(names);
       }
     }
 

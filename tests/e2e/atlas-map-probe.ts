@@ -70,6 +70,10 @@ export interface AtlasMapProbe {
   selection: () => { nodeId: string | null; edge: unknown };
   /** The name boxes the last frame drew, in canvas CSS px — how label collision is seen from outside. */
   labels: () => Array<{ nodeId: string; text: string; minX: number; maxX: number; minY: number; maxY: number }>;
+  /** The relation captions the last frame placed, in canvas CSS px. */
+  relationCaptions?: () => Array<{ edgeId: string; text: string; minX: number; maxX: number; minY: number; maxY: number }>;
+  /** Strata's planes as the last frame drew them, in canvas CSS px — what the tier names stand beside. */
+  tierPlanes?: () => Array<{ kind: string; left: number; right: number; top: number; bottom: number; y: number; a: number }>;
   nodes: () => AtlasMapNode[];
   /**
    * The node id this frame treated as hovered (null if none). The cursor on the canvas

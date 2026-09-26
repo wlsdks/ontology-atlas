@@ -11,9 +11,8 @@ import {
   VaultSourceHydrationBoundary,
 } from '@/entities/vault-session';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
-import { Chip, EmptyState, Surface, TabBar } from '@/shared/ui';
+import { buttonVariants, Chip, EmptyState, Surface, TabBar } from '@/shared/ui';
 import { PlacedInfoHint } from './PlacedInfoHint';
-import { controlClass } from '@/shared/ui/control-class';
 import { PAGE_TOP_PAD } from '@/shared/ui/page-frame';
 import { GuidanceRelationshipPreview } from '@/widgets/relationship-preview';
 import { Link } from '@/i18n/navigation';
@@ -538,8 +537,11 @@ function HarnessPageInner() {
                   <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('noSourceBody')}</p>
                   {/* Under the sentence it answers, on that sentence's start line: a pill at the
                       far edge of the card stood ~900px from its reason and read as a stray
-                      control (design audit, 2026-09-25). */}
-                  <Link href="/projects/" className={controlClass({shape:'pill',size:'lg',tone:'onAccent',className:'atlas-touch-floor atlas-touch-floor-wide mt-4'})}>{t('connectSourceAction')}</Link>
+                      control (design audit, 2026-09-25). The page's one way forward is the
+                      standard primary `Button`, not a pill: the system keeps the pill for a
+                      state or a count, and the review found this press shaped unlike every
+                      other screen's primary (owner review, 2026-09-26). */}
+                  <Link href="/projects/" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor atlas-touch-floor-wide mt-4')}>{t('connectSourceAction')}</Link>
                 </div>
               </>} />
             ) : reportState.status === 'failed' ? (
@@ -560,7 +562,7 @@ function HarnessPageInner() {
                 <div className="min-w-0 max-w-prose">
                   <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('browserOnly')}</p>
                   <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('browserOnlyBody')}</p>
-                  <Link href="/download/" className={controlClass({shape:'pill',size:'lg',tone:'onAccent',className:'atlas-touch-floor atlas-touch-floor-wide mt-4'})}>{t('browserAction')}</Link>
+                  <Link href="/download/" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor atlas-touch-floor-wide mt-4')}>{t('browserAction')}</Link>
                 </div>
               </>} />
             )}

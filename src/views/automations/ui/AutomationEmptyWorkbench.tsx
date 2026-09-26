@@ -1,6 +1,4 @@
-import { Clock3 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
 import styles from './automation-empty-workbench.module.css';
 
 export interface AutomationLaneFact {
@@ -18,20 +16,23 @@ export interface AutomationLaneFact {
  * Atlas is open", the facts own what/when/what-changes, and the description only says what the
  * facts do not (review, 2026-09-25: the same runtime sentence was on screen three times).
  *
+ * ⚠️ **The empty list says nothing of its own** (owner review, 2026-09-26). Its body used to say
+ * "schedules appear here" and its foot "results appear here after the first run", under a title
+ * that had just said there were none: the page's empty message twice more, in a quieter voice.
+ * The list is its frame now, title, count and column heads over the ground its rows will take,
+ * and the one message is the title above it.
+ *
  * `count` is null where no schedule can exist yet (the browser, no folder): a "0" there counted
  * something this runtime cannot hold.
  */
-export function AutomationEmptyWorkbench({ title, description, action, previewTitle, previewEmpty,
-  count, columns, resultLabel, resultEmpty, facts }: {
+export function AutomationEmptyWorkbench({ title, description, action, previewTitle,
+  count, columns, facts }: {
   title: string;
   description: string;
   action: ReactNode;
   previewTitle: string;
-  previewEmpty: string;
   count: number | null;
   columns: readonly [string, string, string];
-  resultLabel: string;
-  resultEmpty: string;
   facts: readonly [AutomationLaneFact, AutomationLaneFact, AutomationLaneFact];
 }) {
   return <div className={styles.stage} data-testid="automations-empty-workbench">
@@ -47,7 +48,7 @@ export function AutomationEmptyWorkbench({ title, description, action, previewTi
         <dd className={styles.factBody}>{fact.body}</dd>
       </div>)}
     </dl>
-    <aside className={styles.preview} aria-label={previewTitle}>
+    <aside className={styles.preview} aria-label={previewTitle} data-testid="automations-empty-list">
       <div className={styles.previewHead}>
         <span className={styles.previewTitle}>{previewTitle}</span>
         {count === null ? null : <span className={styles.zero}>{count}</span>}
@@ -55,13 +56,8 @@ export function AutomationEmptyWorkbench({ title, description, action, previewTi
       <div className={styles.columnHead}>
         {columns.map(column => <span key={column}>{column}</span>)}
       </div>
-      <div className={styles.emptyRow}>
-        <span className={styles.emptyName}>{previewEmpty}</span>
-      </div>
-      <div className={styles.result}>
-        <Clock3 size={ICON_SIZE.sm} aria-hidden />
-        <span><strong className="font-[var(--font-weight-emphasis)]">{resultLabel}</strong><small>{resultEmpty}</small></span>
-      </div>
+      {/* Where rows will land: ground, not a sentence. */}
+      <div className={styles.rows} aria-hidden data-testid="automations-empty-list-rows" />
     </aside>
   </div>;
 }

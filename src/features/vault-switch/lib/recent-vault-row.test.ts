@@ -3,6 +3,7 @@ import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import {
   buildRecentVaultRows,
   canOpenReachability,
+  partitionRecentVaultRows,
   recentVaultRowKey,
 } from './recent-vault-row';
 
@@ -131,5 +132,32 @@ describe('buildRecentVaultRows', () => {
     // last" is a separate stored fact that stops agreeing with list order the moment a
     // touch or a failed open reorders it.
     expect(rows.map((row) => row.isCurrent)).toEqual([false, true]);
+  });
+});
+
+describe('partitionRecentVaultRows', () => {
+  it('keeps every folder that exists in recency order and gathers only the missing ones', () => {
+    const rows = buildRecentVaultRows({
+      records: [
+        record({ name: 'qa-run-a', desktopRootPath: '/tmp/qa-run-a' }),
+        record({ name: 'walled', desktopRootPath: '/Users/dana/walled' }),
+        record({ name: 'qa-run-b', desktopRootPath: '/tmp/qa-run-b' }),
+        record({ name: 'atlas', desktopRootPath: '/Users/dana/atlas' }),
+        record({ name: 'unchecked', desktopRootPath: '/Volumes/net/unchecked' }),
+      ],
+      reachability: {
+        '/tmp/qa-run-a': 'missing',
+        '/Users/dana/walled': 'blocked',
+        '/tmp/qa-run-b': 'missing',
+        '/Users/dana/atlas': 'ready',
+      },
+      currentKey: null,
+    });
+
+    const { listed, missing } = partitionRecentVaultRows(rows);
+    // A refused folder is still there and one picker press away; an unchecked one stays
+    // pressable by design. Only a folder that is gone leaves the answer.
+    expect(listed.map((row) => row.name)).toEqual(['walled', 'atlas', 'unchecked']);
+    expect(missing.map((row) => row.name)).toEqual(['qa-run-a', 'qa-run-b']);
   });
 });
