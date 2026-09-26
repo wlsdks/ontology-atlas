@@ -7,13 +7,7 @@ import path from 'node:path';
 
 const PART_IMPORT = /^@import "\.\/(styles\/[^"]+\.css)";\n/gm;
 
-export const GLOBAL_CSS_ENTRY = 'app/globals.css';
-
-/** Part files in import order, as repo-relative paths. */
-export function globalCssParts(root = process.cwd()) {
-  const entry = readFileSync(path.join(root, GLOBAL_CSS_ENTRY), 'utf8');
-  return [...entry.matchAll(PART_IMPORT)].map((m) => `app/${m[1]}`);
-}
+const GLOBAL_CSS_ENTRY = 'app/globals.css';
 
 /** The entry with every part import replaced by that part's content. */
 export function readGlobalCss(root = process.cwd()) {
