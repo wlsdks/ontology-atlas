@@ -11,8 +11,20 @@
 /** The label that is the queue. See `pr-land.mjs`, "Why a label". */
 export const QUEUE_LABEL = 'landing-queue';
 
-/** Pull requests per train unless `--batch=<n>` says otherwise. */
+/** The largest train, and the size used while there is too little history to measure a red rate. */
 export const DEFAULT_BATCH = 20;
+
+/** The smallest adaptive train: below two, a train is a pull request with extra steps. */
+export const MIN_BATCH = 2;
+
+/** Decided trains (merged or closed red) needed before the measured red rate replaces the default. */
+export const MIN_HISTORY = 8;
+
+/** Recent train pull requests read to measure the red rate. One GraphQL page. */
+export const TRAIN_HISTORY_LIMIT = 60;
+
+/** The first words of the conductor's close comment on a red train (`pr-land.mjs`, `settleHead`). */
+export const RED_CLOSE_PREFIX = 'Red on ';
 
 /** Train branches live under this prefix so a person reading the branch list knows what they are. */
 const TRAIN_BRANCH_PREFIX = 'train/';
@@ -78,9 +90,114 @@ export function nextTrain({ queue = [], splits = [], batchSize = DEFAULT_BATCH }
   const remaining = [...splits];
   while (remaining.length > 0) {
     const half = remaining.shift().filter((number) => byNumber.has(number));
-    if (half.length > 0) return { batch: half.map((number) => byNumber.get(number)), splits: remaining };
+    if (half.length > 0) return { batch: half.map((number) => byNumber.get(number)), splits: remaining, source: 'split' };
   }
-  return { batch: queue.slice(0, Math.max(1, batchSize)), splits: [] };
+  return { batch: queue.slice(0, Math.max(1, batchSize)), splits: [], source: 'queue' };
+}
+
+/*
+ * ------------------------------------------------------------------------------------------------
+ * Adaptive batch size. A train of `n` is green with `(1 - p)^n` for a per-PR red rate `p`, and a
+ * red train bisects sequentially, so the default size is the largest `n` that is green at least
+ * half the time on the measured `p`.
+ * ------------------------------------------------------------------------------------------------
+ */
+
+/** Pull requests a train carried, from its title: `land #1 #2 and 3 more` is five. */
+export function trainSizeFromTitle(title) {
+  const text = String(title ?? '');
+  const numbers = (text.match(/#\d+/g) ?? []).length;
+  const more = Number(/ and (\d+) more\s*$/.exec(text)?.[1] ?? 0);
+  return numbers + more;
+}
+
+/**
+ * Recent train pull requests as `{ number, size, red }` rows. Merged is green; closed with the
+ * conductor's `Red on` comment is red. Everything else (open, timed out, rebuilt for drift,
+ * discarded speculation, a refused merge) says nothing about the components and is left out.
+ */
+export function trainHistoryRows(prs = []) {
+  const rows = [];
+  for (const pr of prs ?? []) {
+    if (!pr || !String(pr.headRefName ?? '').startsWith(TRAIN_BRANCH_PREFIX)) continue;
+    const size = trainSizeFromTitle(pr.title);
+    if (size < 1) continue;
+    if (pr.state === 'MERGED') rows.push({ number: pr.number, size, red: false });
+    else if (pr.state === 'CLOSED' && (pr.comments ?? []).some((c) => String(c?.body ?? '').startsWith(RED_CLOSE_PREFIX))) {
+      rows.push({ number: pr.number, size, red: true });
+    }
+  }
+  return rows;
+}
+
+/**
+ * The per-PR red rate `p` that best explains the rows (maximum likelihood on a 0.05 % grid): a
+ * green train of `n` has likelihood `(1 - p)^n`, a red one `1 - (1 - p)^n`. `0` with no red train.
+ */
+export function estimateRedRate(rows = []) {
+  if (!rows.some((row) => row.red)) return 0;
+  let best = { p: 0, ll: Number.NEGATIVE_INFINITY };
+  for (let step = 1; step < 2000; step += 1) {
+    const p = step / 2000;
+    const keep = Math.log(1 - p);
+    let ll = 0;
+    for (const row of rows) ll += row.red ? Math.log(1 - Math.exp(row.size * keep)) : row.size * keep;
+    if (ll > best.ll) best = { p, ll };
+  }
+  return best.p;
+}
+
+/**
+ * The default train size: `floor(ln 0.5 / ln(1 - p))`, clamped to `[MIN_BATCH, DEFAULT_BATCH]`, so
+ * a train is green at least about half the time. Fewer than `MIN_HISTORY` decided trains keep the
+ * default. `reason` is the sentence the conductor prints.
+ */
+export function adaptiveBatch(rows = [], { max = DEFAULT_BATCH, min = MIN_BATCH, minHistory = MIN_HISTORY } = {}) {
+  const red = rows.filter((row) => row.red).length;
+  const counts = `${rows.length} recent train(s), ${red} red`;
+  if (rows.length < minHistory) {
+    return { size: max, p: null, reason: `${counts}; fewer than ${minHistory} to measure a red rate, so the default ${max}` };
+  }
+  const p = estimateRedRate(rows);
+  const raw = p === 0 ? max : Math.floor(Math.log(0.5) / Math.log(1 - p));
+  const size = Math.min(max, Math.max(min, raw));
+  const greenShare = Math.round(100 * (1 - p) ** size);
+  return {
+    size,
+    p,
+    reason: `${counts}; about ${(100 * p).toFixed(1)} % of pull requests break a train, so a train of ${size} is green about ${greenShare} % of the time`,
+  };
+}
+
+/*
+ * ------------------------------------------------------------------------------------------------
+ * Speculation: at most two trains in flight, the second cut from the first one's head.
+ * ------------------------------------------------------------------------------------------------
+ */
+
+/** Trains in flight at once: one on `main`, one speculating on top of it. */
+const MAX_IN_FLIGHT = 2;
+
+/**
+ * May the conductor cut a speculative train on top of `parent` now? Only while a slot is free,
+ * the parent has an open pull request and a head, the parent has not already gone red, and the
+ * last speculative cut on this parent did not come back empty.
+ */
+export function maySpeculate({ enabled = true, inFlight = 0, parent = null, blockedOn = null }) {
+  if (!enabled || inFlight >= MAX_IN_FLIGHT || !parent) return false;
+  if (!parent.pr || !parent.head) return false;
+  if (parent.verdict && parent.verdict.kind !== 'green') return false;
+  return blockedOn !== parent.pr;
+}
+
+/**
+ * The split queue after the head train failed and its speculative trains were discarded.
+ * Discarded trains that were split halves go back first, in order; the head's own halves
+ * (`headSplits`) go in front of them, so a bisect still finishes before anything else runs.
+ */
+export function requeueAfterDiscard({ splits = [], headSplits = [], discarded = [] }) {
+  const restored = discarded.filter((train) => train.source === 'split').map((train) => train.numbers);
+  return [...headSplits, ...restored, ...splits];
 }
 
 /** Halve a train, first half the larger, keeping queue order. */
@@ -197,14 +314,16 @@ function trainOverlapRule(lock, prFiles) {
   if (lock.state === 'unreadable') return [false, 'the landing lock is unreadable'];
   const payload = lock.holder ?? {};
   if (!('train' in payload)) return [false, `PR #${payload.pr} is landing through an older pr:land that records no file set`];
-  if (payload.train === null) return [true, 'the conductor is between trains'];
-  const files = payload.train?.files;
-  if (!Array.isArray(files)) return [false, 'a train is being assembled and its file set is not recorded yet'];
+  // `trains` lists every train in flight (the speculative one too); `train` alone is the older shape.
+  const trains = Array.isArray(payload.trains) ? payload.trains : [payload.train].filter((t) => t !== null);
+  if (trains.length === 0) return [true, 'the conductor is between trains'];
+  if (trains.some((t) => !Array.isArray(t?.files))) return [false, 'a train is being assembled and its file set is not recorded yet'];
   if (!Array.isArray(prFiles)) return [false, 'this pull request\'s files could not be read'];
-  const overlap = intersect(prFiles, files);
+  const overlap = intersect(prFiles, trains.flatMap((t) => t.files));
+  const subject = trains.length > 1 ? `the ${trains.length} trains in flight` : 'the train in flight';
   return overlap.length === 0
-    ? [true, `the train in flight touches none of its files`]
-    : [false, `the train in flight also changes ${overlap.slice(0, 3).join(', ')}`];
+    ? [true, `${subject} touch${trains.length > 1 ? '' : 'es'} none of its files`]
+    : [false, `${subject} also change${trains.length > 1 ? '' : 's'} ${overlap.slice(0, 3).join(', ')}`];
 }
 
 export function describeFastPath(verdict) {
@@ -233,11 +352,14 @@ export function trainTitle(components) {
 
 const componentLine = (c) => `- #${c.number} \`${c.headRefName}@${String(c.headRefOid ?? '').slice(0, 9)}\` ${c.title ?? ''}`.trimEnd();
 
-export function trainBody({ components, base }) {
+export function trainBody({ components, base, onTopOf = null }) {
+  const onto = onTopOf
+    ? `onto train #${onTopOf} (\`${String(base).slice(0, 9)}\`), speculatively: it lands only after train #${onTopOf} lands, and is discarded if that one does not`
+    : `onto \`main@${String(base).slice(0, 9)}\``;
   return [
     '## Summary',
     '',
-    `A landing train: ${components.length} queued pull request(s) merged onto \`main@${String(base).slice(0, 9)}\` in queue order, behind one CI run. Opened by \`pnpm pr:land\`; do not push to it or merge it by hand.`,
+    `A landing train: ${components.length} queued pull request(s) merged ${onto}, in queue order, behind one CI run. Opened by \`pnpm pr:land\`; do not push to it or merge it by hand.`,
     '',
     ...components.map(componentLine),
     '',
@@ -363,5 +485,13 @@ export function describeTrain(train, nowMs) {
   const started = Date.parse(train.startedAt ?? '');
   const age = Number.isFinite(started) ? `, ${Math.max(0, Math.round((nowMs - started) / 60_000))} min` : '';
   const numbers = (train.components ?? []).map((n) => `#${n}`).join(' ');
-  return `${train.pr ? `train #${train.pr}` : `train ${train.branch ?? '(assembling)'}`} carrying ${numbers || 'nothing yet'}${age}`;
+  const onTop = train.onTopOf ? ` on top of train #${train.onTopOf}` : '';
+  return `${train.pr ? `train #${train.pr}` : `train ${train.branch ?? '(assembling)'}`}${onTop} carrying ${numbers || 'nothing yet'}${age}`;
+}
+
+/** Every train in a lock payload: `trains` when the conductor speculates, else the single `train`. */
+export function describeTrains(payload, nowMs) {
+  const trains = Array.isArray(payload?.trains) ? payload.trains : [payload?.train ?? null];
+  if (trains.length === 0 || trains[0] === null) return describeTrain(null, nowMs);
+  return trains.map((train) => describeTrain(train, nowMs)).join('; ');
 }
