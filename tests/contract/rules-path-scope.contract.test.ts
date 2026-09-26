@@ -251,7 +251,9 @@ describe("`.claude/rules` path scoping contract", () => {
    * this ratchets in one direction only: a commit that saves bytes must record
    * the saving, which is what makes the saving permanent.
    */
-  const RESIDENT_CONTEXT_BYTES = 18_642;
+  const RESIDENT_CONTEXT_BYTES = 18_706;
+
+  // Raised by 64 on 2026-09-26: git.md says screenshots go on the pull request, not under docs/ (24 MB was deleted), and forbidden.md cites brand.md's new path.
 
   /*
    * Lowered from 25,512 on 2026-09-26 when the resident files were rewritten to

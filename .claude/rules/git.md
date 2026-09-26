@@ -48,6 +48,7 @@
 - The title starts with a conventional prefix. The body has `Summary` and
   `Test plan` sections and records which checks ran and passed. Visual changes
   attach dark-mode before/after screenshots (the app has no light mode).
+- Upload screenshots to the pull request; never commit them under `docs/`.
 
 ## Do not
 
