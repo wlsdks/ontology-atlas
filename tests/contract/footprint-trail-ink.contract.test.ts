@@ -8,6 +8,7 @@ import {
 } from "@/shared/lib/appearance-preferences";
 import { trailNodeInkStrength } from "@/widgets/ontology-map/model/focus-state";
 import { draw as traceDraw } from "@/widgets/ontology-map/render/traces";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Footprint trail ink — the two values a person can pick must both stay readable.
@@ -54,7 +55,7 @@ describe("걸어온 길 잉크 — 고를 수 있는 세 톤은 모두 읽힌다
    * value. WCAG 1.4.11 non-text contrast, 3:1.
    */
   it("세 톤 모두 최저 진하기에서 3:1 을 넘는다", () => {
-    const css = read("app/globals.css");
+    const css = readGlobalCss();
     const bg = hexRgb(/--map-canvas-bg-near:\s*(#[0-9a-fA-F]{6})/.exec(css)![1]);
     const tones = {
       amber: /--color-footprint-trail:\s*(#[0-9a-fA-F]{6})/.exec(css)![1],
@@ -76,7 +77,7 @@ describe("걸어온 길 잉크 — 고를 수 있는 세 톤은 모두 읽힌다
    * colour carried would disappear.
    */
   it("발자국 노랑은 허브 앰버와 다른 값이다", () => {
-    const css = read("app/globals.css");
+    const css = readGlobalCss();
     const hub = /--map-amber-hub:\s*(#[0-9a-fA-F]{6})/.exec(css)?.[1]?.toLowerCase();
     const trail = /--color-footprint-trail:\s*(#[0-9a-fA-F]{6})/.exec(css)?.[1]?.toLowerCase();
     expect(hub).toBeDefined();
@@ -205,7 +206,7 @@ describe("별빛 톤은 지도가 이미 쓰는 별 잉크와 같은 값이다",
    * catches the way a text-presence gate really dies — the literals being deleted.
    */
   it("starfield 이 칠하는 모든 값과 어긋나지 않는다", () => {
-    const css = read("app/globals.css");
+    const css = readGlobalCss();
     const trail = /--color-footprint-trail-star:\s*(#[0-9a-fA-F]{6})/.exec(css)![1].toLowerCase();
     const rgb = hexRgb(trail);
     const code = read("src/widgets/ontology-map/render/starfield.ts")

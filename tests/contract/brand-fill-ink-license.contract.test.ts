@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Blank out comments before scanning, preserving line numbers so reported
@@ -61,7 +62,7 @@ function stripComments(source: string): string {
  */
 
 const ROOT = process.cwd();
-const css = readFileSync(join(ROOT, "app/globals.css"), "utf8");
+const css = readGlobalCss();
 
 type Rgba = readonly number[];
 

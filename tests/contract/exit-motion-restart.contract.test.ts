@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Contract that exit motion **actually plays** (frame measurement 2026-07-28).
@@ -22,7 +21,7 @@ import path from 'node:path';
  * easing are both tokens, and the declaration is syntactically complete. So it is
  * pinned structurally: an exit plays forward under its own name.
  */
-const CSS = readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
+const CSS = readGlobalCss();
 
 /** CSS with comments stripped, so explanatory sentences are not mistaken for rules. */
 const CODE = CSS.replace(/\/\*[\s\S]*?\*\//g, '');

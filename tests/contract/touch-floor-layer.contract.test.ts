@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { controlClass, fieldClass, type ControlShape, type FieldSize } from '@/shared/ui/control-class';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Touch floor (`.atlas-touch-floor`) contract — **is it outside every layer?**
@@ -44,7 +45,7 @@ import { controlClass, fieldClass, type ControlShape, type FieldSize } from '@/s
  */
 
 const ROOT = join(__dirname, '..', '..');
-const CSS = readFileSync(join(ROOT, 'app', 'globals.css'), 'utf8');
+const CSS = readGlobalCss();
 const CONTROL_CLASS_SRC = readFileSync(
   join(ROOT, 'src', 'shared', 'ui', 'control-class.ts'),
   'utf8',

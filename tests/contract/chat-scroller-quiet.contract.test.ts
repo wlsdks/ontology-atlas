@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **No scroller draws a bar, and the surfaces that lost a cue pay for it** (owner, 2026-09-06:
@@ -25,7 +26,7 @@ import { describe, expect, it } from 'vitest';
  *    whose one list of file names is otherwise cut by a hard edge that says nothing about
  *    whether the cut is the end.
  */
-const CSS = readFileSync('app/globals.css', 'utf8');
+const CSS = readGlobalCss();
 
 /** Every file whose vertical scrollers were designed with the bar already gone. */
 const SCROLLER_SOURCES = [

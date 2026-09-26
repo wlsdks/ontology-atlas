@@ -4,6 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { ICON_SIZE } from '../../src/shared/ui/icon-size';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Content icon size ramp — **CSS ↔ JS mirror plus an off-ramp literal ratchet.**
@@ -63,7 +64,7 @@ import { ICON_SIZE } from '../../src/shared/ui/icon-size';
  */
 
 const ROOT = process.cwd();
-const CSS = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
+const CSS = readGlobalCss();
 
 /**
  * A ramp token's length **in pixels at the default 16px root**.

@@ -1,0 +1,371 @@
+/* ─── Gateway landing — living screen (2026-08-18 remake) ────────────────────────
+ *
+ * Principle: **Only information motion** moves (demo autoplay · map 1 assembly · terminal round-trip
+ * 1 cycle · first 3 seconds entrance choreography). Facts (SHA·size·version·census) never move,
+ * and the download section is completely static — stillness is the hierarchy device.
+ *
+   Current field/grain/cursor ring are exceptional surfaces of the `--gateway-fx-*` sealed namespace
+   (`:root` token block double-block + `.claude/rules/forbidden.md` reference). The consumption point of these classes is only `src/views/download/**` — locked by eslint scope selector and
+   `gateway-fx-exception.contract.test.ts`.
+ */
+
+/* FX layer — fixed behind body. No pointer-events, not in screen reader (aria-hidden). */
+.gateway-fx-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.gateway-fx-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--gateway-fx-grain-alpha);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='240' height='240' filter='url(%23n)' opacity='0.6'/></svg>");
+}
+
+/*
+ * Custom cursor ring (owner instruction) — **does not erase** native cursor: no cursor:none,
+   pointer affordance contract (`tests/e2e/cursor-affordance.spec.ts`) intact.
+   One piece of information carried by the ring: "expansion + accent coloring = target under pointer is currently pressed". Rest 28px (scale .636) → interaction up 44px (scale 1).
+   z-index should be below --z-skip-link (100), above tooltip (80) — pointer decoration
+   must not be covered by any surface, but there is no reason to be above keyboard escape. raw
+   value 90: --z-* ladder is for surfaces, and this ring is not a surface but the pointer's shadow.
+ */
+.gateway-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 90;
+  pointer-events: none;
+  display: none;
+  will-change: transform;
+}
+
+.gateway-cursor.is-live {
+  display: block;
+}
+
+.gateway-cursor > i {
+  display: block;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border-radius: 9999px;
+  border: 1px solid var(--gateway-fx-cursor-ring);
+  background: transparent;
+  transform: scale(0.636);
+  opacity: 0;
+  transition:
+    transform var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease);
+}
+
+.gateway-cursor.is-on > i {
+  opacity: 1;
+}
+
+.gateway-cursor > i.is-hot {
+  transform: scale(1);
+  border-color: var(--color-indigo-accent);
+  background: var(--color-indigo-a12);
+}
+
+@media (pointer: coarse) {
+  .gateway-cursor {
+    display: none !important;
+  }
+}
+
+/*
+ * Entrance grammar — brightness uses confirmation ramp (120ms), translation uses confirmed ramp (240ms). Do not use canvas-specific 420ms(--topology-motion-camera) for translation duration (design.md:
+   referencing DOM surface is a defect).
+ *
+ * First 3 seconds timeline (chronicle): 0–150ms background static paint → 150/220ms headline two lines →
+   700ms eyebrow·lead → 800ms CTA → 950ms trust line·trigger strip. After that, foreground is permanently static. Delay literals are the score values of this choreography, not ramp tokens.
+ */
+/*
+ * ⚠️ **Resting state is "visible" — choreography is layered on top** (corrected 2026-08-22).
+ *
+   The `opacity: 0` here was the starting frame of choreography, but since it was the **default**,
+   practically "this page is blank until JS attaches `.is-in`". Measurement:
+   opening static export `/ko/download/` and taking the first screenshot immediately showed only GNB,
+   with the entire hero empty. What stood behind that was **JS 32 files ·
+   decode 2,572KB**. There is no reason for the download page's first sentence to come after bundle parsing —
+   it was already all in the markup.
+ *
+   So the starting frame was moved to `@starting-style`. Values and timeline are exactly as before (`gateway-t***` delays remain as score), only **who pulls the trigger** changed: not rAF after hydration but **first style calculation**.
+   So choreography starts earlier and more evenly.
+ *
+   All three branches are safe.
+ * - `@starting-style` support (Chrome/Edge/Safari): same choreography as before.
+ * - No support (old Firefox): at-rule is entirely ignored so **everything is visible from the start** —
+ *   what is lost is only entrance order (decoration), and all information remains. The equivalent given to reduced motion users
+ *   matches exactly the alternative below (base layer carve-out).
+ * - JS failure: permanently blank before, now full text.
+ *
+ * `.is-in` is kept — same value as resting state so it does nothing, but
+ * `useInViewOnce` sections below still attach that class, and this declaration wins entrance for browsers that cannot use scroll
+ * timeline.
+ */
+.gateway-rise {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--motion-fast) var(--motion-ease),
+    transform var(--motion-settle) var(--motion-ease);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @starting-style {
+    .gateway-rise {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
+}
+
+.gateway-rise.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/*
+ * The rise waits for the headline to start, not to finish (2026-09-03, overturning the
+ * 700/800/950 delays of the 2026-08-18 remake in part). Measured, the filled CTA stood at
+ * `opacity: 0` yet hit-testable for 920ms while the page's one action waited for a stagger
+ * that said nothing the typing did not; the motion seat put the same-input stage spread at
+ * 267ms against the 120ms rule. Now the eyebrow and lead follow the first characters at 240ms,
+ * the CTA at 320ms, and the strip at 400ms — one arrival, headline first, inside half a second —
+ * and the typing carries the sense of arrival for the remaining 1.6s.
+ */
+.gateway-t240 {
+  transition-delay: 240ms;
+}
+
+.gateway-t320 {
+  transition-delay: 320ms;
+}
+
+.gateway-t400 {
+  transition-delay: 400ms;
+}
+
+/*
+ * ── Entrance brought by scroll — `animation-timeline: view()` (2026-08-22) ──────
+ *
+ * ## Why scroll instead of timer
+ *
+   The entrance of the three section stages below hero (demo·evidence·agent) has until now
+   attached `.is-in` at the **moment** `useInViewOnce` exceeds threshold 0.18, and from there
+   the 120/240ms transition runs on **its own clock**. So whether scrolling stops or continues or rewinds, choreography flowed identically — fingers and screen were not connected.
+ *
+   Scroll timeline creates that seam: the only input for progress is **how much of that element
+   has entered the scroll viewport**. Roll slowly and it arrives slowly,
+   stop and it stops, rewind and it rewinds. So `linear` easing is correct — acceleration/deceleration is already given by the person's hand. Adding ramp duration here causes two clocks to overlap and become sticky.
+ *
+   Does not use main thread either. No rAF or scroll listener; compositor rolls without them,
+   so this page does **not add a single frame** to the single rAF loop (`gateway-frame-loop.ts` — current field +
+   hero object, idle after 30 seconds of no input) it already carries.
+ *
+ * ## All three branches are safe
+ *
+ * - Support (Chrome/Edge 115+ · Safari 26+): scroll drives choreography.
+ * - No support (today's Firefox): `@supports` turns off entirely and `.gateway-rise`'n   resting state (= visible) and `.is-in` transition remain. **What is lost
+ *   is only scroll sync, but entrance and content remain.**
+ * - Reduced motion: the declaration itself is inside `no-preference` so **does not exist.** Sections are
+ *   fully visible from the start — the same alternative given by other gateway choreography to reduced motion.
+ *   So these classes are listed in `INTENTIONALLY_STILL` of the `reduced-motion-equivalent` contract (reason also written there).
+ *
+ * ## Scope — why not hero
+ *
+   Hero is first screen so scroll progress is always near 0. Hooking it there means giving choreography to "everything already entered from the start" so nothing happens. First screen choreography is handled by `@starting-style` above, and below scroll drives — **one element receives neither.**
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* One entrance per section: the stage (demo video · evidence map · ACP scene), the one
+       thing with mass. The section head above it is still (2026-08-30 — the head's three
+       lines used to rise too, twelve entrances on one page that all said "something arrived").
+       `scale` is not used — in this repository, zoom means map camera. */
+    .gateway-scroll-stage {
+      animation: gatewayScrollStage linear both;
+      animation-timeline: view();
+      animation-range: entry 4% entry 78%;
+    }
+  }
+}
+
+@keyframes gatewayScrollStage {
+  from {
+    opacity: 0;
+    transform: translateY(34px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Headline — typed one character at a time. Rhythm is created by JS timer (`HeroTypewriter`)
+ * here only drawing "on/off" and cursor.
+ *
+ * ⚠️ **Text is in place from the start and only ink turns on.** If text is added,
+ * line breaks recalculate for each character causing the entire block to shake — so it is not `opacity` nor
+ * `color: transparent`, but a state that occupies space but is invisible.
+ * Line box·line break position·block height are already determined before the first character.
+ *
+ * The breaking unit is **word** not character (`.gateway-type-word` has nowrap).
+ * Giving boxes per character causes browser to break lines between syllables quietly breaking `break-keep` contract. */
+.gateway-type-line {
+  display: block;
+}
+
+.gateway-type-word {
+  white-space: nowrap;
+}
+
+/* ⚠️ `visibility`, **not** `opacity`. The caret is a pseudo-element of the character that has
+ * not been typed yet, and `opacity` applies to an element together with its pseudo-elements —
+ * so hiding the glyph that way hid the caret with it and the caret never appeared once
+ * (measured 2026-08-23). `visibility` inherits but a descendant can override it back, which is
+ * exactly the seam needed here. Both keep the character's box, which is what stops the reflow. */
+.gateway-type-ch {
+  visibility: hidden;
+}
+
+.gateway-type-ch.is-on {
+  visibility: visible;
+}
+
+/*
+ * The landing (2026-09-02). A character that has just been typed settles into the line: it
+ * arrives at the normal weight and three-fifths ink and takes `--motion-settle` to reach the
+ * monument's signature weight and full ink. Pretendard Variable interpolates the weight axis,
+ * so the glyph visibly firms rather than pops. Declared only under `no-preference`: under
+ * reduced motion the kill rule above already shows every character complete.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /* `gateway-type-land` is the landing's own class (set with `is-on` by HeroTypewriter) so the
+     reduced-motion contract can name it — the scanner reads the last class of a selector. */
+  .gateway-type-land {
+    animation: gatewayTypeLand var(--motion-settle) var(--motion-ease) both;
+  }
+}
+
+@keyframes gatewayTypeLand {
+  from {
+    font-weight: 400;
+    opacity: 0.6;
+  }
+  to {
+    font-weight: var(--font-weight-signature);
+    opacity: 1;
+  }
+}
+
+/*
+ * [Removed 2026-09-03, council] The decoder ghost — a glyph drawn from the sentence into the
+ * caret's slot before the real character landed. At the headline's size it read as a
+ * misspelling of the page's one claim ("Agents write tlt", "the codelt"). The caret stays; the
+ * landing above carries the type's arrival. Gate: the grid spec asserts no `[data-ghost]` and
+ * `::after { content: none }` on the caret slot.
+ */
+
+/* Cursor is left of the first untyped character = right of the last typed character.
+ * Being a pseudo-element it takes no space so lines do not shift even as cursor moves. */
+.gateway-type-ch.is-cursor {
+  position: relative;
+}
+
+.gateway-type-ch.is-cursor::before {
+  content: '';
+  /* Overrides the hidden glyph above — the caret shows on a character that does not yet. */
+  visibility: visible;
+  position: absolute;
+  left: -0.06em;
+  top: 0.16em;
+  width: 0.055em;
+  height: 0.74em;
+  /* `currentColor` so the caret is the ink of the line it is writing — the two lines sit one
+   * step apart. A fixed token would be wrong on one of them, and indigo would put a second,
+   * blinking protagonist above the fold beside the CTA that already owns that colour. */
+  background: currentColor;
+  animation: gatewayCaretBlink 1.06s steps(1) infinite;
+}
+
+/* Hero object stage — no entrance of its own: the object assembles as the headline is typed
+ * (the typing echo, drawn on the canvas from `HeroTypewriter`'s progress), so the stage is
+ * present from the first frame and carries only the atmosphere behind the ink. */
+/*
+ * The stage is positioned by its utility classes (2026-09-02: `absolute inset-0`, the hero's
+ * ground). This unlayered rule used to pin `position: relative`, which outranks a layered
+ * Tailwind utility — measured, the stage collapsed to 0px tall and the canvas drew nothing.
+ * Only the deep spot (`::before`) needs a containing block, and any positioned value gives one.
+ */
+.gateway-hero-stage {
+  isolation: isolate;
+}
+
+/* The reserved caption line under the hero object — ink arrives, the box never moves. */
+.gateway-hero-caption {
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+
+.gateway-hero-caption.is-on {
+  opacity: 1;
+}
+
+.gateway-hero-stage::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background: radial-gradient(
+    ellipse 42% 52% at 68% 50%,
+    var(--gateway-fx-deep) 0%,
+    transparent 72%
+  );
+}
+
+/* Map section caption — arrives only after assembly completes (numbers are result of assembly). */
+.gateway-map-after {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--motion-fast) var(--motion-ease),
+    transform var(--motion-settle) var(--motion-ease);
+}
+
+.gateway-map-after.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Agent round-trip terminal — lines light up immediately (typing rhythm is driven by JS timer). */
+.gateway-term-line {
+  opacity: 0;
+}
+
+.gateway-term-line.is-on {
+  opacity: 1;
+}
+
+.gateway-term-caret {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  background: var(--color-text-tertiary);
+  vertical-align: -2px;
+  animation: gatewayCaretBlink 1.06s steps(1) infinite;
+}
+
+@keyframes gatewayCaretBlink {
+  50% {
+    opacity: 0;
+  }
+}
+

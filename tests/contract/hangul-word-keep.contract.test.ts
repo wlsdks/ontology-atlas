@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Korean text breaks between words on every screen, from one rule.
@@ -12,7 +13,7 @@ import { describe, expect, it } from "vitest";
  * keeps it out of every `@layer`, where a utility layer would quietly win it back.
  */
 const ROOT = process.cwd();
-const CSS = readFileSync(join(ROOT, "app", "globals.css"), "utf8");
+const CSS = readGlobalCss();
 const RULE = /:root:lang\(ko\)\s+body\s*\{/;
 
 function isOutsideLayers(css: string, index: number): boolean {

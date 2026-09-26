@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -13,6 +11,7 @@ import {
   type DomeInputNode,
 } from "@/widgets/ontology-map/model/dome-view";
 import { computeDomeFitCameraTarget } from "@/widgets/ontology-map/ui/topology-camera-math";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **Does the 3D structure actually land on the canvas?** (2026-09-05, owner direction B2;
@@ -62,7 +61,7 @@ const SCREENS = [
  * band or a widened padding term recomputes the truth of that moment. Same discipline as
  * `accent-ink-contrast.contract.test.ts`.
  */
-const CSS = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
+const CSS = readGlobalCss();
 
 function cssNumber(name: string): number {
   // First definition wins — the `:root` block, which is what the workbench map reads.

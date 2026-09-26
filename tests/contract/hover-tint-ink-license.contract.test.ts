@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
 import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **Ink licence on alpha tint surfaces — including hover** (2026-08-15).
@@ -54,7 +55,7 @@ import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
  */
 
 const ROOT = process.cwd();
-const css = readFileSync(path.join(ROOT, "app/globals.css"), "utf8");
+const css = readGlobalCss();
 
 type Rgba = readonly number[];
 

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **The overview keeps equal air on both sides of the drawing** (2026-09-25).
@@ -19,7 +20,7 @@ import { describe, expect, it } from "vitest";
  * `tests/e2e/map-overview-centre.spec.ts`.
  */
 
-const css = readFileSync("app/globals.css", "utf8");
+const css = readGlobalCss();
 const fit = readFileSync("src/widgets/topology-controls/ui/TopologyFitControl.tsx", "utf8");
 const canvas = readFileSync("src/views/home/ui/TopologyCanvasSurface.tsx", "utf8");
 const chrome = readFileSync("src/views/home/ui/TopologyCommandChrome.tsx", "utf8");

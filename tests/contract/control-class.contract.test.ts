@@ -10,6 +10,7 @@ import {
   type ControlSize,
   type ControlTone,
 } from '@/shared/ui/control-class';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The contract for `controlClass`.
@@ -297,7 +298,7 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
  * one test that **turns red when its evidence disappears**.
  */
 describe('controlClass — 여덟째 모양과 세 축', () => {
-  const GLOBALS = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+  const GLOBALS = readGlobalCss();
   const cssVar = (name: string): string | undefined =>
     new RegExp(`^\\s*${name}:\\s*([^;]+);`, 'm').exec(GLOBALS)?.[1].trim();
 

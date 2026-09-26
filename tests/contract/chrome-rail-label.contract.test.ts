@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * ChromeTile retains an optional group-label mode for labelled rails. The topology
@@ -9,7 +10,7 @@ import { describe, expect, it } from 'vitest';
  */
 
 const ROOT = process.cwd();
-const CSS = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
+const CSS = readGlobalCss();
 
 /** The rule body for a selector, brace-matched so a nested block cannot truncate it. */
 function ruleBody(selectorFragment: string): string {

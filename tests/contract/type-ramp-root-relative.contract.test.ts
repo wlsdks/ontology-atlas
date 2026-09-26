@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+import { locateGlobalCssLine, readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **Every step of the type ramp follows the root font size.**
@@ -25,7 +26,7 @@ import { describe, expect, it } from 'vitest';
  * screen, and that one cannot tell `px` from `rem` at the default root.
  */
 const ROOT = process.cwd();
-const CSS = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
+const CSS = readGlobalCss();
 
 /** Every `.ts`/`.tsx` under `src/` and `app/` — the two directories the ramp lint covers. */
 function sourceFiles(): string[] {
@@ -106,7 +107,10 @@ describe('타입 램프는 루트 글꼴 크기를 따른다', () => {
       const offenders = declarations(prefix)
         .filter((entry) => !NOT_ROOT_RELATIVE.has(entry.name))
         .filter((entry) => !/^[0-9.]+rem$/.test(entry.value))
-        .map((entry) => `  app/globals.css:${entry.line}  ${entry.name}: ${entry.value}`);
+        .map((entry) => {
+          const at = locateGlobalCssLine(entry.line);
+          return `  ${at.file}:${at.line}  ${entry.name}: ${entry.value}`;
+        });
 
       expect(
         offenders,

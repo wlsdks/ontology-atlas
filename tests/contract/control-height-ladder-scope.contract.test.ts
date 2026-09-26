@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The **scope** gate for the control-height ladder.
@@ -36,7 +37,7 @@ import { describe, expect, it } from 'vitest';
  * Ledger: `docs/DECISIONS.md` 2026-08-03 "Tile dimensions are one".
  */
 describe('컨트롤 높이 사다리 — 적용 범위', () => {
-  const GLOBALS = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+  const GLOBALS = readGlobalCss();
 
   /** The first `--name: <value>;` declaration. Multi-line values (`max(\n …\n)`) read as one. */
   const cssVar = (name: string): string | undefined =>

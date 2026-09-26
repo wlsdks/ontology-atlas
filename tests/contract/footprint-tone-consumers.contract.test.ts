@@ -7,6 +7,7 @@ import {
   FOOTPRINT_TONE_FALLBACK,
   FOOTPRINT_TONE_TOKEN,
 } from "@/shared/lib/appearance-preferences";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Every trail tone reaches every consumer.
@@ -34,7 +35,7 @@ describe("걸어온 길 톤 — 모든 소비처가 모든 톤을 안다", () =>
   });
 
   it("모든 톤이 실제로 정의된 CSS 토큰을 가리킨다", () => {
-    const css = read("app/globals.css");
+    const css = readGlobalCss();
     for (const [tone, cssVar] of Object.entries(FOOTPRINT_TONE_TOKEN)) {
       expect(
         new RegExp(`${cssVar}:\\s*#[0-9a-fA-F]{6}`).test(css),
@@ -44,7 +45,7 @@ describe("걸어온 길 톤 — 모든 소비처가 모든 톤을 안다", () =>
   });
 
   it("폴백 값이 토큰 값과 바이트 단위로 같다", () => {
-    const css = read("app/globals.css");
+    const css = readGlobalCss();
     for (const [tone, cssVar] of Object.entries(FOOTPRINT_TONE_TOKEN)) {
       const hex = new RegExp(`${cssVar}:\\s*(#[0-9a-fA-F]{6})`).exec(css)![1];
       const rgb = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));

@@ -128,7 +128,7 @@ focus, or closer zoom.
 
 ### v2 Token Catalog — By Tier
 
-The source of truth for values is `app/globals.css` alone. Canvas 2D cannot read CSS variables directly, so `src/widgets/ontology-map/tokens/read-map-tokens.ts` parses and caches them once via `getComputedStyle`.
+The source of truth for values is the stylesheet `app/globals.css` imports: its parts in `app/styles/` (`@theme` tokens and ramps in `app/styles/tokens.css`). Canvas 2D cannot read CSS variables directly, so `src/widgets/ontology-map/tokens/read-map-tokens.ts` parses and caches them once via `getComputedStyle`.
 
 | Tier | Token | When to use |
 |---|---|---|
@@ -518,7 +518,7 @@ Reference anchors for this bar:
 | Failure patterns noted by the industry | This repo's answer | Evidence |
 
 |---|---|---|
-| "Documents, tokens, and components say different things, so agents can't tell which is correct" | **Single source of truth principle + lint enforcement** — tokens are in one place (`app/globals.css`), this document references names only without duplicating values, `no-restricted-syntax` mechanically blocks hardcoding | `.claude/rules/design.md` "Specs are enforced via lint", Carbon citation |
+| "Documents, tokens, and components say different things, so agents can't tell which is correct" | **Single source of truth principle + lint enforcement** — tokens are in one place (`app/styles/tokens.css`, imported by `app/globals.css`), this document references names only without duplicating values, `no-restricted-syntax` mechanically blocks hardcoding | `.claude/rules/design.md` "Specs are enforced via lint", Carbon citation |
 
 | "Agents only take what the prompt explicitly specifies, filling the rest (spacing, typography, color ramps) by guesswork" | **Conditional rule auto-loading** — opening `src/**/*.tsx` or `app/**/*.css` automatically loads `.claude/rules/design.md` into the session even if the prompt doesn't request it | `CLAUDE.md` rule loading table, `tests/contract/rules-path-scope.contract.test.ts` |
 
@@ -541,7 +541,7 @@ Reference anchors for this bar:
 
 ## Design tokens
 
-Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actual implementation.
+Defined via Tailwind 4's CSS-based `@theme`. The tokens live in `app/styles/tokens.css`; `app/globals.css` is only the entry that imports the `app/styles/*.css` parts in order. Gates read the joined text through `readGlobalCss()` in `scripts/lib/global-css.mjs`.
 
 ### Scale fixed contract (2026-07-24, owner confirmed — "fixed as is now")
 
@@ -2417,7 +2417,7 @@ Two empirical cases existed: `text-callout` (found manually in #618), `text-larg
 The gate is `tests/contract/type-ramp-step-defined.contract.test.ts`. **Why not ESLint**: The judgment requires the actual token list from `app/globals.css`, but `no-restricted-syntax` uses AST selectors and cannot reference other files.
 Copying step names into the rule would cause that copy to drift from the ramp, making the gate blind to its own gaps. So we build it as a contract test that reads the source to judge.
 
-If a new step is truly needed, do all three in one PR: ① Ramp in `app/globals.css` ② Table in this doc ③ Registration in `src/shared/lib/cn.ts`.
+If a new step is truly needed, do all three in one PR: ① Ramp in `app/styles/tokens.css` (imported by `app/globals.css`) ② Table in this doc ③ Registration in `src/shared/lib/cn.ts`.
 
 ### Line-height ramp — 9 steps (2026-07-27)
 
@@ -2565,7 +2565,7 @@ Tailwind v4 `--radius-*` namespace generates `rounded-<step>`.
 **`micro` was added in the 2026-08-03 system establishment.** While the ramp had 3 steps, a 4px radius existed at **96 sites** on screens (59 Tailwind default `rounded-sm` + 37 un-suffixed `rounded`) — micro badges, command tags, kbd level, i.e., one layer below chips (6px) that actually exists but lacked a name in the ramp, leaking into the default. The 96 repeated instances are not explicit exceptions but a missing step. After adding it, all were mechanically replaced with `rounded-micro`, so pixel movement is 0; thereafter, `rounded-sm` and un-suffixed `rounded` are blocked by eslint selectors, and all named Tailwind default steps are blocked by per-family ratchets (`tests/contract/named-offramp-utility-ratchet.contract.test.ts`). The Chrome ladder's "keycap 4px" uses the same value — Chrome-side convergence (aliasing) is pending.
 
 **All 16 instances of `rounded-2xl` (16px) were downgraded to `panel` (12px) on 2026-08-04.** Unlike with `micro`, this was a judgment involving pixel movement, requiring site-by-site review; the answer came not from documentation but from the **radius census of the built screen**: within one row of the project drawer (width 399px), **six types** (20 / 18 / 16 / 12 / 9 / 6) coexisted, and only the `completeness`/`freshness` pair was already `rounded-panel`, meaning **siblings on the same line were misaligned**. Downgrading 16 to 12 leaves two steps — **sheet step** and **content step** (12). (The first draft of this paragraph listed drawer hero 20 as an explicit exception for the sheet step, but a full overlay judgment on the same day **reversed it** — the hero is inflow content scrolling within the drawer, lacking sheet eligibility, and was downgraded to panel. See the `sheet` entry below.) The previous 16/18/20 performed three roles while differing by only 2px from each other, failing to create hierarchy. It wasn't `card` (9) because these boxes are **slot containers** with widths of 365–399px, and the two sibling choices already occupying that slot + `TopologyEmptyState`'s override (`rounded-[var(--radius-panel)]`) yield the same answer. Icon tiles (44px) require separate judgment, but the conclusion is the same — this app's tile ratio is 36px/9px = 4.0, so the pair for 44px is 11px, and the nearest ramp step is 12.
-Registration partners: `app/globals.css` + `src/shared/lib/cn.ts` `RADIUS_RAMP_STEPS` (tailwind-merge radius group — if unregistered, `rounded-chip` followed by `rounded-micro` will not merge, leaving both alive with CSS source order determining the winner).
+Registration partners: `app/styles/tokens.css` (imported by `app/globals.css`) + `src/shared/lib/cn.ts` `RADIUS_RAMP_STEPS` (tailwind-merge radius group — if unregistered, `rounded-chip` followed by `rounded-micro` will not merge, leaving both alive with CSS source order determining the winner).
 
 **`sheet` (18px) was added in the 2026-08-04 system establishment.** As the drawer judgment converged content steps to 12, the same bug surfaced one layer up — at 1512px empirical measurement, **overlay radii spanned six values** (12 · 9 · 22 · 16 · 18 · 20, plus mobile 28 in source), and among them, 16/18/20 differed by only 2px from each other, failing to create hierarchy. Sources were also fractured: 2 component-specific tokens (`--topology-shortcut-sheet-radius` 22 · `--topology-search-sheet-radius` 16, deprecated) + 4 eslint-disables (one literally "pending registration") + 1 directional-suffix lint blind spot (`rounded-t-[28px]`). **Five values were performing one job — floating sheets/palettes.** The reason for value 18: it is the current mode frequency and continues the ramp's common ratio (4→6→9→12→18, ≈1.5×). Scope rule — **only large transient surfaces that float and obscure below** (shortcut/search/agent connection sheets, quick action/gesture hints, mobile bottom sheet tops) qualify as sheet. Anchor popovers · menus use card/panel; small confirmation dialogs use panel; **inflow content is prohibited from using sheet regardless of size** (craft entry card 16 → panel, drawer hero 20 → panel are those judgments). The border partner for the sheet step is `--color-divider` (0.08) — the previous `--color-overlay-3` (0.10) instance was also converged. Gate: eslint radius selector (extended to include directional suffixes) + `RADIUS_RAMP_STEPS` sync contract (`cn.test.ts`).
 

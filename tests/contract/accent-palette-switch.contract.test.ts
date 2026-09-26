@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The accent palette switch contract (2026-08-18).
@@ -38,7 +39,7 @@ import { contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
 const ROOT = process.cwd();
 const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8");
 
-const css = read("app/globals.css");
+const css = readGlobalCss();
 const prefs = read("src/shared/lib/appearance-preferences.ts");
 const boot = read("src/shared/ui/accent-boot-script.tsx");
 const layout = read("app/layout.tsx");

@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The gateway body column cap (`--gateway-page-max`) — the invariants of the
@@ -64,7 +65,7 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 describe("관문 본문 컬럼 상한 — --gateway-page-max 의 불변식", () => {
-  const css = read("app/globals.css");
+  const css = readGlobalCss();
   const gatewayMax = parsePx(css, TOKEN);
   const pageMax = parsePx(css, "--page-max");
 

@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The caps micro-label — `font-mono` + `uppercase` + `--tracking-caps-*` — is a Latin
@@ -19,7 +18,7 @@ import { describe, expect, it } from "vitest";
  * in every locale. Widening this to `.font-mono` would put Korean prose and shell commands
  * in the same bucket.
  */
-const CSS = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+const CSS = readGlobalCss();
 
 /** The override must sit outside every `@layer`, or a utility layer wins it back. */
 function isOutsideLayers(css: string, index: number): boolean {

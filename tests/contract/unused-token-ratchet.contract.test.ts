@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The reverse-direction gate for **tokens that are defined but nobody uses.**
@@ -67,7 +68,7 @@ function repoFiles(): string[] {
     .split("\n")
     .filter(Boolean)
     .filter((f) => /\.(ts|tsx|js|jsx|mjs|cjs|css|rs|html)$/.test(f))
-    .filter((f) => f !== "app/globals.css")
+    .filter((f) => f !== "app/globals.css" && !f.startsWith("app/styles/"))
     .filter((f) => !GENERATED_MIRRORS.some((dir) => f.startsWith(dir)))
     // Include new, untracked source owners during a refactor. A deleted but uncommitted file is
     // still listed. If the gate died trying to read a missing file, then mid-refactor
@@ -83,7 +84,7 @@ const BASELINE_UNUSED = 0;
 
 describe("디자인 토큰 — 아무도 안 쓰는 선언이 늘지 않는다", () => {
   it("keeps the unused-token count at or below the recorded baseline", () => {
-    const css = readFileSync("app/globals.css", "utf8");
+    const css = readGlobalCss();
     const stripped = stripCssComments(css);
 
     const declared = new Map<string, number>();
@@ -156,7 +157,7 @@ describe("디자인 토큰 — 아무도 안 쓰는 선언이 늘지 않는다",
    * inserting one fake token get caught" is verified directly here.
    */
   it("actually detects an unused token — the probe", () => {
-    const css = readFileSync("app/globals.css", "utf8");
+    const css = readGlobalCss();
     const probed = css.replace(":root {", ":root {\n  --probe-nobody-uses-this: 1px;");
     const stripped = stripCssComments(probed);
     const declared = [...stripped.matchAll(/(?:^|[;{}\s])(--[a-zA-Z0-9_-]+)\s*:/gm)].map((m) => m[1]);

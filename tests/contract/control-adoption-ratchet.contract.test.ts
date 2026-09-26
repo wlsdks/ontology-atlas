@@ -6,6 +6,7 @@ import { basename, extname, join, relative } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { judgeRatchet, RAISES_DIR, type RatchetJudgement } from './lib/ratchet-base';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Control adoption ratchet — **hand-written control classNames can never grow.**
@@ -621,7 +622,6 @@ const FALLBACK = {
 } as const;
 
 const ROOTS = ['src', 'app'];
-const GLOBALS_CSS = 'app/globals.css';
 const SELF = 'tests/contract/control-adoption-ratchet.contract.test.ts';
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -895,7 +895,7 @@ const scannedFiles = today.scanned;
 const { total, registered, noBasis, debt, byFile, registeredByFile, noBasisByFile } = today.button;
 const anchorCensus = today.anchor;
 const fieldCensus = today.field;
-const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
+const globalsCss = readGlobalCss();
 
 /** Everything `measureTree` reads; only these are extracted at the merge base. */
 const READS = [...ROOTS, REGISTRY_DIR];

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **The toast is one neutral box whose tone is a small glyph** (owner, 2026-09-24:
@@ -24,7 +25,7 @@ import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast
 const ROOT = process.cwd();
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 const toastSource = read("src/shared/ui/toast.tsx");
-const css = read("app/globals.css");
+const css = readGlobalCss();
 
 function token(name: string): string {
   const match = new RegExp(`${name}:\\s*([^;]+);`).exec(css);

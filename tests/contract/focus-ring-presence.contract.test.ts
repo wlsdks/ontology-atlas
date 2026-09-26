@@ -4,6 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { controlClass } from '../../src/shared/ui/control-class';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /** A comment is not a value — a trap stepped on four times in this round. */
 function stripComments(src: string): string {
@@ -99,7 +100,7 @@ describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 �
    * places that bypass it would be bare again.
    */
   it('base 레이어가 모든 상호작용 요소에 초점 바닥을 깐다', () => {
-    const css = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
+    const css = readGlobalCss();
     const rule = /:where\(([\s\S]{0,400}?)\):focus-visible\s*\{([\s\S]{0,200}?)\}/.exec(css);
     expect(rule, 'globals.css 의 `:where(...):focus-visible` 바닥 규칙이 사라졌다').not.toBeNull();
 

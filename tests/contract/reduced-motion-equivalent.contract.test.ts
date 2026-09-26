@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * reduced-motion contract gate — enforces `docs/DESIGN-SYSTEM.md`'s *"not switched
@@ -21,7 +22,7 @@ import path from 'node:path';
  *  3. Equivalents regain time through tokens only — no literal ms rewrites.
  */
 
-const CSS = readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
+const CSS = readGlobalCss();
 
 /**
  * **Deliberately stopped under reduced motion** — the reason is recorded here.
