@@ -56,6 +56,8 @@ The design-system seat owns new value vocabulary. An implementation agent that
 cannot express a needed value reports and measures the gap; it does not create a
 parallel system. The author of a change does not independently approve it.
 
+Before assigning scopes, run `pnpm conflicts:scan` so no scope includes a file an open pull request is already changing, unless that overlap is intended.
+
 ## 6. Eight mandatory lines
 
 Every delegated brief states:

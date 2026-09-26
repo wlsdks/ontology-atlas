@@ -44,6 +44,7 @@ repository.
 ## 2. The train path
 
 For each pending branch: push it, open a draft, and queue it without waiting.
+Before queueing, run `pnpm conflicts:scan` on the branch; a conflict with an open pull request outside this bundle is resolved now, not by a train ejection.
 
 ```bash
 git push -u origin <branch>

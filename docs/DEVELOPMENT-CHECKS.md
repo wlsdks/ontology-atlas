@@ -154,6 +154,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: `pnpm test:pr:land` when the bundle changes how `pnpm pr:land` is called, or none
 **Fix**: repair `scripts/bundle-branches.mjs`.
 
+### Early conflict scan
+
+**Run**: `node --test scripts/conflicts-scan.test.mjs`
+**Proves**: `pnpm conflicts:scan` lists the open pull requests (from one `gh pr list` call) and `--match` local branches whose changed files overlap this branch's, trial-merges only those with `git merge-tree`, names the conflicted files this branch changes, separates conflicts that come from the other head lagging `main`, and writes no ref, index or GitHub state.
+**Escalate**: `node --test scripts/bundle-branches.test.mjs` when the shared branch helpers change, or none
+**Fix**: repair `scripts/conflicts-scan.mjs`.
+
 ### GitHub Pages deploy
 
 **Run**: `pnpm build`
