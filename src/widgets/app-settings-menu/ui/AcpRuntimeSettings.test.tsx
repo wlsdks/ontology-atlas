@@ -31,6 +31,8 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
+import { buttonVariants } from '@/shared/ui/button';
+
 import { AcpRuntimeSettings } from './AcpRuntimeSettings';
 
 type Runtime = Parameters<typeof makeRuntime>[0];
@@ -706,14 +708,18 @@ describe('runtime rows: marks, columns and the result block (design polish, 2026
     }
   });
 
-  it('offers the Mac app as the one filled press, from the ramp rather than a hand tint', () => {
+  it('offers the Mac app as the one filled press, in the standard primary Button shape', () => {
     bridge.available = false;
     render(<AcpRuntimeSettings embedded />);
     const getApp = screen.getByTestId('app-settings-runtimes-get-app');
     expect(getApp).toHaveAttribute('href', '/download/');
-    expect(getApp).toHaveClass('rounded-full', 'atlas-touch-floor');
-    // The fill is the ramp's `onAccent` tone (it clears the border), not an indigo tint mixed here.
-    expect(getApp).toHaveClass('border-transparent');
+    // The primary Button's own classes, 32px on the chip corner: not a pill, which the system
+    // keeps for a state or a count (owner review, 2026-09-26).
+    for (const cls of buttonVariants({ variant: 'primary', size: 'sm' }).split(' ')) {
+      expect(getApp).toHaveClass(cls);
+    }
+    expect(getApp).not.toHaveClass('rounded-full');
+    expect(getApp).toHaveClass('atlas-touch-floor');
     expect(getApp.className).not.toMatch(/indigo-a16/);
   });
 
@@ -732,7 +738,7 @@ describe('runtime rows: marks, columns and the result block (design polish, 2026
     expect(list.querySelector('[data-vendor-mark="monogram"]')).toBeNull();
   });
 
-  it('keeps one winner on the web card: the app is a pill, MCP steps back to a link', () => {
+  it('keeps one winner on the web card: the app is the filled press, MCP steps back to a link', () => {
     bridge.available = false;
     render(<AcpRuntimeSettings embedded />);
     const mcp = screen.getByTestId('app-settings-runtimes-mcp-link');

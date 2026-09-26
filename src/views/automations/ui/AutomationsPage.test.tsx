@@ -147,6 +147,27 @@ describe('Automations manager', () => {
     expect(screen.getByTestId('automations-last-run')).toHaveTextContent('query_ontology');
   });
 
+  /*
+   * Owner review, 2026-09-26: the empty lane said "no schedules yet" in its title, then again as
+   * "schedules appear here" in the list body and "results appear here after the first run" at its
+   * foot. The list under the title is its frame now: title, count and column heads.
+   */
+  it.each(['ontology', 'documents'] as const)('says an empty %s lane once, over a list that is only its frame', (lane) => {
+    search = `kind=${lane}`;
+    renderPage(runner({ storeStatus: 'missing' }));
+    const preview = en.automations[lane].preview;
+    const list = screen.getByRole('complementary', { name: preview.title });
+    expect(list.textContent).toBe(`${preview.title}0${preview.name}${preview.cadence}${preview.next}`);
+    expect(screen.getAllByText(en.automations[lane].emptyTitle)).toHaveLength(1);
+  });
+
+  it('keeps the list a bare frame where no schedule can exist yet, without a count', () => {
+    renderPage(runner({ storeStatus: 'no-vault' }));
+    const preview = en.automations.ontology.preview;
+    const list = screen.getByRole('complementary', { name: preview.title });
+    expect(list.textContent).toBe(`${preview.title}${preview.name}${preview.cadence}${preview.next}`);
+  });
+
   it('keeps the document lane as a real tabpanel and opens the existing document round sheet', () => {
     search = 'kind=documents';
     const openDocumentSchedule = vi.fn();

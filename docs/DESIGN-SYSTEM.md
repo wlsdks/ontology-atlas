@@ -1782,6 +1782,17 @@ the observation over `--motion-base`. The rule remains after the motion, so time
 state change rather than a transient effect. Reduced motion shows the same selected wash and rule
 immediately.
 
+Before any inspection there is nothing per role on the measured side, so the delta gutter and the
+observation column are **one empty state**, not a dashed face and a hollow mark per role (owner
+review, 2026-09-26: fourteen placeholders and two column notes said one fact). It is one dashed
+panel, the ladder's "not measured" grammar drawn once, from the first role's top to the last
+role's bottom; it states the fact and names the one action that fills it (Inspect source), with
+balanced lines. It yields the gutter to any rule sentence that reads into it, the layer planes end
+at the reviewed faces while it stands, and a role's hit area is its reviewed face. The observation
+heading centres on it, and the delta heading waits for the marks it names. An across chain draws
+the same state as one band under the row. A role missing from a receipt others carry keeps its own
+face.
+
 ### What this surface still does not have
 
 3D. Nothing measured here needs a third axis — the data is rank on one axis and a count on the
@@ -2844,7 +2855,7 @@ Chrome surfaces (tiles/chips) must only be created via `ChromeTile` / `ChromeChi
 |---|---|---|
 | `Select` (Dark Listbox) | `src/shared/ui/select.tsx` | Native `<select>` replacement — macOS gray system dropdown adapted to dark app syntax |
 | `EmptyState` | `src/shared/ui/empty-state.tsx` | Empty lists/charts/pages — skeleton placeholders + icon + one-line guidance |
-| `Button` | `src/shared/ui/button.tsx` | Standard action — `primary` · `outline` · `ghost` · `danger` (the confirm step of an irreversible action only, drawn from the danger ramp). Radius follows the size: `sm` 32px and `lg` 44px wear the chip radius, `md` 40px keeps the panel radius; type is `text-body-lg` at every size, the step a 32px field sets its value in. So a `Button sm` beside a `fieldClass` field or a `controlClass` chip `lg` shares their corner. While disabled, `danger` drops its hue for `outline`'s (the danger ink at `opacity-55` measured 2.42:1). Gate: `src/shared/ui/button.test.tsx` |
+| `Button` | `src/shared/ui/button.tsx` | Standard action — `primary` · `outline` · `ghost` · `danger` (the confirm step of an irreversible action only, drawn from the danger ramp). Radius follows the size: `sm` 32px and `lg` 44px wear the chip radius, `md` 40px keeps the panel radius; type is `text-body-lg` at every size, the step a 32px field sets its value in. So a `Button sm` beside a `fieldClass` field or a `controlClass` chip `lg` shares their corner. While disabled, `danger` drops its hue for `outline`'s (the danger ink at `opacity-55` measured 2.42:1). A page's one way forward is this `primary`, never a `controlClass` `pill`, which carries a state or a count: four web-only doors drawn as filled pills read as a second primary shape beside every other screen's (owner review, 2026-09-26; gate `tests/e2e/primary-action-shape.spec.ts`). Gate: `src/shared/ui/button.test.tsx` |
 | `ChromeTile` / `ChromeChip` | `src/shared/ui/chrome-tile.tsx` · `chrome-chip.tsx` | Chrome tiles/chips (see separate "Chrome Syntax" section) |
 | `controlClass()` | `src/shared/ui/control-class.ts` | **Value Layer** — single source of classes for interactive elements (see section below) |
 | `Chip` · `IconButton` · `RowButton` | `src/shared/ui/controls.tsx` | **Action Layer** — defaults to `type="button"` · enforces accessible names · button semantics |

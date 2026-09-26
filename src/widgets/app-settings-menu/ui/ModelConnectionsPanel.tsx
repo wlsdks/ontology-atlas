@@ -39,8 +39,9 @@ import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
 import { getTauriVaultRootPath, revealTauriVaultFile } from '@/shared/lib/tauri-vault-fs';
 import { useLocalVault } from '@/entities/vault-session';
 import { buildRouteFocusHref, rememberRouteFocusIntent } from '@/shared/ui/route-focus-manager';
-import { controlClass, fieldClass } from '@/shared/ui/control-class';
+import { fieldClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';
+import { buttonVariants } from '@/shared/ui/button';
 import { EmptyState } from '@/shared/ui/empty-state';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { Download } from 'lucide-react';
@@ -228,13 +229,9 @@ export function ModelConnectionsPanel({
                 href={downloadHref}
                 onClick={onDownloadNavigate}
                 data-testid="ai-connection-download-link"
-                className={controlClass({
-                  shape: 'pill',
-                  size: 'lg',
-                  tone: 'onAccent',
-                  className:
-                    'atlas-touch-floor atlas-touch-floor-wide gap-1.5 focus-visible:ring-[color:var(--color-text-primary)]',
-                })}
+                /* The standard primary `Button` every web-only door wears, not a pill: the
+                   system keeps the pill for a state or a count (owner review, 2026-09-26). */
+                className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor atlas-touch-floor-wide')}
               >
                 <Download size={ICON_SIZE.md} aria-hidden />
                 {t('webDegradedCta')}

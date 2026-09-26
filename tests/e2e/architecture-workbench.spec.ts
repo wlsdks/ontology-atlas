@@ -578,7 +578,10 @@ for (const locale of ['ko', 'en'] as const) {
    *    lane's 360px skip-arc cap was reserved on a profile that declares no skip, while the
    *    sentence lane it starved was cutting its sentences at 146px of room.
    * 3. **The column note was drawn on the first face.** Heading box ending at 201 against a note
-   *    starting at 202, and the note ending at 215 over a face starting at 212.
+   *    starting at 202, and the note ending at 215 over a face starting at 212. The notes left on
+   *    2026-09-26 with the fourteen per-role placeholders under them: before any inspection the
+   *    measured columns are one empty state (owner review), and it is the thing that must sit
+   *    clear of the headings, the planes and the rule sentences, with its words inside it.
    *
    * Both locales, because Korean runs taller than English at the same size and a gap tuned on one
    * build is the defect rather than the fix.
@@ -605,26 +608,39 @@ for (const locale of ['ko', 'en'] as const) {
         (plane) => plane.getBoundingClientRect(),
       );
       const boxes = [...document.querySelectorAll('[data-graph-box]')].map((box) => box.getBoundingClientRect());
-      /* The lane group holds the three headings AND the one-per-column notes that sit under them.
-         Excluding only the observation note left the delta note — added the same day, in the same
-         slot and at the same y — inside `headingBottom`, which reported the gap as −13 and read as
-         the overlap this test exists to catch. Both notes are excluded by their id suffix. */
       const headings = [
         ...document.querySelectorAll('[data-testid="architecture-paired-lane-headings"] text'),
-      ].filter((el) => !(el.getAttribute('data-testid') ?? '').endsWith('-column-note'));
-      const note = document.querySelector('[data-testid="architecture-observation-column-note"]')!;
-      const face = document.querySelector('[data-testid^="architecture-observation-box-"]')!;
-      const noteRect = note.getBoundingClientRect();
+      ];
+      const empties = document.querySelectorAll('[data-testid="architecture-observation-empty"]');
+      const panel = empties[0]?.querySelector('rect')?.getBoundingClientRect() ?? null;
+      const lines = [...(empties[0]?.querySelectorAll('tspan') ?? [])].map((line) => line.getBoundingClientRect());
+      const sentences = [
+        ...document.querySelectorAll('[data-edge-sentence-kind="permitted"][data-edge-sentence="drawn"]'),
+      ].map((sentence) => sentence.getBoundingClientRect());
       const headingBottom = Math.max(...headings.map((h) => h.getBoundingClientRect().bottom));
-      const left = Math.min(...boxes.map((b) => b.left));
-      const right = Math.max(...boxes.map((b) => b.right));
+      /* The drawing is the reviewed faces plus the one empty column beside them. */
+      const left = Math.min(...boxes.map((b) => b.left), panel?.left ?? Infinity);
+      const right = Math.max(...boxes.map((b) => b.right), panel?.right ?? -Infinity);
       return {
         planeRightEdges: [...new Set(planes.map((p) => round(p.right)))],
         planeLeftEdges: [...new Set(planes.map((p) => round(p.left)))],
         bandRatio: (right - left) / card.width,
         offCentre: round((left + right) / 2 - (card.left + card.right) / 2),
-        headingToNote: round(noteRect.top - headingBottom),
-        noteToFace: round(face.getBoundingClientRect().top - noteRect.bottom),
+        emptyStates: empties.length,
+        placeholders: document.querySelectorAll(
+          '[data-testid^="architecture-observation-box-"], [data-testid^="architecture-delta-marker-"]',
+        ).length,
+        headingToPanel: panel ? round(panel.top - headingBottom) : null,
+        linesOutside: panel
+          ? lines.filter((line) => line.left < panel.left + 8 || line.right > panel.right - 8).length
+          : null,
+        lineCount: lines.length,
+        planesIntoPanel: panel ? planes.filter((plane) => plane.right > panel.left).length : null,
+        sentencesIntoPanel: panel ? sentences.filter((sentence) => sentence.right > panel.left - 4).length : null,
+        headingOffPanelCentre: (() => {
+          const heading = document.querySelector('[data-testid="architecture-observation-heading"]')?.getBoundingClientRect();
+          return panel && heading ? round((heading.left + heading.right) / 2 - (panel.left + panel.right) / 2) : null;
+        })(),
       };
     });
 
@@ -634,8 +650,17 @@ for (const locale of ['ko', 'en'] as const) {
     // The band was 0.60 of the card before the reserve was made conditional.
     expect(measured.bandRatio, `${locale}: the drawing gave the card back`).toBeGreaterThan(0.65);
     expect(Math.abs(measured.offCentre), `${locale}: the drawing slid off centre`).toBeLessThanOrEqual(8);
+    // Before any inspection the measured columns say so once, not in fourteen placeholders.
+    expect(measured.emptyStates, `${locale}: the empty state is not one`).toBe(1);
+    expect(measured.placeholders, `${locale}: per-role placeholders are back`).toBe(0);
     // Nothing in the chrome row may touch, let alone overlap, what is under it.
-    expect(measured.headingToNote, `${locale}: the column note touches its heading`).toBeGreaterThan(0);
-    expect(measured.noteToFace, `${locale}: the column note is drawn on the first face`).toBeGreaterThan(0);
+    expect(measured.headingToPanel, `${locale}: the empty state touches its heading`).toBeGreaterThan(0);
+    // Its words stay inside it, and it covers neither the planes nor a rule sentence.
+    expect(measured.lineCount, `${locale}: the empty state says nothing`).toBeGreaterThan(1);
+    expect(measured.linesOutside, `${locale}: an empty-state line runs past its panel`).toBe(0);
+    expect(measured.planesIntoPanel, `${locale}: a layer plane runs under the empty state`).toBe(0);
+    expect(measured.sentencesIntoPanel, `${locale}: a rule sentence runs into the empty state`).toBe(0);
+    // The heading over the empty state shares its centre line with the words under it.
+    expect(Math.abs(measured.headingOffPanelCentre ?? Infinity), `${locale}: the heading sits off the empty state`).toBeLessThanOrEqual(1);
   });
 }

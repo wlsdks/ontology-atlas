@@ -9,7 +9,6 @@ import { buildOntologyInsightsReturnHref } from '@/entities/knowledge-graph';
 import { getTopologyFocusHref } from '@/entities/project';
 import { agentDisplayName } from '@/shared/lib/agent-display-name';
 import { cn } from '@/shared/lib/cn';
-import { elapsedParts } from '@/shared/lib/elapsed';
 import { Chip, RowButton } from '@/shared/ui/controls';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -22,6 +21,7 @@ import {
   type BellTab,
   type BellTodo,
 } from '../model/bell-inbox';
+import { inboxDuration } from '../model/inbox-duration';
 import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
 
 /**
@@ -132,7 +132,7 @@ export interface ResultFactLineModel {
 function resultFacts(
   t: (key: string, values?: Record<string, number>) => string,
   row: BellResult,
-  duration: (ms: number) => string,
+  duration: (ms: number) => string | null,
   age: string,
 ): ResultFactLineModel {
   const agent = agentDisplayName(row.agent) ?? row.agent ?? t('unknownAgent');
@@ -312,11 +312,13 @@ export function AgentInboxPanel({
   }, []);
 
   const relative = (at: number) => format.relativeTime(new Date(at), feed.nowMs);
-  const duration = (ms: number) => {
-    const { hours, minutes, seconds } = elapsedParts(ms);
-    if (hours > 0) return t('durationHours', { hours, minutes });
-    if (minutes > 0) return t('durationMinutes', { minutes });
-    return t('durationSeconds', { seconds });
+  /* Null under a second, so the row leaves the duration out rather than print "0s". */
+  const duration = (ms: number): string | null => {
+    const parts = inboxDuration(ms);
+    if (parts === null) return null;
+    if (parts.unit === 'hours') return t('durationHours', { hours: parts.hours, minutes: parts.minutes });
+    if (parts.unit === 'minutes') return t('durationMinutes', { minutes: parts.minutes, seconds: parts.seconds });
+    return t('durationSeconds', { seconds: parts.seconds });
   };
 
   /*

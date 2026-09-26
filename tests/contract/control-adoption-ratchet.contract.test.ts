@@ -1118,7 +1118,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // primary `Button` grammar, so its `<Link>` branch goes through `buttonVariants`, `Link` 22→23.
 // 2026-09-25: the Wiki and Guidance preview footers' three pill links became standard sm
 // buttons, entering the census as `buttonVariants` anchors, so `Link` 23→26.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 26, a: 8 };
+// 2026-09-26: four web-only doors drawn as filled `pill`s (Harness no-source and browser-only,
+// Agents web, Models web) became the primary sm standard button, so `Link` 26→30.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 30, a: 8 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1225,12 +1227,44 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     proof: 'buttonVariants',
     why:
       'Two navigating actions on Automations (2026-09-25). "Get the app" is the app-required ' +
-      "stage's one primary action and must match the empty lane's `<Button>` primary " +
-      "(`buttonVariants({ variant: \"primary\" })`); \"Open Library check history\" sits in the " +
+      "stage's one primary action and must match the empty lane's `<Button>` primary, both the " +
+      "32px sm since 2026-09-26 (`buttonVariants({ variant: \"primary\", size: \"sm\" })`); " +
+      "\"Open Library check history\" sits in the " +
       "lane header beside the outline `<Button>` CTA as `buttonVariants({ variant: \"ghost\", " +
       'size: "sm" })`. As 11-12.5px `shape: "link"` text they read as captions, not actions. ' +
       'Both are `<Link>` because they navigate, and `control-class.ts` does not replace ' +
       'standard buttons.',
+  },
+  {
+    file: 'src/views/architecture/ui/HarnessPage.tsx',
+    count: 2,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The Harness web-only and no-source doors (2026-09-26): "Get the Mac app" and "Connect ' +
+      'a source folder", each the page\'s one way forward. They were filled `pill`s, a shape the ' +
+      'system keeps for a state or a count, and read as a second primary shape beside every ' +
+      'other screen\'s. Both navigate, so they are `<Link>` through `cn(buttonVariants({ ' +
+      'variant: "primary", size: "sm" }), …)`; `control-class.ts` does not replace standard buttons.',
+  },
+  {
+    file: 'src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The Agents tab\'s web-only door, "Get the Mac app" (2026-09-26): the tab\'s one way ' +
+      'forward, moved from a filled `pill` to the primary sm standard button every web-only door ' +
+      'now wears. It navigates, so it stays `<Link>`.',
+  },
+  {
+    file: 'src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The Models tab\'s web-only door, "Get the desktop app" (2026-09-26), for the same reason ' +
+      'as the Agents tab beside it: a filled `pill` became the primary sm standard button.',
   },
   {
     file: 'src/views/library/ui/parts/AgentDoor.tsx',
@@ -1388,7 +1422,11 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // 6px 11px chip there was the second grammar the interaction audit measured.
 // 31 → 34 (2026-09-25): the Analysis preview footers' three actions left the `pill` shape for the
 // standard sm button the Analysis views use for panel actions.
-const BASELINE_ANCHOR_REGISTERED = 34;
+// 34 → 38 (2026-09-26, owner review): the four web-only doors still drawn as filled `pill`s
+// (Harness no-source and browser-only, Agents web, Models web) left that shape for the primary
+// sm standard button. The system keeps the pill for a state or a count, and a page's first press
+// was being drawn in two shapes across screens; `tests/e2e/primary-action-shape.spec.ts` holds it.
+const BASELINE_ANCHOR_REGISTERED = 38;
 
 /** **Only this number may fall.** The current anchor total (34) minus registered (34). */
 const BASELINE_ANCHOR_DEBT = 0;

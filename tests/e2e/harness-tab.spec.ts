@@ -1605,8 +1605,12 @@ test.describe("하네스 탭", () => {
         box.getBoundingClientRect(),
       );
       const cardRect = card!.getBoundingClientRect();
-      const left = Math.min(...boxes.map((b) => b.left));
-      const right = Math.max(...boxes.map((b) => b.right));
+      /* The drawing is the reviewed faces plus, before any inspection, the one empty column. */
+      const panel = document
+        .querySelector('[data-testid="architecture-observation-empty"] rect')
+        ?.getBoundingClientRect();
+      const left = Math.min(...boxes.map((b) => b.left), panel?.left ?? Infinity);
+      const right = Math.max(...boxes.map((b) => b.right), panel?.right ?? -Infinity);
       const sentences = [
         ...document.querySelectorAll('[data-testid^="architecture-box-line-"]'),
       ].map((node) => node.textContent ?? "");
@@ -1624,8 +1628,11 @@ test.describe("하네스 탭", () => {
     // The band used 41 % of the card; more than half of it is the floor this fix has to keep.
     expect(measured.bandWidth / measured.cardWidth).toBeGreaterThan(0.5);
     expect(Math.abs(measured.offCentre), "the drawing slid off the card's centre").toBeLessThanOrEqual(8);
-    // And the "not inspected yet" fact is stated once for the column, not once per role.
-    await expect(page.getByTestId("architecture-observation-column-note")).toHaveCount(1);
+    // And the "not inspected yet" fact is stated once for the measured columns, not once per
+    // role: one empty state, no dashed face or hollow mark per role (owner review, 2026-09-26).
+    await expect(page.getByTestId("architecture-observation-empty")).toHaveCount(1);
+    await expect(page.locator('[data-testid^="architecture-observation-box-"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid^="architecture-delta-marker-"]')).toHaveCount(0);
   });
 
   test("다른 보기로 가는 길은 어떤 화면에서도 사라지지 않는다", async ({ page }) => {
