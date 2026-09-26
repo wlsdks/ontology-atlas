@@ -1072,6 +1072,13 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('runs every companion journey when a companion screen changes, not only the spec it touched', () => {
+    const result = suggestFocusedChecks(['src/features/agent-activity/ui/CompanionMap.tsx']);
+    const row = result.commands.find((r) => r.command.includes('companion-growth.spec.ts'));
+    assert.ok(row, 'companion-growth guards the selector overflow and hit areas a map edit can break');
+    assert.match(row.command, /companion-sector\.spec\.ts/);
+  });
+
   it('suggests the map viewport framing E2E for the exact camera-obstacle source owners', () => {
     const paths = [
       'src/widgets/ontology-map/interaction/free-area.ts',
