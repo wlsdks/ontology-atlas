@@ -2,8 +2,8 @@
  * Contrast measurement — sweeps the rendered DOM and names **text that is not
  * legible**.
  *
- * **Why this file exists.** `/design-council` instructs the "infoviz" (infoviz) seat
- * that it *"must measure contrast"*, and that seat's brief makes the measurement a
+ * **Why this file exists.** `/design-council` (retired 2026-09-27) instructed the "infoviz" (infoviz) seat
+ * that it *"must measure contrast"*, and that seat's brief made the measurement a
  * precondition of any verdict. **But there was no instrument** — as of 2026-08-03 no
  * script in this repository computed contrast, and `/design-audit` only **checked
  * colours against the token set**. Whether a token was used and whether it is legible
