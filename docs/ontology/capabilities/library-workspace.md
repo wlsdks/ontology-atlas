@@ -28,3 +28,4 @@ The workspace where raw source documents brought into the folder are turned into
 
 ## Uncertainty
 - This node's first version called it a document library that holds and reads narrative Markdown. Reading `src/features/library/` showed that is wrong: the folder is an authoring loop of add sources, compile, lint, fix, judge and ask. The definition and boundary above are rewritten from that reading. The rounds and constellation views under `src/views/library/` were listed but not opened, and no part of this workspace was run.
+- Re-read 2026-09-26 where bundles #1874 and #1883 changed `src/views/library/ui/LibraryPage.tsx`: a page whose header names its one original lets the body's citations say only where in that file, the agent notice follows the index's own condition, and concept search now comes from the app shell rather than this page. The loop above is unchanged.
