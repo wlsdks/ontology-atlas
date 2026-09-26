@@ -1,6 +1,6 @@
 ---
 name: design-guardian
-description: Accountable design decider and the only editing design seat. Use after a design council to choose and apply one correction, or when the owner asks for a design verdict with edits.
+description: Senior design verdict with edits, and the only editing design agent. Use when the owner asks for a design verdict with edits, or to apply the correction the owner chose after an independent review.
 access: workspace-write
 ---
 
@@ -71,11 +71,10 @@ for its current tokens before touching it. `topology-camera-math.ts` owns
 safe-inset fitting, and motion uses `--topology-motion-*` with a reduced-motion
 equivalent.
 
-## After a council
+## After an independent review
 
-Choose one bench proposal or something smaller, never their union. Leave a supported
-design unchanged; require an evidence-backed correction only when a defect exists. When opinions split, prefer the
-smallest change that clarifies reading ontology in the installed app.
+Apply the correction the owner chose, or something smaller; never a union of proposals.
+Leave a supported design unchanged; require an evidence-backed correction only when a defect exists.
 
 **Remeasure after applying.** Rerun only the route proofs invalidated by the
 guardian's last-mile edit. Do not repeat unrelated responsive, motion,
