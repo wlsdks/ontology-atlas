@@ -226,7 +226,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint --max-warnings 0 src/shared/lib/validate-vault-document.ts',
-      'pnpm exec vitest run src/shared/lib/validate-vault-document.test.ts',
+      'pnpm exec vitest related --run --passWithNoTests src/shared/lib/validate-vault-document.ts',
       'pnpm test:contracts',
       'pnpm test:mcp:unit',
       'pnpm exec tsc --noEmit',
@@ -411,7 +411,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint --max-warnings 0 src/views/architecture/ui/ArchitectureWorkbench.tsx',
-      'pnpm exec vitest run src/views/architecture/ui/ArchitectureWorkbench.test.tsx',
+      'pnpm exec vitest related --run --passWithNoTests src/views/architecture/ui/ArchitectureWorkbench.tsx',
       'pnpm test:cli:commands',
       'pnpm test:architecture',
       'pnpm exec playwright test tests/e2e/architecture-workbench.spec.ts',
@@ -749,8 +749,9 @@ describe('focused check suggestions', () => {
         'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx',
       'pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts',
       'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
-      'pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts',
-      'pnpm exec vitest run src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx',
+      'pnpm exec vitest related --run --passWithNoTests src/shared/lib/tauri-vault-fs.ts src/views/root-entry/ui/RootEntryPage.tsx ' +
+        'src/views/docs-vault/lib/persistence.ts src/views/docs-vault/ui/DocsVaultPage.tsx ' +
+        'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx',
       'pnpm docs-vault:build',
       'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
@@ -889,7 +890,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint --max-warnings 0 app/layout.tsx app/page.tsx app/sitemap.ts app/[locale]/docs/page.tsx',
-      'pnpm exec vitest run app/sitemap.test.ts',
+      'pnpm exec vitest related --run --passWithNoTests app/layout.tsx app/page.tsx app/sitemap.ts app/[locale]/docs/page.tsx',
       'pnpm test:contracts',
       'pnpm exec tsc --noEmit',
       'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
@@ -910,6 +911,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint --max-warnings 0 src/views/brand-new-surface/ui/BrandNewPage.tsx app/[locale]/brand-new/page.tsx',
+      'pnpm exec vitest related --run --passWithNoTests src/views/brand-new-surface/ui/BrandNewPage.tsx app/[locale]/brand-new/page.tsx',
       'pnpm test:contracts',
       'pnpm exec tsc --noEmit',
       'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
@@ -930,6 +932,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/validate-messages.test.mjs',
       'pnpm exec eslint --max-warnings 0 src/i18n/routing.ts src/i18n/request.ts src/i18n/navigation.ts',
+      'pnpm exec vitest related --run --passWithNoTests src/i18n/routing.ts src/i18n/request.ts src/i18n/navigation.ts',
       'pnpm exec tsc --noEmit',
       // Added 2026-08-08 — a message catalogue is not only the consistency check's
       // input. It is also the input of the gates that read "what does this screen claim
@@ -1015,7 +1018,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations, []);
   });
 
-  it('suggests direct Vitest sibling tests for app and source files', () => {
+  it('runs a changed test and every suite that imports a changed source file', () => {
     const result = suggestFocusedChecks([
       'src/shared/lib/cn.ts',
       'src/shared/lib/cn.test.ts',
@@ -1026,7 +1029,7 @@ describe('focused check suggestions', () => {
       'pnpm exec eslint --max-warnings 0 src/shared/lib/cn.ts src/shared/lib/cn.test.ts ' +
         'src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
       'pnpm exec vitest run src/shared/lib/cn.test.ts',
-      'pnpm exec vitest run src/widgets/docs-vault/ui/DocsVaultEditor.test.tsx',
+      'pnpm exec vitest related --run --passWithNoTests src/shared/lib/cn.ts src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
       'pnpm check:tokens',
       'pnpm test:contracts',
       // Touching the docs widget also suggests the e2e that drives that screen (mapping
@@ -1036,13 +1039,14 @@ describe('focused check suggestions', () => {
         'tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
       'pnpm exec tsc --noEmit',
     ]);
-    assert.deepEqual(result.commands[1].paths, [
+    assert.deepEqual(result.commands[1].paths, ['src/shared/lib/cn.test.ts']);
+    assert.deepEqual(result.commands[2].paths, [
       'src/shared/lib/cn.ts',
-      'src/shared/lib/cn.test.ts',
+      'src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
     ]);
   });
 
-  it('suggests lint and typecheck for app/source TypeScript files without sibling tests', () => {
+  it('suggests lint, related suites and typecheck for app/source TypeScript files without sibling tests', () => {
     const result = suggestFocusedChecks([
       'src/shared/config/site.ts',
       'src/shared/lib/theme.ts',
@@ -1050,6 +1054,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint --max-warnings 0 src/shared/config/site.ts src/shared/lib/theme.ts',
+      'pnpm exec vitest related --run --passWithNoTests src/shared/config/site.ts src/shared/lib/theme.ts',
       'pnpm exec tsc --noEmit',
     ]);
   });

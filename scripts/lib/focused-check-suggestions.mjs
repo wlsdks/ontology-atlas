@@ -1460,21 +1460,35 @@ function directSourceLanguageSuggestions(paths) {
   ];
 }
 
+/**
+ * A changed test runs itself; a changed source file runs **every suite that
+ * imports it**, through Vitest's module graph (`vitest related`). The sibling
+ * `<name>.test.tsx` alone missed the suite that renders the file: a change to
+ * `AcpPermissionCard.tsx` passed every recommended lane while
+ * `AcpChatPanel.test.tsx` had 25 failing cases (lesson dbb4417c). Agents in a
+ * fan-out never reach the pre-push `--changed` lane, so this is where it is caught.
+ */
 function directVitestTestSuggestions(paths) {
   const pathSet = new Set(paths);
-  const byTestFile = new Map();
+  const rows = [];
+  const sources = [];
   for (const path of paths) {
     const testFile = resolveVitestTestFile(path, pathSet);
     if (!testFile) continue;
-    const row = byTestFile.get(testFile) ?? {
-      command: `pnpm exec vitest run ${testFile}`,
-      reason: 'direct Vitest sibling test for changed app/source file',
-      paths: [],
-    };
-    row.paths.push(path);
-    byTestFile.set(testFile, row);
+    if (testFile === path) {
+      rows.push({ command: `pnpm exec vitest run ${testFile}`, reason: 'changed Vitest test file', paths: [path] });
+    } else {
+      sources.push(path);
+    }
   }
-  return [...byTestFile.values()];
+  if (sources.length > 0) {
+    rows.push({
+      command: `pnpm exec vitest related --run --passWithNoTests ${sources.join(' ')}`,
+      reason: 'every Vitest suite that imports a changed source file (module graph), not only its sibling',
+      paths: sources,
+    });
+  }
+  return rows;
 }
 
 /**
@@ -1516,14 +1530,11 @@ function directPlaywrightTestSuggestions(paths) {
     }));
 }
 
-function resolveVitestTestFile(path, pathSet) {
+function resolveVitestTestFile(path) {
   if (!/^(?:src|app)\//.test(path)) return null;
   if (!/\.(?:ts|tsx)$/.test(path)) return null;
   if (/\.(?:test|spec)\.(?:ts|tsx)$/.test(path)) return path;
-
-  const testFile = path.replace(/\.(tsx?)$/, '.test.$1');
-  if (pathSet.has(testFile) || existsSync(testFile)) return testFile;
-  return null;
+  return path.replace(/\.(tsx?)$/, '.test.$1');
 }
 
 function resolveMcpUnitTestFile(path, pathSet) {
