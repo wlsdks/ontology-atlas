@@ -8,6 +8,16 @@ import {
 } from './po-risk-router.mjs';
 import { parseFrontmatter as parseSharedFrontmatter } from './parse-frontmatter.mjs';
 
+// The pilot register was written while two reviewers sat on every review
+// route. The 2026-09-27 decision record replaced them with one independent
+// reviewer; these frozen names keep the historical register checkable.
+const PILOT_EVIDENCE_SEAT = 'po-evidence';
+const PILOT_SPECIALIST_SEATS = Object.freeze({
+  meaning: 'po-steward',
+  positioning: 'po-wedge',
+  scope: 'po-leverage',
+});
+
 const PO_PILOT_RUN_COLUMNS = Object.freeze([
   '#',
   'Date',
@@ -236,7 +246,7 @@ const parseRun = (row) => {
     if (row.Risk === 'none') fail(`run ${id} review route must name a risk`);
     if (firstTurns !== 2) fail(`run ${id} review route must record exactly two first positions`);
     if (![0, 2].includes(rebuttalTurns)) fail(`run ${id} rebuttal turns must be 0 or 2`);
-    const allowedReviewers = ['po-evidence', PO_RISK_ROUTES[row.Risk].reviewer];
+    const allowedReviewers = [PILOT_EVIDENCE_SEAT, PILOT_SPECIALIST_SEATS[row.Risk]];
     for (const reviewer of uniqueContributors) {
       if (!allowedReviewers.includes(reviewer)) {
         fail(`run ${id} contribution ${reviewer} is outside ${allowedReviewers.join(', ')}`);
@@ -351,10 +361,10 @@ export function evaluatePoPilot(pilot, asOf = new Date().toISOString().slice(0, 
   const shippedProofFailures = currentUpdates.filter((update) => update.proof === 'fail-shipped').length;
 
   const specialistContribution = Object.fromEntries(
-    Object.values(PO_RISK_ROUTES).map(({ reviewer }) => [reviewer, { calls: 0, unique: 0 }]),
+    Object.values(PILOT_SPECIALIST_SEATS).map((seat) => [seat, { calls: 0, unique: 0 }]),
   );
   for (const run of reviews) {
-    const specialist = PO_RISK_ROUTES[run.risk].reviewer;
+    const specialist = PILOT_SPECIALIST_SEATS[run.risk];
     specialistContribution[specialist].calls += 1;
     if (run.uniqueContributors.includes(specialist)) specialistContribution[specialist].unique += 1;
   }

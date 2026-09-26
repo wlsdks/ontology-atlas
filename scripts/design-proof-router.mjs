@@ -8,8 +8,8 @@ function help() {
   return `Usage:
   pnpm design:route -- --change=<change> [--change=<change>] [--json]
 
-Supply every observable design change. Atlas derives directions, council seats,
-and the smallest proof set. Every rendered class includes the iterative Computer
+Supply every observable design change. Atlas derives directions, whether one independent
+reviewer is needed with its lenses, and the smallest proof set. Every rendered class includes the iterative Computer
 Use baseline/checkpoint/final loop, except copy, which needs one final capture;
 motion additionally includes real screen recording. Repeat --change or pass a comma-separated list.
 
@@ -36,12 +36,12 @@ export function parseDesignRouteArgs(argv) {
 
 export function formatDesignRoute(result) {
   const proofPlan = result.proofs.map((item) => `${item.name}:${item.scope}`).join(',');
-  const seats = result.council.seats.length > 0 ? result.council.seats.join(',') : 'none';
+  const lenses = result.review.lenses.length > 0 ? result.review.lenses.join(',') : 'none';
   return [
     `[design-route:v${result.policyVersion}]`,
     `directions=${result.directions ? 'yes' : 'no'}`,
-    `council=${result.council.required ? 'yes' : 'no'}`,
-    `seats=${seats}`,
+    `review=${result.review.required ? 'yes' : 'no'}`,
+    `lenses=${lenses}`,
     `proof=${proofPlan}`,
     `sequence=${result.sequence.join('>')}`,
     `because=${result.reasons.join(' + ')}`,
