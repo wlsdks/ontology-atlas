@@ -1061,7 +1061,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `node scripts/lib/check-mcp-source-dependencies.mjs`
 **Proves**: The MCP runtime dependency inventory is non-empty, every declaration is exactly pinned, and each installed version matches `mcp/package.json`, including pnpm-linked installations.
 **Escalate**: `pnpm test:dogfood:script-refs` when the command guard changes; `pnpm test:cli:lib` when its shared resolver changes
-**Fix**: Run `pnpm --dir mcp install --frozen-lockfile`; dependency installation remains an explicit contributor action.
+**Fix**: Run `pnpm --dir mcp install --frozen-lockfile` (a root install also does this outside CI); nothing installs dependencies at run time.
 
 ### Source-checkout MCP verify
 

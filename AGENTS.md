@@ -31,8 +31,6 @@ decisions and approval while their content and conditions still hold.
 
 Check `git status`; preserve unrelated changes and active processes. An existing
 `.codegraph/` index may help with cross-file impact; never create one.
-Root `pnpm install` does not update `mcp/node_modules`; run
-`pnpm --dir mcp install --frozen-lockfile` when its manifest changed.
 
 Finish with `pnpm checks:changed -- --run` and complete every recommendation.
 Stop after success unless a new edit, failure, or named risk requires more; do
