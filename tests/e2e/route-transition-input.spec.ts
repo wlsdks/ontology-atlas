@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForAnimationsDone, waitFrames } from "./settle";
 
 /**
  * **Arriving from the rail, the new screen takes a press** — slice S7's third proof.
@@ -147,7 +148,8 @@ test("레일에서 자료실로 건너오면 도착한 문이 한 크로스페�
   // Leave the Library and come back, pressing without waiting for anything to be actionable.
   await rail.getByRole("link", { name: "Agents" }).click();
   await expect(page.getByTestId("agents-page")).toBeVisible({ timeout: 25_000 });
-  await page.waitForTimeout(600);
+  // The crossfade out of the Library is over before the watcher is armed for the way back.
+  await waitForAnimationsDone(page.locator("html"));
   await page.evaluate(() => {
     (window as unknown as { __presses: { at: number; on: string }[] }).__presses.length = 0;
   });
@@ -183,9 +185,11 @@ test("레일에서 자료실로 건너오면 도착한 문이 한 크로스페�
   );
 
   await page.mouse.click(aim.x, aim.y);
+  // measurement window: the second press lands a fixed gap after the first, which is what it proves.
   await page.waitForTimeout(SECOND_PRESS_GAP_MS);
   await page.mouse.click(aim.x, aim.y);
-  await page.waitForTimeout(250);
+  // The press is logged synchronously; one more painted frame lets the watcher record its state.
+  await waitFrames(page, 2);
 
   const arrival = await page.evaluate(
     () =>

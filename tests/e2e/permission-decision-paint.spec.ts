@@ -59,8 +59,10 @@ test('the keyboard does not open on the decision that writes', async ({ page }) 
   const harness = await openLibraryWorkScenario(page, { permissionKind: 'ontology-patch' });
   await harness.read(page);
   await harness.wait(page);
-  await expect(page.getByTestId('acp-permission-card')).toBeVisible();
-  await page.waitForTimeout(500);
+  const card = page.getByTestId('acp-permission-card');
+  await expect(card).toBeVisible();
+  // The card's mount moves focus inside it (the alertdialog contract); read where it opened.
+  await expect.poll(() => card.evaluate((el) => el.contains(document.activeElement))).toBe(true);
   expect(
     await page.evaluate(() => document.activeElement?.getAttribute('data-testid') ?? null),
   ).not.toBe('acp-permission-allow');

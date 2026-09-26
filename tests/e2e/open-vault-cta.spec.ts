@@ -510,20 +510,10 @@ test.describe("관문은 폴더를 여는 화면이 아니다 — 대신 그 화
        * the press until it opens (audit of every wait, 2026-08-17).
        */
       const sheet = page.getByTestId("vault-guide-sheet");
-      await expect
-        .poll(
-          async () => {
-            if (await sheet.isVisible().catch(() => false)) return true;
-            await starter.click({ timeout: 5_000 }).catch(() => {});
-            await page.waitForTimeout(250);
-            return sheet.isVisible().catch(() => false);
-          },
-          {
-            timeout: 25_000,
-            message: `${viewport.width}: 안내 시트가 안 열렸다 — 착지점의 경로가 바뀌었다`,
-          },
-        )
-        .toBe(true);
+      await expect(async () => {
+        if (!(await sheet.isVisible())) await starter.click({ timeout: 5_000 });
+        await expect(sheet).toBeVisible({ timeout: 1_000 });
+      }, `${viewport.width}: 안내 시트가 안 열렸다 — 착지점의 경로가 바뀌었다`).toPass({ timeout: 25_000 });
 
       await page.getByTestId("vault-guide-pick-existing").click();
       await expect

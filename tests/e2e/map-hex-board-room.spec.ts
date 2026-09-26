@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
 import { dogfoodEvidenceVault } from "./hex-board-vaults";
+import { waitForAnimationsDone, waitForBoxStill, waitForCanvasStill } from "./settle";
 
 /**
  * **The hex board fits the free map it opens in, whatever is selected.**
@@ -117,9 +118,21 @@ for (const viewport of [
     const vault = await openVault(page, { reducedMotion: false });
     await page.goto("/ko/?guides=off&e2e=1&view=hex", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 90_000 });
-    await expect(page.getByTestId("topology-index-panel")).toBeVisible();
-    // INDEX has finished arriving and the board has had every chance to read the room again.
-    await page.waitForTimeout(1_500);
+    const index = page.getByTestId("topology-index-panel");
+    await expect(index).toBeVisible();
+    // INDEX has finished arriving, and the board has read the room again and drawn it. The
+    // re-read runs on the board's own settle timer after INDEX changes, which exposes no state,
+    // so the wait is for the room it publishes to clear INDEX (a board that never re-reads still
+    // fails here, on the poll's timeout).
+    await waitForAnimationsDone(index);
+    await waitForBoxStill(index);
+    await expect
+      .poll(async () => {
+        const board = await readBoard(page);
+        return board.room !== null && board.index !== null && board.canvas.x + board.room.x >= board.index.right;
+      }, { timeout: 30_000 })
+      .toBe(true);
+    await waitForCanvasStill(page.getByTestId("hex-board-map").locator("canvas"));
 
     const board = await readBoard(page);
     console.log(`[hex room rest ${viewport.width}] room=${JSON.stringify(board.room)} index=${JSON.stringify(board.index)} canvas=${JSON.stringify(board.canvas)}`);

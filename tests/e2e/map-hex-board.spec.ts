@@ -134,8 +134,10 @@ test("hex board writes the address only on a real change: stale-only and 20 fore
   let before = await writes();
   await page.getByTestId("hex-board-stale-only").click();
   await expect(page.getByTestId("hex-board-stale-only")).toHaveAttribute("aria-pressed", "true");
+  // measurement window: the claim is that no address write follows the press, so the window has to outlast any deferred write.
   await page.waitForTimeout(1_500);
   await page.getByTestId("hex-board-stale-only").click();
+  // measurement window: as above, for the second press.
   await page.waitForTimeout(1_500);
   expect((await writes()) - before, "stale only wrote the address").toBeLessThanOrEqual(1);
 
@@ -153,6 +155,7 @@ test("hex board writes the address only on a real change: stale-only and 20 fore
       await new Promise((r) => setTimeout(r, 50));
     }
   });
+  // measurement window: the claim is that the board never answers a foreign write, so the count is read after a window a deferred answer would land in.
   await page.waitForTimeout(1_500);
   const total = (await writes()) - before;
   const answered = (await viewWrites()) - viewBefore;

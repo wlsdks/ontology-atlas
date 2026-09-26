@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForAnimationsDone, waitForBoxStill, waitForMapStill } from "./settle";
 
 /**
  * The sub-`lg` node detail is **a bottom sheet, not a full-bleed sheet.**
@@ -79,8 +80,10 @@ async function openSheetFromIndex(page: Page, width: number, height: number) {
   // the sheet — the `?p=` deep link collapses it, so it cannot see this defect at all.
   await page.getByTestId("topology-index-row").first().click();
   await expect(page.getByTestId("map-detail-panel")).toBeVisible({ timeout: 20_000 });
-  // Let the focus camera finish making room before anything is counted.
-  await page.waitForTimeout(1_200);
+  // Let the focus camera finish making room, and the sheet arrive, before anything is counted.
+  await waitForMapStill(page, { what: "camera" });
+  await waitForAnimationsDone(page.locator("body"));
+  await waitForBoxStill(page.getByTestId("map-detail-panel"));
 }
 
 async function measure(page: Page) {

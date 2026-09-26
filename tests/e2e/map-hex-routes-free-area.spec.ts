@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
 import { dogfoodEvidenceVault } from "./hex-board-vaults";
+import { waitForAnimationsDone } from "./settle";
 
 /**
  * **A hex board route never leaves the free map.**
@@ -60,7 +61,7 @@ async function settled(page: Page) {
     )
     .toBe(true);
   // Panels finish their own transitions (INDEX fold, inspector arrival) before we measure.
-  await page.waitForTimeout(700);
+  await waitForAnimationsDone(page.locator("body"));
   last = "";
   await expect
     .poll(

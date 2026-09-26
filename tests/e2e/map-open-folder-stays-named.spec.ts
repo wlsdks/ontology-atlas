@@ -47,6 +47,7 @@ test("the open folder keeps its name and its count while the watch re-reads", as
   const started = Date.now();
   while (Date.now() - started < 20_000) {
     samples.push({ at: Date.now() - started, ...(await read()) });
+    // measurement window: the sampling interval of a 20-second watch; the claim is that nothing blinks during it.
     await page.waitForTimeout(500);
   }
 

@@ -1,6 +1,35 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
-import { waitForMapStill } from "./settle";
+import { waitForMapStill, waitFrames } from "./settle";
+
+/**
+ * Resolve once the lens's sink ramp has arrived. It steps only inside the frame body, and while
+ * it has not arrived the frame gate records `spotlightSettling` among the causes that kept the
+ * frame awake (`idleDebug`, e2e only). Arrived is a frame awake for other reasons only, or two
+ * samples with no awake frame at all; then one more painted frame carries the arrived value.
+ */
+async function waitForSinkArrived(page: import("@playwright/test").Page) {
+  await page.evaluate(() => {
+    (window as unknown as { __sinkSeen?: unknown }).__sinkSeen = undefined;
+  });
+  await page.waitForFunction(
+    () => {
+      type Debug = { lastActive: { t: number; causes: string[] } | null };
+      const debug = (window as unknown as { __atlasMap?: { idleDebug?: () => Debug } }).__atlasMap?.idleDebug?.();
+      if (!debug) return false;
+      const store = window as unknown as { __sinkSeen?: { t: number | null; quiet: number } };
+      const t = debug.lastActive?.t ?? null;
+      const settling = debug.lastActive?.causes.includes("spotlightSettling") ?? false;
+      const seen = store.__sinkSeen;
+      const quiet = seen && seen.t === t ? seen.quiet + 1 : 0;
+      store.__sinkSeen = { t, quiet };
+      return !settling || quiet >= 2;
+    },
+    undefined,
+    { polling: "raf", timeout: 30_000 },
+  );
+  await waitFrames(page, 2);
+}
 
 /**
  * **A path is the only bright thing while a path is asked for** (2026-09-19).
@@ -27,7 +56,7 @@ test("off the path, a domain's name is at most half as bright as one on it", asy
   await expect(page.getByTestId("ontology-map")).toHaveAttribute("data-map-lens", "path");
   await waitForMapStill(page);
   // The sink ramps on its own clock; wait for the frame it has arrived in.
-  await page.waitForTimeout(600);
+  await waitForSinkArrived(page);
 
   const reading = await page.evaluate(() => {
     const probe = window.__atlasMap!;
@@ -95,7 +124,7 @@ async function namePresencePerNode(page: import("@playwright/test").Page, url: s
   await page.evaluate(() => document.fonts.ready);
   await waitForMapStill(page);
   // The sink ramps on its own clock; wait for the frame it has arrived in.
-  await page.waitForTimeout(600);
+  await waitForSinkArrived(page);
   return page.evaluate(() => {
     const probe = window.__atlasMap!;
     const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="ontology-map-canvas"]')!;
