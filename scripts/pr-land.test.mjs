@@ -10,6 +10,7 @@ import {
   classifyLock,
   conduct,
   describeCleanup,
+  lockTrains,
   describeLock,
   otherCheckState,
   parseArgs,
@@ -22,7 +23,7 @@ import {
   runPrLand,
   worktreeToRemove,
 } from './pr-land.mjs';
-import { EJECTED_MARKER, LANDED_MARKER, QUEUE_LABEL, trainCiStep } from './lib/landing-train.mjs';
+import { EJECTED_MARKER, LANDED_MARKER, QUEUE_LABEL, RED_CLOSE_PREFIX, trainCiStep } from './lib/landing-train.mjs';
 
 /**
  * The landing train, driven by `gh` output recorded from this repository and by a fake GitHub.
@@ -123,10 +124,11 @@ describe('pr:land argument parsing', () => {
   });
 
   it('reads the train, fast-path and waiting options', () => {
-    const args = parseArgs(['12', '--batch=5', '--no-wait', '--no-fast', '--flaky=A,B', '--allow-failing=C']);
-    assert.deepEqual([args.batch, args.wait, args.fast, args.flaky, args.allowFailing], [5, false, false, ['A', 'B'], ['C']]);
+    const args = parseArgs(['12', '--batch=5', '--no-wait', '--no-fast', '--no-speculate', '--flaky=A,B', '--allow-failing=C']);
+    assert.deepEqual([args.batch, args.wait, args.fast, args.speculate, args.flaky, args.allowFailing], [5, false, false, false, ['A', 'B'], ['C']]);
     const defaults = parseArgs(['12']);
-    assert.deepEqual([defaults.batch, defaults.wait, defaults.fast], [20, true, true]);
+    // No --batch: the conductor measures the size from recent trains.
+    assert.deepEqual([defaults.batch, defaults.wait, defaults.fast, defaults.speculate], [null, true, true, true]);
     assert.throws(() => parseArgs(['12', '--batch=0']), /positive integer/);
     assert.throws(() => parseArgs(['12', '--flaky=']), /must name at least one/);
   });
@@ -476,7 +478,7 @@ function component(number, extra = {}) {
  * - `mainDrift(trainIndex)` is the files `main` changed under the n-th train while its CI ran.
  * - `readOnly` makes every write throw, for `--plan`.
  */
-function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new Set(), mainDrift = () => [], lock = null, readOnly = false } = {}) {
+function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new Set(), mainDrift = () => [], lock = null, readOnly = false, history = [] } = {}) {
   const calls = [];
   const events = [];
   let clock = Date.parse('2026-09-26T10:00:00Z');
@@ -491,6 +493,7 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
   const locks = new Map(lock ? [[LOCK_REF, lock]] : []);
   const trains = new Map();
   const branchTrain = new Map();
+  const branchBase = new Map();
   let trainCount = 0;
   const write = (name, fn) => (...args) => {
     calls.push([name, ...args]);
@@ -521,6 +524,7 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
       .sort((a, b) => Date.parse(a.queuedAt) - Date.parse(b.queuedAt))
       .map((pr) => ({ ...pr })),
     readRequiredContexts: () => ({ contexts: REQUIRED_CONTEXTS, failure: null }),
+    listTrainHistory: () => history,
     readLock: (ref) => ({ payload: locks.get(ref) ?? null, unreadable: null }),
     takeLock: write('takeLock', (ref, body, { force = false } = {}) => {
       if (locks.has(ref) && !force) return false;
@@ -557,7 +561,10 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
       if (pr.state === 'OPEN') pr.state = 'CLOSED';
       return true;
     }),
-    createBranch: write('createBranch', () => true),
+    createBranch: write('createBranch', (branch, sha) => {
+      branchBase.set(branch, sha);
+      return true;
+    }),
     deleteBranch: write('deleteBranch', () => true),
     mergeInto: write('mergeInto', (branch, sha) => {
       const pr = [...pulls.values()].find((p) => p.headRefOid === sha);
@@ -572,7 +579,7 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
         number, title, body, state: 'OPEN', isDraft: false, headRefName: head, headRefOid: `train-head-${number}`,
         url: `https://github.com/wlsdks/ontology-atlas/pull/${number}`, labels: [], comments: [],
       });
-      trains.set(number, { components: branchTrain.get(head) ?? [], polls: 0, reruns: 0, index: trainCount, rollup: [] });
+      trains.set(number, { number, components: branchTrain.get(head) ?? [], base: branchBase.get(head), polls: 0, reruns: 0, index: trainCount, rollup: [] });
       return { number, url: `https://github.com/wlsdks/ontology-atlas/pull/${number}` };
     }),
     mergePr: write('mergePr', (number) => {
@@ -610,7 +617,9 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
     mergeBase: () => 'base'.padEnd(40, '0'),
     diffNames: (from, to) => {
       if (to === 'origin/main' || to === 'main'.padEnd(40, '0')) {
-        const current = [...trains.values()].at(-1);
+        // The drift under the open train cut from `from`: main's own sha, or a train head.
+        const open = [...trains.values()].filter((t) => pulls.get(t.number).state === 'OPEN');
+        const current = open.find((t) => t.base === from) ?? [...trains.values()].at(-1);
         return current ? mainDrift(current.index) : [];
       }
       if (to.startsWith('head:')) return (branchTrain.get(to.slice('head:'.length)) ?? []).flatMap((n) => pulls.get(n).files);
@@ -751,7 +760,8 @@ describe('the conductor runs trains', () => {
       queued: [1, 2, 3, 4],
       ci: (numbers) => (numbers.includes(breaker) ? red(['Unit · Contract']) : green()),
     });
-    const result = runConductor(world);
+    // Sequential, so the halves read in order; the speculative bisect is below.
+    const result = runConductor(world, { speculate: false });
     assert.deepEqual(result.landed, [1, 2, 4]);
     const trains = called(world, 'openPr').map(([, { title }]) => title);
     assert.deepEqual(trains, [
@@ -810,6 +820,135 @@ describe('the conductor runs trains', () => {
     const world = fakeWorld({ prs: [component(8, { mergeable: 'CONFLICTING' }), component(9)], queued: [8, 9] });
     assert.deepEqual(runConductor(world).landed, [9]);
     assert.ok(world.pulls.get(8).comments.at(-1).body.startsWith(EJECTED_MARKER));
+  });
+});
+
+/*
+ * Two trains in flight. The second is cut from the first one's head while the first one's CI
+ * runs, so both CI runs overlap; it lands only after the first one lands, and is closed, never
+ * merged, when the first one does not.
+ */
+describe('a speculative second train', () => {
+  const prs = () => [1, 2, 3, 4].map((n) => component(n));
+  const titles = (world) => called(world, 'openPr').map(([, { title }]) => title);
+  const trainOf = (world, title) => called(world, 'openPr').findIndex(([, o]) => o.title === title) + 2001;
+  const index = (world, name, predicate = () => true) => world.calls.findIndex((call) => call[0] === name && predicate(call));
+
+  it('lands A then B, one CI run each, with B\'s CI running while A\'s does', () => {
+    const world = fakeWorld({ prs: prs(), queued: [1, 2, 3, 4] });
+    const result = runConductor(world, { batch: 2 });
+
+    assert.deepEqual(result.landed, [1, 2, 3, 4]);
+    assert.deepEqual(titles(world), ['chore(train): land #1 #2', 'chore(train): land #3 #4'], 'two trains, one CI run each');
+    assert.deepEqual(called(world, 'mergePr').map(([, number]) => number), [2001, 2002], 'merged in order: A, then B');
+    const bOpened = index(world, 'openPr', ([, o]) => o.title.endsWith('#3 #4'));
+    assert.ok(bOpened < index(world, 'mergePr'), 'B opened before A merged: the two CI runs overlapped');
+    assert.ok(bOpened < index(world, 'readPr', ([, n]) => n === 2001), 'B opened before A was even polled');
+
+    const [, bBranch, bBase] = called(world, 'createBranch')[1];
+    assert.match(bBranch, /^train\/.*-3$/);
+    assert.match(bBase, /^head:train\/.*-1$/, 'B is cut from A\'s head, not from main');
+    assert.match(called(world, 'openPr')[1][1].body, /onto train #2001 .*speculatively/);
+    assert.equal(called(world, 'closePr').filter(([, n]) => n >= 2001).length, 0, 'nothing discarded');
+
+    // Both file sets were in the lock while both flew, so a fast path saw both.
+    const both = called(world, 'refreshLock').map(([, , body]) => body).find((body) => body.trains?.length === 2 && body.trains.every((t) => t.pr));
+    assert.ok(both, 'the lock recorded two trains in flight');
+    assert.deepEqual(both.trains.map((t) => t.files), [['src/change-1.ts', 'src/change-2.ts'], ['src/change-3.ts', 'src/change-4.ts']]);
+    assert.deepEqual(both.train.files, ['src/change-1.ts', 'src/change-2.ts', 'src/change-3.ts', 'src/change-4.ts']);
+    assert.equal(both.pr, 2001);
+  });
+
+  it('discards B when A goes red, never merges it, and rebuilds it from main after the bisect', () => {
+    const world = fakeWorld({ prs: prs(), queued: [1, 2, 3, 4], ci: (numbers) => (numbers.includes(1) ? red(['MCP']) : green()) });
+    const result = runConductor(world, { batch: 2 });
+
+    assert.deepEqual(result.landed, [2, 3, 4]);
+    assert.deepEqual(titles(world), [
+      'chore(train): land #1 #2',
+      'chore(train): land #3 #4', // speculative on A: discarded
+      'chore(train): land #1',
+      'chore(train): land #2', // speculative on #1: discarded, its half put back
+      'chore(train): land #2',
+      'chore(train): land #3 #4', // speculative on #2, which lands: so does this
+    ]);
+    const merged = called(world, 'mergePr').map(([, n]) => n);
+    assert.ok(!merged.includes(2002) && !merged.includes(2004), 'a discarded train is never merged');
+    assert.deepEqual(merged, [2005, 2006]);
+    const discard = world.pulls.get(2002).comments.at(-1).body;
+    assert.match(discard, /^Discarded: it was cut on top of train #2001, which went red/);
+    assert.ok(!discard.startsWith(RED_CLOSE_PREFIX), 'a discard is not counted as a red train');
+    assert.ok(world.pulls.get(1).comments.at(-1).body.startsWith(EJECTED_MARKER));
+    assert.equal(called(world, 'createBranch')[4][2], 'main'.padEnd(40, '0'), 'after the bisect, the rebuilt train is cut from main');
+  });
+
+  it('lands A and bisects B when B is red on top of a green A', () => {
+    const world = fakeWorld({ prs: prs(), queued: [1, 2, 3, 4], ci: (numbers) => (numbers.includes(4) ? red(['Unit · Contract']) : green()) });
+    const result = runConductor(world, { batch: 2 });
+
+    assert.deepEqual(result.landed, [1, 2, 3]);
+    assert.deepEqual(called(world, 'mergePr').map(([, n]) => n), [2001, 2003]);
+    const bClose = world.pulls.get(2002).comments.at(-1).body;
+    assert.ok(bClose.startsWith(RED_CLOSE_PREFIX), 'B is judged red on its own, after A landed');
+    assert.match(bClose, /Split into #3 \| #4/);
+    assert.deepEqual(titles(world).slice(2), ['chore(train): land #3', 'chore(train): land #4']);
+    assert.ok(world.pulls.get(4).comments.at(-1).body.startsWith(EJECTED_MARKER));
+    assert.equal(world.pulls.get(3).state, 'CLOSED');
+  });
+
+  it('bisects with speculation too: the second half rides on the first', () => {
+    const world = fakeWorld({ prs: prs(), queued: [1, 2, 3, 4], ci: (numbers) => (numbers.includes(3) ? red(['Unit · Contract']) : green()) });
+    assert.deepEqual(runConductor(world).landed, [1, 2, 4]);
+    assert.equal(titles(world)[2], 'chore(train): land #3 #4');
+    assert.match(called(world, 'openPr')[2][1].body, /onto train #2002/, 'the second half was cut on the first half');
+  });
+
+  it('keeps one train in flight with --no-speculate', () => {
+    const world = fakeWorld({ prs: prs(), queued: [1, 2, 3, 4] });
+    runConductor(world, { batch: 2, speculate: false });
+    assert.ok(index(world, 'mergePr') < index(world, 'openPr', ([, o]) => o.title.endsWith('#3 #4')));
+  });
+
+  it('records the head train with the union of files for a reader that knows only `train`', () => {
+    assert.deepEqual(lockTrains([]), { train: null, trains: [] });
+    const both = lockTrains([{ pr: 1, files: ['b'] }, { pr: 2, files: ['a', 'b'] }]);
+    assert.deepEqual(both.train, { pr: 1, files: ['a', 'b'] });
+    assert.equal(lockTrains([{ pr: 1, files: ['b'] }, { pr: null, files: null }]).train.files, null, 'assembling: unknown, never partial');
+  });
+});
+
+describe('the train size a conductor chooses', () => {
+  const trainPr = (number, size, red) => ({
+    number,
+    title: `chore(train): land ${Array.from({ length: size }, (_, i) => `#${number * 100 + i}`).join(' ')}`,
+    state: red ? 'CLOSED' : 'MERGED',
+    headRefName: `train/20260926T100000Z-${number}`,
+    comments: red ? [{ body: `${RED_CLOSE_PREFIX}MCP FAILURE. Split into halves.` }] : [],
+  });
+  const land = (world, argv) => runPrLand(argv, world.io, () => world.deps);
+
+  it('measures it from recent trains when --batch is absent, and prints why', () => {
+    // 12 of 20 ten-PR trains green: p is about 5 %, so a train of 13.
+    const history = Array.from({ length: 20 }, (_, i) => trainPr(i + 1, 10, i >= 12));
+    const world = fakeWorld({ prs: Array.from({ length: 16 }, (_, i) => component(i + 1)), queued: Array.from({ length: 16 }, (_, i) => i + 1), history });
+    assert.equal(land(world, ['--conduct']), 0);
+    assert.ok(world.out.some((line) => /train size 13: 20 recent train\(s\), 8 red; about 5\.0 %/.test(line)));
+    assert.equal(called(world, 'openPr')[0][1].title.match(/#\d+/g).length, 13);
+  });
+
+  it('lets --batch override the measurement', () => {
+    const world = fakeWorld({ prs: [component(1), component(2)], queued: [1, 2], history: [] });
+    assert.equal(land(world, ['--conduct', '--batch=1']), 0);
+    assert.ok(world.out.some((line) => line === 'train size 1 (--batch)'));
+  });
+
+  it('keeps the default when the history is short or unreadable', () => {
+    const world = fakeWorld({ prs: [component(1)], queued: [1], history: [trainPr(1, 1, true)] });
+    land(world, ['--conduct']);
+    assert.ok(world.out.some((line) => /train size 20: 1 recent train\(s\), 1 red; fewer than 8/.test(line)));
+    const unreadable = fakeWorld({ prs: [component(1)], queued: [1], history: null });
+    land(unreadable, ['--conduct']);
+    assert.ok(unreadable.out.some((line) => /train size 20: recent trains could not be read/.test(line)));
   });
 });
 
@@ -880,6 +1019,33 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     assert.match(text, /\| Co-authored-by: Author 33 <a33@example.com>/);
     assert.match(text, /dry run: nothing was written to GitHub/);
     assert.deepEqual(world.calls.filter(([name]) => !['readPr'].includes(name)), [], 'plan made a write call');
+  });
+
+  it('plans the speculative train that would ride on the next one', () => {
+    const world = fakeWorld({ prs: [component(51), component(52), component(53)], queued: [51, 52, 53], conflicts: new Set([53]), readOnly: true });
+    assert.equal(land(world, ['--plan', '51', '--batch=1']), 0);
+    const text = world.out.join('\n');
+    assert.match(text, /train size 1 \(--batch\)/);
+    assert.match(text, /next train \(1 of 3 queued\): chore\(train\): land #51/);
+    assert.match(text, /speculative train while its CI runs \(1\): chore\(train\): land #52/);
+    assert.match(text, /lands only if that train lands, discarded if it does not/);
+    assert.match(text, /#52 feat\/change-52@52ccccccc: merges cleanly/);
+    assert.deepEqual(world.calls.filter(([name]) => !['readPr'].includes(name)), [], 'plan made a write call');
+
+    // With a train in flight, its riders are not planned again and the next train rides on it.
+    const trainLock = {
+      pr: 1990, token: 'otherhost-1-1', holder: 'ada', host: 'otherhost', acquiredAt: '2026-09-26T09:59:00Z',
+      leaseMinutes: LEASE_MINUTES, train: { pr: 1990, components: [51], files: ['src/change-51.ts'] }, trains: [{ pr: 1990, components: [51], files: ['src/change-51.ts'] }],
+    };
+    const flying = fakeWorld({ prs: [component(51), component(52)], queued: [51, 52], lock: trainLock, readOnly: true });
+    land(flying, ['--plan', '52', '--no-fast']);
+    const flyingText = flying.out.join('\n');
+    assert.match(flyingText, /1 train\(s\) in flight carrying #51; the trains below form after it, the first one speculating on it/);
+    assert.match(flyingText, /next train \(1 of 1 queued\): chore\(train\): land #52\n.*from train #1990's head/);
+
+    const sequential = fakeWorld({ prs: [component(51), component(52)], queued: [51, 52], readOnly: true });
+    land(sequential, ['--plan', '51', '--batch=1', '--no-speculate']);
+    assert.match(sequential.out.join('\n'), /no speculative train: --no-speculate/);
   });
 
   it('prints the queue, the train in flight and its CI', () => {

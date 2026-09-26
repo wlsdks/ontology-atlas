@@ -20,10 +20,11 @@
  *      then waits, printing progress, and exits with the pull request's outcome: 0 landed, 1
  *      ejected or closed. `--no-wait` exits right after enqueueing. Whoever finds the lock free
  *      becomes the conductor; `pnpm pr:land --conduct` conducts without queueing anything.
- *   2. **The conductor runs trains.** It takes up to `--batch=<n>` (default 20) queued pull
- *      requests in queue order, creates `train/<timestamp>-<first>` from `origin/main` through the
- *      Git refs API, and merges each component's head into it server-side (`POST .../merges`). A
- *      409 conflict ejects that component with a comment and the train continues without it.
+ *   2. **The conductor runs trains.** It takes up to `--batch=<n>` queued pull requests in queue
+ *      order (default: measured, below), creates `train/<timestamp>-<first>` from `origin/main`
+ *      through the Git refs API, and merges each component's head into it server-side
+ *      (`POST .../merges`). A 409 conflict ejects that component with a comment and the train
+ *      continues without it.
  *   3. **One CI run per train.** The train branch gets its own pull request, opened ready, so its
  *      `opened` event fires the required contexts once for every component. Components stay
  *      drafts and run nothing.
@@ -47,12 +48,29 @@
  *      the seconds between the last check and the merge call. A train takes the same lease for its
  *      drift check and merge, so a fast path and a train can never interleave check and merge.
  *
- * **Throughput, measured 2026-09-26.** A train costs one CI run (~20 min, ~10 jobs; a public
- * repository runs 20 jobs at once, and the lock keeps one train in flight), so the queue drains at
- * about `--batch` pull requests per 25 minutes: 400 green pull requests in ~8 hours at 20. The
- * weak point is the per-PR red rate `p`: a train of `n` is red with `1 - (1 - p)^n` (64 % at
- * p = 5 %, n = 20) and each red train bisects sequentially. Lower `--batch` when bisects dominate
- * the log; flaky contexts belong in `--flaky`, not in a smaller batch.
+ *   7. **Two trains in flight (speculation).** While train A's CI runs, the conductor cuts train
+ *      B from A's head (not `main`) out of the next queued pull requests and opens it, so B's CI
+ *      runs concurrently on exactly the tree `main` becomes if A lands. Verdicts are acted on in
+ *      order: B lands only after A lands (still under the drift check and the fast lease, against
+ *      A's head as its base); if A goes red, is rebuilt or times out, B is closed and never merged,
+ *      and its pull requests ride a train cut from `main` after A's bisect. A component that
+ *      conflicts on top of A stays queued instead of being ejected, since A may be the cause. The
+ *      lock records both trains' file sets (`trains`), so the fast path refuses an overlap with
+ *      either. `--no-speculate` keeps one train in flight.
+ *
+ * **Throughput, measured 2026-09-26.** A train costs one CI run (~20 min, ~10 jobs). A public
+ * repository runs 20 jobs at once, so two trains fit side by side, which is why speculation stops
+ * at two (Uber SubmitQueue, Zuul and Mergify all pair batching and bisection with speculation):
+ * with A green, B's verdict is ready when A's is, and the queue drains at about two trains per
+ * 25 minutes instead of one. The weak point is the per-PR red rate `p`: a train of `n` is red
+ * with `1 - (1 - p)^n` (64 % at p = 5 %, n = 20), each red train bisects sequentially, and a red A
+ * wastes B's run. So without `--batch` the size is measured: the conductor reads the last 60
+ * train pull requests (merged is green; closed with `Red on` is red; drift rebuilds, timeouts and
+ * discarded speculation say nothing), estimates `p` by maximum likelihood, and takes
+ * `n = floor(ln 0.5 / ln(1 - p))` clamped to [2, 20], the largest train green at least half the
+ * time (13 at p = 5 %). Fewer than 8 decided trains keep 20. On 2026-09-26 the 14 decided trains
+ * (2 red, 13 of one pull request) measured p = 11.8 % and chose 5. Flaky contexts belong in `--flaky`, not in a
+ * smaller batch.
  *
  * **Why merging onto a moved `main` is safe here, and exactly when.** Both the fast path and the
  * train merge a tree CI never ran: the tested tree plus whatever reached `main` since. That is
@@ -114,23 +132,29 @@ import {
   DEFAULT_BATCH,
   MAX_REBUILDS,
   QUEUE_LABEL,
+  RED_CLOSE_PREFIX,
+  TRAIN_HISTORY_LIMIT,
+  adaptiveBatch,
   composeSquashBody,
   conflictComment,
   describeFastPath,
-  describeTrain,
+  describeTrains,
   driftVerdict,
   ejectComment,
   fastPathEligibility,
   landedComment,
+  maySpeculate,
   nextTrain,
   parseCoAuthors,
   queueOrder,
   redTrainPlan,
+  requeueAfterDiscard,
   runIdsFromChecks,
   splitTrain,
   trainBody,
   trainBranchName,
   trainCiStep,
+  trainHistoryRows,
   trainTitle,
   waiterOutcome,
   waiterPollSeconds,
@@ -153,6 +177,12 @@ export const FAST_LEASE_MINUTES = 2;
 export const LEASE_MINUTES = 45;
 
 export const POLL_SECONDS = 30;
+
+/**
+ * With one train in flight and nothing queued behind it, how long before the conductor lists the
+ * queue again for a speculative train. Every poll would be 120 queue reads an hour for nothing.
+ */
+const SPECULATION_QUEUE_RECHECK_SECONDS = 300;
 
 /**
  * A train with no verdict after this long is closed and the conductor stops, leaving the queue
@@ -280,7 +310,7 @@ export function describeLock(lock, nowMs = Date.now()) {
   }
   const age = `${lock.ageMinutes.toFixed(0)} min ago`;
   const who = `${lock.holder.holder ?? 'unknown'}@${lock.holder.host ?? 'unknown'}`;
-  const subject = 'train' in lock.holder ? describeTrain(lock.holder.train, nowMs) : `PR #${lock.holder.pr}`;
+  const subject = 'train' in lock.holder ? describeTrains(lock.holder, nowMs) : `PR #${lock.holder.pr}`;
   if (lock.state !== 'stale') return `${subject} held by ${who} since ${age}`;
   const why = lock.holderLiveness === 'dead' ? 'its process is gone' : 'never refreshed: stale';
   return `${subject} held by ${who} since ${age} and ${why}`;
@@ -503,7 +533,9 @@ export function parseArgs(argv) {
     conduct: false,
     wait: true,
     fast: true,
-    batch: DEFAULT_BATCH,
+    speculate: true,
+    // `null` measures the size from recent trains (`chooseBatch`); `--batch=<n>` fixes it.
+    batch: null,
     worktree: null,
     timeoutMinutes: 180,
     allowFailing: [],
@@ -528,6 +560,7 @@ export function parseArgs(argv) {
     else if (arg === '--conduct') args.conduct = true;
     else if (arg === '--no-wait') args.wait = false;
     else if (arg === '--no-fast') args.fast = false;
+    else if (arg === '--no-speculate') args.speculate = false;
     else if (arg === '--parallel-ci') retire(arg);
     else if (arg.startsWith('--batch=')) {
       const size = Number(arg.slice('--batch='.length));
@@ -678,6 +711,20 @@ export function createGithub(slug, run = ghRun) {
       return ok(['pr', 'edit', String(number), '--add-label', QUEUE_LABEL]);
     },
     removeLabel: (number) => ok(['pr', 'edit', String(number), '--remove-label', QUEUE_LABEL]),
+    /**
+     * Recent train pull requests with their comments, for the red rate (`chooseBatch`). One
+     * GraphQL search; `null` when it could not be read, which keeps the default size.
+     */
+    listTrainHistory: () => {
+      const out = run(['pr', 'list', '--state', 'all', '--search', '"chore(train): land" in:title', '--limit', String(TRAIN_HISTORY_LIMIT),
+        '--json', 'number,title,state,headRefName,comments'], { allowFailure: true });
+      if (typeof out !== 'string') return null;
+      try {
+        return JSON.parse(out);
+      } catch {
+        return null;
+      }
+    },
     comment: (number, body) => ok(['pr', 'comment', String(number), '--body', body]),
     closePr: (number, body) => ok(['pr', 'close', String(number), '--comment', body]),
     createBranch: (branch, sha) => ok(['api', '-X', 'POST', `repos/${slug}/git/refs`, '-f', `ref=refs/heads/${branch}`, '-f', `sha=${sha}`]),
@@ -845,22 +892,38 @@ function readLockState(deps, ref = LOCK_REF) {
  * the lease **before** sleeping: a poll that skipped the refresh would age the lock past its
  * lease under a live conductor and invite the next lander to force-take it.
  */
+/**
+ * The payload records every train in flight under `trains`, head first, each with its own file
+ * set, so a fast-path lander refuses a change that overlaps the speculative train too. `train` is
+ * the head train with `files` widened to the union, for a reader that knows only `train`.
+ */
+export function lockTrains(trains) {
+  const list = [...trains];
+  if (list.length === 0) return { train: null, trains: [] };
+  const known = list.every((t) => Array.isArray(t.files));
+  const files = known ? [...new Set(list.flatMap((t) => t.files))].sort() : null;
+  return { train: { ...list[0], files }, trains: list };
+}
+
 function makeHolder({ deps, token }) {
-  let train = null;
+  const trains = new Map();
   const since = new Date(deps.now()).toISOString();
   let held = false;
   let unregister = () => {};
-  const body = () => ({
-    pr: train?.pr ?? train?.components?.[0] ?? 0,
-    token,
-    holder: deps.user,
-    host: deps.host,
-    acquiredAt: new Date(deps.now()).toISOString(),
-    leaseMinutes: LEASE_MINUTES,
-    via: 'pnpm pr:land (train)',
-    conductingSince: since,
-    train,
-  });
+  const body = () => {
+    const recorded = lockTrains(trains.values());
+    return {
+      pr: recorded.train?.pr ?? recorded.train?.components?.[0] ?? 0,
+      token,
+      holder: deps.user,
+      host: deps.host,
+      acquiredAt: new Date(deps.now()).toISOString(),
+      leaseMinutes: LEASE_MINUTES,
+      via: 'pnpm pr:land (train)',
+      conductingSince: since,
+      ...recorded,
+    };
+  };
   const holder = {
     take: ({ force = false } = {}) => {
       held = deps.gh.takeLock(LOCK_REF, body(), { force });
@@ -868,9 +931,13 @@ function makeHolder({ deps, token }) {
       return held;
     },
     refresh: () => deps.gh.refreshLock(LOCK_REF, body()),
-    update: (patch) => {
-      train = patch === null ? null : { ...(train ?? {}), ...patch };
+    /** Record or amend the train under `key`, then publish the payload. */
+    put: (key, patch) => {
+      trains.set(key, { ...(trains.get(key) ?? {}), ...patch });
       holder.refresh();
+    },
+    drop: (key) => {
+      if (trains.delete(key)) holder.refresh();
     },
     hold: (seconds) => {
       holder.refresh();
@@ -990,26 +1057,36 @@ function eject(deps, number, body) {
 }
 
 /**
- * One train, start to finish: cut, merge components, open, wait for CI, then merge, split, rerun,
- * rebuild or eject. Returns the outcome for `conduct` to schedule the next train.
+ * Cut one train: a branch from `main` or, when speculating, from the head of the train in flight
+ * (`parent`); each component merged into it server-side; a ready pull request whose `opened`
+ * event is the one CI run. A speculative train never ejects: a conflict on top of the parent may
+ * be the parent's doing, so that component stays queued for a train cut from `main`.
  */
-export function runTrain({ batch, deps, holder, requiredContexts, args, token = 'train' }) {
+function cutTrain({ batch, parent = null, deps, holder, key }) {
   const { gh, git, log } = deps;
   git.fetch(['main', ...batch.map((c) => c.headRefName)]);
-  const base = git.revParse('origin/main');
+  const base = parent ? parent.head : git.revParse('origin/main');
   if (!base) return { outcome: 'abort', reason: 'could not read origin/main after fetching it' };
   const branch = trainBranchName(deps.now(), batch[0].number);
   if (!gh.createBranch(branch, base)) return { outcome: 'abort', reason: `could not create ${branch}` };
-  holder.update({ branch, base, components: batch.map((c) => c.number), files: null, pr: null, startedAt: new Date(deps.now()).toISOString() });
-  log(`train ${branch} from main@${base.slice(0, 9)}: ${batch.map((c) => `#${c.number}`).join(' ')}`);
+  const onTopOf = parent?.pr ?? null;
+  holder.put(key, { branch, base, onTopOf, components: batch.map((c) => c.number), files: null, pr: null, startedAt: new Date(deps.now()).toISOString() });
+  const numbers = batch.map((c) => `#${c.number}`).join(' ');
+  log(parent
+    ? `speculative train ${branch} on top of train #${onTopOf} (${base.slice(0, 9)}), while its CI runs: ${numbers}`
+    : `train ${branch} from main@${base.slice(0, 9)}: ${numbers}`);
 
   const included = [];
   const errored = [];
   for (const component of batch) {
     const merged = gh.mergeInto(branch, component.headRefOid, `chore(train): merge #${component.number} ${component.headRefName}`);
-    if (merged.state === 'merged' || merged.state === 'up-to-date') {
+    if (merged.state === 'merged' || (merged.state === 'up-to-date' && !parent)) {
       included.push({ ...component, empty: merged.state === 'up-to-date' });
-    } else if (merged.state === 'conflict') {
+    } else if (merged.state === 'up-to-date' || merged.state === 'conflict') {
+      if (parent) {
+        log(`#${component.number} ${merged.state === 'conflict' ? 'conflicts' : 'adds nothing'} on top of train #${onTopOf}; it stays queued for a train cut from main`);
+        continue;
+      }
       log(`#${component.number} conflicts on the train; ejecting it`);
       eject(deps, component.number, conflictComment({ ahead: included.filter((c) => !c.empty) }));
     } else {
@@ -1020,7 +1097,8 @@ export function runTrain({ batch, deps, holder, requiredContexts, args, token = 
   const carrying = included.filter((c) => !c.empty);
   if (carrying.length === 0) {
     gh.deleteBranch(branch);
-    if (included.length > 0) finishComponents({ deps, components: included, trainHead: null, trainNumber: null, trainUrl: null });
+    holder.drop(key);
+    if (!parent && included.length > 0) finishComponents({ deps, components: included, trainHead: null, trainNumber: null, trainUrl: null });
     return { outcome: 'nothing', errored };
   }
 
@@ -1031,118 +1109,157 @@ export function runTrain({ batch, deps, holder, requiredContexts, args, token = 
     // Without the file set neither the drift check nor a fast-path lander can reason about this
     // train, and a train nobody can reason about must not merge.
     gh.deleteBranch(branch);
+    holder.drop(key);
     return { outcome: 'abort', reason: `could not fetch ${branch} to read its files`, errored };
   }
-  holder.update({ components: included.map((c) => c.number), files });
-  const opened = gh.openPr({ title: trainTitle(included), head: branch, base: 'main', body: trainBody({ components: included, base }) });
-  holder.update({ pr: opened.number, url: opened.url });
-  log(`train #${opened.number} opened ready: one CI run for ${included.length} pull request(s) (${opened.url})`);
+  holder.put(key, { components: included.map((c) => c.number), files });
+  const opened = gh.openPr({ title: trainTitle(included), head: branch, base: 'main', body: trainBody({ components: included, base, onTopOf }) });
+  holder.put(key, { pr: opened.number, url: opened.url });
+  log(`train #${opened.number} opened ready: one CI run for ${included.length} pull request(s)${parent ? `, concurrent with train #${onTopOf}'s` : ''} (${opened.url})`);
+  return {
+    outcome: 'open',
+    errored,
+    train: {
+      key, branch, base, head, files, included, onTopOf, pr: opened.number, url: opened.url,
+      empty: 0, refires: 0, reruns: 0, giveUpAt: deps.now() + TRAIN_TIMEOUT_MINUTES * 60_000, verdict: null,
+    },
+  };
+}
 
-  let empty = 0;
-  let refires = 0;
-  let reruns = 0;
-  const giveUpAt = deps.now() + TRAIN_TIMEOUT_MINUTES * 60_000;
-  for (;;) {
-    holder.hold(POLL_SECONDS);
-    if (deps.now() > giveUpAt) {
-      gh.closePr(opened.number, `No verdict after ${TRAIN_TIMEOUT_MINUTES} minutes; closed. The components stay queued.`);
-      gh.deleteBranch(branch);
-      return { outcome: 'abort', reason: `train #${opened.number} had no verdict after ${TRAIN_TIMEOUT_MINUTES} minutes` };
-    }
-    const trainPr = gh.readPr(opened.number);
-    const rollup = trainPr.statusCheckRollup ?? [];
-    empty = rollup.length === 0 ? empty + 1 : 0;
-    const checks = requiredCheckState({ rollup, requiredContexts });
-    const other = otherCheckState({ rollup, requiredContexts, allowFailing: args.allowFailing });
-    const step = trainCiStep({ checks, other, inFlight: runInFlight(trainPr), emptyRollupObservations: empty, refires });
-
-    if (step.action === 'wait') continue;
-    if (step.action === 'refire') {
-      log(`train #${opened.number} reported no run after ${empty} polls; toggling draft to ask GitHub once`);
-      gh.markDraft(opened.number);
-      gh.markReady(opened.number);
-      refires += 1;
-      continue;
-    }
-    if (step.action === 'red') {
-      const plan = redTrainPlan({ components: included.map((c) => c.number), failed: step.failed, flaky: [...args.flaky, ...args.allowFailing], reruns });
-      if (plan.action === 'rerun') {
-        const ids = runIdsFromChecks(step.failed);
-        log(`train #${opened.number} red only on flaky context(s) ${plan.names.join(', ')}; rerunning the failed jobs once`);
-        for (const id of ids) gh.rerunFailed(id);
-        reruns += 1;
-        continue;
-      }
-      const failedLine = step.failed.map((c) => `${c.name} ${c.conclusion}`).join(', ');
-      if (plan.action === 'split') {
-        const halves = plan.halves.map((half) => half.map((n) => `#${n}`).join(' ')).join(' | ');
-        log(`train #${opened.number} is red (${failedLine}); splitting into ${halves}`);
-        gh.closePr(opened.number, `Red on ${failedLine}. Split into ${halves}; each half runs as its own train.`);
-        gh.deleteBranch(branch);
-        return { outcome: 'split', halves: plan.halves };
-      }
-      const [only] = included;
-      log(`train #${opened.number} is red (${failedLine}); ejecting #${only.number}`);
-      gh.closePr(opened.number, `Red on ${failedLine}; #${only.number} is ejected from the queue.`);
-      gh.deleteBranch(branch);
-      const hint = step.failed.some((c) => !requiredContexts.includes(c.name))
-        ? ' An unrequired lane can be accepted by name with `--allow-failing=<context>` by whoever conducts.'
-        : '';
-      eject(deps, only.number, ejectComment({ reason: `train #${opened.number} failed with it alone.${hint}`, failed: step.failed, trainNumber: opened.number }));
-      return { outcome: 'ejected', number: only.number };
-    }
-
-    // Green. The drift check and the merge run under the fast-path lock, the same lock a fast-path
-    // merge holds between its last check and its merge, so neither can land between the other's
-    // check and merge (the window left open when only the fast path took it, 2026-09-26).
-    if (!takeFastLock(deps, token, opened.number)) {
-      log(`a fast-path merge is holding ${FAST_LOCK_REF}; checking again next poll`);
-      continue;
-    }
-    const releaseFast = deps.onExit(() => gh.releaseLock(FAST_LOCK_REF));
-    let mergedSha = null;
-    try {
-      // Green. Main may have moved while CI ran; only a move into this train's files matters.
-      git.fetch(['main']);
-      const mainNow = git.revParse('origin/main');
-      const drift = driftVerdict({ trainFiles: files, mainFiles: mainNow ? git.diffNames(base, mainNow) : null });
-      if (drift.state === 'unknown') {
-        log('could not compare main with the train base; checking again next poll');
-        continue;
-      }
-      if (drift.state === 'overlap') {
-        log(`main moved into this train's files (${drift.overlap.slice(0, 3).join(', ')}); rebuilding it on today's main`);
-        gh.closePr(opened.number, `Green, but main moved into ${drift.overlap.join(', ')} while CI ran. Rebuilt on the new main.`);
-        gh.deleteBranch(branch);
-        return { outcome: 'rebuild', reason: 'main moved into its files' };
-      }
-      for (const name of other.unmatched) log(`--allow-failing named ${name}, which is not failing on this train`);
-      const accepted = other.accepted.length > 0 ? `, accepting ${other.accepted.map((c) => `${c.name} ${c.conclusion}`).join(', ')}` : '';
-      for (const component of included) component.coAuthors = parseCoAuthors(git.coAuthorLog(base, component.headRefOid));
-      log(`train #${opened.number} is green on ${trainPr.headRefOid.slice(0, 9)}${accepted}; squash merging`);
-      const merged = gh.mergePr(opened.number, {
-        sha: trainPr.headRefOid,
-        title: `${trainTitle(included)} (#${opened.number})`,
-        message: composeSquashBody({ components: included, trainNumber: opened.number }),
-      });
-      mergedSha = merged.sha ?? null;
-      if (!merged.ok && gh.readPr(opened.number).state !== 'MERGED') {
-        log(`GitHub refused the train merge (${merged.detail || 'no detail'}); rebuilding`);
-        gh.closePr(opened.number, `The merge was refused: ${merged.detail || 'no detail'}. Rebuilt on the new main.`);
-        gh.deleteBranch(branch);
-        return { outcome: 'rebuild', reason: 'the merge was refused' };
-      }
-    } finally {
-      releaseFast();
-      gh.releaseLock(FAST_LOCK_REF);
-    }
-    log(`train #${opened.number} merged: ${opened.url}`);
-    waitForMainAt(deps, mergedSha);
-    git.fetch(['main', branch, ...included.map((c) => c.headRefName)]);
-    finishComponents({ deps, components: included, trainHead: trainPr.headRefOid, trainNumber: opened.number, trainUrl: opened.url });
-    gh.deleteBranch(branch);
-    return { outcome: 'merged', train: opened.number, landed: included.map((c) => c.number) };
+/**
+ * Read one train's CI once and record its verdict. Reruns and refires happen here for any train,
+ * speculative or not; acting on a verdict is `settleHead`'s, and only for the train at the head.
+ */
+function pollTrain({ train, deps, requiredContexts, args }) {
+  if (train.verdict) return;
+  const { gh, log } = deps;
+  if (deps.now() > train.giveUpAt) {
+    train.verdict = { kind: 'timeout' };
+    return;
   }
+  const trainPr = gh.readPr(train.pr);
+  const rollup = trainPr.statusCheckRollup ?? [];
+  train.empty = rollup.length === 0 ? train.empty + 1 : 0;
+  const checks = requiredCheckState({ rollup, requiredContexts });
+  const other = otherCheckState({ rollup, requiredContexts, allowFailing: args.allowFailing });
+  const step = trainCiStep({ checks, other, inFlight: runInFlight(trainPr), emptyRollupObservations: train.empty, refires: train.refires });
+
+  if (step.action === 'wait') return;
+  if (step.action === 'refire') {
+    log(`train #${train.pr} reported no run after ${train.empty} polls; toggling draft to ask GitHub once`);
+    gh.markDraft(train.pr);
+    gh.markReady(train.pr);
+    train.refires += 1;
+    return;
+  }
+  if (step.action === 'red') {
+    const plan = redTrainPlan({ components: train.included.map((c) => c.number), failed: step.failed, flaky: [...args.flaky, ...args.allowFailing], reruns: train.reruns });
+    if (plan.action === 'rerun') {
+      log(`train #${train.pr} red only on flaky context(s) ${plan.names.join(', ')}; rerunning the failed jobs once`);
+      for (const id of runIdsFromChecks(step.failed)) gh.rerunFailed(id);
+      train.reruns += 1;
+      return;
+    }
+    train.verdict = { kind: 'red', plan, failed: step.failed };
+    return;
+  }
+  train.verdict = { kind: 'green', trainPr, other };
+}
+
+/**
+ * Act on the verdict of the train at the head, whose base `main` already contains: merge, split,
+ * eject, rebuild or give up. `wait` leaves it for the next poll. A speculative train reaches this
+ * only after the train under it landed, which is what makes its base the `main` it merges onto.
+ */
+function settleHead({ train, deps, requiredContexts, token }) {
+  const { gh, git, log } = deps;
+  const { verdict, included, branch, base, files } = train;
+  const number = train.pr;
+  if (verdict.kind === 'timeout') {
+    gh.closePr(number, `No verdict after ${TRAIN_TIMEOUT_MINUTES} minutes; closed. The components stay queued.`);
+    gh.deleteBranch(branch);
+    return { outcome: 'abort', reason: `train #${number} had no verdict after ${TRAIN_TIMEOUT_MINUTES} minutes` };
+  }
+  if (verdict.kind === 'red') {
+    const failedLine = verdict.failed.map((c) => `${c.name} ${c.conclusion}`).join(', ');
+    if (verdict.plan.action === 'split') {
+      const halves = verdict.plan.halves.map((half) => half.map((n) => `#${n}`).join(' ')).join(' | ');
+      log(`train #${number} is red (${failedLine}); splitting into ${halves}`);
+      gh.closePr(number, `${RED_CLOSE_PREFIX}${failedLine}. Split into ${halves}; each half runs as its own train.`);
+      gh.deleteBranch(branch);
+      return { outcome: 'split', halves: verdict.plan.halves };
+    }
+    const [only] = included;
+    log(`train #${number} is red (${failedLine}); ejecting #${only.number}`);
+    gh.closePr(number, `${RED_CLOSE_PREFIX}${failedLine}; #${only.number} is ejected from the queue.`);
+    gh.deleteBranch(branch);
+    const hint = verdict.failed.some((c) => !requiredContexts.includes(c.name))
+      ? ' An unrequired lane can be accepted by name with `--allow-failing=<context>` by whoever conducts.'
+      : '';
+    eject(deps, only.number, ejectComment({ reason: `train #${number} failed with it alone.${hint}`, failed: verdict.failed, trainNumber: number }));
+    return { outcome: 'ejected', number: only.number };
+  }
+
+  // Green. The drift check and the merge run under the fast-path lock, the same lock a fast-path
+  // merge holds between its last check and its merge, so neither can land between the other's
+  // check and merge (the window left open when only the fast path took it, 2026-09-26).
+  const { trainPr, other } = verdict;
+  if (!takeFastLock(deps, token, number)) {
+    log(`a fast-path merge is holding ${FAST_LOCK_REF}; checking again next poll`);
+    return { outcome: 'wait' };
+  }
+  const releaseFast = deps.onExit(() => gh.releaseLock(FAST_LOCK_REF));
+  let mergedSha = null;
+  try {
+    // Main may have moved while CI ran; only a move into this train's files matters. For a train
+    // that speculated, `base` is the head of the train under it, which `main` now contains, so
+    // the diff is exactly what else reached `main` since that train was cut.
+    git.fetch(['main']);
+    const mainNow = git.revParse('origin/main');
+    const drift = driftVerdict({ trainFiles: files, mainFiles: mainNow ? git.diffNames(base, mainNow) : null });
+    if (drift.state === 'unknown') {
+      log('could not compare main with the train base; checking again next poll');
+      return { outcome: 'wait' };
+    }
+    if (drift.state === 'overlap') {
+      log(`main moved into this train's files (${drift.overlap.slice(0, 3).join(', ')}); rebuilding it on today's main`);
+      gh.closePr(number, `Green, but main moved into ${drift.overlap.join(', ')} while CI ran. Rebuilt on the new main.`);
+      gh.deleteBranch(branch);
+      return { outcome: 'rebuild', reason: 'main moved into its files' };
+    }
+    for (const name of other.unmatched) log(`--allow-failing named ${name}, which is not failing on this train`);
+    const accepted = other.accepted.length > 0 ? `, accepting ${other.accepted.map((c) => `${c.name} ${c.conclusion}`).join(', ')}` : '';
+    for (const component of included) component.coAuthors = parseCoAuthors(git.coAuthorLog(base, component.headRefOid));
+    log(`train #${number} is green on ${trainPr.headRefOid.slice(0, 9)}${accepted}; squash merging`);
+    const merged = gh.mergePr(number, {
+      sha: trainPr.headRefOid,
+      title: `${trainTitle(included)} (#${number})`,
+      message: composeSquashBody({ components: included, trainNumber: number }),
+    });
+    mergedSha = merged.sha ?? null;
+    if (!merged.ok && gh.readPr(number).state !== 'MERGED') {
+      log(`GitHub refused the train merge (${merged.detail || 'no detail'}); rebuilding`);
+      gh.closePr(number, `The merge was refused: ${merged.detail || 'no detail'}. Rebuilt on the new main.`);
+      gh.deleteBranch(branch);
+      return { outcome: 'rebuild', reason: 'the merge was refused' };
+    }
+  } finally {
+    releaseFast();
+    gh.releaseLock(FAST_LOCK_REF);
+  }
+  log(`train #${number} merged: ${train.url}`);
+  waitForMainAt(deps, mergedSha);
+  git.fetch(['main', branch, ...included.map((c) => c.headRefName)]);
+  finishComponents({ deps, components: included, trainHead: trainPr.headRefOid, trainNumber: number, trainUrl: train.url });
+  gh.deleteBranch(branch);
+  return { outcome: 'merged', train: number, landed: included.map((c) => c.number) };
+}
+
+/** Close a speculative train whose parent did not land. It never merges; its components stay queued. */
+function discardTrain({ train, deps, why }) {
+  deps.gh.closePr(train.pr, `Discarded: it was cut on top of train #${train.onTopOf}, which ${why}. Its pull requests stay queued and ride a train cut from main.`);
+  deps.gh.deleteBranch(train.branch);
+  deps.log(`speculative train #${train.pr} discarded: train #${train.onTopOf} ${why}`);
 }
 
 /**
@@ -1190,57 +1307,157 @@ function finishComponents({ deps, components, trainHead, trainNumber, trainUrl }
 }
 
 /**
+ * The train size for this conductor: `--batch` when given, otherwise measured from recent trains
+ * (`adaptiveBatch`). Printed either way, with the reason.
+ */
+function chooseBatch({ deps, args }) {
+  if (args.batch !== null && args.batch !== undefined) {
+    deps.log(`train size ${args.batch} (--batch)`);
+    return args.batch;
+  }
+  let history = null;
+  try {
+    history = typeof deps.gh.listTrainHistory === 'function' ? deps.gh.listTrainHistory() : null;
+  } catch {
+    history = null;
+  }
+  if (!Array.isArray(history)) {
+    deps.log(`train size ${DEFAULT_BATCH}: recent trains could not be read, so the default`);
+    return DEFAULT_BATCH;
+  }
+  const choice = adaptiveBatch(trainHistoryRows(history));
+  deps.log(`train size ${choice.size}: ${choice.reason}`);
+  return choice.size;
+}
+
+/** The queue in order, after taking out every pull request the conductor must refuse. */
+function readQueue(deps) {
+  const queue = [];
+  for (const pr of deps.gh.listQueue()) {
+    const refusal = refuseLanding(pr);
+    if (refusal) {
+      deps.log(`#${pr.number} ${refusal.split('\n')[0]}; taking it out of the queue`);
+      eject(deps, pr.number, refusal === CONFLICT_INSTRUCTION ? conflictComment({}) : ejectComment({ reason: `it ${refusal}` }));
+    } else queue.push(pr);
+  }
+  return queue;
+}
+
+/**
  * Hold the lock and run trains until the queue is empty or the deadline passes. Never stops
- * mid-train: the deadline is checked between trains.
+ * mid-train: the deadline stops new trains, and the conductor stays until the ones in flight end.
+ *
+ * Up to `MAX_IN_FLIGHT` trains fly at once. The head is cut from `main`; while its CI runs, the
+ * next one is cut from the head's head, so its CI runs concurrently on exactly the tree `main`
+ * becomes if the head lands. Verdicts are acted on in order: a speculative train lands only after
+ * the train under it landed, and is discarded (never merged) when that train does not.
  */
 export function conduct({ deps, args, requiredContexts, token, force = false, deadline }) {
   const holder = makeHolder({ deps, token });
   if (!holder.take({ force })) return { state: 'lost' };
   deps.log('landing lock acquired: this process conducts trains until the queue is empty');
+  const batchSize = chooseBatch({ deps, args });
+  const speculate = args.speculate !== false;
   let splits = [];
   const rebuilds = new Map();
   const errors = new Map();
   const landed = [];
+  const flight = [];
+  let blockedOn = null;
+  // An empty queue behind the head is read again only every few minutes, not on every poll.
+  let quietUntil = Number.NEGATIVE_INFINITY;
+  let keys = 0;
+  const countErrors = (errored = []) => {
+    for (const number of errored) {
+      const count = (errors.get(number) ?? 0) + 1;
+      errors.set(number, count);
+      if (count >= 2) eject(deps, number, ejectComment({ reason: 'GitHub refused to merge it onto two trains for a reason other than a conflict' }));
+    }
+  };
+  const stop = (reason) => {
+    deps.error(`the train stopped: ${reason}`);
+    return { state: 'aborted', landed };
+  };
   try {
-    while (deps.now() < deadline) {
-      holder.update(null);
-      const queue = [];
-      for (const pr of deps.gh.listQueue()) {
-        const refusal = refuseLanding(pr);
-        if (refusal) {
-          deps.log(`#${pr.number} ${refusal.split('\n')[0]}; taking it out of the queue`);
-          eject(deps, pr.number, refusal === CONFLICT_INSTRUCTION ? conflictComment({}) : ejectComment({ reason: `it ${refusal}` }));
-        } else queue.push(pr);
+    for (;;) {
+      // Cut trains while there is room and time: one from main, then one speculating on it.
+      while (deps.now() < deadline) {
+        const parent = flight.at(-1) ?? null;
+        if (parent && !maySpeculate({ enabled: speculate, inFlight: flight.length, parent, blockedOn })) break;
+        if (parent && deps.now() < quietUntil) break;
+        const riding = new Set(flight.flatMap((train) => train.numbers));
+        const next = nextTrain({ queue: readQueue(deps).filter((pr) => !riding.has(pr.number)), splits, batchSize });
+        if (next.batch.length === 0) {
+          if (parent) quietUntil = deps.now() + SPECULATION_QUEUE_RECHECK_SECONDS * 1000;
+          break;
+        }
+        const numbers = next.batch.map((c) => c.number);
+        splits = next.splits;
+        keys += 1;
+        const cut = cutTrain({ batch: next.batch, parent, deps, holder, key: `train-${keys}` });
+        countErrors(cut.errored);
+        if (cut.outcome === 'open') {
+          flight.push({ ...cut.train, numbers, source: next.source });
+          continue;
+        }
+        if (!parent) {
+          if (cut.outcome === 'abort') return stop(cut.reason);
+          continue;
+        }
+        // A speculative cut that opened nothing waits for the parent to settle before trying again.
+        if (cut.outcome === 'abort') deps.log(`not speculating on train #${parent.pr}: ${cut.reason}`);
+        if (next.source === 'split') splits = [numbers, ...splits];
+        blockedOn = parent.pr;
+        break;
       }
-      const next = nextTrain({ queue, splits, batchSize: args.batch });
-      splits = next.splits;
-      if (next.batch.length === 0) {
+      if (flight.length === 0) {
+        if (deps.now() >= deadline) {
+          deps.log('deadline reached between trains; handing the queue to the next lander');
+          return { state: 'deadline', landed };
+        }
         deps.log('the queue is empty');
         return { state: 'drained', landed };
       }
-      const result = runTrain({ batch: next.batch, deps, holder, requiredContexts, args, token });
-      const key = next.batch.map((c) => c.number).join(',');
-      if (result.outcome === 'merged') landed.push(...result.landed);
-      else if (result.outcome === 'split') splits = [...result.halves, ...splits];
-      else if (result.outcome === 'rebuild') {
-        const count = (rebuilds.get(key) ?? 0) + 1;
-        rebuilds.set(key, count);
-        const numbers = next.batch.map((c) => c.number);
-        if (count <= MAX_REBUILDS) splits = [numbers, ...splits];
-        else if (numbers.length > 1) splits = [...splitTrain(numbers), ...splits];
-        else eject(deps, numbers[0], ejectComment({ reason: `main kept moving into its files; ${MAX_REBUILDS} rebuilds did not settle` }));
-      } else if (result.outcome === 'abort') {
-        deps.error(`the train stopped: ${result.reason}`);
-        return { state: 'aborted', landed };
-      }
-      for (const number of result.errored ?? []) {
-        const count = (errors.get(number) ?? 0) + 1;
-        errors.set(number, count);
-        if (count >= 2) eject(deps, number, ejectComment({ reason: 'GitHub refused to merge it onto two trains for a reason other than a conflict' }));
+
+      holder.hold(POLL_SECONDS);
+      for (const train of flight) pollTrain({ train, deps, requiredContexts, args });
+
+      while (flight.length > 0 && flight[0].verdict) {
+        const head = flight[0];
+        const result = settleHead({ train: head, deps, requiredContexts, token });
+        if (result.outcome === 'wait') break;
+        flight.shift();
+        holder.drop(head.key);
+        // A settled head may have left split halves or a new head to speculate on: look again.
+        quietUntil = Number.NEGATIVE_INFINITY;
+        if (result.outcome === 'merged') {
+          landed.push(...result.landed);
+          // The train above it now stands on main; its drift check uses its own base.
+          if (flight[0]) holder.put(flight[0].key, { onTopOf: null });
+          continue;
+        }
+        const why = result.outcome === 'rebuild' ? 'was rebuilt on a newer main'
+          : result.outcome === 'abort' ? 'stopped without a verdict' : 'went red';
+        const discarded = flight.splice(0);
+        for (const train of discarded) {
+          discardTrain({ train, deps, why });
+          holder.drop(train.key);
+        }
+        blockedOn = null;
+        let headSplits = [];
+        if (result.outcome === 'split') headSplits = result.halves;
+        else if (result.outcome === 'rebuild') {
+          const key = head.numbers.join(',');
+          const count = (rebuilds.get(key) ?? 0) + 1;
+          rebuilds.set(key, count);
+          if (count <= MAX_REBUILDS) headSplits = [head.numbers];
+          else if (head.numbers.length > 1) headSplits = splitTrain(head.numbers);
+          else eject(deps, head.numbers[0], ejectComment({ reason: `main kept moving into its files; ${MAX_REBUILDS} rebuilds did not settle` }));
+        }
+        splits = requeueAfterDiscard({ splits, headSplits, discarded });
+        if (result.outcome === 'abort') return stop(result.reason);
       }
     }
-    deps.log('deadline reached between trains; handing the queue to the next lander');
-    return { state: 'deadline', landed };
   } finally {
     holder.release();
   }
@@ -1286,7 +1503,7 @@ function waitForOutcome({ number, sinceIso, deps, args, requiredContexts, token,
     const line = `queued${position ? ` at ${position} of ${queue.length}` : ''}; landing now: ${describeLock(lock, deps.now())}`;
     if (line !== lastLine) deps.log(line);
     lastLine = line;
-    deps.sleep(waiterPollSeconds(position, args.batch));
+    deps.sleep(waiterPollSeconds(position, args.batch ?? DEFAULT_BATCH));
   }
   deps.error(`stopped waiting after ${args.timeoutMinutes} minutes. PR #${number} stays queued and the next conductor lands it;`);
   deps.error(`\`gh pr edit ${number} --remove-label ${QUEUE_LABEL}\` takes it out.`);
@@ -1418,24 +1635,41 @@ export function planLanding({ args, deps }) {
   }
 
   const queued = deps.gh.listQueue();
-  const combined = [...queued, ...joining.filter((pr) => !queued.some((q) => q.number === pr.number))];
-  const { batch } = nextTrain({ queue: combined, batchSize: args.batch });
+  // Pull requests already riding a train in flight are not planned again.
+  const flying = (Array.isArray(lock.holder?.trains) ? lock.holder.trains : [lock.holder?.train]).filter(Boolean);
+  const aboard = new Set(flying.flatMap((t) => t.components ?? []));
+  const combined = [...queued, ...joining.filter((pr) => !queued.some((q) => q.number === pr.number))].filter((pr) => !aboard.has(pr.number));
+  const batchSize = chooseBatch({ deps, args });
+  const { batch } = nextTrain({ queue: combined, batchSize });
   if (batch.length === 0) {
     deps.log('no train would run: the queue would be empty');
     return 0;
   }
-  if (lock.state === 'held') deps.log('a train is in flight; the train below forms after it');
+  // The speculative train: the next pull requests, cut on top of the first train's head.
+  const riding = new Set(batch.map((c) => c.number));
+  const speculative = args.speculate ? nextTrain({ queue: combined.filter((pr) => !riding.has(pr.number)), batchSize }).batch : [];
+  if (lock.state === 'held' && aboard.size > 0) {
+    deps.log(`${flying.length} train(s) in flight carrying ${[...aboard].map((n) => `#${n}`).join(' ')}; the trains below form after ${args.speculate && flying.length < 2 ? 'it, the first one speculating on it' : 'them'}`);
+  } else if (lock.state === 'held') deps.log('a train is in flight; the trains below form after it');
   deps.log(`next train (${batch.length} of ${combined.length} queued): ${trainTitle(batch)}`);
-  deps.log(`  branch ${trainBranchName(deps.now(), batch[0].number)} from origin/main`);
-  deps.git.fetch(['main', ...batch.map((c) => c.headRefName)]);
-  const trial = deps.git.trialMerge('origin/main', batch.map((c) => c.headRefOid));
-  for (const component of batch) {
+  const ridesOn = lock.state === 'held' && args.speculate && flying.length === 1 && flying[0].pr ? flying[0].pr : null;
+  deps.log(`  branch ${trainBranchName(deps.now(), batch[0].number)} from ${ridesOn ? `train #${ridesOn}'s head (trial-merged below on origin/main)` : 'origin/main'}`);
+  deps.git.fetch(['main', ...batch.map((c) => c.headRefName), ...speculative.map((c) => c.headRefName)]);
+  // One trial merge in queue order: the speculative rows are measured on top of the first train.
+  const trial = deps.git.trialMerge('origin/main', [...batch, ...speculative].map((c) => c.headRefOid));
+  const describeRow = (component, onTop) => {
     const row = trial.find((r) => r.sha === component.headRefOid);
     const verdict = !row ? 'not measured'
-      : row.conflicts.length > 0 ? `would conflict and be ejected (${row.conflicts.join(', ')})`
+      : row.conflicts.length > 0 ? (onTop ? `would conflict on top of it and stay queued (${row.conflicts.join(', ')})` : `would conflict and be ejected (${row.conflicts.join(', ')})`)
         : row.state === 'pending' ? 'merges cleanly' : `adds nothing (${row.state})`;
     deps.log(`  #${component.number} ${component.headRefName}@${String(component.headRefOid).slice(0, 9)}: ${verdict}`);
-  }
+  };
+  for (const component of batch) describeRow(component, false);
+  if (speculative.length > 0) {
+    deps.log(`speculative train while its CI runs (${speculative.length}): ${trainTitle(speculative)}`);
+    deps.log('  cut on top of the train above, CI concurrent; lands only if that train lands, discarded if it does not');
+    for (const component of speculative) describeRow(component, true);
+  } else if (!args.speculate) deps.log('no speculative train: --no-speculate');
   for (const component of batch) component.coAuthors = parseCoAuthors(deps.git.coAuthorLog('origin/main', component.headRefOid));
   deps.log('squash commit, if green:');
   for (const line of composeSquashBody({ components: batch, trainNumber: '<train>' }).split('\n')) deps.log(`  | ${line}`);
@@ -1446,22 +1680,23 @@ export function planLanding({ args, deps }) {
 export function printQueue({ deps, io = console }) {
   const lock = readLockState(deps);
   io.log(`[pr-queue] landing now: ${describeLock(lock, deps.now())}`);
-  const trainPr = lock.holder?.train?.pr;
-  if (trainPr) {
-    const protection = deps.gh.readRequiredContexts();
-    const pr = deps.gh.readPr(trainPr);
-    if (protection.contexts && pr) {
+  const trains = (Array.isArray(lock.holder?.trains) ? lock.holder.trains : [lock.holder?.train]).filter(Boolean);
+  const inFlight = trains.filter((t) => t.pr);
+  const protection = inFlight.length > 0 ? deps.gh.readRequiredContexts() : null;
+  for (const train of inFlight) {
+    const pr = deps.gh.readPr(train.pr);
+    if (protection?.contexts && pr) {
       const checks = requiredCheckState({ rollup: pr.statusCheckRollup ?? [], requiredContexts: protection.contexts });
       const green = protection.contexts.length - checks.pending.length - checks.unrun.length - checks.failed.length;
-      io.log(`[pr-queue]   CI on train #${trainPr}: ${green} green, ${checks.pending.length} running, ${checks.unrun.length} not reported, ${checks.failed.length} failed (${pr.url})`);
+      io.log(`[pr-queue]   CI on train #${train.pr}: ${green} green, ${checks.pending.length} running, ${checks.unrun.length} not reported, ${checks.failed.length} failed (${pr.url})`);
     }
   }
   const queue = deps.gh.listQueue();
   if (queue.length === 0) {
     io.log('[pr-queue] queue: empty');
   } else {
-    io.log(`[pr-queue] queue: ${queue.length} pull request(s), oldest first; the next train takes up to ${DEFAULT_BATCH}`);
-    const riding = new Set(lock.holder?.train?.components ?? []);
+    io.log(`[pr-queue] queue: ${queue.length} pull request(s), oldest first; a train takes up to ${DEFAULT_BATCH}, fewer when recent trains ran red`);
+    const riding = new Set(trains.flatMap((t) => t.components ?? []));
     queue.forEach((pr, index) => {
       const minutes = pr.queuedAt ? Math.max(0, Math.round((deps.now() - Date.parse(pr.queuedAt)) / 60_000)) : null;
       io.log(`[pr-queue]   ${index + 1}. #${pr.number}${riding.has(pr.number) ? ' (on the train)' : ''}${minutes === null ? '' : ` queued ${minutes} min`}  ${String(pr.title ?? '').slice(0, 60)}`);
