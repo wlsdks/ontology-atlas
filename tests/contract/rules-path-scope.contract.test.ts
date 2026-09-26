@@ -251,7 +251,15 @@ describe("`.claude/rules` path scoping contract", () => {
    * this ratchets in one direction only: a commit that saves bytes must record
    * the saving, which is what makes the saving permanent.
    */
-  const RESIDENT_CONTEXT_BYTES = 18_642;
+  const RESIDENT_CONTEXT_BYTES = 18_782;
+
+  /*
+   * Raised by 140 bytes on 2026-09-26 for `/harness-retro`. A lesson has to be
+   * written at the moment a mistake is noticed, in any task, by Claude or Codex,
+   * and no path-loaded rule or skill is loaded at that moment; hooks were ruled
+   * out so the record stays a judgment, not a prompt on every stop. The bytes
+   * are one sentence under "Working and finishing" and one workflow row.
+   */
 
   /*
    * Lowered from 25,512 on 2026-09-26 when the resident files were rewritten to

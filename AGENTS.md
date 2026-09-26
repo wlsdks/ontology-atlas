@@ -38,7 +38,8 @@ Finish with `pnpm checks:changed -- --run` and complete every recommendation.
 Stop after success unless a new edit, failure, or named risk requires more; do
 not add broad suites, repeat passing checks, or write tests that pin prose.
 `.claude/rules/testing.md` owns escalation. Report the outcome first, then the
-evidence and remaining limits. Never claim unperformed proof.
+evidence and remaining limits. Never claim unperformed proof. Before finishing,
+record a mistake, wasted CI round, or costly tool pattern with `/harness-retro`.
 
 ## Choose the relevant workflow
 
@@ -57,6 +58,7 @@ evidence and remaining limits. Never claim unperformed proof.
 | Construction rules or MCP behavior that can change vault quality | `/ontology-field-trial`; wording-only changes that keep evidence/approval/write contracts skip it |
 | Authorized parallel work | `/parallel-brief` before delegation |
 | Two or more ready branches | `/land-bundle`; a single branch lands with `pnpm pr:land` |
+| Reviewing open harness lessons | `/harness-retro` review mode |
 
 Delegate only large, independent, parallelizable work; finish what a handful of
 tool calls can do yourself, and never delegate to verify or double-check your
