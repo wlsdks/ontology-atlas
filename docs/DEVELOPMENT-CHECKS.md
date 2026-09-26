@@ -166,7 +166,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Atlas product outcome and risk routing
 
 **Run**: `pnpm po:route -- --help`
-**Proves**: The router derives a door and risk from supplied change/boundary facts, evidence, and a human-recovery outcome, routing an Atlas product decision to maintenance checks, a solo pass, or Evidence plus one specialist.
+**Proves**: The router derives a door and risk from supplied change/boundary facts, evidence, and a human-recovery outcome, routing an Atlas product decision to maintenance checks, a solo pass, or one independent reviewer with routed lenses.
 **Escalate**: `pnpm test:po` replays derived change/boundary routes and the known one-way and reversible controls.
 
 ### Backlog records
@@ -410,9 +410,9 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Design routing and agent wiring
 
 **Run**: `pnpm test:design-gates`
-**Proves**: Executable routing, documented seat references, and each harness's own agent metadata agree; it does not judge human prose or rendered quality.
-**Escalate**: `pnpm agents:check` when shared skill or agent wiring changes beyond the design bench.
-**Fix**: Repair the reported route, metadata, reference, or missing seat; do not pin replacement prose.
+**Proves**: Executable routing, the lenses each reviewer brief names, and each harness's own reviewer metadata agree; it does not judge human prose or rendered quality.
+**Escalate**: `pnpm agents:check` when shared skill or agent wiring changes beyond the reviewer.
+**Fix**: Repair the reported route, metadata, or missing lens; do not pin replacement prose.
 
 ### Design-system TOC drift
 

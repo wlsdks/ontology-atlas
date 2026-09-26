@@ -290,8 +290,7 @@ Intentional deviations between prototype and shipped code (not drift, for refere
 
 **Channel choice is itself part of the specification.** Kind uses shape rather
 than color as its distinguishing visual variable. As Jacques Bertin argues in
-*Sémiologie graphique* (1967), **hue cannot express order**
-(`.claude/agents/design-infoviz.md`). This app already reserves hue for two
+*Sémiologie graphique* (1967), **hue cannot express order**. This app already reserves hue for two
 different meanings: **hierarchy** through the brightness/depth ladder (project
 ⊃ domain ⊃ capability ⊃ element; see "Map Ink Ladder" below), and
 **state** through color itself (three signal tones plus power/pulse). Adding a
