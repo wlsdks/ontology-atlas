@@ -398,6 +398,11 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm test:e2e:sleeps && pnpm e2e:sleeps:check',
+    reason: 'an e2e spec or the fixed-sleep gate changed; a spec may not add a waitForTimeout without a measurement-window note',
+    matches: [/^tests\/e2e\/.+\.ts$/, /^scripts\/check-e2e-sleeps(?:\.test)?\.mjs$/],
+  },
+  {
     // A companion screen edit ran only the spec it touched, so a new sector entry broke the
     // growth journey's overflow and hit-area contracts in CI instead of locally (lesson 3b68fac4).
     command: 'pnpm exec playwright test tests/e2e/companion-home.spec.ts tests/e2e/companion-growth.spec.ts tests/e2e/companion-learning.spec.ts tests/e2e/companion-progression.spec.ts tests/e2e/companion-sector.spec.ts',

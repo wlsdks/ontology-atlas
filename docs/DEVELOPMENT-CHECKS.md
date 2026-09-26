@@ -210,6 +210,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: `pnpm backlog -- --task=ID` to inspect all current heads and their evidence
 **Fix**: append a new record referencing all current task heads; never overwrite a published record or select a winner by timestamp.
 
+### No new fixed sleeps in e2e
+
+**Run**: `pnpm test:e2e:sleeps && pnpm e2e:sleeps:check`
+**Proves**: the lines this change adds under `tests/e2e/` contain no `waitForTimeout` without a `// measurement window:` note on the line or the line above.
+**Escalate**: `git diff -U0 $(git merge-base HEAD origin/main) -- tests/e2e` to read the added lines the gate judged
+**Fix**: wait for what the screen shows with `tests/e2e/settle.ts` helpers, or name the measurement window the sleep really is.
+
 ### Harness lessons
 
 **Run**: `pnpm test:lessons && pnpm lessons:check`

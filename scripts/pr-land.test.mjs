@@ -831,7 +831,6 @@ describe('the conductor runs trains', () => {
 describe('a speculative second train', () => {
   const prs = () => [1, 2, 3, 4].map((n) => component(n));
   const titles = (world) => called(world, 'openPr').map(([, { title }]) => title);
-  const trainOf = (world, title) => called(world, 'openPr').findIndex(([, o]) => o.title === title) + 2001;
   const index = (world, name, predicate = () => true) => world.calls.findIndex((call) => call[0] === name && predicate(call));
 
   it('lands A then B, one CI run each, with B\'s CI running while A\'s does', () => {
