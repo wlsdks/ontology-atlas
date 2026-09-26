@@ -1,0 +1,115 @@
+{
+  "title": "Agent",
+  "subtitle": "Look at the map together and fix your document folder",
+  "close": "Close panel",
+  "you": "You:",
+  "send": "Send",
+  "stop": "Stop",
+  "placeholder": "Keep going…",
+  "placeholderFirst": "Write what you want done",
+  "thinking": "Thinking",
+  "thinkingSeconds": "Thinking · {seconds}s",
+  "unsupported": "This answer was made without reading the folder. Do not take it as fact.",
+  "charsLabel": "{chars} chars",
+  "footer": "{provider} · {rounds} recorded",
+  "boundary": "Work that needs your source code is better done by the AI in your own terminal. Here the agent only reads your document folder.",
+  "handoffSummary": "Continue in your terminal",
+  "handoffNote": "Copy this and paste it into your own terminal. You run it: this app never types commands for you.",
+  "handoffCopy": "Copy",
+  "handoffCopied": "Copied",
+  "snapshotLabel": "Checkpoint before the agent's change",
+  "provider": {
+    "anthropic": "Anthropic",
+    "openai": "OpenAI",
+    "gemini": "Gemini",
+    "local": "Local runner"
+  },
+  "screenContext": {
+    "lookingAt": "On screen: looking at {title}",
+    "wholeMap": "On screen: the whole map"
+  },
+  "scope": {
+    "title": "Before anything is sent",
+    "body": "In this conversation the agent reads your document folder as it works. What it reads goes to {provider} ({host}) each time.",
+    "liveRows": "Every read shows up as its own line here, with how many characters went out.",
+    "recorded": "Every round trip is recorded in {path}.",
+    "accept": "Got it",
+    "cancel": "Not now",
+    "consent": "If a document needs changing, you see the exact edit first and approve it before it is saved."
+  },
+  "promptDisclosure": {
+    "summary": "See the instructions the agent receives",
+    "note": "The text below is sent every time. You cannot edit it, but you can always read it."
+  },
+  "proposal": {
+    "title": "Proposal · {count} file(s) to change",
+    "readOnlyTitle": "Proposal (this folder is read-only)",
+    "volume": "{files} file(s) · +{added} / −{removed} lines",
+    "apply": "Apply {count} selected",
+    "cancel": "Cancel",
+    "copy": "Copy this change",
+    "copied": "Copied",
+    "snapshot": "Make a checkpoint first (git)",
+    "snapshotUnavailable": "This folder is not a git repository, so no checkpoint can be made",
+    "applied": "Applied · checkpoint {sha}",
+    "appliedNoSnapshot": "Applied",
+    "cancelled": "Cancelled. Not one file changed.",
+    "conflict": "This document just changed: nothing was written. Please ask again.",
+    "failed": "The apply failed: {message} Files may have partially changed. Check the document, then ask again.",
+    "unreadWarning": "This would change a file the agent did not read in this conversation. Expand it and check.",
+    "showOnMap": "Show on the map",
+    "expandHint": "What changes",
+    "createFile": "Create {path}",
+    "modifyFile": "Edit {path}",
+    "addRelation": "Link {from} → {to} ({type})",
+    "applying": "Applying…"
+  },
+  "notice": {
+    "roundCap": "That is as far as I will go: wrapping up.",
+    "aborted": "Stopped here.",
+    "networkFailed": "The connection failed.",
+    "timedOut": "The model did not answer within the time limit. Narrow the question or try a faster model.",
+    "rateLimited": "You have hit the rate limit for now. Try again shortly.",
+    "rejected": "The key was rejected. Check it in settings.",
+    "auditBlocked": "Nothing was sent, because the record could not be written.",
+    "providerRefused": "This request was declined.",
+    "failed": "Something went wrong.",
+    "noToolCall": "The agent stopped at attempt {round} of {cap} without reading this folder even once. Try asking again."
+  },
+  "degraded": {
+    "webTitle": "Available in the desktop app only",
+    "webBody": "A browser has nowhere safe to keep your key. In the desktop app it stays in this computer’s operating-system credential store.",
+    "download": "Get the app",
+    "noVaultTitle": "Open a document folder first",
+    "noVaultBody": "The agent only reads documents in the folder you have open. Pick a folder and this picks up right here.",
+    "noKeyTitle": "This needs an AI service key, once",
+    "noKeyBody": "The key stays in this computer's keychain only. Register it once and this spot connects right away, and you are not asked again. If you already use Claude Code or Codex, no key is needed: connect that tool from the Agents destination on the left.",
+    "noVaultAction": "Open a document folder",
+    "noKeyAction": "Add a key in Models"
+  },
+  "locked": {
+    "examplesTitle": "What you can ask for",
+    "consentPromise": "If a document needs changing, you see the exact edit first. Nothing on disk changes until you say so."
+  },
+  "sessionSummary": "This conversation: {concepts} concepts · {relations} links",
+  "firstWords": {
+    "title": "Where would you like to start?",
+    "hint": "Tap one and the sentence lands in the box below. Edit it before sending",
+    "missingDefinition": "Nobody has written down what \"{title}\" means. Draft it for me",
+    "missingDomain": "\"{title}\" is not filed under any group yet. Find where it belongs",
+    "missingRelations": "Check whether \"{title}\" is missing any links",
+    "mapReview": "What looks most wrong on this map right now?",
+    "emptyVault": "This folder is still empty. Help me work out what this product is first"
+  },
+  "nextStep": {
+    "title": "One next step"
+  },
+  "retry": {
+    "title": "Try again"
+  },
+  "uncited": "Read this turn:",
+  "footerDetail": "{chars} characters were exchanged this turn. Most of it is instructions you never see.",
+  "reground": {
+    "title": "Stopped at attempt {round} of {cap}. Have it re-read this folder and answer again"
+  }
+}

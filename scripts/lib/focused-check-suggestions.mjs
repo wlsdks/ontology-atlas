@@ -26,6 +26,11 @@ export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
   /^\.github\/actions\/setup-playwright\/action\.yml$/,
 ]);
 
+/** An authored message part, `messages/<locale>/<Namespace>.json`. */
+const MESSAGE_PART = /^messages\/[^/]+\/[^/]+\.json$/;
+/** A part, or the composite a pre-split branch still tracks. */
+const MESSAGE_CATALOGUE = /^messages\/(?:[^/]+\/)?[^/]+\.json$/;
+
 const RULES = [
   {
     command: 'pnpm test:backlog && pnpm backlog:check',
@@ -137,7 +142,8 @@ const RULES = [
     // import in any of those files breaks it without touching the test (lesson on new-record.mjs
     // importing lessons.mjs, 2026-09-26).
     matches: [
-      /^scripts\/(?:build-docs-vault|resolve-docs-vault-conflicts|prepare-worktree|new-record|lessons|worktree-materialization)\.(?:mjs|test\.mjs)$/,
+      /^scripts\/(?:build-docs-vault|build-messages|resolve-docs-vault-conflicts|prepare-worktree|new-record|lessons|worktree-materialization)\.(?:mjs|test\.mjs)$/,
+      /^\.githooks\/post-(?:checkout|merge)$/,
       /^scripts\/lib\/(?:record-ledgers|po-pilot-records|parse-frontmatter)\.(?:mjs|test\.mjs)$/,
     ],
   },
@@ -958,16 +964,26 @@ const RULES = [
     // the input of the gates that read "what does this screen claim it can do".
     command: 'pnpm test:desktop:check',
     reason: 'message copy changed — the desktop routing gate reads these strings for capability claims',
-    matches: [/^messages\/[^/]+\.json$/],
+    matches: [MESSAGE_CATALOGUE],
   },
   {
     command: 'pnpm test:i18n:messages',
     reason: 'locale routing or message catalog changed',
     matches: [
-      /^messages\/[^/]+\.json$/,
+      MESSAGE_CATALOGUE,
       /^src\/i18n\/.*\.ts$/,
-      /^scripts\/validate-messages\.test\.mjs$/,
+      /^scripts\/(?:validate-messages\.test|build-messages(?:\.test)?)\.mjs$/,
     ],
+  },
+  {
+    // Since 2026-09-26 the catalogue is authored as messages/<locale>/<Namespace>.json
+    // and composed into the ignored messages/<locale>.json. No module imports a part,
+    // so Vitest's `--changed` graph selects nothing for a copy edit; before the split
+    // the same edit selected every test importing the catalogue. This row restores
+    // that selection by naming the composites the tests do import.
+    command: 'pnpm exec vitest related --run messages/en.json messages/ko.json --passWithNoTests',
+    reason: 'message part changed — run the tests that import the composed catalogue',
+    matches: [MESSAGE_PART],
   },
   {
     command: 'pnpm lint',

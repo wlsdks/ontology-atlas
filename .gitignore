@@ -130,6 +130,9 @@ sweep*/
 # Worktree-local materialization. prepare, checkout, merge and build create these.
 /src/entities/docs-vault/data/
 /public/docs-vault/
+# Message composites; the authored parts are messages/<locale>/<Namespace>.json.
+/messages/*.json
+/messages/*.tmp
 # Local capture sessions, including scripts and recordings beside screenshots.
 /.claude/shots-*/
 /.scratch-po/

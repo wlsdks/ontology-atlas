@@ -1,0 +1,8 @@
+{
+  "relationShort": {
+    "isA": "broader",
+    "dependsOn": "depends on",
+    "contains": "contains",
+    "relates": "related"
+  }
+}

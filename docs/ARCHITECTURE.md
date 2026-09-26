@@ -839,7 +839,11 @@ The `docs-vault:build` step is automatic via `predev` and `prebuild` npm hooks. 
 - In-app navigation: `Link`, `useRouter`, `usePathname` from `@/i18n/navigation` (locale-aware).
 - Locale-agnostic browser history: `useSearchParams` from `next/navigation` (no locale concern).
 - Cross-locale pivot (LocaleSwitch): raw `next/navigation` router, intentional.
-- Translation key namespaces: see `messages/{en,ko}.json` (kept in parity).
+- Translation key namespaces: one file per namespace per locale,
+  `messages/<locale>/<Namespace>.json` (kept in parity). `pnpm messages:build`
+  composes the ignored `messages/<locale>.json` that `src/i18n/request.ts` and
+  tests import; installation, checkout and merge hooks, `predev`, `build`, and
+  Vitest's global setup run it.
 
 ## Test surface
 

@@ -1,0 +1,11 @@
+{
+  "title": "Turn your folder into the map",
+  "subtitle": "Before the OS folder picker opens, just {count} things to know.",
+  "bulletAnyFolder": "Any markdown folder works: no special format required.",
+  "bulletLocal": "Atlas opens this folder locally and does not upload it to an Atlas backend. A coding agent you later connect may send prompts and context to its own provider.",
+  "bulletStarter": "Pick an empty folder and we scaffold starter docs for you.",
+  "bulletPermission": "After you pick, the browser asks to Allow. That grants this page local file access; it is separate from any AI-provider connection.",
+  "actionPickExisting": "Choose existing folder",
+  "actionCreateNew": "Start fresh with an empty folder",
+  "actionCancel": "Not now"
+}

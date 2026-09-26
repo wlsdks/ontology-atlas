@@ -48,6 +48,8 @@ export default defineConfig({
      * deliberate `unknown` fallback and fail on a repair that is working correctly.
      */
     env: { NEXT_PUBLIC_RELEASE_VERSION: packageJson.version },
+    // Composes messages/<locale>.json from its parts before any test imports it.
+    globalSetup: ['./scripts/build-messages.mjs'],
     projects: [
       {
         extends: true,

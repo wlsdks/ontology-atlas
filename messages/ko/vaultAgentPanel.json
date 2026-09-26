@@ -1,0 +1,115 @@
+{
+  "title": "에이전트",
+  "subtitle": "지도를 같이 보며 문서 폴더를 고쳐요",
+  "close": "패널 닫기",
+  "you": "나:",
+  "send": "보내기",
+  "stop": "멈추기",
+  "placeholder": "이어서 말하기…",
+  "placeholderFirst": "무엇을 시킬지 여기에 적어요",
+  "thinking": "생각 중",
+  "thinkingSeconds": "생각 중 · {seconds}초",
+  "unsupported": "이번 답은 이 폴더를 읽지 않고 한 거예요. 그대로 믿지 마세요.",
+  "charsLabel": "{chars}자",
+  "footer": "{provider} · 기록 {rounds}건",
+  "boundary": "코드까지 봐야 하는 일은 내 컴퓨터의 터미널에서 여는 AI가 나아요. 여기서는 문서 폴더만 봐요.",
+  "handoffSummary": "터미널에서 이어가기",
+  "handoffNote": "아래를 복사해 내 컴퓨터의 터미널에 붙여넣어요. 실행은 사용자가 해요. 앱은 명령을 대신 치지 않아요.",
+  "handoffCopy": "복사",
+  "handoffCopied": "복사했어요",
+  "snapshotLabel": "에이전트 적용 전 저장점",
+  "provider": {
+    "anthropic": "Anthropic",
+    "openai": "OpenAI",
+    "gemini": "Gemini",
+    "local": "로컬 러너"
+  },
+  "screenContext": {
+    "lookingAt": "화면: {title}{josa} 보는 중",
+    "wholeMap": "화면: 지도 전체를 보는 중"
+  },
+  "scope": {
+    "title": "보내기 전에 알려드려요",
+    "body": "이 대화에서 에이전트가 문서 폴더를 읽으며 일해요. 읽은 내용은 그때그때 {provider}({host})로 보내져요.",
+    "liveRows": "무엇을 읽어 몇 자를 보냈는지 대화에 한 줄씩 그대로 남아요.",
+    "recorded": "모든 왕복이 {path}에 기록돼요.",
+    "accept": "알겠어요",
+    "cancel": "그만두기",
+    "consent": "문서를 고칠 일이 생기면 바뀔 내용을 먼저 보여주고, 확인해야 저장돼요."
+  },
+  "promptDisclosure": {
+    "summary": "에이전트가 받는 지침 보기",
+    "note": "아래 글이 매번 함께 보내져요. 고칠 수는 없지만 언제든 볼 수 있어요."
+  },
+  "proposal": {
+    "title": "제안 · 바꿀 파일 {count}개",
+    "readOnlyTitle": "제안 (이 폴더는 쓸 수 없어요)",
+    "volume": "파일 {files}개 · +{added}줄 −{removed}줄",
+    "apply": "선택한 {count}건 적용",
+    "cancel": "취소",
+    "copy": "이 변경을 복사",
+    "copied": "복사했어요",
+    "snapshot": "적용 전 저장점 만들기 (git)",
+    "snapshotUnavailable": "이 폴더는 git이 아니라 저장점을 만들 수 없어요",
+    "applied": "적용됨 · 저장점 {sha}",
+    "appliedNoSnapshot": "적용됨",
+    "cancelled": "취소했어요. 파일은 하나도 바뀌지 않았어요.",
+    "conflict": "방금 이 문서가 바뀌었어요. 아무것도 쓰지 않았어요. 다시 물어봐 주세요.",
+    "failed": "적용에 실패했어요: {message} 파일이 일부 바뀌었을 수 있으니 문서를 확인한 뒤 다시 요청해 주세요.",
+    "unreadWarning": "이 대화에서 읽지 않은 파일을 고치려 해요. 내용을 꼭 펼쳐서 확인하세요.",
+    "showOnMap": "지도에서 보기",
+    "expandHint": "바뀌는 내용",
+    "createFile": "만들기 {path}",
+    "modifyFile": "고치기 {path}",
+    "addRelation": "{from} → {to} 연결 ({type})",
+    "applying": "적용 중…"
+  },
+  "notice": {
+    "roundCap": "여기까지 하고 정리할게요.",
+    "aborted": "여기까지 읽었어요.",
+    "networkFailed": "연결에 실패했어요.",
+    "timedOut": "모델이 제한 시간 안에 답하지 못했어요. 질문을 좁히거나 더 빠른 모델로 다시 시도해 주세요.",
+    "rateLimited": "지금은 호출 한도예요. 잠시 뒤에 다시 해주세요.",
+    "rejected": "키가 거부됐어요. 설정에서 확인해 주세요.",
+    "auditBlocked": "기록을 남길 수 없어 보내지 않았어요.",
+    "providerRefused": "이 요청은 거절됐어요.",
+    "failed": "실패했어요.",
+    "noToolCall": "에이전트가 이 폴더를 한 번도 읽지 않은 채 {cap}번 중 {round}번째에서 멈췄어요. 다시 물어봐 주세요."
+  },
+  "degraded": {
+    "webTitle": "데스크톱 앱에서만 쓸 수 있어요",
+    "webBody": "키를 안전하게 두고 보낼 곳이 브라우저에는 없어요. 데스크톱 앱에서는 키가 이 컴퓨터의 운영체제 자격 증명 저장소에만 있어요.",
+    "download": "앱 받기",
+    "noVaultTitle": "먼저 문서 폴더를 열어주세요",
+    "noVaultBody": "에이전트는 지금 열려 있는 폴더의 문서만 읽어요. 폴더를 고르면 여기서 바로 이어져요.",
+    "noKeyTitle": "쓰려면 AI 서비스 키가 한 번 필요해요",
+    "noKeyBody": "키는 이 컴퓨터의 키체인에만 있어요. 등록하면 이 자리에서 바로 이어지고, 다시 묻지 않아요. 이미 Claude Code나 Codex를 쓰고 계시면 키 없이도 돼요. 왼쪽 「에이전트」 화면에서 그 도구를 붙이세요.",
+    "noVaultAction": "문서 폴더 열기",
+    "noKeyAction": "모델 탭에서 키 등록"
+  },
+  "locked": {
+    "examplesTitle": "이런 걸 시킬 수 있어요",
+    "consentPromise": "문서를 고칠 일이 생기면 바뀔 내용을 먼저 보여줘요. 확인하기 전에는 파일이 하나도 바뀌지 않아요."
+  },
+  "sessionSummary": "이 대화에서 개념 {concepts}개 · 연결 {relations}개",
+  "firstWords": {
+    "title": "무엇부터 할까요?",
+    "hint": "누르면 아래 칸에 문장이 앉아요. 고쳐서 보내도 돼요",
+    "missingDefinition": "「{title}」의 뜻이 아직 안 적혀 있어요. 초안을 제안해 줘",
+    "missingDomain": "「{title}」의 소속이 아직 안 적혀 있어요. 어울리는 묶음을 찾아 줘",
+    "missingRelations": "「{title}」에 빠진 연결이 있는지 봐 줘",
+    "mapReview": "이 지도에서 지금 제일 이상한 곳이 어디야?",
+    "emptyVault": "이 폴더는 아직 비어 있어요. 무엇을 만드는 제품인지부터 같이 정리해 줘"
+  },
+  "nextStep": {
+    "title": "다음 한 걸음"
+  },
+  "retry": {
+    "title": "다시 해볼까요"
+  },
+  "uncited": "이 턴에 읽은 자료:",
+  "footerDetail": "이번 차례에 오간 글자 수 {chars}자예요. 대부분은 화면에 안 보이는 안내문이에요.",
+  "reground": {
+    "title": "{cap}번 중 {round}번째에서 멈췄어요. 이 폴더를 다시 읽고 답하게 하기"
+  }
+}

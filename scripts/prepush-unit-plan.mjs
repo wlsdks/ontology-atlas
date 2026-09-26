@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 const SHA = /^[0-9a-f]{40}$/;
 const TEST = /^(?:app|src)\/.*\.(?:test|spec)\.(?:ts|tsx)$/;
 const APP_SOURCE = /^(?:app|src|messages)\//;
+const MESSAGE_PART = /^messages\/[^/]+\/[^/]+\.json$/;
 const quote = (value) => `'${String(value).replaceAll("'", `'"'"'`)}'`;
 const suffix = "--exclude='**/*.perf.test.*' --exclude='tests/contract/**' --passWithNoTests";
 
@@ -21,7 +22,12 @@ export function prepushUnitCommand({ paths, base, exists = existsSync }) {
     if (present.length === 0) return ':';
     return `pnpm exec vitest run ${present.map(quote).join(' ')} ${suffix}`;
   }
-  return `pnpm exec vitest run --changed=${quote(base)} ${suffix}`;
+  const changed = `pnpm exec vitest run --changed=${quote(base)} ${suffix}`;
+  // No module imports a message part, so `--changed` cannot see a copy edit; the
+  // tests that import the ignored composite are named explicitly instead.
+  return appPaths.some((path) => MESSAGE_PART.test(path))
+    ? `${changed} && pnpm exec vitest related --run messages/en.json messages/ko.json ${suffix}`
+    : changed;
 }
 
 function main(argv) {

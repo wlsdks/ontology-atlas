@@ -1,5 +1,8 @@
 import type { NextConfig } from 'next';
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants';
 import createNextIntlPlugin from 'next-intl/plugin';
+
+import { watchMessages } from './scripts/build-messages.mjs';
 
 import packageJson from './package.json' with { type: 'json' };
 
@@ -57,4 +60,16 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+/*
+ * `messages/<locale>.json` is composed from `messages/<locale>/<Namespace>.json`
+ * (`scripts/build-messages.mjs`). `predev` composes it once; this keeps it current
+ * while the dev server runs, so an edited part reaches the screen like any source
+ * file. One watcher per process, dev server only.
+ */
+export default function config(phase: string): NextConfig {
+  const scope = globalThis as { atlasMessagesWatcher?: unknown };
+  if (phase === PHASE_DEVELOPMENT_SERVER && !scope.atlasMessagesWatcher) {
+    scope.atlasMessagesWatcher = watchMessages();
+  }
+  return withNextIntl(nextConfig);
+}

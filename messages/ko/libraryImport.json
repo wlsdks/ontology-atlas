@@ -1,0 +1,54 @@
+{
+  "title": "외부에서 문서 가져오기",
+  "pickBody": "문서가 이미 있는 곳을 고르세요. Atlas가 한 번 연결하면, 대화 중인 코딩 도구가 문서를 받아서 이 폴더에 읽고 고칠 수 있는 마크다운 파일로 하나씩 적어 둬요.",
+  "absentNote": "Google Drive는 아직 없어요. Google이 로그인만으로 되는 연결을 내놓지 않아서, 지금은 Drive에서 내려받아 「파일 넣기」로 넣는 것이 가장 빨라요.",
+  "close": "닫기",
+  "back": "뒤로",
+  "stepOf": "{total}단계 중 {step}단계",
+  "service": {
+    "notion": {
+      "title": "Notion",
+      "body": "Notion 계정에 있는 페이지와 데이터베이스.",
+      "example": "API 설계 문서들"
+    },
+    "confluence": {
+      "title": "Confluence",
+      "body": "Confluence 스페이스의 페이지.",
+      "example": "핸드북 스페이스 전체"
+    },
+    "jira": {
+      "title": "Jira",
+      "body": "Jira의 이슈와 설명.",
+      "example": "플랫폼 보드의 열린 이슈"
+    },
+    "github": {
+      "title": "GitHub",
+      "body": "저장소의 이슈·풀 리퀘스트·위키 문서.",
+      "example": "이 저장소의 설계 논의"
+    },
+    "other": {
+      "title": "다른 서비스",
+      "body": "에이전트의 MCP(에이전트가 이 폴더를 읽고 쓰는 연결) 탭에서 직접 설정해요.",
+      "example": ""
+    }
+  },
+  "connectBrowser": "{service}에 연결해요. 로그인 창이 열리면 허용을 누르고, {service}가 무엇을 공유할지 고르세요.",
+  "connectBrowserWho": "그 창은 대화 중인 코딩 도구가 열고, 받은 것도 그 도구가 가져요. Atlas는 보지 않고, 나중에 이 연결을 지워도 권한이 취소되지는 않아요.",
+  "connectToken": "{service}에 연결해요. 발급받은 값을 한 번만 붙여 넣으세요.",
+  "connectTokenWho": "값은 이 컴퓨터 키체인에 들어가고 폴더 안 파일에는 적히지 않아요. 그 값으로 서비스에 닿는 건 Atlas가 아니라 코딩 도구예요.",
+  "connectAction": "연결하기",
+  "connectFailed": "아무것도 저장되지 않았어요. 폴더를 먼저 열고, 이 폴더의 연결 파일을 읽을 수 있는지 확인하세요.",
+  "tokenLabel": "값",
+  "tokenWhere": "어디서 받나요",
+  "connected": "{service} 연결됨.",
+  "whatLabel": "무엇을 가져올까요?",
+  "whatNext": "다음에 대화가 열려요. 검색해서 최대 {limit}개를 보여 주고, 고를 때까지 기다려요. 고른 문서는 {folder} 아래에 하나씩 적히고, 적기 전에 매번 허락을 물어봐요. 그 폴더 밖은 건드리지 않아요.",
+  "bringAction": "가져오기 시작",
+  "whatRuntime": "이건 Claude 대화에서 돼요. Codex는 아직 이 부분을 재지 않아서, Codex 대화는 이 폴더까지만 닿아요.",
+  "revokeWhere": "{service}에서 되돌리는 곳",
+  "noAgentTitle": "가져오는 일은 이 앱이 띄울 수 있는 코딩 도구가 해요",
+  "noAgentGetApp": "앱 받기",
+  "noAgentBodyWeb": "브라우저는 그 도구를 띄우지 못해요. 연결은 저장되었고 켜져 있으니, 이 폴더를 가리키는 코딩 도구라면 이미 쓸 수 있어요. 문서를 받아서 여기에 적어 주는 것까지 하려면 앱에서 이 화면으로 다시 오세요.",
+  "noAgentBodyRuntime": "이 컴퓨터에는 아직 준비된 도구가 없어요. 연결은 저장되었고 켜져 있으니, 이 폴더를 가리키는 코딩 도구라면 이미 쓸 수 있어요. 하나 설정하고 여기로 돌아와서 마저 하세요.",
+  "noAgentSeeRuntimes": "코딩 도구 보기"
+}

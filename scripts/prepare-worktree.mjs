@@ -2,6 +2,9 @@
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
+/** Ignored outputs every worktree materializes from its authored inputs, in this order. */
+export const MATERIALIZERS = Object.freeze(['scripts/build-docs-vault.mjs', 'scripts/build-messages.mjs']);
+
 export function prepareWorktree({ root = process.cwd(), spawn = spawnSync, stderr = process.stderr } = {}) {
   const git = spawn('git', ['rev-parse', '--show-toplevel'], { cwd: root, encoding: 'utf8' });
   if (git.status === 0) {
@@ -12,9 +15,12 @@ export function prepareWorktree({ root = process.cwd(), spawn = spawnSync, stder
     return git.status ?? 1;
   }
 
-  const built = spawn(process.execPath, ['scripts/build-docs-vault.mjs'], { cwd: root, stdio: 'inherit' });
-  if (built.error) stderr.write(`[prepare] ${built.error.message}\n`);
-  return built.status ?? 1;
+  for (const script of MATERIALIZERS) {
+    const built = spawn(process.execPath, [script], { cwd: root, stdio: 'inherit' });
+    if (built.error) stderr.write(`[prepare] ${built.error.message}\n`);
+    if (built.status !== 0) return built.status ?? 1;
+  }
+  return 0;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
