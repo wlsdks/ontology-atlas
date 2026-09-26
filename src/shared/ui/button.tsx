@@ -88,9 +88,13 @@ const buttonVariants = cva(
        * `lg` (44px) is the download hero, whose every consumer already overrode the panel
        * radius back to the chip radius (six call sites); the override moved here. The other
        * `lg` consumers — the Harness toolbar's split action and rules toggle — sit in a row of
-       * chip-radius controls, so they gain the same radius, not lose one. `md` (40px) keeps
-       * `rounded-panel`: no reviewed screen showed a seam at 40px, so it is not changed on
-       * speculation.
+       * chip-radius controls, so they gain the same radius, not lose one. `md` (40px) kept
+       * `rounded-panel` until a seam showed there too: the 2026-09-26 screen review found
+       * page-level primaries reading as a pill on some screens (40px with the 12px panel
+       * corner) and as a rectangle beside them (the chip corner at 32/44px). So the rule is
+       * one line now — **every Button wears the chip radius; only the boxes that hold
+       * content (card, panel, sheet) wear theirs** (owner: "decide it and make it
+       * consistent").
        *
        * Type stays `text-body-lg` (14px) at every size: a 32px field (`fieldClass` md) sets
        * its text at 14px, and a 12.5px `sm` label beside it read one step smaller than the
@@ -100,7 +104,7 @@ const buttonVariants = cva(
        */
       size: {
         sm: 'h-8 px-3.5 rounded-chip',
-        md: 'h-10 px-4.5 rounded-panel',
+        md: 'h-10 px-4.5 rounded-chip',
         lg: 'h-11 px-6 rounded-chip',
       },
     },

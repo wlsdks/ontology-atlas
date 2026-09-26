@@ -14,6 +14,7 @@ Checks whether each folder a person has opened before can still be opened now, s
 
 ## Includes
 - A per-row probe of whether the folder is reachable, and what the row should offer when it is not.
+- Drawing the list once, from the check's first answer within a short deadline, so a row never flashes as unreachable before its answer arrives.
 
 ## Excludes
 - Opening the folder.
@@ -21,3 +22,4 @@ Checks whether each folder a person has opened before can still be opened now, s
 
 ## Uncertainty
 - Read from the feature barrel, which notes this hook is used only by the recent-folder list inside the feature. Its implementation was not read, and the difference between desktop absolute paths and browser handles was not exercised.
+- Read 2026-09-26: `use-recent-vault-reachability.ts` itself (bundle #1883).

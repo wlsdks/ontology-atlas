@@ -18,6 +18,7 @@ Chooses which local folder is the open vault, remembers the folders a person has
 ## Includes
 - The folder chooser, the list of known folders with their contents and last use, and the switcher in the rail.
 - Resuming a single known folder on launch where the surface is allowed to.
+- Folders that can no longer be found gathered into one quiet line at the end of the known-folder list, where they are reviewed and forgotten only when the person presses it, while live folders stay first.
 
 ## Excludes
 - Reading or interpreting what is inside the folder once it is open.
@@ -25,3 +26,4 @@ Chooses which local folder is the open vault, remembers the folders a person has
 
 ## Uncertainty
 - Read from `src/features/vault-switch/` and `src/entities/local-fs-handle/` by layout plus the capability table in `docs/FEATURES.md`. The stated difference between desktop absolute paths and the browser's File System Access handle was taken from that table rather than exercised.
+- Re-read 2026-09-26: `src/features/vault-switch/ui/RecentVaultList.tsx` (bundle #1883).

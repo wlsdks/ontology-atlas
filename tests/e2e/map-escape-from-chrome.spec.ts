@@ -18,15 +18,22 @@ const selection = (page: Page) =>
 
 /** Select a domain drawn clear of the panels, then close its card: the next rung is "deselect". */
 async function selectDomainWithCardClosed(page: Page) {
+  // Aim at the frame the map settled on, not one it is still moving to: on a slow runner the
+  // agent dock arrives after the first settle and the map reframes around it, so a point read
+  // earlier missed its node in all three CI attempts (2026-09-26).
+  await waitForMapStill(page);
   const target = await page.evaluate(() => {
     const probe = window.__atlasMap!;
-    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const canvasEl = document.querySelector('[data-testid="ontology-map-canvas"]')!;
+    const canvas = canvasEl.getBoundingClientRect();
     const stretch = canvas.width / probe.camera()!.width;
     const domains = probe
       .nodes()
       .filter((node) => node.kind === "domain" && !node.hidden)
       .map((node) => ({ id: node.id, x: canvas.left + node.x * stretch, y: canvas.top + node.y * stretch }))
-      .filter((node) => node.x > canvas.left + 420 && node.x < canvas.right - 420);
+      .filter((node) => node.x > canvas.left + 420 && node.x < canvas.right - 420)
+      // Only a point the canvas itself receives: nothing drawn over it (the dock, a panel).
+      .filter((node) => canvasEl.contains(document.elementFromPoint(node.x, node.y)));
     return domains[0] ?? null;
   });
   expect(target, "no domain drawn in the middle of the canvas to select").not.toBeNull();

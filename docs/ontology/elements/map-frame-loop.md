@@ -24,3 +24,4 @@ Drives the map one frame at a time: reads the current state, advances the physic
 
 ## Uncertainty
 - Identified from its import receipts, which show it reaching 57 modules across the map's engine, model, interaction and render folders, by far the widest fan-out in this domain. Its body was not read, and no frame was ever rendered in this scan.
+- Re-read 2026-09-26 where bundles #1874 and #1883 changed `use-topology-loop.ts`: it now carries the measured widths of the strata tier names and forwards the pointer-leave and path-pick handlers. The per-frame role above is unchanged.
