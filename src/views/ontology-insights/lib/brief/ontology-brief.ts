@@ -69,6 +69,11 @@ export interface OntologyBriefInput {
 export function evidenceAvailability(input: {
   /** The installed app's Git bridge exists here. */
   bridge: boolean;
+  /**
+   * The open folder has a native path the walk can be asked about. A folder opened through the
+   * browser's picker has none even inside the app, so no walk is ever asked for it.
+   */
+  walkable: boolean;
   /** A walk for this load of the folder has been asked and has not answered. */
   walkPending: boolean;
   /** The walk for this load answered with nothing. */
@@ -79,7 +84,13 @@ export function evidenceAvailability(input: {
   if (!input.bridge) return 'app-only';
   if (input.walkPending) return 'reading';
   if (input.noSource) return 'no-source';
-  return input.walkFailed ? 'unreadable' : 'reading';
+  /*
+   * ⚠️ **A walk nobody asked for is not a read in flight.** This used to fall through to
+   * `reading` whenever the bridge existed and no walk was pending, so a folder without a native
+   * path said "reading the folder" forever and the brief's sums and since list, which wait for
+   * every core to stop reading, never appeared (route-identity e2e, 2026-09-27).
+   */
+  return input.walkFailed || !input.walkable ? 'unreadable' : 'reading';
 }
 
 function isAgentWritten(createdBy: string | null | undefined): boolean {

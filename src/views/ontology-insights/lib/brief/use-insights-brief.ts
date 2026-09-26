@@ -310,6 +310,7 @@ export function useInsightsBrief({
     evidenceChanges?.key !== evidenceKey;
   const ontologyEvidenceAvailability = evidenceAvailability({
     bridge: isGitBridgeAvailable(),
+    walkable: nativeRootPath !== null,
     walkPending: evidenceWalkPending,
     walkFailed: evidenceChanges?.key === evidenceKey && evidenceChanges.changes === null,
     noSource: harnessState.status === 'no-source',

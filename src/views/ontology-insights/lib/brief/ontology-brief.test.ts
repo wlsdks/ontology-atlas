@@ -119,7 +119,7 @@ describe('the card and the strip count the same thing', () => {
  * between (real bridge, 2026-09-25). A walk in flight is reading, whatever else is known.
  */
 describe('evidenceAvailability', () => {
-  const base = { bridge: true, walkPending: false, walkFailed: false, noSource: false };
+  const base = { bridge: true, walkable: true, walkPending: false, walkFailed: false, noSource: false };
 
   it('reads while the walk is in flight, even with no project bound', () => {
     expect(evidenceAvailability({ ...base, walkPending: true, noSource: true })).toBe('reading');
@@ -129,6 +129,11 @@ describe('evidenceAvailability', () => {
   it('asks for a repository once the walk has answered with nothing and none is bound', () => {
     expect(evidenceAvailability({ ...base, walkFailed: true, noSource: true })).toBe('no-source');
     expect(evidenceAvailability({ ...base, walkFailed: true })).toBe('unreadable');
+  });
+
+  it('stops reading when the folder has no native path to walk', () => {
+    expect(evidenceAvailability({ ...base, walkable: false })).toBe('unreadable');
+    expect(evidenceAvailability({ ...base, walkable: false, noSource: true })).toBe('no-source');
   });
 
   it('never tells a browser it is reading', () => {

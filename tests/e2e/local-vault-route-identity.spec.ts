@@ -111,7 +111,11 @@ async function expectLocalOnlyTransition(
   section?: 'ontology',
 ) {
   await startFrameTextTrace(page);
-  await page.getByTestId(`app-nav-rail-item-${destination}`).click();
+  const railItem = page.getByTestId(`app-nav-rail-item-${destination}`);
+  await railItem.click();
+  // Arrival first: the previous screen's `main` can still hold the marker (the library lists the
+  // same capability), so asserting text before the route commits passes on the wrong screen.
+  await expect(railItem).toHaveAttribute('aria-current', 'page');
   if (section) {
     const tab = page.getByTestId(`library-workspace-${section}`);
     await tab.click();
