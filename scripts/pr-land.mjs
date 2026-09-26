@@ -1635,7 +1635,10 @@ export function planLanding({ args, deps }) {
   }
 
   const queued = deps.gh.listQueue();
-  const combined = [...queued, ...joining.filter((pr) => !queued.some((q) => q.number === pr.number))];
+  // Pull requests already riding a train in flight are not planned again.
+  const flying = (Array.isArray(lock.holder?.trains) ? lock.holder.trains : [lock.holder?.train]).filter(Boolean);
+  const aboard = new Set(flying.flatMap((t) => t.components ?? []));
+  const combined = [...queued, ...joining.filter((pr) => !queued.some((q) => q.number === pr.number))].filter((pr) => !aboard.has(pr.number));
   const batchSize = chooseBatch({ deps, args });
   const { batch } = nextTrain({ queue: combined, batchSize });
   if (batch.length === 0) {
@@ -1645,9 +1648,12 @@ export function planLanding({ args, deps }) {
   // The speculative train: the next pull requests, cut on top of the first train's head.
   const riding = new Set(batch.map((c) => c.number));
   const speculative = args.speculate ? nextTrain({ queue: combined.filter((pr) => !riding.has(pr.number)), batchSize }).batch : [];
-  if (lock.state === 'held') deps.log('a train is in flight; the trains below form after it');
+  if (lock.state === 'held' && aboard.size > 0) {
+    deps.log(`${flying.length} train(s) in flight carrying ${[...aboard].map((n) => `#${n}`).join(' ')}; the trains below form after ${args.speculate && flying.length < 2 ? 'it, the first one speculating on it' : 'them'}`);
+  } else if (lock.state === 'held') deps.log('a train is in flight; the trains below form after it');
   deps.log(`next train (${batch.length} of ${combined.length} queued): ${trainTitle(batch)}`);
-  deps.log(`  branch ${trainBranchName(deps.now(), batch[0].number)} from origin/main`);
+  const ridesOn = lock.state === 'held' && args.speculate && flying.length === 1 && flying[0].pr ? flying[0].pr : null;
+  deps.log(`  branch ${trainBranchName(deps.now(), batch[0].number)} from ${ridesOn ? `train #${ridesOn}'s head (trial-merged below on origin/main)` : 'origin/main'}`);
   deps.git.fetch(['main', ...batch.map((c) => c.headRefName), ...speculative.map((c) => c.headRefName)]);
   // One trial merge in queue order: the speculative rows are measured on top of the first train.
   const trial = deps.git.trialMerge('origin/main', [...batch, ...speculative].map((c) => c.headRefOid));

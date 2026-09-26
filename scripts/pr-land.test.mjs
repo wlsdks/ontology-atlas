@@ -1032,6 +1032,17 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     assert.match(text, /#52 feat\/change-52@52ccccccc: merges cleanly/);
     assert.deepEqual(world.calls.filter(([name]) => !['readPr'].includes(name)), [], 'plan made a write call');
 
+    // With a train in flight, its riders are not planned again and the next train rides on it.
+    const trainLock = {
+      pr: 1990, token: 'otherhost-1-1', holder: 'ada', host: 'otherhost', acquiredAt: '2026-09-26T09:59:00Z',
+      leaseMinutes: LEASE_MINUTES, train: { pr: 1990, components: [51], files: ['src/change-51.ts'] }, trains: [{ pr: 1990, components: [51], files: ['src/change-51.ts'] }],
+    };
+    const flying = fakeWorld({ prs: [component(51), component(52)], queued: [51, 52], lock: trainLock, readOnly: true });
+    land(flying, ['--plan', '52', '--no-fast']);
+    const flyingText = flying.out.join('\n');
+    assert.match(flyingText, /1 train\(s\) in flight carrying #51; the trains below form after it, the first one speculating on it/);
+    assert.match(flyingText, /next train \(1 of 1 queued\): chore\(train\): land #52\n.*from train #1990's head/);
+
     const sequential = fakeWorld({ prs: [component(51), component(52)], queued: [51, 52], readOnly: true });
     land(sequential, ['--plan', '51', '--batch=1', '--no-speculate']);
     assert.match(sequential.out.join('\n'), /no speculative train: --no-speculate/);
