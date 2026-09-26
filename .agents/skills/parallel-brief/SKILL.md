@@ -61,7 +61,8 @@ Before assigning scopes, run `pnpm conflicts:scan` so no scope includes a file a
 Every delegated brief states:
 
 1. the unique server port, or that no server may run;
-2. which files are read-only;
+2. which files are read-only, and that a slice adding modules loaded at runtime
+   (glob, readdir, dynamic import) also owns `scripts/quality/dead-code/`;
 3. no stash, no `git add -A`, no subagent worktree deletion, and the cleanup owner;
 4. the external scratch location;
 5. which baselines must remain green and the commands that prove them, and that
