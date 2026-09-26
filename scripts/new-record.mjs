@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdirSync, openSync, readFileSync, writeFileSync, closeSync } from 'node:fs';
 import path from 'node:path';
 import { isCalendarDate, validateNewRecord } from './lib/record-ledgers.mjs';
-import { createLesson, createLessonStatus } from './lessons.mjs';
+import { createRequire } from 'node:module';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const VERSION = /^v\d+\.\d+\.\d+(?:-rc\.\d+)?$/;
@@ -18,11 +18,14 @@ export function createRecord({ kind, date, slug, body, category, id = randomUUID
   if (!['decision', 'change', 'release', 'lesson', 'lesson-status'].includes(kind)) throw new Error('kind must be decision, change, release, lesson, or lesson-status');
   if (!date && kind.startsWith('lesson')) date = new Date().toISOString().slice(0, 10);
   if (!isCalendarDate(date)) throw new Error('date must be a real YYYY-MM-DD calendar date');
-  // Lessons keep their own template and history rules in scripts/lessons.mjs.
-  if (kind === 'lesson') return createLesson({ kind: type, area, slug, body, date, id, root });
+  // Lessons keep their own template and history rules in scripts/lessons.mjs,
+  // loaded only for a lesson so the other kinds never depend on it (a checkout
+  // that copies only the record writer still writes a decision).
+  const lessons = () => createRequire(import.meta.url)('./lessons.mjs');
+  if (kind === 'lesson') return lessons().createLesson({ kind: type, area, slug, body, date, id, root });
   if (kind === 'lesson-status') {
     const ids = Array.isArray(parents) ? parents : String(parents ?? '').split(',').map((value) => value.trim()).filter(Boolean);
-    return createLessonStatus({ lesson, status, parents: ids, slug, body, date, id, root });
+    return lessons().createLessonStatus({ lesson, status, parents: ids, slug, body, date, id, root });
   }
   let directory; let relativePath; let content;
   if (kind === 'release') {
