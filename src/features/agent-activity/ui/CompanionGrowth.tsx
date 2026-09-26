@@ -66,7 +66,10 @@ export function CompanionGrowth({learningDraft,onLearningDraft,questLoaded,recei
  const onKeyDown=(event:KeyboardEvent<HTMLDivElement>)=>{
   if(event.key==='Escape'&&overlay){event.preventDefault();event.stopPropagation();const sourceBack=panel.current?.querySelector<HTMLButtonElement>('[data-companion-source-back]');if(sourceBack)sourceBack.click();else if(confirm)cancelReset();else dismiss();return;}
   if(sectorActive&&event.key==='Tab'){
-   const container=overlay||panelExiting?panel.current:sector.current?.element();if(container){const nodes=visibleFocusables(container);event.preventDefault();event.stopPropagation();if(nodes.length){const index=nodes.indexOf(document.activeElement as HTMLElement),next=event.shiftKey?(index<=0?nodes.length-1:index-1):(index<0||index===nodes.length-1?0:index+1);nodes[next].focus({preventScroll:true});}return;}
+   event.preventDefault();event.stopPropagation();
+   const container=overlay||panelExiting?panel.current:sector.current?.element();const nodes=container?visibleFocusables(container):[];
+   // Surface mounts after the opening commit; Tab must stay owned during that gap.
+   if(nodes.length){const index=nodes.indexOf(document.activeElement as HTMLElement),next=event.shiftKey?(index<=0?nodes.length-1:index-1):(index<0||index===nodes.length-1?0:index+1);nodes[next].focus({preventScroll:true});}else gameRoot.current?.focus({preventScroll:true});return;
   }
   if(event.metaKey||event.ctrlKey||event.altKey||event.nativeEvent.isComposing||editable(event.target))return;
   if(sectorActive&&event.key==='Escape'&&!overlay){event.preventDefault();event.stopPropagation();setSectorActive(false);return;}
