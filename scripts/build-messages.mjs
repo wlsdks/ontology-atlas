@@ -358,7 +358,8 @@ const USAGE = [
 ].join('\n');
 
 function main(argv) {
-  const flags = new Set(argv.filter((arg) => !arg.startsWith('--base=')));
+  // `pnpm messages:build -- --check` passes the separator through; every script here ignores it.
+  const flags = new Set(argv.filter((arg) => arg !== '--' && !arg.startsWith('--base=')));
   const base = argv.find((arg) => arg.startsWith('--base='))?.slice('--base='.length);
   if (flags.has('--help') || flags.has('-h')) {
     console.log(USAGE);

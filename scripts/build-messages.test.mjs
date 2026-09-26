@@ -217,3 +217,10 @@ test('--adopt carries a pre-split branch edit onto the parts after merging the s
     rmSync(repo, { recursive: true, force: true });
   }
 });
+
+test('accepts the separator pnpm passes through (pnpm messages:build -- --help)', () => {
+  const script = new URL('./build-messages.mjs', import.meta.url).pathname;
+  const result = spawnSync(process.execPath, [script, '--', '--help'], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Usage: node scripts\/build-messages\.mjs/);
+});
