@@ -9,7 +9,7 @@ test.describe('Automations workspace', () => {
     await expect(page.getByTestId('app-nav-rail-item-automations')).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('automations-tab-ontology')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[role="tabpanel"]')).toHaveAttribute('id', 'automations-tabpanel-ontology');
-    await expect(page.getByText('자동화는 맥 앱에서만 실행돼요')).toBeVisible();
+    await expect(page.getByText('자동화는 데스크톱 앱에서만 실행돼요')).toBeVisible();
 
     await page.getByTestId('automations-tab-documents').click();
     await expect(page).toHaveURL(/\/ko\/automations\/\?guides=off&kind=documents$/);
