@@ -139,7 +139,12 @@ alone. Keep meaning acceptance separate from code, merge, and deployment checks.
 
 - `skip`: maintenance checks.
 - `solo`: one accountable owner proceeds; unknown evidence means probe first.
-- `review`: invoke `/po-council` with only the returned pair.
+- `review`: give one `reviewer` this screen, the route output, and the primary
+  evidence; it applies the lenses the route lists. The author answers a finding
+  once, only on a material conflict; a one-way disagreement takes one second
+  opinion from a different model (the other harness's `reviewer` brief), given
+  the evidence and the disputed decision but neither argument. The owner
+  decides; `unchanged` is valid.
 
 Routine solo work does not create a decision fragment; a significant decision
 creates one with `pnpm record:new -- --kind=decision`. The pilot closed on

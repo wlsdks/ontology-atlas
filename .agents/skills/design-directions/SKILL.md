@@ -17,15 +17,17 @@ Prototyping Leads to Better Design Results, More Divergence, and Increased
 Self-Efficacy” (ACM TOCHI 2010), found parallel alternatives superior to serial
 iteration on quality, divergence, and self-efficacy.
 
-`/design-council` reviews one built direction. This skill cheaply creates the
-alternatives before that review when the route identifies a structural choice.
+One `reviewer` reviews the built direction when the route says `review=yes`.
+This skill cheaply creates the alternatives before that review when the route
+identifies a structural choice.
 
 ## Ownership
 
-The owner of divergence is `chief`, not the builder `design-guardian`. A builder
-who authors the options biases them toward the one they want to implement and
-turns the rest into straw men. `chief` sketches, the human owner chooses, and the
-builder implements.
+The coordinating session sketches the directions, never the builder
+(`design-guardian` or an implementer). A builder who authors the options biases
+them toward the one they want to implement and turns the rest into straw men. If
+the coordinator will also build, it says so. The human owner chooses, the builder
+implements, and the `reviewer` never sketches.
 
 ## A direction is structural, not a palette
 
@@ -105,8 +107,8 @@ or inspecting the current baseline. An already selected direction proceeds to
 
 1. Record the selected direction in one implementation-grade sentence.
 2. Implement only that sentence and retain rejected directions as history.
-3. Convene `/design-council` only when the same route says it is required; it
-   reviews the chosen built direction rather than selecting one.
+3. Give the built direction to one `reviewer` only when the same route says
+   `review=yes`; it reviews the chosen direction rather than selecting one.
 4. Run only the route's proof packet. Every rendered result includes an Orca
    Computer Use capture; motion includes a real screen recording.
 

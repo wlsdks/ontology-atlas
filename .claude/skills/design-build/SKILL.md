@@ -33,8 +33,8 @@ Declare `design-contract` to `pnpm design:route` when changing:
 - type, leading, radius, shadow, or colour ramps in `app/globals.css`;
 - the “Fixed scale contract” in `.claude/rules/design.md`.
 
-The router selects `design-system` plus a contrasting seat, a design-system
-audit, and `/gate-probe`. A one-author specification is taste, not a system.
+The router selects one `reviewer` with the `tokens` and `attention` lenses, a
+design-system audit, and `/gate-probe`. A one-author specification is taste, not a system.
 
 ## 0. Choose the shape before building
 

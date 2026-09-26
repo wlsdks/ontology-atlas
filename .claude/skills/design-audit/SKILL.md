@@ -156,5 +156,5 @@ confirms it.
 ```
 
 Motion belongs to `/motion-verify`; breakpoint coverage to `/responsive-sweep`.
-`/design-council` is not an automatic next step; use it only when the route
-selects a structural council.
+A `reviewer` is not an automatic next step; use one only when the route says
+`review=yes`.
