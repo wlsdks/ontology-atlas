@@ -1,8 +1,15 @@
 import assert from 'node:assert/strict';
+import { cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
+import { pathToFileURL } from 'node:url';
 
 import {
+  CHECK_RULES_DIRECTORY,
+  composeCheckRules,
   formatFocusedCheckSuggestions,
+  loadCheckRules,
   normalizeChangedPath,
   suggestFocusedChecks,
 } from './focused-check-suggestions.mjs';
@@ -17,13 +24,28 @@ function commandNames(result) {
 // The source-language gate is intentionally cross-cutting. Domain-specific tests
 // keep asserting their own exact ordering, while one dedicated test below owns
 // the invariant that every supported source path adds this shared gate exactly once.
+// Per-file lint of changed scripts, tests and packages applies to every such path, like the
+// source-language scan, so domain assertions leave it out; its own test pins it.
+const isScriptLint = (command) => command.startsWith('pnpm exec eslint --max-warnings 0 --no-warn-ignored ');
+
 function domainCommands(result) {
   return commandNames(result).filter(
-    (command) => command !== SOURCE_LANGUAGE_COMMAND && command !== DEAD_CODE_COMMAND,
+    (command) => command !== SOURCE_LANGUAGE_COMMAND && command !== DEAD_CODE_COMMAND && !isScriptLint(command),
   );
 }
 
 describe('focused check suggestions', () => {
+  it('lints changed scripts, tests and packages that the full lint lane covers', () => {
+    const lint = (paths) => commandNames(suggestFocusedChecks(paths)).find(isScriptLint);
+    // A scripts-only change once planned no lint and landed a warning on main (train #1921).
+    assert.equal(
+      lint(['scripts/pr-land.test.mjs', 'tests/e2e/settle.ts', 'mcp/src/index.js']),
+      'pnpm exec eslint --max-warnings 0 --no-warn-ignored scripts/pr-land.test.mjs tests/e2e/settle.ts mcp/src/index.js',
+    );
+    assert.equal(lint(['src/shared/lib/cn.ts']), undefined, 'src and app keep their own lint command');
+    assert.equal(lint(['docs/README.md']), undefined, 'non-code paths plan no lint');
+  });
+
   it('normalizes paths for git and shell input', () => {
     assert.equal(normalizeChangedPath('./mcp\\scripts\\verify.mjs'), 'mcp/scripts/verify.mjs');
     assert.equal(normalizeChangedPath('  docs/ontology/project.md  '), 'docs/ontology/project.md');
@@ -114,7 +136,7 @@ describe('focused check suggestions', () => {
       'scripts/quality/source-language/source-paths.mjs',
       'scripts/quality/source-language/inventory.test.mjs',
     ]);
-    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND), [
+    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && !isScriptLint(command)), [
       SOURCE_LANGUAGE_COMMAND,
       'pnpm test:source:language',
     ]);
@@ -1787,5 +1809,72 @@ describe('deleted paths participate in rule matching without reaching file-readi
     for (const c of suggestions.commands) {
       assert.ok(!c.command.includes('GonePage'), c.command);
     }
+  });
+});
+
+describe('rule files under scripts/lib/check-rules are the registry', () => {
+  // The rule table was one shared file every new check appended to, and two
+  // branches doing that on one day conflicted twice (2026-09-26). A new check
+  // is now a new file: this proves the file alone is enough.
+  it('picks up a new rule file without editing any other file', async () => {
+    const scratch = mkdtempSync(join(tmpdir(), 'check-rules-'));
+    try {
+      const directory = join(scratch, 'check-rules');
+      cpSync(CHECK_RULES_DIRECTORY, directory, { recursive: true });
+      const before = await loadCheckRules(pathToFileURL(`${directory}/`));
+      writeFileSync(
+        join(directory, 'zz-new-area.mjs'),
+        [
+          'export const rules = [',
+          "  { command: 'pnpm test:new-area', reason: 'new area changed', matches: [/^new-area\\//] },",
+          '];',
+          'export const directTests = {',
+          "  script: [['scripts/new-area.mjs', 'scripts/new-area.test.mjs']],",
+          '};',
+          '',
+        ].join('\n'),
+      );
+      const after = await loadCheckRules(pathToFileURL(`${directory}/`));
+
+      assert.deepEqual(after.rules.slice(0, -1), before.rules);
+      assert.equal(after.rules.at(-1).command, 'pnpm test:new-area');
+      assert.ok(after.rules.at(-1).matches[0].test('new-area/x.mjs'));
+      assert.equal(after.directTests.script.bySource.get('scripts/new-area.mjs'), 'scripts/new-area.test.mjs');
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it('sorts by order, then file name, then position, with unordered rules last', () => {
+    const rule = (command, order) => ({ command, reason: command, matches: [/x/], ...(order === undefined ? {} : { order }) });
+    const { rules } = composeCheckRules([
+      { name: 'b.mjs', module: { rules: [rule('b-unordered'), rule('b-20', 20)] } },
+      { name: 'a.mjs', module: { rules: [rule('a-20', 20), rule('a-unordered'), rule('a-10', 10)] } },
+    ]);
+    assert.deepEqual(
+      rules.map((row) => row.command),
+      ['a-10', 'a-20', 'b-20', 'a-unordered', 'b-unordered'],
+    );
+  });
+
+  it('refuses a malformed rule or two files mapping one source to different tests', () => {
+    assert.throws(
+      () => composeCheckRules([{ name: 'bad.mjs', module: { rules: [{ command: 'x', reason: 'y', matches: ['not-a-regexp'] }] } }]),
+      /check-rules\/bad\.mjs: rules\[0\]/,
+    );
+    assert.throws(
+      () =>
+        composeCheckRules([
+          { name: 'a.mjs', module: { directTests: { script: [['s.mjs', 'a.test.mjs']] } } },
+          { name: 'b.mjs', module: { directTests: { script: [['s.mjs', 'b.test.mjs']] } } },
+        ]),
+      /check-rules\/b\.mjs: s\.mjs already maps to a\.test\.mjs/,
+    );
+  });
+
+  it('treats a rule file as advisor and CI-planner surface', () => {
+    const commands = commandNames(suggestFocusedChecks(['scripts/lib/check-rules/mcp.mjs']));
+    assert.ok(commands.includes('pnpm test:checks:changed'), commands.join('\n'));
+    assert.ok(commands.includes('pnpm test:ci:impact'), commands.join('\n'));
   });
 });
