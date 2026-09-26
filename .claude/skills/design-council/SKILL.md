@@ -1,6 +1,7 @@
 ---
 name: design-council
 description: Review only the Atlas structural commitments selected by design routing, using relevant seats, built evidence, optional conflict rebuttal, and one accountable guardian.
+when_to_use: Use only when pnpm design:route returns council=yes. Local visual, responsive, motion, and copy work never convene it.
 ---
 
 # Design Council — selected seats, one accountable applier
@@ -30,9 +31,8 @@ No seat always attends. Use exactly the seats returned by the router; structural
 routes derive at least two contrasting seats. `design-guardian` is not a seat.
 It is the accountable decider and applier.
 
-Seat briefs live at `../../agents/design-*.md`. The path resolves inside each
-mirrored tool tree. Open the selected briefs explicitly and never create a third
-copy.
+Spawn each selected seat by its agent name (`subagent_type: design-lead`, …);
+the seat file is its system prompt, so do not read it into this context.
 
 ## Required evidence
 
@@ -41,17 +41,18 @@ Before a position can approve, provide:
 - the exact PO outcome and selected design direction, when any;
 - the built route/app state and commit;
 - the router's change facts, seats, and proof packet;
-- the computer-use render-loop packet: baseline, material checkpoints,
-  final accessibility tree and screenshot for every rendered state in scope;
+- the `/design-build` §0-B render-loop packet (baseline, checkpoints, final
+  tree + screenshot paths) for every rendered state in scope; seats judge from
+  these captures and do not take their own;
 - measured rect/style, responsive, graph, performance, journey, or installed-app
   output only when the route selected it;
 - a real macOS recording and `/motion-verify` result whenever `motion` is in
   the route.
 
-A browser automation screenshot may support measurement but does not replace the
-Computer Use render loop. Static screenshots do not replace a motion recording. If a
-runtime cannot open the built artifact or run a required instrument, defer that
-part of the verdict instead of judging code or a diff by eye.
+Browser screenshots support measurement; they do not replace the render loop.
+Static screenshots do not replace a motion recording. If a runtime cannot open
+the built artifact or run a required instrument, defer that part of the verdict
+instead of judging code or a diff by eye.
 
 ## Round 0 — prior decision
 
@@ -128,19 +129,11 @@ Five consecutive no-delta councils trigger owner review of the threshold.
 
 ## Output to the human owner
 
-```md
-### First — three lines
-
-- **What we decided**: one sentence
-- **What differs from your request**: every narrowed or widened part, or none
-- **What you need to do**: usually nothing
-```
-
-Keep internal verdict tables in the review artifact; explain the decision and
-its evidence plainly in the conversation. If the owner cannot understand the
-summary, rewrite that summary. A necessary scope or authorization question is
-valid; name the unresolved decision rather than treating every question as a
-failure. Always disclose any difference from the owner's request.
+Report to the owner in the `po-council` "Owner-facing output" shape (the three
+lines: what we decided, what differs from your request, what you need to do).
+Keep internal verdict tables in the review artifact. A necessary scope or
+authorization question is valid; name the unresolved decision. Always disclose
+any difference from the owner's request.
 
 ## Ledger record
 

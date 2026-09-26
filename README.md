@@ -701,30 +701,12 @@ repository [AGENTS.md](AGENTS.md) is canonical for people and agents alike, and
 product decisions route through `pnpm po:route -- --help` from change facts
 rather than a self-declared risk.
 
-Pre-push keeps quick checks local; full contract and Knip scans belong to PR CI.
-Main CI reuses a successful PR only for the identical Git tree with complete
-live required-check proof; unproven pushes use their diff. Daily and manual
-runs remain exhaustive. Exact test-file duplicates are collapsed within a
-local check run. Browser CI shares one build and balances whole test files by
-measured duration; `node --test scripts/run-playwright-ci.test.mjs` verifies allocation.
-MCP harness probes use `pnpm test:mcp:rpc`; full CI keeps the unique CLI boundary
-through `pnpm integration:cli:architecture`. Catalogue checks use captured inputs;
-`pnpm mcp:catalogue:check-online` explicitly checks current registry facts.
-Details: [development checks](docs/DEVELOPMENT-CHECKS.md).
-
-Verification starts with `pnpm checks:changed`, which picks the focused gates for
-the files you changed; `-- --run` executes every recommendation and stops at the
-first failure, and it is the last command before a pull request.
-
-Open the pull request as a **draft** (`gh pr create --draft`), which runs no CI,
-and land it with `pnpm pr:land <number>`. That one command serializes against
-every other agent: it takes a shared lock, merges today's `main` into the
-branch, runs the local lanes on the merged source, marks the pull request ready
-(which fires the single CI run for that branch), squash merges, deletes the
-branch and releases the lock. `pnpm pr:queue` shows who holds the lock and who
-is waiting; `pnpm pr:ci <number>` buys an early CI run without landing. Never
-run `gh pr merge` or `gh pr update-branch` by hand: a guard refuses both,
-because outside the lander neither waits for the landing already in flight.
+Start with `pnpm checks:changed -- --run`: it picks the focused gates for the
+files you changed, runs every recommendation, and stops at the first failure.
+Open pull requests as drafts and land them with `pnpm pr:land <number>`, which
+serializes landings and fires the single CI run
+([details](docs/DEVELOPMENT-CHECKS.md)). Two or more ready branches land together
+through `/land-bundle` as one integration branch and one `pnpm pr:land`.
 
 | Command | What it answers |
 |---|---|
@@ -734,8 +716,8 @@ because outside the lander neither waits for the landing already in flight.
 | `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check` |
 | `pnpm knip` | Dead files, exports and types across every scope |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision record to cite or overturn, and whether this change owes one |
-| `pnpm harness:report` · `pnpm harness:outcomes` | What the agent hooks caught, and whether that lane still earns its place |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Land a pull request, and who is landing right now |
+| `pnpm bundle:plan` · `pnpm bundle:prune` | Land several branches as one: plan the merge (which carry work, shared files, trial conflicts) and afterwards prune the component branches main provably contains. See `/land-bundle` |
 | `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the six app screens the download page shows, Korean and English (`public/gateway/<screen>.<locale>.png`), from a served `pnpm build`, against this repository's own ontology |
 
 For independent backlog-record additions, opt into earlier CI feedback with

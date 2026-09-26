@@ -1,20 +1,16 @@
 ---
 name: design-system-audit
 description: Audit whether the design system is enforced at all: off-ramp values, parallel token systems, syntax and path blind spots, warning-only rules, and missing probes.
+when_to_use: Use when pnpm design:route includes design-system-audit (design-contract changes) or the owner asks whether the design system is enforced.
 ---
 
 # Audit the system, not one screen
 
 A **ramp** is the allowed value ladder; an **off-ramp value** is hand-selected
-outside it; a **gate** is automated enforcement. A 2026-08-03 inventory found
-300+ off-ramp values, but their cause was four gate holes:
-
-| Hole | Effect |
-|---|---|
-| lint saw bracket values only | 268 named Tailwind steps such as `text-sm` and `rounded-md` bypassed the ramp |
-| two central surfaces were warning-only with no warning cap | 66 violations blocked nothing |
-| a colour checker skipped a directory | raw colours had never been checked there |
-| one screen owned a parallel four-step ramp | 17 of 33 elements sat off the app-wide ramp |
+outside it; a **gate** is automated enforcement. Off-ramp values come from gate
+holes: lint that sees bracket values but not named Tailwind steps such as
+`text-sm`, warning-only rules with no cap, a checker that skips a directory,
+and a screen that owns a parallel ramp.
 
 Fixing values without closing entry holes guarantees recurrence. `/design-audit`
 measures one finished DOM change; `/responsive-sweep` measures breakpoint bands;

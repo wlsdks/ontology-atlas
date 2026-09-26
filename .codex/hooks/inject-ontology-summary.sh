@@ -97,11 +97,15 @@ if ! JSON=$("${CLI_ARGS[@]}" overview "$VAULT" --json 2>"$CLI_STDERR"); then
   # Missing packages can occur even when mcp/node_modules already exists.
   # Install the locked dependencies before asking health to read the vault.
   FIX="$HEALTH_COMMAND"
+  HEADLINE="Vault will not compile — no ontology context this session."
   case "$REASON" in
     *ERR_MODULE_NOT_FOUND*|*"Cannot find module"*|*package_json_reader*|*"Source-checkout MCP dependencies are missing"*)
       if [ -f "$(pwd)/mcp/package.json" ]; then
         FIX="pnpm --dir mcp install --frozen-lockfile && $HEALTH_COMMAND"
       fi
+      # The vault was never read, so saying it will not compile blames it for
+      # a missing install (observed 2026-09-26 on a vault that compiles).
+      HEADLINE="Ontology tools cannot start: MCP dependencies are missing — no ontology context this session."
       ;;
   esac
 
@@ -114,7 +118,7 @@ if ! JSON=$("${CLI_ARGS[@]}" overview "$VAULT" --json 2>"$CLI_STDERR"); then
   # minded, but one census format for both runtimes is cheaper than two.
   cat <<EOF
 ontology vault @ ${VAULT}
-Vault will not compile — no ontology context this session.
+$HEADLINE
 $REASON
 Fix it before trusting any ontology answer: \`$FIX\`.
 EOF
@@ -158,11 +162,6 @@ fi
 cat <<EOF
 ontology vault @ ${VAULT}
 $SUMMARY
-
-Token budget: prefer focused ontology reads and the narrowest available source
-tool (built-in search, grep, language server, Serena, CodeGraph); avoid broad
-list_concepts/list files unless needed. Sync ontology only for semantic
-codebase changes; skip typo/style/test-fixture-only edits.
 EOF
 
 exit 0

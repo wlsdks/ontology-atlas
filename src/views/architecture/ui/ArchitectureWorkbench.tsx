@@ -183,7 +183,7 @@ export function ArchitectureWorkbench({
    *
    * It is also the technique the public writing on driving coding agents keeps naming: hand the
    * agent a deep link straight to the exact state instead of a sequence of clicks that reproduces
-   * it. `docs/AGENT-DESIGN-METHOD.md` records where that came from.
+   * it.
    */
   const [selectedRole, setSelectedRole] = useState<string | null>(
     () => readArchitectureRole(),

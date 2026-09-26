@@ -18,7 +18,7 @@ human sees the change appear in their workbench.
 
 **Run when**:
 - a new user-visible capability landed (login flow, checkout flow, …)
-- a new concrete element landed (jwt-token, indexeddb-adapter, sigma-canvas, …)
+- a new concrete element landed (a library, schema, adapter, or entry file)
 - a domain was reshaped (auth → split into auth + session, …)
 - a slug-level rename happened in code that should mirror in the graph
 
@@ -100,17 +100,6 @@ meaning-finalization procedure: `finalize_project_meaning` judges
 `agent_brief.meaningAssessment`. Report unresolved meaning separately from
 successful writes; node and orphan counts alone cannot establish completion.
 
-Supplementary checks:
-
-```
-list_kinds                                # the count moved as expected
-find_orphans                              # nothing got accidentally orphaned
-```
-
-If the vault is the user's own (selected via the web `/docs` picker), the
-web's polling layer will pick up the changes within ~5 seconds — the
-human sees new nodes pulse and a toast appear without reloading.
-
 ## Reply shape
 
 For routine success, use about five lines. Include additional lines when
@@ -150,4 +139,5 @@ is a changelog.
 > Read 13 nodes (5 capability / 3 domain / 4 element / project / readme).
 > Added `capabilities/password-reset` (parent `domains/auth`) and
 > `elements/password-reset-token` (linked as its element).
-> No patches, no renames. No warnings. find_orphans: unchanged.
+> No patches, no renames. No warnings. Validation clean, compile complete,
+> meaning assessment unchanged.

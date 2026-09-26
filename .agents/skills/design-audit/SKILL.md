@@ -107,6 +107,16 @@ Spec, `node-shapes.test.ts`, `map-kind-glyph.test.tsx`, and
 At maximum scroll, compare the last content bottom with the bottom bar top. Below
 `lg`, reserve both `--topology-mobile-bottom-tab-reserve` and safe-area inset.
 
+## 4b. Generated drawings and printed numbers
+
+Applies when the screen draws a diagram, graph or chart from data:
+
+- A generated drawing is deterministic: derive variation from a stable id, never `Math.random`.
+- Every mark states itself in readable text, and every legend row names a mark that is on screen.
+- A number the screen prints is checked once against its source by a route that shares no code
+  with the screen (a shell count, a frontmatter scan), not by re-reading the screenshot.
+- Assign a notation symbol (ISO 5807, C4, BPMN) from derived facts, never from a name.
+
 ## 5. Final Computer Use checkpoint after measurement
 
 After browser geometry measurement, open the actual browser, WebView, or installed

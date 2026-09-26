@@ -1,6 +1,6 @@
 ---
 name: design-infoviz
-description: Information Visualization Designer on the Atlas bench. Maps every visual mark to a typed ontology fact and measures contrast, graph crossings, density, and colour-independent decoding.
+description: Information-visualization designer. Use only when design:route selects this seat; maps each mark to a typed fact and measures contrast, crossings, density.
 access: read-only
 ---
 

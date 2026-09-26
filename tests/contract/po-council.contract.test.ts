@@ -50,7 +50,7 @@ const boundaries = (
   ...overrides,
 }) as Record<string, BoundaryState>;
 const SPECIALISTS = Object.values(PO_RISK_ROUTES).map((route) => route.reviewer);
-const ACTIVE_AGENTS = ['chief', 'po-evidence', ...SPECIALISTS, 'po-craft'] as const;
+const ACTIVE_AGENTS = ['chief', 'po-evidence', ...SPECIALISTS] as const;
 const ACTIVE_FILES = [
   PO_OS,
   PILOT,

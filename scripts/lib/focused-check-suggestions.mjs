@@ -476,24 +476,6 @@ const RULES = [
     ],
   },
   {
-    // The report is the instrument the hook falsifiers are written against, so
-    // it is covered by path like the hooks themselves rather than by a name
-    // somebody has to remember.
-    command: 'pnpm test:harness:report',
-    reason: 'the harness report, or the hook state it reads, changed',
-    matches: [
-      /^scripts\/harness-report(?:\.test)?\.mjs$/,
-      /^\.claude\/hooks\/(?:fast-sensor|stamp-verification|remind-verify-on-stop)\.sh$/,
-    ],
-  },
-  {
-    // The smoke reads its expected counts from both hook wirings, so a change
-    // to either settings file re-proves the parsers against them.
-    command: 'pnpm test:harness:smoke',
-    reason: 'the runtime smoke, or the hook wiring it derives its expectations from, changed',
-    matches: [/^scripts\/harness-smoke(?:\.test)?\.mjs$/, /^\.claude\/settings\.json$/, /^\.codex\/hooks\.json$/],
-  },
-  {
     // The finder is the only retrieval the ledger has; its parser is pinned
     // against the live label census, so its own edits re-run that pin.
     command: 'pnpm test:decisions',
@@ -523,13 +505,6 @@ const RULES = [
     command: 'pnpm test:changelog',
     reason: 'the changelog entry template or its gate changed',
     matches: [/^scripts\/lib\/changelog-entry-template(?:\.test)?\.mjs$/, /^scripts\/check-changelog\.mjs$/],
-  },
-  {
-    // The pre-push hook writes the ledger these outcomes are counted from, so
-    // editing the hook re-proves the record shape it hands over.
-    command: 'pnpm test:harness:outcomes',
-    reason: 'the outcome report, the pre-push ledger writer, or the hook that feeds it changed',
-    matches: [/^scripts\/harness-(?:outcomes|prepush-ledger)(?:\.test)?\.mjs$/, /^\.githooks\/pre-push$/],
   },
   {
     command: 'pnpm test:claude:hooks',
@@ -1357,6 +1332,8 @@ const CLI_DIRECT_LIB_TESTS = new Map([
 const CLI_DIRECT_LIB_TEST_FILES = new Set(CLI_DIRECT_LIB_TESTS.values());
 
 const SCRIPT_DIRECT_LIB_TESTS = new Map([
+  ['scripts/bundle-branches.mjs', 'scripts/bundle-branches.test.mjs'],
+  ['scripts/bundle-branches.test.mjs', 'scripts/bundle-branches.test.mjs'],
   ['scripts/audit-vault-paths.mjs', 'scripts/audit-vault-paths.test.mjs'],
   ['scripts/audit-vault-paths.test.mjs', 'scripts/audit-vault-paths.test.mjs'],
   ['scripts/build-docs-vault.mjs', 'scripts/build-docs-vault.test.mjs'],

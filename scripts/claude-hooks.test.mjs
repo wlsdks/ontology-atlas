@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
-import { constants, mkdtempSync, rmSync } from 'node:fs';
+import { constants } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -35,11 +35,6 @@ const HOOK_CONFIGS = [
       // and PreCompact stdout never reaches the model (its one-day wiring was
       // removed 2026-09-02; the census header records the observation).
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/inject-ontology-summary.sh"',
-      // The usage sensor: which skills and seats a session invokes (2026-09-02).
-      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/record-usage.sh"',
-      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/remind-verify-on-stop.sh"',
-      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/report-agent-file-drift.sh"',
-      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/stamp-verification.sh"',
     ],
     expectedPreToolMatchers: ['Bash', 'Edit|Write|MultiEdit|NotebookEdit'],
   },
@@ -50,8 +45,7 @@ const HOOK_CONFIGS = [
     expectedCommands: [
       'bash .codex/hooks/block-generated-edit.sh',
       // The landing guard, in all three shell matcher groups. Counted, not
-      // named once: a missing group lowers the harness-smoke lower bound
-      // silently instead of failing here.
+      // named once, so a missing group fails here.
       'bash .codex/hooks/block-manual-landing.sh',
       'bash .codex/hooks/block-manual-landing.sh',
       'bash .codex/hooks/block-manual-landing.sh',
@@ -65,20 +59,11 @@ const HOOK_CONFIGS = [
       'bash .codex/hooks/block-unsafe-git.sh',
       'bash .codex/hooks/block-unsafe-git.sh',
       // The sensor lane, mirrored 2026-09-01 after measuring codex-cli 0.151.0
-      // firing PostToolUse for edit tools and honouring a Stop-time block.
+      // firing PostToolUse for edit tools.
       'bash .codex/hooks/fast-sensor.sh',
       // Once: Codex PreCompact/PostCompact output carries no model context
       // (hooks reference), so the 2026-09-01 PreCompact wiring was removed.
       'bash .codex/hooks/inject-ontology-summary.sh',
-      // Usage sensor: SubagentStart plus the three shell PostToolUse groups.
-      'bash .codex/hooks/record-usage.sh',
-      'bash .codex/hooks/record-usage.sh',
-      'bash .codex/hooks/record-usage.sh',
-      'bash .codex/hooks/record-usage.sh',
-      'bash .codex/hooks/remind-verify-on-stop.sh',
-      'bash .codex/hooks/stamp-verification.sh',
-      'bash .codex/hooks/stamp-verification.sh',
-      'bash .codex/hooks/stamp-verification.sh',
     ],
     expectedPreToolMatchers: [
       'Bash',
@@ -159,26 +144,8 @@ describe('agent hooks', () => {
     { name: 'Codex', hook: '.codex/hooks/block-manual-landing.sh' },
   ];
 
-  /**
-   * Every probe runs against a throwaway root.
-   *
-   * The guard appends each refusal to `<root>/.tmp/harness/refusals.jsonl`, and
-   * this suite refuses ten commands per tree. Run inside a real session, whose
-   * `CLAUDE_PROJECT_DIR` is this repository, that is twenty invented refusals
-   * in the number `pnpm harness:report` publishes. A probe left in the real
-   * directory was already counted as a session once, on 2026-09-02.
-   */
-  function runLandingHook(hookPath, payload, { root } = {}) {
-    const sandbox = root ?? mkdtempSync(join(tmpdir(), 'landing-probe-'));
-    try {
-      return spawnSync('bash', [hookPath], {
-        input: JSON.stringify(payload),
-        encoding: 'utf8',
-        env: { ...process.env, CLAUDE_PROJECT_DIR: sandbox, ATLAS_HOOK_ROOT: sandbox },
-      });
-    } finally {
-      if (!root) rmSync(sandbox, { recursive: true, force: true });
-    }
+  function runLandingHook(hookPath, payload) {
+    return spawnSync('bash', [hookPath], { input: JSON.stringify(payload), encoding: 'utf8' });
   }
 
   it('refuses landing a pull request by hand', () => {
@@ -192,6 +159,7 @@ describe('agent hooks', () => {
         'gh pr create --title x --body y',
         'gh pr create --fill',
         'pnpm pr:land 1 && gh pr merge 2',
+        'gh api -X PUT repos/o/r/pulls/12/merge -f merge_method=squash',
         { tool_name: 'functions.exec_command', tool_input: { cmd: 'gh pr merge 3' } },
         { tool_name: 'exec_command', tool_input: { cmd: 'gh pr create --title x' } },
       ]) {
@@ -221,6 +189,7 @@ describe('agent hooks', () => {
         { tool_name: 'Bash', tool_input: { command: 'gh pr view 1572 --json state' } },
         { tool_name: 'Bash', tool_input: { command: 'gh pr checks 1572' } },
         { tool_name: 'Bash', tool_input: { command: 'gh pr list --state open' } },
+        { tool_name: 'Bash', tool_input: { command: 'gh api repos/o/r/pulls/12' } },
         // A pull request body may quote the very commands this guard refuses.
         { tool_name: 'Bash', tool_input: { command: 'gh pr create --draft --body "$(cat <<EOF\nnever gh pr merge by hand\nEOF\n)"' } },
         { tool_name: 'Read', tool_input: { command: 'gh pr merge 1' } },
@@ -231,24 +200,53 @@ describe('agent hooks', () => {
       }
     }
   });
+});
 
-  it('counts every refusal where the harness report can read it', async () => {
-    // A guard nobody counted is the dead gate this repository keeps
-    // rediscovering, so the refusal ledger is part of the guard's contract.
-    const root = await mkdtemp(join(tmpdir(), 'landing-guard-'));
-    try {
-      runLandingHook(
-        '.claude/hooks/block-manual-landing.sh',
-        { tool_name: 'Bash', tool_input: { command: 'gh pr merge 7 --squash' } },
-        { root },
-      );
-      const ledger = await readFile(join(root, '.tmp/harness/refusals.jsonl'), 'utf8');
-      const row = JSON.parse(ledger.trim().split('\n').pop());
-      assert.equal(row.guard, 'block-manual-landing');
-      assert.equal(row.rule, 'gh-pr-merge');
-      assert.match(row.at, /^\d{4}-\d{2}-\d{2}T/);
-    } finally {
-      await rm(root, { recursive: true, force: true });
+// The Git safety guard refuses the commands `.claude/rules/git.md` forbids:
+// hook bypass, force push, a direct push to main, and `reset --hard`. It had no
+// behaviour test until 2026-09-26, when `git -C <dir> push --force` and
+// `git push origin HEAD:main` were found to walk past it.
+describe('Git safety guard', () => {
+  const GUARDS = ['.claude/hooks/block-unsafe-git.sh', '.codex/hooks/block-unsafe-git.sh'];
+  const run = (hook, command) =>
+    spawnSync('bash', [hook], { input: JSON.stringify({ tool_name: 'Bash', tool_input: { command } }), encoding: 'utf8' });
+
+  it('refuses bypass, force push, a push to main, and reset --hard in every spelling', () => {
+    for (const hook of GUARDS) {
+      for (const command of [
+        'git commit --no-verify -m x',
+        'git commit -n -m x',
+        'git push --force origin feat/x',
+        'git push --force-with-lease',
+        'git -C ../wt push -f origin feat/x',
+        'git push origin main',
+        'git push origin HEAD:main',
+        'git push origin feat/x:refs/heads/main',
+        'git reset --hard origin/main',
+        'git -c core.x=1 reset --hard',
+        'pnpm lint && git push --force',
+      ]) {
+        const result = run(hook, command);
+        assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
+        assert.match(result.stdout, /"permissionDecision": "deny"/, `${hook}: ${command}`);
+      }
+    }
+  });
+
+  it('passes ordinary pushes, branches named after main, and read-only git', () => {
+    for (const hook of GUARDS) {
+      for (const command of [
+        'git push -u origin chore/harness',
+        'git push origin main-5',
+        'git -C /a/b status',
+        'git reset --soft HEAD~1',
+        'git log --oneline main',
+        'git commit -m "$(cat <<EOF\nnever --no-verify\nEOF\n)"',
+      ]) {
+        const result = run(hook, command);
+        assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
+        assert.equal(result.stdout, '', `${hook}: ${command}`);
+      }
     }
   });
 });
@@ -571,86 +569,6 @@ describe('commit-msg language gate', () => {
   });
 });
 
-// The PostToolUse drift reporter. Its whole value is being right about two
-// things at once: loud for instruction integrity defects, and silent
-// otherwise. A hook that speaks on every edit spends context to say nothing and
-// gets ignored exactly when it matters, so the quiet cases are asserted as hard
-// as the loud one.
-describe('report-agent-file-drift PostToolUse hook', () => {
-  const HOOK = '.claude/hooks/report-agent-file-drift.sh';
-  const root = process.cwd();
-
-  const fire = (filePath) => {
-    const payload = JSON.stringify({
-      hook_event_name: 'PostToolUse',
-      tool_name: 'Edit',
-      tool_input: { file_path: filePath },
-    });
-    const result = spawnSync('bash', [HOOK], {
-      cwd: root,
-      input: payload,
-      encoding: 'utf8',
-      env: { ...process.env, CLAUDE_PROJECT_DIR: root },
-    });
-    return { status: result.status, stdout: (result.stdout ?? '').trim() };
-  };
-
-  it('is executable where settings.json points', async () => {
-    await access(HOOK, constants.X_OK);
-  });
-
-  it('says nothing about a file outside the agent-file surface', () => {
-    const { status, stdout } = fire(join(root, 'src/shared/ui/does-not-matter.tsx'));
-    assert.equal(status, 0);
-    assert.equal(stdout, '');
-  });
-
-  it('says nothing when the surface is clean, even on a watched path', () => {
-    const { status, stdout } = fire(join(root, '.claude/skills/po-pass/SKILL.md'));
-    assert.equal(status, 0, 'PostToolUse must never block: the edit already happened');
-    assert.equal(stdout, '', 'a clean surface must cost no context');
-  });
-
-  it('stays silent when only client-specific instruction content differs', async () => {
-    const path = '.agents/skills/po-pass/SKILL.md';
-    const original = await readFile(path, 'utf8');
-    try {
-      await writeFile(path, `${original}\nClient-specific instruction.\n`, 'utf8');
-      const { status, stdout } = fire(join(root, path));
-      assert.equal(status, 0);
-      assert.equal(stdout, '');
-    } finally { await writeFile(path, original, 'utf8'); }
-  });
-
-  it('reports an integrity failure independently of copy differences', async () => {
-    const path = '.agents/skills/po-pass/SKILL.md';
-    const original = await readFile(path, 'utf8');
-    try {
-      await writeFile(path, `${original}\n@missing-instruction-probe.md\n`, 'utf8');
-      const { status, stdout } = fire(join(root, path));
-      assert.equal(status, 0);
-      const parsed = JSON.parse(stdout);
-      assert.equal(parsed.hookSpecificOutput.hookEventName, 'PostToolUse');
-      const context = parsed.hookSpecificOutput.additionalContext;
-      assert.match(context, /at-refs/);
-      assert.match(context, /missing-instruction-probe/);
-      assert.match(context, /pnpm agents:check/);
-      assert.doesNotMatch(context, /\[skill-copy\]|\[agent-copy\]/);
-    } finally { await writeFile(path, original, 'utf8'); }
-  });
-
-  it('survives a payload with no file path at all', () => {
-    const result = spawnSync('bash', [HOOK], {
-      cwd: root,
-      input: JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: 'Bash', tool_input: {} }),
-      encoding: 'utf8',
-      env: { ...process.env, CLAUDE_PROJECT_DIR: root },
-    });
-    assert.equal(result.status, 0);
-    assert.equal((result.stdout ?? '').trim(), '');
-  });
-});
-
 // The Codex-side secret read guard. It exists because the Claude side has a
 // committable mechanism and Codex does not: deny-read filesystem policies are
 // documented only for the user-level `~/.codex/config.toml`, and `.codexignore`
@@ -730,19 +648,28 @@ describe('Codex secret read guard', () => {
   });
 });
 
-// The fast-sensor lane and the Stop-time verification reminder.
+// The fast-sensor lane.
 //
-// Why these tests use a fixture project directory: the hooks resolve every path
-// against CLAUDE_PROJECT_DIR, so a temp dir with the same shape exercises the
-// markdown branches and the ledger/stamp/stop protocol without touching this
-// repository. The eslint branch is exercised against the real repository once
-// (a clean file must stay silent); its RED case was proven live when the lane
-// landed (planted unused-import, 2026-09-01) and the lint lane remains the
-// authority for eslint's own verdicts.
-describe('fast-sensor lane and stop-time verification reminder', () => {
+// The fixture project carries a stand-in for the markdown-language gate that
+// always fails, so the Markdown branch and its path handling are exercised
+// without depending on this repository's own docs. The eslint branch runs
+// against the real repository once (a clean file must stay silent); its RED
+// case was proven live when the lane landed and again when it was trimmed
+// (planted unused variable, 2026-09-26). The lint lane stays eslint's authority.
+async function sensorFixture() {
+  const { mkdir } = await import('node:fs/promises');
+  const dir = await mkdtemp(join(tmpdir(), 'fast-sensor-'));
+  await mkdir(join(dir, 'scripts/quality/markdown-language'), { recursive: true });
+  await writeFile(
+    join(dir, 'scripts/quality/markdown-language/check.mjs'),
+    'console.error("planted language finding"); process.exit(1);\n',
+  );
+  await mkdir(join(dir, 'docs'), { recursive: true });
+  return dir;
+}
+
+describe('fast-sensor lane', () => {
   const SENSOR = '.claude/hooks/fast-sensor.sh';
-  const STAMP = '.claude/hooks/stamp-verification.sh';
-  const STOP = '.claude/hooks/remind-verify-on-stop.sh';
 
   const fireHook = (hook, payload, projectDir) =>
     spawnSync('bash', [hook], {
@@ -751,177 +678,41 @@ describe('fast-sensor lane and stop-time verification reminder', () => {
       env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
     });
 
-  const editPayload = (file, sessionId = 'sess-test') => ({
-    session_id: sessionId,
-    tool_name: 'Edit',
-    tool_input: { file_path: file },
-  });
+  const editPayload = (file) => ({ tool_name: 'Edit', tool_input: { file_path: file } });
 
-  it('reports prose em-dash in a user-rendered doc and stays silent on a clean one', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'fast-sensor-'));
+  it('hands a Markdown gate finding back as additional context', async () => {
+    const dir = await sensorFixture();
     try {
-      const guide = join(dir, 'docs', 'guide');
-      await writeFile(join(dir, 'package.json'), '{}').catch(() => {});
-      const { mkdir } = await import('node:fs/promises');
-      await mkdir(guide, { recursive: true });
-      const dirty = join(guide, 'dirty.md');
-      await writeFile(dirty, 'A lead — the AI-shaped dash.\n\n```\ncode — exempt\n```\n');
-      const red = fireHook(SENSOR, editPayload(dirty), dir);
-      assert.equal(red.status, 0, red.stderr);
-      assert.match(red.stdout, /additionalContext/);
-      assert.match(red.stdout, /em-dash in user-rendered prose/);
-      // The fenced line is exempt: only line 1 is named.
-      assert.match(red.stdout, /line 1/);
-
-      const clean = join(guide, 'clean.md');
-      await writeFile(clean, 'A sentence with no dash.\n');
-      const green = fireHook(SENSOR, editPayload(clean), dir);
-      assert.equal(green.status, 0, green.stderr);
-      assert.equal(green.stdout, '');
+      const doc = join(dir, 'docs', 'note.md');
+      await writeFile(doc, 'A note.\n');
+      const result = fireHook(SENSOR, editPayload(doc), dir);
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /additionalContext/);
+      assert.match(result.stdout, /planted language finding/);
+      assert.match(result.stdout, /docs\/note\.md/);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
   });
 
   it('stays silent for a clean real source file, and never blocks', () => {
-    // No session id: this case runs against the real repository, and a ledger
-    // write here would leave test state in the working tree it is measuring.
-    const result = fireHook(
-      SENSOR,
-      editPayload(join(process.cwd(), 'src/shared/lib/cn.ts'), ''),
-      process.cwd(),
-    );
+    const result = fireHook(SENSOR, editPayload(join(process.cwd(), 'src/shared/lib/cn.ts')), process.cwd());
     assert.equal(result.status, 0, result.stderr);
-    assert.doesNotMatch(result.stdout, /"decision"/);
+    assert.equal(result.stdout, '');
   });
 
-  it('ledger + stamp + stop: unverified edits get exactly one turn-back', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'stop-reminder-'));
-    const sessionId = 'sess-stop';
-    try {
-      const { mkdir } = await import('node:fs/promises');
-      await mkdir(join(dir, 'src'), { recursive: true });
-      // The fixture has no pnpm/eslint; the sensor must still ledger the edit and stay quiet.
-      const source = join(dir, 'src', 'a.ts');
-      await writeFile(source, 'export const a = 1;\n');
-      const sensed = fireHook(SENSOR, editPayload(source, sessionId), dir);
-      assert.equal(sensed.status, 0, sensed.stderr);
-      const ledger = await readFile(join(dir, '.tmp', 'harness', `session-${sessionId}.edits`), 'utf8');
-      assert.match(ledger, /src\/a\.ts/);
-
-      // Unverified stop: one block with the exact command to run.
-      const blocked = fireHook(STOP, { session_id: sessionId }, dir);
-      assert.equal(blocked.status, 0, blocked.stderr);
-      assert.match(blocked.stdout, /"decision":\s*"block"/);
-      assert.match(blocked.stdout, /checks:changed/);
-      assert.match(blocked.stdout, /src\/a\.ts/);
-
-      // The continuation stop passes — once means once.
-      const second = fireHook(STOP, { session_id: sessionId, stop_hook_active: true }, dir);
-      assert.equal(second.stdout, '');
-
-      // A verification command newer than the edit clears the reminder entirely.
-      const stamped = fireHook(
-        STAMP,
-        { session_id: sessionId, tool_name: 'Bash', tool_input: { command: 'pnpm checks:changed -- --run src/a.ts' } },
-        dir,
-      );
-      assert.equal(stamped.status, 0, stamped.stderr);
-      const cleared = fireHook(STOP, { session_id: sessionId }, dir);
-      assert.equal(cleared.stdout, '');
-    } finally {
-      await rm(dir, { recursive: true, force: true });
-    }
-  });
-
-  it('stamps the pnpm verification families this repository actually runs', async () => {
-    // The first regex listed nine runner names and missed 61 of the 65
-    // verification scripts in package.json (2026-09-02), so `pnpm lint` and
-    // `pnpm test:contracts` still ended in a false turn-back.
-    const dir = await mkdtemp(join(tmpdir(), 'stamp-family-'));
-    try {
-      const stampPath = join(dir, '.tmp', 'harness', 'session-sess-family.verified');
-      for (const command of ['pnpm lint', 'pnpm test:contracts', 'pnpm --dir mcp test', 'pnpm docs:check']) {
-        await rm(stampPath, { force: true });
-        const result = fireHook(
-          STAMP,
-          { session_id: 'sess-family', tool_name: 'Bash', tool_input: { command } },
-          dir,
-        );
-        assert.equal(result.status, 0, result.stderr);
-        await access(stampPath);
-      }
-      await rm(stampPath, { force: true });
-      fireHook(STAMP, { session_id: 'sess-family', tool_name: 'Bash', tool_input: { command: 'pnpm dev' } }, dir);
-      await assert.rejects(access(stampPath), 'pnpm dev is not verification');
-    } finally {
-      await rm(dir, { recursive: true, force: true });
-    }
-  });
-
-  it('leaves a file outside the repository alone, ledger and gates included', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'sensor-outside-'));
+  it('leaves a file outside the repository alone', async () => {
+    const dir = await sensorFixture();
     const elsewhere = await mkdtemp(join(tmpdir(), 'sensor-elsewhere-'));
     try {
       const doc = join(elsewhere, 'note.md');
-      await writeFile(doc, 'A lead — the dash, in a file that is not ours.\n');
-      const result = fireHook(SENSOR, editPayload(doc, 'sess-outside'), dir);
+      await writeFile(doc, 'A note that is not ours.\n');
+      const result = fireHook(SENSOR, editPayload(doc), dir);
       assert.equal(result.status, 0, result.stderr);
       assert.equal(result.stdout, '', 'a scratch file outside the root must not be judged');
-      await assert.rejects(access(join(dir, '.tmp', 'harness', 'session-sess-outside.edits')));
     } finally {
       await rm(dir, { recursive: true, force: true });
       await rm(elsewhere, { recursive: true, force: true });
-    }
-  });
-
-  it('the stamp ignores non-verification commands and sessions without edits stop freely', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'stop-free-'));
-    try {
-      const stamped = fireHook(
-        STAMP,
-        { session_id: 'sess-free', tool_name: 'Bash', tool_input: { command: 'git status' } },
-        dir,
-      );
-      assert.equal(stamped.stdout, '');
-      const stop = fireHook(STOP, { session_id: 'sess-free' }, dir);
-      assert.equal(stop.stdout, '', 'a session with no source edits must stop unremarked');
-    } finally {
-      await rm(dir, { recursive: true, force: true });
-    }
-  });
-});
-
-// The findings log is what `pnpm harness:report` reads, and the hook falsifiers
-// are written against that report. A sensor that reports to the agent but keeps
-// no count cannot be retired on evidence, only on opinion.
-describe('fast sensor findings log', () => {
-  it('records one row per finding and stays silent when the file is clean', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'sensor-log-'));
-    try {
-      const { mkdir } = await import('node:fs/promises');
-      await mkdir(join(dir, 'docs', 'guide'), { recursive: true });
-      const dirty = join(dir, 'docs', 'guide', 'dirty.md');
-      await writeFile(dirty, 'A lead — the dash.\nAnother — one.\n');
-      const run = spawnSync('bash', ['.claude/hooks/fast-sensor.sh'], {
-        input: JSON.stringify({
-          session_id: 'log-test',
-          tool_name: 'Edit',
-          tool_input: { file_path: dirty },
-        }),
-        encoding: 'utf8',
-        env: { ...process.env, CLAUDE_PROJECT_DIR: dir },
-      });
-      assert.equal(run.status, 0, run.stderr);
-
-      const log = await readFile(join(dir, '.tmp', 'harness', 'findings.jsonl'), 'utf8');
-      const rows = log.trim().split('\n').map((line) => JSON.parse(line));
-      assert.equal(rows.length, 1, 'one finding for the one offending file');
-      assert.equal(rows[0].kind, 'em-dash');
-      assert.equal(rows[0].session, 'log-test');
-      assert.ok(Date.parse(rows[0].at) > 0, 'the row must carry a parseable timestamp');
-    } finally {
-      await rm(dir, { recursive: true, force: true });
     }
   });
 });
@@ -966,88 +757,26 @@ describe('Codex apply_patch payload parity', () => {
   });
 
   it('the Codex sensor reads a patch envelope, including a symlinked root', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'codex-sensor-'));
+    const dir = await sensorFixture();
     try {
-      const { mkdir, realpath } = await import('node:fs/promises');
-      await mkdir(join(dir, 'docs', 'guide'), { recursive: true });
-      const doc = join(dir, 'docs', 'guide', 'probe.md');
-      await writeFile(doc, 'A lead — the dash.\n');
+      const { realpath } = await import('node:fs/promises');
+      await writeFile(join(dir, 'docs', 'probe.md'), 'A probe.\n');
       // macOS reports /private/tmp for a /tmp root; the sensor must still judge
       // the file as repository-relative rather than silently finding nothing.
-      const reported = join(await realpath(dir), 'docs', 'guide', 'probe.md');
+      const reported = join(await realpath(dir), 'docs', 'probe.md');
       const result = fire(
         '.codex/hooks/fast-sensor.sh',
         { ...codexEdit(reported), hook_event_name: 'PostToolUse' },
         dir,
       );
       assert.equal(result.status, 0, result.stderr);
-      assert.match(result.stdout, /em-dash in user-rendered prose/);
-      assert.match(result.stdout, /docs\/guide\/probe\.md/);
+      assert.match(result.stdout, /planted language finding/);
+      assert.match(result.stdout, /docs\/probe\.md/);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
   });
 });
-
-// The usage ledger is what the 90-day "unused skill or seat" line in
-// `pnpm harness:report` reads. A sensor that records the wrong name, or fires
-// on every Read, would either hide a dead seat or tax every file open.
-describe('usage sensor', () => {
-  const CLAUDE = '.claude/hooks/record-usage.sh';
-  const CODEX = '.codex/hooks/record-usage.sh';
-  const fire = (hook, payload, dir) =>
-    spawnSync('bash', [hook], {
-      input: JSON.stringify(payload),
-      encoding: 'utf8',
-      env: { ...process.env, CLAUDE_PROJECT_DIR: dir, ATLAS_HOOK_ROOT: dir },
-    });
-  const ledgerOf = async (dir) => {
-    try {
-      return (await readFile(join(dir, '.tmp', 'harness', 'usage.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l));
-    } catch {
-      return [];
-    }
-  };
-
-  it('Claude: records a Skill call, a Task seat, and a skill-file Read, and stays silent otherwise', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'usage-claude-'));
-    try {
-      fire(CLAUDE, { session_id: 's1', tool_name: 'Skill', tool_input: { skill: 'po-pass' } }, dir);
-      fire(CLAUDE, { session_id: 's1', tool_name: 'Task', tool_input: { subagent_type: 'po-evidence', prompt: 'x' } }, dir);
-      fire(CLAUDE, { session_id: 's1', tool_name: 'Read', tool_input: { file_path: `${dir}/.claude/skills/design-audit/SKILL.md` } }, dir);
-      fire(CLAUDE, { session_id: 's1', tool_name: 'Read', tool_input: { file_path: `${dir}/.agents/agents/chief.md` } }, dir);
-      fire(CLAUDE, { session_id: 's1', tool_name: 'Read', tool_input: { file_path: `${dir}/src/app/page.tsx` } }, dir);
-      fire(CLAUDE, { session_id: 's1', tool_name: 'Bash', tool_input: { command: 'ls' } }, dir);
-      const rows = await ledgerOf(dir);
-      assert.deepEqual(rows.map((r) => [r.kind, r.name]), [
-        ['skill', 'po-pass'],
-        ['agent', 'po-evidence'],
-        ['skill', 'design-audit'],
-        ['agent', 'chief'],
-      ]);
-    } finally {
-      await rm(dir, { recursive: true, force: true });
-    }
-  });
-
-  it('Codex: records SubagentStart agent_type and shell reads of skill or seat files', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'usage-codex-'));
-    try {
-      fire(CODEX, { session_id: 'c1', hook_event_name: 'SubagentStart', agent_id: 'a', agent_type: 'po-steward' }, dir);
-      fire(CODEX, { session_id: 'c1', hook_event_name: 'PostToolUse', tool_name: 'exec_command', tool_input: { command: 'sed -n 1,40p .agents/skills/ontology-sync/SKILL.md && cat .claude/agents/design-lead.md' } }, dir);
-      fire(CODEX, { session_id: 'c1', hook_event_name: 'PostToolUse', tool_name: 'exec_command', tool_input: { command: 'pnpm lint' } }, dir);
-      const rows = await ledgerOf(dir);
-      assert.deepEqual(rows.map((r) => [r.kind, r.name]), [
-        ['agent', 'po-steward'],
-        ['skill', 'ontology-sync'],
-        ['agent', 'design-lead'],
-      ]);
-    } finally {
-      await rm(dir, { recursive: true, force: true });
-    }
-  });
-});
-
 
 // Execute the printed repair command with no globally installed Atlas CLI.
 // Spaces and shell metacharacters must reach the CLI as one unchanged path.

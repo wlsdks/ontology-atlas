@@ -251,7 +251,14 @@ describe("`.claude/rules` path scoping contract", () => {
    * this ratchets in one direction only: a commit that saves bytes must record
    * the saving, which is what makes the saving permanent.
    */
-  const RESIDENT_CONTEXT_BYTES = 25_512;
+  const RESIDENT_CONTEXT_BYTES = 18_642;
+
+  /*
+   * Lowered from 25,512 on 2026-09-26 when the resident files were rewritten to
+   * the Claude Opus 5.5 guidance: dated history and rationale moved out, rules
+   * already stated by a skill, a path-loaded rule or a hook were cut, and the
+   * scope, delegation and reporting lines the guidance asks for were added.
+   */
 
   /*
    * Raised by 209 bytes on 2026-09-12, using the mechanism this gate's own message

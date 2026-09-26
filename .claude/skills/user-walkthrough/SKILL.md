@@ -1,6 +1,7 @@
 ---
 name: user-walkthrough
 description: Walk one complete journey against the running build with a declared knowledge state, name observable UX failure patterns, and refuse to invent whether a person would want the product.
+when_to_use: Use when pnpm design:route includes user-walkthrough, or the owner asks whether a journey works end to end.
 ---
 
 # User walkthrough
@@ -85,10 +86,10 @@ population is the product's actual agent user.
 running static export or installed app to complete the task end to end. It still
 cannot prove desire.
 
-For every human journey, use the computer-use capability to open the actual app/window and
-capture the accessibility tree and screenshot at the changed or failed step.
-Record the saved path and visible control that owned the next action. Browser
-automation alone does not satisfy the design evidence contract.
+For every human journey, capture the actual app/window at the changed or failed
+step as in the `/design-build` §0-B render loop (tree + screenshot paths), and
+record the visible control that owned the next action. Browser screenshots
+support measurement; they do not replace it.
 
 ## Where results go
 
@@ -102,7 +103,7 @@ automation alone does not satisfy the design evidence contract.
 ```md
 ## User walkthrough — <task>
 
-**Walker**: <knowledge · context · concern> · **context isolation**: confirmed
+**Walker**: <knowledge · context · concern> · **walker**: fresh subagent id <id>
 **Journey**: A agent / B human / both
 **Build**: <URL or installed app · commit>
 **Time**: <scoped task duration; north-star citation time only when applicable>

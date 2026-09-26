@@ -1,6 +1,7 @@
 ---
 paths:
   - "src/**/*.tsx"
+  - "src/**/*.css"
   - "src/**/ui/**"
   - "src/shared/motion/**"
   - "src/widgets/ontology-map/**"
@@ -10,261 +11,132 @@ paths:
   - "docs/DESIGN-SYSTEM.md"
 ---
 
-# Design system rules for building screens
+# Design rules for building screens
 
-> Conditionally loaded for UI source. This file owns decisions needed while
-> building; it does not duplicate the design system's values.
+Working decisions for UI source. Values live only in `docs/DESIGN-SYSTEM.md`
+(about 350 KB): open the section you need from its table of contents, never the
+whole file. Why each gate is shaped as it is: `.claude/rules/design-gates.md`.
 
-## Four design documents, one system
+Build rendered work in slices and look at each one: baseline, one coherent
+slice, then a fresh accessibility tree and screenshot in the actual browser,
+WebView or app, correct, and repeat (`docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`
+scopes it per change class; `/design-build` has the steps). DOM geometry
+complements the capture. Motion needs the real recording in `/motion-verify`.
 
-| File | Question | Loaded | Size role |
-|---|---|---|---|
-| `forbidden.md`, Design | What must never be done? | always | smallest pre-file subset |
-| this file | What must a screen obey now? | UI source | working rules |
-| `design-gates.md` | Why is each gate shaped that way? | gate source only | failure history and probes |
-| `docs/DESIGN-SYSTEM.md` | What are the canonical values and evidence? | never automatically | 258 KB authority |
+## Fixed scale contract
 
-`docs/DESIGN-SYSTEM.md` is the single source of truth for values. Use its table
-of contents and open only the relevant section; reading all 258 KB costs about
-60k tokens. This file contains decisions, not a second value catalog.
+Workbench chrome (headers, toolbars, tab bars, side panels) is fixed; divergence
+is a defect. Source: `docs/DESIGN-SYSTEM.md`, "Scale fixed contract" and
+"Line-height ramp".
 
-## Fixed scale contract (owner decision, 2026-07-24)
-
-**Chrome** means the frame around content: headers, toolbars, tab bars, and side
-panels. These values are fixed; divergence is a defect, not taste.
-
-- Chrome pills and tiles are **36px** through `--chrome-tile-size`; chrome labels
-  use **`text-label` (11px)**.
-- Rail icons are one **20px** step through `--app-nav-rail-icon-size`. The rail
-  carries **no brand mark or wordmark**. Above the destinations it carries exactly
-  one thing, the open folder's identity and the way to another
-  (`features/vault-switch`), because the shell has no header and a folder name that
-  depended on the destination would be missing from a wiki-only vault, which has no
-  `/docs`. Nothing else is admitted there: the seat is for state the whole product
-  is about, not for a second navigation tier. The licence is the rail's alone:
-  below `lg` the rail is hidden, so **no chrome names the folder there** and the
-  launch chooser and settings are the only places — a known gap, and giving
-  `BottomTabBar` a folder seat is a separate decision rather than an extension of
-  this one. Decision: `docs/DECISIONS.md`, "The folder
-  count decides the launch, and the rail names the folder".
-- Do not scale at widths of 1920px or above. At 2400px and above, 1.1× is allowed;
-  fractional text scaling below that blurs rasterization.
-- Body type is self-hosted **Pretendard Variable**. Inter was removed after its
-  Latin-only subset mixed badly with Korean glyphs.
-- Register every type-ramp addition in `TYPE_RAMP_STEPS` in
-  `src/shared/lib/cn.ts`. An unregistered class was silently treated as colour
-  and discarded by tailwind-merge, rendering 16px chrome in 2026-07-23.
-- Type and line height are paired. Use the matching `--leading-*` step for UI,
-  `prose` for authored text, and `display-tight` for names/numbers of at most two
-  lines. Register new steps in `LEADING_RAMP_STEPS` too.
-- Responsive type changes must keep their line-height pair. Raw `text-[Npx]` and
-  length references such as `text-[var(--text-body)]` lose that pairing. Named
-  ramp utilities keep it. `--leading-hero` is live through `text-hero` even when
-  it has no direct consumer.
-- Text inheriting the 16px root size has escaped the ramp.
-- The fixed 36px/20px chrome contract applies to the workbench. Gateway chrome
-  is a first impression, not a map toolbar; `GatewayNav` uses existing
-  `min-h-14`/`md:min-h-16` steps. Create a gateway token only after a second real
-  consumer exists.
-- Modal settings sheets are also outside workbench chrome, but not outside a
-  specification. Their interactive text and row labels use `text-body`,
-  descriptions and values use `text-label`, and `text-caption` is reserved for
-  one uppercase eyebrow. LNB rows use `px-3 py-2` and `text-body-lg`.
-- Settings drill-ins follow the same hierarchy. A 2026-08-09 inventory found one
-  panel with 10 of 24 visible strings at 9.5px while six peers had none; keys were
-  smaller than values and JSON users had to inspect was also 9.5px. The gate
-  narrows exemptions to the uppercase eyebrow instead of excluding drill-ins:
-  `tests/contract/settings-sheet-type-dialect.contract.test.ts`.
-
-Full values: `docs/DESIGN-SYSTEM.md`, “Fixed scale contract” and “Line-height
-ramp.”
+- Chrome pills and tiles are 36px (`--chrome-tile-size`); chrome labels use
+  `text-label` (11px).
+- Rail icons are one 20px step (`--app-nav-rail-icon-size`). The rail has no
+  brand mark; above the destinations it carries only the open folder's identity
+  and switcher (`features/vault-switch`). Below `lg` no chrome names the folder;
+  a `BottomTabBar` folder seat is a separate decision.
+- Do not scale UI at 1920px and wider; only 2400px and wider may use 1.1×.
+- Body type is self-hosted Pretendard Variable.
+- Register every new type step in `TYPE_RAMP_STEPS` and every leading step in
+  `LEADING_RAMP_STEPS` (`src/shared/lib/cn.ts`); tailwind-merge silently drops
+  unregistered steps.
+- Size and line height are a pair. Use named ramp utilities: a `--leading-*`
+  step for UI, `prose` for authored text, `display-tight` for names or numbers
+  of at most two lines. Raw `text-[Npx]` and `text-[var(--text-body)]` lose the
+  pair. `--leading-hero` is live through `text-hero`.
+- Text that inherits the 16px root has escaped the ramp.
+- Gateway chrome (`GatewayNav`) is outside the 36px/20px workbench contract;
+  create a gateway token only once a second real consumer exists.
+- Settings sheets and their drill-ins: row labels and interactive text use
+  `text-body`, descriptions and values `text-label`, and `text-caption` (9.5px)
+  only for one uppercase eyebrow. LNB rows use `px-3 py-2` and `text-body-lg`.
+  Gate: `tests/contract/settings-sheet-type-dialect.contract.test.ts`.
 
 ## Design charter
 
-Before arranging workbench UI, read `docs/DESIGN-SYSTEM.md`, “Workbench
-composition and motion.” Choose the fact or action that owns the screen, draw
-its real object or causal relationship, and make any motion explain a state
-change. Tokens do not make an equal-card layout into a useful composition.
+Before arranging workbench UI, read `docs/DESIGN-SYSTEM.md`, "Workbench
+composition and motion": choose the fact or action that owns the screen and draw
+its real object or causal relationship. Equal cards with correct tokens are not
+a composition.
 
-- Rest on an achromatic palette with indigo as the protagonist. Since
-  2026-09-08 (owner, `docs/DECISIONS.md` "The expression bans are lifted")
-  gradients, glass, glow, halo, bloom, animated backgrounds, scale hover,
-  overshoot and further hues are allowed; each still goes through a token on
-  its ramp and must name the fact or state it carries. Gloss with nothing
-  behind it is still the generic look.
-- The pixel mascot is the one bounded identity exception: its committed raster
-  pixels may contain near-black, ivory, chartreuse `#C6F000`, and one gray.
-  Chartreuse never becomes a CSS token, control/status/data colour, or a second
-  application palette. See `docs/BRAND.md` and the 2026-08-28 decision.
-- Signal tones are warning amber, error red, and success emerald, each with one
-  solid dot and three translucent surface/edge/text steps. Success means a real
-  successful state such as connected, confirmed, or complete—not decoration.
-- Hub nodes and Layer 0 containers may use hub amber `#d4b478`; a spine view may
-  show one hub ring and one Layer 0 container. Documented, mode-bounded exceptions
-  are the single agent-focus ring and recent-change spotlight.
-- Amber has two standing roles — hub and kind data — and one a person may opt into
-  (the walked path, which now defaults to star ink). The rail
-  begins with destinations and carries no brand mark; chartreuse mascot pixels
-  therefore do not spend the rail or data-colour budget.
-  The walked path draws in **star ink** (`--color-footprint-trail-star`), the value
-  `render/starfield.ts` already paints its far-field dust and diffraction spikes
-  at — the map's own "constellation DNA", which the trail was the one mark
-  standing outside. Yellow (`--color-footprint-trail`, never the hub value) and
-  indigo remain selectable; the trail may use those three named tones, not an
-  arbitrary colour picker, and appears only while the trail popover is open. Gate:
-  `tests/contract/footprint-trail-ink.contract.test.ts` — every tone clears 3:1 at
-  the lowest selectable intensity, and star ink must not drift from the starfield's.
-- Bars use neutrals plus one indigo protagonist. A 1px track gap separates
-  adjacent segments when colour contrast is insufficient. Kind colours remain
-  only where colour is the sole carrier of kind: unlabeled kind totals, map dots,
-  and tree chips. A prior amber/eucalyptus pair measured 1.14:1 and relied on a
-  red-green distinction, so it was not information-safe.
-- Kind colour is data, not a card decoration. Use neutral surfaces with a small
-  marker and label; never a full-height coloured rail.
-- A new workbench card or diagram row does not get a colored left-edge stripe.
-  Use its whole surface and boundary, label, and connected evidence; see “No
-  left-edge selection stripe” in `docs/DESIGN-SYSTEM.md`. Existing dense Git
-  rows and the document outline have separately reviewed position markers.
-- Galaxy is the view-bounded exception to kind silhouettes, selected by the
-  owner on 2026-09-15. Its canvas nodes have no polygon, outline, nested ring,
-  or expanded orbit: only a circular core, radial corona, and sparse glint.
-  Kind remains explicit in INDEX/inspector text and through the existing
-  `--map-galaxy-*` temperature ramp; Flat, Dome, and hit geometry keep the
-  canonical shapes and radii. Deterministic twinkle is atmosphere, never
-  activity, recency, or a precise instantaneous importance rank. Reduced motion
-  freezes it at a steady readable level and omits the procedural shooting star.
-  Galaxy positions every real node in a stable three-arm arrangement: project
-  core, staggered domain anchors, and containment-derived local clouds. Its
-  overview paints and hit-tests no default edge mesh; hover, selection, path,
-  and walked trail reveal only real relations. Flat and Dome layouts are unchanged.
-- Distinguish workflow categories through shape—indigo underline for active,
-  dashed for planned—not colour alone.
-- Selection stays within one indigo family: node selection uses the base indigo;
-  edge selection uses `--map-edge-selected` on both endpoints.
-### One word per thing (owner, 2026-08-25 — overturns the earlier “avoid ontology” rule)
+- Achromatic base, indigo protagonist. Gradients, glass, glow, scale hover,
+  overshoot and extra hues are allowed (2026-09-08), each through a ramp token
+  and naming the fact or state it carries.
+- The pixel mascot's raster colours, including chartreuse `#C6F000`, never
+  become CSS tokens or UI colours (`docs/BRAND.md`).
+- Signal tones are warning amber, error red and success emerald; success marks
+  a real success state only.
+- Hub amber `#d4b478` belongs to hub nodes and Layer 0 containers. The walked
+  trail uses one of three named tones (star ink by default, yellow, indigo) and
+  shows only while its popover is open. Gate:
+  `tests/contract/footprint-trail-ink.contract.test.ts`.
+- Kind colour is data: a small marker plus a label on a neutral surface. Colour
+  alone may carry kind only in unlabeled totals, map dots and tree chips. Bars
+  use neutrals plus one indigo, separated by a 1px track gap.
+- No coloured left-edge stripe on a new card or row ("No left-edge selection
+  stripe" in `docs/DESIGN-SYSTEM.md`).
+- Galaxy paints a circular core, corona and sparse glint only: no polygon,
+  outline or default edge mesh. Twinkle is atmosphere, never data; reduced
+  motion freezes it. Flat and Dome keep canonical shapes. Details:
+  `docs/DESIGN-SYSTEM.md`, "v2 Language Definition" and "Galaxy reference
+  translation".
+- Workflow categories differ by shape (active underline, planned dashed), not
+  colour alone. Selection stays in one indigo family; edge selection uses
+  `--map-edge-selected` on both endpoints.
 
-The old rule said to use “ontology” only in the brand and in sentences defining
-it, and to say map, concept or workspace elsewhere. Avoiding the word did not
-produce plain language; it produced **four names for one thing**. A measured
-inventory of the Korean catalogue found the person's own folder called by four
-different names across 41 strings, and the word for “map” doing duty for both the
-graph and the screen that draws it — which is why the empty state described the
-node count as a count of *projects*, building a newcomer's first sentence out of a
-schema kind.
+## One word per thing
 
-The owner lifted the ban, then corrected the over-correction the same day: *“make
-these terms consistent and not strange. You may use the word ontology.”* and
-*“proper domain terms are fine — do not mangle them into something odd for the
-sake of non-developers. The universal technical term is what matters.”* A first
-pass had flattened every folder word to a plainer one and replaced the word for
-validation with a vaguer verb; that mangling is as wrong as the split it replaced.
+One accurate word per thing. Canonical spellings live in
+`tests/contract/user-facing-vocabulary.contract.test.ts`; history is in
+`docs/DECISIONS.md` (2026-08-25).
 
-One word per thing, and the word is the accurate one. The canonical spellings are
-data, so they live in the gate rather than here:
-`tests/contract/user-facing-vocabulary.contract.test.ts`. In prose:
-
-| Thing | Rule |
+| Thing | Word in copy |
 |---|---|
-| The Markdown folder the person chose | the ontology-folder term; never a second synonym, and never another product's coinage |
+| The Markdown folder the person chose | the ontology-folder term; no synonym and no other product's coinage |
 | The meaning graph inside it | the ontology; never the renderer's name |
-| The screen that draws it | the map — the view, never the data |
-| One node | the concept term; never “node” |
-| A node's kind | the kind's real name, only where the kind is the point |
+| The screen that draws it | the map: the view, never the data |
+| One node | the concept term; never "node" |
+| A node's kind | its real name, only where kind is the point |
 
-The split that matters most: **the ontology is the thing, the map is the view of
-it.** Using one word for both is what produced sentences describing data as if it
-were drawing.
+`vault` stays in code, CLI, MCP and docs identifiers; a name such as
+`validate_vault` is never reworded inside copy.
 
-`vault` was considered for the folder and rejected on the owner's own test: it is
-Obsidian's coinage, not a universal term — Logseq says graph, Foam and Zettlr say
-workspace, and knowledge engineering does not use the word. Nothing forbids it; it
-is simply not the standard asked for. Inside code, CLI, MCP and docs `vault`
-stays: there it is a filesystem and API name, and renaming a public contract is a
-separate decision. Identifiers keep their spelling wherever they appear, including
-inside copy — `pnpm vault:validate` and `validate_vault` are names, not synonyms.
+## Map and canvas
 
-The guided tour and help glossary still own the definitions; this permits the
-word, it does not licence a second teaching screen.
-
-## Topology focus and scale
-
-Authority and sources: `docs/TOPOLOGY-FOCUS-AND-SCALE.md`, grounded in
-Shneiderman's “overview first, zoom and filter, details on demand” (1996).
-
-- Clicking a node keeps its ego graph opaque, dims or hides everything else, and
-  anchors a compact popover beside it. Do not mutate the source graph. Full detail
-  is an explicit action inside that popover, never the default click result.
-- Start with project, domain, and hub nodes. Expand lower tiers on interaction;
-  do not dump thousands of nodes into the first frame.
-- Use plain labels such as “used by N” and “depends on N.” Do not repeat a generic
-  heading several times.
-- Scale in this order: cache layout, reduce labels/edges during movement, keep
-  offscreen-edge culling, then cluster by domain beyond 5,000 nodes.
-
-## Node specification points to one authority
-
-Shape, radius, magnitude, and embedded-count rules live only in
-`docs/DESIGN-SYSTEM.md`, “Node Spec.” Keep
-`render/node-shapes.ts` and `shared/ui/map-kind-glyph.tsx` aligned;
-`tests/contract/node-kind-shape-parity.contract.test.ts` catches drift.
-
-**Canvas paint composites `source-over`; `lighter` is emission and is licensed, not
-assumed.** Node and edge overlays are *material* — they mark state on something a
-person is already looking at, and material does not glow. `globalCompositeOperation
-= "lighter"` is permitted only where the mark's meaning **is** light: the gateway
-hero, the walked-path star (`shared/lib/star-emission.ts`) inside a lens the
-person opened, and the owner-selected Galaxy star/meteor atmosphere. Every
-`lighter` region restores the previous operation in the same
-function, and a node carries at most one diffraction cross per frame. That second
-clause is now satisfied by subtraction: the walked star wears no cross at all, so
-the magnitude spike never has to stand down for it. This sentence is written down
-because four comments cited it for months while it existed nowhere (design-system,
-2026-09-10). Gate:
-`tests/contract/canvas-composite-license.contract.test.ts`.
-
-Do not invent a visual for bridge nodes before `design-infoviz` decides it. The
-radius values 30/17/11/7 and constants such as `DOMAIN_HALF_EXTENT_RATIO` encode
-the outcome of the map research and require that work to be reopened before
-change.
-
-## Retired studio game exception
-
-The old studio-only glow, gradient, aura, particle, rarity, and shimmer exception
-was revoked on 2026-07-24. “Make it addictive like a game” was a metaphor, not a
-specification; game aesthetics weakened trust in decision material. Studio later
-retired. On 2026-09-08 the owner lifted those bans product-wide; the rule that
-survives is that an effect marks a state or a fact, never a rarity or a reward.
-
-## Label decoration
-
-- Do not put decorative arrows after labels. A trailing `ArrowRight` or
-  `ArrowUpRight` is not hierarchy.
-- Arrows are allowed when they carry path, order, causality, or the prefix for an
-  external destination (`↗`).
-- `tests/contract/label-decoration.contract.test.ts` owns the exact syntax.
-
-## Dimensional regularity
-
-Repeated cards in one row have equal height despite copy length. Repeated icon
-buttons, chips, and fields use one size step per role. Variation must encode a
-real hierarchy or state, not the accident of which file introduced the control.
-Measure repeated rectangles in `/design-audit`; do not approve by sight.
+- Node click behaviour: `forbidden.md`. Focus, overview-first and scale rules:
+  `docs/DESIGN-SYSTEM.md`, "Topology node focus & scale".
+- Shape, radius, magnitude and count rules live only in "Node Spec". Keep
+  `render/node-shapes.ts` and `shared/ui/map-kind-glyph.tsx` aligned
+  (`node-kind-shape-parity` contract). Radii 30/17/11/7,
+  `DOMAIN_HALF_EXTENT_RATIO`, and any bridge-node visual require reopening the
+  map research with `design-infoviz`.
+- Canvas paint composites `source-over`. `globalCompositeOperation = "lighter"`
+  is licensed only where the mark is light: the gateway hero, the walked-path
+  star (`shared/lib/star-emission.ts`) inside an opened lens, and Galaxy
+  star/meteor atmosphere. Restore the previous operation in the same function;
+  a node carries at most one diffraction cross per frame. Gate:
+  `tests/contract/canvas-composite-license.contract.test.ts`.
 
 ## Absolute rules point to one source
 
-The fifteen canonical Don'ts live in `docs/DESIGN-SYSTEM.md`, section
-"Absolute rules (Don'ts)". Do not copy them here. `forbidden.md` carries an always-loaded subset,
-and `tests/contract/design-donts-parity.contract.test.ts` reconciles `dont:`
-markers. Sentences may be rewritten or translated; marker slugs may not drift.
+The canonical Don'ts live in `docs/DESIGN-SYSTEM.md`, section "Absolute rules (Don'ts)".
+`forbidden.md` carries the always-loaded subset. Do not copy them here;
+`design-donts-parity.contract.test.ts` reconciles the `dont:` markers.
+
+## Dimensional regularity
+
+Cards in one row share a height. Repeated icon buttons, chips and fields use one
+size step per role; a size difference must encode hierarchy or state.
 
 ## Changing the specification requires `design-contract`
 
-When a change alters the specification in any file below, declare
-`design-contract` to `pnpm design:route`. The router selects `design-system`
-plus a contrasting seat, a system audit, and a gate probe. File presence alone
-does not convene a council; the census below detects changed vocabulary and
-values. This list is both the human rule and the machine input read by
-`scripts/lib/design-spec-census.mjs`:
+When a change alters the specification in a file below, declare
+`design-contract` to `pnpm design:route`; the router convenes `design-system`
+plus a contrasting seat, a system audit, and a gate probe.
+`scripts/lib/design-spec-census.mjs` reads this list (only rows shaped
+`` - `path` — description ``), and `pnpm decisions:check` requires a decision
+record when a listed file's vocabulary or values change. Contract:
+`tests/contract/design-spec-ledger.contract.test.ts`.
 
 - `src/shared/ui/control-class.ts` — cva axes, options, defaults, and field/control value layers
 - `src/shared/ui/controls.tsx` — interactive primitives
@@ -278,164 +150,62 @@ values. This list is both the human rule and the machine input read by
 - `app/globals.css` — type, leading, radius, shadow, control-height, icon, and palette ramps
 - `.claude/rules/design.md` — this file's “Fixed scale contract” section
 
-Adding a path here immediately extends `pnpm decisions:check`; no duplicate list
-exists in code. Contract:
-`tests/contract/design-spec-ledger.contract.test.ts`.
+## Lint owns the value ramps
 
-This rule exists because 244 controls were normalized without convening this
-seat. The author alone grew eight tones, seven shapes, three axes, and their
-ramps. Although chip sizes fell from 50 to 3, one screen still carried 8–9
-control heights because every difficult case added another option.
+`eslint.config.mjs` (`no-restricted-syntax`) is the authority; document a new
+rule and its lint enforcement in the same PR. In product code it blocks raw
+`text-[Npx]`, `rounded-[Npx]`, leading and tracking values; hex and colour
+functions outside tokens; shadows not built from elevation, docking, press,
+surface or inset tokens; numeric `duration-*`; inline type, radius or shadow
+literals; weights other than 400/510/560/650; Tailwind palette classes; z-index
+20 and above without `--z-*`; repeated `cursor-pointer`; hand-built disabled
+states (`CONTROL_DISABLED_CLASS`); and unpaired accent/tint.
 
-> A specification decided by one author is taste, not a specification.
+Lint cannot see an unknown utility: `text-large` emits no CSS and silently
+renders 16px. Spacing is deliberately unenforced; do not add unused spacing
+tokens. Contract tests cover cross-file values and rendered geometry, and
+`pnpm checks:changed` names the ones a change reaches.
 
-Machines cannot prove who reviewed a change. They can prove that vocabulary or
-values changed without a new decision record. The census watches axes, options,
-defaults, ramp tokens, exported primitives, and this section's numbers—not
-whether a frequently touched file merely appears in a diff. That precision
-avoided 63 false positives across 79 of the last 300 commits.
+## Tokens and surfaces
 
-## The specification is enforced by lint
-
-Document a new rule and its `eslint.config.mjs` enforcement in the same PR. A
-document-only shadow ramp once left five raw rgba shadows alive.
-
-`no-restricted-syntax` currently enforces:
-
-| Rule | Enforcement |
-|---|---|
-| Type ramp | no raw `text-[Npx]`; zero exemptions |
-| Radius ramp | no raw `rounded-[Npx]`, including directional forms |
-| Shadow ramp | every comma-separated layer must match an elevation, docking, press, surface, or inset form |
-| Hex colour | no hex inside arbitrary-value syntax |
-| Colour literal | no `rgb()`/`rgba()`/`hsl()`, no hex in an inline colour property, no literal in a mask stencil, no named `ease-*` class — product files only; the paint mirror, the indigo mirror, the popout HTML and canvas paint are the named exceptions (2026-09-08) |
-| Motion duration | no numeric `duration-*`; use tokens |
-| Leading ramp | no raw or named Tailwind leading steps; use `--leading-*`, `display-tight`, or `prose` |
-| Ramp bypass | do not reference type-ramp tokens as arbitrary lengths |
-| Inline shadow | JSX `boxShadow` must reference an approved token |
-| Inline type/radius | literals, ternaries, and templates are forbidden; `var()` only, with type-ramp bypass still forbidden |
-| Tracking | use named tracking tokens, never raw em values |
-| Weight | only signature 510, emphasis 560, strong 650, plus normal 400 reset |
-| Tailwind palette | use `--color-*`, not `text-white` or `bg-slate-*` |
-| z-index ≥20 | use `--z-*`; local stacking below 20 is free |
-| Cursor | do not repeat `cursor-pointer` on buttons or summaries; the base rule owns it |
-| Disabled state | opacity 55 and `CONTROL_DISABLED_CLASS` own the full state |
-| Checkbox accent | `checkboxAccentSelectors` |
-| Accent/tint pairing | `accentTintPairingSelectors`, including ternary branches |
-
-A **ramp** is the allowed value list; a **selector** describes syntax lint finds;
-a **level** decides error versus warning; a **ratchet** allows a measured count to
-fall but never rise.
-
-### Contract tests cover layers lint cannot see
-
-Use a contract when correctness requires another file's values, composed output,
-absence of a class, or rendered geometry. Current owners include:
-
-- type/leading existence and pairing:
-  `type-ramp-step-defined` and `type-ramp-leading-pair`;
-- shell content compression and scroll-end reserve: `AppShell.test.tsx` and
-  `scroll-end-gap.spec.ts`;
-- composed control values and neutral scope separation: `control-class`;
-- repo-wide hand-written control count: `control-adoption-ratchet`;
-- numeric Lucide icon props: `icon-size-ramp`;
-- inline prose-link display and target semantics: `prose-link` plus
-  `touch-target-contract`;
-- connected TabBar selection geometry and its rendered 44px coarse floor:
-  `touch-target-contract`;
-- Korean mid-word wrapping: `korean-word-break.spec.ts`;
-- rendered pointer affordance: `cursor-affordance.spec.ts`;
-- topology-panel ink hierarchy: `topology-panel-ink-ladder`;
-- quaternary text by composited surface: `quaternary-ink-surface` plus
-  `a11y-open-surfaces`;
-- filled-brand contrast: `brand-fill-ink-license`;
-- motion ramp mirror and easing direction (CSS `var()` shorthand and framer
-  objects, which class lint cannot see): `motion-token-mirror` plus
-  `framer-exit-asymmetry`.
-
-An unknown utility such as `text-large` produces no CSS and silently falls back
-to 16px, so hardcoded-value lint sees nothing. Spacing is deliberately not
-enforced: 27 raw-pixel uses (1.1%) were measured in July 2026 and about 377 bracket
-literals on 2026-09-08, mostly one-off optical
-corrections. Unused `--pad-card`/`--pad-panel` tokens were removed instead;
-unused tokens are misinformation, not specification.
-
-Gate rationale, notation failures, exemptions, and pre-enable inventory belong
-in `@.claude/rules/design-gates.md`, loaded only while changing gates. This file
-once reached 63.4 KB, 43% gate archaeology. Keep rules here and history there.
-
-## Token use
-
-- Route all colours through CSS variables. Do not write raw hex in product code.
-- Use canvas, panel, elevated, and secondary surfaces; text-primary through
-  quaternary; overlay-1/2/3 and soft/strong borders.
-- Use `--topology-*` tokens for topology dimensions, surfaces, shadows, radii,
-  insets, camera, focus, panel, and drag motion. A new clamp, shadow, easing, or
-  duration requires a token name, product reason, and WebView/test marker.
+- All colours go through CSS variables, defined in the `@theme` and `:root`
+  blocks of `app/globals.css`. Declare translucent values in `:root` as well:
+  Tailwind v4 may emit the utility without the root variable.
+- Topology dimensions, surfaces, shadows, radii, insets, camera, focus, panel
+  and drag motion use `--topology-*`. A new clamp, shadow, easing or duration
+  needs a token name, a product reason, and a WebView/test marker.
 - Coarse-pointer targets come only from `@media (pointer: coarse)` and
-  `--touch-target-min` (44px), never viewport guesses. A scrollable page below
-  `lg` reserves `--topology-mobile-bottom-tab-reserve`; full-bleed map/docs
-  surfaces do not. `scroll-end-gap.spec.ts` measures 17 routes at 1280, 768, and
-  390px.
+  `--touch-target-min`, never viewport guesses. Scrollable pages below `lg`
+  reserve `--topology-mobile-bottom-tab-reserve`; full-bleed map and docs
+  surfaces do not.
 - Never ship stacked floating panels, popup soup, tokenless positioning,
-  non-blocking modals, or drag-only discovery. New transient surfaces dismiss or
-  recede unrelated ones.
-- Every rendered design class goes through `pnpm design:route` and its Computer
-  Use render loop: baseline, one coherent visual slice, fresh accessibility tree
-  and screenshot, correction, then the next slice. A whole screen built from
-  imagination and inspected only at the end is invalid. The router adds
-  geometry, responsive, motion, map, journey, or installed-app instruments only
-  for the failure modes that changed.
+  non-blocking modals, or drag-only discovery. A new transient surface dismisses
+  or recedes unrelated ones.
+- Dark only: no light switch, `data-theme`, light-only tokens or light contrast
+  branches; `app/layout.tsx` fixes `viewport.colorScheme` to `dark`.
 
 ## Motion
 
-A routed `motion` change is not complete without a real macOS screen recording
-through `/motion-verify`, plus a Computer Use capture that binds the recording
-to the reviewed app/window. Static screenshots and headless frame sequences are
-diagnostic fallback only.
-
-- Prefer colour and opacity transitions; minimize transform.
-- Use three semantic durations: `--motion-fast` 120ms for feedback,
-  `--motion-base` 180ms for moving a surface, and `--motion-settle` 240ms for a
-  completed change. Default Tailwind transitions already use fast; omit a class.
-  Camera/drag values 420/720ms are canvas-only.
-- Duration and easing move as one family. Respect the global reduced-motion rule.
-- Overshoot, bounce and spring settle are allowed (2026-09-08) on a named
-  token; the motion seat says what the overshoot means and `/motion-verify`
-  records it.
-- Exits accelerate away on `--motion-ease-exit` (JS: `EXIT_TRANSITION`); entries
-  keep `--motion-ease`. Only `-out` / `[data-state="closed"]` rules on a `*Out`
-  keyframe may reference the exit token, never a `transition:`, and no file
-  outside `src/shared/motion` imports `MOTION_EASE_EXIT`;
-  `motion-token-mirror.contract.test.ts` owns both directions.
-- The attention winner moves first. A protagonist hard-cut while the background
-  eases is a defect; a measured popover once completed 88.8% in its first frame
-  while the map received 100ms.
-- One input is one event. Related transitions start in the same frame; more than
-  `--motion-fast` separation reads as another event unless causality requires a
-  deliberate stagger.
-- Exits use their own animation name. Reversing an entrance does not restart when
-  only direction changes; `exit-motion-restart.contract.test.ts` guards this.
-- Reduced-motion alternatives live in the same cascade layer as the global
-  override; `reduced-motion-equivalent.contract.test.ts` owns the roster.
-- Surface swaps keep both frames briefly with `usePanelPresence`,
-  `useSurfaceSwap`, or `useSwapHeight`; exiting content is inert and
-  pointer-disabled for one `EXIT_WINDOW_MS`.
-- Frequent hover/focus motion ends by `--motion-fast`; move/settle values are for
-  infrequent events. User-initiated zoom, pan, and scroll retain time under WCAG
-  2.2 §2.3.3; only programmatic travel becomes immediate.
-- Measure the element that actually owns the animation. A 2026-07-28 audit
-  measured a non-animating positioner and falsely reported a hard cut; the inner
-  panel was already healthy at 16.3% first-frame change.
-
-## Dark only
-
-The product has one dark appearance. Do not restore a light switch,
-`data-theme`, light-only tokens, or light contrast branches. `app/layout.tsx`
-fixes `viewport.colorScheme` to `dark` even when the OS prefers light.
-
-## Token definition location
-
-Tokens live in the `@theme` and `:root` blocks of `app/globals.css`. Tailwind v4
-may create utilities for translucent tokens without emitting root variables, so
-declare translucent values explicitly in `:root` as well.
+- Prefer colour and opacity transitions over transform.
+- Durations: `--motion-fast` 120ms for feedback (the Tailwind default; omit the
+  class), `--motion-base` 180ms to move a surface, `--motion-settle` 240ms for a
+  completed change. Camera and drag values of 420/720ms are canvas-only.
+  Duration and easing move as one family.
+- Overshoot, bounce and spring settle need a named token and a stated meaning.
+- Exits accelerate on `--motion-ease-exit` (JS `EXIT_TRANSITION`) under their own
+  animation name; entries keep `--motion-ease`. Only `-out` /
+  `[data-state="closed"]` rules on a `*Out` keyframe may use the exit token,
+  never a `transition:`, and only `src/shared/motion` imports
+  `MOTION_EASE_EXIT` (`motion-token-mirror`, `exit-motion-restart` contracts).
+- The attention winner moves first; never hard-cut the protagonist while the
+  background eases.
+- One input is one event: related transitions start in the same frame; a gap
+  longer than `--motion-fast` reads as a second event unless causality needs it.
+- Reduced-motion alternatives live in the global override's cascade layer
+  (`reduced-motion-equivalent` contract).
+- Surface swaps keep both frames briefly (`usePanelPresence`, `useSurfaceSwap`,
+  `useSwapHeight`); exiting content is inert and pointer-disabled for one
+  `EXIT_WINDOW_MS`.
+- Frequent hover and focus motion ends by `--motion-fast`. User-initiated zoom,
+  pan and scroll keep their duration (WCAG 2.2 §2.3.3); only programmatic travel
+  becomes immediate.

@@ -85,11 +85,9 @@ import { cn } from '@/shared/lib/cn';
  * what it is made of". The 40px signature numeral stays the insights board's; these cards take the
  * ramp's display step.
  *
- * **Nine names were printed twice, and that was a lost distinction, not a duplicate bug.**
- * `block-generated-edit`, `block-manual-landing`, `block-npm-publish`, `block-unsafe-git`,
- * `fast-sensor`, `inject-ontology-summary`, `record-usage`, `remind-verify-on-stop` and
- * `stamp-verification` exist in **both** `.claude/hooks/` and `.codex/hooks/` as real mirrored
- * files. `ScopeDeclaration.label` is the bare script name for both, so a list keyed by it printed
+ * **Mirrored names were printed twice, and that was a lost distinction, not a duplicate bug.**
+ * Hooks such as `block-manual-landing` and `fast-sensor` exist in **both** `.claude/hooks/` and
+ * `.codex/hooks/` as real mirrored files. `ScopeDeclaration.label` is the bare script name for both, so a list keyed by it printed
  * each name twice and read as a rendering fault. Each name now appears once with the tools that
  * read it — the same fact the guides table's "Read by" column already carries — and the mirror
  * relationship becomes visible instead of looking broken.

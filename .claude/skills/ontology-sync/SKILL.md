@@ -1,6 +1,7 @@
 ---
 name: ontology-sync
-description: After a code change, sync the project's ontology vault — read what's already there, identify new capabilities / elements / domains introduced by the change, and write them back via the MCP server (or fall back to the CLI). Use this at the end of any task that introduces a new feature, refactors a module, or renames a unit. Skip when the change is purely a typo, style nudge, or test fixture tweak.
+description: Sync the Atlas ontology vault after a meaningful code change. Read existing nodes, find new or reshaped capabilities, elements, and domains, and write only confirmed deltas through the MCP server (or the CLI fallback).
+when_to_use: Use at the end of a task that adds a feature, refactors or renames a module, or reshapes a domain in a repo with a vault. Skip typos, comments, style, lint, fixtures, and docs-only prose.
 ---
 
 # /ontology-sync — keep the vault in step with the code
@@ -18,7 +19,7 @@ human sees the change appear in their workbench.
 
 **Run when**:
 - a new user-visible capability landed (login flow, checkout flow, …)
-- a new concrete element landed (jwt-token, indexeddb-adapter, sigma-canvas, …)
+- a new concrete element landed (a library, schema, adapter, or entry file)
 - a domain was reshaped (auth → split into auth + session, …)
 - a slug-level rename happened in code that should mirror in the graph
 
@@ -100,17 +101,6 @@ meaning-finalization procedure: `finalize_project_meaning` judges
 `agent_brief.meaningAssessment`. Report unresolved meaning separately from
 successful writes; node and orphan counts alone cannot establish completion.
 
-Supplementary checks:
-
-```
-list_kinds                                # the count moved as expected
-find_orphans                              # nothing got accidentally orphaned
-```
-
-If the vault is the user's own (selected via the web `/docs` picker), the
-web's polling layer will pick up the changes within ~5 seconds — the
-human sees new nodes pulse and a toast appear without reloading.
-
 ## Reply shape
 
 For routine success, use about five lines. Include additional lines when
@@ -150,4 +140,5 @@ is a changelog.
 > Read 13 nodes (5 capability / 3 domain / 4 element / project / readme).
 > Added `capabilities/password-reset` (parent `domains/auth`) and
 > `elements/password-reset-token` (linked as its element).
-> No patches, no renames. No warnings. find_orphans: unchanged.
+> No patches, no renames. No warnings. Validation clean, compile complete,
+> meaning assessment unchanged.
