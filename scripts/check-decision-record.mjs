@@ -270,12 +270,12 @@ for (const trigger of triggers) console.error(`[decisions]   - ${trigger}`);
 console.error(`
 [decisions] Do one of these:
 [decisions]   1. run /po-pass (or pnpm po:route) with one Atlas outcome and every change/boundary fact
-[decisions]   2. if the route is review, run /po-council with Evidence plus the selected specialist
+[decisions]   2. if the route is review, give one reviewer the evidence and the lenses the route lists
 [decisions]   3. create a decision fragment with the before-state, decision delta, dissent, and falsifier
 [decisions]   4. if the trigger is a false positive (a route file move, say), say so in one line in the record
 [decisions]
 [decisions] For a «specification …» trigger, declare design-contract to pnpm design:route;
-[decisions] it derives the selected seats, system audit, and /gate-probe
+[decisions] it derives the reviewer's lenses, system audit, and /gate-probe
 [decisions] (.claude/rules/design.md “Changing the specification requires design-contract”).
 [decisions]
 [decisions] The record is an existence check, not a quality review — the next pass must find

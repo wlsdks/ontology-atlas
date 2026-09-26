@@ -11,7 +11,7 @@
  * graph, with the skills linked to each other?)
  * This was built to **measure** whether there is anything real in that direction.
  * It is not a product feature, has no screen, and is not a public CLI command
- * (that would require convening the PO council).
+ * (that would require a routed product review).
  *
  * ## How a skill is triggered (the premise for what this measures)
  *
