@@ -1364,6 +1364,8 @@ const CLI_DIRECT_LIB_TESTS = new Map([
 const CLI_DIRECT_LIB_TEST_FILES = new Set(CLI_DIRECT_LIB_TESTS.values());
 
 const SCRIPT_DIRECT_LIB_TESTS = new Map([
+  ['scripts/lib/run-main-copy.mjs', 'scripts/lib/run-main-copy.test.mjs'],
+  ['scripts/lib/run-main-copy.test.mjs', 'scripts/lib/run-main-copy.test.mjs'],
   ['scripts/lib/playwright-server-owner.mjs', 'scripts/lib/playwright-server-owner.test.mjs'],
   ['scripts/lib/playwright-server-owner.test.mjs', 'scripts/lib/playwright-server-owner.test.mjs'],
   ['scripts/bundle-branches.mjs', 'scripts/bundle-branches.test.mjs'],

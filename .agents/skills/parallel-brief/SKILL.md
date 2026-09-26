@@ -54,7 +54,7 @@ The design-system seat owns new value vocabulary. An implementation agent that
 cannot express a needed value reports and measures the gap; it does not create a
 parallel system. The author of a change does not independently approve it.
 
-## 6. Seven mandatory lines
+## 6. Eight mandatory lines
 
 Every delegated brief states:
 
@@ -70,6 +70,9 @@ Every delegated brief states:
    owner lands every branch together with `/land-bundle` (one draft per slice
    on the landing train, or one integration branch when slices must be
    resolved together; either way one CI run per train).
+8. a time budget, such as "about 20 minutes": Opus 5.5 paces its work to a
+   stated budget and usually finishes inside it. It is advisory, so the
+   coordinator keeps its own timeout.
 
 ## 7. Do not delegate
 

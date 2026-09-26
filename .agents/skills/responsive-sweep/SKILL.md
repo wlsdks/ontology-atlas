@@ -68,6 +68,7 @@ not replace this capture.
 
 ## Report
 
-Use a viewport-by-screen table with pass/defect, numeric evidence, browser
+Open with the verdict in one line (pass, or the defects and their bands), then
+a viewport-by-screen table with pass/defect, numeric evidence, browser
 screenshots, Computer Use evidence, the applied fix, and the remeasured value.
 Do not claim “responsive is fine” from Tailwind reasoning alone.

@@ -114,7 +114,8 @@ print(f"mean={mean:.3f} cv={sd/mean:.2f} min={min(diffs):.3f} stalls={len(stalls
 
 ## Report
 
-State app/window/route, Computer Use screenshot path and accessibility owner,
+Open with the verdict in one line (approved, or the stall or defect), then state
+app/window/route, Computer Use screenshot path and accessibility owner,
 recording duration and fps, crop target, stalls and cv, the visual phase-strip
 finding, reduced-motion result, and before/after values when tuned. Keep raw
 recordings and frames in scratch, not the repository. No recording means no
