@@ -1,0 +1,65 @@
+{
+  "backToMap": "← Map",
+  "breadcrumbSeparator": "/",
+  "census": "{concepts} CONCEPTS · {relations} RELATIONS",
+  "freshOn": "Recently updated",
+  "freshOff": "Quiet",
+  "copyLink": "Copy node link",
+  "copyLinkCopied": "Copied the node link",
+  "close": "Close",
+  "metric": {
+    "contains": "Contains",
+    "usedBy": "Used by",
+    "dependsOn": "Depends on",
+    "reach": "Reach at 3 steps"
+  },
+  "groups": {
+    "containsTitle": "What this node contains",
+    "containsCaption": "What sits inside this concept",
+    "usedByTitle": "Places that use this node",
+    "usedByCaption": "The side that uses this one",
+    "dependsOnTitle": "Places this node leans on",
+    "dependsOnCaption": "Without these it does not work",
+    "belongsToTitle": "Belongs to",
+    "belongsToCaption": "The concept this one sits inside",
+    "empty": "No direct connections.",
+    "freshDotTitle": "Recently updated"
+  },
+  "reach": {
+    "leadIn": "From this node,",
+    "stepUnit": "step",
+    "afterSteps": "away it reaches",
+    "stepsAria": "Steps away from this node",
+    "ofTotal": "{count} / {total}",
+    "mostlyNone": "It doesn't reach any other concepts.",
+    "mostlyOne": "mostly in {a} ({aCount}).",
+    "mostlyTwo": "mostly in {a} ({aCount}) and {b} ({bCount}).",
+    "selfDomainLabel": "this domain",
+    "noDomainLabel": "no domain",
+    "domainsHidden": "{count} more domains are reached than these bars show",
+    "domainsHiddenRoute": "Domain boundaries"
+  },
+  "handoff": {
+    "label": "Agent handoff",
+    "copy": "Copy next action",
+    "copied": "Copied the agent handoff call",
+    "openDocument": "Open document",
+    "openMentionDocument": "Open mentioning document",
+    "openMentionDocumentTip": "This concept has no document of its own yet. Opens another document that writes about it",
+    "openStudio": "Edit relations on the map"
+  },
+  "codeLocations": {
+    "heading": "Code location",
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "body": {
+    "title": "Body",
+    "empty": "No body content written yet.",
+    "edit": "Edit body",
+    "save": "Save",
+    "cancel": "Cancel",
+    "placeholder": "Describe this concept…",
+    "saving": "Saving…"
+  }
+}

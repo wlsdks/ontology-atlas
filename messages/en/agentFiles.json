@@ -1,0 +1,20 @@
+{
+  "header": "Agent files",
+  "headerHint": "Which AI tool reads which instruction file: read-only detection, nothing is rewritten",
+  "driftBadge": "mismatch",
+  "driftCount": "{count} files out of sync",
+  "listAria": "Agent instruction files",
+  "drift": {
+    "missing-agents-import": "CLAUDE.md does not import @AGENTS.md: Claude Code and AGENTS.md readers see different instructions",
+    "broken-agents-import": "CLAUDE.md imports @AGENTS.md but AGENTS.md is missing",
+    "at-ref-missing": "An @referenced file was not found",
+    "agents-md-over-codex-cap": "AGENTS.md exceeds the Codex 32 KiB project-doc cap",
+    "skill-copy-diverged": "Duplicated skill copies diverged between .claude/skills and .agents/skills",
+    "skill-copy-file-missing": "A skill file exists in only one of the duplicated skill trees",
+    "agent-copy-diverged": "Duplicated agent briefs diverged between .claude/agents and .agents/agents",
+    "agent-copy-file-missing": "An agent brief exists in only one of the duplicated trees",
+    "non-english-agent-text": "An agent file carries non-English text, and its text is what a blocked or steered agent reads",
+    "mcp-config-unparseable": "An agent-connection (MCP) config file exists but declares no server, so every grant beside it is undeclared",
+    "undeclared-mcp-server": "An agent brief grants tools from an MCP server its config does not declare"
+  }
+}

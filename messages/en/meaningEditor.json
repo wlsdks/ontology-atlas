@@ -1,0 +1,28 @@
+{
+  "ariaLabel": "Edit {name} relations",
+  "editBody": "Choose one relation to see on the map.",
+  "reviewBody": "Review only what will change before writing Markdown.",
+  "relation": "Relation type",
+  "relationHelp": "This becomes one typed line in the Markdown. Folder validation reports a line whose target no document here answers to: it warns, it does not block the write.",
+  "target": "Connected concept",
+  "targetHelp": "Only documents already in this folder can be picked, so the line always resolves. An impact query walks it when it answers what a change to this concept reaches.",
+  "why": "Why this relation exists",
+  "whyHint": "Add the reason when you know it so the next person does not have to infer the line.",
+  "whyRequiredHint": "A dependency needs a reason for relying on the target.",
+  "relationName": {
+    "isA": "Is a kind of (belongs to a broader category)",
+    "dependsOn": "Depends on (this concept needs it to work)",
+    "contains": "Contains (holds it inside this concept)",
+    "relates": "Related to (neither one needs the other)"
+  },
+  "review": "Review change",
+  "remove": "Remove this relation",
+  "back": "Keep editing",
+  "apply": "Confirm and write",
+  "saving": "Writing…",
+  "saved": "Relation written to Markdown.",
+  "cancel": "Cancel",
+  "close": "Close relation editor",
+  "saveError": "Could not write. Check whether the file changed, then try again.",
+  "noChanges": "Nothing changed. Update the relation or its reason first."
+}

@@ -36,7 +36,7 @@ different word. So the table is the source of truth, not the individual fixes.
 
 | Where | Register |
 |---|---|
-| **User-facing strings** (`messages/*.json`) | Plain words a non-developer knows — §5 |
+| **User-facing strings** (`messages/<locale>/*.json`) | Plain words a non-developer knows — §5 |
 | **Code comments, doc-blocks, developer docs** | Precise technical English — §3–4. Do **not** simplify these. `gate` is exactly the right word; spelling it out every time only adds length |
 
 A word can be correct in one register and wrong in the other. These are separate
@@ -106,7 +106,7 @@ Do **not** unify these. A sweep that collapses them destroys meaning. Measured
 
 On screen, use the plain column.
 `tests/contract/ui-copy-glossary.contract.test.ts` enforces this against
-`messages/*.json`.
+the composed `messages/<locale>.json`.
 
 | Internal | Plain concept | English screen |
 |---|---|---|

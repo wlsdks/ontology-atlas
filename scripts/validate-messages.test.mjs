@@ -1,31 +1,33 @@
 import assert from 'node:assert/strict';
-import { readdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
+
+import { composeAll, listLocales } from './build-messages.mjs';
 
 const ROOT = process.cwd();
 const MESSAGES_DIR = path.join(ROOT, 'messages');
 const ROUTING_FILE = path.join(ROOT, 'src/i18n/routing.ts');
 
 describe('i18n message catalog', () => {
-  it('has one message file per configured locale', async () => {
+  // The authored catalogue is messages/<locale>/<Namespace>.json; messages/<locale>.json
+  // is the composite scripts/build-messages.mjs generates. Parity is judged on the parts
+  // so a stale composite cannot hide a missing key.
+  it('has one message directory per configured locale', async () => {
     const locales = await readRoutingLocales();
-    const messageLocales = (await readdir(MESSAGES_DIR))
-      .filter((file) => file.endsWith('.json'))
-      .map((file) => file.replace(/\.json$/, ''))
-      .sort();
-
-    assert.deepEqual(messageLocales, [...locales].sort());
+    assert.deepEqual(listLocales(ROOT), [...locales].sort());
   });
 
   it('keeps translation key shape identical across locales', async () => {
     const locales = await readRoutingLocales();
     const [baseLocale, ...otherLocales] = locales;
-    const baseMessages = await readJson(path.join(MESSAGES_DIR, `${baseLocale}.json`));
+    const { composites, problems } = composeAll(ROOT);
+    assert.deepEqual(problems, [], 'every namespace exists in every locale');
+    const baseMessages = JSON.parse(composites.get(baseLocale));
     const baseKeys = flattenKeys(baseMessages);
 
     for (const locale of otherLocales) {
-      const messages = await readJson(path.join(MESSAGES_DIR, `${locale}.json`));
+      const messages = JSON.parse(composites.get(locale));
       assert.deepEqual(
         flattenKeys(messages),
         baseKeys,

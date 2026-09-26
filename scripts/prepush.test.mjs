@@ -96,4 +96,8 @@ test('planner CLI exits nonzero when the exact Git scope cannot be read', () => 
   for (const paths of [['messages/ko.json'], ['messages/ko.json', 'src/example.test.ts']]) {
     assert.match(prepushUnitCommand({paths,base,exists:()=>true}), /--changed=/);
   }
+  // A part is imported by nothing, so the composites' importers are named explicitly.
+  const part = prepushUnitCommand({paths:['messages/ko/library.json'],base,exists:()=>true});
+  assert.match(part, /--changed=.* && pnpm exec vitest related --run messages\/en\.json messages\/ko\.json/);
+  assert.doesNotMatch(prepushUnitCommand({paths:['src/a.ts'],base,exists:()=>true}), /vitest related/);
  });

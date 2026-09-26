@@ -683,9 +683,16 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### i18n message catalog parity
 
 **Run**: `pnpm test:i18n:messages`
-**Proves**: Locale routing and message catalogs stay in parity across locales.
+**Proves**: Locale routing and the message parts under `messages/<locale>/` stay in parity across locales, and the composites are current.
 **Escalate**: none.
-**Fix**: Changes to the validator itself first print `pnpm exec node --test scripts/validate-messages.test.mjs`.
+**Fix**: Add the missing key to the same namespace file in every locale; changes to the validator itself first print `pnpm exec node --test scripts/validate-messages.test.mjs`.
+
+### i18n message composition
+
+**Run**: `pnpm messages:check`
+**Proves**: each ignored `messages/<locale>.json` equals the composition of its `messages/<locale>/<Namespace>.json` parts, and every namespace exists in every locale.
+**Escalate**: `pnpm test:i18n:messages` for key parity and the merge and adoption proofs
+**Fix**: edit the parts, never the composite, then run `pnpm messages:build`; a pre-split branch runs `pnpm messages:adopt` while merging main.
 
 ### Claude/Codex hook wiring and publish guard
 
