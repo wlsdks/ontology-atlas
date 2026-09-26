@@ -68,8 +68,9 @@ Every delegated brief states:
 6. the primary sources the agent must read instead of trusting a relayed summary;
 7. the landing rule: the agent commits on its own branch in its own worktree and
    never pushes, opens a pull request, or runs `pnpm pr:land`; the coordinating
-   owner lands every branch together with `/land-bundle` (one integration
-   branch, one draft pull request, one CI run).
+   owner lands every branch together with `/land-bundle` (one draft per slice
+   on the landing train, or one integration branch when slices must be
+   resolved together; either way one CI run per train).
 
 ## 7. Do not delegate
 

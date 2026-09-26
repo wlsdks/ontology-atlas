@@ -36,13 +36,12 @@
 ## Landing a pull request
 
 - Open every pull request as a draft (`gh pr create --draft`); drafts run no CI.
-- `pnpm pr:land <number>` is the only way to `main`. It serializes landings and
-  fires the one CI run. `pnpm pr:queue` names the lock holder and waiters,
-  `pnpm pr:ci <n>` buys an early run, and `pnpm pr:land --release` frees a
-  wedged lock.
-- Two or more branches (a Workflow, a fan-out, several drafts) land as one
-  integration branch and one draft through `/land-bundle`, never one landing
-  per branch.
+- `pnpm pr:land <number>` is the only way to `main`: it queues the pull request
+  for a train (up to 20 per CI run, bisected when red), or merges it at
+  once when already green and disjoint (fast path). `--plan <n...>` dry-runs;
+  `pnpm pr:queue` shows the train; `--release` frees a wedged lock.
+- Several branches use `/land-bundle`: a draft each for the train, or
+  one integration branch when they must be resolved together.
 - Never run `gh pr merge`, `gh pr update-branch`, or `gh pr create` without
   `--draft`; `.claude/hooks/block-manual-landing.sh` refuses them.
 - The title starts with a conventional prefix. The body has `Summary` and
