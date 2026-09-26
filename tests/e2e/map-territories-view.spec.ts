@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { parseFrontmatter } from "../../src/shared/lib/parse-frontmatter";
 import { judgeEvidence } from "../../src/shared/lib/evidence-verdict.mjs";
 import { installDesktopRailRuntime, type StubPathChange } from "./desktop-rail-arrival-harness";
+import { waitForMapStill } from "./settle";
 
 /**
  * **Territories names every capability, keeps every name clear, and counts stale honestly.**
@@ -147,6 +148,12 @@ for (const viewport of [
     await installDesktopRailRuntime(page, vault.files, undefined, { replaceFixture: true, gitPathChanges: vault.changes });
     await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
     await page.getByTestId("first-run-open").click();
+    // Opening the dogfood vault reads each of its files through the native stub, one answer at a
+    // time and 120 ms apart, so the map arrives about 14 s after the press (measured 2026-09-26:
+    // the view chip turned visible at 14.0 s). Clicking the chip at once spent the default 15 s
+    // action timeout on that arrival, and on a slower runner the click timed out after scrolling
+    // (CI, three attempts in a row). Wait for the map itself instead.
+    await waitForMapStill(page);
 
     await page.getByTestId("topology-view-3d").click();
     await page.getByTestId("topology-view-3d-choice-territories").click();
