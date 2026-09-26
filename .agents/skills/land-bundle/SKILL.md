@@ -64,7 +64,9 @@ train in flight touches merges on the fast path without waiting. A red train is
 split and rerun; the breaker gets a comment and loses its label. Fix it and
 `pnpm pr:land <number>` again. The conductor closes landed components and
 deletes branches `main` provably contains; `pnpm bundle:prune` cleans up the
-local worktrees afterwards.
+local worktrees afterwards. Clean up only after `pnpm pr:land` exits 0, and through
+`pnpm bundle:prune`, which keeps any branch `main` does not contain; never
+`git branch -D` on a landing you have not seen succeed.
 
 ## 3. The bundle path
 
