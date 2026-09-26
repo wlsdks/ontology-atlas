@@ -67,8 +67,9 @@ delete worktrees, or run `git add -A`.
 Task status: `pnpm backlog -- --task=ID`; `docs/BACKLOG.md` owns the append-only
 record format. Before reversing an existing product or architecture choice, find
 it with `pnpm decisions:find <terms>` and cite or explicitly overturn it, keeping
-dissent and a falsifier. `pnpm record:new` creates immutable fragments; routine
-work needs none.
+dissent and a falsifier. A record is context from its date, not proof it still
+holds: recheck its conditions and figures against the present before relying on
+it. `pnpm record:new` creates immutable fragments; routine work needs none.
 
 ## Rendered work and source authorities
 
