@@ -146,6 +146,8 @@ async function walkUntilCameraMoves(page: import("@playwright/test").Page) {
       });
       await startCameraTrace(page);
       await page.keyboard.press(key);
+      // measurement window: the trace records the transition itself, so it must stay open
+      // past the 420 ms clamp plus the one-frame start delay for its end to be inside it.
       await page.waitForTimeout(900);
       const trace = await readCameraTrace(page);
       const span = movingSpan(trace);

@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { AUDITED_ROUTES } from "./audited-routes";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForPageSettled } from "./settle";
 
 /**
  * **Everything pressable uses the same cursor.**
@@ -76,7 +77,7 @@ for (const route of AUDITED_ROUTES) {
       ).toBeVisible();
     }
     await page.waitForSelector("main", { timeout: 20_000 });
-    await page.waitForTimeout(900);
+    await waitForPageSettled(page);
 
     const controls = await measure(page);
 

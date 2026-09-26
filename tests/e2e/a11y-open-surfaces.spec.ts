@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { openLibraryWorkScenario } from "./library-work-harness";
+import { waitForAnimationsDone, waitForBoxStill, waitForPageSettled } from "./settle";
 
 /**
  * Accessibility ratchet — **open surfaces**.
@@ -275,8 +276,8 @@ async function openAndAudit(page: Page, o: Opener) {
   if (!o.libraryWorkReceipt) {
     const separator = o.route.includes("?") ? "&" : "?";
     await page.goto(`${o.route}${separator}guides=off`, { waitUntil: "domcontentloaded" });
-    // The map's screen is only settled once the physics simulation converges.
-    await page.waitForTimeout(2500);
+    // Audit the screen the route lands on, not one still filling in or converging.
+    await waitForPageSettled(page);
   }
 
   if (o.fileInput) {
@@ -288,7 +289,6 @@ async function openAndAudit(page: Page, o: Opener) {
   }
 
   await page.getByTestId(o.trigger).first().click({ timeout: 8000 });
-  await page.waitForTimeout(800);
 
   // Evidence that it opened. Without this, the axe run below measures the *closed*
   // screen once more — duplicating the first-screen ratchet while falsely reporting
@@ -298,6 +298,10 @@ async function openAndAudit(page: Page, o: Opener) {
     `«${o.name}» 트리거를 눌렀는데 표면이 안 열렸다 — 이 게이트는 아무것도 재지 않았다. ` +
       `트리거 testid(${o.trigger})가 컴포넌트보다 오래 살아남았는지 먼저 의심하라.`,
   ).toBeVisible({ timeout: 5000 });
+  // Audit the surface once it has finished opening, not a frame of its entrance.
+  await waitForAnimationsDone(page.locator(o.surface).first());
+  await waitForBoxStill(page.locator(o.surface).first());
+  await waitForAnimationsDone(page.locator("html"));
 
   await page.addScriptTag({ path: AXE_PATH });
   return page.evaluate(async (tags) => {

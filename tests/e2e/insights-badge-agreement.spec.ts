@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForPageSettled } from "./settle";
 
 /**
  * Insights "to do" — **one screen must not count the same thing as two numbers.**
@@ -153,8 +154,21 @@ test.describe("인사이트 인구조사 — 타일 큰 숫자와 탭 배지가 
     });
 
     await page.goto("/ko/ontology/insights/?guides=off&tab=composition", { waitUntil: "domcontentloaded" });
-    // Long enough to outlast the 400ms intro — and the sample→vault swap falls inside it.
-    await page.waitForTimeout(2_000);
+    // Read once the sample→vault swap has landed and the intro count-up has reached the
+    // number it counts to: every big number painted equals its own exact value.
+    await expect(page.getByTestId("insights-census-tile")).toHaveCount(4, { timeout: 30_000 });
+    await waitForPageSettled(page);
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const read = (node: Element | null) => /(\d[\d,]*)/.exec(node?.textContent ?? "")?.[1] ?? null;
+          return [...document.querySelectorAll('[data-testid="insights-bignum"]')].every((el) => {
+            const exact = read(el.querySelector("[data-insights-exact-value]"));
+            return exact !== null && read(el.querySelector("[data-insights-animated-value]")) === exact;
+          });
+        }),
+      )
+      .toBe(true);
 
     const seen = await page.evaluate(() => {
       const text = (el: Element | null) => (el?.textContent ?? "").trim();

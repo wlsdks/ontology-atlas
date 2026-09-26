@@ -395,6 +395,7 @@ test.describe("the library graph responds", () => {
      * this case has replaced `requestAnimationFrame` with a counting wrapper, and any
      * frame-based wait would be counted as the canvas asking for one.
      */
+    // measurement window: no frame may be asked for over a stretch of real time.
     await page.waitForTimeout(3_000);
     expect(
       (await readFrames()) - idleFrom,
@@ -479,8 +480,10 @@ test.describe("the library graph responds", () => {
       const first = await frameHash();
       // A **measurement window**: the claim is that nothing drifts over a stretch longer
       // than one ambient period, so the stretch has to pass.
+      // measurement window: nothing may drift over more than one ambient period.
       await page.waitForTimeout(2_000);
       const second = await frameHash();
+      // measurement window: the second half of the same stretch.
       await page.waitForTimeout(2_000);
       const third = await frameHash();
       expect(second, "the canvas drifted under prefers-reduced-motion").toBe(first);

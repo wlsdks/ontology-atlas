@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { AUDITED_ROUTES } from './audited-routes';
+import { waitForPageSettled } from './settle';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- Playwright specs load as CJS (using `import.meta` stops the file loading at all).
 const { judgeText, judgeAdjacentMarks } = require('../../scripts/lib/contrast.mjs');
@@ -171,7 +172,7 @@ test('대비 래칫 — WCAG 1.4.3 미달 조합이 늘지 않는다', async ({ 
         page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
       ).toBeVisible();
     }
-    await page.waitForTimeout(2500);
+    await waitForPageSettled(page);
 
     const marks = (await page.evaluate(collectAdjacentMarks)) as Array<{
       separated?: boolean;

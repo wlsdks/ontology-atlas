@@ -375,12 +375,12 @@ test.describe("a press on a mark opens a card beside it", () => {
         message: "the breath never began",
       })
       .toBe(true);
-    // A **measurement window**, not a wait: the claim is that the breath asks for frames
-    // while it runs, so some of its run has to pass before the count means anything.
+    // The claim is that the breath asks for frames while it runs: count them from here
+    // until more than five have been painted, however long this machine takes to paint them.
     await reset();
-    await page.waitForTimeout(900);
-    const during = await read();
-    expect(during, "the arrival breath asked for no frames at all").toBeGreaterThan(5);
+    await expect
+      .poll(read, { timeout: 20_000, message: "the arrival breath asked for no frames at all" })
+      .toBeGreaterThan(5);
 
     // Then it clears its own timestamp, and the canvas stops. The timestamp is the
     // condition; 2.6 s was an estimate of when it would be gone.
@@ -402,6 +402,7 @@ test.describe("a press on a mark opens a card beside it", () => {
     // A **measurement window**, not a wait: "the breath became a loop" is a claim about a
     // stretch of real time with no canvas paint, so the stretch has to pass. The graph's
     // own paint probe is the counter: page-global rAF also includes unrelated UI animation.
+    // measurement window: no canvas paint over a stretch of real time is the claim.
     await page.waitForTimeout(2_000);
     expect(await read(), "the breath became a loop").toBe(0);
   });
@@ -418,6 +419,7 @@ test.describe("a press on a mark opens a card beside it", () => {
     await page.evaluate(() => window.__atlasLibraryGraph!.paint().reset());
     // A **measurement window**: the budget is per painted frame, so some have to be
     // painted before the mean and the worst mean anything.
+    // measurement window: a per-frame budget averaged over a fixed second of painting.
     await page.waitForTimeout(1_000);
     const paint = await page.evaluate(() => {
       const { last, mean, worst, frames } = window.__atlasLibraryGraph!.paint();
@@ -462,6 +464,7 @@ test.describe("with reduced motion", () => {
           const first = await hash();
           // The gap between the two samples of a stability poll, not a gate: the poll
           // returns the moment two frames agree.
+          // measurement window: two samples must agree across a gap longer than one hash landing.
           await page.waitForTimeout(260);
           return (await hash()) === first;
         },
@@ -496,8 +499,10 @@ test.describe("with reduced motion", () => {
     // Three **measurement** samples a third of a second apart: the claim is about a
     // stretch of real time in which nothing may change.
     const first = await hash();
+    // measurement window: nothing may change across a third of a second.
     await page.waitForTimeout(320);
     const second = await hash();
+    // measurement window: the second third of a second.
     await page.waitForTimeout(320);
     const third = await hash();
     expect(second).toBe(first);
