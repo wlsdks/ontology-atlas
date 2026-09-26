@@ -23,7 +23,7 @@ export const SCOPE_CONFIGS = Object.freeze({
   }),
   scripts: Object.freeze({
     cwd: '.',
-    runtime: source(['app/globals.css'], ['scripts/**/*.mjs', '!scripts/**/*.test.mjs', '!scripts/quality/dead-code/**', 'app/**/*.css'], WITHOUT_MANIFEST, { next: false }),
+    runtime: source(['app/globals.css', 'scripts/lib/check-rules/*.mjs'], ['scripts/**/*.mjs', '!scripts/**/*.test.mjs', '!scripts/quality/dead-code/**', 'app/**/*.css'], WITHOUT_MANIFEST, { next: false }),
     verification: source(['scripts/**/*.test.mjs', 'app/globals.css'], ['scripts/**/*.test.mjs', 'app/**/*.css'], WITHOUT_MANIFEST, { next: false }),
   }),
   cli: Object.freeze({
