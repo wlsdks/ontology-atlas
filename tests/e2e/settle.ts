@@ -157,7 +157,9 @@ export async function waitForMapSettled(page: Page, options: MapStillOptions = {
  * pulse or spinner somewhere on the page would otherwise hold this open until the
  * hang ceiling (measured 2026-09-13 — `waitForAnimationsDone(body)` on the route
  * sweep sat for the full 30 s). Something ambient that also moves the layout is
- * caught by {@link waitForBoxStill} instead.
+ * caught by {@link waitForBoxStill} instead. Scroll-driven animations are skipped
+ * for the same reason: the gateway's scroll stages report `running` until scrolled
+ * (measured 2026-09-26 on `/ko/` and `/ko/download/`).
  */
 export async function waitForAnimationsDone(locator: Locator, timeout = HANG_TIMEOUT_MS): Promise<void> {
   await locator.evaluate(
@@ -168,6 +170,9 @@ export async function waitForAnimationsDone(locator: Locator, timeout = HANG_TIM
           const running = element
             .getAnimations({ subtree: true })
             .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+            // A scroll-driven animation runs on a scroll timeline, not the clock: it is
+            // "running" for as long as the page exists and ends only when scrolled.
+            .filter((animation) => !animation.timeline || animation.timeline instanceof DocumentTimeline)
             .some((animation) => animation.playState === "running");
           if (!running) {
             resolve();
@@ -311,6 +316,48 @@ export async function waitForDomeEntered(page: Page, timeout = HANG_TIMEOUT_MS):
       return dome !== null && dome !== undefined && dome.ramp >= 1 && !dome.entryArmed;
     },
     undefined,
+    { polling: "raf", timeout },
+  );
+}
+
+/**
+ * Resolve once the Territories view has drawn {@link STILL_FRAMES} consecutive frames
+ * with the same camera and has finished arriving and dimming.
+ *
+ * Territories paints its own canvas (`OntologyTerritoriesMap.tsx`) and has no
+ * `__atlasMap` probe; each painted frame writes its state to the canvas's
+ * `data-frame` (`TerritoryFrameStats`: offset, arrival, dim, focus). The screen
+ * positions on the mirror list are written on the frame that stops moving, so
+ * they are current once this resolves. Pass `focus` when a selection was just
+ * made, so frames drawn before the selection reached the canvas do not count.
+ */
+export async function waitForTerritoriesStill(
+  page: Page,
+  options: { focus?: string | null; frames?: number; timeout?: number } = {},
+): Promise<void> {
+  const { focus, frames = STILL_FRAMES, timeout = HANG_TIMEOUT_MS } = options;
+  const key = `territories-${(stillKeySeed += 1)}`;
+  await page.waitForFunction(
+    (argument: { focus: string | null | undefined; frames: number; key: string }) => {
+      const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="territories-map"] canvas');
+      const raw = canvas?.dataset.frame;
+      if (!raw) return false;
+      const frame = JSON.parse(raw) as { arrivalT: number; dimT: number; focus: string | null };
+      if (frame.arrivalT < 1 || (frame.dimT !== 0 && frame.dimT !== 1)) return false;
+      if (argument.focus !== undefined && frame.focus !== argument.focus) return false;
+      const box = canvas!.getBoundingClientRect();
+      const signature = `${raw}|${Math.round(box.width)},${Math.round(box.height)}`;
+      const store = ((window as unknown as { __atlasStill?: Record<string, { signature: string; count: number }> })
+        .__atlasStill ??= {});
+      const seen = store[argument.key];
+      if (!seen || seen.signature !== signature) {
+        store[argument.key] = { signature, count: 1 };
+        return false;
+      }
+      seen.count += 1;
+      return seen.count >= argument.frames;
+    },
+    { focus, frames, key },
     { polling: "raf", timeout },
   );
 }
