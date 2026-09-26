@@ -4,6 +4,16 @@ import { describe, it } from 'node:test';
 import {
   DEFAULT_BATCH,
   EJECTED_MARKER,
+  MIN_BATCH,
+  MIN_HISTORY,
+  RED_CLOSE_PREFIX,
+  adaptiveBatch,
+  describeTrains,
+  estimateRedRate,
+  maySpeculate,
+  requeueAfterDiscard,
+  trainHistoryRows,
+  trainSizeFromTitle,
   EMPTY_BEFORE_REFIRE,
   LANDED_MARKER,
   QUEUE_LABEL,
@@ -213,6 +223,18 @@ describe('fast-path eligibility', () => {
     // A stale conductor's recorded files still count until the lock is gone.
     assert.deepEqual(failing(fastPathEligibility({ ...base, lock: { state: 'stale', holder: { pr: 1, train: { files: ['src/a.ts'] } } } })), ['no-overlapping-train']);
   });
+
+  it('refuses a change that overlaps the speculative train, not only the head one', () => {
+    const held = (trains) => ({ state: 'held', holder: { pr: 1900, train: trains[0], trains } });
+    const head = { pr: 1900, files: ['src/b.ts'] };
+    assert.equal(fastPathEligibility({ ...base, lock: held([head, { pr: 1901, files: ['src/c.ts'] }]) }).eligible, true);
+    const overlap = fastPathEligibility({ ...base, lock: held([head, { pr: 1901, files: ['src/a.ts'] }]) });
+    assert.deepEqual(failing(overlap), ['no-overlapping-train']);
+    assert.match(overlap.rules.find((r) => r.rule === 'no-overlapping-train').detail, /the 2 trains in flight also change src\/a.ts/);
+    // The speculative train is still assembling: nothing can be proven disjoint yet.
+    assert.deepEqual(failing(fastPathEligibility({ ...base, lock: held([head, { pr: null, files: null }]) })), ['no-overlapping-train']);
+    assert.equal(fastPathEligibility({ ...base, lock: held([]) }).eligible, true);
+  });
 });
 
 describe('what the train says', () => {
@@ -321,5 +343,79 @@ describe('a waiter reads its outcome from GitHub alone', () => {
     assert.equal(waiterPollSeconds(DEFAULT_BATCH + 3), 60);
     assert.equal(waiterPollSeconds(400), 300);
     assert.equal(waiterPollSeconds(null), 30);
+  });
+});
+
+describe('the train size, measured from recent trains', () => {
+  const trainPr = (number, title, state, comments = []) => ({ number, title, state, headRefName: `train/20260926T100000Z-${number}`, comments });
+
+  it('counts the pull requests a train carried from its title', () => {
+    assert.equal(trainSizeFromTitle('chore(train): land #1911'), 1);
+    assert.equal(trainSizeFromTitle('chore(train): land #1889 #1890 #1891 #1892'), 4);
+    assert.equal(trainSizeFromTitle('chore(train): land #1 #2 #3 and 17 more'), 20);
+    assert.equal(trainSizeFromTitle('feat: something else'), 0);
+  });
+
+  it('reads merged trains as green and trains closed red as red, and ignores the rest', () => {
+    const rows = trainHistoryRows([
+      trainPr(1, 'chore(train): land #10 #11', 'MERGED'),
+      trainPr(2, 'chore(train): land #12', 'CLOSED', [{ body: `${RED_CLOSE_PREFIX}Unit · Contract FAILURE; #12 is ejected from the queue.` }]),
+      trainPr(3, 'chore(train): land #13', 'CLOSED', [{ body: 'Green, but main moved into src/a.ts while CI ran. Rebuilt on the new main.' }]),
+      trainPr(4, 'chore(train): land #14', 'CLOSED', [{ body: 'Discarded: it was cut on top of train #2, which went red.' }]),
+      trainPr(5, 'chore(train): land #15', 'OPEN'),
+      { number: 6, title: 'chore(train): land #16', state: 'MERGED', headRefName: 'feat/not-a-train', comments: [] },
+    ]);
+    assert.deepEqual(rows, [{ number: 1, size: 2, red: false }, { number: 2, size: 1, red: true }]);
+  });
+
+  it('estimates the per-PR red rate by maximum likelihood', () => {
+    assert.equal(estimateRedRate([{ size: 5, red: false }]), 0);
+    // 12 of 20 ten-PR trains green: (1 - p)^10 = 0.6, so p = 1 - 0.6^0.1, about 5 %.
+    const rows = [...Array(12).fill({ size: 10, red: false }), ...Array(8).fill({ size: 10, red: true })];
+    assert.ok(Math.abs(estimateRedRate(rows) - (1 - 0.6 ** 0.1)) < 0.001);
+  });
+
+  it('chooses the largest train that is green at least half the time', () => {
+    const rows = [...Array(12).fill({ size: 10, red: false }), ...Array(8).fill({ size: 10, red: true })];
+    const choice = adaptiveBatch(rows);
+    assert.equal(choice.size, 13, 'floor(ln 0.5 / ln 0.95) at p = 5 %');
+    assert.ok((1 - choice.p) ** choice.size >= 0.5);
+    assert.match(choice.reason, /20 recent train\(s\), 8 red; about 5\.0 % of pull requests break a train, so a train of 13 is green about 5\d % of the time/);
+  });
+
+  it('keeps the default with too little history or no red train, and never goes below two', () => {
+    const few = adaptiveBatch(Array(MIN_HISTORY - 1).fill({ size: 1, red: true }));
+    assert.equal(few.size, DEFAULT_BATCH);
+    assert.match(few.reason, /fewer than 8 to measure a red rate/);
+    assert.equal(adaptiveBatch(Array(30).fill({ size: 20, red: false })).size, DEFAULT_BATCH);
+    assert.equal(adaptiveBatch(Array(30).fill({ size: 1, red: true })).size, MIN_BATCH);
+  });
+});
+
+describe('speculation', () => {
+  const parent = { pr: 2001, head: 'abc', verdict: null };
+  it('cuts a second train only on an open, unfailed parent, with a free slot', () => {
+    assert.equal(maySpeculate({ inFlight: 1, parent }), true);
+    assert.equal(maySpeculate({ inFlight: 1, parent: { ...parent, verdict: { kind: 'green' } } }), true);
+    assert.equal(maySpeculate({ inFlight: 1, parent: { ...parent, verdict: { kind: 'red' } } }), false);
+    assert.equal(maySpeculate({ inFlight: 2, parent }), false, 'at most two trains in flight');
+    assert.equal(maySpeculate({ inFlight: 1, parent, enabled: false }), false);
+    assert.equal(maySpeculate({ inFlight: 1, parent, blockedOn: 2001 }), false, 'a cut that opened nothing waits for the parent');
+    assert.equal(maySpeculate({ inFlight: 1, parent: { ...parent, head: null } }), false);
+  });
+
+  it('puts a discarded split half back behind the failed train\'s own halves', () => {
+    const discarded = [{ source: 'split', numbers: [3, 4] }];
+    assert.deepEqual(requeueAfterDiscard({ splits: [[5]], headSplits: [[1], [2]], discarded }), [[1], [2], [3, 4], [5]]);
+    // A speculative train cut from the queue needs nothing: its pull requests are still queued.
+    assert.deepEqual(requeueAfterDiscard({ splits: [], headSplits: [[1], [2]], discarded: [{ source: 'queue', numbers: [3] }] }), [[1], [2]]);
+  });
+
+  it('describes both trains in flight', () => {
+    const now = Date.parse('2026-09-26T11:00:00Z');
+    const payload = { trains: [{ pr: 2001, components: [1] }, { pr: 2002, onTopOf: 2001, components: [2, 3] }] };
+    assert.equal(describeTrains(payload, now), 'train #2001 carrying #1; train #2002 on top of train #2001 carrying #2 #3');
+    assert.equal(describeTrains({ train: null }, now), 'between trains');
+    assert.equal(describeTrains({ trains: [] }, now), 'between trains');
   });
 });

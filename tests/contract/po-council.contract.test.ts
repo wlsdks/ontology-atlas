@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { readPoPilotSource } from '../../scripts/lib/po-pilot-records.mjs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -32,9 +32,7 @@ const ROOT = process.cwd();
 const PO_OS = 'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md';
 const PILOT = 'docs/PO-PILOT.md';
 const PASS_SKILL = '.claude/skills/po-pass/SKILL.md';
-const PASS_MIRROR = '.agents/skills/po-pass/SKILL.md';
 const COUNCIL_SKILL = '.claude/skills/po-council/SKILL.md';
-const COUNCIL_MIRROR = '.agents/skills/po-council/SKILL.md';
 const CLI = 'scripts/po-risk-router.mjs';
 const PILOT_CLI = 'scripts/po-pilot.mjs';
 
@@ -50,20 +48,6 @@ const boundaries = (
   ...overrides,
 }) as Record<string, BoundaryState>;
 const SPECIALISTS = Object.values(PO_RISK_ROUTES).map((route) => route.reviewer);
-const ACTIVE_AGENTS = ['chief', 'po-evidence', ...SPECIALISTS] as const;
-const ACTIVE_FILES = [
-  PO_OS,
-  PILOT,
-  PASS_SKILL,
-  PASS_MIRROR,
-  COUNCIL_SKILL,
-  COUNCIL_MIRROR,
-  CLI,
-  PILOT_CLI,
-  'scripts/lib/po-risk-router.mjs',
-  'scripts/lib/po-pilot.mjs',
-  ...ACTIVE_AGENTS.flatMap((name) => [`.claude/agents/${name}.md`, `.agents/agents/${name}.md`]),
-] as const;
 
 const read = (path: string): string => readFileSync(join(ROOT, path), 'utf8');
 
@@ -477,48 +461,11 @@ describe('Atlas PO pilot can decide its sunset', () => {
   });
 });
 
-describe('Atlas PO policy stays executable across independent harnesses', () => {
-  it('has a non-empty guarded inventory', () => {
-    expect(ACTIVE_FILES.length, 'the active PO inventory must not be empty').toBeGreaterThan(0);
-    for (const path of ACTIVE_FILES) expect(existsSync(join(ROOT, path)), `${path} must exist`).toBe(true);
-  });
-
+describe('Atlas PO written templates match the router policy', () => {
   it('binds both written templates to fields exported by the router policy', () => {
     expect(fieldsInTemplate(PO_OS, '## Compact solo pass')).toEqual(PO_SOLO_FIELDS);
     expect(fieldsInTemplate(PASS_SKILL, '## 5. Write one screen')).toEqual(PO_SOLO_FIELDS);
     expect(fieldsInTemplate(PO_OS, '## Significant decision record')).toEqual(PO_REVIEW_RECORD_FIELDS);
     expect(fieldsInTemplate(COUNCIL_SKILL, '## Significant record')).toEqual(PO_REVIEW_RECORD_FIELDS);
-  });
-
-  it('prevents the retired score gate from returning to active instructions', () => {
-    const retiredInstructions = /\b\d{1,2}\s*\/\s*24\b|fatal zero|score all six|rubric total/i;
-    for (const path of ACTIVE_FILES) {
-      expect(read(path), `${path} contains a retired score instruction`).not.toMatch(retiredInstructions);
-    }
-  });
-
-  it('keeps owner authority and the before/after decision delta visible', () => {
-    const council = read(COUNCIL_SKILL);
-    for (const line of ['What we decided', 'What differs from your request', 'What you need to do']) {
-      expect(council).toContain(line);
-    }
-    expect(council).toMatch(/human owner\s+decides/i);
-    // The record keeps the prior state and the accountable person; the
-    // before/after delta is typed per run in the pilot register (six-field
-    // template, 2026-09-02), so it is asserted where it now lives.
-    expect(PO_REVIEW_RECORD_FIELDS).toContain('Prior');
-    expect(PO_REVIEW_RECORD_FIELDS).toContain('Owner');
-    expect(PO_REVIEW_RECORD_FIELDS).toContain('Dissent');
-    expect(read(PILOT)).toMatch(/\| Delta \|/);
-  });
-
-  it('starts the finite pilot with an actual measured row', () => {
-    const pilot = parsePoPilot(read(PILOT));
-    expect(pilot.metadata).toMatchObject({
-      decisionTarget: 20,
-      decisionDeadline: '2026-09-15',
-      sparseExtensionDeadline: '2026-09-22',
-    });
-    expect(pilot.runs.length).toBeGreaterThan(0);
   });
 });

@@ -1,8 +1,10 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { globSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { judgeRatchet } from "./lib/ratchet-base";
 
 /**
  * The contract that **conditional rules actually load**.
@@ -248,40 +250,23 @@ describe("`.claude/rules` path scoping contract", () => {
    * resident share was trimmed by 1,667 bytes and then quietly grew 484 bytes
    * back, one justified documentation paragraph at a time, and nothing noticed
    * because every individual addition was small and correct (2026-08-24). So
-   * this ratchets in one direction only: a commit that saves bytes must record
-   * the saving, which is what makes the saving permanent.
-   */
-  const RESIDENT_CONTEXT_BYTES = 18_779;
-
-  /*
-   * Raised by 140 bytes on 2026-09-26 for `/harness-retro`. A lesson has to be
-   * written at the moment a mistake is noticed, in any task, by Claude or Codex,
-   * and no path-loaded rule or skill is loaded at that moment; hooks were ruled
-   * out so the record stays a judgment, not a prompt on every stop. The bytes
-   * are one sentence under "Working and finishing" and one workflow row.
-   */
-
-  // Raised on 2026-09-26 when the bundle merged: forbidden.md cites brand.md's new
-  // path. The screenshot rule shares the pull-request line git.md already had.
-
-  /*
-   * Lowered from 25,512 on 2026-09-26 when the resident files were rewritten to
-   * the Claude Opus 5.5 guidance: dated history and rationale moved out, rules
-   * already stated by a skill, a path-loaded rule or a hook were cut, and the
-   * scope, delegation and reporting lines the guidance asks for were added.
-   */
-
-  /*
-   * Raised by 209 bytes on 2026-09-12, using the mechanism this gate's own message
-   * offers ("state in the commit why this must be resident").
+   * this ratchets in one direction only.
    *
-   * `.claude/rules/git.md` listed the allowed commit prefixes and nothing checked
-   * them, which is how `wip`, `wip2` and `wip3` reached a branch. Those 209 bytes say
-   * the list is now enforced by `.githooks/commit-msg`, that `design:` belongs on it,
-   * and that `wip` does not. They buy a resident rule that a hook refuses rather than
-   * a resident rule a reader may ignore — the one trade that makes a resident byte
-   * worth more than a path-loaded one. The ratchet still only falls from here.
+   * The direction is judged against the change's own merge base
+   * (`tests/contract/lib/ratchet-base.ts`), not against a literal: the literal
+   * changed in seven of this file's twelve commits, so parallel branches that
+   * each saved bytes conflicted on one line and bundle merges recounted it by
+   * hand. A saving is now permanent without bookkeeping, because the next
+   * branch's base already contains it. A deliberate raise is a
+   * `tests/contract/ratchet-raises/resident-context-bytes.<slug>.json` record
+   * saying why the bytes must be resident; the raises made before that
+   * mechanism, with their reasons, are in this file's Git history.
+   *
+   * 18,779 is the measurement on 2026-09-26, the day of the conversion. It is
+   * never edited; it serves a clone with no merge base and is a floor for a tree
+   * compared with itself.
    */
+  const RESIDENT_FALLBACK_BYTES = 18_779;
 
   /**
    * One region of `AGENTS.md` is not ours (2026-09-11). `@vercel/detect-agent`
@@ -301,8 +286,8 @@ describe("`.claude/rules` path scoping contract", () => {
    */
   const VENDOR_REGION = /<!-- BEGIN:nextjs-agent-rules -->[\s\S]*?<!-- END:nextjs-agent-rules -->\n?/g;
 
-  function authoredBytes(file: string): number {
-    const text = readFileSync(join(process.cwd(), file), "utf8");
+  function authoredBytes(file: string, root = process.cwd()): number {
+    const text = readFileSync(join(root, file), "utf8");
     return Buffer.byteLength(text.replace(VENDOR_REGION, ""), "utf8");
   }
 
@@ -324,20 +309,20 @@ describe("`.claude/rules` path scoping contract", () => {
 
   it("ratchets the whole resident context downward, never up", () => {
     const files = ["AGENTS.md", "CLAUDE.md", ...ALWAYS_LOADED.map((f) => join(".claude/rules", f))];
-    const bytes = files.reduce((sum, file) => sum + authoredBytes(file), 0);
+    const verdict = judgeRatchet({
+      gate: "resident-context-bytes",
+      measure: (root) =>
+        files.reduce((sum, file) => sum + (existsSync(join(root, file)) ? authoredBytes(file, root) : 0), 0),
+      reads: files,
+      fallback: RESIDENT_FALLBACK_BYTES,
+    });
     const detail = files.map((file) => `  ${authoredBytes(file)} ${file}`).join("\n");
 
     expect(
-      bytes,
-      `the resident context grew to ${bytes} bytes:\n${detail}\n`
+      verdict.current,
+      `the resident context grew to ${verdict.current} bytes:\n${detail}\n${verdict.explain}\n`
         + "Every turn pays this before the task is read. Move detail to a path-loaded "
-        + "rule or a skill, or state in the commit why this must be resident.",
-    ).toBeLessThanOrEqual(RESIDENT_CONTEXT_BYTES);
-
-    expect(
-      bytes,
-      `the resident context is down to ${bytes} bytes: lower RESIDENT_CONTEXT_BYTES `
-        + "in this file so the saving cannot be spent again.",
-    ).toBeGreaterThan(RESIDENT_CONTEXT_BYTES - 512);
+        + "rule or a skill, or record why this must be resident.",
+    ).toBeLessThanOrEqual(verdict.ceiling);
   });
 });
