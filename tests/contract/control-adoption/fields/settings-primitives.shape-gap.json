@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/app-settings-menu/ui/settings-primitives.tsx",
+  "count": 2,
+  "claim": "shape-gap",
+  "proof": "[&>svg]:h-3.5",
+  "why": "슬라이더(`type=\"range\"`)와 그 행. **앱에 이것 하나뿐**이고, 트랙과 썸이 각각 치수를 갖는 이중 체계라 `fieldClass` 의 한 줄/여러 줄 문법과 근본적으로 다르다. 소비처가 하나인 값에 이름을 붙이지 않는다는 이 저장소의 규율.",
+  "conditional": "슬라이더가 둘이 되면 그때 값에 이름을 붙인다."
+}

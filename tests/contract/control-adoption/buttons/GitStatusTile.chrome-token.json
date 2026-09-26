@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/app-nav-rail/ui/GitStatusTile.tsx",
+  "count": 1,
+  "claim": "chrome-token",
+  "proof": "--app-nav-rail-tile-height",
+  "why": "레일 git 타일 — calc(32px × --topology-ui-scale-factor) + coarse max() 승격. 램프는 스케일 계수도 포인터 승격도 못 낸다.",
+  "conditional": "값 층이 포인터 승격 축을 얻으면 다시 연다. 누름 방언(active:translate-y-px)은 별개 부채다."
+}

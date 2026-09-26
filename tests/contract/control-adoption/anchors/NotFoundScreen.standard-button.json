@@ -1,0 +1,7 @@
+{
+  "file": "src/views/terminal-state/ui/NotFoundScreen.tsx",
+  "count": 2,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "The 404 exits (both not-found files render this one view since 2026-09-25): home is a `<Link>` through `cn(buttonVariants(...))` as primary on the web and outline in the app, beside `<Button>` siblings. Same normalization as the 2026-08-04 button round."
+}

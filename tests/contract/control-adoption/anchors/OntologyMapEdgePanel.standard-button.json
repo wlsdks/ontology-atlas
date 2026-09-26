@@ -1,0 +1,7 @@
+{
+  "file": "src/widgets/ontology-map/ui/OntologyMapEdgePanel.tsx",
+  "count": 1,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "The edge panel's one action (2026-09-25). Its `<button>` branch is the primary `<Button>` the node panel's action row uses; the `<Link>` branch (navigating to the editor) wears the same `buttonVariants({ variant: \"primary\", size: \"sm\" })` so the docked slot speaks one grammar whichever branch renders. `control-class.ts` does not replace standard buttons."
+}

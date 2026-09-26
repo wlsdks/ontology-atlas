@@ -1,0 +1,7 @@
+{
+  "file": "src/widgets/doc-reading-pane/ui/BackToTopButton.tsx",
+  "count": 1,
+  "claim": "chrome-token",
+  "proof": "--chrome-tile-size",
+  "why": "문서함 「맨 위로」 부유 컨트롤 — h-[var(--chrome-tile-size)] 크롬 계약. rounded-full 원형 방언은 별개 부채로 남는다(원형 아이콘 구멍) — 등재는 치수 주장만 승인한다."
+}

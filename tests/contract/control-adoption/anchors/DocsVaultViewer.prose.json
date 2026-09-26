@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/docs-vault/ui/DocsVaultViewer.tsx",
+  "count": 5,
+  "claim": "prose",
+  "proof": "prose-link",
+  "why": "마크다운 a-override 의 다섯 갈래(프로젝트 위키링크 · 볼트 위키링크 · 외부 http · 내부 해석 · repo blob). 전부 본문 문장 속에 렌더되고 줄 상자는 산문 부모의 것이다. 외부 2는 inline-flex 로 줄바꿈이 죽어 있던 「가짜 산문」이었고 이 라운드가 inline 으로 정정했다.",
+  "note": "Prose reclassification from the 2026-08-04 link floor-24 round: of the \"always-on underline 12\" category, the 6 inside markdown body flow left the control ledger. The earlier verdict said prose 5 + pseudo-prose 2 = 7; the recount with this parser is 6 (the gateway truncated-body CTA is a standalone control and stays in debt). The 2 pseudo-prose external links were corrected to display:inline in the same PR, closing the 320px wrapping defect."
+}

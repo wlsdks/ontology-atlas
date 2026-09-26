@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
+  "count": 7,
+  "claim": "chrome-token",
+  "proof": "--git-setup-action-height",
+  "why": "스냅샷 확인/취소 · 도크 · 재확인 · 재시도 · init · init 복사. 데스크톱 36px 인데 coarse 포인터에서 --touch-target-min(44px)으로 **승격**한다. 램프는 포인터 조건부 높이를 못 낸다.",
+  "conditional": "값 층이 포인터 승격 축(coarse 에서 44px)을 얻으면 다시 연다."
+}

@@ -1,0 +1,9 @@
+{
+  "file": "src/views/home/ui/TopologyBlockingOverlays.tsx",
+  "count": 3,
+  "family": "button",
+  "claim": "click-surface",
+  "proof": "data-backdrop-contract",
+  "why": "지도의 차단 백드롭 셋(부트스트랩 취소 · 노드 생성 취소 2). 규격이 아니라 **계약**을 지고 있고 그 계약을 스스로 선언한다 — `data-backdrop-contract=\"blocks-map-and-closes-composer\"` · `data-backdrop-surface-token` · `data-interactive-overlay`(투어 자동시작 차단 판정이 읽는 마커). 컨트롤 규격은 0이다.",
+  "note": "Three existing scrims moved together; the old Home inventory misclassified one as a chrome button using the unrelated Git anchor as its proof."
+}
