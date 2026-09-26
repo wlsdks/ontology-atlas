@@ -712,6 +712,18 @@ canonical UIDs. Discovery and map-clear fields safely default for existing saves
 removed destinations return to camp without resetting accumulated progress. The existing verified mascot pose
 machine is mounted inline beside work status instead of as an AppShell map overlay.
 
+The first destination additionally opens `CompanionSector.tsx`, a Canvas 2D tile
+renderer with a static offscreen floor layer and a camera sized to the visible
+game frame. `companion-sector.ts` owns collisions, contextual targets, the
+three-stop fictional creature encounter, a strict project-scoped sector save,
+and the gate invariant. The sector does not enter `CompanionGame.mode=expedition`,
+so it neither starts timer combat nor changes existing combat saves or rewards.
+The gate rechecks that reflection history still resolves to a unique current
+concept through `observeQuestEvidence` and uses the existing validated reflection
+quest claim; old claims and a previously activated gate do not substitute for
+that current identity. Later source changes are not semantic reapproval. The room and creatures
+are fictional and never supply ontology UIDs or meaning approval.
+
 Companion quest evidence is derived while open from the loaded manifest, personal
 reading history, and the vault session's existing ACP work receipts. It adds no
 receipt polling or transcript parsing. Same-root writer correlation and current

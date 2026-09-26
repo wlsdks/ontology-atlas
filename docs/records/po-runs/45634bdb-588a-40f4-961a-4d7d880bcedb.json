@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-26",
+  "decision": "Pilot a directly traversed companion sector with a current-project learning gate before expanding automatic destinations",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "orient",
+  "changes": [
+    "substantial-investment"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "scope",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-leverage"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-26",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "45634bdb-588a-40f4-961a-4d7d880bcedb",
+  "recordedAt": "2026-09-26T06:32:42.977Z"
+}
