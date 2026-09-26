@@ -44,9 +44,9 @@
   one integration branch when they must be resolved together.
 - Never run `gh pr merge`, `gh pr update-branch`, or `gh pr create` without
   `--draft`; `.claude/hooks/block-manual-landing.sh` refuses them.
-- The title starts with a conventional prefix. The body has `Summary` and
-  `Test plan` sections and records which checks ran and passed. Visual changes
-  attach dark-mode before/after screenshots (the app has no light mode).
+- Title: a conventional prefix. Body: `Summary` and `Test plan`, naming the
+  checks that passed. Attach dark-mode before/after screenshots of visual
+  changes to the PR; never commit them.
 
 ## Do not
 
