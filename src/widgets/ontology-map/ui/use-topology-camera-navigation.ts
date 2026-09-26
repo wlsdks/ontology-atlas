@@ -14,7 +14,7 @@ import {
   type DomeRuntime
 } from "../model/dome-view";
 import { type GalaxyLayout } from "../model/galaxy-layout";
-import type { TopologyMapLensKind } from "../model/path-lens";
+import { isPathTargetPick, type TopologyMapLensKind } from "../model/path-lens";
 import {
   type RealmTransitionState
 } from "../model/realm-transition";
@@ -27,7 +27,7 @@ import {
 } from "./topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "./topology-realm-runtime";
-import { computeDrawnSpineBounds, type TopologyWorld } from "./topology-world";
+import { computeDrawnSpineBounds, computePathPickBounds, type TopologyWorld } from "./topology-world";
 import {
   type ViewportReframeMotion
 } from "./use-topology-viewport-lifecycle";
@@ -341,7 +341,19 @@ export function useTopologyCameraNavigation({
     }
 
     let target: CameraTarget | null = null;
-    if (mode === "focus" && focused !== null) {
+    if (mode === "focus" && focused !== null && !realmActive && isPathTargetPick(mapLensKindRef.current, focused, spotlightIdsRef.current)) {
+      // A path's source waiting for its target keeps the frame it is picked from
+      // (`use-topology-focus-navigation`), at the new size. Galaxy leaves the
+      // reader's camera where it is, as its selection does.
+      if (galaxyRef.current) return false;
+      target = computeOverviewCameraTarget(
+        computePathPickBounds(world, tokens, focused, overviewBounds, expandedParentsRef.current),
+        width,
+        height,
+        fitTokens,
+        world.nodes.length,
+      );
+    } else if (mode === "focus" && focused !== null) {
       const realmData = realmDataRef.current;
       target = computeFocusCameraTarget(
         world,
@@ -401,7 +413,7 @@ export function useTopologyCameraNavigation({
     } else if (motion === "tracking") cameraTweenRef.current = null;
     else beginCameraTween(target);
     return true;
-  }, [beginCameraTween, cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, cameraTweenRef, clusteredIdsRef, dampingRef, domeFocusPendingRef, domeRuntimeRef, expandedParentsRef, focusedSlugRef, galaxyLayoutRef, galaxyRef, hasInitializedRef, lastActiveMsRef, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, runSpotlightFit, selectedEdgeRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
+  }, [beginCameraTween, cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, cameraTweenRef, clusteredIdsRef, dampingRef, domeFocusPendingRef, domeRuntimeRef, expandedParentsRef, focusedSlugRef, galaxyLayoutRef, galaxyRef, hasInitializedRef, lastActiveMsRef, mapLensKindRef, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, runSpotlightFit, selectedEdgeRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
 
   useEffect(() => {
     reframeViewportRef.current = reframeViewport;

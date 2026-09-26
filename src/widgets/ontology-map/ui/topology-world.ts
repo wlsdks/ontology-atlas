@@ -333,6 +333,39 @@ export function computeRevealedBounds(
 }
 
 /**
+ * **The frame a path's target is picked in** (2026-09-26): the overview's own bounds
+ * (`overview` — the drawn spine plus what a person expanded) grown by the source and the
+ * neighbours its focus draws.
+ *
+ * Picking a source selects it, and a selection dives to its ego graph: measured on the
+ * product's own map at 1512×949, the right-click → path on the top domain zoomed to 1.21
+ * around it and its project, and the sibling domain a person would pick next stood at
+ * y 1057.9 on a 949-tall canvas. Every drawn node is a candidate target, so the frame is
+ * the map they are drawn on. A neighbour folded under another parent is held open for the
+ * focus and counts; the source's own folded children stay behind its chip and do not.
+ */
+export function computePathPickBounds(
+  world: Pick<TopologyWorld, "nodeById" | "neighborMap" | "childrenByParent">,
+  tokens: OntologyMapTokens,
+  sourceId: string,
+  overview: Bounds,
+  expandedParents: ReadonlySet<string>,
+): Bounds {
+  const bounds = { ...overview };
+  const source = world.nodeById.get(sourceId);
+  if (!source) return bounds;
+  growBounds(bounds, source, tokens);
+  const folded = computeFoldedIds(world, expandedParents);
+  for (const id of world.neighborMap.get(sourceId) ?? []) {
+    const node = world.nodeById.get(id);
+    if (!node) continue;
+    if (node.parentId === sourceId && folded.has(id)) continue;
+    growBounds(bounds, node, tokens);
+  }
+  return bounds;
+}
+
+/**
  * Radius-padded bbox of a focused node + its 1-hop neighbors (the ego cluster).
  * Returns `null` when `focusedSlug` doesn't resolve. Shared by the focus camera
  * fit (`topology-camera-math.ts#computeFocusCameraTarget`, which adds its own

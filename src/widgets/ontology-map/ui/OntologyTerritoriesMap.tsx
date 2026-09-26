@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
-import { collectCanvasObstacles, computeFreeArea, type Rect } from "../interaction/free-area";
+import { collectCanvasObstacles, computeFreeArea, measureEdgeFitObstacle, type Rect } from "../interaction/free-area";
 import {
   computeTerritoryLayout,
   placeTerritoryCluster,
@@ -173,6 +173,12 @@ export function OntologyTerritoriesMap({
    * under the reader's cursor, and positions never change between states.
    */
   const [room, setRoom] = useState<Rect | null>(null);
+  /**
+   * The free map's horizontal centre in canvas px, measured with the room: halfway between
+   * the chrome on the left (INDEX, or its folded tab) and the utility rail on the right. The
+   * drawing rests centred on it, like every other view's default frame.
+   */
+  const [restCentreX, setRestCentreX] = useState<number | null>(null);
   const selectedRef = useRef(selectedId);
   const offsetRef = useRef<{ x: number; y: number } | null>(null);
   /** Where the camera rests with nothing selected; deselecting returns here. */
@@ -385,6 +391,18 @@ export function OntologyTerritoriesMap({
       setRoom((prev) =>
         prev && prev.x === next.x && prev.y === next.y && prev.width === next.width && prev.height === next.height ? prev : next,
       );
+      /*
+       * The room is laid out with the tiles' allowance baked in, and the drawing rested with
+       * its project where the room's centre put it — not with the drawing centred. Its names
+       * hang unevenly around that project, so the drawing stood 12.5 px right of the free
+       * map's centre at 1512×949 (measured 2026-09-26). The centre is read from the chrome
+       * that stands there: INDEX or its folded tab on the left, the rail's column on the right.
+       */
+      const canvas = canvasRef.current;
+      const leftEdge = Math.max(free.x, canvas ? (measureEdgeFitObstacle(canvas, "left")?.reach ?? 0) : 0);
+      const rightEdge = Math.min(free.x + free.width, r.width - (canvas ? (measureEdgeFitObstacle(canvas, "right")?.reach ?? 0) : 0));
+      const centreX = Math.round((leftEdge + rightEdge) / 2 * 2) / 2;
+      setRestCentreX((prev) => (prev === centreX ? prev : centreX));
     };
     read();
     readRoomRef.current = read;
@@ -419,24 +437,22 @@ export function OntologyTerritoriesMap({
     [size, layout.bounds],
   );
 
-  // Rest position: the project where the room put it, or — when the vault does not fit the room
-  // — the drawing centred in it, its top in view if it is taller.
+  // Rest position: the drawing centred across the free map, between the panels and the rail.
+  // Down the page, the project where the room put it — or, when the vault does not fit the
+  // room, the drawing centred in it, its top in view if it is taller.
   useEffect(() => {
     if (!size) return;
-    let rest: { x: number; y: number };
-    if (layout.fitsRoom && hub) rest = { x: hub.x, y: hub.y };
-    else {
-      const free = room ?? { x: 0, y: 0, width: size.w, height: size.h };
-      const b = layout.bounds;
-      rest = {
-        x: free.x + free.width / 2 - (b.x + b.w / 2),
-        y: b.h > free.height ? free.y + 8 - b.y : free.y + free.height / 2 - (b.y + b.h / 2),
-      };
-    }
+    const free = room ?? { x: 0, y: 0, width: size.w, height: size.h };
+    const b = layout.bounds;
+    const x = (restCentreX ?? free.x + free.width / 2) - (b.x + b.w / 2);
+    const rest =
+      layout.fitsRoom && hub
+        ? { x, y: hub.y }
+        : { x, y: b.h > free.height ? free.y + 8 - b.y : free.y + free.height / 2 - (b.y + b.h / 2) };
     restRef.current = rest;
     if (!selectedRef.current || !offsetRef.current) offsetRef.current = rest;
     requestDraw();
-  }, [size, room, hub, layout, requestDraw]);
+  }, [size, room, hub, layout, restCentreX, requestDraw]);
 
   const moveCamera = useCallback(
     (to: { x: number; y: number }) => {

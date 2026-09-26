@@ -437,6 +437,32 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
+  /*
+   * A closed sheet owns no Escape (2026-09-26). The gear keeps focus after a press and after
+   * the sheet hands focus back; while it swallowed the key, the page's own dismissal order
+   * (on the map: close the node card, then clear the selection) never heard it.
+   */
+  it('with the sheet closed, Escape on the gear reaches the page', async () => {
+    const pageEscape = vi.fn();
+    render(
+      <div onKeyDown={(event) => event.key === 'Escape' && !event.defaultPrevented && pageEscape()}>
+        <AppSettingsMenu mode="static" />
+      </div>,
+    );
+    const trigger = screen.getByTestId('app-settings-trigger');
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'Escape' });
+    expect(pageEscape).toHaveBeenCalledTimes(1);
+
+    // Open, the sheet still takes the key for itself: one Escape, one surface.
+    fireEvent.click(trigger);
+    const panel = screen.getByTestId('app-settings-popover');
+    await waitFor(() => expect(panel).toHaveFocus());
+    fireEvent.keyDown(panel, { key: 'Escape' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(pageEscape).toHaveBeenCalledTimes(1);
+  });
+
   /* A click on the dim beside the panel closes the sheet, as it does for every `<Dialog>`. */
   it('a click on the dim outside the panel closes the sheet and returns focus to the gear', async () => {
     openSheet();

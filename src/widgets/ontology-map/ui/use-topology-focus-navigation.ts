@@ -15,16 +15,17 @@ import {
   type DomeRuntime
 } from "../model/dome-view";
 import { galaxyInspectionTarget } from "../model/galaxy-inspection-camera";
+import { isPathTargetPick, type TopologyMapLensKind } from "../model/path-lens";
 import {
   type RealmTransitionState
 } from "../model/realm-transition";
-import { computeEffectiveCameraScaleMax, computeFocusCameraTarget, focusLeashPx, type FocusLeashPx } from "./topology-camera-math";
+import { computeEffectiveCameraScaleMax, computeFocusCameraTarget, computeOverviewCameraTarget, focusLeashPx, type FocusLeashPx } from "./topology-camera-math";
 import {
   overviewBoundsFor
 } from "./topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "./topology-realm-runtime";
-import { type TopologyWorld } from "./topology-world";
+import { computePathPickBounds, type TopologyWorld } from "./topology-world";
 
 interface Dependencies {
   lastFocusedSlugRef: RefObject<string | null>;
@@ -55,6 +56,8 @@ interface Dependencies {
   focusLeashPxRef: RefObject<FocusLeashPx | null>;
   overviewFitRef: RefObject<"full" | "spine">;
   clusteredIdsRef: RefObject<ReadonlySet<string>>;
+  mapLensKindRef: RefObject<TopologyMapLensKind>;
+  spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
 }
 
 /** Own focus camera transitions and reversible inspection targets. */
@@ -87,6 +90,8 @@ export function useTopologyFocusNavigation({
   focusLeashPxRef,
   overviewFitRef,
   clusteredIdsRef,
+  mapLensKindRef,
+  spotlightIdsRef,
 }: Dependencies) {
 
   // --- focused slug change — spring-dive to the ego bbox, or back to overview when cleared ---
@@ -137,6 +142,13 @@ export function useTopologyFocusNavigation({
         beginCameraTween(inspection.returnTarget);
         return;
       }
+
+      /*
+       * A path's source is selected so the target can be picked, and every other star is a
+       * candidate: approaching the source would carry the candidates off the frame. The
+       * camera the reader has stays (`computePathPickBounds` is the flat map's answer).
+       */
+      if (isPathTargetPick(mapLensKindRef.current, focusedSlug, spotlightIdsRef.current)) return;
 
       const previous = galaxyInspectionCameraRef.current;
       const returnTarget =
@@ -228,12 +240,12 @@ export function useTopologyFocusNavigation({
       return;
     }
 
-    const tokens = readOntologyMapTokensOrNull();
+    const effectTokens = readOntologyMapTokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
-    if (!tokens || !world || width <= 0 || height <= 0) return;
+    if (!effectTokens || !world || width <= 0 || height <= 0) return;
 
-    const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+    const overviewEntryScale = overviewScaleRef.current * effectTokens.overviewEntryRatio;
     // Inside a realm the ego bbox is restricted to realm members, so a
     // flung-out neighbour beyond the warding ring cannot inflate the bbox and
     // throw the camera off screen. The focus dive stays inside the ring.
@@ -258,6 +270,14 @@ export function useTopologyFocusNavigation({
      * one-input-one-event gate holds that gap to a frame count.
      */
     const raf = requestAnimationFrame(() => {
+      /*
+       * The lanes are read in this frame too, not only the panels. A selection folds
+       * INDEX, and the page refreshes `--map-safe-inset-left` for it in an effect that
+       * runs after this one: read before the frame, the lane still said INDEX was open
+       * (376 against the tab's 78), so a path's source framed the map 150 px right of
+       * the free map's centre at 1512×949 (measured 2026-09-26).
+       */
+      const tokens = readOntologyMapTokensOrNull() ?? effectTokens;
       let target: CameraTarget | null;
       if (focusedSlug === null && realmActive && realmData) {
         const bounds = realmVisibleBounds(
@@ -291,7 +311,19 @@ export function useTopologyFocusNavigation({
               top: focusTokens.safeInsetTop,
               bottom: focusTokens.safeInsetBottom,
             });
-        target = computeFocusCameraTarget(world, focusTokens, width, height, focusedSlug, overviewEntryScale, realmMembers, overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current));
+        const overviewBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+        target =
+          focusedSlug !== null && !realmActive && isPathTargetPick(mapLensKindRef.current, focusedSlug, spotlightIdsRef.current)
+            ? // A path's source waits for its target: frame the map the target is picked
+              // from, the source's own neighbours included, rather than dive into them.
+              computeOverviewCameraTarget(
+                computePathPickBounds(world, tokens, focusedSlug, overviewBounds, expandedParentsRef.current),
+                width,
+                height,
+                focusTokens,
+                world.nodes.length,
+              )
+            : computeFocusCameraTarget(world, focusTokens, width, height, focusedSlug, overviewEntryScale, realmMembers, overviewBounds);
       }
       if (!target) return;
       /*
@@ -322,6 +354,6 @@ export function useTopologyFocusNavigation({
       beginCameraTween(finalTarget);
     });
     return () => cancelAnimationFrame(raf);
-  }, [focusedSlug, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, galaxyRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, galaxyInspectionCameraRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef]);
+  }, [focusedSlug, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, galaxyRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, galaxyInspectionCameraRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef]);
 
 }

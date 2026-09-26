@@ -2790,6 +2790,37 @@ export function domeWorldBounds(
 }
 
 /**
+ * Would any node of `model` at this pose, framed by `target`, land in `rect` (canvas px)?
+ * `allowancePx` pads each node centre by its disc. The 3D fit asks it of the chrome that
+ * stands on the canvas's right edge before it lets the drawing use that column.
+ */
+export function domeReachesRect(
+  model: DomeModel,
+  yaw: number,
+  pitch: number,
+  target: { tx: number; ty: number; tscale: number },
+  viewportWidth: number,
+  viewportHeight: number,
+  rect: { left: number; right: number; top: number; bottom: number },
+  allowancePx: number,
+): boolean {
+  for (const coord of model.coords.values()) {
+    const p = projectDomeCoord(model, coord, yaw, pitch);
+    const x = (p.wx - target.tx) * target.tscale + viewportWidth / 2;
+    const y = (p.wy - target.ty) * target.tscale + viewportHeight / 2;
+    if (
+      x + allowancePx > rect.left &&
+      x - allowancePx < rect.right &&
+      y + allowancePx > rect.top &&
+      y - allowancePx < rect.bottom
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Among the angles equivalent to `target` (mod 2π), the one nearest `current` — keeps
  * a programmatic rotation ("fit view", selection reframe) from taking the long way
  * round.
