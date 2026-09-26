@@ -178,7 +178,7 @@ function writeCleanWorkbenchFixtures(root) {
     [
       "pnpm design:route",
       "computer-use-loop",
-      "Do not build a whole UI from imagination",
+      "/design-build",
       "real macOS screen",
       "Design Council",
       "Atlas Designer Bench",
@@ -231,11 +231,9 @@ function writeCleanWorkbenchFixtures(root) {
     root,
     "AGENTS.md",
     [
-      "gate after the PO pass",
       "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
       "/design-build",
       "pnpm design:route",
-      "Computer Use while building",
       "/motion-verify",
     ].join("\n"),
   );

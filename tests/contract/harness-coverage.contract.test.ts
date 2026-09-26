@@ -131,15 +131,15 @@ describe("the coverage matrix over this repository", () => {
 
   it("prints a mirrored guard once, with both tools, instead of its bare name twice", async () => {
     /*
-     * ⚠️ **A repeated name was a lost distinction, not a duplicate bug.** Nine hook scripts in this
+     * ⚠️ **A repeated name was a lost distinction, not a duplicate bug.** Most hook scripts in this
      * repository exist in **both** `.claude/hooks/` and `.codex/hooks/` as real, separately
      * maintained files — `AGENTS.md` requires the Codex side to be an adapted `apply_patch` mirror
      * rather than a copy. `ScopeDeclaration.label` is the bare script name for both, so the first
      * build's list printed each of those names twice and the owner read it, correctly, as a
      * rendering fault.
      *
-     * What this asserts is the shape of the repair rather than the number nine, which moves with
-     * every hook added: every mirrored pair collapses to **one** row, that row names **more than
+     * What this asserts is the shape of the repair rather than a count, which moves with
+     * every hook added or removed: every mirrored pair collapses to **one** row, that row names **more than
      * one** tool, and the files behind it are still both there so the cell's declaration count
      * stays a count of files. A repair that deduplicated by dropping a file would pass the first
      * clause and fail the third.
