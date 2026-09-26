@@ -2,6 +2,7 @@
 name: design-lead
 description: Lead product designer. Use only when design:route selects this seat for a council; names one primary moment, one attention winner, one demotion.
 model: fable
+effort: max
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script
 ---
 

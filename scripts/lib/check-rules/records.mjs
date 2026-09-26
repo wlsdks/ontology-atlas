@@ -40,8 +40,8 @@ export const rules = [
   {
     order: 560,
     command: 'pnpm dev-checks:check',
-    reason: 'the development-checks reference changed; entries must fit the template and name real scripts',
-    matches: [/^docs\/DEVELOPMENT-CHECKS\.md$/],
+    reason: 'the development-checks reference or the README command table changed; entries must fit the template, name real scripts and stay in key order',
+    matches: [/^docs\/DEVELOPMENT-CHECKS\.md$/, /^README\.md$/],
   },
   {
     order: 570,

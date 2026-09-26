@@ -2,6 +2,7 @@
 name: design-directions
 description: When Atlas design routing finds a structural commitment, sketch three different directions in text before code, including the status quo, and let the owner choose one.
 when_to_use: Use only when pnpm design:route returns directions=yes and no owner selection exists for this structure.
+effort: max
 ---
 
 # Design directions before implementation

@@ -1,0 +1,7 @@
+{
+  "file": "src/shared/ui/chrome-tile.tsx",
+  "count": 1,
+  "claim": "value-layer-peer",
+  "proof": "--chrome-tile-size",
+  "why": "크롬 타일 프리미티브. 같은 크롬 계약(36px, coarse 에서 max(36px, 44px))."
+}

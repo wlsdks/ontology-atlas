@@ -1,0 +1,7 @@
+{
+  "file": "src/views/home/ui/TopologyReviewLink.tsx",
+  "count": 1,
+  "claim": "chrome-token",
+  "proof": "--chrome-tile-size",
+  "why": "지도 우상단 유틸 레인의 검수 칩. 높이가 크롬 잠금 단(36px, coarse 에서 max(36,44))이고 표면·보더·그림자·포커스링이 `--topology-utility-lane-*` 계약이다 — 원소가 그 계약을 `data-utility-action-token-contract` 로 스스로 선언한다."
+}

@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx",
+  "count": 1,
+  "claim": "no-spec",
+  "proof": "invisible pointer-events-none absolute",
+  "why": "컴포저의 **높이 계측용 숨김 미러**. 사용자에게 안 보이고 `scrollHeight` 를 재려고만 존재한다 — 컨트롤이 아니라 계측 장치라 씌울 규격이 없다.",
+  "conditional": "오토그로우를 CSS 로 대체해 미러가 사라지면 이 줄도 지운다."
+}

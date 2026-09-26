@@ -2,6 +2,7 @@
 name: po-evidence
 description: Evidence reviewer. Use only as the first seat of a po:route review; separates observation from inference and prescribes the cheapest proof.
 model: opus
+effort: max
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 

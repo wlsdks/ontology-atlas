@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
+  "count": 2,
+  "claim": "chrome-token",
+  "proof": "--git-setup-action-height",
+  "why": "「앱 받기」·「볼트 고르기」 — `PRIMARY_ACTION_CLASS` 가 버튼 형제 7개와 **같은 상수**다. 데스크톱 36px 인데 coarse 포인터에서 --touch-target-min 으로 승격한다.",
+  "conditional": "값 층이 포인터 승격 축을 얻으면 다시 연다 — 버튼 쪽 같은 줄과 함께 내려온다."
+}

@@ -2,6 +2,7 @@
 name: design-system
 description: Design-systems engineer. Use only when design:route selects this seat (design-contract); tokens, ramps, lint, and probed contract tests.
 model: fable
+effort: max
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 
