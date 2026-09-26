@@ -713,7 +713,7 @@ through `/land-bundle` as one integration branch and one `pnpm pr:land`.
 | `pnpm checks:changed` | Which gates this change actually needs |
 | `pnpm backlog` · `pnpm backlog:check` | Current task records and concurrent-state conflicts; append a UUID record per worktree observation ([guide](docs/BACKLOG.md)) |
 | `pnpm agents:check` | Each harness's instruction integrity; independent Codex and Claude files need not match |
-| `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check` |
+| `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check`, `pnpm docs:meta` |
 | `pnpm doc:new -- --type=<kind> --area=<area> --slug=<slug>` | A new living document from its template in `docs/.templates/`, at the path its kind decides |
 | `pnpm docs:meta` · `pnpm doc:history -- <path>` | Whether every living document carries its kind, status and area with pointers that resolve; one document's commits across moves, which is its version |
 | `pnpm docs:move` | Moves the documents listed in `docs/.moved.json` and rewrites every reference; rerun it after merging main into an older branch (`-- --check` only reports) |

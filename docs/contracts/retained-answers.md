@@ -1,3 +1,13 @@
+---
+title: Retained answers and explicit revisions
+doc_type: contract
+status: current
+area: library
+stores: wiki/answers/
+contract_version: 1
+enforced_by: [src/features/library/lib/answer-revision.ts]
+---
+
 # Retained answers and explicit revisions
 
 Library can be used without code or ontology nodes. Its question entrance lists

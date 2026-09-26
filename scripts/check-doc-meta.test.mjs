@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { checkDoc, listLivingDocs, routeExists, run } from './check-doc-meta.mjs';
+import { checkDoc, contractBumpProblems, listLivingDocs, routeExists, run } from './check-doc-meta.mjs';
 import { createDoc } from './new-doc.mjs';
 import { formerPaths } from './doc-history.mjs';
 import { DOC_TYPES } from './lib/doc-types.mjs';
@@ -116,6 +117,33 @@ test('doc:new writes a document docs:meta accepts, for every creatable kind', ()
       assert.deepEqual(problems, [], `${file}: ${JSON.stringify(problems)}`);
     }
     assert.ok(created.includes('docs/specs/2026-09-26-probe-spec.md'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a changed contract_version needs a new decision record that cites the contract', () => {
+  const contract = (version) =>
+    `---\ntitle: C\ndoc_type: contract\nstatus: current\narea: library\nstores: x\ncontract_version: ${version}\nenforced_by: [docs/README.md]\n---\n`;
+  const root = fixture({ 'docs/README.md': '# r\n', 'docs/contracts/c.md': contract(1) });
+  const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' });
+  const commit = (message) => {
+    git('add', '.');
+    git('-c', 'user.email=t@example.com', '-c', 'user.name=Probe', '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', message);
+  };
+  try {
+    git('init', '-q', '-b', 'main');
+    commit('base');
+    git('switch', '-q', '-c', 'bump');
+    writeFileSync(path.join(root, 'docs/contracts/c.md'), contract(2));
+    const docs = [{ repoPath: 'docs/contracts/c.md', frontmatter: { contract_version: 2 } }];
+    assert.deepEqual(contractBumpProblems(docs, root).map((problem) => problem.key), ['contract_version']);
+    mkdirSync(path.join(root, 'docs/records/decisions'), { recursive: true });
+    writeFileSync(path.join(root, 'docs/records/decisions/2026-09-26-bump-x.md'), 'Raises docs/contracts/c.md to 2.\n');
+    commit('bump with a decision');
+    assert.deepEqual(contractBumpProblems(docs, root), []);
+    // An unchanged version needs nothing.
+    assert.deepEqual(contractBumpProblems([{ repoPath: 'docs/README.md', frontmatter: {} }], root), []);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

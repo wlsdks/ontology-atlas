@@ -1,6 +1,9 @@
 ---
 title: Design System
 tags: [design, ux, linear, circuit-constellation, overview]
+doc_type: authority
+status: current
+area: design-system
 ---
 
 # Design System

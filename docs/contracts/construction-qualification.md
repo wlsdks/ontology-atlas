@@ -1,3 +1,13 @@
+---
+title: Ontology Construction Qualification v1
+doc_type: contract
+status: current
+area: ontology-model
+stores: "nothing; an input contract of analyze_repo_structure"
+contract_version: 1
+enforced_by: [mcp/src/construction-qualification.mjs, mcp/src/construction-lifecycle.mjs]
+---
+
 # Ontology Construction Qualification v1
 
 > Status: executable public input contract for the existing

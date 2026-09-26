@@ -1,3 +1,10 @@
+---
+title: Ontology Quality Authority Map
+doc_type: authority
+status: current
+area: ontology-model
+---
+
 # Ontology Quality Authority Map
 
 This document is not the place to create new ontology rules. It is an authoritative map that lets you find, in one place, where the canonical answer for any question lies and what is machine-enforced, what is a review signal, and what requires human judgment. If values or public tool contracts below differ from those in other documents and code, fix the owning canonical source, not this document.

@@ -1,3 +1,10 @@
+---
+title: "Inspecting the Map from Outside — `window.__atlasMap`"
+doc_type: runbook
+status: current
+area: map
+---
+
 # Inspecting the Map from Outside — `window.__atlasMap`
 
 > **One-liner**: States that cannot be distinguished from outside cannot be inspected from outside.

@@ -1,6 +1,9 @@
 ---
 title: Topology — Node Focus & Scale
 tags: [design, topology, graph, ux, performance, spec]
+doc_type: design
+status: current
+area: map
 ---
 
 # Topology — Node Focus & Scale

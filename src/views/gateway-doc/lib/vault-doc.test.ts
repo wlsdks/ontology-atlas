@@ -24,6 +24,14 @@ describe('관문 읽을거리는 볼트 문서를 읽는다', () => {
     expect(readVaultDoc('CHANGELOG')).toBeTruthy();
   });
 
+  it('renders a guide page without its frontmatter block, starting at the title', () => {
+    for (const slug of ['guide/what-is-atlas', 'guide/cli']) {
+      const body = readVaultDoc(slug) ?? '';
+      expect(body.startsWith('# '), slug).toBe(true);
+      expect(body).not.toMatch(/^doc_type:/m);
+    }
+  });
+
   it('없는 슬러그는 null 이다 — 빈 문자열로 조용히 넘어가지 않는다', () => {
     expect(readVaultDoc('NOPE-NOT-A-DOC')).toBeNull();
   });

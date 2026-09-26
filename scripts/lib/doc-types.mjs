@@ -74,7 +74,7 @@ const PLAN_STATUS = Object.freeze(['active', 'done', 'abandoned']);
  * them may also be an `index`.
  */
 export const DOC_TYPES = Object.freeze({
-  authority: { folders: [''], required: [], optional: ['decisions'] },
+  authority: { folders: [''], required: [], optional: ['decisions', 'contract_version'] },
   index: { folders: ['', 'features', 'plans', 'launch'], required: [], optional: [] },
   guide: { folders: ['guide'], required: [], optional: ['gateway'] },
   feature: { folders: ['features', 'features/*'], required: ['routes'], optional: ['decisions'] },
@@ -134,7 +134,7 @@ export function allowedKeys(docType) {
   return new Set([...COMMON_REQUIRED, ...COMMON_OPTIONAL, ...spec.required, ...spec.optional]);
 }
 
-/** The docs/-relative folder of a repo path (`docs/features/map/x.md` → `features/map`). */
+/** The docs/-relative folder of a repo path: a file in `docs/features/map/` gives `features/map`. */
 function docFolder(repoPath) {
   const rel = repoPath.split('\\').join('/').replace(/^docs\//, '');
   const index = rel.lastIndexOf('/');

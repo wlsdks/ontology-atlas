@@ -1,3 +1,10 @@
+---
+title: ATLAS PRODUCT DECISION SYSTEM
+doc_type: authority
+status: current
+area: process
+---
+
 # ATLAS PRODUCT DECISION SYSTEM
 
 > Version 3, piloted from 2026-09-01 and closed as `adjust` on 2026-09-03

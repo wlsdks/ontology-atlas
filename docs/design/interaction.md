@@ -1,3 +1,10 @@
+---
+title: INTERACTION DESIGN — Applying Fluid Interface Principles (2026-07-17)
+doc_type: design
+status: current
+area: map
+---
+
 # INTERACTION DESIGN — Applying Fluid Interface Principles (2026-07-17)
 
 > A record of decisions applying open principles from the Apple *Designing Fluid Interfaces* (WWDC18) lineage to this project's design charter

@@ -1,3 +1,12 @@
+---
+title: Library Rounds — the Library keeps itself current while nobody is looking
+doc_type: spec
+status: current
+area: library
+date: 2026-09-17
+decisions: [0e82da66-48d2-44f1-a923-82857d7a3710]
+---
+
 # Library Rounds — the Library keeps itself current while nobody is looking
 
 Date: 2026-09-17 · Owner ask: "leave the app on, go home or keep working, and the

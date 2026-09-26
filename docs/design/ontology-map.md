@@ -1,3 +1,10 @@
+---
+title: ONTOLOGY-MAP DESIGN — Presentation Architecture Design (Phase 1)
+doc_type: design
+status: historical
+area: map
+---
+
 # ONTOLOGY-MAP DESIGN — Presentation Architecture Design (Phase 1)
 
 > **Historical implementation record (superseded, 2026-07-27).** This document

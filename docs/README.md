@@ -1,3 +1,10 @@
+---
+title: Documentation Guide
+doc_type: index
+status: current
+area: process
+---
+
 # Documentation Guide
 
 This folder is the engineering and product record for Ontology Atlas. For the

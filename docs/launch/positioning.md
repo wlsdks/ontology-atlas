@@ -1,3 +1,10 @@
+---
+title: Codebase Ontology Positioning
+doc_type: launch
+status: current
+area: product
+---
+
 # Codebase Ontology Positioning
 
 > Current messaging companion for README, download, and guide copy.

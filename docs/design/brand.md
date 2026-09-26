@@ -1,3 +1,10 @@
+---
+title: Brand — Ontology Atlas
+doc_type: design
+status: current
+area: design-system
+---
+
 # Brand — Ontology Atlas
 
 > The meaning, source contract, and usage rules for the pixel mascot identity.

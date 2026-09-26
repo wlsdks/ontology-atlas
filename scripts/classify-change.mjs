@@ -77,6 +77,8 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm source:language',
     'pnpm docs:comment-refs',
     'pnpm docs:links',
+    'pnpm docs:meta',
+    'pnpm docs:move -- --check',
   ]),
   unit: Object.freeze(['pnpm knip', 'pnpm test:run']),
   mcp: Object.freeze([

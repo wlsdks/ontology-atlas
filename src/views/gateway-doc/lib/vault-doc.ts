@@ -1,4 +1,5 @@
 import { resolveStaticVaultSource } from '@/entities/docs-vault';
+import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 
 /**
  * The gateway's two reading pages **render markdown from inside the vault, verbatim**.
@@ -30,11 +31,20 @@ import { resolveStaticVaultSource } from '@/entities/docs-vault';
 export function readVaultDoc(slug: string): string | null {
   const { content, contentPreviews } = resolveStaticVaultSource('dogfood');
   const doc = content[slug];
-  if (typeof doc === 'string') return doc;
+  if (typeof doc === 'string') return withoutFrontmatter(doc);
   // A document whose full text is not in the bundle (CHANGELOG) is drawn from the truncated synchronous
   // preview — how many sections were folded comes from the same source via `readVaultDocOmittedSections`.
   const preview = contentPreviews?.[slug];
   return typeof preview?.body === 'string' ? preview.body : null;
+}
+
+/**
+ * A living document's frontmatter (`title`, `doc_type`, `status`, `area`) is metadata for
+ * the Library and `pnpm docs:meta`, not prose. The public site renders the body only, so the
+ * block never prints as a paragraph of keys above the guide.
+ */
+function withoutFrontmatter(raw: string): string {
+  return raw.startsWith('---') ? parseFrontmatter(raw).body.replace(/^(\r?\n)+/, '') : raw;
 }
 
 /**

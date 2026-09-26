@@ -1,3 +1,10 @@
+---
+title: Campaign Demo Storyboard — Review What the Agent Built
+doc_type: launch
+status: current
+area: product
+---
+
 # Campaign Demo Storyboard — Review What the Agent Built
 
 > **Status: replacement brief, not recorded.** The active download-page video

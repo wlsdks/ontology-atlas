@@ -1,3 +1,13 @@
+---
+title: Meaning transition evidence candidate
+doc_type: contract
+status: current
+area: ontology-model
+stores: "nothing yet; an in-memory candidate that roundtrips through Markdown"
+contract_version: 1
+enforced_by: [src/shared/lib/meaning-transition.ts]
+---
+
 # Meaning transition evidence candidate
 
 `src/shared/lib/meaning-transition.ts` prepares an immutable in-memory evidence

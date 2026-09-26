@@ -1,3 +1,10 @@
+---
+title: Launch playbook
+doc_type: index
+status: current
+area: product
+---
+
 # Launch playbook
 
 Collection of drafts for the open-source launch phase. Maintainers will publish directly at the appropriate time.

@@ -1,3 +1,10 @@
+---
+title: Design overhaul master plan (2026-07-25)
+doc_type: plan
+status: done
+area: design-system
+---
+
 # 디자인 전면 정비 마스터 플랜 (2026-07-25, 소유자 실보고 22건)
 
 > 소유자가 실사용 스크린샷과 함께 보고한 22건 + "디자인 시스템 구축"이라는

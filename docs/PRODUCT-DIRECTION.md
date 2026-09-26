@@ -1,3 +1,10 @@
+---
+title: PRODUCT DIRECTION — Codebase meaning for agent work and human judgment
+doc_type: authority
+status: current
+area: product
+---
+
 # PRODUCT DIRECTION — Codebase meaning for agent work and human judgment
 
 > **[v12 Human value and repeated work, 2026-09-13]** Atlas helps people keep

@@ -1,3 +1,10 @@
+---
+title: Glossary
+doc_type: authority
+status: current
+area: process
+---
+
 # Glossary
 
 **This file is the single source of truth for the words this repository uses.**

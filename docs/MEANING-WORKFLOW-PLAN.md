@@ -1,3 +1,10 @@
+---
+title: Meaning workflow implementation plan — V1 to V4
+doc_type: plan
+status: active
+area: ontology-model
+---
+
 # Meaning workflow implementation plan — V1 to V4
 
 This is the current detailed execution specification for the

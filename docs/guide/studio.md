@@ -1,3 +1,10 @@
+---
+title: Correcting Concepts and Relations on the Map
+doc_type: guide
+status: current
+area: map
+---
+
 # Correcting Concepts and Relations on the Map
 
 Relations are written as a single line in the frontmatter at the top of `.md` files, but you don't need to input YAML directly. You can now edit them right next to the selected concept on the map without moving to a separate studio.

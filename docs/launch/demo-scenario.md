@@ -1,3 +1,10 @@
+---
+title: "Demo Video Shooting Scenario — `atlas-tour`"
+doc_type: launch
+status: current
+area: product
+---
+
 # Demo Video Shooting Scenario — `atlas-tour`
 
 > Current scenario: one localized page clip · **28 seconds** · one take, with the agent's wait

@@ -1,6 +1,9 @@
 ---
 title: Architecture
 tags: [architecture, infra, overview]
+doc_type: authority
+status: current
+area: architecture
 ---
 
 # Architecture

@@ -1,3 +1,10 @@
+---
+title: Independent development records
+doc_type: runbook
+status: current
+area: process
+---
+
 # Independent development records
 
 Each change adds a file; unrelated worktrees never reserve the same next number

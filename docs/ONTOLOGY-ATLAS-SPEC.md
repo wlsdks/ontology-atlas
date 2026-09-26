@@ -1,3 +1,11 @@
+---
+title: Ontology Atlas Vault Specification v2.0-rc (RFC)
+doc_type: authority
+status: current
+area: ontology-model
+contract_version: 2.0-rc
+---
+
 # Ontology Atlas Vault Specification v2.0-rc (RFC)
 
 > Status: **RFC** (Request for Comments). This is a v2.0 release candidate,

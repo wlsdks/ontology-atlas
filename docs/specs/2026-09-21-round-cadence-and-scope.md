@@ -1,3 +1,12 @@
+---
+title: Library rounds — a cadence you drag, and a scope that names its places
+doc_type: spec
+status: current
+area: automations
+date: 2026-09-21
+decisions: [0e82da66-48d2-44f1-a923-82857d7a3710]
+---
+
 # Library rounds — a cadence you drag, and a scope that names its places
 
 Date: 2026-09-21 · Owner ask (on the installed app, two screenshots): "make the cadence

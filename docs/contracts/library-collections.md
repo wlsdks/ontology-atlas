@@ -1,3 +1,13 @@
+---
+title: Library collections format
+doc_type: contract
+status: current
+area: library
+stores: ".ontology-atlas/library-collections.json"
+contract_version: 1
+enforced_by: [mcp/src/constellations.mjs]
+---
+
 # Library collections format
 
 Library bookmark organization is vault-local navigation metadata stored at

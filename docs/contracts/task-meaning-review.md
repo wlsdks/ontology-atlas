@@ -1,3 +1,13 @@
+---
+title: Task meaning review
+doc_type: contract
+status: current
+area: analysis
+stores: "nothing; an in-memory review of one ACP write request"
+contract_version: 1
+enforced_by: [src/entities/knowledge-graph/lib/task-meaning-review.ts, src/widgets/acp-chat-panel/model/use-task-meaning-review.ts]
+---
+
 # Task meaning review
 
 The existing ACP conversation reviews an ontology write in three depths: summary,

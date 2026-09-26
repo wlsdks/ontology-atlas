@@ -1,3 +1,10 @@
+---
+title: FOUNDATIONS — what grounds ontology-atlas
+doc_type: authority
+status: current
+area: ontology-model
+---
+
 # FOUNDATIONS — what grounds ontology-atlas
 
 > This document ties the product to **public, citable academic/standard/craft references** rather than *feelings*.

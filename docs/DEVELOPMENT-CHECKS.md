@@ -1,3 +1,10 @@
+---
+title: Development checks
+doc_type: runbook
+status: current
+area: process
+---
+
 # Development checks
 
 > Which command to run first for an area of this repository, what a pass
@@ -171,7 +178,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Docs vs code surface
 
 **Run**: `pnpm docs:check`
-**Proves**: `docs:surface:check`, `docs:language`, `source:language`, `docs:links`, and `docs:comment-refs` each pass, so the generated MCP/CLI surface inventory, prose language ratchets, and doc/comment links are current and machine-derived.
+**Proves**: `docs:surface:check`, `docs:language`, `source:language`, `docs:links`, `docs:comment-refs`, `docs:meta` and `docs:move -- --check` each pass, so the generated MCP/CLI surface inventory, prose language ratchets, doc/comment links, living-document metadata and moved paths are current and machine-derived.
 **Escalate**: `pnpm test:docs:checks`
 **Fix**: regenerate the surface with `pnpm docs:surface:build`, fix the broken link or comment reference, or lower the reported language baseline.
 

@@ -1,3 +1,13 @@
+---
+title: Analysis records
+doc_type: contract
+status: current
+area: analysis
+stores: ".ontology-atlas/analyses/"
+contract_version: 1
+enforced_by: [src/entities/analysis-record/lib/analysis-store.ts, cli/src/commands/analysis.mjs]
+---
+
 # Analysis records
 
 Atlas keeps each in-app ACP analysis as a separate Markdown file under

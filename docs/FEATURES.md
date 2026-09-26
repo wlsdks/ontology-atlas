@@ -1,3 +1,10 @@
+---
+title: FEATURES — ontology-atlas
+doc_type: index
+status: current
+area: product
+---
+
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.

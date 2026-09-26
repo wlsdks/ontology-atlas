@@ -1,3 +1,10 @@
+---
+title: Technology stack
+doc_type: runbook
+status: current
+area: architecture
+---
+
 # Technology stack
 
 > Decisions recorded 2026-07-17. Package and runtime facts refreshed from the repository
