@@ -21,8 +21,8 @@ make sense resolved together.
   own draft is the brief's call: yes for the train path, no for a bundle.
 - Name the branches with one prefix you can select later, such as
   `wf/<topic>/<slice>`, or keep the worktrees under one directory.
-- Give ratchet baselines, `messages/*.json` and shared docs one owner, or expect
-  to recount them on the merged tree (`/parallel-brief` §2).
+- Give ratchet baselines, a shared message namespace file and shared docs one
+  owner, or expect to recount them on the merged tree (`/parallel-brief` §2).
 
 ## 1. Select, plan, and choose the path
 
@@ -79,7 +79,8 @@ git merge --no-ff --no-edit <branch>                              # once per pen
 ```
 
 Resolve conflicts by intent, never with a blanket `--ours`/`--theirs`: keep
-both sides' keys in `messages/*.json`, run
+both sides' keys in `messages/<locale>/<Namespace>.json` (the composite
+`messages/<locale>.json` is generated and ignored), run
 `pnpm docs-vault:resolve-conflicts -- --dry-run` and then the write command for
 generated docs-vault JSON, and recount a ratchet once on the merged tree instead
 of picking either side's number. After the last merge, read every file the plan

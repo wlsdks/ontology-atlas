@@ -1,0 +1,8 @@
+{
+  "relationShort": {
+    "isA": "상위 개념",
+    "dependsOn": "필요한 항목",
+    "contains": "하위 항목",
+    "relates": "관련 항목"
+  }
+}

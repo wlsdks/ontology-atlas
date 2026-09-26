@@ -31,6 +31,33 @@ set -e
 staged=$(git diff --cached --name-only --diff-filter=ACMRD)
 [ -n "$staged" ] || exit 0
 
+# Message catalogues. `messages/<locale>.json` is a generated composite; the
+# authored parts are `messages/<locale>/<Namespace>.json`. A composite in the index
+# is how an old branch resolves its modify/delete conflict with the split, and it
+# would bring back the single-file hot spot, so it is refused (deletions pass).
+added_composites=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^messages/[^/]+\.json$' || true)
+if [ -n "$added_composites" ]; then
+  echo ""
+  echo "[pre-commit] $added_composites is generated from messages/<locale>/<Namespace>.json."
+  echo "[pre-commit] Carry the edits onto the parts: pnpm messages:adopt (during the merge),"
+  echo "[pre-commit] then git rm --cached the composite and stage messages/<locale>/."
+  echo ""
+  exit 1
+fi
+# Same measurement as the Docs Vault block below: the staged index, not the tree.
+if printf '%s\n' "$staged" | grep -qE '^(messages/|scripts/build-messages\.mjs$)'; then
+  messages_tree=$(mktemp -d)
+  git checkout-index --prefix="$messages_tree/" -- $(git ls-files -- 'messages/' 'scripts/build-messages.mjs')
+  if ! node "$messages_tree/scripts/build-messages.mjs" --validate; then
+    rm -rf "$messages_tree"
+    echo ""
+    echo "[pre-commit] staged message parts cannot be composed (measured on the index)."
+    echo ""
+    exit 1
+  fi
+  rm -rf "$messages_tree"
+fi
+
 # Generator/parser changes can invalidate every document even when no Markdown changed.
 if ! printf '%s\n' "$staged" | grep -qE '^(docs/.*\.md|docs/records/.*\.json|samples/storefront/.*\.md|scripts/build-docs-vault\.mjs|scripts/lib/(parse-frontmatter|record-ledgers|po-pilot-records)\.mjs)'; then
   exit 0

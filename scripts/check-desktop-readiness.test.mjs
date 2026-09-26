@@ -47,7 +47,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ Next\.js uses static export output/);
   assert.match(result.stdout, /✓ Next\.js image optimization is disabled/);
   assert.match(result.stdout, /✓ Next\.js emits trailing-slash routes/);
-  assert.match(result.stdout, /✓ build script refreshes docs-vault before next build/);
+  assert.match(result.stdout, /✓ build script refreshes docs-vault and composes message catalogues before next build/);
   assert.match(
     result.stdout,
     /✓ TypeScript excludes Tauri target artifacts from Next\.js type checks/,

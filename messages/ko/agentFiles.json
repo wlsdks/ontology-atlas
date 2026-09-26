@@ -1,0 +1,20 @@
+{
+  "header": "에이전트 파일",
+  "headerHint": "어느 AI 도구가 어느 지침 파일을 읽는지: 읽기 전용 감지, 아무것도 고쳐 쓰지 않아요",
+  "driftBadge": "어긋남",
+  "driftCount": "어긋난 파일 {count}개",
+  "listAria": "에이전트 지침 파일",
+  "drift": {
+    "missing-agents-import": "CLAUDE.md가 @AGENTS.md를 import 하지 않아요. Claude Code와 AGENTS.md를 읽는 도구가 서로 다른 지침을 봐요",
+    "broken-agents-import": "CLAUDE.md가 @AGENTS.md를 import 하지만 AGENTS.md 파일이 없어요",
+    "at-ref-missing": "@참조된 파일을 찾을 수 없어요",
+    "agents-md-over-codex-cap": "AGENTS.md가 Codex의 32 KiB 문서 상한을 넘었어요",
+    "skill-copy-diverged": "복제된 스킬 사본(.claude/skills ↔ .agents/skills)이 서로 달라졌어요",
+    "skill-copy-file-missing": "복제 스킬 트리의 한쪽에만 있는 파일이 있어요",
+    "agent-copy-diverged": "복제된 에이전트 브리프(.claude/agents ↔ .agents/agents)가 서로 달라졌어요",
+    "agent-copy-file-missing": "복제 에이전트 트리의 한쪽에만 있는 브리프가 있어요",
+    "non-english-agent-text": "에이전트 파일에 영어가 아닌 글자가 있어요. 그 글이 곧 에이전트가 읽는 지침이에요",
+    "mcp-config-unparseable": "에이전트 연결(MCP) 설정 파일은 있는데 선언된 서버가 없어요. 옆에 있는 권한이 전부 선언 없는 상태예요",
+    "undeclared-mcp-server": "에이전트 브리프가 설정에 없는 MCP 서버의 도구를 쓰겠다고 적어 뒀어요"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "availableTitle": "Version {version} is available",
+  "availableBody": "Install it now, or keep working and update later.",
+  "install": "Install update",
+  "downloadingTitle": "Downloading {version}",
+  "downloadingPercent": "{percent} downloaded.",
+  "downloadingUnknown": "Downloading: the size is not reported.",
+  "readyTitle": "{version} is ready",
+  "readyBody": "Restart to finish. Your open folder stays where it is.",
+  "restart": "Restart now",
+  "failedTitle": "The update could not be installed",
+  "failedBody": "You can download the latest version from the releases page instead.",
+  "dismiss": "Not now"
+}

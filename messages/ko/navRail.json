@@ -1,0 +1,15 @@
+{
+  "ariaLabel": "주요 이동",
+  "map": "지도",
+  "architecture": "하네스",
+  "docs": "온톨로지",
+  "library": "자료실",
+  "automations": "자동화",
+  "insights": "분석",
+  "projects": "프로젝트",
+  "agents": "에이전트",
+  "mcp": "MCP",
+  "git": "Git",
+  "getApp": "앱 받기",
+  "getAppTitle": "데스크톱 앱을 받으면 폴더를 기억하고, 인터넷 없이 열고, 기록과 AI 연결까지 다뤄요."
+}

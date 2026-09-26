@@ -1,0 +1,65 @@
+{
+  "backToMap": "← 지도",
+  "breadcrumbSeparator": "/",
+  "census": "{concepts} 개념 · {relations} 관계",
+  "freshOn": "최근 갱신",
+  "freshOff": "한동안 그대로",
+  "copyLink": "노드 링크 복사",
+  "copyLinkCopied": "노드 링크를 복사했어요",
+  "close": "닫기",
+  "metric": {
+    "contains": "하위 항목",
+    "usedBy": "이 항목을 사용하는 곳",
+    "dependsOn": "필요한 항목",
+    "reach": "3단계 도달"
+  },
+  "groups": {
+    "containsTitle": "하위 항목",
+    "containsCaption": "이 개념 안에 들어 있는 것들",
+    "usedByTitle": "이 항목을 사용하는 곳",
+    "usedByCaption": "이 개념을 가져다 쓰는 쪽",
+    "dependsOnTitle": "필요한 항목",
+    "dependsOnCaption": "이것들이 없으면 동작하지 않아요",
+    "belongsToTitle": "상위 항목",
+    "belongsToCaption": "이 개념이 들어가 있는 상위",
+    "empty": "직접 연결이 없어요.",
+    "freshDotTitle": "최근 갱신"
+  },
+  "reach": {
+    "leadIn": "이 노드에서",
+    "stepUnit": "단계",
+    "afterSteps": "안에 닿는 개념",
+    "stepsAria": "이 노드에서 떨어진 단계",
+    "ofTotal": "{count} / {total}",
+    "mostlyNone": "도달하는 개념이 없어요.",
+    "mostlyOne": "대부분 {a}({aCount})에 있다.",
+    "mostlyTwo": "대부분 {a}({aCount})와 {b}({bCount})에 있다.",
+    "selfDomainLabel": "도메인 내부",
+    "noDomainLabel": "소속 없음",
+    "domainsHidden": "이 막대에 없는 도메인이 {count}개 더 닿아요",
+    "domainsHiddenRoute": "도메인 경계"
+  },
+  "handoff": {
+    "label": "AI에게 이어서 맡기기",
+    "copy": "AI에게 줄 항목 정보 복사",
+    "copied": "AI에게 줄 정보를 복사했어요. 대화창에 붙여넣으세요.",
+    "openDocument": "문서 열기",
+    "openMentionDocument": "언급한 문서 열기",
+    "openMentionDocumentTip": "이 개념은 아직 자기 문서가 없어요. 이 개념을 적어 둔 다른 문서를 열어요",
+    "openStudio": "지도에서 관계 고치기"
+  },
+  "codeLocations": {
+    "heading": "코드 위치",
+    "copy": "복사",
+    "copied": "복사됨"
+  },
+  "body": {
+    "title": "본문",
+    "empty": "작성된 본문이 없어요.",
+    "edit": "본문 편집",
+    "save": "저장",
+    "cancel": "취소",
+    "placeholder": "이 개념에 대해 설명을 적어보세요…",
+    "saving": "저장 중…"
+  }
+}

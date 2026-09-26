@@ -1,0 +1,10 @@
+{
+  "contains": "하위 항목",
+  "belongs_to": "상위 항목",
+  "depends_on": "필요한 항목",
+  "implements": "구현 항목",
+  "uses": "사용 항목",
+  "describes": "근거 문서",
+  "related_to": "관련 항목",
+  "is_a": "상위 개념"
+}

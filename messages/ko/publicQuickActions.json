@@ -1,0 +1,12 @@
+{
+  "sectionAriaDefault": "프로젝트 관리",
+  "sectionTitle": "프로젝트 관리",
+  "infoHintLabel": "프로젝트 관리 도움말",
+  "infoHintBody": "이 프로젝트를 설명하는 문서를 붙이거나, 프로젝트 정보를 자세히 바꾸는 곳이에요.",
+  "infoNewTitle": "새 프로젝트",
+  "infoNewBody": "지금 작업 중인 공간에 새 프로젝트를 만들어요.",
+  "infoEditTitle": "전체 편집",
+  "infoEditBody": "상태, 태그, 링크처럼 프로젝트 정보를 자세히 바꿔요.",
+  "buttonNew": "새 프로젝트",
+  "buttonEdit": "전체 편집"
+}

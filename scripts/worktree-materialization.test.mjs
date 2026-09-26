@@ -8,6 +8,9 @@ import test from 'node:test';
 
 import { prepareWorktree } from './prepare-worktree.mjs';
 
+// Under a Git hook GIT_DIR points at the real repository; the fixtures own theirs.
+for (const key of Object.keys(process.env)) if (key.startsWith('GIT_')) delete process.env[key];
+
 const SOURCE = new URL('..', import.meta.url).pathname;
 const PREPARE = JSON.parse(readFileSync(join(SOURCE, 'package.json'), 'utf8')).scripts.prepare;
 const UUID_A = '30000000-0000-4000-8000-000000000001';
@@ -24,13 +27,14 @@ const PILOT = `---\nstarted: 2026-09-01\ndecision_target: 20\ndecision_deadline:
 
 function seed(root) {
   for (const path of [
-    'scripts/build-docs-vault.mjs', 'scripts/new-record.mjs', 'scripts/prepare-worktree.mjs',
+    'scripts/build-docs-vault.mjs', 'scripts/build-messages.mjs', 'scripts/new-record.mjs', 'scripts/prepare-worktree.mjs',
     'scripts/lib/parse-frontmatter.mjs', 'scripts/lib/record-ledgers.mjs',
     'scripts/lib/po-pilot-records.mjs', 'scripts/lib/po-pilot.mjs',
     'scripts/lib/po-risk-router.mjs', 'scripts/lib/decision-record-template.mjs',
   ]) copy(root, path);
   for (const path of ['.githooks/post-checkout', '.githooks/post-merge']) copy(root, path);
-  put(root, '.gitignore', '/src/entities/docs-vault/data/\n/public/docs-vault/\n');
+  put(root, '.gitignore', '/src/entities/docs-vault/data/\n/public/docs-vault/\n/messages/*.json\n');
+  for (const locale of ['en', 'ko']) put(root, `messages/${locale}/probe.json`, `{\n  "title": "${locale}"\n}\n`);
   put(root, 'package.json', JSON.stringify({ scripts: { prepare: PREPARE } }, null, 2));
   put(root, 'docs/DECISIONS.md', DECISIONS);
   put(root, 'docs/CHANGELOG.md', CHANGELOG);
@@ -49,6 +53,7 @@ function seed(root) {
   git(root, 'add', '.');
   git(root, 'commit', '-qm', 'fixture');
   node(root, 'scripts/build-docs-vault.mjs');
+  node(root, 'scripts/build-messages.mjs');
   git(root, 'config', 'core.hooksPath', '.githooks');
 }
 
@@ -69,7 +74,18 @@ test('prepare configures Git when present, propagates config failure, and builds
     return command === 'git' ? { status: 128, stderr: 'not a git repository' } : { status: 0 };
   };
   assert.equal(prepareWorktree({ root: '/tmp/archive', spawn: archiveSpawn }), 0);
-  assert.deepEqual(calls.at(-1), [process.execPath, ['scripts/build-docs-vault.mjs']]);
+  assert.deepEqual(calls.slice(-2), [
+    [process.execPath, ['scripts/build-docs-vault.mjs']],
+    [process.execPath, ['scripts/build-messages.mjs']],
+  ]);
+
+  calls.length = 0;
+  const failing = (command, args) => {
+    calls.push([command, args]);
+    if (command === 'git') return { status: 128 };
+    return { status: args[0] === 'scripts/build-docs-vault.mjs' ? 3 : 0 };
+  };
+  assert.equal(prepareWorktree({ root: '/tmp/archive', spawn: failing }), 3, 'a failed materializer was hidden');
 });
 
 test('parallel worktrees merge immutable records and every checkout materializes ignored outputs', () => {
@@ -114,7 +130,7 @@ test('parallel worktrees merge immutable records and every checkout materializes
 
     git(scratch, 'clone', '-q', repo, cold);
     execFileSync('npm', ['run', 'prepare', '--silent'], { cwd: cold, encoding: 'utf8' });
-    for (const path of ['src/entities/docs-vault/data/manifest.json', 'src/entities/docs-vault/data/content.json', 'public/docs-vault/DECISIONS.md']) {
+    for (const path of ['src/entities/docs-vault/data/manifest.json', 'src/entities/docs-vault/data/content.json', 'public/docs-vault/DECISIONS.md', 'messages/en.json', 'messages/ko.json']) {
       assert.equal(existsSync(join(cold, path)), true, `${path} was not materialized`);
       assert.equal(git(cold, 'check-ignore', path).length > 0, true, `${path} is not ignored`);
     }
@@ -127,6 +143,7 @@ test('parallel worktrees merge immutable records and every checkout materializes
     assert.equal(existsSync(join(archive, '.git')), false);
     execFileSync('npm', ['run', 'prepare', '--silent'], { cwd: archive, encoding: 'utf8' });
     assert.equal(existsSync(join(archive, 'src/entities/docs-vault/data/manifest.json')), true);
+    assert.equal(existsSync(join(archive, 'messages/ko.json')), true);
     writeFileSync(join(archive, 'docs/DECISIONS.md'), `${DECISIONS}\nchanged after freeze\n`);
     assert.throws(
       () => execFileSync('npm', ['run', 'prepare', '--silent'], { cwd: archive, encoding: 'utf8', stdio: 'pipe' }),

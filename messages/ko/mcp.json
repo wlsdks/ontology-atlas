@@ -1,0 +1,10 @@
+{
+  "title": "MCP",
+  "lede": "에이전트 연결(MCP)은 코딩 에이전트가 이 폴더를 읽고 쓰는 선이에요. 바깥 서비스도 여기서 붙여요.",
+  "tablistAriaLabel": "MCP 구역",
+  "shareHeading": "이 폴더 내주기",
+  "connectorsHeading": "연결 도구",
+  "connectorsHeadingCount": "연결 도구 · {total}개 중 {on}개 켜짐",
+  "connectorsNeedFolder": "연결 도구는 폴더 안에 적혀요. 위에서 폴더를 열면 여기에 나타나요.",
+  "connectorsCountTitle": "켜 둔 연결 도구 수"
+}
