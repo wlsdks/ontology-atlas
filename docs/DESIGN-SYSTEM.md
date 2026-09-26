@@ -5,7 +5,7 @@ tags: [design, ux, linear, circuit-constellation, overview]
 
 # Design System
 
-> This document is maintained based on Section 3 of the design spec. For the original Linear specification, see [`design-references/DESIGN-linear.md`](design-references/DESIGN-linear.md).
+> This document is maintained based on Section 3 of the design spec.
 >
 > **v2 (2026-07)**: The B2+ "Circuit × Constellation" visual language shipped from ontology-map has become the standard for page rollout (gateway → docs/ontology hub → projects/insights → download) — see the *v2 — "Circuit × Constellation" (B2+) Visual Language* section below. v2 **extends** the v1 charter (monochrome + single indigo + forbidden patterns) rather than replacing it. On 2026-09-08 the owner lifted the expression bans of that charter; see "Absolute rules (Don'ts)" below for what was lifted and what still holds.
 
