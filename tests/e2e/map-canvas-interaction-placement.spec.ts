@@ -288,7 +288,14 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     await page.getByTestId("topology-tour-button").click();
     await expect(page.getByTestId("guided-tour-card")).toBeVisible();
     await expect(page.getByTestId("guided-tour-back")).toHaveCount(0);
-    const nextBefore = (await rectOf(page, "guided-tour-next"))!;
+    // Where [next] sits inside its card, not on the window: step 1 has no anchor and centres,
+    // step 2 stands beside the project node, so the card itself moves by design.
+    const nextInset = async () => {
+      const card = (await rectOf(page, "guided-tour-card"))!;
+      const next = (await rectOf(page, "guided-tour-next"))!;
+      return { right: Math.round(card.x + card.w - (next.x + next.w)), bottom: Math.round(card.y + card.h - (next.y + next.h)) };
+    };
+    const nextBefore = await nextInset();
     for (let i = 0; i < 12; i++) {
       const step = await page.getByTestId("guided-tour-overlay").getAttribute("data-tour-step");
       // Settle on what the step shows, not on a clock: a fixed 700 ms read the card mid-entrance
@@ -299,9 +306,16 @@ test.describe("map canvas interactions on the dogfood vault", () => {
       await waitForMapStill(page);
       const card = (await rectOf(page, "guided-tour-card"))!;
       if (step === "nodes") {
-        // [next] did not move between step 1 and step 2.
-        const nextAfter = (await rectOf(page, "guided-tour-next"))!;
-        expect(Math.round(nextAfter.x + nextAfter.w)).toBe(Math.round(nextBefore.x + nextBefore.w));
+        // [next] keeps its place in the card when [back] appears beside it on step 2.
+        expect(await nextInset(), "[next] holds the card's trailing corner").toEqual(nextBefore);
+        // And the card stands beside the node the step names, never on it. This used to pass
+        // only by accident: a map at rest never wrote the anchor probe, so the card centred on
+        // the project node exactly where step 1's card stood (lesson cb5fbfaf).
+        const cutout = (await rectOf(page, "topology-tour-anchor"))!;
+        expect(cutout, "the anchor probe is projected onto the project node").not.toBeNull();
+        const project = (await drawnNodes(page)).find((n) => n.id.startsWith("project:"))!;
+        expect(contains(cutout, project), "the cutout is centred on the project node").toBe(true);
+        expect(intersects(card, cutout), "the step 2 card covers the project node").toBe(false);
       }
       if (step === "relations" || step === "datasheet") {
         const labels = await page.evaluate(() => {
