@@ -6,7 +6,7 @@ import { installDesktopBridge, openRounds } from "./rounds-desktop-bridge";
 /**
  * **The cadence is dragged, and the scope names its places.**
  *
- * Spec: `docs/superpowers/specs/2026-09-21-round-cadence-and-scope.md` §2.2 ("Ratchet": the
+ * Spec: `docs/specs/2026-09-21-round-cadence-and-scope.md` §2.2 ("Ratchet": the
  * thumb's travel is measured, not assumed) and §3.3. The owner asked for this on the installed
  * app — "1, 5, 10, 30 minutes, 1 hour; pick minutes or hours at the top and a different drag
  * comes out" — and ten minutes is exactly the value four chips could not say.

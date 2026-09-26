@@ -33,9 +33,9 @@ reversible work stays solo; a routed review uses Evidence and one specialist.
 | `positioning` | `po-evidence` + `po-wedge` | Is the lost ability observed, and is the first-contact claim distinctive and earned? |
 | `scope` | `po-evidence` + `po-leverage` | Is the lost ability observed, and is this the smallest worthwhile commitment with a credible rollback? |
 
-`po-craft` is owner-requested recovery-proof review only. It consumes evidence
-from the design, responsive, motion, and walkthrough gates; it does not repeat
-them.
+Reviewers consume the outputs of `/design-audit`, `/responsive-sweep`,
+`/motion-verify`, `/map-perf`, and `/user-walkthrough` rather than repeating
+those gates.
 
 Seat briefs live at `../../agents/po-*.md`. Open only the selected files. From
 either client-specific skill tree, the relative path resolves to the matching agent

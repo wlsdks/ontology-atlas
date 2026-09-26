@@ -19,6 +19,7 @@ Draws the graph as an interactive canvas map a person can move through, and lets
 ## Includes
 - Layout, selection, hover detail, edge inspection, and a context menu for writing in place.
 - The detail panel and edge panel that show what a node or relation says and what proves it.
+- Framing the overview on what is actually drawn, centred in the free space between the INDEX panel and the tool rail, and clearing a relation or cluster card the moment the pointer leaves the canvas.
 
 ## Excludes
 - Storing the graph; the map draws the compiled files and never becomes the record.
@@ -26,3 +27,4 @@ Draws the graph as an interactive canvas map a person can move through, and lets
 
 ## Uncertainty
 - Read from the folder layout under `src/widgets/ontology-map/` and the repository's note that the renderer is custom canvas-2D with Graphology supplying layout only. Nothing was rendered during this scan, so the interactions above are named from file names rather than seen.
+- Checked 2026-09-26 on bundles #1874 and #1883: the overview's drawn centre sat 0 px from the free-area centre at 1040, 1280, 1512 and 1920 wide (it had been 64 to 113 px right), measured in Chromium with the `?e2e=1` probe and in the installed app.

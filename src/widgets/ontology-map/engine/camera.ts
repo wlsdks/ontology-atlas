@@ -5,7 +5,7 @@
  * (flick-release landing projection) and `hysteresis.ts` (click-vs-drag
  * gate, consumed by `interaction/pointer-state-machine.ts`, not here).
  *
- * `docs/ONTOLOGY-MAP-DESIGN.md` §1.3 mandates reusing
+ * `docs/design/ontology-map.md` §1.3 mandates reusing
  * `src/widgets/topology-map-canvas/lib/camera.ts`'s pure functions —
  * `fitBounds`/`zoomAt`/`panBy`/`clampScale` — rather than reimplementing
  * fit-to-bounds geometry. This module's job is the *spring/momentum layer on

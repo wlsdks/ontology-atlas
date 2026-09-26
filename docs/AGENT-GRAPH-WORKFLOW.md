@@ -1,6 +1,13 @@
+---
+title: Agent Graph Workflow
+doc_type: authority
+status: current
+area: agents
+---
+
 # Agent Graph Workflow
 
-> Current as of 2026-08-02. This is the user-facing guide for running
+> This is the user-facing guide for running
 > `ontology-atlas` as a local meaning graph: CLI-only, MCP-connected, and web
 > workbench flows over the same markdown vault.
 
@@ -57,21 +64,9 @@ billing. It prepares the local MCP files, root-specific commands, restart
 guidance, and verification gates so those agents can connect from their own app,
 terminal, or IDE session and work against the same vault.
 
-**Reversal record, 2026-07-26 — the embedded terminal is gone.** Earlier that
-same day this section said the desktop app *may host a terminal*, and a bottom
-dock shipped that ran your already-installed `claude` / `codex` CLI. The owner
-reversed it within the week, and the reasoning is kept here rather than deleted.
-
-Why it was removed: the dock's own trust contract made it a strict subset of the
-terminal you already use — one login shell with no arguments, no tabs, no
-splits, no shell profiles, the session ending when you collapsed it, and about
-thirteen visible rows on a 14-inch screen. Every one of those was the right
-call, and together they meant long agent loops, resumed sessions, and parallel
-worktrees belonged somewhere else. The synergy that seemed to justify embedding
-— *the agent edits the vault and the map reacts immediately* — turned out to be
-position-independent: the vault watcher observes the folder on disk, so an agent
-running in iTerm moves the map exactly the same way. Polishing the window did
-not change the comparison, and sunk cost is not a reason to keep a surface.
+An embedded terminal dock shipped briefly on 2026-07-26 and was removed within
+the week: it was a strict subset of the terminal you already use, and the vault
+watcher moves the map the same way wherever the agent runs.
 
 **Atlas does not host a terminal; it hands off to yours.** The bridge between a
 person and an agent is a protocol, not a window: the MCP tools, the CLI, the
@@ -152,31 +147,9 @@ adding starter markdown. For a parseable existing file, it atomically merges or
 rebinds only the `ontology-atlas` JSON entry / TOML section pair and preserves
 unrelated servers, sections, and comments. Invalid or duplicate Atlas config is
 left untouched with a merge template and a nonzero review result.
-Its terminal and JSON output also point back to this guide
-(`docs/AGENT-GRAPH-WORKFLOW.md`), so CLI-only setup logs still tell a human
-where to read the MCP, graph DB, and verification differences.
-The same guide path is included in `agent-brief --prompt` and
-`agent-brief --graph-db-pack`, so the agent handoff and connector-less graph
-query script carry the explanation forward after setup. The normal
-`agent-brief` terminal view and the shell-pasteable `--graph-db-pack` header now
-also render the same mode guide directly, so a human can tell when to stay
-CLI-only, when MCP adds value, when to use the graph DB pack, and when to run the
-setup gate without opening JSON first.
-The `/ontology/insights` graph DB query pack card shows the same mode guide
-before its copy buttons, and the copied UI CLI pack includes the guide too, so
-the explanation survives when a non-developer passes only the runbook into a
-fresh Claude Code or Codex session.
-`agent-setup --json` also includes `docs.modeComparison`, a machine-readable
-version of the CLI-only / MCP-connected / graph DB pack / setup gate choice, so
-an AI agent can explain the right path without scraping this Markdown table.
-For automation, `agent-brief --json` and MCP `query_ontology({operation:
-"agent_brief"})` expose the same location as `docs.workflowGuide`, so an AI
-tool does not need to parse the human prompt to find the guide.
-They also expose this page's mode chooser as `docs.modeComparison` and the
-scan-to-proof rules as `docs.graphScanProofChecklist`, so an AI tool can inspect
-the CLI-only / MCP-connected / graph DB pack / setup gate choice and the
-required `totalMatches` / follow-up / `evidence.pathsComplete` steps without
-parsing Markdown.
+`agent-setup`, `agent-brief` and MCP `agent_brief` return this guide's path and
+the mode table as `docs.workflowGuide` / `docs.modeComparison`, and the
+scan-to-proof rules as `docs.graphScanProofChecklist`.
 
 ## What MCP Adds
 
@@ -227,8 +200,8 @@ duplicate the known-task handoff.
 This is a measured profile, not a generic claim about every MCP registration.
 The current frozen-control coding run reduced source reads from four to one,
 wall time by 23.9%, and uncached input by 19.1%; two order-reversed blind judges
-preferred the treatment. The full 36-tool registration failed its earlier token
-gate, so use it when the same session requires ontology writes without assuming
+preferred the treatment. The full registration (36 tools when measured) failed
+its earlier token gate, so use it when the same session requires ontology writes without assuming
 the same performance result. Ten of ten prospective coordinates survived an
 unfamiliar-repository audit, but its coding lane lacked a local toolchain;
 cross-repository speed remains unearned.
@@ -319,52 +292,27 @@ Use this scan-to-proof checklist:
 
 ## Actual Verification Snapshot
 
-These checks were run against this repository's dogfood vault on 2026-07-27.
+This section states no counts, timings, hashes, or file totals: every one of
+them changes with the next commit. Run the commands and read the numbers off
+your own screen.
 
 CLI-only checks:
 
-- `node cli/src/index.mjs agent-setup docs/ontology --json`
-  - `operation: "agent_setup"`
-  - `sideEffect: false`
-  - `summary: { total: 4, ready: 2, missing: 2, review: 0, written: 0, examples: 0 }`
-  - `modeIds: ["cli_only", "mcp_connected", "graph_db_pack", "setup_gate"]`
-- `node cli/src/index.mjs match-nodes docs/ontology --kind capability --min-degree 2 --sort degree --limit 8 --json`
-  - `operation: "match_nodes"`
-  - `totalMatches: 38`
-  - `returned: 8`
-  - `limited: true`
-  - `followUp.focusSlug: "capabilities/cli-developer-entry"`
-- `node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
-  - `operation: "agent_fallback_check"`
-  - `ok: true`
-  - `performanceOk: true`
-  - `total: 32`
-  - `passed: 32`
-  - `failed: 0`
-  - `slow: 0`
-  - `wallMs: 1993`
-  - `totalMs: 7928`
-  - slowest fallback: `match-edges --plan --types depends_on --limit 20`
-    at `377ms`
-- `node scripts/perf-graph.mjs --json --check --n=1000`
-  - budgets: `compileMs <= 750`, `queryMs <= 750`
-  - failures: `0`
-  - 1000 generated nodes, 3867 generated edges
-  - median `compile.fullMs: 18.00`
-  - median `agent_brief: 25.26ms`
-  - median `graph_db_pack: 24.55ms`
-  - median `project_map: 8.16ms`
-  - graph DB pack replayed 10 calls:
-    `query_plan`, `match_nodes`, `query_plan`, `match_edges`,
-    `domain_matrix`, `query_plan`, `centrality`, `query_plan`, `all_paths`,
-    `explain_relation`
-  - graph DB pack diagnostics: `totalMatches: [719, 718]`,
-    `allPathsEvidenceStatus: "complete"`, and
-    `explainRelationHasShortestPath: true`
+```bash
+node cli/src/index.mjs agent-setup docs/ontology --json
+node cli/src/index.mjs match-nodes docs/ontology --kind capability --min-degree 2 --sort degree --limit 8 --json
+node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
+node scripts/perf-graph.mjs --json --check --n=1000
+```
 
-Graph and MCP-connected facts. **This section states no counts, hashes, or file
-totals** — every one of them changes the moment anyone adds a node, so a number
-written here is wrong by the next commit and nobody notices. Run the commands:
+`agent-setup` reports `operation: "agent_setup"`, `sideEffect: false`, and the
+four mode ids `cli_only`, `mcp_connected`, `graph_db_pack`, `setup_gate`.
+`match-nodes` reports `totalMatches`, `returned`, `limited`, and a
+`followUp.focusSlug`. The fallback check reports `ok`, `performanceOk`, and
+`failed: 0`. `perf-graph` enforces `compileMs <= 750` and `queryMs <= 750` and
+exits nonzero on a budget failure.
+
+Graph and MCP-connected checks:
 
 ```bash
 node cli/src/index.mjs compile docs/ontology --summary --json   # size, hash, kind census

@@ -214,7 +214,7 @@
     {
       "key": "scripts:runtime:files:scripts/install-brand-icons.mjs:scripts/install-brand-icons.mjs",
       "reason": "Manual brand-raster installer is intentionally invoked from the brand asset procedure.",
-      "consumer": "docs/BRAND.md",
+      "consumer": "docs/design/brand.md",
       "witness": "scripts/install-brand-icons.mjs"
     },
     {
@@ -232,7 +232,7 @@
     {
       "key": "scripts:runtime:files:scripts/measure-graph-readability.mjs:scripts/measure-graph-readability.mjs",
       "reason": "Manual map-readability instrument is a documented graph design check.",
-      "consumer": "docs/MAP-TESTABILITY.md",
+      "consumer": "docs/engineering/map-testability.md",
       "witness": "scripts/measure-graph-readability.mjs"
     },
     {

@@ -43,8 +43,10 @@ describe('Button', () => {
     expect(screen.getByRole('button').className).toContain('h-11');
   });
 
-  it('radius follows the box: 32px and the 44px hero wear the chip radius, 40px the panel', () => {
-    // A 32px Button beside a 32px controlClass chip or fieldClass field wears their radius (6px).
+  it('every size wears the chip radius: a Button is a control, not a container', () => {
+    // A 32px Button beside a 32px controlClass chip or fieldClass field wears their radius (6px),
+    // and so do 40px and 44px ones: a 40px primary on the panel corner read as a pill beside
+    // rectangular primaries on the next screen (2026-09-26).
     // Type stays 14px at every size, the step a 32px field sets its value in.
     for (const size of ['sm', 'md', 'lg'] as const) {
       const cls = buttonVariants({ size });
@@ -53,7 +55,7 @@ describe('Button', () => {
       expect(cls.match(/\brounded-(chip|panel)\b/g)).toHaveLength(1);
     }
     expect(buttonVariants({ size: 'sm' })).toMatch(/\brounded-chip\b/);
-    expect(buttonVariants({ size: 'md' })).toMatch(/\brounded-panel\b/);
+    expect(buttonVariants({ size: 'md' })).toMatch(/\brounded-chip\b/);
     expect(buttonVariants({ size: 'lg' })).toMatch(/\brounded-chip\b/);
   });
 

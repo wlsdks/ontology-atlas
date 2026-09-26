@@ -1,9 +1,16 @@
+---
+title: ATLAS PRODUCT DECISION SYSTEM
+doc_type: authority
+status: current
+area: process
+---
+
 # ATLAS PRODUCT DECISION SYSTEM
 
-> Version 3, active as a finite pilot from 2026-09-01. It keeps the v2
-> two-reviewer ceiling but removes the builder's ability to declare their own
-> door and risk. Git preserves both prior systems; `docs/PO-PILOT.md` decides
-> whether this one earns a permanent place.
+> Version 3, piloted from 2026-09-01 and closed as `adjust` on 2026-09-03
+> (`docs/DECISIONS.md`). It keeps the v2 two-reviewer ceiling but removes the
+> builder's ability to declare their own door and risk. Git preserves both
+> prior systems; `pnpm po:pilot` reports whether this one still holds.
 
 Atlas does not need a universal product-management framework. It needs a product
 owner for one unusual failure: coding agents can change a codebase faster than
@@ -194,16 +201,18 @@ Keep this to one screen:
 ```
 
 Routine solo passes stay in the working plan or pull-request rationale, not the
-append-only decision ledger. During the pilot they still add one compact typed
-run to `docs/PO-PILOT.md`, because missing reversible cases would make the 80%
-avoidance denominator meaningless.
+decision records. Eligible runs are still recorded with
+`pnpm po:record -- --type=run` ([how](records/README.md)), because missing
+reversible cases would make the 80% avoidance denominator meaningless;
+`pnpm po:pilot` composes them.
 
 ## Selected review protocol
 
 One-way work gets Evidence plus the specialist returned by the router.
 
-1. Search `docs/DECISIONS.md` narrowly for the same surface and question. Cite
-   a standing decision or explicitly overturn it; check its falsifier.
+1. Search narrowly with `pnpm decisions:find <terms>` for the same surface
+   and question. Cite a standing decision or explicitly overturn it; check
+   its falsifier.
 2. Record the requested words, intended decision, scope, and recovery proof
    before review. Without a before-state, review cannot claim a causal delta.
 3. Give both reviewers the same primary evidence. Preserve independent first
@@ -215,8 +224,9 @@ One-way work gets Evidence plus the specialist returned by the router.
 6. Record the strongest losing argument, falsifier, review footprint, unique
    contributor, and later recovery result. `unchanged` is valid data.
 
-`po-craft` remains owner-requested proof review only. It consumes evidence from
-the dedicated design and journey gates instead of repeating them.
+Reviewers consume the outputs of `/design-audit`, `/responsive-sweep`,
+`/motion-verify`, `/map-perf`, and `/user-walkthrough` rather than repeating
+those gates.
 
 ## Significant decision record
 
@@ -240,7 +250,7 @@ history.
 ```
 
 Route, evidence state, review turns, delta, and later result are typed per
-run in `docs/PO-PILOT.md`; they are not repeated in the record. A change that
+run with `pnpm po:record`; they are not repeated in the record. A change that
 fits its commit message needs no record. Overturning is a new record whose
 `Prior` names the old one; `pnpm decisions:find` lists who cites a record, so
 status is derived, never edited in place.
@@ -251,8 +261,9 @@ template; it does not claim the judgment was good.
 
 ## Measured pilot and forced sunset
 
-`docs/PO-PILOT.md` is a typed, append-only run and outcome register.
-`pnpm po:pilot` calculates:
+`pnpm po:pilot` composes the frozen `docs/PO-PILOT.md` baseline with the
+fragments in `docs/records/po-runs/` and `docs/records/po-updates/`, and
+calculates:
 
 - eligible decisions and the reversible denominator;
 - review turns and material decision-delta rate;
@@ -261,13 +272,13 @@ template; it does not claim the judgment was good.
 - owner clarity, boundary misses, reopen/reversal results; and
 - each specialist's calls and unique material contributions.
 
-`pnpm po:pilot -- --check` runs automatically in CI. It remains green while a
-valid pilot is collecting. At 20 decisions or 14 days it requires an explicit
-`keep`, `adjust`, or `revert`; fewer than 10 decisions get one extension to 21
-days. A shipped recovery-proof failure or serious boundary miss stops the pilot
-immediately until the owner chooses `adjust` or `revert`. It refuses `keep`
-unless the declared thresholds pass. A specialist with five calls and no unique
-material contribution must leave the default map.
+`pnpm po:pilot -- --check` runs automatically in CI. The pilot reached its
+20-decision target on 2026-09-03 and closed as `adjust`; the router, the
+two-reviewer default, and the typed register stay. The standing falsifier from
+that record reopens the question: a shipped recovery-proof failure, or proof
+resolution still under 80% after the next ten logged decisions. The check
+refuses `keep` unless the declared thresholds pass. A specialist with five
+calls and no unique material contribution must leave the default map.
 
 The known-control contract also replays:
 

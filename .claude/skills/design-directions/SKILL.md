@@ -1,21 +1,15 @@
 ---
 name: design-directions
 description: When Atlas design routing finds a structural commitment, sketch three different directions in text before code, including the status quo, and let the owner choose one.
+when_to_use: Use only when pnpm design:route returns directions=yes and no owner selection exists for this structure.
 ---
 
 # Design directions before implementation
 
-Two evidence lines support this step.
-
-First, frontier models return to a persistent frontend default. Generic
-redirection such as “cleaner” or “not cream” replaces one default palette with
-another; only a concrete specification changes the structure. With sampling
-controls no longer exposed, generate several directions and let a person choose.
-
-Second, Dow, Glassco, Kass, Schwarz, Schwartz, and Klemmer, “Parallel
-Prototyping Leads to Better Design Results, More Divergence, and Increased
-Self-Efficacy” (ACM TOCHI 2010), found parallel alternatives superior to serial
-iteration on quality, divergence, and self-efficacy.
+Generate alternatives before code: models return to one frontend default, and
+parallel alternatives beat serial iteration (Dow et al., TOCHI 2010). Generic
+redirection such as “cleaner” replaces one default with another; only a concrete
+specification changes the structure.
 
 `/design-council` reviews one built direction. This skill cheaply creates the
 alternatives before that review when the route identifies a structural choice.
@@ -107,8 +101,9 @@ or inspecting the current baseline. An already selected direction proceeds to
 2. Implement only that sentence and retain rejected directions as history.
 3. Convene `/design-council` only when the same route says it is required; it
    reviews the chosen built direction rather than selecting one.
-4. Run only the route's proof packet. Every rendered result includes an Orca
-   Computer Use capture; motion includes a real screen recording.
+4. Run only the route's proof packet. Every rendered result includes the
+   `/design-build` §0-B render-loop packet; motion includes a real screen
+   recording.
 
 ## Failure modes
 

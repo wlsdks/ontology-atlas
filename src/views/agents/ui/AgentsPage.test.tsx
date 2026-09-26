@@ -47,7 +47,7 @@ describe('에이전트 목적지', () => {
     expect(screen.getByText(ko.agents.lede)).toBeInTheDocument();
   });
 
-  it('웹에서는 설명의 주어가 맥 앱이다 — 바로 아래 카드가 브라우저는 못 띄운다고 말한다', () => {
+  it('웹에서는 설명의 주어가 데스크톱 앱이다 — 바로 아래 카드가 브라우저는 못 띄운다고 말한다', () => {
     bridge = false;
     renderPage();
     expect(screen.getByText(ko.agents.ledeWeb)).toBeInTheDocument();

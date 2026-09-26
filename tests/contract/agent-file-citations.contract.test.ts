@@ -57,7 +57,8 @@ function resolves(ref: string, from: string): boolean {
 function citations(): { file: string; ref: string }[] {
   const found: { file: string; ref: string }[] = [];
   for (const dir of SOURCES) {
-    for (const file of [...tracked].filter((path) => path.startsWith(`${dir}/`) && path.endsWith(".md"))) {
+    // A tracked file deleted in the working tree (not yet staged) has no text to cite from.
+    for (const file of [...tracked].filter((path) => path.startsWith(`${dir}/`) && path.endsWith(".md") && existsSync(join(ROOT, path)))) {
       for (const match of readFileSync(join(ROOT, file), "utf8").matchAll(CITATION)) {
         found.push({ file, ref: match[1] });
       }

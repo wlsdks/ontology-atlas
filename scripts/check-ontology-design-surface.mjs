@@ -189,7 +189,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     markers: [
       "pnpm design:route",
       "computer-use-loop",
-      "Do not build a whole UI from imagination",
+      "/design-build",
       "real macOS screen",
       "Design Council",
       "Atlas Designer Bench",
@@ -233,22 +233,19 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     id: "agents-product-design-gate",
     files: ["AGENTS.md"],
     /*
-     * ⚠️ **The marker is the clause, not its opening word.** This pinned "Design gate after the
-     * PO pass" and went red twice when the row was reworded — once on 2026-09-13 and again when
-     * #1695 made it "Product design gate after the PO pass", which left `main` failing this gate
-     * with nothing wrong in the repository. What must exist is the routing clause; the adjective
-     * in front of it is prose.
+     * ⚠️ **The markers are references, not sentences.** Pinned clauses ("Design gate after the
+     * PO pass", "Computer Use while building") went red every time the row was reworded, with
+     * nothing wrong in the repository. What must exist is the route: the doc path, the router
+     * command, and the two skills that own the render loop and the motion recording.
      */
     markers: [
-      "gate after the PO pass",
       "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
       "/design-build",
       "pnpm design:route",
-      "Computer Use while building",
       "/motion-verify",
     ],
     reason:
-      "AGENTS.md must route design from observable facts and require the iterative Computer Use and recorded-motion evidence contracts.",
+      "AGENTS.md must route design from observable facts through pnpm design:route and point at the Product Design OS, /design-build, and /motion-verify, which own the render loop and recorded-motion evidence.",
   },
 ];
 

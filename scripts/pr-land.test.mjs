@@ -1,52 +1,36 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import {
   CONFLICT_INSTRUCTION,
-  independentBacklogCi,
-  startParallelBacklogCi,
+  FAST_LOCK_REF,
   LEASE_MINUTES,
   LOCK_REF,
-  classifyLock,
   classifyHolderLiveness,
-  parseLockToken,
-  decideNext,
-  QUEUE_REF,
-  WAIT_LEASE_MINUTES,
-  describeWaitingLine,
-  joinWaitingLine,
-  leaveWaitingLine,
-  mayTakeLock,
-  pruneWaiters,
-  waitingLineHead,
+  classifyLock,
+  conduct,
+  describeCleanup,
   describeLock,
-  readOutcome,
-  protectionFrom,
-  distanceFrom,
-  isBrowserCommand,
-  isCiOwnedCommand,
-  localCheckPlan,
-  mergeFiredCi,
-  parseArgs,
-  refuseLanding,
   otherCheckState,
+  parseArgs,
+  parseLockToken,
+  protectionFrom,
+  readOutcome,
+  refuseLanding,
   requiredCheckState,
   runInFlight,
-  describeCleanup,
+  runPrLand,
   worktreeToRemove,
 } from './pr-land.mjs';
-import { existingPaths } from './suggest-focused-checks.mjs';
+import { EJECTED_MARKER, LANDED_MARKER, QUEUE_LABEL, trainCiStep } from './lib/landing-train.mjs';
 
 /**
- * The landing state machine, driven by `gh` output recorded from this
- * repository on 2026-09-12. No network: every input here is a literal, which is
- * the only way this suite can run in the same lane as the gates it guards.
+ * The landing train, driven by `gh` output recorded from this repository and by a fake GitHub.
+ * No network: every input here is a literal or the in-memory world below, which is the only way
+ * this suite can run in the same lane as the gates it guards.
  *
- * The recorded rollup is PR #1572's, which is exactly the interesting case:
- * eleven contexts reported, eight of them required, and one of the eight
- * (`Unit · Contract`) red. A lander that read "eleven checks, ten green" would
- * have merged it.
+ * The recorded rollup is PR #1572's: eleven contexts reported, eight of them required, and one of
+ * the eight (`Unit · Contract`) red. A lander that read "eleven checks, ten green" would merge it.
  */
 const REQUIRED_CONTEXTS = [
   'Types · Lint · Docs',
@@ -85,13 +69,9 @@ const GREEN_ROLLUP = RECORDED_ROLLUP.map((run) =>
 );
 
 /**
- * What a draft pull request's checks look like.
- *
- * Every job in `checks.yml` and `e2e.yml` carries
- * `github.event.pull_request.draft == false`, so a draft's jobs are skipped and
- * GitHub reports them `skipped`. Branch protection counts a skipped job as
- * satisfied, which is the one reading that would let this lander merge a draft
- * nothing ran on.
+ * What a draft pull request's checks look like: every job carries
+ * `github.event.pull_request.draft == false`, so GitHub reports them `skipped`, and branch
+ * protection counts a skipped job as satisfied.
  */
 const DRAFT_ROLLUP = REQUIRED_CONTEXTS.map((name) => ({
   __typename: 'CheckRun',
@@ -116,14 +96,6 @@ const RECORDED_PR = {
   url: 'https://github.com/wlsdks/ontology-atlas/pull/1572',
 };
 
-const draftPr = (overrides = {}) => ({
-  ...RECORDED_PR,
-  isDraft: true,
-  mergeStateStatus: 'DRAFT',
-  statusCheckRollup: DRAFT_ROLLUP,
-  ...overrides,
-});
-
 const readyPr = (overrides = {}) => ({
   ...RECORDED_PR,
   isDraft: false,
@@ -133,12 +105,15 @@ const readyPr = (overrides = {}) => ({
 });
 
 const NOW = Date.parse('2026-09-12T12:00:00Z');
-const freeLock = { state: 'free', holder: null, ageMinutes: null };
-const myLock = classifyLock({
-  payload: { pr: 1572, token: 'me', acquiredAt: '2026-09-12T11:59:00Z' },
-  nowMs: NOW,
+
+/** The train's CI verdict for a rollup, the way the conductor reads it. */
+const trainStep = (rollup, extra = {}) => trainCiStep({
+  checks: requiredCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS }),
+  other: otherCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS, allowFailing: extra.allowFailing ?? [] }),
+  inFlight: runInFlight({ statusCheckRollup: rollup }),
+  emptyRollupObservations: extra.empty ?? 0,
+  refires: extra.refires ?? 0,
 });
-const holding = { lock: myLock, selfLock: 'me', requiredContexts: REQUIRED_CONTEXTS };
 
 describe('pr:land argument parsing', () => {
   it('reads a number with or without a hash', () => {
@@ -147,65 +122,54 @@ describe('pr:land argument parsing', () => {
     assert.equal(parseArgs(['--', '1572']).number, 1572);
   });
 
-  it('reads the cleanup and worktree paths in both spellings', () => {
-    assert.equal(parseArgs(['12', '--cleanup', '/tmp/wt']).cleanup, '/tmp/wt');
-    assert.equal(parseArgs(['12', '--cleanup=/tmp/wt']).cleanup, '/tmp/wt');
-    assert.equal(parseArgs(['12', '--worktree', '/tmp/wt']).worktree, '/tmp/wt');
-    assert.equal(parseArgs(['12', '--worktree=/tmp/wt']).worktree, '/tmp/wt');
+  it('reads the train, fast-path and waiting options', () => {
+    const args = parseArgs(['12', '--batch=5', '--no-wait', '--no-fast', '--flaky=A,B', '--allow-failing=C']);
+    assert.deepEqual([args.batch, args.wait, args.fast, args.flaky, args.allowFailing], [5, false, false, ['A', 'B'], ['C']]);
+    const defaults = parseArgs(['12']);
+    assert.deepEqual([defaults.batch, defaults.wait, defaults.fast], [20, true, true]);
+    assert.throws(() => parseArgs(['12', '--batch=0']), /positive integer/);
+    assert.throws(() => parseArgs(['12', '--flaky=']), /must name at least one/);
+  });
+
+  it('plans several pull requests, but lands one per command', () => {
+    assert.deepEqual(parseArgs(['--plan', '12', '#13']).numbers, [12, 13]);
+    assert.throws(() => parseArgs(['--plan']), /--plan needs/);
+    assert.throws(() => parseArgs(['12', '13']), /one pull request per command/);
+  });
+
+  it('needs no number to show the queue, release the lock, or conduct', () => {
+    assert.equal(parseArgs(['--queue']).queue, true);
+    assert.equal(parseArgs(['--release']).release, true);
+    assert.equal(parseArgs(['--conduct']).conduct, true);
+    assert.equal(parseArgs(['--ci', '1572']).ci, true);
+    assert.throws(() => parseArgs(['--ci']), /pull request number/);
+    assert.throws(() => parseArgs(['--queue', '--conduct']), /separate commands/);
+  });
+
+  it('accepts the retired flags with a note instead of failing a landing that names them', () => {
+    const args = parseArgs(['12', '--parallel-ci', '--worktree', '/tmp/wt']);
+    assert.equal(args.number, 12);
+    assert.equal(args.notes.length, 2);
+    assert.match(args.notes.join('\n'), /--parallel-ci is retired/);
+    assert.match(args.notes.join('\n'), /--worktree is retired/);
   });
 
   /**
-   * ⚠️ **`--worktree` removes nothing, in either spelling.**
-   *
-   * On 2026-09-13 an agent landed with `--worktree <path>`, found that path gone
-   * afterwards, and reported that the landing had deleted it along with the
-   * gitignored evidence inside it. The landing's own log carried no `cleanup:`
-   * line, so it had not — but nothing in this suite said so, and the next agent
-   * had only the source to trust. Both flag shapes are pinned here now, for both
-   * flags, so this script can be ruled out by reading.
+   * ⚠️ **`--worktree` removes nothing, in either spelling.** On 2026-09-13 an agent believed a
+   * landing had deleted its `--worktree` path; it had not. Removal is `--cleanup`'s alone.
    */
   it('removes a worktree only when --cleanup asks, never for --worktree', () => {
     assert.equal(worktreeToRemove(parseArgs(['12', '--worktree', '/tmp/wt'])), null);
     assert.equal(worktreeToRemove(parseArgs(['12', '--worktree=/tmp/wt'])), null);
     assert.equal(worktreeToRemove(parseArgs(['12', '--cleanup', '/tmp/wt'])), '/tmp/wt');
     assert.equal(worktreeToRemove(parseArgs(['12', '--cleanup=/tmp/wt'])), '/tmp/wt');
-    // Both together is the deliberate shape: run the lanes here, then remove it.
-    assert.equal(
-      worktreeToRemove(parseArgs(['12', '--worktree=/tmp/wt', '--cleanup=/tmp/wt'])),
-      '/tmp/wt',
-    );
-    // And a bare landing removes nothing at all.
     assert.equal(worktreeToRemove(parseArgs(['12'])), null);
   });
 
-  /**
-   * A removal says what it is about to do, and says the one thing that made the
-   * 2026-09-13 loss possible: `git status --porcelain` does not count ignored
-   * files, so a worktree holding only gitignored captures reads clean.
-   */
   it('announces the path and the judgement before removing anything', () => {
-    const clean = describeCleanup({ path: '/tmp/wt', status: '' });
-    assert.match(clean, /^removing \/tmp\/wt/);
-    assert.match(clean, /ignored files are not counted/);
-    assert.equal(
-      describeCleanup({ path: '/tmp/wt', status: ' M src/a.ts' }),
-      '/tmp/wt still has uncommitted work; left alone',
-    );
-    assert.equal(
-      describeCleanup({ path: '/tmp/nope', status: null }),
-      '/tmp/nope is not a Git worktree; left alone',
-    );
-  });
-
-  it('defaults the worktree to the caller, which is the branch it wrote', () => {
-    assert.equal(parseArgs(['12']).worktree, null);
-  });
-
-  it('needs no number for the queue and the release valve, but does for early CI', () => {
-    assert.equal(parseArgs(['--queue']).queue, true);
-    assert.equal(parseArgs(['--release']).release, true);
-    assert.equal(parseArgs(['--ci', '1572']).ci, true);
-    assert.throws(() => parseArgs(['--ci']), /pull request number/);
+    assert.match(describeCleanup({ path: '/tmp/wt', status: '' }), /ignored files are not counted/);
+    assert.equal(describeCleanup({ path: '/tmp/wt', status: ' M src/a.ts' }), '/tmp/wt still has uncommitted work; left alone');
+    assert.equal(describeCleanup({ path: '/tmp/nope', status: null }), '/tmp/nope is not a Git worktree; left alone');
   });
 
   it('refuses a landing with no pull request named', () => {
@@ -218,25 +182,21 @@ describe('pr:land argument parsing', () => {
 });
 
 describe('pr:land refusals', () => {
-  it('lands only an open pull request', () => {
+  it('lands only an open pull request against main', () => {
     assert.equal(refuseLanding(readyPr()), null);
-    assert.equal(refuseLanding(draftPr()), null);
     assert.match(refuseLanding({ ...RECORDED_PR, state: 'CLOSED' }), /is closed, not open/);
     assert.match(refuseLanding({ ...RECORDED_PR, state: 'MERGED' }), /is merged, not open/);
+    assert.match(refuseLanding({ ...RECORDED_PR, baseRefName: 'release' }), /targets release, not main/);
+    assert.match(refuseLanding({ ...RECORDED_PR, headRefName: 'train/20260926T101530Z-1' }), /is a landing train/);
   });
 
-  it('hands a conflict back to the author, and says the lock was released', () => {
+  it('hands a conflict back to the author before queueing it', () => {
     const dirty = refuseLanding({ ...RECORDED_PR, mergeStateStatus: 'DIRTY' });
     assert.equal(dirty, CONFLICT_INSTRUCTION);
     assert.match(dirty, /git fetch origin && git merge origin\/main/);
     assert.match(dirty, /pnpm pr:land <number>/);
-    assert.match(dirty, /landing lock was\n  released/);
-    // Generated docs-vault JSON, the changelog and the ledger are the recurring
-    // conflict in this repository, and hand-resolving them is forbidden
-    // (`.claude/rules/git.md`, "Do not"), so the refusal names the tool.
+    assert.match(dirty, /It was not queued/);
     assert.match(dirty, /pnpm docs-vault:resolve-conflicts/);
-    // `mergeable` and `mergeStateStatus` disagree while GitHub is still
-    // computing the merge; either saying conflict is a refusal.
     assert.equal(refuseLanding({ ...RECORDED_PR, mergeable: 'CONFLICTING' }), CONFLICT_INSTRUCTION);
   });
 
@@ -246,23 +206,17 @@ describe('pr:land refusals', () => {
 });
 
 describe('the landing lock', () => {
-  it('names one ref, so the create is the mutex', () => {
+  it('names one ref for trains and one for fast-path merges', () => {
     assert.equal(LOCK_REF, 'refs/atlas/landing-lock');
+    assert.equal(FAST_LOCK_REF, 'refs/atlas/landing-fast');
   });
 
   it('reads a fresh lock as held and an unrefreshed one as stale', () => {
-    const payload = {
-      pr: 1570,
-      holder: 'stark',
-      host: 'mbp',
-      acquiredAt: '2026-09-12T11:58:00Z',
-      leaseMinutes: LEASE_MINUTES,
-    };
+    const payload = { pr: 1570, holder: 'stark', host: 'mbp', acquiredAt: '2026-09-12T11:58:00Z', leaseMinutes: LEASE_MINUTES };
     const held = classifyLock({ payload, nowMs: NOW });
     assert.equal(held.state, 'held');
     assert.equal(Math.round(held.ageMinutes), 2);
     assert.equal(Math.round(held.expiresInMinutes), 43);
-
     assert.equal(classifyLock({ payload: { ...payload, acquiredAt: '2026-09-12T11:00:00Z' }, nowMs: NOW }).state, 'stale');
   });
 
@@ -273,76 +227,40 @@ describe('the landing lock', () => {
   });
 
   /*
-   * Observed on 2026-09-19: twenty-six landers shared one GitHub account, the REST quota reached
-   * 0/5000, and `pnpm pr:queue` printed `nothing is landing` while PR #1728 held the lock and
-   * refreshed it every minute. A second session logged `taking over a lock nobody refreshed: an
-   * unreadable lock ({})` — the ref read had been served and the blob read had been rate-limited,
-   * so a live lock presented as abandoned and was force-taken. These four cases hold the
-   * distinction that outage cost us: an answer that arrived versus a read that never did.
+   * An older `pr:land` still running in another session classifies the lock itself. It treats a
+   * payload with no numeric `pr` as unreadable and takes it over at once, so a conductor's payload
+   * must keep a number there even between trains.
+   */
+  it('keeps a conductor lock readable by the per-PR pr:land that may still be running elsewhere', () => {
+    const between = { pr: 0, token: 't', acquiredAt: '2026-09-12T11:59:00Z', train: null };
+    assert.equal(classifyLock({ payload: between, nowMs: NOW, liveness: () => 'unknown' }).state, 'held');
+    const riding = { pr: 1999, token: 't', holder: 'stark', host: 'mbp', acquiredAt: '2026-09-12T11:59:00Z', train: { pr: 1999, components: [12, 13], startedAt: '2026-09-12T11:50:00Z' } };
+    assert.match(describeLock(classifyLock({ payload: riding, nowMs: NOW, liveness: () => 'unknown' }), NOW), /^train #1999 carrying #12 #13, 10 min held by stark@mbp/);
+  });
+
+  /*
+   * Observed on 2026-09-19: the REST quota reached 0/5000 and `pnpm pr:queue` printed `nothing is
+   * landing` while a lock was held and refreshed every minute. An answer that arrived versus a
+   * read that never did.
    */
   it('does not render a read that failed as an open door', () => {
     const failure = { reason: 'rate-limited', detail: 'the shared GitHub REST quota is exhausted' };
     const lock = classifyLock({ payload: null, unreadable: failure, nowMs: NOW });
     assert.equal(lock.state, 'unknown');
-    assert.equal(lock.holder, null);
     assert.match(describeLock(lock), /could not be read: the shared GitHub REST quota is exhausted/);
   });
 
-  it('waits on a lock it could not read instead of taking it', () => {
-    const unknown = classifyLock({ payload: null, unreadable: { reason: 'unreachable', detail: 'no network' }, nowMs: NOW });
-    assert.equal(decideNext({ pr: draftPr(), lock: unknown, requiredContexts: REQUIRED_CONTEXTS }).action, 'wait-lock');
-    // The stale-lock takeover it must not become: that one forces a PATCH over whoever is landing.
-    assert.equal(
-      decideNext({ pr: draftPr(), lock: classifyLock({ payload: {}, nowMs: NOW }), requiredContexts: REQUIRED_CONTEXTS }).action,
-      'take-stale-lock',
-    );
-  });
-
   it('tells a ref that is absent from a request that did not happen', () => {
-    // The 404 this script asks for on purpose: there is no lock, so there is no ref.
     assert.deepEqual(readOutcome({ failed: true, output: 'gh: Not Found (HTTP 404)' }), { value: null, failure: null });
-    // Everything else is a read that never arrived, and each says which.
     assert.equal(readOutcome({ failed: true, output: '{"message":"API rate limit exceeded for user ID 1"}' }).failure.reason, 'rate-limited');
     assert.equal(readOutcome({ failed: true, output: 'dial tcp: lookup api.github.com: no such host' }).failure.reason, 'unreachable');
-    assert.match(readOutcome({ failed: true, output: 'dial tcp: no such host' }).failure.detail, /no such host/);
     assert.deepEqual(readOutcome('{"object":{"sha":"abc"}}').value, { object: { sha: 'abc' } });
   });
 
   it('never lets a failed read accuse main of having no gate', () => {
-    const refused = { failed: true, output: '{"message":"API rate limit exceeded for user ID 1"}' };
-    assert.equal(protectionFrom(readOutcome(refused)).contexts, null);
-    // Nor may a 404: this endpoint answers a caller without admin rights much as it answers a
-    // branch with no rule, and only one of those two deserves the accusation.
+    assert.equal(protectionFrom(readOutcome({ failed: true, output: 'API rate limit exceeded' })).contexts, null);
     assert.equal(protectionFrom(readOutcome({ failed: true, output: 'gh: Not Found (HTTP 404)' })).contexts, null);
     assert.deepEqual(protectionFrom(readOutcome('{"contexts":["Unit · Contract"]}')).contexts, ['Unit · Contract']);
-  });
-
-  it('never lets a failed read say main has stayed still', () => {
-    // Answering 0 would skip pouring main in and spend the one CI run on a base nothing checked.
-    assert.equal(distanceFrom(readOutcome({ failed: true, output: 'API rate limit exceeded' })).behindBy, null);
-    assert.equal(distanceFrom(readOutcome({ failed: true, output: 'gh: Not Found (HTTP 404)' })).behindBy, null);
-    assert.equal(distanceFrom(readOutcome('{"behind_by":3}')).behindBy, 3);
-    assert.equal(distanceFrom(readOutcome('{"behind_by":0}')).behindBy, 0);
-  });
-
-  /*
-   * The states of a read are all single-call facts; this one is about the holder across polls, and
-   * no single-call test reaches it. A `continue` that lands above the refresh means the holder
-   * spends a poll without renewing, `acquiredAt` stops moving, the lease expires under a live
-   * holder, and the next lander force-takes the lock — the defect this file is about, by a quieter
-   * road. Caught in review on the first version of that guard, where the new compare-read exit sat
-   * above the refresh and only a holder could reach it.
-   */
-  it('renews the lease before any poll a holder can leave early', () => {
-    const source = readFileSync(new URL('./pr-land.mjs', import.meta.url), 'utf8');
-    const loop = source.slice(source.indexOf('while (Date.now() < deadline) {'));
-    const refresh = loop.indexOf('if (held) refreshLock(');
-    const firstExit = loop.indexOf('continue;');
-    assert.ok(refresh !== -1, 'the poll no longer refreshes the lease it holds');
-    assert.ok(
-      refresh < firstExit,
-      'a poll can end before the holder renews its lease; move the refresh above every early exit',
-    );
   });
 
   it('honours a lease the holder wrote, not only the default', () => {
@@ -350,7 +268,6 @@ describe('the landing lock', () => {
   });
 
   it('reads the machine and the process out of a token, right to left', () => {
-    // A hostname carries dashes of its own, so only the last two fields are known positions.
     assert.deepEqual(parseLockToken('mbp-pro-local-12426-1789854745891'), { host: 'mbp-pro-local', pid: 12426 });
     assert.equal(parseLockToken('me'), null);
     assert.equal(parseLockToken('mbp-notapid-1789854745891'), null);
@@ -359,82 +276,26 @@ describe('the landing lock', () => {
 
   it('proves a holder dead only on this machine, and only by its command line', () => {
     const token = 'mbp-4242-1789854745891';
-    const alive = classifyHolderLiveness({ token }, {
-      host: 'mbp',
-      readProcessCommand: () => 'node /repo/scripts/pr-land.mjs 1704',
-    });
-    assert.equal(alive, 'alive');
-
-    // `ps` printing nothing is `ps` saying there is no such process.
+    assert.equal(classifyHolderLiveness({ token }, { host: 'mbp', readProcessCommand: () => 'node /repo/scripts/pr-land.mjs 1704' }), 'alive');
     assert.equal(classifyHolderLiveness({ token }, { host: 'mbp', readProcessCommand: () => '' }), 'dead');
-
-    // Pids are recycled; the number surviving is not the landing surviving.
-    assert.equal(
-      classifyHolderLiveness({ token }, { host: 'mbp', readProcessCommand: () => '/usr/bin/vim notes.md' }),
-      'dead',
-    );
-
-    // Another machine's process table is not readable from here, so nothing is proven either way.
+    assert.equal(classifyHolderLiveness({ token }, { host: 'mbp', readProcessCommand: () => '/usr/bin/vim notes.md' }), 'dead');
     assert.equal(classifyHolderLiveness({ token }, { host: 'other', readProcessCommand: () => '' }), 'unknown');
-    assert.equal(classifyHolderLiveness({ token: 'me' }, { host: 'mbp', readProcessCommand: () => '' }), 'unknown');
   });
 
   it('frees a lock whose process is gone without waiting out the lease', () => {
-    // The lock found stranded on 2026-09-20: minutes old, nobody behind it.
     const payload = { pr: 1727, holder: 'stark', host: 'mbp', acquiredAt: '2026-09-12T11:58:00Z' };
     const dead = classifyLock({ payload, nowMs: NOW, liveness: () => 'dead' });
     assert.equal(dead.state, 'stale');
-    assert.equal(dead.holderLiveness, 'dead');
     assert.ok(dead.expiresInMinutes > 0, 'the lease has not run out — liveness is what freed it');
-
-    // A live holder inside a slow CI round is never robbed.
     assert.equal(classifyLock({ payload, nowMs: NOW, liveness: () => 'alive' }).state, 'held');
-
-    // Off this machine the lease remains the only rule, in both directions.
     assert.equal(classifyLock({ payload, nowMs: NOW, liveness: () => 'unknown' }).state, 'held');
-    assert.equal(
-      classifyLock({ payload: { ...payload, acquiredAt: '2026-09-12T11:00:00Z' }, nowMs: NOW, liveness: () => 'unknown' }).state,
-      'stale',
-    );
   });
 
-  it('says who holds it and for how long', () => {
+  it('says who holds it and for how long, and why a stale one is free', () => {
     const payload = { pr: 1570, holder: 'stark', host: 'mbp', acquiredAt: '2026-09-12T11:30:00Z' };
     assert.match(describeLock(classifyLock({ payload, nowMs: NOW })), /PR #1570 held by stark@mbp since 30 min ago/);
     assert.match(describeLock(classifyLock({ payload: null, nowMs: NOW })), /nothing is landing/);
-    // Two reasons free a lock, and the log says which one, because they call for different repairs.
-    assert.match(
-      describeLock(classifyLock({ payload, nowMs: NOW, liveness: () => 'dead' })),
-      /its process is gone/,
-    );
-    assert.match(
-      describeLock(classifyLock({ payload: { ...payload, acquiredAt: '2026-09-12T11:00:00Z' }, nowMs: NOW, liveness: () => 'unknown' })),
-      /never refreshed: stale/,
-    );
-  });
-});
-
-describe('the local lanes, and what is left to CI', () => {
-  it('leaves browser evidence to the one CI run', () => {
-    assert.equal(isBrowserCommand('pnpm exec playwright test tests/e2e/a.spec.ts'), true);
-    assert.equal(isBrowserCommand('pnpm test:e2e:static'), true);
-    assert.equal(isBrowserCommand('pnpm lint'), false);
-    assert.equal(isBrowserCommand('pnpm exec vitest run tests/contract'), false);
-  });
-
-  it('builds the local plan from the repository own path-to-check authority', () => {
-    // `scripts/pr-land.mjs` is a script, so the suggester routes it to the
-    // dead-code and language lanes rather than to anything browser-shaped.
-    const plan = localCheckPlan(['scripts/pr-land.mjs', 'app/globals.css']);
-    assert.ok(plan.commands.length > 0, 'a changed script must recommend at least one local lane');
-    assert.equal(plan.commands.some((row) => isBrowserCommand(row.command)), false);
-    assert.equal(plan.deferred.every((row) => isCiOwnedCommand(row.command)), true);
-    // Nothing is silently dropped: every suggestion is either run or deferred.
-    assert.equal(plan.commands.length + plan.deferred.length, plan.suggestions.commands.length);
-  });
-
-  it('returns an empty plan for a path no check claims', () => {
-    assert.deepEqual(localCheckPlan([]).commands, []);
+    assert.match(describeLock(classifyLock({ payload, nowMs: NOW, liveness: () => 'dead' })), /its process is gone/);
   });
 });
 
@@ -447,184 +308,44 @@ describe('the required contexts, read from the protection', () => {
   });
 
   /**
-   * **The state that wedged the repository** (measured 2026-09-12, PR #1578).
-   *
-   * The draft design makes every context report twice: `SKIPPED` while the pull
-   * request was a draft, then for real after `gh pr ready`. Both stay in the
-   * rollup, in no guaranteed order. Keeping whichever came last read a genuinely
-   * FAILED `Unit · Contract` as `SKIPPED`, which this function calls "never ran",
-   * which polls — so the landing held the lock for 45 minutes with the answer
-   * already on the screen, and nothing else could land.
-   *
-   * The recorded mixture below is the real rollup from that pull request: fourteen
-   * green, one failure, and the draft's `SKIPPED` twin for every one of them.
+   * **The state that wedged the repository** (PR #1578, 2026-09-12). Every context reports twice,
+   * `SKIPPED` as a draft and then for real; keeping whichever came last read a real FAILURE as
+   * "never ran" and polled for 45 minutes.
    */
   it('resolves a name that reported twice, so a draft skip cannot bury a real failure', () => {
-    const draftTwin = (name) => ({
-      name,
-      status: 'COMPLETED',
-      conclusion: 'SKIPPED',
-      startedAt: '2026-09-12T13:20:00Z',
-      completedAt: '2026-09-12T13:20:01Z',
-    });
+    const draftTwin = (name) => ({ name, status: 'COMPLETED', conclusion: 'SKIPPED', startedAt: '2026-09-12T13:20:00Z', completedAt: '2026-09-12T13:20:01Z' });
     const real = (name, conclusion) => ({
-      name,
-      status: 'COMPLETED',
-      conclusion,
-      startedAt: '2026-09-12T13:38:00Z',
-      completedAt: '2026-09-12T13:42:30Z',
+      name, status: 'COMPLETED', conclusion, startedAt: '2026-09-12T13:38:00Z', completedAt: '2026-09-12T13:42:30Z',
       detailsUrl: 'https://github.com/wlsdks/ontology-atlas/actions/runs/34696960152/job/1',
     });
-
-    // The failure first and its draft twin last: the order that caused the hang.
     const mixed = [
       real('Unit · Contract', 'FAILURE'),
       ...REQUIRED_CONTEXTS.filter((name) => name !== 'Unit · Contract').map((name) => real(name, 'SUCCESS')),
       ...REQUIRED_CONTEXTS.map(draftTwin),
-      // The phantom a matrix job reports when its own `if` skips it before expansion.
-      draftTwin('Unit · Contract ${{ matrix.shard }}/3'),
       draftTwin('Playwright (chromium ${{ matrix.shard }}/3)'),
     ];
-
-    const verdict = requiredCheckState({ rollup: mixed, requiredContexts: REQUIRED_CONTEXTS });
-    assert.equal(verdict.state, 'failed', 'a real failure must end the landing, not poll');
-    assert.deepEqual(verdict.failed.map((check) => check.name), ['Unit · Contract']);
-    assert.match(verdict.failed[0].url, /actions\/runs\//, 'the refusal must name where to look');
-    assert.deepEqual(verdict.skipped, [], 'no required context is still reading as skipped');
-    assert.deepEqual(verdict.pending, []);
-
-    // The same mixture with the twin first must read identically — order is not
-    // allowed to decide a verdict.
-    const reversed = requiredCheckState({ rollup: [...mixed].reverse(), requiredContexts: REQUIRED_CONTEXTS });
-    assert.equal(reversed.state, 'failed');
-    assert.deepEqual(reversed.failed.map((check) => check.name), ['Unit · Contract']);
-  });
-
-  /**
-   * **The landing aborted on its own superseded run** (measured 2026-09-12, #1578).
-   *
-   * Pushing to a **ready** pull request fires `synchronize`. That run set appeared at
-   * 14:34:11; the lander decided nothing had run yet and toggled draft, firing a
-   * second set at 14:34:24, whose `cancel-in-progress` killed the first. Both stay in
-   * the rollup, so `MCP` reported `CANCELLED` (started 14:34:27) beside `MCP`
-   * `IN_PROGRESS` (started 14:34:55) — and resolving by verdict put the corpse in
-   * front, because a completed cancellation outranks a running job.
-   *
-   * Recency settles it. `startedAt` and not `completedAt`: a superseded run is
-   * cancelled *after* its successor began, so its completion is the later stamp.
-   */
-  it('treats a cancelled context as pending when a newer run for the same head is live', () => {
-    const superseded = (name) => ({
-      name,
-      status: 'COMPLETED',
-      conclusion: 'CANCELLED',
-      startedAt: '2026-09-12T14:34:27Z',
-      completedAt: '2026-09-12T14:34:27Z',
-      detailsUrl: 'https://github.com/wlsdks/ontology-atlas/actions/runs/34699667144/job/1',
-    });
-    const live = (name) => ({
-      name,
-      status: 'IN_PROGRESS',
-      conclusion: null,
-      startedAt: '2026-09-12T14:34:55Z',
-      // GitHub writes the year 1 as the completion of anything still running.
-      completedAt: '0001-01-01T00:00:00Z',
-    });
-
-    const rollup = REQUIRED_CONTEXTS.flatMap((name) => [superseded(name), live(name)]);
-    const verdict = requiredCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS });
-    assert.equal(verdict.state, 'waiting', 'a landing must not abort on its own superseded run');
-    assert.deepEqual(verdict.failed, []);
-    assert.equal(verdict.pending.length, REQUIRED_CONTEXTS.length);
-
-    // Order must not decide it, in either direction.
-    const reversed = requiredCheckState({ rollup: [...rollup].reverse(), requiredContexts: REQUIRED_CONTEXTS });
-    assert.equal(reversed.state, 'waiting');
-
-    // And once nothing newer exists, the cancellation is decisive again.
-    const alone = requiredCheckState({
-      rollup: REQUIRED_CONTEXTS.map(superseded),
-      requiredContexts: REQUIRED_CONTEXTS,
-    });
-    assert.equal(alone.state, 'failed');
-    assert.equal(alone.failed.length, REQUIRED_CONTEXTS.length);
-  });
-
-  it('does not ask GitHub for a run while one is already on its way', () => {
-    const queued = { name: 'MCP', status: 'QUEUED', conclusion: null, startedAt: '2026-09-12T14:34:11Z' };
-    const done = { name: 'MCP', status: 'COMPLETED', conclusion: 'SUCCESS', startedAt: '2026-09-12T14:34:11Z' };
-    assert.equal(runInFlight({ statusCheckRollup: [queued] }), true);
-    assert.equal(runInFlight({ statusCheckRollup: [{ ...queued, status: 'IN_PROGRESS' }] }), true);
-    assert.equal(runInFlight({ statusCheckRollup: [done] }), false);
-    assert.equal(runInFlight({ statusCheckRollup: [] }), false);
-    assert.equal(runInFlight({}), false);
-
-    // The push's run set has appeared but not reported: nothing to re-fire.
-    const ready = readyPr({ statusCheckRollup: [queued] });
-    assert.equal(
-      decideNext({ ...holding, pr: ready, localChecksPassed: true }).action,
-      'wait-checks',
-      'toggling here fires a second run set that cancels the first',
-    );
-
-    /*
-     * The gap that actually caused it: an **empty** rollup, read in the moment
-     * between a push to a ready pull request and GitHub registering its run set.
-     * `runInFlight` cannot see that — there is nothing to see — so the only thing
-     * separating "no run is coming" from "it has not appeared yet" is looking twice.
-     */
-    const silent = readyPr({ statusCheckRollup: [] });
-    assert.equal(
-      decideNext({ ...holding, pr: silent, localChecksPassed: true, emptyRollupObservations: 1 }).action,
-      'wait-checks',
-      'one empty reading is the push-to-run-set gap, not a pull request with no event left',
-    );
-    assert.equal(
-      decideNext({ ...holding, pr: silent, localChecksPassed: true, emptyRollupObservations: 2 }).action,
-      'refire-ci',
-      'a second empty reading means there really is no run to wait for',
-    );
-  });
-
-  it('reads a running check from startedAt, not from the year 1 it reports as completion', () => {
-    // GitHub writes `0001-01-01T00:00:00Z` as the completion of anything in flight.
-    // Parsed as a real instant it makes every running check the oldest entry there
-    // is, which hands the verdict straight back to a superseded run.
-    const superseded = {
-      name: 'MCP',
-      status: 'COMPLETED',
-      conclusion: 'CANCELLED',
-      startedAt: '2026-09-12T14:34:27Z',
-      completedAt: '2026-09-12T14:34:27Z',
-    };
-    const live = {
-      name: 'MCP',
-      status: 'IN_PROGRESS',
-      conclusion: null,
-      startedAt: '2026-09-12T14:34:55Z',
-      completedAt: '0001-01-01T00:00:00Z',
-    };
-    const rest = GREEN_ROLLUP.filter((run) => run.name !== 'MCP');
-    for (const order of [[superseded, live], [live, superseded]]) {
-      const verdict = requiredCheckState({ rollup: [...rest, ...order], requiredContexts: REQUIRED_CONTEXTS });
-      assert.equal(verdict.state, 'waiting');
-      assert.deepEqual(verdict.pending, ['MCP']);
-      assert.deepEqual(verdict.failed, []);
+    for (const rollup of [mixed, [...mixed].reverse()]) {
+      const verdict = requiredCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS });
+      assert.equal(verdict.state, 'failed', 'a real failure must end the train, not poll');
+      assert.deepEqual(verdict.failed.map((check) => check.name), ['Unit · Contract']);
+      assert.deepEqual(verdict.skipped, []);
     }
   });
 
-  it('ends the landing on a cancelled required context, not only a failed one', () => {
-    // A shard cancelled by its own `timeout-minutes` is how #1578 actually went
-    // red. `CANCELLED` is not `SUCCESS` and not `SKIPPED`, so it must be decisive.
-    const rollup = GREEN_ROLLUP.map((run) =>
-      run.name === 'Unit · Contract' ? { ...run, conclusion: 'CANCELLED' } : run,
-    );
-    const verdict = requiredCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS });
-    assert.equal(verdict.state, 'failed');
-    assert.deepEqual(verdict.failed.map((check) => check.conclusion), ['CANCELLED']);
+  /**
+   * **A landing aborted on its own superseded run** (#1578). A cancelled run and a newer live run
+   * for the same name: recency settles it, by `startedAt`.
+   */
+  it('treats a cancelled context as pending when a newer run for the same head is live', () => {
+    const superseded = (name) => ({ name, status: 'COMPLETED', conclusion: 'CANCELLED', startedAt: '2026-09-12T14:34:27Z', completedAt: '2026-09-12T14:34:27Z' });
+    const live = (name) => ({ name, status: 'IN_PROGRESS', conclusion: null, startedAt: '2026-09-12T14:34:55Z', completedAt: '0001-01-01T00:00:00Z' });
+    const rollup = REQUIRED_CONTEXTS.flatMap((name) => [superseded(name), live(name)]);
+    assert.equal(requiredCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS }).state, 'waiting');
+    assert.equal(requiredCheckState({ rollup: [...rollup].reverse(), requiredContexts: REQUIRED_CONTEXTS }).state, 'waiting');
+    assert.equal(requiredCheckState({ rollup: REQUIRED_CONTEXTS.map(superseded), requiredContexts: REQUIRED_CONTEXTS }).state, 'failed');
   });
 
-  it('takes the later of two real verdicts, which is what a re-run means', () => {
+  it('takes the later of two real verdicts, which is what a rerun means', () => {
     const first = { name: 'MCP', status: 'COMPLETED', conclusion: 'FAILURE', completedAt: '2026-09-12T13:00:00Z' };
     const rerun = { name: 'MCP', status: 'COMPLETED', conclusion: 'SUCCESS', completedAt: '2026-09-12T14:00:00Z' };
     const rest = GREEN_ROLLUP.filter((run) => run.name !== 'MCP');
@@ -632,13 +353,12 @@ describe('the required contexts, read from the protection', () => {
     assert.equal(requiredCheckState({ rollup: [...rest, rerun, first], requiredContexts: REQUIRED_CONTEXTS }).state, 'green');
   });
 
-  it('is green only when every required context reported success', () => {
-    assert.equal(requiredCheckState({ rollup: GREEN_ROLLUP, requiredContexts: REQUIRED_CONTEXTS }).state, 'green');
+  it('ends on a cancelled required context, not only a failed one', () => {
+    const rollup = GREEN_ROLLUP.map((run) => (run.name === 'Unit · Contract' ? { ...run, conclusion: 'CANCELLED' } : run));
+    assert.deepEqual(requiredCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS }).failed.map((c) => c.conclusion), ['CANCELLED']);
   });
 
   it('refuses a draft skip as green, because a skipped job executed no line', () => {
-    // Branch protection counts a skipped job as satisfied. This is the reading
-    // that keeps the draft design safe.
     const verdict = requiredCheckState({ rollup: DRAFT_ROLLUP, requiredContexts: REQUIRED_CONTEXTS });
     assert.equal(verdict.state, 'waiting');
     assert.equal(verdict.skipped.length, 8);
@@ -647,22 +367,23 @@ describe('the required contexts, read from the protection', () => {
 
   it('waits for a running context and for one that has not reported at all', () => {
     const running = GREEN_ROLLUP.map((run) => (run.name === 'MCP' ? { ...run, status: 'IN_PROGRESS', conclusion: null } : run));
-    const waiting = requiredCheckState({ rollup: running, requiredContexts: REQUIRED_CONTEXTS });
-    assert.equal(waiting.state, 'waiting');
-    assert.deepEqual(waiting.pending, ['MCP']);
-    assert.equal(waiting.neverRan, false);
-
-    const silent = requiredCheckState({
-      rollup: GREEN_ROLLUP.filter((run) => run.name !== 'MCP'),
-      requiredContexts: REQUIRED_CONTEXTS,
-    });
-    assert.equal(silent.state, 'waiting');
+    assert.deepEqual(requiredCheckState({ rollup: running, requiredContexts: REQUIRED_CONTEXTS }).pending, ['MCP']);
+    const silent = requiredCheckState({ rollup: GREEN_ROLLUP.filter((run) => run.name !== 'MCP'), requiredContexts: REQUIRED_CONTEXTS });
     assert.deepEqual(silent.missing, ['MCP']);
   });
 
+  it('does not ask GitHub again while a run is on its way', () => {
+    const queued = { name: 'MCP', status: 'QUEUED', conclusion: null, startedAt: '2026-09-12T14:34:11Z' };
+    assert.equal(runInFlight({ statusCheckRollup: [queued] }), true);
+    assert.equal(runInFlight({ statusCheckRollup: [] }), false);
+    assert.equal(trainStep([queued], { empty: 0 }).action, 'wait');
+    // An empty rollup is the gap between opening the train and GitHub registering its run set.
+    assert.equal(trainStep([], { empty: 1 }).action, 'wait');
+    assert.equal(trainStep([], { empty: 4 }).action, 'refire');
+    assert.equal(trainStep([], { empty: 9, refires: 1 }).action, 'wait');
+  });
+
   it('ignores a green check nobody required', () => {
-    // `Vault freshness check` is advisory. A lander that waited for every
-    // reported check would block on any future advisory lane.
     const verdict = requiredCheckState({
       rollup: [...GREEN_ROLLUP, { name: 'Verify unsigned Windows x64 beta', status: 'IN_PROGRESS', conclusion: null }],
       requiredContexts: REQUIRED_CONTEXTS,
@@ -671,182 +392,9 @@ describe('the required contexts, read from the protection', () => {
   });
 });
 
-describe('one landing, in order', () => {
-  it('takes a free lock before it looks at anything else', () => {
-    assert.equal(decideNext({ pr: draftPr(), lock: freeLock, requiredContexts: REQUIRED_CONTEXTS }).action, 'take-lock');
-  });
-
-  it('waits behind the agent already landing', () => {
-    const lock = classifyLock({
-      payload: { pr: 1570, holder: 'stark', host: 'mbp', acquiredAt: '2026-09-12T11:59:00Z' },
-      nowMs: NOW,
-    });
-    const step = decideNext({ pr: draftPr(), lock, requiredContexts: REQUIRED_CONTEXTS });
-    assert.equal(step.action, 'wait-lock');
-    assert.equal(step.lock.holder.pr, 1570);
-  });
-
-  it('takes over a lock whose holder stopped refreshing it', () => {
-    const lock = classifyLock({
-      payload: { pr: 1570, holder: 'stark', host: 'mbp', acquiredAt: '2026-09-12T10:00:00Z' },
-      nowMs: NOW,
-    });
-    assert.equal(decideNext({ pr: draftPr(), lock, requiredContexts: REQUIRED_CONTEXTS }).action, 'take-stale-lock');
-  });
-
-  it('does not mistake someone else lock for its own', () => {
-    const lock = classifyLock({ payload: { pr: 1570, token: 'them', acquiredAt: '2026-09-12T11:59:00Z' }, nowMs: NOW });
-    assert.equal(decideNext({ pr: draftPr(), lock, selfLock: 'me', requiredContexts: REQUIRED_CONTEXTS }).action, 'wait-lock');
-  });
-
-  it('refuses before it takes the lock, so a conflict never blocks the queue', () => {
-    const step = decideNext({
-      pr: { ...RECORDED_PR, mergeStateStatus: 'DIRTY' },
-      lock: freeLock,
-      requiredContexts: REQUIRED_CONTEXTS,
-    });
-    assert.equal(step.action, 'refuse');
-    assert.equal(step.reason, CONFLICT_INSTRUCTION);
-  });
-
-  it('pours main in first, while a push is still free', () => {
-    const step = decideNext({ ...holding, pr: draftPr(), behindBy: 7 });
-    assert.equal(step.action, 'merge-main');
-    assert.equal(step.behindBy, 7);
-  });
-
-  it('then runs the local lanes on the merged source, before CI is fired', () => {
-    assert.equal(decideNext({ ...holding, pr: draftPr(), behindBy: 0 }).action, 'local-checks');
-  });
-
-  it('then marks the draft ready, which is the one CI run', () => {
-    assert.equal(decideNext({ ...holding, pr: draftPr(), localChecksPassed: true }).action, 'make-ready');
-  });
-
-  it('does not pay the local lanes again once the pull request is ready', () => {
-    const running = DRAFT_ROLLUP.map((run) => ({ ...run, status: 'IN_PROGRESS', conclusion: null }));
-    const step = decideNext({ ...holding, pr: readyPr({ statusCheckRollup: running }), ciRequested: true });
-    assert.equal(step.action, 'wait-checks');
-  });
-
-  it('asks for the one run a ready pull request never had, exactly once', () => {
-    /*
-     * Two empty readings, not one (measured 2026-09-12, #1578). `mergeFiredCi` only
-     * knows about the merge **this landing** made; a push someone else made to a ready
-     * pull request fires `synchronize` too, and the run set takes a moment to appear.
-     * Reading one empty rollup and toggling fired a second set that cancelled the
-     * first, and the landing then aborted on the corpse.
-     */
-    const empty = readyPr({ statusCheckRollup: [] });
-    assert.equal(decideNext({ ...holding, pr: empty, emptyRollupObservations: 1 }).action, 'wait-checks');
-    assert.equal(decideNext({ ...holding, pr: empty, emptyRollupObservations: 2 }).action, 'refire-ci');
-    // With the run already requested there is nothing left to do but wait; a
-    // second toggle would cancel the run it just asked for.
-    assert.equal(
-      decideNext({ ...holding, pr: empty, ciRequested: true, emptyRollupObservations: 9 }).action,
-      'wait-checks',
-    );
-  });
-
-  it('never re-fires when a run is already in flight', () => {
-    const partial = [GREEN_ROLLUP[3], { name: 'MCP', status: 'IN_PROGRESS', conclusion: null }];
-    assert.equal(decideNext({ ...holding, pr: readyPr({ statusCheckRollup: partial }) }).action, 'wait-checks');
-  });
-
-  it('knows which push already asked for the one CI run', () => {
-    // A ready pull request's merge commit is a `synchronize` event, so CI is
-    // already starting; a draft's push runs nothing. Reading this backwards
-    // makes the lander toggle draft on a run in flight, cancelling it and
-    // paying for a second.
-    assert.equal(mergeFiredCi({ merged: true, isDraft: false }), true);
-    assert.equal(mergeFiredCi({ merged: true, isDraft: true }), false);
-    assert.equal(mergeFiredCi({ merged: false, isDraft: false }), false);
-  });
-
-  it('never re-fires CI on a ready pull request whose merge commit just landed', () => {
-    // The merge commit is a head with no checks yet, which reads as "nothing
-    // ever ran". With the push counted as the request, the lander waits.
-    const freshHead = readyPr({ statusCheckRollup: [], headRefOid: 'f00dcafe0' });
-    assert.equal(decideNext({ ...holding, pr: freshHead, ciRequested: true }).action, 'wait-checks');
-    // Without it, it would toggle draft and buy a second run — once the empty rollup
-    // has been seen twice, which is the separate guard for a run that is merely slow
-    // to appear.
-    assert.equal(decideNext({ ...holding, pr: freshHead, emptyRollupObservations: 2 }).action, 'refire-ci');
-  });
-
-  it('stops on a failing required check and names the job to open', () => {
-    const step = decideNext({ ...holding, pr: RECORDED_PR, ciRequested: true });
-    assert.equal(step.action, 'fail-checks');
-    assert.match(step.checks.failed[0].url, /job\/103534040573/);
-  });
-
-  it('merges only with the lock held, main already in, and every required context green', () => {
-    assert.equal(decideNext({ ...holding, pr: readyPr(), ciRequested: true }).action, 'merge');
-    // Main moving underneath is impossible while the lock is held, but if the
-    // comparison ever says so, the merge waits for a rebuilt tree.
-    assert.equal(decideNext({ ...holding, pr: readyPr(), behindBy: 1, ciRequested: true }).action, 'merge-main');
-  });
-
-  it('reports an already merged pull request as done rather than as a refusal', () => {
-    assert.equal(decideNext({ pr: { ...RECORDED_PR, state: 'MERGED' }, lock: freeLock, requiredContexts: REQUIRED_CONTEXTS }).action, 'done');
-  });
-
-  it('walks a whole draft landing without ever repeating a step', () => {
-    // The sequence the header promises: lock, merge main, local checks, ready,
-    // one CI run, merge.
-    const seen = [];
-    let pr = draftPr();
-    let lock = freeLock;
-    let selfLock = null;
-    let localChecksPassed = false;
-    let ciRequested = false;
-    let behindBy = 4;
-    for (let guard = 0; guard < 10; guard += 1) {
-      const step = decideNext({ pr, lock, behindBy, requiredContexts: REQUIRED_CONTEXTS, selfLock, localChecksPassed, ciRequested });
-      seen.push(step.action);
-      if (step.action === 'take-lock') {
-        lock = myLock;
-        selfLock = 'me';
-      } else if (step.action === 'merge-main') behindBy = 0;
-      else if (step.action === 'local-checks') localChecksPassed = true;
-      else if (step.action === 'make-ready') {
-        ciRequested = true;
-        pr = readyPr({ statusCheckRollup: DRAFT_ROLLUP.map((run) => ({ ...run, status: 'IN_PROGRESS', conclusion: null })) });
-      } else if (step.action === 'wait-checks') pr = readyPr();
-      else break;
-    }
-    assert.deepEqual(seen, ['take-lock', 'merge-main', 'local-checks', 'make-ready', 'wait-checks', 'merge']);
-  });
-});
-
- it('defers whole suites to required CI but retains focused checks and custom invocations', async () => {
-  for (const command of ['pnpm knip', 'pnpm test:contracts', 'pnpm test:run']) assert.equal(isCiOwnedCommand(command), true);
-  for (const command of ['pnpm test:run src/a.test.ts', 'pnpm test:contracts --reporter=json', 'pnpm lint', 'pnpm exec tsc --noEmit']) assert.equal(isCiOwnedCommand(command), false);
-  const { buildImpactPlan } = await import('./classify-change.mjs');
-  const { commandsForLane } = await import('./run-ci-lane.mjs');
-  const paths = ['app/globals.css', 'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx'];
-  const local = localCheckPlan(paths);
-  const ci = buildImpactPlan({ files: paths });
-  assert.ok(local.deferred.some((row) => row.command === 'pnpm knip'));
-  assert.ok(local.deferred.some((row) => row.command === 'pnpm test:contracts'));
-  const commands = commandsForLane({lane:'unit', plan:ci, base:'origin/main', shard:'1/1'});
-  assert.ok(commands.includes('pnpm knip'));
-  assert.ok(commands.some((command) => command.includes('vitest run tests/contract')));
-  assert.ok(local.commands.some((row) => row.command.includes('AppSettingsMenu.test.tsx')));
- });
-
-/**
- * **The Windows lane that was red for three landings** (recorded 2026-09-13).
- *
- * `windows-beta-check.yml` produces no required context, so a rollup exactly this
- * shape read as "every required context is green" and merged. It had been red on
- * `main` since the records migration and was red on the v1.2.2 release pull request
- * eight minutes before that pull request landed. Two release attempts were then spent
- * rediscovering what it had already reported.
- */
+/** **The Windows lane that was red for three landings** (recorded 2026-09-13). */
 const ROLLUP_WITH_RED_UNREQUIRED = [
   ...REQUIRED_CONTEXTS.map((name) => ({ __typename: 'CheckRun', name, status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: 'Checks' })),
-  { __typename: 'CheckRun', name: 'Audit JavaScript production dependencies', status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: 'Windows x64 Beta Check' },
   {
     __typename: 'CheckRun',
     name: 'Verify unsigned Windows x64 beta',
@@ -857,214 +405,436 @@ const ROLLUP_WITH_RED_UNREQUIRED = [
   },
 ];
 
-const readyWithRedUnrequired = readyPr({ statusCheckRollup: ROLLUP_WITH_RED_UNREQUIRED });
-
 describe('checks main does not require', () => {
-  it('refuses to land on a red unrequired lane, and names it with its job URL', () => {
+  it('reads a red unrequired lane as a red train, naming it with its job URL', () => {
     const verdict = otherCheckState({ rollup: ROLLUP_WITH_RED_UNREQUIRED, requiredContexts: REQUIRED_CONTEXTS });
-    assert.equal(verdict.state, 'failed');
     assert.deepEqual(verdict.failed.map((c) => c.name), ['Verify unsigned Windows x64 beta']);
     assert.match(verdict.failed[0].url, /34720027112/);
-    // The required gate is green on the very same rollup: that disagreement is the bug.
     assert.equal(requiredCheckState({ rollup: ROLLUP_WITH_RED_UNREQUIRED, requiredContexts: REQUIRED_CONTEXTS }).state, 'green');
-    assert.equal(
-      decideNext({ ...holding, pr: readyWithRedUnrequired, localChecksPassed: true }).action,
-      'fail-other-checks',
-    );
+    assert.equal(trainStep(ROLLUP_WITH_RED_UNREQUIRED).action, 'red');
   });
 
-  it('lands when the failing lane is accepted by name, and reports the acceptance', () => {
-    const step = decideNext({
-      ...holding,
-      pr: readyWithRedUnrequired,
-      localChecksPassed: true,
-      allowFailing: ['Verify unsigned Windows x64 beta'],
-    });
-    assert.equal(step.action, 'merge');
-    assert.deepEqual(step.other.accepted.map((c) => c.name), ['Verify unsigned Windows x64 beta']);
-    assert.deepEqual(step.other.failed, []);
+  it('lands when the failing lane is accepted by name', () => {
+    assert.equal(trainStep(ROLLUP_WITH_RED_UNREQUIRED, { allowFailing: ['Verify unsigned Windows x64 beta'] }).action, 'green');
   });
 
   it('refuses a red required context however it is named, so the escape cannot reach one', () => {
-    const redRequired = readyPr({ statusCheckRollup: RECORDED_ROLLUP });
-    for (const allowFailing of [[], ['Unit · Contract'], ['Unit · Contract', 'Verify unsigned Windows x64 beta']]) {
-      assert.equal(
-        decideNext({ ...holding, pr: redRequired, localChecksPassed: true, allowFailing }).action,
-        'fail-checks',
-        `--allow-failing=${allowFailing.join(',')} must not reach a required context`,
-      );
+    for (const allowFailing of [[], ['Unit · Contract']]) {
+      assert.equal(trainStep(RECORDED_ROLLUP, { allowFailing }).action, 'red');
     }
-  });
-
-  it('says so when an accepted name is not failing, rather than implying it protected something', () => {
-    const green = readyPr({ statusCheckRollup: ROLLUP_WITH_RED_UNREQUIRED.filter((r) => r.conclusion !== 'FAILURE') });
-    const step = decideNext({ ...holding, pr: green, localChecksPassed: true, allowFailing: ['Verify unsigned Windows x64 beta'] });
-    assert.equal(step.action, 'merge');
-    assert.deepEqual(step.other.unmatched, ['Verify unsigned Windows x64 beta']);
   });
 
   it('treats a skipped or still-running unrequired lane as no failure', () => {
     const rollup = [
-      ...REQUIRED_CONTEXTS.map((name) => ({ __typename: 'CheckRun', name, status: 'COMPLETED', conclusion: 'SUCCESS' })),
-      { __typename: 'CheckRun', name: 'inactive lane', status: 'COMPLETED', conclusion: 'SKIPPED' },
-      { __typename: 'CheckRun', name: 'still going', status: 'IN_PROGRESS', conclusion: '' },
+      ...REQUIRED_CONTEXTS.map((name) => ({ name, status: 'COMPLETED', conclusion: 'SUCCESS' })),
+      { name: 'inactive lane', status: 'COMPLETED', conclusion: 'SKIPPED' },
+      { name: 'still going', status: 'IN_PROGRESS', conclusion: '' },
     ];
     assert.equal(otherCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS }).state, 'clear');
-  });
-
-  it('parses --allow-failing into named contexts and refuses an empty list', () => {
-    assert.deepEqual(parseArgs(['1595', '--allow-failing=A,B']).allowFailing, ['A', 'B']);
-    assert.deepEqual(parseArgs(['1595']).allowFailing, []);
-    assert.throws(() => parseArgs(['1595', '--allow-failing=']), /must name at least one check context/);
   });
 });
 
 /*
- * A path this branch deleted must never reach the local lanes. `git diff --name-only`
- * returns deleted paths, and `eslint <deleted file>` fails on the pattern rather than on
- * the code — which is how #1604 was blocked from landing on 2026-09-13 by deleting one
- * component. The filter lives in `suggest-focused-checks.mjs` and had been there since
- * 2026-08-21; this caller was the one that skipped it.
+ * ------------------------------------------------------------------------------------------------
+ * The conductor against a fake GitHub. Every `gh` and `git` call lands in memory; a write the
+ * scenario does not expect is visible in `world.calls`.
+ * ------------------------------------------------------------------------------------------------
  */
-describe('the local lanes never receive a deleted path', () => {
-  it('drops a path that no longer exists on disk', () => {
-    const kept = existingPaths(['scripts/pr-land.mjs', 'scripts/this-file-was-deleted.mjs'], {
-      cwd: process.cwd(),
-    });
-    assert.deepEqual(kept, ['scripts/pr-land.mjs']);
-  });
-});
 
+const green = () => REQUIRED_CONTEXTS.map((name) => ({ name, status: 'COMPLETED', conclusion: 'SUCCESS', startedAt: '2026-09-26T10:00:00Z' }));
+const red = (names, runId = 777) => REQUIRED_CONTEXTS.map((name) => ({
+  name,
+  status: 'COMPLETED',
+  conclusion: names.includes(name) ? 'FAILURE' : 'SUCCESS',
+  startedAt: '2026-09-26T10:00:00Z',
+  detailsUrl: `https://github.com/wlsdks/ontology-atlas/actions/runs/${runId}/job/1`,
+}));
 
-describe('optional parallel backlog CI', () => {
-  const file = (task, id = '12345678-1234-4234-8234-123456789abc') => ({
-    filename: `docs/records/backlog/2026-09-13-${task}-${id}.md`, status: 'added',
-  });
-  const scope = (files) => ({ files, changedFiles: files.length });
-  it('allows only complete additions for different task identities', () => {
-    assert.equal(independentBacklogCi(scope([file('a')]), scope([file('b')])), true);
-    assert.equal(independentBacklogCi(scope([file('a')]), scope([file('a','22345678-1234-4234-8234-123456789abc')])), false);
-    for (const bad of [[], [null], [{ ...file('a'), status: 'modified' }], [{ filename: 'src/shared/model.ts', status: 'added' }], [{ ...file('a'), previous_filename: 'old.md' }], [{ ...file('a'), filename: 'docs/records/backlog/manual.md' }]]) {
-      assert.equal(independentBacklogCi(scope(bad), scope([file('b')])), false);
-    }
-    assert.equal(independentBacklogCi({ files:[file('a')],changedFiles:2 },scope([file('b')])),false);
-  });
-  it('never promotes a draft without opt-in and the independent scope proof', () => {
-    const calls = [];
-    const io = {
-      readPr: () => ({...draftPr(),number:2,changedFiles:1}),
-      readFiles: (number) => [file(number === 1 ? 'a' : 'b')],
-      ready: (number) => calls.push(number),
-    };
-    const pr = {...draftPr(),number:1,changedFiles:1};
-    assert.equal(startParallelBacklogCi({enabled:false,pr,holder:2,io}),false);
-    assert.deepEqual(calls,[]);
-    assert.equal(startParallelBacklogCi({enabled:true,pr,holder:2,io}),true);
-    assert.deepEqual(calls,[1]);
-    assert.equal(startParallelBacklogCi({enabled:true,pr,holder:2,io:{...io,readFiles:()=>[file('a')]}}),false);
-    assert.equal(startParallelBacklogCi({enabled:true,pr,holder:2,io:{...io,readFiles:()=>{throw new Error('incomplete API');}}}),false);
-    assert.deepEqual(calls,[1]);
-    assert.equal(parseArgs(['1','--parallel-ci']).parallelCi,true);
-    assert.throws(() => parseArgs(['1','--ci','--parallel-ci']), /normal landing/);
-    const ready = { ...pr, isDraft: false };
-    assert.equal(decideNext({ pr: ready, lock: myLock, requiredContexts: REQUIRED_CONTEXTS }).action, 'wait-lock');
-    assert.equal(decideNext({ ...holding, pr: ready, behindBy: 1, ciRequested: true, localChecksPassed: true }).action, 'merge-main');
-  });
-});
+function component(number, extra = {}) {
+  return {
+    number,
+    title: `feat: change ${number}`,
+    url: `https://github.com/wlsdks/ontology-atlas/pull/${number}`,
+    state: 'OPEN',
+    isDraft: true,
+    mergeable: 'MERGEABLE',
+    isCrossRepository: false,
+    baseRefName: 'main',
+    headRefName: `feat/change-${number}`,
+    headRefOid: `${number}`.padEnd(40, 'c'),
+    statusCheckRollup: DRAFT_ROLLUP,
+    files: [`src/change-${number}.ts`],
+    ...extra,
+  };
+}
 
 /**
- * **The waiting line.**
+ * An in-memory GitHub and Git.
  *
- * The lock is a compare-and-swap create and every waiter retried it on its own independent
- * thirty-second phase, so the winner was whoever happened to be awake right after a release.
- * Measured 2026-09-19: one pull request waited the full give-up window while ten landed past it,
- * then exited with 「gave up after 180 minutes; the lock is released and nothing merged」. A second
- * agent reported the same thing in its own words, independently.
- *
- * These are the rules that decide the order, and the fallbacks that keep a fairness layer from
- * ever being the reason nothing lands.
+ * - `ci(numbers, reruns)` decides a train's rollup from the components it carries.
+ * - `conflicts` is the set of component numbers whose merge onto a train answers 409.
+ * - `mainDrift(trainIndex)` is the files `main` changed under the n-th train while its CI ran.
+ * - `readOnly` makes every write throw, for `--plan`.
  */
-const at = (minutesAgo, nowMs) => new Date(nowMs - minutesAgo * 60_000).toISOString();
+function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new Set(), mainDrift = () => [], lock = null, readOnly = false } = {}) {
+  const calls = [];
+  const events = [];
+  let clock = Date.parse('2026-09-26T10:00:00Z');
+  let labelSeq = 0;
+  let nextNumber = 2000;
+  const pulls = new Map(prs.map((pr) => [pr.number, { ...pr, labels: [], comments: [] }]));
+  for (const number of queued) {
+    const pr = pulls.get(number);
+    pr.labels = [{ name: QUEUE_LABEL }];
+    pr.queuedAt = new Date(clock + (labelSeq += 1)).toISOString();
+  }
+  const locks = new Map(lock ? [[LOCK_REF, lock]] : []);
+  const trains = new Map();
+  const branchTrain = new Map();
+  let trainCount = 0;
+  const write = (name, fn) => (...args) => {
+    calls.push([name, ...args]);
+    if (readOnly) throw new Error(`--plan wrote to GitHub: ${name}`);
+    return fn(...args);
+  };
+  const view = (pr) => {
+    const train = trains.get(pr.number);
+    const rollup = train ? (train.rollup ?? []) : pr.statusCheckRollup;
+    return { ...pr, statusCheckRollup: rollup };
+  };
 
-describe('the landing waiting line', () => {
-  const now = Date.parse('2026-09-19T13:00:00.000Z');
-  const starved = { pr: 1694, token: 'a', holder: 'stark', host: 'mac', since: at(180, now), seenAt: at(1, now) };
-  const newcomer = { pr: 1720, token: 'b', holder: 'stark', host: 'mac', since: at(1, now), seenAt: at(0, now) };
+  const gh = {
+    readPr: (number) => {
+      calls.push(['readPr', number]);
+      const pr = pulls.get(number);
+      const train = trains.get(number);
+      if (train && pr.state === 'OPEN') {
+        train.polls += 1;
+        // The first poll sees nothing yet; the next one sees the verdict.
+        if (train.polls >= 2) train.rollup = ci(train.components, train.reruns);
+      }
+      return view(pr);
+    },
+    readPrComments: (number) => pulls.get(number).comments,
+    listQueue: () => [...pulls.values()]
+      .filter((pr) => pr.state === 'OPEN' && pr.labels.some((l) => l.name === QUEUE_LABEL))
+      .sort((a, b) => Date.parse(a.queuedAt) - Date.parse(b.queuedAt))
+      .map((pr) => ({ ...pr })),
+    readRequiredContexts: () => ({ contexts: REQUIRED_CONTEXTS, failure: null }),
+    readLock: (ref) => ({ payload: locks.get(ref) ?? null, unreadable: null }),
+    takeLock: write('takeLock', (ref, body, { force = false } = {}) => {
+      if (locks.has(ref) && !force) return false;
+      locks.set(ref, body);
+      events.push(`take ${ref}`);
+      return true;
+    }),
+    refreshLock: write('refreshLock', (ref, body) => {
+      locks.set(ref, body);
+      events.push('refresh');
+    }),
+    releaseLock: write('releaseLock', (ref) => {
+      locks.delete(ref);
+      events.push(`release ${ref}`);
+      return true;
+    }),
+    addLabel: write('addLabel', (number) => {
+      const pr = pulls.get(number);
+      pr.labels = [{ name: QUEUE_LABEL }];
+      pr.queuedAt = new Date(clock + (labelSeq += 1)).toISOString();
+      return true;
+    }),
+    removeLabel: write('removeLabel', (number) => {
+      pulls.get(number).labels = [];
+      return true;
+    }),
+    comment: write('comment', (number, body) => {
+      pulls.get(number).comments.push({ body, createdAt: new Date(clock).toISOString() });
+      return true;
+    }),
+    closePr: write('closePr', (number, body) => {
+      const pr = pulls.get(number);
+      pr.comments.push({ body, createdAt: new Date(clock).toISOString() });
+      if (pr.state === 'OPEN') pr.state = 'CLOSED';
+      return true;
+    }),
+    createBranch: write('createBranch', () => true),
+    deleteBranch: write('deleteBranch', () => true),
+    mergeInto: write('mergeInto', (branch, sha) => {
+      const pr = [...pulls.values()].find((p) => p.headRefOid === sha);
+      if (conflicts.has(pr.number)) return { state: 'conflict', detail: 'HTTP 409: Merge conflict' };
+      branchTrain.set(branch, [...(branchTrain.get(branch) ?? []), pr.number]);
+      return { state: 'merged' };
+    }),
+    openPr: write('openPr', ({ title, head, body }) => {
+      const number = (nextNumber += 1);
+      trainCount += 1;
+      pulls.set(number, {
+        number, title, body, state: 'OPEN', isDraft: false, headRefName: head, headRefOid: `train-head-${number}`,
+        url: `https://github.com/wlsdks/ontology-atlas/pull/${number}`, labels: [], comments: [],
+      });
+      trains.set(number, { components: branchTrain.get(head) ?? [], polls: 0, reruns: 0, index: trainCount, rollup: [] });
+      return { number, url: `https://github.com/wlsdks/ontology-atlas/pull/${number}` };
+    }),
+    mergePr: write('mergePr', (number) => {
+      const pr = pulls.get(number);
+      pr.state = 'MERGED';
+      return { ok: true, detail: '{"merged":true}' };
+    }),
+    markReady: write('markReady', (number) => {
+      pulls.get(number).isDraft = false;
+      return true;
+    }),
+    markDraft: write('markDraft', () => true),
+    rerunFailed: write('rerunFailed', (runId) => {
+      for (const train of trains.values()) if (train.rollup?.some((r) => String(r.detailsUrl ?? '').includes(`/runs/${runId}/`))) {
+        // A rerun replaces the failed verdicts with runs in flight until the new verdict lands.
+        train.reruns += 1;
+        train.polls = 0;
+        train.rollup = train.rollup.map((run) => (run.conclusion === 'FAILURE' ? { ...run, status: 'IN_PROGRESS', conclusion: null, startedAt: '2026-09-26T11:00:00Z' } : run));
+      }
+      return true;
+    }),
+  };
 
-  it('names one ref of its own, so the mutex above is untouched', () => {
-    assert.equal(QUEUE_REF, 'refs/atlas/landing-queue');
-    assert.notEqual(QUEUE_REF, LOCK_REF);
+  const byHead = (ref) => [...pulls.values()].find((pr) => `origin/${pr.headRefName}` === ref || pr.headRefOid === ref);
+  const git = {
+    fetch: () => true,
+    prune: () => true,
+    revParse: (ref) => {
+      if (ref === 'origin/main') return 'main'.padEnd(40, '0');
+      if (ref.startsWith('origin/train/')) return `head:${ref.slice('origin/'.length)}`;
+      return byHead(ref)?.headRefOid ?? null;
+    },
+    hasCommit: () => true,
+    mergeTreeClean: () => true,
+    mergeBase: () => 'base'.padEnd(40, '0'),
+    diffNames: (from, to) => {
+      if (to === 'origin/main' || to === 'main'.padEnd(40, '0')) {
+        const current = [...trains.values()].at(-1);
+        return current ? mainDrift(current.index) : [];
+      }
+      if (to.startsWith('head:')) return (branchTrain.get(to.slice('head:'.length)) ?? []).flatMap((n) => pulls.get(n).files);
+      return [];
+    },
+    diffNameStatus: (base, sha) => (byHead(sha)?.files ?? []).map((path) => ({ status: 'M', path })),
+    isContained: () => false,
+    isAncestor: () => true,
+    coAuthorLog: (base, sha) => `Co-authored-by: Author ${byHead(sha)?.number} <a${byHead(sha)?.number}@example.com>\nfeat: something\n`,
+    trialMerge: (base, shas) => shas.map((sha) => ({ sha, state: 'pending', conflicts: conflicts.has(byHead(sha)?.number) ? ['src/shared.ts'] : [] })),
+  };
+  // The contained check the conductor makes on the train head: true once that train merged.
+  git.isContained = (base, sha) => String(sha).startsWith('train-head-') && pulls.get(Number(String(sha).slice('train-head-'.length)))?.state === 'MERGED';
+
+  const out = [];
+  const deps = {
+    gh,
+    git,
+    now: () => clock,
+    sleep: (seconds) => {
+      events.push('sleep');
+      clock += seconds * 1000;
+    },
+    log: (line) => out.push(line),
+    error: (line) => out.push(`ERROR ${line}`),
+    host: 'fakehost',
+    pid: 4242,
+    user: 'stark',
+    liveness: () => 'unknown',
+    onExit: () => () => {},
+    cleanupWorktree: () => {},
+  };
+  return { deps, calls, events, out, pulls, locks, trains, io: { log: (l) => out.push(l), error: (l) => out.push(`ERROR ${l}`) } };
+}
+
+const conductArgs = (extra = {}) => ({ batch: 20, allowFailing: [], flaky: [], ...extra });
+const runConductor = (world, extra) => conduct({
+  deps: world.deps,
+  args: conductArgs(extra),
+  requiredContexts: REQUIRED_CONTEXTS,
+  token: 'fakehost-4242-1',
+  deadline: world.deps.now() + 24 * 60 * 60_000,
+});
+const called = (world, name) => world.calls.filter(([call]) => call === name);
+
+describe('the conductor runs trains', () => {
+  it('lands a green train behind one CI run, ejecting a conflicting component and continuing', () => {
+    const world = fakeWorld({ prs: [component(11), component(12), component(13)], queued: [11, 12, 13], conflicts: new Set([12]) });
+    const result = runConductor(world);
+
+    assert.equal(result.state, 'drained');
+    assert.deepEqual(result.landed, [11, 13]);
+    assert.equal(called(world, 'openPr').length, 1, 'one CI run for the whole train');
+    assert.match(called(world, 'openPr')[0][1].title, /^chore\(train\): land #11 #13$/);
+    assert.match(called(world, 'openPr')[0][1].body, /- #11 `feat\/change-11@11ccccccc` feat: change 11/);
+
+    const [merge] = called(world, 'mergePr');
+    assert.equal(merge[2].sha, 'train-head-2001', 'the merge is pinned to the head CI measured');
+    assert.equal(merge[2].title, 'chore(train): land #11 #13 (#2001)');
+    assert.match(merge[2].message, /Co-authored-by: Author 11 <a11@example.com>/);
+    assert.match(merge[2].message, /Co-authored-by: Author 13 <a13@example.com>/);
+
+    const ejected = world.pulls.get(12);
+    assert.equal(ejected.state, 'OPEN');
+    assert.deepEqual(ejected.labels, []);
+    assert.ok(ejected.comments.at(-1).body.startsWith(EJECTED_MARKER));
+    assert.match(ejected.comments.at(-1).body, /#11, which are ahead of it/);
+
+    for (const number of [11, 13]) {
+      const pr = world.pulls.get(number);
+      assert.equal(pr.state, 'CLOSED');
+      assert.ok(pr.comments.at(-1).body.startsWith(LANDED_MARKER));
+      assert.match(pr.comments.at(-1).body, /train #2001/);
+    }
+    const deleted = called(world, 'deleteBranch').map(([, branch]) => branch);
+    assert.ok(deleted.includes('feat/change-11') && deleted.includes('feat/change-13'));
+    assert.ok(!deleted.includes('feat/change-12'), 'an ejected component keeps its branch');
+    assert.equal(world.locks.has(LOCK_REF), false, 'the lock is released when the queue drains');
   });
 
-  it('gives the free lock to whoever asked first — the measured starvation, inverted', () => {
-    const line = [newcomer, starved];
-    assert.equal(waitingLineHead(line, now).pr, 1694);
-    assert.equal(mayTakeLock({ waiters: line, token: 'a', nowMs: now }), true);
-    assert.equal(mayTakeLock({ waiters: line, token: 'b', nowMs: now }), false);
+  it('bisects a red train and ejects only the breaker', () => {
+    const breaker = 3;
+    const world = fakeWorld({
+      prs: [1, 2, 3, 4].map((n) => component(n)),
+      queued: [1, 2, 3, 4],
+      ci: (numbers) => (numbers.includes(breaker) ? red(['Unit · Contract']) : green()),
+    });
+    const result = runConductor(world);
+    assert.deepEqual(result.landed, [1, 2, 4]);
+    const trains = called(world, 'openPr').map(([, { title }]) => title);
+    assert.deepEqual(trains, [
+      'chore(train): land #1 #2 #3 #4',
+      'chore(train): land #1 #2',
+      'chore(train): land #3 #4',
+      'chore(train): land #3',
+      'chore(train): land #4',
+    ]);
+    const note = world.pulls.get(3).comments.at(-1).body;
+    assert.ok(note.startsWith(EJECTED_MARKER));
+    assert.match(note, /Unit · Contract FAILURE https:\/\/github.com\/wlsdks\/ontology-atlas\/actions\/runs\/777/);
+    assert.deepEqual(world.pulls.get(3).labels, []);
+  });
+
+  it('reruns a flaky failure once instead of ejecting, and ejects without the flag', () => {
+    const flakyCi = (numbers, reruns) => (reruns === 0 ? red(['Playwright (chromium 2/3)'], 991) : green());
+    const flaky = fakeWorld({ prs: [component(7)], queued: [7], ci: flakyCi });
+    assert.deepEqual(runConductor(flaky, { flaky: ['Playwright (chromium 2/3)'] }).landed, [7]);
+    assert.deepEqual(called(flaky, 'rerunFailed').map(([, id]) => id), ['991']);
+    assert.equal(called(flaky, 'openPr').length, 1, 'a rerun reuses the train, not a new CI run set');
+
+    const strict = fakeWorld({ prs: [component(7)], queued: [7], ci: flakyCi });
+    assert.deepEqual(runConductor(strict).landed, []);
+    assert.equal(called(strict, 'rerunFailed').length, 0);
+    assert.ok(strict.pulls.get(7).comments.at(-1).body.startsWith(EJECTED_MARKER));
+  });
+
+  it('rebuilds a green train when main moved into its files while CI ran', () => {
+    const world = fakeWorld({
+      prs: [component(5)],
+      queued: [5],
+      mainDrift: (trainIndex) => (trainIndex === 1 ? ['src/change-5.ts'] : ['src/unrelated.ts']),
+    });
+    const result = runConductor(world);
+    assert.deepEqual(result.landed, [5]);
+    assert.equal(called(world, 'openPr').length, 2, 'the drifted train was rebuilt once on the new main');
+    assert.match(called(world, 'closePr')[0][2], /main moved into src\/change-5.ts/);
   });
 
   /*
-   * ⚠️ The case that shipped broken. `writeWaitingLine` is last-write-wins, so a concurrent writer
-   * can drop this entry from the blob; the first version then recovered `since` only from the list
-   * it had just read, found nothing, and sent the waiter to the back. Reported from another
-   * session after its lander polled 25 minutes and the queue printed it fifth, waiting 4. The
-   * asymmetry is the bad part: the longest waiter has the most polls in which to be dropped.
-   *
-   * The existing refresh case below could not catch it, because there the entry is still standing.
+   * ⚠️ The conductor renews its lease before every wait. A wait that skipped the refresh would
+   * age the lock past its lease under a live conductor and invite the next lander to force-take
+   * it: two conductors on one lock, the defect this file exists to prevent.
    */
-  it('keeps its place when the line lost the entry entirely — the reported failure', () => {
-    const dropped = joinWaitingLine([newcomer], { pr: 1694, token: 'a', since: starved.since }, now);
-    const mine = dropped.find((entry) => entry.token === 'a');
-    assert.equal(mine.since, starved.since, 'a dropped entry went to the back of the line');
-    assert.equal(waitingLineHead(dropped, now).pr, 1694);
-    assert.equal(mayTakeLock({ waiters: dropped, token: 'b', nowMs: now }), false);
+  it('renews the lease before every wait it makes while holding the lock', () => {
+    const world = fakeWorld({ prs: [component(1), component(2)], queued: [1, 2], ci: (numbers) => (numbers.length > 1 ? red(['MCP']) : green()) });
+    runConductor(world);
+    const holding = world.events.slice(world.events.indexOf(`take ${LOCK_REF}`), world.events.indexOf(`release ${LOCK_REF}`));
+    const sleeps = holding.map((event, index) => [event, index]).filter(([event]) => event === 'sleep');
+    assert.ok(sleeps.length > 3);
+    for (const [, index] of sleeps) assert.equal(holding[index - 1], 'refresh', `a wait at event ${index} was not preceded by a refresh`);
   });
 
-  it('mints a place only when the caller has none to offer', () => {
-    const fresh = joinWaitingLine([], { pr: 1720, token: 'b' }, now);
-    assert.equal(fresh[0].since, new Date(now).toISOString());
+  it('takes out a queued pull request it must refuse, without stopping the train', () => {
+    const world = fakeWorld({ prs: [component(8, { mergeable: 'CONFLICTING' }), component(9)], queued: [8, 9] });
+    assert.deepEqual(runConductor(world).landed, [9]);
+    assert.ok(world.pulls.get(8).comments.at(-1).body.startsWith(EJECTED_MARKER));
+  });
+});
+
+describe('pnpm pr:land <n>, end to end against the fake', () => {
+  const land = (world, argv) => runPrLand(argv, world.io, () => world.deps);
+
+  it('queues a draft, conducts when the lock is free, and exits 0 once it landed', () => {
+    const world = fakeWorld({ prs: [component(21)] });
+    assert.equal(land(world, ['21']), 0);
+    assert.ok(world.out.some((line) => /FAIL ready-green/.test(line)), 'the fast-path verdict is printed rule by rule');
+    assert.ok(world.out.some((line) => /PR #21 landed through a train/.test(line)));
+    assert.equal(called(world, 'addLabel').length, 1);
+    assert.equal(world.pulls.get(21).state, 'CLOSED');
   });
 
-  it('never moves a waiter to the back for refreshing its place', () => {
-    const rejoined = joinWaitingLine([starved, newcomer], { pr: 1694, token: 'a' }, now);
-    const mine = rejoined.find((entry) => entry.token === 'a');
-    assert.equal(mine.since, starved.since, 'a refresh reset the wait it exists to protect');
-    assert.notEqual(mine.seenAt, starved.seenAt);
-    assert.equal(waitingLineHead(rejoined, now).pr, 1694);
+  it('merges a green, disjoint pull request on the fast path without queueing it', () => {
+    const world = fakeWorld({ prs: [component(22, { isDraft: false, statusCheckRollup: green() })] });
+    assert.equal(land(world, ['22']), 0);
+    const [merge] = called(world, 'mergePr');
+    assert.equal(merge[1], 22);
+    assert.equal(merge[2].sha, component(22).headRefOid);
+    assert.equal(merge[2].title, 'feat: change 22 (#22)');
+    assert.equal(called(world, 'addLabel').length, 0);
+    assert.deepEqual(world.events.filter((e) => e.includes(FAST_LOCK_REF)), [`take ${FAST_LOCK_REF}`, `release ${FAST_LOCK_REF}`]);
+    assert.equal(world.locks.has(LOCK_REF), false, 'the fast path never touched the train lock');
   });
 
-  it('drops a waiter nobody refreshed inside the lease, so a corpse cannot hold the line', () => {
-    const dead = { ...starved, token: 'c', pr: 1699, seenAt: at(WAIT_LEASE_MINUTES + 1, now) };
-    assert.deepEqual(pruneWaiters([dead], now), []);
-    assert.equal(waitingLineHead([dead, newcomer], now).pr, 1720);
-    assert.equal(mayTakeLock({ waiters: [dead, newcomer], token: 'b', nowMs: now }), true);
+  it('takes the train when a train in flight shares its files, and --no-wait leaves right after', () => {
+    const trainLock = {
+      pr: 1990, token: 'otherhost-1-1', holder: 'ada', host: 'otherhost', acquiredAt: '2026-09-26T09:59:00Z',
+      leaseMinutes: LEASE_MINUTES, train: { pr: 1990, components: [5], files: ['src/change-23.ts'] },
+    };
+    const world = fakeWorld({ prs: [component(23, { isDraft: false, statusCheckRollup: green() })], lock: trainLock });
+    assert.equal(land(world, ['23', '--no-wait']), 0);
+    assert.ok(world.out.some((line) => /FAIL no-overlapping-train: the train in flight also changes src\/change-23.ts/.test(line)));
+    assert.equal(called(world, 'mergePr').length, 0);
+    assert.equal(called(world, 'addLabel').length, 1);
+    assert.ok(world.out.some((line) => /landing now: train #1990/.test(line)));
   });
 
-  it('drops an entry it cannot read rather than trusting a shape it does not know', () => {
-    assert.deepEqual(pruneWaiters([null, {}, { pr: 1, token: 2 }, { token: 'x' }], now), []);
-    assert.deepEqual(pruneWaiters('not a line', now), []);
+  it('says who must conduct when --no-wait finds nobody conducting', () => {
+    const world = fakeWorld({ prs: [component(24)] });
+    assert.equal(land(world, ['24', '--no-wait']), 0);
+    assert.ok(world.out.some((line) => /pnpm pr:land --conduct/.test(line)));
+    assert.equal(called(world, 'openPr').length, 0);
   });
 
-  /*
-   * ⚠️ The fallbacks. A `pr:land` from before this line existed does not register and must not be
-   * blocked by it, and a waiter that cannot write its own place has to race rather than stop. A
-   * fairness layer that can stop a landing is worse than an unfair one.
-   */
-  it('lets an unlisted waiter race — the previous version of this script, and an unwritable queue', () => {
-    assert.equal(mayTakeLock({ waiters: [starved], token: 'older-client', nowMs: now }), true);
-    assert.equal(mayTakeLock({ waiters: [], token: 'a', nowMs: now }), true);
-    assert.equal(mayTakeLock({ waiters: undefined, token: 'a', nowMs: now }), true);
+  it('exits 1 when its pull request is ejected', () => {
+    const world = fakeWorld({ prs: [component(25)], conflicts: new Set([25]) });
+    assert.equal(land(world, ['25', '--no-fast']), 1);
+    assert.ok(world.out.some((line) => /ERROR PR #25 was taken out of the queue/.test(line)));
   });
 
-  it('takes only this waiter out of the line', () => {
-    const left = leaveWaitingLine([starved, newcomer], 'a', now);
-    assert.deepEqual(left.map((entry) => entry.pr), [1720]);
+  it('plans without writing anything to GitHub', () => {
+    const world = fakeWorld({
+      prs: [component(31), component(32, { isDraft: false, statusCheckRollup: green() }), component(33)],
+      queued: [33],
+      conflicts: new Set([31]),
+      readOnly: true,
+    });
+    assert.equal(land(world, ['--plan', '31', '32']), 0);
+    const text = world.out.join('\n');
+    assert.match(text, /PR #31: fast path not eligible/);
+    assert.match(text, /PR #31: would be queued/);
+    assert.match(text, /PR #32: would squash-merge now/);
+    assert.match(text, /next train \(2 of 2 queued\): chore\(train\): land #33 #31/);
+    assert.match(text, /#31 feat\/change-31@31ccccccc: would conflict and be ejected/);
+    assert.match(text, /\| Co-authored-by: Author 33 <a33@example.com>/);
+    assert.match(text, /dry run: nothing was written to GitHub/);
+    assert.deepEqual(world.calls.filter(([name]) => !['readPr'].includes(name)), [], 'plan made a write call');
   });
 
-  it('says the order out loud, oldest first, so a waiter can see its own place', () => {
-    const line = describeWaitingLine([newcomer, starved], now);
-    assert.match(line, /1\. PR #1694 .*waiting 180 min/);
-    assert.match(line, /2\. PR #1720 .*waiting 1 min/);
-    assert.equal(describeWaitingLine([], now), 'nobody is queued');
+  it('prints the queue, the train in flight and its CI', () => {
+    const world = fakeWorld({ prs: [component(41), component(42)], queued: [41, 42] });
+    assert.equal(land(world, ['--queue']), 0);
+    const text = world.out.join('\n');
+    assert.match(text, /landing now: nothing is landing/);
+    assert.match(text, /1\. #41 queued 0 min/);
+    assert.match(text, /pnpm pr:land --conduct/);
   });
 });

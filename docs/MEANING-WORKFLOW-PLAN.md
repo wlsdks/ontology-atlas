@@ -1,3 +1,10 @@
+---
+title: Meaning workflow implementation plan — V1 to V4
+doc_type: plan
+status: active
+area: ontology-model
+---
+
 # Meaning workflow implementation plan — V1 to V4
 
 This is the current detailed execution specification for the
@@ -13,17 +20,12 @@ verified facts from unknowns, and correct or defer an agent's proposed meaning.
 An agent can reuse accepted context in a later task. Confidence must remain
 proportionate to evidence; convenience reduces the cost of that outcome.
 
-Astra owns planning, evidence interpretation, code review, and acceptance of
-verification results. Sol at low reasoning effort implements each bounded code
-slice from an Astra-authored brief. The human remains the meaning acceptor.
-A model or automated reviewer cannot fabricate that decision. Use the existing
-solo/two-seat PO router, not a standing expanded council.
+The human remains the meaning acceptor; a model or automated reviewer cannot
+make that decision. Use the existing solo/two-seat PO router, not a standing
+expanded council.
 
-Work one registered slice at a time. Each implementation brief names file
-ownership, exact checkout and Node runtime, read-only boundaries, scratch path,
-port or no-server policy, baseline, positive and negative cases, and primary
-sources. No shared stash, broad staging, or unrelated worktree cleanup. Draft
-PRs land through `pnpm pr:land` after the required checks and Astra review.
+Work one registered slice at a time. Delegated slices use `/parallel-brief`.
+Draft PRs land through `pnpm pr:land` after the required checks.
 
 The program does not promise support for every enterprise language, complete
 runtime impact, automatic meaning acceptance, or a backend-only product.
@@ -186,7 +188,6 @@ conditional versus universal dependency; UI affordance versus server rule;
 original intent absent from code; plausible but unsupported exclusion.
 **Dependencies/owners:** V1.2/V1.3 as needed for the chosen task; construction
 rules, bootstrap guidance, proposal validation and evidence representation.
-Astra owns hypothesis/contract design; Sol implements agreed source changes.
 
 ### V1.5 — Prove candidate and persisted meaning independently
 
@@ -489,7 +490,7 @@ visible when the order changes.
 | Next independent task reuses accepted meaning | V4.2 |
 | User value and voluntary repeated use, not feature/app-open counts | V4.3 and common outcome |
 | Atlas-specialist PO, consistent current public/internal language, mirrored skills | Product Direction/PO operating system and existing mirrored skills; retain solo/two-seat routing |
-| Sol low implementation; Astra planning and review | Working agreement and every implementation brief |
+| Delegated implementation stays bounded; the human accepts meaning | Working agreement; `/parallel-brief` for delegated slices |
 
 This map is a coverage index, not another status board. Keep gaps visible when
 an item is blocked or only its enabling infrastructure has been implemented.

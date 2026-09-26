@@ -1,3 +1,10 @@
+---
+title: Hacker News — Show HN Draft
+doc_type: launch
+status: current
+area: product
+---
+
 # Hacker News — Show HN Draft
 
 Submission type: **Show HN**

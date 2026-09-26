@@ -12,199 +12,110 @@ paths:
 
 # Testing and verification
 
-> Conditionally loaded for test files and configuration. `AGENTS.md` carries the
-> always-loaded focused-first summary.
-
-## Tools
-
-- Unit and component tests: **Vitest**, **Testing Library**, and **jsdom**
-  (`vitest.config.ts`, `vitest.setup.ts`).
-- End to end: **Playwright** (`playwright.config.ts`, `tests/e2e/*.spec.ts`).
+`AGENTS.md` owns the always-loaded rule: run `pnpm checks:changed -- --run` and
+complete its recommendations. This file owns escalation and test shape.
 
 ## Priority
 
-1. Test pure logic in `shared/lib` and `entities/*/model` first and most deeply.
-2. Test business interaction flows in `features/*/model`.
-3. Test only the important interactions in composite `widgets/` and `views/`;
-   do not exhaust every prop combination.
-4. Keep e2e small and valuable: user journeys and regression barriers.
+1. Pure logic in `shared/lib` and `entities/*/model`, deepest.
+2. Interaction flows in `features/*/model`.
+3. Only the important interactions of composite `widgets/` and `views/`.
+4. A small set of e2e journeys and regression barriers.
 
-## Vitest commands
+## Commands
 
 ```bash
-pnpm test                            # watch mode
-pnpm checks:changed                  # recommend focused checks from the Git diff
-pnpm checks:changed -- <path...>     # recommend checks for a planned file set
+pnpm checks:changed -- <path...>     # focused checks for a planned file set
 pnpm test src/path/to/file.test.ts   # one file
-pnpm exec vitest run --changed       # tests related by Vitest's module graph
 pnpm test:run -t "specific case"     # one test block
-pnpm test:run                        # full unit suite, conditional escalation
+pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test <spec>   # e2e as CI runs it
 ```
 
-## Playwright commands
+Without `PLAYWRIGHT_STATIC=1` the config starts `pnpm dev`, which renders
+differently from the static export. Reproduce a red e2e in the CI mode before
+calling CI wrong or flaky; then check for a stale server with
+`lsof -iTCP:<port>`. Run Playwright in the foreground, let it start its own
+server, and give parallel work its own port through `PLAYWRIGHT_BASE_URL`.
 
-```bash
-pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test   # what CI runs
-pnpm exec playwright test --headed
-pnpm exec playwright test tests/e2e/foo.spec.ts
-pnpm exec playwright test --update-snapshots
-```
+## The timing rule
 
-### Reproduce a red e2e the way CI runs it
-
-`PLAYWRIGHT_STATIC=1` serves the built static export; without it the config
-starts `pnpm dev`. **They are different products.** Measured 2026-08-25: a change
-that pushed a start card off-centre passed every local e2e run under dev and
-failed four CI jobs, because the failing assertion depended on layout the dev
-server rendered differently. Twenty minutes went into re-reading correct source
-before the run mode was compared.
-
-Before concluding that CI is wrong or flaky, run the exact CI line above. If it
-still passes, only then look at server age (`design-gates.md`, stale
-`reuseExistingServer`). A local pass under a different run mode is not evidence.
-
-## The timing rule (2026-09-12)
-
-**No test asserts a wall-clock number it did not measure, and no test waits by
-sleeping.** A gate that can go red because the machine was busy teaches people to
-retry, and a gate people retry is not a gate.
-
-Four shapes, three of them allowed:
+No test asserts a wall-clock number it did not measure, and no test waits by
+sleeping.
 
 | Shape | Allowed | Form |
 |---|---|---|
-| **Condition wait** | yes, the default | `waitFor` / `findBy*` / `expect.poll` / `page.waitForFunction`. It returns the moment the condition holds, so it costs nothing on a fast machine and still passes on a slow one |
-| **Relative in one run** | yes | measure both sides in the same process and assert the ratio. `src/views/ontology-insights/lib/duplicate-pairs.perf.test.ts` is the model: warm-up pass, best of three, a documented ratio of 3.8-4.2 against 0.88 when the fast path was broken |
-| **Product budget with headroom** | yes, with both halves | print the measured value **and** keep the bound at >= 5x it. Say the measurement and the date in the comment, so the next reader can re-derive the ratio instead of guessing whether the number still means anything |
-| **Absolute wall clock or a fixed sleep** | **no** | `expect(elapsed).toBeLessThan(n)` with no measured basis; `waitForTimeout(n)`; `await new Promise(r => setTimeout(r, n))` used as a wait |
+| Condition wait | yes, the default | `waitFor`, `findBy*`, `expect.poll`, `page.waitForFunction` |
+| Relative in one run | yes | measure both sides in one process and assert the ratio; model: `duplicate-pairs.perf.test.ts` |
+| Product budget with headroom | yes | print the measured value, keep the bound at 5x or more, and comment the measurement and date |
+| Absolute wall clock or fixed sleep | no | an unmeasured `toBeLessThan(n)`, `waitForTimeout(n)`, or `setTimeout` used as a wait |
 
-Consequences that follow from the rule:
+- `testTimeout` (30 s) and `asyncUtilTimeout` (15 s) are hang detectors, not
+  budgets. Do not narrow them per call (`{ timeout: n }`) or per lane.
+- Wait for the state the screen shows (for example `data-dock-state`), not past
+  a constant. Prove an order by observing it, not by sleeping first.
+- `*.perf.test.*` runs only in the Vitest `perf` project (`pnpm test:perf`,
+  `fileParallelism: false`), never in the pre-push hook or a sharded sweep.
+- In e2e, settle conditions live in `tests/e2e/settle.ts`: canvas stillness from
+  the `?e2e=1` probe, DOM reveals from `Element.getAnimations()`. A remaining
+  sleep states in place why it is a measurement window.
+- Compare canvas pixels inside the page and return one number: a 5-million
+  value `getImageData` array through `page.evaluate` costs 12 s per call
+  (lesson 1250cf7a).
 
-- **Two ceilings, both set once, both hang detectors.** `vitest.config.ts` sets
-  `testTimeout` (30 s) and `vitest.setup.ts` sets `asyncUtilTimeout` (15 s) below
-  it, so a wait always reports the element it was looking for instead of dying as a
-  bare test timeout. Neither is a budget, nothing is asserted about either, and a
-  call site may not narrow them: a hand-raised `{ timeout: n }` is a wall-clock
-  number in disguise. Eight of them starved on 2026-08-28, and a ninth — a 5-second
-  "product-meaningful bound" on a modal close that costs 15 ms — flaked twice more
-  in September before it was removed. A lane may not override them either; one
-  suite, one clock, whoever invokes it.
-- **Sleeping past a constant is not waiting for it.** `setTimeout(400)` to clear a
-  140 ms exit window asserts "140 < 400" about a constant the test never reads.
-  Wait for the state the screen shows instead (`data-dock-state="put-away"`).
-- **An order is not a duration.** "The answer must not be sent before the commit
-  motion starts" is proven by observing the motion and then finding no answer —
-  not by sleeping 80 ms first.
-- **A hang is Vitest's job.** `expect(elapsed).toBeLessThan(5_000)` on work
-  measured at 17.7 ms can only fire on a hang, which the test timeout already
-  reports with a better message. Delete it.
-- **Performance lanes never block.** `*.perf.test.*` runs where the number means
-  something: CI on a quiet runner, not the pre-push hook, which deliberately
-  saturates the machine. A sharded lane is not a quiet runner either — Vitest
-  shards by file, so a ratio's verdict would depend on which other files landed
-  beside it. `vitest.config.ts` gives these files their own `perf` project with
-  `fileParallelism: false`, the sharded sweeps in `run-ci-lane.mjs` name the
-  other two projects explicitly, and `pnpm test:perf` runs them alone on the one
-  shard that carries whole-graph work. Measured cost of getting this wrong:
-  `node-name-match.perf.test.ts` read 6.73, 9.20 and 9.20 against a bar of 10 on
-  branches that never touched it.
-- **In e2e, the conditions live in `tests/e2e/settle.ts`.** A canvas has no DOM,
-  so the map's stillness is read from the `?e2e=1` probe's own drawn values and a
-  DOM reveal from `Element.getAnimations()` — never from a token's duration
-  copied into the spec. A sleep that survives there says in place why it is a
-  measurement window rather than a wait.
-- **Run Playwright in the foreground, and let it own its server.** A dev server
-  started as a background command gets reaped, and the specs in flight then fail
-  against a dead server in about a second each — which reads as a flake in
-  whatever was being changed. Two "flakes" in `download-gateway-grid` were that
-  and nothing else (2026-09-13). So: no pre-started background server, a port of
-  your own via `PLAYWRIGHT_BASE_URL` so a stale server from another session
-  cannot answer instead, and batches short enough to finish in the foreground.
+## What to test
 
-## TDD
+- Behaviour features and regression fixes: write the failing test first, make
+  the narrowest scope green, then refactor. A regression fix ships with a test
+  that detects that regression.
+- Prose, mechanical edits and isolated visual tweaks need no new test. Never
+  write a test that duplicates the implementation or pins prose.
+- Update an e2e baseline only for an intentional rendered change.
+- Deleting a screen or renderer deletes its e2e specs in the same PR.
 
-1. Write the failing test before a behavioral feature or regression fix.
-2. Make the narrowest scope green.
-3. Refactor only after it is green.
+## Escalation
 
-For prose, mechanical edits, and isolated visual adjustments, use the relevant
-checks or rendered evidence. Do not add tests that merely duplicate the
-implementation. Required checks and meaningful regression coverage still apply.
-
-## Focused-first verification
-
-Start with the smallest evidence that can establish the changed behaviour. Run
-`pnpm checks:changed` or `pnpm checks:changed -- <path...>` and execute every
-recommended direct, contract, and integration check. If a sibling test exists,
-run it first.
-
-Escalate only when the risk requires it:
+Start from `checks:changed` and any sibling test. Escalate only when the change
+reaches the named risk:
 
 - `pnpm exec tsc --noEmit`: shared types, public interfaces, route seams,
   Next/TypeScript configuration, or a cross-cutting refactor.
 - `pnpm lint`: ESLint configuration, import direction, structural moves, or
-  anything governed by a lint rule.
-- `pnpm test:run`: shared primitives, global providers, test configuration, or a
-  broad change without a direct test.
+  anything a lint rule governs.
+- `pnpm test:run`: shared primitives, global providers, test configuration, or
+  a broad change without a direct test.
 - `pnpm exec playwright test <spec>`: routes, navigation, browser workflows, or
-  visible interaction. Run all Playwright only for several routes/workflows.
+  visible interaction; the whole suite only when several routes changed.
 - `pnpm build` and desktop packaging checks: static export, Next configuration,
-  bundles, release/download paths, or macOS packaging.
+  bundles, release or download paths, or macOS packaging.
 
-The final report names what ran and why that scope was sufficient. Do not run
-the full suite by habit.
+The final report names what ran and why that scope was enough.
 
-Measurements, captures and harness scripts live **outside** the repository —
-`/Users/jinan/scratch/<fixture>/…` — never in a worktree's gitignored `output/`
-or `.qa-scratch/`. A worktree is removed when its work lands, and
-`git status --porcelain` does not count ignored files, so an ignored evidence
-directory reads clean and goes with it. Measured 2026-09-13: a report cited
-ko+en captures at a path that no longer existed by the time it was read.
+Keep measurements, captures and harness scripts outside the repository (for
+example `~/scratch/<task>/` or the session scratchpad). An ignored `output/`
+inside a worktree is deleted with the worktree.
 
-## Verify web and app separately (2026-07-27)
-
-Web and app no longer promise identical screens (`.claude/rules/surfaces.md`),
-so do not perform an obsolete round trip that assumes they match.
+## Verify web and app separately
 
 | Target | Accepted proof |
 |---|---|
-| Shared map, docs, insights, and project screens | Browser proof covers the shared bundle. Recheck the installed app only when font rendering, scrolling, or window chrome changed |
-| Desktop-only keychain, Git, updater, and absolute-path abilities | Installed-app evidence only; browser success proves nothing |
-| The web surface itself | The three cases in `tests/e2e/web-surface-smoke.spec.ts` |
+| Shared map, docs, insights and project screens | Browser proof covers the shared bundle; recheck the installed app only when font rendering, scrolling or window chrome changed |
+| Desktop-only keychain, Git, updater and absolute-path abilities | Installed-app evidence only |
+| The web surface itself | `tests/e2e/web-surface-smoke.spec.ts` |
 
-Nobody watches the web manually, so its smoke test is the only standing signal.
-A desktop bridge change (`src/shared/lib/tauri-*.ts` or `src-tauri/**`) does not
-authorize skipping it: `checks:changed` recommends web smoke and CI runs it for
-every runtime change.
+A desktop bridge change (`src/shared/lib/tauri-*.ts`, `src-tauri/**`) still runs
+web smoke.
 
-## Regression barriers
+Test keyboard input in the installed app with Computer Use idle, sending keys
+through `osascript` or JXA: a Computer Use session swallows Escape system-wide.
+Before fixing a platform input bug, reproduce it once without the test tool
+(lesson fcc6d81f).
 
-- A regression fix includes a unit test that detects that regression.
-- Update an e2e baseline only when the rendered result intentionally changed,
-  after capturing it in the real runtime.
-- When deleting a screen or renderer, inspect and remove its e2e specs in the
-  same PR. In the 2026-07 cleanup, 108 of 139 specs still targeted the deleted
-  Sigma renderer and old ontology tree; none represented a live product defect.
+## Cross-package contract tests
 
-## Cross-package contract tests (R11 pattern)
-
-Use a contract test when a separately delivered package such as `mcp/` and a
-module under `src/` must behave identically but cannot share one implementation.
-Run the same input/expected-value table through both implementations.
-
-Current examples:
-
-- `tests/contract/parse-frontmatter.contract.test.ts`: one fixture table through
-  the web, MCP, and scripts parsers (12 fixtures × 3 implementations).
-- `tests/contract/validate-vault-document.contract.test.ts`: one fixture table
-  through the web/UI and MCP validators (8 fixtures × 2 implementations).
-
-Pattern:
-
-1. `tests/fixtures/<topic>-cases.mjs` owns the input and expected results.
-2. `tests/contract/<topic>.contract.test.ts` runs that table through every
-   implementation. Message wording may differ; codes and data structures may not.
-3. `vitest.config.ts` already includes `tests/contract/**/*.test.ts`.
-
-Changing either implementation must run the contract. If the contract changed
-intentionally, update the shared table; otherwise divergence is a regression.
+When a separately delivered package such as `mcp/` and a module under `src/`
+must behave identically without sharing code, run one table of inputs and
+expected results through every implementation: the table lives in
+`tests/fixtures/<topic>-cases.mjs`, the runner in
+`tests/contract/<topic>.contract.test.ts` (for example `parse-frontmatter`,
+`validate-vault-document`). Codes and data structures must match; wording may
+differ. Change the shared table only for an intentional change.

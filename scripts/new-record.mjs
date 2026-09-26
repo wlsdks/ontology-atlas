@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdirSync, openSync, readFileSync, writeFileSync, closeSync } from 'node:fs';
 import path from 'node:path';
 import { isCalendarDate, validateNewRecord } from './lib/record-ledgers.mjs';
+import { createRequire } from 'node:module';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const VERSION = /^v\d+\.\d+\.\d+(?:-rc\.\d+)?$/;
@@ -13,9 +14,19 @@ export function safeSlug(value) {
   return slug;
 }
 
-export function createRecord({ kind, date, slug, body, category, id = randomUUID(), version, title, changes, root = process.cwd() }) {
-  if (!['decision', 'change', 'release'].includes(kind)) throw new Error('kind must be decision, change, or release');
+export function createRecord({ kind, date, slug, body, category, id = randomUUID(), version, title, changes, type, area, lesson, status, parents, root = process.cwd() }) {
+  if (!['decision', 'change', 'release', 'lesson', 'lesson-status'].includes(kind)) throw new Error('kind must be decision, change, release, lesson, or lesson-status');
+  if (!date && kind.startsWith('lesson')) date = new Date().toISOString().slice(0, 10);
   if (!isCalendarDate(date)) throw new Error('date must be a real YYYY-MM-DD calendar date');
+  // Lessons keep their own template and history rules in scripts/lessons.mjs,
+  // loaded only for a lesson so the other kinds never depend on it (a checkout
+  // that copies only the record writer still writes a decision).
+  const lessons = () => createRequire(import.meta.url)('./lessons.mjs');
+  if (kind === 'lesson') return lessons().createLesson({ kind: type, area, slug, body, date, id, root });
+  if (kind === 'lesson-status') {
+    const ids = Array.isArray(parents) ? parents : String(parents ?? '').split(',').map((value) => value.trim()).filter(Boolean);
+    return lessons().createLessonStatus({ lesson, status, parents: ids, slug, body, date, id, root });
+  }
   let directory; let relativePath; let content;
   if (kind === 'release') {
     if (!VERSION.test(version ?? '')) throw new Error('release version must be vX.Y.Z or vX.Y.Z-rc.N');
@@ -70,7 +81,9 @@ function args(argv) {
 export const usage = () => `Usage:
   node scripts/new-record.mjs --kind=decision --date=YYYY-MM-DD --slug=<slug> (--body=<text>|--input=<file>)
   node scripts/new-record.mjs --kind=change --date=YYYY-MM-DD --slug=<slug> --category=<category> (--body=<text>|--input=<file>)
-  node scripts/new-record.mjs --kind=release --date=YYYY-MM-DD --version=vX.Y.Z --title=<title> --changes=<uuid,uuid>`;
+  node scripts/new-record.mjs --kind=release --date=YYYY-MM-DD --version=vX.Y.Z --title=<title> --changes=<uuid,uuid>
+  node scripts/new-record.mjs --kind=lesson [--date=YYYY-MM-DD] --type=<mistake|tool-efficiency|gate-gap|process> --area=<harness-area> --slug=<slug> (--body=<text>|--input=<file>)
+  node scripts/new-record.mjs --kind=lesson-status [--date=YYYY-MM-DD] --lesson=<uuid> --status=<verified|refuted|fixed|wontfix|reported> [--parents=<uuid,uuid>] (--body=<text>|--input=<file>)`;
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
   try {

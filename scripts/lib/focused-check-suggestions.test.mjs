@@ -64,7 +64,18 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
+      'pnpm docs:meta && pnpm docs:move -- --check',
     ]);
+  });
+
+  it('suggests the living-document metadata gate for living docs only, never for frozen history or vault nodes', () => {
+    const meta = 'pnpm docs:meta && pnpm docs:move -- --check';
+    for (const living of ['docs/contracts/analysis-records.md', 'docs/features/map/canvas.md', 'docs/records/README.md', 'docs/.moved.json', 'scripts/lib/doc-types.mjs']) {
+      assert.ok(commandNames(suggestFocusedChecks([living])).includes(meta), living);
+    }
+    for (const frozen of ['docs/DECISIONS.md', 'docs/BACKLOG-SNAPSHOT-2026-09-13.md', 'docs/records/decisions/x.md', 'docs/ontology/capabilities/x.md', 'docs/audits/x.md']) {
+      assert.ok(!commandNames(suggestFocusedChecks([frozen])).includes(meta), frozen);
+    }
   });
 
   it('suggests the Markdown language gate for prose and for its implementation', () => {
@@ -204,6 +215,7 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
+      'pnpm docs:meta && pnpm docs:move -- --check',
       'pnpm test:guide-examples',
       'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
     ]);
@@ -226,7 +238,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint --max-warnings 0 src/shared/lib/validate-vault-document.ts',
-      'pnpm exec vitest run src/shared/lib/validate-vault-document.test.ts',
+      'pnpm exec vitest related --run --passWithNoTests src/shared/lib/validate-vault-document.ts',
       'pnpm test:contracts',
       'pnpm test:mcp:unit',
       'pnpm exec tsc --noEmit',
@@ -411,7 +423,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint --max-warnings 0 src/views/architecture/ui/ArchitectureWorkbench.tsx',
-      'pnpm exec vitest run src/views/architecture/ui/ArchitectureWorkbench.test.tsx',
+      'pnpm exec vitest related --run --passWithNoTests src/views/architecture/ui/ArchitectureWorkbench.tsx',
       'pnpm test:cli:commands',
       'pnpm test:architecture',
       'pnpm exec playwright test tests/e2e/architecture-workbench.spec.ts',
@@ -660,10 +672,8 @@ describe('focused check suggestions', () => {
 
     // Every path here is also inventoried by `agent-files`, and `.claude/settings.json`
     // carries the `permissions.deny` rules the secret-read guard derives from
-    // `.gitignore`, so all three gates apply. The runtime smoke derives its
-    // expected hook counts from both wiring files, so it re-proves its parsers.
+    // `.gitignore`, so all three gates apply.
     assert.deepEqual(domainCommands(result), [
-      'pnpm test:harness:smoke',
       'pnpm test:claude:hooks',
       'pnpm agents:check',
       'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
@@ -751,12 +761,14 @@ describe('focused check suggestions', () => {
         'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx',
       'pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts',
       'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
-      'pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts',
-      'pnpm exec vitest run src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx',
+      'pnpm exec vitest related --run --passWithNoTests src/shared/lib/tauri-vault-fs.ts src/views/root-entry/ui/RootEntryPage.tsx ' +
+        'src/views/docs-vault/lib/persistence.ts src/views/docs-vault/ui/DocsVaultPage.tsx ' +
+        'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx',
       'pnpm docs-vault:build',
       'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
+      'pnpm docs:meta && pnpm docs:move -- --check',
       'pnpm test:desktop:check',
       'pnpm test:desktop:runtime',
       'pnpm test:desktop:bridge',
@@ -891,7 +903,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint --max-warnings 0 app/layout.tsx app/page.tsx app/sitemap.ts app/[locale]/docs/page.tsx',
-      'pnpm exec vitest run app/sitemap.test.ts',
+      'pnpm exec vitest related --run --passWithNoTests app/layout.tsx app/page.tsx app/sitemap.ts app/[locale]/docs/page.tsx',
       'pnpm test:contracts',
       'pnpm exec tsc --noEmit',
       'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
@@ -912,6 +924,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint --max-warnings 0 src/views/brand-new-surface/ui/BrandNewPage.tsx app/[locale]/brand-new/page.tsx',
+      'pnpm exec vitest related --run --passWithNoTests src/views/brand-new-surface/ui/BrandNewPage.tsx app/[locale]/brand-new/page.tsx',
       'pnpm test:contracts',
       'pnpm exec tsc --noEmit',
       'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
@@ -932,6 +945,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/validate-messages.test.mjs',
       'pnpm exec eslint --max-warnings 0 src/i18n/routing.ts src/i18n/request.ts src/i18n/navigation.ts',
+      'pnpm exec vitest related --run --passWithNoTests src/i18n/routing.ts src/i18n/request.ts src/i18n/navigation.ts',
       'pnpm exec tsc --noEmit',
       // Added 2026-08-08 — a message catalogue is not only the consistency check's
       // input. It is also the input of the gates that read "what does this screen claim
@@ -1017,7 +1031,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations, []);
   });
 
-  it('suggests direct Vitest sibling tests for app and source files', () => {
+  it('runs a changed test and every suite that imports a changed source file', () => {
     const result = suggestFocusedChecks([
       'src/shared/lib/cn.ts',
       'src/shared/lib/cn.test.ts',
@@ -1028,7 +1042,7 @@ describe('focused check suggestions', () => {
       'pnpm exec eslint --max-warnings 0 src/shared/lib/cn.ts src/shared/lib/cn.test.ts ' +
         'src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
       'pnpm exec vitest run src/shared/lib/cn.test.ts',
-      'pnpm exec vitest run src/widgets/docs-vault/ui/DocsVaultEditor.test.tsx',
+      'pnpm exec vitest related --run --passWithNoTests src/shared/lib/cn.ts src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
       'pnpm check:tokens',
       'pnpm test:contracts',
       // Touching the docs widget also suggests the e2e that drives that screen (mapping
@@ -1038,13 +1052,14 @@ describe('focused check suggestions', () => {
         'tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
       'pnpm exec tsc --noEmit',
     ]);
-    assert.deepEqual(result.commands[1].paths, [
+    assert.deepEqual(result.commands[1].paths, ['src/shared/lib/cn.test.ts']);
+    assert.deepEqual(result.commands[2].paths, [
       'src/shared/lib/cn.ts',
-      'src/shared/lib/cn.test.ts',
+      'src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
     ]);
   });
 
-  it('suggests lint and typecheck for app/source TypeScript files without sibling tests', () => {
+  it('suggests lint, related suites and typecheck for app/source TypeScript files without sibling tests', () => {
     const result = suggestFocusedChecks([
       'src/shared/config/site.ts',
       'src/shared/lib/theme.ts',
@@ -1052,6 +1067,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint --max-warnings 0 src/shared/config/site.ts src/shared/lib/theme.ts',
+      'pnpm exec vitest related --run --passWithNoTests src/shared/config/site.ts src/shared/lib/theme.ts',
       'pnpm exec tsc --noEmit',
     ]);
   });
@@ -1228,6 +1244,7 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
+      'pnpm docs:meta && pnpm docs:move -- --check',
       'pnpm docs:surface:check',
       'pnpm vault:migrate --list',
       'pnpm test:dogfood:script-refs',
@@ -1466,7 +1483,7 @@ describe('focused check suggestions', () => {
       '.claude/skills/po-pass/SKILL.md',
       '.agents/skills/po-council/SKILL.md',
       '.claude/agents/chief.md',
-      '.agents/agents/po-craft.md',
+      '.agents/agents/po-evidence.md',
       'AGENTS.md',
       'package.json',
     ];
@@ -1694,7 +1711,7 @@ describe('agent-file surface', () => {
       '.claude/hooks/block-generated-edit.sh',
       '.claude/hooks/block-npm-publish.sh',
       '.claude/hooks/inject-ontology-summary.sh',
-      '.claude/hooks/report-agent-file-drift.sh',
+      '.claude/hooks/fast-sensor.sh',
       '.codex/hooks/block-unsafe-git.sh',
       '.githooks/commit-msg',
       '.githooks/commit-msg-language.mjs',

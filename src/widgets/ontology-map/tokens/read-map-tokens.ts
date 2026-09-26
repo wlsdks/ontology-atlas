@@ -1,5 +1,5 @@
 /**
- * The `--map-*` token reader (`docs/ONTOLOGY-MAP-DESIGN.md` §2).
+ * The `--map-*` token reader (`docs/design/ontology-map.md` §2).
  *
  * Canvas 2D cannot consume CSS variables directly, so they are resolved once with
  * `getComputedStyle` and cached as JS values (colour strings and numbers) — reusing

@@ -1,3 +1,10 @@
+---
+title: Ontology Quality Authority Map
+doc_type: authority
+status: current
+area: ontology-model
+---
+
 # Ontology Quality Authority Map
 
 This document is not the place to create new ontology rules. It is an authoritative map that lets you find, in one place, where the canonical answer for any question lies and what is machine-enforced, what is a review signal, and what requires human judgment. If values or public tool contracts below differ from those in other documents and code, fix the owning canonical source, not this document.
@@ -55,7 +62,7 @@ listed in [Architecture](ARCHITECTURE.md#agent-instruction-ownership).
 | Whether to maintain a wide hub or create a bridge | human judgment · tool-assisted | Four bridge conditions and non-exclusive questions in `CONSTRUCTION_RULES_EN` · user guide `docs/guide/what-becomes-a-node.md` | Review write warning/maintenance results alongside the actual parent's `get_concept` and `facets` |
 | Current width of language-specific repository analysis packets | evidence protocol · code-owned | Python auto/risk candidates are `PYTHON_IMPORT_ELEMENT_LIMIT`·`PYTHON_IMPORT_RISK_ELEMENT_LIMIT` in `mcp/src/analyze/constants.mjs`; additional exact endpoint is `PYTHON_SELECTED_IMPORT_ELEMENT_LIMIT` in `mcp/src/meaning-evaluation.mjs`; public behavior is `mcp/README.md` | `mcp/src/analyze.test.mjs` · `mcp/src/meaning-evaluation.test.mjs` · `mcp/src/integration.test.mjs` |
 | Boundary between field trial data and product dogfood | evidence protocol | `.agents/skills/ontology-field-trial/SKILL.md` and similar content in `.claude` mirror · prohibition rules `.claude/rules/forbidden.md` | Verify scratch paths, source-hidden handoff, and citation path verification in trial records; external outputs must not be in the repo diff |
-| How to draw many children on the map | rendering only · not ontology policy | Dense-group contract and topology renderer in `docs/FEATURES.md` | Relevant UI/contract/performance checks; do not reuse this value for ontology quality judgments |
+| How to draw many children on the map | rendering only · not ontology policy | Dense-group contract and topology renderer in `docs/features/map/canvas.md` | Relevant UI/contract/performance checks; do not reuse this value for ontology quality judgments |
 
 
 ## Change Rules

@@ -1,6 +1,7 @@
 ---
 name: ontology-extract
 description: Extract a small, evidence-bound set of ontology candidates from prose, check the existing vault for duplicates, obtain user approval, and land only the approved nodes and relations.
+when_to_use: Use when the user explicitly asks to turn supplied prose (RFC, meeting note, PR, pasted wiki text) into ontology nodes. Pasted prose alone is not a request.
 ---
 
 # Extract ontology from prose

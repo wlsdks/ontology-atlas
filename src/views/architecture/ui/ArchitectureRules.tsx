@@ -62,9 +62,8 @@ export function ArchitectureRules({
         {/*
           ⚠️ **The shape key comes first, because the shapes are drawn before any stroke is.** A
           fresh-eyes walkthrough on 2026-08-28 read the whole legend and still could not say what
-          the two shapes meant: it explained only the lines. `docs/AGENT-DESIGN-METHOD.md` states
-          the rule this broke — every legend row names a mark that is on screen, and every mark on
-          screen states itself somewhere readable.
+          the two shapes meant: it explained only the lines. The rule this broke: every legend row
+          names a mark that is on screen, and every mark on screen states itself somewhere readable.
         */}
         {graph.edgeSource === 'permitted' || graph.edgeSource === 'both' ? (
           <span className="flex items-center gap-1.5">

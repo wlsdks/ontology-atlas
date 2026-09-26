@@ -12,7 +12,7 @@ async function openNewDocumentSchedule(page: import("@playwright/test").Page) {
 /**
  * **The Rounds tab draws what the ledger holds, and a round is registered under a stated scope.**
  *
- * Spec: `docs/superpowers/specs/2026-09-17-library-rounds-design.md`. What this spec proves is
+ * Spec: `docs/specs/2026-09-17-library-rounds-design.md`. What this spec proves is
  * the screen half: the fifth tab exists, the morning card sums the seeded night, the axis draws a
  * held pass as a line and a change as a card and sleep as a gap, and the registration sheet writes
  * one round into `.ontology-atlas/rounds.json` with the scope sentences shown above the press.

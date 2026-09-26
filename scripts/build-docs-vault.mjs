@@ -157,6 +157,9 @@ export function isShallowRepository(rootDir) {
  */
 function gitLastCommitDays(rootDir, scopeDir) {
   const days = new Map();
+  // How many commits touched each path — a document's `revision`. Counted in the
+  // same pass as the dates, so no field is ever hand-bumped.
+  const commits = new Map();
   const dirty = new Set();
   try {
     const scope = path.relative(rootDir, scopeDir).replace(/\\/g, '/') || '.';
@@ -183,6 +186,7 @@ function gitLastCommitDays(rootDir, scopeDir) {
       const file = line.trim();
       if (!file || !currentDay) continue;
       if (!days.has(file)) days.set(file, currentDay);
+      commits.set(file, (commits.get(file) ?? 0) + 1);
     }
     const status = execSync(`git status --porcelain -- "${scope}"`, {
       cwd: rootDir,
@@ -190,13 +194,32 @@ function gitLastCommitDays(rootDir, scopeDir) {
       maxBuffer: 16 * 1024 * 1024,
     });
     for (const line of status.split('\n')) {
-      const file = line.slice(3).trim();
+      // A staged rename reads `old -> new`; the document now lives at the new path.
+      const file = line.slice(3).trim().split(' -> ').pop();
       if (file) dirty.add(file);
     }
   } catch {
     // No git, or not a repository (a release tarball) — fall back to the mtime date.
   }
-  return { days, dirty };
+  return { days, commits, dirty };
+}
+
+/**
+ * A document's revision: the commits that touched its path, plus those that touched
+ * the path it had before a move (`docs/.moved.json`), plus one while it has
+ * uncommitted edits — so the number a pre-commit build writes is the number the
+ * commit then makes true. Git is the counter; two branches never edit one line.
+ */
+export function documentRevision(relPath, { commits, dirty }, movedFrom = {}) {
+  let count = commits.get(relPath) ?? 0;
+  let former = movedFrom[relPath];
+  const seen = new Set([relPath]);
+  while (former && !seen.has(former)) {
+    seen.add(former);
+    count += commits.get(former) ?? 0;
+    former = movedFrom[former];
+  }
+  return count + (dirty.has(relPath) ? 1 : 0);
 }
 
 /**
@@ -249,10 +272,24 @@ export function parseArgs(argv = process.argv.slice(2)) {
 // and diffable — but they are this repository's own working output, not
 // documentation anybody installs. Bundling them would grow the shipped app on
 // every run, against a static budget already at 78% (docs/DECISIONS.md,
-// 2026-08-31).
+// 2026-08-31). These two names are skipped at any depth.
 const NOT_PRODUCT_DOCS = new Set(['analyses', 'records']);
 
-async function walk(dir) {
+// Top-level docs/ folders that stay in the repository but leave the app: dated
+// evidence (`archive`, `audits`, `benchmark`), superseded drafts (`prototypes`),
+// plans and marketing copy (`plans`, `launch`). A reader of the in-app Library
+// wants the current product documents; these cost about a fifth of the bundled
+// manifest. A link to one of them still works in the app, because an unknown
+// slug resolves to its GitHub page (`src/widgets/docs-vault/lib/resolve-doc-link.ts`).
+const NOT_SHIPPED_TOP_DIRS = new Set(['archive', 'audits', 'benchmark', 'plans', 'prototypes', 'launch']);
+
+// Single files that stay in the repository but leave the app, as paths relative
+// to the scanned root. The backlog snapshot is a frozen dated copy.
+const NOT_PRODUCT_PATHS = new Set(['BACKLOG-SNAPSHOT-2026-09-13.md']);
+
+// `product: false` lists every Markdown file under `dir` with no exclusion; the
+// staleness check uses it on the public output so a leftover file is reported.
+async function walk(dir, { root = dir, product = true } = {}) {
   const out = [];
   // Sorted by name — readdir order is filesystem-enumeration order, which
   // happens to be byte-sorted on APFS and fresh ext4 checkouts but is not
@@ -263,17 +300,20 @@ async function walk(dir) {
   const entries = (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
     a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
   );
+  const atRoot = dir === root;
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
-    if (entry.isDirectory() && NOT_PRODUCT_DOCS.has(entry.name)) {
+    if (product && entry.isDirectory() && NOT_PRODUCT_DOCS.has(entry.name)) {
       // The recording guide is linked by composed ledgers; fragments are consumed there.
       const guide = path.join(dir, entry.name, 'README.md');
       if (entry.name === 'records' && existsSync(guide)) out.push(guide);
       continue;
     }
+    if (product && atRoot && entry.isDirectory() && NOT_SHIPPED_TOP_DIRS.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
+    if (product && NOT_PRODUCT_PATHS.has(path.relative(root, full).split(path.sep).join('/'))) continue;
     if (entry.isDirectory()) {
-      const nested = await walk(full);
+      const nested = await walk(full, { root, product });
       out.push(...nested);
     } else if (entry.isFile() && entry.name.endsWith('.md')) {
       out.push(full);
@@ -521,12 +561,28 @@ export function splitManifestHeadings(manifest) {
   return { manifest: { ...manifest, docs }, headingsBySlug };
 }
 
+/**
+ * `{ oldSlug: newSlug }` for every document `docs/.moved.json` moved to a slug the
+ * app still ships. A `?slug=` deep link, a pin or a recent entry saved before the
+ * move keeps opening the document (`resolveDocsVaultSlugAlias`).
+ */
+export function movedSlugAliases(movedMap, shippedSlugs) {
+  const aliases = {};
+  for (const [from, to] of Object.entries(movedMap ?? {})) {
+    const oldSlug = from.replace(/^docs\//, '').replace(/\.md$/, '');
+    const newSlug = to.replace(/^docs\//, '').replace(/\.md$/, '');
+    if (shippedSlugs.has(newSlug)) aliases[oldSlug] = newSlug;
+  }
+  return Object.fromEntries(Object.entries(aliases).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+
 export function comparableManifest(manifest) {
   return {
     ...manifest,
     docs: (manifest.docs ?? []).map((doc) => ({
       ...doc,
       updatedAt: '<ignored>',
+      ...('revision' in doc ? { revision: '<ignored>' } : {}),
     })),
     generatedAt: '<ignored>',
   };
@@ -630,7 +686,7 @@ async function assertOutputsCurrent({
 
   const expectedPublic = new Map(publicFiles.map((file) => [file.relativePath, file.raw]));
   const currentPublicFiles = existsSync(PUBLIC_OUT)
-    ? (await walk(PUBLIC_OUT)).map((file) => path.relative(PUBLIC_OUT, file).replace(/\\/g, '/'))
+    ? (await walk(PUBLIC_OUT, { product: false })).map((file) => path.relative(PUBLIC_OUT, file).replace(/\\/g, '/'))
     : [];
   for (const relativePath of currentPublicFiles) {
     if (relativePath.endsWith('.md') && !expectedPublic.has(relativePath)) {
@@ -771,6 +827,8 @@ export async function scanVaultDir(
      * every node in the sample is accused of sitting outside its kind folder.
      */
     vaultSlugPrefix = '',
+    /** `{ newRepoPath: oldRepoPath }` from `docs/.moved.json`, so a revision count survives a move. */
+    movedFrom = {},
   } = {},
 ) {
   const files = await walk(dir);
@@ -824,6 +882,8 @@ export async function scanVaultDir(
     }
     const inputPaths = composed?.inputs ?? [relPath];
     const updatedAt = await latestInputDay(inputPaths, rootDir, gitDays);
+    // A composed ledger has many inputs and no single history; it carries no revision.
+    const revision = composed ? null : documentRevision(relPath, gitDays, movedFrom);
     // Asked where the body is already in hand, exactly as `buildMdEntry` does it.
     const vaultSlug =
       vaultSlugPrefix && slug.startsWith(vaultSlugPrefix)
@@ -853,6 +913,7 @@ export async function scanVaultDir(
       // the working tree or still untracked. Both are dates, so the value is stable as
       // long as the edit and its merge land on the same day.
       updatedAt: updatedAt ?? STABLE_GENERATED_AT_FALLBACK,
+      ...(revision ? { revision } : {}),
       linksOut,
     };
     // The stabiliser that carried values over from the previous manifest was
@@ -996,16 +1057,22 @@ async function buildDocsVault({ check = false } = {}) {
     await ensureDir(path.dirname(MANIFEST_OUT));
   }
 
+  const movedFile = path.join(DOCS_DIR, '.moved.json');
+  const movedMap = existsSync(movedFile) ? JSON.parse(await readFile(movedFile, 'utf8')) : {};
   const scanned = await scanVaultDir(DOCS_DIR, {
     rootDir: ROOT,
     publicOutDir: PUBLIC_OUT,
     check,
     vaultSlugPrefix: 'ontology/',
+    movedFrom: Object.fromEntries(Object.entries(movedMap).map(([from, to]) => [to, from])),
   });
   const { content, gatewayContent, publicFiles } = scanned;
   // The bundled manifest ships with headings split into a separate file — see the
   // MANIFEST_HEADINGS_OUT comment at the top of this file.
-  const { manifest, headingsBySlug } = splitManifestHeadings(scanned.manifest);
+  const split = splitManifestHeadings(scanned.manifest);
+  const { headingsBySlug } = split;
+  const aliases = movedSlugAliases(movedMap, new Set(split.manifest.docs.map((doc) => doc.slug)));
+  const manifest = Object.keys(aliases).length > 0 ? { ...split.manifest, aliases } : split.manifest;
   const { docs, backlinksDetail, tags } = manifest;
   const changelogRaw = content['CHANGELOG'];
   if (typeof changelogRaw !== 'string') {

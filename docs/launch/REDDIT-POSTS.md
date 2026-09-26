@@ -1,3 +1,10 @@
+---
+title: Reddit — Launch Drafts
+doc_type: launch
+status: current
+area: product
+---
+
 # Reddit — Launch Drafts
 
 These drafts start with the developer's review problem, not the implementation

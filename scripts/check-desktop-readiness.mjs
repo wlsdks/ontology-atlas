@@ -95,6 +95,13 @@ const desktopDoc = readText("docs/DESKTOP-MACOS.md");
 const agentsDoc = readText("AGENTS.md");
 const rootReadme = readText("README.md");
 const productDesignDoc = readText("docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md");
+// The per-slice render loop lives in the `/design-build` skill, one copy per harness.
+// Either copy naming the router's `computer-use-loop` proof is enough; the harnesses
+// are independent and need not match.
+const designBuildSkills = [".claude/skills/design-build/SKILL.md", ".agents/skills/design-build/SKILL.md"]
+  .map((relativePath) => path.join(root, relativePath))
+  .filter((absolute) => fs.existsSync(absolute))
+  .map((absolute) => fs.readFileSync(absolute, "utf8"));
 const developmentChecksDoc = readText("docs/DEVELOPMENT-CHECKS.md");
 const agentGraphWorkflowDoc = readText("docs/AGENT-GRAPH-WORKFLOW.md");
 const troubleshootingDoc = readText("docs/TROUBLESHOOTING.md");
@@ -298,8 +305,8 @@ if (
   // This gate checks **where the boundary is**: Atlas does not own the agent loop,
   // the model, or the keys, and does not host a window — it hands off to the user's
   // own terminal. (That morning's "Atlas hosts a terminal" wording was reversed by
-  // owner decision; the history is kept in AGENT-GRAPH-WORKFLOW.md's reversal
-  // section.)
+  // owner decision; AGENT-GRAPH-WORKFLOW.md keeps a one-paragraph note and Git
+  // keeps the full reasoning.)
   agentGraphWorkflowDoc.includes("does not reimplement Claude Code, Codex, or Cursor chat") &&
   agentGraphWorkflowDoc.includes("Atlas does not host a terminal; it hands off to yours") &&
   agentGraphWorkflowDoc.includes("Nothing runs on its own") &&
@@ -1523,8 +1530,8 @@ const agentDesignGateChecks = [
   [
     "AGENTS mandatory design gate",
     agentsDoc.includes("docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md") &&
-      /design gate/i.test(agentsDoc) &&
       /pnpm design:route/.test(agentsDoc) &&
+      agentsDoc.includes("/design-build") &&
       // Strip markdown emphasis before matching — AGENTS.md writes `Runs *after* the PO
       // pass`. The old regex required a contiguous string and **broke on a single
       // asterisk** (CI, 2026-07-31). The invariant (the design gate comes after the PO
@@ -1548,12 +1555,14 @@ const agentDesignGateChecks = [
       /principle/i.test(productDesignDoc),
   ],
   [
+    // Wiring, not wording: the doc names the proof id `pnpm design:route` emits for
+    // rendered changes (tests/contract/design-proof-router.contract.test.ts owns which
+    // changes emit it) and hands the step-by-step loop to a `/design-build` skill that
+    // actually exists and names the same id.
     "iterative real-window evidence",
     /computer-use-loop/.test(productDesignDoc) &&
-      /baseline/.test(productDesignDoc) &&
-      /material checkpoint/.test(productDesignDoc) &&
-      /Do not build a whole UI from imagination/.test(productDesignDoc) &&
-      /accessibility tree/.test(productDesignDoc),
+      productDesignDoc.includes("/design-build") &&
+      designBuildSkills.some((skill) => skill.includes("computer-use-loop")),
   ],
   [
     "recorded motion evidence",

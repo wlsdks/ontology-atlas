@@ -120,13 +120,22 @@ export function buildTagIndexForDocs(docs: Pick<VaultDoc, 'slug' | 'tags'>[]): R
   return tags;
 }
 
+/** Maps saved slugs through the moved-document aliases, keeping order and dropping repeats. */
+export function followMovedSlugs(slugs: readonly string[], aliases?: Record<string, string>): string[] {
+  if (!aliases) return [...slugs];
+  return [...new Set(slugs.map((slug) => aliases[slug] ?? slug))];
+}
+
 export function resolveDocsVaultSlugAlias(
   slug: string | null,
   docs: Pick<VaultDoc, 'slug'>[],
+  aliases?: Record<string, string>,
 ): string | null {
   if (!slug) return null;
   const slugs = new Set(docs.map((doc) => doc.slug));
   if (slugs.has(slug)) return slug;
+  const moved = aliases?.[slug];
+  if (moved && slugs.has(moved)) return moved;
 
   if (slug.startsWith('ontology/')) {
     const localSlug = slug.slice('ontology/'.length);

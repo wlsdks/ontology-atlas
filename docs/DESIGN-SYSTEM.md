@@ -1,11 +1,14 @@
 ---
 title: Design System
 tags: [design, ux, linear, circuit-constellation, overview]
+doc_type: authority
+status: current
+area: design-system
 ---
 
 # Design System
 
-> This document is maintained based on Section 3 of the design spec. For the original Linear specification, see [`design-references/DESIGN-linear.md`](design-references/DESIGN-linear.md).
+> This document is maintained based on Section 3 of the design spec.
 >
 > **v2 (2026-07)**: The B2+ "Circuit × Constellation" visual language shipped from ontology-map has become the standard for page rollout (gateway → docs/ontology hub → projects/insights → download) — see the *v2 — "Circuit × Constellation" (B2+) Visual Language* section below. v2 **extends** the v1 charter (monochrome + single indigo + forbidden patterns) rather than replacing it. On 2026-09-08 the owner lifted the expression bans of that charter; see "Absolute rules (Don'ts)" below for what was lifted and what still holds.
 
@@ -88,7 +91,7 @@ Topology inspection, Workshop writing, Insights maintenance, and source docs.
 
 ## v2 — "Circuit × Constellation" (B2+) Visual Language
 
-> Fidelity standard: `docs/prototypes/topology-b2plus.html` (owner-approved, the only fidelity source). Implementation standard: `src/widgets/ontology-map/` + `--map-*` / `--topology-chrome-*` tokens in `app/globals.css`. The entire expression architecture is in [`ONTOLOGY-MAP-DESIGN.md`](./ONTOLOGY-MAP-DESIGN.md). This section is the **working rulebook** for extending that language to pages outside topology — it is not marketing copy.
+> Fidelity standard: `docs/prototypes/topology-b2plus.html` (owner-approved, the only fidelity source). Implementation standard: `src/widgets/ontology-map/` + `--map-*` / `--topology-chrome-*` tokens in `app/globals.css`. The entire expression architecture is in [`docs/design/ontology-map.md`](./design/ontology-map.md). This section is the **working rulebook** for extending that language to pages outside topology — it is not marketing copy.
 
 ### v2 Language Definition — 6 Axes
 
@@ -98,7 +101,7 @@ Topology inspection, Workshop writing, Insights maintenance, and source docs.
    · **Galaxy is the explicit view-bounded exception (2026-09-15).** The owner removed every polygon, outline, nested ring, and expanded-node orbit from Galaxy. Its canvas mark is a circular light core, radial corona, and sparse diffraction glint; canonical kind geometry remains in Flat, Dome, hit testing, INDEX, and the inspector. In Galaxy, `--map-galaxy-*` temperature plus the visible name/kind text carries kind. Canonical radii still reserve interaction and label space, while the painted core stays compact. Baseline brightness remains the connection-count magnitude, but a deterministic bounded atmospheric twinkle means instantaneous brightness is not an exact ranking and never means activity or recency. Reduced motion freezes each star at a readable steady level. Record: `docs/DECISIONS.md`, "Galaxy becomes a living sky without changing the graph".
 4. **Signal = State (power/pulse).** Indigo means "powered on" — fresh node stroke, powered dot (`--map-panel-power-on`), active highlight. Comet pulse means "current flowing" — live traversal of `depends` relationships (accelerated from ego, `--map-edge-pulse-speed[-ego]`). Stale uses dashed border + low-chroma surface. Do not use signal color if it does not explain the state.
 5. **Calm chrome / fluid canvas boundary.** The canvas is fluid — spring camera, altitude crossfade (circuit ↔ constellation smoothstep), breathe. Chrome (panels/rails/pills) is static precision instrumentation — read as measurement tools rather than touch surfaces on 1920 desktops via `--topology-chrome-*` density (controls 32~36px, icons 11~12px, title 12px, eyebrow 9px). Fluid motion does not leak outside the canvas.
-6. **Indigo is the resting protagonist; amber marks one hub ring.** Since 2026-09-08 a further hue is allowed when it names a typed fact or a decision (a tier, a state, a lens) through a `--color-*` token; the earlier cyan rejection (ONTOLOGY-MAP-DESIGN verdict a5) was about a hue that named nothing, and that test still applies.
+6. **Indigo is the resting protagonist; amber marks one hub ring.** Since 2026-09-08 a further hue is allowed when it names a typed fact or a decision (a tier, a state, a lens) through a `--color-*` token; the earlier cyan rejection (design/ontology-map.md verdict a5) was about a hue that named nothing, and that test still applies.
 
 #### Galaxy reference translation (2026-09-15)
 
@@ -311,7 +314,7 @@ A kind the map never draws (`document`, `vault-readme`, or a kind the app does n
 
 **Both gateways must render the same mapping** — merely listing it in the table isn't enough to enforce this (consistent with the principle "specs are enforced by lint"). Each file has only validated consistency within itself (`node-shapes.test.ts`, `map-kind-glyph.test.tsx`), meaning nothing checked whether the two files **shared** the same mapping. The contract test `tests/contract/node-kind-shape-parity.contract.test.ts` (added 2026-08-01) fills this gap: we broke one side's mapping with a probe to confirm failure (e.g., forcing it to draw domain silhouettes as circles is immediately caught).
 
-Shapes converge to circles based on `farT` (far-distance progress) — once `FULL_CIRCLE_FAR_T = 0.985` is exceeded, they are always circles. Corner radii interpolate from `minCornerRadius`(kind-specific minimum corner ratio — e.g., project is 14% of the radius) to `r`(full circle) via `interpolateCornerRadius(minCornerRadius(kind, r), r, farT)` — this is a continuous morph, not a silhouette swap (`docs/ONTOLOGY-MAP-DESIGN.md` §3.1).
+Shapes converge to circles based on `farT` (far-distance progress) — once `FULL_CIRCLE_FAR_T = 0.985` is exceeded, they are always circles. Corner radii interpolate from `minCornerRadius`(kind-specific minimum corner ratio — e.g., project is 14% of the radius) to `r`(full circle) via `interpolateCornerRadius(minCornerRadius(kind, r), r, farT)` — this is a continuous morph, not a silhouette swap (`docs/design/ontology-map.md` §3.1).
 
 Decorations (pin-tick, via-hole, double hairline) are material expressions rather than silhouettes and are drawn only under the radius-`farT` gate (fading at a distance). The threshold is defined by the top constant block in `node-shapes.ts` (`DOMAIN_PIN_MIN_HALF_EXTENT`, etc.) as the single source of truth — do not duplicate values in this document (duplication is the start of drift, Carbon).
 
@@ -376,7 +379,7 @@ The data side is currently specifying **bridge nodes** (first-class representati
 
 ## Brand identity — pixel mascot (confirmed 2026-08-28)
 
-> Source contract: `docs/BRAND.md`. Pixel authority:
+> Source contract: `docs/design/brand.md`. Pixel authority:
 > `assets/brand/mascot/`. Runtime: `src/shared/ui/brand-mark.tsx`.
 
 The pixel mascot is the one shipping identity across OS, web, README, Open
@@ -1464,7 +1467,7 @@ when they name the surface rather than one specific markdown file.
 
 ## Topology node focus & scale (ego popover)
 
-Full spec + cited references: [`TOPOLOGY-FOCUS-AND-SCALE.md`](./TOPOLOGY-FOCUS-AND-SCALE.md).
+Full spec + cited references: [`design/topology-focus-and-scale.md`](./design/topology-focus-and-scale.md).
 The graph view obeys the infovis mantra *overview first, zoom and filter, then
 details-on-demand* — not the inverse (everything-at-once + fullscreen-on-click).
 
@@ -2855,7 +2858,7 @@ Chrome surfaces (tiles/chips) must only be created via `ChromeTile` / `ChromeChi
 |---|---|---|
 | `Select` (Dark Listbox) | `src/shared/ui/select.tsx` | Native `<select>` replacement — macOS gray system dropdown adapted to dark app syntax |
 | `EmptyState` | `src/shared/ui/empty-state.tsx` | Empty lists/charts/pages — skeleton placeholders + icon + one-line guidance |
-| `Button` | `src/shared/ui/button.tsx` | Standard action — `primary` · `outline` · `ghost` · `danger` (the confirm step of an irreversible action only, drawn from the danger ramp). Radius follows the size: `sm` 32px and `lg` 44px wear the chip radius, `md` 40px keeps the panel radius; type is `text-body-lg` at every size, the step a 32px field sets its value in. So a `Button sm` beside a `fieldClass` field or a `controlClass` chip `lg` shares their corner. While disabled, `danger` drops its hue for `outline`'s (the danger ink at `opacity-55` measured 2.42:1). A page's one way forward is this `primary`, never a `controlClass` `pill`, which carries a state or a count: four web-only doors drawn as filled pills read as a second primary shape beside every other screen's (owner review, 2026-09-26; gate `tests/e2e/primary-action-shape.spec.ts`). Gate: `src/shared/ui/button.test.tsx` |
+| `Button` | `src/shared/ui/button.tsx` | Standard action — `primary` · `outline` · `ghost` · `danger` (the confirm step of an irreversible action only, drawn from the danger ramp). Every size wears the chip radius (`sm` 32px, `md` 40px, `lg` 44px): a Button is a control, and only the boxes that hold content (card, panel, sheet) wear their larger corners. `md` kept the panel radius until 2026-09-26, when a 40px primary on the 12px corner read as a pill beside rectangular primaries on the next screen. Type is `text-body-lg` at every size, the step a 32px field sets its value in, so a Button beside a `fieldClass` field or a `controlClass` chip shares their corner and their text size. While disabled, `danger` drops its hue for `outline`'s (the danger ink at `opacity-55` measured 2.42:1). A page's one way forward is this `primary`, never a `controlClass` `pill`, which carries a state or a count: four web-only doors drawn as filled pills read as a second primary shape beside every other screen's (owner review, 2026-09-26; gate `tests/e2e/primary-action-shape.spec.ts`). Gate: `src/shared/ui/button.test.tsx` |
 | `ChromeTile` / `ChromeChip` | `src/shared/ui/chrome-tile.tsx` · `chrome-chip.tsx` | Chrome tiles/chips (see separate "Chrome Syntax" section) |
 | `controlClass()` | `src/shared/ui/control-class.ts` | **Value Layer** — single source of classes for interactive elements (see section below) |
 | `Chip` · `IconButton` · `RowButton` | `src/shared/ui/controls.tsx` | **Action Layer** — defaults to `type="button"` · enforces accessible names · button semantics |
@@ -3455,7 +3458,7 @@ reads it via ref mirror every frame, **reflecting from the next frame onward**.
 - 2026-07-21: Geometry & Type Codex (R5) — converged `text-[Npx]` (29 types, 1,184 instances) into 7-step type ramp (`--text-caption`…`--text-hero` + `--tracking-*` pairs), arbitrary radii (18 types) into 3 steps (`--radius-chip/card/panel`). Box-specific spec table + explicit exceptions listed. ESLint `no-restricted-syntax` blocks new arbitrary instances (migration complete directory error / R6 concurrent work dir warn). Visuals maintained at ±1px snap level (not a redesign); see "Geometry & Type Codex" section.
 - 2026-07-18: Chrome system (feat/chrome-system) — `--chrome-*` tokens + ChromeTile/ChromeChip components new; converged to 24px alignment rail for brand fill / INDEX panel / analysis panel left inset; INDEX panel v2.1 (header "INDEX · N" + collapse, tree row grid + Lucide chevron + inset capacity meter, footer moved agent sync); see `docs/prototypes/index-panel-v2-full.html`.
 - 2026-07-18: Historical: "Hex Constellation" became the compatibility mark. Retired by the 2026-08-29 pixel mascot identity.
-- 2026-07-18: v2 — Elevated B2+ "Circuit × Constellation" language to page rollout norm (6-axis language · token tier catalog · surface class do/don't · v2 prohibitions added · rollout guard · token drift debt audit); see [`ONTOLOGY-MAP-DESIGN.md`](./ONTOLOGY-MAP-DESIGN.md).
-- 2026-06-08: Added topology node-focus & scale pattern (ego popover, overview-first, plain-language counts, LOD perf path); see [`TOPOLOGY-FOCUS-AND-SCALE.md`](./TOPOLOGY-FOCUS-AND-SCALE.md).
+- 2026-07-18: v2 — Elevated B2+ "Circuit × Constellation" language to page rollout norm (6-axis language · token tier catalog · surface class do/don't · v2 prohibitions added · rollout guard · token drift debt audit); see [`docs/design/ontology-map.md`](./design/ontology-map.md).
+- 2026-06-08: Added topology node-focus & scale pattern (ego popover, overview-first, plain-language counts, LOD perf path); see [`design/topology-focus-and-scale.md`](./design/topology-focus-and-scale.md).
 - 2026-04-13: Removed the consulting category.
 - 2026-04-12: Initial draft (Phase 0).

@@ -1,6 +1,6 @@
 ---
 name: design-lead
-description: Lead Product Designer on the Atlas bench. Converts vague discomfort into one primary moment, one attention winner, and one explicit demotion.
+description: Lead product designer. Use only when design:route selects this seat for a council; names one primary moment, one attention winner, one demotion.
 access: read-only
 ---
 

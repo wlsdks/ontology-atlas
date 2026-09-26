@@ -1,6 +1,7 @@
 ---
 name: responsive-sweep
 description: Live-verify layout across tablet, laptop, and wide breakpoints by measuring rects, elementFromPoint occlusion, bottom-tab reserve, and screenshots.
+when_to_use: Use only when pnpm design:route includes responsive-sweep; measure the bands it returns.
 ---
 
 # Responsive sweep
@@ -48,10 +49,10 @@ update the change facts and use the resulting scope.
      content's bottom and every bottom-attached panel.
 3. Capture a screenshot for human evidence.
 
-After the measured loop, capture at least the affected representative state with
-the computer-use capability and record app/window identity, accessibility owner, and saved
-screenshot path. Browser automation screenshots support the rect evidence but do
-not replace this capture.
+Include the `/design-build` §0-B render-loop packet (baseline, checkpoints,
+final tree + screenshot paths). Browser screenshots support measurement; they
+do not replace it. Capture at least the affected
+representative state after the measured loop.
 
 ## Standing rules
 

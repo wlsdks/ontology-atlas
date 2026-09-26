@@ -3,7 +3,7 @@
  * (`docs/prototypes/topology-b2plus.html` §4): vault graph (project ⊃ domain
  * ⊃ capability ⊃ element) → deterministic `{x, y}` world coordinates.
  *
- * Contract (`docs/ONTOLOGY-MAP-DESIGN.md` §4 P2 — "layout.test.ts: fixed vault
+ * Contract (`docs/design/ontology-map.md` §4 P2 — "layout.test.ts: fixed vault
  * fixture → deterministic coordinates, no overlap, no aspectX-style
  * distortion constant" — a fixed vault
  * fixture yields deterministic coordinates, no overlap, and no aspectX-style

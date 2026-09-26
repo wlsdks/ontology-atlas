@@ -18,6 +18,7 @@ Serves the read and write tools an AI agent calls over JSON-RPC, advertising one
 ## Includes
 - The tool registry, the schemas it advertises, and the read-only mode that hides every write tool.
 - The runtime proof of which vault and repository roots the process is actually bound to.
+- Write results that say what a write could not settle: `reclassify_concept` and `merge_concepts` return an optional `warnings` list naming each entry left in a list the referrer's kind cannot hold.
 
 ## Excludes
 - The graph schema and file format, which the meaning layer owns.
@@ -25,3 +26,4 @@ Serves the read and write tools an AI agent calls over JSON-RPC, advertising one
 
 ## Uncertainty
 - Read from `mcp/src/server/` and `mcp/src/tools/` by layout; no tool count is recorded here because the repository states the live `tools/list` owns that number. This session reached the server as a client, so the registry file itself was not opened.
+- Re-read 2026-09-26: the registry's schema additions for those two `warnings` fields (`mcp/src/server/registry.mjs`, bundle #1874).

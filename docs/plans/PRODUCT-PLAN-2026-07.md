@@ -1,3 +1,10 @@
+---
+title: Ontology Atlas — product plan v9 (2026-07-17)
+doc_type: plan
+status: done
+area: product
+---
+
 # Ontology Atlas — 제품 계획 v9 (확정본, 2026-07-17)
 
 > 이 문서는 2026-07-17 하루 동안의 집중 재기획의 확정 산출물이다.

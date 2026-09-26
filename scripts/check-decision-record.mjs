@@ -186,8 +186,28 @@ const surfaceChanges = entries
   .filter((entry) => (entry.status === "A" || entry.status === "D") && ROUTE_PATTERN.test(entry.path))
   .map((entry) => `${entry.status === "A" ? "new surface" : "surface removed"}: ${entry.path}`);
 
+/**
+ * The entry point is watched only where it decides the contract. Every edit to
+ * `mcp/src/index.js` used to demand a decision record, so a one-line internal
+ * fix paid for a ledger entry nobody would read (2026-09-26). The tool table
+ * itself is `server/registry.mjs`, still watched whole; in the entry point only
+ * a changed line that names the request handlers or the read-only and consent
+ * filters moves what a client can call.
+ */
+const ENTRY_POINT = "mcp/src/index.js";
+const ENTRY_POINT_CONTRACT = /setRequestHandler|TOOLS_FOR_LIST|TOOL_BY_NAME|READ_TOOL_NAMES|READ_ONLY_MODE|WRITE_CONSENT_MODE/;
+
+function entryPointMovesContract(status) {
+  if (status !== "M") return true;
+  const diff = git(["diff", "-U0", `${base}...HEAD`, "--", ENTRY_POINT]);
+  return diff
+    .split("\n")
+    .some((line) => /^[+-](?![+-])/.test(line) && ENTRY_POINT_CONTRACT.test(line));
+}
+
 const contractChanges = entries
   .filter((entry) => CONTRACT_FILES.includes(entry.path))
+  .filter((entry) => entry.path !== ENTRY_POINT || entryPointMovesContract(entry.status))
   .map((entry) => `public contract changed: ${entry.path}`);
 
 /**

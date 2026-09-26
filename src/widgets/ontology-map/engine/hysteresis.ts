@@ -8,13 +8,13 @@
  * ```
  * where `HYSTERESIS = 7` (px). This is the click-safe contract's mechanical
  * core (`.claude/rules/design.md` 「Click=safe contract」 — a click is a safe contract;
- * `docs/INTERACTION-DESIGN.md`
+ * `docs/design/interaction.md`
  * §1): a pointerdown does not commit to a drag until the pointer has moved
  * more than `thresholdPx` from its down-position — below that, a
  * pointerup is a click (`setFocus`/`clearFocus`), not a pan.
  *
- * Value note: `docs/ONTOLOGY-MAP-DESIGN.md` §2.4 resolves a design-doc-level
- * tension explicitly — `INTERACTION-DESIGN.md` §1 recommends "~10px" in
+ * Value note: `docs/design/ontology-map.md` §2.4 resolves a design-doc-level
+ * tension explicitly — `docs/design/interaction.md` §1 recommends "~10px" in
  * general, but this prototype measured and shipped `7px`
  * (`--map-hysteresis-px`), and the design doc says the prototype's
  * concrete value wins. Use `7`, not `10`, unless a later design pass changes

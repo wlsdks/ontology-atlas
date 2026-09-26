@@ -32,6 +32,11 @@ const RULES = [
     reason: 'independent backlog records, their writer, or current-state composition changed',
     matches: [/^scripts\/backlog(?:\.test)?\.mjs$/, /^docs\/records\/backlog\//, /^docs\/BACKLOG(?:-SNAPSHOT-[^/]+)?\.md$/],
   },
+  {
+    command: 'pnpm test:lessons && pnpm lessons:check',
+    reason: 'harness lessons, their writer, or verdict composition changed',
+    matches: [/^scripts\/(?:lessons|new-record)(?:\.test)?\.mjs$/, /^docs\/records\/lessons\//],
+  },
   { command: 'pnpm test:mcp:rpc', reason: 'stdio integration harness lifecycle changed', matches: [/^scripts\/lib\/mcp-test-rpc(?:\.test)?\.mjs$/, /^mcp\/src\/integration\.test\.mjs$/] },
   { command: 'pnpm mcp:catalogue:check', reason: 'captured registry inputs changed', matches: [/^scripts\/data\/mcp-registry-snapshot\.json$/] },
   {
@@ -50,7 +55,7 @@ const RULES = [
     // machine is the one place a wrong verdict merges something untested.
     command: 'pnpm test:pr:land',
     reason: 'the landing sequence or its state machine changed',
-    matches: [/^scripts\/pr-land(?:\.test)?\.mjs$/],
+    matches: [/^scripts\/pr-land(?:\.test)?\.mjs$/, /^scripts\/lib\/landing-train(?:\.test)?\.mjs$/],
   },
   {
     // 2026-09-01 review: check:tokens and design:toc:check were unconditional
@@ -168,6 +173,13 @@ const RULES = [
     matches: [/\.md$/],
   },
   {
+    // Living documents carry their kind, status and area; a new or edited one,
+    // a template, the kind table or the move map can each break that.
+    command: 'pnpm docs:meta && pnpm docs:move -- --check',
+    reason: 'a living document, template, document kind or move changed — metadata and moved paths must stay current',
+    matches: [/^docs\/(?!ontology\/|records\/(?!README)|archive\/|audits\/|benchmark\/|prototypes\/|(?:DECISIONS|CHANGELOG|PO-PILOT)\.md$|BACKLOG-SNAPSHOT-).+\.md$/, /^docs\/\.moved\.json$/, /^scripts\/lib\/doc-types\.mjs$/],
+  },
+  {
     command: 'pnpm test:guide-examples',
     reason: 'public guide ontology examples and the external judgment probe must satisfy their contracts',
     matches: [
@@ -189,11 +201,12 @@ const RULES = [
   },
   {
     command: 'pnpm test:docs:checks',
-    reason: 'docs surface or doc-link checker changed',
+    reason: 'docs surface, doc-link, doc-metadata or doc-move tooling changed',
     matches: [
       /^scripts\/build-docs-surface\.(?:mjs|test\.mjs)$/,
       /^scripts\/check-doc-links\.(?:mjs|test\.mjs)$/,
-      /^scripts\/lib\/(?:docs-surface|doc-links)\.mjs$/,
+      /^scripts\/(?:check-doc-meta|docs-move|new-doc|doc-history)\.(?:mjs|test\.mjs)$/,
+      /^scripts\/lib\/(?:docs-surface|doc-links|doc-types)\.mjs$/,
     ],
   },
   {
@@ -476,24 +489,6 @@ const RULES = [
     ],
   },
   {
-    // The report is the instrument the hook falsifiers are written against, so
-    // it is covered by path like the hooks themselves rather than by a name
-    // somebody has to remember.
-    command: 'pnpm test:harness:report',
-    reason: 'the harness report, or the hook state it reads, changed',
-    matches: [
-      /^scripts\/harness-report(?:\.test)?\.mjs$/,
-      /^\.claude\/hooks\/(?:fast-sensor|stamp-verification|remind-verify-on-stop)\.sh$/,
-    ],
-  },
-  {
-    // The smoke reads its expected counts from both hook wirings, so a change
-    // to either settings file re-proves the parsers against them.
-    command: 'pnpm test:harness:smoke',
-    reason: 'the runtime smoke, or the hook wiring it derives its expectations from, changed',
-    matches: [/^scripts\/harness-smoke(?:\.test)?\.mjs$/, /^\.claude\/settings\.json$/, /^\.codex\/hooks\.json$/],
-  },
-  {
     // The finder is the only retrieval the ledger has; its parser is pinned
     // against the live label census, so its own edits re-run that pin.
     command: 'pnpm test:decisions',
@@ -523,13 +518,6 @@ const RULES = [
     command: 'pnpm test:changelog',
     reason: 'the changelog entry template or its gate changed',
     matches: [/^scripts\/lib\/changelog-entry-template(?:\.test)?\.mjs$/, /^scripts\/check-changelog\.mjs$/],
-  },
-  {
-    // The pre-push hook writes the ledger these outcomes are counted from, so
-    // editing the hook re-proves the record shape it hands over.
-    command: 'pnpm test:harness:outcomes',
-    reason: 'the outcome report, the pre-push ledger writer, or the hook that feeds it changed',
-    matches: [/^scripts\/harness-(?:outcomes|prepush-ledger)(?:\.test)?\.mjs$/, /^\.githooks\/pre-push$/],
   },
   {
     command: 'pnpm test:claude:hooks',
@@ -1357,6 +1345,10 @@ const CLI_DIRECT_LIB_TESTS = new Map([
 const CLI_DIRECT_LIB_TEST_FILES = new Set(CLI_DIRECT_LIB_TESTS.values());
 
 const SCRIPT_DIRECT_LIB_TESTS = new Map([
+  ['scripts/lib/playwright-server-owner.mjs', 'scripts/lib/playwright-server-owner.test.mjs'],
+  ['scripts/lib/playwright-server-owner.test.mjs', 'scripts/lib/playwright-server-owner.test.mjs'],
+  ['scripts/bundle-branches.mjs', 'scripts/bundle-branches.test.mjs'],
+  ['scripts/bundle-branches.test.mjs', 'scripts/bundle-branches.test.mjs'],
   ['scripts/audit-vault-paths.mjs', 'scripts/audit-vault-paths.test.mjs'],
   ['scripts/audit-vault-paths.test.mjs', 'scripts/audit-vault-paths.test.mjs'],
   ['scripts/build-docs-vault.mjs', 'scripts/build-docs-vault.test.mjs'],
@@ -1476,21 +1468,35 @@ function directSourceLanguageSuggestions(paths) {
   ];
 }
 
+/**
+ * A changed test runs itself; a changed source file runs **every suite that
+ * imports it**, through Vitest's module graph (`vitest related`). The sibling
+ * `<name>.test.tsx` alone missed the suite that renders the file: a change to
+ * `AcpPermissionCard.tsx` passed every recommended lane while
+ * `AcpChatPanel.test.tsx` had 25 failing cases (lesson dbb4417c). Agents in a
+ * fan-out never reach the pre-push `--changed` lane, so this is where it is caught.
+ */
 function directVitestTestSuggestions(paths) {
   const pathSet = new Set(paths);
-  const byTestFile = new Map();
+  const rows = [];
+  const sources = [];
   for (const path of paths) {
     const testFile = resolveVitestTestFile(path, pathSet);
     if (!testFile) continue;
-    const row = byTestFile.get(testFile) ?? {
-      command: `pnpm exec vitest run ${testFile}`,
-      reason: 'direct Vitest sibling test for changed app/source file',
-      paths: [],
-    };
-    row.paths.push(path);
-    byTestFile.set(testFile, row);
+    if (testFile === path) {
+      rows.push({ command: `pnpm exec vitest run ${testFile}`, reason: 'changed Vitest test file', paths: [path] });
+    } else {
+      sources.push(path);
+    }
   }
-  return [...byTestFile.values()];
+  if (sources.length > 0) {
+    rows.push({
+      command: `pnpm exec vitest related --run --passWithNoTests ${sources.join(' ')}`,
+      reason: 'every Vitest suite that imports a changed source file (module graph), not only its sibling',
+      paths: sources,
+    });
+  }
+  return rows;
 }
 
 /**
@@ -1532,14 +1538,11 @@ function directPlaywrightTestSuggestions(paths) {
     }));
 }
 
-function resolveVitestTestFile(path, pathSet) {
+function resolveVitestTestFile(path) {
   if (!/^(?:src|app)\//.test(path)) return null;
   if (!/\.(?:ts|tsx)$/.test(path)) return null;
   if (/\.(?:test|spec)\.(?:ts|tsx)$/.test(path)) return path;
-
-  const testFile = path.replace(/\.(tsx?)$/, '.test.$1');
-  if (pathSet.has(testFile) || existsSync(testFile)) return testFile;
-  return null;
+  return path.replace(/\.(tsx?)$/, '.test.$1');
 }
 
 function resolveMcpUnitTestFile(path, pathSet) {

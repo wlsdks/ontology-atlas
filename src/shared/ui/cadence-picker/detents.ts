@@ -1,6 +1,6 @@
 /**
  * **The rail's arithmetic** — kept apart from the component so the travel is measured, not
- * assumed (spec `docs/superpowers/specs/2026-09-21-round-cadence-and-scope.md` §2.2).
+ * assumed (spec `docs/specs/2026-09-21-round-cadence-and-scope.md` §2.2).
  *
  * A detent is a value the rail can say. They sit at even distances along the track whatever
  * their numbers are, because the hand reads distance, not ratio: putting 1440 minutes at

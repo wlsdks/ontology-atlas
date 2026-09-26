@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
  *
  * | File | What it did |
  * |---|---|
- * | `docs/TECH-STACK.md` | a rationale rendered in the verdict column, leaving the rationale empty |
+ * | `docs/engineering/tech-stack.md` | a rationale rendered in the verdict column, leaving the rationale empty |
  * | `docs/DEVELOPMENT-CHECKS.md` | six rows of a two-column table pasted into a three-column one, one of them an empty duplicate, and one row that had swallowed a whole separate check into its last cell |
  * | `docs/DESIGN-SYSTEM.md` | two rows whose "do not" half was pressed into the "do" cell, ending in "are forbidden" because prose had to stand in for the missing column |
  *
@@ -31,7 +31,9 @@ const TRACKED = execFileSync('git', ['ls-files', '*.md'], { encoding: 'utf8' })
       !path.includes('/archive/') &&
       !path.includes('/benchmark/') &&
       !path.endsWith('CHANGELOG.md'),
-  );
+  )
+  /* The index still lists a file deleted in the worktree until the deletion is staged. */
+  .filter((path) => existsSync(path));
 
 interface Row {
   readonly line: number;

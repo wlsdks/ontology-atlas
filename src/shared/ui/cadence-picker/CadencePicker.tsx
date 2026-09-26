@@ -19,7 +19,7 @@ import {
 /**
  * **How often** — one rail you drag, not a row of four chips.
  *
- * Spec: `docs/superpowers/specs/2026-09-21-round-cadence-and-scope.md` §2.2. The owner asked
+ * Spec: `docs/specs/2026-09-21-round-cadence-and-scope.md` §2.2. The owner asked
  * for this on the installed app: "1, 5, 10, 30 minutes, 1 hour; pick minutes or hours at the
  * top and a different drag comes out; the motion has to be very smooth". Four chips could not
  * say ten minutes, and a number field would be a different product — a person setting a

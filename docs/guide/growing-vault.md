@@ -1,3 +1,10 @@
+---
+title: After the Vault Grows
+doc_type: guide
+status: current
+area: ontology-model
+---
+
 # After the Vault Grows
 
 Twenty nodes is no problem. Problems arise when you reach two hundred, three people start using it together, and agents add several items daily.

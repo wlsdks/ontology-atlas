@@ -1,12 +1,13 @@
 ---
 name: parallel-brief
 description: Write a subagent brief that isolates ports, files, worktrees, scratch output, baselines, and primary evidence before parallel work begins.
+when_to_use: Use before delegating work to two or more parallel subagents or worktrees. Not for a single small delegated read.
 ---
 
 # Parallel brief
 
 Concurrency is not the risk; uncoordinated shared state is. Every rule here came
-from a real failure on 2026-08-03 or 2026-08-04.
+from a real failure.
 
 ## 1. Give every browser run its own server
 
@@ -39,7 +40,8 @@ competing baselines.
 
 Git may ignore a path that ESLint still scans. Probe files under `output/` or
 `.tmp/` have inflated warning counts before. Measure inside the assigned
-worktree, write scratch under `/tmp`, and report the exact checkout used.
+worktree, write scratch under the session scratch directory, and report the
+exact checkout used.
 
 ## 5. Assign file ownership
 
@@ -54,7 +56,7 @@ The design-system seat owns new value vocabulary. An implementation agent that
 cannot express a needed value reports and measures the gap; it does not create a
 parallel system. The author of a change does not independently approve it.
 
-## 6. Six mandatory lines
+## 6. Seven mandatory lines
 
 Every delegated brief states:
 
@@ -63,7 +65,12 @@ Every delegated brief states:
 3. no stash, no `git add -A`, no subagent worktree deletion, and the cleanup owner;
 4. the external scratch location;
 5. which baselines must remain green and the commands that prove them;
-6. the primary sources the agent must read instead of trusting a relayed summary.
+6. the primary sources the agent must read instead of trusting a relayed summary;
+7. the landing rule: the agent commits on its own branch in its own worktree and
+   never pushes, opens a pull request, or runs `pnpm pr:land`; the coordinating
+   owner lands every branch together with `/land-bundle` (one draft per slice
+   on the landing train, or one integration branch when slices must be
+   resolved together; either way one CI run per train).
 
 ## 7. Do not delegate
 

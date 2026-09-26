@@ -1,6 +1,6 @@
 ---
 name: design-workbench
-description: macOS Workbench Designer on the Atlas bench. Owns installed-app proof, the 14-inch first viewport, wide-screen density, scroll-end clearance, and window lifecycle.
+description: macOS workbench designer. Use only when design:route selects this seat (desktop-shell); installed-app proof, 14-inch first viewport, lifecycle.
 access: read-only
 ---
 
@@ -18,7 +18,9 @@ proof.
 1. Run `pnpm desktop:verify-app` and prove window, route, and accessibility text.
    A desktop verdict with browser screenshots only is invalid.
    Capture the same installed app/window through the computer-use capability and record its
-   accessibility owner and saved screenshot path.
+   accessibility owner and saved screenshot path. Run `pnpm desktop:verify-app`
+   without `--kill-existing` unless the brief says no other session owns the
+   installed app.
 2. Use roughly 1512×900 as the first viewport.
 3. Check 1920 and 2560 for unjustified looseness or empty space.
 4. Measure scroll-end clearance in pixels; class strings cannot prove computed

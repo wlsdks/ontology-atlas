@@ -211,7 +211,7 @@ installation with scripts disabled.
   members in Library, or recover the same read-only context through MCP and CLI.
 - **Versioned AI analysis kept as local Markdown**, with its evidence and
   selectable history, and measured violations instead of an invented
-  maintainability score. [Analysis records](docs/ANALYSIS-RECORDS.md).
+  maintainability score. [Analysis records](docs/contracts/analysis-records.md).
 - **Documents of any format gather in the Library**, kept byte for byte, with
   wiki pages required to cite their source on every fact.
 - **External MCP servers attach to the in-app chat** — one switch per server, off
@@ -385,7 +385,7 @@ Library also works without code or ontology nodes. Keep a question and its cited
 answer, inspect source changes, request an updated draft through Claude Code or
 Codex ACP, and compare before saving a new revision. Earlier answers remain
 available. Local Compile has its own read and approval path. See
-[retained answers](docs/RETAINED-ANSWERS.md).
+[retained answers](docs/contracts/retained-answers.md).
 
 Galaxy can also save the current ontology-node selection as a named constellation
 with a purpose. Atlas stores that compatible `v1` task scope in the selected vault,
@@ -404,7 +404,7 @@ resume it. Missing or changed comparison evidence stays explicit.
 For supported single-document patches in the installed app, exact Markdown
 previews and saved meaning decisions can be reopened from the existing History
 tab. Writer readback, code checks, merge and deployment remain separate facts.
-[Supported scope and limits](docs/TASK-MEANING-REVIEW.md).
+[Supported scope and limits](docs/contracts/task-meaning-review.md).
 
 ### 5. Plan against reviewed architecture
 
@@ -709,49 +709,35 @@ repository [AGENTS.md](AGENTS.md) is canonical for people and agents alike, and
 product decisions route through `pnpm po:route -- --help` from change facts
 rather than a self-declared risk.
 
-Pre-push keeps quick checks local; full contract and Knip scans belong to PR CI.
-Main CI reuses a successful PR only for the identical Git tree with complete
-live required-check proof; unproven pushes use their diff. Daily and manual
-runs remain exhaustive. Exact test-file duplicates are collapsed within a
-local check run. Browser CI shares one build and balances whole test files by
-measured duration; `node --test scripts/run-playwright-ci.test.mjs` verifies allocation.
-MCP harness probes use `pnpm test:mcp:rpc`; full CI keeps the unique CLI boundary
-through `pnpm integration:cli:architecture`. Catalogue checks use captured inputs;
-`pnpm mcp:catalogue:check-online` explicitly checks current registry facts.
-Details: [development checks](docs/DEVELOPMENT-CHECKS.md).
-
-Verification starts with `pnpm checks:changed`, which picks the focused gates for
-the files you changed; `-- --run` executes every recommendation and stops at the
-first failure, and it is the last command before a pull request.
-
-Open the pull request as a **draft** (`gh pr create --draft`), which runs no CI,
-and land it with `pnpm pr:land <number>`. That one command serializes against
-every other agent: it takes a shared lock, merges today's `main` into the
-branch, runs the local lanes on the merged source, marks the pull request ready
-(which fires the single CI run for that branch), squash merges, deletes the
-branch and releases the lock. `pnpm pr:queue` shows who holds the lock and who
-is waiting; `pnpm pr:ci <number>` buys an early CI run without landing. Never
-run `gh pr merge` or `gh pr update-branch` by hand: a guard refuses both,
-because outside the lander neither waits for the landing already in flight.
+Start with `pnpm checks:changed -- --run`: it picks the focused gates for the
+files you changed, runs every recommendation, and stops at the first failure.
+Open pull requests as drafts and land them with `pnpm pr:land <number>`, which
+queues them for a landing train: up to 20 queued pull requests merge behind one
+CI run, and a red train is bisected
+([details](docs/DEVELOPMENT-CHECKS.md)). A pull request already green on its own
+head and disjoint from `main` merges at once on the fast path. Branches that must
+be resolved together land through `/land-bundle` as one integration branch.
 
 | Command | What it answers |
 |---|---|
 | `pnpm checks:changed` | Which gates this change actually needs |
 | `pnpm backlog` · `pnpm backlog:check` | Current task records and concurrent-state conflicts; append a UUID record per worktree observation ([guide](docs/BACKLOG.md)) |
+| `pnpm lessons` · `pnpm lessons:check` | Shared harness lessons that are open or verified but not yet fixed; record and review them with `/harness-retro` ([records guide](docs/records/README.md#harness-lessons)) |
 | `pnpm agents:check` | Each harness's instruction integrity; independent Codex and Claude files need not match |
-| `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check` |
+| `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check`, `pnpm docs:meta` |
+| `pnpm doc:new -- --type=<kind> --area=<area> --slug=<slug>` | A new living document from its template in `docs/.templates/`, at the path its kind decides |
+| `pnpm docs:meta` · `pnpm doc:history -- <path>` | Whether every living document carries its kind, status and area with pointers that resolve; one document's commits across moves, which is its version |
+| `pnpm docs:move` | Moves the documents listed in `docs/.moved.json` and rewrites every reference; rerun it after merging main into an older branch (`-- --check` only reports) |
 | `pnpm knip` | Dead files, exports and types across every scope |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision record to cite or overturn, and whether this change owes one |
-| `pnpm harness:report` · `pnpm harness:outcomes` | What the agent hooks caught, and whether that lane still earns its place |
-| `pnpm pr:land <n>` · `pnpm pr:queue` | Land a pull request, and who is landing right now |
+| `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request for the landing train (or merge it on the fast path), and show the queue and the train in flight |
+| `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run what a landing would do without writing to GitHub, and run trains until the queue is empty |
+| `pnpm pr:ci <n>` | Fire CI on a draft now, so a green, disjoint change can take the fast path |
+| `pnpm bundle:plan` · `pnpm bundle:prune` | Land several branches as one: plan the merge (which carry work, shared files, trial conflicts) and afterwards prune the component branches main provably contains. See `/land-bundle` |
 | `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the six app screens the download page shows, Korean and English (`public/gateway/<screen>.<locale>.png`), from a served `pnpm build`, against this repository's own ontology |
 
-For independent backlog-record additions, opt into earlier CI feedback with
-`pnpm pr:land <n> --parallel-ci`. Final merge and validation of newer main remain
-serialized; see [eligibility and rerun limits](docs/BACKLOG.md#ci-while-another-task-is-landing).
-
 [Development checks](docs/DEVELOPMENT-CHECKS.md) is the full gate reference, one
-entry per area; [map testability](docs/MAP-TESTABILITY.md) owns canvas
+entry per area; [map testability](docs/engineering/map-testability.md) owns canvas
 performance, readability, contrast, and instrumentation.
 
 ## License

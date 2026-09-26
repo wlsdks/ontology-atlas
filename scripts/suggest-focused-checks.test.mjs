@@ -264,7 +264,8 @@ describe('focused checks --run', () => {
       '검사는 셸로 돌아야 한다(파이프·인용이 든 명령이 있다)',
     );
     assert.ok(
-      !ran.some((entry) => String(entry.command).includes('--run')),
+      // `vitest related --run` is the one command that carries the flag on purpose.
+      !ran.some((entry) => String(entry.command).replace('vitest related --run', '').includes('--run')),
       '`--run` 이 경로로 새어 명령에 들어갔다',
     );
   });

@@ -1,6 +1,9 @@
 ---
 title: Architecture
 tags: [architecture, infra, overview]
+doc_type: authority
+status: current
+area: architecture
 ---
 
 # Architecture
@@ -318,7 +321,7 @@ meaning, immutable history, and the still-mounted conversation. The native
 `analysis_archive` module exclusively appends inside the captured vault's
 `.ontology-atlas/analyses/`. MCP/CLI read the same format without compiling it
 into ontology nodes. The Architecture view may reconstruct a dated observation
-only against its matching profile snapshot. [Contract and boundaries](ANALYSIS-RECORDS.md).
+only against its matching profile snapshot. [Contract and boundaries](contracts/analysis-records.md).
 
 Queued permission requests preserve the JSON-RPC request ID without coercing
 numeric and string IDs together. `use-acp-session` snapshots the request, guards
@@ -338,7 +341,7 @@ execution permission and diagnostic finding review retain separate authority;
 missing code, merge and deployment receipts are unknown. Correction rejects the
 old request and prepares an editable draft; conversation-local deferral keeps
 the permission unresolved until resumed or cancelled.
-[Contract and current limits](TASK-MEANING-REVIEW.md).
+[Contract and current limits](contracts/task-meaning-review.md).
 
 The app can launch a coding agent the user already installed (Claude Code,
 Codex, …) and speak the Agent Client Protocol v1 to it over stdio. It is a
@@ -424,7 +427,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   from the scope and can now refuse (`{ reject }`). `LibraryRoundsProvider` mounts it
   once in `AppShell`, above every route; `/library/?tab=rounds` only reads. No Rust
   change: hashing, the watcher and the ACP commands already existed. Spec:
-  `docs/superpowers/specs/2026-09-17-library-rounds-design.md`.
+  `docs/specs/2026-09-17-library-rounds-design.md`.
 - **Automations (2026-09-20).** `src/views/automations/` is the schedule manager and
   `src/app/automations-workspace/` composes it with the one `LibraryRoundsProvider` clock.
   Its Ontology lane registers `kind: "ontology"` read-only ACP review rounds: the runner may
@@ -456,7 +459,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   lifecycle. ACP returns a draft, and an explicit save exclusively creates its
   Markdown revision after checking previous text and observed source bytes.
   These observations are separate from source-read provenance. The record and
-  concurrency limits are defined in [Retained answers](RETAINED-ANSWERS.md).
+  concurrency limits are defined in [Retained answers](contracts/retained-answers.md).
 
 - `vault-library.ts` keeps source coverage separate from per-page freshness.
   `reviewPages` names stale or unmeasured ordinary Wiki pages even when another write-up
@@ -873,13 +876,13 @@ Long-form docs:
 - [`PRODUCT-DIRECTION.md`](./PRODUCT-DIRECTION.md) — mission
 - [`FEATURES.md`](./FEATURES.md) — currently shipping features
 - [`DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md) — design tokens + forbidden patterns
-- [`DEPLOYMENT.md`](./DEPLOYMENT.md) — static export → static hosting
+- [`engineering/deployment.md`](./engineering/deployment.md) — static export → static hosting
 - [`CHANGELOG.md`](./CHANGELOG.md) — chronological user-visible changes
 - [`docs/archive/`](./archive/) — historical analysis docs (earlier cloud-mode designs, retired surfaces)
 
 ### Internal meaning transition evidence
 
-The pure shared [transition evidence codec](MEANING-TRANSITION-EVIDENCE.md)
+The pure shared [transition evidence codec](contracts/meaning-transition-evidence.md)
 checks an immutable candidate's supplied decision, revision and per-row facts.
 The installed app can retain a validated candidate and its declared
 content-addressed artifacts under `.ontology-atlas/meaning-transitions/` through
