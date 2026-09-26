@@ -146,6 +146,7 @@ interface StorageEntry {
 }
 
 const STORAGE_KEY_REGISTRY: StorageEntry[] = [
+  { key: "ontology-atlas:companion-sector:v1:", kind: "storage", scope: "vault-scoped", scopedBy: "growthProjectKey", file: "src/features/agent-activity/model/companion-sector.ts", provenBy: "src/features/agent-activity/model/companion-sector.test.ts", note: "Direct sector position and encounters use the unique project UID, separate from automatic combat saves; a second project starts fresh." },
   { key: "ontology-atlas:companion-game:v1:", kind: "storage", scope: "vault-scoped", scopedBy: "growthProjectKey", file: "src/features/agent-activity/model/companion-game.ts", provenBy: "src/features/agent-activity/model/use-companion-game.test.tsx", note: "Game power and rewards use the unique project UID; copies of the same project intentionally share progress." },
   { key: "ontology-atlas:companion-growth:v1:", kind: "storage", scope: "vault-scoped", scopedBy: "growthProjectKey", file: "src/features/agent-activity/model/companion-growth.ts", provenBy: "src/features/agent-activity/model/use-companion-growth.test.tsx", note: "Personal reading rewards use the unique project UID; ambiguous or missing identity cannot earn." },
   { key: "ontology-atlas:companion-journal:v1", kind: "storage", scope: "global", file: "src/features/agent-activity/model/companion-journal.ts", provenBy: "src/features/agent-activity/model/use-companion-journal.test.tsx", note: "Device-local personal reflections, deliberately independent of vault truth; explicit reset only." },
