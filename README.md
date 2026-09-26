@@ -736,6 +736,7 @@ be resolved together land through `/land-bundle` as one integration branch.
 | `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run what a landing would do without writing to GitHub, and run trains until the queue is empty |
 | `pnpm pr:ci <n>` | Fire CI on a draft now, so a green, disjoint change can take the fast path |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Land several branches as one: plan the merge (which carry work, shared files, trial conflicts) and afterwards prune the component branches main provably contains. See `/land-bundle` |
+| `pnpm conflicts:scan` | Which open pull requests (and `-- --match=<glob>` local branches) change the same files as this branch, and whether a trial merge with each conflicts; read-only, one `gh` call |
 | `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the six app screens the download page shows, Korean and English (`public/gateway/<screen>.<locale>.png`), from a served `pnpm build`, against this repository's own ontology |
 
 [Development checks](docs/DEVELOPMENT-CHECKS.md) is the full gate reference, one

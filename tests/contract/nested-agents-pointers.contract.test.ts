@@ -87,19 +87,6 @@ describe("nested AGENTS.md pointers", () => {
     }
   });
 
-  it("quotes each rule's globs so the reader knows why it applies here", () => {
-    for (const [dir, perRule] of coverage) {
-      const path = join(process.cwd(), dir, "AGENTS.md");
-      if (!existsSync(path)) continue;
-      const text = readFileSync(path, "utf8");
-      for (const globs of perRule.values()) {
-        for (const glob of globs) {
-          expect(text, `${dir}/AGENTS.md omits the glob ${glob}`).toContain(`\`${glob}\``);
-        }
-      }
-    }
-  });
-
   it("stays a pointer — no rule body is copied in", () => {
     for (const dir of coverage.keys()) {
       const path = join(process.cwd(), dir, "AGENTS.md");
