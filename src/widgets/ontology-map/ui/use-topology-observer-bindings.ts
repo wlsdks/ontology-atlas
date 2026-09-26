@@ -176,7 +176,14 @@ export function useTopologyObserverBindings({
 
   useEffect(() => {
     tourAnchorNodeIdRef.current = tourAnchorNodeId;
-  }, [tourAnchorNodeId, tourAnchorNodeIdRef]);
+    // The tour's anchor probe is written only on a drawn frame. A map at rest skips frames,
+    // so without this wake a step that names a node while the map sleeps leaves the probe
+    // 0x0: the overlay reads "no target", centres its card on the very node the copy points
+    // at, and draws no cutout. Whether the loop happened to be awake decided the placement
+    // (a CI runner that was still drawing placed the card beside the node; a resting map
+    // did not) — lesson cb5fbfaf.
+    lastActiveMsRef.current = performance.now();
+  }, [tourAnchorNodeId, tourAnchorNodeIdRef, lastActiveMsRef]);
 
   useEffect(() => {
     spotlightIdsRef.current = spotlightIds;

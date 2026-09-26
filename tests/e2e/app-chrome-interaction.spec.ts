@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { installDesktopRailRuntime, mountDesktopVault } from './desktop-rail-arrival-harness';
 import { seedFirstRunSeen } from './first-run-seed';
+import { waitForMapSettled, waitForMapStill } from './settle';
 
 /**
  * **The app chrome keeps its geometry, its focus and its word while it works.**
@@ -52,14 +53,19 @@ test.describe('the vault switcher', () => {
           pending: pending !== null,
           pendingText: (pending?.textContent ?? '').trim(),
         });
+        // measurement window: the claim is about every frame of the switch, sampled in the page.
         if (performance.now() - start < 6000) requestAnimationFrame(tick);
+        else (window as unknown as { __chromeSamplesDone: boolean }).__chromeSamplesDone = true;
       };
       requestAnimationFrame(tick);
     });
     await page.getByTestId('vault-switch-pick-other').click();
-    await page.waitForTimeout(400);
+    // The capture shows the switch in progress: the chip is busy opening the folder.
+    await expect(page.getByTestId('vault-switch-rail-tile')).toHaveAttribute('data-busy', 'true');
     await page.screenshot({ path: shot('ch1-switching-400.png') });
-    await page.waitForTimeout(5800);
+    await page.waitForFunction(() => (window as unknown as { __chromeSamplesDone?: boolean }).__chromeSamplesDone === true, undefined, {
+      timeout: 30_000,
+    });
     const samples = await page.evaluate(
       () => (window as unknown as { __chromeSamples: Array<{ at: number; tile: boolean; mapTop: number | null; pending: boolean; pendingText: string }> }).__chromeSamples,
     );
@@ -136,7 +142,18 @@ test.describe('the vault switcher', () => {
       const trail: string[] = [];
       for (let i = 0; i < 6; i += 1) {
         await page.keyboard.press('Tab');
-        await page.waitForTimeout(300);
+        // Settled once focus is inside the popover, or the popover has finished leaving; the
+        // assertions below report whichever state it stopped in.
+        await page
+          .waitForFunction(
+            () => {
+              const popover = document.querySelector('[data-testid="vault-switch-popover"]');
+              return popover === null || popover.contains(document.activeElement);
+            },
+            undefined,
+            { timeout: 5_000 },
+          )
+          .catch(() => {});
         const state = await page.evaluate(() => {
           const a = document.activeElement as HTMLElement | null;
           const popover = document.querySelector('[data-testid="vault-switch-popover"]');
@@ -188,12 +205,16 @@ test.describe('the vault switcher', () => {
           active: a?.getAttribute('data-testid') ?? a?.tagName ?? 'none',
           busy: tileEl?.getAttribute('data-busy') === 'true',
         });
+        // measurement window: the claim is about every frame of the load, sampled in the page.
         if (performance.now() - start < 5000) requestAnimationFrame(tick);
+        else (window as unknown as { __focusSamplesDone: boolean }).__focusSamplesDone = true;
       };
       requestAnimationFrame(tick);
     });
     await page.getByTestId('vault-switch-pick-other').click();
-    await page.waitForTimeout(5200);
+    await page.waitForFunction(() => (window as unknown as { __focusSamplesDone?: boolean }).__focusSamplesDone === true, undefined, {
+      timeout: 30_000,
+    });
     const samples = await page.evaluate(
       () => (window as unknown as { __focusSamples: Array<{ at: number; active: string; busy: boolean }> }).__focusSamples,
     );
@@ -338,7 +359,7 @@ test.describe('the vault switcher', () => {
     await expect
       .poll(() => page.evaluate(() => ((window as unknown as { __atlasMap?: { nodes: () => unknown[] } }).__atlasMap?.nodes().length ?? 0)))
       .toBeGreaterThan(0);
-    await page.waitForTimeout(1500);
+    await waitForMapSettled(page);
     const target = await page.evaluate(() => {
       const canvas = document.querySelector('canvas')!.getBoundingClientRect();
       const nodes = (window as unknown as { __atlasMap: { nodes: () => Node[] } }).__atlasMap.nodes();
@@ -353,7 +374,8 @@ test.describe('the vault switcher', () => {
     await expect(page.getByTestId('topology-node-popover-positioner')).toHaveCount(0);
     await page.mouse.click(target!.x, target!.y);
     await expect(popover).toHaveCount(0);
-    await page.waitForTimeout(400);
+    // A press that also selected the node would reframe the map onto it; let it finish answering.
+    await waitForMapStill(page);
     // The press closed the popover; it did not also focus the node under it.
     await expect(page.getByTestId('topology-node-popover-positioner')).toHaveCount(0);
   });

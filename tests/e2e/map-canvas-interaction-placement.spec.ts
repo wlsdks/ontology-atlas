@@ -2,7 +2,14 @@ import { mkdirSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
 import { dogfoodVaultFiles } from "./dogfood-vault-files";
-import { waitForAnimationsDone, waitForBoxStill, waitForDomeEntered, waitForMapStill } from "./settle";
+import {
+  waitForAnimationsDone,
+  waitForBoxStill,
+  waitForDomeEntered,
+  waitForMapStill,
+  waitForTerritoriesStill,
+  waitFrames,
+} from "./settle";
 
 /**
  * **Map canvas surfaces stand where they belong, keep one grammar, and hand focus back**
@@ -101,8 +108,13 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     await expect(menu).toHaveAttribute("aria-label", /.+/);
     // Focus lands on the first item, inside the menu.
     await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute("role"))).toBe("menuitem");
+    const focusedItem = () =>
+      page.evaluate(() => [...document.querySelectorAll('[data-testid="map-context-menu"] [role="menuitem"]')].indexOf(document.activeElement!));
+    const firstItem = await focusedItem();
     await page.keyboard.press("ArrowDown");
-    await page.waitForTimeout(400);
+    // The arrow is handled once focus has moved to another item; a map walk would open its panel on the same key.
+    await expect.poll(focusedItem).not.toBe(firstItem);
+    await waitFrames(page, 2);
     // The arrow moved inside the menu; the map did not walk and open a panel behind it.
     expect(await page.evaluate(() => document.activeElement?.closest('[data-testid="map-context-menu"]') !== null)).toBe(true);
     await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
@@ -151,7 +163,9 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     await page.getByTestId("topology-view-3d-choice-strata").click();
     await waitForDomeEntered(page, 60_000);
     await waitForMapStill(page).catch(() => {});
-    await page.waitForTimeout(600);
+    await expect(page.getByTestId("topology-light-legend")).toBeVisible();
+    await waitForAnimationsDone(page.getByTestId("topology-light-legend"));
+    await waitForBoxStill(page.getByTestId("topology-light-legend"));
     const legend = (await rectOf(page, "topology-light-legend"))!;
     expect(legend).not.toBeNull();
     const nodes = await drawnNodes(page);
@@ -180,7 +194,8 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     await page.mouse.click(canvas.x + target.x, canvas.y + target.y);
     const panel = page.getByTestId("map-detail-panel");
     await expect(panel).toBeVisible();
-    await page.waitForTimeout(900);
+    await waitForBoxStill(panel);
+    await waitForTerritoriesStill(page, { focus: target.id });
     const panelBox = (await rectOf(page, "map-detail-panel"))!;
     const legendPill = await page.evaluate(() => {
       const p = document.querySelector('[data-testid="territories-legend"] > p')!.getBoundingClientRect();
@@ -209,8 +224,10 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     // At 1040 the evidence note is shown whole, however many lines it takes.
     await page.keyboard.press("Escape");
     await page.setViewportSize({ width: 1040, height: 720 });
-    await page.waitForTimeout(800);
+    await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
     const note = page.getByTestId("territories-evidence-note");
+    await expect(note).toBeVisible();
+    await waitForBoxStill(note);
     const clipped = await note.evaluate((el) => el.scrollWidth > el.clientWidth + 1 || getComputedStyle(el).textOverflow === "ellipsis");
     expect(clipped, "the evidence note is cut off").toBe(false);
     await capture(page, "mc16-territories-1040");
@@ -221,7 +238,8 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     const domain = await pickDomain(page);
     await page.mouse.click(domain.x, domain.y);
     await expect(page.getByTestId("map-detail-panel")).toBeVisible();
-    await page.waitForTimeout(500);
+    await waitForAnimationsDone(page.getByTestId("map-detail-panel"));
+    await waitForBoxStill(page.getByTestId("map-detail-panel"));
     const row = await page.evaluate(() => {
       const actions = document.querySelector('[data-testid="map-detail-panel-actions"]')!;
       return [...actions.querySelectorAll<HTMLElement>(":scope > button, :scope > div > button")].map((b) => {
@@ -288,7 +306,14 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     await page.getByTestId("topology-tour-button").click();
     await expect(page.getByTestId("guided-tour-card")).toBeVisible();
     await expect(page.getByTestId("guided-tour-back")).toHaveCount(0);
-    const nextBefore = (await rectOf(page, "guided-tour-next"))!;
+    // Where [next] sits inside its card, not on the window: step 1 has no anchor and centres,
+    // step 2 stands beside the project node, so the card itself moves by design.
+    const nextInset = async () => {
+      const card = (await rectOf(page, "guided-tour-card"))!;
+      const next = (await rectOf(page, "guided-tour-next"))!;
+      return { right: Math.round(card.x + card.w - (next.x + next.w)), bottom: Math.round(card.y + card.h - (next.y + next.h)) };
+    };
+    const nextBefore = await nextInset();
     for (let i = 0; i < 12; i++) {
       const step = await page.getByTestId("guided-tour-overlay").getAttribute("data-tour-step");
       // Settle on what the step shows, not on a clock: a fixed 700 ms read the card mid-entrance
@@ -299,9 +324,16 @@ test.describe("map canvas interactions on the dogfood vault", () => {
       await waitForMapStill(page);
       const card = (await rectOf(page, "guided-tour-card"))!;
       if (step === "nodes") {
-        // [next] did not move between step 1 and step 2.
-        const nextAfter = (await rectOf(page, "guided-tour-next"))!;
-        expect(Math.round(nextAfter.x + nextAfter.w)).toBe(Math.round(nextBefore.x + nextBefore.w));
+        // [next] keeps its place in the card when [back] appears beside it on step 2.
+        expect(await nextInset(), "[next] holds the card's trailing corner").toEqual(nextBefore);
+        // And the card stands beside the node the step names, never on it. This used to pass
+        // only by accident: a map at rest never wrote the anchor probe, so the card centred on
+        // the project node exactly where step 1's card stood (lesson cb5fbfaf).
+        const cutout = (await rectOf(page, "topology-tour-anchor"))!;
+        expect(cutout, "the anchor probe is projected onto the project node").not.toBeNull();
+        const project = (await drawnNodes(page)).find((n) => n.id.startsWith("project:"))!;
+        expect(contains(cutout, project), "the cutout is centred on the project node").toBe(true);
+        expect(intersects(card, cutout), "the step 2 card covers the project node").toBe(false);
       }
       if (step === "relations" || step === "datasheet") {
         const labels = await page.evaluate(() => {
@@ -358,7 +390,9 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     await page.mouse.click(domain.x, domain.y);
     await expect(page.getByTestId("map-detail-panel")).toBeVisible();
     await page.getByTestId("map-detail-panel-open-full-detail").click();
-    await page.waitForTimeout(500);
+    const fullDetail = page.getByTestId("topology-full-detail-a1-positioner");
+    await expect(fullDetail).toBeVisible();
+    await waitForAnimationsDone(fullDetail);
     await page.keyboard.press("Escape");
     await expect.poll(() => activeTestId(page)).toBe("map-detail-panel-open-full-detail");
   });
@@ -397,7 +431,7 @@ test.describe("map canvas interactions on the dogfood vault", () => {
       await page.getByTestId("topology-view-3d").click();
       await page.getByTestId("topology-view-3d-choice-territories").click();
       await expect(page.getByTestId("territories-map")).toHaveAttribute("data-territories-ready", "true", { timeout: 60_000 });
-      await page.waitForTimeout(600);
+      await waitForTerritoriesStill(page, { focus: null });
       // Each name drawn at rest, probed at its four corners and its centre: the canvas must be
       // what is there — not INDEX, a tile, the legend, or the edge of the window.
       const hidden = await page.evaluate(() => {
@@ -441,7 +475,7 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     await page.getByTestId("topology-view-3d").click();
     await page.getByTestId("topology-view-3d-choice-territories").click();
     await expect(page.getByTestId("territories-map")).toHaveAttribute("data-territories-ready", "true", { timeout: 60_000 });
-    await page.waitForTimeout(800);
+    await waitForTerritoriesStill(page, { focus: null });
     const legendAtRest = await page.evaluate(() => {
       const r = document.querySelector("[data-territories-legend-pill]")!.getBoundingClientRect();
       return { x: r.x, y: r.y, w: r.width, h: r.height };
@@ -475,17 +509,21 @@ test.describe("map canvas interactions on the dogfood vault", () => {
       )!;
       const [x, y, w, h] = (el.dataset.labelBox ?? "").split(",").map(Number);
       const c = document.querySelector('[data-testid="territories-map"]')!.getBoundingClientRect();
-      return { x: c.x + x! + w! / 2, y: c.y + y! + h! / 2 };
+      return { id: el.dataset.territoryId!, x: c.x + x! + w! / 2, y: c.y + y! + h! / 2 };
     });
     await page.mouse.click(target.x, target.y);
     await expect(page.getByTestId("map-detail-panel")).toBeVisible();
-    await page.waitForTimeout(1200);
+    await waitForBoxStill(page.getByTestId("map-detail-panel"));
+    await waitForTerritoriesStill(page, { focus: target.id });
     expect(await unreadable(true), "a lit name cut by the canvas edge or chrome").toEqual([]);
     await capture(page, "mc02-r2-territories-selected-1040");
 
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
-    await page.waitForTimeout(1500);
+    // Escape keeps the selection; INDEX unfolds again and the camera returns to the room.
+    const indexPanel = page.getByTestId("topology-index-panel");
+    if (await indexPanel.count()) await waitForBoxStill(indexPanel);
+    await waitForTerritoriesStill(page, { focus: target.id });
     expect(await unreadable(false), "a drawn name under INDEX after Escape").toEqual([]);
     const legendAfter = await page.evaluate(() => {
       const r = document.querySelector("[data-territories-legend-pill]")!.getBoundingClientRect();
@@ -504,12 +542,12 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     await page.getByTestId("topology-view-3d-choice-strata").click();
     await waitForDomeEntered(page, 60_000);
     await waitForMapStill(page).catch(() => {});
-    await page.waitForTimeout(600);
     const target = (await drawnNodes(page)).find((n) => n.label === "에이전트 접근");
     expect(target, "the domain is drawn").toBeDefined();
     await page.mouse.click(target!.x, target!.y);
     await expect(page.getByTestId("map-detail-panel")).toBeVisible();
-    await page.waitForTimeout(1800);
+    await waitForBoxStill(page.getByTestId("map-detail-panel"));
+    await waitForMapStill(page);
     const panel = (await rectOf(page, "map-detail-panel"))!;
     const under = await page.evaluate(
       ({ id, left }) => {
