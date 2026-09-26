@@ -2,6 +2,7 @@
 name: design-guardian
 description: Accountable design decider and the only editing design seat. Use after a design council to choose and apply one correction, or when the owner asks for a design verdict with edits.
 model: opus
+effort: max
 tools: Read, Edit, Write, Bash, Grep, Glob, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__list_console_messages
 ---
 

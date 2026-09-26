@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx",
+  "count": 2,
+  "claim": "shape-gap",
+  "proof": "flex-col",
+  "why": "하단 탭 둘(현재 탭 · 앱 받기). **아이콘 위 · 라벨 아래**로 세로로 쌓이는데 `row` 는 **가로 정렬이 정체성**이라(`items-center` + `text-left`) 이 배치를 못 낸다. 2026-08-06 에 전수를 세어 **4곳**(그중 1곳은 이미 등재)이라 새 축을 만들지 않기로 판정했다 — `stacked` 축을 만들 때의 근거가 9곳이었다.",
+  "conditional": "세로 스택 컨트롤이 6곳(지금의 두 배)을 넘으면 `row` 에 orientation 축을 만들고 이 줄을 지운다."
+}

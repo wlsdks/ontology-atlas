@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
+  "count": 2,
+  "claim": "no-spec",
+  "proof": "accent-[var(--color-indigo-accent)]",
+  "why": "push opt-in 체크박스와 그 라벨. 체크박스 계약이 고정한다.",
+  "conditional": "체크박스 계약이 사라지면 부채로 내린다."
+}

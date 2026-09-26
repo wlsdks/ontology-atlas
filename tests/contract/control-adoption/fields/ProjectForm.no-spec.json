@@ -1,0 +1,9 @@
+{
+  "file": "src/features/project-edit/ui/ProjectForm.tsx",
+  "count": 2,
+  "claim": "no-spec",
+  "proof": "accent-[color:var(--color-indigo-brand)]",
+  "why": "체크박스 하나와 그 라벨. 체크박스의 크기·타깃은 **자기 계약**(`checkbox-target-size.contract.test.ts`)이 이미 고정한다 — 그 계약이 정본이고 여기서 또 규격을 씌우면 두 곳이 값을 다툰다.",
+  "conditional": "체크박스 계약이 사라지면 이 줄을 지우고 부채로 내린다.",
+  "note": "2026-08-06, forms declared closed too: the remaining places were judged exhaustively. Until the day before the field registry was empty, because with no field spec in the value layer \"the value layer cannot emit this\" was a tautology; once fieldClass and fieldLabel existed each place could state why it cannot move."
+}

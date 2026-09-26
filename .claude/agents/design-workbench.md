@@ -2,6 +2,7 @@
 name: design-workbench
 description: macOS workbench designer. Use only when design:route selects this seat (desktop-shell); installed-app proof, 14-inch first viewport, lifecycle.
 model: opus
+effort: max
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script
 ---
 

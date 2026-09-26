@@ -1,0 +1,7 @@
+{
+  "file": "src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx",
+  "count": 1,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "The Agents tab's web-only door, \"Get the Mac app\" (2026-09-26): the tab's one way forward, moved from a filled `pill` to the primary sm standard button every web-only door now wears. It navigates, so it stays `<Link>`."
+}

@@ -1,0 +1,7 @@
+{
+  "file": "src/shared/ui/chrome-tile.tsx",
+  "count": 1,
+  "claim": "value-layer-peer",
+  "proof": "--chrome-tile-size",
+  "why": "`ChromeTile` 프리미티브의 **`<Link>` 갈래**. 같은 파일의 `<button>` 갈래가 이미 버튼 쪽에 등재돼 있다 — 한 프리미티브가 두 태그를 내므로 두 등록부에 한 줄씩 선다."
+}

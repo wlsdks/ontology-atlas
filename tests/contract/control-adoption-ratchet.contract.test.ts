@@ -1,7 +1,11 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, extname, join, relative } from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
+
+import { judgeRatchet, RAISES_DIR, type RatchetJudgement } from './lib/ratchet-base';
 
 /**
  * Control adoption ratchet — **hand-written control classNames can never grow.**
@@ -13,6 +17,18 @@ import { describe, expect, it } from 'vitest';
  *
  * The ratchet only ever lets those numbers fall. Raising one means the value
  * layer lost a consumer, which is the regression this file exists to stop.
+ *
+ * **Judged against the merge base, not against a number in this file**
+ * (2026-09-27). Every count is measured on the working tree and again, with the
+ * same code, on the merge-base tree (`lib/ratchet-base.ts`); a change fails only
+ * when it made a count grow. The registries live in
+ * `tests/contract/control-adoption/<registry>/<file>.<claim>.json`, one file per
+ * row, so the base's own registry is what the base is measured with and two
+ * branches registering different places touch different files. A deliberate
+ * rise is a `tests/contract/ratchet-raises/<gate>.<slug>.json` record whose
+ * `why` is the reason a reviewer reads. Before this, nine baseline literals here
+ * changed in 56 of 74 commits to the file, and parallel branches conflicted on
+ * them.
  *
  * **The round history — exhaustive counts, registration verdicts, the 13 claims
  * that were rejected and why — is in Git history, not here:** the round log
@@ -45,11 +61,11 @@ import { describe, expect, it } from 'vitest';
  *
  * | Count | Meaning — one line | Direction of movement |
  * |---:|---|---|
- * | **Button registered 32** | Positions the value layer **fundamentally cannot produce** (`OUTSIDE_VALUE_LAYER`) | To increase, manually raise `BASELINE_REGISTERED`. That diff is where to write "why." |
- * | **Button no-basis 4** | Positions the value layer could produce but **has nothing to produce** — not controls (`NO_BASIS`) | It is normal for this not to move. **Not a target for repayment.** |
+ * | **Button registered** | Positions the value layer **fundamentally cannot produce** (`control-adoption/buttons/`) | To increase, add a raise record for `control-registered`. That file is where to write "why." |
+ * | **Button no-basis** | Positions the value layer could produce but **has nothing to produce** — not controls (`control-adoption/no-basis/`) | It is normal for this not to move. **Not a target for repayment.** |
  * | **Button debt 0** | Positions that can be moved but **haven't been yet** | **Tends toward 0.** Button progress is read solely from here. |
- * | **Anchor registered 29** | Same meaning, for anchors (`OUTSIDE_VALUE_LAYER_ANCHORS`) | Manually raise `BASELINE_ANCHOR_REGISTERED`. |
- * | **Anchor no-basis 0** | Measured: saw all 102 and got 0 (since `<a>` aims to be thin, it's hard to become a "click surface with nothing to say") | Manually raise if qualifiers arise. |
+ * | **Anchor registered** | Same meaning, for anchors (`control-adoption/anchors/`) | Add a raise record for `control-anchor-registered`. |
+ * | **Anchor no-basis 0** | Measured: saw all 102 and got 0 (since `<a>` aims to be thin, it's hard to become a "click surface with nothing to say") | Add a raise record if qualifiers arise. |
  * | **Anchor debt 0** | Unregistered among the 23 `<Link>`s and 14 `<a>`s not yet moved | **Tends toward 0.** |
  * | **Form debt 0** | `<input>`, `<textarea>`, `<select>`, `<label>` with hand-written specs (added 2026-08-05; 63→57→29→20 on 06) | **Tends toward 0.** All text fields have been moved, and native `<select>` debt is **0**. The remaining 20 are layout-only labels (not specs) + 5 checkboxes (self-contract fixed) + slider/full-screen editor/stage input. |
  * | Button total 108 · Anchor total 102 · Form total 63 | Sum of each category | Derived values. Do not judge based on these numbers. |
@@ -335,7 +351,7 @@ import { describe, expect, it } from 'vitest';
  * | What becomes false | Which check turns red |
  * |---|---|
  * | Attach any spec to scream(even one `px-3` is enough) | "As many qualified click surfaces as registered actually exist" — value layer now has something to produce, so returns to debt. |
- * | Fifth click surface appears somewhere | "Full split of this reason matches fixed count"(`CLICK_SURFACE_CENSUS`) — new position caught by both debt and full split pin. |
+ * | Fifth click surface appears somewhere | "Every qualifying click surface is in the registry" (probe ⑭) and the `control-click-surfaces` count against the merge base — new position caught by both. |
  * | Claim unqualified position for this category | Above two + "no-basis doesn't increase" — confirmed by measurement probe(`DemoStage` false claim → 4 checks red). |
  *
  * All three rules **are machine-measured**, not relying on human opinion. Confirmed all 7 probes red(full split exceeded · additional in registration file · spec attachment · `inset-0` removal · false claim · clearing ledger · lowering baseline only).
@@ -421,29 +437,28 @@ import { describe, expect, it } from 'vitest';
  * Workshop/record round moved workshop headers 6 had `text-caption`(9.5px) in 3 — `studio-navigation.spec.ts`'s "chrome label is one value 11px" contract only grabbed `studio-save`/`studio-exit` two positions, so siblings escaped.
  * Moving to ramp(`card/sm` = `text-label`) automatically made uncontracted positions into contract values. |
  */
-/** The **kind of claim** that something is outside the value layer. A new kind must also be added to the registration-criteria table above. */
-type OutsideClaim =
-  | 'chrome-token'
-  | 'stage-geometry'
-  | 'value-layer-peer'
-  | 'standard-button'
-  | 'no-spec'
-  | 'state-scoped'
-  | 'prose'
-  /**
-   * **The value layer's eight shapes cannot in principle produce that layout**
-   * (added 2026-08-06).
-   *
-   * Different from `chrome-token`: that one cannot be emitted because the token
-   * changes per condition; this one because the layout itself is not in the
-   * vocabulary.
-   *
-   * ⚠️ **This claim must always carry a `conditional`.** Once the shape or axis
-   * exists, the registration is deleted and the place drops back into debt.
-   * Without a condition it becomes a permanent exemption, which breaks this
-   * registry's definition as a debt list rather than a permit list.
-   */
-  | 'shape-gap';
+/**
+ * The **kind of claim** that something is outside the value layer. A new kind must also be added
+ * to the registration-criteria table above.
+ *
+ * `shape-gap` (added 2026-08-06): **the value layer's eight shapes cannot in principle produce that
+ * layout.** Different from `chrome-token`: that one cannot be emitted because the token changes per
+ * condition; this one because the layout itself is not in the vocabulary. ⚠️ It must always carry a
+ * `conditional` — once the shape or axis exists, the registration is deleted and the place drops
+ * back into debt. Without a condition it becomes a permanent exemption, which breaks this
+ * registry's definition as a debt list rather than a permit list (probe ⑭ holds this).
+ */
+const OUTSIDE_CLAIMS = [
+  'chrome-token',
+  'stage-geometry',
+  'value-layer-peer',
+  'standard-button',
+  'no-spec',
+  'state-scoped',
+  'prose',
+  'shape-gap',
+] as const;
+type OutsideClaim = (typeof OUTSIDE_CLAIMS)[number];
 
 interface OutsideEntry {
   /** Repo-relative path. Must exist. */
@@ -461,243 +476,9 @@ interface OutsideEntry {
   readonly why: string;
   /** "Move it once X exists" — when the value layer gains that axis, delete the registration and drop the place into debt. */
   readonly conditional?: string;
+  /** Round history that used to sit beside the row as a comment. Not read by any check. */
+  readonly note?: string;
 }
-
-/**
- * **The verified "outside the value layer" registry.**
- *
- * If you find a place that is outside the value layer but not listed here,
- * **open it and verify before adding a row** (discipline 1 above). If you cannot
- * verify it, leave it in debt.
- */
-const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
-  /*
-   * ════════════════════════════════════════════════════════════════════
-   * 2026-08-06 — **completion declared.** The last two were judged and listed.
-   * ════════════════════════════════════════════════════════════════════
-   *
-   * Owner: *"What does it mean that the verdict is final? Does it mean there's nothing left to fix? Then you should declare it closed so I don't have to look for it again next time."*
-   * (if the verdict is final and nothing is left to fix, declare it closed so the
-   * next person does not go looking again)
-   *
-   * Correct. **"Nothing left to fix" must mean the count is 0, and 0 is the
-   * declaration.** Saying the verdict is final while leaving a non-zero count
-   * just sends the next person looking.
-   */
-  {
-    file: 'src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '[@media(pointer:coarse)]',
-    why:
-      '최근 변경 창(window) 라디오 칩. ⚠️ **2026-08-15 정정** — 종전 근거(“값 층은 ' +
-      '`[@media(pointer:coarse)]` 변형을 원리적으로 못 낸다”)는 **더 이상 참이 아니다**. ' +
-      '값 층이 `atlas-touch-floor`(globals.css, coarse 에서 44px)를 chip/segment base 에 ' +
-      '실으면서 그 조건은 발화했고, 이 자리의 손 변형은 이제 값 층이 낼 수 있는 것이다. ' +
-      '남은 진짜 blocker 는 높이가 아니라 셋이다: `min-w-12` **균일폭**(값 층에 축 없음) · ' +
-      '`--map-panel-*` **패널 스코프 잉크**(무채색 램프가 아니다) · ' +
-      '`rounded-[var(--chrome-radius-inner)]` **크롬 반경**(칩 램프의 `rounded-chip` 이 아니다). ' +
-      '게다가 이 치수(24 · 11px · 48px 균일)는 소유자가 두 번 고쳐 확정한 것이라 ' +
-      '(2026-08-02 *“버튼이 너무 작고”* → *“비율이나 그런게 맞아야하는데”*), 램프로 끌어당기면 ' +
-      '그 이력을 깬다.',
-    conditional:
-      '값 층이 **균일폭 축 + 패널 스코프 잉크**를 얻으면 이 줄을 지우고 옮긴다. ' +
-      '(포인터 조건부 높이는 이미 얻었다 — 그것만으로는 부족하다.)',
-  },
-  /* 2026-08-06 — **the last three.** Each was opened and its evidence verified. */
-  /*
-   * ════════════════════════════════════════════════════════════════════
-   * 2026-08-06 — **a place with a final verdict comes out of debt**
-   * ════════════════════════════════════════════════════════════════════
-   *
-   * Owner: *"Analyze why we decided not to design-systemize it, and if that's fine, remove it from the issue entirely so the count doesn't show up — since you keep telling me how many are left, I end up ordering them fixed."*
-   * (if we decided not to design-system a place, analyse why, and if that is
-   * fine remove it from the issue entirely so it stops showing up in the count —
-   * being told how many are left keeps making me order it fixed)
-   *
-   * The preamble of this file already gives the reason: **debt is only a progress
-   * gauge if it can reach 0**, and mixing in "cannot in principle" makes 0
-   * unreachable. Leaving a decided place in debt means **the number nags a
-   * person.**
-   *
-   * The eight below were each opened and verified, and all carry a
-   * `conditional` — when the value layer gains that axis the registration is
-   * deleted and the place drops back into debt.
-   */
-
-  {
-    file: 'src/widgets/topology-index-panel/ui/TopologyIndexTab.tsx',
-    count: 1,
-    claim: 'shape-gap',
-    proof: 'flex-col',
-    why: '지도 INDEX 패널을 여는 세로 손잡이. 위와 같은 세로 스택 배치다.',
-    conditional: '세로 스택 컨트롤이 6곳을 넘으면 위와 함께 지운다.',
-  },
-  {
-    file: 'src/widgets/topology-index-panel/ui/TopologyIndexTreeRow.tsx',
-    count: 1,
-    claim: 'no-spec',
-    proof: 'aria-hidden="true"',
-    why:
-      '트리 행의 펼침 셰브론. `aria-hidden` + `tabIndex={-1}` 이라 **접근성 트리에 ' +
-      '없고 포커스 순서에도 없다** — 조작은 바깥 `role="treeitem"` 행이 진다. ' +
-      '컨트롤이 아니라 마우스 어포던스라 씌울 규격이 없다.',
-    conditional: '이 셰브론이 접근성 트리에 다시 노출되면(=진짜 컨트롤이 되면) 부채로 내린다.',
-  },
-  {
-    file: 'src/widgets/topology-controls/ui/HubRail.tsx',
-    count: 1,
-    claim: 'shape-gap',
-    proof: 'h-16 w-5',
-    why:
-      '지도 왼쪽 가장자리의 허브 레일 손잡이. **16:5 세로 막대**(64×20)라 모양 여덟의 ' +
-      '어느 치수 사다리에도 없다 — 칩·pill 은 가로가 길고 `icon` 은 정사각이다. ' +
-      '가장자리에 붙는 잡이(edge grab)는 이 앱에 하나뿐이다.',
-    conditional: '가장자리 잡이가 둘이 되면 그때 값에 이름을 붙인다(이 저장소의 「두 번째로 쓸 곳이 생기는 순간」 규율).',
-  },
-  {
-    file: 'src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx',
-    count: 3,
-    claim: 'chrome-token',
-    proof: '--git-row-h',
-    why:
-      '변경 행 · 「나머지」 토글 · STEP_ROW 3열 그리드 행 3. 높이가 ' +
-      'clamp(38px, 4.2vh, 48px) 이고 좁은 폭에서 26px, coarse 포인터에서 44px 로 ' +
-      '재정의된다. 값 층의 높이 어휘는 고정 단뿐이라 **뷰포트 함수를 표현할 수 없다**.',
-  },
-  {
-    file: 'src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx',
-    count: 7,
-    claim: 'chrome-token',
-    proof: '--git-setup-action-height',
-    why:
-      '스냅샷 확인/취소 · 도크 · 재확인 · 재시도 · init · init 복사. 데스크톱 36px ' +
-      '인데 coarse 포인터에서 --touch-target-min(44px)으로 **승격**한다. 램프는 ' +
-      '포인터 조건부 높이를 못 낸다.',
-    conditional: '값 층이 포인터 승격 축(coarse 에서 44px)을 얻으면 다시 연다.',
-  },
-  {
-    file: 'src/shared/ui/button.tsx',
-    count: 1,
-    claim: 'value-layer-peer',
-    proof: 'buttonVariants',
-    why: '표준 버튼 프리미티브 자신. 값 층이 자기를 소비할 수는 없다.',
-  },
-  {
-    file: 'src/shared/ui/chrome-chip.tsx',
-    count: 1,
-    claim: 'value-layer-peer',
-    proof: '--chrome-tile-size',
-    why: '크롬 칩 프리미티브. 높이가 --chrome-tile-size 크롬 계약이고 소비처는 className 만 얹는다.',
-  },
-  {
-    file: 'src/shared/ui/chrome-tile.tsx',
-    count: 1,
-    claim: 'value-layer-peer',
-    proof: '--chrome-tile-size',
-    why: '크롬 타일 프리미티브. 같은 크롬 계약(36px, coarse 에서 max(36px, 44px)).',
-  },
-  {
-    file: 'src/shared/ui/select.tsx',
-    count: 1,
-    claim: 'value-layer-peer',
-    proof: '--control-h-md',
-    why:
-      'select 트리거. **값 층과 같은 컨트롤 높이 사다리**(--control-h-md/lg)를 직접 ' +
-      '읽고 w-full · rounded-card 로 폼 필드 계약을 진다.',
-  },
-  {
-    file: 'src/shared/ui/tab-bar.tsx',
-    count: 1,
-    claim: 'value-layer-peer',
-    proof: '--tabbar-underline',
-    why:
-      '밑줄 탭 프리미티브 자신. 반경 0 · items-baseline · pb-[11px] · ' +
-      'border-b-[length:var(--tabbar-underline)] 로 **다른 표기법**을 소유한다. ' +
-      'segment 는 「보더 0」이 정의라 이 표기법을 못 그린다.',
-  },
-  /*
-   * ── The 2026-08-04 combined round's 7 verified registrations. The chrome-token
-   * candidates the preamble had deferred to "the next registration round" were
-   * opened place by place. All are tokens that go from 32–36px on fine pointers
-   * to 44 on coarse, or that ride a scale factor, so a fixed-step ramp cannot
-   * express them in principle (`tokenIsBeyondFixedSteps` verifies this
-   * mechanically).
-   */
-  {
-    file: 'src/widgets/search-palette/ui/SearchPalette.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--overlay-close-size',
-    why: '팔레트 닫기 — 32px 이고 coarse 포인터에서 --touch-target-min(44)으로 승격한다.',
-    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
-  },
-
-  {
-    file: 'src/widgets/global-search/ui/GlobalSearch.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--overlay-close-size',
-    why:
-      '검색 시트 닫기. ⚠️ 검증이 결함을 잡은 자리다 — 전용 토큰 ' +
-      '(--topology-search-sheet-close-size)은 32px **단독 고정 선언**이라 이 ' +
-      '게이트가 기각했고(승격 블록 주석은 «이미 커버됨»이라 거짓말하고 있었다), ' +
-      '같은 일을 하는 --overlay-close-size 로 수렴시킨 뒤에야 등재 자격이 생겼다. ' +
-      'fine 32 → 32(이동 0), coarse 32 → 44(형제 오버레이와 같은 계약).',
-    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
-  },
-  {
-    file: 'src/views/docs-vault/ui/parts/DocsHeaderTile.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--chrome-tile-size',
-    why:
-      '문서함 헤더 타일 프리미티브 — size-[var(--chrome-tile-size)] 로 크롬 잠금 단' +
-      '(36, coarse 에서 max(36,44))을 그대로 진다. ChromeTile 의 문서함 형제.',
-  },
-  {
-    file: 'src/widgets/doc-reading-pane/ui/BackToTopButton.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--chrome-tile-size',
-    why:
-      '문서함 「맨 위로」 부유 컨트롤 — h-[var(--chrome-tile-size)] 크롬 계약. ' +
-      'rounded-full 원형 방언은 별개 부채로 남는다(원형 아이콘 구멍) — 등재는 치수 주장만 승인한다.',
-  },
-  {
-    file: 'src/widgets/app-nav-rail/ui/GitStatusTile.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--app-nav-rail-tile-height',
-    why:
-      '레일 git 타일 — calc(32px × --topology-ui-scale-factor) + coarse max() 승격. ' +
-      '램프는 스케일 계수도 포인터 승격도 못 낸다.',
-    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다. 누름 방언(active:translate-y-px)은 별개 부채다.',
-  },
-];
-
-/**
- * **A literal — not derived from `OUTSIDE_VALUE_LAYER`.**
- *
- * This does not inherit the hard-cut ratchet's defect, where `BASELINE =
- * REGISTRY.length` made "it never grows" **impossible to fail in principle**:
- * adding a row raised the baseline with it, loosening the pawl in both
- * directions. Raising the registered count requires editing this number **by
- * hand**, and that diff is where the "why" goes.
- */
-// Reclassification only: one existing full-screen scrim was counted as a chrome
-// button in Home. Total registered + no-basis controls is unchanged (29).
-const BASELINE_REGISTERED = 24;
-
-/**
- * **Only this number may fall.** The total (108) minus registered (30) minus
- * no-basis (4).
- *
- * Writing one more hand control in a registered file does not raise the
- * registered count, so it raises this one — registration is not an exemption.
- * The same is true of no-basis.
- */
-const BASELINE_HAND_WRITTEN_DEBT = 0;
 
 /**
  * **The third category — "no basis".**
@@ -714,8 +495,25 @@ const BASELINE_HAND_WRITTEN_DEBT = 0;
  * **delegated to the caller** (`className={className}`) — the value layer cannot
  * emit someone else's decision, so it is outside in principle. Here **nobody**
  * decides a spec, because there is nothing to decide.
+ *
+ * The only claim type today is `click-surface`: a **screen-covering click
+ * surface** (scrim, blocking backdrop). It gets pressed but it is not a control
+ * — it declares **no** shape, size, type, or ink, only placement
+ * (`absolute inset-0 z-*`) plus one background layer, and the value layer has
+ * already declared both of those outside its share (placement belongs to
+ * `className`).
+ *
+ * ⚠️ **These rows are not debt to repay.** Debt targets 0; these do not — which
+ * is why the counts were split. Mixed together, debt becomes a number that
+ * **cannot reach 0 in principle**, and at that moment it stops being a progress
+ * gauge and becomes decoration.
+ *
+ * **The anchor side is 0 today — a measurement, not an empty row.** Running all
+ * anchors through the predicate returns 0: an `<a>` exists to **go somewhere**,
+ * so it rarely becomes a spec-less click surface. Probe ⑮ asserts exactly that.
  */
-type NoBasisClaim = 'click-surface';
+const NO_BASIS_CLAIMS = ['click-surface'] as const;
+type NoBasisClaim = (typeof NO_BASIS_CLAIMS)[number];
 
 interface NoBasisEntry {
   readonly file: string;
@@ -725,104 +523,102 @@ interface NoBasisEntry {
   /** The evidence string that must remain in the file. Same discipline as a registration. */
   readonly proof: string;
   readonly why: string;
+  readonly note?: string;
 }
 
 /**
- * **The "nothing for the value layer to emit" registry.**
+ * **The registries are data files, one per row.**
  *
- * The only claim type today is `click-surface`: a **screen-covering click
- * surface** (scrim, blocking backdrop). It gets pressed but it is not a control
- * — it declares **no** shape, size, type, or ink, only placement
- * (`absolute inset-0 z-*`) plus one background layer, and the value layer has
- * already declared both of those outside its share (placement belongs to
- * `className`).
+ * `buttons/`, `anchors/` and `fields/` hold the verified "outside the value layer" rows;
+ * `no-basis/` holds the "nothing for the value layer to emit" rows. A row is
+ * `<registry>/<file basename>.<claim>[.<proof slug>].json`.
  *
- * ⚠️ **These rows are not debt to repay.** Debt 74 targets 0; these 4 do not —
- * which is why the counts were split. Mixed together, debt becomes a number that
- * **cannot reach 0 in principle**, and at that moment it stops being a progress
- * gauge and becomes decoration.
+ * If you find a place that is outside the value layer but not listed, **open it
+ * and verify before adding a row** (discipline 1 above). If you cannot verify it,
+ * leave it in debt. Adding a row raises a registered count, so it also needs the
+ * raise record that says why; that pair is the review.
+ *
+ * ⚠️ 2026-08-23, worth keeping: an evidence link was first written trailing a
+ * sentence, which forces `display: inline` and therefore a `prose` registration.
+ * Measuring instead of registering showed the sentence position was the mistake —
+ * moved onto its own line it was an ordinary `shape: 'link'` control and no row
+ * was needed. **Check whether the position is wrong before registering a shape the
+ * value layer cannot make.**
  */
-const NO_BASIS: readonly NoBasisEntry[] = [
-  {
-    file: 'src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx',
-    count: 1,
-    family: 'button',
-    claim: 'click-surface',
-    proof: '--color-scrim-a58',
-    why:
-      '빠른 편집 시트의 스크림. `absolute inset-0 bg-[var(--color-scrim-a58)]` 가 전부이고 역할은 ' +
-      '「바깥을 눌러 닫기」다. 값 층의 모양 여덟 중 어느 것을 씌워도 **보이는 것이 달라지지 ' +
-      '않는다** — 씌울 규격이 없어서다.',
-  },
-  {
-    // Three existing scrims moved together; the old Home inventory misclassified
-    // one as a chrome button using the unrelated Git anchor as its proof.
-    file: 'src/views/home/ui/TopologyBlockingOverlays.tsx',
-    count: 3,
-    family: 'button',
-    claim: 'click-surface',
-    proof: 'data-backdrop-contract',
-    why:
-      '지도의 차단 백드롭 셋(부트스트랩 취소 · 노드 생성 취소 2). 규격이 아니라 **계약**을 지고 ' +
-      '있고 그 계약을 스스로 선언한다 — `data-backdrop-contract="blocks-map-and-closes-composer"` · ' +
-      '`data-backdrop-surface-token` · `data-interactive-overlay`(투어 자동시작 차단 판정이 읽는 ' +
-      '마커). 컨트롤 규격은 0이다.',
-  },
-  {
-    file: 'src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx',
-    count: 1,
-    family: 'button',
-    claim: 'click-surface',
-    proof: 'data-testid="acp-chat-history-scrim"',
-    why:
-      '앱 안 대화의 **지난 대화 목록 뒤 막**. 그 목록은 절대 위치로 떠서 대화를 덮는다 — ' +
-      '흐름에 두면 열 때 대화가 밀려나고 목록이 대화의 일부처럼 보였다(2026-08-16 소유자 ' +
-      '실보고). 떠 있는 것에는 「아무 데나 누르면 닫힌다」가 딸려야 하고 그 클릭면이 이 막이다. ' +
-      '`absolute inset-0` 과 바탕 한 겹이 전부이고, 값 층의 모양 여덟 중 무엇을 씌워도 ' +
-      '**보이는 것이 달라지지 않는다** — 씌울 규격이 없어서다.',
-  },
-];
+const REGISTRY_DIR = 'tests/contract/control-adoption';
+type RegistryName = 'buttons' | 'anchors' | 'fields' | 'no-basis';
 
-const NO_BASIS_BUTTONS = NO_BASIS.filter((e) => e.family === 'button');
+const isText = (v: unknown): v is string => typeof v === 'string' && v.trim() !== '';
+
+function rowProblems(name: string, row: Record<string, unknown>, registry: RegistryName): string[] {
+  const problems: string[] = [];
+  if (!isText(row.file)) problems.push('`file` must be a repository path');
+  else if (!name.startsWith(`${basename(row.file, extname(row.file))}.`)) {
+    problems.push(`file name must start with "${basename(row.file, extname(row.file))}."`);
+  }
+  if (!Number.isInteger(row.count) || (row.count as number) <= 0) problems.push('`count` must be a positive integer');
+  if (!isText(row.proof)) problems.push('`proof` must name the evidence string');
+  if (!isText(row.why)) problems.push('`why` must say why the place is outside');
+  const claims: readonly string[] = registry === 'no-basis' ? NO_BASIS_CLAIMS : OUTSIDE_CLAIMS;
+  if (!claims.includes(row.claim as string)) problems.push(`\`claim\` must be one of ${claims.join(', ')}`);
+  if (registry === 'no-basis' && row.family !== 'button' && row.family !== 'anchor') {
+    problems.push('`family` must be "button" or "anchor"');
+  }
+  return problems;
+}
 
 /**
- * **The anchor side is 0 today — a measurement, not an empty row.**
+ * Read one registry under `root` (the working tree, or a merge-base tree).
  *
- * Running all 102 through the predicate returns 0. That makes sense: an `<a>`
- * exists to **go somewhere**, so it rarely becomes a spec-less click surface
- * (there is no reason to put an `href` on a scrim). When a qualifying anchor
- * appears, a row is added and `BASELINE_ANCHOR_NO_BASIS` is raised by hand — this
- * 0 does not mean the gate is idling, it is **the predicate's 0 after seeing all
- * 102 real places** (probe ⑮ asserts exactly that).
+ * **A root without the registry directory throws** rather than returning empty: that tree
+ * predates the data files, so measuring it would count zero registrations and report every
+ * row as growth. The judge treats a throwing base as "nothing comparable" and uses the absolute
+ * ceiling instead.
  */
+function loadRegistry(root: string, registry: 'no-basis'): NoBasisEntry[];
+function loadRegistry(root: string, registry: Exclude<RegistryName, 'no-basis'>): OutsideEntry[];
+function loadRegistry(root: string, registry: RegistryName): (OutsideEntry | NoBasisEntry)[] {
+  if (!existsSync(join(root, REGISTRY_DIR))) {
+    throw new Error(`${join(root, REGISTRY_DIR)} does not exist; this tree predates the registry files`);
+  }
+  const dir = join(root, REGISTRY_DIR, registry);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.json'))
+    .sort()
+    .map((name) => {
+      const row = JSON.parse(readFileSync(join(dir, name), 'utf8')) as Record<string, unknown>;
+      const problems = rowProblems(name, row, registry);
+      if (problems.length > 0) throw new Error(`${REGISTRY_DIR}/${registry}/${name}: ${problems.join('; ')}`);
+      return row as unknown as OutsideEntry | NoBasisEntry;
+    });
+}
+
+const OUTSIDE_VALUE_LAYER = loadRegistry(process.cwd(), 'buttons');
+const OUTSIDE_VALUE_LAYER_ANCHORS = loadRegistry(process.cwd(), 'anchors');
+const NO_BASIS = loadRegistry(process.cwd(), 'no-basis');
+const NO_BASIS_BUTTONS = NO_BASIS.filter((e) => e.family === 'button');
 const NO_BASIS_ANCHORS = NO_BASIS.filter((e) => e.family === 'anchor');
 
-/** A literal — same reason as the registration baselines (a derived value loosens the pawl in both directions). */
-/*
- * 4 → 5 (2026-08-16): the **scrim behind the past-conversation list** in the
- * in-app chat.
- *
- * That list floats absolutely and covers the conversation (put in flow, opening
- * it pushed the conversation aside and the list read as part of it — reported by
- * the owner). Anything floating needs "click anywhere to dismiss", and that
- * click surface is this scrim.
- *
- * It satisfies both qualifications exactly: `absolute inset-0` (it covers the
- * screen) and **zero** ramp-owned properties (placement plus one background
- * layer, nothing to apply a spec to).
- */
-const BASELINE_NO_BASIS = 5;
-const BASELINE_ANCHOR_NO_BASIS = 0;
-
 /**
- * **Pins the exhaustive count for this reason.** Across the whole repository
- * today, exactly this many hand controls are granted the qualification by the
- * predicate. If a further one appears the number diverges and **turns red** —
- * at which point a person either ① raises the registry and this number by hand
- * if it really is a click surface (that diff is where the "why" goes), or ②
- * repays it as debt. There is no path to a silent exemption.
+ * **The counts when this gate moved to the merge-base judge (2026-09-27). Never edited.**
+ *
+ * They are not the baseline — the merge base is. They are the ceiling used where there is no
+ * merge base to compare with (a shallow clone), and a floor under a tree compared with itself
+ * (a push to `main`). Raise records widen them too, so a deliberate rise never needs an edit
+ * here. Each is a **literal** (probe ④): a value derived from the registry would rise with every
+ * row, which is how the hard-cut ratchet's "never grows" became impossible to fail.
  */
-const CLICK_SURFACE_CENSUS = 5;
+const FALLBACK = {
+  registered: 24,
+  debt: 0,
+  noBasis: 5,
+  clickSurfaces: 5,
+  anchorRegistered: 38,
+  anchorDebt: 0,
+  anchorNoBasis: 0,
+  fieldDebt: -6,
+} as const;
 
 const ROOTS = ['src', 'app'];
 const GLOBALS_CSS = 'app/globals.css';
@@ -897,6 +693,7 @@ function openingTag(source: string, from: number): string {
  */
 const BUTTON_TAGS = ['button'] as const;
 const ANCHOR_TAGS = ['Link', 'a'] as const;
+const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
 
 function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): string[] {
   const source = stripComments(readFileSync(file, 'utf8'));
@@ -1045,9 +842,146 @@ function tokenIsBeyondFixedSteps(css: string, token: string): boolean {
   return /clamp\(|max\(|min\(|\d+v[hw]|touch-target-min/.test(declarations[0]);
 }
 
-const scannedFiles = ROOTS.flatMap((root) => walk(root));
-const { total, registered, noBasis, debt, byFile, registeredByFile, noBasisByFile } = census(scannedFiles);
+type Census = ReturnType<typeof census>;
+type TreeMeasure = {
+  scanned: string[];
+  button: Census;
+  anchor: Census;
+  field: Census;
+  clickSurfaces: string[];
+  anchorClickSurfaces: string[];
+};
+
+/**
+ * Every count this gate judges, for the tree rooted at `root`, with **that tree's own
+ * registries**. The merge-base judge calls it with the extracted base tree, which is why the
+ * registries are data files: the base's rows are only readable if they are not code in this file.
+ */
+function measureTree(root: string): TreeMeasure {
+  const cwd = process.cwd();
+  const scanned = ROOTS.map((r) => join(root, r))
+    .filter((dir) => existsSync(dir))
+    .flatMap((dir) => walk(relative(cwd, dir) || '.'));
+  const noBasis = loadRegistry(root, 'no-basis');
+  return {
+    scanned,
+    button: census(scanned, loadRegistry(root, 'buttons'), BUTTON_TAGS, noBasis.filter((e) => e.family === 'button')),
+    anchor: census(scanned, loadRegistry(root, 'anchors'), ANCHOR_TAGS, noBasis.filter((e) => e.family === 'anchor')),
+    field: census(scanned, loadRegistry(root, 'fields'), FIELD_TAGS, []),
+    clickSurfaces: clickSurfaceCensus(scanned),
+    anchorClickSurfaces: clickSurfaceCensus(scanned, ANCHOR_TAGS),
+  };
+}
+
+/**
+ * The working tree and each extracted merge base are measured once. An extracted base is
+ * content-addressed and never changes; a scratch repository in a probe does, so it is not cached.
+ */
+const BASE_CACHE = join(tmpdir(), 'atlas-ratchet-base');
+const measured = new Map<string, TreeMeasure>();
+function measureOnce(root: string): TreeMeasure {
+  const cacheable = root === process.cwd() || root.startsWith(BASE_CACHE);
+  if (!cacheable) return measureTree(root);
+  let result = measured.get(root);
+  if (!result) {
+    result = measureTree(root);
+    measured.set(root, result);
+  }
+  return result;
+}
+
+const today = measureOnce(process.cwd());
+const scannedFiles = today.scanned;
+const { total, registered, noBasis, debt, byFile, registeredByFile, noBasisByFile } = today.button;
+const anchorCensus = today.anchor;
+const fieldCensus = today.field;
 const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
+
+/** Everything `measureTree` reads; only these are extracted at the merge base. */
+const READS = [...ROOTS, REGISTRY_DIR];
+
+type JudgeOptions = { cwd?: string; base?: string | null; fallback?: number };
+
+/**
+ * **The eight judged counts.** Each is one `judgeRatchet` call with its gate id written out,
+ * because a raise record is valid only for a gate that a contract file names this way
+ * (`ratchet-merge-base.contract.test.ts`). The probes at the end of this file run these same
+ * calls on a scratch repository, so what they prove is what the tests above enforce.
+ */
+const judgeControl = {
+  registered: (o: JudgeOptions = {}) =>
+    judgeRatchet({
+      gate: 'control-registered',
+      measure: (root) => measureOnce(root).button.registered,
+      reads: READS,
+      fallback: o.fallback ?? FALLBACK.registered,
+      cwd: o.cwd,
+      base: o.base,
+    }),
+  debt: (o: JudgeOptions = {}) =>
+    judgeRatchet({
+      gate: 'control-debt',
+      measure: (root) => measureOnce(root).button.debt,
+      reads: READS,
+      fallback: o.fallback ?? FALLBACK.debt,
+      cwd: o.cwd,
+      base: o.base,
+    }),
+  noBasis: (o: JudgeOptions = {}) =>
+    judgeRatchet({
+      gate: 'control-no-basis',
+      measure: (root) => measureOnce(root).button.noBasis,
+      reads: READS,
+      fallback: o.fallback ?? FALLBACK.noBasis,
+      cwd: o.cwd,
+      base: o.base,
+    }),
+  clickSurfaces: (o: JudgeOptions = {}) =>
+    judgeRatchet({
+      gate: 'control-click-surfaces',
+      measure: (root) => measureOnce(root).clickSurfaces.length,
+      reads: READS,
+      fallback: o.fallback ?? FALLBACK.clickSurfaces,
+      cwd: o.cwd,
+      base: o.base,
+    }),
+  anchorRegistered: (o: JudgeOptions = {}) =>
+    judgeRatchet({
+      gate: 'control-anchor-registered',
+      measure: (root) => measureOnce(root).anchor.registered,
+      reads: READS,
+      fallback: o.fallback ?? FALLBACK.anchorRegistered,
+      cwd: o.cwd,
+      base: o.base,
+    }),
+  anchorDebt: (o: JudgeOptions = {}) =>
+    judgeRatchet({
+      gate: 'control-anchor-debt',
+      measure: (root) => measureOnce(root).anchor.debt,
+      reads: READS,
+      fallback: o.fallback ?? FALLBACK.anchorDebt,
+      cwd: o.cwd,
+      base: o.base,
+    }),
+  anchorNoBasis: (o: JudgeOptions = {}) =>
+    judgeRatchet({
+      gate: 'control-anchor-no-basis',
+      measure: (root) => measureOnce(root).anchor.noBasis,
+      reads: READS,
+      fallback: o.fallback ?? FALLBACK.anchorNoBasis,
+      cwd: o.cwd,
+      base: o.base,
+    }),
+  fieldDebt: (o: JudgeOptions = {}) =>
+    judgeRatchet({
+      gate: 'control-field-debt',
+      measure: (root) => measureOnce(root).field.debt,
+      reads: READS,
+      fallback: o.fallback ?? FALLBACK.fieldDebt,
+      cwd: o.cwd,
+      base: o.base,
+    }),
+} satisfies Record<keyof typeof FALLBACK, (o?: JudgeOptions) => RatchetJudgement>;
 
 /**
  * ════════════════════════════════════════════════════════════════════
@@ -1091,347 +1025,6 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * `tokenIsBeyondFixedSteps` refuses. This is where the round proved by
  * measurement that registration is not an escape hatch.
  */
-// 2026-08-18 gateway remake: the hero CTA pair (published `<a>` · pending
-// `<Link>`) + the demo ghost anchor — all three registered via `buttonVariants`
-// (standard-button).
-// 2026-08-18 (second pass, owner request): the hero's second row — Intel `<a>` ·
-// Windows `<a>` · macOS `<a>` for Windows visitors · browser `<Link>`. All four
-// standard-button.
-// 2026-08-19: deleting the install section removed 7 anchors from the gateway
-// (the panel's primary CTA · Intel · GitHub exit · web exit · release notes ·
-// Windows download · Windows tracking) — `Link` 19→17 · `a` 17→12.
-// 2026-09-01: the docs viewer's [[project:slug]] anchor became a locale-aware
-// Link (the raw form hard-navigated to the locale-less root, which dropped ?p=).
-// 2026-09-02: Architecture's empty-profile action became a real in-tab button instead of a
-// button-styled Link to Map. The destination count and the verified registration both fall by one.
-// 2026-09-11 (slice U2): the Library's blocked steps gained a door to `/agents` —
-// `AgentDoor` is one `<Link>` through `buttonVariants`, so `Link` 18→19.
-// 2026-09-25: the two 404 files and the error boundary became one shared terminal-state view.
-// The 404's two `<Link>`s moved with it, and the error screen's home became a plain `<a>`
-// through `buttonVariants` (a full reload after a render failure), so `a` 8→9.
-// 2026-09-25: Automations' "Get the app" and "Open Library check history" became standard
-// buttons (primary, ghost sm) instead of text links, so `Link` 19→21.
-// 2026-09-25: Check history's first-run door to Automations is one `<Link>` through
-// `buttonVariants`, so `Link` 21→22.
-// 2026-09-25 (agents polish): AgentClientButtons' outline anchor became a `<Button>`, so `a` 9→8.
-// 2026-09-25: the map's edge panel "fix this relation on the map" link took the node panel's
-// primary `Button` grammar, so its `<Link>` branch goes through `buttonVariants`, `Link` 22→23.
-// 2026-09-25: the Wiki and Guidance preview footers' three pill links became standard sm
-// buttons, entering the census as `buttonVariants` anchors, so `Link` 23→26.
-// 2026-09-26: four web-only doors drawn as filled `pill`s (Harness no-source and browser-only,
-// Agents web, Models web) became the primary sm standard button, so `Link` 26→30.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 30, a: 8 };
-
-/**
- * **The verified "outside the value layer" anchor registry.**
- *
- * Same discipline as the button side's `OUTSIDE_VALUE_LAYER` — if you find a
- * place outside the value layer that is not listed here, **open it and verify
- * before adding a row**. If you cannot verify it, leave it in debt.
- */
-const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
-  /* 2026-08-06 — **the last two links.** With these, hand-styled links reach 0. */
-  {
-    file: 'src/views/home/ui/TopologyCommandChrome.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--chrome-tile-size',
-    why:
-      '지도 크롬의 git 타일(좁은 폭 전용). `size-[var(--chrome-tile-size)]` 로 36px 이고 ' +
-      'coarse 포인터에서 `max(36px, --touch-target-min)` 으로 **승격**한다 — 선언이 ' +
-      '둘이라 토큰 검사를 통과한다. 값 층은 포인터 조건부 치수를 못 낸다.',
-    conditional: '값 층이 포인터 조건부 치수 축을 얻으면 이 줄을 지우고 옮긴다.',
-  },
-  {
-    file: 'src/widgets/recent-node-row/ui/RecentNodeRow.tsx',
-    count: 1,
-    claim: 'no-spec',
-    proof: 'className={className}',
-    why:
-      '최근 노드 행의 **자리잡기 래퍼**. `className` 을 prop 으로 받아 그대로 넘긴다 — ' +
-      '규격은 호출부에 있고 이 파일에는 씌울 것이 없다. `PublicQuickActions` 의 ' +
-      '`inline-flex` 래퍼와 같은 부류다.',
-    conditional: '이 래퍼가 자기 규격을 갖게 되면(치수·색을 직접 내면) 부채로 내린다.',
-  },
-  {
-    file: 'src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx',
-    count: 2,
-    claim: 'shape-gap',
-    proof: 'flex-col',
-    why:
-      '하단 탭 둘(현재 탭 · 앱 받기). **아이콘 위 · 라벨 아래**로 세로로 쌓이는데 ' +
-      '`row` 는 **가로 정렬이 정체성**이라(`items-center` + `text-left`) 이 배치를 ' +
-      '못 낸다. 2026-08-06 에 전수를 세어 **4곳**(그중 1곳은 이미 등재)이라 새 축을 ' +
-      '만들지 않기로 판정했다 — `stacked` 축을 만들 때의 근거가 9곳이었다.',
-    conditional: '세로 스택 컨트롤이 6곳(지금의 두 배)을 넘으면 `row` 에 orientation 축을 만들고 이 줄을 지운다.',
-  },
-  {
-    file: 'src/views/download/ui/DownloadPage.tsx',
-    count: 6,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      '히어로 CTA 쌍(published `<a>` · pending `<Link>`) · 데모 앵커(ghost → outline, 소유자 ' +
-      '«버튼인지도 모르겠고») · 히어로 둘째 줄 4(Intel `<a>` · Windows `<a>` · Windows ' +
-      '방문자용 macOS `<a>` · 브라우저 `<Link>`). 전부 `cn(buttonVariants({…}), …)` 로 ' +
-      '**표준 버튼 프리미티브**를 지난다. `control-class.ts` 가 스스로 "표준 버튼을 대체하지 ' +
-      '않는다" 고 선언했으므로 여기를 `controlClass` 로 옮기는 것은 그 규칙 위반이다.\n' +
-      '2026-08-19: 14 → 7. 설치 절(판 · 검증 레일 · 3단)이 삭제되면서 판의 주 CTA · ' +
-      'Intel · GitHub 출구 · 웹 출구 · 릴리스 노트 · Windows 받기 · Windows 추적 일곱이 ' +
-      '함께 사라졌다(`docs/DECISIONS.md` (83)).\n' +
-      '2026-09-02: 7 → 9. 페이지 끝의 닫는 밴드가 히어로의 승자를 `outline` 으로 한 번 더 ' +
-      '내놓는다(published `<a>` · web `<Link>`) — 같은 표준 버튼 프리미티브, 채움 인디고는 ' +
-      '여전히 히어로 하나뿐이다.\n' +
-      '2026-09-08: 9 → 6. 히어로가 세 컨트롤 한 줄이 됐다(소유자 «버튼이 너무 많음»). 데모 앵커와 ' +
-      'Intel · Windows 방문자용 macOS `<a>` 가 사라지고 Mac 파일은 `HeroMacMenu` 의 메뉴 행(`controlClass` row)으로 갔다.',
-    conditional:
-      '⚠️ 이 중 둘은 `className` 이 프리미티브의 반경·인셋을 덮는다(`rounded-chip px-4 sm:px-6`). ' +
-      '그건 이 게이트가 아니라 다음 디자인 라운드의 일이다 — 등재가 그 결함을 승인하지는 않는다.',
-  },
-  {
-    file: 'src/widgets/ontology-map/ui/OntologyMapEdgePanel.tsx',
-    count: 1,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      'The edge panel\'s one action (2026-09-25). Its `<button>` branch is the primary `<Button>` ' +
-      'the node panel\'s action row uses; the `<Link>` branch (navigating to the editor) wears the ' +
-      'same `buttonVariants({ variant: "primary", size: "sm" })` so the docked slot speaks one ' +
-      'grammar whichever branch renders. `control-class.ts` does not replace standard buttons.',
-  },
-  {
-    file: 'src/views/ontology-insights/ui/tabs/HarnessTab.tsx',
-    count: 2,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      'The Guidance preview footer (2026-09-25): "Open Harness" as `buttonVariants({ variant: ' +
-      '"primary", size: "sm" })` and "Get the app" as outline sm. They were fully round `pill` ' +
-      'links at 32px beside the Analysis views\' 32px rounded-panel buttons, two shapes for one ' +
-      'kind of panel action. Both navigate, so they stay `<Link>`, and `control-class.ts` does ' +
-      'not replace standard buttons.',
-  },
-  {
-    file: 'src/views/ontology-insights/ui/tabs/LibraryTab.tsx',
-    count: 1,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      'The Wiki preview footer\'s "Start from the Library" (2026-09-25), the same primary sm ' +
-      'standard button as the Guidance footer beside it, for the same reason.',
-  },
-  {
-    file: 'src/views/automations/ui/AutomationsPage.tsx',
-    count: 2,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      'Two navigating actions on Automations (2026-09-25). "Get the app" is the app-required ' +
-      "stage's one primary action and must match the empty lane's `<Button>` primary, both the " +
-      "32px sm since 2026-09-26 (`buttonVariants({ variant: \"primary\", size: \"sm\" })`); " +
-      "\"Open Library check history\" sits in the " +
-      "lane header beside the outline `<Button>` CTA as `buttonVariants({ variant: \"ghost\", " +
-      'size: "sm" })`. As 11-12.5px `shape: "link"` text they read as captions, not actions. ' +
-      'Both are `<Link>` because they navigate, and `control-class.ts` does not replace ' +
-      'standard buttons.',
-  },
-  {
-    file: 'src/views/architecture/ui/HarnessPage.tsx',
-    count: 2,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      'The Harness web-only and no-source doors (2026-09-26): "Get the Mac app" and "Connect ' +
-      'a source folder", each the page\'s one way forward. They were filled `pill`s, a shape the ' +
-      'system keeps for a state or a count, and read as a second primary shape beside every ' +
-      'other screen\'s. Both navigate, so they are `<Link>` through `cn(buttonVariants({ ' +
-      'variant: "primary", size: "sm" }), …)`; `control-class.ts` does not replace standard buttons.',
-  },
-  {
-    file: 'src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx',
-    count: 1,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      'The Agents tab\'s web-only door, "Get the Mac app" (2026-09-26): the tab\'s one way ' +
-      'forward, moved from a filled `pill` to the primary sm standard button every web-only door ' +
-      'now wears. It navigates, so it stays `<Link>`.',
-  },
-  {
-    file: 'src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx',
-    count: 1,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      'The Models tab\'s web-only door, "Get the app" (2026-09-26), for the same reason ' +
-      'as the Agents tab beside it: a filled `pill` became the primary sm standard button.',
-  },
-  {
-    file: 'src/views/library/ui/parts/AgentDoor.tsx',
-    count: 1,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      'The door out of a blocked Library step (slice U2, 2026-09-11). It is a `<Link>` ' +
-      'because it navigates to `/agents`, and `cn(buttonVariants({ variant: "outline", ' +
-      'size: "sm" }), …)` because it stands beside the Ask button that is already ' +
-      '`<Button variant="outline" size="sm">` — the two must be one control at two ' +
-      'tags. `control-class.ts` declares it "does not replace standard buttons", so ' +
-      'moving this to `controlClass` would break that rule rather than honour it.',
-  },
-  {
-    file: 'src/views/library/ui/LibraryRounds.tsx',
-    count: 1,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      'Check history before any round exists (2026-09-25): the page\'s one next step, ' +
-      '"Schedule in Automations". It is a `<Link>` because it navigates, and ' +
-      '`cn(buttonVariants(), …)` because it stands in Work scope\'s starting-point frame ' +
-      'where the same moment is a primary `<Button>`; the two empty tabs must press alike. ' +
-      'The value layer yields the standard button, so `controlClass` cannot make it.',
-  },
-  {
-    file: 'src/views/terminal-state/ui/NotFoundScreen.tsx',
-    count: 2,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      'The 404 exits (both not-found files render this one view since 2026-09-25): home is a ' +
-      '`<Link>` through `cn(buttonVariants(...))` as primary on the web and outline in the app, ' +
-      'beside `<Button>` siblings. Same normalization as the 2026-08-04 button round.',
-  },
-  {
-    file: 'src/views/terminal-state/ui/RouteErrorScreen.tsx',
-    count: 1,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      'The error screen\'s "home" beside the `<Button>` retry. A plain `<a>` on purpose: a full ' +
-      'navigation is the reset after a render failure, and the screen sits outside the locale router.',
-  },
-  {
-    file: 'src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx',
-    count: 2,
-    claim: 'chrome-token',
-    proof: '--git-setup-action-height',
-    why:
-      '「앱 받기」·「볼트 고르기」 — `PRIMARY_ACTION_CLASS` 가 버튼 형제 7개와 **같은 상수**다. ' +
-      '데스크톱 36px 인데 coarse 포인터에서 --touch-target-min 으로 승격한다.',
-    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다 — 버튼 쪽 같은 줄과 함께 내려온다.',
-  },
-  {
-    file: 'src/views/home/ui/TopologyReviewLink.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--chrome-tile-size',
-    why:
-      '지도 우상단 유틸 레인의 검수 칩. 높이가 크롬 잠금 단(36px, coarse 에서 max(36,44))이고 ' +
-      '표면·보더·그림자·포커스링이 `--topology-utility-lane-*` 계약이다 — 원소가 그 계약을 ' +
-      '`data-utility-action-token-contract` 로 스스로 선언한다.',
-  },
-  {
-    file: 'src/shared/ui/chrome-tile.tsx',
-    count: 1,
-    claim: 'value-layer-peer',
-    proof: '--chrome-tile-size',
-    why:
-      '`ChromeTile` 프리미티브의 **`<Link>` 갈래**. 같은 파일의 `<button>` 갈래가 이미 버튼 쪽에 ' +
-      '등재돼 있다 — 한 프리미티브가 두 태그를 내므로 두 등록부에 한 줄씩 선다.',
-  },
-  {
-    file: 'src/widgets/public-quick-actions/ui/PublicQuickActions.tsx',
-    count: 2,
-    claim: 'no-spec',
-    proof: 'className="inline-flex"',
-    why:
-      '`<Button>` 을 감싸 shrink-wrap 시키는 자리잡기 래퍼 둘. `inline-flex` 하나뿐이고 그건 값 ' +
-      '층 자신이 `className` 의 몫이라고 정의한 층이다(자리잡기·폭·순서).',
-  },
-  /*
-   * ── Prose reclassification from the 2026-08-04 link floor-24 round: of the
-   * "always-on underline 12" category, the 6 inside markdown body flow come out of
-   * the control ledger. ⚠️ The preceding verdict counted "prose 5 + pseudo-prose 2
-   * = 7", but the recount with this file's parser is **6** (the gateway markdown
-   * a-override is 1 — the verdict's "gateway 2" mistook the truncated-body notice
-   * CTA for prose; that CTA is a standalone control and stays in debt). The 2
-   * pseudo-prose places (inline-flex on external/repo links) were corrected to
-   * display:inline in the same PR as the registration, closing the 320px wrapping
-   * defect at the same time.
-   */
-  {
-    file: 'src/widgets/docs-vault/ui/DocsVaultViewer.tsx',
-    count: 5,
-    claim: 'prose',
-    proof: 'prose-link',
-    why:
-      '마크다운 a-override 의 다섯 갈래(프로젝트 위키링크 · 볼트 위키링크 · 외부 http · ' +
-      '내부 해석 · repo blob). 전부 본문 문장 속에 렌더되고 줄 상자는 산문 부모의 것이다. ' +
-      '외부 2는 inline-flex 로 줄바꿈이 죽어 있던 「가짜 산문」이었고 이 라운드가 inline 으로 정정했다.',
-  },
-  {
-    file: 'src/views/gateway-doc/ui/GatewayDocPage.tsx',
-    count: 1,
-    claim: 'prose',
-    proof: 'prose-link',
-    why: '관문 읽을거리(PROSE_COMPONENTS)의 마크다운 a-override — 같은 산문 계약.',
-  },
-  {
-    file: 'app/[locale]/layout.tsx',
-    count: 1,
-    claim: 'state-scoped',
-    proof: 'focus:not-sr-only',
-    why:
-      '본문 건너뛰기 링크. 평상시 `sr-only` 이고 규격(반경·보더·인셋·타입·색) **전부가 `focus:` ' +
-      '접두 아래**에 있다. `controlClass()` 는 무변형 문자열을 내므로 접두를 붙일 수 없다.',
-  },
-];
-
-/**
- * **A literal.** Same reason as the button-side baselines — a derived value
- * loosens the pawl in both directions (that is how the hard-cut ratchet actually
- * died).
- */
-// 29 → 32 (2026-08-18 gateway remake): DownloadPage's hero CTA pair + the demo
-// ghost anchor — all standard-button claims (the shape the value layer yielded).
-// 32 → 36 (2026-08-18, second pass): the hero's second row of 4 — the owner
-// pointed out the hero had no Windows-download or web-entry button, so all four
-// destinations became buttons. The same
-// The same standard-button claim, so the registration reason is the same.
-// Stayed 28 on 2026-08-23, and the round is worth recording because it nearly did not.
-// The evidence section's "open this file" link was first written trailing a sentence, which forces
-// `display: inline` and therefore the prose claim and a new registration here. Measuring it instead
-// of registering it showed the sentence position was the actual mistake: `/download`'s
-// coarse-pointer gate has no in-sentence exemption, and the link came back 338x35 red. Moved onto
-// its own line it is an ordinary control, `shape: 'link'` fits, `touch-hit-expand` supplies the
-// 44px finger target, and this ledger did not have to grow. **Check whether the position is wrong
-// before registering a shape the value layer cannot make.**
-// 26 → 27 (2026-09-11, slice U2): `AgentDoor`, the one control that follows each of the
-// Library's agent-availability sentences. Registered rather than moved, for the reason its
-// row states — it is the standard-button shape the value layer itself yields.
-// 27 → 28 (2026-09-25): the render-error screen's "home" moved off a hand-built pill onto the
-// standard button beside its `<Button>` retry, so its dead ends match the 404's. The value layer
-// has no standard-button anchor shape, so the row is registered like the 404's own.
-// 28 → 30 (2026-09-25): Automations' two navigating actions, registered for the reason their
-// row states — the standard-button shape, at the two tags a navigating button needs.
-// 30 → 31 (2026-09-25): Check history's first-run door, the standard-button shape again.
-// 31 → 30 (2026-09-25, agents polish): `AgentClientButtons` left the anchor census — its
-// control is a `<Button>` now, so its row is gone.
-// 30 → 31 (2026-09-25): the edge panel's one action, a `<Link>` when it navigates to the
-// editor. It is the panel's primary and must match the node panel's primary `<Button>`; a
-// 6px 11px chip there was the second grammar the interaction audit measured.
-// 31 → 34 (2026-09-25): the Analysis preview footers' three actions left the `pill` shape for the
-// standard sm button the Analysis views use for panel actions.
-// 34 → 38 (2026-09-26, owner review): the four web-only doors still drawn as filled `pill`s
-// (Harness no-source and browser-only, Agents web, Models web) left that shape for the primary
-// sm standard button. The system keeps the pill for a state or a count, and a page's first press
-// was being drawn in two shapes across screens; `tests/e2e/primary-action-shape.spec.ts` holds it.
-const BASELINE_ANCHOR_REGISTERED = 38;
-
-/** **Only this number may fall.** The current anchor total (34) minus registered (34). */
-const BASELINE_ANCHOR_DEBT = 0;
-
-const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
 
 /**
  * ════════════════════════════════════════════════════════════════════
@@ -1469,139 +1062,12 @@ const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TA
  *
  * ### Today this count does not claim anything is movable
  *
- * The registration list (`OUTSIDE_VALUE_LAYER_FIELDS`) is **empty**, because
+ * The registration list (`control-adoption/fields/`) was **empty**, because
  * without a field shape in the value layer there is not yet any basis to claim
  * "the value layer cannot emit this in principle". So today this count does
  * exactly one thing: **stop it growing further.** When the shape exists,
  * registrations appear and debt comes down.
  */
-const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
-
-/**
- * **Empty** — for the reason above. Until the value layer has a `field` shape,
- * "the value layer cannot emit this" is a tautology, not a claim.
- */
-const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [
-  {
-    file: 'src/views/project-detail/ui/ProjectDetailPage.tsx',
-    count: 1,
-    claim: 'no-spec',
-    proof: 'className="sr-only"',
-    why:
-      '검수 JSON을 브라우저의 로컬 file picker에서 받는 **보이지 않는 transport input**이다. ' +
-      '사람이 보고 누르는 규격은 바로 옆 `Button`이 소유하고, 이 input에 field 모양을 ' +
-      '씌우면 같은 행동에 두 개의 시각 컨트롤이 생긴다.',
-    conditional: 'File System Access 기반 공용 picker primitive가 생기면 이 native input과 등록을 함께 지운다.',
-  },
-  {
-    file: 'src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx',
-    count: 4,
-    claim: 'no-spec',
-    proof: 'className="block"',
-    why:
-      '빠른 편집 시트의 라벨 넷. **`block` 하나뿐인 자리잡기 래퍼**다 — 이름 텍스트는 ' +
-      '안쪽 `FieldLabel` 이 그리고, 이 태그는 그것을 세로로 쌓는 일만 한다. `fieldLabel()` ' +
-      '을 씌우면 안쪽 이름과 **둘이 규격을 다툰다**(`DESIGN-SYSTEM.md` 「폼 필드」 절의 ' +
-      '셋째 갈래).',
-    conditional: '이 라벨이 자기 타입·색을 직접 내기 시작하면 부채로 내린다.',
-  },
-  /*
-   * ════════════════════════════════════════════════════════════════════
-   * 2026-08-06 — **forms declared closed too.** The remaining 20 were judged exhaustively.
-   * ════════════════════════════════════════════════════════════════════
-   *
-   * Until the day before, this array was **empty** — with no field spec in the
-   * value layer, "the value layer cannot emit this in principle" was a tautology.
-   * Now that `fieldClass` and `fieldLabel` exist, each remaining place can actually
-   * state why it cannot be moved.
-   */
-  {
-    file: 'src/features/project-edit/ui/ProjectForm.tsx',
-    count: 2,
-    claim: 'no-spec',
-    proof: 'accent-[color:var(--color-indigo-brand)]',
-    why:
-      '체크박스 하나와 그 라벨. 체크박스의 크기·타깃은 **자기 계약**' +
-      '(`checkbox-target-size.contract.test.ts`)이 이미 고정한다 — 그 계약이 정본이고 ' +
-      '여기서 또 규격을 씌우면 두 곳이 값을 다툰다.',
-    conditional: '체크박스 계약이 사라지면 이 줄을 지우고 부채로 내린다.',
-  },
-  {
-    file: 'src/views/home/ui/OntologyBootstrapForm.tsx',
-    count: 2,
-    claim: 'no-spec',
-    proof: 'accent-[color:var(--color-indigo-brand)]',
-    why: '위와 같다 — 체크박스와 그 라벨은 체크박스 계약이 고정한다.',
-    conditional: '체크박스 계약이 사라지면 부채로 내린다.',
-  },
-  {
-    file: 'src/widgets/vault-agent-panel/ui/AgentProposalCard.tsx',
-    count: 4,
-    claim: 'no-spec',
-    proof: 'accent-[color:var(--color-indigo-brand)]',
-    why: '체크박스 둘과 그 라벨 둘. 체크박스 계약이 고정한다.',
-    conditional: '체크박스 계약이 사라지면 부채로 내린다.',
-  },
-  {
-    file: 'src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx',
-    count: 2,
-    claim: 'no-spec',
-    proof: 'accent-[var(--color-indigo-accent)]',
-    why: 'push opt-in 체크박스와 그 라벨. 체크박스 계약이 고정한다.',
-    conditional: '체크박스 계약이 사라지면 부채로 내린다.',
-  },
-  {
-    file: 'src/features/docs-vault-local/ui/WebManualConnectPanel.tsx',
-    count: 2,
-    claim: 'no-spec',
-    proof: 'size-4',
-    why: '수동 연결 확인 체크박스와 그 행. 체크박스의 크기와 타깃은 체크박스 계약이 고정한다.',
-    conditional: '체크박스 계약이 사라지면 부채로 내린다.',
-  },
-  {
-    file: 'src/widgets/app-settings-menu/ui/settings-primitives.tsx',
-    count: 2,
-    claim: 'shape-gap',
-    proof: '[&>svg]:h-3.5',
-    why:
-      '슬라이더(`type="range"`)와 그 행. **앱에 이것 하나뿐**이고, 트랙과 썸이 ' +
-      '각각 치수를 갖는 이중 체계라 `fieldClass` 의 한 줄/여러 줄 문법과 근본적으로 ' +
-      '다르다. 소비처가 하나인 값에 이름을 붙이지 않는다는 이 저장소의 규율.',
-    conditional: '슬라이더가 둘이 되면 그때 값에 이름을 붙인다.',
-  },
-  {
-    file: 'src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
-    count: 1,
-    claim: 'stage-geometry',
-    proof: 'absolute inset-0 resize-none',
-    why:
-      '문서 편집기의 **전면 작성면**. `absolute inset-0` 으로 패널 전체를 채우는 ' +
-      '표면이라 상자 치수(높이·인셋·반경)를 가질 수 없다 — `fieldClass` 는 자기 ' +
-      '상자를 내는 부품이다.',
-    conditional: '이 편집기가 상자 안으로 들어오면 부채로 내린다.',
-  },
-  {
-    file: 'src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx',
-    count: 1,
-    claim: 'no-spec',
-    proof: 'invisible pointer-events-none absolute',
-    why:
-      '컴포저의 **높이 계측용 숨김 미러**. 사용자에게 안 보이고 `scrollHeight` 를 ' +
-      '재려고만 존재한다 — 컨트롤이 아니라 계측 장치라 씌울 규격이 없다.',
-    conditional: '오토그로우를 CSS 로 대체해 미러가 사라지면 이 줄도 지운다.',
-  },
-];
-
-/** **A literal.** Same reason as the other baselines — a derived value loosens the pawl in both directions. */
-/*
- * 2026-08-15: -1 → -6. Migrating to the Checkbox primitive folded 6 raw
- * type="checkbox" places across 5 files into shared/ui/checkbox.tsx (ratified by
- * the system seat —
- * docs/DECISIONS.md).
- */
-const BASELINE_FIELD_DEBT = -6;
-
-const fieldCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_FIELDS, FIELD_TAGS, []);
 
 describe('컨트롤 채택 래칫 — 폼(`<input>` · `<textarea>` · `<select>` · `<label>`)', () => {
   /**
@@ -1630,24 +1096,17 @@ describe('컨트롤 채택 래칫 — 폼(`<input>` · `<textarea>` · `<select>
     expect(fieldCensus.registered + fieldCensus.noBasis + fieldCensus.debt).toBe(fieldCensus.total);
   });
 
-  it('손으로 규격을 쓴 폼이 늘지 않는다', () => {
+  it('손으로 규격을 쓴 폼이 머지 베이스보다 늘지 않는다', () => {
+    const verdict = judgeControl.fieldDebt();
     const worst = [...fieldCensus.byFile.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
     expect(
-      fieldCensus.debt,
-      `손으로 규격을 쓴 폼이 ${BASELINE_FIELD_DEBT} → ${fieldCensus.debt} 로 늘었다 ` +
-        `(전수 ${fieldCensus.total}).\n` +
-        `가장 많은 파일: ${worst.map(([f, n]) => `${f}(${n})`).join(' · ')}\n` +
-        '값 층에 `field` 모양이 아직 없으므로, 새 폼 컨트롤은 기존 파일의 상수를 재사용하거나 ' +
-        '「체계」를 소집해 모양을 먼저 만들어라.',
-    ).toBeLessThanOrEqual(BASELINE_FIELD_DEBT);
-  });
-
-  it('기준선이 실측보다 위로 뜨지 않는다 — 헐거운 멈춤쇠는 멈춤쇠가 아니다', () => {
-    expect(
-      fieldCensus.debt,
-      `폼 부채가 ${BASELINE_FIELD_DEBT} → ${fieldCensus.debt} 로 줄었다. ` +
-        `BASELINE_FIELD_DEBT 도 ${fieldCensus.debt} 로 내려라.`,
-    ).toBeGreaterThanOrEqual(BASELINE_FIELD_DEBT);
+      verdict.current,
+      `Hand-specced form controls rose to ${verdict.current} over the ceiling ${verdict.ceiling} ` +
+        `(total ${fieldCensus.total}).\n${verdict.explain}\n` +
+        `Most in: ${worst.map(([f, n]) => `${f}(${n})`).join(' · ')}\n` +
+        'New form controls use `fieldClass` / `fieldLabel`; a place they cannot style is a verified row in ' +
+        `${REGISTRY_DIR}/fields/.`,
+    ).toBeLessThanOrEqual(verdict.ceiling);
   });
 
   it('세 부류의 합이 전수와 같다 — 어느 칸에도 안 들어간 건이 없다', () => {
@@ -1730,20 +1189,15 @@ describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
     }
   });
 
-  it('등재가 늘지 않는다 — 늘리려면 리터럴을 손으로 올리고 diff 에 왜를 적는다', () => {
+  it('등재가 머지 베이스보다 늘지 않는다 — 늘리려면 raise 기록에 왜를 적는다', () => {
+    const verdict = judgeControl.registered();
     expect(
-      registered,
-      `등재가 ${BASELINE_REGISTERED} → ${registered} 로 늘었다. **등록부는 허가 목록이 아니라 부채 ` +
-        `목록이다** — 옮길 수 있는데 안 옮긴 것을 등재하는 것이 이 게이트가 막으려는 실패다. 정말 값 ` +
-        `층이 원리적으로 못 내는 자리라면 BASELINE_REGISTERED 를 손으로 올려라.`,
-    ).toBeLessThanOrEqual(BASELINE_REGISTERED);
-  });
-
-  it('등재가 줄었으면 기준선도 내린다 — 여유를 무료로 두지 않는다', () => {
-    expect(
-      registered,
-      `등재가 ${BASELINE_REGISTERED} → ${registered} 로 줄었다. BASELINE_REGISTERED 도 ${registered} 로 내려라.`,
-    ).toBeGreaterThanOrEqual(BASELINE_REGISTERED);
+      verdict.current,
+      `Registered button places rose to ${verdict.current} over the ceiling ${verdict.ceiling}.\n` +
+        `${verdict.explain}\n` +
+        '**The registry is a debt list, not a permit list** — registering a place that could move is the ' +
+        'failure this gate exists to stop. Only a place the value layer cannot emit in principle earns a row.',
+    ).toBeLessThanOrEqual(verdict.ceiling);
   });
 });
 
@@ -1787,85 +1241,70 @@ describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
     }
   });
 
-  it('앵커 등재가 늘지 않는다 — 늘리려면 리터럴을 손으로 올리고 diff 에 왜를 적는다', () => {
+  it('앵커 등재가 머지 베이스보다 늘지 않는다', () => {
+    const verdict = judgeControl.anchorRegistered();
     expect(
-      anchorCensus.registered,
-      `앵커 등재가 ${BASELINE_ANCHOR_REGISTERED} → ${anchorCensus.registered} 로 늘었다. ` +
-        `**등록부는 허가 목록이 아니라 부채 목록이다** — 「모양이 아직 없다」는 등재 사유가 아니다.`,
-    ).toBeLessThanOrEqual(BASELINE_ANCHOR_REGISTERED);
+      verdict.current,
+      `Registered anchor places rose to ${verdict.current} over the ceiling ${verdict.ceiling}.\n` +
+        `${verdict.explain}\n` +
+        '**The registry is a debt list, not a permit list** — "the shape does not exist yet" is not a reason to register.',
+    ).toBeLessThanOrEqual(verdict.ceiling);
   });
 
-  it('앵커 등재가 줄었으면 기준선도 내린다', () => {
-    expect(
-      anchorCensus.registered,
-      `앵커 등재가 ${BASELINE_ANCHOR_REGISTERED} → ${anchorCensus.registered} 로 줄었다. ` +
-        `BASELINE_ANCHOR_REGISTERED 도 ${anchorCensus.registered} 로 내려라.`,
-    ).toBeGreaterThanOrEqual(BASELINE_ANCHOR_REGISTERED);
-  });
-
-  it('앵커 부채가 늘지 않는다 — 누를 수 있는 것은 전부 값 층을 지난다', () => {
+  it('앵커 부채가 머지 베이스보다 늘지 않는다 — 누를 수 있는 것은 전부 값 층을 지난다', () => {
+    const verdict = judgeControl.anchorDebt();
     const worst = [...anchorCensus.byFile.entries()]
       .filter(([f]) => !anchorCensus.registeredByFile.has(f))
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3);
     expect(
-      anchorCensus.debt,
-      `손으로 규격을 쓴 앵커가 ${BASELINE_ANCHOR_DEBT} → ${anchorCensus.debt} 로 늘었다 ` +
-        `(전수 ${anchorCensus.total} − 등재 ${anchorCensus.registered}).\n` +
-        `\`controlClass({ shape: 'link' })\` 가 이 자리를 위해 있다. \`<Link>\` 는 \`cn\` 병합이 필수다 — ` +
-        `raw 변형은 base 의 border-transparent 가 소스 순서로 이긴다(이 파일 실측).\n` +
-        `등재된 파일이라도 면제가 아니다: 거기 손 앵커를 더하면 등재 수는 그대로고 이 수가 오른다.\n` +
-        `미등재 중 가장 많은 파일: ${worst.map(([f, n]) => `${f}(${n})`).join(' · ')}`,
-    ).toBeLessThanOrEqual(BASELINE_ANCHOR_DEBT);
-  });
-
-  it('앵커 부채를 갚았으면 기준선도 내린다 — 여유를 무료로 두지 않는다', () => {
-    expect(
-      anchorCensus.debt,
-      `앵커 부채가 ${BASELINE_ANCHOR_DEBT} → ${anchorCensus.debt} 로 줄었다. ` +
-        `BASELINE_ANCHOR_DEBT 도 ${anchorCensus.debt} 로 내려라.`,
-    ).toBeGreaterThanOrEqual(BASELINE_ANCHOR_DEBT);
+      verdict.current,
+      `Hand-specced anchors rose to ${verdict.current} over the ceiling ${verdict.ceiling} ` +
+        `(total ${anchorCensus.total} − registered ${anchorCensus.registered}).\n${verdict.explain}\n` +
+        `\`controlClass({ shape: 'link' })\` exists for this place. \`<Link>\` needs a \`cn\` merge — the raw ` +
+        `variant lets the base's border-transparent win by source order (measured in this file).\n` +
+        `A registered file is not exempt: a hand anchor added there leaves the registered count alone and raises this one.\n` +
+        `Unregistered files with the most: ${worst.map(([f, n]) => `${f}(${n})`).join(' · ')}`,
+    ).toBeLessThanOrEqual(verdict.ceiling);
   });
 
   it('세 수의 합이 앵커 전수와 맞는다', () => {
     expect(anchorCensus.registered + anchorCensus.noBasis + anchorCensus.debt).toBe(anchorCensus.total);
   });
 
+  /**
+   * The per-tag split used to be a literal (`{ Link: n, a: m }`) edited with every registered
+   * anchor — 25 commits, the most-edited line in this file. It guarded nothing the three judged
+   * anchor counts do not: every new anchor is registered, no-basis, or debt, and each of those is
+   * judged against the merge base. What remains is the property the name promised: both tags are
+   * counted, and together they are the whole census.
+   */
   it('태그 내역이 전수와 맞는다 — 두 태그가 서로를 잃지 않는다', () => {
     const perTag = Object.fromEntries(
       ANCHOR_TAGS.map((tag) => [tag, census(scannedFiles, [], [tag], []).total]),
     );
-    expect(
-      perTag,
-      '머리말의 태그 내역이 실측과 어긋난다. 수가 움직였으면 내역도 같이 고쳐라 — ' +
-        '내역이 낡으면 다음 사람이 어느 쪽이 움직였는지 못 읽는다.',
-    ).toEqual(ANCHOR_TAG_SPLIT);
-    expect(Object.values(perTag).reduce((a, b) => a + b, 0)).toBe(anchorCensus.total);
+    for (const tag of ANCHOR_TAGS) {
+      expect(perTag[tag], `no hand <${tag}> counted — the scanner lost that tag`).toBeGreaterThan(0);
+    }
+    expect(Object.values(perTag).reduce((a, b) => a + b, 0), JSON.stringify(perTag)).toBe(anchorCensus.total);
   });
 });
 
 describe('컨트롤 채택 래칫 — 아직 안 옮긴 부채', () => {
-  it('부채가 늘지 않는다 — 새 컨트롤은 controlClass() 를 쓴다', () => {
+  it('부채가 머지 베이스보다 늘지 않는다 — 새 컨트롤은 controlClass() 를 쓴다', () => {
+    const verdict = judgeControl.debt();
     const worst = [...byFile.entries()]
       .filter(([f]) => !registeredByFile.has(f))
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3);
     expect(
-      debt,
-      `아직 안 옮긴 손 컨트롤이 ${BASELINE_HAND_WRITTEN_DEBT} → ${debt} 로 늘었다 ` +
-        `(전수 ${total} − 등재 ${registered}).\n` +
-        `새 컨트롤은 \`controlClass({ shape })\` 를 쓴다 — 모양 여덟은 실측에서 나왔고 램프 밖 값을 못 낸다.\n` +
-        `등재된 파일이라도 면제가 아니다: 거기 손 컨트롤을 더하면 등재 수는 그대로고 이 수가 오른다.\n` +
-        `미등재 중 가장 많은 파일: ${worst.map(([f, n]) => `${f}(${n})`).join(' · ')}`,
-    ).toBeLessThanOrEqual(BASELINE_HAND_WRITTEN_DEBT);
-  });
-
-  it('부채를 갚았으면 기준선도 내린다 — 여유를 무료로 두지 않는다', () => {
-    expect(
-      debt,
-      `부채가 ${BASELINE_HAND_WRITTEN_DEBT} → ${debt} 로 줄었다. ` +
-        `이 파일의 BASELINE_HAND_WRITTEN_DEBT 도 ${debt} 로 내려라.`,
-    ).toBeGreaterThanOrEqual(BASELINE_HAND_WRITTEN_DEBT);
+      verdict.current,
+      `Hand-written controls not yet moved rose to ${verdict.current} over the ceiling ${verdict.ceiling} ` +
+        `(total ${total} − registered ${registered} − no-basis ${noBasis}).\n${verdict.explain}\n` +
+        `New controls use \`controlClass({ shape })\` — the eight shapes came from measurement and cannot emit off-ramp values.\n` +
+        `A registered file is not exempt: a hand control added there leaves the registered count alone and raises this one.\n` +
+        `Unregistered files with the most: ${worst.map(([f, n]) => `${f}(${n})`).join(' · ')}`,
+    ).toBeLessThanOrEqual(verdict.ceiling);
   });
 
   it('세 수의 합이 전수와 맞는다 — 갈라진 수가 서로를 잃지 않는다', () => {
@@ -1902,33 +1341,27 @@ describe('컨트롤 채택 래칫 — 근거 없음(값 층이 낼 것이 없다
     }
   });
 
-  it('이 사유의 **전수**가 못박은 수와 같다 — 다섯 번째 클릭면은 조용히 면제되지 않는다', () => {
-    const hits = clickSurfaceCensus(scannedFiles);
+  it('이 사유의 **전수**가 머지 베이스보다 늘지 않는다 — 새 클릭면은 조용히 면제되지 않는다', () => {
+    const hits = today.clickSurfaces;
+    const verdict = judgeControl.clickSurfaces();
     expect(
-      hits.length,
-      `클릭면 전수가 ${CLICK_SURFACE_CENSUS} → ${hits.length} 로 바뀌었다 (${[...new Set(hits)].join(' · ')}).\n` +
-        '늘었으면: 새 전면 클릭 캐처가 생긴 것이다. 정말 규격이 0인 자리면 등록부와 CLICK_SURFACE_CENSUS 를 ' +
-        '**손으로** 올려라 — 그 diff 가 「왜」를 적을 자리다. 아니면 부채로 갚아라.\n' +
-        '줄었으면: 그 자리가 컨트롤이 됐거나 사라진 것이므로 두 수를 함께 내려라.',
-    ).toBe(CLICK_SURFACE_CENSUS);
+      verdict.current,
+      `Qualifying click surfaces rose to ${verdict.current} over the ceiling ${verdict.ceiling} ` +
+        `(${[...new Set(hits)].join(' · ')}).\n${verdict.explain}\n` +
+        'A new full-bleed click catcher appeared. If it truly carries zero spec, register it in ' +
+        `${REGISTRY_DIR}/no-basis/ and say why in the raise record; otherwise repay it as debt.`,
+    ).toBeLessThanOrEqual(verdict.ceiling);
     expect(noBasis, '등재한 근거 없음이 실측 전수를 넘었다').toBeLessThanOrEqual(hits.length);
   });
 
-  it('근거 없음이 늘지 않는다 — 늘리려면 리터럴을 손으로 올린다', () => {
-    expect(
-      noBasis,
-      `근거 없음이 ${BASELINE_NO_BASIS} → ${noBasis} 로 늘었다. **이 부류가 도피처가 되면 이 라운드는 ` +
-        `실패다** — 「옮기기 번거롭다」는 근거 없음이 아니라 부채다.`,
-    ).toBeLessThanOrEqual(BASELINE_NO_BASIS);
-    expect(anchorCensus.noBasis).toBeLessThanOrEqual(BASELINE_ANCHOR_NO_BASIS);
-  });
-
-  it('근거 없음이 줄었으면 기준선도 내린다 — 여유를 무료로 두지 않는다', () => {
-    expect(
-      noBasis,
-      `근거 없음이 ${BASELINE_NO_BASIS} → ${noBasis} 로 줄었다. BASELINE_NO_BASIS 도 ${noBasis} 로 내려라.`,
-    ).toBeGreaterThanOrEqual(BASELINE_NO_BASIS);
-    expect(anchorCensus.noBasis).toBeGreaterThanOrEqual(BASELINE_ANCHOR_NO_BASIS);
+  it('근거 없음이 머지 베이스보다 늘지 않는다', () => {
+    for (const verdict of [judgeControl.noBasis(), judgeControl.anchorNoBasis()]) {
+      expect(
+        verdict.current,
+        `${verdict.gate} rose to ${verdict.current} over the ceiling ${verdict.ceiling}.\n${verdict.explain}\n` +
+          '**If this category becomes an escape hatch the round has failed** — "too cumbersome to move" is debt, not no-basis.',
+      ).toBeLessThanOrEqual(verdict.ceiling);
+    }
   });
 
   it('근거 없음 수가 그 파일의 실측을 넘지 않는다 — 파일 면제가 아니다', () => {
@@ -1950,8 +1383,10 @@ describe('컨트롤 채택 래칫 — 근거 없음(값 층이 낼 것이 없다
  * **in both directions**.
  *
  * ⚠️ The hard-cut ratchet had the defect where `BASELINE = REGISTRY.length` made
- * "it never grows" **impossible to fail in principle**. So both baselines are
- * literals, and ④ below asserts that fact itself.
+ * "it never grows" **impossible to fail in principle**. Here the ceiling is the
+ * merge base's own registry, which a row added in this change cannot lift (the
+ * scratch-repository probes at the end prove it), and the fallback ceilings are
+ * literals (④).
  */
 describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가', () => {
   const FIXTURE = 'tests/fixtures/control-adoption/HandWrittenControl.tsx.fixture';
@@ -1981,8 +1416,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     expect(withFixture.debt).toBe(debt + 2);
     expect(
       withFixture.debt,
-      '미등재 자리에 손 컨트롤이 늘었는데 부채 기준선을 안 넘었다면 이 게이트는 아무것도 안 막는다',
-    ).toBeGreaterThan(BASELINE_HAND_WRITTEN_DEBT);
+      '미등재 자리에 손 컨트롤이 늘었는데 판정하는 수가 안 올랐다면 이 게이트는 아무것도 안 막는다',
+    ).toBeGreaterThan(debt);
   });
 
   it('③ 등록부에서 줄을 지우면 그 자리가 **부채로 돌아온다** — 등재가 사실을 지우지 않는다', () => {
@@ -1999,14 +1434,19 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     }
   });
 
-  it('④ 기준선 둘이 **리터럴**이다 — 등록부에서 파생되면 「늘지 않는다」가 실패 불가가 된다', () => {
+  it('④ 대체 천장이 **리터럴**이다 — 등록부에서 파생되면 「늘지 않는다」가 실패 불가가 된다', () => {
     const source = readFileSync(SELF, 'utf8');
-    expect(
-      /const BASELINE_REGISTERED = \d+;/.test(source),
-      'BASELINE_REGISTERED 가 리터럴이 아니다. `OUTSIDE_VALUE_LAYER.length` 나 reduce 로 두면 줄을 ' +
-        '더할 때 기준선도 같이 올라가 멈춤쇠가 헐거워진다(하드컷 래칫의 실제 결함).',
-    ).toBe(true);
-    expect(/const BASELINE_HAND_WRITTEN_DEBT = \d+;/.test(source), '부채 기준선도 리터럴이어야 한다').toBe(true);
+    const block = /const FALLBACK = \{\n([\s\S]*?)\n\} as const;/.exec(source);
+    expect(block, 'FALLBACK 블록을 못 찾았다 — 이 프로브가 헛돈다').not.toBeNull();
+    const lines = block![1].split('\n').map((line) => line.trim());
+    expect(lines.length).toBe(Object.keys(FALLBACK).length);
+    for (const line of lines) {
+      expect(
+        /^[a-zA-Z]+: -?\d+,$/.test(line),
+        `${line} — a fallback derived from a registry (\`.length\`, a reduce) rises with every row, the ` +
+          "hard-cut ratchet's actual defect.",
+      ).toBe(true);
+    }
   });
 
   /**
@@ -2077,22 +1517,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     // The fixtures are not in the registry, so both go to **debt**.
     expect(withFixture.registered).toBe(anchorCensus.registered);
     expect(withFixture.debt).toBe(anchorCensus.debt + 2);
-    expect(
-      withFixture.debt,
-      '앵커가 늘었는데 기준선을 안 넘었다면 이 게이트는 아무것도 안 막는다',
-    ).toBeGreaterThan(BASELINE_ANCHOR_DEBT);
     // The two counts do not contaminate each other.
     expect(census([...scannedFiles, FIXTURE]).debt, '앵커 픽스처가 버튼 부채를 움직였다').toBe(debt + 2);
-  });
-
-  it('⑨ 앵커 기준선 둘이 **리터럴**이다', () => {
-    const source = readFileSync(SELF, 'utf8');
-    expect(/const BASELINE_ANCHOR_DEBT = \d+;/.test(source)).toBe(true);
-    expect(
-      /const BASELINE_ANCHOR_REGISTERED = \d+;/.test(source),
-      '앵커 등재 기준선이 리터럴이 아니다. `OUTSIDE_VALUE_LAYER_ANCHORS.length` 로 두면 줄을 더할 때 ' +
-        '기준선도 같이 올라가 「등재가 늘지 않는다」가 원리적으로 실패 불가가 된다.',
-    ).toBe(true);
   });
 
   it('⑪ 앵커 등록부에서 줄을 지우면 그 자리가 **부채로 돌아온다**', () => {
@@ -2271,7 +1697,7 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
      * probe moot.
      */
     expect(anchorCensus.total, '앵커를 한 건도 안 세고 있으면 아래 0 은 무의미하다').toBeGreaterThan(0);
-    expect(clickSurfaceCensus(scannedFiles, ANCHOR_TAGS).length).toBe(BASELINE_ANCHOR_NO_BASIS);
+    expect(today.anchorClickSurfaces.length, 'an anchor click surface that is not registered as no-basis').toBe(anchorCensus.noBasis);
   });
 
   it('⑯ 합성 프로브 — 규격을 하나만 달아도, 전면을 벗어나도 자격이 죽는다', () => {
@@ -2307,16 +1733,6 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     const withFixture = census([...scannedFiles, FIXTURE]);
     expect(withFixture.noBasis).toBe(noBasis);
     expect(withFixture.debt).toBe(debt + 2);
-  });
-
-  it('⑱ 근거 없음 기준선도 **리터럴**이다 — 파생되면 「늘지 않는다」가 실패 불가가 된다', () => {
-    const source = readFileSync(SELF, 'utf8');
-    expect(/const BASELINE_NO_BASIS = \d+;/.test(source)).toBe(true);
-    expect(/const BASELINE_ANCHOR_NO_BASIS = \d+;/.test(source)).toBe(true);
-    expect(
-      /const CLICK_SURFACE_CENSUS = \d+;/.test(source),
-      '사유의 전수까지 리터럴이어야 한다 — 실측에서 파생하면 「늘면 빨개진다」가 실패 불가가 된다.',
-    ).toBe(true);
   });
 
   /**
@@ -2440,5 +1856,217 @@ describe('컨트롤 소유권 — 한 화면에 닫기는 하나', () => {
     // `onDraftPresenceChange` and friends are not close buttons; the detector must name the prop.
     expect(chatPanelAttributes(host).some((attrs) => attrs.includes('onClose'))).toBe(false);
     expect(chatPanelAttributes(host)[0]).toContain('onDraftPresenceChange');
+  });
+});
+
+/**
+ * ════════════════════════════════════════════════════════════════════
+ * ## The merge-base judgement, on a scratch repository (2026-09-27)
+ * ════════════════════════════════════════════════════════════════════
+ *
+ * The tests above can only compare this checkout with its own merge base. These probes build a
+ * small repository in the same shape (`src/` plus the registry directory), run **the same eight
+ * `judgeControl` calls**, and plant one regression per count: each must turn RED, a raise record
+ * written in the same change must turn it GREEN, and a fall needs no file at all. The last probes
+ * are the reason for the conversion: two branches that each register a different place merge
+ * without a conflict, and a registry row added in a change cannot lift the ceiling it is judged by.
+ */
+describe('머지 베이스 판정 — 스크래치 저장소 프로브', () => {
+  const scratch = mkdtempSync(join(tmpdir(), 'control-adoption-judge-'));
+  afterAll(() => rmSync(scratch, { recursive: true, force: true }));
+
+  const git = (repo: string, ...args: string[]) =>
+    execFileSync(
+      'git',
+      ['-c', 'user.name=probe', '-c', 'user.email=probe@example.invalid', '-c', 'commit.gpgsign=false', ...args],
+      { cwd: repo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    ).trim();
+
+  const put = (repo: string, path: string, text: string) => {
+    mkdirSync(join(repo, path, '..'), { recursive: true });
+    writeFileSync(join(repo, path), text);
+  };
+  const tsx = (element: string) => `export function Probe() {\n  return (${element});\n}\n`;
+  const row = (repo: string, registry: RegistryName, name: string, extra: Record<string, unknown>) =>
+    put(
+      repo,
+      `${REGISTRY_DIR}/${registry}/${name}.json`,
+      JSON.stringify({ file: `src/${name.split('.')[0]}.tsx`, count: 1, proof: 'probe', why: 'probe row', ...extra }),
+    );
+  const raise = (repo: string, gate: string, slug: string) =>
+    put(
+      repo,
+      `${RAISES_DIR}/${gate}.${slug}.json`,
+      JSON.stringify({ gate, raise: 1, why: 'A probe raise that states a full sentence of reason for the growth.' }),
+    );
+
+  /** One of each: a registered button, a no-basis scrim, a registered anchor, and a hand field. */
+  function repo(name: string, { registry = true } = {}): string {
+    const dir = join(scratch, name);
+    mkdirSync(dir, { recursive: true });
+    git(dir, 'init', '-q', '-b', 'main');
+    put(dir, 'src/Reg.tsx', tsx('<button className="h-[var(--probe)]">r</button>'));
+    put(dir, 'src/Scrim.tsx', tsx('<button type="button" className="absolute inset-0 bg-[var(--s)]" />'));
+    put(dir, 'src/Door.tsx', tsx('<a className="px-2" href="#">x</a>'));
+    put(dir, 'src/Field.tsx', tsx('<input className="h-8" />'));
+    if (registry) {
+      row(dir, 'buttons', 'Reg.chrome-token', { claim: 'chrome-token' });
+      row(dir, 'no-basis', 'Scrim.click-surface', { claim: 'click-surface', family: 'button' });
+      row(dir, 'anchors', 'Door.no-spec', { claim: 'no-spec' });
+    }
+    git(dir, 'add', '.');
+    git(dir, 'commit', '-q', '-m', 'base');
+    return dir;
+  }
+
+  const judgeAt = (key: keyof typeof judgeControl, cwd: string, base: string | null) =>
+    judgeControl[key]({ cwd, base, fallback: 1000 });
+
+  /** Each count, the smallest change that makes it grow, and the gate id its raise record names. */
+  const PLANTS: { key: keyof typeof judgeControl; gate: string; plant: (dir: string) => void }[] = [
+    {
+      key: 'registered',
+      gate: 'control-registered',
+      plant: (dir) => {
+        put(dir, 'src/Reg2.tsx', tsx('<button className="h-[var(--probe)]">r</button>'));
+        row(dir, 'buttons', 'Reg2.chrome-token', { claim: 'chrome-token' });
+      },
+    },
+    { key: 'debt', gate: 'control-debt', plant: (dir) => put(dir, 'src/Hand.tsx', tsx('<button className="px-3">h</button>')) },
+    {
+      key: 'noBasis',
+      gate: 'control-no-basis',
+      plant: (dir) => {
+        put(dir, 'src/Scrim2.tsx', tsx('<button type="button" className="absolute inset-0 bg-[var(--s)]" />'));
+        row(dir, 'no-basis', 'Scrim2.click-surface', { claim: 'click-surface', family: 'button' });
+      },
+    },
+    {
+      key: 'clickSurfaces',
+      gate: 'control-click-surfaces',
+      plant: (dir) => put(dir, 'src/Scrim3.tsx', tsx('<button type="button" className="absolute inset-0" />')),
+    },
+    {
+      key: 'anchorRegistered',
+      gate: 'control-anchor-registered',
+      plant: (dir) => {
+        put(dir, 'src/Door2.tsx', tsx('<a className="px-2" href="#">x</a>'));
+        row(dir, 'anchors', 'Door2.no-spec', { claim: 'no-spec' });
+      },
+    },
+    {
+      key: 'anchorDebt',
+      gate: 'control-anchor-debt',
+      plant: (dir) => put(dir, 'src/Hand.tsx', tsx('<a className="px-2" href="#">h</a>')),
+    },
+    {
+      key: 'anchorNoBasis',
+      gate: 'control-anchor-no-basis',
+      plant: (dir) => {
+        put(dir, 'src/Veil.tsx', tsx('<a className="absolute inset-0" href="#" />'));
+        row(dir, 'no-basis', 'Veil.click-surface', { claim: 'click-surface', family: 'anchor' });
+      },
+    },
+    {
+      key: 'fieldDebt',
+      gate: 'control-field-debt',
+      plant: (dir) => put(dir, 'src/Field2.tsx', tsx('<input className="h-8" />')),
+    },
+  ];
+
+  it('covers every judged count exactly once', () => {
+    expect(PLANTS.map((p) => p.key).sort()).toEqual(Object.keys(judgeControl).sort());
+    for (const p of PLANTS) expect(judgeControl[p.key]({ base: null }).gate).toBe(p.gate);
+  });
+
+  it.each(PLANTS)('$gate: RED on growth over the base, GREEN with a raise record, GREEN on a fall', ({ key, gate, plant }) => {
+    const dir = repo(`plant-${key}`);
+    const base = git(dir, 'rev-parse', 'HEAD');
+
+    const unchanged = judgeAt(key, dir, base);
+    expect(unchanged.atBase, 'the base must be measured, not skipped').not.toBeNull();
+    expect(unchanged.current).toBe(unchanged.atBase);
+    expect(unchanged.current).toBeLessThanOrEqual(unchanged.ceiling);
+
+    plant(dir);
+    const grown = judgeAt(key, dir, base);
+    expect(grown.current, `${gate}: the planted regression did not move the count`).toBe(grown.atBase! + 1);
+    expect(grown.current, `${gate}: growth passed`).toBeGreaterThan(grown.ceiling);
+
+    raise(dir, gate, 'probe');
+    const raised = judgeAt(key, dir, base);
+    expect(raised.added.map((r) => r.gate)).toEqual([gate]);
+    expect(raised.current).toBeLessThanOrEqual(raised.ceiling);
+
+    // A fall: every place and row removed, with nothing else edited.
+    rmSync(join(dir, 'src'), { recursive: true, force: true });
+    for (const registry of ['buttons', 'anchors', 'fields', 'no-basis'] as const) {
+      rmSync(join(dir, REGISTRY_DIR, registry), { recursive: true, force: true });
+    }
+    const fallen = judgeAt(key, dir, base);
+    expect(fallen.current, `${gate}: removing every place must be a fall`).toBeLessThan(fallen.atBase! + 1);
+    expect(fallen.current).toBeLessThanOrEqual(fallen.ceiling);
+  });
+
+  it('a registry row added in this change cannot lift the ceiling it is judged by', () => {
+    const dir = repo('row-only');
+    const base = git(dir, 'rev-parse', 'HEAD');
+    put(dir, 'src/Reg.tsx', tsx('<><button className="h-[var(--probe)]">r</button><button className="px-3">h</button></>'));
+    // Registering the new hand control keeps it out of debt, so the registered count is what grows.
+    row(dir, 'buttons', 'Reg.chrome-token.second', { claim: 'chrome-token' });
+    const debt = judgeAt('debt', dir, base);
+    expect(debt.current).toBeLessThanOrEqual(debt.ceiling);
+    const verdict = judgeAt('registered', dir, base);
+    expect(verdict.atBase).toBe(1);
+    expect(verdict.current, 'the row lifted its own ceiling').toBeGreaterThan(verdict.ceiling);
+  });
+
+  it('lets two branches that each register a different place merge without a conflict', () => {
+    const dir = repo('parallel');
+    const base = git(dir, 'rev-parse', 'HEAD');
+    const register = (branch: string, name: string) => {
+      git(dir, 'switch', '-q', '-c', branch, base);
+      put(dir, `src/${name}.tsx`, tsx('<button className="h-[var(--probe)]">r</button>'));
+      row(dir, 'buttons', `${name}.chrome-token`, { claim: 'chrome-token' });
+      raise(dir, 'control-registered', branch);
+      const verdict = judgeAt('registered', dir, base);
+      expect(verdict.current, `${branch} alone`).toBeLessThanOrEqual(verdict.ceiling);
+      git(dir, 'add', '.');
+      git(dir, 'commit', '-q', '-m', branch);
+    };
+    register('register-a', 'Alpha');
+    register('register-b', 'Beta');
+
+    git(dir, 'switch', '-q', 'main');
+    git(dir, 'merge', '-q', '--no-edit', 'register-a');
+    git(dir, 'merge', '-q', '--no-edit', 'register-b');
+    expect(git(dir, 'status', '--porcelain'), 'the merge left conflicts').toBe('');
+    const merged = judgeAt('registered', dir, base);
+    expect(merged.current).toBe(3);
+    expect(merged.current).toBeLessThanOrEqual(merged.ceiling);
+
+    // The next branch starts from the merge: both raises are spent.
+    const next = git(dir, 'rev-parse', 'HEAD');
+    put(dir, 'src/Gamma.tsx', tsx('<button className="h-[var(--probe)]">r</button>'));
+    row(dir, 'buttons', 'Gamma.chrome-token', { claim: 'chrome-token' });
+    const later = judgeAt('registered', dir, next);
+    expect(later.atBase).toBe(3);
+    expect(later.current, 'a raise already landed widened a later change').toBeGreaterThan(later.ceiling);
+  });
+
+  it('judges against the absolute ceiling when the base predates the registry files', () => {
+    const dir = repo('transition', { registry: false });
+    const base = git(dir, 'rev-parse', 'HEAD');
+    row(dir, 'buttons', 'Reg.chrome-token', { claim: 'chrome-token' });
+    const verdict = judgeControl.registered({ cwd: dir, base, fallback: 1 });
+    expect(verdict.atBase, 'a base without registries would count every row as growth').toBeNull();
+    expect(verdict.ceiling).toBe(1);
+    expect(judgeControl.registered({ cwd: dir, base, fallback: 0 }).current).toBeGreaterThan(0);
+  });
+
+  it('refuses a malformed row rather than counting it as zero', () => {
+    const dir = repo('malformed');
+    put(dir, `${REGISTRY_DIR}/buttons/Wrong.chrome-token.json`, JSON.stringify({ file: 'src/Reg.tsx', count: 1 }));
+    expect(() => measureTree(dir)).toThrow(/file name must start with "Reg\."/);
   });
 });

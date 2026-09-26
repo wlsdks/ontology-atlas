@@ -350,6 +350,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: WCAG 1.4.3 text combinations and 1.4.11 touching data-mark pairs stay at the recorded baseline of zero across the 17 audited routes.
 **Escalate**: none.
 
+### Control adoption
+
+**Run**: `pnpm exec vitest run tests/contract/control-adoption-ratchet.contract.test.ts`
+**Proves**: Hand-written button, anchor, and form control classNames, their registered and no-basis places, and the full-bleed click surfaces do not grow against the merge base; each registry row is its own file under `tests/contract/control-adoption/`, so the base is measured with its own registry and two branches registering different places do not conflict.
+**Escalate**: `pnpm test:contracts`.
+**Fix**: Move the control onto `controlClass()` / `fieldClass()`, or add a verified registry row plus a `tests/contract/ratchet-raises/control-<gate>.<slug>.json` record saying why.
+
 ### Copy that names the reader's surface
 
 **Run**: `pnpm exec vitest run tests/contract/surface-naming-ratchet.contract.test.ts`
@@ -1119,6 +1126,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-schema.contract.test.ts`
 **Proves**: A `vitest.config.ts` or `vitest.setup.ts` change still boots jsdom setup and contract discovery correctly, without needing the entire suite.
 **Escalate**: none.
+
+### Vitest performance ratios
+
+**Run**: `pnpm test:perf`
+**Proves**: Each `*.perf.test.*` file's cached path stays ahead of its naive baseline by its measured bar (for example `node-name-match` above 10, where healthy reads 17-25 and the defect 2.7-5.3), one file at a time.
+**Escalate**: Read a local red on a busy machine as noise; CI runs these alone in the `Perf · Ratios` job, which `Unit · Contract` waits for, only when changed app or src code can reach them.
+**Fix**: If the ratio reddens in CI on a change that cannot reach it, isolate the lane further; do not lower the bar.
 
 ## Independent record composition
 

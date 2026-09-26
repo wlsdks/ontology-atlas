@@ -1,0 +1,7 @@
+{
+  "file": "src/views/automations/ui/AutomationsPage.tsx",
+  "count": 2,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "Two navigating actions on Automations (2026-09-25). \"Get the app\" is the app-required stage's one primary action and must match the empty lane's `<Button>` primary, both the 32px sm since 2026-09-26 (`buttonVariants({ variant: \"primary\", size: \"sm\" })`); \"Open Library check history\" sits in the lane header beside the outline `<Button>` CTA as `buttonVariants({ variant: \"ghost\", size: \"sm\" })`. As 11-12.5px `shape: \"link\"` text they read as captions, not actions. Both are `<Link>` because they navigate, and `control-class.ts` does not replace standard buttons."
+}

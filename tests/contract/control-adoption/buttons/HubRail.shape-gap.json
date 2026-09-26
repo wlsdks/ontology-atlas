@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/topology-controls/ui/HubRail.tsx",
+  "count": 1,
+  "claim": "shape-gap",
+  "proof": "h-16 w-5",
+  "why": "지도 왼쪽 가장자리의 허브 레일 손잡이. **16:5 세로 막대**(64×20)라 모양 여덟의 어느 치수 사다리에도 없다 — 칩·pill 은 가로가 길고 `icon` 은 정사각이다. 가장자리에 붙는 잡이(edge grab)는 이 앱에 하나뿐이다.",
+  "conditional": "가장자리 잡이가 둘이 되면 그때 값에 이름을 붙인다(이 저장소의 「두 번째로 쓸 곳이 생기는 순간」 규율)."
+}

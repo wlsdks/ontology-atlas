@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/topology-index-panel/ui/TopologyIndexTreeRow.tsx",
+  "count": 1,
+  "claim": "no-spec",
+  "proof": "aria-hidden=\"true\"",
+  "why": "트리 행의 펼침 셰브론. `aria-hidden` + `tabIndex={-1}` 이라 **접근성 트리에 없고 포커스 순서에도 없다** — 조작은 바깥 `role=\"treeitem\"` 행이 진다. 컨트롤이 아니라 마우스 어포던스라 씌울 규격이 없다.",
+  "conditional": "이 셰브론이 접근성 트리에 다시 노출되면(=진짜 컨트롤이 되면) 부채로 내린다."
+}

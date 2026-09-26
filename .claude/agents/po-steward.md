@@ -2,6 +2,7 @@
 name: po-steward
 description: Meaning and sovereignty reviewer. Use only when po:route selects the meaning risk (truth, transfer, agent-write, or human-correction affected or unknown).
 model: opus
+effort: max
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__ontology-atlas__get_concept, mcp__ontology-atlas__list_concepts, mcp__ontology-atlas__find_backlinks, mcp__ontology-atlas__find_path, mcp__ontology-atlas__validate_vault, mcp__ontology-atlas__connection_info
 ---
 

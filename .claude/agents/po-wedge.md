@@ -2,6 +2,7 @@
 name: po-wedge
 description: Positioning reviewer. Use only when po:route selects the positioning risk; tests whether a first-contact claim is distinctive and earned.
 model: fable
+effort: max
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 

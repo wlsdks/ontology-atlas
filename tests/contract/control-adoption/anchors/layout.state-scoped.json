@@ -1,0 +1,7 @@
+{
+  "file": "app/[locale]/layout.tsx",
+  "count": 1,
+  "claim": "state-scoped",
+  "proof": "focus:not-sr-only",
+  "why": "본문 건너뛰기 링크. 평상시 `sr-only` 이고 규격(반경·보더·인셋·타입·색) **전부가 `focus:` 접두 아래**에 있다. `controlClass()` 는 무변형 문자열을 내므로 접두를 붙일 수 없다."
+}

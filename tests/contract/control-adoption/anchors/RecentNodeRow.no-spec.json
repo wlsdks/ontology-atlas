@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/recent-node-row/ui/RecentNodeRow.tsx",
+  "count": 1,
+  "claim": "no-spec",
+  "proof": "className={className}",
+  "why": "최근 노드 행의 **자리잡기 래퍼**. `className` 을 prop 으로 받아 그대로 넘긴다 — 규격은 호출부에 있고 이 파일에는 씌울 것이 없다. `PublicQuickActions` 의 `inline-flex` 래퍼와 같은 부류다.",
+  "conditional": "이 래퍼가 자기 규격을 갖게 되면(치수·색을 직접 내면) 부채로 내린다."
+}

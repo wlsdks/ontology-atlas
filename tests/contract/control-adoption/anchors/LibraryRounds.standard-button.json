@@ -1,0 +1,7 @@
+{
+  "file": "src/views/library/ui/LibraryRounds.tsx",
+  "count": 1,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "Check history before any round exists (2026-09-25): the page's one next step, \"Schedule in Automations\". It is a `<Link>` because it navigates, and `cn(buttonVariants(), …)` because it stands in Work scope's starting-point frame where the same moment is a primary `<Button>`; the two empty tabs must press alike. The value layer yields the standard button, so `controlClass` cannot make it."
+}
