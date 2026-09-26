@@ -24,13 +24,28 @@ function commandNames(result) {
 // The source-language gate is intentionally cross-cutting. Domain-specific tests
 // keep asserting their own exact ordering, while one dedicated test below owns
 // the invariant that every supported source path adds this shared gate exactly once.
+// Per-file lint of changed scripts, tests and packages applies to every such path, like the
+// source-language scan, so domain assertions leave it out; its own test pins it.
+const isScriptLint = (command) => command.startsWith('pnpm exec eslint --max-warnings 0 --no-warn-ignored ');
+
 function domainCommands(result) {
   return commandNames(result).filter(
-    (command) => command !== SOURCE_LANGUAGE_COMMAND && command !== DEAD_CODE_COMMAND,
+    (command) => command !== SOURCE_LANGUAGE_COMMAND && command !== DEAD_CODE_COMMAND && !isScriptLint(command),
   );
 }
 
 describe('focused check suggestions', () => {
+  it('lints changed scripts, tests and packages that the full lint lane covers', () => {
+    const lint = (paths) => commandNames(suggestFocusedChecks(paths)).find(isScriptLint);
+    // A scripts-only change once planned no lint and landed a warning on main (train #1921).
+    assert.equal(
+      lint(['scripts/pr-land.test.mjs', 'tests/e2e/settle.ts', 'mcp/src/index.js']),
+      'pnpm exec eslint --max-warnings 0 --no-warn-ignored scripts/pr-land.test.mjs tests/e2e/settle.ts mcp/src/index.js',
+    );
+    assert.equal(lint(['src/shared/lib/cn.ts']), undefined, 'src and app keep their own lint command');
+    assert.equal(lint(['docs/README.md']), undefined, 'non-code paths plan no lint');
+  });
+
   it('normalizes paths for git and shell input', () => {
     assert.equal(normalizeChangedPath('./mcp\\scripts\\verify.mjs'), 'mcp/scripts/verify.mjs');
     assert.equal(normalizeChangedPath('  docs/ontology/project.md  '), 'docs/ontology/project.md');
@@ -121,7 +136,7 @@ describe('focused check suggestions', () => {
       'scripts/quality/source-language/source-paths.mjs',
       'scripts/quality/source-language/inventory.test.mjs',
     ]);
-    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND), [
+    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && !isScriptLint(command)), [
       SOURCE_LANGUAGE_COMMAND,
       'pnpm test:source:language',
     ]);

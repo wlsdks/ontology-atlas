@@ -137,7 +137,7 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
   );
   const withLintDirect = prependSuggestions(
     withPlaywrightDirect,
-    directLintSuggestions(normalizedPaths),
+    [...directLintSuggestions(normalizedPaths), ...directScriptLintSuggestions(normalizedPaths)],
   );
   const withMcpDirect = insertBeforeCommand(
     withLintDirect,
@@ -235,6 +235,27 @@ function directLintSuggestions(paths) {
       // new warning, so the breach only surfaced as a red main after merge.
       command: `pnpm exec eslint --max-warnings 0 ${lintable.join(' ')}`,
       reason: 'design-system ramps and FSD boundaries are lint-enforced on changed source',
+      paths: lintable,
+    },
+  ];
+}
+
+/**
+ * Lints every other changed JavaScript or TypeScript file the full `pnpm lint` covers.
+ * A scripts-only change used to plan no lint at all, so an unused variable in
+ * `scripts/pr-land.test.mjs` reached main and failed the next change whose plan
+ * happened to run the whole-repository lint (train #1921, 2026-09-26).
+ * `--no-warn-ignored` keeps a file the config ignores from counting as a warning.
+ */
+function directScriptLintSuggestions(paths) {
+  const lintable = paths.filter(
+    (path) => /\.(?:ts|tsx|js|jsx|mjs|cjs)$/.test(path) && !/^(?:src|app)\//.test(path),
+  );
+  if (lintable.length === 0) return [];
+  return [
+    {
+      command: `pnpm exec eslint --max-warnings 0 --no-warn-ignored ${lintable.join(' ')}`,
+      reason: 'the full lint lane covers scripts, tests and packages too; lint the changed ones now',
       paths: lintable,
     },
   ];
