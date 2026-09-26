@@ -57,7 +57,8 @@ sleeping.
   `fileParallelism: false`), never in the pre-push hook or a sharded sweep.
 - In e2e, settle conditions live in `tests/e2e/settle.ts`: canvas stillness from
   the `?e2e=1` probe, DOM reveals from `Element.getAnimations()`. A remaining
-  sleep states in place why it is a measurement window.
+  sleep states in place why it is a measurement window; `pnpm e2e:sleeps:check`
+  refuses a new one without `// measurement window:`.
 - Compare canvas pixels inside the page and return one number: a 5-million
   value `getImageData` array through `page.evaluate` costs 12 s per call
   (lesson 1250cf7a).

@@ -398,6 +398,11 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm test:e2e:sleeps && pnpm e2e:sleeps:check',
+    reason: 'an e2e spec or the fixed-sleep gate changed; a spec may not add a waitForTimeout without a measurement-window note',
+    matches: [/^tests\/e2e\/.+\.ts$/, /^scripts\/check-e2e-sleeps(?:\.test)?\.mjs$/],
+  },
+  {
     command: 'pnpm exec playwright test tests/e2e/architecture-workbench.spec.ts',
     reason: 'Architecture workflow reachability, scroll anchoring, or mobile navigation changed',
     matches: [

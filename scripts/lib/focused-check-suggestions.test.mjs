@@ -1176,6 +1176,8 @@ describe('focused check suggestions', () => {
     assert.deepEqual(domainCommands(result), [
       'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
       'pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts',
+      // A spec may not add a fixed sleep (2026-09-26, lesson cb5fbfaf).
+      'pnpm test:e2e:sleeps && pnpm e2e:sleeps:check',
       'pnpm exec tsc --noEmit',
     ]);
   });
