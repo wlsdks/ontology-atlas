@@ -703,7 +703,8 @@ export function createGithub(slug, run = ghRun) {
       const result = run(args, { allowFailure: true });
       if (typeof result !== 'string') return { ok: false, detail: String(result.output ?? '').trim() };
       try {
-        return { ok: JSON.parse(result).merged === true, detail: result.trim() };
+        const body = JSON.parse(result);
+        return { ok: body.merged === true, detail: result.trim(), sha: typeof body.sha === 'string' ? body.sha : null };
       } catch {
         return { ok: false, detail: result.trim() };
       }
@@ -1098,6 +1099,7 @@ export function runTrain({ batch, deps, holder, requiredContexts, args, token = 
       continue;
     }
     const releaseFast = deps.onExit(() => gh.releaseLock(FAST_LOCK_REF));
+    let mergedSha = null;
     try {
       // Green. Main may have moved while CI ran; only a move into this train's files matters.
       git.fetch(['main']);
@@ -1122,6 +1124,7 @@ export function runTrain({ batch, deps, holder, requiredContexts, args, token = 
         title: `${trainTitle(included)} (#${opened.number})`,
         message: composeSquashBody({ components: included, trainNumber: opened.number }),
       });
+      mergedSha = merged.sha ?? null;
       if (!merged.ok && gh.readPr(opened.number).state !== 'MERGED') {
         log(`GitHub refused the train merge (${merged.detail || 'no detail'}); rebuilding`);
         gh.closePr(opened.number, `The merge was refused: ${merged.detail || 'no detail'}. Rebuilt on the new main.`);
@@ -1133,6 +1136,7 @@ export function runTrain({ batch, deps, holder, requiredContexts, args, token = 
       gh.releaseLock(FAST_LOCK_REF);
     }
     log(`train #${opened.number} merged: ${opened.url}`);
+    waitForMainAt(deps, mergedSha);
     git.fetch(['main', branch, ...included.map((c) => c.headRefName)]);
     finishComponents({ deps, components: included, trainHead: trainPr.headRefOid, trainNumber: opened.number, trainUrl: opened.url });
     gh.deleteBranch(branch);
@@ -1147,6 +1151,21 @@ export function runTrain({ batch, deps, holder, requiredContexts, args, token = 
  * two components that edited the same file, where a three-way merge of one alone against the
  * squash can conflict.
  */
+/**
+ * Fetch until `origin/main` is the squash commit GitHub just made. Right after a merge the ref can
+ * still read the old main, and judging containment against it re-queued a landed component: #1898
+ * landed twice, the second time as an empty commit (2026-09-26).
+ */
+function waitForMainAt(deps, sha) {
+  if (!sha) return;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    deps.git.fetch(['main']);
+    if (deps.git.revParse('origin/main') === sha) return;
+    deps.sleep(5);
+  }
+  deps.log(`origin/main did not reach the merge commit ${sha.slice(0, 9)} within a minute; judging containment anyway`);
+}
+
 function finishComponents({ deps, components, trainHead, trainNumber, trainUrl }) {
   const { gh, git, log } = deps;
   const trainContained = trainHead ? git.isContained('origin/main', trainHead) : false;
@@ -1154,7 +1173,10 @@ function finishComponents({ deps, components, trainHead, trainNumber, trainUrl }
     const sha = component.headRefOid;
     const contained = git.isContained('origin/main', sha) || (trainContained && git.isAncestor(sha, trainHead));
     if (!contained) {
-      log(`#${component.number}: main does not provably contain ${sha.slice(0, 9)}; left open and queued`);
+      // Never queue it again: a train already carried it, and a second train would land it twice.
+      gh.removeLabel(component.number);
+      gh.comment(component.number, `Train #${trainNumber ?? 'none'} carried ${sha.slice(0, 9)} and merged, but main does not provably contain it. Check main for this change; queue it again with \`pnpm pr:land ${component.number}\` only if something is missing.`);
+      log(`#${component.number}: main does not provably contain ${sha.slice(0, 9)}; taken out of the queue for a person to check`);
       continue;
     }
     const current = git.revParse(`origin/${component.headRefName}`);
