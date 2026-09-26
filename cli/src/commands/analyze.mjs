@@ -185,7 +185,7 @@ function printApprovalRequiredPlan({ result, target, vaultRoot, json }) {
       reason: 'construction-qualification-required',
       qualification: 'constructionQualification:v1',
       recovery:
-        'Use the MCP ontology-bootstrap review → independent qualification → human acceptance → exact writePlan flow. No semantic node or relation was written.',
+        'Continue in an agent connected to the Atlas MCP server, whose instructions carry the review → independent qualification → human acceptance → exact writePlan flow. No semantic node or relation was written.',
     },
     next: {
       writes: 0,
