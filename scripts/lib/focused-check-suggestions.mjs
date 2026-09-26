@@ -1,5 +1,4 @@
 import { existsSync, readdirSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
 
 import { isSupportedSourcePath } from '../quality/source-language/source-paths.mjs';
 
