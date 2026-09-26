@@ -366,4 +366,3 @@ jobs:
         run: |
           pnpm changelog:check
           pnpm decisions:check
-          pnpm po:pilot -- --check

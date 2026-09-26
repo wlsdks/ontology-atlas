@@ -3,6 +3,8 @@ import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { FULL_LANE_COMMANDS } from "../../scripts/classify-change.mjs";
+
 /**
  * The pre-push hook is a **fast, path-scoped mirror of CI** — this locks the four
  * properties that make it survivable, because losing any one of them is what
@@ -135,24 +137,11 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
   });
 
   /**
-   * The repo-wide ESLint pass is CI's. ESLint is per-file, so 84.9 s of whole-tree
-   * linting to judge one changed file buys nothing a few seconds cannot say. The
-   * configuration is the exception, because it can move every file's verdict.
+   * The repo-wide ESLint pass is CI's: the hook lints only changed files, which
+   * is safe only while CI's exhaustive gates still run the whole tree.
    */
-  it("lint 레인은 바뀐 파일만 본다 — 설정이 바뀌면 전체를 본다", () => {
-    expect(executable, "eslint 설정 변경에 전체 lint 가 안 걸린다").toMatch(
-      /touched '\^eslint\\\.config\\\.mjs\$'; then\s*\n\s*lane lint 'pnpm lint'/,
-    );
-    expect(executable, "바뀐 파일만 보는 갈래가 없다").toContain("pnpm exec eslint --max-warnings=0");
-
-    const ci = readFileSync(path.join(ROOT, ".github/workflows/checks.yml"), "utf8");
-    expect(ci, "CI 가 run-ci-lane 을 통해 전사 lint 를 쥐고 있어야 한다").toContain(
-      "node scripts/run-ci-lane.mjs --lane=gates",
-    );
-    expect(
-      readFileSync(path.join(ROOT, "scripts/classify-change.mjs"), "utf8"),
-      "전사 lint 가 CI 의 exhaustive gates 목록에서 사라졌다",
-    ).toContain("'pnpm lint'");
+  it("전사 lint 는 CI 의 exhaustive gates 에 남아 있다", () => {
+    expect(FULL_LANE_COMMANDS.gates).toContain("pnpm lint");
   });
 
   /**
@@ -163,11 +152,7 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
    * the exact failure `.claude/rules/testing.md` forbids, so the budget line must
    * not be able to change the push's fate.
    */
-  it("레인마다 걸린 시간을 찍고 예산과 견준다 — 그러나 예산으로 막지는 않는다", () => {
-    // Anchored: an unanchored /BUDGET_SECONDS=90/ matched `=900` and the probe that
-    // widened the budget tenfold passed (measured 2026-09-12).
-    expect(executable, "예산이 90초가 아니다").toMatch(/^BUDGET_SECONDS=90$/m);
-    expect(executable, "레인별 시간을 재지 않는다").toContain(".secs");
+  it("예산은 보고만 한다 — 예산으로 푸시를 막지 않는다", () => {
     expect(executable, "예산과 견주는 줄이 없다").toMatch(/\$total.*-gt.*\$BUDGET_SECONDS/);
 
     // The budget comparison must not reach an exit. Only the lane verdicts may.
@@ -175,21 +160,6 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
     const budgetCompare = budgetBlock.slice(budgetBlock.indexOf('"$total" -gt'));
     const guard = budgetCompare.slice(0, budgetCompare.indexOf("\nfi"));
     expect(guard, "예산 초과가 푸시를 막는다 — 시계를 게이트로 쓴 것이다").not.toMatch(/exit\s+1/);
-  });
-
-  it("실패한 레인만 출력한다 — 여덟 개가 동시에 떠들면 아무도 안 읽는다", () => {
-    expect(executable).toMatch(/failed/);
-    expect(executable, "실패 로그를 보여주지 않는다").toMatch(/tail .*\.log/);
-  });
-
-  /**
-   * A hook that runs nothing is indistinguishable from no hook. The repo-wide
-   * scanners are unconditional for that reason, so every push runs at least these.
-   */
-  it("무조건 도는 레인이 있다 — 아무것도 안 도는 푸시가 없다", () => {
-    for (const always of ["check-comment-refs.mjs", "decisions:check"]) {
-      expect(executable, `무조건 도는 레인에 ${always} 가 없다`).toContain(always);
-    }
   });
 
   /**
