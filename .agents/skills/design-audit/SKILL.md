@@ -139,6 +139,8 @@ confirms it.
 ```md
 ## Design audit — <screen/change>
 
+**Verdict**: pass | <N> defects — <the one that matters most, in one line>
+
 **Fixed state**: viewport · data · ready signal · DPR
 
 | Check | Result |

@@ -103,6 +103,8 @@ support measurement; they do not replace it.
 ```md
 ## User walkthrough — <task>
 
+**Outcome**: completed | failed at <step> — <what the walker could not do, in one line>
+
 **Walker**: <knowledge · context · concern> · **walker**: fresh subagent id <id>
 **Journey**: A agent / B human / both
 **Build**: <URL or installed app · commit>
