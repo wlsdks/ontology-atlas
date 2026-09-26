@@ -7,27 +7,24 @@ import {
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import {
   measureBottomFitObstacle,
-  measureCanvasInsets
+  measureCanvasInsets,
+  measureEdgeFitObstacle,
+  type EdgeFitObstacle
 } from "../interaction/free-area";
 import { cameraTransitionDurationMs, type CameraKeyframe, type CameraTween } from "../model/camera-easing";
 import {
   DOME_NODE_FIT_ALLOWANCE_PX,
+  domeReachesRect,
   domeWorldBounds,
   type DomeModel
 } from "../model/dome-view";
-import {
-  TIER_LEGEND_RAIL_COLUMN_PX,
-  tierLegendPlacement
-} from "../model/tier-legend-rows";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { computeDomeFitCameraTarget } from "./topology-camera-math";
-
-const TIER_LEGEND_RESERVE_PX = TIER_LEGEND_RAIL_COLUMN_PX;
 
 interface Dependencies {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   panelInsetsRef: RefObject<{ left: number; right: number; } | null>;
-  domeFitInsetsRef: RefObject<{ left: number; right: number; } | null>;
+  domeFitInsetsRef: RefObject<{ left: number; right: number; top: number; bottom: number; } | null>;
   reducedMotionRef: RefObject<boolean>;
   cameraTweenRef: RefObject<CameraTween | null>;
   cameraRef: RefObject<CameraAxes>;
@@ -91,10 +88,11 @@ export function useTopologyCameraPolicy({
       ...tokens,
       safeInsetLeft: Math.max(tokens.safeInsetLeft, measured.left),
       safeInsetRight: Math.max(tokens.safeInsetRight, measured.right),
-      // What a panel really covers, so a narrow window may shrink the
-      // reservation without sliding the graph under it (`clampFitInsets`).
-      obstacleInsetLeft: measured.left,
-      obstacleInsetRight: measured.right,
+      // What the chrome really covers — a panel, the folded INDEX tab, the utility
+      // rail's column — so a narrow window may shrink the reservation without
+      // sliding the graph under it (`clampFitInsets`).
+      obstacleInsetLeft: Math.max(measured.left, measureEdgeFitObstacle(canvasEl, "left")?.reach ?? 0),
+      obstacleInsetRight: Math.max(measured.right, measureEdgeFitObstacle(canvasEl, "right")?.reach ?? 0),
     };
   }, [canvasRef, panelInsetsRef]);
 
@@ -126,53 +124,60 @@ export function useTopologyCameraPolicy({
       const canvasEl = canvasRef.current;
       let left = tokens.safeInsetLeft;
       let right = tokens.safeInsetRight;
+      let edges: { left: EdgeFitObstacle | null; right: EdgeFitObstacle | null } = { left: null, right: null };
       if (canvasEl) {
         const box = canvasEl.getBoundingClientRect();
         if (box.width > 0 && box.height > 0) {
           const measured = measureCanvasInsets(canvasEl, { x: box.x, y: box.y, width: box.width, height: box.height });
           left = measured.left;
           right = measured.right;
+          edges = { left: measureEdgeFitObstacle(canvasEl, "left"), right: measureEdgeFitObstacle(canvasEl, "right") };
         }
       }
+      const panels = {
+        left,
+        right,
+        top: tokens.domeFitInsetTop,
+        bottom: Math.max(tokens.domeFitInsetBottom, canvasEl ? measureBottomFitObstacle(canvasEl) : 0),
+      };
       /*
-       * Strata keeps its legend rail's names clear of the graph — **while the rail
-       * is what is drawn**. The rail sits at the canvas's right edge
-       * (`OntologyMapTierLegend`) and it is **not** a side panel: it covers under
-       * half the canvas height, so `measureCanvasInsets` correctly declines to
-       * treat it as one, and without the reservation the fit runs the graph out to
-       * the canvas edge. It did: three nodes landed under the rows at 1040×720,
-       * measured 2026-09-06, which is the same "a name on the data" defect the
-       * rail exists to end.
+       * **The edge chrome's columns — the utility rail, the folded INDEX tab — where
+       * they cost the drawing nothing or the drawing would sit under them**
+       * (2026-09-26). They are not panels, but every other view centres its drawing
+       * between the chrome on both sides: fitted up to the canvas's edge instead,
+       * Neural sat 30 px right of the free map's centre at 1512×949 (half the rail's
+       * footprint) and at 1040×720 nine of its nodes stood under the tiles.
        *
-       * But at that size the reservation is 6% of the canvas and width is what
-       * binds the fit, so the graph paid for it (2026-09-07: fill 72.5% → 63.6%,
-       * two element pairs touching). `tierLegendPlacement` decides from the fit's
-       * own free box which of the two is true here, and the legend reads the same
-       * predicate — so the column is reserved exactly when a rail is drawn in it,
-       * and at 1040 nothing is reserved and the legend goes to the corner.
+       * Except where a column is width the drawing needs and the chrome covers none of
+       * it: Strata is narrow at the top, where the tiles stand, and at 1040×720 its width
+       * binds the fit — reserving the column there shrank it from 73.7% to 66.9% of the
+       * free canvas and fused two element pairs on one plane, the trade the 2026-09-07
+       * legend decision already refused. The drawing then keeps the width.
        */
-      domeFitInsetsRef.current = { left, right };
-      const legendRight =
-        model.arrangement === "strata" &&
-          tierLegendPlacement(
-            width - left - right,
-            height - tokens.domeFitInsetTop - tokens.domeFitInsetBottom,
-          ) === "rail"
-          ? TIER_LEGEND_RESERVE_PX
-          : 0;
-      return computeDomeFitCameraTarget(
-        bounds,
-        width,
-        height,
-        {
-          left,
-          right: Math.max(right, legendRight),
-          top: tokens.domeFitInsetTop,
-          bottom: Math.max(tokens.domeFitInsetBottom, canvasEl ? measureBottomFitObstacle(canvasEl) : 0),
-        },
-        DOME_NODE_FIT_ALLOWANCE_PX,
-        tokens,
-      );
+      const chromed = {
+        ...panels,
+        left: Math.max(panels.left, edges.left?.reach ?? 0),
+        right: Math.max(panels.right, edges.right?.reach ?? 0),
+      };
+      let target = computeDomeFitCameraTarget(bounds, width, height, panels, DOME_NODE_FIT_ALLOWANCE_PX, tokens);
+      if (chromed.left !== panels.left || chromed.right !== panels.right) {
+        const centred = computeDomeFitCameraTarget(bounds, width, height, chromed, DOME_NODE_FIT_ALLOWANCE_PX, tokens);
+        const costsNothing = centred.tscale >= target.tscale * (1 - 1e-6);
+        const covered = [
+          edges.left && { left: 0, right: edges.left.reach, top: edges.left.top, bottom: edges.left.bottom },
+          edges.right && { left: width - edges.right.reach, right: width, top: edges.right.top, bottom: edges.right.bottom },
+        ].some((rect) => rect && domeReachesRect(model, yaw, pitch, target, width, height, rect, DOME_NODE_FIT_ALLOWANCE_PX));
+        if (costsNothing || covered) target = centred;
+      }
+      /*
+       * Strata's tier names stand beside their rims in the free map between the
+       * chrome (`model/tier-names.ts`), the chrome's columns excluded whether or not
+       * the drawing uses them, so the frame reads the box measured here rather than
+       * walking the DOM on every frame. No column is reserved for the names: one that
+       * finds no clear place beside its rim goes unnamed, and the drawing keeps the width.
+       */
+      domeFitInsetsRef.current = chromed;
+      return target;
     },
     [canvasRef, domeFitInsetsRef],
   );

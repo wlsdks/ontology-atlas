@@ -66,6 +66,8 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
   handleKeyDown: (event: ReactKeyboardEvent<HTMLCanvasElement>) => void;
   /** Raise one Strata plane's ring — the tier legend's hover; null clears it. */
   raiseDomeTier: (kind: DomeViewKind | null) => void;
+  /** The tier names' rendered widths by kind, as they measured themselves; `{}` places none. */
+  setDomeTierNameWidths: (widths: Readonly<Record<string, number>>) => void;
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
@@ -74,11 +76,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0,
     constellationFocusId = null, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect,
     onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange,
-    onTierLegendPlacementChange, onZoomTierChange, onContextMenuNode, onContextMenuPane,
+    onZoomTierChange, onContextMenuNode, onContextMenuPane,
     agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null,
     selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster,
     onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null,
-    visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, domeTierLabels = null,
+    visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null,
     trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null,
     tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false,
     mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null,
@@ -95,7 +97,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onEnterRealm,
   });
   const {
-    annotationRef, getDomeTierLabels, previewEdgePropRef, previewEdgeHeldRef, previewSignatureRef,
+    annotationRef, previewEdgePropRef, previewEdgeHeldRef, previewSignatureRef,
     previewAlphaRef, previewCommitRef, previewTransitionRef, glyphStyleRef, canvasBackgroundRef,
     footprintPrefRef, footprintInkRef, footprintStepColorRef, footprintTrailLenRef, footprintAppearAtRef,
     ambientSleepDelayRef, visitedTrailRef, visitedTrailSetRef, drawnTrailLensRef, trailLensPropRef,
@@ -105,7 +107,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     tierRevealRef,
   } = useTopologyPresentationState({
     args,
-    domeTierLabels,
     previewEdge,
     glyphSet,
     canvasBackground,
@@ -141,14 +142,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     galaxyFlatReturnPositionsRef, galaxyLayoutHandoffRef, galaxyModeCameraRef, pendingFlatCameraRef,
     galaxyRampRef, neuralRampRef, mapArrangementRef, domeRuntimeRef, domeWorldSourceRef, domeModelBuildRef,
     domeFocusPendingRef, domeFitPendingRef, domeFitDurationRef, flatFitPendingRef, onDomeTierAnchorsChangeRef,
-    domeTierRaisedKindRef, domeTierAnchorsSentRef, onTierLegendPlacementChangeRef, tierLegendPlacementSentRef,
+    domeTierRaisedKindRef, domeTierAnchorsSentRef, domeTierNameWidthsRef,
     domeFitInsetsRef,
   } = useTopologyDomeState({
     view3d,
     galaxy,
     mapArrangement,
     onDomeTierAnchorsChange,
-    onTierLegendPlacementChange,
   });
   const {
     lastActiveCausesRef, idleDebugEnabledRef, lastFrameTimeRef, navYieldUntilRef, reducedMotionRef,
@@ -211,8 +211,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onDrawnCountChange,
     onDomeTierAnchorsChangeRef,
     onDomeTierAnchorsChange,
-    onTierLegendPlacementChangeRef,
-    onTierLegendPlacementChange,
     onHoverEdgeRef,
     onHoverEdge,
     onEnterRealmRef,
@@ -569,6 +567,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     focusLeashPxRef,
     overviewFitRef,
     clusteredIdsRef,
+    mapLensKindRef,
+    spotlightIdsRef,
   });
   useTopologyRealmTransition({
     realmRootId,
@@ -886,7 +886,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       expandPrefRef,
       getClusterBarLabels,
       mapArrangementRef,
-      getDomeTierLabels,
       domeTierRaisedKindRef,
       drawnTrailLensRef,
       tourAnchorNodeIdRef,
@@ -894,9 +893,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       onDrawnCountChangeRef,
       domeTierAnchorsSentRef,
       onDomeTierAnchorsChangeRef,
+      domeTierNameWidthsRef,
       domeFitInsetsRef,
-      tierLegendPlacementSentRef,
-      onTierLegendPlacementChangeRef,
       domeEvidenceRef,
     },
   });
@@ -1019,5 +1017,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     lastActiveMsRef.current = performance.now();
   }, [domeTierRaisedKindRef, lastActiveMsRef]);
 
-  return { canvasRef, containerRef, raiseDomeTier, ...handlers, ...wrappedHandlers };
+  /**
+   * The tier names' widths, measured by the names themselves in their own type — the
+   * canvas cannot measure DOM text. Marks activity so a map at rest places them.
+   */
+  const setDomeTierNameWidths = useCallback((widths: Readonly<Record<string, number>>) => {
+    domeTierNameWidthsRef.current = widths;
+    lastActiveMsRef.current = performance.now();
+  }, [domeTierNameWidthsRef, lastActiveMsRef]);
+
+  return { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, ...handlers, ...wrappedHandlers };
 }

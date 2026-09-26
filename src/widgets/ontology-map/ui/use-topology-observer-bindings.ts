@@ -5,13 +5,8 @@ import {
   useEffect,
   type RefObject
 } from "react";
-import {
-  type DomeViewKind
-} from "../model/dome-view";
 import type { TopologyMapLensKind } from "../model/path-lens";
-import {
-  type TierLegendPlacement
-} from "../model/tier-legend-rows";
+import { type TierNameAnchor } from "../model/tier-names";
 import { type ZoomTier } from "../model/tier-visibility";
 import type { HoverAvoidRect } from "./topology-pointer-handlers";
 
@@ -25,10 +20,8 @@ interface Dependencies {
   onZoomTierChange: ((tier: ZoomTier) => void) | undefined;
   onDrawnCountChangeRef: RefObject<((drawn: number) => void) | undefined>;
   onDrawnCountChange: ((drawn: number) => void) | undefined;
-  onDomeTierAnchorsChangeRef: RefObject<((anchors: readonly { kind: DomeViewKind; y: number; }[] | null) => void) | undefined>;
-  onDomeTierAnchorsChange: ((anchors: readonly { kind: DomeViewKind; y: number; }[] | null) => void) | undefined;
-  onTierLegendPlacementChangeRef: RefObject<((placement: TierLegendPlacement) => void) | undefined>;
-  onTierLegendPlacementChange: ((placement: TierLegendPlacement) => void) | undefined;
+  onDomeTierAnchorsChangeRef: RefObject<((anchors: readonly TierNameAnchor[] | null) => void) | undefined>;
+  onDomeTierAnchorsChange: ((anchors: readonly TierNameAnchor[] | null) => void) | undefined;
   onHoverEdgeRef: RefObject<((edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; } | null, position: { x: number; y: number; avoid: readonly HoverAvoidRect[]; } | null) => void) | undefined>;
   onHoverEdge: ((edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; } | null, position: { x: number; y: number; avoid: readonly HoverAvoidRect[]; } | null) => void) | undefined;
   onEnterRealmRef: RefObject<((slug: string) => void) | undefined>;
@@ -75,8 +68,6 @@ export function useTopologyObserverBindings({
   onDrawnCountChange,
   onDomeTierAnchorsChangeRef,
   onDomeTierAnchorsChange,
-  onTierLegendPlacementChangeRef,
-  onTierLegendPlacementChange,
   onHoverEdgeRef,
   onHoverEdge,
   onEnterRealmRef,
@@ -127,8 +118,7 @@ export function useTopologyObserverBindings({
     onZoomTierChangeRef.current = onZoomTierChange;
     onDrawnCountChangeRef.current = onDrawnCountChange;
     onDomeTierAnchorsChangeRef.current = onDomeTierAnchorsChange;
-    onTierLegendPlacementChangeRef.current = onTierLegendPlacementChange;
-  }, [onZoomTierChange, onDrawnCountChange, onDomeTierAnchorsChange, onTierLegendPlacementChange, onZoomTierChangeRef, onDrawnCountChangeRef, onDomeTierAnchorsChangeRef, onTierLegendPlacementChangeRef]);
+  }, [onZoomTierChange, onDrawnCountChange, onDomeTierAnchorsChange, onZoomTierChangeRef, onDrawnCountChangeRef, onDomeTierAnchorsChangeRef]);
 
   useEffect(() => {
     onHoverEdgeRef.current = onHoverEdge;

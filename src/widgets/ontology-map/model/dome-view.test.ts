@@ -51,6 +51,7 @@ import {
   domeHaloPx,
   domeLineWidthFactor,
   domeNearestYawTurn,
+  domeReachesRect,
   domeTierRamp,
   domeWorldBounds,
   KIND_DEPTH,
@@ -1428,3 +1429,36 @@ describe("domeEdgeMinWidthPx", () => {
     expect(domeEdgeMinWidthPx(-2)).toBe(domeEdgeMinWidthPx(1));
   });
 });
+
+/**
+ * **Would the chrome on the canvas's edge cover a node?** (2026-09-26) — asked by the 3D fit
+ * before it lets a drawing use the utility rail's column. The answer is read off the same
+ * projection the fit frames, so a node the rect would cover is found wherever it projects.
+ */
+describe("domeReachesRect", () => {
+  const model = buildDomeModel(NODES);
+  const yaw = 0.55;
+  const pitch = DOME_PITCH_DEFAULT;
+  const bounds = domeWorldBounds(model, yaw, pitch)!;
+  // A camera that puts the drawing's right extreme at x 900 on a 1000-wide canvas.
+  const tscale = 1;
+  const target = { tx: bounds.maxX - 400, ty: (bounds.minY + bounds.maxY) / 2, tscale };
+
+  it("finds the node the rect stands on", () => {
+    const column = { left: 880, right: 1000, top: 0, bottom: 800 };
+    expect(domeReachesRect(model, yaw, pitch, target, 1000, 800, column, 0)).toBe(true);
+  });
+
+  it("reports a column the drawing stays out of as free", () => {
+    const column = { left: 920, right: 1000, top: 0, bottom: 800 };
+    expect(domeReachesRect(model, yaw, pitch, target, 1000, 800, column, 0)).toBe(false);
+    // …until a node's disc is counted in.
+    expect(domeReachesRect(model, yaw, pitch, target, 1000, 800, column, 24)).toBe(true);
+  });
+
+  it("only covers what stands inside its own height", () => {
+    const tiles = { left: 880, right: 1000, top: -400, bottom: -300 };
+    expect(domeReachesRect(model, yaw, pitch, target, 1000, 800, tiles, 0)).toBe(false);
+  });
+});
+

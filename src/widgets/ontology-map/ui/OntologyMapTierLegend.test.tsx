@@ -1,78 +1,70 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { OntologyMapTierLegend } from './OntologyMapTierLegend';
 
 /**
- * **A rail with nothing to draw takes the corner, not the rims.**
- *
- * `layoutTierLegendRows` answers `null` when the band it was handed cannot hold one
- * row per plane. That answer used to fall through every branch in the component: the
- * placement stayed `rail`, no row rendered, `onFitChange(false)` sent the names back
- * to the plane rims — the failure the rail exists to end. CI drew exactly that at
- * 1512x982 on 2026-09-20: `data-tier-legend-placement="rail"` with zero rows inside
- * it, while the same build on a developer's machine chose the corner and passed.
- *
- * jsdom lays nothing out, so every measured box is zero — which is the same input the
- * band gives when it is too short for four rows. That makes this the one place the
- * branch can be pinned without a runner whose fonts happen to squeeze the band.
+ * **Strata's tier names stand where the frame placed them, and nowhere else**
+ * (2026-09-26). The frame decides from the drawn rims (`model/tier-names.ts`); this
+ * draws those names at their boxes, measures every name for the next placement, and
+ * gives the room back when it leaves.
  */
-const ANCHORS = [
-  { kind: 'project', y: 120 },
-  { kind: 'domain', y: 310 },
-  { kind: 'capability', y: 500 },
-  { kind: 'element', y: 610 },
-];
 const LABELS = {
   project: '프로젝트',
   domain: '도메인',
-  capability: '기능',
+  capability: '역량',
   element: '요소',
 } as Record<string, string>;
 
 afterEach(cleanup);
 
-describe('the Strata tier legend', () => {
-  it('draws its names in the corner when the rail has no band to lay them in', () => {
-    const onFitChange = vi.fn();
+describe('the Strata tier names', () => {
+  it('draws only the names the frame placed, each at its own box beside its rim', () => {
     render(
       <OntologyMapTierLegend
-        anchors={ANCHORS}
+        names={[
+          { kind: 'project', side: 'right', minX: 959, maxX: 1003, minY: 117, maxY: 133, a: 1 },
+          { kind: 'element', side: 'left', minX: 391, maxX: 413, minY: 628, maxY: 644, a: 0.5 },
+        ]}
         labels={LABELS}
         onRaise={() => {}}
-        onFitChange={onFitChange}
-        placement="rail"
+        onWidths={() => {}}
       />,
     );
-
-    const legend = screen.getByTestId('topology-tier-legend');
-    expect(
-      legend.dataset.tierLegendPlacement,
-      'the rail could not lay a row, so the drawn shape is the corner',
-    ).toBe('corner');
-    expect(
-      ANCHORS.map((anchor) => screen.getByTestId(`topology-tier-legend-row-${anchor.kind}`).textContent),
-      'every plane is still named',
-    ).toEqual(['프로젝트', '도메인', '기능', '요소']);
-    // The names are placed, so the rims must not be asked to take them back.
-    expect(legend.dataset.tierLegendFits).toBe('true');
-    expect(onFitChange).toHaveBeenLastCalledWith(true);
+    const rows = screen.getAllByTestId(/^topology-tier-legend-row-/);
+    expect(rows.map((row) => row.textContent)).toEqual(['프로젝트', '요소']);
+    const project = screen.getByTestId('topology-tier-legend-row-project');
+    expect(project.style.left).toBe('959px');
+    expect(project.style.top).toBe('117px');
+    expect(project.dataset.tierSide).toBe('right');
+    // A name rises and fades with its plane.
+    expect(screen.getByTestId('topology-tier-legend-row-element').style.opacity).toBe('0.5');
+    // No corner list: a plane the frame could not place is not named anywhere else.
+    expect(screen.queryByTestId('topology-tier-legend-row-domain')).toBeNull();
   });
 
-  it('claims no fit when there is no plane to name', () => {
-    const onFitChange = vi.fn();
+  it('measures every name, placed or not, and hands the room back when it leaves', () => {
+    const onWidths = vi.fn();
+    const view = render(<OntologyMapTierLegend names={[]} labels={LABELS} onRaise={() => {}} onWidths={onWidths} />);
+    expect(Object.keys(onWidths.mock.calls[0]![0] as object).sort()).toEqual(['capability', 'domain', 'element', 'project']);
+    view.unmount();
+    expect(onWidths).toHaveBeenLastCalledWith({});
+  });
+
+  it('raises the plane a name is pointed at, and lets go', () => {
+    const onRaise = vi.fn();
     render(
       <OntologyMapTierLegend
-        anchors={[]}
+        names={[{ kind: 'domain', side: 'right', minX: 10, maxX: 43, minY: 10, maxY: 26, a: 1 }]}
         labels={LABELS}
-        onRaise={() => {}}
-        onFitChange={onFitChange}
-        placement="rail"
+        onRaise={onRaise}
+        onWidths={() => {}}
       />,
     );
-    // Nothing to place is not the same as placed, and `fits` is what the map reads
-    // to decide whether the rim names come back.
-    expect(screen.getByTestId('topology-tier-legend').dataset.tierLegendFits).toBe('false');
-    expect(onFitChange).toHaveBeenLastCalledWith(false);
+    const row = screen.getByTestId('topology-tier-legend-row-domain');
+    fireEvent.pointerEnter(row);
+    expect(onRaise).toHaveBeenLastCalledWith('domain');
+    fireEvent.pointerLeave(row);
+    expect(onRaise).toHaveBeenLastCalledWith(null);
   });
 });

@@ -8,6 +8,33 @@ export function relationCaptionText(label: string, from: { x: number; y: number 
   return `${['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][direction]} ${label}`;
 }
 
+/**
+ * **The flat map's caption budget, for a view that draws every concept** (Strata, Neural,
+ * Galaxy; 2026-09-26).
+ *
+ * The flat map captions what it draws, and at rest it draws the spine: with the agent dock
+ * open over the whole ontology it named the project's four relations. Strata and Neural
+ * draw every concept, so every relation qualified and the placer filled all 24 slots with
+ * "↘ contains" chips over the planes. A view that shows more does not ask a person to read
+ * more: a caption goes where the flat map would put one — the relation that is selected,
+ * pointed at or on the asked-for path; the focused concept's relations; the spine's
+ * relations at rest — and never to a relation the flat map folds behind a chip.
+ */
+export function captionWithinFlatBudget(edge: {
+  /** Selected, hovered, or on the path lens: the relation a person is reading. */
+  attended: boolean;
+  /** Touches the focused concept. */
+  touchesFocus: boolean;
+  /** Both ends are spine concepts (project, domain, hub). */
+  spine: boolean;
+  /** Either end is folded behind a chip on the flat map at this expansion. */
+  folded: boolean;
+}): boolean {
+  if (edge.attended) return true;
+  if (edge.folded) return false;
+  return edge.touchesFocus || edge.spine;
+}
+
 /** Captions explain visible edges without covering a concept, another label, or chrome. */
 export function placeRelationCaptions(
   candidates: readonly RelationCaption[],

@@ -688,6 +688,7 @@ export function TopologyCanvasSurface({
                 onClick={openGuidedTour}
                 data-testid="topology-tour-button"
                 data-agent-dock-adjacent-rail="true"
+                data-map-fit-obstacle="right"
                 className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-tour-help-desktop-top)] md:inline-flex"
               />
             </Tooltip>
@@ -707,6 +708,7 @@ export function TopologyCanvasSurface({
                 onClick={() => setShortcutsOpen(true)}
                 data-testid="topology-shortcuts-help-button"
                 data-agent-dock-adjacent-rail="true"
+                data-map-fit-obstacle="right"
                 data-controls-density={
                   topologyUtilityChromeCompact ? "compact-focus" : "default"
                 }
@@ -758,6 +760,7 @@ export function TopologyCanvasSurface({
             <div
               className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-growth-replay-desktop-top)] md:block"
               data-agent-dock-adjacent-rail="true"
+              data-map-fit-obstacle="right"
             >
               {/* A toggle, not a hold. One bump of the token starts the replay and
                       the next stops it; the loop reports the live state back, so the

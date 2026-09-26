@@ -254,6 +254,57 @@ export function measureCanvasInsets(canvas: Element, canvasRect: Rect): CanvasIn
   return { left: Math.round(left), right: Math.round(right) };
 }
 
+/** A declared fit obstacle that is really on screen — the same discipline as `collectCanvasObstacles`. */
+function isShownObstacle(el: Element, box: DOMRect): boolean {
+  if (box.width <= 0 || box.height <= 0) return false;
+  if (el.closest('details:not([open])') || el.closest('[aria-hidden="true"]')) return false;
+  const style = getComputedStyle(el);
+  return style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity) >= 0.05;
+}
+
+/**
+ * **Chrome that stands in a column on one edge of the canvas** — how far in from that edge
+ * it reaches and the span it covers down the canvas, in canvas px — or `null` when none of
+ * it is on screen.
+ *
+ * The utility rail's tiles are 36 px squares and the folded INDEX tab is 26 px wide: under
+ * `collectCanvasObstacles`' 40 px floor and far too short to read as side panels, so no
+ * shape rule finds them and every fit that measures panels treated their columns as free
+ * map. Neural then centred between INDEX and the canvas's edge, 30 px right of the free
+ * map's centre at 1512×949 (half the rail's 60 px footprint), and at 1040×720 nine of its
+ * nodes stood under the tiles (measured 2026-09-26). Each piece says what it is
+ * (`data-map-fit-obstacle="left"` or `"right"`), the way the lit legend declares the
+ * bottom strip below, and this reads the declared boxes.
+ */
+export interface EdgeFitObstacle {
+  /** How far in from its edge of the canvas the column reaches, px. */
+  reach: number;
+  /** The span it covers, from the canvas's top, px. */
+  top: number;
+  bottom: number;
+}
+
+export function measureEdgeFitObstacle(canvas: Element, side: "left" | "right"): EdgeFitObstacle | null {
+  const c = canvas.getBoundingClientRect();
+  if (c.width <= 0 || c.height <= 0) return null;
+  let found: EdgeFitObstacle | null = null;
+  for (const el of canvas.ownerDocument.querySelectorAll(`[data-map-fit-obstacle="${side}"]`)) {
+    const box = el.getBoundingClientRect();
+    if (!isShownObstacle(el, box)) continue;
+    if (box.right <= c.left || box.left >= c.right || box.bottom <= c.top || box.top >= c.bottom) continue;
+    const reach = side === "right" ? c.right - box.left : box.right - c.left;
+    const top = box.top - c.top;
+    const bottom = box.bottom - c.top;
+    found =
+      found === null
+        ? { reach, top, bottom }
+        : { reach: Math.max(found.reach, reach), top: Math.min(found.top, top), bottom: Math.max(found.bottom, bottom) };
+  }
+  return found === null
+    ? null
+    : { reach: Math.round(found.reach), top: Math.round(found.top), bottom: Math.round(found.bottom) };
+}
+
 /** Air the fit keeps between the drawing and a bottom strip. */
 const BOTTOM_OBSTACLE_GAP_PX = 8;
 

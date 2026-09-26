@@ -511,18 +511,17 @@ had become false).
   original return. **Strata** (2026-09-06, the default 3D view since 2026-09-25)
   lays the four kinds out as stacked planes — project on top, then domain,
   capability, element — each drawn as a lit translucent floor, so
-  "which level is this on" is a glance rather than an inference. The four names
-  sit on a **legend rail** at the canvas's right edge (2026-09-06), below the
-  utility tiles: one row per plane, each row aligned to that plane's projected
-  height and re-aligned as you orbit or morph, and hovering a row raises its
-  plane's ring. They used to hang on the rims themselves, which at 1040x720 put
-  them on the graph; the rim names remain only as the fallback on a canvas too
-  short for the rail, and the two are never both on. Where the rail's column would
-  be width the graph wanted, the four names become a **compact stack in the
-  bottom-right corner** instead (2026-09-07), keeping the same words and the same
-  hover: at 1040x720 that took the graph back from 63.6% of the free canvas to
-  73.4% and from two touching same-tier pairs to none, while 1512x982 keeps the
-  aligned rail and its 66.3% unchanged. On a Strata plane
+  "which level is this on" is a glance rather than an inference. Each plane's
+  name stands **beside its own rim** (2026-09-26), just outside the plane's right
+  edge or else its left, re-placed as you orbit or morph, and only where it lands
+  on nothing: no concept, no other name, no other plane and none of the map's
+  chrome. Concept names and relation captions give way to it, and hovering a name
+  raises its plane's ring. A plane with no clear place beside it stays unnamed
+  rather than named somewhere else; the colour key along the bottom names every
+  kind. Measured on the product's own ontology: all four names at 1512x949, three
+  at 1040x720. The names replaced a rail at the right edge (2026-09-06) and a
+  stack in the bottom-right corner (2026-09-07) that named no plane in
+  particular. On a Strata plane
   a node keeps its parent's bearing, which makes every containment drop short,
   near-vertical and unable to cross a sibling's; a node whose parent is not in the
   map falls to the outer rim of its own plane, where "nothing above holds this"
@@ -3170,6 +3169,7 @@ The phone tabs and the `G` keys read the same verdict.
 
 ### `AppSettingsMenu` (app shell + contextual page headers)
 - The sheet is a modal like every `<Dialog>` (2026-09-25): opened by a click it takes focus itself (WebKit does not focus the clicked gear), so Escape and Tab work at once, and a click on the dim beside the panel closes it and returns focus to the gear. A drag that starts in the panel and ends over the dim does not close it.
+- Only the open sheet owns Escape (2026-09-26). With the sheet closed, Escape pressed on the gear reaches the page, so on the map it runs the map's own Escape order as it does from every other map control.
 - Accent swatches display their own existing palette under either selected app accent. Notification kinds wrap below their full-width explanation instead of compressing that explanation beside six controls.
 - The old 5-tab settings modal is now one compact settings sheet
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI

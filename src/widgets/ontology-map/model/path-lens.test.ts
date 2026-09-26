@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isPathLensEdge, isPathLensNode } from './path-lens';
+import { isPathLensEdge, isPathLensNode, isPathTargetPick } from './path-lens';
 
 describe('topology path lens membership', () => {
   const nodes = new Set(['a', 'b', 'c']);
@@ -24,3 +24,17 @@ describe('topology path lens membership', () => {
     expect(isPathLensEdge('path', 'edge-a-b', null)).toBe(false);
   });
 });
+
+describe('a path waiting for its target', () => {
+  it('is a path lens with a focused source and no resolved path yet', () => {
+    expect(isPathTargetPick('path', 'domain:a', null)).toBe(true);
+    expect(isPathTargetPick('path', 'domain:a', new Set())).toBe(true);
+  });
+
+  it('is not a resolved path, a path without a source, or another lens', () => {
+    expect(isPathTargetPick('path', 'domain:a', new Set(['domain:a', 'domain:b']))).toBe(false);
+    expect(isPathTargetPick('path', null, null)).toBe(false);
+    expect(isPathTargetPick('recent', 'domain:a', null)).toBe(false);
+  });
+});
+

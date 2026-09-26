@@ -246,9 +246,26 @@ export type SafeInsetTokens = Partial<
 export const MAX_FIT_CHROME_SHARE = 0.5;
 
 /**
+ * How the two insets of one axis give way when they pass the ceiling.
+ *
+ * - `equal` — the side lanes. Each is the chrome's footprint plus one air, the
+ *   same air on both sides (`tests/contract/map-fit-side-air.contract.test.ts`),
+ *   and the fit centres the drawing between them. Cutting both by the same number
+ *   of pixels keeps that centre where the chrome puts it. Cutting in proportion
+ *   did not: without a measured rail the right lane's give is its whole 112 px
+ *   against INDEX's 52 above the panel, so the right lane gave twice as much and
+ *   the overview slid toward the rail — +6.6 px at 900 wide and +15.4 px at 800,
+ *   measured 2026-09-26 with INDEX open.
+ * - `proportional` — the top and bottom bands, which are not footprint plus a
+ *   shared air, so there is no centre between them to hold.
+ */
+export type FitInsetShare = "equal" | "proportional";
+
+/**
  * Shrinks a pair of insets so together they reserve at most
  * `MAX_FIT_CHROME_SHARE` of `extent`, keeping each one's measured floor. Only
- * the part above the floor gives way, and both sides give way in proportion.
+ * the part above the floor gives way, as `share` says; a side that reaches its
+ * floor hands the rest of the cut to the other.
  */
 export function clampFitInsets(
   lo: number,
@@ -256,15 +273,23 @@ export function clampFitInsets(
   extent: number,
   floorLo = 0,
   floorHi = 0,
+  share: FitInsetShare = "proportional",
 ): { lo: number; hi: number } {
   if (!(extent > 0)) return { lo, hi };
   const budget = extent * MAX_FIT_CHROME_SHARE;
   if (lo + hi <= budget) return { lo, hi };
   const fLo = Math.min(Math.max(0, floorLo), lo);
   const fHi = Math.min(Math.max(0, floorHi), hi);
-  const soft = lo - fLo + (hi - fHi);
+  const softLo = lo - fLo;
+  const softHi = hi - fHi;
+  const soft = softLo + softHi;
   if (soft <= 0) return { lo: fLo, hi: fHi };
   const allowed = Math.max(0, budget - fLo - fHi);
+  if (share === "equal") {
+    const cut = Math.min(soft, lo + hi - fLo - fHi - allowed);
+    const cutLo = Math.min(softLo, Math.max(cut / 2, cut - softHi));
+    return { lo: lo - cutLo, hi: hi - (cut - cutLo) };
+  }
   const k = Math.min(1, allowed / soft);
   return { lo: fLo + (lo - fLo) * k, hi: fHi + (hi - fHi) * k };
 }
@@ -344,7 +369,7 @@ function readSafeInsets(
   const x =
     viewportWidth === undefined
       ? { lo: raw.left, hi: raw.right }
-      : clampFitInsets(raw.left, raw.right, viewportWidth, tokens.obstacleInsetLeft ?? 0, tokens.obstacleInsetRight ?? 0);
+      : clampFitInsets(raw.left, raw.right, viewportWidth, tokens.obstacleInsetLeft ?? 0, tokens.obstacleInsetRight ?? 0, "equal");
   const y =
     viewportHeight === undefined ? { lo: raw.top, hi: raw.bottom } : clampFitInsets(raw.top, raw.bottom, viewportHeight);
   return { left: x.lo, right: x.hi, top: y.lo, bottom: y.hi };

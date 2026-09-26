@@ -252,7 +252,8 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                * camera anyway; now that a click only selects, a rebuild in the same
                * arrangement keeps the anchor it was drawn at.
                */
-              if (pending.build.model.arrangement === dome.model.arrangement) {
+              const arrangementChanged = pending.build.model.arrangement !== dome.model.arrangement;
+              if (!arrangementChanged) {
                 pending.build.model.centerX = dome.model.centerX;
                 pending.build.model.centerY = dome.model.centerY;
                 pending.build.model.unit = dome.model.unit;
@@ -267,13 +268,19 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                * after a selection reframe spilled nodes past the top edge —
                * measured 2026-09-02). A shape that still fits keeps the zoom the
                * user set; the pose is never touched either way.
+               *
+               * A camera nobody has moved is not a zoom the user set: it is the
+               * previous arrangement's own fit. Kept for the new shape, it left
+               * Neural 61 px right of the free map's centre after a switch from
+               * Strata at 1512×949 (measured 2026-09-26), so a switch of
+               * arrangement frames the new shape the way entering it does.
                */
               const b = domeWorldBounds(dome.model, dome.yaw, dome.pitch);
               if (b !== null) {
                 const scale = cameraRef.current.scale.value;
                 const spanX = (b.maxX - b.minX) * 1.3 * scale;
                 const spanY = (b.maxY - b.minY) * 1.3 * scale;
-                if (spanX > width || spanY > height) {
+                if (spanX > width || spanY > height || (arrangementChanged && !userDrivenCameraRef.current)) {
                   domeFitPendingRef.current = true;
                   domeFitDurationRef.current = DOME_POSE_MS;
                 }

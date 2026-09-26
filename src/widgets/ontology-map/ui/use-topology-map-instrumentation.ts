@@ -27,6 +27,7 @@ import type {
   NodeDragState,
   TopologyPointerHandlers,
 } from "./topology-pointer-handlers";
+import { lastTierPlanes } from "./topology-presentation-frame-stage";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import {
   radiusForKind,
@@ -511,6 +512,8 @@ export function useTopologyMapInstrumentation({
        */
       labels: () => lastDrawnLabelBoxes(),
       relationCaptions: () => lastDrawnRelationCaptions(),
+      /** Strata's planes as the last frame drew them — what the tier names are placed against. */
+      tierPlanes: () => lastTierPlanes(),
       chips: () => {
         const world = worldRef.current;
         const clustered = clusteredIdsRef.current;

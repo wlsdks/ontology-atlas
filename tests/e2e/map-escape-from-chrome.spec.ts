@@ -1,0 +1,78 @@
+import { expect, test, type Page } from "@playwright/test";
+import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
+import { waitForMapStill } from "./settle";
+
+/**
+ * **Escape keeps the map's order when focus sits on the map's own chrome** (2026-09-26).
+ *
+ * The map closes one thing per Escape: the node card, then the selection. Focus rarely
+ * stays on the canvas while a person works — the gear and the tool tiles keep it after a
+ * press, and a closed surface hands it back to the control that opened it. Measured on the
+ * product's own map at 1512×949: with a domain selected and its card already closed,
+ * Escape on the settings gear left the domain selected however often it was pressed,
+ * because the gear's closed sheet still took the key. The tool tiles already passed it on.
+ */
+
+const selection = (page: Page) =>
+  page.evaluate(() => window.__atlasMap?.selection().nodeId ?? null);
+
+/** Select a domain drawn clear of the panels, then close its card: the next rung is "deselect". */
+async function selectDomainWithCardClosed(page: Page) {
+  const target = await page.evaluate(() => {
+    const probe = window.__atlasMap!;
+    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const stretch = canvas.width / probe.camera()!.width;
+    const domains = probe
+      .nodes()
+      .filter((node) => node.kind === "domain" && !node.hidden)
+      .map((node) => ({ id: node.id, x: canvas.left + node.x * stretch, y: canvas.top + node.y * stretch }))
+      .filter((node) => node.x > canvas.left + 420 && node.x < canvas.right - 420);
+    return domains[0] ?? null;
+  });
+  expect(target, "no domain drawn in the middle of the canvas to select").not.toBeNull();
+  await page.mouse.click(target!.x, target!.y);
+  await expect.poll(() => selection(page)).toBe(target!.id);
+  await page.keyboard.press("Escape");
+  // The card closed and the selection stayed: one Escape, one surface.
+  await expect.poll(() => selection(page)).toBe(target!.id);
+  return target!.id;
+}
+
+test("Escape from the gear and the tool tiles reaches the map's dismissal order", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.setViewportSize({ width: 1512, height: 949 });
+  await installDesktopRailRuntime(page);
+  await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+  await page.getByTestId("first-run-open").click();
+  await waitForMapStill(page);
+
+  // The gear, focused with its sheet closed.
+  await selectDomainWithCardClosed(page);
+  const gear = page.getByTestId("app-settings-trigger").first();
+  await gear.focus();
+  await page.keyboard.press("Escape");
+  await expect.poll(() => selection(page), { message: "Escape on the closed gear did not reach the map" }).toBeNull();
+
+  // The gear after its sheet closed: the first Escape closes the sheet and hands focus
+  // back to the gear, the next one is the map's.
+  const id = await selectDomainWithCardClosed(page);
+  await gear.click();
+  await expect(page.getByTestId("app-settings-popover")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(gear).toHaveAttribute("aria-expanded", "false");
+  await expect(gear).toBeFocused();
+  expect(await selection(page), "closing the sheet also cleared the selection").toBe(id);
+  await page.keyboard.press("Escape");
+  await expect.poll(() => selection(page), { message: "Escape after the sheet closed did not reach the map" }).toBeNull();
+
+  // A tool tile after the surface it opened is put away: the view picker.
+  await selectDomainWithCardClosed(page);
+  const viewChip = page.getByTestId("topology-view-3d");
+  await viewChip.click();
+  await expect(page.getByTestId("topology-view-3d-choice-flat")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("topology-view-3d-choice-flat")).toHaveCount(0);
+  await expect(viewChip).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect.poll(() => selection(page), { message: "Escape from the view chip did not reach the map" }).toBeNull();
+});

@@ -11,16 +11,13 @@ import {
   type DomeViewKind
 } from "../model/dome-view";
 import { type GalaxyLayout } from "../model/galaxy-layout";
-import {
-  type TierLegendPlacement
-} from "../model/tier-legend-rows";
+import { type TierNameAnchor } from "../model/tier-names";
 
 interface Dependencies {
   view3d: boolean;
   galaxy: boolean;
   mapArrangement: MapArrangement;
-  onDomeTierAnchorsChange: ((anchors: readonly { kind: DomeViewKind; y: number; }[] | null) => void) | undefined;
-  onTierLegendPlacementChange: ((placement: TierLegendPlacement) => void) | undefined;
+  onDomeTierAnchorsChange: ((anchors: readonly TierNameAnchor[] | null) => void) | undefined;
 }
 
 /** Own 3D model assembly, Galaxy handoffs, and deferred dome intents. */
@@ -29,7 +26,6 @@ export function useTopologyDomeState({
   galaxy,
   mapArrangement,
   onDomeTierAnchorsChange,
-  onTierLegendPlacementChange,
 }: Dependencies) {
 
   /** 3D view target — mirrored because draw reads it per frame and hit-testing reads it per event. */
@@ -147,29 +143,30 @@ export function useTopologyDomeState({
   /** The legend row under the pointer — that plane's ring is raised for as long as it is set. */
   const domeTierRaisedKindRef = useRef<DomeViewKind | null>(null);
 
-  /** The last anchor set handed out — the change filter's memory, never read by the draw. */
-  const domeTierAnchorsSentRef = useRef<{ kind: DomeViewKind; y: number; }[] | null>(null);
-
-  const onTierLegendPlacementChangeRef = useRef<typeof onTierLegendPlacementChange>(onTierLegendPlacementChange);
+  /**
+   * The tier names last handed out — the change filter's memory, and the boxes the
+   * next frame's concept names give way to (`model/tier-names.ts`).
+   */
+  const domeTierAnchorsSentRef = useRef<TierNameAnchor[] | null>(null);
 
   /**
-   * The placement last published, so the legend re-renders on a change and not on
-   * a frame. `null` = nothing published yet.
+   * Each tier name's rendered width by kind, measured by the names themselves
+   * (`OntologyMapTierLegend`). Empty while they are not on screen, which places none.
    */
-  const tierLegendPlacementSentRef = useRef<TierLegendPlacement | null>(null);
+  const domeTierNameWidthsRef = useRef<Readonly<Record<string, number>>>({});
 
   /**
-   * The panel obstruction the last fit measured, reused by the per-frame
-   * placement check so it does not read the DOM on every frame. `null` until the
-   * first fit, when the token insets stand in.
+   * The chrome the last fit measured on each side of the canvas, reused by the
+   * per-frame name placement so it does not read the DOM on every frame. `null`
+   * until the first fit, when the token insets stand in.
    */
-  const domeFitInsetsRef = useRef<{ left: number; right: number; } | null>(null);
+  const domeFitInsetsRef = useRef<{ left: number; right: number; top: number; bottom: number; } | null>(null);
   return {
     view3dRef, galaxyRef, galaxyEnteredAtRef, galaxyAtmosphereSeedRef, galaxyLayoutRef,
     galaxyFlatReturnPositionsRef, galaxyLayoutHandoffRef, galaxyModeCameraRef, pendingFlatCameraRef,
     galaxyRampRef, neuralRampRef, mapArrangementRef, domeRuntimeRef, domeWorldSourceRef, domeModelBuildRef,
     domeFocusPendingRef, domeFitPendingRef, domeFitDurationRef, flatFitPendingRef, onDomeTierAnchorsChangeRef,
-    domeTierRaisedKindRef, domeTierAnchorsSentRef, onTierLegendPlacementChangeRef, tierLegendPlacementSentRef,
+    domeTierRaisedKindRef, domeTierAnchorsSentRef, domeTierNameWidthsRef,
     domeFitInsetsRef,
   };
 }

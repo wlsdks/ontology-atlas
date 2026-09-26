@@ -8,6 +8,7 @@ import {
   computeClusterDiscBounds,
   computeDrawnSpineBounds,
   computeFoldedIds,
+  computePathPickBounds,
   computeRevealedBounds,
   computeSpineBounds,
   isSpineNode,
@@ -459,3 +460,48 @@ describe("the drawn spine — a hub folded behind a crowded parent", () => {
     expect(computeFoldedIds(open, new Set()).size).toBe(0);
   });
 });
+
+/**
+ * **A path's source is framed with the map its target is picked from** (2026-09-26).
+ * The frame is the overview's own bounds grown by the source and the neighbours its focus
+ * draws; the source's own folded children stay behind its chip and do not widen it.
+ */
+describe("computePathPickBounds", () => {
+  const p = node({ id: "p", kind: "project", x: 0, y: 0 });
+  const top = node({ id: "dt", kind: "domain", x: 0, y: -300, parentId: "p" });
+  const bottom = node({ id: "db", kind: "domain", x: 0, y: 300, parentId: "p" });
+  // Thirteen capabilities under the top domain: over the fold threshold, so they fold.
+  const caps = Array.from({ length: 13 }, (_, i) => node({ id: `c${i}`, kind: "capability", x: -600 + i * 10, y: -700, parentId: "dt" }));
+  // A dependency of the top domain's, under the bottom domain and far to the right.
+  const dep = node({ id: "x", kind: "capability", x: 800, y: 320, parentId: "db" });
+  const all = [p, top, bottom, ...caps, dep];
+  const world = {
+    spineBounds: computeSpineBounds(all, tokens),
+    childrenByParent: new Map([["p", ["dt", "db"]], ["dt", caps.map((c) => c.id)], ["db", ["x"]]]),
+    nodeById: new Map(all.map((n) => [n.id, n] as const)),
+    neighborMap: new Map<string, ReadonlySet<string>>([["dt", new Set(["p", ...caps.map((c) => c.id), "x"])]]),
+  };
+  const overview = computeRevealedBounds(world, tokens, new Set(), null);
+
+  it("keeps every drawn domain in the frame — the sibling a person picks next included", () => {
+    const bounds = computePathPickBounds(world, tokens, "dt", overview, new Set());
+    expect(bounds.minY).toBeLessThanOrEqual(-314);
+    expect(bounds.maxY).toBeGreaterThanOrEqual(314);
+  });
+
+  it("grows the frame by a neighbour the focus holds open, not by the source's folded children", () => {
+    const bounds = computePathPickBounds(world, tokens, "dt", overview, new Set());
+    expect(bounds.maxX).toBe(808);
+    // The thirteen folded capabilities at y −700 stay behind the chip.
+    expect(bounds.minY).toBe(overview.minY);
+  });
+
+  it("frames the source's children once they are drawn", () => {
+    expect(computePathPickBounds(world, tokens, "dt", overview, new Set(["dt"])).minY).toBe(-708);
+  });
+
+  it("is the overview when the source is not in the world", () => {
+    expect(computePathPickBounds(world, tokens, "gone", overview, new Set())).toEqual(overview);
+  });
+});
+
