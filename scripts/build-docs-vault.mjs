@@ -249,10 +249,24 @@ export function parseArgs(argv = process.argv.slice(2)) {
 // and diffable — but they are this repository's own working output, not
 // documentation anybody installs. Bundling them would grow the shipped app on
 // every run, against a static budget already at 78% (docs/DECISIONS.md,
-// 2026-08-31).
+// 2026-08-31). These two names are skipped at any depth.
 const NOT_PRODUCT_DOCS = new Set(['analyses', 'records']);
 
-async function walk(dir) {
+// Top-level docs/ folders that stay in the repository but leave the app: dated
+// evidence (`archive`, `audits`, `benchmark`), superseded drafts (`prototypes`),
+// plans and marketing copy (`plans`, `launch`). A reader of the in-app Library
+// wants the current product documents; these cost about a fifth of the bundled
+// manifest. A link to one of them still works in the app, because an unknown
+// slug resolves to its GitHub page (`src/widgets/docs-vault/lib/resolve-doc-link.ts`).
+const NOT_SHIPPED_TOP_DIRS = new Set(['archive', 'audits', 'benchmark', 'plans', 'prototypes', 'launch']);
+
+// Single files that stay in the repository but leave the app, as paths relative
+// to the scanned root. The backlog snapshot is a frozen dated copy.
+const NOT_PRODUCT_PATHS = new Set(['BACKLOG-SNAPSHOT-2026-09-13.md']);
+
+// `product: false` lists every Markdown file under `dir` with no exclusion; the
+// staleness check uses it on the public output so a leftover file is reported.
+async function walk(dir, { root = dir, product = true } = {}) {
   const out = [];
   // Sorted by name — readdir order is filesystem-enumeration order, which
   // happens to be byte-sorted on APFS and fresh ext4 checkouts but is not
@@ -263,17 +277,20 @@ async function walk(dir) {
   const entries = (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
     a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
   );
+  const atRoot = dir === root;
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
-    if (entry.isDirectory() && NOT_PRODUCT_DOCS.has(entry.name)) {
+    if (product && entry.isDirectory() && NOT_PRODUCT_DOCS.has(entry.name)) {
       // The recording guide is linked by composed ledgers; fragments are consumed there.
       const guide = path.join(dir, entry.name, 'README.md');
       if (entry.name === 'records' && existsSync(guide)) out.push(guide);
       continue;
     }
+    if (product && atRoot && entry.isDirectory() && NOT_SHIPPED_TOP_DIRS.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
+    if (product && NOT_PRODUCT_PATHS.has(path.relative(root, full).split(path.sep).join('/'))) continue;
     if (entry.isDirectory()) {
-      const nested = await walk(full);
+      const nested = await walk(full, { root, product });
       out.push(...nested);
     } else if (entry.isFile() && entry.name.endsWith('.md')) {
       out.push(full);
@@ -630,7 +647,7 @@ async function assertOutputsCurrent({
 
   const expectedPublic = new Map(publicFiles.map((file) => [file.relativePath, file.raw]));
   const currentPublicFiles = existsSync(PUBLIC_OUT)
-    ? (await walk(PUBLIC_OUT)).map((file) => path.relative(PUBLIC_OUT, file).replace(/\\/g, '/'))
+    ? (await walk(PUBLIC_OUT, { product: false })).map((file) => path.relative(PUBLIC_OUT, file).replace(/\\/g, '/'))
     : [];
   for (const relativePath of currentPublicFiles) {
     if (relativePath.endsWith('.md') && !expectedPublic.has(relativePath)) {

@@ -296,6 +296,26 @@ test('virtual ledger keeps its public slug, hides record fragments, and takes th
   }
 });
 
+test('dated evidence, drafts, plans and launch copy stay in the repository but leave the app', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-unshipped-'));
+  try {
+    const docs = path.join(root, 'docs');
+    for (const dir of ['archive', 'audits', 'benchmark', 'plans', 'prototypes', 'launch', 'guide/plans']) {
+      await mkdir(path.join(docs, dir), { recursive: true });
+      await writeFile(path.join(docs, dir, 'NOTE.md'), `# ${dir}\n`, 'utf8');
+    }
+    await writeFile(path.join(docs, 'BACKLOG-SNAPSHOT-2026-09-13.md'), '# Snapshot\n', 'utf8');
+    await writeFile(path.join(docs, 'BACKLOG.md'), '# Backlog\n', 'utf8');
+
+    const result = await scanVaultDir(docs, { rootDir: root, check: true, publicOutDir: null });
+    // Only the top-level folder name is excluded; a nested folder that happens to
+    // share the name still ships.
+    assert.deepEqual(Object.keys(result.content).sort(), ['BACKLOG', 'guide/plans/NOTE']);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 /**
  * **The manifest records what the validator hears about each body — or says it did not ask.**
  *
