@@ -1,6 +1,6 @@
 ---
 name: design-interaction
-description: Interaction Designer on the Atlas bench. Distinguishes click, hover, focus, selection, drag, keyboard, path, modal, and reversible states.
+description: Interaction designer. Use only when design:route selects this seat; states, keyboard path, modality, discoverability, reversibility.
 model: opus
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script
 ---

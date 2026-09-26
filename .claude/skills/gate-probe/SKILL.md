@@ -1,6 +1,7 @@
 ---
 name: gate-probe
 description: Prove a gate before trusting it. Inventory violations, plant a defect, verify RED, restore GREEN, prevent idle scans, and confirm automatic wiring.
+when_to_use: Use when adding or changing any automated gate (lint, contract test, e2e, CI step), or before trusting a gate that has never been probed.
 ---
 
 # Gate probe

@@ -1,6 +1,6 @@
 ---
 name: design-responsive
-description: Responsive & Touch Designer on the Atlas bench. Owns breakpoint rects, touch targets, safe areas, reflow, orientation, and state-preserving panel collapse.
+description: Responsive and touch designer. Use only when design:route selects this seat; judges /responsive-sweep rects, targets, safe areas, collapse.
 access: read-only
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: po-pass
 description: Route Atlas product work from observable change facts and one human-recovery outcome; use a compact solo pass for reversible work.
+when_to_use: Use for any product, UX, graph, MCP, CLI, workflow, or macOS change before building; mechanical maintenance takes the --mechanical skip.
 ---
 
 # Atlas product pass — recover human understanding
@@ -9,8 +10,9 @@ This is not a general PO scorecard. It protects the moment where coding-agent
 velocity has made a person unable to find, explain, judge, correct, or hand off
 what their codebase now means.
 
-Read `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` before using this skill. Run
-`pnpm po:route -- --help`; never supply your own door or risk verdict.
+Read the **Human value** section of `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`
+(the rest is summarized below). Run `pnpm po:route -- --help`; never supply your
+own door or risk verdict.
 
 Use its **Human value** section to judge a change in the person's ability:
 understanding, confidence proportionate to evidence, and the ability to

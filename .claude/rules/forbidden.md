@@ -4,112 +4,81 @@
 
 ## Design
 
-> `docs/DESIGN-SYSTEM.md` “Absolute rules (Don'ts)” is canonical. This is an
-> intentional always-loaded subset containing decisions required before a file
-> is opened. Each `dont:` marker pairs a row with that source; unknown keys fail
-> `tests/contract/design-donts-parity.contract.test.ts`.
->
-> Absence here is not permission. The canonical list also covers colliding
-> popovers, non-blocking modals, floating-box soup, one-off topology values, and
-> accepted overlap. Opening UI loads `design.md`, which points to the complete
-> source.
+> Subset of `docs/DESIGN-SYSTEM.md` "Absolute rules (Don'ts)", which is
+> canonical; absence here is not permission. Each `dont:` marker pairs a row
+> with that source (`tests/contract/design-donts-parity.contract.test.ts`).
 
 - **Node click → full-screen or full-bleed detail modal.** The default is ego
   focus plus a compact popover beside the node; full detail is an explicit action
-  inside that popover. This stays always loaded because it is an interaction
-  decision, not a lintable value, and a brand-new surface may be planned before
-  `design.md` loads. <!--dont:node-click-fullscreen-modal-->
-- **Lifted on 2026-09-08 (owner):** gradients including purple-to-pink,
-  glassmorphism, glow, neon, halo and bloom, animated gradient backgrounds and
-  auroras, scale-based hover, overshoot and bounce motion, and a second or
-  third hue beside indigo are **allowed**. Record: `docs/DECISIONS.md`, "The
-  expression bans are lifted". What still holds is discipline, not taste:
-  every value goes through a token and its ramp, contrast floors and the
-  reduced-motion equivalent stay, and a new hue names the decision it carries.
-  The mascot's raster palette is still not a CSS token (`docs/BRAND.md`).
+  inside that popover. <!--dont:node-click-fullscreen-modal-->
+- Gradients, glass, glow, neon, scale hover, overshoot or bounce motion, and
+  hues beside indigo are allowed (`docs/DECISIONS.md`, "The expression bans are
+  lifted"). Every value still goes through a token and its ramp, contrast floors
+  and the reduced-motion equivalent hold, and a new hue names the decision it
+  carries. The mascot's raster palette is not a CSS token (`docs/BRAND.md`).
 - Decorative trailing arrows such as `Open →` or a trailing
   `ArrowRight`/`ArrowUpRight`. Arrows conveying path, order, causality, or an
-  external-link prefix (`↗`) remain meaningful. Gate:
-  `tests/contract/label-decoration.contract.test.ts`.
+  external-link prefix (`↗`) remain meaningful.
   <!--dont:decorative-trailing-arrow-->
 - Repeated cards whose heights vary only because their copy lengths differ.
   Cards in one row have equal height. <!--dont:content-decided-card-height-->
 
-Details: `@.claude/rules/design.md` and `@docs/DESIGN-SYSTEM.md`.
-
 ## Routing
 
-- Do not restore retired routes. R10 removed `/admin/*`, `/login`, `/signup`,
-  `/account`, `/reset-password`, `/settings/*`, `/knowledge/*`, `/review/*`, and
-  `/diagnostics/*`; decision (91) removed `/skills` on 2026-08-21. Fit new work
-  into a current destination first.
-- Do not add the `pages/` router; use App Router.
-- Do not add server-only API routes, server actions, or other runtime behaviour
-  incompatible with static export.
+- Do not restore retired routes: `/admin/*`, `/login`, `/signup`, `/account`,
+  `/reset-password`, `/settings/*`, `/knowledge/*`, `/review/*`,
+  `/diagnostics/*` (R10), and `/skills` (decision 91). Fit new work into a
+  current destination first.
+- No `pages/` router, server-only API routes, server actions, or other runtime
+  behaviour incompatible with static export.
 
 ## Authentication and backend
 
-- Never restore authentication surfaces in Layer 1.
-- Never reintroduce Firebase, Firestore, Cloud Functions, or Storage in Layer 1.
-- v9 introduced optional Layer 2, Atlas Network: a specification, hub registry,
-  and team sync only after demand. It may exist only while satisfying all six
-  trust promises:
+- Never restore authentication surfaces, or Firebase, Firestore, Cloud
+  Functions, or Storage, in Layer 1. Backend SDKs are forbidden.
+- Optional Layer 2 (Atlas Network: specification, hub registry, team sync after
+  demand) may exist only while keeping all six trust promises; drop a feature
+  that breaks one:
   1. Layer 1 stays free, complete, and offline forever.
   2. Nothing is collected silently; every transfer is opt-in and logged locally.
   3. Login is never forced.
   4. Data remains ordinary, portable Markdown.
   5. Existing promises are not reversed later.
-  6. “Safe” means the implementation is public and open to audit.
-  Drop a feature that requires breaking this charter.
-- Backend SDKs outside that charter remain forbidden.
-
-## Code and architecture
-
-- Do not violate FSD import direction, such as an entity importing a widget.
-- Do not make two stores canonical for one concept. When values disagree, vault
-  Markdown wins.
-- Do not bypass Git hooks with `--no-verify` or force-push `main`.
+  6. "Safe" means the implementation is public and open to audit.
 
 ## Naming
 
-- Do not place company codenames, personal names, or another product's brand in
-  identifiers, labels, or comments.
-- Use plain domain names rather than internal codenames such as
-  `reactorService` or `paravelClient`.
-- Commit messages use conventional English prefixes.
+- No company codenames, personal names, or another product's brand in
+  identifiers, labels, comments, or branch names; use plain domain names
+  (not `reactorService` or `paravelClient`).
 
 ## Data and security
 
 - Never commit service accounts, API keys, or `.env*` files.
-- Never scan or upload arbitrary files from the user's disk.
-- Never send user data outside the vault silently.
+- Never scan or upload arbitrary files from the user's disk, or send user data
+  outside the vault silently.
 
 ## Documentation
 
-- Do not leave temporary work-order markers such as `audit A2`, `iter 18`, or
+- No temporary work-order markers such as `audit A2`, `iter 18`, or
   `Track D-cont-1` in code comments.
-- Do not leave broken README or CLAUDE links, or let `AGENTS.md` and `CLAUDE.md`
-  contradict each other.
-- Do not write contributor-facing operational prose in Korean. Typed locale data
-  and the `vault-ko` template are the explicit exceptions.
+- `AGENTS.md` and `CLAUDE.md` must not contradict each other.
+- Contributor-facing operational prose is English. Typed locale data and the
+  `vault-ko` template are the exceptions.
 
-## Plugins and extension (owner direction, 2026-07-23)
+## Plugins and extension
 
-- Atlas will never execute third-party plugin code. That conflicts with the trust
-  charter and gives no reason to run unaudited code inside a static local-first
-  product.
-- Installing an agent CLI for the user is governed by
-  `.claude/rules/surfaces.md`, "Installing an agent tool for the user".
-- MCP tools and agent skills are the extension mechanism. They run in Claude
-  Code, Codex, Cursor, or another program the user already chose to trust.
-- Allowed extensions are declarative files only: vault Markdown or configuration
-  such as saved searches, templates, and `.ontology-atlasignore`. They execute no
-  code and expose every change through Git diff.
+- Atlas never executes third-party plugin code.
+- MCP tools and agent skills are the extension mechanism; they run in an agent
+  program the user already chose to trust. Installing an agent CLI for the
+  user follows `.claude/rules/surfaces.md`.
+- Allowed extensions are declarative files only (vault Markdown, saved
+  searches, templates, `.ontology-atlasignore`): no code, every change visible
+  in a Git diff.
 
 ## Dependencies
 
 - Explain every new dependency in the pull request.
-- Do not add backend SDKs incompatible with the R10 local-first promise.
 - Never patch `node_modules` directly; use `pnpm patch`.
 
 ## npm publishing requires explicit user approval
@@ -117,18 +86,14 @@ Details: `@.claude/rules/design.md` and `@docs/DESIGN-SYSTEM.md`.
 Never run `npm publish`, `pnpm publish`, `yarn publish`, or another external
 registry publication command until the user explicitly asks to publish.
 
-- “Clean this up,” “what next?”, and “finish it” are not approval.
-- The PreToolUse hook in `.claude/settings.json` blocks the first attempt; this
-  behavioural rule still applies when hooks are inactive.
+- "Clean this up," "what next?", and "finish it" are not approval.
 - You may propose publishing, then wait for the user's answer.
 - Read-only audits such as `npm pack --dry-run` are allowed. Actual publication,
   tarball upload, or an `npm version` chain that publishes is not.
-
-Published versions are effectively permanent after the unpublish window and use
-the owner's identity. Requiring a deliberate diff and audit protects that
-reputation.
+- The PreToolUse hook blocks the first attempt; the rule still applies when
+  hooks are inactive.
 
 ## Ask why
 
-If a change appears to require breaking a rule, explain why in the pull request
-and change the rule itself first. Do not create a silent exception in code.
+If a change appears to require breaking a rule, change the rule first and say
+why in the pull request. Do not create a silent exception in code.

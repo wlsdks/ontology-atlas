@@ -1,6 +1,7 @@
 ---
 name: ontology-absorb-confluence
 description: Read a wiki page through a user-registered third-party MCP, classify it with absorb_document dry-run, obtain approval, and land only approved candidates with the source URL cited.
+when_to_use: Use when the user asks to absorb a Confluence, Notion, or wiki page and a wiki MCP they registered is available; without one, use /ontology-extract.
 ---
 
 # Absorb a wiki page through an agent

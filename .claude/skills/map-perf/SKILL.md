@@ -1,6 +1,7 @@
 ---
 name: map-perf
 description: Measure topology-map drag, pan, and zoom with a deterministic harness that proves it grabbed a real node instead of silently panning the background.
+when_to_use: Use when pnpm design:route includes map-perf, or when node drag, pan, zoom, or the map frame loop is reported slow.
 ---
 
 # Map performance
@@ -9,9 +10,8 @@ Run when `pnpm design:route` includes `map-perf`. It proves the changed topology
 gesture's work cost; add the separate `motion` change fact when temporal output
 also changed.
 
-This skill exists because a 2026-07-31 node-drag report was dismissed six times
-while the measurement was actually panning the background. The two gestures look
-the same from outside.
+A node drag and a background pan look the same from outside; a node-drag report
+was once dismissed six times while the harness was panning the background.
 
 ## Why grabbing a node is difficult
 
@@ -97,7 +97,7 @@ Barnes–Hut. Cost grows roughly quadratically.
 
 The harness measures Chrome, while the installed app uses WKWebView. After the
 fix is clear in Chrome, measure once more in the installed app according to
-`.claude/rules/surfaces.md` when the route includes desktop-shell. In every
-case, use the computer-use capability to capture the reviewed app/window, accessibility
-owner, and visible gesture state. The capture proves target/state identity; it
-does not replace the work measurement or a routed motion recording.
+`.claude/rules/surfaces.md` when the route includes desktop-shell. Include the
+`/design-build` §0-B render-loop packet showing the visible gesture state; it
+proves target/state identity and does not replace the work measurement or a
+routed motion recording.

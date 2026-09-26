@@ -94,7 +94,7 @@ describe("Atlas meta-model — one public canon reaches every authoring channel"
 
   it.each([
     ".agents/skills/ontology-bootstrap/guides/construction.md",
-    ".claude/skills/ontology-bootstrap/SKILL.md",
+    ".claude/skills/ontology-bootstrap/guides/construction.md",
   ])("%s uses array-shaped boundary fields in its proposal template", (path) => {
     // Inspect the payload example, not the author's explanatory sentence.
     const templates = [...read(path).matchAll(/```text\n([\s\S]*?)```/g)]

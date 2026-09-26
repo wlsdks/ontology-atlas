@@ -1,6 +1,7 @@
 ---
 name: po-council
 description: Review a hard-to-reverse Atlas product decision with Evidence plus one risk specialist, testing whether it restores a named human ability.
+when_to_use: Use only when pnpm po:route returns review or the owner explicitly asks for independent review.
 ---
 
 # Atlas PO review — two critics, one accountable owner
@@ -33,13 +34,13 @@ reversible work stays solo; a routed review uses Evidence and one specialist.
 | `positioning` | `po-evidence` + `po-wedge` | Is the lost ability observed, and is the first-contact claim distinctive and earned? |
 | `scope` | `po-evidence` + `po-leverage` | Is the lost ability observed, and is this the smallest worthwhile commitment with a credible rollback? |
 
-`po-craft` is owner-requested recovery-proof review only. It consumes evidence
-from the design, responsive, motion, and walkthrough gates; it does not repeat
-them.
+Reviewers consume the outputs of `/design-audit`, `/responsive-sweep`,
+`/motion-verify`, `/map-perf`, and `/user-walkthrough` rather than repeating
+those gates.
 
-Seat briefs live at `../../agents/po-*.md`. Open only the selected files. From
-either mirrored skill tree, the relative path resolves to the matching agent
-tree. Never create a third copy.
+Spawn each selected seat by its agent name (`subagent_type: po-evidence`, and
+`po-steward`, `po-wedge`, or `po-leverage`); the seat file is its system prompt,
+so do not read it into this context.
 
 Run the selected pair in separate contexts and give neither the other's
 output before first positions are sealed. Use parallel scheduling when
@@ -158,15 +159,3 @@ later results go in UUID-referencing update fragments, not in the decision recor
 **Falsifier**: <the one observable condition that reopens this>
 **Owner**: <the accountable person>
 ```
-
-## Failure shields
-
-- The builder supplies facts; the router derives door and risk.
-- Every non-mechanical decision restores exactly one primary Atlas outcome.
-- An affected or unknown boundary always routes to meaning review; omission is invalid.
-- The default review has exactly two independently useful viewpoints.
-- A blocker returns a smaller decision or learning action.
-- Rebuttal occurs only for material disagreement.
-- The result is not a vote or union.
-- Before-state, recovery proof, and decision delta remain visible.
-- `pnpm po:pilot -- --check` forces an evidence-backed sunset.

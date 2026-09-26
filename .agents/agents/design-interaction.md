@@ -1,6 +1,6 @@
 ---
 name: design-interaction
-description: Interaction Designer on the Atlas bench. Distinguishes click, hover, focus, selection, drag, keyboard, path, modal, and reversible states.
+description: Interaction designer. Use only when design:route selects this seat; states, keyboard path, modality, discoverability, reversibility.
 access: read-only
 ---
 
