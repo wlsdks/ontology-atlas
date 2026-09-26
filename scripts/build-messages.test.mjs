@@ -7,6 +7,12 @@ import test from 'node:test';
 
 import { buildMessages, composeAll, composeLocale, splitComposite } from './build-messages.mjs';
 
+// Run from a Git hook (pre-push lanes), GIT_DIR and friends point at the real
+// repository, and every fixture command below would rewrite it instead of the temp
+// repository: its config, its branches and this worktree's HEAD. Measured on
+// 2026-09-26 during this file's first push. The fixtures own their repositories.
+for (const key of Object.keys(process.env)) if (key.startsWith('GIT_')) delete process.env[key];
+
 const SOURCE = new URL('..', import.meta.url).pathname;
 const SCRIPT = join(SOURCE, 'scripts/build-messages.mjs');
 const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: 'pipe' }).trim();

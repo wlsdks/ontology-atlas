@@ -8,6 +8,9 @@ import test from 'node:test';
 
 import { prepareWorktree } from './prepare-worktree.mjs';
 
+// Under a Git hook GIT_DIR points at the real repository; the fixtures own theirs.
+for (const key of Object.keys(process.env)) if (key.startsWith('GIT_')) delete process.env[key];
+
 const SOURCE = new URL('..', import.meta.url).pathname;
 const PREPARE = JSON.parse(readFileSync(join(SOURCE, 'package.json'), 'utf8')).scripts.prepare;
 const UUID_A = '30000000-0000-4000-8000-000000000001';
