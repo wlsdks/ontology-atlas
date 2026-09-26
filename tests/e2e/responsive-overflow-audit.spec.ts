@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { waitForAnimationsDone, waitForBoxStill } from "./settle";
+
 /**
  * Responsive overflow sweep (final review 2026-07-25).
  *
@@ -58,8 +60,10 @@ for (const vp of WIDTHS) {
           page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
         ).toBeVisible();
       }
-      // Time for canvases and charts to finish their first layout.
-      await page.waitForTimeout(900);
+      // Canvases and charts have finished their first layout: fetches answered, fonts in, entrances done.
+      await page.waitForLoadState("networkidle");
+      await page.evaluate(() => document.fonts.ready);
+      await waitForAnimationsDone(page.locator("body"));
 
       const report = await page.evaluate((selector) => {
         const vw = document.documentElement.clientWidth;
@@ -169,7 +173,9 @@ for (const width of [375, 768, 1023, 1024] as const) {
           page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
         ).toBeVisible();
       }
-      await page.waitForTimeout(900);
+      await page.waitForLoadState("networkidle");
+      await page.evaluate(() => document.fonts.ready);
+      await waitForAnimationsDone(page.locator("body"));
 
       const report = await page.evaluate(
         ({ tabBarSelector, selector }) => {
@@ -298,7 +304,9 @@ test("390px /topology — INDEX 를 접어도 검색 칩이 자기 중심을 돌
   await page.goto("/ko/topology/?guides=off&e2e=1");
   await expect(page.getByTestId("topology-index-fold")).toBeVisible({ timeout: 30_000 });
   await page.getByTestId("topology-index-fold").click();
-  await page.waitForTimeout(900);
+  // The fold has finished and the search chip has come to rest where it is measured.
+  await waitForAnimationsDone(page.locator("body"));
+  await waitForBoxStill(page.getByTestId("topology-concept-search").first());
 
   const report = await page.evaluate(() => {
     const search = document.querySelector<HTMLElement>('[data-testid="topology-concept-search"]');

@@ -39,7 +39,7 @@ test("the project row's badge counts everything below it", async ({ page }) => {
     if (collapsed.length === 0) break;
     for (const id of collapsed) {
       await page.locator(`[data-index-row="${id}"]`).first().click();
-      await page.waitForTimeout(120);
+      await expect(page.locator(`[data-index-row="${id}"]`).first()).toHaveAttribute("aria-expanded", "true");
     }
   }
   await waitForMapStill(page);

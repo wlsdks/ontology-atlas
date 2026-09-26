@@ -1,5 +1,7 @@
 import { expect, test, type ConsoleMessage } from "@playwright/test";
 
+import { waitForAnimationsDone } from "./settle";
+
 /**
  * Are the public screens **silently broken** — two things: narrow viewports and the
  * console.
@@ -85,7 +87,11 @@ test.describe("공개 화면 건강 — 좁은 화면과 콘솔", () => {
       }
       // ⚠️ The previous specs swallowed navigation failures into `console.log` — passing even on a 500.
       expect(response?.ok(), `${route} 를 열지 못했다 (${response?.status()})`).toBe(true);
-      await page.waitForTimeout(1_200);
+      // The page's own fetches have answered (their errors reach the console first), its
+      // fonts are in and every entrance has finished: the layout that is measured is at rest.
+      await page.waitForLoadState("networkidle");
+      await page.evaluate(() => document.fonts.ready);
+      await waitForAnimationsDone(page.locator("body"));
 
       const width = await page.evaluate(() => ({
         /*

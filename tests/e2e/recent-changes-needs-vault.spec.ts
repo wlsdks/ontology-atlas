@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { waitForAnimationsDone } from './settle';
+
 /**
  * "Recent changes" must **not be a dead end on the sample.**
  *
@@ -24,8 +26,10 @@ import { expect, test } from '@playwright/test';
 test.describe('최근 변경 — 샘플에서 폴더로 가는 길', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 900 });
-    await page.goto('/ko/topology/?guides=off', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2500);
+    // The page's scripts have loaded (so the chip answers a press) and its toolbar is at rest.
+    await page.goto('/ko/topology/?guides=off', { waitUntil: 'networkidle' });
+    await expect(page.getByTestId('topology-spotlight-toggle')).toBeVisible();
+    await waitForAnimationsDone(page.locator('body'));
   });
 
   test('샘플에서는 눌린다 — 비활성으로 막지 않는다', async ({ page }) => {

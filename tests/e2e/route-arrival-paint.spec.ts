@@ -1,10 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  NATIVE_LATENCY_MS,
   installDesktopRailRuntime,
   mountDesktopVault,
 } from "./desktop-rail-arrival-harness";
+import { waitForAnimationsDone } from "./settle";
 
 /**
  * **A pane the app has already read arrives painted, not loading** — the proof for the
@@ -238,8 +238,15 @@ async function arriveFrom(page: Page, destination: string): Promise<Arrival> {
   const rail = page.getByTestId("app-nav-rail");
   await rail.getByTestId("app-nav-rail-item-insights").click();
   // Settle the departure screen fully: a half-finished transition on the way out would put
-  // its own fallback inside the window measured on the way in.
-  await page.waitForTimeout(NATIVE_LATENCY_MS * 4);
+  // its own fallback inside the window measured on the way in. So the departure has arrived,
+  // its crossfade is over and it shows none of the not-settled markers.
+  await expect(page).toHaveURL(/\/insights\//);
+  await waitForAnimationsDone(page.locator("html"));
+  await page.waitForFunction(
+    (selectors) => selectors.every((selector) => !document.querySelector(selector)),
+    [...NOT_SETTLED],
+    { polling: "raf" },
+  );
   await sampleArrival(page, WATCH_MS, ROUTE_PATH[destination]);
   await rail.getByTestId(`app-nav-rail-item-${destination}`).click({ noWaitAfter: true });
   return readArrival(page);

@@ -126,6 +126,7 @@ test('the chooser lists live folders first and the gone ones as one line, drawn 
   await expect(group.locator('button')).toHaveCount(1);
 
   // No frame ever drew a gone folder as a row — not the frames before the probe answered either.
+  // measurement window: the sampler keeps counting rows per frame; the claim is that none of those frames drew a gone folder.
   await page.waitForTimeout(500);
   const peak = await page.evaluate(() => (window as unknown as { __chooserPeak: { rows: number; frames: number } }).__chooserPeak);
   expect(peak.frames, 'the sampler saw the list').toBeGreaterThan(0);

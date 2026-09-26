@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForAnimationsDone } from "./settle";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 import { BROKEN_VAULT, HEALTHY_VAULT } from "./fixtures/broken-vault";
 
@@ -72,8 +73,11 @@ async function openDocument(page: Page, slug: string) {
 /** Opens one document and measures whether that file states its own problems. */
 async function measureDoc(page: Page, title: string, expectFile: string) {
   await expect(page.getByRole("heading", { name: title, exact: false }).first()).toBeVisible();
-  // The validator runs after a 400ms debounce.
-  await page.waitForTimeout(700);
+  // The document the instrument meant has rendered, with its meta bar. The validator's 400ms
+  // debounce re-validates only a draft being edited; at rest it validates on mount.
+  await expect(page.locator('main [data-testid="docs-editor-path"]')).toHaveText(expectFile);
+  await expect(page.getByTestId("doc-map-evidence").first()).toBeAttached();
+  await waitForAnimationsDone(page.locator("main"));
   const measured = await page.evaluate(() => {
     const block = document.querySelector('[data-testid="doc-frontmatter-block"]');
     const diagnostics = Array.from(

@@ -361,3 +361,52 @@ export async function waitForTerritoriesStill(
     { polling: "raf", timeout },
   );
 }
+
+/**
+ * Resolve once the pixels of the canvas `locator` points at have been identical for
+ * {@link STILL_FRAMES} consecutive animation frames.
+ *
+ * For a paint that ramps on its own clock and exposes no value to read — the path
+ * lens sinking the names off the path, a board redrawing after it re-read its room.
+ * The pixels are hashed **in the page**, so no image crosses the protocol, and a
+ * loop that stops painting at rest (the map's idle gate) reads as still at once.
+ */
+export async function waitForCanvasStill(
+  locator: Locator,
+  options: { frames?: number; timeout?: number } = {},
+): Promise<void> {
+  const { frames = STILL_FRAMES, timeout = HANG_TIMEOUT_MS } = options;
+  await locator.evaluate(
+    (element, argument) =>
+      new Promise<void>((resolve, reject) => {
+        const canvas = element instanceof HTMLCanvasElement ? element : element.querySelector("canvas");
+        const deadline = performance.now() + argument.hang;
+        let previous = "";
+        let repeats = 0;
+        const check = () => {
+          let signature = "none";
+          const context = canvas && canvas.width > 0 && canvas.height > 0 ? canvas.getContext("2d") : null;
+          if (canvas && context) {
+            const words = new Uint32Array(context.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
+            // FNV-1a over every pixel: one changed pixel changes the signature.
+            let hash = 0x811c9dc5;
+            for (let i = 0; i < words.length; i += 1) hash = Math.imul(hash ^ words[i]!, 0x01000193);
+            signature = `${canvas.width}x${canvas.height}:${hash >>> 0}`;
+          }
+          repeats = signature === previous ? repeats + 1 : 1;
+          previous = signature;
+          if (signature !== "none" && repeats >= argument.frames) {
+            resolve();
+            return;
+          }
+          if (performance.now() > deadline) {
+            reject(new Error("canvas never stopped changing"));
+            return;
+          }
+          requestAnimationFrame(check);
+        };
+        check();
+      }),
+    { frames, hang: timeout },
+  );
+}

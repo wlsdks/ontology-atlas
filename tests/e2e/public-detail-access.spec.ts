@@ -28,8 +28,9 @@ test("비로그인 /project/ontology-atlas/ 상세가 실제 콘텐츠를 렌더
   });
 
   await page.goto("/en/project/ontology-atlas/");
-  // Slack for hydration plus the client fetch.
-  await page.waitForTimeout(2000);
+  // The client fetch has answered and the page has drawn its heading.
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByRole("heading").first()).toBeVisible();
   await snap(page, "project-detail-full");
 
   // The document title carries the project name. The URL slug is `ontology-atlas`

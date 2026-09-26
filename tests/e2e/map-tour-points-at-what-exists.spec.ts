@@ -56,7 +56,18 @@ test("no tour step names a legend that is not on screen", async ({ page }) => {
     if (await next.count()) await next.first().click();
     else if (await activate.count()) await activate.first().click();
     else break;
-    await page.waitForTimeout(500);
+    // The tour has moved on: the card shows another step, or it has closed.
+    const shown = `${reading.step}|${reading.text}`;
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const card = document.querySelector<HTMLElement>('[data-testid="guided-tour-card"]');
+          if (!card) return "closed";
+          const step = document.querySelector('[data-testid="guided-tour-progress"]')?.textContent?.trim() ?? String(0);
+          return `${step}|${(card.textContent ?? "").trim()}`;
+        }),
+      )
+      .not.toBe(shown);
   }
 
   // A non-empty subject set: the tour really was walked, not skipped past.
@@ -69,7 +80,7 @@ test("no tour step names a legend that is not on screen", async ({ page }) => {
 
   // The place the line guide really lives, so the step's new pointer is not a second empty promise.
   await page.keyboard.press("Escape");
-  await page.waitForTimeout(300);
+  await expect(page.getByTestId("guided-tour-card")).toHaveCount(0);
   await page.getByTestId("topology-shortcuts-help-button").click();
   await expect(page.getByTestId("shortcut-sheet-relation-guide")).toBeVisible();
 });

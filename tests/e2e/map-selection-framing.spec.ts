@@ -201,9 +201,18 @@ test("Galaxy inspection approaches the star, returns context, and yields to late
   await page.mouse.wheel(0, -80);
   await waitForMapStill(page, { what: "camera" });
   // The interactive spring can meet the frame-delta stillness threshold with
-  // a small amount of target convergence left. Let that tail settle before
-  // using this frame as the close-retention reference.
-  await page.waitForTimeout(2_000);
+  // a small amount of target convergence left. Wait for the zoom to reach the
+  // target the wheel set before using this frame as the close-retention reference.
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const camera = window.__atlasMap?.camera();
+        const target = window.__atlasMap?.cameraTarget?.();
+        return camera && target ? Math.abs(camera.scale - target.scale) : Infinity;
+      }),
+    )
+    .toBeLessThan(0.0001);
+  await waitForMapStill(page, { what: "camera" });
   const userCamera = await page.evaluate(() => window.__atlasMap?.camera() ?? null);
   await page.locator('[data-testid="map-detail-panel-close"]').click();
   await expect(page.locator('[data-testid="map-detail-panel"]')).toHaveCount(0, { timeout: 5_000 });
