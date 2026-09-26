@@ -2,6 +2,7 @@
 name: po-leverage
 description: Scope reviewer. Use only when po:route selects the scope risk; sets appetite and returns the smallest integrated slice with a rollback.
 model: fable
+effort: max
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 

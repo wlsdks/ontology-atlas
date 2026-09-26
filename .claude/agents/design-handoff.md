@@ -2,6 +2,7 @@
 name: design-handoff
 description: Agent-handoff designer. Use only when design:route selects this seat (agent-handoff); the visible MCP or CLI next action is real and state-bound.
 model: opus
+effort: max
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__ontology-atlas__connection_info, mcp__ontology-atlas__get_concept, mcp__ontology-atlas__find_neighbors, mcp__ontology-atlas__query_ontology
 ---
 
