@@ -169,8 +169,8 @@ const content=[
     "ko": "톱니 게"
    },
    {
-    "en": "Tiny furnace imp",
-    "ko": "화로 꼬마"
+    "en": "Furnace maw",
+    "ko": "화로 아귀"
    },
    {
     "en": "Magnet slug",
