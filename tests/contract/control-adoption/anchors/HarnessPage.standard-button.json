@@ -1,0 +1,7 @@
+{
+  "file": "src/views/architecture/ui/HarnessPage.tsx",
+  "count": 2,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "The Harness web-only and no-source doors (2026-09-26): \"Get the Mac app\" and \"Connect a source folder\", each the page's one way forward. They were filled `pill`s, a shape the system keeps for a state or a count, and read as a second primary shape beside every other screen's. Both navigate, so they are `<Link>` through `cn(buttonVariants({ variant: \"primary\", size: \"sm\" }), …)`; `control-class.ts` does not replace standard buttons."
+}

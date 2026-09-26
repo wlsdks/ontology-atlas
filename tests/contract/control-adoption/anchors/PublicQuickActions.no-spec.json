@@ -1,0 +1,7 @@
+{
+  "file": "src/widgets/public-quick-actions/ui/PublicQuickActions.tsx",
+  "count": 2,
+  "claim": "no-spec",
+  "proof": "className=\"inline-flex\"",
+  "why": "`<Button>` 을 감싸 shrink-wrap 시키는 자리잡기 래퍼 둘. `inline-flex` 하나뿐이고 그건 값 층 자신이 `className` 의 몫이라고 정의한 층이다(자리잡기·폭·순서)."
+}

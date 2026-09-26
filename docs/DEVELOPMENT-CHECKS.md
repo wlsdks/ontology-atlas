@@ -458,6 +458,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: `pnpm test:contracts`.
 **Fix**: Remove the growth, or add the raise record naming why the growth is deliberate; never edit a fallback ceiling.
 
+### Control adoption
+
+**Run**: `pnpm exec vitest run tests/contract/control-adoption-ratchet.contract.test.ts`
+**Proves**: Hand-written button, anchor, and form control classNames, their registered and no-basis places, and the full-bleed click surfaces do not grow against the merge base; each registry row is its own file under `tests/contract/control-adoption/`, so the base is measured with its own registry and two branches registering different places do not conflict.
+**Escalate**: `pnpm test:contracts`.
+**Fix**: Move the control onto `controlClass()` / `fieldClass()`, or add a verified registry row plus a `tests/contract/ratchet-raises/control-<gate>.<slug>.json` record saying why.
+
 ### Markdown table shape (rows vs their header)
 
 **Run**: `pnpm exec vitest run tests/contract/markdown-table-shape.contract.test.ts`

@@ -1,0 +1,8 @@
+{
+  "file": "src/widgets/docs-vault/ui/DocsVaultEditor.tsx",
+  "count": 1,
+  "claim": "stage-geometry",
+  "proof": "absolute inset-0 resize-none",
+  "why": "문서 편집기의 **전면 작성면**. `absolute inset-0` 으로 패널 전체를 채우는 표면이라 상자 치수(높이·인셋·반경)를 가질 수 없다 — `fieldClass` 는 자기 상자를 내는 부품이다.",
+  "conditional": "이 편집기가 상자 안으로 들어오면 부채로 내린다."
+}

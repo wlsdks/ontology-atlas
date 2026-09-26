@@ -1,0 +1,8 @@
+{
+  "file": "src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx",
+  "count": 1,
+  "family": "button",
+  "claim": "click-surface",
+  "proof": "--color-scrim-a58",
+  "why": "빠른 편집 시트의 스크림. `absolute inset-0 bg-[var(--color-scrim-a58)]` 가 전부이고 역할은 「바깥을 눌러 닫기」다. 값 층의 모양 여덟 중 어느 것을 씌워도 **보이는 것이 달라지지 않는다** — 씌울 규격이 없어서다."
+}

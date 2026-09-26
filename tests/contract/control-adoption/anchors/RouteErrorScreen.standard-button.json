@@ -1,0 +1,7 @@
+{
+  "file": "src/views/terminal-state/ui/RouteErrorScreen.tsx",
+  "count": 1,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "The error screen's \"home\" beside the `<Button>` retry. A plain `<a>` on purpose: a full navigation is the reset after a render failure, and the screen sits outside the locale router."
+}
