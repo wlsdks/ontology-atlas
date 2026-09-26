@@ -1,3 +1,10 @@
+---
+title: Backlog — ontology-atlas
+doc_type: index
+status: current
+area: process
+---
+
 # Backlog — ontology-atlas
 
 This file is the stable entrypoint, not a shared status or completion log.

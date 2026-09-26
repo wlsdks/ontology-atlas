@@ -1,8 +1,8 @@
 /**
  * Pointer state machine skeleton — the click-safe contract
  * (`.claude/rules/design.md` "Click = Safe Contract";
- * `docs/INTERACTION-DESIGN.md` §1,
- * `docs/ONTOLOGY-MAP-DESIGN.md` §3.6) ported from the B2+ prototype's
+ * `docs/design/interaction.md` §1,
+ * `docs/design/ontology-map.md` §3.6) ported from the B2+ prototype's
  * `pointerdown`/`pointermove`/`releaseDrag()` handlers
  * (`docs/prototypes/topology-b2plus.html` §9).
  *

@@ -16,7 +16,7 @@ import { projectDomeEdgeControl } from '../model/dome-edge';
  * projection genuinely EXCEEDS the bounds, so within-bounds flicks glide freely
  * and only edge-exceeding flicks rubber-band (the seeded velocity overshoots the
  * clamped bound, then `stepCamera`'s per-frame `clampAxisToPanBounds` elastically
- * returns it — INTERACTION-DESIGN §1 "Boundaries rubber-band" —
+ * returns it — docs/design/interaction.md §1 "Boundaries rubber-band" —
  * the boundary rubber-bands). The old port inflated
  * the projection ~60× so EVERY flick slammed to the same edge (the reported
  * snap); see `engine/momentum.ts`.

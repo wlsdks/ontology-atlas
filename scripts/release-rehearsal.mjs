@@ -112,7 +112,7 @@ export const REHEARSAL_SLOW_STEPS = new Set([
  * Timeout for a tool probe, in ms.
  *
  * **Why a timeout was needed (2026-08-21).** `--list` shows what would run and what
- * does not work on this machine (`docs/DEPLOYMENT.md`), so it really invokes four
+ * does not work on this machine (`docs/engineering/deployment.md`), so it really invokes four
  * tools — that part is right. What was missing was **any bound**.
  *
  * Measured: **0.18 s** on this machine, **9.75 s** on the CI runner. On the runner

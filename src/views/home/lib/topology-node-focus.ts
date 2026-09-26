@@ -26,7 +26,7 @@ interface TopologyNodeFocusConnection {
  * It is a projection of `TopologyOntologyDrawerModel` with zero recompute, so
  * its counts and connections cannot drift from the drawer's. The popover shows
  * the node and what it connects to; everything else stays behind the
- * full-detail opt-in. Rationale: `docs/TOPOLOGY-FOCUS-AND-SCALE.md`.
+ * full-detail opt-in. Rationale: `docs/design/topology-focus-and-scale.md`.
  */
 export interface TopologyNodeFocusModel {
   id: string;

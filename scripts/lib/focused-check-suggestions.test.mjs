@@ -64,7 +64,18 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
+      'pnpm docs:meta && pnpm docs:move -- --check',
     ]);
+  });
+
+  it('suggests the living-document metadata gate for living docs only, never for frozen history or vault nodes', () => {
+    const meta = 'pnpm docs:meta && pnpm docs:move -- --check';
+    for (const living of ['docs/contracts/analysis-records.md', 'docs/features/map/canvas.md', 'docs/records/README.md', 'docs/.moved.json', 'scripts/lib/doc-types.mjs']) {
+      assert.ok(commandNames(suggestFocusedChecks([living])).includes(meta), living);
+    }
+    for (const frozen of ['docs/DECISIONS.md', 'docs/BACKLOG-SNAPSHOT-2026-09-13.md', 'docs/records/decisions/x.md', 'docs/ontology/capabilities/x.md', 'docs/audits/x.md']) {
+      assert.ok(!commandNames(suggestFocusedChecks([frozen])).includes(meta), frozen);
+    }
   });
 
   it('suggests the Markdown language gate for prose and for its implementation', () => {
@@ -204,6 +215,7 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
+      'pnpm docs:meta && pnpm docs:move -- --check',
       'pnpm test:guide-examples',
       'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
     ]);
@@ -756,6 +768,7 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
+      'pnpm docs:meta && pnpm docs:move -- --check',
       'pnpm test:desktop:check',
       'pnpm test:desktop:runtime',
       'pnpm test:desktop:bridge',
@@ -1231,6 +1244,7 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
+      'pnpm docs:meta && pnpm docs:move -- --check',
       'pnpm docs:surface:check',
       'pnpm vault:migrate --list',
       'pnpm test:dogfood:script-refs',

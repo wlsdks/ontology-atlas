@@ -1,3 +1,10 @@
+---
+title: Connecting an AI Agent
+doc_type: guide
+status: current
+area: agents
+---
+
 # Connecting an AI Agent
 
 It’s just one click on the app's **"Connect Agent"** button. Once you select the tool you're using, it writes a configuration file for that tool containing the **actual absolute path of the vault**.

@@ -1,3 +1,10 @@
+---
+title: Glossary
+doc_type: authority
+status: current
+area: process
+---
+
 # Glossary
 
 **This file is the single source of truth for the words this repository uses.**
@@ -52,7 +59,7 @@ chose among several possible words, the reason is given.
 | **slug** | A node's readable, mutable address | slug | Web standard |
 | **uid** | A node's permanent UUIDv4 identity, minted once at creation | uid | Survives rename; `slug` does not |
 | **ego graph** | A node plus its direct neighbours | ego | Standard in social-network analysis ("ego network") |
-| **spine / circuit / element** | The map's three zoom tiers, outermost to innermost | spine / circuit / element | Repo-specific. Defined in `docs/ONTOLOGY-MAP-DESIGN.md` |
+| **spine / circuit / element** | The map's three zoom tiers, outermost to innermost | spine / circuit / element | Repo-specific. Defined in `docs/design/ontology-map.md` |
 | **dome** | The map's 3D projection mode | dome | Repo-specific |
 | **ACP** | Agent Client Protocol — how a coding agent talks to the app | ACP | Upstream protocol name |
 
@@ -194,7 +201,7 @@ file and leave a one-line pointer:
 
 ```ts
 // Why the camera fits the full node bbox and not the spine bbox:
-// docs/ONTOLOGY-MAP-DESIGN.md "Camera fit"
+// docs/design/ontology-map.md "Camera fit"
 ```
 
 Two rules keep this safe:

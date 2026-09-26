@@ -1,3 +1,10 @@
+---
+title: Development checks
+doc_type: runbook
+status: current
+area: process
+---
+
 # Development checks
 
 > Which command to run first for an area of this repository, what a pass
@@ -171,7 +178,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Docs vs code surface
 
 **Run**: `pnpm docs:check`
-**Proves**: `docs:surface:check`, `docs:language`, `source:language`, `docs:links`, and `docs:comment-refs` each pass, so the generated MCP/CLI surface inventory, prose language ratchets, and doc/comment links are current and machine-derived.
+**Proves**: `docs:surface:check`, `docs:language`, `source:language`, `docs:links`, `docs:comment-refs`, `docs:meta` and `docs:move -- --check` each pass, so the generated MCP/CLI surface inventory, prose language ratchets, doc/comment links, living-document metadata and moved paths are current and machine-derived.
 **Escalate**: `pnpm test:docs:checks`
 **Fix**: regenerate the surface with `pnpm docs:surface:build`, fix the broken link or comment reference, or lower the reported language baseline.
 
@@ -352,6 +359,20 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm docs:links`
 **Proves**: Repo-relative markdown links, raw HTML hrefs and repo-anchored .md path citations resolve, including the `#section` half against the target's real headings.
 **Escalate**: `pnpm docs:links:external` to also resolve external http(s) links over the network
+
+### Living-document metadata
+
+**Run**: `pnpm docs:meta`
+**Proves**: Every living document under docs/ carries a kind, status and area that fit its folder, no ontology or hand-versioned key, and pointers (enforced_by, routes, decisions, superseded_by, guide registry) that resolve; a changed contract_version arrives with a decision that cites it. Headings and prose are not checked.
+**Escalate**: `pnpm test:docs:checks` when the kinds in `scripts/lib/doc-types.mjs`, a template or the check itself changes
+**Fix**: Start new documents with `pnpm doc:new`; add the missing key the message names; kinds and areas are listed in `scripts/lib/doc-types.mjs`.
+
+### Moved documents
+
+**Run**: `pnpm docs:move -- --check`
+**Proves**: Every document listed in `docs/.moved.json` sits at its new path and no living file outside frozen history still cites an old path.
+**Escalate**: `pnpm test:docs:checks` when the move script or its rewrite rules change
+**Fix**: Run `pnpm docs:move`, which moves each pending pair and rewrites references; review the bare names it prints.
 
 ### Code-comment doc reference integrity
 

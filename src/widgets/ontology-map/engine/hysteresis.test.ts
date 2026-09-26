@@ -8,7 +8,7 @@ import { exceedsHysteresisThreshold, type Point } from "./hysteresis";
  * every test below is RED until the lead implements it against this file.
  *
  * `--map-hysteresis-px` = 7 (prototype value; design doc explicitly
- * prefers this over INTERACTION-DESIGN's "~10px" general recommendation).
+ * prefers this over docs/design/interaction.md's "~10px" general recommendation).
  */
 const THRESHOLD_PX = 7;
 const DOWN: Point = { x: 100, y: 100 };

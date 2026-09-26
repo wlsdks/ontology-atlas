@@ -1,6 +1,6 @@
 /**
  * Per-frame Canvas 2D draw pipeline — the composition point for `engine/`,
- * `model/`, and `render/*` (`docs/ONTOLOGY-MAP-DESIGN.md` §4 P2-P4, prototype
+ * `model/`, and `render/*` (`docs/design/ontology-map.md` §4 P2-P4, prototype
  * `render()` §13). Camera-space conversions live in `topology-camera-math.ts`
  * (this file only consumes `worldToScreen`, it doesn't own the convention).
  */

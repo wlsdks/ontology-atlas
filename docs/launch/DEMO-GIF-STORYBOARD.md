@@ -1,8 +1,15 @@
+---
+title: Campaign Demo Storyboard — Review What the Agent Built
+doc_type: launch
+status: current
+area: product
+---
+
 # Campaign Demo Storyboard — Review What the Agent Built
 
 > **Status: replacement brief, not recorded.** The active download-page video
 > remains the localized 44-second `atlas-tour` documented in
-> `docs/DEMO-SCENARIO.md`. That footage proves concept → relations/evidence →
+> `docs/launch/demo-scenario.md`. That footage proves concept → relations/evidence →
 > read-only Codex path lookup. Do not relabel it as post-agent change review.
 
 This brief defines the next campaign demo without authorizing media production.
@@ -93,5 +100,5 @@ storyboard.
 
 If the gate misses, keep the current lookup video and revise the storyboard.
 Passing this gate authorizes a separate recording task with the privacy, motion,
-locale, and responsive proof required by `docs/DEMO-SCENARIO.md`; it is not
+locale, and responsive proof required by `docs/launch/demo-scenario.md`; it is not
 itself permission to publish.

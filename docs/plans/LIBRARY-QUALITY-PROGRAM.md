@@ -1,3 +1,10 @@
+---
+title: Library quality program
+doc_type: plan
+status: active
+area: library
+---
+
 # Library quality program
 
 Owner direction, 2026-09-11: make Library useful enough that a person would choose

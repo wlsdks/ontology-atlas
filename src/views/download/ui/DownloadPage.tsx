@@ -248,7 +248,7 @@ export function DownloadPage() {
               </div>
               {/* Nominative use: the names say what Atlas connects to, and the line
                   states that no affiliation is claimed. Marks themselves follow the
-                  stricter rule in docs/FEATURES.md — a service's own glyph only where
+                  stricter rule in docs/features/agents.md — a service's own glyph only where
                   its published brand guideline was read and permits it. */}
               <p className="mt-3 max-w-[var(--measure-doc-column)] break-keep text-[color:var(--color-text-quaternary)]">
                 {tFooter('trademarks')}
@@ -890,7 +890,7 @@ function DemoSection() {
 
 /**
  * **The request the take was filmed on, verbatim** (2026-09-25). The shoot sends the locale's
- * `download.demoAgentPrompt` word for word (`docs/DEMO-SCENARIO.md` §3), and until now the page
+ * `download.demoAgentPrompt` word for word (`docs/launch/demo-scenario.md` §3), and until now the page
  * never showed it: a visitor watched Codex answer a question they could not read. At the split
  * width it also closes the head's track — beside a 768px stage at 1920 the head was a third of
  * the video's height, with ≈170px of empty track above it and ≈200px below. It wears the chat

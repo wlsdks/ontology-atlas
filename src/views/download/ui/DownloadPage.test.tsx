@@ -753,7 +753,7 @@ describe('DownloadPage', () => {
   it('quotes the request the take was filmed on, word for word, with its tool names as code', () => {
     renderDownloadPage();
 
-    // The shoot sends `download.demoAgentPrompt` verbatim (docs/DEMO-SCENARIO.md §3), so the page
+    // The shoot sends `download.demoAgentPrompt` verbatim (docs/launch/demo-scenario.md §3), so the page
     // quotes that message and nothing else — the backticks become code, not characters.
     const prompt = screen.getByTestId('gateway-demo-prompt');
     const sentence = enMessages.download.demoAgentPrompt;

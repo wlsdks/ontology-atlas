@@ -81,8 +81,6 @@ references/
 !public/brand/*.png
 !src-tauri/icons/
 !src-tauri/icons/**
-!docs/prototypes/shots/
-!docs/prototypes/shots/**
 # Demo clip poster — the first frame of the video, so it must be held in the repository. The global `*.png`
 # ignore is intended to block Playwright dumps, not deployment assets
 # (an exception of the same class as the brand assets above).

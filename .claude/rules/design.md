@@ -63,7 +63,7 @@ a composition.
   overshoot and extra hues are allowed (2026-09-08), each through a ramp token
   and naming the fact or state it carries.
 - The pixel mascot's raster colours, including chartreuse `#C6F000`, never
-  become CSS tokens or UI colours (`docs/BRAND.md`).
+  become CSS tokens or UI colours (`docs/design/brand.md`).
 - Signal tones are warning amber, error red and success emerald; success marks
   a real success state only.
 - Hub amber `#d4b478` belongs to hub nodes and Layer 0 containers. The walked

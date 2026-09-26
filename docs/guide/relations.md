@@ -1,3 +1,10 @@
+---
+title: How Relations Are Created
+doc_type: guide
+status: current
+area: ontology-model
+---
+
 # How Relations Are Created
 
 When you first open the map, domains radiate outward from the central hub. Just looking at this shape might raise these questions.

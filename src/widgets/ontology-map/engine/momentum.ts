@@ -1,6 +1,6 @@
 /**
  * Flick-release momentum projection — the iOS `UIScrollView` deceleration
- * projection (`docs/INTERACTION-DESIGN.md` §1 "Inertial Projection (v/1000)·d/(1−d)" —
+ * projection (`docs/design/interaction.md` §1 "Inertial Projection (v/1000)·d/(1−d)" —
  * momentum projection).
  *
  * When a pan drag is released with screen-space velocity `v` (px/ms, sampled

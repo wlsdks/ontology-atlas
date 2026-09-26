@@ -1,3 +1,10 @@
+---
+title: Launch playbook
+doc_type: index
+status: current
+area: product
+---
+
 # Launch playbook
 
 Collection of drafts for the open-source launch phase. Maintainers will publish directly at the appropriate time.
@@ -9,10 +16,10 @@ Collection of drafts for the open-source launch phase. Maintainers will publish 
 1. **Preparation**
    - [ ] Upload the signed and notarized macOS DMG to [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases) — all CTAs in the drafts point to this single asset
    - [ ] Verify that the [Connect Agent] button in the installed app actually writes `.mcp.json` / `.codex/config.toml` and shows green for self-verification
-   - [ ] Deploy static hosting (GitHub Pages / Vercel / Netlify / Cloudflare Pages, etc.) — `pnpm build` → upload to `out/`. See `docs/DEPLOYMENT.md` for detailed guides.
+   - [ ] Deploy static hosting (GitHub Pages / Vercel / Netlify / Cloudflare Pages, etc.) — `pnpm build` → upload to `out/`. See `docs/engineering/deployment.md` for detailed guides.
    - [ ] Reconfirm that the hosted demo URL matches the README + draft text
    - [x] Record the 23-second X LNB overview as `docs/launch/ontology-atlas-x-demo.ko.mp4`
-     (current shoot contract: `docs/DEMO-SCENARIO.md`)
+     (current shoot contract: `docs/launch/demo-scenario.md`)
    - [x] Enable GitHub Discussions + setup categories (automatically enabled in this PR)
 
 2. **Launch day**

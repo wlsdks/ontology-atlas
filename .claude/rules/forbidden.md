@@ -15,7 +15,7 @@
   hues beside indigo are allowed (`docs/DECISIONS.md`, "The expression bans are
   lifted"). Every value still goes through a token and its ramp, contrast floors
   and the reduced-motion equivalent hold, and a new hue names the decision it
-  carries. The mascot's raster palette is not a CSS token (`docs/BRAND.md`).
+  carries. The mascot's raster palette is not a CSS token (`docs/design/brand.md`).
 - Decorative trailing arrows such as `Open →` or a trailing
   `ArrowRight`/`ArrowUpRight`. Arrows conveying path, order, causality, or an
   external-link prefix (`↗`) remain meaningful.

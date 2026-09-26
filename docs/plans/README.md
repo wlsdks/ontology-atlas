@@ -1,3 +1,10 @@
+---
+title: Plans
+doc_type: index
+status: current
+area: process
+---
+
 # Plans
 
 This folder contains point-in-time plans, not current-state authority. Code,

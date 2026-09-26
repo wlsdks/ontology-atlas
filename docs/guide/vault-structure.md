@@ -1,3 +1,10 @@
+---
+title: Vault Structure
+doc_type: guide
+status: current
+area: ontology-model
+---
+
 # Vault Structure
 
 A vault is simply a Markdown folder. The only special part is the frontmatter at the top of each file.

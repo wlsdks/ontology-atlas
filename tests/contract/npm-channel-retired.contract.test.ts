@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -96,6 +96,12 @@ const TIER_B_FILES = [
   "CLAUDE.md",
   "docs/AGENT-GRAPH-WORKFLOW.md",
   "docs/FEATURES.md",
+  // The feature inventory split into one file per surface.
+  ...readdirSync(join(process.cwd(), "docs/features"), { recursive: true })
+    .map(String)
+    .filter((file) => file.endsWith(".md"))
+    .map((file) => `docs/features/${file}`)
+    .sort(),
   "docs/TROUBLESHOOTING.md",
   "docs/PRODUCT-DIRECTION.md",
   "cli/README.md",
