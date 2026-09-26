@@ -47,9 +47,6 @@ mod managed_node;
 mod map_entry_diagnostic;
 /// Immutable task-bound code/meaning transition records and retained review artifacts.
 mod meaning_transition_archive;
-/// Tells the page about an Escape press an input method kept from it (Korean 2-Set).
-#[cfg(target_os = "macos")]
-mod native_escape;
 mod secrets;
 
 /// How long a deep link keeps trying to reach the form: 20 attempts, 250 ms apart, so a cold
@@ -4051,9 +4048,6 @@ pub fn run() {
 
             #[cfg(target_os = "macos")]
             install_native_tray(app)?;
-
-            #[cfg(target_os = "macos")]
-            native_escape::install(app.handle());
 
             // Registered before anything slow in this closure: on macOS a link pressed while
             // Atlas was closed is delivered as the app comes up, and the plugin holds it only
