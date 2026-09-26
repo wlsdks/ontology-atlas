@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForAnimationsDone, waitForBoxStill } from "./settle";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
@@ -89,7 +90,7 @@ for (const width of [1040, 1512, 1920]) {
         await expect
           .poll(async () => (await rects(page)).panel?.width ?? 0, { timeout: 5_000 })
           .toBeGreaterThan(300);
-        await page.waitForTimeout(400);
+        await waitForBoxStill(page.locator('[data-agent-dock-surface="inset"]'));
       }
 
       // ① The status is a segment of the toolbar row, joined to the bell. Its entry
@@ -116,8 +117,9 @@ for (const width of [1040, 1512, 1920]) {
       await page.getByTestId("topology-auto-arrange").click();
       const toast = page.locator("[data-sonner-toast]").first();
       await expect(toast).toBeVisible();
-      // Let the entry settle (`--motion-base`) and the lane observer publish.
-      await page.waitForTimeout(500);
+      // Let the entry settle (`--motion-base`) and the lane observer publish (it measures on a frame).
+      await waitForAnimationsDone(toast);
+      await waitForBoxStill(toast);
       const measured = await rects(page);
       const t = measured.toast!;
       expect(t, "토스트가 안 떴다").not.toBeNull();
@@ -154,7 +156,8 @@ for (const [width, height] of [[768, 1024], [1040, 720], [1512, 900]] as const) 
     await page.goto("/ko/topology/?e2e=1&guides=off&p=missing-xyz", { waitUntil: "domcontentloaded" });
     const toast = page.locator("[data-sonner-toast]").first();
     await expect(toast).toBeVisible({ timeout: 30_000 });
-    await page.waitForTimeout(500);
+    await waitForAnimationsDone(toast);
+    await waitForBoxStill(toast);
     const measured = await rects(page);
     const t = measured.toast!;
     expect(t, "토스트가 안 떴다").not.toBeNull();

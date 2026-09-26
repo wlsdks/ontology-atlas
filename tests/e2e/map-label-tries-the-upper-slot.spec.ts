@@ -23,7 +23,9 @@ test("펼친 지도에서 이름을 잃는 개념이 없다", async ({ page }) =
   await page.getByTestId("first-run-open").click().catch(() => {});
   await waitForMapStill(page);
   await page.getByTestId("topology-expand-all").click();
-  await page.waitForTimeout(2000);
+  // The expansion is on; then the opened map and its camera come to rest.
+  await expect(page.getByTestId("topology-expand-all")).toHaveAttribute("aria-pressed", "true");
+  await waitForMapStill(page);
   await waitForMapStill(page, { what: "camera" });
 
   const read = () =>

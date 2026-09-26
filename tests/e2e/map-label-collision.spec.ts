@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { LABEL_TOP_K } from "../../src/widgets/ontology-map/model/label-lod";
 import { EVIDENCE_SPECIMEN } from "../../src/views/download/model/evidence-specimen.generated";
+import { waitForMapSettled, waitForMapStill } from "./settle";
 
 /**
  * Reduced motion, deliberately: this spec measures the **resting** frame. The evidence section
@@ -63,9 +64,9 @@ test.describe("지도 라벨 — 그려진 박스로 잰다", () => {
      * Under reduced motion (pinned above) the assembly snaps, so there is no spring to outwait —
      * and waiting the old 6s reads **after the gateway's ambient sleep** (3s idle): the sleeping
      * canvas's last frame carried ≤5 label boxes (measured 2026-08-23) and the anti-idle guard
-     * below fired. 2s is after the snap settles and before sleep.
+     * below fired. The read is taken the moment the snap has settled, which is before sleep.
      */
-    await page.waitForTimeout(2_000);
+    await waitForMapSettled(page);
 
     const labels = (await page.evaluate(() =>
       (
@@ -125,7 +126,9 @@ test.describe("지도 라벨 — 그려진 박스로 잰다", () => {
       { timeout: 20_000 },
     );
     await page.getByRole("button", { name: /전체 펼치기/ }).click();
-    await page.waitForTimeout(2_500);
+    // The expansion is on, and the opened cloud has stopped moving.
+    await expect(page.getByTestId("topology-expand-all")).toHaveAttribute("aria-pressed", "true");
+    await waitForMapStill(page);
 
     const { labels, nodes } = (await page.evaluate(() => {
       const map = (

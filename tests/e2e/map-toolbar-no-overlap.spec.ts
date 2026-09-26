@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
-import { waitForBoxStill, waitForMapStill } from "./settle";
+import { waitForAnimationsDone, waitForBoxStill, waitForMapStill, waitFrames } from "./settle";
 
 /**
  * **No control in the map's top toolbar is drawn over another** (owner report,
@@ -155,7 +155,9 @@ test("the map's top toolbar never draws one control over another, with or withou
     }
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: HEIGHT });
-      await page.waitForTimeout(500);
+      // The resize has reached a painted frame and every entrance it started has finished.
+      await waitFrames(page, 2);
+      await waitForAnimationsDone(page.locator("body"));
       // The status row re-lays itself out with a layout animation when its share of
       // the line changes; measure the resting toolbar, not a frame of that motion.
       for (const testId of ["topology-search-action-lane", "agent-activity-status-trigger"]) {

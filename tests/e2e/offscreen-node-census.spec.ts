@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { FIXTURE_VAULT } from "./fixture-vault";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForMapSettled } from "./settle";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
@@ -45,26 +46,10 @@ test("첫 화면이 노드를 거의 다 보여 준다", async ({ page }) => {
    * ⚠️ This used to be `waitForTimeout(8_000)`. 8 seconds is **one machine's number**:
    * a slow machine counts while nodes are still moving and a fast one throws away 7
    * seconds. Settling is judged by **value**, not time — layout has settled when node
-   * coordinates barely move between frames (full check audit, 2026-08-17).
+   * coordinates barely move between frames (full check audit, 2026-08-17), read in
+   * the page on consecutive frames rather than across a 400 ms gap.
    */
-  await expect
-    .poll(
-      async () => {
-        const sample = () =>
-          page.evaluate(() => {
-            const map = (
-              window as unknown as { __atlasMap?: { nodes: () => Array<{ id: string; x: number; y: number }> } }
-            ).__atlasMap;
-            return map ? map.nodes().map((n) => `${n.id}:${Math.round(n.x)},${Math.round(n.y)}`).join("|") : "";
-          });
-        const before = await sample();
-        await page.waitForTimeout(400);
-        const after = await sample();
-        return before !== "" && before === after;
-      },
-      { timeout: 60_000, message: "배치가 정착하지 않았다" },
-    )
-    .toBe(true);
+  await waitForMapSettled(page, { timeout: 60_000 });
 
   const census = await page.evaluate(() => {
     const map = (

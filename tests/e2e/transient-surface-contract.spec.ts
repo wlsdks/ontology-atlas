@@ -192,6 +192,7 @@ test.describe("잠깐 뜨는 표면 3계약", () => {
          * this sample has to land while the animation is still alive, so the 70 ms is the
          * subject of the measurement and not a settle to wait out.
          */
+        // measurement window: the sample must land mid-entrance (see above).
         await page.waitForTimeout(70);
 
         const shot = await page.evaluate(() => {

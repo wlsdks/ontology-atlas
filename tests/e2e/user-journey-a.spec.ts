@@ -114,12 +114,15 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
   // again.
   await page.goto("/en/project/ontology-atlas/", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10_000 });
-  await page.waitForTimeout(600); // hydration + useTypingShortcuts bind
   const isMac = process.platform === "darwin";
   const detailPathBefore = new URL(page.url()).pathname;
-  await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
   const paletteInput = page.locator("input#project-search-input");
-  await expect(paletteInput).toBeVisible({ timeout: 3_000 });
+  // The shortcut is bound once the page has hydrated, which exposes no signal of its own:
+  // press until the palette answers, never pressing again once it is open.
+  await expect(async () => {
+    if (!(await paletteInput.isVisible())) await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
+    await expect(paletteInput).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 10_000 });
   // The URL must not leave the detail page.
   expect(new URL(page.url()).pathname).toBe(detailPathBefore);
   await page.keyboard.press("Escape");

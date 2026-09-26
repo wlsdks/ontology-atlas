@@ -166,6 +166,7 @@ test("이동 신호가 오면 지도가 그리기를 멈추고, 손이 움직이
       window.dispatchEvent(new Event("ontology-atlas:navigation-intent"));
       return performance.now();
     });
+    // measurement window: the frames drawn inside the yield window are the subject, so the window has to pass.
     await page.waitForTimeout(YIELD_WINDOW_END_MS + 50);
     return framesBetween(t0 + SIGNAL_SETTLE_MS, t0 + YIELD_WINDOW_END_MS);
   };
