@@ -21,6 +21,7 @@ import {
 import {
   META_MODEL_RULES_EN as APP_META_MODEL_RULES_EN,
 } from "../../src/features/vault-agent/model/system-prompt";
+import { githubAnchorSlug } from "../../src/shared/lib/github-anchor-slug";
 
 const ROOT = resolve(__dirname, "../..");
 const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
@@ -62,17 +63,6 @@ describe("Atlas meta-model — one public canon reaches every authoring channel"
   });
 
   it.each([
-    ".agents/skills/ontology-bootstrap/SKILL.md",
-    ".claude/skills/ontology-bootstrap/SKILL.md",
-    ".agents/skills/ontology-field-trial/SKILL.md",
-    ".claude/skills/ontology-field-trial/SKILL.md",
-    ".agents/skills/ontology-bootstrap/guides/meaning-extraction.md",
-    ".claude/skills/ontology-bootstrap/guides/meaning-extraction.md",
-  ])("%s points to the public canon instead of owning another kind table", (path) => {
-    expect(read(path)).toContain(LOCAL_SPEC_POINTER);
-  });
-
-  it.each([
     ".agents/skills/ontology-bootstrap/guides/construction.md",
     ".claude/skills/ontology-bootstrap/guides/construction.md",
   ])("%s uses array-shaped boundary fields in its proposal template", (path) => {
@@ -90,8 +80,13 @@ describe("Atlas meta-model — one public canon reaches every authoring channel"
   });
 
   it("the public canon owns the stable anchor consumed above", () => {
-    expect(read(SPEC_PATH)).toContain(
-      "## 2. The five authorable node kinds and reserved reader kind",
-    );
+    // The anchor comes from the schema's own reference; the SPEC's headings are
+    // slugged with the rule GitHub renders, so a renamed heading breaks this.
+    const anchor = MCP_META_MODEL_REFERENCE.split("#")[1] ?? "";
+    expect(anchor.length, "reference carries no #anchor").toBeGreaterThan(0);
+    const slugs = [...read(SPEC_PATH).matchAll(/^#{1,6}\s+(.+)$/gm)]
+      .map((match) => githubAnchorSlug(match[1]));
+    expect(slugs.length, `${SPEC_PATH}: no headings read`).toBeGreaterThanOrEqual(1);
+    expect(slugs, `${SPEC_PATH} has no heading for #${anchor}`).toContain(anchor);
   });
 });

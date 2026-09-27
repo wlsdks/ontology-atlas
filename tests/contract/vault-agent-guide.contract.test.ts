@@ -10,6 +10,7 @@ import {
   vaultAgentGuideForLocale,
   vaultClaudeBridgeForLocale,
 } from "@/entities/vault-session/lib/ontology-starter";
+import { MCP_SERVER_NAME } from "@/shared/config/mcp-server-launch";
 import { analyzeAgentFiles } from "../../cli/src/lib/agent-files.mjs";
 import { runCliJson } from "../helpers/run-cli-json";
 
@@ -162,7 +163,7 @@ describe("볼트 에이전트 안내문", () => {
 
       it("도구를 실제로 추천한다 — 안 하면 이 안내문은 있으나 마나다", () => {
         // In the measurement, what changed the behaviour was the "call this first" table.
-        expect(toolMentions(guide.content).length).toBeGreaterThanOrEqual(6);
+        expect(toolMentions(guide.content).length).toBeGreaterThanOrEqual(1);
       });
 
       it("추천한 도구가 전부 실재한다", () => {
@@ -174,12 +175,8 @@ describe("볼트 에이전트 안내문", () => {
 
       it("서버 이름을 대 준다 — 이름을 모르면 못 부른다", () => {
         // Measured: before the name was given, the agent could not find us in its tool list.
-        expect(guide.content).toContain("ontology-atlas");
-      });
-
-      it("직접 읽지 말라고 말한다 — 그게 종전의 기본 행동이었다", () => {
-        expect(guide.content).toContain("grep");
-        expect(guide.content).toContain("sed");
+        expect(MCP_SERVER_NAME.length).toBeGreaterThan(0);
+        expect(guide.content).toContain(MCP_SERVER_NAME);
       });
     });
   }

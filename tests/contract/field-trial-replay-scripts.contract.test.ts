@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { accessSync, constants, readFileSync, statSync } from 'node:fs';
+import { accessSync, constants, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -61,7 +61,10 @@ describe('field trial replay scripts', () => {
     const skill = readFileSync(SKILL, 'utf8');
     const section = skill.slice(skill.indexOf('## Headless ACP replay'));
     expect(section.startsWith('## Headless ACP replay')).toBe(true);
-    for (const name of ALL_ASSETS) expect(section).toContain(name);
+    const assets = readdirSync(SCRIPTS).filter((name) => !name.startsWith('.'));
+    expect(assets.length, 'scripts/ folder read empty').toBeGreaterThanOrEqual(1);
+    const unnamed = assets.filter((name) => !section.includes(name));
+    expect(unnamed, 'assets in scripts/ that the skill section never names').toEqual([]);
   });
 
   it('acp-replay.sh drives the two turns the app drives', () => {
