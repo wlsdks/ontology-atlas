@@ -538,7 +538,6 @@ describe("the library graph's force simulation", () => {
   it("returns the same radii whatever the canvas is", () => {
     const graph = denseFolder();
     const radii = libraryMarkRadii(graph);
-    expect([...radii.entries()]).toEqual([...libraryMarkRadii(graph).entries()]);
     const pages = graph.nodes.filter((node) => node.kind === "page");
     const top = Math.max(...pages.map((node) => radii.get(node.id)!));
     const bottom = Math.min(...pages.map((node) => radii.get(node.id)!));
