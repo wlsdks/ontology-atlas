@@ -3,11 +3,11 @@ import { isAfter, toMs, type BriefCore } from './brief-model';
 /** One thing that happened after the anchor, from whichever core recorded it. */
 export interface SinceRow {
   core: BriefCore['core'];
-  /** ISO time. Rows sort newest first. */
+  /** ISO time; rows sort newest first. */
   at: string;
   /** Message id under `brief.since.*`; `label` is its argument. */
   kind: 'concept-doc' | 'wiki-log' | 'guide-file' | 'agent-call';
-  /** What moved: the concept's title, the wiki log summary, the guide file path, the tool and target. */
+  /** What moved: concept title, wiki log summary, guide file path, or tool and target. */
   label: string;
   /** Where to look, when a screen lists it. */
   href: string | null;
@@ -25,10 +25,8 @@ export interface SinceListInput {
 const CONCEPT_KINDS = new Set(['domain', 'capability', 'element', 'project']);
 
 /**
- * Everything that happened after the anchor, in one list newest first — the re-orientation
- * question the cards answer in counts, answered in names. Deterministic: it reads dates the
- * folder already carries and invents none. `total` says how many there were; the screen shows
- * `limit` and names the rest.
+ * Everything after the anchor in one newest-first list, from dates the folder already carries. `total` counts all;
+ * the screen shows `limit` and names the rest.
  */
 export function buildSinceList(input: SinceListInput): { rows: SinceRow[]; total: number; soleKind: SinceRow['kind'] | null } {
   const rows: SinceRow[] = [];
@@ -50,8 +48,7 @@ export function buildSinceList(input: SinceListInput): { rows: SinceRow[]; total
   }
   rows.sort((a, b) => (toMs(b.at) ?? 0) - (toMs(a.at) ?? 0));
   const limit = input.limit ?? 12;
-  // Judged over every row, not only the shown ones, so a title that names one kind never
-  // hides a different kind among the rows counted but not listed.
+  // Judged over every row, so a title naming one kind never hides another kind past the shown rows.
   const kinds = new Set(rows.map((row) => row.kind));
   const soleKind = kinds.size === 1 ? rows[0]!.kind : null;
   return { rows: rows.slice(0, limit), total: rows.length, soleKind };

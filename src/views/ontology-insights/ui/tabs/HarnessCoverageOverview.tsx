@@ -98,7 +98,7 @@ export function HarnessCoverageOverview({
   const desktopOpen = selected !== null && presentationMode === 'desktop' && !narrow;
   const narrowOpen = selected !== null && presentationMode === 'narrow' && narrow;
 
-  /** The vertical room the popup may use: the scroll field's top to the usable bottom. */
+  /** The popup's vertical room: the scroll field's top to the usable bottom. */
   const fieldBounds = () => {
     const nav = document.querySelector<HTMLElement>('[data-tabbar="primary"]')?.getBoundingClientRect();
     return {
@@ -246,11 +246,8 @@ export function HarnessCoverageOverview({
     );
   };
 
-  /*
-   * How many domains each role reaches at all. The column that reaches the fewest is the one
-   * thing on this screen worth reading first, so it alone is drawn in the warning ink; the
-   * others stay quiet. It states coverage as a count, not a verdict.
-   */
+  // How many domains each role reaches. Only the column reaching the fewest is drawn in the warning ink; coverage
+  // is stated as a count, not a verdict.
   const covered = (['told', 'gated', 'watched'] as const).map((column) => ({
     column,
     count: evidence.areas.filter((area) => area.roles[column].declarations.length > 0).length,
@@ -382,11 +379,8 @@ interface RoleChipProps {
   onSelect: (selection: Selection, trigger: HTMLButtonElement) => void;
 }
 
-/*
- * One chip grammar for both reading modes: mark, role, count, at the chip's own width. An empty
- * role in the column that reaches the fewest domains wears the same warning ink as that column's
- * coverage line in the header, so the header's one highlighted gap points at the places it counts.
- */
+// One chip grammar for both reading modes: mark, role, count. An empty role in the weakest column wears that
+// column's warning ink, so the header's highlighted gap points at the places it counts.
 function RoleChip({ area, column, selected, triggerRefs, controlsId, weakestColumn, onSelect }: RoleChipProps) {
   const t = useTranslations('ontologyPages.insights.harnessTab.visual');
   const selection: Selection = { kind: 'domain', areaSlug: area.slug, column };
@@ -424,18 +418,10 @@ function RoleChip({ area, column, selected, triggerRefs, controlsId, weakestColu
 
 type RowProps = Omit<RoleChipProps, 'column'>;
 
-/*
- * The tree grows with its grid cell: the two stems take whatever height the row gives the domain,
- * up to a cap, so the domains fill the field instead of floating in it. The fork sits just above
- * the two lower chips, which keeps the drawing a tree however tall the stems get.
- *
- * The stem under the name is shared by both branches and is drawn exactly once. The stroke is
- * translucent, so two paths laid over one stem measured brighter (blue 142) than one path (89) and
- * a dashed "none" branch laid over a solid one showed dashes through it. Each branch therefore
- * keeps its full heading-to-chip geometry (the attachment checks walk it), but only one of them
- * paints the shared stem: a declared branch whose sibling already paints it skips that length
- * with its dash array, and an empty branch starts at the fork.
- */
+// The stems take the height the grid row gives the domain, up to a cap, and the fork sits just above the lower
+// chips. The shared stem under the name is painted once: the stroke is translucent, so overlapping paths draw
+// brighter and show dashes through solid. Each branch keeps its full geometry for the attachment checks but skips
+// the stem with its dash array when its sibling paints it; an empty branch starts at the fork.
 function DomainGroup(props: RowProps) {
   const { area } = props;
   const domainRef = useRef<HTMLElement | null>(null);
@@ -454,8 +440,7 @@ function DomainGroup(props: RowProps) {
       setSize((current) => current.width === next.width && current.top === next.top && current.lower === next.lower ? current : next);
     };
     measure();
-    /* The stems can change height while the domain keeps its size (a web font swapping in rewraps
-       the name), so each stem is observed on its own, not only the domain around them. */
+    // A web font swap can rewrap the name and change stem heights without resizing the domain, so each stem is observed.
     const observer = new ResizeObserver(measure);
     observer.observe(domain);
     if (topRef.current) observer.observe(topRef.current);
@@ -485,9 +470,8 @@ function DomainGroup(props: RowProps) {
       </svg>
       <div className={styles.domainHeading} data-domain-heading>
         <h4 className={styles.domainName}>{area.title}</h4>
-        {/* What the domain is for is what makes a zero readable: "this area does X and nothing
-            checks it", not "a file is absent". It also gives each tree a body instead of a bare
-            stretched stem. The full sentence stays in the text reading. */}
+        {/* The domain's purpose makes a zero readable ("this area does X and nothing checks it"); the full sentence stays
+           in the text reading. */}
         {area.purpose ? <p className={styles.domainPurpose} title={area.purpose}>{area.purpose}</p> : null}
       </div>
       <svg ref={lowerRef} className={styles.lowerConnections} viewBox={`0 0 ${width} ${lower}`} preserveAspectRatio="none" aria-hidden>
@@ -697,12 +681,8 @@ function EvidenceLine({ label, children }: { label: string; children: ReactNode 
 }
 
 /**
- * Where the evidence popup stands beside its port.
- *
- * ⚠️ **Vertical room is the field's, not the window's.** Measured against the viewport, a port in
- * the second row at 1040×720 flipped the popup upward to y=16, over the page title and the
- * Brief/Concepts/Wiki/Guidance switch (2026-09-25). `bounds` is the scroll field's own top and the
- * usable bottom; the popup opens on whichever side has more of that room and scrolls inside it.
+ * Where the evidence popup stands beside its port. The vertical room is the scroll field's, not the window's,
+ * or a low port flips the popup over the page title; it opens on the side with more room and scrolls inside.
  */
 function popupPlacement(anchor: DOMRect, viewportWidth: number, viewportHeight: number, paneLeft = 0, popup?: DOMRect, bounds?: { top: number; bottom: number }): CSSProperties & { transformOrigin: string } {
   const leftFloor = Math.max(16, paneLeft + 16);

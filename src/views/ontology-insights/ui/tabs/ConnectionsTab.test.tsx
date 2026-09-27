@@ -25,8 +25,7 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-// The agent-readiness meter and the repair queue are owned by the "to do" tab (DoNextTab). This one
-// answers only "what is central" — the relation type distribution and the hubs.
+// This tab answers only what is central: relation types and hubs.
 const labels: ConnectionsTabLabels = {
   relationTypesTitle: "Relation types",
   relationTypesCaption: "What kind of relations you have.",
@@ -47,8 +46,7 @@ const hubLink = {
   ariaLabel: (title: string) => `${title} — view on the map`,
 };
 
-// The impact ranking is this tab's second band — only its presence and empty state are checked
-// here; the computation and row rendering are covered by ImpactRankingCard.test.tsx.
+// Only the impact band's presence and empty state are checked here; `ImpactRankingCard.test.tsx` covers the rest.
 const impactLabels: ImpactRankingLabels = {
   title: "Widest ripple when changed",
   caption: "How far a change travels.",
@@ -150,12 +148,7 @@ describe("ConnectionsTab", () => {
     expect(impactMocks.buildCalls).toHaveBeenCalledTimes(2);
   });
 
-  /**
-   * The readiness meter and the repair-queue counters were moved out of this tab and later
-   * removed altogether (owner decision, 2026-08-31: the "to do" tab is one list). The assertion
-   * stays because it is cheap and it names the exact testids: if either instrument is ever
-   * rebuilt, this tab is not where it belongs.
-   */
+  /** Names the removed readiness and repair testids, so neither instrument returns to this tab. */
   it("does not render the removed readiness/repair instruments", () => {
     render(
       <ConnectionsTab
@@ -205,7 +198,7 @@ describe("ConnectionsTab", () => {
     expect(screen.queryByTestId("evidence-only-badge")).toBeNull();
   });
 
-  it("허브는 순서를 그대로 두고 문서 없는 행만 배지로 밝힌다", () => {
+  it("keeps hub order and badges only rows without a document", () => {
     render(
       <ConnectionsTab
         edgeTypeRows={[]}
@@ -226,15 +219,13 @@ describe("ConnectionsTab", () => {
       />,
     );
 
-    // Reordering here makes the answer to "what is central right now" itself wrong — a row that
-    // genuinely has many connections stays on top, and only the absence of a document is quietly stated.
+    // Hub order stands; only the missing document is stated.
     expect(screen.getByTestId("insights-hub-row-link")).toHaveTextContent("Integration Test");
     expect(screen.getByTestId("evidence-only-badge")).toHaveTextContent("No document");
   });
 
-  // An ink-reduction regression guard — the ego thumbnails were all the same wheel shape across six
-  // rows, so the distinguishing information lived only in the number. Bringing them back doubles the row height.
-  it("허브 행에 에고 썸네일을 그리지 않는다", () => {
+  // Ego thumbnails were identical wheels, so the number carried all the information; they double the row height.
+  it("draws no ego thumbnail on hub rows", () => {
     const { container } = render(
       <ConnectionsTab
         edgeTypeRows={[]}
@@ -256,7 +247,7 @@ describe("ConnectionsTab", () => {
     expect(container.querySelectorAll("line")).toHaveLength(0);
   });
 
-  it("빈 볼트에서도 관계 타입 카드가 다음 한 걸음을 안내한다", () => {
+  it("shows a next step on the relation type card for an empty vault", () => {
     render(
       <ConnectionsTab
         edgeTypeRows={[]}
@@ -279,7 +270,7 @@ describe("ConnectionsTab", () => {
     expect(screen.getByText("Connect them on the map.")).toBeInTheDocument();
   });
 
-  it("절단 문구와 각주를 한 줄로 합쳐 카드 해부구조를 흔들지 않는다", () => {
+  it("joins the truncation line and footnote into one line", () => {
     const { container } = render(
       <ConnectionsTab
         edgeTypeRows={[]}

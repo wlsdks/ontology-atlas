@@ -5,7 +5,7 @@ import {
 } from "./review-loop";
 
 describe("do-next review loop", () => {
-  it("exact row id가 현재 전체 신호에 있으면 active다", () => {
+  it("is active when the exact row id is in the current signals", () => {
     const state = resolveDoNextReviewState({
       reviewId: "orphan:capability:foo",
       authoritative: true,
@@ -15,7 +15,7 @@ describe("do-next review loop", () => {
     expect(state?.phase).toBe("active");
   });
 
-  it("같은 노드라도 서로 다른 row kind는 별개 신호다", () => {
+  it("treats different row kinds for one node as separate signals", () => {
     const state = resolveDoNextReviewState({
       reviewId: "promotion:element:shared",
       authoritative: true,
@@ -25,7 +25,7 @@ describe("do-next review loop", () => {
     expect(state?.phase).toBe("cleared");
   });
 
-  it("authoritative하지 않으면 부재를 완료로 단정하지 않는다", () => {
+  it("does not treat absence as cleared without authoritative signals", () => {
     const state = resolveDoNextReviewState({
       reviewId: "orphan:capability:foo",
       authoritative: false,
@@ -35,7 +35,7 @@ describe("do-next review loop", () => {
     expect(state?.phase).toBe("checking");
   });
 
-  it("제한된 cycle 탐색에서 부재는 unverified다", () => {
+  it("marks absence unverified after a bounded cycle search", () => {
     const state = resolveDoNextReviewState({
       reviewId: "cycle:capability:a capability:b",
       authoritative: true,
@@ -45,7 +45,7 @@ describe("do-next review loop", () => {
     expect(state?.phase).toBe("unverified");
   });
 
-  it("소견 행의 id 는 리뷰 id 다 — 잘린 묶음의 부재는 cleared 가 아니라 unverified 다", () => {
+  it("uses a finding row id as the review id and marks absence from a truncated group unverified", () => {
     expect(isDoNextReviewId("missing-boundary:capabilities/pay")).toBe(true);
     expect(
       resolveDoNextReviewState({
@@ -75,7 +75,7 @@ describe("do-next review loop", () => {
     ).toBe("cleared");
   });
 
-  it("잘못된 id는 URL에 있어도 소비하지 않는다", () => {
+  it("ignores a malformed id in the URL", () => {
     expect(isDoNextReviewId("done:anything")).toBe(false);
     expect(
       resolveDoNextReviewState({

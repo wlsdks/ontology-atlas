@@ -11,16 +11,13 @@ import type { UnmatchedBoard, UnmatchedRow } from "../../lib/unmatched-board";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 
 export interface UnmatchedTabLabels {
-  /** The list's own heading. Never the reference product's word for it. */
+  /** The list's own heading, never the reference product's word for it. */
   title: string;
   /** One sentence saying what a row is. */
   caption: string;
   /** `×N` beside a name — how many references asked for it. */
   occurrences: (count: number) => string;
-  /**
-   * Introduces the concepts that reached for this name. A prefix rather than a sentence
-   * with a slot, because each name after it is its own link to that document.
-   */
+  /** A prefix rather than a sentence with a slot, because each name after it links to its own document. */
   askedByPrefix: string;
   writtenUnder: (keys: string) => string;
   dismiss: (name: string) => string;
@@ -40,10 +37,7 @@ export interface UnmatchedTabLabels {
 
 export interface UnmatchedTabProps {
   board: UnmatchedBoard;
-  /**
-   * The folder has not been read yet, so the list has **no answer** — which is a
-   * different fact from having nothing to say. See the render branch below.
-   */
+  /** The folder has not been read yet, so the list has no answer, which differs from having nothing to say. */
   pending?: boolean;
   onDismiss: (id: string) => void;
   onRestoreAll: () => void;
@@ -56,32 +50,10 @@ export interface UnmatchedTabProps {
 type PendingFocus = { kind: "row"; id: string } | { kind: "heading" } | { kind: "first" };
 
 /**
- * **Names this folder was asked for and does not hold** — one flat list.
- *
- * `unmatched-board.ts` owns which fact qualifies, why the two the first draft also
- * carried belong to Do-next instead, and why the relation type an agent invented cannot
- * be listed at all: that refusal never reaches disk. This file only draws the list.
- *
- * ## Why no panel, and why the number is the heaviest mark (council, 2026-09-05)
- *
- * The first draft wrapped each group in a bordered panel and put the count at the
- * smallest step in the app. Both were backwards. There is one question here, so a panel
- * around it is a box drawn around the whole screen — the rows are the content, and they
- * read as rows (`FixRow`'s `border-b … py-2.5`, the idiom this board already uses).
- *
- * And the count is the reason to look: a name three separate concepts reached for is a
- * concept this ontology is missing, while one reached for once is probably a typo. Only
- * the number separates those, so it is the heaviest thing in the row — emphasis weight at
- * body-large beside the name — and `×1` is not drawn at all, because a multiplier that
- * never varies is decoration.
- *
- * ## Hiding does not move the count, and never strands the keyboard
- *
- * The hidden marker sits **beside the count it qualifies** rather than in a footer,
- * because "2, one of which you are not looking at" is one fact and reading it in two
- * places is reading it twice. Dismissing moves focus to the next row, then the previous,
- * then the heading — a control that deletes itself and leaves focus on `<body>` drops a
- * keyboard user back at the top of the document, which on this page is seven tabs away.
+ * Names this folder was asked for and does not hold, as one flat list; `unmatched-board.ts` owns which facts qualify.
+ * No panel: rows are the content. The count is the heaviest mark, since a name several concepts reached for is a
+ * missing concept while one reached for once is likely a typo; `×1` is not drawn. The hidden marker sits beside the
+ * count it qualifies. Dismissing moves focus to the next row, then the previous, then the heading, never to `<body>`.
  */
 export function UnmatchedTab({
   board,
@@ -116,7 +88,7 @@ export function UnmatchedTab({
     onRestoreAll();
   }, [onRestoreAll]);
 
-  // Runs after the rebuilt list is in the DOM; the row that had focus is gone by now.
+  // Runs after the rebuilt list is in the DOM; the row that had focus is gone.
   useLayoutEffect(() => {
     const target = pendingFocusRef.current;
     if (!target) return;
@@ -130,18 +102,10 @@ export function UnmatchedTab({
     (button ?? headingRef.current)?.focus();
   }, [board.rows]);
 
-  /*
-   * ⚠️ **"Nothing is missing" and "nothing has been read" are opposite facts.** While the
-   * folder's manifest is still null this list has no answer, and the empty state asserts
-   * one — the most reassuring sentence on the tab, shown at the one moment it cannot be
-   * true. So the page's own reading-state block is drawn instead.
-   */
+  // While the manifest is null the list has no answer, so the reading state shows instead of "nothing is missing".
   if (pending) {
-    /*
-     * A line, not a bordered box. The page frame already draws this tab's boundary, and a
-     * hand-written card here would be the first entry in a debt ledger written to stay at
-     * zero for new files (`static-card-adoption-ratchet`).
-     */
+    // A line, not a bordered box: the page frame draws the boundary, and a hand-written card would grow
+    // the `static-card-adoption-ratchet` ledger.
     return (
       <p
         role="status"
@@ -154,13 +118,8 @@ export function UnmatchedTab({
   }
 
   if (board.totalCount === 0) {
-    /*
-     * **The empty tab is a stage, not a strip** (2026-09-25). Two centred grey lines in a 134px
-     * box left the rest of the tab as plain background down to the handoff row. The shared
-     * shape carries the parts an empty state owes: a glyph for the fact, one sentence, and the
-     * way on — every name already resolves, so the useful next place is the map those names
-     * belong to. The stage takes a fixed floor so the tab reads as answered, not unfinished.
-     */
+    // The shared empty-state shape: a glyph, one sentence and the way on (the map every resolved name belongs to),
+    // on a fixed floor so the tab reads as answered.
     return (
       <EmptyState
         tone="solid"
@@ -238,17 +197,11 @@ export function UnmatchedTab({
       </section>
 
       <div className="flex flex-col gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
-        {/*
-          One polite announcement for a change that is otherwise silent: the row simply
-          stops existing, and the marker beside the count is not where focus went.
-        */}
+        {/* One polite announcement: the row simply stops existing, and focus went elsewhere. */}
         <p data-testid="unmatched-hidden-note" role="status" aria-live="polite" className="sr-only">
           {board.dismissedCount > 0 ? labels.hiddenNote(board.dismissedCount) : ""}
         </p>
-        {/*
-          The limit belongs under the list, not in front of it. Read first, it explains a
-          screen nobody has seen yet; read after, it answers the question the list raises.
-        */}
+        {/* The limit sits under the list, answering the question the list raises. */}
         <p data-testid="unmatched-footnote" className="max-w-3xl leading-prose">
           {labels.footnote}
         </p>
@@ -278,12 +231,8 @@ function UnmatchedRowItem({
     >
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex min-w-0 items-baseline gap-2">
-          {/*
-            ⚠️ **Below `sm` the name wraps rather than truncating.** A slug is the row's whole
-            identity, and at 390 `capabilities/holds-position` truncates to something that
-            names nothing — a fix nobody can act on. Above `sm` there is room, so truncation
-            keeps the count and the hide control on one line.
-          */}
+          {/* Below `sm` the slug wraps rather than truncating, since it is the row's whole identity; above `sm` truncation
+             keeps the count and hide control on one line. */}
           <span className="min-w-0 font-mono text-body-lg text-[color:var(--color-text-primary)] [overflow-wrap:anywhere] sm:truncate sm:[overflow-wrap:normal]">
             {row.name}
           </span>
@@ -296,11 +245,8 @@ function UnmatchedRowItem({
             </span>
           ) : null}
         </div>
-        {/*
-          Every asking concept is a document in this folder, so each name is the way to go
-          read why it asked. `buildDocsVaultHref` is the same destination the Do-next rows
-          use; the map href is not, because these are slugs and that one takes a graph id.
-        */}
+        {/* Each asking concept is a document here, so its name links to it via `buildDocsVaultHref`, as the Do-next rows do;
+           the map href takes a graph id, not a slug. */}
         {row.sources.length > 0 ? (
           <span className="min-w-0 text-label text-[color:var(--color-text-quaternary)]">
             {labels.askedByPrefix}{" "}
@@ -344,7 +290,7 @@ function UnmatchedRowItem({
           className: "flex-none",
         })}
       >
-        {/* Hiding is not deleting, and an X says deleting. */}
+        {/* An eye, not an X: hiding is not deleting. */}
         <EyeOff size={ICON_SIZE.sm} aria-hidden />
       </button>
     </li>
