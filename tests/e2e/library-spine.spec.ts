@@ -169,9 +169,11 @@ test.describe('the Library spine at one saved answer', () => {
     await expect(ask).toBeVisible();
     const shape = (el: Element) => {
       const style = getComputedStyle(el);
-      return { radius: style.borderTopLeftRadius, size: style.fontSize };
+      return { radius: style.borderTopLeftRadius, size: style.fontSize, height: el.getBoundingClientRect().height };
     };
-    expect(await ask.evaluate(shape)).toEqual(await opener.evaluate(shape));
+    const [askShape, openerShape] = [await ask.evaluate(shape), await opener.evaluate(shape)];
+    expect({ radius: askShape.radius, size: askShape.size }).toEqual({ radius: openerShape.radius, size: openerShape.size });
+    expect(Math.abs(askShape.height - openerShape.height), "Ask is a different height from its trigger").toBeLessThan(1);
 
     /*
      * 4 — **the row says "door" at rest** (design-lead F2 with design-interaction C1,

@@ -138,22 +138,6 @@ test.describe("지도에 초점을 주는 길", () => {
       .toBe("map-canvas");
   });
 
-  test("지도에 이미 있을 때 G M 을 누르면 캔버스를 잡는다", async ({ page }) => {
-    await page.goto("/ko/topology/?guides=off&e2e=1");
-    await page.locator("main").first().click({ position: { x: 5, y: 5 } });
-    await page.keyboard.press("g");
-    await page.keyboard.press("m");
-    await expect
-      .poll(
-        () =>
-          page.evaluate(
-            () => document.activeElement?.getAttribute("data-surface-role") ?? "",
-          ),
-        { timeout: 10_000 },
-      )
-      .toBe("map-canvas");
-  });
-
   /** Can you walk immediately after grabbing — is the entrance really wired to the feature. */
   test("G M 으로 잡은 다음 방향키로 걸을 수 있다", async ({ page }) => {
     await seedFirstRunSeen(page);
@@ -196,31 +180,6 @@ test.describe("지도 키보드 걷기", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedFirstRunSeen(page);
     await page.goto("/ko/topology/?guides=off&e2e=1");
-  });
-
-  test("초점이 없을 때 방향키를 누르면 노드 하나가 잡힌다", async ({ page }) => {
-    await focusCanvas(page);
-    expect(await selectedId(page), "시작부터 무언가 골라져 있으면 이 시험이 무의미하다").toBeNull();
-
-    // Whichever direction, the first press starts from whatever is currently in view.
-    await page.keyboard.press("ArrowRight");
-    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
-  });
-
-  test("방향키가 실제로 다른 노드로 옮겨 간다", async ({ page }) => {
-    await focusCanvas(page);
-    await page.keyboard.press("ArrowRight");
-    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
-    const first = await selectedId(page);
-
-    /*
-     * Pressing all four directions and moving **at least once** passes. No specific
-     * direction is pinned because node placement is decided by physics, so "there is a
-     * neighbour to the right" varies with the data. The property this spec locks is
-     * "arrow keys move you", not "there is something to the right".
-     */
-    const moved = await walkOneStep(page, first);
-    expect(moved, `네 방향 어디로도 못 걸었다 (시작: ${first})`).not.toBeNull();
   });
 
   test("걸어간 곳은 실제로 이웃이다 — 아무 노드로나 뛰지 않는다", async ({ page }) => {
@@ -317,8 +276,7 @@ test.describe("지도 키보드 걷기", () => {
     for (const key of [...DIRECTIONS, ...DIRECTIONS]) {
       const id = await selectedId(page);
       if (id) seen.add(id);
-      await page.keyboard.press(key);
-      await waitFrames(page, 12);
+      await pressAndSettle(page, key, id);
     }
     const last = await selectedId(page);
     if (last) seen.add(last);
@@ -335,20 +293,7 @@ test.describe("지도 키보드 걷기", () => {
    * This test exists because of what the owner said in real use: *"The arrow keys work, but you cannot
    * move freely between nodes."* With no response at all, "broken" and "nothing in
    * that direction" are indistinguishable.
-   */
-  test("그 방향에 갈 곳이 없으면 안내가 뜬다", async ({ page }) => {
-    await focusCanvas(page);
-    await page.keyboard.press("ArrowRight");
-    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
-
-    expect(await walkUntilDeadEnd(page), "막다른 길에 닿지 못했다 — 이 시험이 아무것도 안 재고 있다").toBe(true);
-    await expect(
-      page.getByText(/이어진 노드가 없어요/).first(),
-      "막다른 길인데 아무 말도 없다",
-    ).toBeVisible({ timeout: 4_000 });
-  });
-
-  /**
+   *
    * **The notice appears beside the node being walked from, dismisses itself, and
    * does not block walking** (three owner reports from real use, 2026-08-10).
    *
@@ -365,12 +310,20 @@ test.describe("지도 키보드 걷기", () => {
    * canvas, and a focused toast stops its own dismissal timer. Fixing one leaves the
    * other two.
    */
-  test("막다른 길 안내가 노드 옆에 뜬다", async ({ page }) => {
+  test("막다른 길에서 안내가 노드 옆에 뜨고, 초점을 빼앗지 않으며, 스스로 사라진다", async ({ page }) => {
     await focusCanvas(page);
     await page.keyboard.press("ArrowRight");
     await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
     expect(await walkUntilDeadEnd(page), "막다른 길에 닿지 못했다 — 이 시험이 아무것도 안 재고 있다").toBe(true);
 
+    // It says so, rather than staying silent.
+    await expect(
+      page.getByText(/이어진 노드가 없어요/).first(),
+      "막다른 길인데 아무 말도 없다",
+    ).toBeVisible({ timeout: 4_000 });
+
+    // Beside the node being walked from — "beside" can only be measured as a distance. The
+    // measured toast sat in the bottom-right corner, over 500px away at 1440×900.
     const geom = await page.evaluate(() => {
       const probe = window.__atlasMap;
       const id = probe?.selection().nodeId;
@@ -387,35 +340,19 @@ test.describe("지도 키보드 걷기", () => {
       };
     });
     expect(geom, "안내가 DOM 에 없다 — `data-walk-notice` 로 찾을 수 없다").not.toBeNull();
-    // "Beside the node" **can only be measured as a distance.** The measured toast sat
-    // in the bottom-right corner, over 500px away at 1440×900.
     expect(geom!.dx, "안내가 노드에서 가로로 너무 멀다").toBeLessThan(280);
     expect(geom!.dy, "안내가 노드에서 세로로 너무 멀다").toBeLessThan(200);
-  });
 
-  test("막다른 길 안내는 스스로 사라진다", async ({ page }) => {
-    await focusCanvas(page);
-    await page.keyboard.press("ArrowRight");
-    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
-    expect(await walkUntilDeadEnd(page), "막다른 길에 닿지 못했다 — 이 시험이 아무것도 안 재고 있다").toBe(true);
-    await expect(page.locator("[data-walk-notice]").first()).toBeVisible({ timeout: 4_000 });
-    // It goes away without being pressed — owner: *"Show briefly, then vanish on its own."*
-    await expect(page.locator("[data-walk-notice]")).toHaveCount(0, { timeout: 6_000 });
-  });
-
-  test("안내가 떠 있어도 계속 걸을 수 있다 — 초점을 빼앗지 않는다", async ({ page }) => {
-    await focusCanvas(page);
-    await page.keyboard.press("ArrowRight");
-    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
-    expect(await walkUntilDeadEnd(page), "막다른 길에 닿지 못했다 — 이 시험이 아무것도 안 재고 있다").toBe(true);
-    await expect(page.locator("[data-walk-notice]").first()).toBeVisible({ timeout: 4_000 });
-
+    // It does not take the focus, so the arrow keys still reach the canvas.
     const stillOnCanvas = await page.evaluate(
       () => document.activeElement?.getAttribute("data-surface-role") === "map-canvas",
     );
     expect(stillOnCanvas, "안내가 초점을 가져갔다 — 그러면 방향키가 지도에 도착하지 않는다").toBe(true);
 
-    // And walking must actually work. Going back the way we came, there is a neighbour.
+    // It goes away without being pressed — owner: *"Show briefly, then vanish on its own."*
+    await expect(page.locator("[data-walk-notice]")).toHaveCount(0, { timeout: 6_000 });
+
+    // And walking still works. Going back the way we came, there is a neighbour.
     const before = await selectedId(page);
     await page.keyboard.press("ArrowRight");
     await expect

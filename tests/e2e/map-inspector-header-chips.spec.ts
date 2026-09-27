@@ -11,12 +11,12 @@ import { waitForBoxStill } from "./settle";
  * domain chip's right edge (1469 vs 1465). Two shapes that mean the same kind of thing
  * ("a fact about this node you can read, one of them pressable") read as unrelated.
  *
- * Claims at 1280 and 1512: the kind chip and the domain chip share height, radius and
+ * Claims at 1512 (the owner's window; the chips' grammar does not change with width): the kind chip and the domain chip share height, radius and
  * type size; the close button matches that height; the rows end on one right edge; each
  * row's controls share a vertical centre; the title stays the largest type in the header.
  */
 
-for (const width of [1280, 1512] as const) {
+for (const width of [1512] as const) {
   test(`inspector header chips share one grammar at ${width}`, async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: 900 });

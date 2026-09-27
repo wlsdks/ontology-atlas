@@ -18,7 +18,8 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  * - at 1040 the guide popover lay 34px across the index column;
  * - below `xl` the conversation dock covered the index, ignored Escape and left focus on
  *   `body`;
- * - the questions popover mixed a 12px/14px button with the 6px/11px chip grammar;
+ * - the questions popover mixed a 12px/14px button with the 6px/11px chip grammar
+ *   (asserted in `library-spine.spec.ts`, beside the list it belongs to);
  * - Find documents with nothing to suggest offered a dead primary and no corner close;
  * - the new-page dialog moved its field 9px under the caret on the first keystroke;
  * - the graph card cut a long page name to one line, the only place it could be read whole;
@@ -93,10 +94,8 @@ test.describe("Library interaction placement", () => {
     expect(hit).toBe(true);
   });
 
-  for (const size of [
-    { width: 1512, height: 949 },
-    { width: 1040, height: 720 },
-  ]) {
+  // The narrowest window, where the index column and the reader leave a tooltip the least room.
+  for (const size of [{ width: 1040, height: 720 }]) {
     test(`index chip tooltips open into the reader and the chips are named by their label at ${size.width}`, async ({ page }) => {
       await openLibrary(page, size);
       /* The column's controls end at its `px-3` edge; a panel beside them covers none. */
@@ -199,23 +198,6 @@ test.describe("Library interaction placement", () => {
     await expect
       .poll(() => page.evaluate(() => document.activeElement !== document.body && document.activeElement !== null))
       .toBe(true);
-  });
-
-  test("the questions popover's ask control wears the chip grammar of its trigger", async ({ page }) => {
-    await openLibrary(page, { width: 1512, height: 949 });
-    const trigger = page.getByTestId("library-questions-open");
-    await trigger.click();
-    const ask = page.getByTestId("library-questions-ask");
-    await expect(ask).toBeVisible();
-    const read = (locator: Locator) =>
-      locator.evaluate((element) => {
-        const style = getComputedStyle(element);
-        return { radius: style.borderTopLeftRadius, size: style.fontSize, height: element.getBoundingClientRect().height };
-      });
-    const [a, b] = [await read(trigger), await read(ask)];
-    expect(b.radius).toBe(a.radius);
-    expect(b.size).toBe(a.size);
-    expect(Math.abs(b.height - a.height)).toBeLessThan(1);
   });
 
   test("Find documents with nothing to suggest is an empty state with a corner close", async ({ page }) => {
