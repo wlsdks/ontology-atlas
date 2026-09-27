@@ -10,14 +10,12 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * (`text-wrap: balance`), so a two-line description splits into two comparable lines.
  *
  * Measured from the rendered text, not the class: each word's first client rect gives its line,
- * so the check sees what a reader sees in both locales, at the 14-inch window and at the app's
- * floor width, where the picker is the same width but the toolbar is not.
+ * so the check sees what a reader sees in both locales. The picker is the same 240px at every
+ * window width, so one width is enough.
  */
 for (const locale of ["ko", "en"] as const) {
-  for (const viewport of [
-    { width: 1512, height: 949 },
-    { width: 1040, height: 720 },
-  ]) {
+  // The picker is a fixed 240px surface, so one window proves both locales' wraps.
+  for (const viewport of [{ width: 1512, height: 949 }]) {
     test(`${locale} ${viewport.width}: every view description wraps without a lone last word`, async ({ page }) => {
       test.setTimeout(120_000);
       await page.setViewportSize(viewport);
