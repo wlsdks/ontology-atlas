@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { findDependencyCycles, isDependencyEdgeType } from "./dependency-cycles";
+import { findDependencyCycles, isDependencyEdgeType, MAX_RECORDED_CYCLES } from "./dependency-cycles";
 
 function n(id: string): KnowledgeGraphNode {
   return {
@@ -124,5 +124,25 @@ describe("findDependencyCycles", () => {
     const g = nodes("c:a", "c:b");
     const edges = [e("c:a", "c:b"), e("c:b", "c:ghost"), e("c:ghost", "c:a")];
     expect(findDependencyCycles(g, edges).totalCycles).toBe(0);
+  });
+
+  it("returns an empty, complete inventory for an empty graph", () => {
+    expect(findDependencyCycles([], [])).toEqual({
+      cycles: [],
+      totalCycles: 0,
+      hiddenCycles: 0,
+      activeCycleIds: [],
+      limited: false,
+    });
+  });
+
+  it.each([9, 10])("keeps a bounded, limited inventory when %i nodes all depend on one another", (size) => {
+    const ids = Array.from({ length: size }, (_, i) => `c:${i}`);
+    const edges = ids.flatMap((from) => ids.filter((to) => to !== from).map((to) => e(from, to)));
+    const result = findDependencyCycles(nodes(...ids), edges);
+    expect(result.limited).toBe(true);
+    expect(result.totalCycles).toBe(MAX_RECORDED_CYCLES);
+    expect(result.activeCycleIds).toHaveLength(MAX_RECORDED_CYCLES);
+    expect(result.cycles.map((cycle) => cycle.length)[0]).toBe(2);
   });
 });
