@@ -22,68 +22,24 @@ import {
 } from '@/shared/lib/appearance-preferences';
 
 /**
- * The **view picker** the 「3D」 chip opens (2026-08-18).
- *
- * ## Why a popup rather than a toggle
- *
- * With two arrangements inside 3D (dome and cloud), a single 「3D on/off」 toggle can
- * no longer say **what you are looking at**. The arrangements were first put in the
- * settings sheet, and two owner verdicts came back: *"Where can I see the cloud?
- * There's nothing to choose."* (where can I see the cloud? there's nothing to choose) and
- * *"Nobody knows what "ownership" and "coupling" mean — pressing 3D should bring up a selection popup."* (nobody knows
- * what "ownership" and "coupling" mean — pressing 3D should bring up a selection popup).
- *
- * Both are the same diagnosis. **A control that changes what you are looking at
- * belongs over what you are looking at.** The settings sheet is the place for values
- * you set once and rarely change, not for 「how do I look at this screen」.
- *
- * ## Why three rows — flat is chosen here too
- *
- * Splitting 「turn 3D off」 and 「choose a shape within 3D」 into two controls makes the
- * user read one state in two places. With all three in one list, **what you are
- * looking at reads from one place** and choosing is a single act. So the duplicate
- * switch in the settings sheet was removed when this popup appeared — this
- * repository's «one fact, one place» discipline.
- *
- * ## Why the names are not 「ownership/coupling」
- *
- * That was the first copy, and the owner did not recognise it. An abstract noun is
- * only a name to someone who already knows the concept. Name the visible thing first
- * (**dome** · **cloud**) and attach what it answers on a line below. The internal
- * keys (`ownership`/`coupling`) are unchanged — the screen's words differing from the
- * code's words is normal; putting the code's words on screen is the accident.
+ * The view picker the map-view chip opens. A control that changes what you are looking at
+ * sits over the map, not in settings, and every view, flat included, is one list so the
+ * current view reads from one place. Rows name the visible shape, never the internal key.
  */
 
-/**
- * One row of the list — the two flat views plus the three 3D arrangements.
- *
- * `galaxy` is 2D too, but it owns a stable three-arm placement for every real
- * concept while Flat keeps the containment map. It is one row here because to
- * a reader "how does the map look" is one question, and because that is where
- * the owner went looking for it (2026-09-10, superseded spatial direction
- * selected 2026-09-15).
- */
+/** One row: the flat views plus the 3D arrangements; "how does the map look" is one question. */
 type View3dChoice = 'flat' | 'territories' | 'hex' | 'galaxy' | MapArrangement;
 
 /*
- * Strata before Neural. The order is how far each moves from the flat map above
- * it: Strata still draws containment, as stacked levels, and Neural drops it
- * altogether, so reading down the list is one continuous step away from the
- * default. The Cone left this list on 2026-09-25; a stored Cone opens Strata
- * (`resolveStoredMapArrangement`).
+ * Ordered by distance from the flat map: the flat-plane views first, then Strata
+ * (containment as levels) before Neural (no containment). A stored Cone opens
+ * Strata (`resolveStoredMapArrangement`).
  */
-/*
- * Territories sits directly under Flat: it is the same flat plane with nothing folded, so it
- * is the smallest step away from the default (owner decision, 2026-09-24).
- */
-/* The hex board follows Territories: the same flat plane, one tile per capability (2026-09-25). */
 const CHOICES: readonly View3dChoice[] = ['flat', 'territories', 'hex', 'galaxy', 'strata', 'coupling'];
 
 /**
- * Is this press on the map itself? The picker floats over the canvas, so the
- * canvas is the one surface a dismissing press must not also act on. Matched by
- * element type rather than by importing the map widget — `search-hint` and
- * `ontology-map` are siblings, and a DOM shape is not a dependency.
+ * The canvas is the one surface a dismissing press must not also act on. Matched by
+ * element type, since `search-hint` may not import its sibling `ontology-map`.
  */
 function isMapCanvas(target: Node): boolean {
   const element = target instanceof Element ? target : target.parentElement;
@@ -101,10 +57,7 @@ export function View3dMenu({
   onClose: (returnFocus: boolean) => void;
   /** The radiogroup's id, which the chip names in `aria-controls`. */
   groupId?: string;
-  /**
-   * The 「3D」 chip that owns this picker. A press on it is the chip's own
-   * business — see the dismissal block below.
-   */
+  /** The chip that owns this picker; a press on it is not an outside press. */
   anchorRef?: RefObject<HTMLElement | null>;
 }) {
   const t = useTranslations('searchWidgets.hint');
@@ -115,49 +68,33 @@ export function View3dMenu({
   const hexBoard = useHexBoard();
   const value: View3dChoice = view3d ? arrangement : hexBoard ? 'hex' : territories ? 'territories' : galaxy ? 'galaxy' : 'flat';
   const boxRef = useRef<HTMLDivElement | null>(null);
-  /*
-   * The way out — a surface that appears conditionally **is born owing a way to
-   * disappear** (`surface-motion-ratchet`). Without one it vanishes in a single frame
-   * on close, and that is a hard cut where the user cannot see what they just closed.
-   */
+  // A conditional surface owes an exit motion (`surface-motion-ratchet`), or it vanishes in one frame.
   const presence = usePanelPresence(open);
 
   const write = (next: View3dChoice) => {
-    // At most one of the three flags is on; each row writes all of them.
+    // At most one view flag is on; each row writes all of them.
     writeTerritories(next === 'territories');
     writeHexBoard(next === 'hex');
     if (next === 'flat' || next === 'galaxy' || next === 'territories' || next === 'hex') {
-      // The 2D views turn the dome off; the Galaxy choice also selects its
-      // dedicated stable sky coordinates while Flat restores its prior map.
       writeGalaxy(next === 'galaxy');
       writeView3d(false);
     } else {
       writeGalaxy(false);
-  // Write the arrangement **first** — turning 3D on and then changing the arrangement
-  // starts assembling with the old arrangement for one frame and then rebuilds (the
-  // assembly animation stutters twice).
+      // The arrangement goes first, or 3D assembles the old arrangement for a frame and rebuilds.
       writeMapArrangement(next);
       writeView3d(true);
     }
   };
 
   /*
-   * Arrow keys move the checked view and the map follows at once, with the picker still
-   * open (a radiogroup's own grammar, and the point of choosing while watching the
-   * map). A press, Enter included, chooses and closes, and focus goes back to the chip:
-   * it used to fall to BODY after every choice (measured 2026-09-25, all five views).
+   * Arrow keys change the view with the picker still open, so the map follows while
+   * watching; a press, Enter included, chooses, closes and returns focus to the chip.
    */
   const group = useRovingRadioGroup({ value, values: CHOICES, onChange: write });
 
-  // On open, focus the checked view, so the keyboard lands inside the picker it opened
-  // rather than on the chip with one Tab still to go.
-  // The box mounts one commit after `open` (the presence gate), so both are awaited.
-  //
-  // A layout effect, so the focus moves in the same task that inserts the box. As a passive
-  // effect it ran a task later, and an input event is dispatched ahead of that task: an
-  // Escape pressed as the picker appeared closed it and focused the chip, then the stale
-  // effect focused the closing radio, and focus fell to <body> when the box unmounted
-  // (measured 2026-09-26: every run with the Escape between the insert and the effect).
+  // On open, focus the checked view. The box mounts one commit after `open`, so both are
+  // awaited. A layout effect, or an Escape landing before a passive effect lets that
+  // effect focus the closing radio and drop focus to <body>.
   const boxMounted = presence.mounted;
   useLayoutEffect(() => {
     if (!open || !boxMounted) return;
@@ -165,18 +102,9 @@ export function View3dMenu({
   }, [open, boxMounted]);
 
   /*
-   * Closes on an outside press or Esc. This surface **does not block what is behind
-   * it** — the point is choosing while watching the map, and a modal would hide the
-   * result while choosing. So there is no scrim and no trap (it is not subject to the
-   * modal contract).
-   *
-   * ⚠️ **While closed it listens to nothing.** This component is **always rendered**
-   * beside the chip (even with `open` false). Hooks run before any early return, so
-   * without this guard it would intercept document Esc and `stopPropagation()`
-   * **the whole time the menu is closed** — killing Esc across the app. Measured
-   * (2026-08-19 CI): node detail stopped closing on Esc, and five specs went red
-   * together, covering the keyboard path, focus return and the popover contract. A
-   * conditional surface's global listener lives **only while open**.
+   * Closes on an outside press or Esc, with no scrim or trap: the map stays visible while
+   * choosing. The component is always rendered, so listeners live only while open, or its
+   * Escape `stopPropagation()` kills Escape across the app.
    */
   useEffect(() => {
     if (!open) return;
@@ -186,29 +114,11 @@ export function View3dMenu({
         onClose(true);
       }
     };
-    /**
-     * **Putting the picker away must not walk the map** (owner report, 2026-09-07).
-     *
-     * Two holes met here, and together they wrote state the owner never asked for:
-     *
-     * 1. The chip counted as 「outside」. Pressing it a second time closed here and
-     *    the chip's own toggle reopened in the same React batch, so the control that
-     *    opens the picker **could not close it** (measured: `data-state` stayed
-     *    `open` after a second chip press). The only way out left was pressing the
-     *    map.
-     * 2. That press was not consumed. It dismissed the picker **and** reached the
-     *    canvas, selecting whatever node sat under it. In 3D every tier is drawn, so
-     *    that is usually a capability or an element — which appends a footprint step
-     *    and derives the node's `contains` ancestors into `open=`. Back in flat 2D
-     *    the reader finds a walked-trail chip and one domain fanned open, from a click
-     *    they never meant to make.
-     *
-     * So: the anchor is not outside, and a dismissing press that lands on the map
-     * canvas closes the picker and stops there. It is swallowed on `pointerdown`
-     * (capture) plus the `click` that follows, because the canvas acts on both.
-     * Other chrome is left alone on purpose — a press on the search chip or the nav
-     * rail should still do its job on the first try; only the surface this picker
-     * hovers over is protected, and only for the one press that dismissed it.
+    /*
+     * Putting the picker away must not walk the map. The anchor is not outside, or the chip
+     * closes and reopens it in one batch. A dismissing press on the canvas is swallowed on
+     * pointerdown and the following click, or it selects a node and writes trail and the
+     * URL's `open=` state; other chrome still acts on the first press.
      */
     const onDown = (e: PointerEvent) => {
       const box = boxRef.current;
@@ -231,8 +141,7 @@ export function View3dMenu({
       );
     };
     document.addEventListener('keydown', onKey);
-    // Received on capture — stops the map canvas swallowing pointerdown first and
-    // leaving the popup open.
+    // Capture phase, or the map canvas swallows pointerdown first and the picker stays open.
     document.addEventListener('pointerdown', onDown, true);
     return () => {
       document.removeEventListener('keydown', onKey);
@@ -251,11 +160,7 @@ export function View3dMenu({
       className={cn(
         'overlay-spring-surface',
         presence.exiting && 'pointer-events-none',
-        // It hangs from the chip's left edge and grows into the map. The lane starts
-        // at the free map's left edge at every width (2026-09-25), so growing leftward
-        // or centring under the chip put the picker's left part under INDEX; below
-        // `xl` the lane used to sit in the top-right corner, which is why this once
-        // hung from the right edge (2026-09-02, clear of the right rail).
+        // Hangs from the chip's left edge into the map; growing leftward would put it under INDEX.
         'absolute left-0 top-full z-40 mt-2 w-60',
         'rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)]',
         'bg-[color:var(--map-panel-surface)] p-1.5 shadow-[var(--map-panel-shadow)]',
@@ -278,8 +183,7 @@ export function View3dMenu({
               className={controlClass({
                 shape: 'row',
                 size: 'md',
-                // Hover is owned by the value layer — writing it by hand makes the
-                // app's hover grammar diverge site by site (`hover-axis-adoption-ratchet`).
+                // Hover comes from the value layer (`hover-axis-adoption-ratchet`).
                 hoverSurface: 'lift',
                 active,
                 className: 'w-full flex-col items-start gap-0.5 px-2.5 py-2 text-left',
@@ -295,12 +199,8 @@ export function View3dMenu({
               >
                 {t(`view3dChoice.${choice}`)}
               </span>
-              {/* One line for what that row answers. The name alone does not convey
-                  «what is different» — which is why 「Ownership/Combination」 failed.
-                  Balanced, because a description that needs a second line in this 240px
-                  picker otherwise leaves one word under a full line: the hex row ended on a
-                  lone one-syllable word ("board") and the English on a lone "domain" (owner
-                  review, 2026-09-26). */}
+              {/* What the row answers; balanced so a two-line hint in this 240px picker
+                  never leaves one word alone on its second line. */}
               <span className="break-keep text-balance text-label text-[color:var(--map-panel-text-secondary)]">
                 {t(`view3dChoiceHint.${choice}`)}
               </span>

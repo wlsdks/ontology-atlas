@@ -43,12 +43,7 @@ describe("the library graph's view", () => {
     expect(view.y).toBe(0);
   });
 
-  /**
-   * **The fit frames, it does not magnify** (2026-09-12, G2). A folder of six documents on a
-   * 1920 window asks for whatever scale spreads six dots across the width, and the marks are
-   * a fixed world size, so an unclamped fit hands their drawn size straight back to the
-   * window — which is the picture the owner rejected.
-   */
+  // The fit frames, it does not magnify: an unclamped fit would let the window size the marks.
   it("clamps the fit at both ends rather than magnifying a small folder", () => {
     const tiny = fitView({ minX: -50, maxX: 50, minY: -30, maxY: 30 }, BOX, 64);
     expect(tiny.scale).toBe(LIBRARY_ZOOM_MAX);
@@ -87,9 +82,7 @@ describe("the library graph's view", () => {
 
   it("stops at the bounds instead of zooming forever", () => {
     const bounds = scaleBounds();
-    // Absolute, not fit-relative: a mark is a fixed world size, so the camera is the only
-    // thing deciding how big it is drawn and a fit-relative ceiling would hand that back to
-    // the window.
+    // Absolute, not fit-relative, or the window decides the drawn mark size.
     expect(bounds).toEqual({ min: LIBRARY_ZOOM_MIN, max: LIBRARY_ZOOM_MAX });
     // A source's square never drops under three canvas pixels across.
     expect(SOURCE_MARK_WORLD_RADIUS * 2 * bounds.min).toBeCloseTo(MIN_SOURCE_MARK_PX, 6);
@@ -125,10 +118,7 @@ describe("the library graph's view", () => {
     expect(fitView(tiny, BOX, 64).scale).toBe(LIBRARY_ZOOM_MAX);
   });
 
-  /**
-   * **What the fit tile reads before it offers a press.** A press that could only repaint
-   * the same pixels is the affordance inspection 122 measured as a pixel-identical frame.
-   */
+  // What the fit tile reads before offering a press that could only repaint the same pixels.
   it("tells a camera that is already the fit from one that is not", () => {
     const fit = { scale: 1.6, x: 40, y: -12 };
     expect(isSameView(fit, fit)).toBe(true);

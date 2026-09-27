@@ -192,9 +192,8 @@ describe("SearchHint", () => {
   });
 
   it("takes its place from the toolbar instead of positioning itself", () => {
-    // Owner report, 2026-09-24: centred on its own with `left-1/2`, the lane ran into
-    // the utility lane once the review panel narrowed the map. The toolbar that holds
-    // both lanes now owns position; the lane only accepts a placement class.
+    // The toolbar that holds both lanes owns position; a self-centred lane runs into the
+    // utility lane once the map narrows, so the lane only accepts a placement class.
     render(<SearchHint className="xl:ml-auto" onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
     const lane = screen.getByTestId("topology-search-action-lane");
     expect(lane).toHaveClass("xl:ml-auto");
