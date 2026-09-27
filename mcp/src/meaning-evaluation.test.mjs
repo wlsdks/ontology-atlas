@@ -658,11 +658,7 @@ test('repository proposal rejects bounded-evidence omissions as exclusions witho
 });
 
 /*
- * The 2026-08-26 field trial handed a source-hidden reader a project exclusion
- * that nothing in the subject supported, and the reader repeated it as fact. The
- * proposal had already typed its scope answer as unfinished; that qualifier just
- * never reached the exclusions it governs. This checks both directions, because
- * a warning that fires on every proposal is noise rather than a gate.
+ * Both directions: a warning that fired on every proposal would be noise.
  */
 test('a project exclusion inherits an unfinished scope answer, and does not when the answer is complete', () => {
   const analysis = analyzeRepoStructure(fixtureRoot);

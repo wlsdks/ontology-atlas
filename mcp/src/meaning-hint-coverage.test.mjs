@@ -1,20 +1,6 @@
-// **Every** remedy id must carry a sentence the reader can act on.
-//
-// Why (2026-08-17, a hole of my own making): 2026-08-17 (23) fixed "gives a
-// diagnosis but no remedy" — and put **only the states I had seen** into the
-// table. One rung up, this came out:
-//
-//   … needs_evidence (competency_question_incomplete).
-//   Next: resolve_competency_question.
-//
-// An id again. And it leaked the other way too: the table held
-// `repair_source_receipt`, an id that **does not exist** (I invented it). A dead
-// row is never caught and pretends to be alive.
-//
-// > **A table filled in only from the cases you happened to hit is a table with holes.**
-//
-// So the pairing is machine-checked: every remedy the source can emit has a
-// sentence, and every sentence names a remedy that exists.
+// Every remedy id the source can emit has a sentence a reader can act on, and
+// every sentence names a remedy that exists: a table filled from the cases one
+// happened to see has holes, and a dead row passes while pretending to be live.
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -27,11 +13,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const HINT_TABLE_FILE = join(HERE, 'tools', 'graph.mjs');
 
 /**
- * The modules that produce remedies.
- *
- * Two files **each declare the same list** (`ACTION_IDS`, `SOURCE_ACTION_IDS`) and
- * the evaluator emits its own on the fly, so reading one place misses some. Scan
- * all of them and take the union.
+ * The modules that produce remedies. Two declare the same list
+ * (`ACTION_IDS`, `SOURCE_ACTION_IDS`) and the evaluator emits its own, so the union is scanned.
  */
 const REMEDY_SOURCES = [
   'meaning-assessment.mjs',
@@ -55,8 +38,7 @@ function remedyIdsInSource() {
       found.add(m[1]);
       found.add(m[2]);
     }
-    // A declared list is authoritative too — since 2026-08-17 it is declared in
-    // one place only (`project-source-vocabulary.mjs`).
+    // A declared list is authoritative too (`project-source-vocabulary.mjs`).
     for (const block of text.matchAll(/ACTION_IDS = Object\.freeze\(\s*new Set\(\[([^\]]*)\]|(?:SOURCE_)?ACTION_IDS = new Set\(\[([^\]]*)\]/g)) {
       for (const m of (block[1] ?? block[2] ?? '').matchAll(/'([a-z_]+)'/g)) found.add(m[1]);
     }
@@ -74,10 +56,7 @@ function hintKeys() {
   return new Set([...block.matchAll(/^\s{2}([a-z_]+):/gm)].map((m) => m[1]));
 }
 
-/**
- * The ones that are not remedies — `{ id: … }` in these files also marks a **gap**
- * (what is wrong). A gap needs no sentence: the message already states its name.
- */
+/** Gap ids ("what is wrong") share the `{ id: … }` shape but need no sentence. */
 const GAP_IDS = new Set([
   'assessment_input_invalid',
   'competency_not_authored',
@@ -96,7 +75,6 @@ const GAP_IDS = new Set([
   'evidence',
   'impact',
   'scope',
-  // Gaps on the source side — "what is wrong", not "what to do".
   'source_role_evidence_missing',
   'source_inventory_truncated',
   'declared_source_path_missing',
@@ -149,7 +127,6 @@ test('each sentence says something, since a short shell is no better than the id
     const to = n + 1 < keyAt.length ? keyAt[n + 1] : lines.length;
     const key = /^ {2}([a-z_]+):/.exec(lines[from])[1];
     const value = lines.slice(from, to).join(' ').slice(key.length + 3);
-    // A comment line is not a value.
     const prose = value.replace(/\/\/[^\n]*/g, '').replace(/[^A-Za-z0-9 .,`'()/-]/g, ' ');
     assert.ok(
       prose.trim().length > 40,

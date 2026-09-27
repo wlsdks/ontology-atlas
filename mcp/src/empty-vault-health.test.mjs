@@ -1,16 +1,6 @@
-// Never answer "healthy" for a folder with zero nodes.
-//
-// Why (measured 2026-08-16): running `health` on a folder that is not a vault (one
-// `.md`, no frontmatter) returned **`healthy`, exit 0** — because all six checks
-// were `pass:0`. Zero cycles, zero unresolved edges, zero disconnected components.
-// With nothing to count, everything passes.
-//
-// That is exactly the failure `/gate-probe` names: **a check idling on an empty set
-// is not a check.** And the person receiving that answer loses the chance to
-// suspect they pointed at the wrong folder — the tool just said it was fine.
-//
-// So "is there anything to count" is checked first. Without it, the `pass` of the
-// other six proves nothing.
+// Zero nodes is never "healthy": every check passes vacuously on an empty set
+// (`/gate-probe`), and the person loses the hint they opened the wrong folder.
+// "Is there anything to count" is checked first.
 
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -46,9 +36,7 @@ describe('does not report an empty vault as healthy', () => {
   });
 
   it('pins that the other checks pass vacuously on an empty set', () => {
-    // If this assertion breaks, the check above has not become unnecessary — some
-    // other check has started behaving differently on an empty vault, and this is
-    // the place to look again.
+    // If this breaks, another check changed its empty-vault behaviour; look there.
     const others = health([]).checks.filter((c) => c.id !== 'vault_present');
     assert.ok(others.length >= 5);
     assert.deepEqual(

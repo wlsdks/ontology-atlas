@@ -1,4 +1,3 @@
-// R16 (b3) — analyzeRepoStructure unit tests.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -14,10 +13,8 @@ import { fileURLToPath } from 'node:url';
 import { analyzeRepoStructure, buildProposalAssessment } from './analyze.mjs';
 import { selectExactCaseEntry } from './analyze/scan-guards.mjs';
 
-// The meaning corpus lives at the repo root (tests/fixtures/meaning-corpus).
-// Resolve it from this file, not process.cwd(), so the suite passes whether it
-// runs from the repo root (root test:mcp:unit) or from mcp/ (mcp test:all).
-// Same pattern as analyze-golden-corpus.test.mjs.
+// Resolved from this file, not process.cwd(), so the suite runs from the repo
+// root or from mcp/.
 const meaningCorpusRoot = join(
   dirname(fileURLToPath(import.meta.url)),
   '../../tests/fixtures/meaning-corpus',
@@ -161,7 +158,7 @@ test('FSD repo — features/ → capabilities, entities/widgets/views → implem
       [...r.capabilities.map((c) => c.slug)].sort(),
       ['capabilities/auth', 'capabilities/billing'],
     );
-    // Slugs are flat role names — location is carried by path/evidence (decided 2026-08-01).
+    // Slugs are flat role names; location lives in path and evidence.
     assert.deepEqual(
       [...r.elements.map((e) => e.slug)].sort(),
       ['elements/header', 'elements/home', 'elements/user'],
@@ -194,7 +191,6 @@ test('Generic repo — src/ depth-1 folders → capabilities', () => {
       r.capabilities.map((c) => c.slug).sort(),
       ['capabilities/api', 'capabilities/db'],
     );
-    // index.ts → element — slug stays flat, the file location goes in `path`.
     const apiEl = r.elements.find((e) => e.slug === 'elements/api-entry');
     assert.ok(apiEl);
     assert.equal(apiEl.path, 'src/api/index.ts');
@@ -2601,7 +2597,7 @@ test('pnpm workspace — operational README sections stay out of domains and wor
     const r = analyzeRepoStructure(root);
     assert.equal(r.framework, 'generic');
     assert.deepEqual(r.domains, []);
-    // A workspace member's name is the slug — location goes in path/evidence (decided 2026-08-01).
+    // A workspace member's name is the slug; location lives in path and evidence.
     assert.deepEqual(
       r.elements.map((element) => element.slug),
       [
@@ -2753,20 +2749,17 @@ test('workspace semantic evidence rejects package files that resolve outside the
 });
 
 test('a top-level standalone package (like mcp/ or cli/) becomes an element candidate, keyed by package.json', () => {
-  // Measured 2026-08-01: analyze walked only the src/ FSD layers, so this
-  // repository's agent surfaces (mcp/, cli/) were missing entirely from a
-  // regenerated vault. The tool's field of view is the vault's reach, so a reach
-  // regression is caught here.
+  // The tool's field of view is the vault's reach: top-level packages (mcp/,
+  // cli/) must be found, not only the src/ FSD layers.
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'host-app' }));
     writeFileSync(join(r, 'README.md'), '# Host\n\n## Serving\n');
     mkdirSync(join(r, 'src/features/serve'), { recursive: true });
-    // Two independent packages — these must be proposed.
     mkdirSync(join(r, 'mcp'), { recursive: true });
     writeFileSync(join(r, 'mcp', 'package.json'), '{"name":"host-mcp"}\n');
     mkdirSync(join(r, 'cli'), { recursive: true });
     writeFileSync(join(r, 'cli', 'package.json'), '{"name":"host-cli"}\n');
-    // A top-level folder with no package.json — must not be proposed (blanket coverage is not the goal).
+    // No package.json: not proposed, since blanket coverage is not the goal.
     mkdirSync(join(r, 'scripts'), { recursive: true });
     writeFileSync(join(r, 'scripts', 'run.mjs'), '');
     mkdirSync(join(r, 'tests'), { recursive: true });
@@ -2782,7 +2775,6 @@ test('a top-level standalone package (like mcp/ or cli/) becomes an element cand
       r.elements.some((e) => e.slug.includes('scripts') || e.slug.includes('tests')),
       false,
     );
-    // Carried on the containment spine as well.
     assert.ok(r.suggestedRelations.some((rel) => rel.to === 'elements/mcp'));
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -4532,29 +4524,15 @@ test('invalid analyze options are rejected instead of coerced', () => {
 });
 
 /**
- * The defect where one `shared/` folder made it find nothing (measured while
- * dogfooding, 2026-07-28).
- *
- * `fsdMarkers` contained `shared`, so a single `src/shared/` folder — **common in
- * any TS or Node project** — was enough to classify the framework as `fsd`. But
- * FSD mode only walks `features/entities/widgets/views`, so with none of those
- * present it silently returned **0 capabilities and 0 elements**, and nothing in
- * the response said the zero came from the framework verdict.
- *
- * `inferImports` in the same call extracted auth, tasks, db, and notifications
- * correctly from the same repository — **two tools saying different things about
- * one repository.**
- *
- * Promoted to a rule: **do not make a classification that cannot change what gets
- * read.** If the only consequence of calling something FSD is "there are no
- * folders to walk", the name does nothing but suppress.
+ * A classification must change what gets read: a lone `src/shared/` made the
+ * repository "FSD", whose walk found nothing and silently returned zero
+ * capabilities while inferImports found them.
  */
 test('src/shared alone is not FSD: with no folder to scan it takes the generic path', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'taskflow', description: 'x' }));
     writeFileSync(join(r, 'README.md'), '# Taskflow\n');
-    // The shape of the real dogfooding fixture — feature folders sit directly
-    // under src/, with one commonly named shared/ mixed in.
+    // Feature folders directly under src/, plus one shared/.
     mkdirSync(join(r, 'src/auth'), { recursive: true });
     mkdirSync(join(r, 'src/tasks'), { recursive: true });
     mkdirSync(join(r, 'src/notifications'), { recursive: true });
@@ -4573,7 +4551,6 @@ test('src/shared alone is not FSD: with no folder to scan it takes the generic p
   }
 });
 
-// Real FSD must stay FSD — check the fix did not break the other side.
 test('is still FSD when at least one folder to scan exists (lean FSD included)', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'lean', description: 'x' }));

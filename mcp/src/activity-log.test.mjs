@@ -1,4 +1,3 @@
-// Activity log contract: append, rotation, tail read, heartbeat agent copy.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import {
@@ -121,16 +120,8 @@ describe('activity-log (local audit log)', () => {
 
 describe('resolveAgentName records the client name from the connection greeting', () => {
   /**
-   * Agent names used to come only from the heartbeat file (registered explicitly
-   * through the CLI), so activity from an unregistered agent all piled up as
-   * `agent: null`. But the MCP initialize greeting **already carries**
-   * `clientInfo.name` ("claude-code" and friends). Do not discard a fact the server
-   * already knows.
-   *
-   * Priority: heartbeat (an identity a person or agent registered on purpose) >
-   * the greeting's name (automatic) > null. When a heartbeat exists and the
-   * greeting says a different name, the heartbeat wins — registration is intent,
-   * the greeting is a default.
+   * Heartbeat (a registered name, intent) > greeting `clientInfo.name` (a default)
+   * > null.
    */
   it('a heartbeat wins over the greeting', () => {
     const root = tmpVault();

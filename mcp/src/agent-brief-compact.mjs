@@ -87,12 +87,9 @@ function taskTerms(task) {
     collected.push(term);
     if (collected.length >= 24) break;
   }
-  // `lexicalTokens` emits a word and its canonical form, so "lists" arrives as
-  // both `lists` and `list` and every document that writes either one matches
-  // both. Scoring them separately paid twice for one task word: measured
-  // 2026-09-04, one repeated Includes noun reached 12 points and tied a
-  // capability whose own name stated the surface, and a tie returns nothing.
-  // Keep only the canonical representative; document tokens carry it too.
+  // `lexicalTokens` emits a word and its canonical form ("lists" and "list"), and
+  // documents carry both, so scoring each would pay twice for one task word.
+  // Keep only the canonical representative.
   const canonicalForms = new Set(collected.map((term) => canonicalToken(term)));
   const terms = collected.filter((term) => (
     canonicalToken(term) === term || !canonicalForms.has(canonicalToken(term))
@@ -235,19 +232,11 @@ function matchedTermsOnlyIn(terms, included, excluded) {
 }
 
 /**
- * The persisted claim a capability makes about itself, read from its Markdown.
- *
- * Three headings carry the claim: `## Definition`, `## Includes`, `## Excludes`.
- * Two older shapes are read as the same claim so a document written before the
- * construction rules does not fall through to its whole body: `## Inclusions` /
- * `## Exclusions`, and one `## Inclusions / Exclusions` section whose bullets
- * start with `Included:` and `Excluded:`.
- *
- * A document that states none of these is scored on its first prose paragraph —
- * the same excerpt `get_concept` returns — never on its full body. Measured
- * 2026-09-04 on the dogfood vault: the 25k-character MCP server document, which
- * had no `## Definition`, matched every task on generic nouns (`display`,
- * `name`, `result`) and beat the capability whose title named the task.
+ * The claim a capability makes about itself: `## Definition`, `## Includes`
+ * and `## Excludes`, plus the older `## Inclusions` / `## Exclusions` shapes (and one
+ * combined section with `Included:` / `Excluded:` bullets). Without any, it is
+ * scored on its first prose paragraph, the get_concept excerpt, never the full
+ * body, or a long document matches every task on generic nouns.
  */
 function claimSections(doc) {
   const body = doc?.body;
@@ -283,12 +272,9 @@ function claimSections(doc) {
 
 function scoreCapabilityClaim(doc, intent) {
   const { definition, includes, excludes, excerpt } = claimSections(doc);
-  // The name a person gave the capability is part of its claim: a task that
-  // says "topology map" belongs to "Topology Map Rendering & Search" before it
-  // belongs to a document whose prose merely mentions maps. Identity enters
-  // the positive set *before* the Excludes subtraction, so a title can never
-  // override an explicit boundary, and it feeds the non-goal conflict check,
-  // so refusal only gets stricter.
+  // The capability's name is part of its claim. Identity joins the positive set
+  // before the Excludes subtraction, so a title never overrides an explicit
+  // boundary, and it feeds the non-goal conflict check, so refusal only tightens.
   const identity = new Set(lexicalTokens([
     doc.frontmatter?.title || doc.frontmatter?.name || '',
     doc.frontmatter?.display_en || '',
@@ -297,14 +283,10 @@ function scoreCapabilityClaim(doc, intent) {
     doc.frontmatter?.path || '',
   ].join(' ')));
   const positive = new Set([...definition, ...includes, ...excerpt, ...identity]);
-  // An `Excludes` bullet bounds what a capability does with its subject; it
-  // does not withdraw the subject. Capabilities write their own name into
-  // their boundary routinely — "Git write operations" under Git History, "the
-  // tools that own them" under MCP Server — and subtracting that word cancelled
-  // the strongest ownership evidence the vault holds, the name a person chose,
-  // leaving the capability below the support bar. Identity survives the
-  // subtraction; Definition, Includes, and excerpt prose stay cancellable, so
-  // an explicit boundary still beats a described one.
+  // An Excludes bullet bounds what a capability does with its subject; it does not
+  // withdraw the subject. Capabilities name themselves in their boundaries, so
+  // identity survives the subtraction, while Definition, Includes and excerpt
+  // prose stay cancellable.
   const cancellablePositive = new Set([...definition, ...includes, ...excerpt]);
   const desiredPositive = intent.desiredTerms.filter((term) => (
     identity.has(term) || (cancellablePositive.has(term) && !excludes.has(term))
@@ -316,21 +298,11 @@ function scoreCapabilityClaim(doc, intent) {
   const nonGoalExcluded = matchedTermsOnlyIn(distinctNonGoalTerms, excludes, positive);
   const identitySupport = desiredPositive.filter((term) => identity.has(term));
   const includesSupport = desiredPositive.filter((term) => includes.has(term));
-  // A name and an `Includes` bullet are claims a person wrote about what this
-  // capability owns; Definition prose also describes what it merely touches.
-  // Selecting on prose alone is how a source-receipt capability whose
-  // Definition name-drops "map datasheets, full details" won a task about the
-  // map's full-detail panel (measured 2026-09-04 on the dogfood vault, four
-  // incidental nouns at 16 points against the named owner's 6). The 2026-09-02
-  // record's falsifier — "an ambiguous claim is selected" — pre-authorises
-  // exactly this narrowing to stricter refusal. Prose still scores; it can no
-  // longer qualify a candidate on its own. An `Excludes` hit on a stated
-  // non-goal stays qualifying: it is a reviewed boundary, not description.
-  //
-  // One shared word is still never a claim of ownership. `node`, `panel`, and
-  // `detail` belong to most of this vault, so a lone named term reproduces the
-  // same confident wrong answer from the other side; a named claim needs a
-  // second desired term behind it, or an explicit non-goal boundary.
+  // Only a name or an Includes bullet (what a person says it owns) can qualify a
+  // candidate; Definition prose also names what it merely touches, and still
+  // scores. An Excludes hit on a stated non-goal also qualifies: it is a reviewed
+  // boundary. One shared word is never ownership (`node`, `panel` are
+  // everywhere): a named claim needs a second desired term or a non-goal boundary.
   const namedSupport = new Set([...identitySupport, ...includesSupport]);
   const hasClaimSupport = (namedSupport.size >= 1 && desiredPositive.length >= 2)
     || (desiredPositive.length >= 1 && nonGoalExcluded.length >= 1);
@@ -341,12 +313,10 @@ function scoreCapabilityClaim(doc, intent) {
       nonGoalClause.filter((term) => desiredClaimTerms.has(term) && namedClaim.has(term)).length >= 2
     ));
   });
-  // Flat desired/non-goal sets intentionally de-duplicate repeated words for
-  // scoring. Keep clause provenance for the narrower refusal case where the
-  // task positively requests and then negates the same named/Includes-backed
-  // claim. Requiring two claim terms avoids turning one broad shared noun such
-  // as "ticket" into a semantic contradiction. This remains lexical evidence,
-  // never proof that the underlying business requirements conflict.
+  // Clause provenance is kept for the narrower refusal: a task that requests and
+  // then negates the same named or Includes-backed claim. Two claim terms are
+  // required so one broad noun is no contradiction. Lexical evidence, never proof
+  // that the requirements conflict.
   const conflict = desiredExcluded.length > 0 || nonGoalPositive.length > 0 || clauseClaimOverlap;
   const termWeight = (term) => (
     includes.has(term) || identity.has(term) ? 6 : definition.has(term) ? 4 : 2
@@ -393,13 +363,9 @@ function selectCapability(docs, intent) {
       ...claim.matchedTerms,
       ...matchedChildren.flatMap((row) => row.matchedTerms),
     ])].sort();
-    // An element the capability declares it owns is persisted evidence of what
-    // the capability covers: "Topology Index Panel" under "Topology Map
-    // Rendering & Search" says more about an INDEX-panel task than a
-    // neighbouring capability whose definition happens to mention the panel.
-    // Only the element's own name, slug, and path count, only distinct desired
-    // terms, capped at four, and only once the parent's own claim qualified —
-    // a child never rescues a conflicting or empty parent claim (2026-09-02).
+    // An element the capability declares is evidence of what it covers. Only its
+    // name, slug and path count, distinct desired terms, capped at four, and only
+    // once the parent's own claim qualified: a child never rescues a parent.
     const childIdentityTerms = new Set();
     if (claim.qualified) {
       for (const row of matchedChildren) {
@@ -478,9 +444,8 @@ function compactSourceCurrentness(projectSource) {
     topGap: projectSource?.topGap ?? null,
     nextAction: projectSource?.nextAction ?? null,
     witnessSummary: receipt?.witnessSummary ?? { total: 0, supported: 0, missing: 0 },
-    // The receipt is a person's measurement and stays stale until remeasured;
-    // `live` is what the same bounded probe saw just now. Both are reported so
-    // a reader sees which one a coordinate was verified against.
+    // The receipt is a person's measurement, stale until remeasured; `live` is what
+    // the probe saw now. Both are reported.
     ...(live
       ? {
           live: {
@@ -665,8 +630,8 @@ function completeMarkdownUnits(doc, section, role) {
       return true;
     });
     if (mixedTopLevelProse) {
-      // Free-standing prose may govern a preceding or following list. Keep the
-      // whole section verbatim instead of guessing which child owns its scope.
+      // Free-standing prose may govern the list before or after it, so the section is
+      // kept verbatim rather than guessing its owner.
       texts.push(source.trim());
     } else {
       let current = [];
@@ -1122,8 +1087,8 @@ export function buildCompactAgentBrief({
   };
   let qualifierCount = compact.focus.qualifiers?.units.length ?? 0;
   let result = projectWithQualifierCount(qualifierCount);
-  // Measure the complete structured payload as serialized for transport.
-  // Presentation indentation is not sent; the separate wire gate includes wrappers.
+  // The serialized structured payload, without presentation indentation; the wire
+  // gate counts the wrappers separately.
   let bytes = Buffer.byteLength(JSON.stringify(result), 'utf8');
   while (bytes > AGENT_BRIEF_COMPACT_MAX_BYTES && qualifierCount > 0) {
     qualifierCount -= 1;

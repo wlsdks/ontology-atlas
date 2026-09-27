@@ -1,27 +1,6 @@
-// Never call a relation implemented in a language we cannot read "possibly stale".
-//
-// Why (measured 2026-08-17, on this repository itself): `infer-imports` judged our
-// own vault like this:
-//
-//   inBoth: 0
-//   inVaultNotInCode: 3   → "3 vault depends_on edge(s) have no matching
-//                            code import (review for stale)"
-//
-// All three are **correct relations**:
-//   capabilities/acp-runtime      → capabilities/mcp-server
-//   capabilities/cli-developer-entry → capabilities/mcp-server
-//   capabilities/mcp-server       → capabilities/vault-ontology
-//
-// The scanner missed them not because the relations are absent but because it
-// **cannot see them**. Native C endpoints remain outside the scanner's extension
-// list. Process-spawn relations likewise cannot be expressed by an import.
-//
-// **Reporting "did not see" as "does not exist" makes an agent delete correct
-// relations.** This repository's CodeGraph rule already says the same thing:
-// *"never use 'not found' as evidence of absence."*
-//
-// So the verdict splits three ways: visible and absent → "possibly stale";
-// **not visible → "cannot judge"**.
+// A relation implemented in a language the scanner cannot read (native C, or a
+// process spawn) is "cannot judge", never "possibly stale": reporting "did not
+// see" as "does not exist" makes an agent delete correct relations.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';

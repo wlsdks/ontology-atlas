@@ -1,29 +1,12 @@
-// infer_imports
-//
-// TS/JS, Python, and bounded Rust files' static imports become observed
-// file-level dependency edges. Go imports become typed package-directory
-// evidence instead of invented file endpoints. Python, Rust, and Go are parsed
-// as bounded text and never executed.
-// Where analyze_repo_structure's suggestedRelations amount to one *project
-// contains capability* line, this is the source of real *capability A depends_on
-// capability B* edges.
-//
-// Preserving the single source of truth:
-//   - results are returned only — vault frontmatter is never touched
-//   - only an *explicit add_relation* after agent review enters the vault
-//
-// Deliberate limits:
-//   - regex-based — covers the 95% case for TypeScript and JS (top-level static
-//     imports). Dynamic import, re-export, and type-only are caught by the same regex
-//   - resolves relative imports, tsconfig paths, and fallback common @/* aliases
-//     → real files. unresolved aliases surface as alias-not-found instead of
-//     external npm, which is classified separately as externalImports
-//   - Python is read conservatively: `import` / `from ... import` in a root or
-//     src/source-layout package only, with no dynamic import, no namespace-package
-//     guessing, and no automatic promotion to a meaning relation
-//   - Go reads only package imports inside the root module as directory evidence,
-//     excluding vendor/testdata/underscore fixture trees and string/comment lookalikes
-//   - finer AST parsing is future work
+// infer_imports: static imports of TS/JS, Python and bounded Rust files become
+// observed file-level dependency edges; Go imports become package-directory
+// evidence. Non-JS languages are parsed as bounded text, never executed.
+// Results are returned only: nothing enters the vault until an agent reviews
+// them and calls add_relation. Regex-based (static, dynamic, re-export, type-only
+// and side-effect imports); relative imports, tsconfig paths and common `@/*`
+// aliases resolve to files, an unresolved alias is `alias-not-found`, and npm
+// packages are `externalImports`. Python reads root or src-layout packages only;
+// Go reads in-module imports, skipping vendor, testdata and `_` trees.
 
 import { readFileSync, readdirSync, statSync, lstatSync, existsSync, realpathSync } from 'node:fs';
 import { join, dirname, resolve, relative, isAbsolute, extname, sep } from 'node:path';
@@ -137,14 +120,16 @@ const SUPPORT_ELEMENT_BUCKETS = new Set([
   'utils',
 ]);
 
-// matches: import ... from "X", import("X"), require("X"), export ... from "X"
+// import ... from "X", import("X"), require("X"), export ... from "X"
 const IMPORT_RE =
   /(?:\bimport\s+(?:[\s\S]*?)\s+from\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|\bexport\s+(?:[\s\S]*?)\s+from\s+)['"]([^'"]+)['"]/g;
-// also bare `import "X"` (side-effect import) — separate to avoid bloat
+// Bare `import "X"` (side-effect import).
 const SIDE_IMPORT_RE = /\bimport\s+['"]([^'"]+)['"]/g;
 
 /**
- * Walk a code repo and infer file-level import edges.
+ * Walks a code repository and infers file-level import edges: one bounded walk
+ * (`maxFiles`), a regex pass per file and a few fs probes per import, so O(source
+ * bytes + imports); module edges are aggregated in Maps.
  *
  * @param {string} rootPath — repo root (must exist)
  * @param {{ sourceFolders?: string[], ignore?: string[], maxFiles?: number }} options
@@ -179,16 +164,14 @@ export function inferImports(rootPath, options = {}) {
   const workspacePackages = Array.isArray(workspaceDiscovery?.packages)
     ? workspaceDiscovery.packages
     : [];
-  // `apps`/`packages` are a legacy fallback for undeclared monorepos. Once a
-  // repository declares its package roots, scanning those broad directories
-  // would silently re-admit excluded workspace members.
+  // `apps`/`packages` are a fallback for undeclared monorepos only; once package
+  // roots are declared, scanning them would re-admit excluded workspace members.
   const scanSourceFolders =
     options.sourceFolders === undefined && workspaceDiscovery?.hasDeclaration
       ? sourceFolders.filter((folder) => !['apps', 'packages'].includes(folder))
       : sourceFolders;
 
-  // Resolve search roots — defined source folders that exist, plus rootPath
-  // itself if no source folder exists (so simple repos still work).
+  // Existing source folders, or rootPath itself when none exists.
   const roots = [];
   let configuredRootExists = false;
   for (const f of scanSourceFolders) {
@@ -297,12 +280,8 @@ export function inferImports(rootPath, options = {}) {
         );
     }
     for (const match of content.matchAll(SIDE_IMPORT_RE)) {
-      // SIDE_IMPORT_RE matches a superset of IMPORT_RE in some cases —
-      // dedup by checking we haven't already added this exact (from, to, spec).
-      // Cheap heuristic: only count `import "X"` lines that AREN'T also
-      // matched by `import ... from "X"`.
+      // Count a bare `import "X"` only when `import ... from "X"` did not already match it.
       const idx = match.index;
-      // Quick context check: is the prior char an `m` of "from"? then skip.
       const window = content.slice(Math.max(0, idx - 10), idx + 2);
       if (/from\s*$/.test(window.replace(/\s+$/, ''))) continue;
       const spec = match[1];
@@ -323,8 +302,6 @@ export function inferImports(rootPath, options = {}) {
     }
   }
 
-  // Module-level edge collapse — capability/feature folder is the
-  // first segment under one of the source folders.
   const moduleCount = new Map();
   for (const e of edges) {
     const fm = moduleOf(e.from, sourceFolders, rootPath, workspacePackages);
@@ -861,10 +838,9 @@ function readRootRustPackageName(rootPath) {
 }
 
 /**
- * Project a bounded, path-focused static import neighborhood from one scan.
- * This is source evidence only: it does not claim runtime execution, affected
- * behavior, or an ontology relation. The cursor is stable for unchanged edge
- * evidence and never writes to the vault.
+ * A bounded, path-focused static import neighbourhood from one scan. Source
+ * evidence only: no runtime, behaviour or ontology claim. The cursor is stable
+ * for unchanged evidence.
  */
 export function buildImportImpactFocus(
   edges,
@@ -1465,10 +1441,9 @@ function detectAutotoolsC(rootPath) {
 }
 
 /**
- * Read repository-declared Node workspace layouts as bounded implementation
- * evidence. This is deliberately not business meaning: package names and
- * workspace manifests only decide which source roots/import aliases are safe
- * to inspect.
+ * Repository-declared Node workspace layouts, as implementation evidence only:
+ * package names and manifests decide which source roots and aliases are safe to
+ * inspect, never business meaning.
  *
  * @param {string} rootPath
  * @param {{ ignore?: Set<string> }} [options]
@@ -1597,10 +1572,8 @@ function readWorkspaceDeclarations(rootPath) {
       path: '.',
       reason: `workspace-declaration-pattern-limit: omitted ${patterns.length - WORKSPACE_PATTERN_LIMIT} patterns`,
     });
-    // A later declaration can be an exclusion. Once the manifest exceeds the
-    // bounded declaration budget, selecting from a prefix could re-admit a
-    // package that an omitted exclusion would have removed. Keep declaration
-    // discovery fail-closed instead.
+    // Past the declaration budget, a later exclusion may be omitted and a prefix
+    // could re-admit a package it removes, so discovery fails closed.
     return { hasDeclaration, patterns: [], skipped };
   }
   const normalized = [];
@@ -2197,9 +2170,9 @@ function pathResolvesInsideRoot(rootPath, path) {
 }
 
 /**
- * Enumerate repo source files (absolute paths) reusing the same walker +
- * ignore set as import inference — so callers (e.g. validate_vault's reconcile
- * suggestion) skip node_modules / .git / dist / dotfiles and stay bounded.
+ * Source files (absolute paths) through the import walker and ignore set, so
+ * callers such as validate_vault's reconcile skip node_modules, .git, dist and
+ * dotfiles and stay bounded.
  *
  * @param {string} rootPath
  * @param {number} [maxFiles=4000]
@@ -2420,9 +2393,7 @@ function workspaceEntryCandidates(packageRoot, subpath = '') {
       candidates.push(resolve(packageRoot, entry));
     }
   } catch {
-    // The package was already admitted by its declared path. A malformed
-    // manifest simply cannot provide an import entrypoint, so leave it as an
-    // external import instead of guessing a semantic relationship.
+    // A malformed manifest offers no entrypoint: keep it external rather than guess.
   }
   if (!subpath) {
     candidates.push(
@@ -2467,17 +2438,14 @@ function resolveAliasImport(spec, rootPath, pathAliases = []) {
     return { matched: true, path: null };
   }
 
-  // R17 follow-up — `@/X` alias is the de-facto Next.js / FSD convention
-  // for `src/X`. Resolve it *as internal* so feature→entity/shared edges
-  // appear in moduleEdges instead of being lost in externalImports.
+  // `@/X` is the Next.js / FSD convention for `src/X`: resolve it as internal so
+  // the edge lands in moduleEdges, not externalImports.
   if (!spec.startsWith('@/')) {
     return { matched: false, path: null };
   }
 
-  // Strip the `@/` prefix.
   const subPath = spec.slice(2);
-  // Fallback for repos without tsconfig paths. Most Next.js/FSD projects use
-  // `@/*` with one of these roots.
+  // Fallback for repositories without tsconfig paths.
   for (const root of ['src', 'lib', 'app']) {
     const base = join(rootPath, root, subPath);
     const resolved = resolveImportCandidate(base);
@@ -2574,19 +2542,16 @@ function parseTsconfigJson(text) {
 
 function resolveRelativeImport(spec, fromDir) {
   const base = resolve(fromDir, spec);
-  // exact file
   if (existsSync(base) && statSync(base).isFile()) return base;
-  // NodeNext/ESM TypeScript commonly writes runtime `.js` specifiers in
-  // `.ts` source. Resolve the source sibling before declaring drift.
+  // NodeNext TypeScript writes runtime `.js` specifiers in `.ts` source: resolve the
+  // source sibling before declaring drift.
   const sourceBase = /\.(?:mjs|cjs|js|jsx)$/i.test(base)
     ? base.replace(/\.(?:mjs|cjs|js|jsx)$/i, '')
     : base;
-  // try extensions
   for (const ext of RESOLVE_EXT_ORDER) {
     const cand = sourceBase + ext;
     if (existsSync(cand) && statSync(cand).isFile()) return cand;
   }
-  // try base/index.* (folder)
   if (existsSync(base) && statSync(base).isDirectory()) {
     for (const ext of RESOLVE_EXT_ORDER) {
       const cand = join(base, 'index' + ext);
@@ -2597,18 +2562,10 @@ function resolveRelativeImport(spec, fromDir) {
 }
 
 function moduleOf(filePath, sourceFolders, rootPath, workspacePackages = []) {
-  // filePath is relative to rootPath. Find first segment that's a source
-  // folder, then take the next segment as the "module" id.
-  //
-  // Slug parity with analyze_repo_structure. The analyzer emits folder-prefixed
-  // ontology slugs (`capabilities/X`, `elements/<flat-name>`) so import evidence
-  // can be reconciled against analyzer concepts.
-  //
-  // A slug is a flat identifier (2026-08-01 verdict — docs/DECISIONS.md). The
-  // earlier `elements/src/entities/foo` path style is retired: by the same rule as
-  // analyze, only the name rides the slug, and a layer-singular suffix separates
-  // them only when a basename collides across layers (both tools look at the same
-  // rootPath, so their verdicts agree).
+  // `filePath` is rootPath-relative: the segment after a source folder is the
+  // module. Slugs match analyze_repo_structure's
+  // (`capabilities/X`, `elements/<flat-name>`) so evidence reconciles with its concepts: flat
+  // (`docs/DECISIONS.md`), with a layer suffix only on a cross-layer collision.
   const parts = filePath.split(/[\\/]/);
   if (!SOURCE_EXT.has(extname(parts.at(-1) ?? ''))) return null;
   const workspacePackage = workspacePackageForFile(filePath, workspacePackages);
@@ -2618,9 +2575,8 @@ function moduleOf(filePath, sourceFolders, rootPath, workspacePackages = []) {
     sourceFolderStartsAt(parts[0], sourceFolders) &&
     existsSync(join(rootPath, parts[0], parts[1], '__init__.py'))
   ) {
-    // `src/<python-package>/...` layout. Treat the first module inside the
-    // package exactly like a root Python package so cross-file imports do not
-    // collapse to one `capabilities/<package>` self-edge.
+    // `src/<python-package>/...`: the first module inside the package is treated
+    // like a root package, or cross-file imports collapse into one self-edge.
     const modulePart = parts[2];
     const rawName = modulePart === '__init__.py'
       ? parts[1]
@@ -2659,20 +2615,17 @@ function moduleOf(filePath, sourceFolders, rootPath, workspacePackages = []) {
         (parts[i] === 'apps' || parts[i] === 'packages') &&
         existsSync(join(rootPath, parts[i], next, 'package.json'))
       ) {
-        // analyze walks apps → packages and prefixes the folder onto the second
-        // colliding entry only — same rule here: apps keeps the bare name.
+        // Same collision rule as analyze: apps keeps the bare name.
         const collidesWithApps =
           parts[i] === 'packages' &&
           existsSync(join(rootPath, 'apps', next, 'package.json'));
         return `elements/${collidesWithApps ? `packages-${next}` : next}`;
       }
-      // Capability-class bucket — analyze uses the inner name alone as the slug,
-      // so these go under capabilities/.
+      // analyze slugs these by the inner name under capabilities/.
       const capabilityBuckets = new Set(['features']);
       if (capabilityBuckets.has(next) && parts[i + 2]) {
         return `capabilities/${ontologySourceName(parts[i + 2])}`;
       }
-      // Element-class bucket — same flat rule as analyze, with a layer suffix on collision.
       const elementBuckets = ['entities', 'widgets', 'views'];
       if (elementBuckets.includes(next) && parts[i + 2]) {
         const name = ontologySourceName(parts[i + 2]);
@@ -2683,35 +2636,26 @@ function moduleOf(filePath, sourceFolders, rootPath, workspacePackages = []) {
         const layerSingular = next.replace(/ies$/, 'y').replace(/s$/, '');
         return `elements/${collides ? `${name}-${layerSingular}` : name}`;
       }
-      // Single-file layered repos are common in small apps:
-      //   src/features/check-in.js   -> user-facing capability
-      //   src/domain/habit.js        -> implementation element
-      //   src/storage/json-store.js  -> implementation element
-      //
-      // Treating every depth-1 folder as a capability produces noisy ontology
-      // nodes like `capabilities/domain` and `capabilities/storage`. Keep
-      // feature files as capabilities, but classify support layers by their
-      // role so bootstrap lands a more useful graph on a clean vault.
+      // Single-file layered apps: `src/features/check-in.js` is a capability, while
+      // support layers (`src/domain/habit.js`, `src/storage/json-store.js`) are
+      // elements; treating every folder as a capability yields `capabilities/storage`.
       if (next === 'features' && parts[i + 2]) {
         return `capabilities/${ontologySourceName(parts[i + 2])}`;
       }
       if (isSupportElementBucket(next) && parts[i + 2]) {
-        // The file's basename is the role name — `src/storage/json-store.js` →
-        // `elements/json-store`. Location is carried by the evidence.
+        // The basename is the role name; the location is in the evidence.
         return `elements/${ontologySourceName(parts[parts.length - 1])}`;
       }
       if (SOURCE_EXT.has(extname(next))) {
         const flatName = ontologySourceName(next);
         return flatName ? `elements/${flatName}` : null;
       }
-      // A conventional `lib/` tree is a library implementation boundary, not
-      // a business feature namespace. Keep its static edges useful for code
-      // review while leaving capability meaning to bounded product evidence.
+      // A `lib/` tree is a library boundary, not a feature namespace: its edges stay
+      // useful for review while capability meaning is left to product evidence.
       if (parts[i] === 'lib') {
         const flatName = ontologySourceName(next);
         return flatName ? `elements/${flatName}` : null;
       }
-      // Generic fallback — the first segment after sourceFolder is the module.
       return `capabilities/${next}`;
     }
   }

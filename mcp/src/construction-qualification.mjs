@@ -1,10 +1,8 @@
 /**
- * Re-executable ontology-construction qualification contract.
- *
- * This is deliberately not a score. A red semantic, functional, provenance,
- * or pragmatic axis cannot be averaged away by clean structure or cheap tool
- * use. The module validates an evaluator packet and derives categorical output;
- * it neither writes the vault nor approves the meaning it evaluates.
+ * Re-executable ontology-construction qualification contract. Not a score: a red
+ * semantic, functional, provenance or pragmatic axis cannot be averaged away. It
+ * validates an evaluator packet and derives categorical output; it never writes
+ * the vault or approves the meaning it evaluates.
  */
 
 export const CONSTRUCTION_QUALIFICATION_CONTRACT = 'constructionQualification:v1';
@@ -66,9 +64,8 @@ const ACTOR_SCHEMA = Object.freeze({
 });
 
 /**
- * Public MCP input contract. Cross-row semantics and provenance currentness are
- * still evaluated by evaluateConstructionQualification; this schema keeps the
- * transport shape explicit so clients never have to guess an opaque JSON blob.
+ * Public MCP input contract: the transport shape explicit, so clients never guess
+ * an opaque blob. Cross-row semantics are checked by evaluateConstructionQualification.
  */
 export const CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA = Object.freeze({
   type: 'object',
@@ -1500,10 +1497,7 @@ function accuracy(correct, total) {
   };
 }
 
-/**
- * Validate and categorically evaluate a construction-qualification packet.
- * Unknown or red evidence stays visible; no weighted or aggregate score exists.
- */
+/** Validates and categorically evaluates a packet; unknown or red evidence stays visible. */
 export function evaluateConstructionQualification(packet) {
   const findings = [];
   validateRoot(packet, findings);

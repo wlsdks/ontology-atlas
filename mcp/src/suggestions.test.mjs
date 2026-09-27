@@ -34,18 +34,14 @@ describe('suggestions', () => {
     assert.equal(formatErrorValue({ value: 'x' }), 'object');
   });
 
-  // did-you-mean for an unresolved slug — the shared error path of relate, relation-check, and MCP queries.
+  // The shared did-you-mean path of relate, relation-check and MCP queries.
   it('suggests compiled slugs for tail typos, transpositions, and folder misses', () => {
     const slugs = ['capabilities/payment-flow', 'capabilities/auth-login', 'domains/billing'];
-    // Ordinary typo (flwo)
     assert.deepEqual(suggestCompiledSlugs('capabilities/payment-flwo', slugs), ['capabilities/payment-flow']);
-    // Transposition typo, and no folder
     assert.deepEqual(suggestCompiledSlugs('pyament-flow', slugs), ['capabilities/payment-flow']);
-    // Wrong folder, exact tail → the exact tail wins
+    // Wrong folder, exact tail: the exact tail wins.
     assert.deepEqual(suggestCompiledSlugs('elements/payment-flow', slugs), ['capabilities/payment-flow']);
-    // Partial input, substring
     assert.ok(suggestCompiledSlugs('billing', slugs).includes('domains/billing'));
-    // Nothing related at all → no suggestion
     assert.deepEqual(suggestCompiledSlugs('zzzz-qqqq-xxxx', slugs), []);
     assert.deepEqual(suggestCompiledSlugs('', slugs), []);
     assert.deepEqual(suggestCompiledSlugs('x', []), []);

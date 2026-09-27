@@ -1,4 +1,3 @@
-// R17 — inferImports unit tests.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
@@ -1026,10 +1025,8 @@ test('tsconfig path alias (@/) — resolves to src/ when target exists, else unr
   });
   try {
     const r = inferImports(root);
-    // @/lib/foo → resolved to src/lib/foo.ts (internal edge)
     const e = r.edges.find((x) => x.to === 'src/lib/foo.ts');
     assert.ok(e, `expected alias-resolved edge to src/lib/foo.ts, got: ${JSON.stringify(r.edges)}`);
-    // @/missing → unresolved with alias-not-found
     assert.ok(
       r.unresolved.some(
         (u) => u.spec === '@/missing' && u.reason === 'alias-not-found',
@@ -1194,9 +1191,7 @@ test('dynamic import + require + reexport detected', () => {
 });
 
 test('module-level edge collapse (FSD features/ uses the capability folder slug, consistent with analyze)', () => {
-  // features/X and entities/X map to capabilities/X. Sharing the slug with the
-  // analyze_repo_structure candidate is what lets a semantic review line the two
-  // concepts up exactly.
+  // Sharing the analyze_repo_structure slug lets a review line the concepts up.
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src/features/auth'), { recursive: true });
     mkdirSync(join(r, 'src/features/billing'), { recursive: true });
@@ -1490,9 +1485,7 @@ test('module-level edge collapse (single-file layered repo classifies support la
 });
 
 test('module-level edge collapse (FSD widgets/ uses the element folder slug, consistent with analyze)', () => {
-  // widgets/X and views/X get a flat elements/<name> slug — decided 2026-08-01,
-  // the same rule as analyze (a layer suffix only when the basename collides
-  // across layers).
+  // Flat `elements/<name>`, like analyze (a layer suffix only on a basename collision).
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src/widgets/header'), { recursive: true });
     mkdirSync(join(r, 'src/widgets/footer'), { recursive: true });

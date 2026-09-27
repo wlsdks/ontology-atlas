@@ -1,5 +1,5 @@
-// Vault helpers — directory walking plus `.md` read/write. Synchronous fs only:
-// MCP tool calls are infrequent, so async overhead buys nothing.
+// Vault directory walking and `.md` read/write. Synchronous fs only: MCP tool
+// calls are infrequent, so async buys nothing.
 
 import {
   accessSync,
@@ -58,33 +58,18 @@ import {
 } from './meaning-findings.mjs';
 
 /**
- * External-change detection — blocks a silent overwrite when a human GUI, an
- * outside editor, or another AI's MCP server touches the same `.md` concurrently.
- *
- * When the caller passes `expectedMtime`, the current mtime is compared just
- * before the write and a conflict throws, leaving the caller to tell the user and
- * decide whether to force. Omitting the option skips the check, which keeps
- * existing callers working.
- *
- * mtime is an integer in ms. Filesystems differ in precision, but MCP calls are
- * infrequent enough that 1s-granularity detection suffices.
+ * Thrown when a write passed `expectedMtime` and the file changed on disk since
+ * that read (a GUI, an outside editor or another agent). Omitting the option
+ * skips the check. mtime is integer ms; 1s-granularity filesystems suffice.
  */
 export class VaultConflictError extends Error {
   constructor(slug, expectedMtime, currentMtime) {
     super(
       `Vault conflict: "${slug}" was modified externally (changed on disk) between read and write. ` +
         `expectedMtime=${expectedMtime} currentMtime=${currentMtime}. ` +
-        // **Never name a recovery path that does not exist** (measured 2026-07-29).
-        //
-        // The old wording said to overwrite with `force:true`. Of the eight write
-        // tools that raise this error, **seven do not declare `force` at all** —
-        // trying it yields `unknown_argument`. The one that does accept it,
-        // `delete_concept`, means "delete even with backlinks", not "ignore
-        // mtime", so it comes back as `vault_conflict` too.
-        //
-        // The advertised recovery was therefore dead in all eight tools, and an
-        // agent that believes the message fails a second time. State only the
-        // path that actually works.
+        // Name only a recovery that works: seven of the eight write tools that raise
+        // this do not accept `force`, and delete_concept's `force` means "despite
+        // backlinks", not "ignore mtime".
         `Re-read the doc with get_concept to get the current expected_mtime, then retry the write.`,
     );
     this.name = 'VaultConflictError';
@@ -95,10 +80,7 @@ export class VaultConflictError extends Error {
   }
 }
 
-/**
- * File mtime (ms), or null when the file is absent. In a read-modify-write flow
- * the caller captures it right after the read and passes it as `expectedMtime`.
- */
+/** File mtime in ms, or null when absent; capture it right after a read to pass as `expectedMtime`. */
 export function getFileMtime(filePath) {
   try {
     return statSync(filePath).mtimeMs;
@@ -181,10 +163,8 @@ function assertBoundedNonNegativeInteger(value, name, { max }) {
 }
 
 /**
- * The frontmatter array keys that are *interpreted as graph edges*. Adding a new
- * edge type (`aggregates`, `implements`, …) here covers findOrphans, findPath,
- * and the rest automatically. Two functions used to hold their own local copy of
- * this array, which is exactly how they drifted.
+ * The frontmatter array keys read as graph edges. findOrphans, findPath and the
+ * rest share this one list; a private copy is how they drifted before.
  */
 const NEIGHBOR_KEYS = Object.freeze([
   'domains',
@@ -207,10 +187,7 @@ export const GRAPH_ARRAY_KEYS = Object.freeze([
 ]);
 const GRAPH_ARRAY_KEY_SET = new Set(GRAPH_ARRAY_KEYS);
 
-/**
- * Graph relation arrays should be stable on disk. Agent writes can arrive in
- * different orders, but the same edge set should serialize the same way.
- */
+/** Same edge set, same bytes on disk, whatever order the agent wrote them in. */
 export function normalizeRelationRefs(values) {
   if (!Array.isArray(values)) return [];
   const seen = new Set();
@@ -271,15 +248,10 @@ export function collectNeighborRefs(doc) {
 }
 
 /**
- * The one-sentence rationale a source document stores for one of its relations:
- * `relation_notes: { <target ref>: "why" }`, written by `add_relation(why)` in the
- * same frontmatter write as the edge. The map is keyed by the ref exactly as the
- * relation array spells it, so the raw ref is tried first and the resolved slug
- * second — the same lookup order the compiler uses for `edge.rationale`.
- *
- * Returns the trimmed sentence, or `undefined` when the document carries no
- * note for that target. Callers omit the key on `undefined` rather than sending
- * `null`: an absent rationale is an absent claim, not a claim with a null value.
+ * The `relation_notes: { <ref>: "why" }` sentence a document stores for one
+ * relation. The raw ref is tried before the resolved slug, the compiler's order
+ * for `edge.rationale`. `undefined` when absent: callers omit the key, since an
+ * absent rationale is no claim, not a null one.
  */
 export function relationNoteFor(doc, ref, resolvedSlug) {
   const notes = doc?.frontmatter?.relation_notes;
@@ -293,18 +265,10 @@ export function relationNoteFor(doc, ref, resolvedSlug) {
 }
 
 /**
- * Finds the documents that **name `ref` in a relation key**.
- *
- * Why it exists (measured 2026-07-26): the web map showed 289 concepts while the
- * compiled graph had 96 nodes. The 193 in between are *concepts with no document
- * of their own, named only in another document's relation keys*. Copying such a
- * name off the map into `get_concept` used to end in `Doc not found` — the vault
- * answering "unknown" about a name it **does know**, which makes the numbers on
- * screen untrustworthy.
- *
- * This function creates no nodes (the graph inventory stays 96). It returns only
- * the fact of "which document in this vault wrote this name, under which key",
- * and the caller turns that fact into an answer instead of an error.
+ * Documents that name `ref` in a relation key. A concept named only in another
+ * document's relations has no file, yet the map shows it; this lets get_concept
+ * answer "who wrote this name, under which key" instead of "Doc not found".
+ * It creates no nodes.
  */
 export function findGraphReferences(docs, ref) {
   const target = String(ref ?? '').trim();
@@ -322,19 +286,10 @@ export function findGraphReferences(docs, ref) {
 }
 
 /**
- * Extracts *one prose paragraph* from a body as an excerpt, so the body preview an
- * agent receives from `get_concept` is the *first sentence a human meant to write*
- * rather than markdown table or code-block syntax.
- *
- * Line-based algorithm:
- *   1. Skip blank lines, headings, code blocks, tables, images, rules, lists, quotes.
- *   2. If the first non-empty line is prose, collect through the end of its
- *      paragraph (next blank line, or the start of a block).
- *   3. If no prose is found, fall back to `body.slice(0, maxLen)`.
- *   4. Cap at `maxLen` (default 800); trim and append '…' beyond it.
- *
- * Independent of the graph schema (NEIGHBOR_KEYS and friends) — a plain string
- * helper, exported so it can be unit-tested.
+ * The first prose paragraph of a body, so get_concept previews the sentence a
+ * person wrote rather than table or code syntax. Skips blank lines, headings,
+ * code, tables, images, rules, lists and quotes; falls back to the raw body when
+ * no prose exists; caps at `maxLen` with a trailing '…'.
  */
 export function extractSummaryExcerpt(body, maxLen = 800) {
   if (typeof body !== 'string' || body.length === 0) return '';
@@ -357,7 +312,6 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
     const line = lines[i];
     const trimmed = line.trim();
     if (trimmed === '' || isBlockStart(line)) {
-      // Skip the whole inside of the code block — scan forward to the next ```
       if (trimmed.startsWith('```')) {
         i += 1;
         while (i < lines.length && !lines[i].trim().startsWith('```')) i += 1;
@@ -365,7 +319,6 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
       i += 1;
       continue;
     }
-    // Prose paragraph begins — collect to the next blank line or block start
     const para = [];
     while (i < lines.length) {
       const cur = lines[i];
@@ -378,7 +331,6 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
       return text.length > maxLen ? text.slice(0, maxLen).trimEnd() + '…' : text;
     }
   }
-  // No prose line found — fall back to the raw body
   const trimmedBody = body.trim();
   return trimmedBody.length > maxLen
     ? trimmedBody.slice(0, maxLen).trimEnd() + '…'
@@ -386,40 +338,24 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
 }
 
 /**
- * Maximum characters `body: 'full'` returns in one call.
- *
- * Why there is a cap at all: a `.md` inside a vault is any file on the user's
- * disk, and one pasted log can be hundreds of KB. This stops a single document
- * eating an agent's whole context. Measured vault bodies run 1–3 KB, so almost
- * nothing reaches the cap, and what does is reported by {@link describeBodyDelivery}.
+ * Cap for `body: 'full'`: a vault `.md` can be a pasted log of hundreds of KB,
+ * and one document must not fill an agent's context. Measured bodies run 1–3 KB;
+ * anything cut is reported by {@link describeBodyDelivery}.
  */
 export const FULL_BODY_MAX_CHARS = 40_000;
 
 /**
- * Selector cap for one `get_concepts({ body: "full" })` call.
- *
- * Full bodies make each row's payload large, so this is narrower than the general
- * batch cap of 50. Code that builds runnable read workflows (meaning repair, for
- * one) must use the same value, or a handoff will emit a call the server rejects.
+ * Row cap for one `get_concepts({ body: "full" })`, narrower than the batch cap
+ * of 50. Builders of runnable read workflows (meaning repair) must use this
+ * value, or they emit a call the server rejects.
  */
 export const GET_CONCEPTS_FULL_BODY_MAX = 20;
 
 /**
- * Reports **how much body was returned and what was not**.
- *
- * Why this is separate (measured 2026-08-01): an agent handed only the vault
- * answered — *"MCP `get_concept` returns the body as an excerpt only. Each node's
- * body may hold more code evidence, but that part was outside the scope of this
- * read."* The construction rules **require** evidence, confidence, and
- * inclusion/exclusion to be written in the body, and the read tool returned the
- * first paragraph while **saying nothing about the cut**. Not knowing what is
- * missing means you cannot ask for it — half of what was written was unreachable.
- *
- * So the contract here is two lines:
- *
- * 1. When cut, report `truncated: true` and **how many characters were withheld**.
- * 2. Only when cut, put **the exact call that fetches the rest** in `hint`. An
- *    untruncated response has no `hint` at all — no payload on a clean answer.
+ * Reports how much body was returned and what was withheld. The construction
+ * rules put evidence and boundaries in the body, so a silent cut hides what an
+ * agent must read. When cut: `truncated: true`, `omittedChars`, and a `hint`
+ * naming the call that fetches the rest; an intact response carries no `hint`.
  *
  * @param {string} body raw markdown body
  * @param {object} [options]
@@ -441,10 +377,8 @@ export function describeBodyDelivery(body, options = {}) {
   } else {
     text = extractSummaryExcerpt(source, maxLen);
   }
-  // An excerpt joins lines with spaces, so **a character-count comparison cannot
-  // decide this** — one newline of difference turns a fully delivered body into
-  // "truncated". Compare with whitespace normalised: only skipping a table, a code
-  // block, or a second paragraph counts as a cut; a whole one-paragraph body does not.
+  // An excerpt joins lines with spaces, so compare with whitespace normalised: a
+  // one-paragraph body delivered whole must not read as truncated.
   const returnedChars = text.length;
   const flatten = (value) => value.replace(/\s+/g, ' ').trim();
   const truncated =
@@ -459,10 +393,7 @@ export function describeBodyDelivery(body, options = {}) {
   return { text, info };
 }
 
-/**
- * Walks every `.md` under the vault root, excluding dotfiles, node_modules, and
- * the like. Returns each file's absolute path.
- */
+/** Absolute paths of every `.md` under the vault root, skipping dotfiles and node_modules. */
 export function walkMd(rootPath) {
   const out = [];
   const stack = [rootPath];
@@ -497,24 +428,10 @@ export function walkMd(rootPath) {
 }
 
 /**
- * File path → vault-relative slug (`projects/foo.md` → `projects/foo`).
- *
- * **Normalised to NFC** (measured 2026-07-29). macOS commonly hands back Korean
- * filenames as NFD (decomposed jamo) — HFS+ copies, unzipped archives, zips built
- * by non-macOS toolchains — while what a user types into frontmatter is NFC. The
- * two strings are **character-identical but byte-different**.
- *
- * That produced this:
- *
- *   validate: `Korean` does not resolve to any node in the vault
- *   list:     domain  Korean  NFD file        ← the node is on the very next line
- *
- * The compiler failed alongside it, so edges into that node dropped to
- * `resolved: false` — **nodes with Korean names lose their relations**, on this
- * product's primary platform. The difference is invisible, so the user cannot fix it.
- *
- * Normalisation applies **to identifiers only**. Disk paths are untouched: the
- * file stays NFD and is read as NFD.
+ * File path → vault-relative slug (`projects/foo.md` → `projects/foo`), NFC
+ * normalised: macOS often hands back Korean filenames as NFD while frontmatter
+ * is typed as NFC, and the byte mismatch drops those nodes' relations. Only the
+ * identifier is normalised; the disk path stays as it is.
  */
 export function pathToSlug(rootPath, filePath) {
   const rel = relative(rootPath, filePath).replace(/\\/g, '/');
@@ -522,55 +439,37 @@ export function pathToSlug(rootPath, filePath) {
 }
 
 /**
- * vault-relative slug → file path (extension appended automatically).
- *
- * Security: a malicious slug from an agent or prompt injection (`../../etc/passwd`
- * and friends) must not be able to name a file outside the vault root, so the path
- * is normalised and then checked to contain the root. A violation throws, and
- * every caller (writeDoc, readDoc, patchFrontmatter, updateDoc, deleteDoc) fails
- * with it — blocking reads and writes outside the vault alike.
+ * vault-relative slug → file path. Security: a slug from an agent or a prompt
+ * injection (`../../etc/passwd`) must not name a file outside the vault root, so
+ * this throws on escape, and every read and write caller fails with it.
  */
 export function slugToPath(rootPath, slug) {
   if (typeof slug !== 'string' || slug.length === 0) {
     throw new Error('slug must be a non-empty string');
   }
-  // Block null-byte injection — the Node fs API truncates on it in some environments.
+  // Some Node fs APIs truncate at a null byte.
   if (slug.includes('\0')) {
     throw new Error('slug must not contain a null byte');
   }
   const candidate = resolve(rootPath, `${slug}.md`);
   const normalizedRoot = resolve(rootPath);
-  // The candidate must join the rootPath prefix on a separator: either exactly
-  // normalizedRoot, or normalizedRoot + sep.
   if (
     candidate !== normalizedRoot &&
     !candidate.startsWith(normalizedRoot + sep)
   ) {
     throw new Error(`slug points outside the vault root: "${slug}"`);
   }
-  // **A string check alone cannot stop a symlink** (measured 2026-07-29).
-  //
-  // The check above only asks whether the **path string** from `resolve()` sits
-  // inside the root. But if `escape.md` inside the vault links to a file outside
-  // it, the string is perfectly inside the root and `writeFileSync` follows the
-  // link and **writes outside**. Measured: `relate escape real --vault
-  // /tmp/sym/vault` edited `/tmp/sym/outside.md` and reported `wrote
-  // /tmp/sym/vault/escape.md` — the user cannot find their edit at that path.
-  //
-  // The very threat this function's own doc-block names — *"a malicious slug from
-  // an agent or prompt injection must not name a file outside the vault root"* —
-  // was open on the **filesystem** side rather than the slug side.
-  //
-  // Only existing paths are realpath'd: creating a new file (a path that does not
-  // exist yet) is normal, and its parent directory is checked below.
+  // The string check cannot stop a symlink: `escape.md` inside the vault may
+  // link outside it, and writeFileSync follows the link. Existing paths are
+  // realpath'd; a new file's parent is checked below.
   assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
 }
 
 /**
- * Whether the real path (after symlink resolution) is still inside the vault. When
- * the file does not exist yet, the nearest **existing ancestor** is used instead —
- * creating a new file inside a linked directory is the same escape.
+ * The real path (symlinks resolved) must stay inside the vault. A file that does
+ * not exist yet uses its nearest existing ancestor, since creating a file inside
+ * a linked directory is the same escape.
  */
 function assertRealPathInside(candidate, normalizedRoot, slug) {
   let realRoot;
@@ -593,7 +492,6 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('slug resolves outside')) throw error;
       const parent = dirname(probe);
-      // Walked to the filesystem root with no existing ancestor — nothing left to check.
       if (parent === probe) return;
       probe = parent;
     }
@@ -601,32 +499,12 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
 }
 
 /**
- * Whether a `.md` for the given slug exists in the vault. Used to validate agent
- * input (add_relation and friends) so a typo or hallucinated slug is not silently
- * appended to a frontmatter array as a dangling reference.
- *
- * A malformed slug (empty, null byte, outside the vault) returns false rather than
- * throwing out of slugToPath, so the caller can branch on a boolean. A genuine fs
- * error surfaces naturally on the caller's follow-up read.
- */
-/**
- * Returns the exact on-disk spelling of an existing slug, or `null`.
- *
- * **Why letter case needs its own resolver** (bug sweep 2026-09-01, reproduced).
- * `existsSync` follows the filesystem's case rules, so on macOS and Windows a
- * wrong-case slug (`capabilities/Auth` for `auth.md`) passes every existence
- * gate — but every backlink match below is a case-sensitive string comparison.
- * Reproduced: `rename_concept` deleted `auth.md`, created `authn.md`, redirected
- * **0** backlinks, and reported success. Destructive tools must therefore
- * operate on the disk's spelling, never the caller's.
- *
- * Matching walks one directory level per slug segment: exact entry first, then a
- * unique case-insensitive entry. On a case-sensitive filesystem this makes a
- * wrong-case slug resolve the same way it already does on macOS, so behaviour
- * stops depending on the platform. If the path exists but a segment cannot be
- * matched (for example Unicode normalization differences between the slug and
- * the directory listing), the input slug is returned unchanged — never worse
- * than the old `existsSync` behaviour.
+ * The exact on-disk spelling of an existing slug, or `null`. `existsSync`
+ * follows the filesystem's case rules, so on macOS a wrong-case slug passes every
+ * existence gate while backlink matching is case-sensitive: rename_concept would
+ * redirect 0 backlinks and report success. Destructive tools use the disk's
+ * spelling. Walks one directory level per segment (exact entry, then a unique
+ * case-insensitive one); an unmatched segment returns the input unchanged.
  */
 export function canonicalDiskSlug(rootPath, slug) {
   if (typeof slug !== 'string' || slug.length === 0) return null;
@@ -661,6 +539,11 @@ export function canonicalDiskSlug(rootPath, slug) {
   return canonical.join('/');
 }
 
+/**
+ * Whether a `.md` for the slug exists, so a typo or invented slug is not
+ * appended to a frontmatter array as a dangling reference. A malformed slug
+ * returns false instead of throwing; a genuine fs error surfaces on the next read.
+ */
 export function vaultSlugExists(rootPath, slug) {
   if (typeof slug !== 'string' || slug.length === 0) return false;
   let candidate;
@@ -672,12 +555,7 @@ export function vaultSlugExists(rootPath, slug) {
   return existsSync(candidate);
 }
 
-/**
- * Reads one `.md` into `{ slug, frontmatter, body, raw, mtime }`.
- *
- * `mtime` is the file's mtimeMs at read time; passing it as `expectedMtime` on a
- * later write is what makes conflict detection work.
- */
+/** Reads one `.md`; its `mtime` passed as a later `expectedMtime` enables conflict detection. */
 export function readDoc(rootPath, filePath) {
   const snapshot = readStableFileSnapshot(filePath);
   const raw = snapshot.raw;
@@ -693,29 +571,17 @@ export function readDoc(rootPath, filePath) {
   return result;
 }
 
-/**
- * Loads every doc in the vault as a manifest, leaving filtering to the caller.
- * Heavy on a large vault, but MCP calls are infrequent enough that it is fine.
- */
+/** Every doc in the vault; the caller filters. */
 export function loadVaultDocs(rootPath) {
   const files = walkMd(rootPath);
   return files.map((path) => readDoc(rootPath, path));
 }
 
 /**
- * Returns slug candidates similar to `badSlug`, so an agent that hit not-found via
- * a typo or a missing prefix gets its next action.
- *
- * Matching stages, first hit wins:
- *  1. Exact tail match — input `auth` → `capabilities/auth`, `domains/auth`, ….
- *  2. Tail substring, either direction — `auth` ⊂ `auth-platform`, `oauth` ⊃ `auth`.
- *  3. Tail prefix — the user typed only part of it.
- *
- * `badSlug` itself is excluded. Returns up to `limit` (default 3).
- *
- * Substring comparison only. A distance metric such as Levenshtein is expensive on
- * a large vault and yields many false positives, and the goal here is not "did you
- * mean" — it is showing "these slugs exist in the vault" in one call.
+ * Up to `limit` existing slugs similar to `badSlug`, for a not-found error's
+ * next action. First stage that hits wins: exact tail, tail substring either
+ * way, tail prefix. Substring only: an edit distance is costly on a large vault
+ * and noisy, and the goal is "these exist", not "did you mean".
  */
 export function suggestSimilarSlugs(rootPath, badSlug, limit = 3) {
   if (typeof badSlug !== 'string' || badSlug.length === 0) return [];
@@ -748,10 +614,7 @@ export function suggestSimilarSlugs(rootPath, badSlug, limit = 3) {
   return [...tier1, ...tier2, ...tier3].slice(0, limit);
 }
 
-/**
- * Builds an actionable suffix so an agent receiving a not-found or duplicate error
- * can decide its next action immediately. Callers append it to the error message.
- */
+/** Suffix a not-found or duplicate error appends so the agent can act next. */
 function notFoundSuffix(rootPath, slug) {
   const suggestions = suggestSimilarSlugs(rootPath, slug);
   const lines = [
@@ -763,37 +626,18 @@ function notFoundSuffix(rootPath, slug) {
   return lines.join(' ');
 }
 
-/* ------------------------------------------------------------------------- *
- * Node-eligibility gate (2026-07-31 council — `docs/DECISIONS.md`)
- *
- * This is the **logic canon** of the ontology construction spec. Values live in
- * `schema.mjs`, wording in `construction-rules.mjs`, and the judgement lives
- * here because here is the only place all three write doors meet.
- *
- * That last part is the whole reason the gate exists at all. The measured defect
- * was 92 `elements:` entries on one capability, 92 of which resolved to nothing
- * — and they did not arrive through `add_concept`, which is where every existing
- * warning lived. They accumulated through `patch_concept`, and `add_relation` is
- * a third door again. Guidance aimed at the creation path never met the growth
- * path. So the gate sits below all three, in `commitDoc`, and no door can opt out
- * by construction rather than by discipline.
- *
- * What it does NOT do:
- *
- *   - It never blocks a write. Every finding is advisory, following the
- *     `missing-expected-field` precedent. A rejection would strand an agent
- *     mid-batch with half a graph written and no way forward, and agents route
- *     around tools that punish them.
- *   - It never enforces a child count. There is no cap here in any form,
- *     per-kind or otherwise — a number a model can be told to stay under is a
- *     number it satisfies with two empty buckets named "Group A" and "Group B".
- * ------------------------------------------------------------------------- */
+/*
+ * Node-eligibility gate (`docs/DECISIONS.md`). Values live in `schema.mjs` and
+ * wording in `construction-rules.mjs`; the judgement lives here, in `commitDoc`,
+ * because all three write doors (add_concept, patch_concept, add_relation) meet
+ * here. It never blocks a write and never enforces a child count: a rejection
+ * strands an agent mid-batch, and a cap is met with empty filler buckets.
+ */
 
 /**
- * Session state. Two jobs, both of which need memory the compiled vault cannot
- * have: *how often we have already spoken* about a node, and *what this machine
- * created in this run* (provenance — a static scan cannot distinguish five nodes
- * a person wrote over a week from five one batch emitted).
+ * Session memory the compiled vault cannot have: how often a node was already
+ * mentioned, and what this run created (a static scan cannot tell a person's
+ * week of nodes from one batch).
  */
 const GATE = {
   findings: [],
@@ -804,34 +648,26 @@ const GATE = {
   /** parent ref → the sibling count we last spoke about. */
   noticedBulk: new Map(),
   /**
-   * parent slug → child refs this session's writes ADDED to its graph arrays.
-   *
-   * The other provenance map watches children declaring a parent; this one
-   * watches a parent's own list growing, which is the direction the 92 actually
-   * came from (`patch_concept` on `elements:`, never a child announcing itself).
+   * parent slug → child refs this session's writes added to its graph arrays: a
+   * parent's own list growing (`patch_concept` on `elements:`), the direction the
+   * other provenance map cannot see.
    */
   parentGrewBy: new Map(),
   /** Lazy slug index: { rootPath, names: Set<string> }. */
   index: null,
   /**
-   * Repository root the meaning findings resolve a cited `path:` against, or
-   * `null` while nothing has grounded one.
-   *
-   * It arrives through a setter rather than an import because `server/runtime.mjs`
-   * imports this module — asking it for `REPO_ROOT` here would close the cycle.
-   * `null` is the honest default: an ungrounded root would measure this vault
-   * against whichever directory the process started in, and an ungrounded
-   * comparison must say it did not look rather than produce a number.
+   * Repository root the meaning findings resolve a cited `path:` against,
+   * or `null` while nothing grounded it. Set through a setter
+   * because `server/runtime.mjs` imports this module (an import would be a cycle); `null`
+   * keeps the check silent instead of measuring against the process cwd.
    */
   repoRoot: null,
 };
 
 /**
- * Ground the meaning findings against the repository the vault describes.
- *
- * Called once, at module load, by the door that owns `add_concept` /
- * `add_concepts` / `patch_concept` — the only writes that can set `path:`.
- * Passing `null` (an ungrounded root) leaves the folder-only check silent.
+ * Called once at module load by the door that owns add_concept, add_concepts and
+ * patch_concept, the only writes that set `path:`. `null` keeps the
+ * folder-only check silent.
  */
 export function configureNodeEligibilityRepoRoot(repoRoot) {
   GATE.repoRoot = typeof repoRoot === 'string' && repoRoot.trim() ? repoRoot : null;
@@ -848,11 +684,8 @@ export function resetNodeEligibilityGate() {
 }
 
 /**
- * Take the findings produced since the last drain, and clear them.
- *
- * Destructive on purpose: the caller turns them into one `postWriteMaintenance`
- * payload per tool response, and a finding delivered twice is a finding the
- * reader starts filtering.
+ * Takes and clears the findings since the last drain: each tool response carries
+ * them once, and a finding delivered twice is one the reader starts filtering.
  */
 export function drainNodeEligibilityFindings() {
   const findings = GATE.findings;
@@ -861,9 +694,9 @@ export function drainNodeEligibilityFindings() {
 }
 
 /**
- * Every name the vault answers to: canonical slugs, their tails, and frontmatter
- * `slug:` aliases — the same three the MCP resolver accepts, so the gate cannot
- * call "unresolved" something `get_concept` would happily return.
+ * Every name the vault answers to (slugs, tails, frontmatter `slug:` aliases),
+ * the same three the MCP resolver accepts, so the gate never calls "unresolved"
+ * what get_concept would return.
  */
 function buildGateIndex(rootPath) {
   const names = new Set();
@@ -885,14 +718,9 @@ function gateIndex(rootPath, { rebuild = false } = {}) {
 }
 
 /**
- * Resolve a reference against the vault, paying for a full scan only when the
- * cheap answer would be bad news.
- *
- * The index is a cache, and a cache can be stale in exactly one direction that
- * matters: a doc written by a human editor or another agent since we built it
- * would look missing. So a miss is never trusted — it triggers one rebuild and a
- * re-check. A clean vault therefore costs one scan per session; a dirty one
- * costs one scan per warning, which is the write nobody minds paying for.
+ * The index can only be stale toward "missing" (a doc written by someone else
+ * since the build), so a miss triggers one rebuild and a re-check before it is
+ * trusted.
  */
 function gateResolves(rootPath, ref) {
   const name = String(ref).normalize('NFC');
@@ -901,14 +729,9 @@ function gateResolves(rootPath, ref) {
 }
 
 /**
- * What implementation file does the node on the other end of an edge cite?
- *
- * The dependency-witness finding is pure and needs this one fact about the
- * target, so the door supplies it through the read helpers that already exist
- * rather than opening a second path to disk. `null` whenever the answer would
- * be a guess: no such document, unreadable, or no `path:` of its own. The
- * caller treats every `null` as "do not speak", so a tail alias nobody
- * canonicalized costs silence, not a wrong accusation.
+ * The `path:` the node at the other end of an edge cites, read through the
+ * existing helpers. `null` whenever the answer would be a guess (missing,
+ * unreadable, no `path:`); the caller stays silent on `null`.
  */
 function gateTargetPath(rootPath, ref) {
   const name = String(ref ?? '').trim();
@@ -924,13 +747,9 @@ function gateTargetPath(rootPath, ref) {
 }
 
 /**
- * The `init` starter example for one kind, if this vault still has it.
- *
- * One `existsSync` and at most one `readDoc` per created node — the canonical
- * address is known (`domains/example-domain` and its two siblings), so there is
- * no scan to pay for. A starter somebody renamed is not looked for here on
- * purpose: renaming it is the finished state, and the whole-vault pass covers
- * the copied-under-another-name shape where it can see every node at once.
+ * The `init` starter example for one kind, if still present: one existsSync and
+ * at most one readDoc at its known address. A renamed starter is the finished
+ * state; the whole-vault pass covers a copy under another name.
  */
 function gateStarterExample(rootPath, kind) {
   const starterSlug = STARTER_EXAMPLE_SLUGS[kind];
@@ -955,23 +774,17 @@ function noteGateWrite(rootPath, slug) {
   if (tail) GATE.index.names.add(tail);
 }
 /**
- * Drops the lazy gate index after a document leaves the vault. Additions can be
- * folded in (`noteGateWrite`), but a removal cannot: another slug may still
- * provide the same tail, so the only safe move is a rebuild on next use.
- * Without this, `gateResolves` kept answering true for a deleted / renamed /
- * merged-away slug for the rest of the session, silently suppressing the
- * dangling-graph-reference advisory (bug sweep 2026-09-01).
+ * Drops the gate index after a removal: another slug may still provide the same
+ * tail, so only a rebuild is safe. Otherwise gateResolves keeps answering true
+ * for a removed slug and silences the dangling-reference advisory.
  */
 function noteGateRemoval() {
   GATE.index = null;
 }
 
 /**
- * Speak on the first crossing, then only when the count crosses a new multiple.
- *
- * The council left the firing frequency open and this is the resolution default:
- * a channel that repeats itself on every write is the channel
- * `missing-expected-field` became — technically present, actually invisible.
+ * Speaks on the first crossing, then only on each new multiple: a channel that
+ * repeats on every write becomes invisible.
  */
 function shouldNotice(ledger, key, count, { threshold, multiple }) {
   if (count < threshold) return false;
@@ -999,12 +812,8 @@ const {
 } = NODE_ELIGIBILITY_GATE;
 
 /**
- * Which containment array makes a node a parent, per kind.
- *
- * Only two entries, and the absence of `project → domain` is deliberate: a vault
- * has a handful of projects at most, so any percentile over that sample is
- * describing nothing, and a constant invented for it would be the guess the
- * amendment's research exists to avoid.
+ * Which containment array makes a node a parent, per kind. No `project → domain`
+ * entry: a vault has a handful of projects, too few for a percentile.
  */
 const DENSE_PARENT_RELATIONS = Object.freeze({
   domain: Object.freeze({ key: 'capabilities', childKind: 'capability', bootstrap: 'domain_to_capability' }),
@@ -1018,16 +827,10 @@ function percentile90(values) {
 }
 
 /**
- * What counts as "wide" for this kind of parent, and where that number came from.
- *
- * The vault's own p90 wins as soon as there are enough parents of the kind for a
- * percentile to describe anything real; below that the researched starting range
- * stands in. Reporting the basis alongside the number is not decoration — a
- * bootstrap constant printed as "your vault's p90" would dress a shipped default
- * as a measurement of the reader's own data.
- *
- * Costs a full vault scan, so it is computed only after the caller has already
- * decided this parent is worth a sentence.
+ * What counts as "wide" for this kind of parent, and whether the number is the
+ * vault's own p90 (enough parents) or the researched starting range; a bootstrap
+ * constant must not be reported as the reader's own measurement. Costs a full
+ * scan, so call it only once a parent is already worth a sentence.
  */
 function siblingFanoutTrigger(rootPath, parentKind) {
   const relation = DENSE_PARENT_RELATIONS[parentKind];
@@ -1046,12 +849,8 @@ function siblingFanoutTrigger(rootPath, parentKind) {
 }
 
 /**
- * Did a machine fill this parent during this session?
- *
- * Two shapes of the same fact, because children arrive from both directions:
- * `createdUnderParent` sees a batch of children each declaring `domain:`, while
- * `parentGrewBy` sees one parent's own array growing through repeated writes —
- * which is the direction the measured 92 actually came from.
+ * Did a machine fill this parent this session? `createdUnderParent` sees children
+ * each declaring `domain:`; `parentGrewBy` sees the parent's own array grow.
  */
 function machineFilledParent(slug) {
   if (GATE.noticedBulk.has(slug)) return true;
@@ -1077,16 +876,14 @@ function pushRefFinding(slug, code, key, refs, message) {
 }
 
 /**
- * The gate. Runs on the committed frontmatter, after the file is on disk —
- * observing, never gating, which is what "warn, don't reject" means mechanically.
+ * Runs on the committed frontmatter after the file is on disk: it observes and
+ * never blocks. `created` marks a brand-new node; `previousFrontmatter` is what
+ * this write replaced, which tells a new edge from one already on disk.
  *
  * @param {string} rootPath
  * @param {string} slug
  * @param {Record<string, unknown>} frontmatter
- * @param {{ created?: boolean }} [options] `created` marks a brand-new node, the
- *   only case where bulk provenance means anything. `previousFrontmatter` is the
- *   frontmatter this write replaced, which is how a check can tell an edge that
- *   arrived just now from one that was already on disk.
+ * @param {{ created?: boolean }} [options]
  */
 function runNodeEligibilityGate(
   rootPath,
@@ -1102,10 +899,9 @@ function runNodeEligibilityGate(
 ) {
   if (!frontmatter || typeof frontmatter !== 'object') return;
 
-  // ⓪ A capability born with no evidence. Creation only — the honest sequence is
-  //    "name the behavior, attach the file", so a node that lacks evidence on a
-  //    LATER write is not yet wrong and does not deserve a repeated accusation.
-  //    `maintenance_plan` carries the durable version of the question.
+  // ⓪ A capability born with no evidence. Creation only: "name the behaviour,
+  //    then attach the file" is the honest order, and `maintenance_plan` carries
+  //    the durable question.
   if (created && frontmatter.kind === 'capability') {
     const elements = Array.isArray(frontmatter.elements) ? frontmatter.elements : [];
     const hasEvidence = hasCapabilityImplementationEvidence({
@@ -1124,14 +920,9 @@ function runNodeEligibilityGate(
     }
   }
 
-  // ⓪b A node written outside its kind folder. Creation only: the slug is minted
-  //     once, and repeating it on every later write would be a standing
-  //     accusation about a decision the author cannot undo with a patch. Measured
-  //     2026-09-21 — a trial built a whole vault flat at the root and
-  //     `validate_vault` answered 0 issues, so nothing in the product ever said
-  //     the convention exists. Advisory: a flat slug is valid, it just groups
-  //     with nothing. The hard error next door (`flatSlugIssue`, in `writeDoc`)
-  //     covers the different shape that silently merges distinct nodes.
+  // ⓪b A node written outside its kind folder. Creation only, since a slug is
+  //     minted once and a patch cannot undo it. Advisory: a flat slug is valid;
+  //     `flatSlugIssue` in writeDoc rejects the shape that merges distinct nodes.
   if (created && typeof frontmatter.kind === 'string') {
     const folder = folderForKind(frontmatter.kind.trim());
     if (folder && !slug.startsWith(folder)) {
@@ -1150,8 +941,7 @@ function runNodeEligibilityGate(
     }
   }
 
-  // ① A path in the title slot. An element names a role ("jwt-token"), not a
-  //    location — a title that is a path means the author described evidence.
+  // ① A path in the title slot: an element names a role, not a location.
   const title = frontmatter.title;
   if (looksLikePath(title)) {
     if (shouldNotice(GATE.noticed, `${slug}\0path-shaped-title\0title`, 1, {
@@ -1169,11 +959,9 @@ function runNodeEligibilityGate(
     }
   }
 
-  // ② Reference resolution. This is the check the vault-wide validator has and
-  //    the write path did not — and note the validator *exempts* path-shaped
-  //    `elements:` entries outright, which is precisely why 92 of them were
-  //    invisible to `validate_vault` while sitting in the graph. Here nothing is
-  //    exempt; the path shape only chooses which repair the message names first.
+  // ② Reference resolution. validate_vault exempts path-shaped `elements:`
+  //    entries; here nothing is exempt, and the path shape only picks the repair
+  //    named first.
   const evidenceByKey = new Map();
   const danglingByKey = new Map();
   let totalRefs = 0;
@@ -1195,21 +983,10 @@ function runNodeEligibilityGate(
     pushRefFinding(slug, 'dangling-graph-reference', key, refs, danglingGraphReferenceMessage);
   }
 
-  // ③ Dense parent. The one check with a number attached, so it is also the one
-  //    that could quietly become the fan-out cap the council threw out. Two
-  //    guards keep it from doing that.
-  //
-  //    First, it only ever fires when something ELSE is already wrong: the
-  //    parent's references are mostly broken, or a machine filled it in this
-  //    session. A wide parent whose children all resolve and were added by hand
-  //    is never mentioned — schema.org's `CreativeWork` has 67 direct subtypes
-  //    and is not sick, and this vault's own `topology-kind-legibility` (7
-  //    elements, all resolving) must stay silent. That precondition runs BEFORE
-  //    the percentile so the healthy case never even pays for the scan.
-  //
-  //    Second, unresolved strings are not counted as children. Counting them
-  //    would make the very defect this gate exists to name look like healthy
-  //    growth.
+  // ③ Dense parent. Fires only when something else is already wrong (mostly
+  //    broken references, or machine-filled this session), so a healthy wide
+  //    parent stays silent and never pays for the percentile scan. Unresolved
+  //    strings are not counted as children, or the defect would read as growth.
   const relation = DENSE_PARENT_RELATIONS[frontmatter.kind];
   if (relation) {
     const childRefs = Array.isArray(frontmatter[relation.key]) ? frontmatter[relation.key] : [];
@@ -1246,17 +1023,9 @@ function runNodeEligibilityGate(
     }
   }
 
-  // ④ Meaning gaps in the body. Everything above judges frontmatter, and
-  //    frontmatter is half a node: measured, this door let through nodes whose
-  //    body is still the starter scaffold, exclusions that are evidence limits
-  //    rather than product boundaries, and evidence pointing at a folder whose
-  //    drift can never be checked. `meaning-findings.mjs` owns the logic and
-  //    `construction-rules.mjs` the sentences; this is only the wiring, so the
-  //    three doors inherit it the same way they inherit the four checks above.
-  //
-  //    Gated on what the write touched. A patch that renames a node has not
-  //    opened its body, and a standing accusation on every unrelated write is
-  //    how `missing-expected-field` became invisible.
+  // ④ Meaning gaps in the body. `meaning-findings.mjs` owns the logic and
+  //    `construction-rules.mjs` the sentences; this is the wiring. Gated on what
+  //    the write touched, so an unrelated patch does not repeat the accusation.
   for (const finding of meaningFindings({
     kind: frontmatter.kind,
     slug,
@@ -1275,25 +1044,11 @@ function runNodeEligibilityGate(
     GATE.findings.push(finding);
   }
 
-  // ④b A dependency the file it stands on never mentions. Everything above
-  //     reads one document; this one opens the source file the node cites and
-  //     asks whether it names the file the target cites. Measured 2026-09-22 on
-  //     this repository's own vault: 70 of 85 file-to-file `depends_on` edges
-  //     are witnessed that way and 15 are not, every one of them carrying a
-  //     `why` and validating clean. `impact` already answers
-  //     `sourceBacked: false` for the whole set and keeps doing so — nothing
-  //     here touches that flag; this names which rows it was talking about, at
-  //     the moment the writer still holds the reason.
-  //
-  //     New edges only, which is why `previousFrontmatter` had to be threaded
-  //     this far: re-accusing an edge on every unrelated patch is how a channel
-  //     becomes furniture. The notice key carries the target, so two edges added
-  //     to one node are two sentences rather than one that names neither.
-  //
-  //     Like `folder-only-evidence`, this has no vault-wide half in the compiled
-  //     maintenance plan: reading the cited file needs the repository root, which
-  //     the write door grounds and a compiled snapshot does not carry. The two
-  //     validators hold the root, so they answer instead.
+  // ④b A dependency the source file never mentions: opens the file this node
+  //     cites and asks whether it names the file the target cites. New edges only
+  //     (hence `previousFrontmatter`), keyed by target so two edges are two
+  //     sentences. No compiled-plan half: it needs the repository root, which only
+  //     the write door and the validators hold.
   for (const finding of dependencyWitnessFinding({
     slug,
     frontmatter,
@@ -1310,23 +1065,10 @@ function runNodeEligibilityGate(
     GATE.findings.push(finding);
   }
 
-  // ④c The `init` starter example, once it is no longer alone. Measured
-  //     2026-09-22 on two unfamiliar repositories: both builders wrote a real
-  //     map through the first-run door and left `domains/example-domain`,
-  //     `capabilities/example-capability` and `elements/example-element`
-  //     standing, connected only to each other, with "Example domain" rendering
-  //     on the map beside the real ones. Nothing said a word.
-  //
-  //     Creation only, and only for a node that is not itself a starter: the
-  //     moment a real node of that kind lands is the moment the starter stops
-  //     being instructions and becomes a fake concept. The finding is attached
-  //     to the STARTER, not to the node just written — that is the file somebody
-  //     has to act on, and it keeps this row and the vault-wide row below
-  //     identical so the maintenance queue can drop the duplicate. It reaches
-  //     the agent on the new node's write response all the same.
-  //
-  //     Said once per starter per session: a thirty-node build must not repeat
-  //     it thirty times.
+  // ④c An `init` starter example once a real node of its kind lands: from then
+  //     it is a fake concept on the map. Creation only, for non-starter nodes. The
+  //     finding is attached to the starter (the file to act on), matching the
+  //     vault-wide row so the queue drops the duplicate; once per starter per session.
   if (created && typeof frontmatter.kind === 'string') {
     const kind = frontmatter.kind.trim();
     const title = frontmatter.title;
@@ -1342,9 +1084,8 @@ function runNodeEligibilityGate(
     }
   }
 
-  // ⑤ Bulk provenance. Not a size limit — a statement about *who* made these and
-  //    *when*. Only the write path can know that, which is the entire argument
-  //    for putting this check here rather than in the compiled maintenance plan.
+  // ⑤ Bulk provenance: who made these and when, which only the write path knows.
+  //    Not a size limit.
   if (!created) return;
   const parent = typeof frontmatter.domain === 'string' ? frontmatter.domain.trim() : '';
   if (!parent) return;
@@ -1372,12 +1113,9 @@ function runNodeEligibilityGate(
 }
 
 /**
- * **The single write point.** `writeDoc`, `patchFrontmatter`, and `updateDoc`
- * all serialize here — so `add_concept`, `add_relation`, and `patch_concept`
- * inherit the gate whether or not their author remembered it existed.
- *
- * `mcp/src/write-path-gate.test.mjs` fails if a door starts writing bytes
- * somewhere else.
+ * The single write point: writeDoc, patchFrontmatter and updateDoc serialize
+ * here, so every door inherits the gate. `write-path-gate.test.mjs` fails if a
+ * door writes bytes elsewhere.
  */
 function commitDoc(
   rootPath,
@@ -1439,37 +1177,19 @@ function assertNodeIdentity(rootPath, slug, frontmatter) {
 }
 
 /**
- * Does a hand-authored node **not yet have an identity**? If it has one it is
- * immutable; if not, there is a slot to fill.
- *
- * A node written directly in Obsidian, vim, or the GitHub web editor has no
- * `uid:`. This repository promises that «you can just write the markdown by
- * hand», so that state is legitimate input — but left alone, the compile stops on
- * an identity error and **every graph command on the whole vault dies**
- * (overview, health, agent-brief, query_ontology).
+ * A node written by hand (Obsidian, vim, the GitHub editor) has no `uid:`. That
+ * is legitimate input, but left alone the compile stops on an identity error and
+ * every graph command on the vault fails.
  */
 function hasSettledUid(frontmatter) {
   return typeof frontmatter?.uid === 'string' && frontmatter.uid.trim() !== '';
 }
 
 /**
- * ⚠️ **Immutability applies only to changing a value that was there** (2026-08-08).
- *
- * Filling an absent value for the first time used to be refused by the same
- * sentence, which left an agent carrying only Atlas MCP with **no door at all**
- * for fixing a hand-authored node:
- *
- * | attempt | old response |
- * |---|---|
- * | `patch_concept` (other fields, no uid) | "`uid:` must be a UUIDv4" |
- * | `patch_concept({uid: <new value>})` | "`uid:` is immutable" |
- * | `add_concept` (same slug) | "already exists; use patch" |
- *
- * The three pointed at each other in a closed loop (reproduced 2026-08-08). With
- * no value to change, nothing is being changed. The real risk — taking over
- * someone else's identity — is already blocked separately by the collision check
- * in `assertNodeIdentity`, so opening this door still makes identity theft
- * impossible.
+ * Immutability covers changing a present uid only; filling an absent one is
+ * allowed, or a hand-written node has no repair door (patch, set uid and add
+ * all refuse). Taking over another node's identity is still blocked by the
+ * collision check in `assertNodeIdentity`.
  */
 function assertIdentityPatch(previousFrontmatter, patch) {
   if (!patch) return;
@@ -1487,14 +1207,8 @@ function assertIdentityPatch(previousFrontmatter, patch) {
 }
 
 /**
- * When a node without identity is edited, **that write mints the identity**.
- *
- * The writer minting it is exactly this repository's contract ("writer-minted
- * immutable UUIDv4"). A hand-authored node simply had no minter yet, and the
- * first write to touch it takes that role.
- *
- * **Not silently** — the minted value rides the return so the caller can tell the
- * person. Identity coming into existence is an event a person should know about.
+ * The first write to a node without identity mints it (writer-minted UUIDv4).
+ * The minted value rides the return so the caller tells the person.
  */
 function fillMissingUid(previousFrontmatter, nextFrontmatter) {
   const kind = nextFrontmatter?.kind;
@@ -1507,12 +1221,8 @@ function fillMissingUid(previousFrontmatter, nextFrontmatter) {
 }
 
 /**
- * Record which child refs THIS write added to a parent's graph arrays.
- *
- * Provenance the vault cannot reconstruct afterwards: on disk, a child added by
- * a person over a week and one appended by a loop look identical. The diff is
- * only visible in the moment of writing, which is the same argument that put the
- * whole gate here rather than in the compiled plan.
+ * Records which child refs this write added to a parent's graph arrays: on disk,
+ * a child a person added over a week and one a loop appended look identical.
  */
 function noteParentGrowth(slug, previousFrontmatter, nextFrontmatter) {
   if (!previousFrontmatter) return;
@@ -1529,10 +1239,7 @@ function noteParentGrowth(slug, previousFrontmatter, nextFrontmatter) {
   }
 }
 
-/**
- * Writes a new doc, creating directories as needed. Throws if the file exists —
- * an overwrite has to be the caller's explicit choice.
- */
+/** Writes a new doc, creating directories; throws if it exists, so an overwrite is always explicit. */
 export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   const filePath = slugToPath(rootPath, slug);
   if (existsSync(filePath)) {
@@ -1544,9 +1251,8 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   if (typeof body !== 'string') {
     throw new Error('body must be a string.');
   }
-  // Slug flatness — measured at the one door where a new identity is born. This
-  // is shape validity, so it is a hard error (the fan-out gate's "never block"
-  // principle covers judgements of meaning only).
+  // Slug flatness is shape validity, so a hard error; the gate's "never block"
+  // covers judgements of meaning only.
   const slugIssue = flatSlugIssue(frontmatter?.kind, slug);
   if (slugIssue) throw new Error(slugIssue);
   assertNodeIdentity(rootPath, slug, frontmatter);
@@ -1554,20 +1260,10 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   return commitDoc(rootPath, slug, filePath, frontmatter, body, { created: true });
 }
 
-/**
- * Options shape for patchFrontmatter / updateDoc / deleteDoc / redirectBacklinks:
- *   { expectedMtime?: number }
- *
- * When the caller passes the mtime it read, a change detected just before the
- * write throws a conflict. Omitting it skips the check, keeping existing callers
- * working.
- */
 
 /**
- * Deletes a doc permanently. Confirmation and backlink checks are the caller's
- * responsibility. Returns `{ slug, filePath, frontmatter, body, raw, mtime }`
- * captured just before the delete, throws when the file is absent, and honours
- * `expectedMtime` for external-change detection.
+ * Deletes a doc; confirmation and backlink checks are the caller's. Returns the
+ * state read just before the delete, throws when absent, honours `expectedMtime`.
  */
 export function deleteDoc(rootPath, slug, options = {}) {
   const filePath = slugToPath(rootPath, slug);
@@ -1584,14 +1280,9 @@ export function deleteDoc(rootPath, slug, options = {}) {
 }
 
 /**
- * Patches only the frontmatter of an existing doc, preserving the body. In the
- * patch object, `null` deletes the key and `undefined` skips it.
- * `options.expectedMtime` enables external-change detection.
- *
- * Returns `{ filePath, frontmatter, mintedUid }`. `mintedUid` has a value **only
- * when this write minted the identity for the first time** (recovering a
- * hand-authored node) — the caller must tell the person, because identity coming
- * into existence is not an event to pass over silently.
+ * Patches only the frontmatter, keeping the body: `null` deletes a
+ * key, `undefined` skips it. `mintedUid` is set only when this write minted the
+ * identity, and the caller must tell the person.
  */
 export function patchFrontmatter(rootPath, slug, patch, options = {}) {
   const filePath = slugToPath(rootPath, slug);
@@ -1624,12 +1315,8 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
 }
 
 /**
- * Updates frontmatter and body of an existing doc together. Frontmatter patch
- * semantics match patchFrontmatter (`null` deletes, `undefined` skips); a string
- * `body` replaces, `undefined` preserves. `expectedMtime` enables
- * external-change detection.
- *
- * The return contract matches `patchFrontmatter`: `{ filePath, frontmatter, mintedUid }`.
+ * Updates frontmatter and body together, with patchFrontmatter's patch semantics
+ * and return shape; a string `body` replaces, `undefined` keeps.
  */
 export function updateDoc(rootPath, slug, {
   frontmatter: patch,
@@ -1670,11 +1357,7 @@ export function updateDoc(rootPath, slug, {
   return { filePath, frontmatter: preview.frontmatter, mintedUid };
 }
 
-/**
- * Kind distribution for the vault: node count per kind plus the total. Lets an
- * agent answer inventory questions ("how many capabilities are in this vault?")
- * in one load plus one counting pass.
- */
+/** Node count per kind plus the total, for inventory questions in one pass. */
 export function listKinds(rootPath) {
   const docs = loadVaultDocs(rootPath);
   const byKind = {};
@@ -1691,10 +1374,9 @@ export function listKinds(rootPath) {
     byKind[kind] = (byKind[kind] || 0) + 1;
     total += 1;
   }
-  // Concepts named only in a relation key, with no document. The screens (map,
-  // insights) count these as concepts too, so omitting this number makes `total`
-  // alone read as "the screen inflated it". They are not in the per-kind
-  // inventory — they never declared a kind.
+  // Concepts named only in a relation key. The map and insights count them, so
+  // without this number `total` reads as if the screen inflated it; they have no
+  // kind, so they stay out of the per-kind inventory.
   const referencedOnly = new Set();
   for (const doc of docs) {
     for (const { ref } of collectNeighborRefs(doc)) {
@@ -1710,16 +1392,8 @@ export function listKinds(rootPath) {
 }
 
 /**
- * Finds orphan nodes: docs that no other node points at from a frontmatter graph
- * key (domains/capabilities/elements/dependencies/relates/contains/describes/domain).
- * Matching policy matches findBacklinks (absolute slug, or the last segment).
- *
- * Options:
- *   - kind: restrict to one kind
- *   - excludeKinds: drop these kinds from the result (default ['project', 'vault-readme'])
- *
- * Used when an agent tidies isolated nodes, or a user asks which of their nodes
- * nothing uses.
+ * Docs no other node points at from a frontmatter graph key, matched like
+ * findBacklinks. `excludeKinds` defaults to ['project', 'vault-readme'].
  */
 export function findOrphans(rootPath, options = {}) {
   const docs = loadVaultDocs(rootPath);
@@ -1729,10 +1403,8 @@ export function findOrphans(rootPath, options = {}) {
       ? options.excludeKinds
       : ['project', 'vault-readme'],
   );
-  // "Is this node referenced?" is answered conservatively: an ambiguous ref
-  // counts as a reference to **every** candidate, so no document a vault plainly
-  // names is reported as an orphan (bug sweep 2026-09-01 — the private
-  // first-wins map before this marked one of two same-tail nodes orphaned).
+  // An ambiguous ref counts as a reference to every candidate, so no document a
+  // vault plainly names is reported as an orphan.
   const { resolveCandidates } = buildRefIndex(docs);
   const referenced = new Set();
   for (const doc of docs) {
@@ -1754,9 +1426,8 @@ export function findOrphans(rootPath, options = {}) {
       slug: doc.slug,
       kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
-      // Same shape as list_concepts / find_backlinks, so an agent can sort or
-      // filter orphans ("only in this domain", "only recently changed") straight
-      // from the response, with no follow-up get_concept.
+      // Same row shape as list_concepts and find_backlinks, so an agent can filter
+      // orphans without a follow-up get_concept.
       domain: doc.frontmatter.domain,
       mtime: doc.mtime,
     });
@@ -1765,42 +1436,24 @@ export function findOrphans(rootPath, options = {}) {
 }
 
 /**
- * Shortest graph path between two slugs (BFS). Edges come from the frontmatter
- * graph keys (domains, capabilities, elements, dependencies, relates, contains,
- * describes, domain) plus their backlinks, forming an undirected graph.
- *
- * An entry string matches either the absolute slug or the slug's last segment —
- * the same policy as findBacklinks.
- *
- * Returns null when no path exists; cuts off beyond `maxHops` (default 5).
+ * Shortest undirected path between two slugs over the graph keys and their
+ * backlinks, by BFS. Endpoints match an absolute slug or its last segment. null
+ * when there is no path within `maxHops` (default 5).
  */
 export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   assertBoundedNonNegativeInteger(maxHops, 'maxHops', { max: 20 });
   const docs = loadVaultDocs(rootPath);
-  // The last segment and the frontmatter slug are aliases, so in a dogfood vault
-  // where project.md carries a user-facing `slug: ontology-atlas`, traversal still
-  // treats the file slug and the frontmatter slug as one node. The shared index
-  // nulls an ambiguous ref, so a path is never routed through an arbitrary match
-  // (bug sweep 2026-09-01 — this function used a private first-wins map before).
+  // Tail and frontmatter slug are aliases of one node. An ambiguous ref resolves
+  // to null, so no path is routed through an arbitrary match.
   const resolveRef = buildRefIndex(docs).resolve;
   const resolvedFrom = resolveRef(fromSlug);
   const resolvedTo = resolveRef(toSlug);
-  // Both endpoints must exist in the vault for the answer to mean anything. Even
-  // an identical slug returns a trivial path only when it is in the vault, so no
-  // fake path is invented for a nonexistent slug (past regression: from===to on a
-  // fabricated slug returned hops:[slug]).
+  // Both endpoints must exist, so a fabricated slug never gets a trivial path.
   if (!resolvedFrom || !resolvedTo) return null;
   if (resolvedFrom === resolvedTo) return { from: fromSlug, to: toSlug, hops: [resolvedFrom], edges: [] };
-  // adjacency: undirected, each edge recording the frontmatter `via` key (domains,
-  // capabilities, elements, dependencies, relates, contains, describes, domain).
-  // When one doc references the same neighbour under several keys, the *first* key
-  // wins — NEIGHBOR_KEYS runs domains → describes, from most to least specific, so
-  // the most specific meaning is kept. This lets an agent that receives a path
-  // explain hop by hop why two nodes are connected, which carries far more of the
-  // mental model than a bare slug sequence.
-  // Each adjacency entry is `{ via, rationale? }`. The rationale is the source
-  // document's `relation_notes` sentence for that target; it rides along in both
-  // directions because the note explains the pair, whichever way BFS walks it.
+  // Undirected adjacency: node → Map(neighbour → { via, rationale? }). The first
+  // key naming a neighbour wins, and NEIGHBOR_KEYS runs most to least specific.
+  // The source document's `relation_notes` rationale rides in both directions.
   const adj = new Map();
   function addEdge(a, b, via, rationale) {
     if (!adj.has(a)) adj.set(a, new Map());
@@ -1817,9 +1470,7 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
       }
     }
   }
-  // BFS carrying depth in the queue, which avoids walking the parent chain back on
-  // every dequeue (O(D)). The queue runs on a head index too, removing
-  // Array.shift()'s O(V) cost — measurable on a large vault.
+  // BFS: queue of { node, depth } with a head index (no Array.shift), O(V + E).
   const queue = [{ node: resolvedFrom, depth: 0 }];
   const visited = new Set([resolvedFrom]);
   const parent = new Map();
@@ -1835,10 +1486,8 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
       parent.set(n, cur);
       parentEdge.set(n, meta);
       if (n === resolvedTo) {
-        // Path reconstruction: push to the end, then reverse once (O(D)). It used
-        // to `hops.unshift(p)` each step, i.e. O(D²) — an antipattern even with a
-        // small maxHops. edges[] exposes the 'via' frontmatter key between hops i
-        // and i+1, plus the stored `rationale` when the declaring document has one.
+        // Push then reverse once, O(D). edges[i] carries the `via` key between hops i
+        // and i+1, plus the declaring document's `rationale` when it has one.
         const hops = [n];
         const edges = [];
         let p = n;
@@ -1857,27 +1506,19 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   return null;
 }
 
-/**
- * Scans which vault docs point at `targetSlug`, looking at the frontmatter array
- * keys (capabilities, elements, dependencies, relates, contains, describes) and at
- * wikilinks and markdown links in the body.
- */
+/** Docs pointing at `targetSlug` through a frontmatter graph key or a body wikilink or markdown link. */
 export function findBacklinks(rootPath, targetSlug, options = {}) {
-  // `includeAmbiguousTailRefs` widens the frontmatter match to documents whose
-  // ref is ambiguous but **could** mean the target, each row marked
-  // `ambiguousTail: true`. The default stays exact-only (standing decision — an
-  // ambiguous tail is not misattributed as a confirmed backlink), but
-  // delete_concept's safety gate opts in: without this, a node referenced only
-  // via an ambiguous tail was deletable without force and without a warning
-  // (bug sweep 2026-09-01, reproduced).
+  // `includeAmbiguousTailRefs` adds rows whose ambiguous ref could mean the
+  // target, marked `ambiguousTail: true`. The default stays exact-only, but
+  // delete_concept opts in, or a node referenced only by an ambiguous tail would
+  // be deleted without force or warning.
   const includeAmbiguous = options.includeAmbiguousTailRefs === true;
   const docs = loadVaultDocs(rootPath);
   const { resolve: resolveRef, resolveCandidates } = buildRefIndex(docs);
   const resolvedTarget = resolveRef(targetSlug) || targetSlug;
   const matches = [];
-  // Graph frontmatter is read through collectNeighborRefs, so a legacy key such as
-  // depends_on still reads as the canonical dependencies edge, and a targetSlug
-  // that is a frontmatter slug alias still finds the same node.
+  // collectNeighborRefs reads legacy keys (`depends_on`) as canonical edges and
+  // resolves a frontmatter slug alias to the same node.
   const requestedTail = targetSlug.split('/').pop();
   const resolvedTail = resolvedTarget.split('/').pop();
   const bodyNeedles = new Set([
@@ -1905,8 +1546,8 @@ export function findBacklinks(rootPath, targetSlug, options = {}) {
         if (!matchedKeys.includes(key)) matchedKeys.push(key);
       }
     }
-    // Wikilinks match their alias (`[[x|label]]`) and heading (`[[x#h]]`) forms
-    // too — redirectBacklinks rewrites those, so this count must see them.
+    // Alias (`[[x|label]]`) and heading (`[[x#h]]`) wikilinks count too, because
+    // redirectBacklinks rewrites them.
     const bodyHit = [...bodyNeedles].some(
       (needle) =>
         doc.body.includes(`[[${needle}]]`) ||
@@ -1921,9 +1562,7 @@ export function findBacklinks(rootPath, targetSlug, options = {}) {
       slug: doc.slug,
       kind: doc.frontmatter.kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
-      // Same shape as list_concepts, so an agent reading backlinks immediately
-      // knows the domain and the change time. Two views of one mental model
-      // exposing the same fields is what lets an agent handle both identically.
+      // Same fields as list_concepts, so an agent handles both views alike.
       domain: doc.frontmatter.domain,
       mtime: doc.mtime,
       matchedKeys: matchedKeys.length > 0 ? matchedKeys : undefined,
@@ -1935,15 +1574,9 @@ export function findBacklinks(rootPath, targetSlug, options = {}) {
 }
 
 /**
- * One candidate-aware reference index shared by findPath, findOrphans and
- * findBacklinks (bug sweep 2026-09-01). Before it, three policies coexisted in
- * this file: buildRefResolver nulled ambiguous tails, while findPath and
- * findOrphans kept private first-wins maps — reproduced: with
- * `capabilities/foo.md` and `elements/foo.md`, `find_path` routed a path through
- * the arbitrary first match and `find_orphans` reported one of them as an orphan
- * a document plainly references. Policy now: an ambiguous ref asserts **no
- * specific edge** (resolve → null) but is a **candidate referrer of every
- * match** (resolveCandidates), so "is this node referenced?" checks stay
+ * The one reference index findPath, findOrphans and findBacklinks share. An
+ * ambiguous ref asserts no specific edge (`resolve` → null) but is a candidate
+ * referrer of every match (`resolveCandidates`), so "is this referenced?" stays
  * conservative.
  */
 function buildRefIndex(docs) {
@@ -1983,56 +1616,6 @@ function buildRefIndex(docs) {
 }
 
 
-/**
- * Applies a multi-file vault write **all-or-nothing**.
- *
- * **Why it was needed — «atomic» was false.** `rename_concept`'s tool description
- * said *"update every backlink in one atomic graph-level operation"* and
- * `AGENTS.md` said *"atomically rewrites every backlink"*. In reality
- * `redirectBacklinks` wrote each file immediately inside a loop, and one failed
- * write left a **half vault** (measured 2026-08-01: `chmod 444` on one of three
- * references → new file created, old file not deleted → **two nodes with the same
- * title**, two references on the new name and one on the old).
- *
- * The worst part came next: on that vault `validate` answered *"issue 0 ✓"* and
- * `health` answered *"vault_validation pass"*. **A split graph passed both
- * checks.** On a product whose premise is that the user's disk is the source of
- * truth, that is the most expensive kind of silent failure.
- *
- * **Guaranteed:** **as long as the process lives**, any I/O failure (EACCES,
- * EROFS, ENOSPC, an editor lock, a read-only file left by a sync client) leaves
- * the vault as it started. Two stages — ① before writing anything, **pre-check
- * write permission on every target**, and ② if it still fails, restore what was
- * already written from the original bytes.
- *
- * **Not guaranteed: crash and power-loss safety.** That needs a journal or a
- * `rename(2)`-based commit, and it duplicates this product's recovery path — the
- * vault is a git repository (snapshot → diff → revert). So the line is drawn
- * honestly: this function is named `applyAllOrNothing`, not `applyAtomically`.
- *
- * If the rollback itself fails (an I/O failure in its own right) it is **not
- * hidden** — the error lists which file was left in which state. Saying "I do not
- * know" beats saying "it is fine".
- *
- * @param {Array<{op:'write'|'delete', path:string, content?:string}>} plan
- * @returns {{applied:number}}
- */
-/**
- * Writes one file **without a torn state**: write to a temp file, flush it to
- * disk, then rename.
- *
- * **Why** (review 2026-08-16): it used to be a bare `writeFileSync`, which
- * **truncates the original first** and then writes. A process death or a full
- * disk in between leaves the user's markdown **truncated** — and that file is in
- * the folder we just asked them to open.
- *
- * ⚠️ This repository **already had** a safe write (`writeTextAtomically` in
- * `cli/src/lib/agent-config.mjs`), used only for `.mcp.json` and `config.toml` —
- * i.e. **protecting the config files and not the user's data**.
- *
- * A rename is atomic within one filesystem, so a death at any moment leaves the
- * file holding **either the old contents or the new**, never half.
- */
 function existingRegularFileMode(filePath) {
   try {
     const metadata = statSync(filePath);
@@ -2071,17 +1654,22 @@ function changedOnDiskError(paths) {
   );
 }
 
+/**
+ * Writes one file without a torn state: temp file, fsync, rename. A rename is
+ * atomic within one filesystem, so a crash leaves either the old contents or the
+ * new, never a truncated user file.
+ */
 export function writeFileAtomically(filePath, text, options = {}) {
   const temporaryPath = `${filePath}.oatlas-tmp-${process.pid}`;
   const existingMode = existingRegularFileMode(filePath);
   let descriptor = null;
   try {
     descriptor = openSync(temporaryPath, 'wx');
-    // Applied before the contents so the temp file never widens a private original's mode, even briefly.
+    // Before the contents, so the temp file never widens a private original's mode.
     if (existingMode !== null) fchmodSync(descriptor, existingMode);
     writeFileSync(descriptor, text, 'utf-8');
-  // Flush to disk before the rename — otherwise power can be lost with the new
-  // name in place and the contents still in cache.
+  // Flush before the rename, or power loss can leave the new name with the
+  // contents still in cache.
     fsyncSync(descriptor);
     closeSync(descriptor);
     descriptor = null;
@@ -2110,8 +1698,7 @@ export function writeFileAtomically(filePath, text, options = {}) {
       }
     }
     try {
-      // On success the rename took it, so there is nothing to remove. A temp file
-      // remains only on failure, and clearing it never touches the original.
+      // Only a failed write leaves the temp file; removing it never touches the original.
       if (existsSync(temporaryPath)) unlinkSync(temporaryPath);
     } catch {
       /* even if it cannot be cleared, the original is intact */
@@ -2120,19 +1707,15 @@ export function writeFileAtomically(filePath, text, options = {}) {
 }
 
 /**
- * The key for comparing whether two paths **name the same file**.
- *
- * For an existing file it is the real path (symlinks resolved); for one that does
- * not exist yet, the path string. Lowercased for case-insensitive filesystems
- * (macOS by default, Windows) — on a case-sensitive one, two genuinely different
- * files then share a key, but the cost of that is one skipped delete, which always
- * beats losing data.
+ * Key for "do these paths name the same file": the real path when it exists,
+ * else the string, lowercased for case-insensitive filesystems. On a
+ * case-sensitive one, a false match costs one skipped delete, never data.
  */
 function sameFileKey(path) {
   try {
     if (existsSync(path)) return realpathSync(path).toLowerCase();
   } catch {
-    /* if the real path cannot be resolved, fall back to the string — better than no verdict */
+    /* unresolvable real path: the string is still a verdict */
   }
   return resolve(path).toLowerCase();
 }
@@ -2149,11 +1732,9 @@ function nearestExistingParent(path) {
 }
 
 /**
- * Creates parent directories one level at a time, and only during the real apply.
- *
- * `recursive:true` can make us mistake a directory another process created in a
- * race for one of ours. Splitting on EEXIST per level means rollback knows exactly
- * what it owns.
+ * Creates parents one level at a time, only during the real apply: a per-level
+ * EEXIST tells a directory another process raced in from one we own, so
+ * rollback removes only ours.
  */
 function createMissingParents(path, createdDirectories) {
   const missing = [];
@@ -2175,13 +1756,9 @@ function createMissingParents(path, createdDirectories) {
 }
 
 /**
- * `review_state: human_decides` on the document at `filePath`, as a refusal
- * sentence — or null when the file is absent, unparseable, or unreserved.
- *
- * Absent is not reserved: a plan that creates a file cannot be stepping on a
- * person's reservation. Unparseable is not reserved either; a file this module
- * cannot read has a different problem, and inventing a reservation for it would
- * block writes nobody reserved.
+ * The refusal sentence when the file carries `review_state: human_decides`, or
+ * null when absent, unparseable or unreserved: a created file steps on no
+ * reservation, and an unreadable one must not invent one.
  */
 function reservedForHumanIssue(filePath) {
   if (typeof filePath !== 'string' || !existsSync(filePath)) return null;
@@ -2202,24 +1779,24 @@ function reservedForHumanIssue(filePath) {
   );
 }
 
+/**
+ * Applies a multi-file vault write all-or-nothing. While the process lives, any
+ * I/O failure (EACCES, EROFS, ENOSPC, a lock) leaves the vault as it started:
+ * every target's permission is pre-checked, and a later failure restores the
+ * original bytes. Not crash-safe (that needs a journal; the vault is a git
+ * repository), hence not "atomic". A failed rollback is reported file by file.
+ *
+ * @param {Array<{op:'write'|'delete', path:string, content?:string}>} plan
+ * @returns {{applied:number}}
+ */
 export function applyAllOrNothing(plan, options = {}) {
   if (!Array.isArray(plan) || plan.length === 0) return { applied: 0 };
 
   /*
-   * ⓿ **Every file the plan touches, not only the one the tool named**
-   * (Codex review, 2026-09-02).
-   *
-   * Each write tool checked its own operand for `review_state: human_decides`
-   * and stopped there. But rename, reclassify, and merge redirect backlinks,
-   * which emits writes to **documents nobody named** — so a reserved node could
-   * be rewritten as collateral by an operation aimed at its neighbour, and the
-   * refusal that guarded the front door never saw it.
-   *
-   * Guarding here rather than in each handler is the point: this is the one
-   * place every multi-file plan passes through, so a tool added later inherits
-   * the refusal instead of having to remember it. The check reads the file as it
-   * is now, refuses the whole plan, and writes nothing — a partially applied
-   * plan around a reserved document would be worse than either outcome.
+   * ⓿ Every file the plan touches must be unreserved, not only the named one:
+   * rename, reclassify and merge rewrite backlinks in documents nobody named.
+   * Guarded here, where every multi-file plan passes, so a new tool inherits it;
+   * the whole plan is refused and nothing is written.
    */
   if (options.allowReservedTargets !== true) {
     for (const entry of plan) {
@@ -2229,17 +1806,10 @@ export function applyAllOrNothing(plan, options = {}) {
   }
 
   /*
-   * ⓪ **A plan that writes and then deletes the same file drops the delete.**
-   *
-   * A rename differing only in case produces exactly this plan:
-   *   write `capabilities/auth.md` · delete `capabilities/Auth.md`
-   * and the macOS and Windows filesystems treat those as the **same file**, so
-   * deleting after writing deletes what was just written — the node disappears
-   * entirely and the tool reports success (reproduced in the 2026-08-16 review).
-   *
-   * The front door (`rename_concept`) rejects that case, but three tools build
-   * this plan (rename, merge, reclassify), so the **write layer** blocks it too.
-   * What a string comparison cannot catch is caught here by **real path**.
+   * ⓪ A plan that writes and then deletes the same file drops the delete. A
+   * case-only rename (write `auth.md`, delete `Auth.md`) names one file on macOS
+   * and Windows, and the delete would erase what was just written. Rename, merge
+   * and reclassify all build this plan, so the write layer compares real paths.
    */
   const writeTargets = new Set();
   for (const entry of plan) {
@@ -2268,18 +1838,9 @@ export function applyAllOrNothing(plan, options = {}) {
   }
 
   /*
-   * ⓪-b **If someone edited it in the meantime, write nothing at all.**
-   *
-   * Why (review 2026-08-16): the `expected_mtime` check existed only on the
-   * single-file paths. But the three tools using this function (rename, merge,
-   * reclassify) rewrite N referencing documents from **a snapshot read minutes
-   * earlier**. If the user edited one of them in Obsidian in between, that edit
-   * vanished silently — and a human and an agent sharing one folder is the exact
-   * situation this product sells, so protection was missing precisely there.
-   *
-   * When the planner attaches `expectedMtime` to an entry, it is checked here.
-   * Without it nothing is checked, as before (zero regression) — but that slot is
-   * now "not supplied" rather than "does not exist".
+   * ⓪-b If someone edited a target since the planner's snapshot, write nothing.
+   * Rename, merge and reclassify rewrite N documents read minutes earlier; an
+   * entry without `expectedMtime` is not checked.
    */
   const conflicts = [];
   for (const entry of plan) {
@@ -2289,9 +1850,8 @@ export function applyAllOrNothing(plan, options = {}) {
     throw changedOnDiskError(conflicts);
   }
 
-  // ① Pre-check, before a single character is written. The common failures
-  //    (read-only file, locked file, read-only vault) are caught here, so no
-  //    rollback is needed at all.
+  // ① Pre-check before writing anything, so the common failures (read-only or
+  //    locked file, read-only vault) need no rollback.
   const blocked = [];
   for (const entry of plan) {
     const dir = dirname(entry.path);
@@ -2302,7 +1862,7 @@ export function applyAllOrNothing(plan, options = {}) {
         accessSync(nearestExistingParent(entry.path), fsConstants.W_OK);
       }
       if (entry.op === 'delete' && existsSync(entry.path)) {
-        // Deleting a file needs write permission on **the directory**, not on the file.
+        // Deleting needs write permission on the directory, not the file.
         accessSync(dir, fsConstants.W_OK);
       }
     } catch (error) {
@@ -2318,7 +1878,7 @@ export function applyAllOrNothing(plan, options = {}) {
     );
   }
 
-  // ② Apply, carrying each entry's **prior state** — the material for a rollback.
+  // ② Apply, keeping each entry's prior state for rollback.
   const done = [];
   const createdDirectories = [];
   try {
@@ -2348,8 +1908,7 @@ export function applyAllOrNothing(plan, options = {}) {
         after: entry.op === 'write' ? entry.content : null,
       });
     }
-    // A plan that deleted a file invalidates the lazy gate index — the removed
-    // slug (or its tail) must stop resolving for the advisory channel.
+    // A delete invalidates the gate index, so the removed slug stops resolving.
     if (done.some((step) => step.op === 'delete')) noteGateRemoval();
     return { applied: done.length };
   } catch (error) {
@@ -2401,35 +1960,24 @@ export function applyAllOrNothing(plan, options = {}) {
 }
 
 /**
- * Rewrites every frontmatter array key and body link that points at `targetSlug`
- * to `nextSlug`. The core operation behind rename_concept and merge_concepts.
+ * Rewrites every frontmatter graph key and body link pointing at `targetSlug`
+ * to `nextSlug`, for rename_concept and merge_concepts. Matches like
+ * findBacklinks (absolute slug, last segment, path-prefixed tail); a tail is
+ * rewritten with the tail of `nextSlug`, so the new name shows in every form.
  *
- * Matching policy (same as findBacklinks):
- *  - absolute slug (`capabilities/mcp-server`)
- *  - last segment (`mcp-server`) — the replacement uses `nextSlug`'s tail rather
- *    than keeping the target tail, so a rename shows the new name consistently
- *    whichever form the slug was written in
- *  - trailing match (`…/mcp-server`) follows the same policy
- *
- * Body replacement covers `[[targetSlug]]` and `(targetSlug.md)`.
- *
- * `options.dryRun = true` previews without writing to disk.
- * `options.excludeSlugs` lets the caller skip documents it replaces in the same plan.
- * `options.targetKind` — pass it **only when the node changes kind** (reclassify_concept): an
- * entry in a list named for a kind (`domains` / `capabilities` / `elements`) then moves to the
- * list for `targetKind` when the referrer's kind keeps one (`containmentKeyFor`, spec §5), and
- * stays where it is otherwise, listed in `keptInPlace`. With it, `targetSlug === nextSlug` is a
- * kind change in place: no address is rewritten, only lists move.
+ * With `dryRun` it previews without writing. `excludeSlugs` skips documents the
+ * caller replaces in the same plan. Pass `targetKind` only when the node changes
+ * kind (reclassify_concept): an entry in a kind-named list (domains,
+ * capabilities, elements) moves to the list for `targetKind` when the
+ * referrer's kind keeps one (`containmentKeyFor`, spec §5), else it stays and is
+ * listed in `keptInPlace`; then `targetSlug === nextSlug` is a kind change in place.
  *
  * Returns `{ updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated, keptInPlace }`.
  */
 export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) {
   /**
-   * With `deferWrite: true` only the plan is built and returned as `plan`; disk is
-   * untouched. Different from `dryRun`: a dry run is a preview *for the user*,
-   * while this lets **the caller merge its own writes into one plan** and apply
-   * them all-or-nothing. `rename_concept` uses it to bind file creation, backlink
-   * rewriting, and old-file deletion into one unit.
+   * With `deferWrite` it returns the plan without touching disk, so the caller merges its
+   * own writes into one all-or-nothing apply (`dryRun` is a preview for the user).
    */
   const { dryRun = false, deferWrite = false, excludeSlugs = [], targetKind = null } = options;
   const excluded = new Set(Array.isArray(excludeSlugs) ? excludeSlugs : []);
@@ -2450,10 +1998,9 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   const tailMatches = docs
     .map((doc) => doc.slug)
     .filter((slug) => slug.split('/').pop() === targetTail);
-  // A bare/suffix tail is shorthand only while it uniquely resolves. When
-  // capabilities/foo and elements/foo both exist, rewriting "foo" would
-  // silently redirect whichever concept the author meant and can even mutate
-  // the other node's frontmatter slug. Exact canonical refs remain safe.
+  // A bare or suffix tail is rewritten only while it resolves uniquely; with
+  // capabilities/foo and elements/foo both present, rewriting "foo" could redirect
+  // the wrong concept. Exact canonical refs stay safe.
   const canRewriteTail = tailMatches.length === 1 && tailMatches[0] === targetSlug;
 
   function rewriteArrayItem(value) {
@@ -2461,7 +2008,6 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     if (value === targetSlug) return { value: nextSlug, changed: true };
     if (canRewriteTail && value === targetTail) return { value: nextTail, changed: true };
     if (canRewriteTail && value.endsWith(`/${targetTail}`)) {
-      // path-prefixed tail — preserved prefix plus the new tail
       const prefix = value.slice(0, value.length - targetTail.length);
       return { value: `${prefix}${nextTail}`, changed: true };
     }
@@ -2469,9 +2015,8 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   }
 
   const updates = [];
-  /** Typed-list entries a kind change left where they were: the referrer keeps no list for it. */
   const keptInPlace = [];
-  /** The write plan destined for disk: applied in one go once the loop ends. */
+  /** Applied in one go once the loop ends. */
   const plan = [];
   for (const doc of docs) {
     if (doc.slug === targetSlug || excluded.has(doc.slug)) continue;
@@ -2480,18 +2025,13 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     const beforeKeys = [];
     const afterKeys = [];
     let fmChanged = false;
-    // When the document being rewritten IS the destination node (merge_concepts
-    // scans the surviving doc for refs to the absorbed one), every rewrite would
-    // by construction produce a reference to itself. Reproduced (bug sweep
-    // 2026-09-01): merging capabilities/b into capabilities/a where a carried
-    // `relates: [capabilities/b]` wrote `relates: [capabilities/a]` — a self-loop
-    // polluting degree counts, neighbors and path queries. Such refs are dropped
-    // instead of rewritten; the removal stays visible in beforeKeys/afterKeys.
+    // When the rewritten document is the destination (merge scans the survivor),
+    // every rewrite would point at itself, so such refs are dropped instead; the
+    // removal stays visible in beforeKeys/afterKeys.
     const rewritingSelf = doc.slug === nextSlug;
 
-    // A kind change in place (`targetSlug === nextSlug`) rewrites no address: only the list pass
-    // below runs. `rewriteArrayItem` reports a match as `changed`, so running this pass with an
-    // identical address would record no-op updates.
+    // A kind change in place rewrites no address; running this pass would record
+    // no-op updates, since `rewriteArrayItem` reports a match as `changed`.
     for (const key of renaming ? Object.keys(nextFm) : []) {
       const value = nextFm[key];
       if (Array.isArray(value)) {
@@ -2501,24 +2041,17 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
           .filter((r) => !(rewritingSelf && r.changed))
           .map((r) => r.value);
         if (before.length !== after.length || before.some((b, i) => b !== after[i])) {
-          // dedup + sort — never append a duplicate when nextSlug is already
-          // present, so the same graph state leaves the same frontmatter array.
           const deduped = normalizeRelationRefs(after);
           nextFm[key] = deduped;
           beforeKeys.push({ key, before });
-          // A removal (self-ref drop leaving the array empty) reports the key
-          // with `after` omitted — the update-row contract's removal shape.
+          // An emptied array is reported with `after` omitted, the removal shape.
           afterKeys.push(deduped.length > 0 ? { key, after: deduped } : { key });
           fmChanged = true;
         }
       } else if (typeof value === 'string') {
-        // Only graph reference slots are rewritten (`domain:` plus the
-        // GRAPH_ARRAY_KEYS family). An evidence string such as `path:` is not a
-        // reference — measured 2026-08-01 while flattening the dogfood vault: the
-        // tail-suffix clause of the rename `elements/src/widgets/docs-vault` →
-        // `elements/docs-vault-widget` also rewrote **another node's**
-        // `path: src/entities/docs-vault` to `…/docs-vault-widget`, pointing it at
-        // a file that does not exist (3 cases of pathDrift).
+        // Only reference slots are rewritten (`domain:` and GRAPH_ARRAY_KEYS). An
+        // evidence string such as `path:` is not a reference, and the tail-suffix
+        // clause would otherwise point it at a file that does not exist.
         const isRefSlot = key === 'domain' || GRAPH_ARRAY_KEY_SET.has(key);
         const r = isRefSlot ? rewriteArrayItem(value) : { changed: false };
         if (r.changed) {
@@ -2534,16 +2067,10 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
           fmChanged = true;
         }
       } else if (value && typeof value === 'object') {
-        // The KEY of an object map value (`relation_notes: {ref: "why"}`) is a
-        // rename target too. Without this, a relation's rationale note is orphaned
-        // the moment the rename happens — the red-team finding that blocked the
-        // schema from shipping.
-        //
-        // Key-collision merge policy: when both the old and the new key exist, the
-        // existing (new) value wins — a note the user already wrote under the new
-        // name is the more recent intent, and letting the rename overwrite it is
-        // silent data loss. The displaced old value is not discarded: it stays in
-        // beforeKeys, visible in the dry run and the audit.
+        // An object map's keys (`relation_notes: {ref: "why"}`) are rename targets too,
+        // or the rationale is orphaned. On a collision the existing new-key value wins
+        // (the more recent intent; overwriting it is silent loss) and the displaced old
+        // value stays in beforeKeys.
         const entries = Object.entries(value);
         let mapChanged = false;
         const nextMap = {};
@@ -2554,17 +2081,14 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
             continue;
           }
           mapChanged = true;
-          // A note whose key would now denote the document itself (merge into
-          // this doc) is dropped with the self-ref it annotated.
+          // A note keyed to the document itself goes with the self-ref it annotated.
           if (rewritingSelf) continue;
           if (r.value in nextMap || entries.some(([k]) => k === r.value)) {
-            // Collision — the existing (new key) value wins; the old value is only recorded.
             continue;
           }
           nextMap[r.value] = mapValue;
         }
         if (mapChanged) {
-          // Preserve the collision winner (the original new key) value
           for (const [mapKey, mapValue] of entries) {
             if (!(mapKey in nextMap) && !rewriteArrayItem(mapKey).changed) nextMap[mapKey] = mapValue;
           }
@@ -2573,8 +2097,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
             afterKeys.push({ key, after: nextMap });
             nextFm[key] = nextMap;
           } else {
-            // The last note annotated the dropped self-ref — remove the empty
-            // map with it and report the removal (`after` omitted).
+            // The last note went with a dropped self-ref: remove the empty map too.
             afterKeys.push({ key });
             delete nextFm[key];
           }
@@ -2584,16 +2107,11 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     }
 
     /*
-     * ⚠️ **A kind change moves the entry between lists, not only its address** (2026-09-26,
-     * map-edit review). The pass above keeps every rewritten entry in the key it was in, so
-     * reclassifying `capabilities/x` into `elements/x` left a domain reading
-     * `capabilities: [elements/x]`: an element in the capability list that resolved, raised no
-     * warning, and was counted by the dense-parent check as one of the domain's capabilities.
-     * A list named for a kind says what its entries are, so the entry follows the node into the
-     * list for its new kind — when the referrer's kind keeps that list (spec §5,
-     * `containmentKeyFor`). When it does not, nothing is guessed: the entry keeps its list and
-     * is returned in `keptInPlace` for the caller to say so. The surviving document of a merge
-     * is skipped: its references to the absorbed node were just dropped as self-references.
+     * A kind change moves an entry between kind-named lists, not only its
+     * address: `capabilities: [elements/x]` resolves silently and the dense-parent check
+     * counts it as a capability. The entry follows the node into its new kind's list
+     * when the referrer's kind keeps one (spec §5, `containmentKeyFor`); otherwise
+     * it stays and is reported in `keptInPlace`. A merge survivor is skipped.
      */
     if (targetKind && !rewritingSelf) {
       const holderKind = typeof doc.frontmatter?.kind === 'string' ? doc.frontmatter.kind.trim() : '';
@@ -2614,8 +2132,8 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
         if (!Array.isArray(written)) continue;
         const hits = [...new Set(written.filter(namesTarget).map((value) => rewriteArrayItem(value).value))];
         if (hits.length === 0 || destination === key) continue;
-        // A destination written as something other than a list cannot take the entry
-        // without losing what it holds, so it is kept like a missing list.
+        // A destination written as a non-list cannot take the entry without losing
+        // what it holds, so it is kept like a missing list.
         const destinationWritten = destination ? doc.frontmatter[destination] : undefined;
         if (!destination || (destinationWritten !== undefined && !Array.isArray(destinationWritten))) {
           for (const ref of hits) {
@@ -2650,16 +2168,13 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     let nextBody = doc.body;
     let bodyChanged = false;
     /*
-     * Body links carry the same reference in more shapes than the frontmatter
-     * arrays do: `[[slug]]`, `[[slug#heading]]`, `[[slug|alias]]`, `(slug.md)`,
-     * `(slug.md#anchor)`, and path-prefixed `(…/slug.md)`. Rewriting only the
-     * bare forms left alias/anchor links silently dangling after a confirmed
-     * rename — and permanently dangling after a merge, which deletes the old
-     * file in the same plan. `rewriteArrayItem` already owns the slug/tail
-     * matching rules (including the ambiguous-tail guard), so every form routes
-     * through it. Bare prose paths outside a link stay untouched: an evidence
-     * string is not a reference (see the pathDrift note above). A kind change in
-     * place has no new address to write, so it leaves the body alone.
+     * Body links take more shapes than frontmatter: the wikilinks for a slug,
+     * a heading and an alias (`[[slug]]`, `[[slug#h]]`, `[[slug|alias]]`) and the
+     * markdown links (`(slug.md)`, `(slug.md#a)`, `(…/slug.md)`). Missing one
+     * leaves it dangling, permanently after a merge deletes the old file. All
+     * route through `rewriteArrayItem` for its tail rules and ambiguity guard.
+     * Bare prose paths are evidence, not references; a kind change in place
+     * leaves the body.
      */
     if (renaming) {
       nextBody = nextBody.replace(
@@ -2692,20 +2207,12 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
       bodyChanged,
     });
 
-    // **Do not write here.** This line used to be a `writeFileSync`, so a failure
-    // on the next file left a half vault with only the earlier ones changed.
+    // Planned, not written: a failure on a later file must not leave a half vault.
     plan.push({
       op: 'write',
       path: filePath,
       content: buildMarkdown({ frontmatter: nextFm, body: nextBody }),
-      /*
-       * **Carry the read timestamp along** (review 2026-08-16).
-       *
-       * This document is a snapshot read seconds or minutes ago. If the user
-       * edited the file in their own editor in between, writing it as-is here
-       * destroys that edit. Compare this value against disk immediately before
-       * the write.
-       */
+      // The snapshot may be minutes old; a person's edit since then must not be overwritten.
       expectedMtime: doc.mtime,
       expectedRaw: doc.raw,
     });
@@ -2739,19 +2246,10 @@ function normalizeForDuplicateTitle(title) {
 }
 
 /**
- * Returns an advisory warning string when a new node's title matches an existing
- * node's under normalisation (lowercased, whitespace collapsed), else null.
- *
- * The #1 failure mode of a growing vault is **duplicate or hallucinated nodes**.
- * Checking `similar_nodes` before `add_concept` is the correct discipline, but
- * forgetting it lets near-duplicates pile up quietly. This is add_concept's safety
- * net: when the same title already exists, it says "merge with patch_concept". It
- * is advisory and never blocks the write.
- *
- * Precision first — *exact* match after normalisation — to minimise false alarms.
- * Fuzzy or partial matching is excluded because it fires on genuinely different
- * concepts (auth-login vs auth-logout). The node itself (same slug) and empty
- * titles are excluded.
+ * Advisory warning when a new title equals an existing one after normalisation
+ * (lowercase, collapsed whitespace), else null. Exact match only, since fuzzy
+ * matching flags genuinely different concepts (auth-login vs auth-logout); the
+ * node itself and empty titles are excluded. Never blocks the write.
  */
 export function detectDuplicateTitle(title, slug, docs) {
   const norm = normalizeForDuplicateTitle(title);
@@ -2769,11 +2267,7 @@ export function detectDuplicateTitle(title, slug, docs) {
   return null;
 }
 
-/**
- * Light check that the vault root looks like a markdown vault. Only an absolute
- * path and a directory are required — a folder with no frontmatter is allowed as
- * an empty vault.
- */
+/** Requires an absolute path to a directory; a folder with no frontmatter is an empty vault. */
 export function ensureVaultRoot(rootPath) {
   if (!rootPath) {
     throw new Error('Set the vault root via OATLAS_VAULT env var or --vault arg.');

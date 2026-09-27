@@ -84,7 +84,7 @@ function summary({ fileName, record }) {
   };
 }
 
-/** Cursor pages describe scanned immutable files, not a guessed match total. */
+/** Cursor pages over scanned immutable files, not a guessed match total. */
 export async function listAnalysisRecords(vaultRoot, { limit = 30, cursor = null, mode = null, project = null } = {}) {
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error('Analysis history limit must be between 1 and 100.');
   if (cursor !== null && !isAnalysisRecordFileName(cursor)) throw new Error('Invalid analysis history cursor.');
@@ -99,8 +99,7 @@ export async function listAnalysisRecords(vaultRoot, { limit = 30, cursor = null
     try {
       const result = await readRecord(directory, fileName);
       const record = result.record;
-      // Review rows retain their referenced run id. A consumer joins them to
-      // that exact run; a review never silently approves another scope or run.
+      // A review keeps its run id: it never approves another scope or run.
       if (record.recordType === 'run' && ((mode && record.mode !== mode) || (project && record.scope.projectSlug !== project))) continue;
       records.push(summary(result));
     } catch (error) {

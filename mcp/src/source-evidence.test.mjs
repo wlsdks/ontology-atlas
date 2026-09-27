@@ -128,8 +128,7 @@ test('validates literal selectors and supported source types', () => {
   writeFileSync(join(root, 'logo.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
   const packet = readSourceEvidence(root, [{ path: 'logo.png', startLine: 1, maxLines: 1 }]);
   assert.equal(packet.rows[0].reason, 'unsupported_source_type');
-  // Prose beside the code is readable: a README is the project's own statement
-  // of purpose, and refusing it left a builder citing headings by line number.
+  // A README is the project's own statement of purpose, so prose beside code is readable.
   writeFileSync(join(root, 'README.md'), '# Tool\n\nParses a command line.\n');
   const prose = readSourceEvidence(root, [{ path: 'README.md', startLine: 3, maxLines: 1 }]);
   assert.equal(prose.rows[0].status, 'read');
@@ -236,7 +235,7 @@ test('outlines a whole file through the same reader, sharing its path and hash c
   assert.equal(row.next, null);
   assert.match(row.sha256, /^[a-f0-9]{64}$/);
   assert.equal(packet.totalReturnedBytes, row.returnedBytes);
-  // The hash it returns is the one the following exact read replays with.
+  // The returned hash is the one the following exact read replays with.
   const exact = readSourceEvidence(root, [
     { path: 'src/command.go', startLine: 7, maxLines: 1, expectedSha256: row.sha256 },
   ]).rows[0];

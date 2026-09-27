@@ -11,11 +11,9 @@ import {
 } from './task-navigation-evidence.mjs';
 import { parseSourceRangeCitation } from './source-range-citation.mjs';
 /*
- * The rule moved to the text layer so the write-path meaning findings can
- * apply the same sentence without importing this module — that import closed
- * a cycle (`ontology-engine` → findings → here → `ontology-engine`). One
- * implementation, two callers; the behaviour is byte-identical to the copy
- * that used to live below.
+ * The rule lives in the text layer so the write-path findings share it without
+ * importing this module, which would close a cycle
+ * (`ontology-engine` → findings → here → `ontology-engine`).
  */
 import { isEpistemicExclusionBoundary } from './construction-rules.mjs';
 
@@ -513,22 +511,10 @@ export function validateMeaningProposalAgainstAnalysis(
         ));
       }
       /*
-       * **A project exclusion inherits the scope answer that governs it.**
-       *
-       * Measured in the 2026-08-26 field trial: a project node excluded
-       * "general-purpose content management" while nothing in the subject
-       * supported it, and the source-hidden reader repeated it as established
-       * fact. An exclusion is the one claim that reader can never check — there
-       * is no code for a thing deliberately not built — so it is the worst place
-       * in the schema to let an unqualified assertion through.
-       *
-       * Fabrication itself is not machine-detectable and this does not pretend
-       * to detect it. What is derivable is that the same proposal already typed
-       * its scope answer as unfinished, and that qualifier did not travel to the
-       * exclusions it governs. The finding is a warning, not an error: the
-       * boundary may well be right, and a human accepting the plan is the one
-       * who decides. It exists so the reviewer sees the pairing rather than
-       * discovering it from a handoff answer months later.
+       * A project exclusion inherits the scope answer that governs it. An exclusion
+       * is the one claim a source-hidden reader can never check, so when the same
+       * proposal marks its scope answer unfinished the pairing is a warning for the
+       * reviewer. Fabrication itself is not detected.
        */
       if (concept === proposal.project && concept.excludes.some((row) => nonEmpty(row))) {
         const scopeStatus = proposal.competencyAnswers?.scope?.status;
@@ -1557,10 +1543,9 @@ function buildConceptBody(concept, relations, competencyAnswers = null) {
   const body = competencyAnswers
     ? `${rendered}\n\n${renderProjectCompetencyMarkdown(competencyAnswers)}`
     : `${rendered}\n`;
-  // `parseFrontmatter(buildMarkdown({ body })).body` is the public canonical
-  // body representation: the Markdown separator contributes exactly one
-  // leading newline. Plans use that same representation so reviewed bytes,
-  // writer input, and a later full-body read stay identical.
+  // `parseFrontmatter(buildMarkdown({ body })).body` is the canonical body: the
+  // separator adds exactly one leading newline, so reviewed bytes, writer input
+  // and a later full-body read stay identical.
   return `\n${body}`;
 }
 

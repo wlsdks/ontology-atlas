@@ -1,14 +1,6 @@
-// Tests for the stale-parent advisory.
-//
-// The behaviour worth defending is not "it flags things" — it is the set of things
-// it refuses to flag. The first version of this module flagged 6 of 7 domains in the
-// dogfood vault and every flag was wrong, so most of what follows pins a silence and
-// names the case it is protecting.
-//
-// The dogfood vault is currently silent under this check, which is the correct
-// answer for it and also means a real-vault run proves nothing about whether the
-// check can fire at all. `plants a defect` below is that proof: it constructs the
-// exact history a permanently-green gate would hide.
+// The behaviour worth defending is what it refuses to flag, so most cases pin a
+// silence. The dogfood vault is silent under this check, so `plants a defect` is
+// the proof it can fire at all.
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
@@ -32,7 +24,7 @@ function domain(slug, children, kind = 'domain') {
   return { slug, frontmatter: { kind, capabilities: children } };
 }
 
-/** Newest-first revisions, written oldest-first here because that is how history reads. */
+/** Revisions are returned newest first; written oldest first here, as history reads. */
 function history(...entries) {
   return [...entries].reverse();
 }
@@ -138,8 +130,7 @@ describe('findStaleParentSummaries', () => {
   });
 
   it('does not flag a child being edited, which is what broke the first version', () => {
-    // Membership never moves; only the children's own files would have changed, and
-    // those are not in this node's history at all.
+    // Membership never moves; children's own edits are not in this node's history.
     const rows = findStaleParentSummaries({
       docs,
       revisionsOf: () =>

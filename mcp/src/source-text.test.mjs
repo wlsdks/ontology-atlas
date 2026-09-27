@@ -12,7 +12,7 @@ import {
   xlsxUnits,
 } from './source-text.mjs';
 
-// ── a zip writer for the tests only: what Office writes, at its smallest ────────
+// A minimal zip writer, shaped like Office output, for these tests only.
 
 const CRC_TABLE = new Uint32Array(256).map((_, n) => {
   let c = n;
@@ -213,7 +213,7 @@ test('heading slugs match the anchor grammar: lowercase, hyphens, letters of any
   assert.equal(headingSlug('Error handling & retries'), 'error-handling-retries');
   assert.equal(headingSlug('  6. Constraints '), '6-constraints');
   assert.equal(headingSlug('Café — résumé'), 'cafe-resume');
-  // No Latin letters leaves no slug; the document reader numbers such a heading instead.
+  // No Latin letters, no slug: the document reader numbers such a heading.
   assert.equal(headingSlug('범위와 예산'), '');
   const korean = docxUnits(zip({ 'word/document.xml': `<w:document><w:body>${paragraph('범위와 예산', 'Heading1')}${paragraph('예산은 240,000.')}</w:body></w:document>` }));
   assert.deepEqual(korean.map((unit) => unit.anchor), ['h:heading-1', 'h:heading-1']);

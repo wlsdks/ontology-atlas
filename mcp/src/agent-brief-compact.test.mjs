@@ -634,9 +634,8 @@ DER parsing and unrelated encodings.
         ].join('\n'),
       },
     ];
-    // The two documents make the same persisted claim but carry different
-    // names, and the task repeats one of those names. A title is a reviewed
-    // claim too (2026-09-04), so the named capability wins instead of a tie.
+    // Same persisted claim, different names, and the task repeats one: a title is a
+    // reviewed claim, so the named capability wins instead of a tie.
     const namedByTitle = buildCompactAgentBrief({
       brief,
       artifact,
@@ -954,9 +953,7 @@ DER parsing and unrelated encodings.
   });
 
   it('reads a titled claim over a long unstructured body and legacy Inclusions bullets', () => {
-    // Measured 2026-09-04 on the dogfood vault: a 25k-character capability with
-    // no `## Definition` was scored on its whole body and won every task on
-    // generic nouns, beating the capability whose title named the task.
+    // A long capability with no `## Definition` must not be scored on its whole body.
     const longBody = [
       '# Agent Server',
       '',
@@ -1019,12 +1016,8 @@ DER parsing and unrelated encodings.
   });
 
   it('refuses a claim carried only by passing prose and keeps the named claim', () => {
-    // Measured 2026-09-04 on the dogfood vault: "Open a node's full detail
-    // panel from the map popover" selected a source-receipt capability whose
-    // Definition merely name-drops map datasheets and full details, because
-    // four incidental prose nouns outweighed the capability whose own name and
-    // Includes carry the surface. Prose describes; a name and an Includes line
-    // claim. Only a named claim can be selected.
+    // Prose describes; a name and an Includes line claim. A Definition that merely
+    // name-drops the surface must not beat the capability that names it.
     const proseDocs = [
       docs[0],
       {
@@ -1062,8 +1055,7 @@ DER parsing and unrelated encodings.
     assert.equal(named.focus.capability?.slug, 'capabilities/map-browsing');
     assert.ok(named.focus.capability.matchedTerms.includes('popover'));
 
-    // With the named claim removed nothing owns the surface: the brief refuses
-    // instead of presenting the prose document as a confident starting point.
+    // With the named claim removed nothing owns the surface, so the brief refuses.
     const proseOnly = buildCompactAgentBrief({
       brief,
       artifact,
@@ -1076,13 +1068,8 @@ DER parsing and unrelated encodings.
   });
 
   it('keeps a capability its own name even when its Excludes prose repeats it', () => {
-    // A capability writes its own subject into its boundary all the time:
-    // "Git write operations" under Git History, "the tools that own them"
-    // under MCP Server. Subtracting that word cancelled the strongest evidence
-    // the vault has about ownership — the name a person chose — and the
-    // capability then fell below the support bar and refused. An Excludes
-    // bullet bounds what the capability does with its subject; it does not
-    // withdraw the subject. Includes bullets stay cancellable.
+    // An Excludes bullet bounds what the capability does with its subject and does
+    // not withdraw the name a person chose; Includes bullets stay cancellable.
     const boundaryNameDocs = [
       docs[0],
       {
@@ -1141,9 +1128,8 @@ DER parsing and unrelated encodings.
   });
 
   it('counts a task word and its inflected form once', () => {
-    // "lists" contributes both `lists` and `list`; scoring them separately let
-    // one repeated noun in an Includes bullet tie a capability whose own name
-    // states the surface, and a tie returns nothing.
+    // "lists" yields `lists` and `list`; scored once, so one repeated noun cannot tie
+    // the capability whose name states the surface.
     const inflectionDocs = [
       docs[0],
       {

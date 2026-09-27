@@ -1,4 +1,4 @@
-// Canonical implementation shared by the publishable MCP server and web bridge.
+// Shared by the MCP server and the web bridge.
 const GRAPH_ARRAY_KEYS = Object.freeze([
   "domains",
   "capabilities",
@@ -46,9 +46,9 @@ function canonicalDoc(doc) {
 }
 
 /**
- * Semantic change detector for one project's real ontology documents.
- * Callers own project containment; this function owns one byte-identical
- * canonicalization shared by the browser UI and the MCP server.
+ * Semantic change detector for one project's ontology documents. Callers own
+ * containment; this owns the byte-identical canonicalization the browser and the
+ * MCP server share.
  */
 export function buildProjectSourceGraphHash(projectSlug, docs) {
   const canonical = [...docs]

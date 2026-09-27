@@ -1,23 +1,8 @@
 /**
- * A multi-file write is **all-or-nothing**.
- *
- * Why this file exists: `rename_concept`'s tool description promised *"one atomic
- * graph-level operation"* and `AGENTS.md` promised *"atomically rewrites every
- * backlink"*, and the implementation did neither (measured in the 2026-08-01
- * review). With one of three references read-only:
- *
- * - the new file was created and the old file **was not deleted**, leaving two
- *   nodes with the same title
- * - some references pointed at the new name, the rest at the old one
- *
- * And on that split vault `validate` answered *"issue 0 ✓"* and `health` answered
- * *"pass"* — **no check called the state wrong.** On a product whose premise is
- * that the user's disk is the source of truth, that is the most expensive kind of
- * silent failure.
- *
- * So the contract is pinned here, measured along all three branches: ① refusal up
- * front (the common case) ② rollback when a write fails midway ③ **saying so
- * rather than hiding it** when even the rollback fails.
+ * A multi-file write is all-or-nothing: refused up front (the common case),
+ * rolled back when a write fails midway, and reported rather than hidden when
+ * even the rollback fails. A half-applied rename leaves two same-titled nodes
+ * that validate and health both pass.
  */
 import { describe, it, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -55,10 +40,7 @@ describe('applyAllOrNothing', () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  /**
-   * The common failures end here — a read-only file (sync client, lock, permissions
-   * on a shared checkout). Nothing is written, so there is nothing to roll back.
-   */
+  /** A read-only target (sync client, lock, permissions): nothing is written, so nothing rolls back. */
   it('refuses and writes nothing when one target is unwritable', () => {
     const root = scratch();
     writeFileSync(join(root, 'ok.md'), 'before-ok');
@@ -72,7 +54,7 @@ describe('applyAllOrNothing', () => {
           { op: 'write', path: join(root, 'locked.md'), content: 'after-locked' },
         ]),
       (error) => {
-        // Which file · that the vault did not change · what to do about it.
+        // Names the file, that the vault is unchanged, and what to do.
         assert.match(error.message, /Refused before writing anything/);
         assert.match(error.message, /locked\.md/);
         assert.match(error.message, /vault is unchanged/);
@@ -80,7 +62,7 @@ describe('applyAllOrNothing', () => {
       },
     );
 
-    // The point is that the earlier entry did not succeed first.
+    // The earlier entry must not have been written first.
     assert.equal(readFileSync(join(root, 'ok.md'), 'utf-8'), 'before-ok');
     assert.equal(readFileSync(join(root, 'locked.md'), 'utf-8'), 'before-locked');
     chmodSync(join(root, 'locked.md'), 0o644);
@@ -88,10 +70,8 @@ describe('applyAllOrNothing', () => {
   });
 
   /**
-   * A write that fails **after passing** the pre-check — this is where rollback
-   * does its work. Writing a file onto a directory yields EISDIR, and
-   * `accessSync(dir, W_OK)` passes, so the pre-check cannot catch it. A good stand-in
-   * for ENOSPC.
+   * A failure after the pre-check passes: writing onto a directory yields EISDIR
+   * while `accessSync(dir, W_OK)` passes, a stand-in for ENOSPC.
    */
   it('rolls back earlier writes when a write fails', () => {
     const root = scratch();
@@ -113,7 +93,6 @@ describe('applyAllOrNothing', () => {
       },
     );
 
-    // Were the first two restored — the part that used to fail.
     assert.equal(readFileSync(join(root, 'first.md'), 'utf-8'), 'ORIGINAL-1');
     assert.equal(readFileSync(join(root, 'second.md'), 'utf-8'), 'ORIGINAL-2');
     rmSync(root, { recursive: true, force: true });
@@ -181,12 +160,8 @@ describe('applyAllOrNothing', () => {
 
 test('writes nothing when someone else edited a target in between', async () => {
   /*
-   * Review 2026-08-16: the `expected_mtime` check existed only on the paths that
-   * edit **one file**. rename/merge/reclassify edit many, rewriting N referencing
-   * documents from a snapshot read minutes earlier, and an edit the user made in
-   * Obsidian in between vanished silently — a human and an agent sharing one
-   * folder is the exact situation this product sells, and protection was missing
-   * only there.
+   * Multi-file plans rewrite documents from a snapshot read minutes earlier, so an
+   * edit a person made in between must stop the whole plan.
    */
   const dir = mkdtempSync(join(tmpdir(), 'oatlas-conflict-'));
   const kept = join(dir, 'kept.md');
@@ -194,10 +169,9 @@ test('writes nothing when someone else edited a target in between', async () => 
   writeFileSync(kept, 'kept-before', 'utf-8');
   writeFileSync(stale, 'stale-before', 'utf-8');
 
-  // Carry the mtime from the moment the plan was built.
   const staleMtime = statSync(stale).mtimeMs;
-  // The user edited it in between. The edit's mtime is set explicitly, one minute later,
-  // so the gap does not depend on the filesystem's timestamp resolution or on a sleep.
+  // The edit's mtime is set a minute later explicitly, so the gap does not depend
+  // on timestamp resolution or a sleep.
   writeFileSync(stale, 'edited by the human', 'utf-8');
   const edited = new Date(staleMtime + 60_000);
   utimesSync(stale, edited, edited);
@@ -211,7 +185,7 @@ test('writes nothing when someone else edited a target in between', async () => 
     /changed on disk/,
   );
 
-  // **Not one character was written** — the human's edit and the earlier file both stand.
+  // Not one character written: the person's edit and the earlier file both stand.
   assert.equal(readFileSync(stale, 'utf-8'), 'edited by the human');
   assert.equal(readFileSync(kept, 'utf-8'), 'kept-before');
   rmSync(dir, { recursive: true, force: true });

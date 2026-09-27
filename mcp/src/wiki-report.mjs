@@ -1,51 +1,16 @@
 /**
- * The wiki check, grouped into a report — **one aggregator, three surfaces.**
- *
- * `wiki-schema.mjs` decides the facts: `validateWikiPage` judges one page against its own
- * bytes, `validateWikiFolder` judges what no page can know about itself. Both answer
- * *per page*. A report a person reads is the other way round: one heading per finding
- * *kind*, and under it the pages that carry it. Until now three surfaces did that
- * regrouping separately — `wiki-validate` prints per page, `validate_wiki` returns per
- * page, and the Library drew a per-page block beside each page and nothing at all for the
- * folder — so the app could say "2 pages do not fit the template" on the same screen
- * where `wiki-validate` said `0/6 pages fit the contract`, and both numbers were
- * correctly computed from different rules.
- *
- * `docs/DECISIONS.md` 2026-09-11 ("The Library keeps its spine, and computes the
- * structural check itself") makes that disagreement a falsifier: *"a structural finding
- * differs between the app's report and `wiki-validate`"*. So the regrouping is written
- * once, here, beside the module that owns the verdict, and the app reaches it through
- * `src/shared/lib/wiki-report.mjs` — a re-export, not a twin. The web bundle and the MCP
- * package ship separately and `wiki-schema.mjs` therefore needs a TypeScript twin; a
- * *pure* module with no runtime dependency does not, and one file cannot drift from
- * itself.
- *
- * ## Advisory is a field, not a caller's opinion
- *
- * `orphan-page` and `shared-source-unlinked` are true of a wiki's youth rather than of a
- * page: on a folder whose pages do not link each other yet, the first is true of every
- * page and the second of every pair that shares a document. The Library already refused
- * to let them mark a row off-template, and the CLI already counted them as
- * off-template — the same split, decided twice, in opposite directions.
- *
- * It is now one field on the group. Nothing here drops an advisory finding: it is
- * reported, counted, and ordered last, and a surface that wants a blocking-only number
- * reads `blockingPageCount` instead of inventing its own filter.
- *
- * ## Deterministic, because a person holds two screens side by side
- *
- * Groups sort by `(advisory, code)` and rows by `(page, line, code)`. Every list this
- * module emits is sorted, so the app's report and a terminal's output enumerate one
- * folder in one order — which is the only way a person can check the record's falsifier
- * themselves.
+ * Groups per-page wiki verdicts into the per-kind report every surface shows
+ * (`wiki-validate`, `validate_wiki`, the Library), so their numbers cannot
+ * disagree (`docs/DECISIONS.md`, "The Library keeps its spine, and computes the
+ * structural check itself"). The app imports it
+ * through `src/shared/lib/wiki-report.mjs`, a re-export rather than a twin: this module
+ * is pure. Advisory is a field on the group, never a caller's filter: advisory
+ * findings are reported, counted and ordered last, and `blockingPageCount` is
+ * the blocking-only number. Every list is sorted (groups by advisory then code,
+ * rows by page, line, code) so two screens enumerate one folder identically.
  */
 
-/**
- * Findings that describe the **folder's shape** rather than one page's own text.
- *
- * Kept here rather than in the app so that `isWikiFolderCode`, the row's mark, the header
- * clause and this report all read one set. `wiki-schema.mjs` documents what each means.
- */
+/** Findings about the folder's shape rather than one page's text (meanings in `wiki-schema.mjs`). */
 export const WIKI_FOLDER_CODES = Object.freeze([
   'dangling-wikilink',
   'orphan-page',
@@ -53,11 +18,8 @@ export const WIKI_FOLDER_CODES = Object.freeze([
 ]);
 
 /**
- * Folder findings that are **advisory** — true of a young wiki rather than of a page.
- *
- * A wiki nobody has cross-linked yet makes `orphan-page` true of every page, so a mark on
- * every row says nothing (library e2e, 2026-09-07). They stay in the report, counted and
- * last; they do not decide whether a page fits the template.
+ * Folder findings true of a young, uncross-linked wiki rather than of a page:
+ * reported and counted, but they never decide whether a page fits the template.
  */
 export const WIKI_ADVISORY_CODES = Object.freeze(['orphan-page', 'shared-source-unlinked']);
 
@@ -75,13 +37,9 @@ export function isWikiAdvisoryCode(code) {
 }
 
 /**
- * The **kind** a finding belongs to, which is its code without the part that names the
- * instance.
- *
- * Only `missing-field:<key>` carries one today (`missing-field:title`,
- * `missing-field:sources`, …). A reader wants one "a required field is missing" heading
- * over the pages and fields, not seven headings; the row keeps the full code, because
- * that is the token `wiki-validate` prints and an agent branches on.
+ * The finding kind: the code without its instance part.
+ * Only `missing-field:<key>` has one, so a reader gets one "required field missing"
+ * heading; the row keeps the full code, which agents branch on.
  */
 export function wikiFindingCode(code) {
   const text = String(code ?? '');
@@ -94,16 +52,14 @@ function comparePages(left, right) {
 }
 
 /**
- * Group per-page verdicts into the report a person reads.
+ * Groups per-page verdicts into the report a person reads.
  *
  * @param {{
  *   pages?: ReadonlyArray<{ page?: string, path?: string, problems?: ReadonlyArray<{ code: string, message?: string, line?: number, detail?: unknown }> }>,
  *   unmeasured?: ReadonlyArray<string>,
- * }} input `pages` is every page that was judged, `page`/`path` vault-relative
- *   (`wiki/<slug>.md`) — the shape `wiki-validate --json` and `validate_wiki` already
- *   return. `unmeasured` names pages that exist in the folder but have **not** been
- *   judged: the app reads a page's bytes lazily, and "not read yet" must never be drawn
- *   as "nothing found". A caller that judged the whole folder up front passes none.
+ * }} input `pages` were judged (vault-relative, the `wiki-validate --json` shape);
+ *   `unmeasured` exist but were not judged yet (the app reads lazily), and must
+ *   never be drawn as "nothing found".
  * @returns {{
  *   pageCount: number,
  *   fitPageCount: number,
@@ -124,9 +80,7 @@ export function aggregateWikiFindings({ pages = [], unmeasured = [] } = {}) {
     const problems = entry?.problems ?? [];
     if (problems.length === 0) fitPageCount += 1;
     if (problems.every((problem) => isWikiAdvisoryCode(problem.code))) {
-      // A page whose only findings are advisory fits the template: the folder around it
-      // is young, and nothing in the page's own bytes is wrong. This is the rule the app
-      // and the CLI disagreed about; it now lives in one place.
+      // Only advisory findings: the page's own bytes are fine, so it fits the template.
     } else {
       blockingPageCount += 1;
     }
@@ -162,9 +116,8 @@ export function aggregateWikiFindings({ pages = [], unmeasured = [] } = {}) {
         rows,
       };
     })
-    // Blocking kinds first — they are about a page's own bytes and a person can fix them
-    // by editing that page — then advisory, each block alphabetical by code so two
-    // screens showing one folder enumerate it identically.
+    // Blocking kinds first (fixable by editing that page), then advisory, each
+    // alphabetical by code.
     .sort(
       (left, right) =>
         Number(left.advisory) - Number(right.advisory) || comparePages(left.code, right.code),

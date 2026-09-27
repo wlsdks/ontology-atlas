@@ -1,10 +1,5 @@
-// Integration tests for the MCP tool handlers.
-//
-// Ports verify.mjs's spawn + stdio JSON-RPC pattern into the test framework:
-// build a tmp vault, boot the server, call a tool, check the response, clean up.
-//
-// Covers what the unit helper tests (parser, vault, redirect-backlinks, …) do not:
-// the input → routing → output flow of the tool handlers themselves.
+// Tool-handler integration tests: build a tmp vault, boot the server over stdio
+// JSON-RPC (verify.mjs's pattern), call a tool, check the response.
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -96,17 +91,9 @@ console.log(
 );
 
 /**
- * A body that answers every meaning check, per kind.
- *
- * Since 2026-09-22 `validate_vault` reads the prose as well as the frontmatter,
- * so a node with an empty body carries `definition-missing`, both
- * `boundary-missing` sides, and `uncertainty-missing`. Almost every fixture
- * below is about something else — a relation, a health verdict, a tool's
- * response shape — and was written when a bodyless document was silent. Rather
- * than restate a finished body in sixty places, `makeVault` supplies one
- * wherever a fixture left the body blank, exactly as it already supplies a
- * `uid:`. A fixture that writes its own body keeps it, so a case that wants a
- * thin one still gets the findings.
+ * A body that answers every meaning check, per kind. validate_vault reads prose,
+ * so makeVault fills a blank fixture body with this (as it supplies `uid:`); a
+ * fixture that writes its own body keeps it and still gets the findings.
  */
 const FINISHED_BODY_BY_KIND = {
   domain:
@@ -133,10 +120,7 @@ function withFinishedBody(content) {
   const close = content.search(/\r?\n---\r?\n/);
   if (close === -1) return content;
   /*
-   * "Blank" includes a body that is only the `# Title` line. The heading repeats
-   * the frontmatter `title`, so a node whose whole body is its own name says
-   * exactly as much as one with no body at all — and dozens of fixtures below
-   * write that shape to look like a real document.
+   * A body that is only the `# Title` line counts as blank: it repeats `title`.
    */
   const afterClose = content
     .slice(close)
@@ -145,8 +129,7 @@ function withFinishedBody(content) {
     .filter((line) => line.trim() !== "" && !/^#\s+/.test(line.trim()))
     .join("\n");
   if (afterClose.trim() !== "") return content;
-  // The `# Title` line is kept: a fixture that asserts on the rendered body
-  // excerpt still finds it, and the finished prose lands underneath.
+  // The `# Title` line is kept for fixtures that assert on the excerpt.
   const kept = content.slice(close).replace(/^\r?\n---\r?\n/, "").replace(/\s+$/, "");
   return content.slice(0, close) + "\n---\n" + kept + "\n" + body;
 }
@@ -155,8 +138,6 @@ function makeVault(seed = []) {
   const root = mkdtempSync(join(tmpdir(), "ontology-atlas-int-"));
   for (const [index, { slug, content }] of seed.entries()) {
     const fullPath = join(root, `${slug}.md`);
-    // Subdirectory slugs ("capabilities/foo") get their directories created too,
-    // so a fixture writer can express any structure, not only top-level files.
     mkdirSync(dirname(fullPath), { recursive: true });
     const seededContent = /^---\r?\n/.test(content) && /(?:^|\r?\n)kind\s*:/m.test(content) && !/(?:^|\r?\n)uid\s*:/m.test(content)
       ? content.replace(
@@ -196,9 +177,9 @@ function gitCalls(tracePath, command) {
 }
 
 /**
- * Spawns the server on a tmp vault, sends the requests as JSON-RPC, and collects
- * every expected response. Once all request IDs have answered, stdin closes and
- * the server must exit cleanly. The timeout is only a hang detector.
+ * Spawns the server on a tmp vault, sends the requests, and collects every
+ * response; then stdin closes and the server must exit cleanly. The timeout only
+ * detects a hang.
  */
 function rpc(vaultRoot, requests, timeoutMs = 1500, extraEnv = {}) {
   return runJsonRpcProcess({
@@ -218,17 +199,9 @@ function rpcForRepo(vaultRoot, repoRoot, requests, timeoutMs = 1500, extraEnv = 
 }
 
 /**
- * ⚠️ **`2024-11-05` is not a stale constant — it is the thing under test.**
- *
- * This handshake deliberately uses the **oldest supported version**. The contract
- * this file protects is that old clients still connect after the server moved to
- * the v2 SDK (2026-07-29); bumping to the newest version stops verifying it, and
- * a pass would only mean "current clients talk to each other".
- *
- * Measured at migration time: the v2 server negotiates `2024-11-05` for this
- * request and answers `tools/list` and `tools/call` normally. If the SDK ever
- * drops this version from its list, this turns red first — and that is when
- * "oldest supported version" gets raised.
+ * The version `2024-11-05` is under test, not stale: the oldest supported protocol version,
+ * so old clients keep connecting. If the SDK drops it this turns red first, and
+ * that is when the oldest supported version is raised.
  */
 const INIT_REQUESTS = [
   {
@@ -452,10 +425,8 @@ function assertInstructionToolInventoryMatches(initializeResponse, tools) {
   assert.deepEqual([...inventory.writeNames].sort(), expectedWrite, "inventory write names match tools/list");
 }
 
-// The single tools (get_concept, add_concept, add_relation) must cross-reference
-// their batch counterparts (get_concepts, add_concepts, add_relations) in their
-// descriptions, so an agent reading only the tool list knows the K-round-trip
-// alternative exists. Drift turns this red immediately.
+// Single tools name their batch twins so an agent reading only the list knows
+// the one-call alternative exists.
 await test("tools/list — each single-item tool description cross-references its batch twin", async () => {
   const root = makeVault([]);
   try {
@@ -2163,10 +2134,8 @@ await test("tools/list — each single-item tool description cross-references it
 });
 
 await test("initialize — exposes agent guidance in the instructions field", async () => {
-  // The initialize response must carry instructions, so a connected agent knows
-  // the authorable/reserved kind boundary, the call order, and the write tools'
-  // dry-run pattern immediately. Without them, agents relearn all of it by trial
-  // and error every session.
+  // A connected agent learns the kind boundary, call order and dry-run pattern
+  // from initialize instead of by trial and error.
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, INIT_REQUESTS);
@@ -2178,7 +2147,6 @@ await test("initialize — exposes agent guidance in the instructions field", as
       instructions.length > 200,
       `instructions must have a meaningful length (got ${instructions.length})`,
     );
-    // Core keywords — drift breaks this at once
     assert.match(instructions, /five authorable kinds/i);
     assert.match(instructions, /vault-readme.*reserved reader kind/i);
     assert.match(instructions, /dry-run|confirm/i);
@@ -2190,9 +2158,6 @@ await test("initialize — exposes agent guidance in the instructions field", as
     for (const toolName of EXPECTED_TOOLS) {
       assert.match(instructions, new RegExp(`\\b${toolName}\\b`), `instructions mention ${toolName}`);
     }
-    // The instructions must state that the batch tools are the default path, so
-    // agents reach for one batch call instead of K per-row round trips. Blocks a
-    // regression to stale guidance.
     assert.match(instructions, /add_concepts/);
     assert.match(instructions, /add_relations/);
     assert.match(instructions, /non-object row/);
@@ -2206,8 +2171,8 @@ await test("initialize — exposes agent guidance in the instructions field", as
     assert.match(instructions, /compile_ontology/);
     assert.match(instructions, /query_ontology/);
     assert.match(instructions, /validate_vault/);
-    // Cold-start meaning extraction must fail closed instead of promoting
-    // repository structure directly into accepted business concepts.
+    // Cold-start extraction must fail closed instead of promoting repository
+    // structure into accepted business concepts.
     assert.match(instructions, /semanticEvidence/);
     assert.match(instructions, /extractionContract/);
     assert.match(instructions, /observed facts, proposed meanings, and persisted shared concepts/);
@@ -2373,9 +2338,7 @@ await test("README first exploration — documented read-only MCP calls stay val
 });
 
 await test("read_source — a repository code path is refused with the call that reads it", async () => {
-  // A Rust trial builder asked read_source for `src/options.rs` and was told only
-  // that the path must sit under sources/ (2026-09-23). The refusal now names the
-  // code reader in the exact shape it takes, so the next read is not lost.
+  // A refused path outside sources/ names the code reader in its exact call shape.
   const vaultRoot = makeVault();
   try {
     const { responses } = await rpc(vaultRoot, [
@@ -2868,17 +2831,10 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     ]);
     const validatedResult = getCallParsed(validated.responses, 2);
     /*
-     * **Frontmatter clean, meaning thin — and `validate_vault` now says both.**
-     *
-     * Every structural check passes: zero errors, no dangling reference, no
-     * duplicate. What the qualification lane wrote is still three findings
-     * short, and until 2026-09-22 this tool answered `0 problems` about it while
-     * the write door had already told the agent otherwise. The exact three are
-     * pinned rather than counted, because each proves a different half of the
-     * wiring: two body checks reading the prose the write plan produced, and
-     * `folder-only-evidence` — the one that needs a repository root and the
-     * filesystem — arriving from the whole-vault pass. `path: src/review` is a
-     * directory, so this node's evidence can never be dated against the code.
+     * Frontmatter clean, meaning thin, and validate_vault says both. The exact three
+     * findings are pinned because each proves a different wiring: two body checks
+     * on the written prose, and `folder-only-evidence` (`path: src/review` is a
+     * directory) from the whole-vault pass.
      */
     assert.equal(validatedResult.summary.errorFiles, 0);
     assert.deepEqual(
@@ -3196,7 +3152,7 @@ await test("infer_imports — import graph exposes structuredContent", async () 
     assert.ok(result.edges.some((edge) => edge.from === "src/features/auth/index.ts" && edge.to === "src/entities/user/index.ts" && edge.kind === "static"));
     assert.ok(result.edges.some((edge) => edge.from === "src/features/auth/index.ts" && edge.to === "src/shared/api/client.ts"));
     assert.ok(result.externalImports.some((entry) => entry.from === "src/features/auth/index.ts" && entry.spec === "zod"));
-    // Slugs are flat identifiers (decided 2026-08-01) — a module slug is the role name only.
+    // Slugs are flat identifiers: a module slug is the role name only.
     assert.ok(result.moduleEdges.some((edge) => edge.from === "capabilities/auth" && edge.to === "elements/user" && edge.count >= 1));
     assert.ok(result.moduleEdges.some((edge) => edge.from === "capabilities/auth" && edge.to === "elements/client" && edge.count >= 1));
     assert.equal(result.reconciliationSummary.unresolvedImports, 1);
@@ -3270,13 +3226,10 @@ await test("inspect_architecture — profile intent and observed imports produce
     });
     assert.equal(result.conformance.unknown.unknownImportUsages, 0);
     assert.equal(result.agentPlanContract.contract, "architectureChangePlan:v1");
-    // The measured stamp (2026-08-27): a dated receipt of the exact source
-    // state. The tmp repository is not a git checkout, so the stamp must be a
-    // folder fingerprint and must not carry anything sha-shaped.
-    // Reconciled 2026-08-29, and the default flipped with the encoding. This fixture declares
-    // neither key: on the branch that meant type-only edges were free, and under the encoding that
-    // shipped it means both usages are governed until a profile says otherwise. Excluding them is
-    // a reviewed declaration now, never a tool default.
+    // The stamp is a dated receipt of the source state; the tmp repository is no
+    // git checkout, so it is a folder fingerprint with nothing sha-shaped. With
+    // neither usage key declared, both usages are governed until a profile says
+    // otherwise.
     assert.deepEqual(result.profile.dependencyUsages, ["value", "type_only"]);
     assert.ok(!Number.isNaN(Date.parse(result.measured.at)));
     assert.equal(result.measured.tool.name, "ontology-atlas");
@@ -3364,8 +3317,8 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
   const vaultRoot = makeVault([
     {
       slug: "capabilities/legacy",
-      // This fixture tests "readable, but no import". Without a path, the new
-      // contract makes it notJudgeableByImports and the stale follow-up test disappears.
+      // "Readable, but no import": without a path the edge would be
+      // notJudgeableByImports and the stale follow-up would not appear.
       content: "---\nkind: capability\ntitle: Legacy\npath: src/legacy.ts\ndependencies: [capabilities/target]\n---\n",
     },
     {
@@ -4941,14 +4894,9 @@ await test("query_ontology health/workspace_brief — validator findings cannot 
     { slug: "project", content: "---\nkind: project\ntitle: Project\ndomains: [domains/core]\n---\n" },
     { slug: "domains/core", content: "---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run]\n---\n" },
     /*
-     * Structurally connected, but the graph still has a finding.
-     *
-     * ⚠️ 2026-08-11 — the finding used to be "a capability with no domain". But
-     * this fixture's `domains/core` **contains that capability**, so when the
-     * false positive of telling a node with a parent that it has none was fixed
-     * (`containment-parent`), this test went green with it. The point of the test
-     * is "never report healthy while a finding exists", so it now uses **a
-     * different, real finding** — one reference pointing at a node that does not exist.
+     * Structurally connected with a real finding (a reference to a missing node):
+     * healthy must never be reported while a finding exists. The domain contains
+     * the capability, so a missing-`domain:` finding would not count.
      */
     { slug: "capabilities/run", content: "---\nkind: capability\ntitle: Run\ndomain: domains/core\nelements: [elements/worker]\ndepends_on: [capabilities/missing]\n---\n" },
     { slug: "elements/worker", content: "---\nkind: element\ntitle: Worker\ndomain: domains/core\n---\n" },
@@ -4969,11 +4917,8 @@ await test("query_ontology health/workspace_brief — validator findings cannot 
     assert.equal(brief.status, "needs_attention");
     assert.equal(brief.health.validation.summary.warningFiles, 1);
     assert.equal(brief.health.checks.find((check) => check.id === "vault_validation").status, "warn");
-    // The wording states **what was looked at** (2026-08-01). It used to merge two
-    // kinds of warning into one number, so when this check warned on a vault
-    // `validate` called clean, there was no way to tell which kind those were.
-    // This tmp vault is outside a git repository, so code paths were never
-    // measured at all — and it says so.
+    // The wording states what was looked at: this tmp vault is outside git, so code
+    // paths were never measured, and it says so.
     const validationAction = brief.nextActions.find((action) => action.id === "vault_validation");
     assert.equal(validationAction.kind, "validate_vault");
     assert.equal(validationAction.severity, "warn");
@@ -5022,13 +4967,9 @@ await test("query_ontology health/workspace_brief — meaning assessment cannot 
 });
 
 await test("query_ontology health — authored answers without a finalize receipt ask for the receipt, not for authoring", async () => {
-  // The third state (measured 2026-08-31 on this repository's own dogfood
-  // vault): all five competency answers are written in the project document,
-  // but no finalize receipt exists in this vault's sidecar. The gap id stays
-  // `competency_not_authored` (decision 2026-08-17 (28) named the missing
-  // receipt that way, and the id is read by agents), but the instruction must
-  // change: a person who already wrote the answers must not be told to write
-  // them. The only missing step is calling finalize_project_meaning.
+  // Answers written in the project document but no finalize receipt: the gap id
+  // stays `competency_not_authored` (agents read it), but the instruction must
+  // be to call finalize_project_meaning, not to write the answers again.
   const answer = (text) => ({
     status: "answered",
     answer: text,
@@ -5061,8 +5002,6 @@ await test("query_ontology health — authored answers without a finalize receip
     assert.match(meaningCheck?.message ?? "", /competency_not_authored/);
     assert.match(meaningCheck?.message ?? "", /no finalize receipt/);
     assert.match(meaningCheck?.message ?? "", /finalize_project_meaning/);
-    // The wrong instruction for this state: the section exists and parses, so
-    // the message must not send the author back to writing it.
     assert.doesNotMatch(meaningCheck?.message ?? "", /Fill in/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -5191,9 +5130,6 @@ await test("list_concepts — 100/125/500 pagination boundary contract", async (
 });
 
 await test("list_concepts — domain filter", async () => {
-  // Answers a common query ("all capabilities under auth") in one call without the
-  // query_concepts DSL. Only capability/element kinds are meaningful, but the
-  // filter applies uniformly across kinds.
   const root = makeVault([
     {
       slug: "domains/auth",
@@ -5217,7 +5153,7 @@ await test("list_concepts — domain filter", async () => {
     },
   ]);
   try {
-    // domain=auth only — capability 2 + element 1 = 3 (the domain itself has no domain:)
+    // Two capabilities and one element; the domain itself has no domain:.
     const { responses: r1 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts", { domain: "auth" }),
@@ -5226,7 +5162,6 @@ await test("list_concepts — domain filter", async () => {
     assert.equal(out1.total, 3, "domain=auth → 3");
     assert.ok(out1.nodes.every((n) => n.domain === "auth"));
 
-    // domain=auth + kind=capability → 2 (login, logout)
     const { responses: r2 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts", { domain: "auth", kind: "capability" }),
@@ -5234,7 +5169,6 @@ await test("list_concepts — domain filter", async () => {
     const out2 = getCallParsed(r2, 2);
     assert.equal(out2.total, 2, "domain=auth + kind=capability → 2");
 
-    // A domain with no matches → empty result, no throw
     const { responses: r3 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts", { domain: "totally-unknown" }),
@@ -5247,8 +5181,6 @@ await test("list_concepts — domain filter", async () => {
 });
 
 await test("find_evidence — each match carries a prose excerpt", async () => {
-  // One find_evidence call gives an agent both *which docs reference this* and
-  // *what those docs are about*, with no follow-up get_concept.
   const root = makeVault([
     {
       slug: "capabilities/auth",
@@ -5273,16 +5205,13 @@ await test("find_evidence — each match carries a prose excerpt", async () => {
     for (const m of result.matches) {
       assert.match(m.uid, /^[0-9a-f-]{36}$/, `${m.slug}.uid`);
       assert.equal(typeof m.excerpt, "string");
-      // No markdown table syntax or # heading may appear
       assert.doesNotMatch(m.excerpt, /^#/);
       assert.doesNotMatch(m.excerpt, /^\|/);
     }
-    // The domains/billing match is its first prose paragraph
     const billing = result.matches.find((m) => m.slug === "domains/billing");
     if (billing) {
       assert.match(billing.excerpt, /결제 도메인/);
     }
-    // Response-shape consistency across the read tools: domain + mtime included
     for (const m of result.matches) {
       assert.equal(typeof m.mtime, "number", `${m.slug}.mtime number`);
       assert.ok(m.mtime > 0);
@@ -5293,50 +5222,8 @@ await test("find_evidence — each match carries a prose excerpt", async () => {
 });
 
 /**
- * **Loose documents must not take first place in evidence** (measured 2026-08-08).
- *
- * A vault is an ordinary markdown folder, so meeting notes, memos, and drafts live
- * alongside nodes — by design (`kind:` is the membership test, and without it a
- * document is outside the graph). The problem was that evidence search mixed the
- * two **without distinguishing them**: once every body match scores the same (0.3),
- * the ordering is effectively **alphabetical by slug**.
- *
- * Measured on a vault of 3,000 loose documents: asking about "token issuance"
- * returned five memos in the top five and not one real node. On a small vault, a
- * coffee-chat memo saying *"there was no evidence"* came back as evidence. Yet this
- * tool's description tells the agent *"the most relevant **node** is matches[0]"* —
- * it was calling a non-node a node and handing it over first.
- *
- * The fix is not «hide the loose documents». A person's memo is sometimes the real
- * evidence, and hiding it breaks the local-first promise. Three things instead:
- * ① on a tie, **nodes first** ② per-row honesty via `isNode` ③ `nodesOnly` so the
- * agent can narrow.
- */
-/**
- * **A document outside the graph must not be returned as a concept** (measured 2026-08-08).
- *
- * `get_concept('notes/coffee-chat')` — a memo with no frontmatter at all — returned
- * a normal response: an excerpt, empty neighbors, empty outgoingEdges, and **zero
- * warnings**. A document that has frontmatter but no `kind:` at least gets a
- * `missing-kind` warning, while genuinely loose prose got no marker whatsoever —
- * the least signal in the most common case.
- *
- * The tool is named `get_concept`, so the response asserts «this is a concept».
- * It is not rejected (reading a person's notes is legitimate); it **says what it
- * is handing over**.
- */
-/**
- * **Both ends of a relation must be nodes** (measured 2026-08-08).
- *
- * `add_relation({from: <node>, to: "notes/daily/day-1"})` succeeded with
- * `ok: true`. The existence check asked **«is there a .md by that name»** rather
- * than «is that a node» — so it rejected nonexistent slugs correctly and let a
- * diary memo through.
- *
- * It is caught afterwards (`danglingReferences` in the same response, compile's
- * `dangling-graph-reference`, the maintenance queue). But that is **after the
- * write**, and in between the graph holds a relation the compiler will discard.
- * The write gate saying it first is cheaper.
+ * Both relation ends must be nodes: the existence check asked "is there a .md",
+ * so a diary memo passed. Later channels catch it, but only after the write.
  */
 await test("add_relation — a document outside the graph cannot be a relation endpoint", async () => {
   const root = makeVault([
@@ -5368,11 +5255,9 @@ await test("add_relation — a document outside the graph cannot be a relation e
 
 await test("relation tools — an edge written under the depends_on alias key is the same edge (no duplicate add, removable)", async () => {
   /*
-   * Caught in the 2026-09-01 review. The read layer canonicalizes the
-   * `depends_on:` authoring alias, but the write layer read only the literal
-   * `dependencies` key: add_relation appended a duplicate under a second key,
-   * remove_relation answered "does not exist" for an edge get_concept rendered,
-   * and neighbors.dependencies contradicted outgoingEdges from the same doc.
+   * The read layer canonicalizes the `depends_on:` alias, so the write layer must
+   * too: no duplicate under a second key, and remove_relation finds the edge
+   * get_concept renders.
    */
   const root = makeVault([
     {
@@ -5405,7 +5290,6 @@ await test("relation tools — an edge written under the depends_on alias key is
       callTool(5, "get_concept", { slug: "capabilities/payment" }),
     ]);
 
-    // The read side sees the aliased edge in BOTH shapes it serves.
     const before = getCallParsed(responses, 2);
     assert.deepEqual(before.neighbors.dependencies, ["capabilities/session"],
       `neighbors misses the alias edge: ${JSON.stringify(before.neighbors)}`);
@@ -5414,11 +5298,9 @@ await test("relation tools — an edge written under the depends_on alias key is
       `outgoingEdges lacks the alias edge: ${JSON.stringify(before.outgoingEdges)}`,
     );
 
-    // The same edge, so adding it again is a no-op — not a duplicate under a second key.
     const added = getCallParsed(responses, 3);
     assert.equal(added.alreadyExists, true, `counted the alias edge as a new edge: ${JSON.stringify(added)}`);
 
-    // And it can be removed through the tool.
     const removed = getCallParsed(responses, 4);
     assert.equal(removed.changed, true, `could not remove the alias edge: ${JSON.stringify(removed)}`);
 
@@ -5430,6 +5312,10 @@ await test("relation tools — an edge written under the depends_on alias key is
   }
 });
 
+/**
+ * A document outside the graph is not rejected (reading notes is legitimate),
+ * but get_concept says what it is handing over.
+ */
 await test("get_concept — says so for a document outside the graph", async () => {
   const root = makeVault([
     { slug: "notes/coffee-chat", content: "민수랑 결제 얘기함. 근거는 없었음.\n" },
@@ -5453,9 +5339,7 @@ await test("get_concept — says so for a document outside the graph", async () 
       `no outside-the-graph warning: ${JSON.stringify(junk.warnings)}`,
     );
 
-    // Real nodes are untouched — this repair must add no noise to the normal path.
-    // (Other legitimate warnings are not forbidden; what this test protects is
-    //  that the words "outside the graph" do not appear on them.)
+    // Real nodes must not carry the "outside the graph" warning.
     const node = getCallParsed(responses, 3);
     assert.equal(node.isNode, true);
     assert.ok(
@@ -5467,9 +5351,14 @@ await test("get_concept — says so for a document outside the graph", async () 
   }
 });
 
+/**
+ * Evidence ranking: on equal scores the order was alphabetical by slug, so memos
+ * outranked nodes. Loose documents stay visible (a memo may be real evidence),
+ * but nodes rank first on a tie, each row carries `isNode`, and `nodesOnly` narrows.
+ */
 await test("find_evidence — on equal scores nodes rank before non-node documents, with isNode per row", async () => {
   const root = makeVault([
-    // By slug alphabetisation the loose document wins (aaa… < capabilities/…).
+    // Alphabetically the loose document would win (aaa… < capabilities/…).
     {
       slug: "aaa-meeting-note",
       content: "민수랑 얘기함. 토큰 발급이 느리다는 말이 나왔는데 근거는 없었음.\n",
@@ -5492,13 +5381,11 @@ await test("find_evidence — on equal scores nodes rank before non-node documen
     ]);
     const all = getCallParsed(responses, 2);
     assert.ok(all.matches.length >= 3, "all three documents must match for this test to hold");
-    // ① Nodes first — an equal score (body match 0.3) must not lose to slug alphabetisation.
     assert.equal(
       all.matches[0].slug,
       "capabilities/token-issue",
       `a node does not rank first: ${all.matches.map((m) => m.slug).join(", ")}`,
     );
-    // ② Per-row honesty — leaving an absent kind as «unwritten» makes the reader guess.
     for (const m of all.matches) {
       assert.equal(typeof m.isNode, "boolean", `${m.slug}.isNode`);
     }
@@ -5510,10 +5397,8 @@ await test("find_evidence — on equal scores nodes rank before non-node documen
     assert.equal(node.isNode, true);
     assert.match(node.uid, /^[0-9a-f-]{36}$/);
     assert.equal(node.kind, "capability");
-    // When loose documents are mixed in, say so — along with how the agent can narrow.
     assert.match(String(all.nonNodeHint ?? ""), /nodesOnly/);
 
-    // ③ It can be narrowed.
     const onlyNodes = getCallParsed(responses, 3);
     assert.ok(onlyNodes.matches.length >= 1);
     assert.ok(
@@ -5565,8 +5450,6 @@ await test("find_evidence — zero hits return a growthHint (near-title candidat
 });
 
 await test("list_concepts — summary opt-in adds a prose summary to each node", async () => {
-  // One call gives an agent the node list plus what each is about, with no N
-  // follow-up get_concept calls. Absent from the response when summary:false (default).
   const root = makeVault([
     {
       slug: "capabilities/auth",
@@ -5580,7 +5463,6 @@ await test("list_concepts — summary opt-in adds a prose summary to each node",
     },
   ]);
   try {
-    // default: no summary
     const { responses: r1 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts"),
@@ -5591,7 +5473,6 @@ await test("list_concepts — summary opt-in adds a prose summary to each node",
       assert.equal(node.summary, undefined, "no summary by default");
     }
 
-    // summary:true → a prose summary on every node
     const { responses: r2 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts", { summary: true }),
@@ -5599,7 +5480,6 @@ await test("list_concepts — summary opt-in adds a prose summary to each node",
     const out2 = getCallParsed(r2, 2);
     for (const node of out2.nodes) {
       assert.equal(typeof node.summary, "string", `${node.slug}.summary`);
-    // No markdown heading or table syntax (prose only)
       assert.doesNotMatch(node.summary, /^#/);
       assert.doesNotMatch(node.summary, /^\|/);
     }
@@ -5611,15 +5491,12 @@ await test("list_concepts — summary opt-in adds a prose summary to each node",
 });
 
 await test("list_concepts — since filter for incremental sync", async () => {
-  // Passing the max mtime captured from a previous list response as `since` sends
-  // *only what changed*. Strict mtime > since means resending the same max
-  // double-fetches nothing.
+  // `since` is strict (mtime > since), so resending the max fetches nothing.
   const root = makeVault([
     { slug: "old", content: "---\nkind: capability\ntitle: Old\n---\n" },
     { slug: "newer", content: "---\nkind: capability\ntitle: Newer\n---\n" },
   ]);
   try {
-    // Pass 1: full list — capture both nodes' mtimes
     const { responses: r1 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts"),
@@ -5628,7 +5505,6 @@ await test("list_concepts — since filter for incremental sync", async () => {
     assert.equal(out1.total, 2);
     const maxMtime = Math.max(...out1.nodes.map((n) => n.mtime));
 
-    // Pass 2: since=maxMtime — 0 rows, because the comparison is strict
     const { responses: r2 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts", { since: maxMtime }),
@@ -5636,7 +5512,6 @@ await test("list_concepts — since filter for incremental sync", async () => {
     const out2 = getCallParsed(r2, 2);
     assert.equal(out2.total, 0, "since=max returns 0 rows (no resend)");
 
-    // Pass 3: since=maxMtime - 1 — at least 1 row (the most recent node)
     const { responses: r3 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts", { since: maxMtime - 1 }),
@@ -5649,8 +5524,6 @@ await test("list_concepts — since filter for incremental sync", async () => {
 });
 
 await test("list_concepts — each node carries its mtime", async () => {
-  // Same meaning as get_concept's mtime. One list call tells an agent which nodes
-  // changed recently, so it can sort or filter with no follow-up get_concept.
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\n---\n" },
@@ -5673,8 +5546,6 @@ await test("list_concepts — each node carries its mtime", async () => {
 });
 
 await test("find_backlinks — each match row carries domain and mtime", async () => {
-  // An agent reading backlinks immediately knows the domain and the change time.
-  // Same shape as list_concepts: two views of one mental model exposing consistent fields.
   const root = makeVault([
     {
       slug: "capabilities/auth",
@@ -5888,8 +5759,7 @@ await test("find_path — exposes the shortest-path contract in structuredConten
       to: "missing-node",
       found: false,
       reason: "no path found (or maxHops exceeded)",
-      // "to" is absent from the vault while "login" is present, so the suggestion
-      // is an add_concept scaffold, not add_relation.
+      // "to" is missing while "login" exists, so the hint is an add_concept scaffold.
       growthHint: {
         reason: '"missing-node" does not resolve to a vault node.',
         suggestion:
@@ -5906,9 +5776,7 @@ await test("find_path — exposes the shortest-path contract in structuredConten
 });
 
 await test("find_path / get_concept — edges carry the stored relation_notes rationale, and omit the key without one", async () => {
-  // The same pair the dogfood vault carries: capabilities/cli-developer-entry
-  // depends on capabilities/mcp-server with a one-sentence why. An agent that
-  // wrote it through add_relation(why) must read it back through the read tools.
+  // An edge written through add_relation(why) must read back with its why.
   const why =
     "The terminal command surface delegates ontology reads, writes, and verification to the same MCP contracts.";
   const root = makeVault([
@@ -6424,8 +6292,6 @@ await test("MCP read/query tools — blank/padded scalar string inputs are rejec
 });
 
 await test("query_concepts — each match row carries its mtime", async () => {
-  // Same shape as list_concepts / find_backlinks / find_orphans, for read-tool
-  // response consistency: an agent handles DSL query results with no extra call.
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\ndomain: x\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\ndomain: x\n---\n" },
@@ -6456,11 +6322,10 @@ await test("query_concepts — zero rows return a growthHint (a missing kind/dom
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      // "project" is a valid kind enum but this vault has none.
+      // A valid kind this vault has none of.
       callTool(2, "query_concepts", { filter: "kind=project" }),
-      // "auth" domain exists; "billing" has none.
       callTool(3, "query_concepts", { filter: "domain=billing" }),
-      // Both kind and domain exist — only the combination yields 0 rows ("a" has elements).
+      // Kind and domain both exist; only the combination yields 0 rows.
       callTool(4, "query_concepts", { filter: "kind=capability AND domain=auth AND NOT has(elements)" }),
     ]);
 
@@ -6634,8 +6499,6 @@ await test("query_ontology all_paths — limited exposes hidden MCP paths", asyn
 });
 
 await test("find_orphans — each orphan row carries domain and mtime", async () => {
-  // Same shape as list_concepts / find_backlinks, so an agent can sort or filter
-  // orphans straight from the response with no follow-up get_concept.
   const root = makeVault([
     {
       slug: "domains/auth",
@@ -6659,7 +6522,6 @@ await test("find_orphans — each orphan row carries domain and mtime", async ()
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
-    // domains/auth + used-cap (nothing references used-cap) — both are orphans
     assert.ok(result.total >= 1);
     for (const o of result.orphans) {
       assert.match(o.uid, /^[0-9a-f-]{36}$/, `${o.slug}.uid`);
@@ -6700,9 +6562,9 @@ await test("get_concept — an unknown slug returns an error carrying a growthHi
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-    // A tail-substring near miss exists (login) — the did-you-mean branch.
+    // A tail-substring near miss exists: the did-you-mean branch.
       callTool(2, "get_concept", { slug: "capabilities/log" }),
-    // No near miss at all — the add_concept scaffold branch.
+    // No near miss: the add_concept scaffold branch.
       callTool(3, "get_concept", { slug: "totally-unrelated-thing" }),
     ]);
 
@@ -6888,8 +6750,6 @@ await test("identity reads — list/get/batch expose uid beside canonical slug a
   }
 });
 
-// get_concepts batch reader: K slugs in one round trip. Input order is preserved,
-// and a missing slug surfaces as an `{ ok: false, error }` row instead of aborting.
 await test("get_concepts — batch read keeps input order and returns partial results", async () => {
   const root = makeVault([
     { slug: "alpha", content: "---\nkind: capability\ntitle: Alpha\n---\nbody A" },
@@ -6904,7 +6764,6 @@ await test("get_concepts — batch read keeps input order and returns partial re
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.concepts.length, 3, "one concepts row per input slug");
-    // Order preserved: input [beta, missing, alpha] → output in the same order.
     assert.equal(result.concepts[0].slug, "beta");
     assert.equal(result.concepts[0].ok, true);
     assert.equal(result.concepts[0].frontmatter.title, "Beta");
@@ -6913,7 +6772,6 @@ await test("get_concepts — batch read keeps input order and returns partial re
     assert.deepEqual(result.concepts[0].outgoingEdges, []);
     assert.equal(typeof result.concepts[0].mtime, "number");
     assert.ok(result.concepts[0].mtime > 0);
-    // Missing slug → ok:false with an error message; the batch survives.
     assert.equal(result.concepts[1].slug, "missing-slug");
     assert.equal(result.concepts[1].ok, false);
     assert.match(result.concepts[1].error, /not found/i);
@@ -6923,7 +6781,6 @@ await test("get_concepts — batch read keeps input order and returns partial re
     assert.deepEqual(result.concepts[1].recoveryTools, ["list_concepts", "find_evidence"]);
     assert.equal(result.concepts[1].createTool, "add_concept");
     assert.equal(result.concepts[1].growthHint.exampleCall.tool, "add_concept");
-    // The valid slug after it is processed normally.
     assert.equal(result.concepts[2].slug, "alpha");
     assert.equal(result.concepts[2].ok, true);
     assert.equal(result.concepts[2].frontmatter.title, "Alpha");
@@ -6963,7 +6820,6 @@ await test("get_concepts — invalid slug rows are isolated as partial results",
   }
 });
 
-// get_concepts empty-array and cap (50) gates: a normal empty response vs an error.
 await test("get_concepts — empty slugs[] returns empty concepts[], 51 slugs is an error", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },
@@ -6976,14 +6832,12 @@ await test("get_concepts — empty slugs[] returns empty concepts[], 51 slugs is
     const empty = getCallParsed(r1, 2);
     assert.deepEqual(empty.concepts, []);
 
-    // 51 entries → error response (the batch call itself throws; MCP serialises the error).
     const tooMany = Array.from({ length: 51 }, (_, i) => `s${i}`);
     const { responses: r2 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "get_concepts", { slugs: tooMany }),
     ]);
-    // The server throws, so the MCP response carries isError content or an error
-    // field. Only checked for our cap message ("Too many slugs") in the text.
+    // The error text is checked for the cap message only.
     const text = JSON.stringify(r2.find((r) => r.id === 2));
     assert.match(text, /Too many slugs|50/i);
     assert.equal(getCallStructured(r2, 2)?.errorCode, "invalid_arguments");
@@ -6992,9 +6846,6 @@ await test("get_concepts — empty slugs[] returns empty concepts[], 51 slugs is
   }
 });
 
-// add_concepts batch writer, so an /ontology-bootstrap flow lands several nodes in
-// one call. Input order is preserved and results are partial (one row failing does
-// not abort the batch).
 await test("add_concepts — batch write keeps order and returns partial results", async () => {
   const root = makeVault([
     { slug: "exist", content: "---\nkind: capability\ntitle: Exist\n---\n" },
@@ -7005,20 +6856,16 @@ await test("add_concepts — batch write keeps order and returns partial results
       callTool(2, "add_concepts", {
         concepts: [
           { slug: "alpha", kind: "capability", title: "Alpha", domain: "auth" },
-          // existing slug → ok:false
           { slug: "exist", kind: "capability", title: "Existing" },
           { slug: "beta", kind: "element", title: "Beta", domain: "auth" },
-          // missing required → ok:false
           { slug: "gamma", kind: "capability" },
         ],
       }),
-      // Verify the landed rows with a list after the batch
       callTool(3, "list_concepts"),
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.concepts.length, 4, "one concepts row per input");
-    // Order preserved: alpha → exist (fail) → beta → gamma (fail)
     assert.equal(result.concepts[0].slug, "alpha");
     assert.equal(result.concepts[0].ok, true);
     assert.equal(typeof result.concepts[0].filePath, "string");
@@ -7037,7 +6884,6 @@ await test("add_concepts — batch write keeps order and returns partial results
     assert.match(result.concepts[3].error, /required|title/i);
     assertPostWriteMaintenanceShape(result.postWriteMaintenance, "batch concept postWriteMaintenance");
     assert.equal(result.concepts[0].postWriteMaintenance, undefined);
-    // The list response gains alpha and beta; gamma is absent.
     const list = getCallParsed(responses, 3);
     const slugs = list.nodes.map((n) => n.slug).sort();
     assert.ok(slugs.includes("alpha"), "alpha land");
@@ -7082,13 +6928,10 @@ await test("add_concept/add_concepts — implementation path is preserved as evi
   }
 });
 
-// ── Authorship `created_by` (decision ledger, 2026-07-31) ──────────────────
-//
-// A write that came through this server was made by **an agent** — the call path
-// itself proves it, so it cannot be forged. Retroactive inference is forbidden and
-// absence is unknown. The pure contract (value conventions, schema, query filters)
-// belongs to `tests/contract/created-by-provenance.contract.test.ts`; this measures
-// **what the running server actually leaves on disk**.
+// `created_by`: a write through this server is an agent's, which the call path
+// proves. The pure contract lives
+// in `tests/contract/created-by-provenance.contract.test.ts`; this measures what the
+// running server leaves on disk.
 
 function writeHeartbeat(root, agent) {
   mkdirSync(join(root, ".ontology-atlas"), { recursive: true });
@@ -7110,7 +6953,7 @@ await test("add_concept/add_concepts — created_by carries the same identity as
         concepts: [{ slug: "capabilities/batch", kind: "capability", title: "Batch", domain: "auth" }],
       }),
       callTool(4, "get_concepts", { slugs: ["capabilities/single", "capabilities/batch"] }),
-      // The other side of "show only what a human made" — an agent's write is not counted as human.
+      // An agent's write is not counted as human.
       callTool(5, "query_concepts", { filter: "created_by=human" }),
       callTool(6, "query_concepts", { filter: 'created_by="agent:codex"' }),
     ]);
@@ -7124,9 +6967,8 @@ await test("add_concept/add_concepts — created_by carries the same identity as
   }
 });
 
-// With no heartbeat the stamp follows the activity log one step further (2026-09-07):
-// the connect greeting's clientInfo.name. The test harness greets as "test", so that is
-// the name; a human it still is not.
+// Without a heartbeat the stamp uses the greeting's clientInfo.name ("test" here),
+// still never human.
 await test("add_concept/add_concepts — without a heartbeat, uses the greeting name (never falls back to human)", async () => {
   const root = makeVault([]);
   try {
@@ -7143,14 +6985,8 @@ await test("add_concept/add_concepts — without a heartbeat, uses the greeting 
   }
 });
 
-// The `agent` field of the activity log (activity.jsonl) knows one step more than
-// created_by: even with no heartbeat (deliberate registration), the initialize
-// greeting's clientInfo.name is recorded (2026-08-13 — the piece that names the
-// activity of claude-code/codex sessions that connect without registering). The
-// created_by stamp still trusts the heartbeat alone, because that value is written
-// permanently into the vault and must not admit an automatic guess (decision
-// ledger, 2026-07-31). The pure precedence logic belongs to activity-log.test.mjs;
-// this measures the wiring — whether the server really persists the greeted name.
+// The activity log records the greeting's clientInfo.name without a heartbeat;
+// activity-log.test.mjs owns the precedence logic, this measures the wiring.
 await test("add_concept/add_concepts — the activity record keeps the greeting name without a heartbeat", async () => {
   const noHeartbeat = makeVault([]);
   const withHeartbeat = makeVault([]);
@@ -7178,12 +7014,8 @@ await test("add_concept/add_concepts — the activity record keeps the greeting 
   }
 });
 
-// 2026-08-16 — the bug where the reason for a batch-written relation **vanished
-// from the activity record only**. `why` reached the frontmatter, but
-// `summarizeWrite`'s batch branch returned `{target, summary}` alone, so it was
-// dropped from the log line. In that state all 15 activity lines in a live vault
-// read `why: null`, and that nearly became **evidence for the wrong conclusion**
-// ("the conversation happens outside the app, so no reason is recorded").
+// A batch-written relation's why must reach the activity log, not only the
+// frontmatter.
 await test("add_relations — batch relations also leave their reasons in the activity log", async () => {
   const root = makeVault([
     { slug: "capabilities/a", content: "---\nslug: capabilities/a\nkind: capability\ntitle: A\ndomain: auth\n---\n\n# A\n" },
@@ -7213,7 +7045,7 @@ await test("add_relations — batch relations also leave their reasons in the ac
 });
 
 await test("add_relations — a repeated reason is written once", async () => {
-  // Ten rows sharing a reason would print it ten times and become unreadable.
+  // Ten rows sharing a reason would print it ten times.
   const root = makeVault([
     { slug: "capabilities/a", content: "---\nslug: capabilities/a\nkind: capability\ntitle: A\ndomain: auth\n---\n\n# A\n" },
     { slug: "capabilities/b", content: "---\nslug: capabilities/b\nkind: capability\ntitle: B\ndomain: auth\n---\n\n# B\n" },
@@ -7252,13 +7084,11 @@ await test("patch_concept — created_by is preserved and cannot be overwritten"
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      // A patch is not authorship — an agent refining a human's node leaves the origin human.
+      // A patch is not authorship: refining a human's node keeps the origin human.
       callTool(2, "patch_concept", { slug: "capabilities/by-hand", frontmatter: { domain: "auth" } }),
       callTool(3, "get_concept", { slug: "capabilities/by-hand" }),
-      // A patch never invents an origin for a node that has none.
       callTool(4, "patch_concept", { slug: "capabilities/unknown-origin", frontmatter: { domain: "auth" } }),
       callTool(5, "get_concept", { slug: "capabilities/unknown-origin" }),
-      // A patch claiming to be human is rejected.
       callTool(6, "patch_concept", { slug: "capabilities/unknown-origin", frontmatter: { created_by: "human" } }),
     ]);
     assert.equal(getCallParsed(responses, 3).frontmatter.created_by, "human", "patch preserves an existing stamp");
@@ -7355,8 +7185,6 @@ await test("add_concept/add_concepts — an explicit empty body is not replaced 
   }
 });
 
-// add_concepts empty-array and cap (50) gates, pinning the same batch contract on
-// the writer side as get_concepts and add_relations.
 await test("add_concepts — empty concepts[] returns empty results, 51 rows is an error", async () => {
   const root = makeVault([]);
   try {
@@ -7385,8 +7213,8 @@ await test("add_concepts — empty concepts[] returns empty results, 51 rows is 
   }
 });
 
-// add_concepts detects duplicate slugs within the input up front, so the second row
-// gets a clearer error (row label plus first-seen index) than "already exists".
+// An in-input duplicate gets the row label and first-seen index, clearer than
+// "already exists".
 await test("add_concepts — the second duplicate slug in one input is ok:false", async () => {
   const root = makeVault([]);
   try {
@@ -7414,10 +7242,8 @@ await test("add_concepts — the second duplicate slug in one input is ok:false"
   }
 });
 
-// The same slug is an error (data protection), but the same title on a different
-// slug lands both with a near-duplicate advisory — catching bootstrap's #1 failure
-// mode (splitting one concept into two nodes) in the first batch, by in-batch
-// comparison with no vault load.
+// Same title on a different slug lands with an advisory, caught by in-batch
+// comparison without loading the vault.
 await test("add_concepts — a second row with the same title lands with a near-duplicate warning", async () => {
   const root = makeVault([]);
   try {
@@ -7621,12 +7447,8 @@ await test("MCP slug conflicts expose structured recovery fields", async () => {
 });
 
 /*
- * Bug sweep 2026-09-01, reproduced: on macOS/Windows a wrong-case slug passes
- * `existsSync` while backlink matching is a case-sensitive string comparison, so
- * `rename_concept{oldSlug:"capabilities/Auth"}` deleted `auth.md`, redirected
- * **0** backlinks, and reported success — and `delete_concept` deleted a
- * referenced node without `force` because `findBacklinks` saw no referrers.
- * Destructive tools now resolve the caller's spelling to the on-disk one first.
+ * On macOS a wrong-case slug passes `existsSync` while backlink matching is
+ * case-sensitive, so destructive tools resolve to the on-disk spelling first.
  */
 await test("MCP rename_concept with a wrong-case oldSlug still redirects backlinks", async () => {
   const root = makeVault([
@@ -7706,9 +7528,7 @@ await test("MCP delete_concept with a wrong-case slug still sees its backlinks",
 });
 
 await test("MCP rename_concept preserves a frontmatter slug alias that differs from the file slug", async () => {
-  // The dogfood pattern: project.md carries a user-facing `slug: ontology-atlas`
-  // alias other documents reference by that spelling. Rename used to overwrite
-  // the alias with newSlug, severing every alias-form ref silently.
+  // A frontmatter `slug:` alias other documents reference must survive a rename.
   const root = makeVault([
     {
       slug: "capabilities/auth",
@@ -7740,10 +7560,8 @@ await test("MCP rename_concept preserves a frontmatter slug alias that differs f
 });
 
 await test("MCP delete_concept treats an ambiguous-tail referrer as a blocking backlink", async () => {
-  // capabilities/foo and elements/foo share a tail; d1's `capabilities: [foo]`
-  // could mean either. Deleting a candidate without force must be refused —
-  // before the shared ref index, findBacklinks saw no referrer for either node
-  // and the safety gate waved the delete through (bug sweep 2026-09-01).
+  // capabilities/foo and elements/foo share a tail, so d1's `capabilities: [foo]`
+  // could mean either; deleting a candidate without force must be refused.
   const root = makeVault([
     { slug: "capabilities/foo", content: "---\nkind: capability\ntitle: Foo Cap\n---\n" },
     { slug: "elements/foo", content: "---\nkind: element\ntitle: Foo El\n---\n" },
@@ -8063,10 +7881,6 @@ await test("MCP write tools — blank/padded string inputs are rejected before d
   }
 });
 
-// add_relations batch writer, landing analyze_repo_structure (suggestedRelations)
-// and infer_imports (moduleEdges) output in one call. Result rows preserve input
-// order, frontmatter relation arrays get a canonical sort, the operation is
-// idempotent (a repeated edge returns alreadyExists), and a missing slug fails at row level.
 await test("add_relations — batch write keeps row order, sorts canonically and returns partial results", async () => {
   const root = makeVault([
     { slug: "p", content: "---\nkind: project\ntitle: P\n---\n" },
@@ -8079,15 +7893,11 @@ await test("add_relations — batch write keeps row order, sorts canonically and
       callTool(2, "add_relations", {
         relations: [
           { from: "p", to: "c2", type: "contains", why: "P contains the C2 capability." },
-          // Accumulating on the same `from` — readDoc re-reads each time, so nothing is lost
+          // Accumulating on one `from`: each row re-reads the doc.
           { from: "p", to: "c1", type: "contains" },
-          // Idempotent — the same edge twice
           { from: "p", to: "c1", type: "contains" },
-          // missing target → ok:false
           { from: "p", to: "missing", type: "contains" },
-          // unknown type → ok:false
           { from: "p", to: "c1", type: "weird-type" },
-          // close type typo → ok:false with nearest-value hint
           { from: "p", to: "c1", type: "depend_on" },
         ],
       }),
@@ -8096,31 +7906,26 @@ await test("add_relations — batch write keeps row order, sorts canonically and
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.relations.length, 6, "one relations row per input");
-    // Order preserved
     assert.equal(result.relations[0].ok, true);
     assert.equal(result.relations[0].to, "c2");
     assert.equal(result.relations[0].key, "contains");
     assert.equal(result.relations[0].changed, true);
     assert.equal(result.relations[1].ok, true);
     assert.equal(result.relations[1].to, "c1");
-    // Idempotent — the second is alreadyExists
     assert.equal(result.relations[2].ok, true);
     assert.equal(result.relations[2].alreadyExists, true);
-    // missing target
     assert.equal(result.relations[3].ok, false);
     assert.match(result.relations[3].error, /does not exist|missing/i);
     assert.equal(result.relations[3].errorCode, "not_found");
     assert.equal(result.relations[3].missingSlug, "missing");
     assert.equal(result.relations[3].createTool, "add_concept");
     assert.deepEqual(result.relations[3].recoveryTools, ["list_concepts", "find_evidence"]);
-    // unknown type
     assert.equal(result.relations[4].ok, false);
     assert.match(result.relations[4].error, /type must be one of/i);
     assert.match(result.relations[4].error, /Received: "weird-type"/i);
     assert.equal(result.relations[4].errorCode, "invalid_arguments");
     assert.equal(result.relations[4].valueName, "type");
     assert.equal(result.relations[4].receivedValue, "weird-type");
-    // close type typo
     assert.equal(result.relations[5].ok, false);
     assert.match(result.relations[5].error, /type must be one of/i);
     assert.match(result.relations[5].error, /Received: "depend_on"/i);
@@ -8128,7 +7933,6 @@ await test("add_relations — batch write keeps row order, sorts canonically and
     assert.equal(result.relations[5].suggestion, "depends_on");
     assertPostWriteMaintenanceShape(result.postWriteMaintenance, "batch relation postWriteMaintenance");
     assert.equal(result.relations[0].postWriteMaintenance, undefined);
-    // p.contains lands deduplicated and sorted by edge set
     const p = getCallParsed(responses, 3);
     assert.deepEqual(p.frontmatter.contains, ["c1", "c2"]);
     assert.equal(p.frontmatter.relation_notes.c2, "P contains the C2 capability.");
@@ -8137,7 +7941,6 @@ await test("add_relations — batch write keeps row order, sorts canonically and
   }
 });
 
-// add_relations empty-array and cap gates.
 await test("add_relations — empty relations[] returns empty results, 51 rows is an error", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
@@ -8281,7 +8084,6 @@ await test("add_relations — an unknown row field is isolated as a row-level er
   }
 });
 
-// validate_vault — the whole vault's health in one agent call.
 await test("validate_vault — a clean vault returns the scanned/problems[]/summary shape", async () => {
   const root = makeVault([
     { slug: "p", content: "---\nkind: project\ntitle: P\n---\n" },
@@ -8314,7 +8116,6 @@ await test("validate_vault — surfaces both an empty-kind error and a missing-e
     ]);
     const r = getCallParsed(responses, 2);
     assert.ok(r.problems.length >= 2);
-    // byCode aggregation
     assert.ok(r.summary.byCode["empty-kind"]);
     assert.equal(r.summary.byCode["empty-kind"].severity, "error");
     assert.ok(r.summary.byCode["missing-expected-field"]);
@@ -9676,9 +9477,8 @@ await test("absorb_document — repo boundary, symlink escape, explicit opt-in, 
 });
 
 await test("absorb_document — a failed confirm changes neither the vault nor the source (all-or-nothing)", async () => {
-  // Caught in the 2026-09-01 review: the confirm path wrote sections in a bare
-  // loop, so a mid-loop failure left a half-absorbed vault and the retry minted
-  // -2-suffixed duplicates. The write must be one unit like rename/merge.
+  // A mid-loop failure must not leave a half-absorbed vault whose retry mints
+  // -2-suffixed duplicates.
   if (process.platform === "win32") return; // chmod-based fault injection
   const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-absorb-atomic-"));
   const vault = join(repoRoot, "vault");
@@ -9836,7 +9636,7 @@ await test("remove_relation — dry-run then confirmed removal also removes rati
       label: "remove_relation no-op preview",
     });
     const project = getCallParsed(responses, 5);
-    // `contains` is no kind's scaffold list, so its last entry takes the key with it (2026-09-26).
+    // `contains` is no kind's scaffold list, so its last entry takes the key with it.
     assert.equal(project.frontmatter.contains, undefined);
     assert.equal(project.frontmatter.relation_notes, undefined);
   } finally {
@@ -9845,11 +9645,10 @@ await test("remove_relation — dry-run then confirmed removal also removes rati
 });
 
 /*
- * Owner inspection, 2026-09-26: removing the only `relates` entry of capabilities/wiki-pages left
- * `relates: []` in the file. A removal now leaves the bytes creating the node would have left: the
- * key goes with its last entry, `relation_notes` goes with its last reason, and only a kind's own
- * scaffold list (a capability's `elements`) returns to the `[]` add_concept writes. Asserted on the
- * file itself, because get_concept reads an absent key and an empty one the same way.
+ * A removal leaves the bytes creation would have: the key goes with its last
+ * entry and `relation_notes` with its last reason; only a kind's scaffold list
+ * returns to `[]`. Asserted on the file, since get_concept reads absent and
+ * empty alike.
  */
 await test("remove_relation / replace_relation — an emptied key is deleted, a scaffold list returns to []", async () => {
   const WIKI_PAGES = [
@@ -9897,7 +9696,6 @@ await test("remove_relation / replace_relation — an emptied key is deleted, a 
     ]);
     assert.ok(lines().includes("elements: []"), `a capability's scaffold list did not return to []:\n${lines().join("\n")}`);
 
-    // replace_relation moves the only entry to another key: the old key goes with it.
     writeFileSync(file, WIKI_PAGES);
     await rpc(root, [
       ...INIT_REQUESTS,
@@ -9942,7 +9740,6 @@ await test("replace_relation — atomically replaces target/type and rationale",
     });
     assert.equal(getCallParsed(responses, 3).changed, true);
     const project = getCallParsed(responses, 4);
-    // The only `contains` entry moved to `domains`, so `contains` goes with it (2026-09-26).
     assert.equal(project.frontmatter.contains, undefined);
     assert.deepEqual(project.frontmatter.domains, ["domains/identity"]);
     assert.equal(project.frontmatter.relation_notes["domains/identity"], "Canonical ownership");
@@ -9953,9 +9750,8 @@ await test("replace_relation — atomically replaces target/type and rationale",
 });
 
 await test("replace_relation — converting to depends_on demands a why when none can be inherited", async () => {
-  // add_relation hard-requires a nonblank why for every new depends_on edge;
-  // replace_relation used to bypass that contract when converting an edge that
-  // carried no prior relation note (bug sweep 2026-09-01).
+  // replace_relation must enforce add_relation's nonblank why on a new
+  // depends_on edge.
   const root = makeVault([
     { slug: "capabilities/a", content: "---\nkind: capability\ntitle: A\nrelates: [capabilities/b]\n---\n" },
     { slug: "capabilities/b", content: "---\nkind: capability\ntitle: B\n---\n" },
@@ -10064,13 +9860,6 @@ await test("remove_relation — resolves stored frontmatter-slug aliases and the
   }
 });
 
-/**
- * ⚠️ Until 2026-08-01 this case used a **path-shaped slug**
- * (`elements/src/entities/claim`), and it had been failing ever since #806 started
- * rejecting that form at the write gate. Nobody saw it because this file **was not
- * wired into any workflow** (`checks.yml` dropped it over a 162s runtime, noting it
- * was *"a separate step's job"* — that step was never created). The slug is flat now.
- */
 await test("reclassify_concept — kind/slug/domain/body and backlinks move together", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\ncontains: [capabilities/claim]\n---\n" },
@@ -10115,10 +9904,8 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
 });
 
 /*
- * 2026-09-26 map-edit review: a reclassify rewrote each referrer to the new address but kept the
- * entry in the list for the OLD kind, so a domain read `capabilities: [elements/...]` — an element
- * counted as a capability, resolving, flagged by nothing. The list now follows the kind, and an
- * entry the referrer's kind keeps no list for stays and is named in `warnings`.
+ * A reclassified node's entry follows it into the list for its new kind, or is
+ * named in `warnings` when the referrer's kind keeps no such list.
  */
 await test("reclassify_concept — typed list entries follow the new kind, or are named in warnings", async () => {
   const root = makeVault([
@@ -10136,7 +9923,6 @@ await test("reclassify_concept — typed list entries follow the new kind, or ar
         slug: "capabilities/memories", newSlug: "elements/memories",
         newKind: "element", domain: "domains/workbench", confirm: true,
       }),
-      // In place, and into a kind the referring capability keeps no list for.
       callTool(3, "reclassify_concept", {
         slug: "elements/recall-index", newKind: "capability", domain: "domains/workbench",
       }),
@@ -10159,11 +9945,8 @@ await test("reclassify_concept — typed list entries follow the new kind, or ar
   }
 });
 
-// 2026-08-01 — an agent handed only the vault ended its answer with "there may be
-// more in the body but I could not confirm". The construction rules require the
-// evidence to be written in the body, and the read tool returned the first
-// paragraph without even saying it was cut. The contract this test protects is two
-// lines: give the whole thing when asked, and say so when you did not.
+// The construction rules put evidence in the body, so the read tools give the
+// whole body when asked and say so when they cut.
 await test("body delivery — the full body is available and truncation is never silent", async () => {
   const ruledBody = [
     "## 정의",
@@ -10201,7 +9984,6 @@ await test("body delivery — the full body is available and truncation is never
       callTool(8, "get_concept", { slug: "elements/editor", body: "outline" }),
     ]);
 
-    // ① The default stays an excerpt — but it reports the cut and the call that fetches the rest.
     const excerptRead = getCallParsed(responses, 2);
     assert.equal(excerptRead.excerpt, "워크스페이스 안에서 앱을 만드는 능력.");
     assert.equal(excerptRead.body, undefined);
@@ -10210,7 +9992,7 @@ await test("body delivery — the full body is available and truncation is never
     assert.ok(excerptRead.bodyInfo.omittedChars > 0);
     assert.match(excerptRead.bodyInfo.hint, /body: "full"/);
 
-    // ② full carries evidence and confidence too, and does not bill the same text again as an excerpt.
+    // `full` does not repeat the same text as an excerpt.
     const fullRead = getCallParsed(responses, 3);
     assert.match(fullRead.body, /## 근거/);
     assert.match(fullRead.body, /app\/src\/editor\/index\.ts/);
@@ -10220,24 +10002,20 @@ await test("body delivery — the full body is available and truncation is never
     assert.equal(fullRead.bodyInfo.truncated, false);
     assert.equal(fullRead.bodyInfo.hint, undefined);
 
-    // ③ A fully delivered body gets no false truncation warning.
     const wholeRead = getCallParsed(responses, 4);
     assert.equal(wholeRead.bodyInfo.truncated, false);
 
-    // ④ The batch takes the same parameters.
     const batch = getCallParsed(responses, 5);
     assert.equal(batch.concepts[0].ok, true);
     assert.match(batch.concepts[0].body, /## 확신도/);
     assert.equal(batch.concepts[0].bodyInfo.mode, "full");
 
-    // ⑤ find_evidence reports truncation too, and names the follow-up call.
     const evidence = getCallParsed(responses, 6);
     const hit = evidence.matches.find((m) => m.slug === "capabilities/app-authoring");
     assert.equal(hit.excerptTruncated, true);
     assert.ok(hit.bodyChars > hit.excerpt.length);
     assert.match(evidence.bodyHint, /body: "full"/);
 
-    // ⑥ The same holds for list_concepts summaries.
     const listed = getCallParsed(responses, 7);
     const row = listed.nodes.find((n) => n.slug === "capabilities/app-authoring");
     assert.equal(row.summaryTruncated, true);
@@ -10245,7 +10023,7 @@ await test("body delivery — the full body is available and truncation is never
     const shortRow = listed.nodes.find((n) => n.slug === "elements/editor");
     assert.equal(shortRow.summaryTruncated, undefined);
 
-    // ⑦ An unknown mode fails while naming the allowed values, rather than quietly falling back to excerpt.
+    // An unknown mode names the allowed values instead of falling back to excerpt.
     assert.match(getCallText(responses, 8), /excerpt, full/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -10256,17 +10034,13 @@ await test("query_ontology agent_brief — selected project and compact task han
   const root = makeVault([
     {
       slug: "project-a",
-      // The exclusion moved into `## Uncertainty` on 2026-09-22. "Behavior not
-      // established by the bounded vault" says what the writer did not see, not
-      // what the library does not do, and `epistemic-exclusion` now says so —
-      // the repair the finding itself prescribes.
+      // The evidence limit sits under `## Uncertainty`, not Excludes,
+      // as `epistemic-exclusion` prescribes.
       content: "---\nkind: project\ntitle: Encoding Library\ndomains: [domains/encoding]\n---\n## Definition\n\nA library that writes encoded values.\n\n## Excludes\n\n- Decoding, which a separate library owns.\n\n## Uncertainty\n\n- Behavior not established by the bounded vault.\n",
     },
     {
       slug: "domains/encoding",
-      // Finished on 2026-09-22: `validate_vault` reads the prose now, and this
-      // test asserts the brief reports a clean vault — so the fixture has to be
-      // one. Four words of definition and no boundary is not.
+      // The brief must report a clean vault, so the fixture must be one.
       content: "---\nkind: domain\ntitle: Encoding\ncapabilities: [capabilities/write-values]\n---\n## Definition\n\nEncoding owns turning in-memory values into the bytes a decoder on another machine can read.\n\n## Includes\n\n- Producing the byte form of every value this library writes\n\n## Excludes\n\n- Parsing bytes back into values, which the decoding side owns\n\n## Uncertainty\n\n- Whether callers outside this repository depend on the byte order was never established\n",
     },
     {
@@ -10665,12 +10439,8 @@ await test("query_ontology agent_brief — read-only known-task wire path stays 
     assert.equal(compact.focus.verification.manifest, "mcp/package.json");
     assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") <= 12000);
     const wireCharacters = JSON.stringify(connectionResponse).length + JSON.stringify(compactResponse).length;
-    // The budget was 20,000 before connection_info carried the construction
-    // card (decision 2026-09-21: a host may cut `instructions` at 2,048
-    // characters, so the card rides in the first read every construction
-    // prompt makes). The card is capped at CONSTRUCTION_CARD_MAX_CHARS, and the
-    // budget moves by exactly that allowance rounded up, not by whatever the
-    // dogfood vault's prose happens to weigh.
+    // The budget grows by exactly the construction card's allowance
+    // (CONSTRUCTION_CARD_MAX_CHARS, rounded up), not by what the dogfood prose weighs.
     assert.ok(
       wireCharacters < 22_000,
       `connection_info + compact read-only wire path must stay below 22000 characters; received ${wireCharacters}`,

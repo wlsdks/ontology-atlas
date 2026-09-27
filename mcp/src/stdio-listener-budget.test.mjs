@@ -40,8 +40,8 @@ test('stdio transport tolerates a bounded burst while stdout is backpressured', 
   ];
 
   child.stdin.end(`${requests.map((request) => JSON.stringify(request)).join('\n')}\n`);
-  // Intentionally leave stdout unread so every tools/list response waits on
-  // backpressure at once, matching the verifier/CI failure shape.
+  // stdout left unread so every tools/list response waits on backpressure at once,
+  // the verifier's failure shape.
   await new Promise((resolveDelay) => setTimeout(resolveDelay, 400));
   child.kill('SIGKILL');
   await once(child, 'close');

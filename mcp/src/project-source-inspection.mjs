@@ -12,10 +12,9 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 
-// Keep these values byte-for-byte aligned with src-tauri/src/lib.rs. The app
-// mints the receipt; a fresh MCP process must reproduce the same bounded probe
-// before it can call that receipt current.
-// tests/contract/source-inventory-bound.contract.test.ts fails when the two drift.
+// Byte-for-byte aligned with src-tauri/src/lib.rs, or a fresh MCP process
+// cannot reproduce the app's probe and call its receipt current
+// (tests/contract/source-inventory-bound.contract.test.ts).
 const SOURCE_INVENTORY_VERSION = 'inventory-v2';
 const SOURCE_INVENTORY_MAX_DEPTH = 20;
 const SOURCE_INVENTORY_MAX_FILES = 8000;

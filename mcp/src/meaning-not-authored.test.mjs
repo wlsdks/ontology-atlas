@@ -1,22 +1,5 @@
-// "Not written yet" and "broken" are different statements.
-//
-// Why (measured 2026-08-17): checking a vault **immediately after creating it**
-// produced:
-//
-//   vault health  needs_attention
-//     ⚠ meaning_assessment  1 project meaning assessment(s) require review;
-//                           first project: invalid (assessment_input_invalid)
-//
-// The user did nothing wrong. `init` does not create the competency question
-// block, and in the code **absent** and **broken** collapsed to the same value
-// (`malformed`) — so a newborn vault reports itself as faulty.
-//
-// This is the mirror image of 2026-08-17 (19). There, "nothing at all" was called
-// "healthy"; here, "not done yet" is called "wrong". Both name **work not yet
-// done** as something else.
-//
-// What needs fixing is not the verdict but **the name and the remedy**: if it was
-// not written, say so, and say what to do about it.
+// "Not written yet" and "broken" are different statements: a fresh `init` vault
+// has no competency block, and must say what to do rather than call itself invalid.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -54,7 +37,7 @@ test('also says what to do, since a diagnosis without a remedy is no diagnosis',
 });
 
 test('a block that is present but wrong is still invalid input', () => {
-  // Collapsing this back together undoes the fix — genuinely broken input must still be called that.
+  // Genuinely broken input must still be called broken.
   const assessment = deriveMeaningAssessment(
     baseInput({
       contract: 'wrong-contract',
@@ -69,7 +52,7 @@ test('a block that is present but wrong is still invalid input', () => {
 });
 
 test('names another error first, so a missing capability does not hide other defects', () => {
-  // The project slug itself is wrong. That is a problem that precedes "not written".
+  // A wrong project slug precedes "not written".
   const assessment = deriveMeaningAssessment({ ...baseInput(null), projectSlug: '' });
   assert.equal(assessment.topGap.id, 'assessment_input_invalid');
 });

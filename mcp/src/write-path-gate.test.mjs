@@ -1,19 +1,10 @@
 /**
- * Write-path wiring for the node-eligibility gate (2026-07-31 council —
- * `docs/DECISIONS.md`, 「Ontology construction rules」 — the ontology construction rules).
- *
- * This file proves ONE thing, and deliberately only one: that the gate is
- * wired into the **shared** write primitive, so `add_concept`, `patch_concept`,
- * and `add_relation` all inherit it. That is the defect the council measured —
- * the warning pipeline lived on the creation door only, and the 92 unresolved
- * `elements:` entries on `cli-developer-entry` grew through `patch_concept`,
- * which emitted nothing at all.
- *
- * Everything the gate *decides* (which refs are path-shaped, what the message
- * says, what the thresholds are) belongs to
- * `tests/contract/vault-schema.contract.test.ts` and the construction-rules
- * literals. Splitting it this way keeps this file honest: if someone re-routes
- * one of the three doors around `commitDoc`, this fails, and nothing else does.
+ * Proves only that the node-eligibility gate is wired into the shared write
+ * primitive, so add_concept, patch_concept and add_relation all inherit it
+ * (`docs/DECISIONS.md`, the ontology construction rules). What the gate decides
+ * belongs to `tests/contract/vault-schema.contract.test.ts` and the rule
+ * literals; if a door is re-routed around `commitDoc`, this fails and nothing
+ * else does.
  */
 
 import { afterEach, beforeEach, describe, it } from 'node:test';
@@ -36,12 +27,9 @@ let root;
 let uidSequence = 0;
 
 /**
- * A body that answers the three questions the gate now asks of one.
- *
- * The cases below are about frontmatter, and they assert an exact code list. A
- * starter or empty body would add the body codes to every one of those lists and
- * bury the fact each case exists to pin, so they hand the gate a written node and
- * the body half is proved on its own, further down.
+ * A body that answers the gate's body questions, so the frontmatter cases'
+ * exact code lists are not buried under body codes; the body half is proved
+ * on its own below.
  */
 const WRITTEN_BODY = [
   '# Written',
@@ -182,26 +170,16 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   it('repeats stay quiet until the count crosses the next multiple', () => {
     patchFrontmatter(root, 'capabilities/entry', { elements: ['elements/a'] });
     assert.equal(drainNodeEligibilityFindings().length, 1);
-    // Same slug, same code, count 1 → 2: below the next multiple, so silent.
+    // Count 1 → 2 is below the next multiple, so silent.
     patchFrontmatter(root, 'capabilities/entry', { elements: ['elements/a', 'elements/b'] });
     assert.deepEqual(drainNodeEligibilityFindings(), []);
-    // Crossing the repeat multiple speaks once more.
     patchFrontmatter(root, 'capabilities/entry', {
       elements: Array.from({ length: 10 }, (_, i) => `elements/x${i}`),
     });
     assert.equal(drainNodeEligibilityFindings().length, 1);
   });
 
-  /**
-   * The two calibration cases the amendment named. They are the whole reason the
-   * dense-parent check has a precondition at all: without one it fires on both,
-   * and a check that flags the vault's single healthy wide parent is a check the
-   * reader learns to ignore.
-   */
-  // 2026-08-01 field trial — an agent handed only the vault answered "there is no
-  // code entrypoint" for 8 of 16 capabilities. The rules demand evidence and
-  // nobody reported its absence. **This does not block** — the write succeeds and
-  // only the signal fires.
+  // Never blocks: the write succeeds and only the signal fires.
   describe('capability without evidence — says so without blocking', () => {
     it('says so once when `elements:` is empty at creation (the write succeeds)', () => {
       writeDoc(root, 'capabilities/no-evidence', {
@@ -254,6 +232,10 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     });
   });
 
+  /**
+   * Without its precondition, dense-parent would flag the vault's single healthy
+   * wide parent.
+   */
   describe('dense parent — the two calibration cases', () => {
     function seedElements(count, { resolved }) {
       const refs = [];
@@ -287,7 +269,6 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       });
       const findings = drainNodeEligibilityFindings();
       assert.deepEqual(findings.filter((f) => f.code === 'dense-parent'), []);
-      // …and nothing else either: every reference resolves.
       assert.deepEqual(findings, []);
     });
 
@@ -299,16 +280,13 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
         frontmatter: { elements: [...real, ...seedElements(91, { resolved: false })] },
       });
       const findings = drainNodeEligibilityFindings();
-      // The gate must not stay quiet about this node — that is the whole point.
       const paths = findings.filter((f) => f.code === 'path-shaped-reference');
       assert.equal(paths.length, 1);
       assert.equal(paths[0].count, 91);
 
-      // But dense-parent specifically must NOT fire, and that is not a miss: it
-      // counts only children that resolve, and this node has one. Counting the 91
-      // would call the defect "healthy growth" and would also mean the node stops
-      // looking dense the moment it is repaired — the metric would be measuring
-      // the bug. Width is not what is wrong here; category is.
+      // dense-parent must not fire: it counts only resolving children (one here).
+      // Counting the unresolved would call the defect growth, and the node would
+      // stop looking dense once repaired. Category is wrong here, not width.
       assert.deepEqual(findings.filter((f) => f.code === 'dense-parent'), []);
     });
 
@@ -316,14 +294,13 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       mkdirSync(join(root, 'elements'), { recursive: true });
       const refs = seedElements(9, { resolved: true });
       resetNodeEligibilityGate();
-      // Grown one write at a time, as `add_relation` does — the shape that made
-      // the 92, and the only way the vault can know a machine did it.
+      // Grown one write at a time, as add_relation does: only the session can tell
+      // a machine did it.
       for (let i = 1; i <= refs.length; i += 1) {
         patchFrontmatter(root, 'capabilities/entry', { elements: refs.slice(0, i) });
       }
       const dense = drainNodeEligibilityFindings().filter((f) => f.code === 'dense-parent');
-      // Spoken once, at the crossing (7 = trigger 6 + 1), then quiet — the same
-      // first-crossing-then-multiples rule the other three checks follow.
+      // Once at the crossing (trigger 6 + 1), then quiet.
       assert.equal(dense.length, 1);
       assert.equal(dense[0].count, 7);
       assert.equal(dense[0].basis, 'bootstrap');
@@ -337,8 +314,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       const refs = seedElements(9, { resolved: true });
       resetNodeEligibilityGate();
       patchFrontmatter(root, 'capabilities/entry', { elements: refs });
-      // One write adding nine is still one batch, so drop the provenance record
-      // to model "these were already on disk when the session opened".
+      // One write adding nine is still one batch: reset to model "already on disk".
       resetNodeEligibilityGate();
       patchFrontmatter(root, 'capabilities/entry', { elements: refs });
       assert.deepEqual(drainNodeEligibilityFindings(), []);
@@ -364,11 +340,8 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     assert.equal(bulk[0].count, 5);
   });
 
-  // Slug flatness (decided 2026-08-01) — the single door where a new identity is
-  // born (writeDoc) rejects a path-shaped slug as a hard error. Unlike the fan-out
-  // gate it blocks, because this is shape validity: measured, 43 path-shaped slugs
-  // came through this door in a regenerated vault and collapsed the on-screen node
-  // count from 68 to 66.
+  // writeDoc, where identities are born, rejects a path-shaped slug as a hard
+  // error: shape validity, since such slugs collapse distinct nodes on screen.
   it('writeDoc rejects a path-style slug under the kind folder', () => {
     assert.throws(
       () =>
@@ -385,7 +358,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   });
 
   it('writeDoc leaves foreign vault nesting outside the schema folders alone', () => {
-    // The user's own folder convention inside their vault — not the gate's business under the local-first contract.
+    // The user's own folder convention: not the gate's business (local-first).
     writeDoc(root, 'services/auth-api', {
       frontmatter: { slug: 'services/auth-api', kind: 'element', title: 'Auth API' },
       body: '',
@@ -393,14 +366,8 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   });
 
   /**
-   * The kind-folder convention, stated at the one moment a slug is minted.
-   *
-   * Measured 2026-09-21: a trial built an entire vault flat at the root —
-   * `slug: option-declaration` with `kind: capability` — and `validate_vault`
-   * answered 0 issues. The builder could not have known a convention it was
-   * never told about. Advisory, and creation-only: a slug cannot be repaired by
-   * a patch, so repeating it on every later write would be an accusation with
-   * no exit.
+   * The kind-folder convention, stated when a slug is minted. Advisory and
+   * creation-only: a patch cannot repair a slug, so repeating it has no exit.
    */
   describe('slug outside its kind folder — said once, never blocked', () => {
     it('reports a capability written at the vault root and names the canonical slug', () => {
@@ -414,7 +381,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
         },
         body: WRITTEN_BODY,
       });
-      // Never blocked: the file lands exactly where the caller asked for it.
+      // Never blocked: the file lands where the caller asked.
       assert.ok(filePath.endsWith('/option-declaration.md'));
       const findings = drainNodeEligibilityFindings().filter((f) => f.code === 'slug-outside-kind-folder');
       assert.equal(findings.length, 1);
@@ -453,8 +420,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     });
 
     it('stays silent for the two kinds that have no folder', () => {
-      // `project` and `document` live at the vault root by schema, so telling
-      // them to move would be telling them to break the convention.
+      // project and document live at the root by schema.
       writeDoc(root, 'atlas', {
         frontmatter: { slug: 'atlas', kind: 'project', title: 'Atlas' },
         body: WRITTEN_BODY,
@@ -490,11 +456,8 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   });
 
   /**
-   * The body half of the same claim. Frontmatter was only ever half a node, and
-   * the door every real build actually uses — the app's ACP session, which has
-   * no independent evaluator lane — never opened the other half. One case here,
-   * for the same reason as the rest of this file: it proves the wiring, and
-   * `meaning-findings.test.mjs` proves what each code decides.
+   * The body half: the app's ACP session, the door real builds use, has no
+   * evaluator lane. Wiring only; `meaning-findings.test.mjs` proves the judgement.
    */
   it('a body that is still the starter scaffold is reported on the creation door', () => {
     writeDoc(root, 'capabilities/labelled', {
@@ -512,8 +475,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   });
 
   it('a cited folder is reported once the write door has grounded a repository root', () => {
-    // Ungrounded first: measuring this vault against whichever directory the
-    // process started in would report drift that is not there.
+    // Ungrounded first: measuring against the process cwd would report false drift.
     configureNodeEligibilityRepoRoot(null);
     patchFrontmatter(root, 'capabilities/entry', { path: 'capabilities' });
     assert.deepEqual(
@@ -529,15 +491,10 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   });
 
   /**
-   * The edge half of the same claim. `add_relation`, `add_relations`,
-   * `replace_relation`, and `patch_concept` all land through `patchFrontmatter`,
-   * so one case at that primitive proves all four inherit it — the split this
-   * file has kept since the council: wiring here, judgement in
-   * `meaning-findings.test.mjs`.
-   *
-   * It needs `previousFrontmatter` to reach the gate, which is the one thing
-   * `commitDoc` received and did not forward until 2026-09-22. Without it every
-   * patch would re-accuse every edge the node already had.
+   * add_relation, add_relations, replace_relation and patch_concept all land
+   * through `patchFrontmatter`, so one case proves all four. It
+   * needs `previousFrontmatter` forwarded by `commitDoc`, or every patch re-accuses
+   * every existing edge.
    */
   it('a dependency added by a relation write is reported when the citing file never names the target', () => {
     mkdirSync(join(root, 'src', 'lib'), { recursive: true });
@@ -551,7 +508,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       configureNodeEligibilityRepoRoot(root);
       patchFrontmatter(root, 'capabilities/entry', { path: 'src/stranger.ts' });
       drainNodeEligibilityFindings();
-      // The relation write itself — what add_relation({type:"depends_on"}) does.
+      // What add_relation({type:"depends_on"}) does.
       patchFrontmatter(root, 'capabilities/entry', {
         dependencies: ['capabilities/helper'],
         relation_notes: { 'capabilities/helper': 'The entry point delegates to the helper.' },
@@ -564,12 +521,8 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       assert.match(findings[0].message, /src\/lib\/helper\.ts/);
 
       /*
-       * A later, unrelated patch must not repeat it. Within one session the
-       * notice map alone would hold, so the reset here is the load-bearing part:
-       * it is the next server run touching the same node, and the only thing
-       * that can still tell the edge is old is `previousFrontmatter` arriving
-       * from `commitDoc`. Without that thread this fires again on a title patch,
-       * for as long as the node exists.
+       * A later unrelated patch must not repeat it. The reset models the next server
+       * run, where only `previousFrontmatter` from `commitDoc` can tell the edge is old.
        */
       resetNodeEligibilityGate();
       patchFrontmatter(root, 'capabilities/entry', { title: 'Entry, renamed' });
@@ -608,12 +561,8 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   });
 
   /**
-   * The starter examples `init` writes, once the vault has outgrown them.
-   *
-   * Wiring only, as everywhere in this file: what the finding decides belongs to
-   * `meaning-findings.test.mjs`. What is proved here is that the creation door
-   * notices, that it attaches the row to the STARTER rather than to the node
-   * just written, and that it says it once however many real nodes follow.
+   * Wiring only: the creation door notices, attaches the row to the starter rather
+   * than the node just written, and says it once however many real nodes follow.
    */
   it('reports the starter example when the first real node of its kind is created', () => {
     writeFileSync(
@@ -626,14 +575,13 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     });
     const findings = drainNodeEligibilityFindings().filter((f) => f.code === 'starter-example-node');
     assert.equal(findings.length, 1);
-    // The row names the file somebody has to act on, not the one just written,
-    // so this and the vault-wide row are the same row and the queue can dedupe.
+    // The row names the file to act on, matching the vault-wide row so the queue dedupes.
     assert.equal(findings[0].slug, 'domains/example-domain');
     assert.deepEqual(findings[0].refs, ['domains/billing']);
     assert.match(findings[0].message, /domains\/billing/);
     assert.match(findings[0].message, /delete_concept/);
 
-    // Said once per starter: a thirty-node build must not repeat it thirty times.
+    // Once per starter: a thirty-node build must not repeat it thirty times.
     writeDoc(root, 'domains/identity', {
       frontmatter: { slug: 'domains/identity', kind: 'domain', title: 'Identity' },
       body: WRITTEN_BODY,
@@ -645,16 +593,14 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   });
 
   /*
-   * `init` writing its own scaffold into an empty folder. Every node is a
-   * starter and nothing is wrong yet — a product that scolds a person for the
-   * file it just wrote them is worse than one that says nothing.
+   * An `init` writing its own scaffold: nothing is wrong yet.
    */
   it('stays silent while the starter is still the only node of its kind', () => {
     writeFileSync(
       join(root, 'domains', 'example-domain.md'),
       `---\nuid: ${nextTestUid()}\nslug: domains/example-domain\nkind: domain\ntitle: Example domain\n---\n`,
     );
-    // A capability arriving does not make the DOMAIN starter stale.
+    // A capability arriving does not make the domain starter stale.
     writeDoc(root, 'capabilities/charge-card', {
       frontmatter: {
         slug: 'capabilities/charge-card',
@@ -672,11 +618,8 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   });
 
   /*
-   * The starter arriving *after* the real node — `add_concept` on the scaffold
-   * address itself. Whatever else that is, it is not news to the person who just
-   * typed it, and the only sentence this door could produce would name the
-   * starter as its own real sibling. The vault-wide pass says it on the next
-   * `validate_vault`, which is the right moment for it.
+   * add_concept on the starter address itself is not news to its writer; the
+   * vault-wide pass reports it on the next validate_vault.
    */
   it('stays silent when the node being created IS the starter example', () => {
     writeDoc(root, 'domains/billing', {
@@ -695,7 +638,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   });
 
   it('a create whose `path:` climbs out of the repository lists nothing and reports nothing', () => {
-    // `path:` is a value an agent wrote, so it is untrusted input at this door.
+    // Security: `path:` is agent-written, untrusted input.
     const outside = join(root, '..', `outside-${Date.now()}`);
     mkdirSync(outside, { recursive: true });
     writeFileSync(join(outside, 'private-notes.txt'), 'not for a tool response\n');
@@ -713,7 +656,6 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       });
       const findings = drainNodeEligibilityFindings();
       assert.deepEqual(findings.filter((f) => f.code === 'folder-only-evidence'), []);
-      // Nothing from outside the repository reached the response at all.
       assert.equal(JSON.stringify(findings).includes('private-notes'), false);
     } finally {
       configureNodeEligibilityRepoRoot(null);
@@ -731,8 +673,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       ['boundary-missing', 'boundary-missing', 'definition-missing', 'uncertainty-missing'],
     );
     resetNodeEligibilityGate();
-    // …while a frontmatter-only write is not. A standing accusation on every
-    // unrelated patch is how `missing-expected-field` became invisible.
+    // …a frontmatter-only write is not, or every unrelated patch repeats the accusation.
     patchFrontmatter(root, 'capabilities/entry', { title: 'Entry, renamed' });
     assert.deepEqual(
       codesFor(drainNodeEligibilityFindings(), 'capabilities/entry').filter((code) =>

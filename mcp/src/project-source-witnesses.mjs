@@ -1,17 +1,10 @@
 /**
- * Source-role witnesses derived from vault documents.
- *
- * A witness is one explicit claim the ontology makes about the code: "this
- * node is implemented at this repo-relative path". The receipt checks each
- * claim against the bounded source inventory; the count of claims that land is
- * the only honest confidence signal a source binding has.
- *
- * This is the MCP/CLI-side derivation, over vault docs. The app derives the
- * same set from its in-memory graph
- * (`src/views/home/lib/project-source-witnesses.ts`); the two are pinned
- * together by `tests/contract/project-source-connect.contract.test.ts`,
- * because a receipt minted by one surface and read by the other must mean the
- * same thing.
+ * Source-role witnesses from vault documents: each is one claim that a node is
+ * implemented at a repo-relative path, and the count that lands is a source
+ * binding's only honest confidence signal. The app derives the same set in
+ * its home view (src/views/home/lib/project-source-witnesses.ts), and the
+ * contract test tests/contract/project-source-connect.contract.test.ts pins the
+ * two together so a receipt means the same on both surfaces.
  */
 
 import { extractProjectMeaningEvidencePaths } from './project-meaning-evidence.mjs';
@@ -63,9 +56,8 @@ function graphNodeId(doc) {
 
 /**
  * @param {{projectSlug: string, docs: ReadonlyArray<{slug: string, frontmatter?: object, title?: string, body?: string}>}} input
- *   `docs` must already be scoped to the project (the same containment the
- *   project graph hash uses). Scoping lives with the caller so the hash and the
- *   witnesses can never disagree about what "this project" means.
+ *   `docs` already scoped to the project by the caller, with the same containment
+ *   as the project graph hash, so the two cannot disagree about "this project".
  */
 export function deriveProjectSourceWitnessesFromDocs(input) {
   const docs = Array.isArray(input?.docs) ? input.docs : [];
@@ -74,9 +66,8 @@ export function deriveProjectSourceWitnessesFromDocs(input) {
   const add = (candidate) => {
     if (!looksLikeSourceWitnessPath(candidate.path)) return;
     const path = normalizeWitnessPath(candidate.path);
-    // One implementation path may legitimately witness different ontology
-    // roles (for example a capability entrypoint and its concrete element).
-    // Deduplicate only the same node's repeated claim, never the path globally.
+    // One path may witness different roles (a capability entrypoint and its
+    // element): deduplicate a node's repeated claim, never the path globally.
     const claim = `${candidate.nodeSlug}\0${path}`;
     if (seenClaims.has(claim)) return;
     seenClaims.add(claim);

@@ -1,5 +1,3 @@
-// Vault mtime conflict detection.
-// Run with `node --test` or `npm run test`.
 
 import assert from "node:assert/strict";
 import {
@@ -69,7 +67,6 @@ test("readDoc returns the mtime", () => {
 test("skips the check when expectedMtime is omitted (existing callers stay compatible)", () => {
   const root = makeVault();
   writeMd(root, "foo", "---\nkind: capability\n---\n");
-  // Without expectedMtime, patchFrontmatter proceeds normally
   patchFrontmatter(root, "foo", { title: "Foo" });
   const after = readFileSync(join(root, "foo.md"), "utf-8");
   assert.match(after, /title: Foo/);
@@ -88,9 +85,7 @@ test("throws VaultConflictError when expectedMtime differs", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
   const stale = getFileMtime(file) - 5000; // 5s ago — simulates an external change
-  // Touch the file once more so its mtime is clearly newer than `stale`. Right
-  // after mkdtemp the mtime is now while stale is 5s ago, but some filesystems
-  // truncate below the millisecond, so set an explicitly different time.
+  // Set an explicitly different mtime: some filesystems truncate below a millisecond.
   const now = Date.now();
   utimesSync(file, now / 1000, now / 1000);
 
@@ -241,7 +236,6 @@ test("a matching read then write round-trip has no conflict", () => {
   const root = makeVault();
   writeMd(root, "foo", "---\nkind: capability\n---\nold body");
   const doc = readDoc(root, join(root, "foo.md"));
-  // Passing doc.mtime straight through as expectedMtime yields no conflict
   patchFrontmatter(
     root,
     "foo",

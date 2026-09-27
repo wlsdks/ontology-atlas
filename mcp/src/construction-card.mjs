@@ -1,26 +1,15 @@
 /**
- * The construction card — the one block that survives a truncating host.
- *
- * Measured in a live Claude Code session: that host keeps only the FIRST 2,048
- * CHARACTERS of an MCP server's `instructions` string. The ontology-atlas
- * instructions are ~39,000 characters, so the meta-model boundary (offset
- * 2,818), the construction lifecycle (4,621), the starting workflows (7,029),
- * write-tool safety (30,024) and the construction rules (35,606) never reached
- * an attached agent at all. Per-tool descriptions, by contrast, are delivered in
- * full, which is why the long-form rules are also reachable on demand through
- * `connection_info({guide})`.
- *
- * So this card is the contract for a model that reads NOTHING ELSE: it must fit
- * inside the surviving window together with one identity line, and it must be
- * enough to construct correctly on its own. `CONSTRUCTION_CARD_MAX_CHARS` and
- * `tests/contract/mcp-instructions-card.contract.test.ts` hold that budget.
+ * The construction card: the block that survives a host truncating the
+ * instructions string (Claude Code keeps only its first 2,048 characters). It must
+ * fit that window with the identity line and suffice alone; long-form rules are
+ * on demand through `connection_info({guide})`. The contract test
+ * tests/contract/mcp-instructions-card.contract.test.ts holds the budget.
  */
 
 /**
- * The identity line ahead of the card is 97 characters plus a blank line, so a
- * card of 1,949 would end exactly on the 2,048th character. 1,940 keeps a small
- * margin under that ceiling; the contract test measures the real end offset in
- * the rendered instructions rather than trusting this number.
+ * A 97-character identity line and a blank line precede the card, so 1,949 would
+ * end on the 2,048th character; 1,940 leaves a margin, and the contract test
+ * measures the real offset.
  */
 export const CONSTRUCTION_CARD_MAX_CHARS = 1940;
 
@@ -44,24 +33,17 @@ export const CONSTRUCTION_CARD_EN = `## Construction card
 6. Long rules on demand: \`connection_info({guide:"<topic>"})\`; topics \`meta_model\`, \`construction\`, \`lifecycle\`, \`write_safety\`, \`workflows\`, \`competency\`.`;
 
 /**
- * The `## Competency answers` layout, for the `competency` guide topic.
- *
- * `finalize_project_meaning` parses that section with
- * `parseProjectCompetencyMarkdown` in `project-meaning-receipt.mjs`, which
- * accepts only the exact shape `renderProjectCompetencyMarkdown` emits. A trial
- * run on an unfamiliar repository had to read that parser's source to learn the
- * shape, because no error and no guide stated it — so it is stated here, and
- * `construction-card.test.mjs` feeds the example below back through the real
- * parser so this text cannot drift away from what the parser accepts.
- */
-/**
- * The one- or two-sentence layout reminder appended to the `finalize_project_meaning`
- * refusal. It lives beside the guide it points at so the refusal and the guide
- * cannot describe two different layouts, and `tools/project-source.mjs` imports
- * it rather than retyping the sentence.
+ * The layout reminder appended to the finalize_project_meaning refusal, beside
+ * the guide it points at; `tools/project-source.mjs` imports it.
  */
 export const COMPETENCY_SECTION_HINT_EN = 'The project body needs exactly one `## Competency answers` section holding five `### <id>: answered|partial|visible-gap` rows in the order scope, domains, abilities, evidence, impact; each row repeats its fixed question verbatim, then a blank line, then the answer, then optional `- Concepts:` / `- Relations:` / `- Evidence:` / `- Paths:` / `- Gap:` rows in that order. Call **connection_info**({guide:"competency"}) for the exact layout and a complete example.';
 
+/**
+ * The `## Competency answers` layout for the `competency`
+ * guide. `parseProjectCompetencyMarkdown` accepts only
+ * what `renderProjectCompetencyMarkdown` emits, and `construction-card.test.mjs`
+ * feeds this example through the real parser so it cannot drift.
+ */
 export const COMPETENCY_ANSWERS_GUIDE_EN = `## Competency answers — the exact section finalize_project_meaning parses
 
 \`finalize_project_meaning\` reads one \`## Competency answers\` section from the

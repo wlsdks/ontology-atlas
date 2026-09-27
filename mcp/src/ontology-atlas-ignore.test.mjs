@@ -69,7 +69,7 @@ describe('refMatchesOntologyAtlasIgnore', () => {
   });
 
   it('escapes regex metacharacters safely', () => {
-    // path.with.dots — `.` is any-char in a regex, but our patterns must treat it as a literal
+    // `.` is any character in a regex but a literal in these patterns.
     assert.equal(refMatchesOntologyAtlasIgnore('path.with.dots', ['path.with.dots']), true);
     assert.equal(refMatchesOntologyAtlasIgnore('pathXwithXdots', ['path.with.dots']), false);
   });

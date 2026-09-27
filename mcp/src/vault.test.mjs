@@ -99,7 +99,7 @@ describe('findPath — edge metadata (R+)', () => {
     mkdirSync(join(pathRoot, 'capabilities'), { recursive: true });
     mkdirSync(join(pathRoot, 'domains'), { recursive: true });
     mkdirSync(join(pathRoot, 'elements'), { recursive: true });
-    // domain → contains → capability → elements (1 hop = capability, 2 hop = element)
+    // domain → contains → capability → elements (1 hop = capability, 2 hops = element)
     writeFileSync(
       join(pathRoot, 'project.md'),
       '---\nslug: project-display\nkind: project\ndomains: [identity]\ncapabilities: [auth]\n---\n',
@@ -162,10 +162,8 @@ describe('findPath — edge metadata (R+)', () => {
   });
 
   it('an ambiguous tail ref draws no edge — a path is never routed through an arbitrary match', () => {
-    // Bug sweep 2026-09-01, reproduced: with capabilities/foo.md and
-    // elements/foo.md both present, the private first-wins map attributed a
-    // `capabilities: [foo]` ref to whichever slug enumerated first, inventing a
-    // path through the wrong node. The shared index nulls the ambiguous ref.
+    // capabilities/foo.md and elements/foo.md both exist, so `capabilities: [foo]`
+    // is ambiguous and must not route a path through either.
     writeFileSync(
       join(pathRoot, 'capabilities', 'foo.md'),
       '---\nslug: capabilities/foo\nkind: capability\n---\n',
@@ -229,7 +227,7 @@ describe('findPath — edge metadata (R+)', () => {
     // The note explains the pair, so it rides along whichever way BFS walked it.
     const reversed = findPath(pathRoot, 'elements/token', 'capabilities/auth');
     assert.equal(reversed.edges[0].rationale, withNote.edges[0].rationale);
-    // A hop without a note carries no `rationale` key at all — never null.
+    // A hop without a note has no `rationale` key at all, never null.
     const withoutNote = findPath(pathRoot, 'project', 'capabilities/auth');
     assert.deepEqual(withoutNote.edges, [{ from: 'project', to: 'capabilities/auth', via: 'capabilities' }]);
     assert.equal('rationale' in withoutNote.edges[0], false);
@@ -389,7 +387,6 @@ describe('actionable error messages', () => {
   it('deleteDoc not-found (substring-similar slug) lists similar slug candidates', () => {
     let caught;
     try {
-      // The bad slug contains 'mcp-server' as a substring, so candidates can match.
       deleteDoc(errRoot, 'capabilities/mcp-server-x');
     } catch (e) {
       caught = e;
@@ -418,10 +415,8 @@ describe('UID identity write gate', () => {
   const uidB = '11890f3e-7b5d-4c0a-8f14-123456789abc';
 
   /**
-   * Mimics a node a person typed straight into an editor — no `uid:`. The point is
-   * that it does not use `writeDoc`: that door demands identity, so this state
-   * cannot be created through it. Real users just make the file in Obsidian, vim,
-   * or the GitHub web editor.
+   * A node typed straight into an editor, with no `uid:`. Not through writeDoc,
+   * which demands identity, so the state could not exist otherwise.
    */
   const handWrite = (slug, title) => {
     const filePath = join(root, `${slug}.md`);
@@ -464,35 +459,14 @@ describe('UID identity write gate', () => {
   });
 
   /**
-   * **Filling an absent identity for the first time is not changing an identity**
-   * (2026-08-08).
-   *
-   * A node a person writes by hand in Obsidian or an editor has no `uid:`. In that
-   * state **every graph command on the whole vault dies** (`overview`, `health`,
-   * `agent-brief`, `query_ontology` — the compile stops on a node identity error).
-   * Yet an agent carrying only Atlas MCP had **no door at all** to fix it:
-   *
-   * | attempt | old response |
-   * |---|---|
-   * | `patch_concept` (other fields, no uid) | "`uid:` must be a UUIDv4" |
-   * | `patch_concept({uid: <new value>})` | "`uid:` is immutable" |
-   * | `add_concept` (same slug) | "already exists; use patch" |
-   *
-   * The three pointed at each other in a closed loop. The cause: the immutability
-   * check did not distinguish **changing a value that was there from filling one
-   * that was not**. With no value to change, nothing is being changed — and the
-   * theft risk (taking another node's identity) is already blocked separately by
-   * the collision check in `assertNodeIdentity`.
-   *
-   * It is also a local-first promise problem: we say «you can just write the
-   * markdown by hand», and then a hand-written node killed the vault with recovery
-   * blocked.
+   * Filling an absent identity is not changing one. A hand-written node has
+   * no `uid:` and stops every graph command, and patch, set-uid and add each refused
+   * to repair it. Theft of another node's identity stays blocked
+   * by `assertNodeIdentity`'s collision check.
    */
   it('the first write mints a uid for a node without one, recovering a hand-written node', () => {
-    // A file a person typed by hand in an editor — it does not go through `writeDoc`.
-    // (Going through it would demand a uid, so this state could not exist at all.)
     handWrite('capabilities/hand-written', 'Hand written');
-    // ① Filled even with no value supplied — an ordinary patch of another field revives it.
+    // ① An ordinary patch of another field fills it.
     const patched = patchFrontmatter(root, 'capabilities/hand-written', {
       description: 'now repaired',
     });
@@ -500,7 +474,7 @@ describe('UID identity write gate', () => {
     assert.equal(nodeUidIssue(patched.frontmatter.uid), null);
     assert.equal(patched.mintedUid, patched.frontmatter.uid, 'the response must say it filled the uid');
 
-    // ② Once filled it is immutable again — this repair must not pierce immutability.
+    // ② Once filled it is immutable again.
     const settled = patched.frontmatter.uid;
     assert.throws(
       () => patchFrontmatter(root, 'capabilities/hand-written', { uid: uidB }),
@@ -511,12 +485,12 @@ describe('UID identity write gate', () => {
       /immutable|uid/i,
     );
 
-    // ③ The caller may also supply the value directly (an agent that mints its own UUID).
+    // ③ The caller may supply the value (an agent minting its own UUID).
     handWrite('capabilities/hand-written-2', 'HW2');
     const filled = patchFrontmatter(root, 'capabilities/hand-written-2', { uid: uidB });
     assert.equal(filled.frontmatter.uid, uidB);
 
-    // ④ Filling in someone else's identity is still blocked — the collision check lives.
+    // ④ Taking another node's identity is still blocked.
     handWrite('capabilities/hand-written-3', 'HW3');
     assert.throws(
       () => patchFrontmatter(root, 'capabilities/hand-written-3', { uid: settled }),
@@ -565,7 +539,6 @@ describe('extractSummaryExcerpt (R+)', () => {
   it('a body of blocks only falls back to the trimmed original (no prose)', () => {
     const body = '| a | b |\n|---|---|\n| 1 | 2 |';
     const r = extractSummaryExcerpt(body);
-    // Fallback when no prose is found — the whole body, within the cap
     assert.match(r, /\|/);
   });
 
@@ -596,9 +569,8 @@ describe('extractSummaryExcerpt (R+)', () => {
 });
 
 describe('describeBodyDelivery says a truncated body is truncated', () => {
-  // A body carrying exactly what the construction rules demand: definition,
-  // evidence, confidence, inclusion/exclusion. The excerpt takes only the first
-  // paragraph, so every remaining section stays outside the response.
+  // A body with what the construction rules demand; the excerpt takes only the
+  // first paragraph.
   const RULED_BODY = [
     '## 정의',
     '',
@@ -633,9 +605,8 @@ describe('describeBodyDelivery says a truncated body is truncated', () => {
   });
 
   it('a paragraph differing only in line breaks is not truncated (a character-count false positive)', () => {
-    // An excerpt joins lines with spaces, so its length differs from the original.
-    // Deciding "truncated" on that alone puts a false warning on every fully
-    // delivered body.
+    // An excerpt joins lines with spaces, so its length differs from the original
+    // without anything being cut.
     const body = '\n첫 줄.\n둘째 줄.\n';
     const { info } = describeBodyDelivery(body);
     assert.equal(info.truncated, false);
@@ -704,13 +675,9 @@ describe('detectDuplicateTitle', () => {
 });
 
 /**
- * The door every real ontology build actually uses.
- *
- * `add_concept` fills the starter scaffold when the caller passes no body, so
- * the default write is exactly the shape the field trial measured: a node whose
- * body is a template, in a vault an agent will later be handed without the
- * source. This asserts that the write still succeeds — construction rule 5 —
- * and that the reader is told what is still owed, then that saying it clears it.
+ * add_concept fills the starter scaffold when no body is passed. The write still
+ * succeeds (construction rule 5), the reader is told what is owed, and writing
+ * it clears the finding.
  */
 describe('write-time meaning findings — the default body is reported, a written one is not', () => {
   beforeEach(() => {
@@ -738,7 +705,7 @@ describe('write-time meaning findings — the default body is reported, a writte
       },
       body: defaultBody('capability', 'Folder Access'),
     });
-    // The write is never blocked; the file is on disk with the scaffold intact.
+    // Never blocked: the file is on disk with the scaffold.
     assert.ok(filePath.endsWith('capabilities/folder-access.md'));
     const codes = drainNodeEligibilityFindings()
       .filter((finding) => finding.slug === 'capabilities/folder-access')
@@ -760,8 +727,7 @@ describe('write-time meaning findings — the default body is reported, a writte
       body: defaultBody('capability', 'Folder Access'),
     });
     drainNodeEligibilityFindings();
-    // A fresh ledger, so the silence below is the body's doing rather than the
-    // first-crossing-then-multiples rule keeping quiet on its own.
+    // A fresh ledger, so the silence below is the body's doing, not the notice rule.
     resetNodeEligibilityGate();
     updateDoc(root, 'capabilities/folder-access', {
       body: [

@@ -1,17 +1,6 @@
-// A freshly created vault does not report itself as faulty.
-//
-// Why (measured 2026-08-17): running `health` right after `init` gave:
-//
-//   ⚠ meaning_assessment  … first project: invalid (assessment_input_invalid)
-//
-// The user had done nothing, and the tool said "the input is wrong". The cause was
-// "not finalised yet" and "broken" taking the same branch (the missing-receipt
-// branch of `readProjectMeaningAssessment` fell through to `invalidAssessment`).
-//
-// This test locks the **first impression**. The two checks before it
-// (`meaning-not-authored`) cover the evaluator itself; this one covers whether the
-// path *to* that evaluator is intact — it was broken, and fixing only the evaluator
-// left the screen unchanged.
+// A freshly created vault does not report itself as faulty: the missing-receipt
+// branch of `readProjectMeaningAssessment` must say "not finalised yet". The
+// evaluator itself is covered by `meaning-not-authored`; this covers the path to it.
 
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -58,7 +47,7 @@ test('also says what to do next', () => {
 });
 
 test('a missing vault path is still invalid input', () => {
-  // Collapsing this back together undoes the fix — genuinely wrong input must still be called that.
+  // Genuinely wrong input must still be called wrong.
   const assessment = readProjectMeaningAssessment({ ...input(freshVault()), vaultRoot: '' });
   assert.equal(assessment.topGap.id, 'assessment_input_invalid');
 });

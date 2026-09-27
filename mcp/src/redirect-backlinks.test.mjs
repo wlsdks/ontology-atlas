@@ -1,5 +1,3 @@
-// redirectBacklinks smoke test — the core operation behind rename and merge.
-// Run with `node --test` or `npm run test`.
 
 import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync } from "node:fs";
@@ -90,7 +88,6 @@ test("dedup: does not add nextSlug again when already present", () => {
   );
   redirectBacklinks(root, "old-slug", "new-slug");
   const after = readMd(root, "ref");
-  // both old → new becomes [new-slug, new-slug] → dedup [new-slug]
   assert.match(after, /dependencies: \[new-slug\]/);
   rmSync(root, { recursive: true, force: true });
 });
@@ -128,9 +125,8 @@ test("also replaces body links [[slug]] and (slug.md)", () => {
 });
 
 test("body link — also replaces alias, heading, tail (md) and path-prefixed forms", () => {
-  // Caught in the 2026-09-01 review: only the bare [[slug]]/[[tail]]/(slug.md)
-  // forms were rewritten, so an alias or anchor link dangled after a confirmed
-  // rename — and pointed at a deleted file after a merge.
+  // Alias and anchor links must be rewritten too, or they dangle after a rename
+  // and point at a deleted file after a merge.
   const root = makeVault();
   writeMd(root, "capabilities/auth", "---\nkind: capability\ntitle: Auth\n---\n");
   writeMd(
@@ -218,7 +214,6 @@ test("also redirects an inline string key (e.g. domain)", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-// Renaming the key of an object map value (as used by relation_notes).
 test("renaming an object map key keeps its why note attached", () => {
   const root = makeVault();
   writeMd(
@@ -327,8 +322,8 @@ test("findBacklinks does not mistake an ambiguous tail for an exact target backl
 });
 
 test("findBacklinks — includeAmbiguousTailRefs opts candidate referrers in, marked", () => {
-  // delete_concept's safety gate uses this: a doc whose ref only *could* mean
-  // the target must still block an un-forced delete (bug sweep 2026-09-01).
+  // delete_concept's gate: a doc whose ref only could mean the target must still
+  // block an unforced delete.
   const root = makeVault();
   writeMd(root, "capabilities/shared-name", "---\nkind: capability\n---\n");
   writeMd(root, "elements/shared-name", "---\nkind: element\n---\n");
@@ -347,9 +342,8 @@ test("findBacklinks — includeAmbiguousTailRefs opts candidate referrers in, ma
 });
 
 test("redirectBacklinks — the surviving doc's refs to the absorbed node are dropped, never turned into self-edges", () => {
-  // Reproduced (bug sweep 2026-09-01): merging capabilities/b into
-  // capabilities/a where a carried `relates: [capabilities/b]` wrote
-  // `relates: [capabilities/a]` — a self-loop on disk.
+  // Merging b into a where a carries `relates: [capabilities/b]` must not write a
+  // self-loop.
   const root = makeVault();
   writeMd(
     root,
@@ -362,8 +356,7 @@ test("redirectBacklinks — the surviving doc's refs to the absorbed node are dr
   const result = redirectBacklinks(root, "capabilities/b", "capabilities/a", { dryRun: false });
 
   assert.equal(result.totalUpdated, 2);
-  // A removal is reported with `after` omitted — the update-row contract's
-  // removal shape (mcp-verify rejects null / empty-array / empty-map values).
+  // A removal omits `after` (mcp-verify rejects null, [] and {} values).
   const survivorUpdate = result.updates.find((row) => row.slug === "capabilities/a");
   for (const keyRow of survivorUpdate.afterKeys) {
     assert.equal("after" in keyRow, false, `${keyRow.key} should be reported as a removal`);
@@ -377,12 +370,8 @@ test("redirectBacklinks — the surviving doc's refs to the absorbed node are dr
 });
 
 test("a path: evidence string is not a reference; the tail-suffix clause leaves it alone", () => {
-  // Measured regression (2026-08-01, while flattening the dogfood vault): the
-  // rename `elements/src/widgets/docs-vault` → `elements/docs-vault-widget`
-  // rewrote **another node's** `path: src/entities/docs-vault` to
-  // `…/docs-vault-widget`, pointing it at a file that does not exist. Only
-  // reference slots (domain plus the graph arrays) may be rewritten; evidence
-  // slots (`path` and other arbitrary string keys) must be preserved.
+  // Only reference slots (domain and the graph arrays) are rewritten; evidence
+  // such as `path:` is preserved, or a tail-suffix rename points it at a missing file.
   const root = makeVault();
   writeMd(root, "elements/docs-vault", "---\nkind: element\ntitle: DV\n---\n");
   writeMd(
@@ -400,9 +389,7 @@ test("a path: evidence string is not a reference; the tail-suffix clause leaves 
     dryRun: false,
   });
 
-  // References follow.
   assert.match(readMd(root, "capabilities/cap"), /elements\/docs-vault-widget/);
-  // Evidence stays.
   assert.match(readMd(root, "elements/other"), /path: src\/entities\/docs-vault\n/);
   rmSync(root, { recursive: true, force: true });
 });
@@ -443,10 +430,8 @@ test("a deferred plan carries the exact snapshot bytes and mtime it will rewrite
 });
 
 /*
- * A kind change moves an entry between the lists named for kinds (2026-09-26, map-edit review).
- * reclassify_concept rewrote a domain's `capabilities: [capabilities/x]` to
- * `capabilities: [elements/x]` — an element in the capability list, resolving, flagged by
- * nothing, and counted by the dense-parent check as a capability child.
+ * A kind change moves an entry between kind-named lists: an element must not stay
+ * in `capabilities:`, where it resolves silently and counts as a capability.
  */
 test("targetKind — a typed list entry moves to the list for the new kind", () => {
   const root = makeVault();

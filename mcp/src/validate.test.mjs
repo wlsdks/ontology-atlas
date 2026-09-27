@@ -5,14 +5,9 @@ import { isValidVaultTitle, validateVaultDocument } from './validate.mjs';
 const TEST_UID = '00000000-0000-4000-8000-000000000001';
 
 /**
- * A finished body, per kind.
- *
- * Since 2026-09-22 this validator reads the prose too, so a document written to
- * test one frontmatter rule has to carry a body that answers every meaning
- * question — otherwise the case under test arrives buried under four findings
- * about a body nobody meant to write. These are the shortest bodies that do:
- * one non-circular sentence, both boundary sides where the kind has them, and a
- * stated unknown.
+ * The shortest body per kind that answers every meaning question (one
+ * non-circular sentence, both boundary sides where the kind has them, a stated
+ * unknown), so frontmatter cases are not buried under body findings.
  */
 const FINISHED_BODY = {
   domain: '\n# Area\n\n' +
@@ -30,7 +25,6 @@ const FINISHED_BODY = {
     '## Uncertainty\n\n- The older build deep-link fallback was not read\n',
 };
 
-/** The finished capability body, for the `relation_notes` cases below. */
 const CAPABILITY_BODY = FINISHED_BODY.capability;
 
 describe('isValidVaultTitle', () => {
@@ -99,9 +93,8 @@ describe('validateVaultDocument (R11 #23)', () => {
   });
 
   it('recognises all six canonical kinds (capability/element need a domain to be clean)', () => {
-    // capability and element warn with missing-expected-field when `domain` is
-    // absent. This test only checks that the canonical kind is recognised, so
-    // `domain` is filled in to keep it clean.
+    // `domain` is filled so a capability or element stays clean and only kind
+    // recognition is tested.
     const cases = [
       { k: 'project' },
       { k: 'domain' },
@@ -112,8 +105,6 @@ describe('validateVaultDocument (R11 #23)', () => {
     ];
     for (const { k, extra } of cases) {
       const extraLine = extra ? `\n${extra}` : '';
-      // A finished body where the kind has body duties, so the only thing this
-      // case can fail on is the kind itself.
       const body = FINISHED_BODY[k] ?? '';
       const r = validateVaultDocument(`---\nuid: ${TEST_UID}\nkind: ${k}${extraLine}\n---\n${body}`);
       assert.equal(r.ok, true, `kind=${k}`);
@@ -142,8 +133,7 @@ describe('validateVaultDocument (R11 #23)', () => {
   });
 
   it('a scalar whose quote closes early is an error, not a silent rename', () => {
-    // docs/ontology/elements/agents-destination.md, 2026-08-31: the node loaded,
-    // validate said 0 issues, and the map rendered the stray quote.
+    // A stray quote: the node loaded and validated clean while the map rendered it.
     const r = validateVaultDocument(
       `---\nuid: ${TEST_UID}\nkind: element\ndomain: domains/agent-integration\ntitle: Agents Destination\ndisplay_ko: "에이전트" 목적지\n---\n`,
     );
@@ -179,11 +169,7 @@ describe('validateVaultDocument (R11 #23)', () => {
 
 describe('the meaning half — the body checks the person can finally run', () => {
   /*
-   * Until 2026-09-22 every one of these was reported to the *agent* at the write
-   * door and to nobody else, so an agent could read six findings and tell the
-   * person the vault validated clean without contradicting a single surface the
-   * person could check. These cases are that gap closed: the same judgements,
-   * from the same module, on the validator the owner runs.
+   * The write-door judgements, from the same module, on the validator a person runs.
    */
   it('a body that opens straight into headings has no definition', () => {
     const r = validateVaultDocument(
@@ -237,8 +223,7 @@ describe('the meaning half — the body checks the person can finally run', () =
     const raw =
       `---\nuid: ${TEST_UID}\nkind: element\ndomain: domains/auth\ntitle: Role\n---\n` +
       FINISHED_BODY.element;
-    // Position is not a fact about bytes: a caller holding only the text is
-    // never told a node is in the wrong place.
+    // Position is not a fact about bytes: a text-only caller is never told a node is misplaced.
     assert.deepEqual(validateVaultDocument(raw).issues, []);
     assert.deepEqual(
       validateVaultDocument(raw, { slug: 'token-rotator' }).issues.map((issue) => issue.code),
@@ -265,14 +250,11 @@ describe('the meaning half — the body checks the person can finally run', () =
 
 describe('relation_notes guard (swallowed entries and orphaned keys)', () => {
   const head = `---\nuid: ${TEST_UID}\nkind: capability\ntitle: ACP\ndomain: domains/agent-integration\n`;
-  /** Every case here is about frontmatter, so the body is always the finished one. */
   const tail = `---\n${CAPABILITY_BODY}`;
 
   it('an unquoted value that ran past its comma leaves a pseudo-key: orphaned-relation-note', () => {
-    // The exact shape found in docs/ontology/capabilities/acp-runtime.md on
-    // 2026-08-30: the first value ends at the comma, and the rest of the sentence
-    // plus the next entry's slug become the second KEY. The value test alone saw
-    // nothing, so validate_vault reported 0 problems.
+    // An unquoted value ends at its comma, so the rest plus the next slug become a
+    // key; the value test alone sees nothing.
     const r = validateVaultDocument(
       head +
         'dependencies: [capabilities/mcp-server]\nrelates: [capabilities/reviewed-ontology-writing]\n' +

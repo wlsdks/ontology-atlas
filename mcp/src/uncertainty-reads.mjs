@@ -1,32 +1,16 @@
-// Turn a node's `## Uncertainty` prose into the next reads it asks for.
-//
-// The construction rules make every node record what its author did not read.
-// That record is the most honest thing in a vault and, until now, the most
-// inert: it is prose, so nothing could queue it. This module is the one place
-// that reads those lines as work — which file, which lines, and what kind of
-// gap — so `growth_plan` can hand the next agent a read instead of a feeling.
-//
-// Pure and deterministic: no file system, no clock, no network. It is handed a
-// body that somebody else loaded and returns rows. Everything it claims is in
-// the statement it quotes, so a wrong classification is visible next to its
-// evidence rather than hidden behind it.
+// Turns a node's `## Uncertainty` prose into the reads it asks for (which file,
+// which lines, which kind of gap), so growth_plan can queue them. Pure and
+// deterministic over a body someone else loaded; each row quotes its statement,
+// so a wrong classification sits beside its evidence.
 
 import { uncertaintySectionLines } from './meaning-findings.mjs';
 
 /**
- * The kinds, in the order a reader should work them.
- *
- * A named range is first because it is the cheapest complete answer: the author
- * already found the file and stopped partway, so the remaining read is bounded.
- * A whole unread file is next, then an area nobody opened, then something that
- * was never run, then a claim taken on somebody else's word. `other` is last
- * and deliberately kept: a line under this heading that matches no phrasing is
- * still the author saying something is unsettled, and dropping it would teach
- * the vault that only recognised wording counts.
- *
- * Module-private on purpose: `cli/src/lib/query-result-contract.mjs` keeps its
- * own copy because the CLI ships without this package, and that copy is a
- * contract against the response rather than an import of the producer.
+ * Kinds in working order: a named range (a bounded remainder) first, then a
+ * whole unread file, an unopened area, something never run, a claim taken on
+ * someone's word, and `other`, kept so unrecognised wording still
+ * counts. `cli/src/lib/query-result-contract.mjs` keeps its own copy, since the CLI ships
+ * without this package; it is a contract on the response, not an import.
  */
 const UNCERTAINTY_READ_KINDS = Object.freeze([
   'unread-range',
@@ -43,23 +27,16 @@ const KIND_ORDER = new Map(UNCERTAINTY_READ_KINDS.map((kind, index) => [kind, in
 const UNREAD_PHRASE =
   /\bnot\s+(?:re-?)?read\b|\bunread\b|\bnot\s+traced\b|\bnot\s+scanned\b|\bnot\s+inspected\b|\bwithout\s+re-?reading\b/i;
 /**
- * "Read from the module header", "by name", "by layout", "the feature's file
- * layout only": the author saw the outside of the file and not its body. On
- * this repository's own vault (2026-09-23) 22 of 107 Uncertainty lines were
- * written this way and every one fell to `other`, so the body each of them
- * names as unread was never queued.
+ * "Read from the module header", "by name", "by layout": the author saw the
+ * outside of the file, not its body.
  */
 const SURFACE_ONLY_PHRASE =
   /\bread\s+from\s+(?:the|its)\s+(?:module\s+)?header\b|\bread\s+from\b[^.;]*\bheaders\b|\bheaders?\s+only\b|\bonly\s+from\s+their\s+headers\b|\bby\s+(?:name|layout)\b(?!\s+only)|\b(?:file|folder)\s+layout\b|\bgrammar\s+comment\b/i;
-/** "was not opened", "never opened" — an area the author did not enter at all. */
+/** "was not opened", "never opened": an area the author did not enter at all. */
 const UNOPENED_PHRASE = /\bnot\s+opened\b|\bnever\s+opened\b/i;
 /**
- * "was not run", "never run", "not executed", "no code was executed".
- *
- * `never` sits beside `not` for the same reason it does in the unread family
- * above: this vault's authors write both, and reading only one of them would
- * file "it was never run in this session" under `other` while filing "it was
- * not run" under the kind that names the work.
+ * "was not run", "never run", "not executed", "no code was executed". `never` sits
+ * beside `not` because authors write both.
  */
 const NOT_EXECUTED_PHRASE =
   /\b(?:not|never)\s+(?:run|executed|exercised|rendered|tested)\b|\bno\s+code\s+was\s+executed\b|\bnothing\b[^.;]{0,40}\bwas\s+(?:run|rendered|exercised)\b|\bno\s+\w+\s+was\s+(?:run|rendered|exercised|taken)\b/i;
@@ -73,10 +50,8 @@ const UNVERIFIED_PHRASE =
  */
 const RANGE_PATTERN = /\blines?\s+(\d[\d,]*)(?:\s*[–—-]\s*|\s+(?:to|through)\s+)?(\d[\d,]*)?/gi;
 /**
- * `from line 276 to line 470`: the shape a builder writes for a function's
- * extent. Read before RANGE_PATTERN so the two `line N` inside it are not
- * counted as two one-line ranges (measured on a Rust trial vault, 2026-09-23,
- * where this sentence was the one that held the missed answer).
+ * Reads `from line 276 to line 470` before RANGE_PATTERN so its two `line N` are
+ * not counted as two one-line ranges.
  */
 const FROM_TO_PATTERN = /\bfrom\s+line\s+(\d[\d,]*)\s+(?:to|through|until)\s+line\s+(\d[\d,]*)/gi;
 /** `through line 414`, `up to line 414`: the end of whatever the author read before it. */
@@ -87,20 +62,14 @@ const DENOMINATOR_AFTER = /^\s+of\s+(\d[\d,]*)\b/;
 const PATH_AFTER = /^\s+of\s+(?:the\s+)?(`?)([^\s`,;]+)\1/;
 
 /**
- * Which way a span points: the lines the author read, or the lines they did not.
- *
- * "Only lines 141–220 were read" names what was read, and the next read is
- * everything else; queueing 141–220 sends the reader back over ground already
- * covered. The first polarity phrase after the span decides, then the nearest
- * before it; with neither, a span in an Uncertainty line is taken as unread,
- * which is what the heading means.
+ * Whether a span names lines read or unread: "Only lines 141–220 were read"
+ * means the rest is next. The first polarity phrase after the span decides,
+ * then the nearest before it; with neither, the Uncertainty heading means unread.
  */
 const READ_POLARITY = /\b(?:was|were)\s+read\b(?!\s+(?:only\s+)?(?:in|as)\s+(?:an?\s+)?outline)|\bread\s+(?:directly|in\s+full|line\s+by\s+line)\b/gi;
 /**
- * "read only in outline", "seen as an outline", "outline only": the author saw
- * the declarations and not the bodies, so the lines themselves are unread. A
- * Rust trial builder wrote six of nineteen Uncertainty lines this way and every
- * one fell to `other`, including the one holding the answer a reader then missed.
+ * "read only in outline", "seen as an outline", "outline only": declarations
+ * seen, bodies unread.
  */
 const OUTLINE_ONLY_PHRASE = /\b(?:read|seen)\s+(?:only\s+)?(?:in|as)\s+(?:an?\s+)?outline\b|\boutline\s+only\b|\bonly\s+in\s+outline\b/i;
 const UNREAD_POLARITY = new RegExp(
@@ -142,13 +111,9 @@ function stripEdges(token) {
 }
 
 /**
- * Is this token an address in the repository?
- *
- * Two bars, because the two ways a path is written carry different risk. Inside
- * backticks the author already marked it as code, so a bare file name such as
- * `schema.mjs` counts. Outside them a token needs both a separator and an
- * extension, otherwise every sentence ending in a word with a dot becomes a
- * file and the queue fills with prose.
+ * Is this token a repository address? Inside backticks a bare file name counts;
+ * outside, a separator and an extension are both required, or prose words with
+ * a dot become files.
  */
 function looksLikePath(token, { backticked }) {
   if (!token || /\s/.test(token)) return false;
@@ -192,12 +157,9 @@ function locatePaths(statement) {
 }
 
 /**
- * Which file a range belongs to.
- *
- * The nearest path written before it wins, because English puts the file first:
- * "lines 1–110 of X" is the exception and falls back to the first path in the
- * sentence. With no path in the sentence at all the node's own `path:` is the
- * only candidate left, and a range with no file is worse than useless.
+ * The file a range belongs to: the nearest path before it (English names the
+ * file first), else the first path in the sentence ("lines 1–110 of X"), else
+ * the node's own `path:`.
  */
 function pathForRange(index, paths, fallbackPath) {
   let chosen = null;
@@ -234,12 +196,9 @@ function polarityAt(statement, start, end) {
 }
 
 /**
- * Every span in a statement, as the lines still to read.
- *
- * A span the author read becomes its complement when the file's end is known
- * (a denominator, or a later "through line N"); otherwise it is kept as a
- * `readRanges` entry so the action can say "beyond lines 141–220" rather than
- * send the reader back over them.
+ * Every span as the lines still to read. A read span becomes its complement
+ * when the file's end is known (a denominator or a later "through line N"),
+ * otherwise it stays in `readRanges` so the action can say "beyond lines …".
  */
 function locateRanges(statement, paths, fallbackPath) {
   const spans = [];
@@ -301,12 +260,9 @@ function locateRanges(statement, paths, fallbackPath) {
 }
 
 /**
- * Which gap this statement records.
- *
- * Tested in the order the kinds are worked, so a sentence that says several
- * things lands on the most actionable one. A partial read beats a whole unread
- * file: the author who wrote "lines 1–110 of 2790 were read" left a bookmark,
- * and that bookmark is the cheapest thing in the queue.
+ * Which gap a statement records, tested in working order so a sentence saying
+ * several things lands on the most actionable; a partial read is a bookmark,
+ * the cheapest item in the queue.
  */
 function classify(statement, { hasRange, hasReadRange }) {
   const unread =
@@ -338,14 +294,10 @@ function proposeAction({ slug, path, range, readRange }) {
 }
 
 /**
- * The reads one node's uncertainty asks for.
- *
- * `path` is the node's own frontmatter path and is used only as an inheritance:
- * a statement that says something was not read without naming a file means the
- * file this node is about. That inheritance is deliberately narrow — an area
- * nobody opened, a command nobody ran and a claim nobody checked are not
- * automatically about the node's own entry point, so those kinds stay pathless
- * and say so rather than pointing a reader at the wrong file.
+ * The reads one node's uncertainty asks for. The node's own `path` is inherited
+ * only by a statement that something was not read without naming a file; an
+ * unopened area, an unrun command or an unchecked claim stay pathless rather
+ * than point at the wrong file.
  */
 export function extractUncertaintyReads({ slug, kind, path, body, title } = {}) {
   if (typeof slug !== 'string' || !slug) return [];
@@ -387,12 +339,8 @@ export function extractUncertaintyReads({ slug, kind, path, body, title } = {}) 
 }
 
 /**
- * The same rows, ordered and carrying the sentence that acts on them.
- *
- * Ordering lives here rather than in the caller so the CLI, the MCP response
- * and any later surface all read the same queue in the same order. Stable
- * within a kind and a slug, so a node whose uncertainty lists three things
- * keeps the order its author wrote them in.
+ * Rows ordered and carrying their action sentence, here so every surface reads
+ * one queue in one order. Stable within a kind and slug, keeping the author's order.
  */
 export function orderUncertaintyReads(rows) {
   return [...rows]
@@ -415,8 +363,7 @@ export function orderUncertaintyReads(rows) {
       readRanges: row.readRanges ?? [],
       proposedAction: proposeAction({
         slug: row.slug,
-        // The range's own file wins over the first path named: a sentence that
-        // mentions two files and bounds one of them means the bounded one.
+        // The bounded file wins over the first path named.
         path: row.ranges[0]?.path ?? row.readRanges?.[0]?.path ?? row.paths[0] ?? null,
         range: row.ranges[0] ?? null,
         readRange: row.readRanges?.[0] ?? null,

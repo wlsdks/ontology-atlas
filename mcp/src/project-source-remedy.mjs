@@ -1,17 +1,7 @@
 /**
- * Project source remedy — turns a diagnosis into something callable.
- *
- * `projectSource.nextAction.id` has always been a *name*. A name is not a
- * prescription: the app said "connect the source" while no tool, command, or
- * button existed that could. This module is the single mapping from every
- * action id in the receipt vocabulary to the exact MCP tool call and CLI
- * command that performs it — so an agent can execute it and a screen can
- * render it as one button, from the same table.
- *
- * It adds no new gap/action vocabulary. The ids come from
- * `project-source-receipt.mjs`; this only says what runs them.
- *
- * Pure. MCP callers and contract tests consume this table directly.
+ * Maps every receipt action id to the exact MCP call and CLI command that
+ * performs it, so an agent can run it and a screen can render one button from
+ * the same table. Adds no vocabulary (ids come from the receipt). Pure.
  */
 
 const PROJECT_SOURCE_REMEDY_CONTRACT = 'projectSourceRemedy:v1';
@@ -96,7 +86,7 @@ function connectCliArguments(projectSlug, spec, target) {
 
 /**
  * @param {{projectSlug?: string, nextAction?: {id?: string, target?: string}}} view
- *   a `ProjectSourceView` (the shape `agent_brief.projectSource` returns).
+ *   a `ProjectSourceView` (`agent_brief.projectSource`)
  */
 export function projectSourceRemedy(view) {
   const actionId = view?.nextAction?.id ?? null;
@@ -145,7 +135,7 @@ export function projectSourceRemedy(view) {
   };
 }
 
-/** Reversal is a first-class part of the prescription, not an afterthought. */
+/** Reversal is part of the prescription. */
 export function undoPlan(projectSlug) {
   if (!projectSlug) return null;
   return {

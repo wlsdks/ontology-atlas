@@ -3,9 +3,8 @@ import { describe, it } from 'node:test';
 
 import { extractUncertaintyReads, orderUncertaintyReads } from './uncertainty-reads.mjs';
 
-// The extractor reads one thing: the `## Uncertainty` section every node in a
-// constructed vault carries. Its whole value is that the row it returns can be
-// checked against the sentence it quotes, so every case here pins both.
+// Each returned row must be checkable against the sentence it quotes, so every
+// case pins both.
 
 function body(uncertainty, lead = 'A capability that does something.') {
   return `${lead}\n\n## Uncertainty\n${uncertainty}\n`;
@@ -50,9 +49,7 @@ describe('extractUncertaintyReads — what the author did not read, as a read', 
   });
 
   /*
-   * "Lines 1–110 of 2790 were read" names what WAS read. Until 2026-09-23 the
-   * queue handed back 1–110 as the next read, sending the reader over ground
-   * already covered; the lines still to read are 111–2790.
+   * "Lines 1–110 of 2790 were read" names what was read; the next read is 111–2790.
    */
   it('turns a bounded partial read into the lines still unread', () => {
     const [row] = extract(
@@ -85,16 +82,8 @@ describe('extractUncertaintyReads — what the author did not read, as a read', 
   });
 
   /*
-   * Measured on a Rust trial vault (2026-09-23): six of nineteen Uncertainty
-   * lines said "read only in outline" and fell to `other`, one of them holding
-   * the answer a sealed reader then missed; "from line 276 to line 470" was
-   * split into two one-line spans; and "lines 138-414 of src/cli.rs" was filed
-   * under an earlier file in the same sentence.
-   */
-  /*
-   * This repository's own vault (2026-09-23): 49 of 107 Uncertainty lines fell
-   * to `other`, most of them "read from the module header", "by layout" or "was
-   * never exercised". Each names a body nobody read or a thing nobody ran.
+   * "Read from the module header", "by layout", "never exercised": each names a
+   * body nobody read or a thing nobody ran, not `other`.
    */
   it('reads a surface-only read, an unexercised ability and an editor-style citation', () => {
     const header = extract('- Read from the module header. It was never exercised in this vault.', {
@@ -105,13 +94,16 @@ describe('extractUncertaintyReads — what the author did not read, as a read', 
     assert.equal(extract("- Read from the feature's file layout only.")[0].kind, 'unread-file');
     assert.equal(extract('- No turn was run and no provider was contacted.')[0].kind, 'not-executed');
     assert.equal(extract('- Whether every mapping exists was not checked.')[0].kind, 'unverified-claim');
-    // `file:line` is how this vault cites what it read: the file is found, and
-    // nothing is queued as unread on the strength of a citation.
+    // `file:line` cites what was read: the file is found and nothing is queued as unread.
     const cited = extract('- Read today: the literal at `mcp/src/rules.mjs:677` and `:733`.')[0];
     assert.deepEqual(cited.paths, ['mcp/src/rules.mjs']);
     assert.deepEqual(cited.ranges, []);
   });
 
+  /*
+   * "read only in outline" is unread lines; "from line 276 to line 470" is one span,
+   * not two; "lines 138-414 of src/cli.rs" belongs to that file, not an earlier one.
+   */
   it('reads the phrasing a builder actually writes', () => {
     const outlined = extract(
       '- `Options::from_cli_arguments` runs from line 276 to line 470 and was read only in outline, so some individual flag conversions were not checked line by line.',

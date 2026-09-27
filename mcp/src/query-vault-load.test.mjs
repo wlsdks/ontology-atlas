@@ -28,8 +28,8 @@ test('graph read requests load every vault document once and observe edits on th
     writeFileSync(join(root, 'note.md'), '---\ntitle: Note\nmalformed header\n---\nA non-node document.\n');
     const graphModule = new URL('./tools/graph.mjs', import.meta.url).href;
     const validationModule = new URL('./tools/validate-vault.mjs', import.meta.url).href;
-    // An isolated process gives the server one explicit root. Count actual
-    // descriptor opens rather than elapsed time or references to loader names.
+    // An isolated process with one explicit root; counts actual descriptor opens,
+    // not time or loader names.
     const script = `
       import fs from 'node:fs';
       import crypto from 'node:crypto';
