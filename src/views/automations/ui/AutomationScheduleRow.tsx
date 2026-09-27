@@ -33,8 +33,7 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle }: {
   const detailId = `automation-detail-${round.id}`;
 
   return (
-    // Collapsed rows are quiet outlined rows; the expanded one becomes a single raised card that
-    // holds both its header and its detail, so selection and its content share one surface.
+    // The expanded row is one raised card, so selection and its detail share one surface.
     <li className={cn('min-w-0 overflow-hidden rounded-panel border transition-[background-color,border-color,box-shadow] motion-reduce:transition-none',
       expanded
         ? 'border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-1)]'

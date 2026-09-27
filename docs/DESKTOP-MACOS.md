@@ -9,7 +9,7 @@ area: release
 
 This runbook is for the maintainer who builds, verifies, signs, and releases
 the **Ontology Atlas** desktop app. It covers local builds, the installed-app
-log, release channels, the protected release workflow, Apple signing and
+log, release versions, the protected release workflow, Apple signing and
 notarization, and the Windows beta. Where a script owns a procedure, the script
 wins over this page.
 
@@ -108,24 +108,20 @@ uploads it, and sharing it is the owner's action.
 LLM transfers. Only the Rust side reaches the log: WebView JavaScript errors do
 not, so a blank screen with a clean log points at the frontend.
 
-## Release channels
+## Release versions
 
-A semver pre-release suffix (`v1.1.0-rc.1`) publishes a GitHub
-**Pre-release**; a plain tag (`v1.1.0`) publishes a stable release. The
-Pre-release badge only keeps the tag out of GitHub's `releases/latest`. The
-public `/download` facts (written with `--allow-prerelease`) and the hosted
-updater manifest (`scripts/stage-hosted-updater-manifest.mjs`, served at the
-updater endpoint in `src-tauri/tauri.conf.json`) follow the newest non-draft
-release, pre-releases included, and the app checks for updates automatically
-(`src/features/app-update/model/use-app-update.ts`). Once an RC's download
-facts land and the site redeploys, every installed app is offered that RC.
-
-The procedure is identical for both: align the three version files to the
-pre-release version, create and push the tag, and dispatch. The workflow reads
-whether `RELEASE_TAG` is a pre-release and applies it to the draft and publish
-stages. Tauri copies the version string unchanged into `CFBundleVersion`;
-macOS direct distribution accepts `1.1.0-rc.1`, but the App Store would reject
-it, so revisit this if the App Store is ever considered.
+Every release is a plain `vX.Y.Z` tag published as a normal GitHub release.
+`pnpm desktop:release-tag`, the admission job's first check of the tag, refuses a
+tag with a pre-release or build suffix such as `v1.4.0-rc.1`, so there is no
+release-candidate channel; to soak a build, install the draft the workflow
+stages before approving publication. The public `/download` facts describe the
+release the workflow published, and the hosted updater manifest
+(`scripts/stage-hosted-updater-manifest.mjs`, served at the updater endpoint in
+`src-tauri/tauri.conf.json`) follows the newest published plain release, which
+the app checks for automatically
+(`src/features/app-update/model/use-app-update.ts`).
+`pnpm desktop:verify-download` refuses a GitHub release someone marks as a
+pre-release by hand.
 
 ## Release runbook
 

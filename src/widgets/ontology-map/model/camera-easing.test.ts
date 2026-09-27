@@ -110,16 +110,12 @@ describe("easeCameraKeyframe", () => {
   });
 });
 
-/* ── van Wijk optimal path ──────────────────────────────────────────────── */
 
 const VIEW_W = 1512;
 
 /**
- * **Optical flow** — the quantity van Wijk actually holds constant: one step's
- * world displacement divided by the world width the screen holds at that moment
- * (i.e. how many screen-widths flowed past). Measured in pixels, how to mix in the
- * zoom term becomes arbitrary and it stops being clear what is being measured, so
- * the paper's dimensionless quantity is used as-is.
+ * Optical flow, the dimensionless quantity van Wijk holds constant: one step's world
+ * displacement over the world width on screen at that moment.
  */
 function opticalFlowSpread(
   path: (p: number) => CameraKeyframe,
@@ -133,13 +129,9 @@ function opticalFlowSpread(
     const w = (VIEW_W / prev.scale + VIEW_W / now.scale) / 2;
     const dlnw = Math.abs(Math.log(prev.scale / now.scale));
     /*
-     * The paper's metric. Identity verified analytically:
-     *   u'(s)/w(s) = sech(ρs+r₀)/ρ · · · w'(s)/w(s) = −ρ·tanh(ρs+r₀)
-     * hence `ρ²(u'/w)² + (w'/w)²/ρ² = sech² + tanh² = 1`. Only this combination is
-     * constant along the path, and that is the perceived flow van Wijk optimised.
-     * Measuring travel alone (du/w), or applying ρ the other way round
-     * (hypot(du/w, ρ·dlnw)), is not constant and makes the test draw the wrong
-     * conclusion — both were stepped on during this round.
+     * The paper's metric: with u'(s)/w(s) = sech(ρs+r₀)/ρ and w'(s)/w(s) =
+     * −ρ·tanh(ρs+r₀), `ρ²(u'/w)² + (w'/w)²/ρ² = sech² + tanh² = 1`. Travel alone (du/w) or
+     * ρ applied the other way is not constant along the path and would draw the wrong conclusion.
      */
     flow.push(Math.hypot((VAN_WIJK_RHO * du) / w, dlnw / VAN_WIJK_RHO));
     prev = now;
@@ -149,11 +141,11 @@ function opticalFlowSpread(
   return { min, max, ratio: max / Math.max(min, 1e-12) };
 }
 
-describe("van Wijk 경로 — 광학 흐름이 일정하다", () => {
+describe("van Wijk path keeps optical flow constant", () => {
   const start: CameraKeyframe = { x: 0, y: 0, scale: 0.3 };
   const target: CameraKeyframe = { x: 4000, y: 1200, scale: 2.4 };
 
-  it("끝점을 정확히 못박는다", () => {
+  it("pins both endpoints exactly", () => {
     const a = easeCameraKeyframe(start, target, 0, 500, VIEW_W);
     const b = easeCameraKeyframe(start, target, 500, 500, VIEW_W);
     expect(a).toEqual(start);
@@ -161,34 +153,29 @@ describe("van Wijk 경로 — 광학 흐름이 일정하다", () => {
   });
 
   /*
-   * `/gate-probe` — **the one assertion that measures the wiring.** Every other
-   * test calls `vanWijkCameraKeyframe` directly, so reverting the path back to
-   * linear inside `easeCameraKeyframe` leaves them all green (verified by probe).
-   * Whether a call that supplies a viewport width really takes the path is caught
-   * only here.
+   * The only assertion that measures the wiring: every other test
+   * calls `vanWijkCameraKeyframe` directly, so a linear `easeCameraKeyframe` would leave them green.
    */
-  it("뷰포트 폭을 주면 경로가 바뀐다 — 안 주면 선형, 주면 van Wijk", () => {
+  it("changes the path when given a viewport width: linear without, van Wijk with", () => {
     const a: CameraKeyframe = { x: 0, y: 0, scale: 1 };
     const b: CameraKeyframe = { x: 12000, y: 0, scale: 1 };
     const flat = easeCameraKeyframe(a, b, 200, 400);
     const path = easeCameraKeyframe(a, b, 200, 400, VIEW_W);
-    expect(flat.scale, "폭 없는 호출이 배율을 건드렸다 — 선형 폴백이 깨졌다").toBeCloseTo(1, 9);
-    expect(path.scale, "폭을 줬는데 배율이 안 물러났다 — 경로가 선형으로 되돌았다").toBeLessThan(0.95);
+    expect(flat.scale, "a call without width changed the scale, so the linear fallback broke").toBeCloseTo(1, 9);
+    expect(path.scale, "a call with width did not pull the scale back, so the path fell back to linear").toBeLessThan(0.95);
   });
 
-  it("배율을 **기하** 로 보간한다 — 1→4 의 중간은 2.5 가 아니라 2 쪽이다", () => {
+  it("interpolates scale geometrically, so the middle of 1 to 4 sits near 2, not 2.5", () => {
     const half = vanWijkCameraKeyframe({ x: 0, y: 0, scale: 1 }, { x: 0, y: 0, scale: 4 }, 0.5, VIEW_W);
     expect(half.scale).toBeCloseTo(2, 6);
     expect(Math.abs(half.scale - 2)).toBeLessThan(Math.abs(half.scale - 2.5));
   });
 
   /*
-   * `/gate-probe` — **the only point that separates van Wijk from a lerp.** Any
-   * per-axis interpolation traps the mid-path zoom between the two endpoints, so
-   * "pull back further in the middle" is impossible for a linear path in
-   * principle. Reverting the path to a lerp turns this red (verified by probe).
+   * The only point that separates van Wijk from a lerp: per-axis interpolation keeps the
+   * mid-path zoom between the endpoints, so it cannot pull back further.
    */
-  it("멀리 갈수록 중간에 물러난다 — 같은 배율의 먼 이동에서 중간이 더 축소된다", () => {
+  it("pulls back further mid-flight for a longer move at the same scale", () => {
     const a: CameraKeyframe = { x: 0, y: 0, scale: 1 };
     const b: CameraKeyframe = { x: 12000, y: 0, scale: 1 };
     const mid = vanWijkCameraKeyframe(a, b, 0.5, VIEW_W);
@@ -196,7 +183,7 @@ describe("van Wijk 경로 — 광학 흐름이 일정하다", () => {
     expect(mid.scale).toBeLessThan(b.scale);
   });
 
-  it("이동이 0 인 순수 줌에서도 유한한 값을 낸다 (0/0 갈래)", () => {
+  it("yields finite values for a pure zoom with zero travel (the 0/0 branch)", () => {
     const a: CameraKeyframe = { x: 10, y: -5, scale: 0.5 };
     const b: CameraKeyframe = { x: 10, y: -5, scale: 3 };
     for (const p of [0, 0.25, 0.5, 0.75, 1]) {
@@ -209,14 +196,14 @@ describe("van Wijk 경로 — 광학 흐름이 일정하다", () => {
     expect(vanWijkCameraKeyframe(a, b, 1, VIEW_W).scale).toBeCloseTo(3, 6);
   });
 
-  it("두 상태가 같으면 목표로 스냅한다 — 퇴화에서 NaN 이 안 샌다", () => {
+  it("snaps to the target when both states are equal, leaking no NaN", () => {
     const a: CameraKeyframe = { x: 7, y: 9, scale: 1.25 };
     const k = vanWijkCameraKeyframe(a, { ...a }, 0.5, VIEW_W);
     expect(k.x).toBeCloseTo(7, 9);
     expect(k.scale).toBeCloseTo(1.25, 9);
   });
 
-  it("광학 흐름이 선형 보간보다 훨씬 고르다 — 이것이 논문이 최적화한 값이다", () => {
+  it("keeps optical flow far more even than linear interpolation, the quantity the paper optimises", () => {
     const wijk = opticalFlowSpread((p) => vanWijkCameraKeyframe(start, target, p, VIEW_W));
     const linear = opticalFlowSpread((p) => ({
       x: start.x + (target.x - start.x) * p,
@@ -224,19 +211,16 @@ describe("van Wijk 경로 — 광학 흐름이 일정하다", () => {
       scale: start.scale + (target.scale - start.scale) * p,
     }));
     /*
-     * 1.00 = perfectly uniform. The van Wijk path is constant in this metric **by
-     * definition**, so only finite-sampling residue should remain, while linear
-     * interpolation must swing wide. Both assertions are kept because the first
-     * alone stays green even if both paths are broken, and the second alone only
-     * says linear is bad — never that ours is good.
+     * 1.00 is perfectly uniform. Both assertions stay: the first alone passes with both paths
+     * broken, and the second alone only says linear is bad, never that ours is good.
      */
     expect(
       wijk.ratio,
-      `van Wijk 경로가 자기 계량에서 상수가 아니다 (${wijk.ratio.toFixed(4)}×) — 식이 틀렸다`,
+      `van Wijk path is not constant in its own metric (${wijk.ratio.toFixed(4)}x), so the formula is wrong`,
     ).toBeLessThan(1.02);
     expect(
       linear.ratio,
-      `선형 보간이 이 계량에서 안 흔들린다 (${linear.ratio.toFixed(2)}×) — 표본이 차이를 못 본다`,
+      `linear interpolation does not vary in this metric (${linear.ratio.toFixed(2)}x), so the sample cannot see the difference`,
     ).toBeGreaterThan(1.5);
   });
 });

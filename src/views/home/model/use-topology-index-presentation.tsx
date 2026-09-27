@@ -41,44 +41,33 @@ export function useTopologyIndexPresentation({
   const { meaningWorkbenchOpen, acpDockFrameOpen, vaultAgentOpen } = homeWorkbenchController;
   const { canCreateNode, selectedEdge } = topologyAuthoring;
 
-  // Bound to the datasheet being *shown*, not merely to its model existing, so the Esc
-  // dismissal order is honoured: after the first press (popover closed, selection
-  // kept) the left panel must come back. The realm ledger is exempt from the
-  // automatic demotion because it is a realm's only exit and navigation surface.
-  //
-  // An open edge panel is a selection too: it docks in the same slot as the datasheet, so
-  // INDEX yields to it by the same rule. It used to stay expanded beside an edge and fold beside
-  // a node, so one slot behaved two ways (interaction audit, 2026-09-25).
+  // Bound to the datasheet being shown, so after the first Esc (popover closed, selection kept)
+  // INDEX returns. An open edge panel docks in the same slot, so INDEX yields to it too. The realm
+  // ledger is exempt as a realm's only exit.
   const topologySelectionActive = (Boolean(v2DatasheetModel) && !nodePopoverDismissed) || selectedEdge !== null;
   const {
     manualExpand: indexManualExpandDuringSelection,
     markManualExpand: markIndexManualExpandDuringSelection,
     beginExpandedSelection: beginExpandedIndexSelection,
   } = useIndexSelectionOverride(topologySelectionActive);
-  // Clicking the collapsed edge tab always means "give the slot back to
-  // INDEX" — the analysis rail owns the slot only because of a non-overview
-  // mode (focus/path/health), so returning to overview is always enough.
+  // The analysis rail owns the slot only in a non-overview mode, so returning to overview gives it
+  // back.
   const handleIndexTabExpand = useCallback(() => {
     setIndexPreference("expanded");
-    // A manual expand during a selection beats the automatic demotion for the rest
-    // of that selection. The selection-session hook resets this at the exact
-    // inactive/active transition, before the next frame can inherit it.
+    // A manual expand wins for the rest of the selection; the selection-session hook resets it.
     markIndexManualExpandDuringSelection();
-    // Same for the empty-map demotion. Without this line the tab depresses and
-    // nothing happens, because the demotion re-collapses it every render.
+    // Same for the empty-map demotion, or it re-collapses every render.
     setIndexManualExpandWhileEmpty(true);
     if (analysisMode !== "overview") {
       setRouteState((current) => ({ ...current, analysisMode: "overview" }));
     }
   }, [analysisMode, markIndexManualExpandDuringSelection, setIndexManualExpandWhileEmpty, setIndexPreference, setRouteState]);
-  /*
-   * The map plants no toast offset: toasts stand at the bottom of the free map, between
-   * the walls INDEX and the dock declare (`data-toast-wall`, 2026-09-24).
-   */
+  // Toasts stand between the walls INDEX and the dock declare (`data-toast-wall`), so the map
+  // plants no offset.
   const readoutStackRef = useRef<HTMLDivElement | null>(null);
-  // Click focus signature — aligns the growth origin (transform-origin) of the popover with the screen coordinates of the just-clicked node.
-  // The panel is keyed by slug and re-mounts + triggers `.topology-chrome-in` appearance every time the node changes, so
-  // using the slug as a dependency and injecting the origin converted to the positioner's local coordinate system as a CSS variable before paint (useLayoutEffect) (inheritance → internal panels read it). If no recent (<600ms) canvas pointer exists (list/keyboard selection), clears the variable to fall back to existing `center top`.
+  // Aligns the popover's growth origin with the clicked node: the panel remounts per slug, so the
+  // origin is injected as a CSS variable before paint. Without a canvas pointer in the last 600 ms
+  // it falls back to `center top`.
   const nodePopoverSlug = v2DatasheetModel?.slug ?? null;
   useLayoutEffect(() => {
     const positioner = nodePopoverPositionerRef.current;
@@ -93,28 +82,18 @@ export function useTopologyIndexPresentation({
       positioner.style.removeProperty("--topology-chrome-in-origin");
       return;
     }
-    // Convert the click point into the panel box's local coordinates and clamp it
-    // inside. The panel is anchored top-right, so the node is usually down and to the
-    // left; making that corner the origin is what reads as the popover growing out of
-    // the node.
+    // Clamped inside the top-right-anchored panel, so it grows from the node's corner.
     const ox = Math.max(0, Math.min(rect.width, pointer.x - rect.left));
     const oy = Math.max(0, Math.min(rect.height, pointer.y - rect.top));
     positioner.style.setProperty("--topology-chrome-in-origin", `${ox}px ${oy}px`);
   }, [lastCanvasPointerRef, nodePopoverPositionerRef, nodePopoverSlug]);
-  // Owner follow-up, 2026-07-24: the realm and spotlight ledgers close during a node
-  // selection too — having the left and right panels both open at once is
-  // uncomfortable. The escape affordance survives in the ✕ on the realm/lens chips and
-  // in Esc, so keeping the ledger permanently visible is not required. It returns when
-  // the selection clears.
-  /** Is this a map with no concepts to hold yet? See `indexManualExpandWhileEmpty`. */
+  // The realm and spotlight ledgers also close during a selection, returning when it clears;
+  // the chips' ✕ and Esc remain their exits.
   const topologyGraphEmpty = (ontologyInsight?.nodes.length ?? 0) === 0;
-  /*
-   * Opening the agent dock on the right puts INDEX through the same session demotion.
-   * With both up, the map — the thing you need in order to judge what the agent is
-   * changing — is left as a narrow corridor in the middle. No stored preference is
-   * touched, so closing the chat restores the user's INDEX state. An ask intent
-   * arriving in the URL honours the same spatial contract from its first frame.
-   */
+  // The agent dock applies the same session demotion, or the map becomes a corridor between two
+  // panels.
+  // The stored preference is untouched; a URL ask intent follows the same rule from its first
+  // frame.
   const agentDockRequestedOpen =
     meaningWorkbenchOpen ||
     acpDockFrameOpen ||
@@ -123,21 +102,12 @@ export function useTopologyIndexPresentation({
       llmBridgeAvailable &&
       (routeState.askIntent || routeState.askBusinessFlow),
     );
-  /*
-   * ⚠️ Lifted out of the JSX so INDEX can yield to it (owner, 2026-08-25). The checklist centres in
-   * the map area; with INDEX open that area is not the window, so the surface asking for attention
-   * sat off the middle while claiming it. `resolve-contextual-index-state` now collapses INDEX while
-   * this is true, which is the same shape as the existing agent-dock and meaning-editor rules.
-   */
-  // Declared here rather than beside its dismiss handler: `resolveContextualIndexState` below needs
-  // it, and INDEX cannot yield to a surface whose visibility is computed after INDEX is resolved.
+  // The checklist centres in the map area, so INDEX yields while it shows. Declared here
+  // because `resolveContextualIndexState` below needs it before INDEX resolves.
   const [startStepsDismissed, setStartStepsDismissed] = useState(() =>
     readFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY),
   );
-  /**
-   * Dismisses the first-steps card, meaning the last step is behind them. Session
-   * scoped, so reopening the app shows the guidance again.
-   */
+  /** Session scoped, so reopening the app shows the guidance again. */
   const dismissStartSteps = useCallback(() => {
     writeFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY);
     setStartStepsDismissed(true);
@@ -150,9 +120,8 @@ export function useTopologyIndexPresentation({
     baseState: baseRenderedIndexState,
     meaningEditorOpen: Boolean(meaningEditorIntent),
     selectionActive: topologySelectionActive,
-    // `?index=expanded` is an explicit deep-link contract (not merely the
-    // stored default). Legacy `/ontology?node=…` redirects carry it so the
-    // requested INDEX context stays visible beside the selected node.
+    // `?index=expanded` is an explicit deep-link contract; legacy `/ontology?node=` redirects
+    // carry it.
     selectionManualExpand:
       indexManualExpandDuringSelection || indexState === "expanded",
     graphEmpty: topologyGraphEmpty,
@@ -160,14 +129,9 @@ export function useTopologyIndexPresentation({
     agentDockOpen: agentDockRequestedOpen,
   });
   /**
-   * Collapse ↔ expand is **one event** produced by one click. Previously only the
-   * arriving surface got any time and the leaving one got zero frames. Drawing both
-   * frames overlapped in the same slot makes **what leaves, what arrives, and the map
-   * all start on the same frame**, which structurally guarantees the rule that steps
-   * from one input must start within `--motion-fast` of each other.
+   * Collapse and expand are one event: leaving, arriving and the map start on the same frame,
    *
-   * The exit window is the shared `EXIT_WINDOW_MS`: surfaces over the map leaving by
-   * different timings would be the same defect again.
+   * within `--motion-fast`. The exit window is the shared `EXIT_WINDOW_MS`.
    */
   const indexSlotSwap = useSurfaceSwap(renderedIndexState);
   return {

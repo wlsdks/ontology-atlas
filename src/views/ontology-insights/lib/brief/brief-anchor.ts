@@ -1,17 +1,10 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
 /**
- * **When this reader last looked at the brief**, per vault — the anchor every "since"
- * count in the brief is measured from.
- *
- * It is a fact about a reader, not about the folder, so it lives in this browser only and
- * never reaches the vault (same reasoning as `unmatched-dismissals.ts`). It is scoped to the
- * vault's identity scope for the reason the notification box learned on 2026-08-01: one
- * global key made one folder's visit mark another folder's items seen.
- *
- * A first visit has no anchor; the brief then measures from a fixed window
- * (`DEFAULT_BRIEF_WINDOW_MS`) and says so, rather than from the epoch, which would count the
- * whole folder as "new since you left".
+ * When this reader last looked at the brief, per vault: the anchor every "since" count is measured from. A fact
+ * about the reader, so it stays in this browser (like `unmatched-dismissals.ts`), scoped per vault identity so one
+ * folder's visit never marks another's items seen. A first visit measures from `DEFAULT_BRIEF_WINDOW_MS`, not the
+ * epoch, which would count the whole folder as new.
  */
 const KEY_PREFIX = 'atlas.insights.briefSeenAt:';
 const EVENT = 'ontology-atlas:insights-brief-seen-change';
@@ -32,12 +25,8 @@ export function briefSeenKey(vaultScope: string): string {
 let snapshot = new Map<string, number | null>();
 
 /**
- * The value each scope held before this session's last mark, so one press can be taken back.
- *
- * Marking the visit is the one press that redefines every "since" number on the screen, and it
- * used to overwrite the previous anchor with nothing retaining it (design-interaction,
- * 2026-09-20). It writes to this browser only, never to the folder, so the reversal owes no
- * dialog and no confirmation — one press back is the whole of it.
+ * The value each scope held before this session's last mark, so one press can be taken back. Browser-only, so the
+ * reversal needs no dialog.
  */
 let priorAnchor = new Map<string, number | null>();
 
@@ -74,10 +63,7 @@ export function canUndoBriefSeenAt(vaultScope: string): boolean {
   return Boolean(vaultScope) && priorAnchor.has(vaultScope);
 }
 
-/**
- * Put the anchor back where it was before this session's last mark. A no-op when there was no
- * mark, so a caller never has to guard it.
- */
+/** Put the anchor back where it was before this session's last mark; a no-op without a mark. */
 export function undoBriefSeenAt(vaultScope: string): void {
   if (!vaultScope || typeof window === 'undefined' || !priorAnchor.has(vaultScope)) return;
   const restored = priorAnchor.get(vaultScope) ?? null;
@@ -93,20 +79,15 @@ export function undoBriefSeenAt(vaultScope: string): void {
   window.dispatchEvent(new Event(EVENT));
 }
 
-/** Pure: the anchor for a recorded visit, or the default window ending now. */
+/** The anchor for a recorded visit, or the default window ending now. */
 export function resolveBriefAnchor(seenAtMs: number | null, nowMs: number): BriefAnchor {
   if (seenAtMs != null && seenAtMs < nowMs) return { anchorMs: seenAtMs, isDefaultWindow: false };
   return { anchorMs: nowMs - DEFAULT_BRIEF_WINDOW_MS, isDefaultWindow: true };
 }
 
-/*
- * ⚠️ **The two events are not the same event.** `EVENT` is dispatched by this module's own
- * write, which has *already* put the new value in `snapshot`; clearing the cache there threw
- * that value away and re-read it from `localStorage`. Where the write had thrown — private
- * mode, blocked site data — the re-read found nothing, so the visit silently did not stick and
- * "since you left" kept counting from the old anchor. The `storage` event is the cross-tab one:
- * another tab wrote, this cache is stale, and it must be dropped.
- */
+// The two events differ. `EVENT` follows this module's own write, which already updated `snapshot`; clearing the
+// cache there would re-read `localStorage` and lose the value where the write threw (private mode). The `storage`
+// event is another tab's write, so the cache is stale and is dropped.
 function subscribe(onChange: () => void): () => void {
   const handleOwnWrite = () => onChange();
   const handleOtherTab = () => {
@@ -122,9 +103,8 @@ function subscribe(onChange: () => void): () => void {
 }
 
 /**
- * The recorded visit for one vault and a way to record this one. The screen calls
- * `markSeen` when the person leaves the brief (or on an explicit "seen" action), never on
- * mount — marking on mount would zero every count the moment it was drawn.
+ * The recorded visit for one vault and a way to record this one. `markSeen` runs when the person leaves the brief
+ * or presses "seen", never on mount, which would zero every count as it is drawn.
  */
 export function useBriefSeenAt(
   vaultScope: string,

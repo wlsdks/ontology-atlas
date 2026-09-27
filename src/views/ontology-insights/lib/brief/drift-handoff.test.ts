@@ -31,11 +31,7 @@ describe('buildDriftHandoff', () => {
 
 describe('the request names what the tools take', () => {
   it('carries each concept slug, because get_concept does not accept a display title', () => {
-    /*
-     * The request told the agent to read the recorded meaning with `get_concept` and then named
-     * the concept only by its title, so the agent had to search for the document before it could
-     * read anything (2026-09-20).
-     */
+    // The request names each concept by slug, which `get_concept` takes, not by title.
     const request = buildDriftHandoff({ rows, locale: 'en' })!;
     expect(request).toContain('Payments (capabilities/pay)');
     expect(request).toContain('Shipping (capabilities/ship)');
@@ -60,12 +56,8 @@ describe('the request names what the tools take', () => {
 });
 
 describe('the request says where an unknown goes', () => {
-  /*
-   * Asked only to "propose the sentence to change", an agent that cannot verify a claim proposes
-   * striking it, and the vault then reads as if that boundary had been checked and found absent.
-   * The vault has a place for the difference, and the MCP write door names that place as the
-   * repair for an unstated unknown, so the request names it too.
-   */
+  // An agent that cannot verify a claim would propose striking it, so the request routes the unknown into the
+  // concept's Uncertainty line, the repair the MCP write door names.
   it('routes what could not be checked into the Uncertainty line, not into a deletion', () => {
     const request = buildDriftHandoff({ rows, locale: 'en' })!;
     expect(request).toContain('`## Uncertainty` line');

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { resolveSessionAbilities } from "./session-abilities";
 
 describe("resolveSessionAbilities", () => {
-  it("내 폴더가 로드됐을 때만 쓰기 가능이다 — 샘플은 읽기 전용", () => {
+  it("can write only when the user folder is loaded, not the sample", () => {
     expect(
       resolveSessionAbilities({ dataSourceMode: "local", vaultStatus: "loaded" }).canWriteVault,
     ).toBe(true);
@@ -15,7 +15,7 @@ describe("resolveSessionAbilities", () => {
     ).toBe(false);
   });
 
-  it("같은 폴더를 다시 읽는 중에는 쓰기 능력이 유지된다 — 순서가 흔들려 큐가 다시 그려지지 않게", () => {
+  it("keeps write ability while the same folder reloads", () => {
     expect(
       resolveSessionAbilities({
         dataSourceMode: "local",
@@ -33,7 +33,7 @@ describe("resolveSessionAbilities", () => {
     ).toBe(false);
   });
 
-  it("heartbeat 파일이 있고 파싱되면 에이전트가 관측된 것으로 본다", () => {
+  it("observes an agent when the heartbeat file exists and parses", () => {
     expect(
       resolveSessionAbilities({
         dataSourceMode: "local",
@@ -43,7 +43,7 @@ describe("resolveSessionAbilities", () => {
     ).toBe(true);
   });
 
-  it("파일이 없거나 깨졌으면 미관측 — 넘길 상대가 있다고 단정하지 않는다", () => {
+  it("observes no agent when the heartbeat file is missing or corrupt", () => {
     expect(
       resolveSessionAbilities({
         dataSourceMode: "local",

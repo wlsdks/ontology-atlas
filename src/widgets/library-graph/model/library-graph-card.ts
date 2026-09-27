@@ -2,20 +2,12 @@ import type { LayoutPoint } from "./library-graph-layout";
 import type { LibraryGraph, LibraryGraphSourceState } from "./build-library-graph";
 
 /**
- * **Where the card stands, and which lines flow while it is open.**
- *
- * The two pure halves of "a press on a mark opens a card beside it" live here, away from
- * the surface that renders them and away from the loop that paints the canvas, because
- * both are claims a test can settle without a browser: a rectangle beside a dot never
- * covers the dot, and the lines that carry the drift are exactly this page's citations.
- *
- * The interaction itself is the map's, not this canvas's invention: a press on a node
- * focuses its neighbourhood and hangs a compact surface beside it, and full detail is an
- * explicit action inside that surface (`.claude/rules/forbidden.md`, "Node click →
- * full-screen or full-bleed detail modal" — the popover is the standing rule).
+ * The pure halves of the mark card, testable without a browser: where it stands (never
+ * over its mark) and which lines flow while it is open. The popover shape is the standing
+ * rule (`.claude/rules/forbidden.md`).
  */
 
-/** The card never grows past this, whatever its content — direction B, 2026-09-12. */
+/** The card never grows past this, whatever its content. */
 export const LIBRARY_CARD_MAX_WIDTH = 320;
 
 /** Room between the mark's own edge and the card's, in CSS px. */
@@ -34,38 +26,18 @@ export interface LibraryGraphCardPlacement {
   top: number;
   side: LibraryGraphCardSide;
   /**
-   * The tallest the card may be here, so it scrolls inside instead of leaving the canvas.
-   *
-   * ⚠️ **Without it the guarantee below is unsatisfiable.** A 220px card beside a mark in
-   * the middle of a 460px-tall canvas has 208px under it and 218px over it: *no* placement
-   * both clears the mark and stays in the box, so something has to give, and the honest
-   * thing to give is the card's own height — the map's inspector has scrolled inside
-   * `--map-inspector-max-height` for the same reason since it existed. Measured before
-   * this existed: the card's bottom edge stood 11.4px past the canvas at 616×460.
+   * The tallest the card may be here, scrolling inside past it: in a short canvas no
+   * placement both clears the mark and stays in the box, so the card's height gives.
    */
   maxHeight: number;
 }
 
 /**
- * The card's place, in the canvas's own CSS pixels.
- *
- * Four rules, in this order, and every one of them is a measurement in
- * `library-graph-card.test.ts`:
- *
- * 1. **Beside the mark, never over it.** The preferred side is the mark's right, so the
- *    card's near edge starts one gap past the mark's own radius; the axis it is placed on
- *    is therefore disjoint from the mark's, and clamping the *other* axis cannot bring the
- *    two together. A card covering the dot a person just pressed is the defect direction B
- *    names first.
- * 2. **Flip rather than spill.** With no room on the right the card goes left; with no room
- *    on either side — a narrow canvas, a mark in the middle — it goes below the mark, and
- *    above it when there is more room there.
- * 3. **Inside the canvas box, scrolling if it must.** The box is the canvas element's own
- *    rect, which begins *below* the caption row and the strip, so a card clamped into it
- *    cannot cover either. That is why this takes the canvas box rather than the window: the
- *    strip needs no special case to be safe from.
- * 4. **Nothing moves the mark.** This returns where the *card* goes. The picture is
- *    untouched (`docs/DECISIONS.md`, 2026-09-08 "The Library graph stands still").
+ * The card's place in canvas CSS pixels (each rule tested in `library-graph-card.test.ts`):
+ * beside the mark, never over it, right first; flip left, then below or above, whichever
+ * has more room; clamped into the canvas box, which lies below the caption row and strip,
+ * scrolling if it must. The mark never moves (`docs/DECISIONS.md`, "The Library graph
+ * stands still").
  */
 export function placeLibraryGraphCard({
   mark,
@@ -108,12 +80,7 @@ export function placeLibraryGraphCard({
     };
   }
 
-  /*
-   * Neither side holds the card: place it on the other axis, where the mark's own row is
-   * free. The horizontal clamp is the box's, so a mark near a corner still gets a card
-   * fully inside the canvas — and because the card is now above or below the mark, that
-   * clamp cannot slide it over the dot.
-   */
+  // Neither side fits: above or below, where the horizontal clamp cannot slide it over the dot.
   const roomBelow = Math.max(0, box.height - inset - (mark.y + reach));
   const roomAbove = Math.max(0, mark.y - reach - inset);
   if (roomBelow >= roomAbove) {
@@ -134,17 +101,8 @@ export function placeLibraryGraphCard({
 }
 
 /**
- * **The citation lines a card's mark makes knowledge flow along.**
- *
- * One direction for both cases, because there is only one direction in the product: a
- * source is read and a page is written from it. A page's card drifts its citations
- * *inward* — every file it leans on, arriving at the write-up — and a file's card drifts
- * the same lines *outward*, to the pages that were written from it. Same lines, same
- * travel, read from either end.
- *
- * `mentions` is deliberately excluded. A page naming a concept is not knowledge moving
- * into the page; it is the page pointing at the map, and drifting it would say the concept
- * was a source (design-infoviz's standing rule for this canvas: one mark, one fact).
+ * The citations touching a card's mark, which drift file → page from either end. Mentions
+ * never drift, or a named concept would read as a source.
  */
 export function libraryGraphFlowEdges(
   graph: Pick<LibraryGraph, "edges">,
@@ -172,11 +130,8 @@ export function libraryGraphStaleEdges(graph: Pick<LibraryGraph, "edges">): Set<
 }
 
 /**
- * One row of the card's neighbourhood list: the mark at the other end of a relation.
- *
- * `state` is a file's compile state, the same word the list beside this canvas prints;
- * `missing` is the one thing a row can say that no `LibrarySourceRow` can, because the row
- * is gone — a page citing a file that has left the folder.
+ * One row of the card's neighbourhood list. `state` is a file's compile state; null means
+ * the cited file has left the folder.
  */
 export interface LibraryGraphCardRow {
   /** The graph id, so a row can name the mark it is about. Null when the file is gone. */
@@ -188,26 +143,15 @@ export interface LibraryGraphCardRow {
 }
 
 /**
- * **What the card says, handed down by the screen that knows it.**
- *
- * `src/widgets/` sits below `src/views/` in the import direction, so this widget cannot
- * reach the Library's model — and it should not: the Summary's first sentence, a file's
- * byte length and which pages cite it are the *folder's* facts, already derived once in
- * `use-library-model.ts`. The widget owns the surface, the anchoring, the keyboard and the
- * motion; the view owns the facts. Same seam, and same reason, as `headerEnd`.
- *
- * Every field is a **fact**, never a rendered string: the wording is the card's, so one
- * screen cannot drift from another's phrasing of the same state.
+ * The folder's facts for the card, from `use-library-model.ts`, which a widget cannot
+ * import. Facts, never rendered strings, so the wording stays the card's.
  */
 export interface LibraryGraphCardFacts {
   /** One sentence about the mark: a page's Summary, opening sentence only. */
   sentence?: string | null;
   /**
-   * A page's own counts: cited files, citations in its body, concepts named, and how many
-   * of those files the folder can no longer vouch for.
-   *
-   * `cites` is **null when the body has not been read**, never zero — the page text is
-   * loaded lazily, and a zero there would be a measurement nobody made.
+   * A page's counts: cited files, citations in its body, concepts named, stale files. The
+   * body loads lazily, so `cites` is null until it is read, never zero.
    */
   counts?: { sources: number; cites: number | null; mentions: number; stale: number };
   /** A file's own facts, in the words the source pane already uses. */
@@ -215,19 +159,13 @@ export interface LibraryGraphCardFacts {
   /** The other end of every relation the mark has, in the model's own order. */
   rows?: readonly LibraryGraphCardRow[];
   /**
-   * Whether a draft can be asked for, and why not when it cannot.
-   *
-   * The door runs the folder's existing Compile brief — there is no second write path and
-   * no new agent contract here. When no agent is connected the reason line stands in its
-   * place, because a door that cannot open is worse than a sentence saying so.
+   * Whether a draft can be asked for through the existing Compile brief (no second write
+   * path), and the reason shown instead when no agent is connected.
    */
   refresh?: { onRequest: (() => void) | null; reason: string | null };
   /**
-   * Shows where the file is: Finder in the app, the file itself in the browser, which has
-   * no Finder and no absolute path and hands over the file it was granted instead
-   * (`.claude/rules/surfaces.md`, "Reveal a file in Finder"). The two are one door with two
-   * words, and the word is the host's: the source pane already says *open a copy* on the
-   * web, and the card said *show in Finder* there (dev, 2026-09-19).
+   * Shows where the file is: Finder in the app, a copy of the granted file in the browser
+   * (`.claude/rules/surfaces.md`, "Reveal a file in Finder"). One door; the host picks the word.
    */
   onReveal?: (() => void) | null;
   /** True when `onReveal` hands over a copy rather than revealing a place, so the door says so. */

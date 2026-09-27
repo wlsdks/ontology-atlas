@@ -155,7 +155,7 @@ describe('registry entry', () => {
 describe('server.json CLI', () => {
   it('requires a release tag shaped like a tag, since the artifact URL is built from it', () => {
     assert.deepEqual(tagProblems('v1.1.0'), []);
-    assert.deepEqual(tagProblems('v1.1.0-rc.1'), []);
+    assert.equal(tagProblems('v1.1.0-rc.1').length, 1);
     assert.equal(tagProblems('1.1.0').length, 1);
     assert.equal(tagProblems(null).length, 1);
   });

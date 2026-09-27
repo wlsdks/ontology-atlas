@@ -26,17 +26,16 @@ interface FootprintGraphNode {
 }
 
 export interface UseFootprintTrailArgs {
-  /** The node currently holding ego focus on the canvas, or null. */
+  /** Null without ego focus. */
   canvasSelectedSlug: string | null;
-  /** The live map graph; the trail is refined against it. */
+  /** The trail is refined against it. */
   graphNodes: readonly FootprintGraphNode[];
-  /** Vault-side nodes, used to name the handoff packet's targets. */
+  /** Names the handoff packet's targets. */
   insightNodes: readonly InsightNode[] | undefined;
-  /** Slugs the packet flags as dusty. */
   dustySlugs: ReadonlySet<string>;
-  /** Vault edges, read for the reason each consecutive pair is connected. */
+  /** Read for the reason each consecutive pair is connected. */
   insightEdges: readonly TrailEdge[] | undefined;
-  /** Names a relation type in the reader's current register (`relationVocabulary`). */
+  /** In the reader's current register (`relationVocabulary`). */
   relationLabelOf: (type: string) => string;
 }
 
@@ -44,14 +43,11 @@ export interface UseFootprintTrailResult {
   setFootprintTrail: (trail: string[]) => void;
   lastVisitedNodeRef: RefObject<string | null>;
   footprintNodeLookup: ReadonlyMap<string, FootprintGraphNode>;
-  /** Collapsed trail (last visit per node) for the chip and the handoff packet. */
+  /** Last visit per node, for the chip and the handoff packet. */
   footprintTrailEntries: FootprintTrailEntry[];
-  /**
-   * How each entry connects to the one before it, aligned index-for-index with
-   * `footprintTrailEntries`. Index 0 is null: the oldest step has no predecessor.
-   */
+  /** Aligned with `footprintTrailEntries`; index 0 is null. */
   footprintTrailStepCaptions: (TrailStepCaption | null)[];
-  /** Raw visit order with deleted nodes removed, for the map's step numbers. */
+  /** Raw visit order minus deleted nodes, for the map's step numbers. */
   footprintVisitedIds: string[];
   footprintPacketCopied: boolean;
   copyFootprintPacket: () => Promise<void>;
@@ -62,11 +58,8 @@ export interface UseFootprintTrailResult {
 }
 
 /**
- * Footprint trail — the path walked so far, appended each time a node takes ego
- * focus on the map. It is not a mode but a passive record layer over the map: not
- * in the URL, never in localStorage, cleared on reload. The same ordered array
- * feeds the map (recency-decayed footprint rings) and the trail chip (mini
- * timeline + handoff packet).
+ * Appended whenever a node takes ego focus; not in the URL or storage, cleared on reload.
+ * One ordered array feeds the map's footprint rings and the trail chip.
  */
 export function useFootprintTrail({
   canvasSelectedSlug,
@@ -78,9 +71,7 @@ export function useFootprintTrail({
 }: UseFootprintTrailArgs): UseFootprintTrailResult {
   const t = useTranslations("topology");
   const [footprintTrail, setFootprintTrail] = useState<string[]>([]);
-  // Guards against appending the same node twice in a row (clicking the background
-  // and reselecting). Revisits between two different nodes still append and so
-  // refresh the order.
+  // Skips an immediate repeat of the same node; revisits between different nodes still append.
   const lastVisitedNodeRef = useRef<string | null>(null);
   useEffect(() => {
     if (!canvasSelectedSlug) return;
@@ -88,24 +79,22 @@ export function useFootprintTrail({
     lastVisitedNodeRef.current = canvasSelectedSlug;
     setFootprintTrail((trail) => appendFootprintVisit(trail, canvasSelectedSlug));
   }, [canvasSelectedSlug]);
-  // id → label/kind lookup. The trail is refined against the live graph so a deleted
-  // node cannot linger in it — the trail is a derived display layer, never a source.
+  // Refined against the live graph so a deleted node cannot linger: the trail is display, never a
+  // source.
   const footprintNodeLookup = useMemo(
     () => new Map(graphNodes.map((n) => [n.id, n])),
     [graphNodes],
   );
   /**
-   * The **collapsed** trail the timeline and the handoff packet read: only the last
-   * visit to each node. The raw `footprintTrail` keeps the steps walked back over,
-   * which is what numbers the map, but handing an agent the same `get_concept` three
-   * times is noise, not information.
+   * Only the last visit per node, since repeating `get_concept` is noise; the map keeps the raw
+   * steps.
    */
   const footprintTrailEntries = useMemo<FootprintTrailEntry[]>(() => {
     const entries: FootprintTrailEntry[] = [];
     for (const id of collapseFootprintTrail(footprintTrail)) {
       const node = footprintNodeLookup.get(id);
       if (!node) continue;
-      // The handoff packet carries the name the vault knows, not the canvas node id.
+      // The name the vault knows, not the canvas id.
       const target = resolveNodeAgentTarget(insightNodes?.find((n) => n.id === id));
       entries.push({
         id,
@@ -117,28 +106,16 @@ export function useFootprintTrail({
     }
     return entries;
   }, [footprintTrail, footprintNodeLookup, insightNodes]);
-  /**
-   * The visit ids handed to the map: the **raw** order with only deleted nodes
-   * filtered out, never collapsed. Only the map needs the repeated steps — the step
-   * numbers (`buildFootprintSteps`) come from them, and the recency rank collapses on
-   * last appearance anyway. Sending the collapsed list would erase "I came here three
-   * times" from the screen.
-   */
+  /** Never collapsed: the map's step numbers need the repeats. */
   const footprintVisitedIds = useMemo(
     () => footprintTrail.filter((id) => footprintNodeLookup.has(id)),
     [footprintTrail, footprintNodeLookup],
   );
   /**
-   * The reason each step follows the one before it. The trail used to carry names and
-   * distances only, which records *where* the reader went and drops *why they could go
-   * there* — and the why (`relation_notes`) is the durable thing this product keeps. Both
-   * the timeline rows and the handoff packet read this one derivation, so the screen and
-   * the agent are told the same thing.
+   * The reason each step follows the last (`relation_notes`), shared by the timeline and the
+   * packet. The edge scan and the naming stay in two memos because `relationLabelOf` is a new
+   * closure every render.
    */
-  // Two steps on purpose. Scanning every vault edge is the expensive half and depends
-  // only on the walk and the graph; `relationLabelOf` comes from `useTranslations` and is
-  // a fresh closure on every render, so naming is kept in its own memo. Fused, one render
-  // of the page would re-scan the whole edge list.
   const footprintTrailStepLinks = useMemo(
     () => buildTrailStepLinks(footprintTrailEntries.map((entry) => entry.id), insightEdges ?? []),
     [footprintTrailEntries, insightEdges],
@@ -151,7 +128,7 @@ export function useFootprintTrail({
     [footprintTrailStepLinks, relationLabelOf],
   );
   const [footprintPacketCopied, setFootprintPacketCopied] = useState(false);
-  /* Clears itself, and cancels on unmount — see `COPY_FEEDBACK_RESET_MS`. */
+  // See `COPY_FEEDBACK_RESET_MS`.
   useEffect(() => {
     if (!footprintPacketCopied) return;
     const timer = window.setTimeout(() => setFootprintPacketCopied(false), COPY_FEEDBACK_RESET_MS);
@@ -177,38 +154,16 @@ export function useFootprintTrail({
     if (!ok) return;
     setFootprintPacketCopied(true);
   }, [footprintTrailEntries, footprintTrailStepCaptions, dustySlugs, t]);
-  // Footprint lens — a transient state **equivalent to** the popover being open: no
-  // new mode, toggle, or URL state. While it is open the map folds away relation
-  // reading (the ego highlight edges) and yields to trail reading — only visited
-  // nodes keep their values and labels, everything else and every edge falls back
-  // to the existing dim values. Those ego edges were the blue lines the owner called
-  // *"dizzying"*. No trail polyline is drawn (in this product a line means a
-  // relation); the field is simply cleared for the moment of reading.
-  //
-  // The lens flag and the brush are **refs, not state**. As state, every toggle and
-  // every row hover re-renders the whole page tree (measured: ~100 ms per switch,
-  // 68–109 ms per hover — squarely in "sticky" territory). The canvas loop reads refs
-  // every frame anyway, so the same picture costs zero renders.
+  // Footprint lens: true while the popover is open, with no new mode or URL state. The map dims
+  // ego edges and keeps only visited nodes lit; no trail line is drawn, since a line means a
+  // relation. Refs, not state, because state re-rendered the page tree on every toggle and hover.
   const footprintLensActiveRef = useRef(false);
   const footprintBrushNodeIdRef = useRef<string | null>(null);
   const handleFootprintLens = useCallback((active: boolean) => {
     footprintLensActiveRef.current = active;
-    /*
-     * ⚠️ **The lens also has to reach the DOM, because the DOM was winning the screen.**
-     *
-     * Two council seats measured the same thing from opposite ends on 2026-09-10: the detail
-     * panel beats the constellation for attention **5.3:1** (design-lead), and on the first
-     * frame after the trigger is clicked **66.9% of everything that changed was that panel**
-     * against 3.5% for the first star (design-motion). The panel already declares itself
-     * `data-attention-role="supporting-detail"`; it simply never acted on the declaration, so
-     * the one screen a person opens to look at their walk opened on a list with a solid
-     * indigo call to action on it.
-     *
-     * An attribute rather than React state for the same reason the flag beside it is a ref:
-     * as state, one toggle re-rendered the whole page tree at ~100 ms. A dataset write plus a
-     * CSS opacity transition costs no render at all, and the panel comes straight back on
-     * hover or focus, so nothing in it becomes unreachable.
-     */
+    // The lens also dims the DOM panel that declares `data-attention-role="supporting-detail"`,
+    // which otherwise takes the eye from the map. A dataset attribute costs no render; hover or
+    // focus brings the panel back.
     if (typeof document !== "undefined") {
       if (active) document.documentElement.dataset.trailLens = "on";
       else delete document.documentElement.dataset.trailLens;

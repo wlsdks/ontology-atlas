@@ -170,11 +170,9 @@ second direct source.
   the compiled MCP server. There is no npm package; every other platform runs the
   browser app, the CLI and MCP server from a source checkout, or the MCP server
   as an `.mcpb` bundle or a container image ([channels](mcp/README.md#1-register-with-an-agent)).
-- **A `-rc.N` build walks the same signing, notarization, installer, and updater
-  checks as a final one** — what it lacks is a wide run behind it. The in-app
-  updater reads a fixed Pages manifest staged from the newest non-draft release,
-  release candidates included, and every archive must pass the bundled signature
-  check before installation.
+- **Every release is a plain version, and the in-app updater takes only those.**
+  It reads a fixed Pages manifest staged from the newest published release, and
+  every archive must pass the bundled signature check before installation.
 - **Screenshots demonstrate the product journey, not release availability.**
 
 ## Where it stands

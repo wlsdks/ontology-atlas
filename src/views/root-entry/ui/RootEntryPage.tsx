@@ -12,25 +12,9 @@ import { HomePage } from "@/views/home";
 import { FirstRunPage } from "@/views/first-run";
 
 /**
- * The root `/` entry branch, split by whether a vault is chosen:
- *
- * - **Web with no vault → the gateway.** `/` is that visitor's **face**. The condition matches the
- *   shell's own gateway verdict (`isGatewaySurface`), so chrome and content cannot disagree.
- * - **Desktop with no vault → `FirstRunPage`** (an Obsidian-style first run: open, create, demo). An
- *   installed app enters local work, not promotion.
- * - **Vault chosen, including a restore → `HomePage`.** The **return-visit contract**: when a vault
- *   handle already in use is restored from IndexedDB, you go straight to your own vault hub with no
- *   starter module, no SAMPLE badge, and no bottom-right readout — "do not make people click every time
- *   they come back." The `vault.manifest` check below handles this branch first, for web and desktop
- *   alike, and the INDEX panel's own gate (`restoreAttempted && mode === 'static'`) separately prevents
- *   a one-frame flicker before the restore completes.
- *
- * **The hub is the map.** An earlier design had `/` and `/ontology` each rendering the (then) tree/ego
- * hub `OntologyViewPage` as a deliberate dual surface. Redefining the hub as the map means `/` now
- * renders the same `HomePage` as `/topology` (map + INDEX + datasheet). `/ontology` remains its own
- * route but converges on the same surface through a thin redirect (`OntologyRedirectPage`) — the point
- * that the two URLs are still distinct explicit entry points survives; only the destination merged into
- * one map hub.
+ * The root entry: a chosen or restored vault goes straight to the map (`HomePage`), with no starter; the
+ * installed app without one gets `FirstRunPage`; the web without one gets the gateway, by the same
+ * verdict as the shell's `isGatewaySurface`, so chrome and content agree.
  */
 export function RootEntryPage() {
   const vault = useLocalVault();
@@ -43,33 +27,14 @@ export function RootEntryPage() {
 
   if (!clientReady) return <DesktopVaultRedirect />;
   if (vault.manifest) return <HomePage />;
-  /*
-   * **A returning person choosing between their folders is not an arriving visitor.**
-   *
-   * When the launch deliberately stopped to ask which folder (`awaitingVaultChoice`, two or
-   * more known), `FirstRunPage` is the chooser — it carries the known-folder list and swaps
-   * its own words. Without this arm the web branch below sent that person to the gateway,
-   * the download face, on a reload of their own workspace (workbench and interaction seats,
-   * 2026-09-13). It is the same reasoning as the lost-vault notice further down: coming back
-   * is not the same as arriving.
-   */
+  /* A person choosing between their folders gets the chooser, not the web gateway. */
   if (isDesktopShell() || vault.awaitingVaultChoice) {
-    // Hold a neutral boot frame until the restore has been attempted — if there is a vault to restore,
-    // this stops FirstRun from flashing for one frame.
+    // A neutral frame until the restore is attempted, or FirstRun flashes.
     return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />;
   }
   /*
-   * A web visitor who has not opened any folder yet. **For this person `/` is the face.** The
-   * condition matches the shell's gateway verdict (`isGatewaySurface`), so chrome and content
-   * cannot disagree. Opening a vault moves them to the `vault.manifest` branch above and the map.
-   *
-   * ⚠️ **Coming back is not the same as arriving** (census state 1b, 2026-08-31). Someone who
-   * connected a folder and then moved or deleted it landed on this same promotional face with no
-   * trace that a folder had ever been chosen — the most common re-entry path answered with total
-   * silence. The gateway still renders (there is nothing else to show), but the notice above it
-   * says what happened and hands over the picker. The stored handle is **not** cleared here: a
-   * failed restore is not proof the folder is gone forever, and forgetting it would delete the one
-   * fact the next visit needs. Only picking a folder again replaces it.
+   * A visitor whose connected folder no longer reads gets a notice and the picker over the gateway.
+   * The stored handle is kept: a failed restore does not prove the folder is gone.
    */
   const failedRestore =
     vault.restoreAttempted && vault.status === 'error' && !noticeDismissed;
@@ -88,14 +53,7 @@ export function RootEntryPage() {
   );
 }
 
-/**
- * The one line a returning visitor gets when the folder they connected is no longer readable.
- *
- * It names the folder when a name is known, because "your folder is gone" points at nothing a
- * person can recognise; without one it falls back to a sentence that works with no name rather
- * than printing empty quotation marks. Neutral panel tone: this is a fact plus a next step, not an
- * alarm, and the person did nothing wrong.
- */
+/** Names the folder when known; a neutral tone, since the person did nothing wrong. */
 function LostVaultNotice({
   folderName,
   missing,

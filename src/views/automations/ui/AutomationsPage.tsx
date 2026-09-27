@@ -64,8 +64,7 @@ export function AutomationsPage({
 
   const saveOntology = async (round: RoundRecord) => {
     if (!runner) return false;
-    // `save` answers `{ ok, startedNow }`; an ontology round never starts its first pass on
-    // save, so only the verdict is read here.
+    // An ontology round never starts its first pass on save, so `startedNow` is ignored.
     const { ok } = await runner.save(round);
     if (ok) toast.show(t("saved", { name: round.name }), "success");
     return ok;
@@ -80,8 +79,6 @@ export function AutomationsPage({
     setOntologySheetOpen(true);
   } : onOpenDocumentSchedule;
 
-  // Where no schedule can exist yet (the browser, no folder), the list drops its "0": it would
-  // count something this runtime cannot hold. The stage's title is the one empty message.
   const emptyStage = (title: string, description: string, action: ReactNode, canHoldSchedules: boolean) => (
     <AutomationEmptyWorkbench title={title} description={description} action={action}
       previewTitle={t(`${lane}.preview.title`)}
@@ -99,8 +96,6 @@ export function AutomationsPage({
       className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
       <div className={`${PAGE_FRAME_FORM} flex min-h-full flex-col gap-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-[var(--page-bottom-breath)]`}>
         <header className={PAGE_HEADER_ROW}>
-          {/* The "runs locally while Atlas is open" fact lives in the lede: as an 11px eyebrow it
-              floated alone at the top right, tied to nothing, as a fourth header text size. */}
           <div className="min-w-0">
             <h1 className="text-display font-[var(--font-weight-signature)]">{t("title")}</h1>
             <p className="mt-2 max-w-prose text-body-lg text-[color:var(--color-text-tertiary)]">{t("lede")}</p>
@@ -121,10 +116,7 @@ export function AutomationsPage({
 
         <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col gap-5">
           {state === "app-required" || state === "no-vault" ? (
-            // The same stage as an empty lane: the tabs still switch what each lane would do,
-            // and one primary action wins, instead of a one-row notice over a blank screen.
-            // Both stages' first press is the 32px primary `Button` most destinations use for
-            // theirs: at 40px its 12px corner read as a pill beside them (owner review, 2026-09-26).
+            // The empty-lane stage, so the tabs still show what each lane would do.
             <div className="flex flex-1 flex-col pt-6 pb-8">
               {emptyStage(
                 state === "app-required" ? t("appRequiredTitle") : t("openFolderTitle"),
@@ -142,8 +134,7 @@ export function AutomationsPage({
               action={<Button variant="outline" onClick={() => void runner?.refresh()} className="atlas-touch-floor atlas-touch-floor-wide">{t("retry")}</Button>} />
           ) : runner ? (
             <>
-              {/* The count is a quiet label, not a heading: at text-title it matched every row name
-                  under it, so the list had no attention winner. */}
+              {/* A quiet count: at title size it tied every row name for attention. */}
               {rounds.length > 0 ? <div data-testid="automations-lane-card" className="flex min-h-8 flex-wrap items-center justify-between gap-x-4 gap-y-2">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                   <h2 className="text-body font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-secondary)]">{t("scheduleCount", { count: rounds.length })}</h2>
@@ -152,8 +143,7 @@ export function AutomationsPage({
                   </p>
                 </div>
                 {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
-                {/* -mr-3.5 cancels the ghost's px-3.5, so the label ends on the cards' right edge
-                    instead of 14px inside it; the hover surface overhangs the gutter instead. */}
+                {/* -mr-3.5 cancels the ghost's px-3.5 so the label ends on the cards' right edge. */}
                 {lane === "documents" ? <Link href="/library/?tab=rounds" data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide -mr-3.5")}>
                   <LibraryBig size={ICON_SIZE.sm} aria-hidden />{t("documents.openRounds")}
                 </Link> : null}

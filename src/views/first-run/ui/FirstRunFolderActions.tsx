@@ -20,8 +20,7 @@ export function FirstRunFolderActions({ busy, showJustStart, onOpen, onCreate, t
   const tFirstRun = useTranslations('firstRun');
   useEffect(() => {
     if (!open) return;
-    // WebKit does not focus a button on a pointer click. Escape must still return
-    // to the trigger when focus stayed on the page rather than inside the menu.
+    // WebKit does not focus a clicked button, so Escape still returns to the trigger from the page.
     const restoreOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') trigger.current?.focus();
     };

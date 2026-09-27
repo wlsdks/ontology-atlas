@@ -626,51 +626,72 @@ test("download release verifier reports rate limits without a stack trace", asyn
   });
 });
 
-/**
- * Reproduces exactly how v1.0.0-rc.1 failed in CI on 2026-07-27.
- *
- * An RC draft is a draft, so `releases/tags/<tag>` returns 404 and the list
- * fallback runs — and only there was a second "reject prereleases" filter, absent
- * from the direct-lookup path. So a release found by name was filtered out anyway,
- * and the error message misleadingly said the tag was not found.
- *
- * A final tag never exposes this. It appears only on the day a first prerelease
- * ships.
- */
-test("download release verifier finds a prerelease draft that was requested by tag", async () => {
-  const rcTag = "v1.0.0-rc.1";
-  // The version in the DMG name must match the tag — this test also checks that the
-  // comparison holds for a version containing `-rc.1`.
-  const rcNames = ["ontology-atlas_1.0.0-rc.1_aarch64.dmg", "ontology-atlas_1.0.0-rc.1_x64.dmg"];
-  await withServer((req, res) => {
-    // A draft 404s on direct tag lookup — GitHub's actual behaviour.
-    if (req.url === `/repos/wlsdks/ontology-atlas/releases/tags/${rcTag}`) {
-      res.writeHead(404, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ message: "Not Found" }));
-      return;
-    }
-    if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=100") {
-      const payload = releasePayload(`http://${req.headers.host}`, validChecksum, rcNames, rcTag);
-      payload[0].draft = true;
-      payload[0].prerelease = true;
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(payload));
-      return;
-    }
-    makeHandler({ tagName: rcTag, names: rcNames })(req, res);
-  }, async (baseUrl) => {
-    const { stdout } = await execFileAsync(
-      process.execPath,
-      ["scripts/check-macos-download-release.mjs", `--tag=${rcTag}`, "--allow-draft"],
-      {
-        cwd: process.cwd(),
-        encoding: "utf8",
-        env: { ...process.env, OATLAS_GITHUB_API_BASE: baseUrl, GITHUB_TOKEN: "test-token" },
-      },
-    );
+test("download release verifier refuses a release GitHub marks as a pre-release, even when named by tag", async () => {
+  await withServer(makeHandler(), async (baseUrl) => {
+    const payload = releasePayload(baseUrl);
+    payload[0].draft = true;
+    payload[0].prerelease = true;
+    await withServer((req, res) => {
+      if (req.url === "/repos/wlsdks/ontology-atlas/releases/tags/v0.1.0") {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ message: "Not Found" }));
+        return;
+      }
+      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=100") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(payload));
+        return;
+      }
+      makeHandler()(req, res);
+    }, async (draftBaseUrl) => {
+      await assert.rejects(
+        execFileAsync(
+          process.execPath,
+          ["scripts/check-macos-download-release.mjs", "--tag=v0.1.0", "--allow-draft"],
+          {
+            cwd: process.cwd(),
+            encoding: "utf8",
+            env: {
+              ...process.env,
+              OATLAS_GITHUB_API_BASE: draftBaseUrl,
+              GITHUB_TOKEN: "test-token",
+            },
+          },
+        ),
+        (error) => {
+          assert.match(error.stderr, /marked as a pre-release on GitHub/);
+          return true;
+        },
+      );
+    });
+  });
+});
 
-    // Must pass without --allow-prerelease, because the tag was named.
-    assert.match(stdout, /draft macOS download assets/);
+test("download release verifier skips a newer pre-release when it picks the current release", async () => {
+  await withServer(makeHandler(), async (baseUrl) => {
+    const stable = releasePayload(baseUrl)[0];
+    const newer = { ...stable, tag_name: "v0.2.0", prerelease: true, assets: [] };
+    await withServer((req, res) => {
+      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify([newer, stable]));
+        return;
+      }
+      makeHandler()(req, res);
+    }, async (listBaseUrl) => {
+      const { stdout } = await runVerifier(listBaseUrl);
+
+      assert.match(stdout, /wlsdks\/ontology-atlas v0\.1\.0 exposes reachable public/);
+    });
+  });
+});
+
+test("download release verifier has no flag that accepts a pre-release", async () => {
+  await withServer(makeHandler(), async (baseUrl) => {
+    await assert.rejects(runVerifierWithArgs(baseUrl, ["--allow-prerelease"]), (error) => {
+      assert.match(error.stderr, /unknown argument: --allow-prerelease/);
+      return true;
+    });
   });
 });
 

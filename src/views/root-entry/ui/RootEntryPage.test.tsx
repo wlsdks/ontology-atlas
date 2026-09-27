@@ -59,13 +59,7 @@ describe('RootEntryPage', () => {
     mocks.vaultState = { handle: null, manifest: null, restoreAttempted: true };
   });
 
-  /*
-   * ⚠️ Census state 1b, the worst finding of the 2026-08-31 sweep: somebody who connected a folder,
-   * then moved or deleted it, came back to the promotional face with **no trace** that a folder had
-   * ever been chosen. The gateway still renders — there is nothing else to show — but it can no
-   * longer be the whole answer.
-   */
-  it('연결했던 폴더를 잃은 재방문자에게 무슨 일이 있었는지 말하고 피커를 건넨다', () => {
+  it('tells a returning visitor who lost the connected folder what happened and offers the picker', () => {
     const open = vi.fn(() => Promise.resolve());
     mocks.open = open;
     mocks.vaultState = {
@@ -80,7 +74,6 @@ describe('RootEntryPage', () => {
 
     render(<RootEntryPage />);
 
-    // The face still renders; the notice is added to it rather than replacing it.
     expect(screen.getByTestId('gateway-landing')).toBeInTheDocument();
     expect(screen.getByTestId('root-entry-lost-vault-notice')).toHaveTextContent(
       'Cannot find my-atlas',
@@ -89,7 +82,7 @@ describe('RootEntryPage', () => {
     expect(open).toHaveBeenCalledTimes(1);
   });
 
-  it('이름을 모르면 이름 자리를 비운 문장 대신 이름 없이도 성립하는 문장을 쓴다', () => {
+  it('uses a sentence that works without a name when the folder name is unknown', () => {
     mocks.vaultState = {
       handle: null,
       manifest: null,
@@ -107,11 +100,7 @@ describe('RootEntryPage', () => {
     expect(notice.textContent).not.toContain('Cannot find');
   });
 
-  /*
-   * Dismissing hides the line. It must **not** forget the stored handle: a failed restore is not
-   * proof the folder is gone forever, and forgetting it deletes the one fact the next visit needs.
-   */
-  it('알림을 닫아도 기억한 폴더를 지우지 않는다', () => {
+  it('keeps the remembered folder when the notice is dismissed', () => {
     const forgetRecent = vi.fn();
     mocks.vaultState = {
       handle: null,
@@ -131,7 +120,7 @@ describe('RootEntryPage', () => {
     expect(forgetRecent).not.toHaveBeenCalled();
   });
 
-  it('복구가 끝나기 전에는 아직 아무 말도 하지 않는다', () => {
+  it('says nothing before recovery finishes', () => {
     mocks.vaultState = {
       handle: null,
       manifest: null,
@@ -147,12 +136,7 @@ describe('RootEntryPage', () => {
     expect(screen.queryByTestId('root-entry-lost-vault-notice')).not.toBeInTheDocument();
   });
 
-  /**
-   * 2026-07-30 — the implementation reversing "root-first-open". This test locks **the reversed side**:
-   * for a web visitor who has not opened any folder, `/` is the face, not the map. The map belongs to
-   * `/topology`.
-   */
-  it('보여줄 볼트가 없는 웹 방문자에게 루트는 얼굴이다 — 지도가 아니라', () => {
+  it('shows the gateway, not the map, at the root for a web visitor with no vault', () => {
     render(<RootEntryPage />);
 
     expect(screen.getByTestId('gateway-landing')).toBeInTheDocument();
@@ -160,12 +144,7 @@ describe('RootEntryPage', () => {
     expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
   });
 
-  /**
-   * **The other half of the reversal stands.** Someone who has opened a vault is a worker rather than a
-   * visitor, so the root must not show them promotion. If this branch collapses, anyone with the app
-   * installed or with their own vault sees the download guidance every time.
-   */
-  it('볼트를 연 웹 사용자에게는 루트가 그대로 지도다', () => {
+  it('shows the map at the root for a web user with an open vault', () => {
     mocks.vaultState = {
       handle: {} as never,
       manifest: {} as never,
@@ -178,11 +157,7 @@ describe('RootEntryPage', () => {
     expect(screen.queryByTestId('gateway-landing')).not.toBeInTheDocument();
   });
 
-  /**
-   * The installed app must not tell someone who already installed it to "download" — this half of
-   * root-first-open was not reversed.
-   */
-  it('설치된 앱의 루트에는 얼굴이 뜨지 않는다', () => {
+  it('shows no gateway at the root of the installed app', () => {
     mocks.isDesktopShell = true;
 
     render(<RootEntryPage />);

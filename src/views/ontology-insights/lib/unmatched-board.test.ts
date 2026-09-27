@@ -80,13 +80,8 @@ describe("buildUnmatchedBoard — a dismissal is this viewer's, and only hides",
   });
 });
 
-/*
- * ⚠️ **Two boards on one screen must not count one fact twice** (decision 2026-08-07 (3)).
- * The first draft of this tab also carried missing containment and unplaced concepts, and
- * both already fed the Do-next badge — so one folder problem raised two numbers on the same
- * page. The narrowing holds because of what a dangling reference *is*: a name this folder
- * has no document for. Do-next rows are all real concepts, so the two sets cannot meet.
- */
+// Two boards on one screen must not count one fact twice: a dangling reference is a name without a document,
+// while Do-next rows are real concepts, so the sets cannot meet.
 describe("the unmatched list and the Do-next queue never hold the same thing", () => {
   const PROSE = new Proxy({} as Record<string, string>, {
     get: (_target, key) => (typeof key === "string" ? key : ""),

@@ -80,7 +80,6 @@ const cam = (x: number, y: number, scale: number): CameraAxes => ({
 
 const KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
 
-/** Small deterministic vault — 1 project · 2 domains · 3 capabilities · 3 elements. */
 const NODES: readonly DomeInputNode[] = [
   { id: "atlas", kind: "project", x: 10, y: -20, parentId: null },
   { id: "dom-a", kind: "domain", x: -300, y: 40, parentId: "atlas" },
@@ -93,15 +92,15 @@ const NODES: readonly DomeInputNode[] = [
   { id: "el-orphan", kind: "element", x: 80, y: 420, parentId: null },
 ];
 
-describe("dome-view — 높이·각도는 타입 사실을 나른다", () => {
-  it("KIND_DEPTH 는 스파인 서열(project 0 → element 3) 그대로다", () => {
+describe("dome-view heights and angles carry type facts", () => {
+  it("KIND_DEPTH follows the spine order (project 0 to element 3)", () => {
     expect(KIND_DEPTH.project).toBe(0);
     expect(KIND_DEPTH.domain).toBe(1);
     expect(KIND_DEPTH.capability).toBe(2);
     expect(KIND_DEPTH.element).toBe(3);
   });
 
-  it("링 높이는 깊은 kind 일수록 낮다 — project 꼭짓점, element 바닥", () => {
+  it("lowers the ring height for deeper kinds: project at the apex, element at the floor", () => {
     expect(DOME_PLANE.project.y).toBeGreaterThan(DOME_PLANE.domain.y);
     expect(DOME_PLANE.domain.y).toBeGreaterThan(DOME_PLANE.capability.y);
     expect(DOME_PLANE.capability.y).toBeGreaterThan(DOME_PLANE.element.y);
@@ -110,7 +109,7 @@ describe("dome-view — 높이·각도는 타입 사실을 나른다", () => {
     expect(DOME_PLANE.capability.r).toBeLessThan(DOME_PLANE.element.r);
   });
 
-  it("깊이 안개는 히어로 램프다 — 가까움 1.0, 멂 0.09, 단조 감소", () => {
+  it("depth fog is the hero ramp: 1.0 near, 0.09 far, decreasing monotonically", () => {
     expect(domeFogAlpha(0)).toBeCloseTo(1, 12);
     expect(domeFogAlpha(1)).toBeCloseTo(0.09, 12);
     expect(domeFogAlpha(0.5)).toBeLessThan(domeFogAlpha(0.25));
@@ -118,16 +117,14 @@ describe("dome-view — 높이·각도는 타입 사실을 나른다", () => {
     expect(domeLineWidthFactor(1)).toBeCloseTo(0.35, 12);
   });
 
-  it("레이아웃은 결정론이고, 각도의 출처는 containment 부모다", () => {
+  it("lays out deterministically, taking angles from the containment parent", () => {
     const a = buildDomeModel(NODES);
     const b = buildDomeModel(NODES);
     for (const [id, coord] of a.coords) {
       expect(b.coords.get(id)).toEqual(coord);
     }
-    // A lone project sits on the apex (the axis).
     expect(a.coords.get("atlas")).toEqual({ px: 0, py: DOME_PLANE.project.y, pz: 0 });
-    // Capabilities stay inside their parent domain's arc — children of one parent
-    // are angularly closer to it than to the opposite parent's children.
+    // Children of one parent are angularly closer to it than to the other parent's children.
     const angleOf = (id: string) => {
       const c = a.coords.get(id)!;
       return Math.atan2(c.pz, c.px);
@@ -138,26 +135,22 @@ describe("dome-view — 높이·각도는 타입 사실을 나른다", () => {
     };
     expect(angDist(angleOf("cap-a1"), angleOf("dom-a"))).toBeLessThan(angDist(angleOf("cap-a1"), angleOf("dom-b")));
     expect(angDist(angleOf("el-2"), angleOf("cap-b1"))).toBeLessThan(angDist(angleOf("el-2"), angleOf("cap-a1")));
-    // Every node carries the ring height of its own kind.
     for (const n of NODES) {
       expect(a.coords.get(n.id)!.py).toBe(DOME_PLANE[n.kind].y);
     }
   });
 });
 
-describe("dome-view — 프레임 맵은 worldToScreen 과 등가다 (드로우/히트 단일 출처)", () => {
-  it("worldToScreen(w + off) 는 돔 투영을 그대로 지난다 (램프 1)", () => {
+describe("dome-view frame map equals worldToScreen, one source for draw and hit", () => {
+  it("worldToScreen(w + off) passes through the dome projection at ramp 1", () => {
     const model = buildDomeModel(NODES);
     const runtime = createDomeRuntime(model);
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
     runtime.yaw = 1.234;
     runtime.pitch = 0.4;
     /*
-     * Turn the entry sweep off. This test's claim is that the frame map equals
-     * the projection of the **drawn** pose, not of the raw yaw/pitch. While the
-     * sweep is live the two poses differ, and that difference is correct
-     * (`runtime.drawYaw/drawPitch` is the single source of the drawn pose — a
-     * separate test below pins that contract).
+     * The frame map equals the projection of the drawn pose; with the entry sweep live the
+     * drawn and raw poses differ by design (a separate test pins `drawYaw`/`drawPitch`).
      */
     runtime.entryArmed = false;
     const BASE_R = 10;
@@ -171,10 +164,8 @@ describe("dome-view — 프레임 맵은 worldToScreen 과 등가다 (드로우/
       const want = worldToScreen(camera, 1512, 900, direct.wx, direct.wy);
       expect(via.x).toBeCloseTo(want.x, 9);
       expect(via.y).toBeCloseTo(want.y, 9);
-      // `s` is a radius multiplier, and base × s × cameraScale is what the draw
-      // paints — so the drawn radius is `DOME_NODE_PX[kind] × perspective` SCREEN
-      // pixels, whatever the zoom. That is the whole point of the table: fitting
-      // the cone bigger must buy spacing, not ink.
+      // The drawn radius is `DOME_NODE_PX[kind] × perspective` screen pixels at any zoom, so
+      // fitting the cone bigger buys spacing, not ink.
       expect(off.s * BASE_R * CAM_SCALE).toBeCloseTo(DOME_NODE_PX[n.kind] * direct.s, 9);
       expect(off.a).toBe(1);
       expect(off.u).toBeGreaterThanOrEqual(0);
@@ -182,7 +173,7 @@ describe("dome-view — 프레임 맵은 worldToScreen 과 등가다 (드로우/
     }
   });
 
-  it("램프 0 이면 오프셋 0 · 배율 1 — 2D 와 동일", () => {
+  it("gives offset 0 and scale 1 at ramp 0, the same as 2D", () => {
     const model = buildDomeModel(NODES);
     const runtime = createDomeRuntime(model);
     runtime.rampClock = 0;
@@ -195,7 +186,7 @@ describe("dome-view — 프레임 맵은 worldToScreen 과 등가다 (드로우/
     }
   });
 
-  it("조립 스태거 — project 가 먼저 서고 element 가 마지막에 선다", () => {
+  it("staggers the assembly: project stands first and element last", () => {
     expect(domeTierRamp(0, "project")).toBe(0);
     expect(domeTierRamp(300, "project")).toBeGreaterThan(domeTierRamp(300, "domain"));
     expect(domeTierRamp(500, "domain")).toBeGreaterThan(domeTierRamp(500, "capability"));
@@ -206,8 +197,8 @@ describe("dome-view — 프레임 맵은 worldToScreen 과 등가다 (드로우/
   });
 });
 
-describe("dome-view — 평면 내 역투영(3D 노드 드래그의 좌표 계약)", () => {
-  it("solve(project(p)) 가 자기 평면 좌표로 돌아온다", () => {
+describe("dome-view in-plane unprojection, the coordinate contract of 3D node drag", () => {
+  it("solve(project(p)) returns the in-plane coordinate", () => {
     const model = buildDomeModel(NODES);
     for (const [yaw, pitch] of [
       [0.55, DOME_PITCH_DEFAULT],
@@ -225,11 +216,9 @@ describe("dome-view — 평면 내 역투영(3D 노드 드래그의 좌표 계�
     }
   });
 
-  it("아래 시점(음수 pitch)에서도 solve(project(p)) 가 자기 평면 좌표로 돌아온다", () => {
-    // The coordinate contract of opening pitch to the full range (2026-08-18,
-    // second round). From below, the denominator's normal sign flips negative,
-    // and the old unconditional positive floor pinned every drag to that floor
-    // constant. The viewpoint decides the expected sign (`solveDomePlanePoint`).
+  it("solve(project(p)) returns the in-plane coordinate from below (negative pitch)", () => {
+    // From below the denominator's sign flips negative, so the viewpoint decides the expected
+    // sign (`solveDomePlanePoint`) instead of an unconditional positive floor.
     const model = buildDomeModel(NODES);
     for (const [yaw, pitch] of [
       [0.55, -DOME_PITCH_DEFAULT],
@@ -247,20 +236,17 @@ describe("dome-view — 평면 내 역투영(3D 노드 드래그의 좌표 계�
     }
   });
 
-  it("반경 상한 — 화면 밖으로 던져도 바닥 링 1.5× 안에서 방향만 유지한다", () => {
+  it("caps the radius: a throw off screen keeps its direction within 1.5x the floor ring", () => {
     const model = buildDomeModel(NODES);
     const solved = solveDomePlanePoint(model, DOME_PLANE.element.y, model.centerX + model.unit * 5000, model.centerY, 0.55, DOME_PITCH_DEFAULT);
     expect(solved).not.toBeNull();
     expect(Math.hypot(solved!.px, solved!.pz)).toBeLessThanOrEqual(DOME_PLANE.element.r * 1.5 + 1e-9);
   });
 
-  it("수평선 퇴화 — 포인터가 평면 수평선을 넘어도 얼지 않고 반경 상한 안의 유한한 점을 낸다", () => {
-    // Reproduces the owner report of 2026-08-18: "Some don't move properly even when clicked" (some of them don't move properly even when clicked). At low
-    // pitch (side-on) dragging a node upward takes the denominator through 0, and
-    // the earlier code returned either null (discarding that frame's move — the
-    // node freezes) or a solution behind the camera (it flies off). Contract:
-    // sweeping the full screen height always yields non-null, always finite,
-    // always inside the radius cap.
+  it("yields a finite point within the radius cap, without freezing, when the pointer crosses the plane horizon", () => {
+    // At low pitch dragging upward takes the denominator through 0; returning null freezes
+    // the node and a solution behind the camera flings it. A full-height sweep must stay
+    // non-null, finite and inside the radius cap.
     const model = buildDomeModel(NODES);
     for (const pitch of [DOME_PITCH_MIN, DOME_PITCH_DEFAULT, DOME_PITCH_MAX]) {
       for (const planeY of [DOME_PLANE.project.y, DOME_PLANE.domain.y, DOME_PLANE.element.y]) {
@@ -275,12 +261,12 @@ describe("dome-view — 평면 내 역투영(3D 노드 드래그의 좌표 계�
     }
   });
 
-  it("수평선 정점 — 분모가 정확히 0 인 포인터도 비-null (종전: null → 노드 동결)", () => {
+  it("returns non-null for a pointer exactly on the horizon where the denominator is 0", () => {
     const model = buildDomeModel(NODES);
     const pitch = DOME_PITCH_MIN;
     const cp = Math.cos(pitch);
     const sp = Math.sin(pitch);
-    // Solve for the uy where denom = F·sp + uy·cp = 0 and hit exactly that spot.
+    // The uy where denom = F·sp + uy·cp = 0.
     const uy = (-DOME_FOCAL * sp) / cp;
     const wy = model.centerY + uy * model.unit;
     const solved = solveDomePlanePoint(model, DOME_PLANE.domain.y, model.centerX + 50, wy, 0.55, pitch);
@@ -289,11 +275,9 @@ describe("dome-view — 평면 내 역투영(3D 노드 드래그의 좌표 계�
     expect(Number.isFinite(solved!.pz)).toBe(true);
   });
 
-  it("수평선 횡단 연속성 — 한 픽셀 옮겼는데 반대편 림으로 순간이동하지 않는다 (종전: 부호 뒤집힘)", () => {
-    // Once the denominator crossed to 0−, the solution flipped behind the camera
-    // and jumped to the rim at the opposite bearing — on screen, the node being
-    // dragged teleports to the far side of the dome. Contract: a one-unit pointer
-    // step may move the solution by at most one step along the rim.
+  it("does not teleport to the opposite rim when the pointer moves one pixel across the horizon", () => {
+    // Past 0− the solution flipped behind the camera to the opposite rim, teleporting the
+    // node; a one-unit pointer step may move it at most one step along the rim.
     const model = buildDomeModel(NODES);
     const pitch = DOME_PITCH_MIN;
     const cp = Math.cos(pitch);
@@ -313,12 +297,12 @@ describe("dome-view — 평면 내 역투영(3D 노드 드래그의 좌표 계�
   });
 });
 
-describe("dome-view — 물성(관성·러버밴드·스프링)", () => {
-  it("관성은 기하 감쇠로 줄다 임계 밑에서 0 으로 스냅한다", () => {
+describe("dome-view physics: inertia, rubber band and spring", () => {
+  it("decays inertia geometrically and snaps to 0 below the threshold", () => {
     let v = 0.002;
     for (let i = 0; i < 600; i++) v = decayOrbitVelocity(v, 16.7);
     expect(v).toBe(0);
-    // dt-invariant — the same total time gives the same value regardless of how it is split into frames.
+    // dt-invariant: the same total time gives the same value however it splits into frames.
     const oneStep = decayOrbitVelocity(0.002, 100);
     let split = 0.002;
     for (let i = 0; i < 10; i++) split = decayOrbitVelocity(split, 10);
@@ -326,29 +310,28 @@ describe("dome-view — 물성(관성·러버밴드·스프링)", () => {
   });
 
   it("pitch is clamped to 0.15–0.95 rad: the lit planes are always seen from above", () => {
-    // 2026-09-25 (lit strata): a tier disc seen from below reverses the level order and
-    // an edge-on disc loses it, so both are walls now. This replaces the 2026-08-18
-    // pole-to-pole range; the dissent is kept in the decision fragment.
+    // A tier disc seen from below reverses the level order and an edge-on disc loses it, so
+    // both are walls; the dissent is in the decision fragment.
     expect(DOME_PITCH_MIN).toBe(0.15);
     expect(DOME_PITCH_MAX).toBe(0.95);
-    expect(clampDomePitch(0)).toBe(DOME_PITCH_MIN); // edge-on — locked
-    expect(clampDomePitch(-0.8)).toBe(DOME_PITCH_MIN); // from below — locked
+    expect(clampDomePitch(0)).toBe(DOME_PITCH_MIN);
+    expect(clampDomePitch(-0.8)).toBe(DOME_PITCH_MIN);
     expect(clampDomePitch(DOME_PITCH_DEFAULT)).toBe(DOME_PITCH_DEFAULT);
     expect(clampDomePitch(2)).toBe(DOME_PITCH_MAX);
     expect(clampDomePitch(-2)).toBe(DOME_PITCH_MIN);
   });
 
-  it("pitch 러버밴드 — 1/4 저항이되 오버슛은 상한에서 멎는다(극점 뒤집힘 방지)", () => {
+  it("rubber-bands pitch at quarter resistance and stops the overshoot at the cap, so the pole never flips", () => {
     expect(resistDomePitch(DOME_PITCH_MAX + 0.2)).toBeCloseTo(DOME_PITCH_MAX + 0.05, 12);
     expect(resistDomePitch(DOME_PITCH_MIN - 0.2)).toBeCloseTo(DOME_PITCH_MIN - 0.05, 12);
-    // However hard you pull, the squash stops at 0.09 — even squashed it never passes π/2.
+    // However hard the pull, the squash stops at 0.09, never passing π/2.
     expect(resistDomePitch(DOME_PITCH_MAX + 40)).toBeCloseTo(DOME_PITCH_MAX + 0.09, 12);
     expect(resistDomePitch(DOME_PITCH_MAX + 40)).toBeLessThan(Math.PI / 2);
     expect(resistDomePitch(DOME_PITCH_MIN - 40)).toBeCloseTo(DOME_PITCH_MIN - 0.09, 12);
     expect(resistDomePitch(0.3)).toBe(0.3);
   });
 
-  it("드래그 스프링은 목표로 수렴한다 (임계감쇠 — 오버슛 없이 정착)", () => {
+  it("converges the drag spring to its target without overshoot (critically damped)", () => {
     const spring = { px: 0, pz: 0, vx: 0, vz: 0 };
     for (let i = 0; i < 200; i++) stepDomeDragSpring(spring, 100, -60, 16.7, 15);
     expect(spring.px).toBeCloseTo(100, 1);
@@ -356,14 +339,14 @@ describe("dome-view — 물성(관성·러버밴드·스프링)", () => {
     expect(Math.abs(spring.vx)).toBeLessThan(0.1);
   });
 
-  it("domeWorldBounds 는 유한 bbox 를 낸다 (「제자리로」의 입력)", () => {
+  it("domeWorldBounds yields a finite bbox, the input of return to home", () => {
     const model = buildDomeModel(NODES);
     const bounds = domeWorldBounds(model, 0.55, DOME_PITCH_DEFAULT)!;
     expect(bounds.minX).toBeLessThan(bounds.maxX);
     expect(bounds.minY).toBeLessThan(bounds.maxY);
   });
 
-  it("updateDomeFrame 은 그려진 자리의 bbox 를 남긴다 — 팬 리쉬 앵커의 입력", () => {
+  it("updateDomeFrame keeps the bbox of the drawn positions, the input of the pan leash anchor", () => {
     const model = buildDomeModel(NODES);
     const runtime = createDomeRuntime(model);
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
@@ -388,19 +371,18 @@ describe("dome-view — 물성(관성·러버밴드·스프링)", () => {
   });
 });
 
-describe("dome-view — 선택 리프레임·자율 회전 무장 (2026-08-18 2차)", () => {
-  it("domeNearestYawTurn — 같은 각의 등가각 중 현재에 가장 가까운 쪽을 고른다", () => {
+describe("dome-view selection reframe and auto-rotate arming", () => {
+  it("domeNearestYawTurn picks the equivalent angle nearest the current yaw", () => {
     const TAU = Math.PI * 2;
     expect(domeNearestYawTurn(0.55, 0.6)).toBeCloseTo(0.55, 12);
     expect(domeNearestYawTurn(0.55, 6.6)).toBeCloseTo(0.55 + TAU, 12);
     expect(domeNearestYawTurn(0.55, -5.5)).toBeCloseTo(0.55 - TAU, 12);
-    // Never turns more than half a revolution.
     for (const cur of [-9, -2.2, 0, 3.3, 14]) {
       expect(Math.abs(domeNearestYawTurn(0.55, cur) - cur)).toBeLessThanOrEqual(Math.PI + 1e-9);
     }
   });
 
-  it("domeFocusYaw — 그 yaw 로 투영하면 노드가 돔의 앞면(최소 깊이)에 온다", () => {
+  it("domeFocusYaw brings the node to the front of the dome (minimum depth)", () => {
     const model = buildDomeModel(NODES);
     for (const id of ["dom-a", "cap-b1", "el-2"]) {
       const coord = model.coords.get(id)!;
@@ -410,15 +392,14 @@ describe("dome-view — 선택 리프레임·자율 회전 무장 (2026-08-18 2�
       const r = Math.hypot(coord.px, coord.pz);
       const zMin = -r * Math.cos(DOME_PITCH_DEFAULT) - coord.py * Math.sin(DOME_PITCH_DEFAULT);
       expect(at.z).toBeCloseTo(zMin, 6);
-      // Equivalent-angle rule — never more than half a revolution from the current yaw.
       expect(Math.abs(yaw - 0.9)).toBeLessThanOrEqual(Math.PI + 1e-9);
     }
-    // A node on the axis (a lone project apex) gives no reason to rotate — the current yaw stands.
+    // A node on the axis gives no reason to rotate, so the current yaw stands.
     const apex = model.coords.get("atlas")!;
     expect(domeFocusYaw(apex, 1.23)).toBe(1.23);
   });
 
-  it("domeEgoWorldBounds — 모델에 있는 id 만으로 유한 bbox, 전부 없으면 null", () => {
+  it("domeEgoWorldBounds yields a finite bbox from ids in the model and null when none are", () => {
     const model = buildDomeModel(NODES);
     const b = domeEgoWorldBounds(model, ["dom-a", "cap-a1", "ghost-id"], 0.55, DOME_PITCH_DEFAULT);
     expect(b).not.toBeNull();
@@ -427,18 +408,16 @@ describe("dome-view — 선택 리프레임·자율 회전 무장 (2026-08-18 2�
     expect(domeEgoWorldBounds(model, ["ghost-id"], 0.55, DOME_PITCH_DEFAULT)).toBeNull();
   });
 
-  it("새 런타임은 회전 무장 상태로, 자세 이동 없이 시작한다", () => {
-    // The attract rotation is the default for a screen nobody has touched yet.
-    // Disarming it on intervention (orbit, zoom, pinch, node drag, selection) is
-    // the loop's and the pointer handlers' contract, not this one's.
+  it("starts a new runtime armed for rotation with no pose movement", () => {
+    // Disarming on intervention belongs to the loop and pointer handlers, not this contract.
     const runtime = createDomeRuntime(buildDomeModel(NODES));
     expect(runtime.spinArmed).toBe(true);
     expect(runtime.poseTween).toBeNull();
   });
 });
 
-describe("worldToScreen — 깊이 항이 없으면 출력이 종전과 동일하다 (하드 계약)", () => {
-  it("기본 경로는 기존 두 줄 식 그대로다", () => {
+describe("worldToScreen without a depth term matches the flat projection exactly", () => {
+  it("the default path is the plain two-line formula", () => {
     const camera = cam(37.5, -18.25, 0.85);
     for (const [wx, wy] of [
       [0, 0],
@@ -447,13 +426,13 @@ describe("worldToScreen — 깊이 항이 없으면 출력이 종전과 동일�
       [99999, -99999],
     ]) {
       const p = worldToScreen(camera, 1512, 900, wx, wy);
-      // The same formula written out literally — a change to the function body is caught here.
+      // The formula written out, so a change to the function body is caught.
       expect(p.x).toBe((wx - 37.5) * 0.85 + 1512 / 2);
       expect(p.y).toBe((wy - -18.25) * 0.85 + 900 / 2);
     }
   });
 
-  it("z=0 · lift=0 깊이 항은 기본 경로와 같은 좌표를 낸다", () => {
+  it("a depth term with z=0 and lift=0 gives the same coordinates as the default path", () => {
     const camera = cam(5, 9, 1.3);
     const flat = worldToScreen(camera, 800, 600, 123.4, -56.7);
     const zero = worldToScreen(camera, 800, 600, 123.4, -56.7, { z: 0, lift: 0, focal: DOME_FOCAL });
@@ -462,30 +441,29 @@ describe("worldToScreen — 깊이 항이 없으면 출력이 종전과 동일�
   });
 });
 
-/* ── 3D quality layer: shell · meridians · halo · latitude rings ─────────── */
 
-describe("깊이 헤일로 — 가까운 것이 먼 것을 가린다", () => {
-  it("가까울수록 넓고 멀수록 0 으로 수렴한다", () => {
+describe("depth halo lets the near occlude the far", () => {
+  it("widens when near and converges to 0 when far", () => {
     expect(domeHaloPx(0)).toBeCloseTo(DOME_HALO_MAX_PX, 6);
     expect(domeHaloPx(1)).toBeCloseTo(0, 6);
     expect(domeHaloPx(0.3)).toBeGreaterThan(domeHaloPx(0.7));
   });
 
-  it("범위 밖 입력을 클램프한다 — 정규화가 어긋난 프레임에서도 음수 폭이 안 나온다", () => {
+  it("clamps out-of-range input so a misnormalised frame yields no negative width", () => {
     expect(domeHaloPx(-2)).toBeCloseTo(DOME_HALO_MAX_PX, 6);
     expect(domeHaloPx(9)).toBeCloseTo(0, 6);
   });
 });
 
-describe("먼 쪽 상세 램프 — 뒤쪽 반구의 부가 획만 깊이 연속으로 접는다", () => {
-  it("앞쪽 반구는 정확히 1 이다 — 관찰자 쪽 픽셀은 한 자리도 달라질 수 없다", () => {
+describe("far-side detail ramp folds only the extra strokes of the back hemisphere, continuously in depth", () => {
+  it("is exactly 1 on the front hemisphere, so no pixel on the viewer side changes", () => {
     expect(DOME_DETAIL_FADE_START).toBeGreaterThanOrEqual(0.5);
     for (let u = 0; u <= DOME_DETAIL_FADE_START + 1e-9; u += 0.01) {
       expect(domeDetailFactor(u)).toBe(1);
     }
   });
 
-  it("END 이후 0, 사이는 단조 감소·중점 0.5 (smoothstep)", () => {
+  it("is 0 past END and decreases monotonically between, 0.5 at the midpoint (smoothstep)", () => {
     expect(domeDetailFactor(DOME_DETAIL_FADE_END)).toBe(0);
     expect(domeDetailFactor(1)).toBe(0);
     expect(domeDetailFactor((DOME_DETAIL_FADE_START + DOME_DETAIL_FADE_END) / 2)).toBeCloseTo(0.5, 9);
@@ -498,7 +476,7 @@ describe("먼 쪽 상세 램프 — 뒤쪽 반구의 부가 획만 깊이 연속
   });
 });
 
-describe("위도 링 — 좌표계이지 데이터가 아니다", () => {
+describe("latitude rings are a coordinate system, not data", () => {
   const nodes: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "d", kind: "domain", x: 100, y: 0, parentId: "p" },
@@ -506,53 +484,53 @@ describe("위도 링 — 좌표계이지 데이터가 아니다", () => {
     { id: "e", kind: "element", x: 140, y: 80, parentId: "c" },
   ];
 
-  it("링은 모델의 원뿔 바닥 원이다 — 한 줄기 사슬(p→d→c→e)에는 프로젝트 바닥 하나뿐", () => {
+  it("rings are the cone floor circles of the model: a single chain (p to d to c to e) has only the project floor", () => {
     const runtime = createDomeRuntime(buildDomeModel(nodes));
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
     updateDomeFrame(runtime, nodes, () => 10);
-    // d, c each have one child → radius 0 → no base circle; only the project's ring.
+    // d and c have one child each, radius 0 and no base circle; only the project's ring.
     expect(runtime.rings).toHaveLength(1);
     expect(runtime.rings[0].kind).toBe("domain");
     expect(runtime.rings[0].points).toHaveLength(DOME_RING_SAMPLES);
     expect(runtime.rings[0].a).toBeGreaterThan(0.99);
   });
 
-  it("표본 수는 반지름에 비례하고 바닥 12 · 천장 DOME_RING_SAMPLES 이다", () => {
+  it("scales the sample count with the radius, floor 12 and ceiling DOME_RING_SAMPLES", () => {
     expect(domeRingSampleCount(DOME_PLANE.domain.r)).toBe(DOME_RING_SAMPLES);
     expect(domeRingSampleCount(1)).toBe(12);
     expect(domeRingSampleCount(40)).toBeGreaterThan(12);
     expect(domeRingSampleCount(40)).toBeLessThan(DOME_RING_SAMPLES);
   });
 
-  it("한 링 안에서 깊이가 갈린다 — 앞뒤가 같으면 링은 깊이 단서가 아니다", () => {
+  it("varies depth within one ring, or the ring gives no depth cue", () => {
     const runtime = createDomeRuntime(buildDomeModel(nodes));
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
     updateDomeFrame(runtime, nodes, () => 10);
     const us = runtime.rings[0].points.map((point) => point.u);
     expect(Math.max(...us) - Math.min(...us)).toBeGreaterThan(0.2);
-    // Must be clamped on the same scale as the node frame, or the fog falls differently on the two.
+    // Clamped on the node frame's scale, or the fog falls differently on the two.
     for (const u of us) {
       expect(u).toBeGreaterThanOrEqual(0);
       expect(u).toBeLessThanOrEqual(1);
     }
   });
 
-  it("조립 램프가 0 이면 링도 0 — 2D 에서는 그리지 않는다", () => {
+  it("draws no ring at assembly ramp 0, so none in 2D", () => {
     const runtime = createDomeRuntime(buildDomeModel(nodes));
     runtime.rampClock = 0;
     updateDomeFrame(runtime, nodes, () => 10);
     for (const ring of runtime.rings) expect(ring.a).toBeLessThanOrEqual(0);
   });
 
-  it("링 잉크는 데이터 잉크 아래에 머문다 — 좌표계가 주목을 다투면 안 된다", () => {
+  it("keeps ring ink below data ink, so the coordinate system never competes for attention", () => {
     expect(DOME_RING_ALPHA).toBeLessThan(0.5);
   });
 });
 
-describe("티어 비틀림 — 손과 프로그램이 같은 함수를 쓴다", () => {
+describe("tier twist uses one function for hand and program", () => {
   const zero = () => ({ project: 0, domain: 0, capability: 0, element: 0 });
 
-  it("깊은 티어일수록 더 뒤처진다 — 뒤집히면 위계가 거꾸로 읽힌다", () => {
+  it("lags deeper tiers further, or the hierarchy reads upside down", () => {
     const lag = zero();
     chargeTierLag(lag, 1);
     expect(lag.project).toBe(0);
@@ -561,7 +539,7 @@ describe("티어 비틀림 — 손과 프로그램이 같은 함수를 쓴다", 
     expect(Math.abs(lag.domain)).toBeGreaterThan(Math.abs(lag.project));
   });
 
-  it("비틀림의 부호는 회전 반대편이다 — 뒤처짐이지 앞서감이 아니다", () => {
+  it("twists against the rotation: a lag, not a lead", () => {
     const lag = zero();
     chargeTierLag(lag, 1);
     expect(lag.element).toBeLessThan(0);
@@ -571,13 +549,10 @@ describe("티어 비틀림 — 손과 프로그램이 같은 함수를 쓴다", 
   });
 
   /*
-   * `/gate-probe` — **this assertion was red before the third round of
-   * 2026-08-18.** The twist existed only on the hand-drag path; programmatic pose
-   * moves (click-to-reframe, 「Recenter」) rotated the four rings as one
-   * frozen block. The same rotation behaving like a different object depending on
-   * who started it is exactly what reads as "a JS animation".
+   * Program pose moves (reframe, Recenter) must twist the rings too, or the same rotation
+   * looks like a different object depending on who started it.
    */
-  it("프로그램 이동도 비틀림을 만든다 — 다만 손보다 약하게", () => {
+  it("twists on program motion too, but weaker than by hand", () => {
     const hand = zero();
     chargeTierLag(hand, 0.2);
     const program = zero();
@@ -587,7 +562,7 @@ describe("티어 비틀림 — 손과 프로그램이 같은 함수를 쓴다", 
     expect(program.element).toBeCloseTo(hand.element * DOME_POSE_LAG_SCALE, 12);
   });
 
-  it("배수 기본값은 1 — 손 드래그는 1:1 직접 조작이다", () => {
+  it("defaults the multiplier to 1, so a hand drag is 1:1 direct manipulation", () => {
     const a = zero();
     const b = zero();
     chargeTierLag(a, 0.37);
@@ -596,7 +571,7 @@ describe("티어 비틀림 — 손과 프로그램이 같은 함수를 쓴다", 
     expect(a.element).toBeCloseTo(0.37 * DOME_TIER_LAG.element, 12);
   });
 
-  it("충전은 누적된다 — 프레임마다 더해지고 감쇠가 따로 되감는다", () => {
+  it("accumulates the charge every frame while damping unwinds it separately", () => {
     const lag = zero();
     chargeTierLag(lag, 0.1);
     const once = lag.element;
@@ -605,55 +580,51 @@ describe("티어 비틀림 — 손과 프로그램이 같은 함수를 쓴다", 
   });
 });
 
-describe("돔 손잡이 — 어디를 끌면 돌리고 어디를 끌면 옮기나", () => {
+describe("dome handle: where a drag rotates and where it pans", () => {
   const bounds = { minX: -100, minY: -50, maxX: 100, maxY: 50 };
 
-  it("중심은 손잡이 안이다 — 돔 위 드래그는 회전", () => {
+  it("the centre is inside the handle, so a drag on the dome rotates", () => {
     expect(isInsideDomeGrip(bounds, 0, 0)).toBe(true);
   });
 
   /*
-   * `/gate-probe` — **this assertion is why the rule exists.** Testing against
-   * the bbox makes the four corners count as "on the object": empty black screen
-   * that rotates when you drag it — the exact spot the owner pointed at. Only an
-   * ellipse makes the test match what the eye sees. Reverting to a rectangular
-   * test turns this red.
+   * An ellipse, not the bbox: corners of the bbox are empty screen that would rotate when
+   * dragged. A rectangular test turns this red.
    */
-  it("bbox 모서리는 손잡이 **밖**이다 — 거기서 끌면 지도가 따라온다", () => {
+  it("bbox corners are outside the handle, so a drag there pans the map", () => {
     expect(isInsideDomeGrip(bounds, 100, 50)).toBe(false);
     expect(isInsideDomeGrip(bounds, -100, -50)).toBe(false);
   });
 
-  it("축 위 가장자리는 여백만큼 안이다 — 돔 테두리를 잡았는데 지도가 밀리면 안 된다", () => {
-    // With margin 1.08, 100% of the semi-axis is still inside; past 108% is outside.
+  it("axis edges are inside by the margin, so grabbing the dome rim never pans the map", () => {
+    // With margin 1.08 the full semi-axis is inside and past 108% is outside.
     expect(isInsideDomeGrip(bounds, 100, 0)).toBe(true);
     expect(isInsideDomeGrip(bounds, 100 * DOME_GRIP_MARGIN + 1, 0)).toBe(false);
   });
 
-  it("먼 검은 자리는 언제나 밖이다", () => {
+  it("a far empty spot is always outside", () => {
     expect(isInsideDomeGrip(bounds, 900, 700)).toBe(false);
   });
 
-  it("그려진 것이 없으면 밖이다 — 판정할 물체가 없으면 기본값(팬)이 이긴다", () => {
+  it("nothing drawn means outside, so the default (pan) wins without an object to judge", () => {
     expect(isInsideDomeGrip(null, 0, 0)).toBe(false);
     expect(isInsideDomeGrip({ minX: 5, minY: 5, maxX: 5, maxY: 5 }, 5, 5)).toBe(false);
   });
 
-  it("납작한 돔에서도 세로 판정이 가로를 따라가지 않는다 — 축마다 자기 반지름", () => {
-    // A vertically very flat bbox: far horizontally is still inside, slightly off vertically is outside.
+  it("a flat dome judges vertical by its own radius, not the horizontal one", () => {
     const flat = { minX: -200, minY: -10, maxX: 200, maxY: 10 };
     expect(isInsideDomeGrip(flat, 150, 0)).toBe(true);
     expect(isInsideDomeGrip(flat, 0, 30)).toBe(false);
   });
 });
 
-describe("진입 스윕 — 그린 자세의 단일 출처", () => {
+describe("entry sweep is the single source of the drawn pose", () => {
   const nodes: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "d", kind: "domain", x: 100, y: 0, parentId: "p" },
   ];
 
-  it("스윕이 살아 있으면 그린 자세가 raw 자세와 다르다 — 그리고 프레임은 그린 쪽을 따른다", () => {
+  it("the drawn pose differs from the raw pose while the sweep lives, and the frame follows the drawn one", () => {
     const model = buildDomeModel(nodes);
     const runtime = createDomeRuntime(model);
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
@@ -669,7 +640,7 @@ describe("진입 스윕 — 그린 자세의 단일 출처", () => {
     expect(nodes[1].y + off.dy).toBeCloseTo(drawn.wy, 9);
   });
 
-  it("스윕이 다 소진되면 그린 자세 = raw 자세", () => {
+  it("the drawn pose equals the raw pose once the sweep is spent", () => {
     const model = buildDomeModel(nodes);
     const runtime = createDomeRuntime(model);
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
@@ -681,13 +652,10 @@ describe("진입 스윕 — 그린 자세의 단일 출처", () => {
   });
 
   /*
-   * `/gate-probe` — simply setting `entryArmed = false` makes the drawn pose jump
-   * in one frame: the screen jumps at the very moment the user touches it, which
-   * breaks the contract this repo keeps consistently across camera, orbit, and
-   * pose moves — a gesture takes over from where things are right now. This
-   * assertion catches that jump.
+   * Clearing `entryArmed` alone makes the drawn pose jump the moment the user touches it;
+   * a gesture takes over from where things are now.
    */
-  it("손이 닿을 때 자세로 개어 넣는다 — 그린 자세가 바이트 그대로 유지된다", () => {
+  it("folds the sweep into the pose on touch, keeping the drawn pose byte for byte", () => {
     const model = buildDomeModel(nodes);
     const runtime = createDomeRuntime(model);
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
@@ -703,12 +671,12 @@ describe("진입 스윕 — 그린 자세의 단일 출처", () => {
     expect(runtime.entryArmed).toBe(false);
     expect(runtime.drawYaw).toBeCloseTo(beforeYaw, 9);
     expect(runtime.drawPitch).toBeCloseTo(beforePitch, 9);
-    // The target must move too, or smoothing drags back toward the old one.
+    // The target moves too, or smoothing drags back toward the old one.
     expect(runtime.yawTarget).toBeCloseTo(runtime.yaw, 9);
     expect(runtime.pitchTarget).toBeCloseTo(runtime.pitch, 9);
   });
 
-  it("이미 무장 해제됐으면 아무 일도 안 한다 — 두 번 부르면 각이 두 번 더해진다", () => {
+  it("does nothing when already disarmed, or a second call adds the angle twice", () => {
     const model = buildDomeModel(nodes);
     const runtime = createDomeRuntime(model);
     runtime.entryClock = 400;
@@ -721,14 +689,14 @@ describe("진입 스윕 — 그린 자세의 단일 출처", () => {
   });
 });
 
-describe("릴리스 투영 — 관성이 의미 있는 자리에 착지한다", () => {
-  it("투영 거리는 감쇠 상수에서 나온다 — 속도 × 총 이동 계수", () => {
-    // Σ v·d^t dt = v / (−ln d). Change the damping and this value must follow.
+describe("release projection lands inertia where it means something", () => {
+  it("derives the projection distance from the damping constant: velocity times total travel factor", () => {
+    // Σ v·d^t dt = v / (−ln d), so the value follows the damping.
     expect(projectOrbitLanding(1, 0.002)).toBeCloseTo(1 + 0.002 * ORBIT_DECAY_TRAVEL_MS, 9);
-    expect(projectOrbitLanding(1, 0), "속도 0 이면 제자리다").toBe(1);
+    expect(projectOrbitLanding(1, 0), "zero velocity stays in place").toBe(1);
   });
 
-  it("도메인 자오선 — 그 각에서 도메인이 정면(깊이 최소)에 선다", () => {
+  it("domain meridian puts the domain in front (minimum depth) at that angle", () => {
     const nodes: DomeInputNode[] = [
       { id: "p", kind: "project", x: 0, y: 0, parentId: null },
       { id: "d1", kind: "domain", x: 100, y: 0, parentId: "p" },
@@ -738,67 +706,61 @@ describe("릴리스 투영 — 관성이 의미 있는 자리에 착지한다", 
     const model = buildDomeModel(nodes);
     const yaws = domeFacingYaws(model);
     expect(yaws).toHaveLength(3);
-    // Check which domain is actually nearest at each candidate yaw — if the
-    // derivation (yaw = −π/2 − θ) is wrong, this turns red.
+    // Checks the nearest domain at each candidate yaw, so a wrong yaw = −π/2 − θ turns red.
     for (const yaw of yaws) {
       let minZ = Infinity;
       for (const id of ["d1", "d2", "d3"]) {
         const p = projectDomeCoord(model, model.coords.get(id)!, yaw, DOME_PITCH_DEFAULT);
         if (p.z < minZ) minZ = p.z;
       }
-      // A node standing front-on must be a full ring radius toward the camera in depth.
       expect(minZ).toBeLessThan(0);
     }
   });
 
-  it("창 안이면 겨누고, 창 밖이면 아무 일도 안 한다", () => {
+  it("aims inside the window and does nothing outside it", () => {
     const candidates = [0, 1, 2];
     expect(snapOrbitLanding(1.05, candidates, 0.14)).toBeCloseTo(1, 9);
     expect(snapOrbitLanding(1.5, candidates, 0.14)).toBeNull();
   });
 
-  it("후보는 2π 주기다 — 여러 바퀴 돌아도 가장 가까운 등가각으로 접힌다", () => {
+  it("treats candidates as 2pi periodic, folding many turns to the nearest equivalent angle", () => {
     const snapped = snapOrbitLanding(1 + 4 * Math.PI + 0.03, [1], 0.14);
     expect(snapped).not.toBeNull();
     expect(snapped! - (1 + 4 * Math.PI)).toBeCloseTo(0, 9);
   });
 
-  it("창 기본값이 좁다 — 넓으면 「내가 세운 자리를 앱이 옮긴다」가 된다", () => {
+  it("keeps the default window narrow, or the app moves the place the person set", () => {
     expect(ORBIT_SNAP_WINDOW_RAD).toBeLessThan(0.25);
   });
 
   /*
-   * `/gate-probe` — solving τ back out of the release velocity is what makes this
-   * feature velocity-continuous. Revert to a fixed τ and the speed jumps on the
-   * frame the hand lifts. This assertion pins the derivation: over the same
-   * distance, a faster release must give a shorter τ.
+   * Solving τ from the release velocity keeps speed continuous when the hand lifts; a
+   * fixed τ turns this red.
    */
-  it("τ 를 릴리스 속도에서 역산한다 — 빠르게 놓을수록 짧다", () => {
+  it("derives tau from the release velocity: a faster release is shorter", () => {
     const slow = orbitSnapTauMs(0.2, 0.0005);
     const fast = orbitSnapTauMs(0.2, 0.002);
     expect(fast).toBeLessThan(slow);
     expect(orbitSnapTauMs(0.2, 0.002)).toBeCloseTo(100, 6);
   });
 
-  it("도착 임계가 1px 보다 작다 — 그리고 0 이 아니다(지수 접근은 도달하지 않는다)", () => {
+  it("keeps the arrival threshold below 1px and above 0, since exponential approach never arrives", () => {
     expect(ORBIT_SNAP_ARRIVE_RAD).toBeGreaterThan(0);
-    // 1px on the outer ring ≈ 0.008rad (the measured conversion in the doc-block).
+    // 1px on the outer ring ≈ 0.008 rad (the conversion in the constant's doc-block).
     expect(ORBIT_SNAP_ARRIVE_RAD).toBeLessThan(0.008);
   });
 
-  it("τ 를 범위 안으로 잠근다 — 순간이동도, 영원히 안 멎는 것도 막는다", () => {
+  it("clamps tau to its range, preventing both a teleport and a spin that never stops", () => {
     expect(orbitSnapTauMs(0.001, 1)).toBe(ORBIT_SNAP_TAU_MIN_MS);
     expect(orbitSnapTauMs(10, 0.00001)).toBe(ORBIT_SNAP_TAU_MAX_MS);
-    // With the opposite sign (target behind the direction of travel) the derivation is negative and falls to the cap.
+    // A target behind the direction of travel derives negative and falls to the cap.
     expect(orbitSnapTauMs(-0.2, 0.002)).toBe(ORBIT_SNAP_TAU_MAX_MS);
     expect(orbitSnapTauMs(0.2, 0)).toBe(ORBIT_SNAP_TAU_MAX_MS);
   });
 });
 
-/* ── Placement basis: containment (dome) vs connection (cloud) ───────────── */
 
-describe("결합 구름 — 관계가 자리를 정한다", () => {
-  /** Two groups linked only internally, joined to each other by a single bridge. */
+describe("coupling cloud lets relations decide positions", () => {
   const nodes: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "a1", kind: "domain", x: 10, y: 0, parentId: "p" },
@@ -824,46 +786,44 @@ describe("결합 구름 — 관계가 자리를 정한다", () => {
     return Math.hypot(a.px - b.px, a.py - b.py, a.pz - b.pz);
   };
 
-  it("기본은 소유다 — 옵션을 안 주면 돔 그대로", () => {
+  it("defaults to ownership, the plain dome without the option", () => {
     expect(buildDomeModel(nodes).arrangement).toBe("ownership");
   });
 
   /*
-   * `/gate-probe` — **the first implementation died here.** Relaxing only the
-   * bearing while pinning tier height drew the owner's verdict *"What I wanted was a completely different shape."* The cloud
-   * only reads differently from the dome if connection decides height as well.
-   * Pin the tiers again and this assertion turns red.
+   * The cloud reads as a different shape only when connection decides height too; pinning
+   * tier heights again turns this red.
    */
-  it("높이가 kind 평면에서 풀린다 — 이게 돔과 다른 모양이 되는 지점이다", () => {
+  it("releases height from the kind plane, where the shape departs from the dome", () => {
     const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });
     expect(cloud.arrangement).toBe("coupling");
     const offPlane = nodes.filter((n) => {
       const c = cloud.coords.get(n.id)!;
       return Math.abs(c.py - DOME_PLANE[n.kind].y) > 1;
     });
-    expect(offPlane.length, "모든 노드가 아직 자기 kind 평면 위에 있다 — 돔의 변주일 뿐이다").toBeGreaterThan(
+    expect(offPlane.length, "every node still sits on its kind plane, so this is only a dome variant").toBeGreaterThan(
       nodes.length / 2,
     );
   });
 
-  it("같은 무리끼리가 다른 무리보다 가깝다 — 결합이 실제로 자리를 정했다", () => {
+  it("places members of one group closer than members of different groups", () => {
     const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });
     const within = (dist(cloud, "a2", "a3") + dist(cloud, "b2", "b3")) / 2;
     const across = (dist(cloud, "a2", "b2") + dist(cloud, "a3", "b3")) / 2;
-    expect(within, `무리 안 ${within.toFixed(1)} · 무리 밖 ${across.toFixed(1)}`).toBeLessThan(across);
+    expect(within, `within group ${within.toFixed(1)}, across groups ${across.toFixed(1)}`).toBeLessThan(across);
   });
 
-  it("겹치지 않는다 — 밀어냄이 실제로 일한다", () => {
+  it("leaves no overlap, so repulsion does work", () => {
     const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });
     for (const a of nodes) {
       for (const b of nodes) {
         if (a.id >= b.id) continue;
-        expect(dist(cloud, a.id, b.id), `${a.id}·${b.id} 가 겹쳤다`).toBeGreaterThan(1);
+        expect(dist(cloud, a.id, b.id), `${a.id} and ${b.id} overlap`).toBeGreaterThan(1);
       }
     }
   });
 
-  it("무게중심이 원점이다 — 회전축이 구름 밖이면 조금만 돌려도 화면을 벗어난다", () => {
+  it("centres the mass at the origin, or a small rotation swings the cloud off screen", () => {
     const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });
     let mx = 0;
     let my = 0;
@@ -877,14 +837,14 @@ describe("결합 구름 — 관계가 자리를 정한다", () => {
     expect(Math.hypot(mx / n, my / n, mz / n)).toBeLessThan(1e-6);
   });
 
-  it("반지름이 돔과 같은 스케일이다 — 카메라 핏과 안개가 두 배치에 같게 걸린다", () => {
+  it("keeps the radius on the dome scale, so camera fit and fog apply alike to both layouts", () => {
     const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });
     let maxR = 0;
     for (const c of cloud.coords.values()) maxR = Math.max(maxR, Math.hypot(c.px, c.py, c.pz));
     expect(maxR).toBeCloseTo(DOME_FIT_RADIUS, 6);
   });
 
-  it("결정론 — 같은 입력이면 바이트 그대로 같다 (난수 0)", () => {
+  it("is deterministic: the same input gives the same bytes (no randomness)", () => {
     const a = buildDomeModel(nodes, { arrangement: "coupling", edges });
     const b = buildDomeModel(nodes, { arrangement: "coupling", edges });
     for (const [id, ca] of a.coords) {
@@ -895,7 +855,7 @@ describe("결합 구름 — 관계가 자리를 정한다", () => {
     }
   });
 
-  it("관계가 없으면 소유 배치 그대로다 — 정할 근거가 없으면 안 흔든다", () => {
+  it("keeps the ownership layout without relations, having no ground to move it", () => {
     const plain = buildDomeModel(nodes);
     const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges: [] });
     for (const [id, c] of plain.coords) {
@@ -903,11 +863,11 @@ describe("결합 구름 — 관계가 자리를 정한다", () => {
     }
   });
 
-  it("반복 횟수가 고정이다 — 시간 기반이면 기계마다 다른 그림이 나온다", () => {
+  it("fixes the iteration count, or each machine draws a different picture", () => {
     expect(CLOUD_ITERATIONS).toBeGreaterThan(50);
   });
 
-  it("구름에는 위도 링이 없다 — 없는 좌표계를 그리지 않는다", () => {
+  it("draws no latitude ring for the cloud, which has no such coordinate system", () => {
     const runtime = createDomeRuntime(buildDomeModel(nodes, { arrangement: "coupling", edges }));
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
     updateDomeFrame(runtime, nodes, () => 10);
@@ -917,8 +877,7 @@ describe("결합 구름 — 관계가 자리를 정한다", () => {
 
 });
 
-describe("콘 트리 — 자식은 부모 바로 아래 원 위에 놓인다 (2026-09-02)", () => {
-  /** 1 project · 3 domains of unequal size · capabilities · elements. */
+describe("cone tree places children on a circle directly below the parent", () => {
   const tree: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "d-big", kind: "domain", x: 0, y: 0, parentId: "p" },
@@ -934,35 +893,32 @@ describe("콘 트리 — 자식은 부모 바로 아래 원 위에 놓인다 (20
   ];
   const horizontal = (a: { px: number; pz: number }, b: { px: number; pz: number }) => Math.hypot(a.px - b.px, a.pz - b.pz);
 
-  it("자식은 부모의 (px, pz) 둘레 안에 있다 — 섹터가 아니라 바로 아래", () => {
+  it("keeps children within the parent (px, pz) circle, directly below rather than in a sector", () => {
     const m = buildDomeModel(tree);
     for (const n of tree) {
       if (n.parentId === null || n.parentId === "nowhere") continue;
       const parent = m.coords.get(n.parentId)!;
       const at = m.coords.get(n.id)!;
-      // Never farther from its parent than the widest base times the stagger —
-      // except a domain, which rests on the project's ring.
+      // Within the widest base times the stagger of the parent, except a domain on the project ring.
       expect(horizontal(at, parent)).toBeLessThanOrEqual((n.kind === "domain" ? DOME_PLANE.domain.r : 64 * 1.12) + 1e-9);
-      // Height is still one value per kind — the in-plane drag contract.
+      // Height stays one value per kind, the in-plane drag contract.
       expect(at.py).toBe(DOME_PLANE[n.kind].y);
     }
   });
 
-  it("외자식은 줄기다 — 부모와 같은 (px, pz), 바닥 원 없음", () => {
+  it("an only child is a stem: the parent (px, pz) with no floor circle", () => {
     const m = buildDomeModel(tree);
     expect(horizontal(m.coords.get("c-one")!, m.coords.get("d-one")!)).toBeCloseTo(0, 9);
     expect(horizontal(m.coords.get("e-one")!, m.coords.get("c-one")!)).toBeCloseTo(0, 9);
     expect(m.circles.some((c) => c.kind === "capability" && Math.abs(c.cx - m.coords.get("d-one")!.px) < 1e-9 && Math.abs(c.cz - m.coords.get("d-one")!.pz) < 1e-9)).toBe(false);
   });
 
-  it("자식이 둘 이상인 부모마다 바닥 원이 하나씩, 프로젝트 바닥은 도메인 링이다", () => {
+  it("gives one floor circle per parent with two or more children; the project floor is the domain ring", () => {
     const m = buildDomeModel(tree);
     const domainRing = m.circles.filter((c) => c.kind === "domain");
     expect(domainRing).toHaveLength(1);
     expect(domainRing[0].r).toBe(DOME_PLANE.domain.r);
-    // d-big (6 children) and d-mid (3 children) get capability bases; d-one does not.
     expect(m.circles.filter((c) => c.kind === "capability")).toHaveLength(2);
-    // c-big-0 (9 elements) gets an element base; c-one does not.
     const elementBases = m.circles.filter((c) => c.kind === "element");
     expect(elementBases).toHaveLength(1);
     const cBig0 = m.coords.get("c-big-0")!;
@@ -972,7 +928,7 @@ describe("콘 트리 — 자식은 부모 바로 아래 원 위에 놓인다 (20
     for (const c of m.circles) expect(c.r).toBeGreaterThan(0);
   });
 
-  it("도메인 섹터는 서브트리 크기에 비례한다 — 큰 도메인이 더 넓은 각을 받는다", () => {
+  it("sizes a domain sector by its subtree, so a larger domain gets a wider angle", () => {
     const m = buildDomeModel(tree);
     const bearing = (id: string) => {
       const c = m.coords.get(id)!;
@@ -982,11 +938,11 @@ describe("콘 트리 — 자식은 부모 바로 아래 원 위에 놓인다 (20
       const d = Math.abs(a - b) % (Math.PI * 2);
       return d > Math.PI ? Math.PI * 2 - d : d;
     };
-    // Sorted by id: d-big, d-mid, d-one. The big domain's neighbours sit farther from it.
+    // Sorted by id: d-big, d-mid, d-one; the big domain's neighbours sit farther from it.
     expect(gap(bearing("d-big"), bearing("d-mid"))).toBeGreaterThan(gap(bearing("d-mid"), bearing("d-one")));
   });
 
-  it("형제 원뿔은 서로 겹치지 않는다 — 바닥 원 사이 거리가 반지름 합보다 크다", () => {
+  it("keeps sibling cones apart: floor circles are farther apart than their radii sum", () => {
     const m = buildDomeModel(tree);
     const bases = m.circles.filter((c) => c.kind === "capability");
     for (let i = 0; i < bases.length; i += 1) {
@@ -997,21 +953,21 @@ describe("콘 트리 — 자식은 부모 바로 아래 원 위에 놓인다 (20
     }
   });
 
-  it("발자국은 옛 바닥 링 안에 남는다 — 카메라 핏·안개·손잡이 계약이 그대로다", () => {
+  it("keeps the footprint inside the old floor ring, so camera fit, fog and handle contracts hold", () => {
     const m = buildDomeModel(tree);
     for (const c of m.coords.values()) {
       expect(Math.hypot(c.px, c.pz)).toBeLessThanOrEqual(DOME_FIT_RADIUS * 1.1);
     }
   });
 
-  it("부모가 모델 밖이면 자기 평면에서 해시 방위를 받는다 — 빠지는 노드는 없다", () => {
+  it("gives a node whose parent is outside the model a hashed bearing on its own plane, dropping none", () => {
     const m = buildDomeModel(tree);
     const lost = m.coords.get("e-lost")!;
     expect(lost.py).toBe(DOME_PLANE.element.y);
     expect(Math.hypot(lost.px, lost.pz)).toBeCloseTo(DOME_PLANE.element.r, 6);
   });
 
-  it("결정론 — 같은 입력이면 좌표와 바닥 원이 그대로다", () => {
+  it("is deterministic: the same input keeps coordinates and floor circles", () => {
     const a = buildDomeModel(tree);
     const b = buildDomeModel(tree);
     expect([...a.coords.entries()]).toEqual([...b.coords.entries()]);
@@ -1021,7 +977,7 @@ describe("콘 트리 — 자식은 부모 바로 아래 원 위에 놓인다 (20
 
 });
 
-describe("배치 모핑 — 전환은 컷이 아니라 이동이다 (2026-09-02)", () => {
+describe("layout morph moves nodes instead of cutting", () => {
   const nodes: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "d1", kind: "domain", x: 100, y: 0, parentId: "p" },
@@ -1038,7 +994,7 @@ describe("배치 모핑 — 전환은 컷이 아니라 이동이다 (2026-09-02)
     return { dx: f.dx, dy: f.dy };
   };
 
-  it("중간 프레임은 from 과 to 사이에 있고, 끝나면 morph 가 null 이다", () => {
+  it("keeps middle frames between from and to and clears morph at the end", () => {
     const runtime = createDomeRuntime(buildDomeModel(nodes));
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
     updateDomeFrame(runtime, nodes, () => 10, 0);
@@ -1057,7 +1013,7 @@ describe("배치 모핑 — 전환은 컷이 아니라 이동이다 (2026-09-02)
     expect(dist(mid, after)).toBeLessThan(dist(before, after));
   });
 
-  it("모핑 중에는 옛 바닥 원이 사라지는 중이고 새 원이 나타나는 중이다", () => {
+  it("fades the old floor circles out and the new ones in during the morph", () => {
     const runtime = createDomeRuntime(buildDomeModel(nodes));
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
     updateDomeFrame(runtime, nodes, () => 10, 0);
@@ -1065,7 +1021,7 @@ describe("배치 모핑 — 전환은 컷이 아니라 이동이다 (2026-09-02)
     expect(treeRings).toBeGreaterThan(0);
     beginDomeMorph(runtime, buildDomeModel(nodes, { arrangement: "coupling", edges }), 1000, 750);
     updateDomeFrame(runtime, nodes, () => 10, 1000 + 375);
-    // The cloud has no rings, so every ring drawn now is a fading tree ring.
+    // The cloud has no rings, so every ring drawn is a fading tree ring.
     expect(runtime.rings).toHaveLength(treeRings);
     for (const ring of runtime.rings) {
       expect(ring.a).toBeGreaterThan(0);
@@ -1075,7 +1031,7 @@ describe("배치 모핑 — 전환은 컷이 아니라 이동이다 (2026-09-02)
     expect(runtime.rings).toHaveLength(0);
   });
 
-  it("지속 0 은 컷이다 — reduced-motion", () => {
+  it("a duration of 0 is a cut, for reduced motion", () => {
     const runtime = createDomeRuntime(buildDomeModel(nodes));
     beginDomeMorph(runtime, buildDomeModel(nodes, { arrangement: "coupling", edges }), 1000, 0);
     expect(runtime.morph).toBeNull();
@@ -1083,8 +1039,8 @@ describe("배치 모핑 — 전환은 컷이 아니라 이동이다 (2026-09-02)
   });
 });
 
-describe("화면 밖 정착 — 3D 를 다녀온 2D 지도가 다시 잠든다 (2026-09-02)", () => {
-  it("남아 있던 모션 상태를 전부 쉬게 한다", () => {
+describe("off-screen settling lets the 2D map sleep again after a 3D visit", () => {
+  it("rests every remaining motion state", () => {
     const runtime = createDomeRuntime(
       buildDomeModel([{ id: "p", kind: "project", x: 0, y: 0, parentId: null }]),
     );
@@ -1106,8 +1062,8 @@ describe("화면 밖 정착 — 3D 를 다녀온 2D 지도가 다시 잠든다 (
   });
 });
 
-describe("플릭 코스트 상한 — 반 바퀴를 넘는 관성은 정보가 없다 (2026-09-02)", () => {
-  it("상한 안의 속도는 그대로, 넘는 속도는 반 바퀴 코스트로 잘린다", () => {
+describe("flick coast cap: inertia past half a turn carries no information", () => {
+  it("keeps a velocity under the cap and clips one above it to a half-turn coast", () => {
     expect(clampOrbitReleaseVelocity(0.001)).toBe(0.001);
     expect(clampOrbitReleaseVelocity(-0.001)).toBe(-0.001);
     const capped = clampOrbitReleaseVelocity(0.05);
@@ -1116,12 +1072,12 @@ describe("플릭 코스트 상한 — 반 바퀴를 넘는 관성은 정보가 �
     expect(projectOrbitLanding(0, clampOrbitReleaseVelocity(-0.05))).toBeCloseTo(-ORBIT_COAST_MAX_RAD, 9);
   });
 
-  it("상한은 반 바퀴다 — 그 뒤로는 어느 면이 앞이었는지 잃는다", () => {
+  it("caps at half a turn, past which the front face is lost", () => {
     expect(ORBIT_COAST_MAX_RAD).toBeCloseTo(Math.PI, 12);
   });
 });
 
-describe("구름 이완 슬라이스 — 쌍 루프 안에서 끊어도 결과는 바이트 그대로다 (2026-09-02)", () => {
+describe("cloud relaxation slices give the same bytes when cut inside the pair loop", () => {
   const nodes: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     ...Array.from({ length: 6 }, (_, i) => ({ id: `d${i}`, kind: "domain" as const, x: i * 40, y: 0, parentId: "p" })),
@@ -1129,7 +1085,7 @@ describe("구름 이완 슬라이스 — 쌍 루프 안에서 끊어도 결과�
   ];
   const edges = Array.from({ length: 90 }, (_, i) => ({ sourceId: `c${i % 60}`, targetId: `c${(i * 7 + 3) % 60}` }));
 
-  it("초미세 예산으로 여러 번 나눠 돌려도 한 번에 돌린 것과 좌표가 같다", () => {
+  it("gives the same coordinates run in many tiny budgets as run at once", () => {
     const whole = buildDomeModel(nodes, { arrangement: "coupling", edges });
     const build = beginDomeModelBuild(nodes, { arrangement: "coupling", edges });
     let calls = 0;
@@ -1137,14 +1093,12 @@ describe("구름 이완 슬라이스 — 쌍 루프 안에서 끊어도 결과�
       calls += 1;
       if (calls > 100000) throw new Error("slicing never finishes");
     }
-    // A 0.02 ms budget has to pause inside the pair loop many times.
     expect(calls).toBeGreaterThan(10);
     for (const [id, coord] of whole.coords) expect(build.model.coords.get(id)).toEqual(coord);
   });
 });
 
-describe("Strata — four labelled planes, and drops that cannot cross (2026-09-06)", () => {
-  /** 1 project · 2 domains · 3 capabilities · 2 elements · 1 element with no parent in the model. */
+describe("Strata — four labelled planes, and drops that cannot cross", () => {
   const tree: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "d-a", kind: "domain", x: -200, y: 0, parentId: "p" },
@@ -1177,14 +1131,12 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
     const d = bearing(coords.get("d")!);
     expect(bearing(coords.get("c")!)).toBeCloseTo(d, 12);
     expect(bearing(coords.get("e")!)).toBeCloseTo(d, 12);
-    // A lone project is the axis the structure stands on.
     expect(radius(coords.get("p")!)).toBe(0);
   });
 
   it("keeps a whole subtree inside its own arc, so two domains never share a bearing band", () => {
     const { coords } = buildStrataTargets(tree);
-    // Bearings measured from where the walk starts (−π/2), so an arc that
-    // straddles ±π is still one interval rather than two.
+    // Bearings from the walk start (−π/2), so an arc straddling ±π is one interval.
     const arc = (id: string) => (bearing(coords.get(id)!) + Math.PI / 2 + Math.PI * 4) % (Math.PI * 2);
     const spanOf = (rootId: string) => {
       const seen: number[] = [];
@@ -1216,7 +1168,7 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
       for (let j = i + 1; j < drops.length; j += 1) {
         const s = drops[i];
         const t = drops[j];
-        // Drops that share a node meet at it by construction; meeting is not crossing.
+        // Drops sharing a node meet there by construction; meeting is not crossing.
         if (s.ids.some((id) => t.ids.includes(id))) continue;
         const d1 = side(s.ax, s.az, s.bx, s.bz, t.ax, t.az);
         const d2 = side(s.ax, s.az, s.bx, s.bz, t.bx, t.bz);
@@ -1244,7 +1196,7 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
       expect(circle.cz).toBe(0);
       expect(circle.y).toBe(DOME_PLANE[circle.kind].y);
     }
-    expect(circles[0].r).toBeGreaterThan(0); // the project plane needs a rim the apex never had
+    expect(circles[0].r).toBeGreaterThan(0);
     const noElements = buildStrataTargets(tree.filter((n) => n.kind !== "element"));
     expect(noElements.circles.map((c) => c.kind)).toEqual(["project", "domain", "capability"]);
   });
@@ -1278,12 +1230,9 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
 
   it("orders siblings by the barycenter of their relations, so dependency arcs stop crossing", () => {
     /*
-     * Two domains, two capabilities each, and one relation from each capability
-     * on the left to its counterpart on the right. In id order the two arcs
-     * interleave and cross exactly once; the barycenter sweep swaps the left
-     * pair inside its own sector — it never leaves that sector — and the arcs
-     * nest instead. This is the one-sided crossing reduction of the Sugiyama
-     * framework with a circular key (Bachmaier, IEEE TVCG 13(3), 2007).
+     * In id order the two arcs cross once; the barycenter sweep swaps the left pair within
+     * its sector so they nest (circular one-sided crossing reduction, Bachmaier, IEEE TVCG
+     * 13(3), 2007).
      */
     const pair: DomeInputNode[] = [
       { id: "p", kind: "project", x: 0, y: 0, parentId: null },
@@ -1298,7 +1247,6 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
       { sourceId: "c-a1", targetId: "c-b1" },
       { sourceId: "c-a2", targetId: "c-b2" },
     ];
-    /** Do the two relation chords cross, seen from above? */
     const crosses = (coords: ReadonlyMap<string, DomeCoord>): boolean => {
       const side = (p: DomeCoord, q: DomeCoord, r: DomeCoord) =>
         Math.sign((q.px - p.px) * (r.pz - p.pz) - (q.pz - p.pz) * (r.px - p.px));
@@ -1310,8 +1258,6 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
     };
     expect(crosses(buildStrataTargets(pair).coords), "the id order is the crossing one").toBe(true);
     expect(crosses(buildStrataTargets(pair, relations).coords)).toBe(false);
-    // …and the reorder stayed inside the sector: both capabilities are still on
-    // their own domain's side of the disc.
     const { coords } = buildStrataTargets(pair, relations);
     const arc = (id: string) =>
       (Math.atan2(coords.get(id)!.pz, coords.get(id)!.px) + Math.PI / 2 + Math.PI * 4) % (Math.PI * 2);
@@ -1322,8 +1268,7 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
 
   it("gives its plane rings their own base opacity, and leaves the cone's bases on theirs", () => {
     expect(domeRingAlphaFor("strata")).toBe(DOME_STRATA_RING_ALPHA);
-    // Below 1: at full ink the four ellipses read as the subject rather than as
-    // the stage (measured 2026-09-06 — see the constant's doc-block).
+    // At full ink the ellipses read as the subject rather than the stage.
     expect(DOME_STRATA_RING_ALPHA).toBeLessThan(1);
     expect(domeRingAlphaFor("ownership")).toBe(DOME_RING_ALPHA);
     expect(domeRingAlphaFor("coupling")).toBe(DOME_RING_ALPHA);
@@ -1337,7 +1282,7 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
     const named = runtime.rings.filter((r) => r.label !== null);
     expect(named.map((r) => r.kind)).toEqual(["project", "domain", "capability", "element"]);
     for (const ring of named) {
-      // The anchor is the ring's screen-rightmost sample — stable under rotation.
+      // The screen-rightmost sample, stable under rotation.
       expect(ring.label!.wx).toBe(Math.max(...ring.points.map((p) => p.wx)));
     }
     const coneRuntime = createDomeRuntime(buildDomeModel(tree, { arrangement: "ownership" }));
@@ -1347,40 +1292,34 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
   });
 });
 
-describe("domeEdgeFogAlpha x domeEdgeWidthFactor — 관계선의 깊이 잉크에 바닥을 둔다", () => {
+describe("domeEdgeFogAlpha x domeEdgeWidthFactor floors the depth ink of relation lines", () => {
   /**
-   * The floor the two functions are tuned to, spelled out here rather than
-   * imported: 0.62 alpha x 0.72 width. The module keeps both numbers private, so
-   * this is the one place that states what they are supposed to multiply to, and
-   * it fails the moment either moves without the other.
+   * A lower bound: the product of the two private floors (0.62 × 0.72). The edge pass holds
+   * the product at 0.62 past the crossover, so this passes unless a floor drops sharply.
    */
   const INK_FLOOR = 0.4464;
   const ink = (u: number) => domeEdgeFogAlpha(u) * domeEdgeWidthFactor(u);
 
-  it("가까운 쪽은 한 픽셀도 바뀌지 않는다 — 생 램프의 곱이 이미 바닥 위다", () => {
+  it("leaves the near side unchanged, since the raw ramp product is already above the floor", () => {
     for (const u of [0, 0.05, 0.1]) {
       expect(domeEdgeFogAlpha(u)).toBeCloseTo(domeFogAlpha(u), 9);
       expect(domeEdgeWidthFactor(u)).toBeCloseTo(domeLineWidthFactor(u), 9);
     }
   });
 
-  it("깊이 어디에서도 잉크가 바닥 아래로 내려가지 않는다", () => {
+  it("never lets ink fall below the floor at any depth", () => {
     for (let u = 0; u <= 1.0001; u += 0.05) {
       expect(ink(u)).toBeGreaterThanOrEqual(INK_FLOOR - 1e-9);
     }
-    // Before the floor the far end drew at 0.09 x 0.35 = 3.5% of the near end's
-    // ink, and the owner's report was that the relations were invisible there.
+    // Without the floor the far end drew 3.5% of the near ink, invisible.
     expect(domeFogAlpha(1) * domeLineWidthFactor(1)).toBeLessThan(0.04);
     expect(ink(1) / ink(0)).toBeGreaterThan(0.4);
   });
 
-  it("잉크는 깊이에 따라 단조 감소하고, 근거리 값을 절대 넘지 않는다", () => {
+  it("decreases ink monotonically with depth and never exceeds the near value", () => {
     /*
-     * The invariant is on the **product**, not on either factor. Past the
-     * crossover the two trade against each other at a fixed total — the alpha
-     * rises exactly as fast as the width falls — so asserting a falling alpha
-     * would be asserting the wrong thing, while a rising product would mean a far
-     * line drawn stronger than a near one.
+     * The invariant is on the product: past the crossover alpha rises as width falls, and a
+     * rising product would draw a far line stronger than a near one.
      */
     let previous = Infinity;
     for (let u = 0; u <= 1.0001; u += 0.05) {
@@ -1390,13 +1329,11 @@ describe("domeEdgeFogAlpha x domeEdgeWidthFactor — 관계선의 깊이 잉크�
       expect(domeEdgeFogAlpha(u)).toBeLessThanOrEqual(1);
       previous = value;
     }
-    // The width keeps a real falloff of its own rather than going flat.
     expect(domeEdgeWidthFactor(1)).toBeLessThan(domeEdgeWidthFactor(0));
   });
 
-  it("노드와 링의 램프는 손대지 않는다 — 바닥은 관계선 전용이다", () => {
-    // `domeFogAlpha` and `domeLineWidthFactor` are what the node fill, the rim and
-    // the plane rings read; only the edge pass reads the floored pair.
+  it("leaves the node and ring ramps alone; the floor is for relation lines only", () => {
+    // Node fill, rim and plane rings read the raw pair; only the edge pass reads the floored one.
     expect(domeFogAlpha(1)).toBeCloseTo(0.09, 9);
     expect(domeLineWidthFactor(1)).toBeCloseTo(0.35, 9);
     expect(domeFogAlpha(0.8)).toBeLessThan(domeEdgeFogAlpha(0.8));
@@ -1404,11 +1341,8 @@ describe("domeEdgeFogAlpha x domeEdgeWidthFactor — 관계선의 깊이 잉크�
 });
 
 /**
- * **The resting line's device-pixel width floor.** The ink floor above holds
- * `alpha × width factor`, and that product only reaches the eye while the stroke
- * covers a device pixel; below that the rasteriser spreads it over two rows and
- * the peak collapses. So the floor is a device length, and the caller converts it
- * with the ratio it is actually rasterising at.
+ * The floor product reaches the eye only while the stroke covers a device pixel, so the
+ * caller converts this device length at its rasterising ratio.
  */
 describe("domeEdgeMinWidthPx", () => {
   it("asks for one device pixel, whatever the ratio", () => {
@@ -1429,16 +1363,14 @@ describe("domeEdgeMinWidthPx", () => {
 });
 
 /**
- * **Would the chrome on the canvas's edge cover a node?** (2026-09-26) — asked by the 3D fit
- * before it lets a drawing use the utility rail's column. The answer is read off the same
- * projection the fit frames, so a node the rect would cover is found wherever it projects.
+ * Asked by the 3D fit before it uses the utility rail's column, on the projection the
+ * fit frames.
  */
 describe("domeReachesRect", () => {
   const model = buildDomeModel(NODES);
   const yaw = 0.55;
   const pitch = DOME_PITCH_DEFAULT;
   const bounds = domeWorldBounds(model, yaw, pitch)!;
-  // A camera that puts the drawing's right extreme at x 900 on a 1000-wide canvas.
   const tscale = 1;
   const target = { tx: bounds.maxX - 400, ty: (bounds.minY + bounds.maxY) / 2, tscale };
 
@@ -1450,7 +1382,6 @@ describe("domeReachesRect", () => {
   it("reports a column the drawing stays out of as free", () => {
     const column = { left: 920, right: 1000, top: 0, bottom: 800 };
     expect(domeReachesRect(model, yaw, pitch, target, 1000, 800, column, 0)).toBe(false);
-    // …until a node's disc is counted in.
     expect(domeReachesRect(model, yaw, pitch, target, 1000, 800, column, 24)).toBe(true);
   });
 

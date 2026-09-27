@@ -1,11 +1,4 @@
-/**
- * A remounted engine inherits the headline's progress (council finding, 2026-09-02).
- *
- * With `echo` on, the engine lights a dot only when `setTyping` earns it. The `[typed, total]`
- * effect fires on change alone, so an engine mounted after the last character — a remount on
- * `graph`, HMR — used to wait forever and the ground stayed blank. This mounts the object with a
- * finished headline and asserts the engine was told at once.
- */
+/** An engine mounted after the headline finished must hear its progress at once, not wait forever. */
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 

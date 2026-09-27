@@ -32,10 +32,7 @@ describe("resolveTourAnchorNodeId", () => {
     expect(resolveTourAnchorNodeId(nodes, "domain")).toBe("domain:a");
   });
 
-  // Regression guard for the 2026-07-23 correction: an `isHub` node folds into
-  // a "+N" cluster chip in the spine view, so clicking it expands the cluster (a
-  // full relayout into element view) instead of selecting. No target may prefer
-  // a hub over a domain or project.
+  // An `isHub` node folds into a "+N" cluster chip whose click relayouts instead of selecting.
   it("target 'domain': never prefers an isHub capability over a spine-visible domain", () => {
     const nodes = [
       { id: "capability:mcp-server", kind: "capability", isHub: true },

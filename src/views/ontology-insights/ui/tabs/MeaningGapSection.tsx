@@ -24,30 +24,15 @@ import {
 } from "../parts/FixRow";
 
 /**
- * **The section where a to-do that ends in one sentence is finished on the spot** — the first
- * slot of non-developer writing.
- *
- * Why a deeplink to another surface is not enough: putting a screen transition in the way of
- * writing one sentence kills the completion rate. The other surface stays the place for
- * assembling relations (many sockets); this is **for writing one field** — zero new routes,
- * zero new modals, a disclosure expansion of an existing row.
- *
- * The contracts it keeps:
- * - **State the file to change first.** Above the save button, a sentence names the `.md` path
- *   being edited and what will be written under which key (an abbreviated form of the consent
- *   grammar — the change is narrow enough, one file and one field, that a full dialog is excessive).
- * - **Cancel changes zero files.** Cancel and Esc never touch the file. With text entered it
- *   takes a second press to close (two-step), so nothing is lost by accident.
- * - **A concurrent edit is never silently overwritten.** The save carries `expected_mtime`, and
- *   if a person or an agent edited the same file in between the save is refused and the file is
- *   re-read — the next save then works from the new baseline.
- * - **It locks on the frame it is pressed.** There is no path where two presses write twice.
- * - **Motion uses only the list-row expansion grammar** (`.ai-row-disclosure`,
- *   `app/globals.css`) — it grows downward only, and the way out matches the way in.
+ * Meaning-gap rows that finish a one-sentence to-do in place, by expanding the row (no new route or modal).
+ * Contracts: the sentence above Save names the `.md` path and key to be written; cancel and Esc change no file, and
+ * with text entered closing takes a second press; the save carries `expected_mtime`, so a concurrent edit is
+ * refused and re-read, never overwritten; the save locks on the pressed frame, so two presses never write twice;
+ * motion uses only the row disclosure grammar (`.ai-row-disclosure`, `app/styles/base-motion.css`).
  */
 
 export interface MeaningGapLabels extends FixRowLabels {
-  /** Closes the inline input again. Opening it uses the list-wide "fix it myself" label. */
+  /** Closes the inline input; opening it uses the list-wide "fix it myself" label. */
   writeHereClose: string;
   definitionPlaceholder: string;
   domainLegend: string;
@@ -64,11 +49,7 @@ export interface MeaningGapLabels extends FixRowLabels {
   needsDomain: string;
 }
 
-/**
- * The filled state of the domain chip that already carries a value. It stays here rather than
- * beside the shared row chips because it is this form's own "you picked this" ink, not a role the
- * flat list has anywhere else. Not one value is new (the existing `--color-indigo-line-*`).
- */
+/** This form's own "you picked this" ink for the filled domain chip, from existing `--color-indigo-line-*` values. */
 const ACCENT_CHIP_FILLED =
   "font-[var(--font-weight-signature)] border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] hover:border-[color:var(--color-indigo-line-a45)]";
 
@@ -81,13 +62,13 @@ type RowPhase =
 
 interface RowUiState {
   value: string;
-  /** Whether cancel has announced "what you typed will be lost" (the two-step confirm). */
+  /** Whether cancel has warned that the typed text will be lost (two-step confirm). */
   cancelArmed: boolean;
   phase: RowPhase;
 }
 
 const EMPTY_UI: RowUiState = { value: "", cancelArmed: false, phase: { kind: "editing" } };
-/** How long the save confirmation line stays on screen — after that the row drops out of the queue. */
+/** How long the save confirmation stays before the row leaves the queue. */
 const SAVED_ROW_LINGER_MS = 2200;
 
 export interface MeaningGapSectionProps {
@@ -96,23 +77,17 @@ export interface MeaningGapSectionProps {
   /** The one plain sentence every row of this gap kind states. Owned by the list, not by a heading. */
   sentence: string;
   abilities: QueueRowAbilities;
-  /** Candidates to choose from on an unassigned-parent row. Unused on an undefined-meaning row. */
+  /** Candidates for an unassigned-parent row; unused on an undefined-meaning row. */
   domainChoices?: DomainChoice[];
   mapHref: (nodeId: string) => string;
   sourceHref: (nodeId: string) => string | null;
   builderHref: (nodeId: string) => string;
   /**
-   * The address that hands this row to the map's agent. That surface exists only in the desktop
-   * app, so with none supplied the item does not appear (a door that will not open is not drawn).
-   * It takes `gap` because it carries only the **kind** of sentence — the sentence itself is
-   * composed by the destination's opening-line generator.
+   * Omitted outside the desktop app, and the item is then not drawn. Carries only the gap kind; the destination
+   * composes the sentence.
    */
   askAgentHref?: (nodeId: string, gap: MeaningGapKind) => string | null;
-  /**
-   * The actual write — one vault frontmatter field. The caller wires it to `updateFrontmatter`
-   * and passes `expectedMtime` along. It resolves on success and throws `VaultConflictError` on
-   * a conflict.
-   */
+  /** Writes one vault frontmatter field with `expectedMtime`; resolves on success and throws `VaultConflictError` on a conflict. */
   onWrite: (row: MeaningGapRow, value: string) => Promise<void>;
   labels: MeaningGapLabels;
 }
@@ -133,21 +108,14 @@ export function MeaningGapSection({
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [uiById, setUiById] = useState<ReadonlyMap<string, RowUiState>>(new Map());
   /**
-   * A snapshot of the row being worked on — it keeps being drawn even after it drops out of the
-   * queue data.
-   *
-   * One device solves two things: ① right after a successful save the gap is filled and the row
-   * disappears from the data, but the confirmation line must linger or it reads as "I saved and
-   * nothing happened" — the row fading out over time is the face of "it left the queue"; ② if
-   * the vault is re-read before the save, or someone else edits the same file and the row list
-   * shifts, **the sentence being typed is not lost.**
+   * Snapshots of rows being worked on, drawn after they leave the queue data: the save confirmation must linger,
+   * and a re-read or another writer shifting the list must not lose the sentence being typed.
    */
   const [pinnedRows, setPinnedRows] = useState<readonly MeaningGapRow[]>([]);
   const pin = useCallback((row: MeaningGapRow) => {
     setPinnedRows((prev) => (prev.some((r) => r.id === row.id) ? prev : [...prev, row]));
   }, []);
-  // Lock on the frame it is pressed — `setState` is not reflected until the next render, so the
-  // duplicate-save guard must be a synchronous store.
+  // A ref, not state: `setState` lands on the next render, so the duplicate-save guard must be synchronous.
   const savingIdsRef = useRef<Set<string>>(new Set());
 
   const patchUi = useCallback((id: string, next: Partial<RowUiState>) => {
@@ -195,22 +163,14 @@ export function MeaningGapSection({
   );
 
   const liveIds = new Set(rows.map((row) => row.id));
-  // A pinned row is drawn **in its original position**. Appending it to the end drops the row
-  // just touched below its siblings, so the row you pressed has to be found again by eye
-  // (dimensional regularity). Re-sorting by the same name order as `buildMeaningGapRows` restores
-  // the position exactly.
+  // A pinned row is drawn in its original position, re-sorted by `buildMeaningGapRows`'s name order, so the row
+  // just touched is not found again by eye at the end.
   const visibleRows = [...rows, ...pinnedRows.filter((row) => !liveIds.has(row.id))].sort(
     (a, b) => a.title.localeCompare(b.title),
   );
   if (visibleRows.length === 0) return null;
 
-  /*
-   * **No section chrome any more.** These rows are members of the tab's one flat list (owner
-   * decision, 2026-08-31), so the heading, the count, the hint and the truncation line are gone
-   * and this component emits rows only. What it still owns is the state a run of rows shares:
-   * which row is expanded, what is typed in it, and the pin that keeps a just-saved row on screen
-   * after it drops out of the data.
-   */
+  // No section chrome: these rows join the tab's one flat list. The component owns only the shared state of a run of rows.
   return (
     <>
       {visibleRows.map((row) => (
@@ -228,8 +188,7 @@ export function MeaningGapSection({
           builderHref={builderHref}
           askAgentHref={askAgentHref}
           onOpen={() => {
-            // Pin on expansion — the field being typed into does not vanish from the screen even
-            // if the vault is re-read afterwards.
+            // Pin on expansion, so the field being typed into survives a vault re-read.
             pin(row);
             setOpenRowId(row.id);
           }}
@@ -272,10 +231,8 @@ function MeaningGapRowView({
   sourceHref: (nodeId: string) => string | null;
   builderHref: (nodeId: string) => string;
   /**
-   * The address that hands this row to the map's agent. That surface exists only in the desktop
-   * app, so with none supplied the item does not appear (a door that will not open is not drawn).
-   * It takes `gap` because it carries only the **kind** of sentence — the sentence itself is
-   * composed by the destination's opening-line generator.
+   * Omitted outside the desktop app, and the item is then not drawn. Carries only the gap kind; the destination
+   * composes the sentence.
    */
   askAgentHref?: (nodeId: string, gap: MeaningGapKind) => string | null;
   onOpen: () => void;
@@ -287,28 +244,16 @@ function MeaningGapRowView({
   const saved = ui.phase.kind === "saved";
   const saving = ui.phase.kind === "saving";
 
-  /*
-   * The domain chips are **an exclusive single selection** (one value, and re-clicking does not
-   * clear it). They used to put `aria-pressed` on each sibling, which never expressed exclusivity
-   * in the accessibility tree. The initial value is an empty string so nothing is pressed at
-   * first, and that is the legitimate shape of an **unselected radiogroup** — the hook makes the
-   * first item the tab stop in that case (APG).
-   *
-   * ⚠️ The container stays as it is. The design-system seat treated this site as a `variant='chips'`
-   * migration candidate, but measurement showed **the value layer has no chip hover** (census:
-   * 312 `controlClass` call sites write hover by hand, 88 of them chips). Migrating would remove
-   * the hover feedback on an inactive chip — a regression into "it does not look pressable".
-   * Whether the value layer should own hover is a separate round's decision.
-   */
+  // The domain chips are an exclusive single selection, so they are a radiogroup; an empty initial value is a
+  // legitimate unselected radiogroup and the hook makes the first item the tab stop (APG). Not migrated
+  // to `variant='chips'`: the value layer has no chip hover, so the inactive chip would lose its hover feedback.
   const domainGroup = useRovingRadioGroup({
     value: ui.value,
     values: domainChoices.map((c) => c.value),
     onChange: (value) => onPatch({ value, cancelArmed: false }),
     busy: saving,
   });
-  // The area must stay open through the save confirmation — the form leaving and the confirmation
-  // line arriving have to pass through one and the same height transition to read as "this row
-  // became a fixed row" (a sudden collapse is just a different screen).
+  // Stays open through the save confirmation so form and confirmation share one height transition.
   const detailOpen = open || saved;
   const { mounted, boxRef, contentRef } = useRowDisclosure(detailOpen);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -319,7 +264,7 @@ function MeaningGapRowView({
 
   const dirty = ui.value.trim().length > 0;
   const requestClose = () => {
-    // With text entered it asks once more — the way back must be on screen.
+    // With text entered it asks once more, so the way back stays on screen.
     if (dirty && !ui.cancelArmed) {
       onPatch({ cancelArmed: true });
       return;
@@ -340,15 +285,13 @@ function MeaningGapRowView({
       data-testid="do-next-meaning-gap-row"
       className="min-w-0 border-b border-[color:var(--color-divider)] last:border-b-0"
       onKeyDown={(event) => {
-        // Two-step Esc — when expanded this row consumes it (cancelling the input); when collapsed
-        // it passes upward (the tab or the palette receives it).
+        // Two-step Escape: an expanded row consumes it; a collapsed row lets it bubble to the tab or palette.
         if (event.key !== "Escape" || !open) return;
         event.stopPropagation();
         requestClose();
       }}
     >
-      {/* The header band uses the **same shell** as the queue's other section rows (py-2.5 and the
-          same column order). A different height here alone breaks the rhythm within one list. */}
+      {/* The same shell and column order as the queue's other rows, so the list keeps one rhythm. */}
       <div
         data-testid="do-next-item"
         data-fix-kind={gapKind}
@@ -359,9 +302,7 @@ function MeaningGapRowView({
           <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
             {row.title}
           </span>
-          {/* The one plain sentence naming the observed fact. It used to be a section hint above
-              a run of rows; with one list it belongs to the row, because there is no header left
-              to carry it. `break-keep` because Korean breaks mid-word otherwise. */}
+          {/* The row states the observed fact itself; `break-keep` stops Korean breaking mid-word. */}
           <span
             data-testid="do-next-item-why"
             className="min-w-0 break-keep text-body leading-body text-[color:var(--color-text-quaternary)]"
@@ -370,9 +311,8 @@ function MeaningGapRowView({
           </span>
         </div>
         <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
-          {/* Primary: hand it to the agent beside the map with the sentence already written. It
-              exists only where that agent surface does, so in a browser the row falls through to
-              its own next-best action rather than offering a door that will not open. */}
+          {/* Primary: hand it to the map's agent with the sentence written. Only where that surface exists, so a browser row
+             falls through to its next-best action. */}
           {askAgentUrl ? (
             <Link
               href={askAgentUrl}
@@ -388,21 +328,14 @@ function MeaningGapRowView({
               {labels.askAgent}
             </Link>
           ) : null}
-          {/* Secondary: do it yourself. On these rows that is the inline write, which is the whole
-              point of the meaning-gap sections and the only place on this screen a person finishes
-              a to-do without leaving it.
-              A row whose save has finished has nothing to open or close: the confirmation line
-              states the state and the row will shortly leave the list. */}
+          {/* Secondary: the inline write. A saved row has nothing to open or close; its confirmation states the state. */}
           {abilities.canWriteVault && !saved ? (
             <button
               type="button"
               data-testid="meaning-gap-write-toggle"
               aria-expanded={open}
               onClick={() => (open ? requestClose() : onOpen())}
-              /* This chip is **emphasized regardless of whether it is open** — it is a disclosure
-                 rather than a selection (`active`), so it uses `tone: 'accentOnTint'` rather than
-                 the ramp's pressed ink. The height is not pinned because the ramp default is
-                 already 32px (before the 2026-08-03 convergence a `fixedHeight` axis was needed). */
+              // Emphasized whether open or not: it is a disclosure, not a selection, so `tone: 'accentOnTint'`, not pressed ink.
               className={controlClass({
                 shape: "chip",
                 size: "md",
@@ -452,8 +385,7 @@ function MeaningGapRowView({
         className="ai-row-disclosure"
         data-state={detailOpen ? "open" : "closed"}
         data-testid="meaning-gap-disclosure"
-        // It stays in the DOM while collapsing, so the invisible input is disabled immediately and
-        // never remains in the tab order or for a screen reader.
+        // Stays in the DOM while collapsing, so `inert` keeps the hidden input out of the tab order and the accessibility tree.
         inert={!detailOpen}
       >
         {mounted ? (
@@ -498,8 +430,7 @@ function MeaningGapRowView({
                           onSave(ui.value.trim());
                         }
                       }}
-                      // Giving one sentence a 1,300px line makes the reading eye cross the screen —
-                      // the measure is fitted to the sentence length.
+                      // The field's measure fits one sentence instead of the full row width.
                       className={fieldClass({ size: "md", className: "w-full max-w-2xl" })}
                     />
                   ) : (
@@ -516,10 +447,7 @@ function MeaningGapRowView({
                               {...domainGroup.itemProps(index)}
                               type="button"
                               data-testid="meaning-gap-domain-chip"
-                              /* This one is **a selection** (paired with `aria-pressed`), so the
-                                 ink is not written by hand but taken from the ramp's `active`.
-                                 Pressed state must be one set app-wide, and the value layer owns
-                                 that set. */
+                              // A selection, so its pressed ink comes from the ramp's `active`, the one app-wide pressed set.
                               className={controlClass({
                                 shape: "chip",
                                 size: "md",
@@ -537,7 +465,7 @@ function MeaningGapRowView({
                     </fieldset>
                   )}
 
-                  {/* State the file to change first — what will be written where, before pressing. */}
+                  {/* States the file to change before the press. */}
                   <p
                     data-testid="meaning-gap-confirm"
                     className="text-label leading-label text-[color:var(--color-text-quaternary)]"
@@ -551,8 +479,7 @@ function MeaningGapRowView({
                       data-testid="meaning-gap-save"
                       onClick={() => onSave(ui.value.trim())}
                       disabled={!canSave}
-                      /* The disabled affordance is taken from the ramp too — a hand-written
-                         `disabled:opacity-50` turned off neither the cursor nor the hover. */
+                      // The disabled affordance comes from the ramp; a hand-written `disabled:opacity-50` left cursor and hover on.
                       className={controlClass({
                         shape: "chip",
                         size: "md",

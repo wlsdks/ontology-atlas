@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const MAX_TAG_PEEL_DEPTH = 8;
-const SEMVER_TAG = /^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+const PLAIN_RELEASE_TAG = /^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/;
 const FULL_SHA = /^[0-9a-f]{40}$/i;
 
 function printHelp() {
@@ -58,7 +58,7 @@ function parseArgs(argv) {
   }
   if (!/^[^/\s]+\/[^/\s]+$/.test(options.repo)) fail("--repo must use owner/name format.");
   if (options.mode !== "admit" && options.mode !== "pin") fail("--mode must be admit or pin.");
-  if (!SEMVER_TAG.test(options.tag)) fail(`--tag must be a v-prefixed semantic version, got ${options.tag || "(empty)"}.`);
+  if (!PLAIN_RELEASE_TAG.test(options.tag)) fail(`--tag must be a plain vMAJOR.MINOR.PATCH release tag (release candidates are retired), got ${options.tag || "(empty)"}.`);
   if (!FULL_SHA.test(options.sha)) fail(`release source sha must be a full 40-character commit SHA, got ${options.sha || "(empty)"}.`);
   if (options.defaultBranch && !/^[A-Za-z0-9._/-]+$/.test(options.defaultBranch)) {
     fail(`default branch contains unsupported characters: ${options.defaultBranch}.`);
