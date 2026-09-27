@@ -8,25 +8,53 @@ import {
   deserializeSnapshot,
   serializeSnapshot,
   snapshotMatchesGraph,
+  type PersistedBaseline,
 } from "./change-baseline-persist";
 
-// Review state only, keyed per vault so one vault's baseline never overwrites another's or
-// counts a different vault as all added. The overlap guard still catches a same-named vault.
-const PERSIST_KEY_PREFIX = "demo:change-baseline:v1:";
-/** The pre-scope global key; never read, cleared once when a scope is first set. */
-const LEGACY_UNSCOPED_KEY = "demo:change-baseline:v1";
+/** One entry, for the open vault only; it names that vault, so no other vault restores it. */
+const PERSIST_KEY = "demo:change-baseline:v2";
+/** The first form: an entry per vault at `<prefix>:<scope>`, and before scopes at `<prefix>`. */
+const LEGACY_KEY_PREFIX = "demo:change-baseline:v1";
+const legacyKeyFor = (scope: string) => `${LEGACY_KEY_PREFIX}:${scope}`;
 
 /** The active vault; while null nothing is stored or restored. */
 let baselineScope: string | null = null;
 
-function persistBaseline(snap: OntologySnapshot | null): void {
-  if (typeof window === "undefined" || baselineScope === null) return;
+/** Null where the page may not use storage; then the baseline lives in memory only. */
+function storage(): Storage | null {
   try {
-    const key = `${PERSIST_KEY_PREFIX}${baselineScope}`;
-    if (snap) window.localStorage.setItem(key, serializeSnapshot(snap));
-    else window.localStorage.removeItem(key);
+    return typeof window === "undefined" ? null : window.localStorage;
   } catch {
-    /* private mode — skip */
+    return null;
+  }
+}
+
+function removeLegacyBaselines(store: Storage, keep: string): void {
+  const legacy: string[] = [];
+  for (let i = 0; i < store.length; i += 1) {
+    const key = store.key(i);
+    if (key !== null && key !== keep && key.startsWith(LEGACY_KEY_PREFIX)) legacy.push(key);
+  }
+  for (const key of legacy) store.removeItem(key);
+}
+
+function persistBaseline(snap: OntologySnapshot | null): void {
+  const store = storage();
+  if (!store || baselineScope === null) return;
+  if (!snap) {
+    store.removeItem(PERSIST_KEY);
+    return;
+  }
+  const payload = serializeSnapshot(snap, baselineScope);
+  try {
+    store.setItem(PERSIST_KEY, payload);
+  } catch (error) {
+    // The previous save would otherwise come back after a reload as if it were this one.
+    store.removeItem(PERSIST_KEY);
+    console.warn(
+      `[change-baseline] The review baseline (${payload.length} characters) was not saved, so it lasts until this page reloads.`,
+      error,
+    );
   }
 }
 
@@ -46,22 +74,14 @@ export function setChangeBaselineScope(scope: string): void {
   if (baselineScope === scope) return;
   const first = baselineScope === null;
   baselineScope = scope;
-  if (first && typeof window !== "undefined") {
-    try {
-      window.localStorage.removeItem(LEGACY_UNSCOPED_KEY);
-    } catch {
-      /* private mode — skip */
-    }
+  if (first) {
+    const store = storage();
+    if (store) removeLegacyBaselines(store, legacyKeyFor(scope));
   }
   if (baseline !== null) {
     baseline = null;
     emit();
   }
-}
-
-/** For tests and diagnostics. */
-export function getChangeBaselineScope(): string | null {
-  return baselineScope;
 }
 
 export function markChangeBaseline(
@@ -84,17 +104,21 @@ export function clearChangeBaseline(): void {
 export function restorePersistedBaseline(
   nodes: readonly KnowledgeGraphNode[],
 ): boolean {
-  if (typeof window === "undefined" || baseline !== null) return false;
-  if (baselineScope === null) return false;
-  let raw: string | null = null;
-  try {
-    raw = window.localStorage.getItem(`${PERSIST_KEY_PREFIX}${baselineScope}`);
-  } catch {
-    return false;
+  const store = storage();
+  if (!store || baseline !== null || baselineScope === null) return false;
+  // Read once: the first form's entry becomes the current form below, or is gone.
+  const legacyKey = legacyKeyFor(baselineScope);
+  const legacy = store.getItem(legacyKey);
+  store.removeItem(legacyKey);
+  let stored: PersistedBaseline | null = deserializeSnapshot(store.getItem(PERSIST_KEY));
+  let carriedOver = false;
+  if (stored?.scope !== baselineScope) {
+    stored = deserializeSnapshot(legacy);
+    carriedOver = stored !== null;
   }
-  const snap = deserializeSnapshot(raw);
-  if (!snap || !snapshotMatchesGraph(snap, nodes)) return false;
-  baseline = snap;
+  if (!stored || !snapshotMatchesGraph(stored.snapshot, nodes)) return false;
+  baseline = stored.snapshot;
+  if (carriedOver) persistBaseline(baseline);
   emit();
   return true;
 }

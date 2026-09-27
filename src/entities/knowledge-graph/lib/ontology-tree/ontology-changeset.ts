@@ -9,8 +9,8 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 const SEP = "\u0001";
 
 export interface OntologySnapshot {
-  /** nodeId → kind/title/summary plus sorted outgoing edges. */
-  nodeSigs: Map<string, string>;
+  /** nodeId → `hashNodeSignature` of its kind, title, summary and sorted outgoing edges. */
+  nodeSigs: Map<string, number>;
   /** Kept apart from the signature so a removed node's kind can still be shown. */
   nodeKinds: Map<string, string>;
   /** `"from\u0001to\u0001type"`, joined with SEP. */
@@ -33,22 +33,50 @@ export interface OntologyChangeset {
   removedNodeKinds: Map<string, string>;
 }
 
-function edgeKey(edge: Pick<KnowledgeGraphEdge, "from" | "to" | "type">): string {
-  return `${edge.from}${SEP}${edge.to}${SEP}${edge.type}`;
+export function joinEdgeKey(from: string, to: string, type: string): string {
+  return `${from}${SEP}${to}${SEP}${type}`;
 }
 
-/** Kind, title, summary and sorted outgoing edges; coordinates and timestamps are ignored. */
+/** Null for a string `joinEdgeKey` did not make. */
+export function splitEdgeKey(key: string): [string, string, string] | null {
+  const parts = key.split(SEP);
+  return parts.length === 3 ? [parts[0], parts[1], parts[2]] : null;
+}
+
+function edgeKey(edge: Pick<KnowledgeGraphEdge, "from" | "to" | "type">): string {
+  return joinEdgeKey(edge.from, edge.to, edge.type);
+}
+
+/** cyrb53. A node's edit goes unseen only if its old and new signatures collide, about 2^-53. */
+export function hashNodeSignature(signature: string): number {
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < signature.length; i += 1) {
+    const code = signature.charCodeAt(i);
+    h1 = Math.imul(h1 ^ code, 2654435761);
+    h2 = Math.imul(h2 ^ code, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+}
+
+/** Kind, title, summary and sorted outgoing edges, hashed; coordinates and timestamps are ignored. */
 function nodeSignature(
   node: KnowledgeGraphNode,
   outgoingByNode: Map<string, string[]>,
-): string {
+): number {
   const edges = (outgoingByNode.get(node.id) ?? []).slice().sort();
-  return [
-    node.kind,
-    node.title,
-    node.summary ?? "",
-    edges.join(","),
-  ].join(SEP);
+  return hashNodeSignature(
+    [
+      node.kind,
+      node.title,
+      node.summary ?? "",
+      edges.join(","),
+    ].join(SEP),
+  );
 }
 
 function buildOutgoingMap(edges: readonly KnowledgeGraphEdge[]): Map<string, string[]> {
@@ -69,7 +97,7 @@ export function snapshotOntology(
   takenAt: number,
 ): OntologySnapshot {
   const outgoing = buildOutgoingMap(edges);
-  const nodeSigs = new Map<string, string>();
+  const nodeSigs = new Map<string, number>();
   const nodeKinds = new Map<string, string>();
   for (const node of nodes) {
     nodeSigs.set(node.id, nodeSignature(node, outgoing));
