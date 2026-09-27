@@ -11,7 +11,7 @@ import { IMPACT_MODE_COPY_KEYS } from "./impact-mode-copy";
  * operation was running. This test blocks that regression from returning.
  */
 describe("IMPACT_MODE_COPY_KEYS (rank16)", () => {
-  it("모드 4개 모두 등록돼 있다", () => {
+  it('registers all four modes', () => {
     expect(IMPACT_MODE_COPY_KEYS.map((item) => item.mode)).toEqual([
       "none",
       "upstream",
@@ -20,13 +20,13 @@ describe("IMPACT_MODE_COPY_KEYS (rank16)", () => {
     ]);
   });
 
-  it("모드마다 라벨/도움말 키가 서로 다르다 (중복 = 정직성 결함 재발)", () => {
+  it('gives every mode distinct label and help keys', () => {
     const helpKeys = IMPACT_MODE_COPY_KEYS.map((item) => item.helpKey);
     expect(new Set(helpKeys).size).toBe(helpKeys.length);
   });
 
   it.each([koMessages, enMessages])(
-    "ko/en 메시지 카탈로그에 모든 label/help 키가 실존한다",
+    'has every label and help key in the ko and en catalogs',
     (messages) => {
       const drawer = messages.vaultWidgets.projectDrawer as Record<
         string,
@@ -41,7 +41,7 @@ describe("IMPACT_MODE_COPY_KEYS (rank16)", () => {
     },
   );
 
-  it("upstream/downstream 도움말이 필요한 대상/필요로 하는 대상 어휘와 일치한다 (ko)", () => {
+  it('matches the upstream and downstream help to the ko direction vocabulary', () => {
     const drawer = koMessages.vaultWidgets.projectDrawer;
     expect(drawer.impactHelpUpstream).toContain("필요한 대상");
     expect(drawer.impactHelpDownstream).toContain("필요로 하는 대상");

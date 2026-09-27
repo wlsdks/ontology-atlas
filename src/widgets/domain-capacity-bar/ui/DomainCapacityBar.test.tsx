@@ -28,7 +28,7 @@ describe("DomainCapacityBar", () => {
     expect(tail).not.toContainElement(screen.getByTestId("domain-capacity-bar-breakdown"));
   });
 
-  it("두 세그먼트는 앱 공통 막대 문법 — 主 계열 인디고 + 무채, kind tone 아님", () => {
+  it('draws both segments in the shared bar grammar of indigo and neutral, not kind tones', () => {
     // The kind tones (amber/eucalyptus) measure 1.14:1 against each other on the
     // track, so they never separated by brightness — only by hue, and that hue pair
     // is the axis red-green colour blindness separates worst. Identity is already
@@ -51,7 +51,7 @@ describe("DomainCapacityBar", () => {
     expect(el.style.backgroundColor).toBe("");
   });
 
-  it("두 값이 모두 있으면 1px 심이 경계를 진다 — 색이 아니라 구조가 가른다", () => {
+  it('separates two nonzero values with a 1px seam', () => {
     // Indigo and neutral measure 1.12:1 against each other, so an adjacent boundary is
     // invisible by colour alone. The seam is a colour-independent separator that
     // guarantees "a bar of two values" even in colour blindness or greyscale.
@@ -66,7 +66,7 @@ describe("DomainCapacityBar", () => {
     expect(track.children).toHaveLength(2);
   });
 
-  it("한쪽이 0 이면 세그먼트도 심도 없다 — 가를 것이 없다", () => {
+  it('draws no seam when one side is zero', () => {
     render(
       <DomainCapacityBar
         row={{ id: "domain:auth", title: "Auth", capabilityCount: 0, elementCount: 4, total: 4 }}
@@ -80,7 +80,7 @@ describe("DomainCapacityBar", () => {
     expect(screen.getByTestId("domain-capacity-bar-element").style.width).toBe("100%");
   });
 
-  it("트랙은 aria-hidden — 같은 수를 스크린리더가 두 번 읽지 않는다", () => {
+  it('hides the track from assistive technology', () => {
     render(
       <DomainCapacityBar
         row={{ id: "domain:auth", title: "Auth", capabilityCount: 3, elementCount: 5, total: 8 }}
@@ -92,7 +92,7 @@ describe("DomainCapacityBar", () => {
     expect(screen.getByText("Capability 3 · Element 5")).toBeInTheDocument();
   });
 
-  it("최소 폭 바닥을 두지 않는다 — 상수 바닥은 작은 값을 부풀리는 lie factor 다", () => {
+  it('sets no minimum width floor so small values are not inflated', () => {
     render(
       <DomainCapacityBar
         row={{ id: "domain:auth", title: "Auth", capabilityCount: 1, elementCount: 199, total: 200 }}
@@ -102,7 +102,7 @@ describe("DomainCapacityBar", () => {
     expect(screen.getByTestId("domain-capacity-bar-capability").style.width).toBe("0.5%");
   });
 
-  it("꼬리 열 폭이 내용과 무관하게 같다 — 여섯 행이 한 축을 공유해야 한다 (E1)", () => {
+  it('keeps the tail column the same width regardless of content', () => {
     // `Capacity 4 · Element 110` and `Capacity 2 · Element 5` have different text widths. If that
     // difference leaks into the length of the `flex-1` track beside it, the axis
     // diverges row by row (measured 929.8/935.5/941.2px) and a domain with smaller
@@ -177,7 +177,7 @@ describe("DomainCapacityBar", () => {
 });
 
 describe("DomainCapacityLegend", () => {
-  it("두 단위어와 두 점을 그린다 — 색을 강등한 자리를 대신하는 열쇠", () => {
+  it('draws two unit words and two dots as the legend', () => {
     render(<DomainCapacityLegend labels={labels} />);
     const legend = screen.getByTestId("domain-capacity-legend");
     expect(legend).toHaveTextContent("Capability");
@@ -191,7 +191,7 @@ describe("DomainCapacityLegend", () => {
     expect(dots[0].className).toContain("w-2");
   });
 
-  it("aria-hidden — aria-hidden 인 그래픽의 열쇠만 낭독되면 맥락 없는 단어가 된다", () => {
+  it('hides the legend from assistive technology along with the graphic', () => {
     render(<DomainCapacityLegend labels={labels} />);
     expect(screen.getByTestId("domain-capacity-legend")).toHaveAttribute("aria-hidden");
   });
@@ -209,8 +209,8 @@ describe("DomainCapacityLegend", () => {
  * identically and the only thing that differs is where the boundary sits.* Break that
  * and the bar quietly reverts to its old meaning.
  */
-describe("막대가 말하는 것 — 크기가 아니라 구성", () => {
-  it("합이 3배 차이 나도 트랙은 똑같이 꽉 찬다", () => {
+describe('the bar shows composition, not size', () => {
+  it('fills the track fully even when totals differ threefold', () => {
     const { rerender } = render(
       <DomainCapacityBar
         row={{ id: "a", title: "Small", capabilityCount: 1, elementCount: 3, total: 4 }}
@@ -231,11 +231,11 @@ describe("막대가 말하는 것 — 크기가 아니라 구성", () => {
       screen.getByTestId("domain-capacity-bar-capability").style.width,
       screen.getByTestId("domain-capacity-bar-element").style.width,
     ];
-    expect(small, "합이 4인 행도 25/75 로 트랙을 다 쓴다").toEqual(["25%", "75%"]);
-    expect(big, "합이 12인 행도 같은 비율이면 같은 그림이다").toEqual(small);
+    expect(small, 'a row totalling 4 fills the track at 25/75').toEqual(["25%", "75%"]);
+    expect(big, 'a row totalling 12 with the same ratio draws the same picture').toEqual(small);
   });
 
-  it("두 조각의 폭을 더하면 언제나 100%", () => {
+  it('sums the two segment widths to 100%', () => {
     for (const row of [
       { capabilityCount: 1, elementCount: 11 },
       { capabilityCount: 3, elementCount: 2 },
@@ -250,12 +250,12 @@ describe("막대가 말하는 것 — 크기가 아니라 구성", () => {
       const sum = ["capability", "element"]
         .map((k) => Number(screen.getByTestId(`domain-capacity-bar-${k}`).style.width.replace("%", "")))
         .reduce((a, b) => a + b, 0);
-      expect(Math.round(sum), `${row.capabilityCount}:${row.elementCount} 이 트랙을 안 채운다`).toBe(100);
+      expect(Math.round(sum), `${row.capabilityCount}:${row.elementCount} does not fill the track`).toBe(100);
       unmount();
     }
   });
 
-  it("둘 다 0이면 빈 트랙이다 — 0을 100%로 부풀리지 않는다", () => {
+  it('draws an empty track when both are zero', () => {
     render(
       <DomainCapacityBar
         row={{ id: "z", title: "Z", capabilityCount: 0, elementCount: 0, total: 0 }}

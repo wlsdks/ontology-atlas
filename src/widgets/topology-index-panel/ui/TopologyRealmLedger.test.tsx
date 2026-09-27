@@ -143,7 +143,7 @@ describe("TopologyRealmLedger", () => {
     expect(labelsSeen.some((t) => t?.includes("Views"))).toBe(false);
   });
 
-  it("fires onExit from the 영역 해제 button", () => {
+  it('fires onExit from the clear-region button', () => {
     const props = renderLedger();
     fireEvent.click(screen.getByTestId("topology-realm-exit"));
     expect(props.onExit).toHaveBeenCalledTimes(1);

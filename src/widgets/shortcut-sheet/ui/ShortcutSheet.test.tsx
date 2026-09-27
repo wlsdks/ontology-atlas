@@ -158,8 +158,8 @@ describe("ShortcutSheet — relation guide", () => {
 // #67 — pouring some 40 rows into two columns at once made the dialog eat 95% of the
 // viewport (852px) at 1512×900 with the bottom cut off. The answer is **classification,
 // not hiding** — the `All` (all) tab keeps the previous list, so discoverability is not lost.
-describe("ShortcutSheet — 문맥 탭 (#67)", () => {
-  it("기본은 '지금 화면' — 지도에서는 문서함 섹션이 나오지 않는다", () => {
+describe('ShortcutSheet context tabs', () => {
+  it('defaults to the current screen so the map hides the docs section', () => {
     renderSheet();
 
     expect(screen.getByTestId("shortcut-sheet-scope-current")).toHaveAttribute(
@@ -175,7 +175,7 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("'전체' 탭은 모든 섹션을 되살린다 — 단축키를 숨겨 과밀을 회피하지 않는다", () => {
+  it('restores every section on the all tab', () => {
     renderSheet();
     fireEvent.click(screen.getByTestId("shortcut-sheet-scope-all"));
 
@@ -184,7 +184,7 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
     expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.topology, { selector: "p" })).toBeInTheDocument();
   });
 
-  it("문서함 탭에서도 전역 단축키는 남는다 — 지금 누를 수 있는 키가 사라지면 안 된다", () => {
+  it('keeps global shortcuts on the docs tab', () => {
     renderSheet();
     fireEvent.click(screen.getByTestId("shortcut-sheet-scope-docs"));
 
@@ -195,7 +195,7 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("탭 바와 닫기 버튼은 스크롤 영역 밖에 고정된다", () => {
+  it('keeps the tab bar and close button outside the scroll area', () => {
     renderSheet();
     const tabs = screen.getByTestId("shortcut-sheet-scope-tabs");
     const scroll = screen.getByTestId("shortcut-sheet-scroll");
@@ -204,7 +204,7 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
     expect(scroll.contains(screen.getByTestId("shortcut-sheet-close"))).toBe(false);
   });
 
-  it("스크롤 여지를 알리는 아래쪽 페이드가 있다", () => {
+  it('shows a bottom fade that signals more to scroll', () => {
     renderSheet();
     expect(screen.getByTestId("shortcut-sheet-scroll-fade")).toBeInTheDocument();
   });
@@ -219,8 +219,8 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
 // was cut outside the viewport (1256px). jsdom does not compute layout, so this
 // cannot be caught by height — the **deterministic anchoring method** is pinned as a
 // contract instead.
-describe("ShortcutSheet — 스크롤 영역 높이 계약 (#67)", () => {
-  it("스크롤 영역을 래퍼에 absolute 로 못박는다 — `h-full` 퍼센트 해석에 의존하지 않는다", () => {
+describe('ShortcutSheet scroll area height contract', () => {
+  it('pins the scroll area absolutely to the wrapper instead of relying on h-full', () => {
     renderSheet();
     const scroll = screen.getByTestId("shortcut-sheet-scroll");
 
@@ -234,7 +234,7 @@ describe("ShortcutSheet — 스크롤 영역 높이 계약 (#67)", () => {
     expect(scroll.className).not.toContain("absolute");
   });
 
-  it("래퍼도 flex 컬럼이라 자식이 남는 높이를 정확히 받는다 (+ 페이드 앵커용 relative)", () => {
+  it('makes the wrapper a relative flex column so children get the remaining height', () => {
     renderSheet();
     const wrapper = screen.getByTestId("shortcut-sheet-scroll").parentElement!;
 

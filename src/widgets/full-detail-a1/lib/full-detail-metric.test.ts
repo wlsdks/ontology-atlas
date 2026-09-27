@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { formatFullDetailMetricLine } from "./full-detail-metric";
 
 describe("formatFullDetailMetricLine", () => {
-  it("담는 것 · 쓰는 곳 · 기대는 곳 · N단계 도달 순서로 하나의 engraved line", () => {
+  it('joins contains, used by, depends on and N-step reach into one line', () => {
     const line = formatFullDetailMetricLine(
       { contains: 18, usedBy: 2, dependsOn: 1, reach: 279 },
       {
@@ -17,7 +17,7 @@ describe("formatFullDetailMetricLine", () => {
     );
   });
 
-  it("0 도 명시적으로 렌더 (누락 아님)", () => {
+  it('renders zero explicitly', () => {
     const line = formatFullDetailMetricLine(
       { contains: 0, usedBy: 0, dependsOn: 0, reach: 0 },
       { contains: "a", usedBy: "b", dependsOn: "c", reach: "d" },

@@ -166,7 +166,7 @@ describe("TopologyIndexPanel", () => {
     const projectRow = document.querySelector('[data-index-row="project:root"]')!;
     const badge = projectRow.querySelector('[data-testid="topology-index-row-count"]')!;
     // 1 would be the count of its direct children — the number the map never shows.
-    expect(badge.textContent?.trim(), "프로젝트 행이 지도 노드와 다른 수를 말한다").toBe("3");
+    expect(badge.textContent?.trim(), 'a project row must state the same count as the map node').toBe("3");
     expect(badge.getAttribute("title")).toBe("하위 전체 3");
   });
 
@@ -262,14 +262,14 @@ describe("TopologyIndexPanel", () => {
 
       const line = screen.getByTestId("topology-index-source");
       expect(line).toHaveTextContent("my-vault");
-      expect(line, "숫자를 모를 때 0을 지어내면 안 된다").not.toHaveTextContent("documents");
+      expect(line, 'an unknown count must not be invented as 0').not.toHaveTextContent("documents");
     });
   });
 
   // 2026-09-19 — INDEX filtered 125 concepts down to two and marked nothing in
   // either, on an 11px label, while the palette on the same screen had been marking
   // its rows for months. The filter says which rows survived; the mark says where.
-  it("남은 행에 친 글자가 어디 있는지 표시한다", async () => {
+  it('marks where the typed text sits in the remaining rows', async () => {
     render(
       <TopologyIndexPanel
         treeResult={buildFixtureTree()}
@@ -294,7 +294,7 @@ describe("TopologyIndexPanel", () => {
     expect(mark?.textContent).toBe("MCP");
   });
 
-  it("빈 검색어면 아무것도 표시하지 않는다", () => {
+  it('marks nothing for an empty query', () => {
     render(
       <TopologyIndexPanel
         treeResult={buildFixtureTree()}
@@ -369,7 +369,7 @@ describe("TopologyIndexPanel", () => {
    * (`AppSettingsMenu`). This case stops it **coming back** — it is a self-contained
    * module, so putting one line back here revives it silently.
    */
-  it("블록 가져오기 모듈을 INDEX 에 싣지 않는다 — 설정으로 옮겼다", () => {
+  it('does not carry the block import module in INDEX', () => {
     blockImportMounted.current = 0;
     render(
       <TopologyIndexPanel
@@ -926,7 +926,7 @@ describe("TopologyIndexPanel", () => {
     expect(onPromote).toHaveBeenCalledTimes(1);
   });
 
-  it("수렴 스펙 ①: 헤더는 시각 카운트를 렌더하지 않는다 (지형도 HUD 와 3중 중복 해소, sr-only census 만 존치)", () => {
+  it('does not render the visible count in the header, only the sr-only census', () => {
     render(
       <TopologyIndexPanel
         treeResult={buildFixtureTree()}
@@ -950,7 +950,7 @@ describe("TopologyIndexPanel", () => {
   // excludes element rows from the tree (via caller's filterTreeExcludeKind), but
   // there is no text explaining that fact, so "Capacity 2 · Element 7" was read as
   // a consistency defect where expanding shows only 2 rows.
-  describe("plainMode hint (P1 결함①a)", () => {
+  describe('plainMode hint', () => {
     it("renders the quiet plain-mode hint when plainMode is true and the label is provided", () => {
       render(
         <TopologyIndexPanel
@@ -1011,7 +1011,7 @@ describe("TopologyIndexPanel", () => {
   // (static sample) state, maintenance controls like "dusty nodes" are not exposed to
   // first-time visitors. If `vaultLoaded=false`, rendering is suppressed;
   // if `vaultLoaded=true` (or omitted — backward-compatible default), it must appear as usual.
-  describe("vault-connected gate for maintenance controls (P1 오버뷰 레일)", () => {
+  describe('vault-connected gate for maintenance controls', () => {
     it("hides maintenance rows when vaultLoaded is false", () => {
       render(
         <TopologyIndexPanel
@@ -1061,7 +1061,7 @@ describe("TopologyIndexPanel", () => {
      * node at all, and the only screen that explains it is the document library, which somebody
      * has to already suspect a problem to open. This row is the map's one quiet way to say so.
      */
-    it("검사에 걸린 문서가 있으면 지도에서도 그 사실을 말하고 문서함으로 보낸다", () => {
+    it('tells the map about docs that failed checks and links to the docs', () => {
       render(
         <TopologyIndexPanel
           treeResult={buildFixtureTree()}
@@ -1082,7 +1082,7 @@ describe("TopologyIndexPanel", () => {
       expect(row).toHaveAttribute("href", expect.stringContaining("/docs"));
     });
 
-    it("걸린 문서가 없으면 그 줄은 존재하지 않는다", () => {
+    it('omits that line when no docs failed', () => {
       // No success badge: a row that says "0 problems" is furniture, not information.
       render(
         <TopologyIndexPanel
@@ -1102,7 +1102,7 @@ describe("TopologyIndexPanel", () => {
       expect(screen.queryByTestId("topology-index-broken-docs")).not.toBeInTheDocument();
     });
 
-    it("폴더가 붙기 전에는 그 줄도 나오지 않는다", () => {
+    it('omits that line before a folder is attached', () => {
       render(
         <TopologyIndexPanel
           treeResult={buildFixtureTree()}
@@ -1213,7 +1213,7 @@ describe("TopologyIndexPanel", () => {
       );
       expect(
         (firstRunStarterProps.current as { mapUnbuilt?: boolean } | null)?.mapUnbuilt,
-        "빈 금고야말로 아직 아무것도 못 만든 상태다",
+        'an empty vault is the state that has built nothing yet',
       ).toBe(true);
     });
 
@@ -1238,7 +1238,7 @@ describe("TopologyIndexPanel", () => {
       // querying for the button would pass whether or not the rule holds.
       expect(
         (firstRunStarterProps.current as { mapUnbuilt?: boolean } | null)?.mapUnbuilt,
-        "이미 만든 지도에 「지도 만들기」를 권하면 처음부터 다시 하라는 말로 읽힌다",
+        'suggesting map creation on an existing map reads as starting over',
       ).toBe(false);
       // The right action for a built map missing its evidence link is still offered.
       expect(screen.getByTestId("topology-index-source-unbound")).toBeInTheDocument();
@@ -1325,8 +1325,8 @@ describe("TopologyIndexPanel", () => {
 
 // Owner report from real use (2026-07-24) — resolving the sensitivity of expanding
 // only on an exact chevron hit: a row with children now does select and expand in one click.
-describe("TopologyIndexPanel — 행 클릭 펼침", () => {
-  it("자식이 있는 행을 클릭하면 선택과 동시에 자식이 열린다", () => {
+describe('TopologyIndexPanel row click expands', () => {
+  it('opens children and selects when a row with children is clicked', () => {
     const onSelect = vi.fn();
     render(
       <TopologyIndexPanel
@@ -1349,7 +1349,7 @@ describe("TopologyIndexPanel — 행 클릭 펼침", () => {
     expect(root).toHaveAttribute("aria-expanded", "true");
   });
 
-  it("이미 펼쳐진 행을 다시 클릭해도 접히지 않는다(접기는 셰브론 담당)", () => {
+  it('does not collapse an expanded row on a second click', () => {
     render(
       <TopologyIndexPanel
         treeResult={buildFixtureTree()}
@@ -1371,7 +1371,7 @@ describe("TopologyIndexPanel — 행 클릭 펼침", () => {
     expect(root).toHaveAttribute("aria-expanded", "true");
   });
 
-  it("역량·요소 숫자가 그 자리에서 무슨 뜻인지 말한다", () => {
+  it('says what the capability and element counts mean in place', () => {
     /*
      * ⚠️ Owner, 2026-08-24: *"more people than not will not know what a capability or an element even is —
      * something is needed so that a person who does not know what an ontology is can understand."*
@@ -1399,7 +1399,7 @@ describe("TopologyIndexPanel — 행 클릭 펼침", () => {
     expect(counts.textContent).toContain("elems");
     expect(
       counts.getAttribute("title"),
-      "숫자만 있고 그 말이 무슨 뜻인지는 어디에도 없다",
+      'the counts must say what they mean',
     ).toBe(labels.subcountsTitle);
   });
 });

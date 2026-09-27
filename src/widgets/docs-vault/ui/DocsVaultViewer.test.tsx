@@ -300,8 +300,8 @@ describe("DocsVaultViewer", () => {
   // palette produces exactly one mark plus scrollIntoView *after* the body content
   // loads asynchronously. No mark can exist before the content arrives, so this test
   // uses an async fetcher (awaiting findByText for load completion) to measure that timing.
-  describe("highlightQuery 착지 — 본문 로드 후 mark + scrollIntoView", () => {
-    it("본문 로드 완료 후 매치어를 mark 로 감싸고 스크롤한다", async () => {
+  describe('highlightQuery landing marks and scrolls after the body loads', () => {
+    it('wraps the match in mark and scrolls after the body loads', async () => {
       const scrollSpy = vi.fn();
       Element.prototype.scrollIntoView = scrollSpy;
       renderViewer("Intro line.\n\nThe deterministic compile phrase lives here.", {
@@ -332,7 +332,7 @@ describe("DocsVaultViewer", () => {
     // Reproducing a measured regression: it must land even in a real vault document
     // whose body wraps at ~80 characters so a newline falls inside the matched phrase
     // (the AGENTS.md convention).
-    it("본문이 줄바꿈으로 쪼개진 구절(line-wrap)도 mark + 스크롤된다", async () => {
+    it('marks and scrolls a phrase split by a line wrap', async () => {
       const scrollSpy = vi.fn();
       Element.prototype.scrollIntoView = scrollSpy;
       renderViewer(
@@ -348,7 +348,7 @@ describe("DocsVaultViewer", () => {
       await vi.waitFor(() => expect(scrollSpy).toHaveBeenCalled());
     });
 
-    it("highlightQuery 없으면 mark 를 만들지 않고 스크롤도 안 한다", async () => {
+    it('neither marks nor scrolls without highlightQuery', async () => {
       const scrollSpy = vi.fn();
       Element.prototype.scrollIntoView = scrollSpy;
       renderViewer("Intro line.\n\nThe deterministic compile phrase lives here.");

@@ -79,7 +79,7 @@ function renderPalette(initialQuery = '') {
  * could not read the movement).
  */
 describe('DocsVaultUnifiedPalette — combobox a11y', () => {
-  it('입력이 combobox 역할 + listbox 를 aria-controls 로 연결', () => {
+  it('links the combobox input to the listbox through aria-controls', () => {
     renderPalette();
     const input = screen.getByRole('combobox');
     expect(input).toHaveAttribute('aria-expanded', 'true');
@@ -88,7 +88,7 @@ describe('DocsVaultUnifiedPalette — combobox a11y', () => {
     expect(document.getElementById(controls!)).toHaveAttribute('role', 'listbox');
   });
 
-  it('aria-activedescendant 가 활성 option 을 가리키고, 방향키로 갱신', () => {
+  it('points aria-activedescendant at the active option and updates it with arrow keys', () => {
     renderPalette();
     const input = screen.getByRole('combobox');
 
@@ -107,7 +107,7 @@ describe('DocsVaultUnifiedPalette — combobox a11y', () => {
     expect(document.getElementById(second!)).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('결과가 없으면 aria-activedescendant 를 비운다', () => {
+  it('clears aria-activedescendant when there are no results', () => {
     renderPalette('zzz-definitely-no-match-query');
     const input = screen.getByRole('combobox');
     expect(input).not.toHaveAttribute('aria-activedescendant');
@@ -115,17 +115,17 @@ describe('DocsVaultUnifiedPalette — combobox a11y', () => {
 
   // aria-activedescendant alone does not convey "how many results" to AT → announce
   // the count through a polite live region (standard combobox practice).
-  it('검색어가 있으면 결과 수를 live-region 으로 알린다', () => {
+  it('announces the result count in a live region when there is a query', () => {
     renderPalette('alpha');
     expect(screen.getByRole('status')).toHaveTextContent(/결과 1개/);
   });
 
-  it('검색어가 있고 결과 0건이면 무결과를 live-region 으로 알린다', () => {
+  it('announces no results in a live region for a query with zero results', () => {
     renderPalette('zzz-definitely-no-match-query');
     expect(screen.getByRole('status')).toHaveTextContent('일치하는 항목이 없어요');
   });
 
-  it('빈 검색어(기본 뷰)에서는 announce 하지 않아 첫 오픈 소음 방지', () => {
+  it('does not announce for an empty query on first open', () => {
     renderPalette('');
     expect(screen.getByRole('status').textContent).toBe('');
   });

@@ -47,22 +47,22 @@ describe("buildFullDetailReachModel", () => {
     edge("e4", "capability:a1", "capability:b1", "depends_on"),
   ];
 
-  it("depth 1 은 직접 outgoing 만 — domain:a 에서 capability:a1", () => {
+  it('depth 1 reaches only direct outgoing nodes', () => {
     const model = buildFullDetailReachModel("domain:a", nodes, edges);
     expect(model.byDepth[1].reachableCount).toBe(1);
   });
 
-  it("depth 2 는 a1 의 outgoing 까지 포함 — b1, a2", () => {
+  it('depth 2 includes a1\'s outgoing nodes', () => {
     const model = buildFullDetailReachModel("domain:a", nodes, edges);
     expect(model.byDepth[2].reachableCount).toBe(3);
   });
 
-  it("depth 3 은 더 늘어나지 않음(그래프가 다 소진)", () => {
+  it('depth 3 adds nothing once the graph is exhausted', () => {
     const model = buildFullDetailReachModel("domain:a", nodes, edges);
     expect(model.byDepth[3].reachableCount).toBe(3);
   });
 
-  it("도메인별 분해 — self(domain:a 내부) vs domain:b, isSelf 플래그", () => {
+  it('breaks reach down by domain with an isSelf flag', () => {
     const model = buildFullDetailReachModel("domain:a", nodes, edges);
     const rows = model.byDepth[2].domainRows;
     const self = rows.find((r) => r.isSelf);
@@ -73,18 +73,18 @@ describe("buildFullDetailReachModel", () => {
     expect(other?.count).toBe(1); // b1
   });
 
-  it("totalNodes 는 전체 그래프 노드 수", () => {
+  it('reports totalNodes as the whole graph size', () => {
     const model = buildFullDetailReachModel("domain:a", nodes, edges);
     expect(model.totalNodes).toBe(nodes.length);
   });
 
-  it("리프 노드 — 도달 0, domainRows 빈 배열", () => {
+  it('reaches nothing from a leaf node', () => {
     const model = buildFullDetailReachModel("capability:a2", nodes, edges);
     expect(model.byDepth[3].reachableCount).toBe(0);
     expect(model.byDepth[3].domainRows).toEqual([]);
   });
 
-  it("도메인 조상이 없는 노드(project) 는 domainId null 버킷", () => {
+  it('buckets a node without a domain ancestor under domainId null', () => {
     const withProject = [...nodes, node("project:root", "project", "Root")];
     const withEdge = [...edges, edge("e5", "domain:a", "project:root", "depends_on")];
     const model = buildFullDetailReachModel("domain:a", withProject, withEdge);

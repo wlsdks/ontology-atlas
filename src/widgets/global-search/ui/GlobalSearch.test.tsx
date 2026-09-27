@@ -94,7 +94,7 @@ describe("GlobalSearch", () => {
   ];
   const projects: Project[] = [project({ slug: "ontology-atlas", name: "ontology-atlas" })];
 
-  it("검색 결과에 ontology 노드가 포함된다 (project/doc 만 있던 이전 헤더 팔레트와의 차이)", () => {
+  it('includes ontology nodes in the results', () => {
     render(
       <GlobalSearch
         open
@@ -113,7 +113,7 @@ describe("GlobalSearch", () => {
     expect(findOntologyOption("capability:mcp-server")).not.toBeNull();
   });
 
-  it("ontology 노드 결과를 고르면 onSelectNode 가 정확한 노드로 호출된다", () => {
+  it('calls onSelectNode with the exact node when a node result is chosen', () => {
     const onSelectNode = vi.fn();
     render(
       <GlobalSearch
@@ -137,7 +137,7 @@ describe("GlobalSearch", () => {
     expect(onSelectNode.mock.calls[0][0]).toMatchObject({ id: "capability:mcp-server" });
   });
 
-  it("kind 필터 칩이 실제로 결과를 좁힌다 (no-op 회귀 방지)", () => {
+  it('narrows results with a kind filter chip', () => {
     render(
       <GlobalSearch
         open
@@ -170,7 +170,7 @@ describe("GlobalSearch", () => {
   // pressed on a control. Measured live: tabbing to a kind chip and pressing Enter
   // left the chip aria-pressed="false" and instead closed the palette and flew the
   // map to whichever row happened to be highlighted. The close button did the same.
-  describe("Enter 는 포커스된 컨트롤의 것이다", () => {
+  describe('Enter belongs to the focused control', () => {
     const openPalette = (onSelectNode = vi.fn()) => {
       render(
         <GlobalSearch
@@ -185,7 +185,7 @@ describe("GlobalSearch", () => {
       return onSelectNode;
     };
 
-    it("필터 칩 위의 Enter 는 결과를 열지 않는다", () => {
+    it('does not open a result on Enter over a filter chip', () => {
       const onSelectNode = openPalette();
       fireEvent.change(screen.getByRole("combobox", { name: COMMAND_LABEL }), {
         target: { value: "mcp" },
@@ -196,7 +196,7 @@ describe("GlobalSearch", () => {
       expect(onSelectNode).not.toHaveBeenCalled();
     });
 
-    it("닫기 버튼 위의 Enter 도 결과를 열지 않는다", () => {
+    it('does not open a result on Enter over the close button', () => {
       const onSelectNode = openPalette();
       fireEvent.change(screen.getByRole("combobox", { name: COMMAND_LABEL }), {
         target: { value: "mcp" },
@@ -207,7 +207,7 @@ describe("GlobalSearch", () => {
       expect(onSelectNode).not.toHaveBeenCalled();
     });
 
-    it("검색칸 위의 Enter 는 그대로 결과를 연다", () => {
+    it('opens the result on Enter in the search input', () => {
       // The behaviour the guard must not cost: from the field, Enter is exactly
       // "open the highlighted row".
       const onSelectNode = openPalette();
@@ -218,7 +218,7 @@ describe("GlobalSearch", () => {
     });
   });
 
-  it("N12 — 파일 경로 형태 element title 은 mono/quaternary 로 강등되고, 일반 title 은 그대로 primary", () => {
+  it('demotes a file-path-shaped element title to mono quaternary and keeps ordinary titles primary', () => {
     render(
       <GlobalSearch
         open
@@ -266,7 +266,7 @@ describe("GlobalSearch", () => {
     );
   }
 
-  it("ESC 를 누르면 닫힌다 (onOpenChange(false))", () => {
+  it('closes on Escape through onOpenChange(false)', () => {
     render(<Harness />);
     const trigger = screen.getByRole("button", { name: "open trigger" });
     trigger.focus();
@@ -291,7 +291,7 @@ describe("GlobalSearch", () => {
    * first press left both the dialog and the input untouched (only the second
    * closed it). The two tests below pin both axes.
    */
-  it("열려 있으면 aria-modal 로 모달임을 선언한다 (전역 Esc 규율의 판정 근거)", () => {
+  it('declares itself modal with aria-modal while open', () => {
     render(
       <GlobalSearch
         open
@@ -308,7 +308,7 @@ describe("GlobalSearch", () => {
     ).not.toBeNull();
   });
 
-  it("첫 Esc 한 번에 닫히고 입력값이 비워진다 — 모달에 양보하는 전역 캡처 핸들러가 있어도", () => {
+  it('closes and clears the input on the first Escape even with a global capture handler that yields to modals', () => {
     // Imitates the first-run card's (`use-first-run-starter`) real contract exactly:
     // window capture plus preventDefault, yielding while a modal is open.
     const guardFired = vi.fn();
@@ -343,7 +343,7 @@ describe("GlobalSearch", () => {
     }
   });
 
-  it("닫히면 트리거로 포커스가 복귀한다", async () => {
+  it('returns focus to the trigger when closed', async () => {
     render(<Harness />);
     const trigger = screen.getByRole("button", { name: "open trigger" });
     trigger.focus();
@@ -353,7 +353,7 @@ describe("GlobalSearch", () => {
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 
-  it("data-overlay-spring 검증마커가 스크림·패널에 있다", () => {
+  it('marks the scrim and panel with data-overlay-spring', () => {
     render(
       <GlobalSearch
         open
@@ -382,7 +382,7 @@ describe("GlobalSearch", () => {
 // covering the whole screen, so the area that looks like a scrim is actually
 // **inside** Content. As far as Radix's `onPointerDownOutside` was concerned, no
 // "outside" existed.
-describe("GlobalSearch — 스크림 클릭 닫기 계약", () => {
+describe('GlobalSearch scrim click closes', () => {
   const nodes: KnowledgeGraphNode[] = [
     node({ id: "capability:mcp-server", title: "MCP Server", kind: "capability" }),
   ];
@@ -398,7 +398,7 @@ describe("GlobalSearch — 스크림 클릭 닫기 계약", () => {
     );
   }
 
-  it("래퍼(스크림) 를 누르면 닫힌다", () => {
+  it('closes when the wrapper scrim is clicked', () => {
     const onOpenChange = vi.fn();
     renderPalette(onOpenChange);
 
@@ -407,7 +407,7 @@ describe("GlobalSearch — 스크림 클릭 닫기 계약", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("패널 내부를 누르면 닫히지 않는다 — 결과 클릭이 팔레트를 죽이면 안 된다", () => {
+  it('stays open when the panel interior is clicked', () => {
     const onOpenChange = vi.fn();
     renderPalette(onOpenChange);
 

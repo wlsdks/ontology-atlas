@@ -96,8 +96,8 @@ function renderDrawer(
   return result;
 }
 
-describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
-  it("4개 모드 필이 서로 다른 title(도움말)을 갖는다", () => {
+describe('ProjectDrawer impact mode help', () => {
+  it('gives the four mode pills distinct help titles', () => {
     renderDrawer();
 
     const none = screen.getByRole("radio", { name: /^기본 —/ });
@@ -113,7 +113,7 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
     expect(new Set(titles).size).toBe(4);
   });
 
-  it("의존/영향 필의 aria-label 이 rank13 방향 어휘를 그대로 쓴다", () => {
+  it('uses the direction vocabulary in the depends-on and impact pill aria-labels', () => {
     renderDrawer();
 
     const upstream = screen.getByRole("radio", { name: /^의존 —/ });
@@ -123,7 +123,7 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
     expect(downstream.getAttribute("aria-label")).toContain("필요로 하는 대상");
   });
 
-  it("모드 필 클릭은 콜백을 부르고, 각 모드는 자기 도움말 문구를 보인다", () => {
+  it('calls back on a mode pill click and shows each mode\'s own help', () => {
     // A controlled component (impactMode=prop) plus an AnimatePresence swap is
     // non-deterministic in jsdom, so each help text is pinned deterministically with a
     // fresh mount per mode rather than re-rendering one instance (the click → callback

@@ -185,13 +185,13 @@ function projectSourceView(overrides: Partial<ProjectSourceView> = {}): ProjectS
 }
 
 describe("FullDetailA1", () => {
-  it("헤더에 제목/kind/slug 를 렌더", () => {
+  it('renders title, kind and slug in the header', () => {
     renderFullDetail();
     expect(screen.getByText("Domain A")).toBeInTheDocument();
     expect(screen.getByText("domains/a")).toBeInTheDocument();
   });
 
-  it("과제 ⑩ — fullTitle 이 title 과 다르면 secondary 텍스트로 렌더", () => {
+  it('renders fullTitle as secondary text when it differs from title', () => {
     renderFullDetail({
       node: {
         id: "domain:a",
@@ -210,27 +210,27 @@ describe("FullDetailA1", () => {
     );
   });
 
-  it("과제 ⑩ — fullTitle 이 title 과 같으면 secondary 텍스트를 생략", () => {
+  it('omits the secondary text when fullTitle equals title', () => {
     renderFullDetail();
     expect(
       screen.queryByTestId("full-detail-a1-full-title"),
     ).not.toBeInTheDocument();
   });
 
-  it("engraved metric strip 이 담는 것/쓰는 곳/기대는 곳/reach 를 한 줄로", () => {
+  it('renders contains, used by, depends on and reach in one metric strip', () => {
     renderFullDetail();
     const metric = screen.getByText(/담는 것 1/);
     expect(metric.textContent).toContain("이 노드를 쓰는 곳 1");
     expect(metric.textContent).toContain("이 노드가 기대는 곳 0");
   });
 
-  it("contains 그룹의 행 클릭 → onSelectNode 호출", () => {
+  it('calls onSelectNode when a contains row is clicked', () => {
     const { onSelectNode } = renderFullDetail();
     fireEvent.click(screen.getByText("Child Capability"));
     expect(onSelectNode).toHaveBeenCalledWith("capability:child");
   });
 
-  it("reach step 은 눌리는 것으로 보이는 라디오그룹이다 — 이름 있고, 선택이 접근성 트리에 있다", () => {
+  it('renders reach steps as a named radio group with the selection exposed', () => {
     /*
      * ⚠️ These were three chips with transparent borders, so at rest they read as grey
      * numerals inside a sentence; the owner reported not realising they could be pressed
@@ -249,23 +249,23 @@ describe("FullDetailA1", () => {
     expect(steps[1]).toHaveAttribute("aria-checked", "false");
   });
 
-  it("닫기 버튼 클릭 → onClose 호출", () => {
+  it('calls onClose when the close button is clicked', () => {
     const { onClose } = renderFullDetail();
     fireEvent.click(screen.getByTestId("full-detail-a1-close"));
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("본문 섹션에 markdown body 를 렌더", () => {
+  it('renders the markdown body in the body section', () => {
     renderFullDetail();
     expect(screen.getByText("본문 텍스트입니다.")).toBeInTheDocument();
   });
 
-  it("본문이 없으면 empty 문구", () => {
+  it('shows the empty copy without a body', () => {
     renderFullDetail({ bodyMarkdown: null });
     expect(screen.getByText("작성된 본문이 없습니다.")).toBeInTheDocument();
   });
 
-  it("explanationEdit 이 있으면 읽기↔편집 primitive 로 본문을 렌더", () => {
+  it('renders the body through the read/edit primitive when explanationEdit is set', () => {
     const onSave = vi.fn();
     renderFullDetail({ explanationEdit: { onSave } });
     expect(screen.getByTestId("node-explanation-read")).toBeInTheDocument();
@@ -286,7 +286,7 @@ describe("FullDetailA1 — project source receipt parity", () => {
     busy: "측정 중…",
   };
 
-  it("project에서 receipt를 고정 순서와 public markers로 렌더한다", () => {
+  it('renders the project receipt in fixed order with public markers', () => {
     renderFullDetail({
       node: {
         id: "project:ontology-atlas",
@@ -313,7 +313,7 @@ describe("FullDetailA1 — project source receipt parity", () => {
     expect(text.indexOf(sourceLabels.gap)).toBeLessThan(text.indexOf(sourceLabels.action));
   });
 
-  it("non-project에는 receipt prop이 와도 표시하지 않는다", () => {
+  it('hides the receipt on non-project nodes even when the prop is passed', () => {
     renderFullDetail({
       projectSource: projectSourceView(),
       projectSourceLabels: sourceLabels,
@@ -321,7 +321,7 @@ describe("FullDetailA1 — project source receipt parity", () => {
     expect(screen.queryByTestId("full-detail-project-source")).not.toBeInTheDocument();
   });
 
-  it("busy/error 중에도 이전 receipt를 보존하고 action을 잠근다", () => {
+  it('keeps the previous receipt and locks actions while busy or failed', () => {
     const onProjectSourceAction = vi.fn();
     renderFullDetail({
       node: {
@@ -344,7 +344,7 @@ describe("FullDetailA1 — project source receipt parity", () => {
     expect(action).toHaveAttribute("aria-busy", "true");
   });
 
-  it("전체 상세 handoff에 copy-safe source receipt를 이어 붙인다", () => {
+  it('appends a copy-safe source receipt to the full-detail handoff', () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
     renderFullDetail({
@@ -379,7 +379,7 @@ describe("FullDetailA1 — project source receipt parity", () => {
 // R+ "Code location" (code location) — the REAL code evidence (raw file paths),
 // distinct from the `node.slug` already shown top-right (a vault-doc
 // reference, not code).
-describe("FullDetailA1 — 코드 위치 (code location) section", () => {
+describe('FullDetailA1 code location section', () => {
   it("renders a heading + row for each code path when codeLocations is non-empty", () => {
     renderFullDetail({ codeLocations: ["mcp/src/index.js", "mcp/src/verify.mjs"] });
     expect(screen.getByText("코드 위치")).toBeInTheDocument();

@@ -30,14 +30,14 @@ const DOC = [
   '이 기능은 ',
 ].join('\n');
 
-describe('detectMentionTrigger — 매칭이 없으면 평범한 글자로 남는다', () => {
-  it('공백 뒤의 @ 를 잡고 질의어를 돌려준다', () => {
+describe('detectMentionTrigger leaves plain text alone when nothing matches', () => {
+  it('catches an @ after a space and returns the query', () => {
     const src = '이 기능은 @결제';
     const hit = detectMentionTrigger(src, src.length);
     expect(hit).toEqual({ query: '결제', start: src.indexOf('@') });
   });
 
-  it('줄머리의 @ 도 잡는다', () => {
+  it('catches an @ at the start of a line', () => {
     const src = '@결제';
     expect(detectMentionTrigger(src, src.length)?.query).toBe('결제');
   });
@@ -47,7 +47,7 @@ describe('detectMentionTrigger — 매칭이 없으면 평범한 글자로 남�
    * `AGENTS.md`, and in those files `@AGENTS.md` is **real import syntax**. A menu
    * intruding there hijacks someone else's syntax.
    */
-  it('경로 표기(@AGENTS.md · @docs/…)는 가로채지 않는다', () => {
+  it('does not capture path notation such as @AGENTS.md or @docs/', () => {
     for (const src of ['@AGENTS.md', '읽어라 @docs/FOUNDATIONS.md', '@.claude/rules']) {
       const hit = detectMentionTrigger(src, src.length);
       // A query starting with `.` or `/` is not a trigger.
@@ -61,16 +61,16 @@ describe('detectMentionTrigger — 매칭이 없으면 평범한 글자로 남�
     expect(detectMentionTrigger('@docs/x', 7)).toBeNull();
   });
 
-  it('이메일·핸들 중간의 @ 는 안 잡는다', () => {
+  it('does not catch an @ inside an email or handle', () => {
     expect(detectMentionTrigger('me@example', 10)).toBeNull();
   });
 
-  it('줄바꿈을 건너 잡지 않는다', () => {
+  it('does not match across a line break', () => {
     expect(detectMentionTrigger('@결제\n다음 줄', '@결제\n다음 줄'.length)).toBeNull();
   });
 });
 
-describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', () => {
+describe('insertMentionRelation writes prose to the body and facts to frontmatter', () => {
   const trigger = (content: string) => {
     const caret = content.length;
     const hit = detectMentionTrigger(content, caret);
@@ -78,7 +78,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     return hit;
   };
 
-  it('관계가 frontmatter 에 canonical 로 들어가고 본문에는 이름만 남는다', () => {
+  it('adds the relation to frontmatter canonically and leaves only the name in the body', () => {
     const content = `${DOC}@베`;
     const result = insertMentionRelation({
       content,
@@ -99,7 +99,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     expect(result.content).not.toContain('@베');
   });
 
-  it('커서가 삽입한 이름 뒤에 선다 — frontmatter 가 길어진 만큼 밀려도', () => {
+  it('places the cursor after the inserted name even when frontmatter grew', () => {
     const content = `${DOC}@베`;
     const result = insertMentionRelation({
       content,
@@ -112,7 +112,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     expect(result.content.slice(result.caret - 1, result.caret)).toBe(')');
   });
 
-  it('이미 있는 관계는 파일을 건드리지 않는다 (본문만 바뀐다)', () => {
+  it('leaves frontmatter untouched when the relation already exists', () => {
     const withRelation = DOC.replace(
       'domain: domains/orders',
       'domain: domains/orders\nrelates: [capabilities/beta]',
@@ -140,7 +140,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
    * sorted». Writing it differently would make the file we just wrote raise a
    * warning in our own check.
    */
-  it('기존 항목이 있으면 정렬된 집합으로 합친다', () => {
+  it('merges into existing entries as a sorted set', () => {
     const withRelation = DOC.replace(
       'domain: domains/orders',
       'domain: domains/orders\nrelates: [capabilities/zeta, capabilities/alpha2]',
@@ -158,7 +158,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     );
   });
 
-  it('제목이 비면 슬러그를 본문에 쓴다 — 빈 글자를 남기지 않는다', () => {
+  it('writes the slug into the body when the title is empty', () => {
     const content = `${DOC}@x`;
     const result = insertMentionRelation({
       content,
@@ -181,7 +181,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
    * this assertion in place it would have thrown **at the call**. An API that is
    * hard to misuse beats a comment.
    */
-  it('편집 중 문서와 고른 문서가 같으면 거절한다', () => {
+  it('rejects picking the document being edited', () => {
     const content = `${DOC}@알`;
     expect(() =>
       insertMentionRelation({
@@ -194,7 +194,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     ).toThrow(/itself|same document/i);
   });
 
-  it('링크의 기준점은 **편집 중 문서**다 — 고른 문서가 아니다', () => {
+  it('resolves the link relative to the document being edited, not the picked one', () => {
     const content = `${DOC}@베`;
     const result = insertMentionRelation({
       content,
@@ -208,7 +208,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     expect(result.content).toContain('[베타](../capabilities/beta.md)');
   });
 
-  it('네 방위 전부가 실재하는 frontmatter 키로 쓴다', () => {
+  it('writes every direction to a real frontmatter key', () => {
     for (const relation of MENTION_RELATIONS) {
       const content = `${DOC}@베`;
       const result = insertMentionRelation({

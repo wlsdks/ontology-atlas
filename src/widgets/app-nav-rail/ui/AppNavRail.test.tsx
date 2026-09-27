@@ -137,7 +137,7 @@ describe("AppNavRail", () => {
    * «does the rail actually fire the signal». Both are needed to close the circuit;
    * with only one, a broken wire leaves both green.
    */
-  it("이동이 성사되는 클릭에서만 이동 신호를 쏜다", () => {
+  it('emits the navigation signal only on clicks that actually navigate', () => {
     renderRail();
     const insights = screen.getByTestId("app-nav-rail-item-insights");
     const seen: Event[] = [];

@@ -12,11 +12,11 @@ import { clampMenuToBox } from './caret-position';
  * The caret coordinates themselves are confirmed on a real device (a layer that
  * cannot be proven without a browser).
  */
-describe('clampMenuToBox — 메뉴는 편집기 밖으로 나가지 않는다', () => {
+describe('clampMenuToBox keeps the menu inside the editor', () => {
   const box = { width: 800, height: 600 };
   const menu = { width: 320, height: 240 };
 
-  it('자리가 있으면 캐럿 줄 바로 아래에 붙는다', () => {
+  it('places the menu right below the caret line when there is room', () => {
     const at = clampMenuToBox({
       caret: { top: 100, left: 200, lineHeight: 20 },
       box,
@@ -25,7 +25,7 @@ describe('clampMenuToBox — 메뉴는 편집기 밖으로 나가지 않는다',
     expect(at).toEqual({ top: 126, left: 200 });
   });
 
-  it('아래로 못 펴면 캐럿 위로 뒤집는다 — 잘린 메뉴는 없는 것과 같다', () => {
+  it('flips the menu above the caret when it cannot open downward', () => {
     const at = clampMenuToBox({
       caret: { top: 520, left: 100, lineHeight: 20 },
       box,
@@ -35,7 +35,7 @@ describe('clampMenuToBox — 메뉴는 편집기 밖으로 나가지 않는다',
     expect(at.top).toBe(520 - 240 - 6);
   });
 
-  it('오른쪽 끝에서는 왼쪽으로 당겨 붙인다', () => {
+  it('pulls the menu left at the right edge', () => {
     const at = clampMenuToBox({
       caret: { top: 100, left: 760, lineHeight: 20 },
       box,
@@ -44,7 +44,7 @@ describe('clampMenuToBox — 메뉴는 편집기 밖으로 나가지 않는다',
     expect(at.left).toBe(800 - 320 - 6);
   });
 
-  it('좁은 편집기에서도 음수로 나가지 않는다', () => {
+  it('never goes negative in a narrow editor', () => {
     const at = clampMenuToBox({
       caret: { top: 10, left: 5, lineHeight: 20 },
       box: { width: 200, height: 120 },

@@ -19,8 +19,8 @@ function render(ui: React.ReactElement) {
  * accessible name and click callback, (2) the right rail's position token contract,
  * and (3) the keyboard focus ring (WCAG 2.4.7).
  */
-describe('TopologyFitControl — Fit 타일', () => {
-  it('Fit 버튼이 접근명을 가지고 클릭 시 onFitView 를 호출한다', () => {
+describe('TopologyFitControl fit tile', () => {
+  it('gives the fit button an accessible name and calls onFitView on click', () => {
     const onFitView = vi.fn();
     render(<TopologyFitControl onFitView={onFitView} />);
 
@@ -29,14 +29,14 @@ describe('TopologyFitControl — Fit 타일', () => {
     expect(onFitView).toHaveBeenCalledTimes(1);
   });
 
-  it('Fit 버튼이 keyboard focus 링(WCAG 2.4.7)을 가진다', () => {
+  it('gives the fit button a keyboard focus ring', () => {
     render(<TopologyFitControl onFitView={() => {}} />);
     const fitButton = screen.getByRole('button', { name: '지도 전체 맞추기' });
     expect(fitButton.className).toMatch(/focus-visible:ring-2/);
     expect(fitButton.className).toContain('focus-visible:outline-none');
   });
 
-  it('우측 레일 위치 토큰 계약(desktop-top)을 유지한다', () => {
+  it('keeps the right-rail desktop-top position token', () => {
     const { container } = render(<TopologyFitControl onFitView={() => {}} />);
     const rail = container.querySelector('[data-testid="topology-fit-control"]');
 

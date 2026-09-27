@@ -371,7 +371,7 @@ describe('DocsVaultEditor', () => {
     confirmSpy.mockRestore();
   });
 
-  it('마크다운 편집 textarea 가 접근명(aria-label)을 가진다', async () => {
+  it('gives the markdown textarea an accessible name', async () => {
     render(
       <DocsVaultEditor vaultScope={VAULT_SCOPE}
         doc={doc}
@@ -397,7 +397,7 @@ describe('DocsVaultEditor', () => {
    * and the property "announced when slow" has to stay alive. Delete it and the next
    * person can remove the skeleton entirely with nothing breaking.
    */
-  it('오래 걸리는 로딩은 role=status 로 announce 된다 (a11y)', async () => {
+  it('announces a slow load through role=status', async () => {
     let resolve!: (v: string) => void;
     render(
       <DocsVaultEditor vaultScope={VAULT_SCOPE}
@@ -428,7 +428,7 @@ describe('DocsVaultEditor', () => {
    * branch and the mtime guard passed, so a save wrote A's draft **over B's file**.
    * What this test pins is not cosmetics but that data-loss path.
    */
-  it('다른 볼트의 초안을 읽지 않는다 — 키에 볼트가 들어간다', async () => {
+  it('does not read another vault\'s draft because the key includes the vault', async () => {
     window.localStorage.setItem(
       `ontology-atlas:docs-vault-editor-draft:other-vault:${doc.slug}`,
       JSON.stringify({
@@ -466,7 +466,7 @@ describe('DocsVaultEditor', () => {
    * This check reproduces that defect **through behaviour** — remove the dependency
    * and the draft does not appear under the new scope's key.
    */
-  it('디바운스 중에 볼트를 갈아타면 초안이 **새 스코프**로 간다 — 옛 볼트로 새지 않는다', async () => {
+  it('moves a pending debounced draft to the new scope when the vault switches', async () => {
     const OTHER = 'other-vault';
     const otherKey = `ontology-atlas:docs-vault-editor-draft:${OTHER}:${doc.slug}`;
 
@@ -513,14 +513,14 @@ describe('DocsVaultEditor', () => {
       const written = window.localStorage.getItem(otherKey);
       expect(
         written,
-        '초안이 새 스코프 키에 안 생겼다 — vaultScope 가 의존성에서 빠져 옛 스코프로 샜다',
+        'the draft must land under the new scope key',
       ).toBeTruthy();
       expect(JSON.parse(written as string).content).toContain('고친 것');
     });
 
     expect(
       window.localStorage.getItem(draftKey),
-      '옛 스코프 키에 초안이 남았다 — 남의 볼트를 오염시킨다',
+      'the draft must not remain under the old scope key',
     ).toBeNull();
   });
 

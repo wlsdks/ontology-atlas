@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { isBottomTabActive } from "./is-tab-active";
 
 describe("isBottomTabActive", () => {
-  it("home 탭 ('/') — / 에서 active", () => {
+  it('marks the home tab active on /', () => {
     expect(
       isBottomTabActive("/", "/", ["/ontology"]),
     ).toBe(true);
   });
 
-  it("ontology 탭 — /ontology sub-surface 에서 active", () => {
+  it('marks the ontology tab active on /ontology sub-surfaces', () => {
     expect(
       isBottomTabActive("/ontology", "/", ["/ontology"]),
     ).toBe(true);
@@ -18,7 +18,7 @@ describe("isBottomTabActive", () => {
     expect(isBottomTabActive("/topology", "/", ["/ontology"])).toBe(false);
   });
 
-  it("topology 탭 — /topology prefix", () => {
+  it('marks the topology tab active under the /topology prefix', () => {
     expect(isBottomTabActive("/topology", "/topology/", ["/topology"])).toBe(true);
     expect(isBottomTabActive("/ko/topology", "/topology/", ["/topology"])).toBe(true);
     expect(
@@ -26,7 +26,7 @@ describe("isBottomTabActive", () => {
     ).toBe(true);
   });
 
-  it("projects 탭 — /projects + /project 둘 다 startsWith", () => {
+  it('marks the projects tab active under both /projects and /project', () => {
     expect(
       isBottomTabActive("/projects", "/projects/", ["/projects", "/project"]),
     ).toBe(true);
@@ -35,12 +35,12 @@ describe("isBottomTabActive", () => {
     ).toBe(true);
   });
 
-  it("docs 탭 — /docs prefix", () => {
+  it('marks the docs tab active under the /docs prefix', () => {
     expect(isBottomTabActive("/docs", "/docs/", ["/docs"])).toBe(true);
     expect(isBottomTabActive("/docs/?slug=x", "/docs/", ["/docs"])).toBe(true);
   });
 
-  it("fallback exact-match — prefix 가 안 잡히면 href 정확 일치만", () => {
+  it('falls back to an exact href match when no prefix rule applies', () => {
     // A tab with no prefixes
     expect(isBottomTabActive("/projects/", "/projects/", [])).toBe(true);
     // Trailing-slash variants match
@@ -49,7 +49,7 @@ describe("isBottomTabActive", () => {
     expect(isBottomTabActive("/docs", "/projects/", [])).toBe(false);
   });
 
-  it("home 탭 ('/') — 다른 path 에서는 prefix 아니면 false", () => {
+  it('keeps the home tab inactive on other paths', () => {
     // A home tab with no matchPrefixes
     expect(isBottomTabActive("/docs", "/", [])).toBe(false);
   });

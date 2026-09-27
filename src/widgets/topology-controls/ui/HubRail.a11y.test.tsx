@@ -76,7 +76,7 @@ describe('HubRail — roving tabindex a11y', () => {
     window.localStorage.clear();
   });
 
-  it('선택이 없으면 첫 option 만 tab stop(0), 나머지 -1', () => {
+  it('makes only the first option a tab stop when nothing is selected', () => {
     render(<HubRail projects={HUBS} onSelect={() => {}} />);
     const options = screen.getAllByRole('option');
     expect(options).toHaveLength(2); // hub-a, hub-b (leaves excluded)
@@ -86,7 +86,7 @@ describe('HubRail — roving tabindex a11y', () => {
     expect(options[1]).toHaveAttribute('tabindex', '-1');
   });
 
-  it('선택된 hub 이 유일한 tab stop', () => {
+  it('makes the selected hub the only tab stop', () => {
     render(
       <HubRail projects={HUBS} selectedSlug="hub-b" onSelect={() => {}} />,
     );
