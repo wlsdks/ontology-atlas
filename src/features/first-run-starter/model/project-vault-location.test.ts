@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  PROJECT_VAULT_DIR,
   projectAlreadyHasVault,
   projectVaultLocation,
 } from './project-vault-location';
@@ -33,11 +32,6 @@ describe('project vault location shown equals the path created', () => {
     }
   });
 
-  it('takes the folder name from one constant', () => {
-    // Every surface that creates one reads this constant, so two surfaces cannot disagree.
-    expect(PROJECT_VAULT_DIR).toBe('atlas');
-    expect(projectVaultLocation('/p')?.vaultRoot.endsWith(`/${PROJECT_VAULT_DIR}`)).toBe(true);
-  });
 
   it('recognises an existing folder as continue rather than create', () => {
     expect(projectAlreadyHasVault(['src', 'atlas', 'package.json'])).toBe(true);

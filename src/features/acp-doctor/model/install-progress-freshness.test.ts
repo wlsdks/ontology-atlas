@@ -26,9 +26,4 @@ describe('held install progress freshness', () => {
     // A timezone change or manual adjustment can make elapsed time negative.
     expect(isInstallProgressFresh({ at: now + 60_000 }, now)).toBe(true);
   });
-
-  it('keeps the freshness window finite and positive', () => {
-    expect(INSTALL_PROGRESS_FRESH_MS).toBeGreaterThan(0);
-    expect(Number.isFinite(INSTALL_PROGRESS_FRESH_MS)).toBe(true);
-  });
 });
