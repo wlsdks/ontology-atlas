@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../../../../../messages/en.json';
+import ko from '../../../../../messages/ko.json';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import type { VaultDoc, LibrarySourceRow } from '@/entities/docs-vault';
 
@@ -45,16 +46,16 @@ function fixture(hash = currentHash, listedMtime = 10) {
   return { doc, raw, source, handle };
 }
 
-function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includeWiki = true, visible = true, agentReady = true, onSummarize = () => {}, report = null, onFileReport = null, onOpenSource = () => {} }: {
+function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includeWiki = true, visible = true, agentReady = true, locale = 'en', onSummarize = () => {}, report = null, onFileReport = null, onOpenSource = () => {} }: {
   hash?: string; scope?: string; listedMtime?: number; includeWiki?: boolean;
-  visible?: boolean; agentReady?: boolean;
+  visible?: boolean; agentReady?: boolean; locale?: 'en' | 'ko';
   onSummarize?: (request: QuestionDeskReportRequest) => void;
   report?: QuestionDeskReportDraft | null;
   onFileReport?: (() => void) | null;
   onOpenSource?: (path: string, anchor: string) => void;
 }) {
   const { doc, raw, source, handle } = fixture(hash, listedMtime);
-  return <NextIntlClientProvider locale="en" messages={en}>
+  return <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? ko : en}>
     <LibraryQuestionDesk docs={includeWiki ? [doc] : []} pageTexts={includeWiki ? new Map([[doc.slug, raw]]) : new Map()}
       sources={[source]} sourceHandles={new Map([[path, handle]])} hashes={new Map([[path, currentHash]])}
       vaultRoot="/fixture" vaultScope={scope} agentReady={agentReady}
@@ -186,6 +187,34 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.getByTestId('question-desk-report-section-2')).toHaveTextContent('One page suggests an owner.');
     expect(screen.getByTestId('question-desk-report-section-3')).toHaveTextContent('Another-language documents may be missed.');
     expect(screen.getByTestId('question-desk-coverage-toggle')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps Korean masthead type untracked and renders a localized human timestamp', async () => {
+    const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
+    const rendered = render(<Desk onSummarize={onSummarize} />);
+    await search();
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    const request = onSummarize.mock.calls[0]![0];
+    const generatedAt = '2026-09-27T17:00:00Z';
+    const report: QuestionDeskReportDraft = {
+      question: request.question, searchId: request.searchId, listingVersion: request.listingVersion, vaultScope: request.vaultScope,
+      text: 'An unreviewed answer.', coverage: request.coverage, limits: request.limits, generatedAt,
+    };
+    rendered.rerender(<Desk report={report} onSummarize={onSummarize} />);
+    expect(screen.getByTestId('question-desk-report-masthead')).toHaveClass('font-mono');
+    expect(screen.getByTestId('question-desk-report-masthead').className).toContain('tracking-');
+    const generated = screen.getByTestId('question-desk-report-generated');
+    expect(generated).toHaveAttribute('datetime', generatedAt);
+    expect(generated).toHaveTextContent(new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(generatedAt)));
+    expect(generated).not.toHaveTextContent(generatedAt);
+
+    rendered.rerender(<Desk locale="ko" report={report} onSummarize={onSummarize} />);
+    const koreanMasthead = screen.getByTestId('question-desk-report-masthead');
+    expect(koreanMasthead).toHaveTextContent(/[가-힣]/u);
+    expect(koreanMasthead.className).not.toMatch(/tracking-|font-mono/u);
+    expect(screen.getByTestId('question-desk-report-generated')).toHaveTextContent(
+      new Intl.DateTimeFormat('ko', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(generatedAt)),
+    );
   });
 
   it('offers explicit Markdown and print exports only for the current unreviewed report', async () => {

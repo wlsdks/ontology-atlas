@@ -33,6 +33,7 @@ import { Button, Chip, Dialog, Disclosure } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
 import { MOTION, OVERLAY_RISE, OVERLAY_RISE_REDUCED, OVERLAY_SETTLED, STAGGER } from '@/shared/motion';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { latinEyebrowClass } from '@/shared/lib/latin-eyebrow';
 import { StateBadge } from './StateBadge';
 
 const INLINE_CITATION = /\[\[src:[^\]]+\]\]/g;
@@ -100,6 +101,11 @@ async function digestHex(bytes: ArrayBuffer): Promise<string | null> {
     const digest = await crypto.subtle.digest('SHA-256', bytes);
     return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
   } catch { return null; }
+}
+
+function formatReportTimestamp(value: string, locale: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
 function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
@@ -527,11 +533,11 @@ export function LibraryQuestionDesk({
               <div data-question-desk-print="true" data-testid="question-desk-print-content">
                 <header className="mb-7">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                    <p className="text-caption leading-caption tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">{t('report.masthead')}</p>
+                    <p data-testid="question-desk-report-masthead" className={`text-caption leading-caption text-[color:var(--color-indigo-text-soft)] ${latinEyebrowClass(locale, 'tracking-[var(--tracking-caps-08)]')}`}>{t('report.masthead')}</p>
                     <p className="text-label leading-label text-[color:var(--color-indigo-text-soft)]">{t('report.unreviewed')}</p>
                   </div>
                   <h3 id="question-desk-report-title" className="mt-3 text-display font-[var(--font-weight-strong)] leading-display tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">{activeReport.question}</h3>
-                  <p className="mt-2 text-caption leading-caption text-[color:var(--color-text-tertiary)]">{t('report.generated', { time: activeReport.generatedAt })}</p>
+                  <time dateTime={activeReport.generatedAt} data-testid="question-desk-report-generated" className="mt-2 block text-caption leading-caption text-[color:var(--color-text-tertiary)]">{t('report.generated', { time: formatReportTimestamp(activeReport.generatedAt, locale) })}</time>
                 </header>
                 <DraftReport text={activeReport.text} sources={sources} onOpenSource={onOpenSource} actions={reportActions} />
                 <footer className="mt-6 border-t border-[color:var(--color-border-soft)] pt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">
