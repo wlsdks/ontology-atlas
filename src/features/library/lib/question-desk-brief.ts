@@ -250,8 +250,9 @@ export function planQuestionDeskReportFile(report: QuestionDeskReportContent, lo
       const valid = [...line.matchAll(cited)];
       if (loose.length !== valid.length) return { ok: false, reason: 'citation' };
       if (index === 1) {
-        if (/^[-*]\s+/.test(line) && valid.length > 0) citedFacts.push(line);
-        else evidenceCommentary.push(line);
+        const sourceHeading = /^[-*]\s+(.+)$/.exec(line)?.[1];
+        if (sourceHeading && valid.length > 0) citedFacts.push(line);
+        else if (!sourceHeading || !knownSources.has(sourceHeading)) evidenceCommentary.push(line);
       }
       for (const match of valid) {
         const path = match[1]!;

@@ -310,7 +310,7 @@ describe('question desk evidence', () => {
       coverage: '위키 2/2 · 원문 2/2', limits: '로컬 단어 일치 없음; 다른 언어 문서는 빠질 수 있음',
       text: [
         '## 답', '즉시는 아닙니다. 별도 작업이 실행된 뒤 반영됩니다.',
-        '## 원문 근거', '두 영어 원문을 다시 읽었습니다.',
+        '## 원문 근거', '두 영어 원문을 다시 읽었습니다.', '- sources/refund.md',
         '- 환불 승인은 재고 복구 작업을 대기열에 넣습니다. [[src:sources/refund.md#l2]]',
         '이것은 승인 즉시 수량이 바뀐다는 뜻이 아닙니다.',
         '## 불일치하거나 변경된 주장', '위키의 즉시 복구 주장은 원문과 어긋납니다. [[src:sources/refund.md#l2]]',
@@ -330,6 +330,7 @@ describe('question desk evidence', () => {
     expect(facts).not.toContain('즉시 복구 주장은');
     expect(page.text.split('## Open questions\n')[1]!).toContain('즉시 복구 주장은');
     expect(page.text.split('## Not in sources\n')[1]!).toContain('두 영어 원문을 다시 읽었습니다.');
+    expect(page.text.split('## Not in sources\n')[1]!).not.toContain('근거 해설 (사실로 승격하지 않음): - sources/refund.md');
     expect(page.text.split('## Not in sources\n')[1]!).toContain('로컬 단어 검색은 한국어 질문');
   });
 

@@ -641,6 +641,10 @@
     touch-action: manipulation;
   }
 
+  body > [data-question-desk-print-root] {
+    display: none;
+  }
+
   /* Print — leaves only Docs Vault viewer body and hides UI. Reverses to a light background
      to improve ink/readability in printer/PDF save. */
   @media print {
@@ -663,43 +667,38 @@
       color: #1a1a1a;
     }
 
-    html[data-print-scope="question-desk"] [data-docs-viewer],
-    html[data-print-scope="question-desk"] [data-docs-viewer] * {
-      visibility: hidden;
-    }
-    html[data-print-scope="question-desk"] body > *,
-    html[data-print-scope="question-desk"] [data-testid="library-page"],
-    html[data-print-scope="question-desk"] [data-testid="library-reader"],
-    html[data-print-scope="question-desk"] [data-testid="library-pane-body"],
-    html[data-print-scope="question-desk"] [data-testid="library-question-desk"] {
+    html[data-print-scope="question-desk"],
+    html[data-print-scope="question-desk"] body {
       height: auto !important;
       max-height: none !important;
       overflow: visible !important;
+      background: #fff;
     }
-    html[data-print-scope="question-desk"] [data-question-desk-print],
-    html[data-print-scope="question-desk"] [data-question-desk-print] * {
-      visibility: visible;
+    html[data-print-scope="question-desk"] body {
+      display: block !important;
+      min-height: 0 !important;
+      margin: 0;
     }
-    html[data-print-scope="question-desk"] [data-testid="question-desk-results"],
-    html[data-print-scope="question-desk"] [data-testid="question-desk-report"] {
-      opacity: 1 !important;
-      transform: none !important;
-      animation: none !important;
-      transition: none !important;
+    html[data-print-scope="question-desk"] body > :not([data-question-desk-print-root]) {
+      display: none !important;
     }
-    html[data-print-scope="question-desk"] [data-question-desk-print] {
+    html[data-print-scope="question-desk"] body > [data-question-desk-print-root] {
+      display: block !important;
+      visibility: visible !important;
       page: atlas-question-report;
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
+      position: static !important;
+      width: auto;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
       margin: 0;
       padding: 0;
       border: 0;
       color: #111;
       background: #fff;
     }
-    html[data-print-scope="question-desk"] [data-question-desk-print] * {
+    html[data-print-scope="question-desk"] [data-question-desk-print-root] * {
+      visibility: visible !important;
       color: #111 !important;
       background: transparent !important;
       box-shadow: none !important;
@@ -708,17 +707,12 @@
       animation: none !important;
       transition: none !important;
     }
-    html[data-print-scope="question-desk"] [data-question-desk-print] [data-report-actions],
-    html[data-print-scope="question-desk"] [data-question-desk-print] [data-report-actions] * {
-      display: none !important;
-      visibility: hidden !important;
-    }
-    html[data-print-scope="question-desk"] [data-question-desk-print] header,
-    html[data-print-scope="question-desk"] [data-question-desk-print] footer,
-    html[data-print-scope="question-desk"] [data-question-desk-print] li {
+    html[data-print-scope="question-desk"] [data-question-desk-print-root] header,
+    html[data-print-scope="question-desk"] [data-question-desk-print-root] footer,
+    html[data-print-scope="question-desk"] [data-question-desk-print-root] li {
       break-inside: avoid;
     }
-    html[data-print-scope="question-desk"] [data-question-desk-print] button {
+    html[data-print-scope="question-desk"] [data-question-desk-print-root] button {
       border: 0;
       padding: 0;
       text-decoration: underline;

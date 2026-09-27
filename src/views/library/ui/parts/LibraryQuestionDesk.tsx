@@ -242,6 +242,7 @@ export function LibraryQuestionDesk({
   const [printError, setPrintError] = useState<string | null>(null);
   const searchId = useRef(0);
   const printCleanupRef = useRef<(() => void) | null>(null);
+  const printContentRef = useRef<HTMLDivElement | null>(null);
   const sourceUnitsByStamp = useRef(new Map<string, SourceUnit[]>());
   const jevRequestId = useRef(0);
   const liveScope = useRef(vaultScope);
@@ -442,14 +443,28 @@ export function LibraryQuestionDesk({
     const root = document.documentElement;
     const printMedia = window.matchMedia?.('print');
     printCleanupRef.current?.();
+    const printable = printContentRef.current;
+    if (!printable) { setPrintError(t('report.printFailed')); return; }
+    const printRoot = document.createElement('div');
+    printRoot.dataset.questionDeskPrintRoot = 'true';
+    const content = printable.cloneNode(true) as HTMLDivElement;
+    content.removeAttribute('data-testid');
+    content.querySelectorAll('[data-report-actions]').forEach((actions) => actions.remove());
+    content.querySelectorAll('[id], [data-testid]').forEach((element) => {
+      element.removeAttribute('id');
+      element.removeAttribute('data-testid');
+    });
+    printRoot.appendChild(content);
     const onMediaChange = () => { if (!printMedia?.matches) clear(); };
     const clear = () => {
       delete root.dataset.printScope;
+      printRoot.remove();
       window.removeEventListener('afterprint', clear);
       printMedia?.removeEventListener?.('change', onMediaChange);
       if (printCleanupRef.current === clear) printCleanupRef.current = null;
     };
     printCleanupRef.current = clear;
+    document.body.appendChild(printRoot);
     root.dataset.printScope = 'question-desk';
     window.addEventListener('afterprint', clear, { once: true });
     printMedia?.addEventListener?.('change', onMediaChange);
@@ -530,7 +545,7 @@ export function LibraryQuestionDesk({
               data-testid="question-desk-report" aria-labelledby="question-desk-report-title"
               className="pt-2">
               <p role="status" className="sr-only">{t('report.readyNotice')}</p>
-              <div data-question-desk-print="true" data-testid="question-desk-print-content">
+              <div ref={printContentRef} data-question-desk-print="true" data-testid="question-desk-print-content">
                 <header className="mb-7">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                     <p data-testid="question-desk-report-masthead" className={`text-caption leading-caption text-[color:var(--color-indigo-text-soft)] ${latinEyebrowClass(locale, 'tracking-[var(--tracking-caps-08)]')}`}>{t('report.masthead')}</p>
@@ -549,7 +564,7 @@ export function LibraryQuestionDesk({
                 </footer>
               </div>
             </motion.section> : null}
-            {!hasLocalMatches && !activeReport ? <section data-testid="question-desk-unknown" className="border-t border-[color:var(--color-border-soft)] pt-4">
+            {!hasLocalMatches && !activeReport ? <section data-testid="question-desk-unknown">
               <h3 className="text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]">{t('zeroLocalTitle')}</h3>
               <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t('zeroLocalBody')}</p>
               {agentReady ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('zeroLocalAgentNote')}</p> : null}

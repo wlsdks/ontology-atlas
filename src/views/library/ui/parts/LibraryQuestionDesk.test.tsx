@@ -264,12 +264,15 @@ describe('Library question desk transfer boundary', () => {
     fireEvent.click(screen.getByTestId('question-desk-print-pdf'));
     expect(print).toHaveBeenCalledTimes(1);
     expect(document.documentElement.dataset.printScope).toBe('question-desk');
+    expect(document.body.querySelector('[data-question-desk-print-root]')).toBeInTheDocument();
     window.dispatchEvent(new Event('afterprint'));
     expect(document.documentElement.dataset.printScope).toBeUndefined();
+    expect(document.body.querySelector('[data-question-desk-print-root]')).toBeNull();
     print.mockImplementationOnce(() => Promise.reject(new Error('ACL')) as never);
     fireEvent.click(screen.getByTestId('question-desk-print-pdf'));
     expect(await screen.findByTestId('question-desk-print-error')).toHaveTextContent('Could not open the print dialog');
     expect(document.documentElement.dataset.printScope).toBeUndefined();
+    expect(document.body.querySelector('[data-question-desk-print-root]')).toBeNull();
     print.mockRestore();
     rendered.rerender(<Desk report={report} listedMtime={11} onSummarize={onSummarize} />);
     expect(screen.queryByTestId('question-desk-report')).not.toBeInTheDocument();
@@ -290,9 +293,44 @@ describe('Library question desk transfer boundary', () => {
     const print = vi.spyOn(window, 'print').mockImplementation(() => {});
     fireEvent.click(screen.getByTestId('question-desk-print-pdf'));
     expect(document.documentElement.dataset.printScope).toBe('question-desk');
+    expect(document.body.querySelector('[data-question-desk-print-root]')).toBeInTheDocument();
     rendered.unmount();
     expect(document.documentElement.dataset.printScope).toBeUndefined();
+    expect(document.body.querySelector('[data-question-desk-print-root]')).toBeNull();
     print.mockRestore();
+  });
+
+  it('hands a complete report to a direct body print root before opening the dialog', async () => {
+    const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
+    const rendered = render(<Desk onSummarize={onSummarize} />);
+    await search();
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    const request = onSummarize.mock.calls[0]![0];
+    const report: QuestionDeskReportDraft = {
+      question: request.question, searchId: request.searchId, listingVersion: request.listingVersion, vaultScope: request.vaultScope,
+      text: '## Answer\nA later job restores stock.\n## Source-backed evidence\n- The job is queued. [[src:sources/refund.md#l2]]\n## Disagreements or changed claims\n- The Wiki says immediately.\n## Unknowns and search limits\n- The run time is unknown.',
+      coverage: request.coverage, limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
+    };
+    rendered.rerender(<Desk report={report} onSummarize={onSummarize} />);
+    const print = vi.spyOn(window, 'print').mockImplementation(() => {
+      const printRoot = document.body.querySelector('[data-question-desk-print-root]');
+      expect(printRoot?.parentElement).toBe(document.body);
+      expect(printRoot).toHaveTextContent(report.question);
+      expect(printRoot).toHaveTextContent('A later job restores stock.');
+      expect(printRoot).toHaveTextContent('The job is queued.');
+      expect(printRoot).toHaveTextContent('The Wiki says immediately.');
+      expect(printRoot).toHaveTextContent('The run time is unknown.');
+      expect(printRoot).toHaveTextContent(report.coverage);
+      expect(printRoot).toHaveTextContent(report.limits);
+      expect(printRoot?.querySelector('[data-source-path="sources/refund.md"]')).toHaveTextContent('sources/refund.md#l2');
+      expect(printRoot?.querySelector('[data-report-actions]')).toBeNull();
+    });
+    try {
+      fireEvent.click(screen.getByTestId('question-desk-print-pdf'));
+      expect(print).toHaveBeenCalledTimes(1);
+      window.dispatchEvent(new Event('afterprint'));
+      expect(document.body.querySelector('[data-question-desk-print-root]')).toBeNull();
+    } finally { print.mockRestore(); }
   });
 
   it('renders a source-only folder and searches it without touching Keychain', async () => {
@@ -322,7 +360,9 @@ describe('Library question desk transfer boundary', () => {
     render(<Desk />);
     fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Who owns the lunar migration?' } });
     fireEvent.click(screen.getByTestId('question-desk-search'));
-    expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('Word search can miss documents in another language');
+    const unknown = await screen.findByTestId('question-desk-unknown');
+    expect(unknown).toHaveTextContent('Word search can miss documents in another language');
+    expect(unknown).not.toHaveClass('border-t');
     expect(screen.getByTestId('question-desk-summarize')).toHaveTextContent('Investigate originals');
     fireEvent.click(screen.getByTestId('question-desk-coverage-toggle'));
     expect(screen.getByTestId('question-desk-results')).toHaveTextContent('Searched 1 of 1 Wiki pages and 1 of 1 original files.');
