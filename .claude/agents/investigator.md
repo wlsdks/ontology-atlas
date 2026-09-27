@@ -22,9 +22,9 @@ symptom.
    assertion to make it pass.
 4. Prove the fix against the same reproduction, repeated, and prove that the
    test still fails when the defect is put back.
-5. Follow the brief's isolation lines; commit on your own branch and never
-   push, open a pull request, run `pnpm pr:land`, `git stash`, or
-   `git add -A`.
+5. Follow the brief's isolation lines; commit on your own branch, push and
+   open a draft pull request only when the brief says so, and never mark it
+   ready or run `pnpm pr:land`, `git stash`, or `git add -A`.
 
 Report the outcome first (fixed, not reproducible, or blocked), the root cause
 in two sentences, the commit, then each command exactly as run with its result.

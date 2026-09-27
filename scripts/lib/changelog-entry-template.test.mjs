@@ -30,7 +30,7 @@ describe('changelog entry template', () => {
     assert.match(checkEntryTemplate(late)[0], /title must start with/);
     const early = entry(GOOD.replace('2026-09-03', '2026-07-30').replace('v1.0.4: ', ''));
     assert.deepEqual(checkEntryTemplate(early), []);
-    assert.deepEqual(checkEntryTemplate(entry(GOOD.replace('v1.0.4', 'v1.0.4-rc.2'))), []);
+    assert.ok(checkEntryTemplate(entry(GOOD.replace('v1.0.4', 'v1.0.4-rc.2'))).some((problem) => /title must start with/.test(problem)));
   });
 
   it('names a category outside the template, a repeat, an empty one, and a prose line', () => {

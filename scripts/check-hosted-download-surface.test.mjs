@@ -8,11 +8,11 @@ import { evaluateHostedSurface } from "./check-hosted-download-surface.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const hostedUpdaterManifest = JSON.stringify({
-  version: "1.0.0-rc.9",
+  version: "1.3.0",
   platforms: {
     "darwin-aarch64": {
       signature: "signed",
-      url: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.0.0-rc.9/app.tar.gz",
+      url: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.3.0/app.tar.gz",
     },
   },
 });

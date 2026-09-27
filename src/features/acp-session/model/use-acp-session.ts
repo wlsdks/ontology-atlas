@@ -454,7 +454,7 @@ export function useAcpSession({
    * ⚠️ When the open turn last spoke, so the screen can tell "still working" from "stopped
    * answering". `prompt` is deliberately given no timeout, so a turn that ends without a result
    * would otherwise hold the composer shut forever with nothing on screen saying why
-   * (`turn-liveness.ts`, measured in the installed rc.11 build).
+   * (`turn-liveness.ts`).
    */
   const [lastTurnUpdateAt, setLastTurnUpdateAt] = useState<number | null>(null);
   /*

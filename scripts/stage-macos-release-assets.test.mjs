@@ -38,7 +38,7 @@ function fakeBundle(version, arch) {
 }
 
 test("stages exactly the four release assets, flat", () => {
-  const { root, bundleDir, outDir } = fakeBundle("1.0.0-rc.2", "aarch64");
+  const { root, bundleDir, outDir } = fakeBundle("1.3.0", "aarch64");
   try {
     const staged = stageReleaseAssets({ bundleDir, outDir, expectArch: "aarch64" });
     assert.deepEqual(readdirSync(outDir).sort(), staged.files.slice().sort());
@@ -59,8 +59,8 @@ test("renames the updater archive so both architectures survive one release", ()
   // is, one overwrites the other, and GitHub turns the space into a dot so the URL
   // in latest.json no longer matches — both failures surface as "no update
   // available" with no error.
-  const a = fakeBundle("1.0.0-rc.2", "aarch64");
-  const b = fakeBundle("1.0.0-rc.2", "x64");
+  const a = fakeBundle("1.3.0", "aarch64");
+  const b = fakeBundle("1.3.0", "x64");
   try {
     const left = stageReleaseAssets({ bundleDir: a.bundleDir, outDir: a.outDir });
     const right = stageReleaseAssets({ bundleDir: b.bundleDir, outDir: b.outDir });
@@ -68,8 +68,8 @@ test("renames the updater archive so both architectures survive one release", ()
       (staged) => staged.files.find((file) => file.endsWith(".app.tar.gz")),
     );
     assert.deepEqual(archives, [
-      "ontology-atlas_1.0.0-rc.2_aarch64.app.tar.gz",
-      "ontology-atlas_1.0.0-rc.2_x64.app.tar.gz",
+      "ontology-atlas_1.3.0_aarch64.app.tar.gz",
+      "ontology-atlas_1.3.0_x64.app.tar.gz",
     ]);
     for (const name of archives) {
       assert.ok(!/\s/.test(name), `${name} 에 공백이 있다`);
@@ -155,8 +155,8 @@ test("the artifact folder name carries the architecture", () => {
   // On download the folder is the only thing carrying the architecture.
   assert.equal(artifactNameForArch("aarch64"), "ontology-atlas-macos-aarch64");
   assert.equal(artifactNameForArch("x64"), "ontology-atlas-macos-x64");
-  assert.deepEqual(parseDmgName("ontology-atlas_1.0.0-rc.2_x64.dmg"), {
-    version: "1.0.0-rc.2",
+  assert.deepEqual(parseDmgName("ontology-atlas_1.3.0_x64.dmg"), {
+    version: "1.3.0",
     arch: "x64",
   });
   assert.equal(parseDmgName("Ontology Atlas.dmg"), null);
@@ -173,11 +173,11 @@ test("the dSYM ships as its own zip, never inside the app", () => {
   // The shipped binary stays stripped. Without this asset a crash report from a release build
   // names addresses and nothing else — which is exactly what four unreadable SIGABRT reports
   // cost in the week before 1.0.0.
-  const { root, bundleDir, outDir } = fakeBundle("1.0.0-rc.2", "aarch64");
+  const { root, bundleDir, outDir } = fakeBundle("1.3.0", "aarch64");
   fakeDsym(root);
   try {
     const staged = stageReleaseAssets({ bundleDir, outDir, expectArch: "aarch64" });
-    const expected = dsymArchiveName("1.0.0-rc.2", "aarch64");
+    const expected = dsymArchiveName("1.3.0", "aarch64");
     assert.equal(staged.dsym, expected);
     assert.ok(staged.files.includes(expected));
     assert.deepEqual(readdirSync(outDir).sort(), staged.files.slice().sort());

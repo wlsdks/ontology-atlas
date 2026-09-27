@@ -139,7 +139,7 @@ function decisions(root, legacy) {
 function releases(root) {
   return filesBelow(root, 'docs/records/releases').map((file) => {
     const { meta, body } = parseFrontmatter(readFileSync(path.join(root, file), 'utf8'), file);
-    if (!/^v\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(meta.version ?? '')) throw new RecordLedgerError(`${file}: invalid release version`);
+    if (!/^v\d+\.\d+\.\d+$/.test(meta.version ?? '')) throw new RecordLedgerError(`${file}: invalid release version`);
     if (path.basename(file, '.md') !== meta.version) throw new RecordLedgerError(`${file}: filename must equal version`);
     if (!isCalendarDate(meta.date) || !meta.title) throw new RecordLedgerError(`${file}: a real calendar date and title are required`);
     if (meta.title.includes('\n') || Buffer.byteLength(meta.title) > 200) throw new RecordLedgerError(`${file}: title must fit one 200-byte line`);
@@ -165,7 +165,7 @@ function changelog(root, legacy) {
   }
   const legacyDates = [...split.records.matchAll(/^## (\d{4}-\d{2}-\d{2})/gm)].map((match) => match[1]);
   const newestLegacyDate = legacyDates.sort().at(-1);
-  const legacyVersions = new Set([...split.records.matchAll(/^## \d{4}-\d{2}-\d{2} · (v\d+\.\d+\.\d+(?:-rc\.\d+)?):/gm)].map((match) => match[1]));
+  const legacyVersions = new Set([...split.records.matchAll(/^## \d{4}-\d{2}-\d{2} · (v\d+\.\d+\.\d+):/gm)].map((match) => match[1]));
   for (const change of changes) if (newestLegacyDate && change.meta.date < newestLegacyDate) throw new RecordLedgerError(`${change.file}: date predates the newest frozen changelog entry ${newestLegacyDate}`);
   const assigned = new Map();
   const markers = releases(root);
@@ -254,7 +254,7 @@ export function validateNewRecord({ kind, date, id, version, changes = [], root 
 
   if (kind === 'release') {
     const existingVersions = new Set([
-      ...[...legacy.matchAll(/^## \d{4}-\d{2}-\d{2} · (v\d+\.\d+\.\d+(?:-rc\.\d+)?):/gm)].map((match) => match[1]),
+      ...[...legacy.matchAll(/^## \d{4}-\d{2}-\d{2} · (v\d+\.\d+\.\d+):/gm)].map((match) => match[1]),
       ...releaseMarkers.map((marker) => marker.meta.version),
     ]);
     if (existingVersions.has(version)) throw new RecordLedgerError(`release version ${version} already exists`);

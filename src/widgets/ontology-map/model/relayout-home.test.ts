@@ -3,19 +3,13 @@ import { describe, expect, it } from "vitest";
 import { initHomeSpring, isHomeSpringConverged, stepHomeSpring } from "./relayout-home";
 
 /**
- * C1 B3 — auto-arrange restores canonical layout. Each dragged/displaced node
- * springs back to its own `homeX`/`homeY` (`topology-world.ts`) over a short
- * critically-damped transition — reusing `engine/spring.ts#stepSpring` (the
- * same primitive the camera uses) rather than a bespoke lerp, so the motion
- * language stays consistent ("no pop", monotonic approach).
+ * Auto-arrange springs each displaced node back to its `homeX`/`homeY` with the
+ * camera's `engine/spring.ts` `stepSpring`, so the approach is monotonic and never pops.
  */
 describe("stepHomeSpring / isHomeSpringConverged", () => {
-  // A representative critically-damped angular frequency — this pure-math
-  // test isn't tied to a specific `--map-*` token; the caller
-  // (`use-topology-loop.ts`'s auto-arrange homing) passes
-  // `--map-camera-spring-angfreq-transition` (dive-zoom fix's split).
+  // The caller passes `--map-camera-spring-angfreq-transition`; any critical value serves here.
   const ANGULAR_FREQUENCY = 2.941;
-  const DAMPING = 1.0; // critically damped
+  const DAMPING = 1.0;
 
   it("converges to the home coordinate after enough steps", () => {
     let state = initHomeSpring(500, -300);
