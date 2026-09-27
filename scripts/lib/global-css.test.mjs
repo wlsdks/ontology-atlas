@@ -74,6 +74,42 @@ test('a ramp change made only in an app/styles part reaches the spec census', ()
   );
 });
 
+test('a layer split across two parts joins back into one block', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'global-css-seam-'));
+  try {
+    const put = (file, text) => {
+      mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+      writeFileSync(path.join(dir, file), text);
+    };
+    put('app/globals.css', '@import "tailwindcss";\n@import "./styles/a.css";\n@import "./styles/b.css";\n');
+    put('app/styles/a.css', '@layer base {\n  .a {}\n}\n');
+    put('app/styles/b.css', '@layer base {\n  .b {}\n}\n');
+    assert.equal(readGlobalCss(dir), '@import "tailwindcss";\n@layer base {\n  .a {}\n  .b {}\n}\n');
+    // `.b {}` is joined line 4 and line 2 of b.css (its `@layer base {` was dropped).
+    assert.deepEqual(locateGlobalCssLine(4, dir), { file: 'app/styles/b.css', line: 2 });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('an import the reader cannot inline fails loudly', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'global-css-bad-'));
+  try {
+    mkdirSync(path.join(dir, 'app/styles'), { recursive: true });
+    writeFileSync(path.join(dir, 'app/styles/a.css'), '.a {}\n');
+    for (const entry of [
+      "@import 'tailwindcss';\n@import './styles/a.css';\n",
+      '@import "tailwindcss";\n@import "./styles/a.css";',
+      '@import "tailwindcss";\n@import "./other/a.css";\n',
+    ]) {
+      writeFileSync(path.join(dir, 'app/globals.css'), entry);
+      assert.throws(() => readGlobalCss(dir), /unsupported import line/, entry);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('maps a joined line back to the part that holds it', () => {
   assert.deepEqual(locateGlobalCssLine(1, repo), { file: 'app/globals.css', line: 1 });
   assert.deepEqual(locateGlobalCssLine(2, repo), { file: 'app/styles/one.css', line: 1 });

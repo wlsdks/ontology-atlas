@@ -13,6 +13,14 @@ export const rules = [
     matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/, /^src\/.+\.css$/, /^src\/shared\/lib\/cn\.ts$/],
   },
   {
+    order: 95,
+    // Every token gate and spec census reads the split stylesheet through this
+    // reader; a wrong join would blind all of them at once.
+    command: 'node --test scripts/lib/global-css.test.mjs && pnpm exec vitest related --run scripts/lib/global-css.mjs',
+    reason: 'the stylesheet reader changed — its own tests and every gate that reads CSS through it',
+    matches: [/^scripts\/lib\/global-css(?:\.test)?\.mjs$/],
+  },
+  {
     order: 100,
     command: 'pnpm design:toc:check',
     reason: 'the design system document changed and its table of contents is generated',

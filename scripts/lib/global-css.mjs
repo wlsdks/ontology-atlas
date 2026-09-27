@@ -12,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const PART_LINE = /^@import "\.\/(styles\/[^"]+\.css)";\n$/;
+const TAILWIND_LINE = /^@import "tailwindcss"[^;\n]*;\n?$/;
 const GLOBAL_CSS_ENTRY = 'app/globals.css';
 const SEAM_CLOSE = '}\n';
 const SEAM_OPEN = '@layer base {\n';
@@ -24,6 +25,11 @@ function segments(entry, readPart) {
   const out = [];
   for (const raw of entry.split(/(?<=\n)/)) {
     const m = PART_LINE.exec(raw);
+    if (!m && /^\s*@import\b/.test(raw) && !TAILWIND_LINE.test(raw)) {
+      // An import this reader does not inline would silently drop its rules
+      // from every gate. Write it as `@import "./styles/<part>.css";` on its own line.
+      throw new Error(`${GLOBAL_CSS_ENTRY}: unsupported import line ${JSON.stringify(raw)}`);
+    }
     if (!m) {
       out.push({ file: GLOBAL_CSS_ENTRY, text: raw, skip: 0, entryLine: true });
       continue;
