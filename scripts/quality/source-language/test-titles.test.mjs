@@ -40,6 +40,20 @@ test('evaluates messages and titles assembled with + and templates', () => {
   ]);
 });
 
+test('reads an expect.poll message from its options', () => {
+  const source = [
+    "await expect.poll(() => count(), { timeout: 10_000, message: 'poll ' + label }).toBe(1);",
+    "await expect.poll(() => count(), { 'message': `quoted ${n}` }).toBe(1);",
+    "await expect.poll(() => count(), { timeout: 10_000, intervals: [100] }).toBe(1);",
+    'await expect.poll(() => count()).toBe(1);',
+  ].join('\n');
+  assert.deepEqual(texts(source), ['message:poll ${label}', 'message:quoted ${n}']);
+  assert.deepEqual(
+    hangulTestTitles('a.spec.ts', "await expect.poll(() => n, { timeout: 5_000, message: '한글 메시지' }).toBe(1);").map((e) => e.kind),
+    ['message'],
+  );
+});
+
 test('reads the literals of a message it cannot evaluate', () => {
   const source = [
     "expect(a, ok ? '' : 'why it failed').toBe(1);",

@@ -72,6 +72,17 @@ function messageText(node, sourceFile) {
   return evaluatedText(node, sourceFile) ?? printedLiterals(node);
 }
 
+function optionsMessage(options) {
+  if (!options || !ts.isObjectLiteralExpression(options)) return undefined;
+  const message = options.properties.find(
+    (property) =>
+      ts.isPropertyAssignment(property) &&
+      (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) &&
+      property.name.text === 'message',
+  );
+  return message?.initializer;
+}
+
 function messageArgument(call) {
   const callee = call.expression;
   if (ts.isIdentifier(callee)) {
@@ -83,6 +94,7 @@ function messageArgument(call) {
   const owner = callee.expression.text;
   const method = callee.name.text;
   if (owner === 'expect' && method === 'soft') return call.arguments[1];
+  if (owner === 'expect' && method === 'poll') return optionsMessage(call.arguments[1]);
   if (owner !== 'assert') return undefined;
   if (SECOND_ARGUMENT_ASSERTS.has(method)) return call.arguments[1];
   if (THIRD_ARGUMENT_ASSERTS.has(method)) return call.arguments[2];
