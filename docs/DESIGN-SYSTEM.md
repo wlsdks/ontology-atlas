@@ -53,6 +53,7 @@ The criterion for separation is not the topic, but **"when it is read."** All fo
 - [Workbench composition and motion](#workbench-composition-and-motion)
 - [Architecture canvas — the flow surface (new, 2026-08-28)](#architecture-canvas--the-flow-surface-new-2026-08-28)
 - [Library index — readable page titles](#library-index--readable-page-titles)
+- [Wiki question report — editorial evidence grammar (2026-09-27)](#wiki-question-report--editorial-evidence-grammar-2026-09-27)
 - [Absolute rules (Don'ts)](#absolute-rules-donts)
 - [Arrows carry information or they don't ship](#arrows-carry-information-or-they-dont-ship)
 - [Dimensional regularity — when content length varies](#dimensional-regularity--when-content-length-varies)
@@ -1853,6 +1854,46 @@ derived from the prose measure) and that measure. Its graph opens through one la
 so it retains the same focus trap, Escape, scrim, exit lockout and scroll lock
 as other dialogs. Closing returns to the originating page and scroll position.
 A closed graph must not keep a drawing loop running. The Dialog reads system motion preference through the live shared subscription. Reduced entry and exit use `OVERLAY_RISE_REDUCED` with zero travel, retaining the opacity fade; changing the preference while the workbench is open takes effect without remounting it.
+
+## Wiki question report — editorial evidence grammar (2026-09-27)
+
+The Wiki question desk uses the same Atlas shell as other workbenches, then gives
+the report one reading column. The question and answer lead; original evidence,
+disagreement, and unknowns follow in distinct sections. Search coverage and raw
+leads remain one named disclosure away. A zero local word match is a retrieval
+limit, not a claim that the originals have no answer. The exact source address
+stays visible beside an actionable citation, and an unreviewed draft never looks
+like accepted Wiki meaning.
+
+| Role | Existing Atlas type and measure | Treatment |
+|---|---|---|
+| Question | `--text-display` + `--leading-display` | One aligned headline above the report; no repeated card title. |
+| Short answer lead | `--text-hero` + `--leading-hero` on roomy windows, `--text-display` on narrow windows | Only a genuinely short first paragraph earns this step. Long answers stay at reading size; no truncation or fabricated summary. |
+| Explanation and source excerpts | `--text-reading` + `--leading-prose`, within `--measure-doc-column` | Paragraph rhythm and line length carry the reading hierarchy. |
+| Section and source labels | `--text-title` for sections; body steps for citations; `--text-label` for metadata | Source paths may break anywhere; Korean sentences keep word boundaries and never inherit Latin mono decoration. |
+
+The report is an open document surface with thin rules, not a stack of cards.
+Violet marks the selected question and citation path; amber is reserved for a
+confirmed conflict status, not for an agent's unreviewed disagreement heading.
+An unknown remains neutral. Status and source limits use words as well as
+colour. The actual response and visible source addresses survive Markdown and print; print hides controls
+and motion, not uncertainty. No new numeric type or motion token is needed:
+the existing scale already covers 23px question, 30px short answer, and 16px
+reading body. A new value needs a measured role and more than one real consumer.
+
+Search completion uses the shared base arrival; report arrival uses settle.
+The shared animated disclosure handles coverage and lead expansion while
+keeping its open state and focus through ACP completion. Reduced motion removes
+travel without removing any content or feedback. Motion starts from the action
+that caused it and never delays the answer or blocks another press.
+
+Reference calibration: [Apple layout](https://developer.apple.com/design/human-interface-guidelines/layout)
+puts the important fact early in reading order and uses alignment to show
+relationships; [Carbon typography](https://preview.carbondesignsystem.com/building-blocks/foundations/typography/style-strategies)
+separates productive controls from editorial reading; [NotebookLM](https://blog.google/innovation-and-ai/technology/ai/notebooklm-google-ai/)
+and [Notion Enterprise Search](https://www.notion.com/help/enterprise-search)
+keep a path from an answer back to its source. Atlas's local originals,
+unreviewed status, omissions, and explicit write approval remain its own rules.
 
 ## Absolute rules (Don'ts)
 
