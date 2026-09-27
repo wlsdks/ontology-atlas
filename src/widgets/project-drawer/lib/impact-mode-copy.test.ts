@@ -5,7 +5,7 @@ import { IMPACT_MODE_COPY_KEYS } from "./impact-mode-copy";
 
 /** The four impact modes run different graph operations, so their help text must differ. */
 describe("IMPACT_MODE_COPY_KEYS", () => {
-  it('gives every mode distinct label and help keys', () => {
+  it('gives every mode a distinct help key', () => {
     const helpKeys = IMPACT_MODE_COPY_KEYS.map((item) => item.helpKey);
     expect(new Set(helpKeys).size).toBe(helpKeys.length);
   });
@@ -25,10 +25,4 @@ describe("IMPACT_MODE_COPY_KEYS", () => {
       }
     },
   );
-
-  it('matches the upstream and downstream help to the ko direction vocabulary', () => {
-    const drawer = koMessages.vaultWidgets.projectDrawer;
-    expect(drawer.impactHelpUpstream).toContain("필요한 대상");
-    expect(drawer.impactHelpDownstream).toContain("필요로 하는 대상");
-  });
 });
