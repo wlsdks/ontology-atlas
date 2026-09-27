@@ -329,7 +329,7 @@ describe('collapsePlaywrightCommands', () => {
    * this repository's whole reason for `--run` is that picking a subset burns CI.
    */
   const merged = collapsePlaywrightCommands([
-    { command: 'pnpm exec tsc --noEmit' },
+    { command: 'pnpm typecheck' },
     { command: 'pnpm exec playwright test tests/e2e/a.spec.ts' },
     { command: 'pnpm exec playwright test tests/e2e/b.spec.ts tests/e2e/c.spec.ts' },
     { command: 'pnpm lint' },
@@ -338,7 +338,7 @@ describe('collapsePlaywrightCommands', () => {
   assert.deepEqual(
     merged.map((c) => c.command),
     [
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
       'pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts tests/e2e/c.spec.ts',
       'pnpm lint',
     ],
@@ -347,7 +347,7 @@ describe('collapsePlaywrightCommands', () => {
 
   it('collapsePlaywrightCommands leaves a single Playwright command alone', () => {
   const one = [
-    { command: 'pnpm exec tsc --noEmit' },
+    { command: 'pnpm typecheck' },
     { command: 'pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts' },
   ];
   assert.deepEqual(collapsePlaywrightCommands(one), one);

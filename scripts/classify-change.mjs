@@ -23,7 +23,7 @@ import {
 export const FULL_LANE_COMMANDS = Object.freeze({
   gates: Object.freeze([
     'pnpm po:pilot -- --check',
-    'pnpm exec tsc --noEmit',
+    'pnpm typecheck',
     'pnpm lint',
     'pnpm check:tokens',
     'pnpm test:check:tokens',

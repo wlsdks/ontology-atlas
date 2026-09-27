@@ -263,7 +263,7 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest related --run --passWithNoTests src/shared/lib/validate-vault-document.ts',
       'pnpm test:contracts',
       'pnpm test:mcp:unit',
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
       'pnpm test:cli:lib',
       'pnpm vault:validate',
     ]);
@@ -453,7 +453,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test mcp/src/architecture-profile.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:repo-analysis',
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
       'pnpm integration:cli:repo-analysis',
       'pnpm vault:validate',
     ]);
@@ -803,7 +803,7 @@ describe('focused check suggestions', () => {
       // its behalf — the web is unattended, so the smoke test is suggested in the same
       // set.
       'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
     ]);
     assert.deepEqual(result.commands[0].paths, [
       'scripts/check-desktop-readiness.mjs',
@@ -882,7 +882,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm desktop:check',
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
       'pnpm build',
     ]);
   });
@@ -927,14 +927,14 @@ describe('focused check suggestions', () => {
       'pnpm exec eslint --max-warnings 0 app/layout.tsx app/page.tsx app/sitemap.ts app/[locale]/docs/page.tsx',
       'pnpm exec vitest related --run --passWithNoTests app/layout.tsx app/page.tsx app/sitemap.ts app/[locale]/docs/page.tsx',
       'pnpm test:contracts',
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
       'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
       'pnpm decisions:check',
     ]);
   });
 
   // The situation the 2026-08-04 field trial measured — for one new view file plus
-  // one new route this advisor suggested **only** `pnpm exec tsc --noEmit`. The lint
+  // one new route this advisor suggested **only** `pnpm typecheck`. The lint
   // that carries the design spec, the contracts that classify routes, and the two
   // ratchets that actually measure were all absent. `AGENTS.md` pins "point at this
   // command instead of enumerating the checks", so this omission carries weight.
@@ -948,7 +948,7 @@ describe('focused check suggestions', () => {
       'pnpm exec eslint --max-warnings 0 src/views/brand-new-surface/ui/BrandNewPage.tsx app/[locale]/brand-new/page.tsx',
       'pnpm exec vitest related --run --passWithNoTests src/views/brand-new-surface/ui/BrandNewPage.tsx app/[locale]/brand-new/page.tsx',
       'pnpm test:contracts',
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
       'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
       'pnpm decisions:check',
     ]);
@@ -968,7 +968,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/validate-messages.test.mjs',
       'pnpm exec eslint --max-warnings 0 src/i18n/routing.ts src/i18n/request.ts src/i18n/navigation.ts',
       'pnpm exec vitest related --run --passWithNoTests src/i18n/routing.ts src/i18n/request.ts src/i18n/navigation.ts',
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
       // Added 2026-08-08 — a message catalogue is not only the consistency check's
       // input. It is also the input of the gates that read "what does this screen claim
       // it can do".
@@ -988,7 +988,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm integration:mcp:repo-analysis',
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
       'pnpm integration:cli:repo-analysis',
     ]);
   });
@@ -1072,7 +1072,7 @@ describe('focused check suggestions', () => {
       // `docs-deeplink` stayed red in CI across six PRs).
       'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts ' +
         'tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
     ]);
     assert.deepEqual(result.commands[1].paths, ['src/shared/lib/cn.test.ts']);
     assert.deepEqual(result.commands[2].paths, [
@@ -1090,7 +1090,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint --max-warnings 0 src/shared/config/site.ts src/shared/lib/theme.ts',
       'pnpm exec vitest related --run --passWithNoTests src/shared/config/site.ts src/shared/lib/theme.ts',
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
     ]);
   });
 
@@ -1207,7 +1207,7 @@ describe('focused check suggestions', () => {
       'pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts',
       // A spec may not add a fixed sleep (2026-09-26, lesson cb5fbfaf).
       'pnpm test:e2e:sleeps && pnpm e2e:sleeps:check',
-      'pnpm exec tsc --noEmit',
+      'pnpm typecheck',
     ]);
   });
 
@@ -1641,7 +1641,7 @@ describe('focused check suggestions', () => {
   it('타입 검사를 tsconfig 가 보는 곳 전부에 권한다 — 테스트 파일도 포함', () => {
     const typecheck = (path) =>
       suggestFocusedChecks([path]).commands.some(
-        (s) => s.command === 'pnpm exec tsc --noEmit',
+        (s) => s.command === 'pnpm typecheck',
       );
 
     // The two that used to be missing — this is why this test exists.
@@ -1657,7 +1657,7 @@ describe('focused check suggestions', () => {
   it('타입이 없는 파일에는 타입 검사를 권하지 않는다 — 넓히기만 한 게 아니다', () => {
     const typecheck = (path) =>
       suggestFocusedChecks([path]).commands.some(
-        (s) => s.command === 'pnpm exec tsc --noEmit',
+        (s) => s.command === 'pnpm typecheck',
       );
     assert.ok(!typecheck('docs/DECISIONS.md'));
     assert.ok(!typecheck('scripts/build-docs-vault.mjs'));

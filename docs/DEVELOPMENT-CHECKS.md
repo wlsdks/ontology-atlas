@@ -146,7 +146,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### App/type safety
 
-**Run**: `pnpm exec tsc --noEmit`
+**Run**: `pnpm typecheck`
 **Proves**: TypeScript and Next.js config type safety across the app, including route exports, metadata routes, and page/layout files.
 **Escalate**: `pnpm build` when the change may also affect static export output
 **Fix**: fix the reported type error at its source location.
@@ -1074,7 +1074,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm build`
 **Proves**: the app still compiles to a static export without errors.
-**Escalate**: `pnpm exec tsc --noEmit` to isolate a type only failure
+**Escalate**: `pnpm typecheck` to isolate a type only failure
 **Fix**: fix the reported build error; keep the change compatible with static export (no server-only routes, actions, or APIs).
 
 ### Static dogfood manifest

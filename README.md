@@ -739,6 +739,7 @@ be resolved together land through `/land-bundle` as one integration branch.
 | `pnpm pr:ci <n>` | Fire CI on a draft now, so a green, disjoint change can take the fast path |
 | `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run what a landing would do without writing to GitHub, and run trains until the queue is empty |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request for the landing train (or merge it on the fast path), and show the queue and the train in flight |
+| `pnpm typecheck` | Types across every file, with Next's generated route and page types, so the browser build need not check them again |
 
 Rows stay sorted by command, and the reference's entries by area, so two
 branches that each add one land on different lines; `pnpm dev-checks:check`
