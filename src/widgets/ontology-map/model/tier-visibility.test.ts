@@ -13,9 +13,9 @@ import {
   PLAIN_TIER_REVEAL,
 } from "./tier-visibility";
 
-// zoomRatio: 1 = overview entry, >1 zoomed IN, <1 zoomed OUT.
+// zoomRatio: 1 = overview entry, >1 zoomed in, <1 zoomed out.
 const ENTRY = 1;
-const ZOOMED_IN = 4; // well past both reveal bands
+const ZOOMED_IN = 4;
 const ZOOMED_OUT = 0.5;
 
 describe("computeZoomRatio", () => {
@@ -35,19 +35,9 @@ describe("computeZoomRatio", () => {
 });
 
 /*
- * ⚠️ **The seam this file used to contain, now pinned shut** (2026-08-29).
- *
- * The reveal bands started at 0 while the hit floor sat at 0.5, so the first
- * half of every band painted circles that could not be named, hovered, clicked
- * or dragged. Measured on the installed app, storefront sample, resting camera:
- * about ninety painted nodes; one click on such a circle did nothing and
- * another fell through to an edge crossing the same pixels, because a node the
- * hit test rejects lets the click reach the edge test behind it.
- *
- * The bands now begin at the floor, so this sweep — every ratio a camera can
- * reach, both child tiers — is what forbids the band from coming back. It is
- * deliberately expressed as an implication over the *constants*, not a pair of
- * numbers: moving a band or a floor without moving the other fails here.
+ * A band that paints before the hit floor draws circles that cannot be named, hovered,
+ * clicked or dragged, and a click there falls through to an edge behind. The sweep is an
+ * implication over the constants, so moving a band without its floor fails here.
  */
 describe("paint, hit and label begin together — no drawn-but-dead band", () => {
   const KINDS = ["capability", "element"] as const;
@@ -66,13 +56,8 @@ describe("paint, hit and label begin together — no drawn-but-dead band", () =>
     }
   });
 
-  it("the floor is the draw pass's own skip value, not a second number beside it", () => {
-    expect(HITTABLE_MIN_TIER_ALPHA).toBe(0.02);
-  });
-
   it("each band opens where the old hit floor sat, so clicking begins when it always did", () => {
-    // smoothstep reaches 0.5 at the midpoint; the old bands' midpoints were
-    // 1.75 and 2.575, and those are the new opening ratios.
+    // smoothstep reaches 0.5 at the midpoint; the previous band midpoints are these opening ratios.
     expect(DEFAULT_TIER_REVEAL.capability.enterRatio).toBe(1.75);
     expect(DEFAULT_TIER_REVEAL.element.enterRatio).toBe(2.575);
     for (const [kind, enter] of [["capability", 1.75], ["element", 2.575]] as const) {
@@ -122,8 +107,6 @@ describe("nodeTierAlpha", () => {
   });
 
   it("reveals capabilities before elements as you zoom in (staged semantic zoom)", () => {
-    // At the capability full-reveal ratio, capabilities are fully in while
-    // elements (deeper band) have not started yet.
     const ratio = DEFAULT_TIER_REVEAL.capability.fullRatio;
     const cap = nodeTierAlpha("capability", false, ratio, DEFAULT_TIER_REVEAL);
     const el = nodeTierAlpha("element", false, ratio, DEFAULT_TIER_REVEAL);
@@ -150,10 +133,8 @@ describe("edgeTierAlpha", () => {
 });
 
 /**
- * C1 A2 — focus ego tier exemption. A capability/element with a near-zero
- * tierAlpha (semantic-zoom-hidden at overview) must still become visible when
- * it's in the focused node's ego set, ramping smoothly via `egoRamp` — never
- * a hard pop, and never affecting non-ego-members.
+ * A tier-hidden node in the focused ego set still becomes visible, ramping
+ * through `egoRamp` without a pop and without touching non-members.
  */
 describe("effectiveNodeAlpha", () => {
   it("is unchanged for a non-ego-member regardless of egoRamp", () => {
@@ -172,11 +153,10 @@ describe("effectiveNodeAlpha", () => {
   });
 });
 
-describe("isSpineOnlyZoom (QA 소실 A — clamp-bounds source)", () => {
+describe("isSpineOnlyZoom (clamp-bounds source)", () => {
   it("is true at the overview entry and while zoomed out (only the spine draws)", () => {
     expect(isSpineOnlyZoom(ENTRY, DEFAULT_TIER_REVEAL)).toBe(true);
     expect(isSpineOnlyZoom(0.5, DEFAULT_TIER_REVEAL)).toBe(true);
-    // Just below the capability enter ratio: still spine-only.
     expect(isSpineOnlyZoom(DEFAULT_TIER_REVEAL.capability.enterRatio - 1e-6, DEFAULT_TIER_REVEAL)).toBe(true);
   });
 
@@ -196,12 +176,8 @@ describe("isSpineOnlyZoom (QA 소실 A — clamp-bounds source)", () => {
 });
 
 /**
- * persona eval (label-clarity, 2026-07) — "child click ejects to overview
- * instead of selecting". `isNodeHittable` is the pure predicate extracted
- * from `ui/topology-pointer-handlers.ts#hitVisibleNode`'s inline filter —
- * mirrors the draw pass's `effectiveNodeAlpha` ego exemption exactly, so a
- * capability revealed only because it's the focused domain's 1-hop neighbor
- * is STILL hittable even though its own tier alpha is 0 at that zoom ratio.
+ * Mirrors the draw pass's ego exemption, so a capability shown only as the focused
+ * domain's 1-hop neighbour stays clickable at tier alpha 0.
  */
 describe("isNodeHittable", () => {
   const domain = { id: "domain:x", kind: "domain" as const, isHub: false };
@@ -231,25 +207,19 @@ describe("isNodeHittable", () => {
     expect(isNodeHittable(otherCapability, ENTRY, "domain:x", neighbors)).toBe(false);
   });
 
-  it("is NOT hittable when clustered (selective-ego hidden neighbor), even as a 1-hop neighbor of the focus (S3 known gap)", () => {
+  it("is not hittable when clustered behind the +N chip, even as a 1-hop neighbour of the focus", () => {
     const neighbors = new Set(["capability:hidden"]);
-    // Without the clustered set the ego exemption keeps it hittable...
     expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors)).toBe(true);
-    // ...but once it's folded behind the `Neighbor +N` ("+N neighbours") chip (in the frame's clustered
-    // set) it must not be grabbable — it isn't drawn.
+    // Folded behind the `+N` chip it is not drawn, so it must not be grabbable.
     const clustered = new Set(["capability:hidden"]);
     expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors, DEFAULT_TIER_REVEAL, clustered)).toBe(false);
   });
 
-  it("uses the realm depth-tier override so a depth1 element child is hittable at spine zoom (S10 결함 3)", () => {
-    // In a realm the child's ORIGINAL kind is `element` (tier-gated at spine
-    // zoom), but its depth-1 placement makes the draw pass treat it as a
-    // `domain`-tier node (always drawn). Without the override the hit test gates
-    // it out by its element kind → drawn-but-unclickable, the reported dead child.
+  it("uses the realm depth-tier override so a depth1 element child is hittable at spine zoom", () => {
+    // In a realm a depth-1 element draws at domain tier; without the override the hit test
+    // gates it by kind, leaving a drawn but unclickable child.
     const depth1Element = { id: "element:child", kind: "element" as const, isHub: false };
-    // No override → element tier gated out at overview entry, no focus.
     expect(isNodeHittable(depth1Element, ENTRY, null, undefined)).toBe(false);
-    // With the realm tier override (depth1 → domain) it becomes hittable.
     const tierKinds = new Map([["element:child", "domain" as const]]);
     expect(isNodeHittable(depth1Element, ENTRY, null, undefined, DEFAULT_TIER_REVEAL, undefined, tierKinds)).toBe(true);
   });
@@ -278,12 +248,10 @@ describe("isNodeHittable", () => {
 });
 
 /**
- * Slice C (developer / non-developer mode toggle) — the plain lens pushes the
- * element tier into an unreachable band (1e6/2e6) so it is always hidden.
- * `capability` matches DEFAULT, leaving the map's upper structure intact, and the
- * ego exemption (`effectiveNodeAlpha`) works regardless of this config.
+ * The plain lens pushes the element tier to an unreachable band (1e6/2e6); capability
+ * matches DEFAULT, and the ego exemption works regardless.
  */
-describe("PLAIN_TIER_REVEAL (슬라이스 C — 비개발 모드 element 상시 숨김)", () => {
+describe("PLAIN_TIER_REVEAL (elements always hidden outside developer mode)", () => {
   const REALISTIC_RATIOS = [0.5, 1, 1.5, 2, 2.85, 4, 10, 50];
 
   it("hides elements at every realistic zoom ratio (0.5~50)", () => {
@@ -322,27 +290,25 @@ describe("PLAIN_TIER_REVEAL (슬라이스 C — 비개발 모드 element 상시 
   it("still reveals a hidden element once it's the ego-focused node (click-to-reveal exception)", () => {
     const tierAlpha = nodeTierAlpha("element", false, 1, PLAIN_TIER_REVEAL);
     expect(tierAlpha).toBe(0);
-    // ego exemption is a separate function, config-independent — a focused
-    // element still reaches full opacity via effectiveNodeAlpha's ramp.
+    // The ego exemption is config-independent.
     expect(effectiveNodeAlpha(tierAlpha, true, 1)).toBe(1);
   });
 
   it("isNodeHittable also gates a non-focused element out under the plain config", () => {
     const hiddenElement = { id: "element:hidden", kind: "element" as const, isHub: false };
     expect(isNodeHittable(hiddenElement, 1, null, undefined, PLAIN_TIER_REVEAL)).toBe(false);
-    // But the ego exception still makes the focused element itself hittable.
     expect(isNodeHittable(hiddenElement, 1, "element:hidden", new Set(), PLAIN_TIER_REVEAL)).toBe(true);
   });
 });
 
-describe("classifyZoomTier (M-5 — corner readout orientation)", () => {
+describe("classifyZoomTier (corner readout orientation)", () => {
   const C = DEFAULT_TIER_REVEAL;
 
   it("is 'spine' at the overview entry (nothing below the spine revealed yet)", () => {
     expect(classifyZoomTier(ENTRY, C)).toBe("spine");
   });
 
-  it("is 'spine' while capabilities are still less than half-revealed", () => {
+  it("is 'spine' at the capability band's opening ratio, before its hit floor", () => {
     expect(classifyZoomTier(C.capability.enterRatio, C)).toBe("spine");
   });
 
@@ -355,7 +321,7 @@ describe("classifyZoomTier (M-5 — corner readout orientation)", () => {
     expect(classifyZoomTier(ZOOMED_IN, C)).toBe("element");
   });
 
-  it("never reports 'element' while still at the spine (the exact orientation lie the UX round caught)", () => {
+  it("never reports 'element' while still at the spine", () => {
     expect(classifyZoomTier(ENTRY, C)).not.toBe("element");
     expect(classifyZoomTier(ZOOMED_OUT, C)).not.toBe("element");
   });

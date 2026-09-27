@@ -1,8 +1,8 @@
 /**
- * Layout-only communities from actual adjacency, never declared domains.
- * A bounded local modularity pass (Blondel et al., 2008, section 2) keeps dense
- * neighbourhoods together without adding relations or assigning product meaning.
- * Stable visitation and strict positive gains preserve reload determinism.
+ * Layout-only communities from actual adjacency, never declared domains: at most 24 local
+ * modularity passes (Blondel et al., 2008) and 64 single best-pair merges, each O(N + E)
+ * plus small sorts, over adjacency Sets, per-node weight Maps and Int32Arrays. Stable
+ * visitation and strict positive gains keep reloads deterministic.
  */
 export function findCouplingGroups(
   ids: readonly string[],
@@ -14,7 +14,7 @@ export function findCouplingGroups(
     const a = index.get(edge.sourceId);
     const b = index.get(edge.targetId);
     if (a === undefined || b === undefined || a === b) continue;
-    // Reciprocal facts still draw separately, but do not double physical affinity.
+    // Reciprocal facts do not double physical affinity.
     adjacent[a].add(b);
     adjacent[b].add(a);
   }
@@ -52,9 +52,8 @@ export function findCouplingGroups(
     if (!moved) break;
   }
 
-  // Local moves can strand a small triangle at the end of a long branch even
-  // when moving that whole triangle improves modularity. Aggregate communities
-  // by the same positive-gain criterion, with a fixed work ceiling.
+  // Aggregate communities by the same positive-gain rule: local moves alone can strand a
+  // small triangle at the end of a long branch. The pass count is a fixed work ceiling.
   for (let pass = 0; twiceEdges > 0 && pass < 64; pass += 1) {
     const between = new Map<number, Map<number, number>>();
     for (const i of visit) {
@@ -85,8 +84,8 @@ export function findCouplingGroups(
     total[bestB] = 0;
   }
 
-  // A bridge can leave its old community during a local move. Split disconnected
-  // remnants: spatial cohesion must never imply a path which does not exist.
+  // Split disconnected remnants a bridge left behind, or spatial cohesion would imply a
+  // path that does not exist.
   const result = new Int32Array(ids.length).fill(-1);
   let group = 0;
   for (const start of visit) {

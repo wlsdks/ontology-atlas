@@ -1,24 +1,11 @@
 import type { LayoutPoint } from "./library-graph-layout";
 
 /**
- * **The islands are bodies.** The map is laid, not simulated (`library-islands-layout.ts`),
- * so the same folder is the same picture on every visit — and the owner, 2026-09-18,
- * asked whether it moves like a force graph at all. It does, on the two occasions motion
- * means something and never otherwise:
- *
- * - **Arrival.** A folder's islands start near the middle of the map and are pushed out to
- *   their places, largest first, over about half a second: the picture assembling, the
- *   way a galaxy forms, rather than appearing. Their places are the layout's, so nothing
- *   about the picture is left to the physics.
- * - **A hand.** Dragging an island carries it, and the islands it runs into are shoved
- *   aside and settle back to their homes once it has passed; the dragged one keeps where
- *   it was dropped until the map is laid again.
- *
- * At rest nothing moves — the 2026-09-08 rule (*"why does it wriggle… get rid of that"*)
- * holds: the field reports itself still and the frame loop stops. The physics is a spring
- * to each body's home, a collision that separates overlapping discs with the larger body
- * moving less, and a heavy damping, stepped at a fixed size, so it is deterministic and
- * settles in a bounded number of steps; nothing here is random.
+ * The islands as bodies. The layout (`library-islands-layout.ts`) fixes their homes;
+ * motion happens only on arrival (islands move out to their places) and under a hand
+ * (a dragged island shoves others, which spring back). At rest nothing moves and the loop
+ * stops. A spring home, collisions where the larger body moves less, and heavy damping at
+ * a fixed step: deterministic, bounded settle; each step is O(k²) over k islands.
  */
 
 export interface IslandBody {
@@ -44,10 +31,8 @@ export interface IslandField {
 }
 
 /**
- * The spring's share of the distance home taken per step, and the velocity kept per step.
- * Together they land a body in about thirty steps with one small overshoot — measured in
- * Chrome on the 3,424-mark stub: the largest island travelled 150 world units in 30
- * frames, 757 ms at the first setting (0.12 / 0.72); this one lands in about 500 ms.
+ * The spring's share of the distance home per step, and the velocity kept per step: a body
+ * lands in about thirty steps with one small overshoot (measured on the 3,424-mark stub).
  */
 const HOME_PULL = 0.16;
 const DAMPING = 0.66;
@@ -56,10 +41,8 @@ const BODY_GAP = 10;
 /** A body that moved less than this in one step, in world units, is at rest. */
 const REST_DISTANCE = 0.05;
 /**
- * Where an arriving body starts, as a share of its distance from the map's centre: just
- * inside its place, so the islands close the last stretch together and never cross.
- * The first setting, 0.35, piled every island on the middle and let the separation throw
- * them apart — the owner saw it: "very cluttered and strange while it moves".
+ * Where an arriving body starts, as a share of its distance from the centre: just inside
+ * its place, or islands pile on the middle and the separation throws them apart.
  */
 const ARRIVAL_START = 0.9;
 /** While a hand holds one body, the others' spring is this much of itself: they yield rather than fight. */
@@ -131,8 +114,7 @@ export function stepIslandField(field: IslandField): boolean {
     body.vx += (body.home.x - body.x) * pull;
     body.vy += (body.home.y - body.y) * pull;
   }
-  // Collisions: overlapping discs are pushed apart, the larger moving less; a held body
-  // does not move at all, so its whole overlap goes to the other.
+  // A held body never moves in a collision, so the other takes the whole overlap.
   for (let i = 0; i < bodies.length; i += 1) {
     const a = bodies[i];
     for (let j = i + 1; j < bodies.length; j += 1) {
@@ -143,8 +125,7 @@ export function stepIslandField(field: IslandField): boolean {
       const wanted = a.r + b.r + BODY_GAP;
       if (distance >= wanted) continue;
       const overlap = wanted - distance;
-      // Two bodies on one point have no direction between them; the later one goes right,
-      // which is a rule and not a roll of the dice.
+      // Coincident bodies separate by a fixed rule (the later goes right), never at random.
       const nx = distance > 1e-3 ? dx / distance : 1;
       const ny = distance > 1e-3 ? dy / distance : 0;
       const total = a.r + b.r;
@@ -172,8 +153,7 @@ export function stepIslandField(field: IslandField): boolean {
     body.x += body.vx;
     body.y += body.vy;
   }
-  // No two bodies rest overlapping: after the step, any pair still inside each other's
-  // breath is moved apart in place, so the spring cannot hold a body inside a neighbour.
+  // Pairs still overlapping after the step are moved apart in place, or a spring holds a body inside a neighbour.
   for (let i = 0; i < bodies.length; i += 1) {
     const a = bodies[i];
     for (let j = i + 1; j < bodies.length; j += 1) {
@@ -196,10 +176,8 @@ export function stepIslandField(field: IslandField): boolean {
     }
   }
   /*
-   * Rest is measured by how far a body actually moved this step, not by its velocity: a
-   * body whose home lies inside a neighbour is pulled by its spring and pushed back by the
-   * separation every step, and would carry a velocity forever while standing still. What
-   * a person sees is displacement, so that is what "still" means here.
+   * Rest is displacement, not velocity: a body whose home lies inside a neighbour keeps a
+   * velocity forever while standing still.
    */
   bodies.forEach((body, i) => {
     if (body.pinned) return;

@@ -1,25 +1,9 @@
 /**
- * **The lit Strata stage** — the floors the nodes stand on (2026-09-25, owner-approved
- * lit-hologram direction).
- *
- * Strata's four planes used to exist only as one hairline ring each. That was enough to say
- * "there are levels" and not enough to read a level off: the plane was an outline around empty
- * space, and "which domain owns this capability" had to be inferred from where the containment
- * line happened to run. The approved look makes the planes into floors:
- *
- * - **a translucent disc per tier**, filled with that kind's colour, so the level a node is on
- *   is the colour of the floor under it;
- * - **a faint polar grid** (two inner rings and twelve spokes) on the three lower discs, which
- *   is what makes a translucent disc read as a surface under perspective instead of a blur;
- * - **one sector band per domain** on the capability and element discs, alternating two
- *   strengths so neighbouring domains separate. The bands are not decoration: every node's
- *   bearing stays inside its domain's sector by construction (`buildStrataTargets`), so the
- *   band is the ownership fact the placement already proved, drawn where the eye looks for it.
- *   Under a focus the focused line's own sectors are lit instead.
- *
- * Everything here is **geometry only**: it samples plane points through
- * `projectDomePlanePoint` (the pose the nodes were drawn at, per-tier torsion included) into
- * reused arrays of world coordinates. Colours, fog and the canvas live in `render/dome-light.ts`.
+ * The lit Strata stage: a translucent disc per tier in its kind's colour, a faint polar
+ * grid on the lower three so a disc reads as a surface under perspective, and one sector
+ * band per domain on the capability and element discs. Every node's bearing stays in its
+ * domain's sector (`buildStrataTargets`), so a band draws a proven ownership fact. Geometry
+ * only, through `projectDomePlanePoint` into reused arrays; paint is `render/dome-light.ts`.
  */
 import {
   DOME_PLANE,
@@ -32,10 +16,8 @@ import {
 
 const TAU = Math.PI * 2;
 
-/** A closed or open polyline in world 2D, with each point's normalised depth. */
 interface StagePath {
   kind: DomeViewKind;
-  /** Tier assembly ramp 0..1 — the stage rises and fades with its tier. */
   a: number;
   xs: number[];
   ys: number[];
@@ -44,42 +26,34 @@ interface StagePath {
 }
 
 interface StageBand extends StagePath {
-  /** The sector's owner — a domain, or a capability on the element plane. */
+  /** A domain, or a capability on the element plane. */
   ownerId: string;
-  /** Alternate strength, so two neighbouring domains' bands do not fuse into one. */
+  /** So two neighbouring domains' bands do not fuse. */
   alt: boolean;
-  /** Part of the focused line: drawn in the focus ink instead of the plane's own. */
   lit: boolean;
 }
 
 export interface StrataStage {
-  /** One filled disc per plane, the rim of the plane ring. */
   discs: StagePath[];
-  /** Polar grid rings — open paths on the domain, capability and element planes. */
   grid: StagePath[];
-  /** Polar grid spokes — two points each. */
   spokes: StagePath[];
   bands: StageBand[];
 }
 
-/** Planes that carry a grid and bands — the project plane is a small cap with one node on it. */
+/** The project plane is a small cap with one node on it. */
 const GRID_PLANES: readonly DomeViewKind[] = ["domain", "capability", "element"];
-/** Inner grid rings as a share of the plane radius. */
 const GRID_RING_FRACTIONS = [0.42, 0.7] as const;
-/** Spokes per plane — every 30°. */
 const GRID_SPOKES = 12;
-/** Spokes start here (share of radius), so the centre is not a star of converging lines. */
+/** So the centre is not a star of converging lines. */
 const SPOKE_INNER = 0.18;
 /**
- * The band's radial extent as a share of its plane's radius. Placed nodes sit on two lanes at
- * 0.738 and 0.918 (`STRATA_PLACED_FILL` × the stagger), so this annulus holds both lanes with a
- * margin and leaves the rim, where unparented nodes land, outside every domain's band.
+ * Placed nodes sit on lanes at 0.738 and 0.918 (`STRATA_PLACED_FILL` × the stagger), so this
+ * annulus holds both and leaves the rim, where unparented nodes land, outside every band.
  */
 const BAND_INNER = 0.6;
 const BAND_OUTER = 0.965;
-/** Arc samples per full turn, for discs, grid rings and band arcs. */
 const SAMPLES_PER_TURN = 72;
-/** The project plane's disc radius — matches `STRATA_PROJECT_RING_R` in `dome-view.ts`. */
+/** Matches `STRATA_PROJECT_RING_R` in `dome-view.ts`. */
 const PROJECT_DISC_R = 34;
 
 const scratch: DomePlaneSample = { wx: 0, wy: 0, u: 0 };
@@ -125,12 +99,8 @@ function arc(
 const emptyPath = (kind: DomeViewKind): StagePath => ({ kind, a: 0, xs: [], ys: [], us: [], length: 0 });
 
 /**
- * Samples the whole stage for this frame into `out`, reusing its arrays. `litIds` names the
- * sectors of the focused line (a domain, and a capability under it) — their bands light and a
- * lit capability's own band is added on the element plane. Returns `out`.
- *
- * Only planes that carry nodes are drawn (the model's named circles), for the reason the rings
- * already give: a floor for a level this vault does not have would assert one.
+ * The `litIds` set names the focused line's sectors, whose bands light. Only planes that carry
+ * nodes get a floor, or it would assert a level this vault does not have.
  */
 export function sampleStrataStage(
   runtime: DomeRuntime,

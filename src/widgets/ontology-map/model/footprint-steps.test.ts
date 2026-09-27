@@ -3,45 +3,41 @@ import { describe, expect, it } from "vitest";
 import { buildFootprintSteps, buildTrailGlintLegs, buildWalkedEdgeArrivalSteps, buildWalkedEdgeDirections, buildWalkedEdgeKeys, trailGlintLocalPhase, walkedEdgeKey } from "./footprint-steps";
 
 describe("buildFootprintSteps", () => {
-  it("재방문 노드는 순번을 여러 개 갖는다(1부터)", () => {
+  it("gives a revisited node several step numbers, starting at 1", () => {
     const steps = buildFootprintSteps(["a", "b", "a", "c", "a"]);
     expect(steps.get("a")).toEqual([1, 3, 5]);
     expect(steps.get("b")).toEqual([2]);
     expect(steps.get("c")).toEqual([4]);
   });
 
-  it("빈 트레일은 빈 맵", () => {
+  it("maps an empty trail to an empty map", () => {
     expect(buildFootprintSteps([]).size).toBe(0);
   });
 });
 
 describe("buildWalkedEdgeKeys", () => {
-  it("연달아 방문한 쌍만 후보가 된다", () => {
+  it("makes candidates only of consecutively visited pairs", () => {
     const keys = buildWalkedEdgeKeys(["a", "b", "c"]);
     expect(keys.has(walkedEdgeKey("a", "b"))).toBe(true);
     expect(keys.has(walkedEdgeKey("b", "c"))).toBe(true);
-    // a→c was never visited consecutively — it is not a walked path.
     expect(keys.has(walkedEdgeKey("a", "c"))).toBe(false);
   });
 
-  it("방향이 달라도 같은 키 — 엣지는 무향으로 조회된다", () => {
+  it("keys an edge the same in either direction, since edges are undirected", () => {
     expect(buildWalkedEdgeKeys(["b", "a"]).has(walkedEdgeKey("a", "b"))).toBe(true);
   });
 
-  it("같은 노드로 이어지는 자기 쌍은 만들지 않는다", () => {
+  it("makes no self pair for a step to the same node", () => {
     expect(buildWalkedEdgeKeys(["a", "a"]).size).toBe(0);
   });
 
-  it("걸음이 하나면 쌍이 없다", () => {
+  it("has no pair with a single step", () => {
     expect(buildWalkedEdgeKeys(["a"]).size).toBe(0);
   });
 });
 
 describe("buildWalkedEdgeDirections", () => {
-  /*
-   * ⚠️ The star mark has no toes. Direction moved from the glyph onto the line on
-   * 2026-09-10, and this is the only place that remembers which way the walk went.
-   */
+  /* The star mark has no toes, so this is the only record of which way the walk went. */
   it("remembers which way each relation was crossed", () => {
     const dirs = buildWalkedEdgeDirections(["b", "a"]);
     // Walked b -> a, and "a" sorts lower, so the crossing runs high -> low.
@@ -69,8 +65,8 @@ describe("buildWalkedEdgeDirections", () => {
 
 describe("buildWalkedEdgeArrivalSteps", () => {
   /*
-   * ⚠️ A line belongs to the star it leads to. This is what lets the ignition sweep draw the
-   * path in the order it happened rather than handing over the finished shape at once.
+   * A line belongs to the star it leads to, so the ignition sweep draws the path in the
+   * order it happened.
    */
   it("gives each relation the step the walk arrived along it", () => {
     const steps = buildWalkedEdgeArrivalSteps(["a", "b", "c"]);
@@ -79,8 +75,7 @@ describe("buildWalkedEdgeArrivalSteps", () => {
   });
 
   it("keeps the first arrival when a relation is walked again", () => {
-    // Drawn once, in the order it was first made — a line that redrew itself later would
-    // pull the sweep backwards.
+    // Drawn once, when first made; a later redraw would pull the sweep backwards.
     expect(buildWalkedEdgeArrivalSteps(["a", "b", "a", "b"]).get(walkedEdgeKey("a", "b"))).toBe(1);
   });
 
@@ -94,9 +89,8 @@ describe("buildWalkedEdgeArrivalSteps", () => {
 
 describe("buildTrailGlintLegs", () => {
   /**
-   * The whole point of the allocator: one speed. A leg twice as long must own twice as much
-   * of the lap, or the two lights the eye sees together move at different speeds — which is
-   * the defect it replaced (2.9x spread, measured 2026-09-10).
+   * One speed: a leg twice as long owns twice the lap, or two lights seen together move at
+   * different speeds.
    */
   it("gives each relation a share of the lap proportional to its length", () => {
     const legs = buildTrailGlintLegs([
@@ -120,7 +114,7 @@ describe("buildTrailGlintLegs", () => {
   });
 
   it("falls back to equal slices when every stop sits at one point", () => {
-    // A degenerate walk must still traverse in order rather than divide by zero.
+    // A degenerate walk still traverses in order rather than dividing by zero.
     const legs = buildTrailGlintLegs([
       { key: "a b", length: 0 },
       { key: "b c", length: 0 },
@@ -146,7 +140,7 @@ describe("trailGlintLocalPhase", () => {
     expect(trailGlintLocalPhase(leg, 0.75)).toBeCloseTo(1, 10);
   });
 
-  /** One light on the walk: every other relation must report *nothing to draw*, not 0 or 1. */
+  /** Every other relation reports nothing to draw (null), not 0 or 1. */
   it("is null while the light is somewhere else on the walk", () => {
     const leg = { start: 0.25, end: 0.75 };
     expect(trailGlintLocalPhase(leg, 0.1)).toBeNull();
