@@ -6,11 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { EXIT_TRANSITION, MOTION } from './index';
 import { useExitLockout } from './use-exit-lockout';
 
-/**
- * `EXIT_TRANSITION` no longer carries `pointerEvents` (moved here after the CI finding
- * documented in this hook's doc-block), so these tests are the replacement coverage for
- * "a leaving surface stops taking input from its first exit frame."
- */
+/** A leaving surface stops taking input from its first exit frame; `EXIT_TRANSITION` carries no `pointerEvents`. */
 
 function Surface({ open }: { open: boolean }) {
   const { ref, onAnimationStart } = useExitLockout<HTMLDivElement>();
@@ -50,8 +46,7 @@ describe('useExitLockout', () => {
 
     await act(async () => {
       getByText('close').click();
-      // AnimatePresence dispatches onAnimationStart synchronously with React's commit,
-      // but flush a frame the same way the probe measurement did.
+      // onAnimationStart is synchronous with the commit; one frame is flushed as a margin.
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 

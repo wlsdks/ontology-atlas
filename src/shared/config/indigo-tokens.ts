@@ -1,14 +1,9 @@
 /**
- * The JS-side source of truth for indigo, for the places CSS variables
- * (`--color-indigo-*`) cannot reach: the canvas renderer and OpenGraph images.
+ * The JS-side source of truth for indigo, for the places CSS variables (`--color-indigo-*`)
+ * cannot reach: the canvas renderer and OpenGraph images. Tailwind arbitrary values cannot
+ * import it, so they stay consistent by using the same triplet (`94,106,210` = `#5e6ad2`).
  *
- * Tailwind arbitrary values (`bg-[color:rgba(94,106,210,0.x)]`) do **not** import
- * this module — those are matched as strings at build time and cannot reference a
- * runtime const. They stay consistent as long as they use the same RGB triplet
- * (`94,106,210` = `#5e6ad2`).
- *
- * All six variants are verified at chroma ≤ 8% in LCH. They are named by
- * **purpose**, not by lightness order:
+ * The six variants (chroma ≤ 8% in LCH) are named by purpose:
  *   brand     — the canonical accent
  *   accent    — emphasised text, strong buttons
  *   hover     — hover state (more vivid)

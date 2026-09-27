@@ -1,31 +1,16 @@
 /**
- * The connector catalogue — **the shortcut past typing a package name.**
+ * The connector catalogue: the shortcut past typing a package name. The data lives in
+ * `mcp-catalogue.generated.ts` (from `scripts/build-mcp-catalogue.mjs`); this file owns the
+ * shape, the search, and turning a chosen entry into a connector draft.
  *
- * The data lives in `mcp-catalogue.generated.ts`, written by
- * `scripts/build-mcp-catalogue.mjs` and committed. This file owns the shape, the
- * search, and the one function that turns a chosen entry into a connector draft.
+ * The type keeps two shapes apart, and so does the screen:
+ * - `remote`, a hosted address: nothing to install; the coding agent connects and does any
+ *   OAuth sign-in in its own browser. Atlas writes the address down and stops.
+ * - `local`, a program on this computer: the person's runtime fetches the package, and its one
+ *   credential goes into this machine's keychain, never into the folder's file.
  *
- * ## The two shapes, and why they must never be blurred
- *
- * A person meets exactly one of two errands, and they ask for different things:
- *
- * - **A hosted address** (`remote`). Nothing to install, nothing to type. The
- *   coding agent opens the connection and, for an OAuth server, does the signing
- *   in — in its own browser window, against the provider's consent screen. Atlas
- *   writes the address down and stops.
- * - **A program on this computer** (`local`). The person's own runtime fetches
- *   the package the first time it starts, and it needs exactly one credential,
- *   which goes into this machine's keychain and never into the folder's file.
- *
- * Every shipped client blurs these two and the owner could not follow the
- * result (2026-09-07). So the type keeps them apart, and so does the screen.
- *
- * ## What this file may not grow
- *
- * No popularity, no counts, no rating, no "recommended", no sort but the
- * curation order. Those turn a list into a marketplace, which
- * `.claude/rules/forbidden.md` refuses by name. The generator's header carries
- * the same rule for the data side.
+ * No popularity, counts, ratings, "recommended" or sort other than curation order: that makes
+ * a marketplace, which `.claude/rules/forbidden.md` refuses. The generator carries the same rule.
  */
 import type { ConnectorRecord, ConnectorValueEntry } from '@/shared/lib/connector-record';
 
@@ -102,18 +87,14 @@ export function variantVariables(variant: CatalogueVariant): readonly CatalogueV
   return variant.kind === 'remote' ? variant.headers : variant.env;
 }
 
-/**
- * The variables a person still has to supply. An OAuth remote returns none, which is the whole
- * reason it is the easier of the two shapes and why the screen may say "nothing to enter".
- */
+/** The variables a person still has to supply; an OAuth remote needs none. */
 export function variantSecrets(variant: CatalogueVariant): readonly CatalogueVariable[] {
   return variantVariables(variant).filter((variable) => variable.required);
 }
 
 /**
- * Search across a catalogue entry the way a person remembers it: the service's name, what it is
- * for, and the package or address itself. Somebody who half-remembers "the one with
- * githubcopilot in the URL" has to find it too.
+ * Matches an entry the way a person remembers it: the service's name, its purpose, and the
+ * package or address itself.
  */
 function catalogueHaystack(entry: CatalogueEntry): string {
   return [
@@ -141,15 +122,10 @@ export function searchCatalogue(
 /**
  * A chosen entry, as a connector draft the by-hand form can hold.
  *
- * ⚠️ **No value is carried, ever.** A required credential becomes a `secretRef` — a pointer at
- * this machine's keychain with nothing behind it yet — so the form asks for it and
- * `serializeConnectorState` cannot be handed a literal to refuse. A non-secret variable becomes a
- * bare name, which is a field with an empty box beside it.
- *
- * `origin` records **which catalogue entry and which capture** produced this row. The PO steward's
- * 2026-09-07 review made that a condition: without it, `connectors.json` cannot tell a curated
- * suggestion apart from something the person typed, and the next agent reading the folder has no
- * way to ask where a row came from.
+ * No value is ever carried: a required credential becomes an empty keychain `secretRef`, so the
+ * form asks for it and `serializeConnectorState` is never handed a literal to refuse. `origin`
+ * records which catalogue entry and capture produced the row, or `connectors.json` cannot tell a
+ * curated suggestion from something the person typed.
  */
 export function catalogueDraft(
   entry: CatalogueEntry,
@@ -187,9 +163,8 @@ export function catalogueDraft(
     id: options.id,
     name: entry.name,
     transport: 'stdio',
-    // The bare runtime name when this machine could not resolve one — which `connectorProblems`
-    // then reports as `command-not-absolute`, with the sentence saying why. Writing a guessed
-    // path instead would defer the failure to the moment somebody asks a question.
+    // Unresolved runtimes stay bare, so `connectorProblems` reports `command-not-absolute` now
+    // rather than a guessed path failing later.
     command: options.runtimePath ?? variant.runtime,
     args: [...variant.args],
     env: toEntries(variant.env),

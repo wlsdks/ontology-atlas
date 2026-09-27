@@ -1,29 +1,13 @@
 /**
- * Single source for the **instructions a user copies into their own agent**.
+ * Instructions a user copies into their own agent; a sibling of `cli-invocation.ts`.
  *
- * Sibling of `cli-invocation.ts`: both are strings the UI composes for an agent to
- * consume verbatim, and several surfaces read them (the checklist, the
- * connection-complete card), which makes `shared/config` the only correct layer.
+ * Builders, not constants: a baked-in `.` path points at whatever folder the agent runs in.
+ * English only, not i18n: the reader is an agent, and translated tool names and imperatives
+ * make it call a different tool. The screen caption explains to the person.
  *
- * **Builders, not constants.** A static prompt with `.` baked in as the path
- * already caused one incident: open the agent from a different working folder and
- * that `.` points at someone else's folder. A copy detached from the fact (the
- * vault path) is not a copy, it is a wrong answer.
- *
- * **English only — deliberately not in i18n.** The reader of these strings is an
- * **agent**. If tool names (`connection_info`, `add_relations`, …) and imperatives
- * vary by language, the agent mistranslates the sentence and calls a different
- * tool. All three precedents in this repo are English constants, and the one
- * prompt that did go through i18n is exactly where that corruption showed up.
- * Human-readable explanation is the screen caption's job — that caption is the
- * only place a person is told "nothing is written before approval".
- *
- * ⚠️ **Every tool and command named here must actually exist.** An instruction
- * that fails the moment it is pasted is a trap, not help. In particular, skills
- * that exist only in this repo (`/ontology-bootstrap`) and `npx ontology-atlas`
- * (not on any registry) cannot be used.
- * `tests/contract/agent-prompt-tool-names.contract.test.ts` checks these against
- * the MCP tool list.
+ * Every tool and command named here must exist, or the paste fails at once; repo-only skills
+ * and `npx ontology-atlas` are unusable. `tests/contract/agent-prompt-tool-names.contract.test.ts`
+ * checks the tool names.
  */
 
 /** What the prompt calls the folder when the vault path is unknown (on the web, say). */
@@ -35,60 +19,16 @@ function vaultRef(vaultPath: string | null | undefined): string {
 }
 
 /**
- * **First step after connecting** — survey the repository and *propose* concept
- * candidates.
+ * First step after connecting: survey the repository and propose concept candidates, writing
+ * only what a human approved.
  *
- * The last clauses are this product's signature: propose, and write only what a
- * human approved. Where comparable setup prompts end in "EXECUTE NOW", this one
- * writes the contract that the human is the arbiter of meaning into the prompt
- * itself.
- *
- * ## Why this stops short of describing the write
- *
- * It used to end "write only approved items", and that sentence sent people into
- * a wall. A walkthrough pasted this instruction into a fresh agent, approved the
- * proposal it produced, and got nothing: the server answered `canWrite: false`,
- * because acceptance has to be bound to a generated plan digest and an
- * independent evaluation that a blanket "I approve" predates. The instruction had
- * promised a path the server refuses, and named none of the fields that would
- * explain it.
- *
- * The cause was not the gate. It was that this file carried a **second,
- * hand-shortened copy** of a lifecycle the server already publishes in full —
- * ten steps in its own `instructions`, plus a `nextStep` on every response. Two
- * hand-written copies of one contract drift, which is the same failure the
- * insights surface hit when it disagreed with the CLI about what a node is
- * (`docs/DECISIONS.md`, 2026-08-16).
- *
- * So it no longer paraphrases the write path. It hands over the proposal and
- * points at the authority that knows the rest.
- *
- * ## Why it now stops instead of chasing `canWrite`
- *
- * The first repair of this told the agent to "keep following nextStep until
- * canWrite is true", which was still wrong for the reader it was written for. A
- * single-context agent cannot honestly reach that state: writing needs a
- * qualification packet whose evaluator is not its builder, and the server fails
- * closed on `maker-self-evaluation` when they match. Told to chase the flag, such
- * an agent either loops or invents the second actor.
- *
- * The other half of that repair was a wrong diagnosis worth recording. The plan
- * digest is a pure function of the proposal the caller submits, so a proposal
- * carried back verbatim reproduces the digest the human accepted. Acceptance does
- * not expire; a fresh session simply re-authors the proposal by default and
- * invalidates its own approval. Saying "save what you showed them" costs one
- * sentence and removes that whole failure.
- *
- * ## Why the incremental path is step 6 and the bulk route follows it
- *
- * Naming the open path was not enough while it sat at step 9, behind three steps
- * of a route this reader usually cannot take. Reproduced on the app's own
- * first-run path against an unfamiliar repository: the agent spent a whole turn
- * authoring the full proposal, hit `canWrite:false`, and only then offered the
- * small batches — the person had already approved the build and still had an
- * empty vault. So the reviewed small batch is now the first thing described, and
- * the bulk lifecycle is stated once, as what a session with an independent
- * evaluation lane does instead.
+ * It does not paraphrase the server's write lifecycle, which the server publishes in its
+ * `instructions` and every `nextStep`; a second hand-written copy drifts
+ * (`docs/DECISIONS.md`, 2026-08-16). A single-context agent cannot make `canWrite` true (the
+ * server rejects `maker-self-evaluation`), so the reviewed small batch comes first, as step 6,
+ * and the bulk route after it tells the agent to stop rather than chase the flag or invent an
+ * evaluator. The plan digest is a pure function of the proposal, so saving it verbatim keeps
+ * the human's acceptance valid.
  */
 export function buildAgentAnalyzePrompt({
   vaultPath,
@@ -159,13 +99,9 @@ export function buildAgentAnalyzePrompt({
 }
 
 /**
- * **Instructions that verify the connection first** — pasted by someone who is not
- * comfortable editing config files, so the agent checks the current state itself
- * and names the next step.
- *
- * The agent is **never told to write the config file**: the app is what knows the
- * absolute path, and the app's Connect Agent button is what writes the config.
- * Telling the agent to write it too would put the same fact in two places.
+ * Instructions that verify the connection first and name the next step, for someone not
+ * comfortable editing config files. The agent never writes the config: the app knows the
+ * absolute path and its Connect Agent button writes it, so the fact lives in one place.
  */
 export function buildAgentSetupPrompt({
   vaultPath,

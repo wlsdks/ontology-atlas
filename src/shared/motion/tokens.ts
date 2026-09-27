@@ -1,37 +1,14 @@
 /**
- * **JS mirror** of the motion tokens — a verbatim copy of the `--motion-*` ramp in
- * `app/globals.css`.
+ * JS mirror of the `--motion-*` ramp in `app/globals.css`. framer-motion cannot read a CSS
+ * `var()` in a numeric `transition`, so the values are copied, and
+ * `tests/contract/motion-token-mirror.contract.test.ts` fails when they drift or a name
+ * leaves the ramp. Every JS duration goes through this file, because the Tailwind lint only
+ * reads class strings.
  *
- * **Why a copy.** framer-motion cannot read a CSS `var()` from a numeric `transition`
- * field, so the values have to be transcribed — and a transcribed value **will** drift
- * without a gate. That gate is
- * `tests/contract/motion-token-mirror.contract.test.ts`: it parses the CSS, compares it
- * against this file, and fails when a name appears that is not on the ramp.
- *
- * **What had gone wrong** (measured 2026-07-28 by the design council's system /
- * design-systems seat). This file carried four steps
- * (`instant/fast/medium/slow` = 0.12/0.18/**0.28/0.42**), and **0.28 and 0.42 existed
- * nowhere in the CSS ramp**. Of 22 usages, **15 were rendering with an off-ramp
- * duration**.
- *
- * No gate caught it because the lint selector (`duration-<number>`) only reads Tailwind
- * class strings. framer's `transition={{ duration: 0.28 }}` and this constant object
- * were **outside every gate's reach** — the values drifted precisely because they lived
- * where nothing was looking.
- *
- * **The names describe use, not size.** Same three-step ramp as
- * `.claude/rules/design.md`; you pick by what the motion does, not by its value:
- *
- * - `fast` (120ms) = **acknowledge** a state that already changed (hover, focus, colour,
- *   chip transitions).
- * - `base` (180ms) = **move** a surface into or out of place (panels, sheets, cards,
- *   drawers).
- * - `settle` (240ms) = **confirm** that something finished (FLIP re-layout, commit
- *   convergence).
- *
- * Every old `medium`/`slow` call site was "a surface appears", so all of them moved to
- * `base` — a 0.42 card entrance was neither an acknowledgement nor a confirmation, just
- * slow.
+ * Names describe use, as in `.claude/rules/design.md`:
+ * - `fast` (120ms) acknowledges a state that already changed (hover, focus, colour).
+ * - `base` (180ms) moves a surface into or out of place (panels, sheets, cards).
+ * - `settle` (240ms) confirms that something finished (FLIP re-layout, commit).
  */
 
 /** Value copy of `--motion-ease` (cubic-bezier(0.25, 0.1, 0.25, 1)) — the entry family. */
@@ -40,10 +17,8 @@ export const MOTION_EASE = [0.25, 0.1, 0.25, 1] as const;
 /**
  * Value copy of `--motion-ease-exit` (cubic-bezier(0.4, 0, 1, 1)) — the exit family.
  *
- * Accelerates away where `MOTION_EASE` decelerates into place. Not a general-purpose
- * option: surfaces reach it only through {@link EXIT_TRANSITION}, and
- * `motion-token-mirror.contract.test.ts` fails any file outside `src/shared/motion` that
- * names it, so an entrance cannot borrow the leaving curve.
+ * Surfaces reach it only through {@link EXIT_TRANSITION}; `motion-token-mirror.contract.test.ts`
+ * fails any file outside `src/shared/motion` that names it, so an entrance cannot borrow it.
  */
 export const MOTION_EASE_EXIT = [0.4, 0, 1, 1] as const;
 
@@ -57,56 +32,29 @@ export const MOTION = {
 } as const;
 
 /**
- * List entrance stagger — cumulative delay per item, in seconds.
- *
- * Differing from `--git-row-stagger` (14ms) is deliberate: that one is for dense rows on
- * the history surface, this one is for cards. Snapping them together would give both
- * surfaces the same rhythm and make them read as the same thing (design-systems seat: do
- * not snap values whose contexts genuinely differ).
+ * List entrance stagger per item, in seconds. It differs from `--git-row-stagger` (14ms) on
+ * purpose: dense history rows and cards should not share one rhythm.
  */
 export const STAGGER = 0.035;
 
 /**
- * Critically damped spring for the three DOM overlays (GlobalSearch, SearchPalette,
- * NewDocKindDialog) — zero overshoot, zero bounce. A JS copy matching the
- * `--overlay-spring-response` (0.30) / `--overlay-spring-damping` (1.0) tokens in
- * `app/globals.css`, since framer cannot read a CSS `var()` from a numeric transition
- * field. Tuned separately from the canvas two-parameter physics model — it does **not**
- * inherit the same spring; the conversion is documented in the globals.css comment.
- * `duration` is the response in seconds, and `bounce: 0` is framer's expression of
- * damping 1.0.
- *
- * **This is the only spring in the DOM.** The old `SPRING.sheet` (stiffness 280 /
- * damping 30 — underdamped, so it overshot) had exactly one consumer (ProjectDrawer) and
- * was an unregistered exception with no gate. In an app whose identity is restraint,
- * overshoot needs explicit approval, so that one call site moved here and the spring was
- * deleted. If something genuinely must bounce, register a `bounce > 0` token then, with
- * the product reason.
+ * Critically damped spring for the DOM overlays, mirroring `--overlay-spring-response` (0.30)
+ * and `--overlay-spring-damping` (1.0) in `app/globals.css`: `duration` is the response in
+ * seconds and `bounce: 0` is damping 1.0. It is the only DOM spring; a spring that overshoots
+ * needs its own `bounce > 0` token with the product reason.
  */
 export const OVERLAY_SPRING = { type: "spring", duration: 0.3, bounce: 0 } as const;
 
 /**
- * Overlay transition for reduced-motion users — opacity cross-fade only, no translate or
- * transform, 120ms. Same duration as `.overlay-fade-only` and
- * `--map-tip-fade-ms` (120) in globals.css; that token is scoped to ontology-map,
- * so it cannot be referenced via var() here — only the value is matched.
+ * Reduced-motion overlay transition: a 120ms opacity cross-fade, the value of
+ * `.overlay-fade-only` and `--map-tip-fade-ms`, which is scoped to ontology-map and so cannot
+ * be read through var() here.
  */
 export const OVERLAY_SPRING_REDUCED = { duration: 0.12, ease: "linear" } as const;
 
 /**
- * The modal scrim fade — the single transition where an overlay covers what is behind it.
- *
- * Why a constant: this value was duplicated across four sites as the literal
- * `transition={{ duration: reducedMotion ? 0.12 : 0.18 }}`. The values were on the ramp,
- * but they sat **outside the reach of the `motion-token-mirror` contract**, so no gate
- * covered them, and the easing fell back to framer's default — leaving only half of "an
- * element taking a ramp duration takes the matching easing family".
- *
- * This is the **same setup** as the 2026-07-28 incident where JS durations drifted two
- * steps off the CSS ramp (0.28, 0.42): duplicate a literal and eventually only one copy
- * changes. Hoisting it to a constant puts it under that contract automatically.
- *
- * A scrim is a surface changing place, so it takes `base`.
+ * The modal scrim fade. A constant rather than a literal per site, so the mirror contract
+ * covers it and the easing is the ramp's; a scrim is a surface changing place, so `base`.
  */
 export const SCRIM_FADE = MOTION.base;
 
@@ -114,60 +62,11 @@ export const SCRIM_FADE = MOTION.base;
 export const SCRIM_FADE_REDUCED = OVERLAY_SPRING_REDUCED;
 
 /**
- * **Leaving is not arriving rewound.**
+ * Where a surface starts, as a name, so entrance distances cannot drift between copies.
  *
- * `app/globals.css` has said this since 2026-07-28 for the surfaces that leave through a
- * CSS class: an exit plays forward under its own keyframe name at
- * `calc(var(--motion-base) * 0.67)`. Every surface that leaves through
- * `AnimatePresence` was outside that sentence, because framer's `exit` prop reuses the
- * element's single `transition` — the same clock, the same curve, backwards.
- *
- * Measured 2026-09-05 (1440×900, WAAPI `getTiming()` on the exiting element):
- *
- * | Surface | entry | exit |
- * |---|---|---|
- * | node inspector — `Surface`, CSS | 180 ms | 120.6 ms, own keyframe |
- * | docs quick drawer scrim — framer | 180 ms | **180 ms, same curve** |
- * | search palette panel — framer | 180 ms | **180 ms, same curve** |
- *
- * 180 × 0.67 = 120.6 ms, which is the ramp's `fast` step, so the JS mirror introduces no
- * off-ramp value: it names the step the CSS formula already lands on. Reading it as a
- * name rather than as `MOTION.fast` is the point — an exit is not "acknowledge a hover",
- * and `framer-exit-asymmetry.contract.test.ts` can require *this* name at every exit.
- *
- * **The curve is the exit family.** `--motion-ease` decelerates into place; a surface
- * leaving on it slows down while still on screen. `MOTION_EASE_EXIT` accelerates away,
- * the same `--motion-ease-exit` the inspector's CSS movement exit (`topologyChromeOut`)
- * runs, so a framer exit and a CSS exit share one curve as well as one clock.
- */
-/*
- * The input lockout that used to live here as `pointerEvents: { duration: 0 }` moved to
- * `useExitLockout` in `./use-exit-lockout.ts` — see that file's doc-block for the CI
- * finding that forced the move (a string value inside a framer exit set, even with its
- * own zero-duration transition, hangs `AnimatePresence` completion under jsdom on
- * GitHub's Linux runner). This object stays a pure `{ duration, ease }` transition so it
- * carries no non-numeric animatable value.
- */
-/**
- * **Where a surface starts, as a name.**
- *
- * `EXIT_TRANSITION` below put the exit *clock* under the mirror contract, and `MOTION`
- * put the entry clock there before it. The **distance** stayed a literal: eight files
- * wrote their own `{ opacity: 0, y: 8 }` or `{ opacity: 0, y: 12, scale: 0.985 }`, which
- * is the setup the module's own doc-blocks keep describing — duplicate a value and
- * eventually only one copy changes. Measured 2026-09-08: 16 sites, two distances, zero
- * disagreement so far.
- *
- * **Two grammars, and the split is real.** `dialog.tsx`'s contract says the overlay
- * grammar is "opacity plus an 8px rise", and the primitive plus the search palette,
- * the project drawer's hero and the project card all take it. Four hand-built modal
- * surfaces — the shortcut sheet, the recent-changes dialog, the block import module and
- * the vault-open guide sheet — arrive from 12px with a hair of scale instead. Naming
- * both is not blessing the split: it is what makes the split countable, and
- * `framer-entrance-grammar.contract.test.ts` refuses a third.
- *
- * The resting state is exported beside each start so a consumer cannot spread the start
- * and forget to animate `scale` back to 1.
+ * Two grammars: the overlay grammar (`dialog.tsx`) is opacity plus an 8px rise; hand-built
+ * modal sheets arrive from 12px with a hair of scale. `framer-entrance-grammar.contract.test.ts`
+ * refuses a third. Each resting state is exported beside its start so `scale` returns to 1.
  */
 export const OVERLAY_RISE = { opacity: 0, y: 8 } as const;
 
@@ -184,16 +83,18 @@ export const SHEET_RISE = { opacity: 0, y: 12, scale: 0.985 } as const;
 export const SHEET_SETTLED = { opacity: 1, y: 0, scale: 1 } as const;
 
 /**
- * The reduced-motion equivalent of `SHEET_RISE`: the same axes, travel zero.
- *
- * The shortcut sheet's own doc-block records why this is not simply "no animation" —
- * the global kill rule cuts CSS animations, and a framer sheet kept its opacity easing
- * while its geometry was cut to one frame, so the surface teleported. *"It is not a
- * teleport when the travel distance is 0, not the time."* Named beside its sibling for
- * the same reason `OVERLAY_SPRING_REDUCED` and `SCRIM_FADE_REDUCED` are named.
+ * The reduced-motion equivalent of `SHEET_RISE`: the same axes with zero travel, so the sheet
+ * fades in place instead of teleporting when geometry animation is cut.
  */
 export const SHEET_RISE_REDUCED = { opacity: 0, y: 0, scale: 1 } as const;
 
+/**
+ * Leaving is not arriving rewound: framer's `exit` otherwise reuses the entry `transition`
+ * backwards. The CSS exits run at `calc(var(--motion-base) * 0.67)` = 120ms, the ramp's `fast`
+ * step, on `--motion-ease-exit`, so framer and CSS exits share one clock and one curve.
+ * `framer-exit-asymmetry.contract.test.ts` requires this name at every exit; the input lockout
+ * lives in `useExitLockout`, so this stays a numeric `{ duration, ease }`.
+ */
 export const EXIT_TRANSITION = {
   duration: MOTION.fast.duration,
   ease: MOTION_EASE_EXIT,
