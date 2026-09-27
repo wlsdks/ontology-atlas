@@ -110,16 +110,12 @@ describe("easeCameraKeyframe", () => {
   });
 });
 
-/* ── van Wijk optimal path ──────────────────────────────────────────────── */
 
 const VIEW_W = 1512;
 
 /**
- * **Optical flow** — the quantity van Wijk actually holds constant: one step's
- * world displacement divided by the world width the screen holds at that moment
- * (i.e. how many screen-widths flowed past). Measured in pixels, how to mix in the
- * zoom term becomes arbitrary and it stops being clear what is being measured, so
- * the paper's dimensionless quantity is used as-is.
+ * Optical flow, the dimensionless quantity van Wijk holds constant: one step's world
+ * displacement over the world width on screen at that moment.
  */
 function opticalFlowSpread(
   path: (p: number) => CameraKeyframe,
@@ -133,13 +129,9 @@ function opticalFlowSpread(
     const w = (VIEW_W / prev.scale + VIEW_W / now.scale) / 2;
     const dlnw = Math.abs(Math.log(prev.scale / now.scale));
     /*
-     * The paper's metric. Identity verified analytically:
-     *   u'(s)/w(s) = sech(ρs+r₀)/ρ · · · w'(s)/w(s) = −ρ·tanh(ρs+r₀)
-     * hence `ρ²(u'/w)² + (w'/w)²/ρ² = sech² + tanh² = 1`. Only this combination is
-     * constant along the path, and that is the perceived flow van Wijk optimised.
-     * Measuring travel alone (du/w), or applying ρ the other way round
-     * (hypot(du/w, ρ·dlnw)), is not constant and makes the test draw the wrong
-     * conclusion — both were stepped on during this round.
+     * The paper's metric: with u'(s)/w(s) = sech(ρs+r₀)/ρ and w'(s)/w(s) = −ρ·tanh(ρs+r₀),
+     * `ρ²(u'/w)² + (w'/w)²/ρ² = sech² + tanh² = 1`. Travel alone (du/w) or ρ applied the other
+     * way is not constant along the path and would draw the wrong conclusion.
      */
     flow.push(Math.hypot((VAN_WIJK_RHO * du) / w, dlnw / VAN_WIJK_RHO));
     prev = now;
@@ -161,11 +153,8 @@ describe("van Wijk path keeps optical flow constant", () => {
   });
 
   /*
-   * `/gate-probe` — **the one assertion that measures the wiring.** Every other
-   * test calls `vanWijkCameraKeyframe` directly, so reverting the path back to
-   * linear inside `easeCameraKeyframe` leaves them all green (verified by probe).
-   * Whether a call that supplies a viewport width really takes the path is caught
-   * only here.
+   * The only assertion that measures the wiring: every other test calls
+   * `vanWijkCameraKeyframe` directly, so a linear `easeCameraKeyframe` would leave them green.
    */
   it("changes the path when given a viewport width: linear without, van Wijk with", () => {
     const a: CameraKeyframe = { x: 0, y: 0, scale: 1 };
@@ -183,10 +172,8 @@ describe("van Wijk path keeps optical flow constant", () => {
   });
 
   /*
-   * `/gate-probe` — **the only point that separates van Wijk from a lerp.** Any
-   * per-axis interpolation traps the mid-path zoom between the two endpoints, so
-   * "pull back further in the middle" is impossible for a linear path in
-   * principle. Reverting the path to a lerp turns this red (verified by probe).
+   * The only point that separates van Wijk from a lerp: per-axis interpolation keeps the
+   * mid-path zoom between the endpoints, so it cannot pull back further.
    */
   it("pulls back further mid-flight for a longer move at the same scale", () => {
     const a: CameraKeyframe = { x: 0, y: 0, scale: 1 };
@@ -224,11 +211,8 @@ describe("van Wijk path keeps optical flow constant", () => {
       scale: start.scale + (target.scale - start.scale) * p,
     }));
     /*
-     * 1.00 = perfectly uniform. The van Wijk path is constant in this metric **by
-     * definition**, so only finite-sampling residue should remain, while linear
-     * interpolation must swing wide. Both assertions are kept because the first
-     * alone stays green even if both paths are broken, and the second alone only
-     * says linear is bad — never that ours is good.
+     * 1.00 is perfectly uniform. Both assertions stay: the first alone passes with both paths
+     * broken, and the second alone only says linear is bad, never that ours is good.
      */
     expect(
       wijk.ratio,

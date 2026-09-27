@@ -86,9 +86,9 @@ describe("rubberband", () => {
     const small = rubberband(50, 800);
     const large = rubberband(400, 800);
     expect(small).toBeGreaterThan(0);
-    expect(small).toBeLessThan(50); // always resisted below the raw overshoot
+    expect(small).toBeLessThan(50);
     expect(large).toBeLessThan(400);
-    expect(large).toBeGreaterThan(small); // monotonic — more drag, more follow, but sub-linear
+    expect(large).toBeGreaterThan(small);
   });
 
   it("is an odd function of overshoot (symmetric past either edge)", () => {

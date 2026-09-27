@@ -1,9 +1,8 @@
 import type { LayoutGraphNode, LayoutPoint, LayoutRings } from "./layout";
 
 /**
- * Galaxy is a three-arm sky, not the Flat containment fan with different paint.
- * These constants are exported so the procedural backdrop and the real-node
- * layout follow one curve without duplicating its geometry.
+ * Exported so the procedural backdrop and the real-node layout follow one three-arm
+ * curve without duplicating its geometry.
  */
 export const GALAXY_ARM_COUNT = 3;
 export const GALAXY_VERTICAL_FLATTEN = 0.68;
@@ -18,19 +17,16 @@ const DOMAIN_END_T = 0.98;
 const LOCAL_SCATTER_FLATTEN = 0.78;
 
 export interface GalaxyLayout {
-  /** Existing ontology node ids mapped to their Galaxy-only world positions. */
   readonly points: ReadonlyMap<string, LayoutPoint>;
-  /** World-space radius used by the aligned procedural sky. */
   readonly radius: number;
-  /** Exact point bounds; the camera adds its own canonical safe-area padding. */
+  /** The camera adds its own safe-area padding. */
   readonly bounds: { readonly minX: number; readonly minY: number; readonly maxX: number; readonly maxY: number };
-  /** Existing containment-derived domain membership; null means ungrouped. */
+  /** null means ungrouped. */
   readonly domainByNodeId: ReadonlyMap<string, string | null>;
 }
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
-/** A point on the shared, flattened three-arm spiral. */
 export function galaxySpiralPoint(
   t: number,
   arm: number,
@@ -49,7 +45,7 @@ export function galaxySpiralPoint(
   };
 }
 
-/** Stable 0..1 phase; layout never depends on mount order or random state. */
+/** Stable per id, so layout never depends on mount order or random state. */
 function phaseForId(id: string): number {
   let hash = 2166136261;
   for (let i = 0; i < id.length; i += 1) {
@@ -77,13 +73,9 @@ function resolveOwningDomain(
 }
 
 /**
- * Places actual ontology concepts in stable Galaxy-only coordinates.
- *
- * Domains occupy staggered positions along three spiral arms. Their real
- * containment descendants form compact local star clouds around the owning
- * domain. No synthetic graph nodes or relations are introduced, and ungrouped
- * concepts remain visible at the outer edge rather than being assigned a
- * fictional domain.
+ * Domains sit staggered along three arms with their real descendants in local clouds;
+ * ungrouped concepts stay visible at the outer edge rather than get a fictional domain.
+ * No synthetic nodes or relations. O(N) over parent and child Maps.
  */
 export function computeGalaxyLayout(
   nodes: readonly LayoutGraphNode[],
@@ -99,16 +91,13 @@ export function computeGalaxyLayout(
     .slice()
     .sort((left, right) => left.id.localeCompare(right.id));
 
-  // The existing ring tokens establish the map's world-unit scale. Galaxy
-  // spreads farther because each arm must hold complete domain clouds rather
-  // than one thin hierarchy fan.
+  // Wider than the ring tokens' scale: each arm holds whole domain clouds, not a thin fan.
   const radius = Math.max(rings.domain * 3.15, 420 + Math.sqrt(Math.max(1, nodes.length)) * 24);
   const points = new Map<string, LayoutPoint>();
   const domainByNodeId = new Map<string, string | null>();
 
   projects.forEach((project, index) => {
-    // A normal vault has one project at the core. Extra real projects stay
-    // present in a small deterministic core cloud.
+    // Projects beyond the first stay in a small deterministic core cloud.
     if (index === 0) {
       points.set(project.id, { id: project.id, x: 0, y: 0 });
       domainByNodeId.set(project.id, null);
@@ -164,8 +153,7 @@ export function computeGalaxyLayout(
       return kindRank(left.kind) - kindRank(right.kind) || left.id.localeCompare(right.id);
     });
     const phase = phaseForId(domain.id) * TAU + anchor.tangent;
-    // Golden-angle placement is a cloud rather than an orbit. Spacing stays
-    // above the canonical element/capability diameters used by hit testing.
+    // Golden-angle cloud; spacing stays above the node diameters hit testing uses.
     const spacing = Math.max(38, Math.min(rings.element * 0.48, rings.capability * 0.33));
     members.forEach((member, index) => {
       const angle = phase + GOLDEN_ANGLE * index;
@@ -194,8 +182,7 @@ export function computeGalaxyLayout(
       domainByNodeId.set(node.id, null);
     });
 
-  // Defensive completeness for malformed/cyclic containment: every real id
-  // still receives a stable visible point.
+  // Malformed or cyclic containment still gives every real id a stable visible point.
   for (const node of nodes) {
     if (points.has(node.id)) continue;
     const angle = phaseForId(node.id) * TAU;
@@ -235,9 +222,8 @@ export interface GalaxyEdgeAttention {
 }
 
 /**
- * The Galaxy overview is carried by star groups. Relations appear only when
- * the person points at a real neighbourhood or explicitly asks for a path/
- * relation; invisible overview edges therefore cannot surface hover cards.
+ * Overview relations stay hidden until the person points at a neighbourhood or asks for
+ * a path, so invisible edges cannot surface hover cards.
  */
 export function isGalaxyEdgeVisible(
   edge: { readonly sourceId: string; readonly targetId: string },

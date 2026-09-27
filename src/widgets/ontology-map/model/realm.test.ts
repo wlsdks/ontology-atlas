@@ -136,13 +136,11 @@ describe("computeRealmLayout", () => {
     const layout = computeRealmLayout(sub, RINGS, RADII);
     const root = layout.get("c");
     expect(root).toEqual({ id: "c", x: 0, y: 0 });
-    // depth-1 children (e1, e2) fan around the domain ring — at exactly the
-    // ring radius from the origin (same invariant layout.test pins for domains).
+    // Depth-1 children ring the origin at the ring radius, the invariant layout.test pins for domains.
     for (const id of ["e1", "e2"]) {
       const p = layout.get(id);
       expect(p).toBeDefined();
-      // Two depth-1 siblings sit on the ring at radius `domain` before de-pileup;
-      // the de-pileup only nudges local overlaps, so they stay near the ring.
+      // De-pileup only nudges local overlaps, so the siblings stay near the ring.
       const r = Math.hypot(p!.x, p!.y);
       expect(r).toBeGreaterThan(RINGS.domain * 0.5);
     }
@@ -162,7 +160,7 @@ describe("computeRealmLayout with few children lies horizontal", () => {
     expect(layout.get("c")).toEqual({ id: "c", x: 0, y: 0 });
     const e1 = layout.get("e1")!;
     const e2 = layout.get("e2")!;
-    // −90° rigid rotation of the even TAU split (a vertical dumbbell): (0,−R)→(−R,0), (0,R)→(R,0).
+    // −90° rigid rotation of the even split: (0,−R)→(−R,0), (0,R)→(R,0).
     expect(e1.x).toBeLessThan(0);
     expect(Math.abs(e1.y)).toBeLessThan(1e-9);
     expect(e2.x).toBeGreaterThan(0);
@@ -173,7 +171,7 @@ describe("computeRealmLayout with few children lies horizontal", () => {
     const sub = extractRealmSubtree("c", new Map([["c", ["only"]]]));
     const layout = computeRealmLayout(sub, RINGS, RADII);
     const only = layout.get("only")!;
-    expect(only.x).toBeLessThan(0); // (0,−R)→(−R,0)
+    expect(only.x).toBeLessThan(0);
     expect(Math.abs(only.y)).toBeLessThan(1e-9);
   });
 
@@ -184,7 +182,6 @@ describe("computeRealmLayout with few children lies horizontal", () => {
     ]);
     const sub = extractRealmSubtree("c", children);
     const rotated = computeRealmLayout(sub, RINGS, RADII);
-    // Compare coordinate by coordinate against the unrotated baseline from the same input.
     const rawInput = [...sub.depthById.keys()].map((id) => ({
       id,
       kind: realmLayoutKind(sub.depthById.get(id) ?? 0),
@@ -203,7 +200,7 @@ describe("computeRealmLayout with few children lies horizontal", () => {
     const sub = extractRealmSubtree("c", new Map([["c", ["a", "b", "d"]]]));
     const layout = computeRealmLayout(sub, RINGS, RADII);
     const a = layout.get("a")!;
-    // The even TAU split starts at −90°, so the first child sits on top (x≈0, y<0).
+    // The even split starts at −90°, so the first child sits on top.
     expect(Math.abs(a.x)).toBeLessThan(1e-9);
     expect(a.y).toBeLessThan(0);
   });
@@ -232,16 +229,16 @@ describe("computeWardingRadius", () => {
 
 describe("computeVisibleWardingRadius", () => {
   it("is the farthest reach plus a content-proportional margin", () => {
-    // outer=200 → margin = max(40, 200*0.1=20) = 40 → 240.
+    // outer 200: margin = max(40, 200*0.1) = 40.
     expect(computeVisibleWardingRadius([50, 120, 200])).toBe(200 + Math.max(WARDING_VISIBLE_MIN_MARGIN, 200 * WARDING_VISIBLE_MARGIN_RATIO));
     expect(computeVisibleWardingRadius([50, 120, 200])).toBe(240);
-    // outer=800 → margin = max(40, 80) = 80 → 880.
+    // outer 800: margin = max(40, 80) = 80.
     expect(computeVisibleWardingRadius([800])).toBe(800 + 800 * WARDING_VISIBLE_MARGIN_RATIO);
   });
 
   it("shrinks the radius when the visible set shrinks (folded)", () => {
     const full = computeVisibleWardingRadius([100, 400, 900]);
-    const folded = computeVisibleWardingRadius([100, 400]); // the folded child at 900 is excluded
+    const folded = computeVisibleWardingRadius([100, 400]);
     expect(folded).toBeLessThan(full);
   });
 

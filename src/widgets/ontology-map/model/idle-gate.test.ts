@@ -53,23 +53,17 @@ describe("shouldSkipFrame", () => {
 });
 
 describe("focusFadeSettling (deselect ring residue regression)", () => {
-  // Reproduces the regression: no live focus (node or edge) remains, but the
-  // retained colorFocus is still there while the focus ramp decays. Both the ramp
-  // decay and the colorFocus clear happen only inside the rAF frame body, so with
-  // no incidental activity (a comet, the camera) the idle skip drops the frame,
-  // the ramp freezes, and the selection ring stays at full opacity. This flag
-  // counts the window as activity and keeps the loop awake until the fade ends.
-  const TAU = 0.16; // --map-focus-dim-tau
-  const CLEAR_THRESHOLD = 0.02; // the colorFocus clear threshold in use-topology-loop
+  // The ramp decays and colorFocus clears only inside a frame, so skipping frames during the
+  // retained fade would freeze the selection ring at full opacity.
+  // --map-focus-dim-tau
+  const TAU = 0.16; // the colorFocus clear threshold in use-topology-loop
+  const CLEAR_THRESHOLD = 0.02;
 
   it("stays active during the retained colorFocus fade with no other activity", () => {
-    // Every incidental source (comet, camera, hover) is off — pure idle, fade only.
     expect(isCanvasActive({ ...IDLE, focusFadeSettling: true })).toBe(true);
   });
 
-  // Mirrors, as a pure function, the focusFadeSettling decision use-topology-loop
-  // computes from refs each frame — proving all three deselect paths converge on
-  // the same state: no live focus, colorFocus retained.
+  // The pure form of the per-frame decision in use-topology-loop.
   const focusFadeSettlingFrom = (refs: {
     colorFocus: string | null;
     focusedSlug: string | null;
@@ -77,42 +71,34 @@ describe("focusFadeSettling (deselect ring residue regression)", () => {
   }): boolean => refs.colorFocus !== null && refs.focusedSlug === null && refs.selectedEdge === null;
 
   it("converges the three deselect paths (empty click, Escape, panel close) to one active frame state", () => {
-    // All three run through handleClose and set focusedSlug to null, but the
-    // retained colorFocus stays as the color fade target. The state must count as
-    // activity regardless of which event produced it, or the ring freezes —
-    // handling the paths separately is exactly how only X-close froze.
+    // Every deselect path leaves the same state and must count as activity, or the ring
+    // freezes; handling the paths separately let one of them freeze.
     const deselected = { colorFocus: "domain:views", focusedSlug: null, selectedEdge: null };
     for (const _path of ["empty-click", "escape", "panel-x-close"]) {
       expect(focusFadeSettlingFrom(deselected)).toBe(true);
       expect(isCanvasActive({ ...IDLE, focusFadeSettling: focusFadeSettlingFrom(deselected) })).toBe(true);
     }
-    // A live focus still held (a static selection) is not fading, so idle is allowed.
     expect(focusFadeSettlingFrom({ colorFocus: "domain:views", focusedSlug: "domain:views", selectedEdge: null })).toBe(false);
-    // A live edge-pair selection is not a fade either.
     expect(focusFadeSettlingFrom({ colorFocus: null, focusedSlug: null, selectedEdge: { a: 1 } })).toBe(false);
   });
 
   it("returns to idle once the fade decays below the threshold and colorFocus clears", () => {
-    // Just after deselect: the ramp starts at 1 and decays each frame with focusActive=false.
     let ramp = 1;
     let colorFocusRetained = true;
     let frames = 0;
     const dt = 1 / 60;
 
-    // While the fade runs, frames must never be skipped: the ramp decays only
-    // inside a frame, so freezing it means the fade never finishes.
     while (colorFocusRetained) {
-      const focusFadeSettling = colorFocusRetained; // no live focus, colorFocus retained
+      const focusFadeSettling = colorFocusRetained;
       expect(isCanvasActive({ ...IDLE, focusFadeSettling })).toBe(true);
       ramp = stepFocusRamp(ramp, false, dt, TAU);
-      if (ramp < CLEAR_THRESHOLD) colorFocusRetained = false; // the clear condition in use-topology-loop
+      if (ramp < CLEAR_THRESHOLD) colorFocusRetained = false;
       frames += 1;
       if (frames > 600) throw new Error("페이드가 수렴하지 않음");
     }
 
-    // The decay finishes in bounded time: ~4τ ≈ 0.64 s at 60 fps ≈ 39 frames.
+    // About 4τ ≈ 0.64 s at 60 fps ≈ 39 frames.
     expect(frames).toBeLessThan(60);
-    // Once cleared and with nothing else active, the canvas returns to idle rather than repainting forever.
     expect(isCanvasActive({ ...IDLE, focusFadeSettling: false })).toBe(false);
   });
 });
@@ -125,8 +111,8 @@ describe("isCameraUnsettled (wheel zoom dying while idle, regression)", () => {
   });
 
   it("counts a wheel changing only the scale target as activity, without value movement", () => {
-    // While frames are skipped the physics step does not run, so the value cannot
-    // move. If a changed target alone is not activity, nothing ever wakes the loop.
+    // Skipped frames run no physics, so the value cannot move; unless a changed target is
+    // activity, nothing wakes the loop.
     expect(isCameraUnsettled(settled, { tx: 100, ty: 50, tscale: 1.4 })).toBe(true);
   });
 
@@ -140,7 +126,6 @@ describe("isCameraUnsettled (wheel zoom dying while idle, regression)", () => {
 });
 
 describe("isEgoTailAnimating: ambient sleep reaches all three branches", () => {
-  // Awake, depends comets flowing, one node selected.
   const AWAKE_FOCUSED: EgoTailActivityInput = {
     reducedMotion: false,
     ambientAsleep: false,
@@ -156,10 +141,8 @@ describe("isEgoTailAnimating: ambient sleep reaches all three branches", () => {
   });
 
   /**
-   * A regression this repository actually had: ambient sleep was applied to the
-   * depends branch only, so **leaving a node selected and taking your hands off**
-   * left the contains branch holding the condition open forever. The screen had
-   * already stopped (every comet speed × factor 0), so it was pure wasted raster.
+   * Ambient sleep must reach the contains branch too, or a node left selected holds the
+   * loop open for pure wasted raster.
    */
   it("is inactive asleep even while selected, so a datasheet left open still sleeps", () => {
     expect(isEgoTailAnimating({ ...AWAKE_FOCUSED, ambientAsleep: true })).toBe(false);
@@ -182,10 +165,8 @@ describe("isEgoTailAnimating: ambient sleep reaches all three branches", () => {
   });
 
   /**
-   * The pulse is deliberately outside the condition: it is a one-shot signal born
-   * from hover that expires after 420 ms, and hover is input, so the app is already
-   * awake at that moment. Gating it would only add a "fired but never drawn"
-   * failure mode.
+   * The pulse stays outside the condition: it is born from hover, which is input, so the app
+   * is already awake; gating it would only add a fired-but-never-drawn failure.
    */
   it("still draws a live hover pulse while asleep", () => {
     expect(
@@ -210,15 +191,7 @@ describe("isEgoTailAnimating: ambient sleep reaches all three branches", () => {
   });
 });
 
-/**
- * The 3D dome's autonomous spin under the ambient-motion contract.
- *
- * Measured 2026-08-19: the spin alone sat outside the `ambient-sleep` contract,
- * so 3D would not sleep even 45 s after the last input, permanently burning
- * 520 ms per second (half a core) at 2,000 nodes where the same state in 2D cost
- * 3 ms/s. Same failure as `isEgoTailAnimating`, so the same condition sits in the
- * same place.
- */
+/** The 3D autonomous spin sleeps under the same ambient contract as the comets. */
 describe("isDomeSpinAnimating", () => {
   const SPINNING: DomeSpinInput = {
     domeOn: true,
@@ -233,7 +206,6 @@ describe("isDomeSpinAnimating", () => {
     expect(isDomeSpinAnimating(SPINNING)).toBe(true);
   });
 
-  /** This one line guards the most expensive regression in the file. */
   it("auto-rotate is not activity during ambient sleep", () => {
     expect(isDomeSpinAnimating({ ...SPINNING, ambientAsleep: true })).toBe(false);
   });
@@ -261,10 +233,8 @@ describe("isDomeSpinAnimating", () => {
 
 describe("keeps the loop awake while the walked trail is open", () => {
   /*
-   * ⚠️ Written after the defect. `trailLensSettling` buys a frame when the lens *toggles*,
-   * and nothing kept the loop awake after that — the constellation was measured byte-identical
-   * over 2.0s with the lens open, so the twinkle and the light that carries direction had
-   * never run at all (design-lead, 2026-09-10).
+   * `trailLensSettling` buys one frame per toggle; without this the twinkle and the light
+   * carrying direction would never run while the lens stays open.
    */
   it("is active when the lens is open and walked relations exist", () => {
     expect(isCanvasActive({ ...IDLE, trailMotionActive: true })).toBe(true);

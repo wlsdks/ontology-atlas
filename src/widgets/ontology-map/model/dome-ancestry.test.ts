@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { collectDomeAncestry, collectDomeSubtree, domeAncestryEdgeKey } from './dome-ancestry';
 
-/**
- * The ancestry walk — what is locked is that the chain is **exactly** the parent line, in the
- * contains direction, and that a malformed vault cannot spin it.
- */
+/** The chain is exactly the parent line in the contains direction, and a cycle cannot spin it. */
 const PARENTS: Record<string, string | null> = {
   'project:atlas': null,
   'domain:agents': 'project:atlas',
@@ -21,7 +18,7 @@ describe('collectDomeAncestry', () => {
     const n = collectDomeAncestry('element:panel', parentOf, nodes, edges);
     expect(n).toBe(3);
     expect([...nodes]).toEqual(['capability:mcp', 'domain:agents', 'project:atlas']);
-    // Edges are keyed parent-first — the contains direction the world writes.
+    // Edges are keyed parent-first, the contains direction.
     expect(edges.has(domeAncestryEdgeKey('capability:mcp', 'element:panel'))).toBe(true);
     expect(edges.has(domeAncestryEdgeKey('domain:agents', 'capability:mcp'))).toBe(true);
     expect(edges.has(domeAncestryEdgeKey('project:atlas', 'domain:agents'))).toBe(true);
@@ -32,21 +29,18 @@ describe('collectDomeAncestry', () => {
     const nodes = new Set<string>(['stale']);
     const edges = new Set<string>(['stale']);
     expect(collectDomeAncestry('project:atlas', parentOf, nodes, edges)).toBe(0);
-    // The sets are cleared even on an empty result — a stale frame's chain must not linger.
+    // Cleared even on an empty result, so a stale frame's chain never lingers.
     expect(nodes.size).toBe(0);
     expect(edges.size).toBe(0);
   });
 
-  /**
-   * A malformed vault can write `contains` cycles (the `cycles` query exists because they really
-   * occur). The walk must stop on the first repeat rather than hanging the frame loop.
-   */
+  /** A malformed vault can write `contains` cycles; the walk stops on the first repeat. */
   it('stops on a cyclic parent chain instead of hanging the frame loop', () => {
     const cyc = (id: string) => ({ a: 'b', b: 'c', c: 'a' })[id] ?? null;
     const nodes = new Set<string>();
     const edges = new Set<string>();
     const n = collectDomeAncestry('a', cyc, nodes, edges);
-    expect(n).toBe(2); // b, c — then c's parent is a (the focus) and the walk stops
+    expect(n).toBe(2);
     expect(nodes.has('a')).toBe(false);
   });
 
@@ -76,7 +70,6 @@ describe('collectDomeSubtree', () => {
     expect([...nodes].sort()).toEqual(['capability:mcp', 'element:panel', 'element:server', 'project:atlas']);
     expect(edges.has(domeAncestryEdgeKey('project:atlas', 'domain:agents'))).toBe(true);
     expect(edges.has(domeAncestryEdgeKey('capability:mcp', 'element:server'))).toBe(true);
-    // A sibling domain's line stays dark.
     expect(nodes.has('capability:camera')).toBe(false);
   });
 

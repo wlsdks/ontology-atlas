@@ -20,7 +20,6 @@ describe("selectTopKLabels", () => {
 
   it("breaks degree ties by id ascending (deterministic)", () => {
     const entries = [entry("zeta", 5), entry("alpha", 5), entry("mid", 5)];
-    // K=2 with a three-way tie → the two lexicographically-first ids.
     expect([...selectTopKLabels(entries, 2)].sort()).toEqual(["alpha", "mid"]);
   });
 
@@ -34,7 +33,6 @@ describe("selectTopKLabels", () => {
   it("always keeps exempt entries regardless of their degree", () => {
     const entries = [entry("hub", 9), entry("leaf", 0, true), entry("filler", 4)];
     const allowed = selectTopKLabels(entries, 1);
-    // K=1 → the top non-exempt is "hub"; the low-degree exempt "leaf" is kept too.
     expect(allowed.has("hub")).toBe(true);
     expect(allowed.has("leaf")).toBe(true);
     expect(allowed.has("filler")).toBe(false);
@@ -47,7 +45,6 @@ describe("selectTopKLabels", () => {
       entry("n2", 7),
       entry("n3", 6),
     ];
-    // K=2 keeps the 2 top non-exempt (n1,n2) PLUS the exempt focus → 3 total.
     const allowed = selectTopKLabels(entries, 2);
     expect([...allowed].sort()).toEqual(["focus", "n1", "n2"]);
   });
@@ -120,12 +117,9 @@ describe("isEgoNeighborLabelExempt (label overlap LOD for focused domain childre
   });
 
   it("end-to-end: a focused domain's 18 same-kind children caps to DISC_LABEL_TOP_K exempt labels", () => {
-    // Reproduces the audited scenario: a focus with 18 neighbors, all the same
-    // kind/degree (a typical domain's capability children) — before this fix,
-    // `neighborsOfFocused.size > DISC_LABEL_TOP_K` would still exempt all 18
-    // unconditionally; now only the DOI-ranked top-K keep the exemption.
+    // A focus with 18 same-kind same-degree neighbours: only the DOI-ranked top K stay exempt.
     const neighborIds = Array.from({ length: 18 }, (_, i) => `child-${String(i).padStart(2, "0")}`);
-    const ranked = neighborIds; // identical kind/degree → DOI rank falls back to id-ascending, already sorted.
+    const ranked = neighborIds;
     const eligible = selectDiscLabelEligible([ranked], DISC_LABEL_TOP_K);
     const exemptCount = neighborIds.filter((id) => isEgoNeighborLabelExempt(id, eligible)).length;
     expect(exemptCount).toBe(DISC_LABEL_TOP_K);
@@ -134,9 +128,8 @@ describe("isEgoNeighborLabelExempt (label overlap LOD for focused domain childre
   });
 
   it("a small focus (≤ DISC_LABEL_TOP_K neighbors) is unaffected — caller passes null, regression 0", () => {
-    // The caller (`ui/topology-frame-draw.ts`) only computes a non-null eligible
-    // set when `neighborsOfFocused.size > DISC_LABEL_TOP_K`; below that, every
-    // neighbor stays exempt exactly as before this fix.
+    // The caller (`ui/topology-frame-draw.ts`) computes an eligible set only above
+    // `DISC_LABEL_TOP_K` neighbours; below it every neighbour stays exempt.
     const neighborIds = ["a", "b", "c"];
     expect(neighborIds.every((id) => isEgoNeighborLabelExempt(id, null))).toBe(true);
   });

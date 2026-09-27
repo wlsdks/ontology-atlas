@@ -77,7 +77,6 @@ describe("isNodeEmphasisActive", () => {
   });
 
   it("suppresses hover emphasis while a focus is active", () => {
-    // b is a live hover ego-member, but focus owns attention -> suppressed
     expect(isNodeEmphasisActive("b", "a", true, null)).toBe(false);
   });
 
@@ -89,9 +88,8 @@ describe("isNodeEmphasisActive", () => {
 
 describe("scheduleRipple", () => {
   /**
-   * A7 — total stagger budget. Uncapped, a 40-neighbor hub started its last
-   * neighbor 523ms in (an enumeration, not a ripple) while a low-degree node
-   * finished in ~91ms. Same interaction, same motion signature.
+   * Uncapped, a 40-neighbour hub started its last neighbour far later than a low-degree
+   * node finished, an enumeration rather than a ripple; one interaction, one motion.
    */
   it("compresses the per-neighbor delay so a hub's ripple ends inside the budget", () => {
     const neighbors = Array.from({ length: 40 }, (_, i) => `n${i}`);
@@ -220,7 +218,7 @@ describe("resolveTrailLensNodeEgoState (walked trail lens)", () => {
   });
 
   it("dims an unvisited neighbour, which is no longer in the keep set", () => {
-    // The point of the lens: the keep-set swaps wholesale from 1-hop neighbours to visited nodes.
+    // The keep set swaps wholesale from 1-hop neighbours to visited nodes.
     expect(resolveTrailLensNodeEgoState("capability:neighbor-of-y", "element:y", trail)).toBe("dim");
   });
 
@@ -237,17 +235,15 @@ describe("rankEgoNeighborsByDOI", () => {
       { id: "cap-hi", kind: "capability", degree: 5 },
       { id: "cap-lo", kind: "capability", degree: 2 },
       { id: "dom", kind: "domain", degree: 1 },
-      { id: "el-a", kind: "element", degree: 9 }, // equal degree → slug order, el-a < el-b
+      { id: "el-a", kind: "element", degree: 9 },
     ];
     const ranked = rankEgoNeighborsByDOI(neighbors);
     expect(ranked).toEqual(["dom", "cap-hi", "cap-lo", "el-a", "el-b"]);
-    // Deterministic: rerunning gives the same order.
     expect(rankEgoNeighborsByDOI([...neighbors].reverse())).toEqual(ranked);
   });
 
   it("breaks a same-kind same-degree tie by relation type: contains, then depends, then relates", () => {
-    // Slugs are laid out in **reverse** of the relation hierarchy, so slug order
-    // alone can never produce the expected result — that pins the relation weight.
+    // Slugs run opposite to the relation hierarchy, so slug order alone cannot pass.
     const neighbors: EgoNeighborRankEntry[] = [
       { id: "el-a", kind: "element", degree: 4, relationType: "relates" },
       { id: "el-b", kind: "element", degree: 4, relationType: "depends_on" },
@@ -255,9 +251,7 @@ describe("rankEgoNeighborsByDOI", () => {
       { id: "el-d", kind: "element", degree: 4, relationType: "belongs_to" },
     ];
     const ranked = rankEgoNeighborsByDOI(neighbors);
-    // contains/belongs_to (weight 3, tie broken by slug) > depends_on (2) > relates (1).
     expect(ranked).toEqual(["el-c", "el-d", "el-b", "el-a"]);
-    // Deterministic: input order does not matter.
     expect(rankEgoNeighborsByDOI([...neighbors].reverse())).toEqual(ranked);
   });
 
@@ -284,7 +278,6 @@ describe("rankEgoNeighborsByDOI", () => {
       { id: "el-relates", kind: "element", degree: 4, relationType: "relates" },
       { id: "el-exotic", kind: "element", degree: 4, relationType: "describes" },
     ];
-    // All three weigh 1, degrees tie, so slug order decides.
     expect(rankEgoNeighborsByDOI(neighbors)).toEqual(["el-exotic", "el-relates", "el-unknown"]);
   });
 });

@@ -1,25 +1,11 @@
 /**
- * **Hex board** — the flat map as a board of hexagonal tiles (owner decision, 2026-09-25;
- * design spec "F2"). One capability is one tile; a domain is a contiguous region of tiles
- * around its title tile; the project sits at the centre; empty cells between regions are the
- * *moat* that makes regions read as separate plates and carries every route.
- *
- * The rules this module owns (the spec's §1, §2, §5 and §6):
- *
- * - **Most-specific parent.** Read through `readTree` (shared with Territories): an element
- *   listed under a capability belongs to that capability, and only its count reaches the board.
- * - **Stable, append-only placement.** A domain's seed and a capability's cell, once given,
- *   never move. The placement is returned as a small record the page keeps per vault; handed
- *   back, it is honoured: a new domain takes the next free spiral slot, a new capability the
- *   first free cell of its region, and a deleted capability leaves a hole that a later one may
- *   fill. The only reflow is an **overflow** — a region with no free cell — and it is reported
- *   (`reflowed`), never silent.
- * - **Labels fit or are not drawn.** Every name is wrapped at word boundaries and checked
- *   against the hexagon's half-width at its top and bottom edges. The label band starts at the
- *   smallest cell size at which *every* name fits (never below 44 px), so a name is never
- *   clipped or truncated at runtime.
- *
- * Coordinates here are unit space (cell circumradius 1); `model/hex-grid.ts` has the maths.
+ * The hex board (design spec "F2"): one capability per tile, a domain as a contiguous region
+ * round its title tile, the project at the centre, and empty moat cells between regions that
+ * carry every route. Elements count toward their most-specific capability (`readTree`).
+ * Placement is append-only: a kept record is honoured, a new domain takes the next spiral
+ * slot and a new capability its region's first free cell; only an overflow re-seeds, and it
+ * is reported (`reflowed`). A name is drawn only at cell sizes where every name fits its
+ * face, never clipped. Unit space; maths in `model/hex-grid.ts`.
  */
 
 import { readTree, rollDependencies, type TerritoryInputEdge, type TerritoryInputNode } from "./territories-layout";
@@ -36,14 +22,13 @@ import {
   type Axial,
 } from "./hex-grid";
 
-/* ── input ──────────────────────────────────────────────────────────────── */
 
 type HexTileKind = "project" | "domain" | "capability";
 
-/** Which text a width is asked for, so the renderer answers with its real fonts. */
+/** So the renderer answers with its real fonts. */
 export type HexTextRole = "capability" | "capabilityStrong" | "domain" | "meta" | "project" | "mono" | "plate" | "plateMeta";
 
-/** Type sizes (CSS px) per role. The board's floor is 11 px (spec §5). */
+/** CSS px per role; the floor is 11 px (spec §5). */
 export const HEX_TYPE = {
   capability: 11.5,
   domain: 14,
@@ -54,10 +39,7 @@ export const HEX_TYPE = {
   plateMeta: 11,
 } as const;
 
-/**
- * The placement a page keeps for a vault. Plain JSON: ids → axial cells. `reg` is the region
- * radius the seeds were spaced for; a reflow is the only thing that changes it.
- */
+/** `reg` is the region radius the seeds were spaced for; only a reflow changes it. */
 export interface HexPlacementRecord {
   version: 1;
   reg: number;
@@ -65,7 +47,6 @@ export interface HexPlacementRecord {
   cells: Record<string, [number, number]>;
 }
 
-/* ── output ─────────────────────────────────────────────────────────────── */
 
 export interface HexTile {
   id: string;
@@ -73,25 +54,22 @@ export interface HexTile {
   name: string;
   q: number;
   r: number;
-  /** Unit-space centre. */
   x: number;
   y: number;
-  /** The owning domain (a domain's own id for its title tile); null for the project. */
+  /** A domain's own id for its title tile; null for the project. */
   domainId: string | null;
-  /** Element count (capabilities only; 0 elsewhere). */
   elementCount: number;
-  /** Element ids, most-specific parent, sorted. */
   elementIds: readonly string[];
-  /** Brightness bucket for the element count: 0, 1–2, 3–4, 5–6, 7+. */
+  /** 0, 1–2, 3–4, 5–6, 7+. */
   bucket: number;
-  /** Ring distance from the project cell — the arrival stagger. */
+  /** Ring distance from the project cell, the arrival stagger. */
   ring: number;
 }
 
 interface HexRegion {
   domainId: string;
   seed: Axial;
-  /** Every occupied cell of the region: its title tile first, then its capabilities. */
+  /** Title tile first, then capabilities. */
   cells: Axial[];
   capabilityIds: string[];
   elementCount: number;
@@ -105,7 +83,7 @@ interface HexDependency {
 interface HexCanal {
   fromDomain: string;
   toDomain: string;
-  /** Relations counted in both directions when the canal is two-way. */
+  /** Both directions when the canal is two-way. */
   count: number;
   twoWay: boolean;
 }
@@ -114,25 +92,21 @@ export interface HexBoardLayout {
   project: HexTile | null;
   domains: HexTile[];
   capabilities: HexTile[];
-  /** Every tile, project first, then domains, then capabilities. */
   tiles: HexTile[];
   byId: ReadonlyMap<string, HexTile>;
-  /** Occupied cell key → tile id. */
   occupied: ReadonlyMap<string, string>;
   regions: HexRegion[];
-  /** Capability → capability dependencies (element ends rolled up to their capability). */
+  /** Element ends rolled up to their capability. */
   dependencies: HexDependency[];
-  /** Region → region reliance at rest, opposite directions merged. */
+  /** Opposite directions merged. */
   canals: HexCanal[];
-  /** Unit-space extent of the tiles (cell outlines included). */
+  /** Cell outlines included. */
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
   reg: number;
-  /** A region overflowed and the whole board was re-seeded. */
   reflowed: boolean;
   record: HexPlacementRecord;
 }
 
-/* ── reading the graph ──────────────────────────────────────────────────── */
 
 const byString = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -144,22 +118,18 @@ export function hexBucket(elementCount: number): number {
   return 4;
 }
 
-/* ── placement ──────────────────────────────────────────────────────────── */
 
 interface Placement {
   seeds: Map<string, Axial>;
   cells: Map<string, Axial>;
   reg: number;
-  /** Capabilities that found no cell (overflow). */
   homeless: string[];
 }
 
-/** Ring seeds for a small board: an ellipse round the project, stretched toward the room. */
 function ringSeeds(domainIds: readonly string[], reg: number, stretch: number): Map<string, Axial> {
   const seeds = new Map<string, Axial>();
   const n = domainIds.length;
   const S = reg + 2;
-  // A wider room stretches the ring sideways (`placeFitted` picks the stretch).
   const sx = 1.05 * stretch;
   const sy = 0.95;
   const taken = new Set<string>(["0,0"]);
@@ -178,16 +148,12 @@ function ringSeeds(domainIds: readonly string[], reg: number, stretch: number): 
   return seeds;
 }
 
-/** Spiral seeds for a large board: seed i takes spiral slot i+1, scaled by K. */
 function spiralSeed(slot: number, k: number): Axial {
   const s = hexSpiral(slot + 1)[slot]!;
   return [s[0] * k, s[1] * k];
 }
 
-/**
- * The next free spiral slot for a new domain: far enough from every existing seed (and the
- * project) that its region has the same margin every other region has.
- */
+/** Far enough from every seed and the project that its region keeps the common margin. */
 function nextFreeSeed(existing: readonly Axial[], k: number): Axial {
   for (let slot = 1; slot < 10_000; slot += 1) {
     const cand = spiralSeed(slot, k);
@@ -196,7 +162,7 @@ function nextFreeSeed(existing: readonly Axial[], k: number): Axial {
   return spiralSeed(10_000, k);
 }
 
-/** A cell belongs to a domain only if its nearest seed wins by ≥ 2 rings (spec §2.4). */
+/** Its nearest seed must win by ≥ 2 rings (spec §2.4). */
 function makeOwner(seeds: ReadonlyMap<string, Axial>) {
   const list = [...seeds];
   return (q: number, r: number): string | null => {
@@ -230,7 +196,6 @@ function place(
       const s = prior.seeds[id];
       if (s) seeds.set(id, [s[0], s[1]]);
     }
-    // New domains, in id order, each take the next free spiral slot.
     for (const id of domainIds) {
       if (seeds.has(id)) continue;
       seeds.set(id, nextFreeSeed([[0, 0], ...seeds.values()], k));
@@ -267,7 +232,7 @@ function place(
     candidates.sort((u, v) => u.d - v.d || u.a - v.a || u.q - v.q || u.r - v.r);
     const regionCells = new Set<string>([hexKey(seed[0], seed[1])]);
     const caps = capsByDomain.get(domainId) ?? [];
-    // Placed capabilities keep their cells when the cell is still theirs to hold.
+    // A placed capability keeps its cell while the cell is still theirs to hold.
     const fresh: string[] = [];
     for (const id of caps) {
       const c = prior?.cells[id];
@@ -296,7 +261,6 @@ function place(
   return { seeds, cells, reg, homeless };
 }
 
-/** Unit-space extent of a placement's cells. */
 function placementExtent(p: Placement): { w: number; h: number } {
   let minX = 0;
   let maxX = 0;
@@ -313,9 +277,8 @@ function placementExtent(p: Placement): { w: number; h: number } {
 }
 
 /**
- * A first ring placement tries a few sideways stretches and keeps the one whose board fills
- * the room best (the largest cell at fit), so a wide screen gets a wide board. A kept record,
- * or a spiral board, is placed as it is.
+ * A first ring placement tries a few sideways stretches and keeps the largest cell at fit,
+ * so a wide screen gets a wide board; a kept record or spiral board is placed as is.
  */
 function placeFitted(
   domainIds: readonly string[],
@@ -341,16 +304,13 @@ function placeFitted(
 }
 
 export interface HexBoardOptions {
-  /** The placement kept for this vault, if any. It is honoured; the result carries the next one. */
+  /** Honoured; the result carries the next one. */
   prior?: HexPlacementRecord | null;
-  /** Width ÷ height of the room the board first opens in. Only a first placement reads it. */
+  /** Width ÷ height of the first room; only a first placement reads it. */
   aspect?: number;
 }
 
-/**
- * Lay the board out. Pure and total-ordered: the same graph and the same prior record always
- * give the same board.
- */
+/** Total-ordered: the same graph and prior record always give the same board. */
 export function computeHexBoard(
   nodes: readonly TerritoryInputNode[],
   edges: readonly TerritoryInputEdge[],
@@ -375,7 +335,7 @@ export function computeHexBoard(
   let reg = Math.max(1, prior ? prior.reg : ringsFor(maxCaps));
   let placement = placeFitted(domainIds, capsByDomain, reg, aspect, prior);
   let reflowed = false;
-  // Overflow: re-seed the whole board with wider spacing. The only reflow, and it is reported.
+  // Overflow re-seeds the whole board with wider spacing, the only reflow.
   for (let guard = 0; placement.homeless.length > 0 && guard < 12; guard += 1) {
     reflowed = true;
     prior = null;
@@ -440,7 +400,7 @@ export function computeHexBoard(
     dependencies.push({ from: d.from, to: d.to });
   }
 
-  // Canals: ordered domain pairs; an opposite pair merges into one two-way canal (spec §3).
+  // Ordered domain pairs; an opposite pair merges into one two-way canal (spec §3).
   const roll = new Map<string, HexCanal>();
   for (const dep of dependencies) {
     const a = byId.get(dep.from)?.domainId;
@@ -479,15 +439,14 @@ export function computeHexBoard(
   }
 
   const record: HexPlacementRecord = { version: 1, reg: placement.reg, seeds: {}, cells: {} };
-  // Seeds and cells of concepts no longer on the board are kept: a hole stays a hole, and a
-  // domain that comes back finds its plate where it left it.
+  // Kept for concepts no longer on the board: a hole stays a hole and a returning domain finds its plate.
   if (prior && !reflowed) {
     for (const [id, s] of Object.entries(prior.seeds)) record.seeds[id] = [s[0], s[1]];
     for (const [id, c] of Object.entries(prior.cells)) if (!byId.has(id)) record.cells[id] = [c[0], c[1]];
   }
   for (const [id, s] of placement.seeds) record.seeds[id] = [s[0], s[1]];
   for (const [id, c] of placement.cells) record.cells[id] = [c[0], c[1]];
-  // A kept hole must not be claimed twice: drop remembered cells that a live tile now occupies.
+  // A kept hole must not be claimed twice.
   for (const [id, c] of Object.entries(record.cells)) {
     const holder = occupied.get(hexKey(c[0], c[1]));
     if (holder && holder !== id) delete record.cells[id];
@@ -510,18 +469,16 @@ export function computeHexBoard(
   };
 }
 
-/* ── cell size, gutters, bands ──────────────────────────────────────────── */
 
-/** Largest cell size at rest (spec §1). */
+/** spec §1 */
 const HEX_MAX_FIT_RADIUS = 60;
-/** The zoom clamp (spec §6). */
+/** spec §6 */
 export const HEX_MIN_RADIUS = 8;
 export const HEX_MAX_RADIUS = 96;
-/** Semantic zoom thresholds (spec §7). */
+/** spec §7 */
 export const HEX_BAND_PIPS = 28;
 export const HEX_BAND_NAMES = 44;
 
-/** `R = min(60, floor(min(W/Δx, H/Δy)))` over the free room. */
 export function fitHexRadius(bounds: HexBoardLayout["bounds"], room: { width: number; height: number }): number {
   const w = bounds.maxX - bounds.minX;
   const h = bounds.maxY - bounds.minY;
@@ -529,7 +486,7 @@ export function fitHexRadius(bounds: HexBoardLayout["bounds"], room: { width: nu
   return Math.max(HEX_MIN_RADIUS, Math.min(HEX_MAX_FIT_RADIUS, r));
 }
 
-/** Half-gutter per cell size: routes run in the 2·GUT gap between faces. */
+/** Routes run in the 2·GUT gap between faces. */
 export function hexGutter(R: number): number {
   return R >= 44 ? 4 : R >= 28 ? 3 : 1.5;
 }
@@ -542,20 +499,19 @@ export function hexBandFor(R: number, namesFrom: number): HexBand {
   return "regions";
 }
 
-/* ── labels ─────────────────────────────────────────────────────────────── */
 
 export type HexMeasure = (text: string, role: HexTextRole) => number;
 
 export interface HexTextLine {
   text: string;
   role: HexTextRole;
-  /** Baseline offset from the tile centre (CSS px, y down). */
+  /** CSS px, y down. */
   dy: number;
-  /** A domain's stale-count line, which takes the stale ink when its count is not zero. */
+  /** Takes the stale ink when its count is not zero. */
   tone?: "stale";
 }
 
-/** Word-boundary wrap at `maxW`; a single word longer than `maxW` stays whole (and then fails the fit). */
+/** A single word longer than `maxW` stays whole and fails the fit. */
 function wrapWords(text: string, role: HexTextRole, maxW: number, measure: HexMeasure): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
@@ -572,7 +528,6 @@ function wrapWords(text: string, role: HexTextRole, maxW: number, measure: HexMe
   return lines;
 }
 
-/** The two-line split at a word boundary whose longer line is shortest. */
 function balancedTwoLines(text: string, role: HexTextRole, measure: HexMeasure): string[] | null {
   const words = text.split(/\s+/).filter(Boolean);
   if (words.length < 2) return null;
@@ -590,10 +545,7 @@ function balancedTwoLines(text: string, role: HexTextRole, measure: HexMeasure):
   return best;
 }
 
-/**
- * The text lines a tile carries in the names band, in CSS px relative to its centre (spec §5).
- * `staleFile`, when given, lifts a capability's name to make room for the moved file's name.
- */
+/** `staleFile` lifts a capability's name to make room for the moved file's name (spec §5). */
 export function hexTileLines(
   tile: Pick<HexTile, "kind" | "name">,
   R: number,
@@ -610,8 +562,8 @@ export function hexTileLines(
       if (extras.staleFile) out.push({ text: extras.staleFile, role: "mono", dy: 19 });
       return out;
     };
-    // The spec's wrap (word boundaries at 1.45R) first; when that spills — a hexagon narrows
-    // toward its top — the most even two-line split. The fit check decides, never a clip.
+    // Word wrap at 1.45R first; when that spills where the hexagon narrows, the most even
+    // two-line split. The fit check decides, never a clip.
     const greedy = place(wrapWords(tile.name, role, 1.45 * R, measure));
     if (hexLineSpills(greedy, R, measure).length === 0) return greedy;
     const even = balancedTwoLines(tile.name, role, measure);
@@ -624,10 +576,8 @@ export function hexTileLines(
   if (tile.kind === "domain") {
     const lines = wrapWords(tile.name, "domain", 1.25 * R, measure);
     const two = lines.length > 1;
-    // Two title lines sit 2 px higher than the spec's −17/−1 so the counts line lands where the
-    // face is still wide enough for the counts line ("11 capabilities · 16 elements") at 1280.
-    // With no counts to carry (the band below the counts' own fit), the name sits centred,
-    // where the face is widest.
+    // Two title lines sit 2 px above the spec's −17/−1 so the counts line lands where the face
+    // is wide enough at 1280; with no counts the name centres where the face is widest.
     const bare = !extras.meta && !extras.stale;
     const title = bare ? (two ? [-4, 12] : [5]) : two ? [-19, -3] : [-6];
     const out: HexTextLine[] = lines.slice(0, 2).map((text, i) => ({ text, role: "domain", dy: title[i]! }));
@@ -645,13 +595,12 @@ export function hexTileLines(
   return out;
 }
 
-/** Ascent/descent as a share of the font size, for the fit check. */
 const ASCENT = 0.85;
 const DESCENT = 0.22;
 
 /**
- * Every line against the face's half-width at its top and bottom edges,
- * `2·(RI − |dy|/√3) − 8` (− 4 for a counts line). Returns the lines that do not fit (spec §5: a spill is an error).
+ * Half-width at each line's top and bottom edges, `2·(RI − |dy|/√3) − 8` (− 4 for counts).
+ * A spill is an error (spec §5).
  */
 export function hexLineSpills(lines: readonly HexTextLine[], R: number, measure: HexMeasure): HexTextLine[] {
   const RI = R - hexGutter(R);
@@ -665,17 +614,14 @@ export function hexLineSpills(lines: readonly HexTextLine[], R: number, measure:
       out.push(line);
       continue;
     }
-    // A title tile's counts line is set tighter (−4): it is short numerals the rim cannot clip.
+    // Counts are short numerals the rim cannot clip, so they get the tighter −4.
     const avail = 2 * Math.min(hexHalfWidthAt(RI, top), hexHalfWidthAt(RI, bottom)) - (line.role === "meta" ? 4 : 8);
     if (measure(line.text, line.role) > avail) out.push(line);
   }
   return out;
 }
 
-/**
- * The smallest cell size (≥ 44, ≤ 96) at which every tile's lines fit, or null when some name
- * never fits. The names band starts here, so a drawn name always fits its face.
- */
+/** Between 44 and 96, or null when some name never fits; the names band starts here. */
 export function minNamesRadius(
   layout: HexBoardLayout,
   measure: HexMeasure,
@@ -694,7 +640,7 @@ export function minNamesRadius(
   return null;
 }
 
-/** Middle-first truncation for a file name: its extension carries meaning (spec §5). */
+/** The extension carries meaning (spec §5). */
 export function middleTruncate(text: string, maxW: number, measure: (t: string) => number): string {
   if (measure(text) <= maxW) return text;
   const chars = [...text];
@@ -707,15 +653,13 @@ export function middleTruncate(text: string, maxW: number, measure: (t: string) 
   return "…";
 }
 
-/* ── keyboard walk ──────────────────────────────────────────────────────── */
 
 export type HexWalkDirection = "up" | "down" | "left" | "right";
 
 /**
- * The tile an arrow key moves to (spec §6): ↑/↓ are the axial neighbours `(0,∓1)`; → is
- * `(1,0)` or `(1,−1)`, whichever lies nearer the row the walk started on (`rowY`, unit space),
- * ← its mirror. With no occupied neighbour that way, the walk crosses the moat to the nearest
- * tile along the direction (projection plus a doubled orthogonal penalty, the flat map's rule).
+ * ↑/↓ are axial `(0,∓1)`; → is `(1,0)` or `(1,−1)`, whichever is nearer the starting row
+ * (← mirrors). With no neighbour that way, the walk crosses the moat to the nearest tile
+ * (projection plus a doubled orthogonal penalty, the flat map's rule) (spec §6).
  */
 export function hexNeighborInDirection(
   layout: HexBoardLayout,

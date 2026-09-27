@@ -10,8 +10,7 @@ describe("ambientSleepFactor", () => {
   const D = AMBIENT_SLEEP_DELAY_MS;
   const R = AMBIENT_SLEEP_RAMP_MS;
 
-  // The awake span must **not differ from before by one pixel** — this fix removes
-  // idle cost, it does not change the screen of someone who is looking at it.
+  // The awake span must not differ by one pixel: sleep removes idle cost only.
   it("holds exactly 1 from the input until the delay ends", () => {
     expect(ambientSleepFactor(0, 0)).toBe(1);
     expect(ambientSleepFactor(D / 2, 0)).toBe(1);
@@ -35,12 +34,11 @@ describe("ambientSleepFactor", () => {
     expect(ambientSleepFactor(D + 3_600_000, 0)).toBe(0);
   });
 
-  // One input restores everything on the next frame. `idle-gate` has no wake
-  // wiring by design, so this function returning 1 immediately *is* the contract.
+  // `idle-gate` has no wake wiring by design, so returning 1 at once is the whole
+  // wake contract.
   it("returns to 1 at once when input arrives", () => {
     const deepSleep = D + R * 5;
     expect(ambientSleepFactor(deepSleep, 0)).toBe(0);
-    // Input arrives at that moment → lastInput updates
     expect(ambientSleepFactor(deepSleep, deepSleep)).toBe(1);
   });
 
@@ -60,8 +58,7 @@ describe("ambientSleepFactor", () => {
 });
 
 describe("isAmbientAsleep", () => {
-  // Closing the condition **mid-ramp** freezes the comets at partial speed, which
-  // manufactures the "looks broken" it exists to avoid.
+  // Closing the condition mid-ramp would freeze the comets at partial speed.
   it("counts as not yet asleep while the ramp runs (factor above 0)", () => {
     expect(isAmbientAsleep(1)).toBe(false);
     expect(isAmbientAsleep(0.5)).toBe(false);
@@ -78,15 +75,15 @@ describe("ambient sleep contract, end to end", () => {
     let lastInput = 1_000;
     const at = (ms: number) => ambientSleepFactor(ms, lastInput);
 
-    expect(at(1_000)).toBe(1); // moment of input
-    expect(at(20_000)).toBe(1); // 19 s — still looking
-    expect(at(31_000)).toBe(1); // exactly the 30 s boundary — still awake
-    expect(at(32_000)).toBeCloseTo(0.5, 5); // mid-ramp
-    expect(isAmbientAsleep(at(32_000))).toBe(false); // keep drawing while ramping
-    expect(at(33_000)).toBe(0); // ramp done — asleep
+    expect(at(1_000)).toBe(1);
+    expect(at(20_000)).toBe(1);
+    expect(at(31_000)).toBe(1);
+    expect(at(32_000)).toBeCloseTo(0.5, 5);
+    expect(isAmbientAsleep(at(32_000))).toBe(false);
+    expect(at(33_000)).toBe(0);
     expect(isAmbientAsleep(at(33_000))).toBe(true);
 
-    lastInput = 40_000; // the user touches it again
+    lastInput = 40_000;
     expect(at(40_000)).toBe(1);
     expect(isAmbientAsleep(at(40_000))).toBe(false);
   });

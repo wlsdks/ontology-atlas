@@ -18,18 +18,15 @@ describe("backgroundParallaxOrigin", () => {
     expect(backgroundParallaxOrigin({ x: 320, y: 210 }, VP, 0)).toEqual(CENTER);
   });
 
-  // This is the definition of parallax: the background moves **less** than the ground.
   it("moves the background k times the ground motion for 0 < k < 1", () => {
     const k = 0.82;
     const moved = { x: CENTER.x - 200, y: CENTER.y + 100 };
     const bg = backgroundParallaxOrigin(moved, VP, k);
     expect(bg.x).toBeCloseTo(CENTER.x - 200 * k, 6);
     expect(bg.y).toBeCloseTo(CENTER.y + 100 * k, 6);
-    // The background travels a shorter distance than the ground = it is further away
     expect(Math.abs(bg.x - CENTER.x)).toBeLessThan(Math.abs(moved.x - CENTER.x));
   });
 
-  // Applied about anything but the centre, the layers start out misaligned even at rest.
   it("keeps the layers aligned at any factor when the camera is at the origin", () => {
     for (const k of [0, 0.5, 0.82, 1]) {
       expect(backgroundParallaxOrigin(CENTER, VP, k)).toEqual(CENTER);
@@ -51,10 +48,8 @@ describe("resolveBackgroundParallax", () => {
   });
 
   /**
-   * The heart of this contract is that reduced-motion is **1, not 0**. Vestibular
-   * stimulus comes from relative motion between layers, and 1.0 removes it. At 0
-   * the background welds to the screen and relative motion against the content
-   * appears instead — manufacturing the thing being avoided.
+   * Reduced motion is 1, not 0: vestibular stimulus comes from relative motion between
+   * layers, and 0 would weld the background to the screen and create it.
    */
   it("returns 1.0 under prefers-reduced-motion, removing relative motion", () => {
     expect(resolveBackgroundParallax("web", 0.82, true)).toBe(1);
@@ -75,9 +70,7 @@ describe("resolveBackgroundParallax", () => {
 });
 
 describe("resolveBackgroundOrigin decides the whole origin in one function", () => {
-  // If the caller (topology-frame-draw) wires the two functions together by hand,
-  // that assembly becomes an unverified surface. Bundled into one, the only risk
-  // left is whether the caller passes the result through.
+  // One function, so the caller cannot assemble the two steps wrongly by hand.
   it("offsets the origin for the near constellation while awake", () => {
     const out = resolveBackgroundOrigin({ x: 300, y: 300 }, VP, "web", 0.82, false);
     expect(out.x).toBeCloseTo(CENTER.x + (300 - CENTER.x) * 0.82, 6);

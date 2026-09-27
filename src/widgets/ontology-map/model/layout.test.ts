@@ -6,11 +6,7 @@ import {
   type LayoutRings,
 } from "./layout";
 
-/**
- * Small fixed vault fixture — one project, two domains, a handful of
- * capabilities/elements. Deliberately tiny (unlike the 12-domain prototype
- * fixture) so overlap/ring-radius assertions are easy to hand-verify.
- */
+/** Deliberately tiny so overlap and ring-radius assertions can be verified by hand. */
 const FIXTURE: readonly LayoutGraphNode[] = [
   { id: "ontology-atlas", kind: "project", parentId: null },
   { id: "domain-a", kind: "domain", parentId: "ontology-atlas" },
@@ -91,15 +87,11 @@ describe("computeConcentricLayout", () => {
 });
 
 /**
- * De-pileup / determinism contract (Design Guardian rejected the earlier
- * fidelity): the static default must be a clean deterministic grid, NOT an FA2
- * settlement. The
- * collision-relax post-process spreads overlapping arcs with a FIXED iteration
- * count and a seeded tie-break — same input → byte-identical output.
+ * The static default is a deterministic grid, not an FA2 settlement: the collision relax
+ * runs a fixed iteration count with a seeded tie-break, so the output is byte-identical.
  */
 describe("computeConcentricLayout — deterministic de-pileup", () => {
-  // One domain with a fat fan of capabilities (each with several elements) —
-  // the 295-vs-40-concept density the guardian flagged, in miniature.
+  // One domain with a fat fan of capabilities, each with several elements.
   const DENSE: LayoutGraphNode[] = [{ id: "p", kind: "project", parentId: null }];
   DENSE.push({ id: "d", kind: "domain", parentId: "p" });
   for (let c = 0; c < 10; c += 1) {
@@ -130,29 +122,24 @@ describe("computeConcentricLayout — deterministic de-pileup", () => {
 
   it("leaves no two nodes closer than their combined collision radii", () => {
     const points = computeConcentricLayout(DENSE, RINGS, { radii: RADII, relaxPadding: 6 });
-    // Smallest possible min-distance = two elements = 7 + 7 = 14 (padding is
-    // extra headroom the relax targets, so we assert against the hard radii).
+    // Two elements at 7 + 7; padding is headroom the relax targets, so assert the hard radii.
     expect(minPairwiseDistance(points)).toBeGreaterThanOrEqual(14);
   });
 
   it("actually separates an overlapping seed (relax does work), deterministically", () => {
-    // Inflate radii so even the concentric seed overlaps heavily, forcing the
-    // relax to push nodes apart.
+    // Radii large enough that the concentric seed overlaps and the relax must push apart.
     const huge = { project: 400, domain: 400, capability: 400, element: 400 };
     const seedOnly = computeConcentricLayout(DENSE, RINGS, { radii: huge, relaxIterations: 0 });
     const relaxed = computeConcentricLayout(DENSE, RINGS, { radii: huge, relaxIterations: 80 });
     expect(minPairwiseDistance(relaxed)).toBeGreaterThan(minPairwiseDistance(seedOnly));
-    // Still fully deterministic under the heavy relax.
     const relaxedAgain = computeConcentricLayout(DENSE, RINGS, { radii: huge, relaxIterations: 80 });
     expect(relaxedAgain).toEqual(relaxed);
   });
 });
 
 describe("computeConcentricLayout with nonstandard lineage and orphans (blob regression)", () => {
-  // A vault where a domain holds elements directly (no capability in between).
-  // These nodes used not to be placed at all: they stacked at (0,0), and live
-  // physics dragged the stack toward the hub into a "blob" where even the labels
-  // overlapped (owner report).
+  // A domain holding elements directly: unplaced, they stack at (0,0) and physics drags
+  // the stack into a blob with overlapping labels.
   const DOMAIN_DIRECT: readonly LayoutGraphNode[] = [
     { id: "p", kind: "project", parentId: null },
     { id: "d", kind: "domain", parentId: "p" },
@@ -166,11 +153,10 @@ describe("computeConcentricLayout with nonstandard lineage and orphans (blob reg
     const d = byId(points, "d");
     for (const id of ["el-1", "el-2", "el-3"]) {
       const p = byId(points, id);
-      expect(Math.hypot(p.x, p.y)).toBeGreaterThan(1); // never stacked on the origin
-      // A fan of 3 is at or below the density threshold → they ring the domain at exactly the element radius.
+      expect(Math.hypot(p.x, p.y)).toBeGreaterThan(1);
+      // A fan of 3 is below the density threshold, so it rings the domain at the element radius.
       expect(Math.hypot(p.x - d.x, p.y - d.y)).toBeCloseTo(RINGS.element, 4);
     }
-    // And they do not overlap each other.
     const [a, b, c] = ["el-1", "el-2", "el-3"].map((id) => byId(points, id));
     expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThan(1);
     expect(Math.hypot(b.x - c.x, b.y - c.y)).toBeGreaterThan(1);
@@ -188,7 +174,6 @@ describe("computeConcentricLayout with nonstandard lineage and orphans (blob reg
     const parent = byId(points, "el-parent");
     const child = byId(points, "el-child");
     expect(Math.hypot(child.x, child.y)).toBeGreaterThan(1);
-    // Single child, no relax collision → exactly the element ring radius.
     expect(Math.hypot(child.x - parent.x, child.y - parent.y)).toBeCloseTo(RINGS.element, 4);
   });
 
@@ -210,7 +195,7 @@ describe("computeConcentricLayout with nonstandard lineage and orphans (blob reg
   });
 
   it("keeps the output of a standard vault unchanged (the fan merge is a no-op)", () => {
-    // FIXTURE has no direct elements → every new pass is a no-op. Re-checks the core ring contract.
+    // FIXTURE has no direct elements, so the new passes are no-ops.
     const points = computeConcentricLayout(FIXTURE, RINGS);
     for (const capId of ["cap-a1", "cap-a2", "cap-b1"]) {
       const cap = FIXTURE.find((n) => n.id === capId)!;
@@ -221,13 +206,8 @@ describe("computeConcentricLayout with nonstandard lineage and orphans (blob reg
   });
 });
 
-/**
- * Children of a parent past the threshold (12) are placed on a bounded
- * phyllotaxis disc instead of a runaway fan. Parents at or below it keep the fan
- * contract above — the regression tests below re-check that.
- */
+/** Past the threshold (12) children take a bounded phyllotaxis disc instead of a runaway fan. */
 describe("computeConcentricLayout phyllotaxis disc for dense parents", () => {
-  // One domain with 108 capabilities — the dogfood Onboarding & UX density, as-is.
   const DENSE_DOMAIN: LayoutGraphNode[] = [
     { id: "p", kind: "project", parentId: null },
     { id: "d", kind: "domain", parentId: "p" },
@@ -246,9 +226,8 @@ describe("computeConcentricLayout phyllotaxis disc for dense parents", () => {
       const p = byId(points, `cap-${c}`);
       maxFromParent = Math.max(maxFromParent, Math.hypot(p.x - d.x, p.y - d.y));
     }
-    // shift (capability ring 145) + spacing (26)·√108 ≈ 415; the bound includes relax slack.
+    // capability ring shift (145) + spacing (26)·√108 ≈ 415; the bound includes relax slack.
     expect(maxFromParent).toBeLessThan(650);
-    // The old fan (radius ∝ n) would have been 1500+ — the contrast is what proves boundedness.
     expect(maxFromParent).toBeLessThan(700);
   });
 
@@ -266,7 +245,6 @@ describe("computeConcentricLayout phyllotaxis disc for dense parents", () => {
         min = Math.min(min, Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y));
       }
     }
-    // Two capabilities = 11 + 11 = 22, the lower bound.
     expect(min).toBeGreaterThanOrEqual(22);
   });
 
@@ -284,7 +262,7 @@ describe("computeConcentricLayout phyllotaxis disc for dense parents", () => {
       const p = byId(points, `el-${e}`);
       maxFromParent = Math.max(maxFromParent, Math.hypot(p.x - c.x, p.y - c.y));
     }
-    // element ring (90) shift + spacing·√40 ≈ 90 + 26·6.3 ≈ 254; bound includes slack.
+    // element ring (90) + spacing·√40 ≈ 90 + 26·6.3 ≈ 254; the bound includes slack.
     expect(maxFromParent).toBeLessThan(450);
   });
 
@@ -297,10 +275,7 @@ describe("computeConcentricLayout phyllotaxis disc for dense parents", () => {
       for (let c = 0; c < n; c += 1) g.push({ id: `cap-${c}`, kind: "capability", parentId: "d" });
       return g;
     };
-    // 12 (the threshold) = fan → every child sits exactly on the capability ring
-    // (base × multiplier, before the radius runs away). All this checks is that 13
-    // becomes a denser √-growth disc whose max radius does not jump — the fan's
-    // base grows with the n multiplier.
+    // At the threshold of 12 the fan path runs; 13 becomes a √-growth disc whose radius stays bounded.
     const twelve = computeConcentricLayout(mk(12), RINGS, { radii: RADII });
     const thirteen = computeConcentricLayout(mk(13), RINGS, { radii: RADII });
     const maxR = (pts: { id: string; x: number; y: number }[], n: number) => {
@@ -312,32 +287,24 @@ describe("computeConcentricLayout phyllotaxis disc for dense parents", () => {
       }
       return m;
     };
-    // The 13-child disc's max radius is bounded (under the disc limit), independent of the fan multiplier.
     expect(maxR(thirteen, 13)).toBeLessThan(400);
-    // 12 takes the fan path (≤ capability ring × density multiplier) and keeps its own contract.
     expect(maxR(twelve, 12)).toBeGreaterThan(0);
   });
 });
 
 /**
- * Spatial-grid `relaxCollisions` replaces the brute-force O(n²) scan under a
- * **byte-identity** contract. The `relaxStrategy` option runs both paths and the
- * outputs are compared directly. Determinism, de-pileup, and the rest are already
- * covered above through the grid (default) path, so this block only checks
- * equivalence.
+ * The spatial-grid `relaxCollisions` must be byte-identical to the O(n²) brute force;
+ * `relaxStrategy` runs both paths so this block checks only equivalence.
  */
 describe("computeConcentricLayout grid and brute force agree", () => {
   const RADII = { project: 25, domain: 17, capability: 11, element: 7 };
 
-  // Several domains · mixed fan densities (both sides of the threshold) · direct
-  // elements · orphans, in one fixture, so the relax path is exercised broadly.
-  // Generated deterministically (fixed input order).
+  // Mixed fan densities on both sides of the threshold, direct elements and orphans.
   function buildMixedFixture(): LayoutGraphNode[] {
     const g: LayoutGraphNode[] = [{ id: "p", kind: "project", parentId: null }];
     for (let d = 0; d < 6; d += 1) {
       const domainId = `d-${d}`;
       g.push({ id: domainId, kind: "domain", parentId: "p" });
-      // Vary the fan size per domain (4–9) to force overlap — below the threshold (12), so the fan path.
       const capCount = 4 + (d % 6);
       for (let c = 0; c < capCount; c += 1) {
         const capId = `d-${d}-c-${c}`;
@@ -346,11 +313,9 @@ describe("computeConcentricLayout grid and brute force agree", () => {
           g.push({ id: `${capId}-e-${e}`, kind: "element", parentId: capId });
         }
       }
-      // Two elements directly under the domain (non-standard lineage).
       g.push({ id: `d-${d}-de-0`, kind: "element", parentId: domainId });
       g.push({ id: `d-${d}-de-1`, kind: "element", parentId: domainId });
     }
-    // A few orphans.
     for (let o = 0; o < 5; o += 1) {
       g.push({ id: `orphan-${o}`, kind: "element", parentId: null });
     }
@@ -381,10 +346,7 @@ describe("computeConcentricLayout grid and brute force agree", () => {
   });
 
   it("both paths separate the seed and agree on default DENSE (0 relax seed overlap)", () => {
-    // Checks both that relax actually separates overlaps rather than being a
-    // no-op, and that the result is the same on both paths — re-confirming grid ≡
-    // brute at the production radius (25) in a state where work is being done, not
-    // one where there is nothing to do.
+    // Relax must do real work here at the production radius (25), not pass as a no-op.
     const dense: LayoutGraphNode[] = [
       { id: "p", kind: "project", parentId: null },
       { id: "d", kind: "domain", parentId: "p" },
@@ -404,15 +366,13 @@ describe("computeConcentricLayout grid and brute force agree", () => {
     const seed = computeConcentricLayout(dense, RINGS, { radii: RADII, relaxStrategy: "grid", relaxIterations: 0 });
     const grid = computeConcentricLayout(dense, RINGS, { radii: RADII, relaxStrategy: "grid" });
     const brute = computeConcentricLayout(dense, RINGS, { radii: RADII, relaxStrategy: "bruteforce" });
-    expect(min(grid)).toBeGreaterThan(min(seed)); // relax really did separate them
-    expect(grid).toEqual(brute); // and both paths are byte-identical
+    expect(min(grid)).toBeGreaterThan(min(seed));
+    expect(grid).toEqual(brute);
   });
 
   it("the grid stays deterministic and separates at an unrealistically large radius", () => {
-    // Radius 400 is an extreme production never sees (real max 25). Per-iteration
-    // movement exceeds the cell slack here, so byte-identity with brute force is
-    // not guaranteed — but the grid path itself stays deterministic and really
-    // does separate overlaps.
+    // Radius 400 is far past production (25): per-iteration movement exceeds the cell slack,
+    // so only determinism and separation hold, not identity with brute force.
     const huge = { project: 400, domain: 400, capability: 400, element: 400 };
     const a = computeConcentricLayout(MIXED, RINGS, { radii: huge, relaxStrategy: "grid", relaxIterations: 40 });
     const b = computeConcentricLayout(MIXED, RINGS, { radii: huge, relaxStrategy: "grid", relaxIterations: 40 });
@@ -428,8 +388,6 @@ describe("computeConcentricLayout grid and brute force agree", () => {
     expect(min(a)).toBeGreaterThan(min(seed));
   });
 
-  // No performance guard here: a wall-clock comparison is flaky under CPU
-  // contention (demonstrated in practice), so it was removed. O(n²) regressions
-  // are pinned structurally by the grid/brute-force byte-identity test, and
-  // absolute performance is measured by the scripts/perf-graph bench path.
+  // No wall-clock guard: it flakes under CPU contention. The byte-identity test pins the
+  // algorithm, and the scripts/perf-graph bench measures absolute cost.
 });

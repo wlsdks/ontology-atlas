@@ -80,7 +80,6 @@ const cam = (x: number, y: number, scale: number): CameraAxes => ({
 
 const KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
 
-/** Small deterministic vault — 1 project · 2 domains · 3 capabilities · 3 elements. */
 const NODES: readonly DomeInputNode[] = [
   { id: "atlas", kind: "project", x: 10, y: -20, parentId: null },
   { id: "dom-a", kind: "domain", x: -300, y: 40, parentId: "atlas" },
@@ -124,10 +123,8 @@ describe("dome-view heights and angles carry type facts", () => {
     for (const [id, coord] of a.coords) {
       expect(b.coords.get(id)).toEqual(coord);
     }
-    // A lone project sits on the apex (the axis).
     expect(a.coords.get("atlas")).toEqual({ px: 0, py: DOME_PLANE.project.y, pz: 0 });
-    // Capabilities stay inside their parent domain's arc — children of one parent
-    // are angularly closer to it than to the opposite parent's children.
+    // Children of one parent are angularly closer to it than to the other parent's children.
     const angleOf = (id: string) => {
       const c = a.coords.get(id)!;
       return Math.atan2(c.pz, c.px);
@@ -138,7 +135,6 @@ describe("dome-view heights and angles carry type facts", () => {
     };
     expect(angDist(angleOf("cap-a1"), angleOf("dom-a"))).toBeLessThan(angDist(angleOf("cap-a1"), angleOf("dom-b")));
     expect(angDist(angleOf("el-2"), angleOf("cap-b1"))).toBeLessThan(angDist(angleOf("el-2"), angleOf("cap-a1")));
-    // Every node carries the ring height of its own kind.
     for (const n of NODES) {
       expect(a.coords.get(n.id)!.py).toBe(DOME_PLANE[n.kind].y);
     }
@@ -153,11 +149,8 @@ describe("dome-view frame map equals worldToScreen, one source for draw and hit"
     runtime.yaw = 1.234;
     runtime.pitch = 0.4;
     /*
-     * Turn the entry sweep off. This test's claim is that the frame map equals
-     * the projection of the **drawn** pose, not of the raw yaw/pitch. While the
-     * sweep is live the two poses differ, and that difference is correct
-     * (`runtime.drawYaw/drawPitch` is the single source of the drawn pose — a
-     * separate test below pins that contract).
+     * The frame map equals the projection of the drawn pose; with the entry sweep live the
+     * drawn and raw poses differ by design (a separate test pins `drawYaw`/`drawPitch`).
      */
     runtime.entryArmed = false;
     const BASE_R = 10;
@@ -171,10 +164,8 @@ describe("dome-view frame map equals worldToScreen, one source for draw and hit"
       const want = worldToScreen(camera, 1512, 900, direct.wx, direct.wy);
       expect(via.x).toBeCloseTo(want.x, 9);
       expect(via.y).toBeCloseTo(want.y, 9);
-      // `s` is a radius multiplier, and base × s × cameraScale is what the draw
-      // paints — so the drawn radius is `DOME_NODE_PX[kind] × perspective` SCREEN
-      // pixels, whatever the zoom. That is the whole point of the table: fitting
-      // the cone bigger must buy spacing, not ink.
+      // The drawn radius is `DOME_NODE_PX[kind] × perspective` screen pixels at any zoom, so
+      // fitting the cone bigger buys spacing, not ink.
       expect(off.s * BASE_R * CAM_SCALE).toBeCloseTo(DOME_NODE_PX[n.kind] * direct.s, 9);
       expect(off.a).toBe(1);
       expect(off.u).toBeGreaterThanOrEqual(0);
@@ -226,10 +217,8 @@ describe("dome-view in-plane unprojection, the coordinate contract of 3D node dr
   });
 
   it("solve(project(p)) returns the in-plane coordinate from below (negative pitch)", () => {
-    // The coordinate contract of opening pitch to the full range (2026-08-18,
-    // second round). From below, the denominator's normal sign flips negative,
-    // and the old unconditional positive floor pinned every drag to that floor
-    // constant. The viewpoint decides the expected sign (`solveDomePlanePoint`).
+    // From below the denominator's sign flips negative, so the viewpoint decides the expected
+    // sign (`solveDomePlanePoint`) instead of an unconditional positive floor.
     const model = buildDomeModel(NODES);
     for (const [yaw, pitch] of [
       [0.55, -DOME_PITCH_DEFAULT],
@@ -255,12 +244,9 @@ describe("dome-view in-plane unprojection, the coordinate contract of 3D node dr
   });
 
   it("yields a finite point within the radius cap, without freezing, when the pointer crosses the plane horizon", () => {
-    // Reproduces the owner report of 2026-08-18: "Some don't move properly even when clicked" (some of them don't move properly even when clicked). At low
-    // pitch (side-on) dragging a node upward takes the denominator through 0, and
-    // the earlier code returned either null (discarding that frame's move — the
-    // node freezes) or a solution behind the camera (it flies off). Contract:
-    // sweeping the full screen height always yields non-null, always finite,
-    // always inside the radius cap.
+    // At low pitch dragging upward takes the denominator through 0; returning null freezes
+    // the node and a solution behind the camera flings it. A full-height sweep must stay
+    // non-null, finite and inside the radius cap.
     const model = buildDomeModel(NODES);
     for (const pitch of [DOME_PITCH_MIN, DOME_PITCH_DEFAULT, DOME_PITCH_MAX]) {
       for (const planeY of [DOME_PLANE.project.y, DOME_PLANE.domain.y, DOME_PLANE.element.y]) {
@@ -280,7 +266,7 @@ describe("dome-view in-plane unprojection, the coordinate contract of 3D node dr
     const pitch = DOME_PITCH_MIN;
     const cp = Math.cos(pitch);
     const sp = Math.sin(pitch);
-    // Solve for the uy where denom = F·sp + uy·cp = 0 and hit exactly that spot.
+    // The uy where denom = F·sp + uy·cp = 0.
     const uy = (-DOME_FOCAL * sp) / cp;
     const wy = model.centerY + uy * model.unit;
     const solved = solveDomePlanePoint(model, DOME_PLANE.domain.y, model.centerX + 50, wy, 0.55, pitch);
@@ -290,10 +276,8 @@ describe("dome-view in-plane unprojection, the coordinate contract of 3D node dr
   });
 
   it("does not teleport to the opposite rim when the pointer moves one pixel across the horizon", () => {
-    // Once the denominator crossed to 0−, the solution flipped behind the camera
-    // and jumped to the rim at the opposite bearing — on screen, the node being
-    // dragged teleports to the far side of the dome. Contract: a one-unit pointer
-    // step may move the solution by at most one step along the rim.
+    // Past 0− the solution flipped behind the camera to the opposite rim, teleporting the
+    // node; a one-unit pointer step may move it at most one step along the rim.
     const model = buildDomeModel(NODES);
     const pitch = DOME_PITCH_MIN;
     const cp = Math.cos(pitch);
@@ -318,7 +302,7 @@ describe("dome-view physics: inertia, rubber band and spring", () => {
     let v = 0.002;
     for (let i = 0; i < 600; i++) v = decayOrbitVelocity(v, 16.7);
     expect(v).toBe(0);
-    // dt-invariant — the same total time gives the same value regardless of how it is split into frames.
+    // dt-invariant: the same total time gives the same value however it splits into frames.
     const oneStep = decayOrbitVelocity(0.002, 100);
     let split = 0.002;
     for (let i = 0; i < 10; i++) split = decayOrbitVelocity(split, 10);
@@ -326,13 +310,12 @@ describe("dome-view physics: inertia, rubber band and spring", () => {
   });
 
   it("pitch is clamped to 0.15–0.95 rad: the lit planes are always seen from above", () => {
-    // 2026-09-25 (lit strata): a tier disc seen from below reverses the level order and
-    // an edge-on disc loses it, so both are walls now. This replaces the 2026-08-18
-    // pole-to-pole range; the dissent is kept in the decision fragment.
+    // A tier disc seen from below reverses the level order and an edge-on disc loses it, so
+    // both are walls; the dissent is in the decision fragment.
     expect(DOME_PITCH_MIN).toBe(0.15);
     expect(DOME_PITCH_MAX).toBe(0.95);
-    expect(clampDomePitch(0)).toBe(DOME_PITCH_MIN); // edge-on — locked
-    expect(clampDomePitch(-0.8)).toBe(DOME_PITCH_MIN); // from below — locked
+    expect(clampDomePitch(0)).toBe(DOME_PITCH_MIN);
+    expect(clampDomePitch(-0.8)).toBe(DOME_PITCH_MIN);
     expect(clampDomePitch(DOME_PITCH_DEFAULT)).toBe(DOME_PITCH_DEFAULT);
     expect(clampDomePitch(2)).toBe(DOME_PITCH_MAX);
     expect(clampDomePitch(-2)).toBe(DOME_PITCH_MIN);
@@ -341,7 +324,7 @@ describe("dome-view physics: inertia, rubber band and spring", () => {
   it("rubber-bands pitch at quarter resistance and stops the overshoot at the cap, so the pole never flips", () => {
     expect(resistDomePitch(DOME_PITCH_MAX + 0.2)).toBeCloseTo(DOME_PITCH_MAX + 0.05, 12);
     expect(resistDomePitch(DOME_PITCH_MIN - 0.2)).toBeCloseTo(DOME_PITCH_MIN - 0.05, 12);
-    // However hard you pull, the squash stops at 0.09 — even squashed it never passes π/2.
+    // However hard the pull, the squash stops at 0.09, never passing π/2.
     expect(resistDomePitch(DOME_PITCH_MAX + 40)).toBeCloseTo(DOME_PITCH_MAX + 0.09, 12);
     expect(resistDomePitch(DOME_PITCH_MAX + 40)).toBeLessThan(Math.PI / 2);
     expect(resistDomePitch(DOME_PITCH_MIN - 40)).toBeCloseTo(DOME_PITCH_MIN - 0.09, 12);
@@ -394,7 +377,6 @@ describe("dome-view selection reframe and auto-rotate arming", () => {
     expect(domeNearestYawTurn(0.55, 0.6)).toBeCloseTo(0.55, 12);
     expect(domeNearestYawTurn(0.55, 6.6)).toBeCloseTo(0.55 + TAU, 12);
     expect(domeNearestYawTurn(0.55, -5.5)).toBeCloseTo(0.55 - TAU, 12);
-    // Never turns more than half a revolution.
     for (const cur of [-9, -2.2, 0, 3.3, 14]) {
       expect(Math.abs(domeNearestYawTurn(0.55, cur) - cur)).toBeLessThanOrEqual(Math.PI + 1e-9);
     }
@@ -410,10 +392,9 @@ describe("dome-view selection reframe and auto-rotate arming", () => {
       const r = Math.hypot(coord.px, coord.pz);
       const zMin = -r * Math.cos(DOME_PITCH_DEFAULT) - coord.py * Math.sin(DOME_PITCH_DEFAULT);
       expect(at.z).toBeCloseTo(zMin, 6);
-      // Equivalent-angle rule — never more than half a revolution from the current yaw.
       expect(Math.abs(yaw - 0.9)).toBeLessThanOrEqual(Math.PI + 1e-9);
     }
-    // A node on the axis (a lone project apex) gives no reason to rotate — the current yaw stands.
+    // A node on the axis gives no reason to rotate, so the current yaw stands.
     const apex = model.coords.get("atlas")!;
     expect(domeFocusYaw(apex, 1.23)).toBe(1.23);
   });
@@ -428,9 +409,7 @@ describe("dome-view selection reframe and auto-rotate arming", () => {
   });
 
   it("starts a new runtime armed for rotation with no pose movement", () => {
-    // The attract rotation is the default for a screen nobody has touched yet.
-    // Disarming it on intervention (orbit, zoom, pinch, node drag, selection) is
-    // the loop's and the pointer handlers' contract, not this one's.
+    // Disarming on intervention belongs to the loop and pointer handlers, not this contract.
     const runtime = createDomeRuntime(buildDomeModel(NODES));
     expect(runtime.spinArmed).toBe(true);
     expect(runtime.poseTween).toBeNull();
@@ -447,7 +426,7 @@ describe("worldToScreen without a depth term matches the flat projection exactly
       [99999, -99999],
     ]) {
       const p = worldToScreen(camera, 1512, 900, wx, wy);
-      // The same formula written out literally — a change to the function body is caught here.
+      // The formula written out, so a change to the function body is caught.
       expect(p.x).toBe((wx - 37.5) * 0.85 + 1512 / 2);
       expect(p.y).toBe((wy - -18.25) * 0.85 + 900 / 2);
     }
@@ -462,7 +441,6 @@ describe("worldToScreen without a depth term matches the flat projection exactly
   });
 });
 
-/* ── 3D quality layer: shell · meridians · halo · latitude rings ─────────── */
 
 describe("depth halo lets the near occlude the far", () => {
   it("widens when near and converges to 0 when far", () => {
@@ -510,7 +488,7 @@ describe("latitude rings are a coordinate system, not data", () => {
     const runtime = createDomeRuntime(buildDomeModel(nodes));
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
     updateDomeFrame(runtime, nodes, () => 10);
-    // d, c each have one child → radius 0 → no base circle; only the project's ring.
+    // d and c have one child each, radius 0 and no base circle; only the project's ring.
     expect(runtime.rings).toHaveLength(1);
     expect(runtime.rings[0].kind).toBe("domain");
     expect(runtime.rings[0].points).toHaveLength(DOME_RING_SAMPLES);
@@ -530,7 +508,7 @@ describe("latitude rings are a coordinate system, not data", () => {
     updateDomeFrame(runtime, nodes, () => 10);
     const us = runtime.rings[0].points.map((point) => point.u);
     expect(Math.max(...us) - Math.min(...us)).toBeGreaterThan(0.2);
-    // Must be clamped on the same scale as the node frame, or the fog falls differently on the two.
+    // Clamped on the node frame's scale, or the fog falls differently on the two.
     for (const u of us) {
       expect(u).toBeGreaterThanOrEqual(0);
       expect(u).toBeLessThanOrEqual(1);
@@ -571,11 +549,8 @@ describe("tier twist uses one function for hand and program", () => {
   });
 
   /*
-   * `/gate-probe` — **this assertion was red before the third round of
-   * 2026-08-18.** The twist existed only on the hand-drag path; programmatic pose
-   * moves (click-to-reframe, 「Recenter」) rotated the four rings as one
-   * frozen block. The same rotation behaving like a different object depending on
-   * who started it is exactly what reads as "a JS animation".
+   * Program pose moves (reframe, Recenter) must twist the rings too, or the same rotation
+   * looks like a different object depending on who started it.
    */
   it("twists on program motion too, but weaker than by hand", () => {
     const hand = zero();
@@ -613,11 +588,8 @@ describe("dome handle: where a drag rotates and where it pans", () => {
   });
 
   /*
-   * `/gate-probe` — **this assertion is why the rule exists.** Testing against
-   * the bbox makes the four corners count as "on the object": empty black screen
-   * that rotates when you drag it — the exact spot the owner pointed at. Only an
-   * ellipse makes the test match what the eye sees. Reverting to a rectangular
-   * test turns this red.
+   * An ellipse, not the bbox: corners of the bbox are empty screen that would rotate when
+   * dragged. A rectangular test turns this red.
    */
   it("bbox corners are outside the handle, so a drag there pans the map", () => {
     expect(isInsideDomeGrip(bounds, 100, 50)).toBe(false);
@@ -625,7 +597,7 @@ describe("dome handle: where a drag rotates and where it pans", () => {
   });
 
   it("axis edges are inside by the margin, so grabbing the dome rim never pans the map", () => {
-    // With margin 1.08, 100% of the semi-axis is still inside; past 108% is outside.
+    // With margin 1.08 the full semi-axis is inside and past 108% is outside.
     expect(isInsideDomeGrip(bounds, 100, 0)).toBe(true);
     expect(isInsideDomeGrip(bounds, 100 * DOME_GRIP_MARGIN + 1, 0)).toBe(false);
   });
@@ -640,7 +612,6 @@ describe("dome handle: where a drag rotates and where it pans", () => {
   });
 
   it("a flat dome judges vertical by its own radius, not the horizontal one", () => {
-    // A vertically very flat bbox: far horizontally is still inside, slightly off vertically is outside.
     const flat = { minX: -200, minY: -10, maxX: 200, maxY: 10 };
     expect(isInsideDomeGrip(flat, 150, 0)).toBe(true);
     expect(isInsideDomeGrip(flat, 0, 30)).toBe(false);
@@ -681,11 +652,8 @@ describe("entry sweep is the single source of the drawn pose", () => {
   });
 
   /*
-   * `/gate-probe` — simply setting `entryArmed = false` makes the drawn pose jump
-   * in one frame: the screen jumps at the very moment the user touches it, which
-   * breaks the contract this repo keeps consistently across camera, orbit, and
-   * pose moves — a gesture takes over from where things are right now. This
-   * assertion catches that jump.
+   * Clearing `entryArmed` alone makes the drawn pose jump the moment the user touches it;
+   * a gesture takes over from where things are now.
    */
   it("folds the sweep into the pose on touch, keeping the drawn pose byte for byte", () => {
     const model = buildDomeModel(nodes);
@@ -703,7 +671,7 @@ describe("entry sweep is the single source of the drawn pose", () => {
     expect(runtime.entryArmed).toBe(false);
     expect(runtime.drawYaw).toBeCloseTo(beforeYaw, 9);
     expect(runtime.drawPitch).toBeCloseTo(beforePitch, 9);
-    // The target must move too, or smoothing drags back toward the old one.
+    // The target moves too, or smoothing drags back toward the old one.
     expect(runtime.yawTarget).toBeCloseTo(runtime.yaw, 9);
     expect(runtime.pitchTarget).toBeCloseTo(runtime.pitch, 9);
   });
@@ -723,7 +691,7 @@ describe("entry sweep is the single source of the drawn pose", () => {
 
 describe("release projection lands inertia where it means something", () => {
   it("derives the projection distance from the damping constant: velocity times total travel factor", () => {
-    // Σ v·d^t dt = v / (−ln d). Change the damping and this value must follow.
+    // Σ v·d^t dt = v / (−ln d), so the value follows the damping.
     expect(projectOrbitLanding(1, 0.002)).toBeCloseTo(1 + 0.002 * ORBIT_DECAY_TRAVEL_MS, 9);
     expect(projectOrbitLanding(1, 0), "zero velocity stays in place").toBe(1);
   });
@@ -738,15 +706,13 @@ describe("release projection lands inertia where it means something", () => {
     const model = buildDomeModel(nodes);
     const yaws = domeFacingYaws(model);
     expect(yaws).toHaveLength(3);
-    // Check which domain is actually nearest at each candidate yaw — if the
-    // derivation (yaw = −π/2 − θ) is wrong, this turns red.
+    // Checks the nearest domain at each candidate yaw, so a wrong yaw = −π/2 − θ turns red.
     for (const yaw of yaws) {
       let minZ = Infinity;
       for (const id of ["d1", "d2", "d3"]) {
         const p = projectDomeCoord(model, model.coords.get(id)!, yaw, DOME_PITCH_DEFAULT);
         if (p.z < minZ) minZ = p.z;
       }
-      // A node standing front-on must be a full ring radius toward the camera in depth.
       expect(minZ).toBeLessThan(0);
     }
   });
@@ -768,10 +734,8 @@ describe("release projection lands inertia where it means something", () => {
   });
 
   /*
-   * `/gate-probe` — solving τ back out of the release velocity is what makes this
-   * feature velocity-continuous. Revert to a fixed τ and the speed jumps on the
-   * frame the hand lifts. This assertion pins the derivation: over the same
-   * distance, a faster release must give a shorter τ.
+   * Solving τ from the release velocity keeps speed continuous when the hand lifts; a
+   * fixed τ turns this red.
    */
   it("derives tau from the release velocity: a faster release is shorter", () => {
     const slow = orbitSnapTauMs(0.2, 0.0005);
@@ -782,23 +746,21 @@ describe("release projection lands inertia where it means something", () => {
 
   it("keeps the arrival threshold below 1px and above 0, since exponential approach never arrives", () => {
     expect(ORBIT_SNAP_ARRIVE_RAD).toBeGreaterThan(0);
-    // 1px on the outer ring ≈ 0.008rad (the measured conversion in the doc-block).
+    // 1px on the outer ring ≈ 0.008 rad (the conversion in the constant's doc-block).
     expect(ORBIT_SNAP_ARRIVE_RAD).toBeLessThan(0.008);
   });
 
   it("clamps tau to its range, preventing both a teleport and a spin that never stops", () => {
     expect(orbitSnapTauMs(0.001, 1)).toBe(ORBIT_SNAP_TAU_MIN_MS);
     expect(orbitSnapTauMs(10, 0.00001)).toBe(ORBIT_SNAP_TAU_MAX_MS);
-    // With the opposite sign (target behind the direction of travel) the derivation is negative and falls to the cap.
+    // A target behind the direction of travel derives negative and falls to the cap.
     expect(orbitSnapTauMs(-0.2, 0.002)).toBe(ORBIT_SNAP_TAU_MAX_MS);
     expect(orbitSnapTauMs(0.2, 0)).toBe(ORBIT_SNAP_TAU_MAX_MS);
   });
 });
 
-/* ── Placement basis: containment (dome) vs connection (cloud) ───────────── */
 
 describe("coupling cloud lets relations decide positions", () => {
-  /** Two groups linked only internally, joined to each other by a single bridge. */
   const nodes: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "a1", kind: "domain", x: 10, y: 0, parentId: "p" },
@@ -829,10 +791,8 @@ describe("coupling cloud lets relations decide positions", () => {
   });
 
   /*
-   * `/gate-probe` — **the first implementation died here.** Relaxing only the
-   * bearing while pinning tier height drew the owner's verdict *"What I wanted was a completely different shape."* The cloud
-   * only reads differently from the dome if connection decides height as well.
-   * Pin the tiers again and this assertion turns red.
+   * The cloud reads as a different shape only when connection decides height too; pinning
+   * tier heights again turns this red.
    */
   it("releases height from the kind plane, where the shape departs from the dome", () => {
     const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });
@@ -918,7 +878,6 @@ describe("coupling cloud lets relations decide positions", () => {
 });
 
 describe("cone tree places children on a circle directly below the parent", () => {
-  /** 1 project · 3 domains of unequal size · capabilities · elements. */
   const tree: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "d-big", kind: "domain", x: 0, y: 0, parentId: "p" },
@@ -940,10 +899,9 @@ describe("cone tree places children on a circle directly below the parent", () =
       if (n.parentId === null || n.parentId === "nowhere") continue;
       const parent = m.coords.get(n.parentId)!;
       const at = m.coords.get(n.id)!;
-      // Never farther from its parent than the widest base times the stagger —
-      // except a domain, which rests on the project's ring.
+      // Within the widest base times the stagger of the parent, except a domain on the project ring.
       expect(horizontal(at, parent)).toBeLessThanOrEqual((n.kind === "domain" ? DOME_PLANE.domain.r : 64 * 1.12) + 1e-9);
-      // Height is still one value per kind — the in-plane drag contract.
+      // Height stays one value per kind, the in-plane drag contract.
       expect(at.py).toBe(DOME_PLANE[n.kind].y);
     }
   });
@@ -960,9 +918,7 @@ describe("cone tree places children on a circle directly below the parent", () =
     const domainRing = m.circles.filter((c) => c.kind === "domain");
     expect(domainRing).toHaveLength(1);
     expect(domainRing[0].r).toBe(DOME_PLANE.domain.r);
-    // d-big (6 children) and d-mid (3 children) get capability bases; d-one does not.
     expect(m.circles.filter((c) => c.kind === "capability")).toHaveLength(2);
-    // c-big-0 (9 elements) gets an element base; c-one does not.
     const elementBases = m.circles.filter((c) => c.kind === "element");
     expect(elementBases).toHaveLength(1);
     const cBig0 = m.coords.get("c-big-0")!;
@@ -982,7 +938,7 @@ describe("cone tree places children on a circle directly below the parent", () =
       const d = Math.abs(a - b) % (Math.PI * 2);
       return d > Math.PI ? Math.PI * 2 - d : d;
     };
-    // Sorted by id: d-big, d-mid, d-one. The big domain's neighbours sit farther from it.
+    // Sorted by id: d-big, d-mid, d-one; the big domain's neighbours sit farther from it.
     expect(gap(bearing("d-big"), bearing("d-mid"))).toBeGreaterThan(gap(bearing("d-mid"), bearing("d-one")));
   });
 
@@ -1065,7 +1021,7 @@ describe("layout morph moves nodes instead of cutting", () => {
     expect(treeRings).toBeGreaterThan(0);
     beginDomeMorph(runtime, buildDomeModel(nodes, { arrangement: "coupling", edges }), 1000, 750);
     updateDomeFrame(runtime, nodes, () => 10, 1000 + 375);
-    // The cloud has no rings, so every ring drawn now is a fading tree ring.
+    // The cloud has no rings, so every ring drawn is a fading tree ring.
     expect(runtime.rings).toHaveLength(treeRings);
     for (const ring of runtime.rings) {
       expect(ring.a).toBeGreaterThan(0);
@@ -1137,14 +1093,12 @@ describe("cloud relaxation slices give the same bytes when cut inside the pair l
       calls += 1;
       if (calls > 100000) throw new Error("slicing never finishes");
     }
-    // A 0.02 ms budget has to pause inside the pair loop many times.
     expect(calls).toBeGreaterThan(10);
     for (const [id, coord] of whole.coords) expect(build.model.coords.get(id)).toEqual(coord);
   });
 });
 
 describe("Strata — four labelled planes, and drops that cannot cross (2026-09-06)", () => {
-  /** 1 project · 2 domains · 3 capabilities · 2 elements · 1 element with no parent in the model. */
   const tree: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "d-a", kind: "domain", x: -200, y: 0, parentId: "p" },
@@ -1177,14 +1131,12 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
     const d = bearing(coords.get("d")!);
     expect(bearing(coords.get("c")!)).toBeCloseTo(d, 12);
     expect(bearing(coords.get("e")!)).toBeCloseTo(d, 12);
-    // A lone project is the axis the structure stands on.
     expect(radius(coords.get("p")!)).toBe(0);
   });
 
   it("keeps a whole subtree inside its own arc, so two domains never share a bearing band", () => {
     const { coords } = buildStrataTargets(tree);
-    // Bearings measured from where the walk starts (−π/2), so an arc that
-    // straddles ±π is still one interval rather than two.
+    // Bearings from the walk start (−π/2), so an arc straddling ±π is one interval.
     const arc = (id: string) => (bearing(coords.get(id)!) + Math.PI / 2 + Math.PI * 4) % (Math.PI * 2);
     const spanOf = (rootId: string) => {
       const seen: number[] = [];
@@ -1216,7 +1168,7 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
       for (let j = i + 1; j < drops.length; j += 1) {
         const s = drops[i];
         const t = drops[j];
-        // Drops that share a node meet at it by construction; meeting is not crossing.
+        // Drops sharing a node meet there by construction; meeting is not crossing.
         if (s.ids.some((id) => t.ids.includes(id))) continue;
         const d1 = side(s.ax, s.az, s.bx, s.bz, t.ax, t.az);
         const d2 = side(s.ax, s.az, s.bx, s.bz, t.bx, t.bz);
@@ -1244,7 +1196,7 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
       expect(circle.cz).toBe(0);
       expect(circle.y).toBe(DOME_PLANE[circle.kind].y);
     }
-    expect(circles[0].r).toBeGreaterThan(0); // the project plane needs a rim the apex never had
+    expect(circles[0].r).toBeGreaterThan(0);
     const noElements = buildStrataTargets(tree.filter((n) => n.kind !== "element"));
     expect(noElements.circles.map((c) => c.kind)).toEqual(["project", "domain", "capability"]);
   });
@@ -1278,12 +1230,9 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
 
   it("orders siblings by the barycenter of their relations, so dependency arcs stop crossing", () => {
     /*
-     * Two domains, two capabilities each, and one relation from each capability
-     * on the left to its counterpart on the right. In id order the two arcs
-     * interleave and cross exactly once; the barycenter sweep swaps the left
-     * pair inside its own sector — it never leaves that sector — and the arcs
-     * nest instead. This is the one-sided crossing reduction of the Sugiyama
-     * framework with a circular key (Bachmaier, IEEE TVCG 13(3), 2007).
+     * In id order the two arcs cross once; the barycenter sweep swaps the left pair within
+     * its sector so they nest (circular one-sided crossing reduction, Bachmaier, IEEE TVCG
+     * 13(3), 2007).
      */
     const pair: DomeInputNode[] = [
       { id: "p", kind: "project", x: 0, y: 0, parentId: null },
@@ -1298,7 +1247,6 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
       { sourceId: "c-a1", targetId: "c-b1" },
       { sourceId: "c-a2", targetId: "c-b2" },
     ];
-    /** Do the two relation chords cross, seen from above? */
     const crosses = (coords: ReadonlyMap<string, DomeCoord>): boolean => {
       const side = (p: DomeCoord, q: DomeCoord, r: DomeCoord) =>
         Math.sign((q.px - p.px) * (r.pz - p.pz) - (q.pz - p.pz) * (r.px - p.px));
@@ -1310,8 +1258,6 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
     };
     expect(crosses(buildStrataTargets(pair).coords), "the id order is the crossing one").toBe(true);
     expect(crosses(buildStrataTargets(pair, relations).coords)).toBe(false);
-    // …and the reorder stayed inside the sector: both capabilities are still on
-    // their own domain's side of the disc.
     const { coords } = buildStrataTargets(pair, relations);
     const arc = (id: string) =>
       (Math.atan2(coords.get(id)!.pz, coords.get(id)!.px) + Math.PI / 2 + Math.PI * 4) % (Math.PI * 2);
@@ -1322,8 +1268,7 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
 
   it("gives its plane rings their own base opacity, and leaves the cone's bases on theirs", () => {
     expect(domeRingAlphaFor("strata")).toBe(DOME_STRATA_RING_ALPHA);
-    // Below 1: at full ink the four ellipses read as the subject rather than as
-    // the stage (measured 2026-09-06 — see the constant's doc-block).
+    // At full ink the ellipses read as the subject rather than the stage.
     expect(DOME_STRATA_RING_ALPHA).toBeLessThan(1);
     expect(domeRingAlphaFor("ownership")).toBe(DOME_RING_ALPHA);
     expect(domeRingAlphaFor("coupling")).toBe(DOME_RING_ALPHA);
@@ -1337,7 +1282,7 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
     const named = runtime.rings.filter((r) => r.label !== null);
     expect(named.map((r) => r.kind)).toEqual(["project", "domain", "capability", "element"]);
     for (const ring of named) {
-      // The anchor is the ring's screen-rightmost sample — stable under rotation.
+      // The screen-rightmost sample, stable under rotation.
       expect(ring.label!.wx).toBe(Math.max(...ring.points.map((p) => p.wx)));
     }
     const coneRuntime = createDomeRuntime(buildDomeModel(tree, { arrangement: "ownership" }));
@@ -1349,10 +1294,8 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
 
 describe("domeEdgeFogAlpha x domeEdgeWidthFactor floors the depth ink of relation lines", () => {
   /**
-   * The floor the two functions are tuned to, spelled out here rather than
-   * imported: 0.62 alpha x 0.72 width. The module keeps both numbers private, so
-   * this is the one place that states what they are supposed to multiply to, and
-   * it fails the moment either moves without the other.
+   * The floor the two private factors multiply to (0.62 alpha x 0.72 width), stated here
+   * so moving either without the other fails.
    */
   const INK_FLOOR = 0.4464;
   const ink = (u: number) => domeEdgeFogAlpha(u) * domeEdgeWidthFactor(u);
@@ -1368,19 +1311,15 @@ describe("domeEdgeFogAlpha x domeEdgeWidthFactor floors the depth ink of relatio
     for (let u = 0; u <= 1.0001; u += 0.05) {
       expect(ink(u)).toBeGreaterThanOrEqual(INK_FLOOR - 1e-9);
     }
-    // Before the floor the far end drew at 0.09 x 0.35 = 3.5% of the near end's
-    // ink, and the owner's report was that the relations were invisible there.
+    // Without the floor the far end drew 3.5% of the near ink, invisible.
     expect(domeFogAlpha(1) * domeLineWidthFactor(1)).toBeLessThan(0.04);
     expect(ink(1) / ink(0)).toBeGreaterThan(0.4);
   });
 
   it("decreases ink monotonically with depth and never exceeds the near value", () => {
     /*
-     * The invariant is on the **product**, not on either factor. Past the
-     * crossover the two trade against each other at a fixed total — the alpha
-     * rises exactly as fast as the width falls — so asserting a falling alpha
-     * would be asserting the wrong thing, while a rising product would mean a far
-     * line drawn stronger than a near one.
+     * The invariant is on the product: past the crossover alpha rises as width falls, and a
+     * rising product would draw a far line stronger than a near one.
      */
     let previous = Infinity;
     for (let u = 0; u <= 1.0001; u += 0.05) {
@@ -1390,13 +1329,11 @@ describe("domeEdgeFogAlpha x domeEdgeWidthFactor floors the depth ink of relatio
       expect(domeEdgeFogAlpha(u)).toBeLessThanOrEqual(1);
       previous = value;
     }
-    // The width keeps a real falloff of its own rather than going flat.
     expect(domeEdgeWidthFactor(1)).toBeLessThan(domeEdgeWidthFactor(0));
   });
 
   it("leaves the node and ring ramps alone; the floor is for relation lines only", () => {
-    // `domeFogAlpha` and `domeLineWidthFactor` are what the node fill, the rim and
-    // the plane rings read; only the edge pass reads the floored pair.
+    // Node fill, rim and plane rings read the raw pair; only the edge pass reads the floored one.
     expect(domeFogAlpha(1)).toBeCloseTo(0.09, 9);
     expect(domeLineWidthFactor(1)).toBeCloseTo(0.35, 9);
     expect(domeFogAlpha(0.8)).toBeLessThan(domeEdgeFogAlpha(0.8));
@@ -1404,11 +1341,8 @@ describe("domeEdgeFogAlpha x domeEdgeWidthFactor floors the depth ink of relatio
 });
 
 /**
- * **The resting line's device-pixel width floor.** The ink floor above holds
- * `alpha × width factor`, and that product only reaches the eye while the stroke
- * covers a device pixel; below that the rasteriser spreads it over two rows and
- * the peak collapses. So the floor is a device length, and the caller converts it
- * with the ratio it is actually rasterising at.
+ * The floor product reaches the eye only while the stroke covers a device pixel, so the
+ * caller converts this device length at its rasterising ratio.
  */
 describe("domeEdgeMinWidthPx", () => {
   it("asks for one device pixel, whatever the ratio", () => {
@@ -1429,16 +1363,14 @@ describe("domeEdgeMinWidthPx", () => {
 });
 
 /**
- * **Would the chrome on the canvas's edge cover a node?** (2026-09-26) — asked by the 3D fit
- * before it lets a drawing use the utility rail's column. The answer is read off the same
- * projection the fit frames, so a node the rect would cover is found wherever it projects.
+ * Asked by the 3D fit before it uses the utility rail's column, on the projection the
+ * fit frames.
  */
 describe("domeReachesRect", () => {
   const model = buildDomeModel(NODES);
   const yaw = 0.55;
   const pitch = DOME_PITCH_DEFAULT;
   const bounds = domeWorldBounds(model, yaw, pitch)!;
-  // A camera that puts the drawing's right extreme at x 900 on a 1000-wide canvas.
   const tscale = 1;
   const target = { tx: bounds.maxX - 400, ty: (bounds.minY + bounds.maxY) / 2, tscale };
 
@@ -1450,7 +1382,6 @@ describe("domeReachesRect", () => {
   it("reports a column the drawing stays out of as free", () => {
     const column = { left: 920, right: 1000, top: 0, bottom: 800 };
     expect(domeReachesRect(model, yaw, pitch, target, 1000, 800, column, 0)).toBe(false);
-    // …until a node's disc is counted in.
     expect(domeReachesRect(model, yaw, pitch, target, 1000, 800, column, 24)).toBe(true);
   });
 

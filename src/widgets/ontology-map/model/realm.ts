@@ -1,24 +1,8 @@
 /**
- * Realm — subtree extraction, depth-remapped re-root layout, and warding-circle
- * geometry.
- *
- * Entering a realm treats the selected node as a temporary root, keeps only its
- * containment subtree, and turns the map into that node's own world. This module
- * holds the **pure geometry** of that switch. Transition motion belongs to
- * `model/realm-transition.ts`; camera and draw wiring to
- * `ui/use-topology-loop.ts`.
- *
- * Why the depth mapping ignores kind: whether the realm root is a capability or
- * a domain, inside that node's world the root *is* the centre and its immediate
- * children *are* the domain ring — otherwise it does not read as "that node's
- * map". So rings are chosen by **depth from the root** (0 → project ring,
- * 1 → domain, 2 → capability, 3+ → element), not by render kind. Render kind
- * (color, shape) is untouched; this module only produces coordinates.
- *
- * Deterministic: the same input (same `childrenByParent` order) always yields
- * the same subtree, coordinates, and radii (`realm.test.ts`). It reuses
- * `computeConcentricLayout` and so inherits that module's determinism — fixed
- * iterations, fixed order, seedless tie-breaks.
+ * Pure realm geometry: subtree extraction, re-rooted layout and ward radius. Rings follow
+ * depth from the root, not kind (0 origin, 1 domain, 2 capability, 3+ element), so any
+ * root reads as that node's own map; render kind is untouched. Deterministic through
+ * `computeConcentricLayout`. Motion is `model/realm-transition.ts`.
  */
 
 import {
@@ -31,21 +15,17 @@ import {
 } from "./layout";
 
 export interface RealmSubtree {
-  /** Realm root id — the node that becomes the temporary origin. */
   rootId: string;
-  /** Every id in the subtree including the root — the containment transitive closure. */
+  /** The containment transitive closure, root included. */
   memberIds: ReadonlySet<string>;
-  /** Each member's depth from the root (root = 0). */
+  /** root = 0 */
   depthById: ReadonlyMap<string, number>;
-  /** Each non-root member's containment parent id (the root has none). */
   parentById: ReadonlyMap<string, string>;
 }
 
 /**
- * BFS from the root over `childrenByParent` (contains parent → direct children)
- * to collect the transitive closure. `depthById` doubles as the visited mark,
- * which breaks cycles safely. Child order follows input order, so it is
- * deterministic.
+ * BFS over `childrenByParent`, O(N + E); `depthById` doubles as the visited mark, which
+ * breaks cycles. Child order follows input order.
  */
 export function extractRealmSubtree(
   rootId: string,
@@ -60,7 +40,7 @@ export function extractRealmSubtree(
     head += 1;
     const depth = depthById.get(parent) ?? 0;
     for (const child of childrenByParent.get(parent) ?? []) {
-      if (depthById.has(child)) continue; // already seen — cycle or re-visit
+      if (depthById.has(child)) continue; // already seen: a cycle or a revisit
       depthById.set(child, depth + 1);
       parentById.set(child, parent);
       queue.push(child);
@@ -69,12 +49,7 @@ export function extractRealmSubtree(
   return { rootId, memberIds: new Set(depthById.keys()), depthById, parentById };
 }
 
-/**
- * Depth → layout kind. Rings are chosen by depth from the root, not by render
- * kind: 0 = origin, 1 = domain ring, 2 = capability ring, 3+ = element ring.
- * Anything deeper than 3 shares the element ring and still stays separated,
- * because the fan is taken around each parent.
- */
+/** Deeper than 3 shares the element ring and stays separated, since fans form per parent. */
 export function realmLayoutKind(depth: number): LayoutNodeKind {
   if (depth <= 0) return "project";
   if (depth === 1) return "domain";
@@ -82,10 +57,10 @@ export function realmLayoutKind(depth: number): LayoutNodeKind {
   return "element";
 }
 
-/** The depth at which realm rings match the global spine; depth 3+ uses the spine rings unchanged. */
+/** From this depth realm rings equal the global spine rings. */
 const REALM_FILL_FULL_DEPTH = 3;
 
-/** Deepest level in the subtree (0 when only the root is present). Pure. */
+/** 0 when only the root is present. */
 export function realmMaxDepth(subtree: RealmSubtree): number {
   let max = 0;
   for (const d of subtree.depthById.values()) if (d > max) max = d;
@@ -93,11 +68,8 @@ export function realmMaxDepth(subtree: RealmSubtree): number {
 }
 
 /**
- * Depth-derived realm rings — the shallower the subtree, the further in the
- * depth-1 ring is pulled, which removes the empty annulus. The factor
- * `fill(min(maxDepth, 3)) / base.domain` is applied to all three rings so their
- * proportions are preserved. At maxDepth ≥ 3 the factor is 1, making the
- * coordinates byte-identical to before: no regression for deep realms.
+ * A shallower subtree pulls the depth-1 ring in, removing the empty annulus. One factor
+ * scales all three rings; at maxDepth ≥ 3 it is 1 and the coordinates are unchanged.
  */
 export function realmRingsForDepth(
   maxDepth: number,
@@ -111,30 +83,15 @@ export function realmRingsForDepth(
 }
 
 /**
- * At or below this many depth-1 children, the whole layout is rotated −90° so
- * the children sit on the **horizontal** axis.
- *
- * Dividing TAU evenly reads as "points that happen to be inside a circle" at
- * N = 1 (a single vertex on top) and N = 2 (a vertical dumbbell), and the
- * vertical edge runs straight through the child labels — owner report
- * 2026-07-23, reproduced on a shallow capability realm. The horizontal
- * composition aligns with the labels (horizontal text) and the reading
- * direction, and leaves the bottom of the circle free for the warding caption.
- * From N ≥ 3 the even division already reads as a deliberate polygon (triangle,
- * diamond), so it is left alone: zero coordinate regression for deep realms.
+ * At or below this many depth-1 children the layout rotates −90° onto the horizontal axis:
+ * one or two children on a vertical line read as stray points and cross their labels. From
+ * three the even division already reads as a polygon.
  */
 const REALM_HORIZON_MAX_DEPTH1 = 2;
 
 /**
- * Realm-local coordinates: run the subtree through `computeConcentricLayout` by
- * depth, producing a re-rooted layout with the root at the origin. Render kind
- * is ignored, so expanding an element as the root still puts its direct children
- * on the domain ring.
- *
- * A shallow fan — depth-1 children at or below `REALM_HORIZON_MAX_DEPTH1` —
- * rotates every non-root point −90° about the origin ((x,y) → (y,−x)), putting
- * the first child left and the second right. Being a rigid rotation, the
- * relative geometry (fan, separation, warding radius) is preserved exactly.
+ * A shallow fan rotates every non-root point −90° ((x,y) → (y,−x)), first child left; a
+ * rigid rotation, so fan, separation and ward radius are preserved.
  */
 export function computeRealmLayout(
   subtree: RealmSubtree,
@@ -161,11 +118,7 @@ export function computeRealmLayout(
   return new Map(points.map((p) => [p.id, p]));
 }
 
-/**
- * Warding radius — distance to the realm node furthest from the centre, plus a
- * margin. Pure: same points and margin, same radius. With no points (root only)
- * just the margin remains, giving the smallest circle that wraps the root.
- */
+/** With no points just the margin remains, the smallest circle round the root. */
 export function computeWardingRadius(
   points: readonly { x: number; y: number }[],
   center: { x: number; y: number },
@@ -179,23 +132,15 @@ export function computeWardingRadius(
   return maxDist + margin;
 }
 
-/** Visible-member warding margin, as a fraction of the content radius (the furthest edge reach). */
+/** Of the content radius (the furthest edge reach). */
 export const WARDING_VISIBLE_MARGIN_RATIO = 0.1;
-/** Lower bound on that margin (world units) — wraps at least this much even when only the root is visible. */
+/** Wraps at least this much even when only the root is visible. */
 export const WARDING_VISIBLE_MIN_MARGIN = 40;
 
 /**
- * Warding radius computed from **only the members actually drawn**.
- *
- * `computeWardingRadius` also counted children folded away by the density
- * threshold — the phyllotaxis disc coordinates under a parent with more than 12
- * children — producing a circle far larger than the visible world: content
- * filling ~40% of the screen inside a warding circle that ran off it. This
- * function takes only the reaches of visible members, which the caller has
- * already filtered, and adds a margin proportional to the content radius (never
- * below the lower bound). A reach is `hypot(node - center) + nodeRadius`, so the
- * circle never clips the body of the outermost node. With no points (root only)
- * just the lower-bound margin remains. Pure.
+ * Only drawn members count: folded children would give a ward far larger than the visible
+ * world. A reach is `hypot(node - center) + nodeRadius`, so the outermost body is never
+ * clipped.
  */
 export function computeVisibleWardingRadius(reaches: readonly number[]): number {
   let outer = 0;
@@ -211,11 +156,8 @@ export interface RealmBounds {
 }
 
 /**
- * Bounding box of the visible members (plus a margin). It exists so the camera
- * fit is derived from the **same visible-member basis** as the warding radius,
- * which is what removes the "small content inside a huge circle" mismatch. With
- * no points — the degenerate root-only case — `fallback` is returned unchanged.
- * Pure.
+ * The camera fit uses the same visible-member basis as the ward radius, so small content
+ * never sits in a huge circle. With no points `fallback` is returned unchanged.
  */
 export function computeVisibleBounds(
   points: readonly { x: number; y: number }[],

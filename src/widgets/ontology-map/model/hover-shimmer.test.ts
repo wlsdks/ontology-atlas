@@ -47,7 +47,7 @@ describe("computeHoverShimmer", () => {
   });
 
   it("now=0 gives offset 0 (phase start)", () => {
-    // -0*perimeter === -0, and Object.is treats -0 !== 0, so use toBeCloseTo.
+    // -0 * perimeter is -0, which Object.is tells apart from 0.
     expect(computeHoverShimmer(0, PERIOD, PERIMETER, 0.16).offset).toBeCloseTo(0, 9);
   });
 

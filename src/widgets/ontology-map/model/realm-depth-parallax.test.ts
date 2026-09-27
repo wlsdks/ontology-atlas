@@ -28,7 +28,6 @@ describe("depthParallaxFactorForDepth", () => {
 describe("stepDepthParallax", () => {
   it("is always 0 at factor 0 (the depth <= 1 band)", () => {
     const next = stepDepthParallax({ x: 5, y: -3 }, { x: 100, y: 100 }, 0, 1 / 60);
-    // The previous offset only decays; nothing new is charged.
     expect(next.x).toBeCloseTo(5 * Math.exp(-(1 / 60) / REALM_PARALLAX_TAU_S));
     expect(next.y).toBeCloseTo(-3 * Math.exp(-(1 / 60) / REALM_PARALLAX_TAU_S));
   });
@@ -44,21 +43,19 @@ describe("stepDepthParallax", () => {
     for (let i = 0; i < 120; i += 1) {
       off = stepDepthParallax(off, { x: 0, y: 0 }, 0.06, 1 / 60);
     }
-    // After 2 s (beyond the grace period) it is effectively 0.
     expect(Math.hypot(off.x, off.y)).toBeLessThan(0.001);
   });
 
   it("converges a constant-speed pan to a small steady lag near factor, v and tau", () => {
     const dt = 1 / 60;
-    const vWorldPerFrame = 30; // world movement per frame
+    const vWorldPerFrame = 30;
     let off = ZERO_PARALLAX;
     for (let i = 0; i < 600; i += 1) {
       off = stepDepthParallax(off, { x: vWorldPerFrame, y: 0 }, 0.06, dt);
     }
     const velWorldPerSec = vWorldPerFrame / dt;
     const expected = 0.06 * velWorldPerSec * REALM_PARALLAX_TAU_S;
-    // A discrete approximation, so passing means the same order of magnitude (±20%),
-    // not an exact value.
+    // A discrete approximation, so within 20% is the same order of magnitude.
     expect(off.x).toBeGreaterThan(expected * 0.8);
     expect(off.x).toBeLessThan(expected * 1.2);
   });

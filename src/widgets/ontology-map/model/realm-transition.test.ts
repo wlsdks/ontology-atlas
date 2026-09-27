@@ -134,9 +134,7 @@ describe("realmOutsidePosition (gravity fling)", () => {
   });
 
   it("uses the fallback angle when the node sits exactly on the center", () => {
-    // reduced-motion (duration 0) flings straight along the fallback angle with
-    // no curl — a coincident node still leaves the center in a deterministic
-    // direction (straight up for PI/2) instead of collapsing to NaN.
+    // A coincident node leaves along the fallback angle (straight up for PI/2), never NaN.
     const p = realmOutsidePosition({ x: 0, y: 0 }, { x: 0, y: 0 }, 5, { duration: 0, fallbackAngle: Math.PI / 2 });
     expect(p.x).toBeCloseTo(0);
     expect(p.y).toBeGreaterThan(0);
@@ -183,8 +181,7 @@ describe("realmDepthClarity (depth clarity)", () => {
   it("lowers alpha with depth and keeps 1.0 at depth <= 1", () => {
     expect(realmDepthClarityAlpha(0)).toBe(1);
     expect(realmDepthClarityAlpha(1)).toBe(1);
-    // Raised from 0.92/0.84 on 2026-08-18: 0.84 composited with the leaf ink
-    // gave 2.58:1, under the WCAG 1.4.11 floor of 3:1. Safe minimum is 0.955.
+    // 0.84 composited with the leaf ink gave 2.58:1, under the 3:1 WCAG 1.4.11 floor; the minimum is 0.955.
     expect(realmDepthClarityAlpha(2)).toBeCloseTo(0.98);
     expect(realmDepthClarityAlpha(3)).toBeCloseTo(0.96);
     expect(realmDepthClarityAlpha(7)).toBe(realmDepthClarityAlpha(3));
@@ -219,7 +216,6 @@ describe("realmExitFlipDelayFor (exit in reverse depth order, deepest first)", (
   it("runs opposite to the entry delay, decreasing as depth grows", () => {
     expect(realmExitFlipDelayFor(3)).toBeLessThan(realmExitFlipDelayFor(2));
     expect(realmExitFlipDelayFor(2)).toBeLessThan(realmExitFlipDelayFor(1));
-    // Entry runs the other way: the deeper the layer, the later it starts.
     expect(realmInsideFlipDelayFor(1)).toBeLessThan(realmInsideFlipDelayFor(3));
   });
 });
@@ -286,7 +282,7 @@ describe("realmOutsideReturnPosition (fling played in reverse)", () => {
   it("matches the fling end at elapsed 0 and lands exactly home at duration (no jump)", () => {
     const from = { x: 120, y: -40 };
     const center = { x: 0, y: 0 };
-    // Reproduce where the entry fling ended (e = 1 at the fling duration).
+    // Where the entry fling ended (e = 1 at the fling duration).
     const flungEnd = realmOutsidePosition(from, center, REALM_OUTSIDE_FLING_MS);
     const start = realmOutsideReturnPosition(from, center, 0);
     expect(start.x).toBeCloseTo(flungEnd.x, 3);
