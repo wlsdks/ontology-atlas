@@ -4,10 +4,8 @@ import { analyzeAgentFiles } from '@/entities/agent-files';
 import { buildSkillParityModel } from './skill-parity';
 
 /**
- * These tests **do not build a fake analysis object.** They feed real files through the real
- * `analyzeAgentFiles` and run all the way through the fold — so the folding function breaks the
- * moment it diverges from the analysis's actual output shape. A hand-built fixture would hide that
- * divergence forever.
+ * Real files through the real `analyzeAgentFiles`, so the fold breaks when the analysis shape
+ * changes; a hand-built fixture would hide that.
  */
 function analyze(files: Array<{ path: string; content: string }>) {
   return analyzeAgentFiles({
@@ -37,10 +35,6 @@ describe('buildSkillParityModel', () => {
     expect(model.disagreeing).toBe(0);
   });
 
-  /**
-   * The exact shape of the measured defect — a discipline learned yesterday exists only in the
-   * `.claude` copy, and Codex judges without it.
-   */
   it('names the diverged file, not just the skill', () => {
     const model = buildSkillParityModel(
       analyze([
@@ -56,12 +50,7 @@ describe('buildSkillParityModel', () => {
     expect(model.disagreeing).toBe(1);
   });
 
-  /**
-   * **With only one tree present, the parity question does not arise.** `.agents/skills` being
-   * absent means "Codex was never set up", not that copies diverged. Drawing a row per skill turns
-   * **one fact into eleven rows**, making a vault where nothing is wrong look full of problems. The
-   * CLI answers this case `not-applicable` too, and a contract test caught the mismatch.
-   */
+  /** One tree present is setup, not drift, matching the CLI's `not-applicable`. */
   it('says nothing when only one tree exists — that is setup, not drift', () => {
     const model = buildSkillParityModel(
       analyze([
@@ -87,10 +76,7 @@ describe('buildSkillParityModel', () => {
     expect(model.rows.find((r) => r.name === 'shared')?.verdict).toBe('agreed');
   });
 
-  /**
-   * The skill folder exists on both sides but **one file inside it** is one-sided. Judging by
-   * folder alone would miss this as `agreed`.
-   */
+  /** Judging by folder alone would call this `agreed`. */
   it('flags a per-file gap inside a skill that exists on both sides', () => {
     const model = buildSkillParityModel(
       analyze([

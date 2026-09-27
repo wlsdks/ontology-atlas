@@ -7,19 +7,9 @@ import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 
 /**
- * The review queue for the currently loaded folder.
- *
- * **Why it is a hook with state rather than a `useMemo`.** The drift half of the
- * queue hashes a document's meaning, and the browser's only hash
- * (`crypto.subtle`) is asynchronous. That cost is paid for approved nodes alone —
- * a raised node needs no body, and an unmarked node is never counted — so the
- * work is bounded by how much a person actually reviewed rather than by vault
- * size.
- *
- * **Why the body is parsed here.** Both sources hand over a whole `.md` file:
- * the static source from its bundled content map, the local folder from a file
- * handle. The digest is over the body a reader sees, so the frontmatter is
- * stripped with the same parser the manifest was built with.
+ * The review queue for the loaded folder. A stateful hook because drift hashing uses the
+ * asynchronous `crypto.subtle`; only approved nodes are hashed, so cost follows what a person
+ * reviewed, not vault size.
  */
 export function useReviewQueue({
   docs,
@@ -27,9 +17,8 @@ export function useReviewQueue({
   bundledContent,
 }: {
   docs: VaultDoc[];
-  /** Local folder reader. Absent for the bundled source. */
+  /** Absent for the bundled source. */
   getDocContent: ((slug: string) => Promise<string>) | undefined;
-  /** Bundled source content, keyed by slug. */
   bundledContent: Record<string, string> | undefined;
 }): ReviewQueueRow[] {
   const [rows, setRows] = useState<ReviewQueueRow[]>([]);
@@ -42,14 +31,10 @@ export function useReviewQueue({
         const raw = getDocContent
           ? await getDocContent(slug).catch(() => null)
           : (bundledContent?.[slug] ?? null);
-        // A file that cannot be read is not evidence that its node drifted, so
-        // `buildReviewQueue` drops the row on null rather than reporting one.
+        // An unreadable file is not evidence of drift, so `buildReviewQueue` drops the row on null.
         return raw === null ? null : parseFrontmatter(raw).body;
       });
-      // The rest of this sidebar draws `display_ko` / `display_en`; a queue that
-      // showed the canonical `title` instead put two names for one node on one
-      // screen. Resolved here rather than in the entity, because which name a
-      // reader gets is a property of who is reading.
+      // Show the reader's `display_<locale>` name as the rest of the sidebar does.
       const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
       const localized = next.map((row) => {
         const doc = bySlug.get(row.slug);

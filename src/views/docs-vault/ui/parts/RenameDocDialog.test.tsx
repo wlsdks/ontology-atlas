@@ -6,10 +6,6 @@ import koMessages from "../../../../../messages/ko.json";
 import { VaultConflictError } from "@/entities/vault-session";
 import { RenameDocDialog, type RenameDocTarget } from "./RenameDocDialog";
 
-/*
- * Map-edit QA D9 (2026-09-26): renaming was a `window.prompt` asking for a raw slug path. The
- * dialog asks for a name, shows the address it becomes, and refuses in words.
- */
 const target: RenameDocTarget = {
   slug: "capabilities/mcp-tool-server",
   title: "MCP 도구 서버",
@@ -37,7 +33,6 @@ describe("RenameDocDialog", () => {
     const { input } = renderDialog();
     expect(input.value).toBe("mcp-tool-server");
     expect(screen.getByTestId("docs-rename-referrers")).toHaveTextContent("4개");
-    // Nothing to do yet: the unchanged name cannot be confirmed.
     expect(screen.getByTestId("docs-rename-confirm")).toBeDisabled();
   });
 

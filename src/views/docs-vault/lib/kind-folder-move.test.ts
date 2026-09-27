@@ -23,7 +23,6 @@ describe("kindFolderAddress", () => {
 });
 
 describe("reclassifyMoveTarget", () => {
-  // Map-edit QA D8 (2026-09-26): the quick patch changed `kind:` and left the file behind.
   it("moves a document filed by its old kind into its new kind's folder", () => {
     expect(reclassifyMoveTarget("capabilities/agent-work-visibility", "capability", "element")).toBe(
       "elements/agent-work-visibility",

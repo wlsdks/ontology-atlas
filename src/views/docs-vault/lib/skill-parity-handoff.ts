@@ -1,30 +1,11 @@
 import type { SkillParityRow } from './skill-parity';
 
 /**
- * **The sentence that hands diverged copies to an agent.**
- *
- * **Why not a shell command.** Two reasons, both already learned here by measurement.
- *
- * **① A command that will not run is a lie, not guidance.** The `ontology-atlas <cmd>` dialect is
- * not in the registry and 404s; the live channels are the app bundle and a source checkout only
- * (`.claude/rules/surfaces.md`). But the vault root where the skill trees live and the Atlas CLI
- * checkout are **generally different paths** — we do not know where the CLI is on this machine.
- * Writing an unknown path as if we knew it is exactly the dead guidance that rule exists to stop.
- *
- * **② This job does not end with a command anyway.** Which copy is newer is something the files do
- * not know and **only reading the contents reveals**. Automatic merging can silently erase a
- * discipline learned yesterday, so the council ruled it OUT. What is handed over is work needing
- * judgement, and the side that judges is the agent — the person decides, the agent fixes.
- *
- * **The copied value is attached to the fact the screen stated.** When the screen says "3
- * diverged", the sentence carries **those 3 by name**. Copying only the summary leaves the
- * receiver not knowing what to open, which is a copy detached from the fact.
- *
- * **Paths must be absolute.** Whoever pastes this is usually **an agent session in another
- * window**, and there is no guarantee its working directory is this vault. Given only relative
- * paths, that session opens the wrong place against its own cwd and either reports nothing there
- * or — worse — edits a different file with the same name. We **already know** the absolute path
- * (the desktop bridge read with it). Withholding what we know is laziness, not honesty.
+ * A sentence handing diverged copies to an agent, not a shell command: the CLI's location on
+ * this machine is unknown (`.claude/rules/surfaces.md` forbids dead guidance), and which copy is
+ * newer takes reading, so the agent fixes and no automatic merge runs. It names each diverged
+ * skill, with absolute paths, because the receiving session's cwd may be another folder and a
+ * relative path could edit a different file with the same name.
  */
 export function buildSkillParityHandoff(
   rows: SkillParityRow[],

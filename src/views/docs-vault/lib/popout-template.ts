@@ -3,36 +3,11 @@ import { DOC_COLUMN_GUTTER_PX, PROSE_MEASURE_REM } from "@/shared/ui/reading-mea
 import { escapeHtml } from "./persistence";
 
 /**
- * Composes a self-contained HTML page for an external popout or print.
- *
- * Called by `handleExportDocHtml` in `DocsVaultPage`: it takes the document body article's
- * `outerHTML` and wraps it into a single dark-theme HTML page. The downloaded `.html` uses
- * neutrals plus indigo alpha only, and is offline self-contained.
- *
- * This document is standalone HTML outside the app, so the `:root` CSS tokens (`var(--color-*)`)
- * are not defined. Colours are therefore pinned as the design tokens' *literal values*, defined in
- * `POPOUT_TOKENS` alone to prevent drift. Keep the values equal to the tokens in
- * `docs/DESIGN-SYSTEM.md` and `app/globals.css`.
- *
- * The reading column is the one measurement here that is **not** pinned by hand: it reads
- * `PROSE_MEASURE_REM` and `DOC_COLUMN_GUTTER_PX` from `src/shared/ui/reading-measure.ts`, which
- * carry the same derivation as `--measure-doc-column`. It was a hand-written `760px` until
- * 2026-09-11, which is how the popout kept a column the app itself had stopped using.
- *
- * ## Why the type here is `rem` (2026-09-12)
- *
- * This page is a **document in its own browser window**, and it declares no root font size — so
- * its root is whatever the reader's browser says, including a text-only zoom setting. While the
- * sizes below were px literals, that setting was inert here for the same reason it was inert in
- * the app (`app/globals.css`, "The ramp is written in `rem`"): nothing it multiplied was ever
- * consulted. Written as `rem`, one popout follows every zoom level, and the column follows with
- * it — the measure in `rem`, the two gutters absolute, exactly as `--measure-doc-column`
- * composes them. Every rendered pixel is unchanged at the default 16px root: `26px → 1.625rem`,
- * `12.5px → 0.78125rem`, and so on.
- *
- * The sizes are **not** the app's ramp and are not meant to become it: a printed or popped-out
- * page has no chrome to agree with, and the ramp's own steps are bound to `--leading-*` pairs
- * this page does not carry.
+ * A self-contained dark HTML page for popout or print. Standalone, so `var(--color-*)` tokens
+ * do not resolve: colours are the tokens' literal values, kept equal to `docs/DESIGN-SYSTEM.md`
+ * and `app/globals.css`. The column uses `PROSE_MEASURE_REM` and `DOC_COLUMN_GUTTER_PX` from the
+ * file `src/shared/ui/reading-measure.ts`. Sizes are `rem` so the page follows the reader's zoom;
+ * they are not the app's ramp.
  */
 const POPOUT_TOKENS = {
   canvas: "#08090a",
@@ -41,7 +16,7 @@ const POPOUT_TOKENS = {
   textSecondary: "#d0d6e0",
   textTertiary: "#8a8f98",
   borderSoft: "rgba(255,255,255,0.08)",
-  // One colour: indigo. Code, links, and blockquote emphasis use indigo alpha only.
+  // One hue: indigo alpha only.
   indigoAlphaStrong: "rgba(139,151,255,0.9)",
   indigoAlphaBorder: "rgba(139,151,255,0.35)",
   indigoAlphaSurface: "rgba(139,151,255,0.08)",

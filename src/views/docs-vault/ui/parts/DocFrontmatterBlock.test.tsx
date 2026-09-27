@@ -17,9 +17,7 @@ const doc: VaultDoc = {
     slug: "capabilities/cli-developer-entry",
     title: "CLI Developer Entry",
     domain: "developer-experience",
-    // The uid has to be here for this fixture to really be «clean» (2026-08-04). It used to be
-    // absent while still being called "clean frontmatter" — the screen was filtering errors out,
-    // so the test inherited the same falsehood.
+    // The uid makes this fixture really clean.
     uid: "0f0e5f1a-6c53-4a1b-9c2f-2f0f7b6a1d34",
     status: "active",
     depends_on: ["mcp-server"],
@@ -47,38 +45,25 @@ describe("DocFrontmatterBlock", () => {
     expect(details).not.toBeNull();
     expect(details).not.toHaveAttribute("open");
 
-    // The kind in the word the tree uses; the slug stays with the document header's path.
+    // Kind in the tree's word; the slug stays with the header path.
     const summary = screen.getByTestId("doc-frontmatter-summary");
     expect(within(summary).getByTestId("doc-frontmatter-summary-kind")).toHaveAttribute("data-kind", "capability");
     expect(within(summary).queryByText("capabilities/cli-developer-entry")).toBeNull();
     expect(within(summary).getByText("속성 6개")).toBeInTheDocument();
   });
 
-  /**
-   * **A teaching line repeated on every document does not live there permanently** (2026-08-08,
-   * owner report — *"The top looks a bit odd when reading a document; can it be laid out better?"*.
-   *
-   * "See a spec example" is an explanation that does not vary per document. Yet it had its own row
-   * even while collapsed, pushing the body down 25px on the screen of someone who came to read —
-   * on **all 112 documents** of the shipped sample vault.
-   *
-   * The moment it is wanted is when you want to know «what does this property accept», and that is
-   * the moment this properties block is opened. So it moved inside.
-   *
-   * ⚠️ Without this test it comes back — the earlier unit tests only check DOM presence with
-   * `getByTestId`, so they were all green even with the toggle **outside** the details (measured).
-   */
-  it("규격 예시 토글은 접힌 속성 블록 안에 있다 — 읽는 화면에 상주하지 않는다", () => {
+  /** A teaching line that never varies per document lives inside the collapsed block, not on the reading screen. */
+  it("keeps the spec example toggle inside the collapsed properties block", () => {
     renderBlock();
     const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
     expect(details).not.toHaveAttribute("open");
 
     const toggle = screen.queryByTestId("doc-frontmatter-example-toggle");
-    // With a kind that has no example this test spins idly — exclude that case first.
-    expect(toggle, "이 fixture 에 규격 예시가 없다 — 시험이 헛돈다").not.toBeNull();
+    // Guard against a fixture without an example.
+    expect(toggle, "this fixture has no spec example, so the test would pass idly").not.toBeNull();
     expect(
       toggle?.closest("details:not([open])"),
-      "「규격 예시 보기」가 접힌 속성 블록 밖에 있다 — 읽으러 온 사람의 본문을 밀어낸다",
+      "the spec example toggle sits outside the collapsed block and pushes the body down",
     ).toBe(details);
   });
 
@@ -89,15 +74,7 @@ describe("DocFrontmatterBlock", () => {
 
     const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
     expect(details).toHaveAttribute("open");
-    /*
-     * **Located by position, not by sentence** (2026-08-22).
-     *
-     * It used to search by regex for that era's wording. What this test proves is «expanding shows
-     * the note», not «the note is this sentence», and pinning the wording turns it red — while the
-     * content is still correct — the moment the copy is made clearer. That shape is already
-     * forbidden by `.claude/rules/documentation.md` (*"do not check sentences a human wrote"*),
-     * and this test really did break during the glossary cleanup (`docs/GLOSSARY.md`).
-     */
+    // Located by position, not wording (`.claude/rules/documentation.md`, `docs/GLOSSARY.md`).
     const note = screen.getByTestId("doc-frontmatter-note");
     expect(note).toBeVisible();
     expect((note.textContent ?? "").trim().length).toBeGreaterThan(0);
@@ -105,9 +82,7 @@ describe("DocFrontmatterBlock", () => {
 
   it("never deletes the graph-source fields — only collapses them", () => {
     renderBlock();
-    // domain / status / depends_on are still present in the DOM even while
-    // collapsed (native <details> hides via UA stylesheet, not removal) —
-    // frontmatter is the graph source, so hiding is fine but deleting is not.
+    // Collapsed `<details>` still keeps the graph fields in the DOM.
     expect(screen.getByText("developer-experience")).toBeInTheDocument();
     expect(screen.getByText("active")).toBeInTheDocument();
   });
@@ -120,8 +95,6 @@ describe("DocFrontmatterBlock", () => {
 
   it("linkifies resolvable reference slugs and navigates on click, leaving unresolved ones plain", () => {
     const onNavigate = vi.fn();
-    // domain (developer-experience) and depends_on (mcp-server) exist in the vault;
-    // ghost-ref does not.
     const resolveRef = (token: string) =>
       token === "developer-experience"
         ? "domains/developer-experience"
@@ -147,7 +120,6 @@ describe("DocFrontmatterBlock", () => {
     fireEvent.click(screen.getByTestId("doc-frontmatter-ref-mcp-server"));
     expect(onNavigate).toHaveBeenCalledWith("capabilities/mcp-server");
 
-    // An unresolved reference does not become a button.
     expect(screen.queryByTestId("doc-frontmatter-ref-ghost-ref")).not.toBeInTheDocument();
     expect(screen.getByText("ghost-ref")).toBeInTheDocument();
   });
@@ -193,10 +165,6 @@ describe("DocFrontmatterBlock", () => {
     });
   });
 
-  /*
-   * Map-edit QA D2 (2026-09-26): `display_ko` / `display_en` were set once at creation and had
-   * no door afterwards — the block did not even list them.
-   */
   it("lists the per-language names beside the title and edits them in the quick patch", async () => {
     const onPatch = vi.fn().mockResolvedValue(undefined);
     const named: VaultDoc = {
@@ -214,7 +182,7 @@ describe("DocFrontmatterBlock", () => {
     expect(screen.getByText("display_en:")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
-    // The reader's own language first, then the other one.
+    // Reader's language first.
     const koField = screen.getByTestId("doc-frontmatter-display-name-ko");
     const enField = screen.getByTestId("doc-frontmatter-display-name-en");
     expect(koField).toHaveValue("CLI 개발자 입구");
@@ -224,15 +192,10 @@ describe("DocFrontmatterBlock", () => {
     fireEvent.change(enField, { target: { value: "  " } });
     fireEvent.click(screen.getByText("저장"));
     await vi.waitFor(() => {
-      // An emptied name is removed, so screens fall back to the title.
       expect(onPatch).toHaveBeenCalledWith({ display_ko: "CLI 입구", display_en: null });
     });
   });
 
-  /*
-   * Map-edit QA D4 (2026-09-26): a refused save printed the vault layer's English
-   * (`Vault conflict — "…" was modified externally between read and write.`) under Title.
-   */
   it("says a refused save in the reader's language and keeps the thrown English off the page", async () => {
     const { VaultConflictError } = await import("@/entities/vault-session");
     const onPatch = vi
@@ -252,7 +215,6 @@ describe("DocFrontmatterBlock", () => {
     const conflict = await screen.findByTestId("doc-frontmatter-save-error");
     expect(conflict).toHaveTextContent(koMessages.docsVault.frontmatterBlock.saveConflict);
     expect(conflict.textContent).not.toMatch(/Vault conflict|modified externally/);
-    // The form stays open with what was typed.
     expect(screen.getByDisplayValue("CLI entry")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("저장"));
@@ -266,10 +228,6 @@ describe("DocFrontmatterBlock", () => {
     expect(failed).toHaveAttribute("data-failure-detail", "EIO: i/o error, write");
   });
 
-  /*
-   * Map-edit QA D7 (2026-09-26): after a delete, the referrer still listed the removed slug and
-   * its own page said nothing.
-   */
   it("flags a reference the folder has no document for, on the referrer's own page", () => {
     const referrer: VaultDoc = {
       ...doc,
@@ -301,10 +259,6 @@ describe("DocFrontmatterBlock", () => {
     expect(screen.queryByTestId("doc-frontmatter-validator-warnings")).not.toBeInTheDocument();
   });
 
-  /*
-   * Map-edit QA D8 (2026-09-26): reclassifying rewrote `kind:` and left the file in the old
-   * kind's folder, and the warning that followed had no remedy beside it.
-   */
   it("says before Save that a kind change files the document under its new kind", async () => {
     const onPatch = vi.fn().mockResolvedValue(undefined);
     render(
@@ -323,11 +277,7 @@ describe("DocFrontmatterBlock", () => {
     await vi.waitFor(() => expect(onPatch).toHaveBeenCalledWith({ kind: "element" }));
   });
 
-  /*
-   * 2026-09-26 map-edit review: after a reclassify, the domain read
-   * `capabilities: [..., elements/companion-memories]`. The entry resolved, so the dangling warning
-   * never fired and no screen said anything, while the map counted it as a capability.
-   */
+  // A misfiled entry resolves, so only this check can see it.
   it("flags an entry listed under a list for another kind, which the dangling warning cannot see", () => {
     const domain: VaultDoc = {
       ...doc,
@@ -363,7 +313,6 @@ describe("DocFrontmatterBlock", () => {
     expect(row).toHaveTextContent("elements/companion-memories (Element, in capabilities)");
     expect(row?.textContent).not.toContain("agent-work-visibility");
     expect(row?.textContent).not.toContain("map-camera");
-    // It resolves, so it is not also reported as missing.
     expect(rows.some((el) => el.getAttribute("data-issue-code") === "dangling-graph-reference")).toBe(false);
   });
 
@@ -397,7 +346,7 @@ describe("DocFrontmatterBlock", () => {
     expect(screen.queryByTestId("doc-frontmatter-kind-referrers")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByTestId("doc-frontmatter-kind-select"), { target: { value: "element" } });
-    // Asked about the address the file will have, not the one it has.
+    // Asked about the future address.
     expect(kindChangeReferrers).toHaveBeenLastCalledWith("element", "elements/cli-developer-entry");
     const lines = screen.getAllByTestId("doc-frontmatter-kind-referrer");
     expect(lines.map((line) => line.getAttribute("data-outcome"))).toEqual(["moved", "kept"]);
@@ -446,8 +395,7 @@ describe("DocFrontmatterBlock", () => {
     expect(screen.queryByTestId("doc-frontmatter-validator-warnings")).not.toBeInTheDocument();
   });
 
-  // The unit gate for the defect — it turns red if the filter that hid errors and showed only
-  // warnings comes back.
+  // Fails if a filter that hides errors returns.
   it("surfaces validator ERRORS beside the file, not only warnings", () => {
     const noUidDoc: VaultDoc = {
       ...doc,
@@ -463,8 +411,7 @@ describe("DocFrontmatterBlock", () => {
     expect(within(rows[0]).getByText(/uid/)).toBeInTheDocument();
   });
 
-  // The unit gate for the defect — with no kind a compact diagnostic appears, and a plain guide
-  // document with no ontology intent still shows nothing (zero noise).
+  // A kind-less node candidate gets a compact diagnostic; a plain guide document shows nothing.
   it("renders a compact diagnostic for a kind-less node candidate, and nothing for a plain doc", () => {
     const kindless: VaultDoc = {
       ...doc,
@@ -520,8 +467,6 @@ describe("DocFrontmatterBlock", () => {
     expect(within(example).getByText(/domain: example-domain/)).toBeInTheDocument();
   });
 
-  // The CREATE writer stores meaning in a `definition:` frontmatter key that is not in GRAPH_KEYS,
-  // so it used to be invisible in the read view.
   it("surfaces the definition frontmatter as an always-visible read-mode lede", () => {
     const docWithDefinition: VaultDoc = {
       ...doc,
@@ -533,7 +478,6 @@ describe("DocFrontmatterBlock", () => {
       </NextIntlClientProvider>,
     );
     const lede = screen.getByTestId("doc-frontmatter-definition");
-    // visible without expanding the collapsed frontmatter block
     expect(lede).toBeInTheDocument();
     expect(within(lede).getByText("문의를 접수하고 답변하는 역량.")).toBeInTheDocument();
     expect(within(lede).getByText("정의")).toBeInTheDocument();
@@ -561,11 +505,7 @@ describe("DocFrontmatterBlock", () => {
   });
 });
 
-// Code location — frontmatter `elements: [...]` is the vault's ONLY real code evidence, but it was
-// not in `GRAPH_KEYS` above (not a single-line key:value fact), so it was invisible even when
-// expanded. This adds a dedicated, distinguishable section: raw code paths in plain monospace,
-// rather than the clickable `REFERENCE_KEYS` ref-token pattern.
-describe("DocFrontmatterBlock — 코드 위치 (code location) section", () => {
+describe("DocFrontmatterBlock code location section", () => {
   const docWithElements: VaultDoc = {
     ...doc,
     frontmatter: {
@@ -626,7 +566,6 @@ describe("DocFrontmatterBlock — 코드 위치 (code location) section", () => 
   });
 });
 
-// rank7 (design-council B5) — last-edit provenance + expected_mtime conflict.
 describe("DocFrontmatterBlock — last-edit provenance", () => {
   function emptyAgentActivityStatus(): AgentActivityStatus {
     return {
@@ -731,8 +670,7 @@ describe("DocFrontmatterBlock — last-edit provenance", () => {
     );
     expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
 
-    // simulate the background poller picking up an EXTERNAL edit (no
-    // self-edit record for this slug) while the panel stays mounted.
+    // Simulates the poller picking up an external edit while the panel stays mounted.
     rerender(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={{ ...changingDoc, mtime: 2000 }} agentActivityStatus={emptyAgentActivityStatus()} />
@@ -766,14 +704,9 @@ describe("DocFrontmatterBlock — last-edit provenance", () => {
   });
 });
 
-/*
- * ⚠️ Census state 3e, 2026-08-31. `parseFrontmatter` records an unreadable line and an unclosed
- * quote, the manifest keeps them on the doc, and this screen is the one place that explains a
- * document to the person editing it. It never read them, so a broken line cost the document a
- * field and no screen in the product said a word about it.
- */
-describe("DocFrontmatterBlock - 파서가 못 읽은 줄", () => {
-  it("못 읽은 줄과 닫히지 않은 따옴표를 사람 말로 말한다", () => {
+// `parseFrontmatter` diagnostics must reach the person editing the document.
+describe("DocFrontmatterBlock unreadable parser lines", () => {
+  it("explains unreadable lines and unclosed quotes in plain words", () => {
     renderBlock("ko", {
       diagnostics: [
         { code: "malformed-frontmatter-line", line: 3, message: "raw parser text" },
@@ -785,14 +718,13 @@ describe("DocFrontmatterBlock - 파서가 못 읽은 줄", () => {
     const text = rows.map((row) => row.textContent ?? "").join("\n");
     expect(text).toContain("정보칸의 한 줄을 읽지 못했어요");
     expect(text).toContain("따옴표로 연 값이 닫히지 않았어요");
-    // The machine code itself must never be what the person reads. An unknown code falls back to
-    // the code string, so this also proves the dictionary really has both entries.
+    // An unknown code would fall back to the code string, so this also proves both entries exist.
     expect(text).not.toContain("malformed-frontmatter-line");
     expect(text).not.toContain("malformed-quoted-scalar");
     for (const row of rows) expect(row).toHaveAttribute("data-severity", "error");
   });
 
-  it("진단이 없는 문서에는 아무 줄도 만들지 않는다", () => {
+  it("renders no issue rows for a doc without diagnostics", () => {
     renderBlock("ko");
     expect(screen.queryByTestId("doc-frontmatter-issue")).not.toBeInTheDocument();
   });

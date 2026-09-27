@@ -66,9 +66,8 @@ describe("useOpenDocTabs", () => {
   });
 
   it("keeps the stored tabs when a document opens before hydration settles", () => {
-    // Regression guard: at mount the document-selection effect (openTab) runs before the hydration
-    // microtask. Saving against empty state wiped the previous session's tabs entirely, breaking the
-    // owner's contract "still there after restarting the app".
+    // At mount `openTab` runs before hydration; saving against empty state would wipe the
+    // previous session's tabs.
     seed(["a", "b", "c"]);
     const deferred: Array<() => void> = [];
     vi.spyOn(globalThis, "queueMicrotask").mockImplementation((fn) => {
@@ -81,7 +80,6 @@ describe("useOpenDocTabs", () => {
         validSlugs: new Set(["a", "b", "c", "d"]),
       }),
     );
-    // Not hydrated yet — state is empty.
     expect(result.current.tabs).toEqual([]);
 
     act(() => {
@@ -122,8 +120,7 @@ describe("useOpenDocTabs", () => {
     expect(result.current.tabs.map((tab) => tab.slug)).toEqual(["a", "b"]);
 
     rerender({ sourceKey: "local:my-vault" });
-    // The window where a document from a new vault is opened before hydration — the previous
-    // vault's tabs must not leak into the new vault's storage.
+    // A document opened before hydration after a vault switch must not leak the previous vault's tabs.
     act(() => {
       result.current.openTab("y", "Y");
     });

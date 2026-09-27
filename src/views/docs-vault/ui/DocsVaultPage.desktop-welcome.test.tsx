@@ -75,12 +75,7 @@ const t = ((key: string, values?: Record<string, string | number>) => {
 function renderWelcome(showDogfoodHint: boolean) {
   const onOpen = vi.fn();
   const onOpenDogfoodPath = vi.fn();
-  /*
-   * A real provider, not only the injected `t`. This screen is also the launch chooser, and
-   * the chooser's own words live in the shared `vaultSwitch` namespace so the `/docs` seat
-   * and the installed app's launch screen cannot drift apart - so the component reads that
-   * namespace itself and needs the catalogue mounted (2026-09-13).
-   */
+  // A real provider: the chooser reads the shared `vaultSwitch` namespace itself.
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
     <DesktopVaultWelcome
@@ -97,12 +92,7 @@ function renderWelcome(showDogfoodHint: boolean) {
 }
 
 describe("DesktopVaultWelcome dogfood handoff", () => {
-  /**
-   * The copied value must be **the path configured in this build**. The maintainer's home path used
-   * to be a source constant and this test held that string as its expectation. The value now comes
-   * from `NEXT_PUBLIC_DOGFOOD_VAULT_PATHS`, so the test measures **whether the same source is
-   * used**, not a path string (in a public build it is the empty string).
-   */
+  /** Measures that the configured source is used, not a path string (empty in a public build). */
   it("copies exactly the configured dogfood path", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {

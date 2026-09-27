@@ -13,24 +13,15 @@ import { Input } from "@/shared/ui/input";
 export interface RenameDocTarget {
   slug: string;
   title: string;
-  /** How many documents point here — their references move with the file. */
+  /** Their references move with the file. */
   referrerCount: number;
 }
 
 /**
- * **Rename is a door on the page, and it asks for a name** (2026-09-26, map-edit QA D9).
- *
- * Renaming lived only in the command palette, behind a typed query, and answered with the
- * browser's own `window.prompt` asking for a "document address (no extension)": an unstyled
- * light box outside the product's dialog system, asking a person for a slug path. This asks
- * for a new name in the product's `Dialog` (scrim, focus trap, Escape, focus return) and shows
- * the address that name becomes before anything moves. The folder stays: a rename changes the
- * file's name, not where it is filed (a kind change moves folders, `kind-folder-move.ts`).
- *
- * The name becomes an address through `slugify`, the rule new documents are named by, so a
- * name typed here and a name typed into "create" land the same way. The move itself is the
- * caller's (`renameDoc` with `rewriteBacklinks`), and a refusal is shown here in the reader's
- * language, never the vault layer's English.
+ * Asks for a new name in the product's `Dialog` and shows the address before anything moves.
+ * The folder stays (a kind change moves folders, `kind-folder-move.ts`). `slugify` names it as
+ * "create" would; the caller moves it (`renameDoc` with `rewriteBacklinks`), and a refusal
+ * shows in the reader's language.
  */
 export function RenameDocDialog({
   target,
@@ -38,15 +29,14 @@ export function RenameDocDialog({
   onCancel,
   onConfirm,
 }: {
-  /** The document to rename; null closes the dialog. */
+  /** Null closes the dialog. */
   target: RenameDocTarget | null;
-  /** Whether another document already lives at an address. */
   isTaken: (slug: string) => boolean;
   onCancel: () => void;
-  /** Moves the document; rejects with the reason when the vault refuses. */
+  /** Rejects with the reason when the vault refuses. */
   onConfirm: (nextSlug: string) => Promise<void>;
 }) {
-  // Held through the exit so the panel does not fade out around an empty box.
+  // Held through the exit so the panel does not fade around an empty box.
   const held = useHeldValue(target, target?.slug ?? null);
   return (
     <Dialog
@@ -94,7 +84,7 @@ function RenameForm({
   const nextName = slugify(name).replace(/^-+|-+$/g, "");
   const nextSlug = `${dir}${nextName}`;
   const unchanged = nextSlug === target.slug;
-  // Validation speaks only once there is something to judge: the untouched name is not an error.
+  // The untouched name is not an error.
   const problem = !nextName
     ? name.trim()
       ? t("errorNoLetters")

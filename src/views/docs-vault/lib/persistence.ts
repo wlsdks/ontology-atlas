@@ -1,35 +1,18 @@
 /**
- * URL and localStorage parsing/storage helpers for the docs vault page.
- *
- * Used only inside that surface — `DocsVaultContent` combines the `?view=` query with the
- * user's last stored choice at first render to decide view and source.
- *
- * Pure functions plus a window guard, so SSR and static export are safe.
- *
- * The docs check panel moved from a band to a centre modal, and
- * `readStoredContractOpen`/`storeContractOpen` were deliberately removed with it — a modal
- * open on every page load violates modality, so its open state is not persisted and it
- * always starts closed. The toggle itself is plain component state in `DocsVaultContent`
- * and lives only for the session.
+ * URL and localStorage helpers for the docs vault page; pure plus a window guard, so SSR and
+ * static export are safe. The docs check modal's open state is deliberately not persisted.
  */
 
 import { VaultConflictError } from "@/entities/vault-session";
 
 export type DocsVaultSource = "server" | "local";
-// The folder-topology mini map was removed: it was a third graph vocabulary competing with
-// the kind schema. Only 'doc' remains, so this is no longer a union, but the call sites'
-// signatures (`parseDocsVaultView`, `replaceDocsVaultUrlState`) are kept as they are to
-// minimize the regression diff.
+// One view remains; call-site signatures are kept so adding a view changes only this module.
 export type DocsVaultView = "doc";
 
 export const DOCS_VAULT_SOURCE_KEY = "demo:docs-vault:source";
 export const DOCS_VAULT_LIST_COLLAPSED_KEY = "demo:docs-vault:list-collapsed";
 
-/**
- * Whether the document-list aside is collapsed. A workspace preference, so it persists
- * across sessions and reloads (localStorage). Defaults to false (expanded). Guarded for
- * SSR and static export.
- */
+/** A workspace preference persisted in localStorage; defaults to expanded. */
 export function readStoredListCollapsed(): boolean {
   if (typeof window === "undefined") return false;
   try {
@@ -54,9 +37,7 @@ export function storeListCollapsed(collapsed: boolean) {
   }
 }
 
-/** URL `?view=` → a validated enum; an unknown value falls back to 'doc'. The union has one
- *  member, so this effectively returns a constant, but the call-site signature is kept (it
- *  once had several views) — reintroducing one means updating this function alone. */
+/** An unknown value falls back to 'doc'. */
 export function parseDocsVaultView(value?: string | null): DocsVaultView {
   void value;
   return "doc";
@@ -80,20 +61,9 @@ export function readStoredSource(): DocsVaultSource {
 }
 
 /**
- * Should landing on the docs surface auto-prefer the local source? True when a local
- * vault is actually loaded, or when the launch deliberately stopped to let the person
- * choose between known folders — and the current source is not already local.
- * Guards the one trust bug: a live vault must never be silently replaced by the
- * Sample (`server`) source just because that was the last stored preference.
- * Callers apply this ONCE per mount (a ref) so a later deliberate switch to
- * Sample is respected — this only covers the initial landing.
- *
- * `awaitingVaultChoice` is the second arm, added with the launch chooser (2026-09-13).
- * A deferred launch has loaded no manifest by design, so the `'loaded'` test alone sent
- * somebody who was meant to be picking a folder to the sample instead — the folder
- * screen is reached through the local source, and nothing else would have selected it.
- * It is a separate arm rather than a widened status test because the two facts differ:
- * one says a folder is open, the other says none is open **on purpose**.
+ * True when a local vault is loaded, or the launch stopped to let the person choose, and the
+ * source is not already local: a live vault must never be silently replaced by the stored
+ * Sample preference. Callers apply it once per mount so a later switch to Sample is respected.
  */
 export function shouldPreferLocalOnLanding(
   localVaultStatus: string,
@@ -121,10 +91,8 @@ export function shouldHonorLocalIntent(
   intent: string | null | undefined,
   isDesktopRuntime: boolean,
 ): boolean {
-  // A web session respects local intent too. In the same browser the map already allows
-  // writing to the vault, so gating only the docs surface behind desktop was a contract that
-  // contradicted itself across surfaces. A browser without FSA is stopped by the
-  // `localVaultStatus === 'unsupported'` gate instead.
+  // The web honours local intent as the map does; a browser without FSA is stopped by
+  // the `localVaultStatus === 'unsupported'` gate instead.
   void isDesktopRuntime;
   return intent === "local";
 }
@@ -178,8 +146,7 @@ export function isDocsVaultLocalSourceDisabled({
   isDesktopRuntime: boolean;
   localVaultStatus: string;
 }): boolean {
-  // The gate looks only at capability (FSA support). The runtime (web or desktop) is no
-  // longer a gate — the same contract as the map.
+  // Capability (FSA support) is the gate, not the runtime, as on the map.
   void isDesktopRuntime;
   return localVaultStatus === "unsupported";
 }
@@ -195,9 +162,7 @@ export function shouldShowDesktopVaultWelcome({
   localVaultStatus: string;
   hasLocalManifest: boolean;
 }): boolean {
-  // The welcome screen (including the open-folder CTA) is capability-based too: entering the
-  // local source in a web FSA session must still offer a way to open. Desktop-only elements
-  // (the dogfood path hint) are gated separately by `shouldShowDogfoodVaultHint`.
+  // Capability-based too; desktop-only hints are gated by `shouldShowDogfoodVaultHint`.
   void isDesktopRuntime;
   return (
     source === "local" &&
@@ -208,10 +173,7 @@ export function shouldShowDesktopVaultWelcome({
   );
 }
 
-/**
- * Escapes user input (title, body) when building HTML for an external popout or print.
- * Four entities are enough — no SVG or iframe is used.
- */
+/** Escapes user input for a popout or print document; four entities suffice without SVG or iframe. */
 export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -220,27 +182,13 @@ export function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/**
- * Re-exported, not defined here. It moved to `@/shared/lib/schedule-state-sync` on
- * 2026-09-06 because the reading pane's two scroll hooks became widget code and a
- * widget cannot import a view. Keeping the name reachable from this module leaves the
- * twenty call sites inside Docs untouched while the definition stays single.
- */
+/** Re-exported so Docs call sites keep this import while the definition lives in shared. */
 export { scheduleStateSync } from "@/shared/lib/schedule-state-sync";
 
 /**
- * The editor's save handler — persists the buffer through `saveDoc`.
- *
- * **The data-loss guard, and the point of this function:** when the `.md` changes outside
- * (another editor, an AI over MCP) between read and write, `saveDoc` throws
- * `VaultConflictError`. *Swallowing* that error here (as an older `onSave` did) makes the
- * calling editor's `doSave` mistake the resolve for success, mark the buffer phantom-clean,
- * and show "saved" → `dirty` becomes false, which releases the poll guard, and the next poll
- * re-fetch silently overwrites the unsaved edit. So a conflict, or any error, is **always
- * re-thrown**. The editor uses that throw to keep the buffer dirty and prevent the loss.
- *
- * `onConflict` is a side-effect hook for notifying the user (a toast); the error is re-thrown
- * whether or not it is called.
+ * Persists the editor buffer through `saveDoc` and always rethrows, a `VaultConflictError`
+ * included: a swallowed conflict marks the buffer clean, releases the poll guard, and the next
+ * poll overwrites the unsaved edit.
  */
 export async function persistEditorSave(
   saveDoc: (

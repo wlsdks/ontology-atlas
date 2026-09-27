@@ -10,23 +10,17 @@ import {
 } from '@/entities/agent-files';
 
 /**
- * Read-only agent-file detection for the docs workbench sidebar.
- *
- * Reads the few root-level agent docs (CLAUDE.md / AGENTS.md / GEMINI.md …)
- * through the vault file handles, runs the shared pure analysis
- * (`./agent-files`), and returns a compact UI model — or `null` when the
- * picked vault does not include the repo root (dot-dirs are invisible to the
- * FSA walk, so a deeper vault cannot honestly claim this view) or when no
- * writable local vault is loaded (packaged sample = docs/ontology, no root).
+ * Read-only agent-file detection for the sidebar. Null unless a local vault is open and it
+ * includes the repo root: dot directories are invisible to the FSA walk, so a deeper vault
+ * cannot honestly claim this view (the packaged sample is docs/ontology, with no root).
  */
 export function useAgentFilesModel(
   manifest: VaultManifest,
   fileHandles: Map<string, FileSystemFileHandle>,
 ): AgentFilesUiModel | null {
   const [model, setModel] = useState<AgentFilesUiModel | null>(null);
-  // The gate: only when a local vault is open (file handles exist) and CLAUDE.md/AGENTS.md are
-  // visible at the manifest root. When the gate closes, the return value is demoted to null rather
-  // than clearing state (avoiding a synchronous setState inside an effect).
+  // When the gate closes the result is demoted to null rather than cleared, avoiding a
+  // synchronous setState inside an effect.
   const gate = fileHandles.size > 0 && manifestIncludesRepoRoot(manifest.docs);
 
   useEffect(() => {
@@ -51,7 +45,7 @@ export function useAgentFilesModel(
         });
         if (!cancelled) setModel(buildAgentFilesUiModel(analysis, manifest.docs));
       } catch {
-        // read failure (revoked permission, deleted file) — hide the group
+        // Read failure (revoked permission, deleted file): hide the group.
         if (!cancelled) setModel(null);
       }
     })();

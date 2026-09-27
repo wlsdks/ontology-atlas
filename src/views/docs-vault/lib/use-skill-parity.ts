@@ -7,14 +7,8 @@ import { readDesktopSkillTrees } from './read-desktop-skill-trees';
 import { buildSkillParityModel, type SkillParityModel } from './skill-parity';
 
 /**
- * The skill-copy parity verdict — **only in the desktop app, when the vault root is known.**
- *
- * `null` means "draw nothing in this slot", while a model with empty `rows` means "a vault with no
- * skill tree". These are different facts and are not collapsed into one value — the first is a
- * missing capability, the second is nothing to see.
- *
- * This hook never switches on for the web. An FSA handle has no absolute path, so there is no way
- * in principle to see `.claude/`, and no web equivalent is built
+ * Desktop only, with a known vault root. `null` means no capability (draw nothing); an
+ * empty `rows` means no skill tree. The web cannot see `.claude/` through an FSA handle
  * (`.claude/rules/surfaces.md`).
  */
 export function useSkillParity(vaultRootPath: string | null): SkillParityModel | null {
@@ -39,8 +33,7 @@ export function useSkillParity(vaultRootPath: string | null): SkillParityModel |
         });
         setModel(buildSkillParityModel(analysis));
       } catch {
-        // A read failure is demoted to **no verdict**. Calling what could not be read "agreed"
-        // would have the screen claim it checked something it did not.
+        // A read failure is no verdict, never "agreed".
         if (!cancelled) setModel(null);
       }
     })();

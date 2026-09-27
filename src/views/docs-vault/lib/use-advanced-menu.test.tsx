@@ -18,18 +18,18 @@ function MenuFixture() {
 }
 
 describe('useAdvancedMenu', () => {
-  it('초기 open=false', () => {
+  it('starts closed', () => {
     render(<MenuFixture />);
     expect(screen.queryByTestId('content')).toBeNull();
   });
 
-  it('setOpen(true) → content 렌더', () => {
+  it('renders content after setOpen(true)', () => {
     render(<MenuFixture />);
     act(() => screen.getByTestId('trigger').click());
     expect(screen.getByTestId('content')).toBeInTheDocument();
   });
 
-  it('outside pointerdown 시 close', () => {
+  it('closes on an outside pointerdown', () => {
     render(<MenuFixture />);
     act(() => screen.getByTestId('trigger').click());
     expect(screen.getByTestId('content')).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe('useAdvancedMenu', () => {
     expect(screen.queryByTestId('content')).toBeNull();
   });
 
-  it('inside pointerdown 은 close 안 함 (containment 검사)', () => {
+  it('stays open on an inside pointerdown', () => {
     render(<MenuFixture />);
     act(() => screen.getByTestId('trigger').click());
     act(() => {
@@ -56,7 +56,7 @@ describe('useAdvancedMenu', () => {
     expect(screen.queryByTestId('content')).toBeInTheDocument();
   });
 
-  it('Escape 키 → close', () => {
+  it('closes on Escape', () => {
     render(<MenuFixture />);
     act(() => screen.getByTestId('trigger').click());
     act(() => {
@@ -65,9 +65,8 @@ describe('useAdvancedMenu', () => {
     expect(screen.queryByTestId('content')).toBeNull();
   });
 
-  it('open=false 시 listener 미등록 (cleanup verify)', () => {
+  it('registers no listeners while closed', () => {
     render(<MenuFixture />);
-    // An outside pointerdown while closed must change nothing (zero state changes).
     act(() => {
       const ev = new PointerEvent('pointerdown', { bubbles: true });
       Object.defineProperty(ev, 'target', {

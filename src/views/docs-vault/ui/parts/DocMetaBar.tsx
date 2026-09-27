@@ -19,31 +19,17 @@ const actionLinkClass = controlClass({
     "min-h-8 border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] underline-offset-2 transition-[background-color,border-color,color,transform] hover:-translate-y-0.5 hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:border-[color:var(--color-indigo-line-a54)] active:bg-[color:var(--color-indigo-line-a13)] motion-reduce:transform-none",
 });
 
-/**
- * The meta bar above a document body — word count, reading time, kind jump, tags, updated date.
- */
 export function DocMetaBar({
   doc,
   reviewRow,
   review,
 }: {
   doc: VaultDoc;
-  /**
-   * This document's row in the review queue, when it has one.
-   *
-   * Passed in rather than recomputed, so the sidebar and the document cannot
-   * disagree about the same fact — the drift verdict is a hash comparison, and
-   * two call sites hashing separately is two chances to answer differently.
-   */
+  /** Passed in so the sidebar and the document share one drift verdict (a hash comparison). */
   reviewRow?: ReviewQueueRow;
   /**
-   * The person's own two actions on this document, present only when a writable
-   * local folder is loaded.
-   *
-   * This is the path the MCP server refuses to let an agent take. It is a lane,
-   * not an identity check — Atlas has no login, and a file-capable agent can
-   * write the same keys without passing here. Absent on the bundled sample,
-   * where nothing can be written at all.
+   * Present only for a writable local folder. The lane the MCP server refuses an agent, not
+   * an identity check: Atlas has no login.
    */
   review?: {
     /** True while this document carries `review_state: human_decides`. */
@@ -59,28 +45,8 @@ export function DocMetaBar({
   const numberLocale = locale === "ko" ? "ko-KR" : "en-US";
   const readingMinutes = estimateReadingMinutes(doc.wordCount);
   const updated = new Date(doc.updatedAt);
-  /*
-   * **Two clocks, one row** (2026-09-05).
-   *
-   * Atlas keeps two different times about the same document and, until now,
-   * showed only one of them. `reviewed_at` is *meaning* time — the day a person
-   * looked at this document and said the meaning was right. `updatedAt` is
-   * *record* time — when the bytes were last written, by anyone, for any
-   * reason including a typo. A reader seeing one date alone cannot tell an
-   * approval from a save, and the two answer different questions: "is this
-   * still judged correct?" versus "has anything changed?".
-   *
-   * They sit on the same row so the gap between them is readable at a glance,
-   * with the meaning date in secondary ink and the record date dimmed — the
-   * record is the weaker claim, since nothing about a save says the meaning
-   * still holds. The dimmed column keeps `--color-text-quaternary` (#82828a),
-   * measured at 5.00:1 on `--color-panel` and 6.16:1 on `--color-canvas`, both
-   * above the 4.5:1 floor; `two-clock-row.contract.test.ts` recomputes it.
-   *
-   * Absent `reviewed_at` nothing extra renders: a document nobody has reviewed
-   * has one clock, and inventing a second would be the lie this row exists to
-   * avoid.
-   */
+  // Two clocks, one row: `reviewed_at` is meaning time (a person judged it right), `updatedAt`
+  // record time (bytes last written). One date alone cannot tell an approval from a save.
   const reviewedAtRaw = doc.frontmatter?.reviewed_at;
   const reviewedAt =
     typeof reviewedAtRaw === "string" && !Number.isNaN(Date.parse(reviewedAtRaw))
@@ -88,48 +54,16 @@ export function DocMetaBar({
       : null;
   const formatDay = (value: Date) =>
     value.toLocaleDateString(numberLocale, { year: "numeric", month: "2-digit", day: "2-digit" });
-  // The topology renders the whole ontology graph, so project, domain, capability, and element
-  // all have 1:1 nodes and can be jumped to (`buildTopologyDeeplinkForDoc` handles each kind).
+  // Every node kind has a map node; `buildTopologyDeeplinkForDoc` handles each.
   const topologyHref = buildTopologyDeeplinkForDoc(doc);
   /**
-   * **Does this document actually exist on the map** — the chip, the body, and the CTA all branch
-   * on this one value.
-   *
-   * The verdict is taken from the deeplink builder (2026-08-04) because the chip and the body used
-   * to say "map evidence" **unconditionally**. So a document with a missing, empty, or unknown
-   * `kind` — one with **no node** in the graph — still claimed to back the map. A document the
-   * builder cannot make an address for has no place on the map. Using **the same value** makes it
-   * structurally impossible for the chip to say «it is there» while the CTA cannot go.
+   * One verdict for chip, body and CTA: a document the deeplink builder cannot address has no
+   * place on the map.
    */
   const inGraph = topologyHref != null;
-  /*
-   * **An explanation earns its place only when it changes something** (2026-08-08, owner report —
-   *[the top looks a bit odd when reading a document; can it be laid out better?]*.
-   *
-   * This line used to appear on every document. But on a document that **is** on the map the
-   * sentence says nothing new — the chip immediately to its left reads "map evidence" and there is
-   * a link to the topology on its right — while eating a whole line above the body. Measured: in
-   * the shipped sample vault **all 112 documents are nodes**, so the same sentence repeated 112
-   * times, pushing the body down each time.
-   *
-   * On a document that is **not** on the map the opposite holds — why it is not, and what to do,
-   * live only in that sentence (82 documents in the dogfood vault). So it is kept only then. Same
-   * shape as this repository's degradation-card discipline: state the reason and the destination
-   * in the case that does not work.
-   *
-   * Not moved into a tooltip: on a touch device there is no hover, so it would effectively vanish,
-   * which becomes "hiding a typed fact".
-   */
-  /*
-   * ⚠️ **A wiki page is off the map *by contract*, so it must not be told to fix that**
-   * (2026-09-09). `wiki/` holds write-ups about sources, and the one thing that keeps
-   * them out of the graph is the absence of `kind:` — `isWikiPage` is that absence.
-   * This line nevertheless read *fill in what the diagnostic above says is missing and
-   * it will appear there*, which is wrong twice over: the diagnostic above is not
-   * rendered for such a page (`DocFrontmatterBlock` returns null), and the only way to
-   * follow the advice is to add the very key `validateWikiPage` reports as
-   * `kind-present`. A person doing as they were told would break the page.
-   */
+  // The explanation shows only for documents not on the map; for the rest the chip and link
+  // already say it. A wiki page gets its own sentence: the generic one would have it add
+  // the `kind:` that `validateWikiPage` rejects.
   const proofBody = inGraph ? null : t(isWikiPage(doc) ? "notOnMapWikiBody" : "notOnMapBody");
 
   return (
@@ -137,7 +71,6 @@ export function DocMetaBar({
       aria-label={inGraph ? t("recordProofAria") : t("notOnMapAria")}
       className="mx-auto flex max-w-[var(--measure-doc-column)] flex-col gap-2 border-b border-[color:var(--color-overlay-2)] px-6 py-2 text-label text-[color:var(--color-text-quaternary)] md:px-10"
     >
-      {/* Only a document that is not on the map gets its own line — there, why it is not is the fact. */}
       {proofBody ? (
         <div className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1.5">
         <span
@@ -146,7 +79,7 @@ export function DocMetaBar({
             className={
               inGraph
                 ? "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 text-label text-[color:var(--color-text-secondary)]"
-                : // Not being on the map is a fact, not an alarm — kept neutral.
+                : // Not being on the map is a fact, not an alarm.
                   "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 text-label text-[color:var(--color-text-quaternary)]"
             }
           >
@@ -160,7 +93,7 @@ export function DocMetaBar({
       ) : null}
 
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
-        {/* When it is on the map the chip joins this row — two rows become one. */}
+        {/* On the map, the chip joins this row. */}
         {proofBody ? null : (
         <span
             data-testid="doc-map-evidence"
@@ -168,7 +101,7 @@ export function DocMetaBar({
             className={
               inGraph
                 ? "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 text-label text-[color:var(--color-text-secondary)]"
-                : // Not being on the map is a fact, not an alarm — kept neutral.
+                : // Not being on the map is a fact, not an alarm.
                   "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 text-label text-[color:var(--color-text-quaternary)]"
             }
           >
@@ -176,17 +109,11 @@ export function DocMetaBar({
             {inGraph ? t("recordProofLabel") : t("notOnMapLabel")}
           </span>
         )}
-        {/* The sidebar row carries this fact, and a person who arrives any other
-            way — a link, a tab left open, coming back tomorrow — would not have
-            seen it. It belongs to the document, so it is stated on the document.
-            Neutral, like the not-on-the-map chip beside it: this is a fact to act
-            on, not an alarm. */}
+        {/* Stated on the document for readers who never saw the sidebar row; neutral, not an alarm. */}
         {reviewRow ? (
           <span
             data-testid="doc-review-chip"
-            // Geometry comes from the shared badge, not from this file. Its two
-            // older siblings above predate that primitive and are the whole of
-            // the hand-written ledger; a third would have grown it.
+            // Geometry from the shared badge; the two older chips above are the whole hand-written ledger.
             className={badgeClass({
               shape: "tag",
               className:
@@ -206,16 +133,8 @@ export function DocMetaBar({
           </span>
         ) : null}
         {review ? (
-          // One action, chosen by the state the document is already in. Offering
-          // both at once would ask a person to classify their own click before
-          // making it, and the two are not alternatives: releasing a reservation
-          // is the end of a decision, confirming is the end of a reading.
-          // **Confirming is the primary action even on a reserved node** (Codex
-          // review, 2026-09-02). Offering only "release" there meant a person
-          // who had just decided the question had to clear the reservation,
-          // wait for the folder to reread, and press again — and in between the
-          // node was agent-writable and still unapproved. Releasing without
-          // approving stays possible, as the secondary action beside it.
+          // One action for the current state; confirming is primary even on a reserved node, or the
+          // node stays agent-writable and unapproved between release and confirm.
           <button
             type="button"
             data-testid="doc-review-action"
@@ -246,21 +165,8 @@ export function DocMetaBar({
           </span>
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          {/*
-            There is **one** entrance to the map (2026-07-28).
-
-            "Meaning map" (`/ontology/?node=`) and "topology" (`/topology/?p=`) used to sit side by
-            side. But `/ontology` is a **thin redirect** to the map (the old hub is retired), so
-            both links arrive at the same screen. Two entrances differing only in parameters are
-            not a choice, they are hesitation.
-
-            Only the direct one (`/topology` focus) is kept — one redirect hop fewer, and one fewer
-            question the screen asks the user.
-          */}
-          {/* **With no address to build, the CTA is not drawn.** Zero dead CTAs is this
-              repository's contract (`.claude/rules/surfaces.md`) — a link that looks pressable and
-              selects nothing is a trap, not a degradation. It branches on the same `inGraph` value
-              above, so the chip and the CTA cannot say different things. */}
+          {/* One entrance to the map: `/ontology` is only a redirect to `/topology`. */}
+          {/* With no address the CTA is not drawn (`.claude/rules/surfaces.md`: no dead CTAs). */}
           {topologyHref ? (
             <Link
               href={topologyHref}
@@ -294,8 +200,7 @@ export function DocMetaBar({
           >
             {formatDay(updated)}
           </span>
-          {/* The version is Git's count of commits on this file, derived at build
-              time, so nobody bumps it by hand and two branches never collide on it. */}
+          {/* Git's commit count for this file, derived at build time. */}
           {doc.revision ? (
             <span data-testid="doc-revision" title={t("revisionTitle", { count: doc.revision })}>
               {t("revisionLabel", { count: doc.revision })}

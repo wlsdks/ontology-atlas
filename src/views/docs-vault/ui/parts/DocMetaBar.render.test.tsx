@@ -49,41 +49,26 @@ function renderMetaBar(targetDoc: VaultDoc = doc) {
 }
 
 describe("DocMetaBar", () => {
-  /*
-   * **Why this was renamed (2026-08-08)**: this test used to pin, as a contract, that the
-   * explanation sentence renders even on a document that **is** on the map. That was waste, not a
-   * contract — the sentence repeats what the chip on its left ("map evidence") and the link on its
-   * right ("topology") already say, while eating a whole line above the body. Measured: in the
-   * shipped sample vault **all 112 documents are nodes**, so the same sentence repeated 112 times.
-   *
-   * The property held is unchanged — "it is on the map" is stated in **words a person reads**, and
-   * no frontmatter jargon appears on screen. The case that does need an explanation (a document not
-   * on the map) is held by the test below.
-   */
-  it("in-graph 문서는 칩으로만 말한다 — 같은 말을 문장으로 되풀이하지 않는다", () => {
+  // A document on the map says so once, as a chip, with words a person reads.
+  it("states in-graph status only as a chip without repeating it as a sentence", () => {
     renderMetaBar();
 
     expect(
       screen.getByRole("region", { name: "지도 근거" }),
     ).toBeInTheDocument();
     expect(screen.getByText("지도 근거")).toBeInTheDocument();
-    // The mono path chip was deliberately removed — the canonical path is owned by the editor head
-    // and is not duplicated in the meta bar.
     expect(
       screen.queryByText("docs/ontology/capabilities/agent-graph-readiness.md"),
     ).not.toBeInTheDocument();
-    // What the chip said is not repeated as a sentence.
     expect(
       screen.queryByText(/개념으로 연결됩니다/),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/frontmatter/)).not.toBeInTheDocument();
-    // But the way to the map is still there — what was cut is the explanation, not the fact.
+    // The way to the map stays.
     expect(screen.getByTestId("doc-map-open")).toBeInTheDocument();
   });
 
-  // Why this was renamed (2026-08-04): this test used to pin, as a «contract», that a document
-  // **absent** from the graph calls itself "map evidence". That was a defect, not a contract —
-  // calling something evidence when it is not makes the word evidence mean nothing.
+  // A document absent from the graph must not call itself "map evidence".
   it("tells a non-graph doc that it is not on the map (and offers no map CTA)", () => {
     renderMetaBar({
       ...doc,
@@ -92,7 +77,6 @@ describe("DocMetaBar", () => {
       frontmatter: {},
     });
 
-    // The mono path chip was removed — the editor head owns file identity.
     expect(screen.queryByText("docs/README.md")).not.toBeInTheDocument();
     expect(screen.getByTestId("doc-map-evidence")).toHaveAttribute("data-in-graph", "false");
     expect(screen.getByText("지도에 없음")).toBeInTheDocument();
@@ -101,24 +85,14 @@ describe("DocMetaBar", () => {
         /아직 지도에 그려지지 않아요/,
       ),
     ).toBeInTheDocument();
-    // Zero dead CTAs — with no address to build, the link does not exist.
+    // No dead CTAs.
     expect(screen.queryByTestId("doc-map-open")).toBeNull();
     expect(
       screen.queryByRole("link", { name: /의미 지도/ }),
     ).not.toBeInTheDocument();
   });
 
-  /**
-   * There is **one** entrance to the map (2026-07-28).
-   *
-   * "Meaning map" (`/ontology/?node=`) and "topology" (`/topology/?p=`) used to sit side by side.
-   * But `/ontology` is a **thin redirect** to the map, so both links arrive at the same screen —
-   * two entrances differing only in parameters are not a choice, they are hesitation. Only the
-   * direct one was kept.
-   *
-   * This test holds both "there is one entrance" and "that one really goes to the map" — reducing
-   * to one while also losing the path would be loss, not reduction.
-   */
+  /** `/ontology` only redirects, so one direct entrance is kept. */
   it("renders exactly one map entrance, and it goes to the map", () => {
     renderMetaBar();
 
@@ -128,11 +102,9 @@ describe("DocMetaBar", () => {
       "/topology/?mode=focus&p=ontology%2Fcapabilities%2Fagent-graph-readiness",
     );
     expect(relationMapLink).toHaveAttribute("title", "이 개념을 지도에서 열기");
-    // The touch contract is unchanged — what was reduced is the count, not the size.
     expect(relationMapLink.className).toContain("min-h-8");
     expect(relationMapLink.className).toContain("active:translate-y-px");
 
-    // The second entrance, which went through a redirect hop, is gone.
     expect(screen.queryByRole("link", { name: /의미 지도/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole("link").filter((a) => (a.getAttribute("href") ?? "").includes("/ontology/?node="))).toHaveLength(0);
   });
@@ -147,14 +119,8 @@ describe("DocMetaBar", () => {
 });
 
 /**
- * ⚠️ **A wiki page is off the map by contract, and must not be told to fix that.**
- *
- * Measured 2026-09-09: opening `wiki/budget.md` in Docs printed *fill in what the
- * diagnostic above says is missing and it will appear there*. Two things were wrong at
- * once. There is no diagnostic above — `DocFrontmatterBlock` returns null for such a
- * page — and the only way to obey the sentence is to add `kind:`, which is the very key
- * `validateWikiPage` reports as `kind-present`. A person doing as they were told would
- * break the page.
+ * A wiki page has no `kind:` by contract (`validateWikiPage` reports one as `kind-present`), so
+ * it must not be told to add one.
  */
 describe("DocMetaBar — a wiki page is not a document that failed to become a node", () => {
   const wikiDoc: VaultDoc = {
@@ -179,10 +145,7 @@ describe("DocMetaBar — a wiki page is not a document that failed to become a n
     ).toBeInTheDocument();
   });
 
-  /*
-   * A file under `wiki/` that grew a `kind:` is an ontology node someone filed in the
-   * wrong folder — `isWikiPage` says so — and it gets the ordinary verdict again.
-   */
+  // A file under `wiki/` that has a `kind:` gets the ordinary verdict.
   it("treats a file under wiki/ that really carries a kind as the node it is", () => {
     renderMetaBar({
       ...wikiDoc,
