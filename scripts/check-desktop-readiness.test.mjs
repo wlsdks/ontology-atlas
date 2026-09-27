@@ -226,7 +226,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(readinessOutput, /unprivileged release admission binds a protected branch dispatch to its trusted workflow commit|admit-release must be unprivileged/);
   assert.match(readinessOutput, /macOS and Windows signing builds consume the admitted commit from release-signing|build-macos and build-windows must need admit-release/);
   assert.match(readinessOutput, /staging and publication use the admitted commit and requested release tag|stage-macos and publish-macos must need admit-release/);
-  assert.match(readinessOutput, /Windows checks updater-only signing credentials before its installer build|build-windows must run desktop:release-secrets -- --updater-only/);
+  assert.match(readinessOutput, /Windows builds its installer with no signing secret in the job|build-windows must run desktop:build:windows and reference no secret/);
   assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned releases and malformed PKCS#12 or App Store Connect \.p8 credentials/);
   assert.match(readinessOutput, /desktop release workflow and preflight route signing setup through the release-signing environment|release-macos\.yml must be dispatchable \(workflow_dispatch\) and sign under the release-signing environment/);
   assert.match(
@@ -718,7 +718,7 @@ test("desktop readiness checker defines durable protected-release markers", () =
   assert.ok(checker.includes("github\\.workflow_sha"));
   assert.ok(checker.includes("github\\.ref_type"));
   assert.ok(checker.includes("needs\\.admit-release\\.outputs\\.release_sha"));
-  assert.ok(checker.includes("desktop:release-secrets -- --updater-only"));
+  assert.ok(checker.includes("pnpm desktop:build:windows"));
   assert.ok(checker.includes("workflow_dispatch"));
 });
 
