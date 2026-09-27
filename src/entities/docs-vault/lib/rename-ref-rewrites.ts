@@ -298,7 +298,7 @@ export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): Ref
   if (oldSlug === newSlug) return plan(next);
 
   /* Wikilinks resolve from the referrer, as in `extractOutLinksWithContext`, and are written back
-     * in its vault-relative form; the bare tail keeps its uniqueness guard. */
+   * in its vault-relative form; the bare tail keeps its uniqueness guard. */
   next = next.replace(
     /(\[\[)([^\]|#]+)((?:[|#][^\]]*)?\]\])/g,
     (whole, open: string, target: string, rest: string) => {

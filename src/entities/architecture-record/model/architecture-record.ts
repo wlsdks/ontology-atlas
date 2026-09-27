@@ -78,7 +78,7 @@ function countOf(value: unknown, name: string): number {
   return value as number;
 }
 
-/** A persisted record carrying `source.rootPath` anywhere is invalid, not untidy. */
+/** No absolute machine path may persist in a receipt; a rootPath anywhere makes it invalid. */
 function assertNoRootPath(value: unknown, path: string): void {
   if (Array.isArray(value)) {
     value.forEach((item, index) => assertNoRootPath(item, `${path}[${index}]`));

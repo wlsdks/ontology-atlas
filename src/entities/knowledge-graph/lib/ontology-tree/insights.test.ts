@@ -37,7 +37,7 @@ describe("computeKindDistribution", () => {
     expect(computeKindDistribution([]).size).toBe(0);
   });
 
-  it("counts several kinds", () => {
+  it("counts nodes per kind across several kinds", () => {
     const dist = computeKindDistribution([
       node("a", "capability"),
       node("b", "capability"),

@@ -109,7 +109,7 @@ describe("buildAgentBriefingPacket", () => {
     expect(Array.isArray(packet.entrypoints)).toBe(true);
   });
 
-  it("handles an empty vault", () => {
+  it("reports an empty census for an empty vault", () => {
     const empty = buildAgentBriefingPacket([], [], { orphans: [] });
     expect(empty.briefing).toContain("agent onboarding brief");
     expect(empty.briefing).toContain("census: empty vault");

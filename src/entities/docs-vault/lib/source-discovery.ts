@@ -1,6 +1,8 @@
 /**
  * Rules for proposing documents; `src-tauri/src/library.rs` holds the same constants
- * (`source-discovery-rules.contract.test.ts`). Metadata only; secrets never reach the list.
+ * (`source-discovery-rules.contract.test.ts`). Metadata only; secrets never reach the list
+ * (`.claude/rules/local-first.md`): an extension allow-list, not a deny-list, so an unforeseen
+ * name stays hidden, plus a name deny-list for secrets in document formats.
  */
 
 /**

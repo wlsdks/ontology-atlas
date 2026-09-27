@@ -5,10 +5,10 @@ import type { VaultDoc, VaultSourceFile } from '../model/types';
 /**
  * The two vault file kinds that are not the graph: raw sources under `sources/` and wiki pages
  * under `wiki/` (no `kind:`). A page's `sources`, `source_hash` and `sources_truncated` say
- * whether its write-up still matches the file on disk.
+ * whether its write-up still matches the file on disk. Vault file kinds: `docs/DECISIONS.md`.
  */
 
-/** Mirrors `VAULT_SOURCES_DIR`. */
+/** The top-level wiki folder, anchored at the root like `VAULT_SOURCES_DIR`. */
 const VAULT_WIKI_DIR = 'wiki';
 
 /**
@@ -160,7 +160,10 @@ export interface LibraryModel {
   pairing: LibraryPairing;
 }
 
-/** Derived from the manifest and known hashes; the only held state is a session hash cache. */
+/**
+ * Derived from the manifest and known hashes; the only held state is a session hash cache, since a
+ * second canonical store is refused (`.claude/rules/forbidden.md`).
+ */
 export function buildLibraryModel({
   sources,
   docs,

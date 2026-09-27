@@ -38,7 +38,7 @@ const edge = (
 });
 
 describe("computeEdgeTypeDistribution", () => {
-  it("counts by type", () => {
+  it("counts edges per relation type", () => {
     const dist = computeEdgeTypeDistribution([
       edge("e1", "a", "b", "contains"),
       edge("e2", "b", "c", "contains"),

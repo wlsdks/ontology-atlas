@@ -74,7 +74,7 @@ interface WalkEntry {
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i;
 
 /**
- * The top-level raw-source folder: listed by name, format, size and mtime, never read.
+ * The top-level raw-source folder: listed by name, format, size and mtime, never read (`docs/DECISIONS.md`).
  * Mirrored in `src-tauri/src/lib.rs`; `vault-walk-rules.contract.test.ts` holds them together.
  */
 export const VAULT_SOURCES_DIR = 'sources';
@@ -89,7 +89,10 @@ function vaultSourceFormat(name: string): string {
   return at > 0 ? name.slice(at + 1).toLowerCase() : '';
 }
 
-/** Source-code extensions, counted but never read, so first run can tell a repository from a documents folder. */
+/**
+ * Source-code extensions, counted but never read, so first run can tell a repository from a documents folder
+ * (`docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md`, finding 3).
+ */
 const SOURCE_EXT =
   /\.(m?[jt]sx?|vue|svelte|dart|py|go|rs|java|kt|swift|rb|php|cs|c|cc|cpp|h|hpp|scala|ex|exs|sh)$/i;
 
@@ -438,7 +441,7 @@ function aggregateBuild(
   }
 
   // Frontmatter relation refs add backlinks too, deduped by fromSlug so a body link's richer
-    // context wins.
+  // context wins.
   const slugSet = new Set(docs.map((doc) => doc.slug));
   const tailToSlug = new Map<string, string | null>();
   for (const doc of docs) {
@@ -519,7 +522,7 @@ async function collectEntries(
   const files = walked.entries;
   const entries: BuiltVaultEntry[] = [];
   /* Sources are listed by size and mtime from native stamps, never opened (`getFile()` under
-     * Tauri transfers the whole file). On the web a directory `File` is metadata only. */
+   * Tauri transfers the whole file). On the web a directory `File` is metadata only. */
   const stamps = files.some((entry) => entry.kind === 'source')
     ? await nativeStampIndex(root)
     : null;
@@ -590,7 +593,7 @@ export async function rebuildLocalManifestIncremental(
   providedStamps?: VaultStampIndex | null,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
   /* The walk info must survive an incremental rebuild: the first-run card reads
-     * `sourceFileCount`, and its absence reorders the card while it is on screen. */
+   * `sourceFileCount`, and its absence reorders the card while it is on screen. */
   const walked = await walkVault(root);
   const files = walked.entries;
   const walkInfo = {
@@ -600,7 +603,7 @@ export async function rebuildLocalManifestIncremental(
   };
   const prevByPath = new Map(previous.map((e) => [e.relativePath, e] as const));
   /* Decide from native mtimes before calling `getFile()`, which under Tauri transfers the whole
-     * body. The web has no batch API and gets null (`.claude/rules/surfaces.md`). */
+   * body. The web has no batch API and gets null (`.claude/rules/surfaces.md`). */
   const nativeStamps: VaultStampIndex | null = providedStamps ?? (await nativeStampIndex(root));
   const entries: BuiltVaultEntry[] = [];
   for (const entry of files) {

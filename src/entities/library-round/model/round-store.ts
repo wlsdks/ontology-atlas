@@ -67,7 +67,7 @@ function clampAbsenceStart(state: RoundState, awayFrom: string, at: string, born
 
 export function createRoundStore(medium: RoundMedium): RoundStore {
   /* An `awayFrom` this process did not write may be left by a crash, so its start is clamped;
-     * one opened here is exact. */
+   * one opened here is exact. */
   const bornAt = Date.now();
   let openedHere = false;
 

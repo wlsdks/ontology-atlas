@@ -38,9 +38,9 @@ export interface KnowledgeGraphNode {
   /** Whether the node has its own `.md`; absent reads as true. See `resolveNodeDocument`. */
   hasOwnDocument?: boolean;
   /**
-     * The vault-relative name MCP and the CLI accept; `evidenceIds[0]` may carry a bundle-root prefix
-     * or another document's slug. Absent falls back to it (`resolveNodeAgentTarget`).
-     */
+   * The vault-relative name MCP and the CLI accept; `evidenceIds[0]` may carry a bundle-root prefix
+   * or another document's slug. Absent falls back to it (`resolveNodeAgentTarget`).
+   */
   agentSlug?: string | null;
   /** The reference as written, for a node without a document. */
   ref?: string;

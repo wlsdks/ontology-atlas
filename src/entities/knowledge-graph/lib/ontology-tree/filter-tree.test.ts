@@ -175,7 +175,7 @@ describe("knowledgeNodeMatchesQuery", () => {
     expect(knowledgeNodeMatchesQuery(n, "capability:mcp")).toBe(true);
   });
 
-  it("matches queries typed on a Korean keyboard layout like the palette", () => {
+  it("matches initial-consonant and half-typed Hangul queries like the palette", () => {
     // Measured 2026-09-19: INDEX said "no matching concept" to both of these while
     // the palette on the same screen resolved them against the same vault.
     const cart = node("capability:cart", "장바구니");
@@ -327,7 +327,7 @@ describe("filterTreeByNodeIds", () => {
     expect(r[0]?.children[0]?.children).toHaveLength(0);
   });
 
-  it("keeps ancestors and only the changed descendant", () => {
+  it("keeps ancestors and only the changed grandchild when only a grandchild changed", () => {
     const r = filterTreeByNodeIds(tree.roots, new Set(["grand-1"]));
     expect(r).toHaveLength(1); // root
     expect(r[0]?.children).toHaveLength(1); // child-1 (ancestor)

@@ -95,7 +95,7 @@ describe('findRelatedDocs', () => {
     expect(result[0].reasons).toContain('frontmatter.projects');
   });
 
-  it('respects limit', () => {
+  it('returns at most limit docs when more match', () => {
     const docs = Array.from({ length: 10 }, (_, i) =>
       doc({ slug: `d${i}`, frontmatter: { projects: ['reactor'] } }),
     );

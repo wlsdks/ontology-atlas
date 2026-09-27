@@ -1,6 +1,7 @@
 /**
  * The app-side review mark and digest, mirroring `mcp/src/schema.mjs` (`review-mark.contract.test.ts`).
  * The mark means no Atlas write tool produced this, not that a person was authenticated.
+ * Background: `docs/benchmark/FINDINGS-2026-09-02-review-marks.md`; queue scope: `docs/DECISIONS.md`.
  */
 
 import type { VaultDoc } from '../model/types';

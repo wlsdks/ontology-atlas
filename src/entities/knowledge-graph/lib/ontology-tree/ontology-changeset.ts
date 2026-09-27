@@ -13,7 +13,7 @@ export interface OntologySnapshot {
   nodeSigs: Map<string, string>;
   /** Kept apart from the signature so a removed node's kind can still be shown. */
   nodeKinds: Map<string, string>;
-  /** `from`, `to` and `type` joined with SEP. */
+  /** `"from\u0001to\u0001type"`, joined with SEP. */
   edgeKeys: Set<string>;
   /** Stamped by the caller, in ms. */
   takenAt: number;

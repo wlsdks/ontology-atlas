@@ -105,8 +105,7 @@ function needsQuote(s: string): boolean {
   return s === 'true' || s === 'false' || (s !== '' && !Number.isNaN(Number(s)));
 }
 
-/** Newlines fold to `
-`. */
+/** Folds newlines to the two-character `\n` escape. */
 function escapeQuoted(s: string): string {
   return s
     .replace(/\\/g, '\\\\')

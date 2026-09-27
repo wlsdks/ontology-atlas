@@ -14,9 +14,9 @@ export interface LocalFsHandleRecord {
   /** Refreshed on restore and open. */
   lastAccessedAt: number;
   /**
-     * Counts from the last real read, cached at load because a chooser cannot read folders without a
-     * permission gesture. Absent for older records, never shown as zero.
-     */
+   * Counts from the last real read, cached at load because a chooser cannot read folders without a
+   * permission gesture. Absent for older records, never shown as zero.
+   */
   docCount?: number;
   /** Kind-bearing documents outside `wiki/`, as `src/features/library/lib/lint-brief.ts` counts them. */
   conceptCount?: number;

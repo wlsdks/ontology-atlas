@@ -14,8 +14,7 @@ export function generateNodeUid(uid?: string): string {
   return resolved;
 }
 
-/** Quotes a YAML scalar, folding newlines to `
-`; four writers must agree on this rule. */
+/** A raw newline would inject keys or end the frontmatter, so newlines fold to `\n`; four writers must agree. */
 function quoteYamlScalar(v: string): string {
   // Boolean- and number-shaped strings are quoted, or they read back retyped.
   if (v === 'true' || v === 'false' || (v !== '' && !Number.isNaN(Number(v)))) {

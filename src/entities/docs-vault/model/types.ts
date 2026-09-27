@@ -24,9 +24,9 @@ export interface VaultDoc {
   /** Source paths from the project competency block; derived at load, never written back. */
   meaningEvidencePaths?: string[];
   /**
-     * Meaning finding codes (`src/shared/lib/meaning-findings.ts`). Absent: not a node. `null`: the
-     * rule was unavailable at build, so nothing was measured; never read it as clean.
-     */
+   * Meaning finding codes (`src/shared/lib/meaning-findings.ts`). Absent: not a node. `null`: the
+   * rule was unavailable at build, so nothing was measured; never read it as clean.
+   */
   meaningFindings?: string[] | null;
   wordCount: number;
   updatedAt: string;
@@ -37,7 +37,7 @@ export interface VaultDoc {
   mtime?: number;
 }
 
-/** A raw file under `sources/`, known from its directory entry only and never opened. */
+/** A raw file under `sources/`, known from its directory entry only and never opened (`docs/DECISIONS.md`). */
 export interface VaultSourceFile {
   /** Always begins `sources/`. */
   path: string;

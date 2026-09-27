@@ -99,7 +99,7 @@ export function summaryStalenessOf(revisions: readonly NodeRevision[]): SummaryS
     if (bodyChangedAt !== null && membershipChangedAt !== null) break;
   }
   // Unchanged back to the oldest revision: its timestamp is a lower bound that can only understate
-    // the lag. `mcp/src/stale-parent.mjs` does the same.
+  // the lag. `mcp/src/stale-parent.mjs` does the same.
   const oldest = parsed[parsed.length - 1].isoTime;
   const bodyTime = toTime(bodyChangedAt ?? oldest);
   const membershipTime = toTime(membershipChangedAt ?? oldest);

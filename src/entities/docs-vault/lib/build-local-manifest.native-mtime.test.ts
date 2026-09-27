@@ -156,7 +156,7 @@ describe('incremental rebuild with native stamps skips unchanged files', () => {
       seed.entries,
     );
 
-    expect(nativeVaultFingerprint, 'native stamps are requested once').toHaveBeenCalledTimes(1);
+    expect(nativeVaultFingerprint).toHaveBeenCalledTimes(1);
     expect(
       [...opens.keys()],
       'only the changed file is opened; the rest are reused by mtime',

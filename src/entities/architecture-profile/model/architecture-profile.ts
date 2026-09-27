@@ -19,9 +19,9 @@ interface ArchitectureRole {
   /** What this role is for, in a reviewer's sentence; a role id is a folder name and states no intent. */
   summary?: string;
   /**
-     * Translations of `summary` by locale, read only by the web workbench; agents, prompts and the
-     * CLI print only the canonical `summary`.
-     */
+   * Translations of `summary` by locale, read only by the web workbench; agents, prompts and the
+   * CLI print only the canonical `summary`.
+   */
   summaries: Record<string, string>;
 }
 
@@ -359,7 +359,7 @@ export function buildArchitectureAgentPrompt(
         ];
 
   /* The readable sentence goes first: `splitAppRequest` folds at the first marker line, and text
-     * is only reordered, never changed, since it lands as the person's own turn. */
+   * is only reordered, never changed, since it lands as the person's own turn. */
   return [
     `Start from the reviewed architecture profile ${profile.slug}.`,
     `Architecture task context: ${JSON.stringify(packet)}`,
@@ -377,6 +377,7 @@ export function buildArchitectureAgentPrompt(
  * The empty state's request to a connected agent; the app never calls MCP itself. It must not ask for
  * `allow_*`, `dependency_policy`, `dependency_usages`, pattern or role names, or generated evidence:
  * rules derived from imports approve the status quo, and `patterns` stays a person's decision.
+ * Why role names and generated evidence are refused: `docs/DECISIONS.md`.
  */
 export function buildArchitectureDraftPrompt(
   context: ArchitectureHandoffContext | null = null,

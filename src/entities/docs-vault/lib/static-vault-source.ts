@@ -13,9 +13,9 @@ export interface StaticVaultSource {
   /** slug → markdown for the `guide/*` documents needed before first paint; the rest load from `public/docs-vault/`. */
   content: Record<string, string>;
   /**
-     * Truncated synchronous previews for documents too large to bundle, cut on `## ` boundaries;
-     * `omittedSections` counts the cut.
-     */
+   * Truncated synchronous previews for documents too large to bundle, cut on `## ` boundaries;
+   * `omittedSections` counts the cut.
+   */
   contentPreviews?: Record<string, { body: string; omittedSections: number }>;
   /** Manifest slug prefix absent from the agent's vault root (`ontology/` in the dogfood bundle); none locally. */
   agentSlugPrefix?: string;

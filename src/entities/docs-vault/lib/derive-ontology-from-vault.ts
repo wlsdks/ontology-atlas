@@ -140,7 +140,7 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
   if (!rawKind) return null;
   const title = doc.title?.trim() || doc.slug.split('/').pop() || doc.slug;
   // A project id uses the frontmatter slug so it equals `computeProjectSlug` and the containment
-    // `projectIds`; other kinds keep the file slug so external refs still resolve.
+  // `projectIds`; other kinds keep the file slug so external refs still resolve.
   let idSlug: string;
   const fmSlug = typeof fm.slug === 'string' ? fm.slug.trim() : '';
   if (rawKind === 'project' && fmSlug) {
@@ -195,7 +195,7 @@ function deriveOntologyFromVaultUncached(
     if (derived) {
       let docNode = derived;
       // Two same-kind docs with the same tail would collide: the later keeps its full-path id, a
-            // warning is raised, and the shared tail alias resolves to neither.
+      // warning is raised, and the shared tail alias resolves to neither.
       if (nodes.has(docNode.id)) {
         const disambiguated = `${docNode.kind}:${doc.slug}`;
         warnings.push(
@@ -429,7 +429,7 @@ function deriveOntologyFromVaultUncached(
     }
 
     // `dependencies[]` and `depends_on[]` are aliases (`mcp/src/vault.mjs` NEIGHBOR_KEY_ALIASES); one
-        // target counts once. Gate: tests/contract/derive-relation-keys.contract.test.ts.
+    // target counts once. Gate: tests/contract/derive-relation-keys.contract.test.ts.
     const seenDepIds = new Set<string>();
     for (const dep of [...asStringArray(fm.dependencies), ...asStringArray(fm.depends_on)]) {
       const folderRef = resolveFolderPrefixedRef(dep);

@@ -364,9 +364,9 @@ function dependencyCycleCount(graph: CompiledGraph): number {
   }
 
   /**
-     * Nodes that can reach `start` within MAX_DEPTH, with distances; other branches cannot close a
-     * cycle and are pruned, which keeps a dense 2000-node graph on the main thread in milliseconds.
-     */
+   * Nodes that can reach `start` within MAX_DEPTH, with distances; other branches cannot close a
+   * cycle and are pruned, which keeps a dense 2000-node graph on the main thread in milliseconds.
+   */
   const reverseDistances = (start: string): Map<string, number> => {
     const dist = new Map<string, number>();
     let frontier = [start];
@@ -498,9 +498,9 @@ export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealth
 }
 
 /**
-   * References no node answers to, grouped by name: concepts agents reached for that the vault
-   * lacks. Resolved exactly like `compile()`; MCP twin: `resolve_dangling_reference`.
-   */
+ * References no node answers to, grouped by name: concepts agents reached for that the vault
+ * lacks. Resolved exactly like `compile()`; MCP twin: `resolve_dangling_reference`.
+ */
 export interface UnmatchedGraphAsk {
   /** The name as written in frontmatter. */
   ref: string;

@@ -83,10 +83,10 @@ export const AGENT_FILE_RULES: readonly AgentFileRule[] = Object.freeze([
   { id: 'codex-dir', kind: 'config', tools: ['codex'], pattern: /^\.codex\/.+/ },
   { id: 'mcp-json', kind: 'mcp-config', tools: ['claude-code', 'cursor'], pattern: /^\.mcp\.json$/ },
   /*
-     * Exclusion files, one product each (sources in `guide-citations.ts`): `.cursorignore` and
-     * `.cursorindexingignore` Cursor, `.codeiumignore` Windsurf, `.aiexclude` Gemini Code Assist
-     * (not Gemini CLI), `.aiignore` JetBrains. `tools` stays empty for products outside `AgentTool`.
-     */
+   * Exclusion files, one product each (sources in `guide-citations.ts`): `.cursorignore` and
+   * `.cursorindexingignore` Cursor, `.codeiumignore` Windsurf, `.aiexclude` Gemini Code Assist
+   * (not Gemini CLI), `.aiignore` JetBrains. `tools` stays empty for products outside `AgentTool`.
+   */
   { id: 'cursor-ignore', kind: 'exclusion', tools: ['cursor'], pattern: /^\.cursorignore$/ },
   { id: 'cursor-indexing-ignore', kind: 'exclusion', tools: ['cursor'], pattern: /^\.cursorindexingignore$/ },
   { id: 'codeium-ignore', kind: 'exclusion', tools: [], pattern: /^\.codeiumignore$/ },
@@ -407,7 +407,7 @@ export function analyzeAgentFiles({
   })();
 
   // Agent briefs, byte diff. Unlike skills, a seat present on one side only is drift: the
-    // registry and its reference document must both exist.
+  // registry and its reference document must both exist.
   const agentCopy = (() => {
     const claudeByName = new Map<string, InternalRecord>();
     const agentsByName = new Map<string, InternalRecord>();
@@ -559,9 +559,9 @@ export function analyzeAgentFiles({
   })();
 
   /**
-     * Brief MCP grants, each tree against its own reader's config (`.claude` → `.mcp.json`,
-     * `.agents` → `.codex/config.toml`). A config declaring nothing makes every grant undeclared.
-     */
+   * Brief MCP grants, each tree against its own reader's config (`.claude` → `.mcp.json`,
+   * `.agents` → `.codex/config.toml`). A config declaring nothing makes every grant undeclared.
+   */
   const mcpGrants = (() => {
     const sources = [
       {
@@ -668,6 +668,8 @@ export function analyzeAgentFiles({
     };
   })();
 
+  // Codex merges AGENTS.md files from the root down the working path and nested files are one
+  // level deep, so the worst case is root plus the largest nested file, not the sum.
   const codexSizeCap = (() => {
     const agents = recordByPath.get('AGENTS.md');
     const nested = records.filter((r) => r.ruleId === 'nested-agents-md');
