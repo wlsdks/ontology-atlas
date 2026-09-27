@@ -38,22 +38,22 @@ const baseInput = (competency) => ({
   competency,
 });
 
-test('역량 블록이 아예 없으면 「안 적었다」고 말한다', () => {
+test('says not authored when the capability block is absent', () => {
   const assessment = deriveMeaningAssessment(baseInput(null));
   assert.equal(
     assessment.topGap.id,
     'competency_not_authored',
-    '없는 것을 `assessment_input_invalid` 로 부르면 사용자는 자기가 뭘 깨뜨린 줄 안다',
+    'calling an absence `assessment_input_invalid` makes the user think they broke something',
   );
   assert.equal(assessment.topGap.dimension, 'competency');
 });
 
-test('그리고 무엇을 하면 되는지 같이 준다 — 처방 없는 진단은 진단이 아니다', () => {
+test('also says what to do, since a diagnosis without a remedy is no diagnosis', () => {
   const assessment = deriveMeaningAssessment(baseInput(null));
   assert.equal(assessment.nextAction.id, 'author_competency_answers');
 });
 
-test('블록이 **있는데 틀린** 것은 여전히 「입력이 잘못됐다」다', () => {
+test('a block that is present but wrong is still invalid input', () => {
   // Collapsing this back together undoes the fix — genuinely broken input must still be called that.
   const assessment = deriveMeaningAssessment(
     baseInput({
@@ -68,13 +68,13 @@ test('블록이 **있는데 틀린** 것은 여전히 「입력이 잘못됐다�
   assert.equal(assessment.topGap.id, 'assessment_input_invalid');
 });
 
-test('다른 것이 틀렸으면 그것을 먼저 말한다 — 역량 부재가 다른 결함을 가리지 않는다', () => {
+test('names another error first, so a missing capability does not hide other defects', () => {
   // The project slug itself is wrong. That is a problem that precedes "not written".
   const assessment = deriveMeaningAssessment({ ...baseInput(null), projectSlug: '' });
   assert.equal(assessment.topGap.id, 'assessment_input_invalid');
 });
 
-test('제대로 적힌 역량은 이 갈래를 안 탄다 — 늘 「안 적었다」면 그것도 검사가 아니다', () => {
+test('a well-formed capability does not take this branch, since always saying not authored is no check', () => {
   const assessment = deriveMeaningAssessment(
     baseInput({
       contract: MEANING_COMPETENCY_CONTRACT,

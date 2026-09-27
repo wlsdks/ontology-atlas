@@ -31,21 +31,21 @@ const node = (slug, frontmatter) => ({
   mtime: 1,
 });
 
-describe('빈 볼트를 정상이라고 답하지 않는다', () => {
-  it('노드 0개면 `healthy` 가 아니다 — 실측 재현', () => {
+describe('does not report an empty vault as healthy', () => {
+  it('zero nodes is not `healthy`', () => {
     const result = health([]);
     assert.equal(result.summary.nodes, 0);
     assert.notEqual(result.status, 'healthy');
   });
 
-  it('그 이유를 검사 한 줄로 말한다 — 사람이 무엇을 할지 알 수 있게', () => {
+  it('names the reason in one check so a person knows what to do', () => {
     const check = health([]).checks.find((c) => c.id === 'vault_present');
-    assert.ok(check, 'vault_present 검사가 있어야 한다');
+    assert.ok(check);
     assert.equal(check.status, 'fail');
     assert.match(check.message, /폴더|folder|vault/i);
   });
 
-  it('나머지 검사가 빈 집합 위에서 헛돌고 있었다는 것도 같이 못박는다', () => {
+  it('pins that the other checks pass vacuously on an empty set', () => {
     // If this assertion breaks, the check above has not become unnecessary — some
     // other check has started behaving differently on an empty vault, and this is
     // the place to look again.
@@ -54,11 +54,11 @@ describe('빈 볼트를 정상이라고 답하지 않는다', () => {
     assert.deepEqual(
       [...new Set(others.map((c) => c.status))],
       ['pass'],
-      '노드가 없으면 나머지 검사는 전부 셀 것이 없어 통과한다',
+      'with no nodes every other check has nothing to count and passes',
     );
   });
 
-  it('노드가 하나라도 있으면 통과한다 — 검사가 늘 실패하면 그것도 검사가 아니다', () => {
+  it('passes with at least one node, since a check that always fails is no check', () => {
     const result = health([node('domains/auth', { kind: 'domain', title: 'Auth' })]);
     const check = result.checks.find((c) => c.id === 'vault_present');
     assert.equal(check.status, 'pass');

@@ -68,7 +68,7 @@ function remedyIdsInSource() {
 function hintKeys() {
   const text = readFileSync(HINT_TABLE_FILE, 'utf8');
   const start = text.indexOf('const MEANING_NEXT_ACTION_HINTS = Object.freeze({');
-  assert.ok(start > 0, '표를 못 찾았다 — 이 검사는 아무것도 못 잰다');
+  assert.ok(start > 0, 'table not found, so this check measures nothing');
   const end = text.indexOf('});', start);
   const block = text.slice(start, end);
   return new Set([...block.matchAll(/^\s{2}([a-z_]+):/gm)].map((m) => m[1]));
@@ -102,14 +102,14 @@ const GAP_IDS = new Set([
   'declared_source_path_missing',
 ]);
 
-test('검사가 헛돌고 있지 않다 — 실제로 처방을 긁고 있다', () => {
+test('the scan is not idle: it really collects the remedies', () => {
   const ids = remedyIdsInSource();
-  assert.ok(ids.size >= 15, `소스에서 id 를 ${ids.size}개만 찾았다 — 스캔이 죽었다`);
+  assert.ok(ids.size >= 15, `found only ${ids.size} ids in the source, so the scan is dead`);
   assert.ok(ids.has('author_competency_answers'));
   assert.ok(ids.has('resolve_competency_question'));
 });
 
-test('소스가 낼 수 있는 처방에는 전부 할 수 있는 말이 있다', () => {
+test('every remedy the source can emit has a sentence', () => {
   const keys = hintKeys();
   const remedies = [...remedyIdsInSource()].filter((id) => !GAP_IDS.has(id));
   const missing = remedies.filter((id) => !keys.has(id));
@@ -121,17 +121,17 @@ test('소스가 낼 수 있는 처방에는 전부 할 수 있는 말이 있다'
   );
 });
 
-test('표에 실재하지 않는 처방이 없다 — 죽은 칸은 안 걸리고 살아 있는 척한다', () => {
+test('the table has no remedy the source never emits, since a dead row passes while pretending to be live', () => {
   const ids = remedyIdsInSource();
   const dead = [...hintKeys()].filter((k) => !ids.has(k));
   assert.deepEqual(
     dead,
     [],
-    `이 열쇠는 소스 어디에서도 안 나온다(오타이거나 지어낸 것): ${dead.join(', ')}`,
+    `no source emits these keys (a typo or invented): ${dead.join(', ')}`,
   );
 });
 
-test('문장이 실제로 뭔가를 말한다 — 짧은 껍데기는 id 와 다를 바 없다', () => {
+test('each sentence says something, since a short shell is no better than the id', () => {
   const text = readFileSync(HINT_TABLE_FILE, 'utf8');
   const start = text.indexOf('const MEANING_NEXT_ACTION_HINTS = Object.freeze({');
   const block = text.slice(start, text.indexOf('});', start));
@@ -143,7 +143,7 @@ test('문장이 실제로 뭔가를 말한다 — 짧은 껍데기는 id 와 다
   const keyAt = lines
     .map((line, i) => (/^ {2}[a-z_]+:/.test(line) ? i : -1))
     .filter((i) => i >= 0);
-  assert.ok(keyAt.length >= 10, '잰 항목이 너무 적다 — 이 검사는 아무것도 못 잰다');
+  assert.ok(keyAt.length >= 10, 'too few entries measured, so this check measures nothing');
   for (let n = 0; n < keyAt.length; n += 1) {
     const from = keyAt[n];
     const to = n + 1 < keyAt.length ? keyAt[n + 1] : lines.length;
@@ -153,7 +153,7 @@ test('문장이 실제로 뭔가를 말한다 — 짧은 껍데기는 id 와 다
     const prose = value.replace(/\/\/[^\n]*/g, '').replace(/[^A-Za-z0-9 .,`'()/-]/g, ' ');
     assert.ok(
       prose.trim().length > 40,
-      `${key} 의 문장이 너무 짧다(${prose.trim().length}자) — 무엇을 하면 되는지 말하지 못한다`,
+      `the sentence for ${key} is too short (${prose.trim().length} chars) to say what to do`,
     );
   }
 });

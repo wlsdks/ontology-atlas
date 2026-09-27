@@ -57,7 +57,7 @@ function writeMd(root, slug, content) {
 
 console.log("conflict-detection");
 
-test("readDoc 응답에 mtime 포함", () => {
+test("readDoc returns the mtime", () => {
   const root = makeVault();
   writeMd(root, "foo", "---\nkind: capability\n---\nbody");
   const doc = readDoc(root, join(root, "foo.md"));
@@ -66,7 +66,7 @@ test("readDoc 응답에 mtime 포함", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("expectedMtime 미지정 시 검증 skip (기존 호출자 호환)", () => {
+test("skips the check when expectedMtime is omitted (existing callers stay compatible)", () => {
   const root = makeVault();
   writeMd(root, "foo", "---\nkind: capability\n---\n");
   // Without expectedMtime, patchFrontmatter proceeds normally
@@ -76,7 +76,7 @@ test("expectedMtime 미지정 시 검증 skip (기존 호출자 호환)", () => 
   rmSync(root, { recursive: true, force: true });
 });
 
-test("expectedMtime 일치하면 patchFrontmatter 통과", () => {
+test("patchFrontmatter passes when expectedMtime matches", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
   const mtime = getFileMtime(file);
@@ -84,7 +84,7 @@ test("expectedMtime 일치하면 patchFrontmatter 통과", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("expectedMtime 불일치 시 VaultConflictError", () => {
+test("throws VaultConflictError when expectedMtime differs", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
   const stale = getFileMtime(file) - 5000; // 5s ago — simulates an external change
@@ -107,7 +107,7 @@ test("expectedMtime 불일치 시 VaultConflictError", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("VaultConflictError 가 slug / mtimes 노출", () => {
+test("VaultConflictError exposes the slug and both mtimes", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
   const stale = getFileMtime(file) - 5000;
@@ -127,7 +127,7 @@ test("VaultConflictError 가 slug / mtimes 노출", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("updateDoc 도 expectedMtime 옵션 따른다", () => {
+test("updateDoc honours the expectedMtime option", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
   const stale = getFileMtime(file) - 5000;
@@ -144,7 +144,7 @@ test("updateDoc 도 expectedMtime 옵션 따른다", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("updateDoc 는 null body 를 빈 본문으로 coerce 하지 않는다", () => {
+test("updateDoc does not coerce a null body to an empty body", () => {
   const root = makeVault();
   writeMd(root, "foo", "---\nkind: capability\n---\nold body");
 
@@ -160,7 +160,7 @@ test("updateDoc 는 null body 를 빈 본문으로 coerce 하지 않는다", () 
   rmSync(root, { recursive: true, force: true });
 });
 
-test("writeDoc 는 invalid frontmatter/body 를 쓰기 전에 거부한다", () => {
+test("writeDoc rejects invalid frontmatter or body before writing", () => {
   const root = makeVault();
 
   assert.throws(
@@ -184,7 +184,7 @@ test("writeDoc 는 invalid frontmatter/body 를 쓰기 전에 거부한다", () 
   rmSync(root, { recursive: true, force: true });
 });
 
-test("patchFrontmatter 는 invalid patch 를 generic TypeError 전에 거부한다", () => {
+test("patchFrontmatter rejects an invalid patch before a generic TypeError", () => {
   const root = makeVault();
   writeMd(root, "foo", "---\nkind: capability\n---\nold body");
 
@@ -201,7 +201,7 @@ test("patchFrontmatter 는 invalid patch 를 generic TypeError 전에 거부한�
   rmSync(root, { recursive: true, force: true });
 });
 
-test("updateDoc 는 invalid frontmatter patch 를 쓰기 전에 거부한다", () => {
+test("updateDoc rejects an invalid frontmatter patch before writing", () => {
   const root = makeVault();
   writeMd(root, "foo", "---\nkind: capability\n---\nold body");
 
@@ -224,7 +224,7 @@ test("updateDoc 는 invalid frontmatter patch 를 쓰기 전에 거부한다", (
   rmSync(root, { recursive: true, force: true });
 });
 
-test("deleteDoc 도 expectedMtime 옵션 따른다", () => {
+test("deleteDoc honours the expectedMtime option", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
   const stale = getFileMtime(file) - 5000;
@@ -237,7 +237,7 @@ test("deleteDoc 도 expectedMtime 옵션 따른다", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("read → write 일치 흐름은 conflict 없음 (round-trip)", () => {
+test("a matching read then write round-trip has no conflict", () => {
   const root = makeVault();
   writeMd(root, "foo", "---\nkind: capability\n---\nold body");
   const doc = readDoc(root, join(root, "foo.md"));
@@ -251,7 +251,7 @@ test("read → write 일치 흐름은 conflict 없음 (round-trip)", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("patch는 atomic rename 직전 사람 편집을 보존하고 충돌로 멈춘다", () => {
+test("patch keeps a human edit made right before the atomic rename and stops with a conflict", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\nold body");
   const doc = readDoc(root, file);
@@ -270,7 +270,7 @@ test("patch는 atomic rename 직전 사람 편집을 보존하고 충돌로 멈�
   rmSync(root, { recursive: true, force: true });
 });
 
-test("delete는 unlink 직전 사람 편집을 보존하고 충돌로 멈춘다", () => {
+test("delete keeps a human edit made right before unlink and stops with a conflict", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\nold body");
   const doc = readDoc(root, file);

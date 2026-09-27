@@ -196,7 +196,7 @@ test('Generic repo — src/ depth-1 folders → capabilities', () => {
     );
     // index.ts → element — slug stays flat, the file location goes in `path`.
     const apiEl = r.elements.find((e) => e.slug === 'elements/api-entry');
-    assert.ok(apiEl, 'api index.ts → element 후보');
+    assert.ok(apiEl);
     assert.equal(apiEl.path, 'src/api/index.ts');
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -2752,7 +2752,7 @@ test('workspace semantic evidence rejects package files that resolve outside the
   }
 });
 
-test('최상위 독립 패키지(mcp/·cli/ 류)가 요소 후보로 잡힌다 — package.json 이 판별자', () => {
+test('a top-level standalone package (like mcp/ or cli/) becomes an element candidate, keyed by package.json', () => {
   // Measured 2026-08-01: analyze walked only the src/ FSD layers, so this
   // repository's agent surfaces (mcp/, cli/) were missing entirely from a
   // regenerated vault. The tool's field of view is the vault's reach, so a reach
@@ -4549,7 +4549,7 @@ test('invalid analyze options are rejected instead of coerced', () => {
  * read.** If the only consequence of calling something FSD is "there are no
  * folders to walk", the name does nothing but suppress.
  */
-test('src/shared 하나로 FSD 라 부르지 않는다 — 훑을 폴더가 없으면 일반 경로로 간다', () => {
+test('src/shared alone is not FSD: with no folder to scan it takes the generic path', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'taskflow', description: 'x' }));
     writeFileSync(join(r, 'README.md'), '# Taskflow\n');
@@ -4566,7 +4566,7 @@ test('src/shared 하나로 FSD 라 부르지 않는다 — 훑을 폴더가 없�
     assert.notEqual(r.framework, 'fsd');
     const slugs = r.capabilities.map((c) => c.slug).sort();
     for (const expected of ['capabilities/auth', 'capabilities/db', 'capabilities/notifications', 'capabilities/tasks']) {
-      assert.ok(slugs.includes(expected), `${expected} 가 후보에 없다: ${slugs.join(', ')}`);
+      assert.ok(slugs.includes(expected), `${expected} is missing from the candidates: ${slugs.join(', ')}`);
     }
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -4574,7 +4574,7 @@ test('src/shared 하나로 FSD 라 부르지 않는다 — 훑을 폴더가 없�
 });
 
 // Real FSD must stay FSD — check the fix did not break the other side.
-test('훑을 폴더가 하나라도 있으면 여전히 FSD 다 (lean FSD 포함)', () => {
+test('is still FSD when at least one folder to scan exists (lean FSD included)', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'lean', description: 'x' }));
     writeFileSync(join(r, 'README.md'), '# Lean\n');

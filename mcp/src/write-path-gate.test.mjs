@@ -202,8 +202,8 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   // code entrypoint" for 8 of 16 capabilities. The rules demand evidence and
   // nobody reported its absence. **This does not block** — the write succeeds and
   // only the signal fires.
-  describe('capability without evidence — 막지 않고 말한다', () => {
-    it('생성 시점에 `elements:` 가 비면 한 번 말한다 (쓰기는 성공한다)', () => {
+  describe('capability without evidence — says so without blocking', () => {
+    it('says so once when `elements:` is empty at creation (the write succeeds)', () => {
       writeDoc(root, 'capabilities/no-evidence', {
         frontmatter: {
           slug: 'capabilities/no-evidence',
@@ -222,7 +222,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       assert.match(finding.message, /patch_concept/);
     });
 
-    it('capability path 만 있어도 증거다 — 노드가 아니어도 조용하다', () => {
+    it('a capability path alone is evidence, so it stays quiet even without a node', () => {
       writeDoc(root, 'capabilities/path-evidence', {
         frontmatter: {
           slug: 'capabilities/path-evidence',
@@ -238,7 +238,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       assert.equal(codes.includes('path-shaped-reference'), false);
     });
 
-    it('나중 수정에는 다시 말하지 않는다 — 이름 먼저, 파일 나중이 정직한 순서다', () => {
+    it('does not repeat on later edits: name first, file later is the honest order', () => {
       writeDoc(root, 'capabilities/later', {
         frontmatter: {
           slug: 'capabilities/later',
@@ -384,7 +384,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     );
   });
 
-  it('writeDoc leaves foreign vault nesting alone (schema folder 밖)', () => {
+  it('writeDoc leaves foreign vault nesting outside the schema folders alone', () => {
     // The user's own folder convention inside their vault — not the gate's business under the local-first contract.
     writeDoc(root, 'services/auth-api', {
       frontmatter: { slug: 'services/auth-api', kind: 'element', title: 'Auth API' },

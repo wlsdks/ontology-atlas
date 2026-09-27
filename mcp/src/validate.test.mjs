@@ -34,7 +34,7 @@ const FINISHED_BODY = {
 const CAPABILITY_BODY = FINISHED_BODY.capability;
 
 describe('isValidVaultTitle', () => {
-  it('비-string 은 false', () => {
+  it('non-string is false', () => {
     assert.equal(isValidVaultTitle(undefined), false);
     assert.equal(isValidVaultTitle(null), false);
     assert.equal(isValidVaultTitle(0), false);
@@ -44,13 +44,13 @@ describe('isValidVaultTitle', () => {
     assert.equal(isValidVaultTitle([]), false);
   });
 
-  it('빈 문자열 / 공백-only 는 false', () => {
+  it('empty or whitespace-only string is false', () => {
     assert.equal(isValidVaultTitle(''), false);
     assert.equal(isValidVaultTitle('   '), false);
     assert.equal(isValidVaultTitle('\t\n'), false);
   });
 
-  it('비-empty trimmed string 은 true', () => {
+  it('non-empty trimmed string is true', () => {
     assert.equal(isValidVaultTitle('Auth Platform'), true);
     assert.equal(isValidVaultTitle('한글 제목'), true);
     assert.equal(isValidVaultTitle('  Trimmed  '), true);
@@ -59,13 +59,13 @@ describe('isValidVaultTitle', () => {
 });
 
 describe('validateVaultDocument (R11 #23)', () => {
-  it('frontmatter 없으면 ok', () => {
+  it('ok without frontmatter', () => {
     const r = validateVaultDocument('# just a doc');
     assert.equal(r.ok, true);
     assert.equal(r.issues.length, 0);
   });
 
-  it('정상 frontmatter ok', () => {
+  it('ok with valid frontmatter', () => {
     const r = validateVaultDocument(
       `---\nuid: ${TEST_UID}\nkind: project\ntitle: Foo\n---\nbody`,
     );
@@ -73,32 +73,32 @@ describe('validateVaultDocument (R11 #23)', () => {
     assert.equal(r.issues.length, 0);
   });
 
-  it('닫는 --- 빠지면 unclosed-frontmatter error', () => {
+  it('a missing closing --- is an unclosed-frontmatter error', () => {
     const r = validateVaultDocument('---\nkind: project\n# unclosed');
     assert.equal(r.ok, false);
     assert.equal(r.issues[0].code, 'unclosed-frontmatter');
     assert.equal(r.issues[0].severity, 'error');
   });
 
-  it('빈 kind 는 empty-kind error', () => {
+  it('an empty kind is an empty-kind error', () => {
     const r = validateVaultDocument('---\nkind:\n---\n');
     assert.equal(r.ok, false);
     assert.equal(r.issues.some((i) => i.code === 'empty-kind'), true);
   });
 
-  it('kind 없으면 missing-kind warning (ok=true)', () => {
+  it('a missing kind is a missing-kind warning (ok=true)', () => {
     const r = validateVaultDocument('---\ntitle: Foo\n---\n');
     assert.equal(r.ok, true);
     assert.equal(r.issues.some((i) => i.code === 'missing-kind'), true);
   });
 
-  it('non-canonical kind 는 unknown-kind warning', () => {
+  it('a non-canonical kind is an unknown-kind warning', () => {
     const r = validateVaultDocument(`---\nuid: ${TEST_UID}\nkind: weird\n---\n`);
     assert.equal(r.ok, true);
     assert.equal(r.issues.some((i) => i.code === 'unknown-kind'), true);
   });
 
-  it('canonical kind 6 종 모두 인식 (capability/element 는 domain 채워야 clean)', () => {
+  it('recognises all six canonical kinds (capability/element need a domain to be clean)', () => {
     // capability and element warn with missing-expected-field when `domain` is
     // absent. This test only checks that the canonical kind is recognised, so
     // `domain` is filled in to keep it clean.
@@ -130,7 +130,7 @@ describe('validateVaultDocument (R11 #23)', () => {
     );
   });
 
-  it('graph 배열 중복/비정렬이면 non-canonical-graph-array warning', () => {
+  it('a duplicate or unsorted graph array is a non-canonical-graph-array warning', () => {
     const r = validateVaultDocument(
       `---\nuid: ${TEST_UID}\nkind: project\ntitle: X\ndependencies: [z, a, z]\n---\n`,
     );

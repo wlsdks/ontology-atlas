@@ -26,8 +26,8 @@ function tmpVault() {
   return mkdtempSync(join(tmpdir(), 'activity-log-'));
 }
 
-describe('activity-log (B3 — 로컬 감사 로그)', () => {
-  it('append 는 v1 JSONL 한 줄을 남기고 tail 로 읽힌다', () => {
+describe('activity-log (local audit log)', () => {
+  it('append writes one v1 JSONL line that tail reads back', () => {
     const root = tmpVault();
     try {
       const entry = buildActivityEntry({
@@ -50,7 +50,7 @@ describe('activity-log (B3 — 로컬 감사 로그)', () => {
     }
   });
 
-  it('로테이션 — 상한 초과 시 앞 절반 절삭, 최신은 보존', () => {
+  it('rotation past the cap drops the older half and keeps the newest lines', () => {
     const root = tmpVault();
     try {
       for (let i = 0; i < ACTIVITY_LOG_MAX_LINES + 1; i += 1) {
@@ -66,7 +66,7 @@ describe('activity-log (B3 — 로컬 감사 로그)', () => {
     }
   });
 
-  it('깨진 줄은 건너뛰고 sinceMs 필터가 동작한다', () => {
+  it('skips a malformed line and applies the sinceMs filter', () => {
     const root = tmpVault();
     try {
       mkdirSync(join(root, '.ontology-atlas'), { recursive: true });
@@ -86,7 +86,7 @@ describe('activity-log (B3 — 로컬 감사 로그)', () => {
     }
   });
 
-  it('heartbeat 의 agent 를 복사하되 없으면 null (조작 금지)', () => {
+  it('copies the heartbeat agent, or null without one (never invented)', () => {
     const root = tmpVault();
     try {
       assert.equal(readHeartbeatAgent(root), null);
@@ -98,7 +98,7 @@ describe('activity-log (B3 — 로컬 감사 로그)', () => {
     }
   });
 
-  it('외부 sidecar symlink에서는 읽기와 append를 모두 best-effort로 거부한다', () => {
+  it('refuses both read and append through an outside sidecar symlink, best-effort', () => {
     const root = tmpVault();
     const outside = mkdtempSync(join(tmpdir(), 'activity-log-outside-'));
     const sentinel = join(outside, 'activity.jsonl');
@@ -119,7 +119,7 @@ describe('activity-log (B3 — 로컬 감사 로그)', () => {
   });
 });
 
-describe('resolveAgentName — 연결 인사의 클라이언트 이름 자동 기록 (2026-08-13)', () => {
+describe('resolveAgentName records the client name from the connection greeting', () => {
   /**
    * Agent names used to come only from the heartbeat file (registered explicitly
    * through the CLI), so activity from an unregistered agent all piled up as
@@ -132,7 +132,7 @@ describe('resolveAgentName — 연결 인사의 클라이언트 이름 자동 �
    * greeting says a different name, the heartbeat wins — registration is intent,
    * the greeting is a default.
    */
-  it('하트비트가 있으면 하트비트가 이긴다', () => {
+  it('a heartbeat wins over the greeting', () => {
     const root = tmpVault();
     try {
       mkdirSync(join(root, '.ontology-atlas'), { recursive: true });
@@ -147,7 +147,7 @@ describe('resolveAgentName — 연결 인사의 클라이언트 이름 자동 �
     }
   });
 
-  it('하트비트가 없으면 인사의 이름을 쓴다', () => {
+  it('without a heartbeat, uses the greeting name', () => {
     const root = tmpVault();
     try {
       assert.equal(resolveAgentName(root, { name: 'claude-code', version: '1.0' }), 'claude-code');
@@ -156,7 +156,7 @@ describe('resolveAgentName — 연결 인사의 클라이언트 이름 자동 �
     }
   });
 
-  it('둘 다 없으면 null — 이름을 지어내지 않는다', () => {
+  it('with neither, returns null instead of inventing a name', () => {
     const root = tmpVault();
     try {
       assert.equal(resolveAgentName(root, undefined), null);

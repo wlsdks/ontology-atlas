@@ -24,29 +24,29 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OWNER = 'project-source-vocabulary.mjs';
 
-test('스캐너가 두 표기를 다 본다 — 「공집합이 아니다」와 「전집합을 본다」는 다르다', () => {
+test('the scanner sees both quote styles: non-empty differs from complete', () => {
   // Verified against the **real files**, not a synthetic fixture. A probe written
   // on the same assumption as the defect (single quotes) cannot prove the defect.
   const text = readFileSync(join(HERE, 'meaning-assessment.mjs'), 'utf8');
   const single = [...text.matchAll(/'[a-z_]{6,}'/g)].length;
   const double = [...text.matchAll(/"[a-z_]{6,}"/g)].length;
-  assert.ok(double > 0, '이 파일이 큰따옴표를 안 쓴다면 이 검사가 지키던 것이 사라졌다');
+  assert.ok(double > 0, 'if this file no longer uses double quotes, what this check guarded is gone');
   void single;
 });
 
-test('검사가 헛돌고 있지 않다 — 낱말이 실재한다', () => {
-  assert.ok(PROJECT_SOURCE_ACTION_IDS.size >= 6, '처방 목록이 비었다');
-  assert.ok(PROJECT_SOURCE_GAP_IDS.size >= 6, '간극 목록이 비었다');
+test('the scan is not idle: the words exist', () => {
+  assert.ok(PROJECT_SOURCE_ACTION_IDS.size >= 6, 'the action list is empty');
+  assert.ok(PROJECT_SOURCE_GAP_IDS.size >= 6, 'the gap list is empty');
   assert.ok(PROJECT_SOURCE_ACTION_IDS.has('connect_source'));
   assert.ok(PROJECT_SOURCE_GAP_IDS.has('source_unbound'));
 });
 
-test('두 목록이 겹치지 않는다 — 간극과 처방은 다른 것이다', () => {
+test('the two lists do not overlap: a gap and an action are different things', () => {
   const both = [...PROJECT_SOURCE_ACTION_IDS].filter((id) => PROJECT_SOURCE_GAP_IDS.has(id));
-  assert.deepEqual(both, [], `이 이름이 간극이자 처방이다: ${both.join(', ')}`);
+  assert.deepEqual(both, [], `these names are both a gap and an action: ${both.join(', ')}`);
 });
 
-test('이 목록을 다시 선언하는 파일이 없다', () => {
+test('no file redeclares these lists', () => {
   const offenders = [];
   for (const file of readdirSync(HERE)) {
     if (!file.endsWith('.mjs') || file === OWNER || file.endsWith('.test.mjs')) continue;
@@ -73,6 +73,6 @@ test('이 목록을 다시 선언하는 파일이 없다', () => {
   assert.deepEqual(
     offenders,
     [],
-    `이 파일들이 낱말을 다시 선언한다 — ${OWNER} 에서 import 해라:\n${offenders.join('\n')}`,
+    `these files redeclare the words; import them from ${OWNER}:\n${offenders.join('\n')}`,
   );
 });

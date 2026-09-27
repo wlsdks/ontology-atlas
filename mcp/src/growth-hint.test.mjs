@@ -175,7 +175,7 @@ test('buildFindEvidenceZeroHitsGrowthHint — no near matches → add_concept sc
 
 // ── Korean vault slug suggestions (audit 2026-07-25) ───────────────────────
 
-test('한글 제목이 untitled 로 뭉개지지 않는다', () => {
+test('a Hangul title does not collapse to untitled', () => {
   const hint = buildFindEvidenceZeroHitsGrowthHint({ title: '인증 도메인' });
   // Before the fix: the `[^a-z0-9]` replacement erased Korean entirely, yielding
   // 'untitled', and the second Korean concept collided on the slug.
@@ -184,12 +184,12 @@ test('한글 제목이 untitled 로 뭉개지지 않는다', () => {
   assert.equal(hint.exampleCall.args.slug, '인증-도메인');
 });
 
-test('영문 동작은 그대로 (회귀 0)', () => {
+test('English titles behave as before', () => {
   const hint = buildFindEvidenceZeroHitsGrowthHint({ title: 'Payment Billing' });
   assert.equal(hint.exampleCall.args.slug, 'payment-billing');
 });
 
-test('슬러그로 남길 글자가 없으면 여전히 untitled 로 떨어진다', () => {
+test('still falls back to untitled when no slug character remains', () => {
   const hint = buildFindEvidenceZeroHitsGrowthHint({ title: '!!! ???' });
   assert.equal(hint.exampleCall.args.slug, 'untitled');
 });

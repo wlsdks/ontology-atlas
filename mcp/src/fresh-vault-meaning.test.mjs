@@ -42,22 +42,22 @@ const input = (root) => ({
   inventory: null,
 });
 
-test('영수증이 없는 볼트를 「입력이 잘못됐다」고 부르지 않는다', () => {
+test('does not call a vault without a receipt invalid input', () => {
   const assessment = readProjectMeaningAssessment(input(freshVault()));
   assert.notEqual(
     assessment.topGap.id,
     'assessment_input_invalid',
-    '갓 만든 볼트가 자기가 고장 났다고 말한다 — 사용자는 아무것도 안 했다',
+    'a fresh vault reports itself broken though the user did nothing',
   );
   assert.equal(assessment.topGap.id, 'competency_not_authored');
 });
 
-test('무엇을 하면 되는지 같이 준다', () => {
+test('also says what to do next', () => {
   const assessment = readProjectMeaningAssessment(input(freshVault()));
   assert.equal(assessment.nextAction.id, 'author_competency_answers');
 });
 
-test('볼트 경로 자체가 없는 것은 여전히 「입력이 잘못됐다」다', () => {
+test('a missing vault path is still invalid input', () => {
   // Collapsing this back together undoes the fix — genuinely wrong input must still be called that.
   const assessment = readProjectMeaningAssessment({ ...input(freshVault()), vaultRoot: '' });
   assert.equal(assessment.topGap.id, 'assessment_input_invalid');

@@ -28,37 +28,37 @@ import { test } from 'node:test';
 
 import { isBacklinkKeyValue } from './backlink-key-shape.mjs';
 
-test('문자열과 문자열 배열은 그대로 받는다', () => {
+test('accepts a string and a string array as they are', () => {
   assert.equal(isBacklinkKeyValue('domains/auth'), true);
   assert.equal(isBacklinkKeyValue(['a', 'b']), true);
 });
 
-test('관계 이유 맵을 받는다 — 실측 모양 그대로', () => {
+test('accepts a relation reason map in its observed shape', () => {
   assert.equal(
     isBacklinkKeyValue({ 'capabilities/mcp-server': 'ACP 세션은 이 서버를 주입받는다' }),
     true,
   );
 });
 
-test('빈 컬렉션은 거절한다 — 백링크 변경 행에 담을 값이 없다', () => {
+test('rejects an empty collection: a backlink change row has no value to hold', () => {
   assert.equal(isBacklinkKeyValue([]), false);
   assert.equal(isBacklinkKeyValue({}), false);
 });
 
-test('중첩된 것은 여전히 거절한다 — 넓히는 것이지 푸는 것이 아니다', () => {
+test('still rejects nesting: the check widens, it does not loosen', () => {
   assert.equal(isBacklinkKeyValue({ a: { b: 'c' } }), false);
   assert.equal(isBacklinkKeyValue({ a: ['b'] }), false);
   assert.equal(isBacklinkKeyValue([['a']]), false);
 });
 
-test('지저분한 문자열은 거절한다 — 원래 검사가 지키던 성질이다', () => {
+test('rejects a messy string, the property the original check guarded', () => {
   assert.equal(isBacklinkKeyValue(' 앞뒤 공백 '), false);
   assert.equal(isBacklinkKeyValue(''), false);
   assert.equal(isBacklinkKeyValue('널\u0000문자'), false);
   assert.equal(isBacklinkKeyValue({ a: ' 공백 ' }), false);
 });
 
-test('배열도 아니고 맵도 아닌 것은 거절한다', () => {
+test('rejects a value that is neither an array nor a map', () => {
   assert.equal(isBacklinkKeyValue(7), false);
   assert.equal(isBacklinkKeyValue(null), false);
   assert.equal(isBacklinkKeyValue(undefined), false);

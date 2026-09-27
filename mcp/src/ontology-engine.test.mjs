@@ -3969,7 +3969,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(row.proposedAction?.tool, 'add_concept');
   });
 
-  it('ontologyAtlasIgnorePatterns 가 매치되는 external element ref 를 materialize 추천에서 제외 + ignored 카운트 노출', () => {
+  it('excludes external element refs matched by ontologyAtlasIgnorePatterns from materialize recommendations and reports the ignored count', () => {
     const graph = compileOntology(
       [
         doc('project', { kind: 'project', title: 'P', domains: ['domains/x'] }),

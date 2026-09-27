@@ -63,31 +63,31 @@ describe('canonicalDiskSlug', () => {
 });
 
 describe('vaultSlugExists', () => {
-  it('실재하는 top-level slug 는 true', () => {
+  it('an existing top-level slug is true', () => {
     assert.equal(vaultSlugExists(root, 'README'), true);
   });
 
-  it('실재하는 subdir slug 는 true', () => {
+  it('an existing subdirectory slug is true', () => {
     assert.equal(vaultSlugExists(root, 'capabilities/auth'), true);
   });
 
-  it('없는 slug 는 false', () => {
+  it('a missing slug is false', () => {
     assert.equal(vaultSlugExists(root, 'capabilities/nope'), false);
     assert.equal(vaultSlugExists(root, 'phantom'), false);
   });
 
-  it('빈 / null / undefined slug 는 false (throw 안 함)', () => {
+  it('an empty, null or undefined slug is false (no throw)', () => {
     assert.equal(vaultSlugExists(root, ''), false);
     assert.equal(vaultSlugExists(root, null), false);
     assert.equal(vaultSlugExists(root, undefined), false);
   });
 
-  it('vault 외부로 escape 시도하는 slug 는 false (throw 안 함)', () => {
+  it('a slug escaping the vault is false (no throw)', () => {
     assert.equal(vaultSlugExists(root, '../etc/passwd'), false);
     assert.equal(vaultSlugExists(root, '../../README'), false);
   });
 
-  it('null byte injection 시도는 false', () => {
+  it('a null byte injection attempt is false', () => {
     assert.equal(vaultSlugExists(root, 'README\0evil'), false);
   });
 });
@@ -121,9 +121,9 @@ describe('findPath — edge metadata (R+)', () => {
     rmSync(pathRoot, { recursive: true, force: true });
   });
 
-  it('hops 와 edges 는 길이가 1 차이 — 매 hop 사이 via 가 명시', () => {
+  it('hops outnumber edges by one, with via named between every hop', () => {
     const r = findPath(pathRoot, 'project', 'elements/token');
-    assert.ok(r, 'path 가 존재해야 한다');
+    assert.ok(r);
     assert.deepEqual(r.hops, ['project', 'capabilities/auth', 'elements/token']);
     assert.equal(r.edges.length, r.hops.length - 1);
     assert.deepEqual(r.edges[0], {
@@ -138,15 +138,15 @@ describe('findPath — edge metadata (R+)', () => {
     });
   });
 
-  it('trivial path (from === to) 는 edges 가 빈 배열', () => {
+  it('a trivial path (from === to) has empty edges', () => {
     const r = findPath(pathRoot, 'project', 'project');
     assert.deepEqual(r.hops, ['project']);
     assert.deepEqual(r.edges, []);
   });
 
-  it('domains[] project containment 도 path edge 로 해석', () => {
+  it('resolves domains[] project containment as a path edge', () => {
     const r = findPath(pathRoot, 'project', 'domains/identity');
-    assert.ok(r, 'project.domains[] 경로가 존재해야 한다');
+    assert.ok(r, 'the project.domains[] path must exist');
     assert.deepEqual(r.hops, ['project', 'domains/identity']);
     assert.deepEqual(r.edges[0], {
       from: 'project',
@@ -155,9 +155,9 @@ describe('findPath — edge metadata (R+)', () => {
     });
   });
 
-  it('frontmatter slug 를 endpoint alias 로 해석', () => {
+  it('resolves a frontmatter slug as an endpoint alias', () => {
     const r = findPath(pathRoot, 'project-display', 'domains/identity');
-    assert.ok(r, 'frontmatter slug alias 경로가 존재해야 한다');
+    assert.ok(r, 'the frontmatter slug alias path must exist');
     assert.deepEqual(r.hops, ['project', 'domains/identity']);
   });
 
@@ -200,9 +200,9 @@ describe('findPath — edge metadata (R+)', () => {
     assert.equal(orphanSlugs.includes('elements/foo'), false);
   });
 
-  it('domain: inline parent 도 path edge 로 해석', () => {
+  it('resolves an inline domain: parent as a path edge', () => {
     const r = findPath(pathRoot, 'capabilities/auth', 'domains/identity');
-    assert.ok(r, 'capability.domain 경로가 존재해야 한다');
+    assert.ok(r, 'the capability.domain path must exist');
     assert.deepEqual(r.hops, ['capabilities/auth', 'domains/identity']);
     assert.deepEqual(r.edges[0], {
       from: 'capabilities/auth',
@@ -245,7 +245,7 @@ describe('findPath — edge metadata (R+)', () => {
     assert.equal(r.edges[0].rationale, 'Keyed by the resolved slug.');
   });
 
-  it('maxHops 는 core 에서도 non-negative integer, max 20 으로 검증', () => {
+  it('core also validates maxHops as a non-negative integer up to 20', () => {
     assert.throws(
       () => findPath(pathRoot, 'project', 'elements/token', -1),
       /maxHops must be a non-negative integer/,
@@ -284,7 +284,7 @@ describe('findOrphans — graph frontmatter keys', () => {
     rmSync(orphanRoot, { recursive: true, force: true });
   });
 
-  it('domains[] 와 domain: inline 참조를 orphan 판정에 반영', () => {
+  it('orphan detection honours domains[] and inline domain: references', () => {
     const result = findOrphans(orphanRoot, { kind: 'domain' });
     assert.equal(
       result.orphans.some((node) => node.slug === 'domains/identity'),
@@ -292,7 +292,7 @@ describe('findOrphans — graph frontmatter keys', () => {
     );
   });
 
-  it('project / vault-readme 루트 문서는 기본 orphan cleanup 후보에서 제외', () => {
+  it('project and vault-readme root documents are excluded from default orphan cleanup candidates', () => {
     writeFileSync(
       join(orphanRoot, 'README.md'),
       '---\nkind: vault-readme\ntitle: README\n---\n',
@@ -330,34 +330,34 @@ describe('suggestSimilarSlugs (R+)', () => {
     rmSync(suggestRoot, { recursive: true, force: true });
   });
 
-  it('tail 정확 일치가 최우선', () => {
+  it('an exact tail match ranks first', () => {
     const r = suggestSimilarSlugs(suggestRoot, 'mcp-server');
     assert.deepEqual(r[0], 'capabilities/mcp-server');
   });
 
-  it('substring 매치 — 일부만 친 경우', () => {
+  it('a substring match covers a partial slug', () => {
     const r = suggestSimilarSlugs(suggestRoot, 'mcp');
     assert.ok(r.includes('capabilities/mcp-server'));
     assert.ok(r.includes('capabilities/mcp-conflict-guard'));
   });
 
-  it('전혀 안 비슷하면 빈 배열', () => {
+  it('nothing similar yields an empty array', () => {
     const r = suggestSimilarSlugs(suggestRoot, 'totally-unrelated-xyz');
     assert.deepEqual(r, []);
   });
 
-  it('limit 존중 (default 3)', () => {
+  it('honours limit (default 3)', () => {
     const r = suggestSimilarSlugs(suggestRoot, 'a', 2);
     assert.ok(r.length <= 2);
   });
 
-  it('빈 / null badSlug 는 빈 배열', () => {
+  it('an empty or null badSlug yields an empty array', () => {
     assert.deepEqual(suggestSimilarSlugs(suggestRoot, ''), []);
     assert.deepEqual(suggestSimilarSlugs(suggestRoot, null), []);
   });
 });
 
-describe('actionable 에러 메시지 (R+)', () => {
+describe('actionable error messages', () => {
   let errRoot;
   beforeEach(() => {
     errRoot = mkdtempSync(join(tmpdir(), 'ontology-atlas-vault-err-'));
@@ -371,7 +371,7 @@ describe('actionable 에러 메시지 (R+)', () => {
     rmSync(errRoot, { recursive: true, force: true });
   });
 
-  it('writeDoc duplicate slug — patch_concept 사용 권장 + rename 옵션 명시', () => {
+  it('writeDoc duplicate slug recommends patch_concept and names the rename option', () => {
     let caught;
     try {
       writeDoc(errRoot, 'capabilities/mcp-server', {
@@ -386,7 +386,7 @@ describe('actionable 에러 메시지 (R+)', () => {
     assert.match(caught.message, /rename_concept/);
   });
 
-  it('deleteDoc not-found (substring-similar slug) — 비슷한 slug 후보 노출', () => {
+  it('deleteDoc not-found (substring-similar slug) lists similar slug candidates', () => {
     let caught;
     try {
       // The bad slug contains 'mcp-server' as a substring, so candidates can match.
@@ -400,7 +400,7 @@ describe('actionable 에러 메시지 (R+)', () => {
     assert.match(caught.message, /capabilities\/mcp-server/);
   });
 
-  it('deleteDoc not-found (전혀 안 비슷한 slug) — list_concepts fallback 안내만', () => {
+  it('deleteDoc not-found (nothing similar) points only to the list_concepts fallback', () => {
     let caught;
     try {
       deleteDoc(errRoot, 'totally/unrelated-xyz');
@@ -488,7 +488,7 @@ describe('UID identity write gate', () => {
    * markdown by hand», and then a hand-written node killed the vault with recovery
    * blocked.
    */
-  it('uid 가 없던 노드는 첫 쓰기가 신원을 채워 준다 — 손으로 쓴 노드의 복구로', () => {
+  it('the first write mints a uid for a node without one, recovering a hand-written node', () => {
     // A file a person typed by hand in an editor — it does not go through `writeDoc`.
     // (Going through it would demand a uid, so this state could not exist at all.)
     handWrite('capabilities/hand-written', 'Hand written');
@@ -496,9 +496,9 @@ describe('UID identity write gate', () => {
     const patched = patchFrontmatter(root, 'capabilities/hand-written', {
       description: 'now repaired',
     });
-    assert.ok(patched.frontmatter.uid, 'uid 가 채워지지 않았다');
+    assert.ok(patched.frontmatter.uid, 'the uid was not filled');
     assert.equal(nodeUidIssue(patched.frontmatter.uid), null);
-    assert.equal(patched.mintedUid, patched.frontmatter.uid, '채운 사실을 응답이 말해야 한다');
+    assert.equal(patched.mintedUid, patched.frontmatter.uid, 'the response must say it filled the uid');
 
     // ② Once filled it is immutable again — this repair must not pierce immutability.
     const settled = patched.frontmatter.uid;
@@ -526,76 +526,76 @@ describe('UID identity write gate', () => {
 });
 
 describe('extractSummaryExcerpt (R+)', () => {
-  it('prose 시작 — 첫 단락 그대로', () => {
+  it('prose first: the first paragraph as is', () => {
     const body = '`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 16 도구 노출.\n\n다음 단락은 무시.';
     const r = extractSummaryExcerpt(body);
     assert.equal(r, '`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 16 도구 노출.');
   });
 
-  it('H1 + 빈 줄 + prose — H1 skip 후 prose 만', () => {
+  it('H1, blank line, prose: skips the H1 and keeps only the prose', () => {
     const body = '\n# MCP Server (16 tools)\n\n`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버.\n';
     const r = extractSummaryExcerpt(body);
     assert.equal(r, '`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버.');
   });
 
-  it('H1 + 표 + prose — 표 skip 후 prose 만 (mcp-server 같은 dogfood pattern)', () => {
+  it('H1, table, prose: skips the table and keeps only the prose (a dogfood pattern like mcp-server)', () => {
     const body = '\n# MCP Server\n\n| col1 | col2 |\n|---|---|\n| a | b |\n\n환경변수 설정 후 사용.\n';
     const r = extractSummaryExcerpt(body);
     assert.equal(r, '환경변수 설정 후 사용.');
   });
 
-  it('코드블록 + prose — 코드 skip 후 prose 만', () => {
+  it('code block then prose: skips the code and keeps only the prose', () => {
     const body = '```js\nconst x = 1;\nconst y = 2;\n```\n\nprose paragraph.';
     const r = extractSummaryExcerpt(body);
     assert.equal(r, 'prose paragraph.');
   });
 
-  it('multi-line prose — 한 줄로 join', () => {
+  it('multi-line prose is joined into one line', () => {
     const body = '첫 줄.\n둘째 줄.\n셋째 줄.';
     const r = extractSummaryExcerpt(body);
     assert.equal(r, '첫 줄. 둘째 줄. 셋째 줄.');
   });
 
-  it('빈 / null body — 빈 문자열', () => {
+  it('an empty or null body yields an empty string', () => {
     assert.equal(extractSummaryExcerpt(''), '');
     assert.equal(extractSummaryExcerpt(null), '');
     assert.equal(extractSummaryExcerpt(undefined), '');
   });
 
-  it('block 만 있는 body — fallback (원본 trim, prose 0건)', () => {
+  it('a body of blocks only falls back to the trimmed original (no prose)', () => {
     const body = '| a | b |\n|---|---|\n| 1 | 2 |';
     const r = extractSummaryExcerpt(body);
     // Fallback when no prose is found — the whole body, within the cap
     assert.match(r, /\|/);
   });
 
-  it('maxLen cap — 초과 시 … 부착', () => {
+  it('maxLen cap appends … when exceeded', () => {
     const long = 'a'.repeat(900);
     const r = extractSummaryExcerpt(long, 800);
     assert.equal(r.length, 801); // 800 + '…'
     assert.ok(r.endsWith('…'));
   });
 
-  it('list / 인용도 block 으로 인식 (-, *, ordered, > 모두)', () => {
+  it('treats lists and quotes as blocks (-, *, ordered, >)', () => {
     const body = '- item 1\n- item 2\n\n뒤에 오는 prose.';
     const r = extractSummaryExcerpt(body);
     assert.equal(r, '뒤에 오는 prose.');
   });
 
-  it('ordered list 는 prose 로 오인하지 않고 다음 설명 단락을 사용', () => {
+  it('does not mistake an ordered list for prose and uses the next description paragraph', () => {
     const body = '1. first step\n2) second step\n\nActual explanatory paragraph.';
     const r = extractSummaryExcerpt(body);
     assert.equal(r, 'Actual explanatory paragraph.');
   });
 
-  it('이미지와 thematic break 는 설명문 대신 다음 prose 를 사용', () => {
+  it('uses the next prose instead of an image or thematic break', () => {
     const body = '![diagram](./graph.png)\n\n---\n\nActual summary after visual lead.';
     const r = extractSummaryExcerpt(body);
     assert.equal(r, 'Actual summary after visual lead.');
   });
 });
 
-describe('describeBodyDelivery — 잘렸으면 잘렸다고 말한다 (2026-08-01)', () => {
+describe('describeBodyDelivery says a truncated body is truncated', () => {
   // A body carrying exactly what the construction rules demand: definition,
   // evidence, confidence, inclusion/exclusion. The excerpt takes only the first
   // paragraph, so every remaining section stays outside the response.
@@ -614,7 +614,7 @@ describe('describeBodyDelivery — 잘렸으면 잘렸다고 말한다 (2026-08-
     '높음 — 두 경로를 직접 열어 확인했다.',
   ].join('\n');
 
-  it('발췌 모드에서도 원본 길이와 안 준 글자 수를 말한다', () => {
+  it('excerpt mode also states the original length and the characters withheld', () => {
     const { text, info } = describeBodyDelivery(RULED_BODY, { maxLen: 200 });
     assert.equal(text, '워크스페이스 안에서 앱을 만드는 능력.');
     assert.equal(info.mode, 'excerpt');
@@ -623,7 +623,7 @@ describe('describeBodyDelivery — 잘렸으면 잘렸다고 말한다 (2026-08-
     assert.ok(info.omittedChars > 0);
   });
 
-  it('잘렸을 때만 hint 를 싣는다 — 멀쩡한 응답에 안내문을 붙이지 않는다', () => {
+  it('carries a hint only when truncated, never on an intact response', () => {
     const withHint = describeBodyDelivery(RULED_BODY, { hint: 'call X' });
     assert.equal(withHint.info.hint, 'call X');
     const whole = describeBodyDelivery('한 단락짜리 본문.', { hint: 'call X' });
@@ -632,7 +632,7 @@ describe('describeBodyDelivery — 잘렸으면 잘렸다고 말한다 (2026-08-
     assert.equal(whole.info.omittedChars, undefined);
   });
 
-  it('줄바꿈만 다른 한 단락은 잘린 것이 아니다 (글자 수 비교의 오탐)', () => {
+  it('a paragraph differing only in line breaks is not truncated (a character-count false positive)', () => {
     // An excerpt joins lines with spaces, so its length differs from the original.
     // Deciding "truncated" on that alone puts a false warning on every fully
     // delivered body.
@@ -641,7 +641,7 @@ describe('describeBodyDelivery — 잘렸으면 잘렸다고 말한다 (2026-08-
     assert.equal(info.truncated, false);
   });
 
-  it('full 모드는 본문 전체를 그대로 돌려준다', () => {
+  it('full mode returns the whole body as is', () => {
     const { text, info } = describeBodyDelivery(RULED_BODY, { mode: 'full' });
     assert.equal(text, RULED_BODY);
     assert.equal(info.mode, 'full');
@@ -649,7 +649,7 @@ describe('describeBodyDelivery — 잘렸으면 잘렸다고 말한다 (2026-08-
     assert.equal(info.returnedChars, RULED_BODY.length);
   });
 
-  it('full 모드도 상한을 넘으면 잘렸다고 말한다', () => {
+  it('full mode also says truncated past the cap', () => {
     const huge = 'x'.repeat(FULL_BODY_MAX_CHARS + 500);
     const { text, info } = describeBodyDelivery(huge, { mode: 'full', hint: 'read the file' });
     assert.equal(text.length, FULL_BODY_MAX_CHARS);
@@ -658,7 +658,7 @@ describe('describeBodyDelivery — 잘렸으면 잘렸다고 말한다 (2026-08-
     assert.equal(info.hint, 'read the file');
   });
 
-  it('빈 본문 — 잘림 없음', () => {
+  it('an empty body is not truncated', () => {
     const { text, info } = describeBodyDelivery('');
     assert.equal(text, '');
     assert.equal(info.truncated, false);
@@ -672,33 +672,33 @@ describe('detectDuplicateTitle', () => {
     { slug: 'domains/views', frontmatter: { name: 'Views', kind: 'domain' } },
   ];
 
-  it('정규화 동일 title(대소문자/공백 차이) → 기존 slug + patch 안내 경고', () => {
+  it('a normalized-equal title (case or whitespace) warns with the existing slug and a patch hint', () => {
     const w = detectDuplicateTitle('  mcp   server ', 'capabilities/new-mcp', docs);
     assert.ok(w, 'expected a duplicate warning');
     assert.match(w, /capabilities\/mcp-server/);
     assert.match(w, /patch_concept/);
   });
 
-  it('다른 title → null (오경고 없음)', () => {
+  it('a different title returns null (no false warning)', () => {
     assert.equal(detectDuplicateTitle('Topology Engine', 'capabilities/topo', docs), null);
   });
 
-  it('같은 slug(자기 자신)은 중복으로 보지 않음', () => {
+  it('the same slug (itself) is not a duplicate', () => {
     assert.equal(detectDuplicateTitle('MCP Server', 'capabilities/mcp-server', docs), null);
   });
 
-  it('frontmatter.name fallback 도 매칭', () => {
+  it('also matches the frontmatter.name fallback', () => {
     const w = detectDuplicateTitle('views', 'domains/new-views', docs);
     assert.ok(w);
     assert.match(w, /domains\/views/);
   });
 
-  it('빈/공백 title → null', () => {
+  it('an empty or whitespace title returns null', () => {
     assert.equal(detectDuplicateTitle('   ', 'x', docs), null);
     assert.equal(detectDuplicateTitle('', 'x', docs), null);
   });
 
-  it('빈 docs → null', () => {
+  it('empty docs return null', () => {
     assert.equal(detectDuplicateTitle('MCP Server', 'x', []), null);
   });
 });

@@ -456,7 +456,7 @@ function assertInstructionToolInventoryMatches(initializeResponse, tools) {
 // their batch counterparts (get_concepts, add_concepts, add_relations) in their
 // descriptions, so an agent reading only the tool list knows the K-round-trip
 // alternative exists. Drift turns this red immediately.
-await test("tools/list — 단일 도구 description 이 batch 짝을 cross-reference", async () => {
+await test("tools/list — each single-item tool description cross-references its batch twin", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -464,7 +464,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       { jsonrpc: "2.0", id: 99, method: "tools/list", params: {} },
     ]);
     const list = responses.find((r) => r.id === 99);
-    assert.ok(list, "tools/list 응답");
+    assert.ok(list);
     const tools = list.result?.tools;
     assert.ok(Array.isArray(tools));
     assert.ok(
@@ -2162,7 +2162,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
   }
 });
 
-await test("initialize — instructions 필드 (#45) AI agent 안내 노출", async () => {
+await test("initialize — exposes agent guidance in the instructions field", async () => {
   // The initialize response must carry instructions, so a connected agent knows
   // the authorable/reserved kind boundary, the call order, and the write tools'
   // dry-run pattern immediately. Without them, agents relearn all of it by trial
@@ -2171,12 +2171,12 @@ await test("initialize — instructions 필드 (#45) AI agent 안내 노출", as
   try {
     const { responses } = await rpc(root, INIT_REQUESTS);
     const init = responses.find((r) => r.id === 1);
-    assert.ok(init, "initialize 응답이 와야 함");
+    assert.ok(init);
     const instructions = init.result?.instructions;
-    assert.equal(typeof instructions, "string", "instructions 가 string 이어야");
+    assert.equal(typeof instructions, "string");
     assert.ok(
       instructions.length > 200,
-      `instructions 가 의미 있는 길이여야 (got ${instructions.length})`,
+      `instructions must have a meaningful length (got ${instructions.length})`,
     );
     // Core keywords — drift breaks this at once
     assert.match(instructions, /five authorable kinds/i);
@@ -2396,7 +2396,7 @@ await test("read_source — a repository code path is refused with the call that
   }
 });
 
-await test("tools/call — arguments 생략은 빈 object, non-object 는 명시적으로 거부", async () => {
+await test("tools/call — omitted arguments become an empty object and non-object arguments are rejected", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Demo\n---\n" },
   ]);
@@ -5091,7 +5091,7 @@ await test("query_ontology health/workspace_brief — clean projectless graph st
   }
 });
 
-await test("list_concepts — tmp vault 의 노드 수 정확히 보고", async () => {
+await test("list_concepts — reports the exact node count of a tmp vault", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\n---\n" },
@@ -5103,13 +5103,13 @@ await test("list_concepts — tmp vault 의 노드 수 정확히 보고", async 
       callTool(2, "list_concepts"),
     ]);
     const result = getCallParsed(responses, 2);
-    assert.equal(result.total, 2, "kind 있는 노드 2 개만 카운트");
+    assert.equal(result.total, 2, "counts only the two nodes with a kind");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("list_concepts — 500개를 넘는 vault도 offset 페이지로 누락 없이 복원", async () => {
+await test("list_concepts — offset pages restore a vault of over 500 nodes without loss", async () => {
   const root = makeVault(
     Array.from({ length: 503 }, (_, index) => ({
       slug: `capabilities/node-${String(index).padStart(4, "0")}`,
@@ -5190,7 +5190,7 @@ await test("list_concepts — 100/125/500 pagination boundary contract", async (
   }
 });
 
-await test("list_concepts — domain 필터 (R+)", async () => {
+await test("list_concepts — domain filter", async () => {
   // Answers a common query ("all capabilities under auth") in one call without the
   // query_concepts DSL. Only capability/element kinds are meaningful, but the
   // filter applies uniformly across kinds.
@@ -5246,7 +5246,7 @@ await test("list_concepts — domain 필터 (R+)", async () => {
   }
 });
 
-await test("find_evidence — 각 match 에 prose excerpt 동봉 (R+)", async () => {
+await test("find_evidence — each match carries a prose excerpt", async () => {
   // One find_evidence call gives an agent both *which docs reference this* and
   // *what those docs are about*, with no follow-up get_concept.
   const root = makeVault([
@@ -5338,7 +5338,7 @@ await test("find_evidence — 각 match 에 prose excerpt 동봉 (R+)", async ()
  * write**, and in between the graph holds a relation the compiler will discard.
  * The write gate saying it first is cheaper.
  */
-await test("add_relation — 그래프 밖 문서는 관계 끝이 될 수 없다", async () => {
+await test("add_relation — a document outside the graph cannot be a relation endpoint", async () => {
   const root = makeVault([
     {
       slug: "capabilities/checkout",
@@ -5357,16 +5357,16 @@ await test("add_relation — 그래프 밖 문서는 관계 끝이 될 수 없�
       }),
     ]);
     const text = getCallText(responses, 2);
-    assert.match(text, /Error/i, `잡문을 관계 끝으로 받아 줬다: ${text}`);
+    assert.match(text, /Error/i, `accepted a non-node document as a relation endpoint: ${text}`);
     // Why it cannot happen, and where to go instead — this repository's refusal grammar.
-    assert.match(text, /not a graph node|kind/i, `이유를 안 말한다: ${text}`);
-    assert.match(text, /absorb_document|add_concept|kind:/i, `길을 안 알려준다: ${text}`);
+    assert.match(text, /not a graph node|kind/i, `does not state the reason: ${text}`);
+    assert.match(text, /absorb_document|add_concept|kind:/i, `does not state the way forward: ${text}`);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("relation tools — depends_on 별칭 키로 쓴 엣지도 같은 엣지다 (중복 추가 없음, 제거 가능)", async () => {
+await test("relation tools — an edge written under the depends_on alias key is the same edge (no duplicate add, removable)", async () => {
   /*
    * Caught in the 2026-09-01 review. The read layer canonicalizes the
    * `depends_on:` authoring alias, but the write layer read only the literal
@@ -5408,29 +5408,29 @@ await test("relation tools — depends_on 별칭 키로 쓴 엣지도 같은 엣
     // The read side sees the aliased edge in BOTH shapes it serves.
     const before = getCallParsed(responses, 2);
     assert.deepEqual(before.neighbors.dependencies, ["capabilities/session"],
-      `neighbors 가 별칭 엣지를 못 본다: ${JSON.stringify(before.neighbors)}`);
+      `neighbors misses the alias edge: ${JSON.stringify(before.neighbors)}`);
     assert.ok(
       before.outgoingEdges.some((e) => e.to === "capabilities/session" && e.via === "dependencies"),
-      `outgoingEdges 에 별칭 엣지가 없다: ${JSON.stringify(before.outgoingEdges)}`,
+      `outgoingEdges lacks the alias edge: ${JSON.stringify(before.outgoingEdges)}`,
     );
 
     // The same edge, so adding it again is a no-op — not a duplicate under a second key.
     const added = getCallParsed(responses, 3);
-    assert.equal(added.alreadyExists, true, `별칭 엣지를 새 엣지로 잘못 세었다: ${JSON.stringify(added)}`);
+    assert.equal(added.alreadyExists, true, `counted the alias edge as a new edge: ${JSON.stringify(added)}`);
 
     // And it can be removed through the tool.
     const removed = getCallParsed(responses, 4);
-    assert.equal(removed.changed, true, `별칭 엣지를 제거하지 못했다: ${JSON.stringify(removed)}`);
+    assert.equal(removed.changed, true, `could not remove the alias edge: ${JSON.stringify(removed)}`);
 
     const after = getCallParsed(responses, 5);
-    assert.deepEqual(after.neighbors.dependencies, [], "제거 후에도 엣지가 남아 있다");
-    assert.equal(after.frontmatter.depends_on, undefined, "별칭 키가 캐노니컬 키로 접히지 않았다");
+    assert.deepEqual(after.neighbors.dependencies, [], "the edge remains after removal");
+    assert.equal(after.frontmatter.depends_on, undefined, "the alias key was not folded into the canonical key");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("get_concept — 그래프 밖 문서는 그렇다고 말한다", async () => {
+await test("get_concept — says so for a document outside the graph", async () => {
   const root = makeVault([
     { slug: "notes/coffee-chat", content: "민수랑 결제 얘기함. 근거는 없었음.\n" },
     {
@@ -5446,11 +5446,11 @@ await test("get_concept — 그래프 밖 문서는 그렇다고 말한다", asy
       callTool(3, "get_concept", { slug: "capabilities/real-node" }),
     ]);
     const junk = getCallParsed(responses, 2);
-    assert.equal(junk.isNode, false, "그래프 밖 문서인데 isNode 가 false 가 아니다");
-    assert.ok(Array.isArray(junk.warnings) && junk.warnings.length > 0, "경고가 하나도 없다");
+    assert.equal(junk.isNode, false, "isNode is not false for a document outside the graph");
+    assert.ok(Array.isArray(junk.warnings) && junk.warnings.length > 0, "no warning at all");
     assert.ok(
       junk.warnings.some((w) => /not a graph node|그래프 밖/i.test(String(w.message ?? w))),
-      `그래프 밖이라는 말이 없다: ${JSON.stringify(junk.warnings)}`,
+      `no outside-the-graph warning: ${JSON.stringify(junk.warnings)}`,
     );
 
     // Real nodes are untouched — this repair must add no noise to the normal path.
@@ -5460,14 +5460,14 @@ await test("get_concept — 그래프 밖 문서는 그렇다고 말한다", asy
     assert.equal(node.isNode, true);
     assert.ok(
       !(node.warnings ?? []).some((w) => w.code === "not-a-graph-node"),
-      `정상 노드에 「그래프 밖」 경고가 붙었다: ${JSON.stringify(node.warnings)}`,
+      `a real node got an outside-the-graph warning: ${JSON.stringify(node.warnings)}`,
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("find_evidence — 같은 점수면 노드가 잡문보다 먼저, 행마다 isNode", async () => {
+await test("find_evidence — on equal scores nodes rank before non-node documents, with isNode per row", async () => {
   const root = makeVault([
     // By slug alphabetisation the loose document wins (aaa… < capabilities/…).
     {
@@ -5491,12 +5491,12 @@ await test("find_evidence — 같은 점수면 노드가 잡문보다 먼저, �
       callTool(3, "find_evidence", { title: "토큰 발급", nodesOnly: true }),
     ]);
     const all = getCallParsed(responses, 2);
-    assert.ok(all.matches.length >= 3, "세 문서가 다 매치되어야 이 시험이 성립한다");
+    assert.ok(all.matches.length >= 3, "all three documents must match for this test to hold");
     // ① Nodes first — an equal score (body match 0.3) must not lose to slug alphabetisation.
     assert.equal(
       all.matches[0].slug,
       "capabilities/token-issue",
-      `노드가 1등이 아니다: ${all.matches.map((m) => m.slug).join(", ")}`,
+      `a node does not rank first: ${all.matches.map((m) => m.slug).join(", ")}`,
     );
     // ② Per-row honesty — leaving an absent kind as «unwritten» makes the reader guess.
     for (const m of all.matches) {
@@ -5518,15 +5518,15 @@ await test("find_evidence — 같은 점수면 노드가 잡문보다 먼저, �
     assert.ok(onlyNodes.matches.length >= 1);
     assert.ok(
       onlyNodes.matches.every((m) => m.isNode === true),
-      "nodesOnly 인데 잡문이 남았다",
+      "a non-node document survived nodesOnly",
     );
-    assert.equal(onlyNodes.nonNodeHint, undefined, "좁힌 결과에 안내가 또 붙었다");
+    assert.equal(onlyNodes.nonNodeHint, undefined, "the narrowed result carries the guidance again");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("find_evidence — 0 hits 면 growthHint (near-title 후보 또는 add_concept 스캐폴드) (과제 ⑧)", async () => {
+await test("find_evidence — zero hits return a growthHint (near-title candidates or an add_concept scaffold)", async () => {
   const root = makeVault([
     {
       slug: "capabilities/token-issue",
@@ -5564,7 +5564,7 @@ await test("find_evidence — 0 hits 면 growthHint (near-title 후보 또는 ad
   }
 });
 
-await test("list_concepts — summary opt-in (R+) — 각 노드에 prose 요약", async () => {
+await test("list_concepts — summary opt-in adds a prose summary to each node", async () => {
   // One call gives an agent the node list plus what each is about, with no N
   // follow-up get_concept calls. Absent from the response when summary:false (default).
   const root = makeVault([
@@ -5588,7 +5588,7 @@ await test("list_concepts — summary opt-in (R+) — 각 노드에 prose 요약
     const out1 = getCallParsed(r1, 2);
     assert.equal(out1.total, 2);
     for (const node of out1.nodes) {
-      assert.equal(node.summary, undefined, "default 에선 summary 안 들어감");
+      assert.equal(node.summary, undefined, "no summary by default");
     }
 
     // summary:true → a prose summary on every node
@@ -5598,7 +5598,7 @@ await test("list_concepts — summary opt-in (R+) — 각 노드에 prose 요약
     ]);
     const out2 = getCallParsed(r2, 2);
     for (const node of out2.nodes) {
-      assert.equal(typeof node.summary, "string", `${node.slug}.summary 가 string`);
+      assert.equal(typeof node.summary, "string", `${node.slug}.summary`);
     // No markdown heading or table syntax (prose only)
       assert.doesNotMatch(node.summary, /^#/);
       assert.doesNotMatch(node.summary, /^\|/);
@@ -5610,7 +5610,7 @@ await test("list_concepts — summary opt-in (R+) — 각 노드에 prose 요약
   }
 });
 
-await test("list_concepts — since 필터 (R+) — incremental sync", async () => {
+await test("list_concepts — since filter for incremental sync", async () => {
   // Passing the max mtime captured from a previous list response as `since` sends
   // *only what changed*. Strict mtime > since means resending the same max
   // double-fetches nothing.
@@ -5634,7 +5634,7 @@ await test("list_concepts — since 필터 (R+) — incremental sync", async () 
       callTool(2, "list_concepts", { since: maxMtime }),
     ]);
     const out2 = getCallParsed(r2, 2);
-    assert.equal(out2.total, 0, "since=max → 0건 (재전송 방지)");
+    assert.equal(out2.total, 0, "since=max returns 0 rows (no resend)");
 
     // Pass 3: since=maxMtime - 1 — at least 1 row (the most recent node)
     const { responses: r3 } = await rpc(root, [
@@ -5642,13 +5642,13 @@ await test("list_concepts — since 필터 (R+) — incremental sync", async () 
       callTool(2, "list_concepts", { since: maxMtime - 1 }),
     ]);
     const out3 = getCallParsed(r3, 2);
-    assert.ok(out3.total >= 1, "since=max-1 → 1+ 건");
+    assert.ok(out3.total >= 1, "since=max-1 returns at least one row");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("list_concepts — 각 노드에 mtime 포함 (R+)", async () => {
+await test("list_concepts — each node carries its mtime", async () => {
   // Same meaning as get_concept's mtime. One list call tells an agent which nodes
   // changed recently, so it can sort or filter with no follow-up get_concept.
   const root = makeVault([
@@ -5664,7 +5664,7 @@ await test("list_concepts — 각 노드에 mtime 포함 (R+)", async () => {
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.total, 2);
     for (const node of result.nodes) {
-      assert.equal(typeof node.mtime, "number", `${node.slug}.mtime 은 number`);
+      assert.equal(typeof node.mtime, "number", `${node.slug}.mtime`);
       assert.ok(node.mtime > 0, `${node.slug}.mtime > 0`);
     }
   } finally {
@@ -5672,7 +5672,7 @@ await test("list_concepts — 각 노드에 mtime 포함 (R+)", async () => {
   }
 });
 
-await test("find_backlinks — 매치 row 에 domain + mtime 포함 (R+)", async () => {
+await test("find_backlinks — each match row carries domain and mtime", async () => {
   // An agent reading backlinks immediately knows the domain and the change time.
   // Same shape as list_concepts: two views of one mental model exposing consistent fields.
   const root = makeVault([
@@ -5706,7 +5706,7 @@ await test("find_backlinks — 매치 row 에 domain + mtime 포함 (R+)", async
   }
 });
 
-await test("find_backlinks — target alias 와 legacy depends_on 을 canonical graph edge 로 읽음", async () => {
+await test("find_backlinks — reads a target alias and legacy depends_on as canonical graph edges", async () => {
   const root = makeVault([
     {
       slug: "domains/auth",
@@ -5755,7 +5755,7 @@ await test("find_backlinks — target alias 와 legacy depends_on 을 canonical 
   }
 });
 
-await test("find_neighbors — one-hop graph subgraph 를 방향/타입 기준으로 반환", async () => {
+await test("find_neighbors — returns the one-hop graph subgraph by direction and type", async () => {
   const root = makeVault([
     {
       slug: "domains/auth",
@@ -5847,7 +5847,7 @@ await test("find_neighbors — one-hop graph subgraph 를 방향/타입 기준�
   }
 });
 
-await test("find_path — structuredContent 로 shortest path 계약을 노출", async () => {
+await test("find_path — exposes the shortest-path contract in structuredContent", async () => {
   const root = makeVault([
     {
       slug: "domains/auth",
@@ -5960,7 +5960,7 @@ await test("find_path / get_concept — edges carry the stored relation_notes ra
   }
 });
 
-await test("find_neighbors/get_concept — legacy depends_on frontmatter 를 dependencies edge 로 읽음", async () => {
+await test("find_neighbors/get_concept — read legacy depends_on frontmatter as dependencies edges", async () => {
   const root = makeVault([
     {
       slug: "capabilities/login",
@@ -6423,7 +6423,7 @@ await test("MCP read/query tools — blank/padded scalar string inputs are rejec
   }
 });
 
-await test("query_concepts — 매치 row 에 mtime 포함 (R+)", async () => {
+await test("query_concepts — each match row carries its mtime", async () => {
   // Same shape as list_concepts / find_backlinks / find_orphans, for read-tool
   // response consistency: an agent handles DSL query results with no extra call.
   const root = makeVault([
@@ -6449,7 +6449,7 @@ await test("query_concepts — 매치 row 에 mtime 포함 (R+)", async () => {
   }
 });
 
-await test("query_concepts — 0 rows 면 growthHint (부재 kind/domain 사실 또는 필터 완화 제안) (과제 ⑧)", async () => {
+await test("query_concepts — zero rows return a growthHint (a missing kind/domain fact or a filter relaxation)", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\ndomain: auth\nelements: [x]\n---\n" },
   ]);
@@ -6633,7 +6633,7 @@ await test("query_ontology all_paths — limited exposes hidden MCP paths", asyn
   }
 });
 
-await test("find_orphans — orphan row 에 domain + mtime 포함 (R+)", async () => {
+await test("find_orphans — each orphan row carries domain and mtime", async () => {
   // Same shape as list_concepts / find_backlinks, so an agent can sort or filter
   // orphans straight from the response with no follow-up get_concept.
   const root = makeVault([
@@ -6675,7 +6675,7 @@ await test("find_orphans — orphan row 에 domain + mtime 포함 (R+)", async (
   }
 });
 
-await test("get_concept 응답에 mtime (R11 #8) 포함", async () => {
+await test("get_concept response carries the mtime", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: capability\ntitle: Foo\n---\nbody" },
   ]);
@@ -6693,7 +6693,7 @@ await test("get_concept 응답에 mtime (R11 #8) 포함", async () => {
   }
 });
 
-await test("get_concept — 존재하지 않는 slug 는 growthHint 를 실은 error 로 (과제 ⑧)", async () => {
+await test("get_concept — an unknown slug returns an error carrying a growthHint", async () => {
   const root = makeVault([
     { slug: "capabilities/login", content: "---\nkind: capability\ntitle: Login\n---\n" },
   ]);
@@ -6733,7 +6733,7 @@ await test("get_concept — 존재하지 않는 slug 는 growthHint 를 실은 e
   }
 });
 
-await test("get_concept — graph neighbors 와 outgoingEdges 포함", async () => {
+await test("get_concept — includes graph neighbors and outgoingEdges", async () => {
   const root = makeVault([
     {
       slug: "project",
@@ -6769,7 +6769,7 @@ await test("get_concept — graph neighbors 와 outgoingEdges 포함", async () 
   }
 });
 
-await test("get_concept/get_concepts — tail/frontmatter slug alias 를 canonical slug 로 읽음", async () => {
+await test("get_concept/get_concepts — read a tail or frontmatter slug alias as the canonical slug", async () => {
   const root = makeVault([
     {
       slug: "domains/auth",
@@ -6808,7 +6808,7 @@ await test("get_concept/get_concepts — tail/frontmatter slug alias 를 canonic
   }
 });
 
-await test("get_concept/add_relation — ambiguous alias 는 명시적 에러로 surface", async () => {
+await test("get_concept/add_relation — an ambiguous alias surfaces as an explicit error", async () => {
   const root = makeVault([
     { slug: "domains/auth", content: "---\nkind: domain\ntitle: Auth\n---\n" },
     { slug: "capabilities/auth", content: "---\nkind: capability\ntitle: Auth\n---\n" },
@@ -6890,7 +6890,7 @@ await test("identity reads — list/get/batch expose uid beside canonical slug a
 
 // get_concepts batch reader: K slugs in one round trip. Input order is preserved,
 // and a missing slug surfaces as an `{ ok: false, error }` row instead of aborting.
-await test("get_concepts — 배치 read, 입력 순서 보존 + partial result", async () => {
+await test("get_concepts — batch read keeps input order and returns partial results", async () => {
   const root = makeVault([
     { slug: "alpha", content: "---\nkind: capability\ntitle: Alpha\n---\nbody A" },
     { slug: "beta", content: "---\nkind: element\ntitle: Beta\n---\nbody B" },
@@ -6903,7 +6903,7 @@ await test("get_concepts — 배치 read, 입력 순서 보존 + partial result"
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.equal(result.concepts.length, 3, "concepts row 수 = 입력 slugs 수");
+    assert.equal(result.concepts.length, 3, "one concepts row per input slug");
     // Order preserved: input [beta, missing, alpha] → output in the same order.
     assert.equal(result.concepts[0].slug, "beta");
     assert.equal(result.concepts[0].ok, true);
@@ -6943,7 +6943,7 @@ await test("get_concepts — invalid slug rows are isolated as partial results",
       callTool(2, "get_concepts", { slugs: ["alpha", " beta", "", null, 123, "beta"] }),
     ]);
     const result = getCallParsed(responses, 2);
-    assert.equal(result.concepts.length, 6, "concepts row 수 = 입력 slugs 수");
+    assert.equal(result.concepts.length, 6, "one concepts row per input slug");
     assert.equal(result.concepts[0].ok, true);
     assert.equal(result.concepts[0].slug, "alpha");
     assert.equal(result.concepts[1].ok, false);
@@ -6964,7 +6964,7 @@ await test("get_concepts — invalid slug rows are isolated as partial results",
 });
 
 // get_concepts empty-array and cap (50) gates: a normal empty response vs an error.
-await test("get_concepts — 빈 slugs[] → 빈 concepts[], 51개 → error", async () => {
+await test("get_concepts — empty slugs[] returns empty concepts[], 51 slugs is an error", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },
   ]);
@@ -6995,7 +6995,7 @@ await test("get_concepts — 빈 slugs[] → 빈 concepts[], 51개 → error", a
 // add_concepts batch writer, so an /ontology-bootstrap flow lands several nodes in
 // one call. Input order is preserved and results are partial (one row failing does
 // not abort the batch).
-await test("add_concepts — 배치 write, 순서 보존 + partial result", async () => {
+await test("add_concepts — batch write keeps order and returns partial results", async () => {
   const root = makeVault([
     { slug: "exist", content: "---\nkind: capability\ntitle: Exist\n---\n" },
   ]);
@@ -7017,7 +7017,7 @@ await test("add_concepts — 배치 write, 순서 보존 + partial result", asyn
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.equal(result.concepts.length, 4, "concepts row 수 = 입력 길이");
+    assert.equal(result.concepts.length, 4, "one concepts row per input");
     // Order preserved: alpha → exist (fail) → beta → gamma (fail)
     assert.equal(result.concepts[0].slug, "alpha");
     assert.equal(result.concepts[0].ok, true);
@@ -7042,8 +7042,8 @@ await test("add_concepts — 배치 write, 순서 보존 + partial result", asyn
     const slugs = list.nodes.map((n) => n.slug).sort();
     assert.ok(slugs.includes("alpha"), "alpha land");
     assert.ok(slugs.includes("beta"), "beta land");
-    assert.ok(slugs.includes("exist"), "exist 그대로");
-    assert.ok(!slugs.includes("gamma"), "gamma fail → land 안 됨");
+    assert.ok(slugs.includes("exist"), "exist is untouched");
+    assert.ok(!slugs.includes("gamma"), "the failed gamma row does not land");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -7099,7 +7099,7 @@ function writeHeartbeat(root, agent) {
   );
 }
 
-await test("add_concept/add_concepts — created_by 는 활동 로그와 같은 신원으로 찍힌다", async () => {
+await test("add_concept/add_concepts — created_by carries the same identity as the activity log", async () => {
   const root = makeVault([]);
   writeHeartbeat(root, "codex");
   try {
@@ -7127,7 +7127,7 @@ await test("add_concept/add_concepts — created_by 는 활동 로그와 같은 
 // With no heartbeat the stamp follows the activity log one step further (2026-09-07):
 // the connect greeting's clientInfo.name. The test harness greets as "test", so that is
 // the name; a human it still is not.
-await test("add_concept/add_concepts — 하트비트가 없으면 연결 인사의 이름을 쓴다 (사람으로 떨어지지 않는다)", async () => {
+await test("add_concept/add_concepts — without a heartbeat, uses the greeting name (never falls back to human)", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -7151,7 +7151,7 @@ await test("add_concept/add_concepts — 하트비트가 없으면 연결 인사
 // permanently into the vault and must not admit an automatic guess (decision
 // ledger, 2026-07-31). The pure precedence logic belongs to activity-log.test.mjs;
 // this measures the wiring — whether the server really persists the greeted name.
-await test("add_concept/add_concepts — 활동 기록 agent 는 하트비트 없이도 연결 인사 이름을 남긴다", async () => {
+await test("add_concept/add_concepts — the activity record keeps the greeting name without a heartbeat", async () => {
   const noHeartbeat = makeVault([]);
   const withHeartbeat = makeVault([]);
   writeHeartbeat(withHeartbeat, "codex");
@@ -7162,16 +7162,16 @@ await test("add_concept/add_concepts — 활동 기록 agent 는 하트비트 �
     ]);
     const readLastAgent = (root) => {
       const lines = readFileSync(join(root, ".ontology-atlas", "activity.jsonl"), "utf-8").trim().split("\n");
-      assert.ok(lines.length > 0, "활동 기록이 비어 있으면 이 테스트는 공회전이다");
+      assert.ok(lines.length > 0, "an empty activity log makes this test idle");
       return JSON.parse(lines[lines.length - 1]).agent;
     };
-    assert.equal(readLastAgent(noHeartbeat), "test", "INIT_REQUESTS 의 clientInfo.name 이 남아야 한다");
+    assert.equal(readLastAgent(noHeartbeat), "test", "the INIT_REQUESTS clientInfo.name must remain");
 
     await rpc(withHeartbeat, [
       ...INIT_REQUESTS,
       callTool(2, "add_concept", { slug: "capabilities/hello", kind: "capability", title: "Hello", domain: "auth" }),
     ]);
-    assert.equal(readLastAgent(withHeartbeat), "codex", "하트비트가 있으면 인사 이름보다 우선한다");
+    assert.equal(readLastAgent(withHeartbeat), "codex", "a heartbeat wins over the greeting name");
   } finally {
     rmSync(noHeartbeat, { recursive: true, force: true });
     rmSync(withHeartbeat, { recursive: true, force: true });
@@ -7184,7 +7184,7 @@ await test("add_concept/add_concepts — 활동 기록 agent 는 하트비트 �
 // dropped from the log line. In that state all 15 activity lines in a live vault
 // read `why: null`, and that nearly became **evidence for the wrong conclusion**
 // ("the conversation happens outside the app, so no reason is recorded").
-await test("add_relations — 배치로 쓴 관계도 활동 기록에 이유를 남긴다", async () => {
+await test("add_relations — batch relations also leave their reasons in the activity log", async () => {
   const root = makeVault([
     { slug: "capabilities/a", content: "---\nslug: capabilities/a\nkind: capability\ntitle: A\ndomain: auth\n---\n\n# A\n" },
     { slug: "capabilities/b", content: "---\nslug: capabilities/b\nkind: capability\ntitle: B\ndomain: auth\n---\n\n# B\n" },
@@ -7201,18 +7201,18 @@ await test("add_relations — 배치로 쓴 관계도 활동 기록에 이유를
       }),
     ]);
     const lines = readFileSync(join(root, ".ontology-atlas", "activity.jsonl"), "utf-8").trim().split("\n");
-    assert.ok(lines.length > 0, "활동 기록이 비어 있으면 이 테스트는 공회전이다");
+    assert.ok(lines.length > 0, "an empty activity log makes this test idle");
     const last = JSON.parse(lines[lines.length - 1]);
     assert.equal(last.tool, "add_relations");
-    assert.ok(last.why, "배치 관계의 이유가 기록에서 사라졌다");
-    assert.match(last.why, /토큰 검증/, "첫 행의 이유가 없다");
-    assert.match(last.why, /감사 줄/, "둘째 행의 이유가 없다");
+    assert.ok(last.why, "the batch relation reasons vanished from the log");
+    assert.match(last.why, /토큰 검증/, "the first row has no reason");
+    assert.match(last.why, /감사 줄/, "the second row has no reason");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("add_relations — 같은 이유가 반복되면 한 번만 적는다", async () => {
+await test("add_relations — a repeated reason is written once", async () => {
   // Ten rows sharing a reason would print it ten times and become unreadable.
   const root = makeVault([
     { slug: "capabilities/a", content: "---\nslug: capabilities/a\nkind: capability\ntitle: A\ndomain: auth\n---\n\n# A\n" },
@@ -7237,7 +7237,7 @@ await test("add_relations — 같은 이유가 반복되면 한 번만 적는다
   }
 });
 
-await test("patch_concept — created_by 는 보존되고 덮어쓸 수 없다", async () => {
+await test("patch_concept — created_by is preserved and cannot be overwritten", async () => {
   const root = makeVault([
     {
       slug: "capabilities/by-hand",
@@ -7279,7 +7279,7 @@ await test("patch_concept — created_by 는 보존되고 덮어쓸 수 없다",
   }
 });
 
-await test("absorb_document — 흡수한 노드도 에이전트 저작으로 찍힌다", async () => {
+await test("absorb_document — absorbed nodes are also stamped as agent-authored", async () => {
   const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-absorb-origin-"));
   const vault = join(repoRoot, "vault");
   mkdirSync(vault);
@@ -7312,7 +7312,7 @@ await test("absorb_document — 흡수한 노드도 에이전트 저작으로 �
   }
 });
 
-await test("add_concept/add_concepts — 명시한 빈 body 는 기본 본문으로 대체하지 않음", async () => {
+await test("add_concept/add_concepts — an explicit empty body is not replaced with the default body", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -7357,7 +7357,7 @@ await test("add_concept/add_concepts — 명시한 빈 body 는 기본 본문으
 
 // add_concepts empty-array and cap (50) gates, pinning the same batch contract on
 // the writer side as get_concepts and add_relations.
-await test("add_concepts — 빈 concepts[] → 빈 results, 51개 → error", async () => {
+await test("add_concepts — empty concepts[] returns empty results, 51 rows is an error", async () => {
   const root = makeVault([]);
   try {
     const { responses: r1 } = await rpc(root, [
@@ -7387,7 +7387,7 @@ await test("add_concepts — 빈 concepts[] → 빈 results, 51개 → error", a
 
 // add_concepts detects duplicate slugs within the input up front, so the second row
 // gets a clearer error (row label plus first-seen index) than "already exists".
-await test("add_concepts — 입력 내 중복 slug 두번째는 ok:false", async () => {
+await test("add_concepts — the second duplicate slug in one input is ok:false", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -7400,8 +7400,8 @@ await test("add_concepts — 입력 내 중복 slug 두번째는 ok:false", asyn
       }),
     ]);
     const result = getCallParsed(responses, 2);
-    assert.equal(result.concepts[0].ok, true, "첫 row land");
-    assert.equal(result.concepts[1].ok, false, "두번째 동일 slug 는 fail");
+    assert.equal(result.concepts[0].ok, true, "the first row lands");
+    assert.equal(result.concepts[1].ok, false, "the second row with the same slug fails");
     assert.match(result.concepts[1].error, /concepts\[1\] duplicate slug in input batch/i);
     assert.match(result.concepts[1].error, /first seen at concepts\[0\]/i);
     assert.equal(result.concepts[1].errorCode, "conflict");
@@ -7418,7 +7418,7 @@ await test("add_concepts — 입력 내 중복 slug 두번째는 ok:false", asyn
 // slug lands both with a near-duplicate advisory — catching bootstrap's #1 failure
 // mode (splitting one concept into two nodes) in the first batch, by in-batch
 // comparison with no vault load.
-await test("add_concepts — 같은 title 의 두번째 row 는 land 하되 near-duplicate warning", async () => {
+await test("add_concepts — a second row with the same title lands with a near-duplicate warning", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -7431,24 +7431,24 @@ await test("add_concepts — 같은 title 의 두번째 row 는 land 하되 near
       }),
     ]);
     const result = getCallParsed(responses, 2);
-    assert.equal(result.concepts[0].ok, true, "첫 row land");
+    assert.equal(result.concepts[0].ok, true, "the first row lands");
     assert.ok(
       !(result.concepts[0].warnings ?? []).some((w) => /already exists/i.test(w)),
-      "첫 row 는 dup 경고 없음",
+      "the first row has no duplicate warning",
     );
-    assert.equal(result.concepts[1].ok, true, "두번째 row 도 land (advisory, 막지 않음)");
+    assert.equal(result.concepts[1].ok, true, "the second row also lands (advisory, not blocking)");
     assert.ok(
       (result.concepts[1].warnings ?? []).some(
         (w) => /already exists at "alpha"/i.test(w) && /patch_concept/i.test(w),
       ),
-      "두번째 row 는 정규화 동일 title 에 대한 near-duplicate 경고",
+      "the second row warns of a near-duplicate normalized title",
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("add_concepts — object 가 아닌 row 는 row-level error 로 격리", async () => {
+await test("add_concepts — a non-object row is isolated as a row-level error", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -7478,7 +7478,7 @@ await test("add_concepts — object 가 아닌 row 는 row-level error 로 격�
   }
 });
 
-await test("add_concepts — blank/padded scalar row 는 row-level error 로 격리", async () => {
+await test("add_concepts — a blank or padded scalar row is isolated as a row-level error", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -7511,7 +7511,7 @@ await test("add_concepts — blank/padded scalar row 는 row-level error 로 격
   }
 });
 
-await test("add_concepts — unknown row field 는 row-level error 로 격리", async () => {
+await test("add_concepts — an unknown row field is isolated as a row-level error", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -8067,7 +8067,7 @@ await test("MCP write tools — blank/padded string inputs are rejected before d
 // and infer_imports (moduleEdges) output in one call. Result rows preserve input
 // order, frontmatter relation arrays get a canonical sort, the operation is
 // idempotent (a repeated edge returns alreadyExists), and a missing slug fails at row level.
-await test("add_relations — 배치 write, row 순서 보존 + canonical sort + partial", async () => {
+await test("add_relations — batch write keeps row order, sorts canonically and returns partial results", async () => {
   const root = makeVault([
     { slug: "p", content: "---\nkind: project\ntitle: P\n---\n" },
     { slug: "c1", content: "---\nkind: capability\ntitle: C1\ndomain: x\n---\n" },
@@ -8095,7 +8095,7 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.equal(result.relations.length, 6, "relations row 수 = 입력 길이");
+    assert.equal(result.relations.length, 6, "one relations row per input");
     // Order preserved
     assert.equal(result.relations[0].ok, true);
     assert.equal(result.relations[0].to, "c2");
@@ -8138,7 +8138,7 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
 });
 
 // add_relations empty-array and cap gates.
-await test("add_relations — 빈 relations[] → 빈 results, 51개 → error", async () => {
+await test("add_relations — empty relations[] returns empty results, 51 rows is an error", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
   ]);
@@ -8167,7 +8167,7 @@ await test("add_relations — 빈 relations[] → 빈 results, 51개 → error",
   }
 });
 
-await test("add_relations — object 가 아닌 row 는 row-level error 로 격리", async () => {
+await test("add_relations — a non-object row is isolated as a row-level error", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\n---\n" },
@@ -8200,7 +8200,7 @@ await test("add_relations — object 가 아닌 row 는 row-level error 로 격�
   }
 });
 
-await test("add_relations — blank/padded scalar row 는 row-level error 로 격리", async () => {
+await test("add_relations — a blank or padded scalar row is isolated as a row-level error", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\n---\n" },
@@ -8236,7 +8236,7 @@ await test("add_relations — blank/padded scalar row 는 row-level error 로 �
   }
 });
 
-await test("add_relations — unknown row field 는 row-level error 로 격리", async () => {
+await test("add_relations — an unknown row field is isolated as a row-level error", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\n---\n" },
@@ -8282,7 +8282,7 @@ await test("add_relations — unknown row field 는 row-level error 로 격리",
 });
 
 // validate_vault — the whole vault's health in one agent call.
-await test("validate_vault — clean vault: scanned/problems[]/summary 시그너처", async () => {
+await test("validate_vault — a clean vault returns the scanned/problems[]/summary shape", async () => {
   const root = makeVault([
     { slug: "p", content: "---\nkind: project\ntitle: P\n---\n" },
   ]);
@@ -8302,7 +8302,7 @@ await test("validate_vault — clean vault: scanned/problems[]/summary 시그너
   }
 });
 
-await test("validate_vault — empty-kind error 와 missing-expected-field warning 모두 surface", async () => {
+await test("validate_vault — surfaces both an empty-kind error and a missing-expected-field warning", async () => {
   const root = makeVault([
     { slug: "broken", content: "---\nkind:\ntitle: X\n---\n" },
     { slug: "capWithoutDomain", content: "---\nkind: capability\ntitle: A\n---\n" },
@@ -8343,7 +8343,7 @@ await test("validate_vault — dangling graph reference warning surface", async 
     ]);
     const r = getCallParsed(responses, 2);
     const problem = r.problems.find((p) => p.slug === "a");
-    assert.ok(problem, "a 문제 row");
+    assert.ok(problem, "problem row for a");
     assert.ok(
       problem.issues.some((i) => i.code === "dangling-graph-reference"),
     );
@@ -8392,7 +8392,7 @@ await test("validate_vault — duplicate uid across primary and merged history i
   }
 });
 
-await test("patch_concept — expected_mtime stale 면 conflict error response", async () => {
+await test("patch_concept — a stale expected_mtime returns a conflict error response", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },
   ]);
@@ -8407,7 +8407,7 @@ await test("patch_concept — expected_mtime stale 면 conflict error response",
     ]);
     assert.ok(
       isErrorResponse(responses, 2),
-      "stale expected_mtime 은 isError:true 여야",
+      "a stale expected_mtime must be isError:true",
     );
     const text = responses.find((r) => r.id === 2).result.content[0].text;
     assert.match(text, /conflict|VaultConflictError|modified externally/i);
@@ -8418,7 +8418,7 @@ await test("patch_concept — expected_mtime stale 면 conflict error response",
   }
 });
 
-await test("patch_concept — graph 배열 patch 는 canonical set 으로 저장", async () => {
+await test("patch_concept — a graph array patch is stored as a canonical set", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: project\ntitle: Foo\n---\n" },
   ]);
@@ -8504,7 +8504,7 @@ await test("broader fallback — get mtime, patch full array, validate; is_a rel
   }
 });
 
-await test("patch_concept — graph 배열 patch 는 배열 string item 만 허용", async () => {
+await test("patch_concept — a graph array patch accepts only arrays of strings", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: project\ntitle: Foo\ndomains: [domains/a]\n---\n" },
   ]);
@@ -8561,7 +8561,7 @@ await test("patch_concept — graph 배열 patch 는 배열 string item 만 허�
   }
 });
 
-await test("patch_concept — 핵심 scalar frontmatter 와 body 타입을 검증", async () => {
+await test("patch_concept — validates core scalar frontmatter and body types", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: capability\ntitle: Foo\ndomain: domains/a\nslug: foo-alias\n---\nbody\n" },
   ]);
@@ -8631,7 +8631,7 @@ await test("patch_concept — 핵심 scalar frontmatter 와 body 타입을 검�
   }
 });
 
-await test("rename_concept dry-run — preview 만, 디스크 변경 0", async () => {
+await test("rename_concept dry-run — preview only, no disk change", async () => {
   const root = makeVault([
     { slug: "old-target", content: "---\nkind: capability\ntitle: Old\n---\n" },
     {
@@ -8678,7 +8678,7 @@ await test("rename_concept dry-run — preview 만, 디스크 변경 0", async (
   }
 });
 
-await test("rename_concept confirm:true — 파일 이동 + backlink redirect", async () => {
+await test("rename_concept confirm:true — moves the file and redirects backlinks", async () => {
   const root = makeVault([
     { slug: "old-target", content: "---\nkind: capability\ntitle: Old\n---\n" },
     {
@@ -8757,7 +8757,7 @@ await test("graph destructive writes — missing slug errors include recovery hi
   }
 });
 
-await test("merge_concepts confirm:true — fromSlug 삭제 + backlink redirect", async () => {
+await test("merge_concepts confirm:true — deletes fromSlug and redirects backlinks", async () => {
   const root = makeVault([
     { slug: "from", content: "---\nkind: capability\ntitle: From\n---\n# From\n\nMerge body for captured excerpt." },
     { slug: "into", content: "---\nkind: capability\ntitle: Into\n---\n" },
@@ -8837,7 +8837,7 @@ await test("merge_concepts confirm:true — survivor uid is preserved and source
   }
 });
 
-await test("merge_concepts dry-run — preview 만, 디스크 변경 0", async () => {
+await test("merge_concepts dry-run — preview only, no disk change", async () => {
   const root = makeVault([
     { slug: "from", content: "---\nkind: capability\ntitle: From\n---\n| raw | table |\n| --- | --- |\n\nDry-run source summary." },
     { slug: "into", content: "---\nkind: capability\ntitle: Into\n---\n" },
@@ -8880,7 +8880,7 @@ await test("merge_concepts dry-run — preview 만, 디스크 변경 0", async (
   }
 });
 
-await test("merge_concepts — survivor expected_into_mtime 충돌도 쓰기 전에 차단한다", async () => {
+await test("merge_concepts — a survivor expected_into_mtime conflict is also blocked before writing", async () => {
   const root = makeVault([
     { slug: "from", content: "---\nkind: capability\ntitle: From\n---\n" },
     { slug: "into", content: "---\nkind: capability\ntitle: Into\n---\n" },
@@ -8906,7 +8906,7 @@ await test("merge_concepts — survivor expected_into_mtime 충돌도 쓰기 전
   }
 });
 
-await test("delete_concept confirm:true — 삭제 후 post-write maintenance summary 반환", async () => {
+await test("delete_concept confirm:true — returns a post-write maintenance summary after deleting", async () => {
   const root = makeVault([
     { slug: "gone", content: "---\nkind: capability\ntitle: Gone\n---\n- list item\n\nDelete body for captured excerpt." },
   ]);
@@ -8936,7 +8936,7 @@ await test("delete_concept confirm:true — 삭제 후 post-write maintenance su
   }
 });
 
-await test("delete_concept dry-run — backlink preview 만, 디스크 변경 0", async () => {
+await test("delete_concept dry-run — backlink preview only, no disk change", async () => {
   const root = makeVault([
     { slug: "gone", content: "---\nkind: capability\ntitle: Gone\n---\n" },
     { slug: "ref", content: "---\nkind: project\ntitle: Ref\ndependencies: [gone]\n---\n" },
@@ -9013,7 +9013,7 @@ await test("identity destructive previews — rename/reclassify/delete expose ui
   }
 });
 
-await test("list_concepts — corrupt doc 있으면 vaultWarnings 카운트 (R11 #23)", async () => {
+await test("list_concepts — counts corrupt documents in vaultWarnings", async () => {
   const root = makeVault([
     { slug: "ok", content: "---\nkind: capability\ntitle: OK\n---\n" },
     {
@@ -9028,7 +9028,7 @@ await test("list_concepts — corrupt doc 있으면 vaultWarnings 카운트 (R11
       callTool(2, "list_concepts"),
     ]);
     const result = getCallParsed(responses, 2);
-    assert.ok(result.vaultWarnings, "vaultWarnings 필드 존재");
+    assert.ok(result.vaultWarnings);
     assert.ok(
       result.vaultWarnings.errorCount >= 1,
       "unclosed-frontmatter 1+ error",
@@ -9042,7 +9042,7 @@ await test("list_concepts — corrupt doc 있으면 vaultWarnings 카운트 (R11
   }
 });
 
-await test("list_concepts — dangling graph reference 도 vaultWarnings 에 포함", async () => {
+await test("list_concepts — includes dangling graph references in vaultWarnings", async () => {
   const root = makeVault([
     {
       slug: "a",
@@ -9055,7 +9055,7 @@ await test("list_concepts — dangling graph reference 도 vaultWarnings 에 포
       callTool(2, "list_concepts"),
     ]);
     const result = getCallParsed(responses, 2);
-    assert.ok(result.vaultWarnings, "vaultWarnings 필드 존재");
+    assert.ok(result.vaultWarnings);
     assert.equal(result.vaultWarnings.errorCount, 0);
     assert.equal(result.vaultWarnings.warningCount, 1);
   } finally {
@@ -9063,7 +9063,7 @@ await test("list_concepts — dangling graph reference 도 vaultWarnings 에 포
   }
 });
 
-await test("get_concept — corrupt doc 응답에 warnings 노출 (R11 #23)", async () => {
+await test("get_concept — exposes warnings for a corrupt document", async () => {
   const root = makeVault([
     { slug: "weird", content: "---\nkind: bogus\n---\nbody" },
   ]);
@@ -9073,17 +9073,17 @@ await test("get_concept — corrupt doc 응답에 warnings 노출 (R11 #23)", as
       callTool(2, "get_concept", { slug: "weird" }),
     ]);
     const result = getCallParsed(responses, 2);
-    assert.ok(Array.isArray(result.warnings), "warnings 필드는 배열");
+    assert.ok(Array.isArray(result.warnings));
     assert.ok(
       result.warnings.some((w) => w.code === "unknown-kind"),
-      "unknown-kind issue 포함",
+      "includes the unknown-kind issue",
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("get_concept — dangling outgoing graph reference 를 warnings 에 포함", async () => {
+await test("get_concept — includes dangling outgoing graph references in warnings", async () => {
   const root = makeVault([
     {
       slug: "a",
@@ -9255,7 +9255,7 @@ await test("add_relation — missing endpoints include recovery and create hints
   }
 });
 
-await test("add_relation — 같은 edge 두번 추가 시 alreadyExists:true (idempotent)", async () => {
+await test("add_relation — adding the same edge twice returns alreadyExists:true (idempotent)", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: project\ntitle: A\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\n---\n" },
@@ -9288,7 +9288,7 @@ await test("add_relation — 같은 edge 두번 추가 시 alreadyExists:true (i
   }
 });
 
-await test("add_relation — 기존 relation 배열도 중복 제거 + 정렬", async () => {
+await test("add_relation — also deduplicates and sorts an existing relation array", async () => {
   const root = makeVault([
     {
       slug: "a",
@@ -9318,7 +9318,7 @@ await test("add_relation — 기존 relation 배열도 중복 제거 + 정렬", 
   }
 });
 
-await test("add_relation — graph containment 배열 키도 직접 write", async () => {
+await test("add_relation — writes graph containment array keys directly", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\n---\n" },
     { slug: "domains/auth", content: "---\nkind: domain\ntitle: Auth\n---\n" },
@@ -9352,7 +9352,7 @@ await test("add_relation — graph containment 배열 키도 직접 write", asyn
   }
 });
 
-await test("add_relation — domain 타입은 inline parent domain 을 설정", async () => {
+await test("add_relation — the domain type sets the inline parent domain", async () => {
   const root = makeVault([
     { slug: "capabilities/login", content: "---\nkind: capability\ntitle: Login\n---\n" },
     { slug: "domains/auth", content: "---\nkind: domain\ntitle: Auth\n---\n" },
@@ -9386,7 +9386,7 @@ await test("add_relation — domain 타입은 inline parent domain 을 설정", 
   }
 });
 
-await test("add_relation — tail/frontmatter slug alias 를 canonical slug 로 저장", async () => {
+await test("add_relation — stores a tail or frontmatter slug alias as the canonical slug", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\n---\n" },
     {
@@ -9675,7 +9675,7 @@ await test("absorb_document — repo boundary, symlink escape, explicit opt-in, 
   }
 });
 
-await test("absorb_document — 실패한 confirm 은 볼트도 원문도 바꾸지 않는다 (all-or-nothing)", async () => {
+await test("absorb_document — a failed confirm changes neither the vault nor the source (all-or-nothing)", async () => {
   // Caught in the 2026-09-01 review: the confirm path wrote sections in a bare
   // loop, so a mid-loop failure left a half-absorbed vault and the retry minted
   // -2-suffixed duplicates. The write must be one unit like rename/merge.
@@ -9705,11 +9705,11 @@ await test("absorb_document — 실패한 confirm 은 볼트도 원문도 바꾸
     ], 2500, { OATLAS_REPO_ROOT: repoRoot });
     assert.equal(isErrorResponse(responses, 2), true, "confirm on a read-only vault must fail");
     const text = responses.find((row) => row.id === 2).result.content[0].text;
-    assert.match(text, /rolled back|unchanged/i, `실패가 원상복구를 말하지 않는다: ${text}`);
+    assert.match(text, /rolled back|unchanged/i, `the failure does not say it restored the state: ${text}`);
     chmodSync(vault, 0o755);
-    assert.deepEqual(readdirSync(vault), [], "실패한 confirm 이 노드를 남겼다");
-    assert.equal(readFileSync(sourcePath, "utf-8"), source, "실패한 confirm 이 원문을 건드렸다");
-    assert.equal(existsSync(`${sourcePath}.pre-absorb.bak`), false, "실패한 confirm 이 백업을 남겼다");
+    assert.deepEqual(readdirSync(vault), [], "the failed confirm left a node");
+    assert.equal(readFileSync(sourcePath, "utf-8"), source, "the failed confirm touched the source");
+    assert.equal(existsSync(`${sourcePath}.pre-absorb.bak`), false, "the failed confirm left a backup");
   } finally {
     chmodSync(vault, 0o755);
     rmSync(repoRoot, { recursive: true, force: true });
@@ -10164,7 +10164,7 @@ await test("reclassify_concept — typed list entries follow the new kind, or ar
 // evidence to be written in the body, and the read tool returned the first
 // paragraph without even saying it was cut. The contract this test protects is two
 // lines: give the whole thing when asked, and say so when you did not.
-await test("body delivery — 전체 본문을 받을 수 있고 잘림은 조용하지 않다", async () => {
+await test("body delivery — the full body is available and truncation is never silent", async () => {
   const ruledBody = [
     "## 정의",
     "",

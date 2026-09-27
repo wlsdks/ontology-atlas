@@ -35,7 +35,7 @@ import { parentedSlugs, suppressParentedExpectedFieldIssues } from './validate.m
 
 const doc = (slug, frontmatter) => ({ slug, frontmatter });
 
-test('containment parent · 프로젝트가 담은 역량은 부모가 있다', () => {
+test('containment parent · a capability the project contains has a parent', () => {
   const docs = [
     doc('shop', { kind: 'project', contains: ['capabilities/checkout', 'capabilities/catalog'] }),
     doc('capabilities/checkout', { kind: 'capability' }),
@@ -44,10 +44,10 @@ test('containment parent · 프로젝트가 담은 역량은 부모가 있다', 
   const parented = parentedSlugs(docs);
   assert.equal(parented.has('capabilities/checkout'), true);
   assert.equal(parented.has('capabilities/catalog'), true);
-  assert.equal(parented.has('shop'), false, '아무도 프로젝트를 담지 않는다');
+  assert.equal(parented.has('shop'), false, 'nothing contains the project');
 });
 
-test('containment parent · 도메인의 capabilities 목록도 부모다', () => {
+test('containment parent · a domain capabilities list is also a parent', () => {
   const docs = [
     doc('domains/auth', { kind: 'domain', capabilities: ['capabilities/login'] }),
     doc('capabilities/login', { kind: 'capability' }),
@@ -55,7 +55,7 @@ test('containment parent · 도메인의 capabilities 목록도 부모다', () =
   assert.equal(parentedSlugs(docs).has('capabilities/login'), true);
 });
 
-test('containment parent · 아무도 안 담으면 부모가 없다', () => {
+test('containment parent · uncontained nodes have no parent', () => {
   const docs = [
     doc('shop', { kind: 'project', contains: [] }),
     doc('capabilities/orphan', { kind: 'capability' }),
@@ -63,7 +63,7 @@ test('containment parent · 아무도 안 담으면 부모가 없다', () => {
   assert.equal(parentedSlugs(docs).has('capabilities/orphan'), false);
 });
 
-test('suppress · 부모가 있으면 domain 누락 경고를 지운다', () => {
+test('suppress · a parent clears the missing-domain warning', () => {
   const docs = [
     doc('shop', { kind: 'project', contains: ['capabilities/checkout'] }),
     doc('capabilities/checkout', { kind: 'capability' }),
@@ -78,7 +78,7 @@ test('suppress · 부모가 있으면 domain 누락 경고를 지운다', () => 
   assert.deepEqual(issuesBySlug.get('capabilities/checkout'), []);
 });
 
-test('suppress · 부모가 없으면 그대로 남는다 — 그때는 진짜 결함이다', () => {
+test('suppress · without a parent the warning stays, since then it is a real defect', () => {
   const docs = [doc('capabilities/orphan', { kind: 'capability' })];
   const issuesBySlug = new Map([
     [
@@ -90,7 +90,7 @@ test('suppress · 부모가 없으면 그대로 남는다 — 그때는 진짜 �
   assert.equal(issuesBySlug.get('capabilities/orphan').length, 1);
 });
 
-test('suppress · 다른 코드의 경고는 건드리지 않는다', () => {
+test('suppress · leaves warnings with other codes alone', () => {
   const docs = [doc('shop', { kind: 'project', contains: ['capabilities/checkout'] }), doc('capabilities/checkout', { kind: 'capability' })];
   const issuesBySlug = new Map([
     [
@@ -108,7 +108,7 @@ test('suppress · 다른 코드의 경고는 건드리지 않는다', () => {
   );
 });
 
-test('suppress · domain 이 아닌 expected 필드 경고는 포함으로 지워지지 않는다', () => {
+test('suppress · containment does not clear expected-field warnings other than domain', () => {
   // Containment establishes **the parent** and nothing else. The other expected fields are out of its reach.
   const docs = [doc('shop', { kind: 'project', contains: ['capabilities/checkout'] }), doc('capabilities/checkout', { kind: 'capability' })];
   const issuesBySlug = new Map([
