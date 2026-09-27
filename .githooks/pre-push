@@ -260,4 +260,4 @@ if [ "$total" -gt "$BUDGET_SECONDS" ]; then
 else
   echo "[pre-push] All local lanes passed in ${total}s (budget ${BUDGET_SECONDS}s, slowest '$slowest_name' at ${slowest_secs}s)."
 fi
-echo "[pre-push] CI owns the three parallel e2e shards and the repo-wide lint pass."
+echo "[pre-push] CI owns the parallel e2e shards and the repo-wide lint pass."
