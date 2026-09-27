@@ -105,6 +105,12 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   git: '/git/',
 };
 
+export function withQuery(href: string, query: Readonly<Record<string, string>>): string {
+  const url = new URL(href, 'https://atlas.invalid');
+  for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 /**
  * The Agents destination's models tab (2026-09-25): API keys, local runners, the experimental
  * external check and the record of what left. Every door that used to open the settings sheet's
@@ -112,6 +118,8 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
  * habit lands on the new tab instead of a pane that no longer exists.
  */
 export const AGENTS_MODELS_HREF = '/agents/?tab=models';
+
+export const MCP_CONNECTORS_HREF = withQuery(DESTINATION_HREF.mcp, { mcp: 'connectors' });
 
 /** The leader key: press this, then one of the letters below, to navigate. */
 export const NAV_LEADER_KEY = 'g';

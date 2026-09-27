@@ -8,7 +8,7 @@ import type { RoundPassEntry, RoundRecord } from "@/entities/library-round";
 import { cadenceKey, cadenceMinutes, roundPlaceLabels, roundPlaces } from "@/entities/library-round";
 import { useLocalVault } from "@/entities/vault-session";
 import { Link, useRouter } from "@/i18n/navigation";
-import { DESTINATION_HREF } from "@/shared/config/destinations";
+import { DESTINATION_HREF, withQuery } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
@@ -35,6 +35,7 @@ import { RoundsHistoryEmpty } from "./parts/RoundsHistoryEmpty";
  */
 const EMPTY_ENTRIES: RoundPassEntry[] = [];
 const EMPTY_ROUNDS: RoundRecord[] = [];
+const DOCUMENT_AUTOMATIONS_HREF = withQuery(DESTINATION_HREF.automations, { kind: "documents" });
 
 export function LibraryRounds() {
   const t = useTranslations("library.rounds");
@@ -281,7 +282,7 @@ export function LibraryRounds() {
                 { id: "consistency", name: t("kind.consistency"), body: t("kind.consistencyBody") },
                 { id: "service", name: t("kind.service"), body: t("kind.serviceBody") },
               ]}
-              action={<Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-new"
+              action={<Link href={DOCUMENT_AUTOMATIONS_HREF} data-testid="library-rounds-new"
                 className={cn(buttonVariants(), "atlas-touch-floor atlas-touch-floor-wide")}>
                 <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("emptyAction")}</Link>} />
           ) : (
@@ -303,7 +304,7 @@ export function LibraryRounds() {
                     {t("index.title")}
                   </h2>
                   {/* Schedule changes live in Automations; this door keeps results and controls distinct. */}
-                  <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-new"
+                  <Link href={DOCUMENT_AUTOMATIONS_HREF} data-testid="library-rounds-new"
                     className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>
                     <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}
                   </Link>
@@ -382,7 +383,7 @@ function Header({ t }: { t: ReturnType<typeof useTranslations<"library.rounds">>
         <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t("title")}</h1>
         <p className="mt-2 max-w-prose text-body-lg leading-title text-[color:var(--color-text-tertiary)] [word-break:keep-all]">{t("lede")}</p>
       </div>
-      <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-manage-automations" className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>
+      <Link href={DOCUMENT_AUTOMATIONS_HREF} data-testid="library-rounds-manage-automations" className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>
         <CalendarClock size={ICON_SIZE.sm} aria-hidden />
         {t("manageAutomations")}
       </Link>
