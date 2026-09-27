@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The gateway stage width (`--gateway-stage-max`) — the invariants of the
@@ -66,7 +67,7 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 describe("관문 무대 폭 — --gateway-stage-max 의 불변식", () => {
-  const css = read("app/globals.css");
+  const css = readGlobalCss();
   const clamp = parseStageClamp(css);
 
   it("(a) 바닥은 48rem — 원장 (83) 의 소유자 승인값이다", () => {

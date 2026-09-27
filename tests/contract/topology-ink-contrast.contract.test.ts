@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { realmDepthClarityAlpha } from "@/widgets/ontology-map/model/realm-transition";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The contract that map ink sits above **WCAG 1.4.11 (non-text contrast 3:1)**.
@@ -22,7 +21,7 @@ import { realmDepthClarityAlpha } from "@/widgets/ontology-map/model/realm-trans
  * cannot see are handled by contract tests".
  */
 
-const CSS = readFileSync(resolve(process.cwd(), "app/globals.css"), "utf8");
+const CSS = readGlobalCss();
 
 /** WCAG 1.4.11 — the contrast floor for non-text UI elements. */
 const MIN_CONTRAST = 3;

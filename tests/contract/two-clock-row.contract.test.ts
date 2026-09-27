@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 const ROOT = resolve(__dirname, '../..');
 const read = (relative: string) => readFileSync(resolve(ROOT, relative), 'utf8');
-const CSS = read('app/globals.css');
+const CSS = readGlobalCss();
 
 /** The first `:root` declaration of a token, which is the dark base the app ships. */
 function token(name: string): string {

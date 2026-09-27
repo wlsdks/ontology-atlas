@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -7,6 +5,7 @@ import {
   domeFogAlpha,
   DOME_RIM_FOG_FLOOR,
 } from "@/widgets/ontology-map/model/dome-view";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **Depth fog may darken a node's rim only to 3 : 1** (2026-09-05, owner
@@ -41,7 +40,7 @@ import {
  * observation, and this file owns the floor.
  */
 
-const CSS = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
+const CSS = readGlobalCss();
 
 function token(name: string): string {
   // The first definition wins — the `:root` block, which is what the map reads.

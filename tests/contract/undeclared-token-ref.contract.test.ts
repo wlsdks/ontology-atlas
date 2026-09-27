@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Blocks **`var()` calling a token that does not exist** — a gate for the class of
@@ -56,7 +57,7 @@ function walk(dir: string, out: string[] = []): string[] {
 const files = SOURCE_ROOTS.flatMap((root) => walk(path.join(ROOT, root)));
 
 function collectDeclared(): Set<string> {
-  const css = readFileSync(path.join(ROOT, "app/globals.css"), "utf8");
+  const css = readGlobalCss();
   const declared = new Set<string>(
     [...css.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((m) => m[1]),
   );

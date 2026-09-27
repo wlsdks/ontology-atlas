@@ -4,6 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { FONT_WEIGHT } from '../../src/shared/ui/font-weight';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **Type values on drawing surfaces** — canvas `ctx.font` and inline SVG attributes.
@@ -34,7 +35,7 @@ import { FONT_WEIGHT } from '../../src/shared/ui/font-weight';
  */
 
 const ROOT = process.cwd();
-const CSS = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
+const CSS = readGlobalCss();
 
 function cssWeight(name: string): number {
   const m = CSS.match(new RegExp(`^\\s*--font-weight-${name}\\s*:\\s*(\\d+);`, 'm'));

@@ -10,7 +10,7 @@ import { extendTailwindMerge } from 'tailwind-merge';
  * following `text-[color:…]` arbitrary value, and were dropped silently — those
  * surfaces had been rendering at the root 16px. Found by measuring chrome pills.
  *
- * Must stay in sync with the `--text-*` ramp in `app/globals.css`: a new step
+ * Must stay in sync with the `--text-*` ramp in `app/styles/tokens.css`: a new step
  * there needs a new step here (contract test: `cn.test.ts`).
  */
 export const TYPE_RAMP_STEPS = [
@@ -20,14 +20,14 @@ export const TYPE_RAMP_STEPS = [
   'body-lg',
   'title',
   // Authored document body (2026-09-12): 16px paired with `leading-prose`, the size
-  // `--measure-doc-column` is derived at. See its block in `app/globals.css`.
+  // `--measure-doc-column` is derived at. See its block in `app/styles/tokens.css`.
   'reading',
   'display',
   'hero',
   'hero-lg',
   // Gateway headline only (2026-08-18): clamp(40px, 5.8cqw, 96px), proportional
   // to the measure. Values and the glyph-budget arithmetic are in the
-  // `--text-monument` doc-block in `app/globals.css`.
+  // `--text-monument` doc-block in `app/styles/tokens.css`.
   'monument',
 ] as const;
 
@@ -39,7 +39,7 @@ export const TYPE_RAMP_STEPS = [
  * CSS source order picks the winner. A conditional branch silently losing to the
  * value it meant to override.
  *
- * Must stay in sync with the `--leading-*` ramp in `app/globals.css`
+ * Must stay in sync with the `--leading-*` ramp in `app/styles/tokens.css`
  * (contract test: `cn.test.ts`).
  */
 export const LEADING_RAMP_STEPS = [
@@ -62,7 +62,7 @@ export const LEADING_RAMP_STEPS = [
  * load-bearing when the value layer (`control-class.ts`) started compounding a
  * size radius over a shape's base radius.
  *
- * Must stay in sync with the `--radius-*` ramp in `app/globals.css`
+ * Must stay in sync with the `--radius-*` ramp in `app/styles/tokens.css`
  * (contract test: `cn.test.ts`).
  */
 export const RADIUS_RAMP_STEPS = ['micro', 'chip', 'card', 'panel', 'sheet'] as const;

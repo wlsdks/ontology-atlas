@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **Tailwind scans code only — never documents.**
@@ -28,10 +29,8 @@ import { describe, expect, it } from 'vitest';
  * pin.
  */
 
-const GLOBALS = join(process.cwd(), 'app/globals.css');
-
 describe('Tailwind 소스 스캔 범위', () => {
-  const css = readFileSync(GLOBALS, 'utf8');
+  const css = readGlobalCss();
 
   it('자동 탐지를 끈다 — 안 끄면 문서·산문까지 훑는다', () => {
     expect(

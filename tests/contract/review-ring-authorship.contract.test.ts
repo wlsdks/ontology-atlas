@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /** `created_by` is provenance, never an inferred review state or primary map lens. */
 const ROOT = process.cwd();
@@ -24,7 +25,7 @@ describe("created_by UI boundary", () => {
     const frame = read("src/widgets/ontology-map/ui/topology-frame-draw.ts");
     const shapes = read("src/widgets/ontology-map/render/node-shapes.ts");
     const tokens = read("src/widgets/ontology-map/tokens/read-map-tokens.ts");
-    const css = read("app/globals.css");
+    const css = readGlobalCss();
     expect(home).not.toMatch(/humanAuthoredLens|segmentHuman/);
     expect(panel).not.toMatch(/humanAuthored|segmentHuman|lens === "human"/);
     expect(frame).not.toMatch(/reviewPending:\s*node\.createdBy === "human"/);

@@ -1,12 +1,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 const inspector = readFileSync("src/views/home/model/use-topology-inspector-state.tsx", "utf8");
 const chrome = readFileSync("src/views/home/ui/TopologyCommandChrome.tsx", "utf8");
 const canvas = readFileSync("src/views/home/ui/TopologyCanvasSurface.tsx", "utf8");
 const hint = readFileSync("src/widgets/search-hint/ui/SearchHint.tsx", "utf8");
 const fit = readFileSync("src/widgets/topology-controls/ui/TopologyFitControl.tsx", "utf8");
-const css = readFileSync("app/globals.css", "utf8");
+const css = readGlobalCss();
 
 describe("14-inch map chrome reflows around the agent dock and node inspector", () => {
   it("agent dock requests compact top chrome instead of overlapping the search lane", () => {

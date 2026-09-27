@@ -1,9 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
 import { fieldClass, type FieldFrame, type FieldSize } from '@/shared/ui/control-class';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The `fieldClass` contract — the value layer for form fields.
@@ -44,8 +43,7 @@ import { fieldClass, type FieldFrame, type FieldSize } from '@/shared/ui/control
  * the copy drifted from the ramp.
  */
 
-const ROOT = join(__dirname, '..', '..');
-const GLOBALS = readFileSync(join(ROOT, 'app', 'globals.css'), 'utf8');
+const GLOBALS = readGlobalCss();
 
 const FRAMES: FieldFrame[] = ['boxed', 'bare'];
 const SIZES: FieldSize[] = ['xs', 'sm', 'md', 'lg'];

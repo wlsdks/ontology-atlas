@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
 import { controlClass } from "../../src/shared/ui/control-class";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Blank out comments before scanning, preserving line numbers so reported
@@ -51,8 +52,6 @@ function stripComments(source: string): string {
  * tests.)
  */
 
-const read = (rel: string) => readFileSync(join(process.cwd(), rel), "utf8");
-
 /** Reads a token value from `app/globals.css`, first definition wins. */
 type Rgba = readonly number[];
 
@@ -66,7 +65,7 @@ function cssToken(css: string, name: string): Rgba {
   return parsed as Rgba;
 }
 
-const css = read("app/globals.css");
+const css = readGlobalCss();
 
 /** The app's three base backgrounds — the floor under every control host. */
 const BASES = {

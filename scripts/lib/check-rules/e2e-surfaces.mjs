@@ -38,7 +38,7 @@ export const rules = [
     order: 730,
     command: 'pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts',
     reason: 'global CSS, Tailwind, or PostCSS styling behavior changed',
-    matches: [/^app\/globals\.css$/, /^postcss\.config\.mjs$/],
+    matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/, /^postcss\.config\.mjs$/],
   },
   {
     order: 820,

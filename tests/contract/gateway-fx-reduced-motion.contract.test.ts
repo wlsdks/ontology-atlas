@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Gateway FX (current field, grain, cursor ring) — the reduced-motion equivalent.
@@ -107,7 +108,7 @@ describe("관문 FX — 감속 동등물", () => {
   });
 
   it("(b′) 관문 등장 안무의 감속 동등물이 base 레이어 kill 규칙 뒤에 있다", () => {
-    const css = read("app/globals.css");
+    const css = readGlobalCss();
     // The carve-out must sit inside the same layer as the global kill rule
     // (@layer base) and after it to win — an !important outside the layer loses to one
     // inside it (measured).

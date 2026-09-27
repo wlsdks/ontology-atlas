@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **Do the tokens the design document cites actually exist?** (2026-08-15, ledger
@@ -33,7 +34,7 @@ import { describe, expect, it } from "vitest";
  */
 
 const ROOT = process.cwd();
-const CSS = readFileSync(path.join(ROOT, "app/globals.css"), "utf8");
+const CSS = readGlobalCss();
 const DOC = readFileSync(path.join(ROOT, "docs/DESIGN-SYSTEM.md"), "utf8");
 
 /** Measured today. Growing turns this red; shrinking turns the "lower the floor" check below red. */
@@ -110,7 +111,7 @@ describe("디자인 문서의 토큰 참조 무결성", () => {
     expect(
       gone.length,
       `문서가 인용한 토큰 중 실재하지 않는 것이 ${CEILING} → ${gone.length} 로 늘었다.\n` +
-        "새 토큰을 문서에 적을 때는 `app/globals.css` 에 **먼저** 넣어라.\n" +
+        "새 토큰을 문서에 적을 때는 `app/styles/tokens.css` (the `@theme` part `app/globals.css` imports) 에 **먼저** 넣어라.\n" +
         "이미 없어진 화면의 토큰을 적고 있다면 그 절을 지우는 것이 답이다.\n" +
         top,
     ).toBeLessThanOrEqual(CEILING);

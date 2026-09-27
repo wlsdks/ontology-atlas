@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The **light plate** third-party product marks sit on — its use is not widened.
@@ -18,7 +19,7 @@ import { describe, expect, it } from 'vitest';
  */
 
 const ROOT = join(import.meta.dirname, '..', '..');
-const GLOBALS = readFileSync(join(ROOT, 'app', 'globals.css'), 'utf8');
+const GLOBALS = readGlobalCss();
 
 const TOKENS = ['--color-vendor-plate', '--color-vendor-plate-edge', '--color-vendor-mark-ink'];
 
@@ -101,7 +102,7 @@ describe('남의 제품 마크 판 — 예외를 예외로 유지한다', () => 
      * goes through it. That is the invariant this test exists for, and a second copy of the painting
      * is precisely what it must keep catching.
      */
-    expect(users.sort()).toEqual(['app/globals.css', 'src/shared/ui/vendor-mark.tsx']);
+    expect(users.sort()).toEqual(['app/styles/tokens.css', 'src/shared/ui/vendor-mark.tsx']);
   });
 
   it('출처와 근거가 문서에 적혀 있다', () => {

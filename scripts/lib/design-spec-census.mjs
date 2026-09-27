@@ -54,6 +54,41 @@
 
 import ts from 'typescript';
 
+import { readGlobalCssAt, showFileAt } from './global-css.mjs';
+
+/**
+ * The text of a trigger file at a Git ref, as censusFor() expects it.
+ * `app/globals.css` holds only `@import` lines since the stylesheet was split
+ * into `app/styles/` parts, so its census reads the joined parts; a ref from
+ * before the split returns its plain entry, so an old base still compares.
+ * Null means the file is absent at that ref.
+ */
+export function specTextAt(ref, path, root = process.cwd()) {
+  if (path === 'app/globals.css') return readGlobalCssAt(ref, root);
+  return showFileAt(ref, path, root);
+}
+
+/** A changed stylesheet part counts as a change to the `app/globals.css` trigger. */
+export function specTriggerPath(changedPath) {
+  return /^app\/styles\/[^/]+\.css$/.test(changedPath) ? 'app/globals.css' : changedPath;
+}
+
+/**
+ * Spec changes between two refs, described one per line, for the trigger files
+ * among the changed paths.
+ */
+export function designSpecChangesBetween(base, head, changedPaths, triggerFiles, root = process.cwd()) {
+  const touched = new Set([...changedPaths].map(specTriggerPath));
+  const found = [];
+  for (const path of triggerFiles) {
+    if (!touched.has(path)) continue;
+    const before = censusFor(path, specTextAt(base, path, root));
+    const after = censusFor(path, specTextAt(head, path, root));
+    for (const change of diffCensus(before, after)) found.push(describeChange(path, change));
+  }
+  return found;
+}
+
 /** The authority the gate reads the trigger list from. The list is never duplicated here. */
 export const SPEC_RULE_DOC = '.claude/rules/design.md';
 
@@ -335,7 +370,7 @@ export function diffCensus(before, after) {
   return changes;
 }
 
-export function describeChange(path, change) {
+function describeChange(path, change) {
   if (change.kind === 'added') return `Spec added: ${path} — ${change.key} = ${change.to}`;
   if (change.kind === 'removed') return `Spec removed: ${path} — ${change.key} (was: ${change.from})`;
   return `Spec value changed: ${path} — ${change.key}: ${change.from} → ${change.to}`;

@@ -11,6 +11,7 @@ import {
   PAGE_FRAME_FORM,
   PAGE_TOP_PAD,
 } from "@/shared/ui/page-frame";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **The page frame is defined in one place.**
@@ -81,7 +82,7 @@ describe("페이지 틀 규격", () => {
 
   it("최대 폭은 실재하는 토큰을 가리킨다 — 두 곳에 적지 않는다", () => {
     expect(PAGE_FRAME).toContain("max-w-[var(--page-max)]");
-    const css = read("app/globals.css");
+    const css = readGlobalCss();
     expect(css, "`--page-max` 가 정의돼 있지 않다 — 틀이 없는 값을 가리킨다").toMatch(
       /--page-max:\s*\S+/,
     );
@@ -124,7 +125,7 @@ describe("페이지 틀 규격", () => {
     expect(PAGE_FRAME, "틀이 lg 바닥 여백을 안 낸다").toContain(
       "lg:pb-[var(--page-bottom-breath)]",
     );
-    const css = read("app/globals.css");
+    const css = readGlobalCss();
     expect(css, "`--page-bottom-breath` 가 정의돼 있지 않다 — 없는 값을 가리킨다").toMatch(
       /--page-bottom-breath:\s*\S+/,
     );

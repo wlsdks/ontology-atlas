@@ -180,7 +180,7 @@ const WEB_SURFACE_INPUTS = [
   /^next\.config\.ts$/,
   /^messages\//,
   /^public\/(?!docs-vault\/)/,
-  /^app\/(?:globals\.css|\[locale\]\/(?:page|download\/|not-found|error|global-error))/,
+  /^app\/(?:globals\.css|styles\/[^/]+\.css|\[locale\]\/(?:page|download\/|not-found|error|global-error))/,
   /^src\/app\//,
   /^src\/views\/(?:download|first-run|root-entry)\//,
   /^src\/widgets\/gateway-chrome\//,

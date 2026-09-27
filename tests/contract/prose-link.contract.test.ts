@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Prose-link contract — **a link inside markdown body flow is not a control.**
@@ -40,7 +41,6 @@ const PROSE_FILES = [
   'src/views/gateway-doc/ui/GatewayDocPage.tsx',
 ];
 
-const GLOBALS = 'app/globals.css';
 
 /** Takes one className literal containing `prose-link` and returns its contract violations. */
 function proseClassViolations(className: string): string[] {
@@ -73,7 +73,7 @@ function proseClassNames(source: string): string[] {
 
 describe('산문 링크 계약 (.prose-link)', () => {
   it('globals.css 의 .prose-link 가 밑줄 기하만 소유한다 — display·행간·크기는 산문의 것', () => {
-    const css = readFileSync(GLOBALS, 'utf8');
+    const css = readGlobalCss();
     const block = /\.prose-link\s*\{([^}]*)\}/.exec(css)?.[1];
     expect(block, '.prose-link 블록이 globals.css 에 없다').toBeTruthy();
     expect(block).toMatch(/text-decoration-line:\s*underline/);

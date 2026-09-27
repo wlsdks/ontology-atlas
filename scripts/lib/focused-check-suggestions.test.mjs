@@ -1226,7 +1226,7 @@ describe('focused check suggestions', () => {
   });
 
   it('suggests overflow smoke for global styling changes', () => {
-    const result = suggestFocusedChecks(['postcss.config.mjs', 'app/globals.css']);
+    const result = suggestFocusedChecks(['postcss.config.mjs', 'app/globals.css', 'app/styles/tokens.css']);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm check:tokens',

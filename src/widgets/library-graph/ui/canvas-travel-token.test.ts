@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../../../scripts/lib/global-css.mjs';
 
 /**
  * **The canvas's clocks have one silent failure mode, and this is its gate.**
@@ -28,7 +29,7 @@ const read = (rel: string): string => readFileSync(join(process.cwd(), rel), "ut
 
 describe("the library graph's clocks", () => {
   it("resolves both from `:root`, so this canvas inherits them", () => {
-    const css = read("app/globals.css");
+    const css = readGlobalCss();
     for (const token of ["--motion-fast", "--motion-base"]) {
       const match = new RegExp(`${token}:\\s*([\\d.]+)ms`).exec(css);
       expect(match, `${token} is gone from app/globals.css`).not.toBeNull();

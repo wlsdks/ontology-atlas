@@ -51,7 +51,7 @@ const painted = (el) => {
 };
 ```
 
-Read ramp values from `app/globals.css`; never hardcode a remembered list that
+Read ramp values from `app/styles/*.css`; never hardcode a remembered list that
 will call a new valid step a defect.
 
 Measure pairwise rect intersections among independent painted elements in the

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The **surface licence contract** for quaternary ink (system seat verdict,
@@ -64,7 +65,7 @@ function cssToken(css: string, name: string): Rgba {
   return parsed as Rgba;
 }
 
-const css = read("app/globals.css");
+const css = readGlobalCss();
 const stack = (...layers: Rgba[]) =>
   layers.reduce((bg, fg) => composite(fg as never, bg as never) as unknown as Rgba);
 const ratioOn = (ink: Rgba, bg: Rgba) =>

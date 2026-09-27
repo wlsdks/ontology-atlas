@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Blank out comments before scanning, preserving line numbers so reported
@@ -162,7 +163,7 @@ function isDefined(
 }
 
 function scan(): string[] {
-  const ramp = readRampSteps(readFileSync(join(process.cwd(), "app/globals.css"), "utf8"));
+  const ramp = readRampSteps(readGlobalCss());
   const files: string[] = [];
   for (const root of ROOTS) collectSourceFiles(join(process.cwd(), root), files);
 
@@ -195,7 +196,7 @@ describe("타입/행간 램프 — 존재하지 않는 스텝 차단", () => {
   });
 
   it("램프를 실제로 읽는다 — 스캔이 비면 통과가 아니라 결함이다", () => {
-    const ramp = readRampSteps(readFileSync(join(process.cwd(), "app/globals.css"), "utf8"));
+    const ramp = readRampSteps(readGlobalCss());
     // The floor is a 7-step ramp plus 9 line-height steps. If ramp parsing breaks, the test above passes forever.
     expect(ramp.text.size).toBeGreaterThanOrEqual(7);
     expect(ramp.leading.size).toBeGreaterThanOrEqual(9);
@@ -204,7 +205,7 @@ describe("타입/행간 램프 — 존재하지 않는 스텝 차단", () => {
   });
 
   it("판정이 실제로 잡는다 (프로브)", () => {
-    const ramp = readRampSteps(readFileSync(join(process.cwd(), "app/globals.css"), "utf8"));
+    const ramp = readRampSteps(readGlobalCss());
     const check = (line: string) =>
       extractRampRefs(line).filter((r) => !isDefined(r, ramp)).length;
 

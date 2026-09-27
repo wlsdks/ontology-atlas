@@ -1,8 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
 import { describe, it, expect } from 'vitest';
 import { cn, LEADING_RAMP_STEPS, RADIUS_RAMP_STEPS, TYPE_RAMP_STEPS } from './cn';
+import { readGlobalCss } from '../../../scripts/lib/global-css.mjs';
 
 /**
  * Reads the ramp steps actually declared in `app/globals.css`.
@@ -19,7 +18,7 @@ import { cn, LEADING_RAMP_STEPS, RADIUS_RAMP_STEPS, TYPE_RAMP_STEPS } from './cn
  * here first. `--text-body--line-height` companions are pairs, not steps.
  */
 function rampStepsFromCss(prefix: 'text' | 'leading' | 'radius'): string[] {
-  const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+  const css = readGlobalCss();
   const found = new Set<string>();
   const re = new RegExp(`^\\s*--${prefix}-([a-z0-9-]+):`, 'gm');
   for (const m of css.matchAll(re)) {

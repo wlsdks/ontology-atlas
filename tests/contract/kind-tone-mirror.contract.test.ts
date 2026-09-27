@@ -1,11 +1,10 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   ONTOLOGY_KIND_PAINT,
   ONTOLOGY_KIND_TONE,
   ONTOLOGY_VISUAL_KINDS,
 } from "@/entities/ontology-class/model/tone";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **Kind tone lives in `app/globals.css`; `tone.ts` carries a copy for paint.**
@@ -17,7 +16,7 @@ import {
  * variable, so `ONTOLOGY_KIND_PAINT` copies the triplet; this test is what makes that copy a
  * mirror rather than a second source: change one side and it turns red.
  */
-const CSS = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
+const CSS = readGlobalCss();
 
 function cssTriplet(kind: string): readonly [number, number, number] | null {
   const m = CSS.match(new RegExp(`--color-kind-${kind}-rgb:\\s*(\\d+)\\s+(\\d+)\\s+(\\d+);`));

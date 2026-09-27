@@ -23,9 +23,9 @@ Before proposing a new primitive or ramp value (dimension, colour, or spacing),
 follow this sequence. Reusing an existing value does not require repeating the
 history review; verify its current role and use it:
 
-1. search `app/globals.css` for the role;
+1. grep `app/styles/*.css` for the role;
 2. read “System growth rules” in `docs/DESIGN-SYSTEM.md`;
-3. inspect `git log --oneline -- app/globals.css | head -20` for history;
+3. read the history with `git log --oneline -S'<token>' -- app/globals.css app/styles | head -20`;
 4. only then propose a value, with the measured number of blocked consumers.
 
 The existing height family begins at `--control-h-`. A value invented without
@@ -37,7 +37,7 @@ Declare `design-contract` to `pnpm design:route` when changing:
 
 - `src/shared/ui/control-class.ts` axes, options, or defaults;
 - `src/shared/ui/controls.tsx` or `surface.tsx` primitive guarantees;
-- type, leading, radius, shadow, or colour ramps in `app/globals.css`;
+- type, leading, radius, shadow, or colour ramps in the `app/styles/` parts;
 - the “Fixed scale contract” in `.claude/rules/design.md`.
 
 The router selects one `reviewer` with the `tokens` and `attention` lenses, a

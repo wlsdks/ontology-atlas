@@ -1,6 +1,7 @@
 import { globSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * **A class name that emits nothing looks exactly like one that works.**
@@ -39,7 +40,7 @@ function typographyPluginInstalled(): boolean {
 }
 
 function stylesheetDefinesProse(): boolean {
-  const css = readFileSync(join(REPO_ROOT, "app", "globals.css"), "utf8");
+  const css = readGlobalCss();
   // A real rule for the bare `.prose` class, not `.prose-link` and not a mention in prose.
   return /^\s*\.prose(?![\w-])[^{]*\{/m.test(css);
 }

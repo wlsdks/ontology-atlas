@@ -9,6 +9,7 @@ import {
   OVERLAY_SPRING,
   OVERLAY_SPRING_REDUCED,
 } from "../../src/shared/motion";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * The **CSS ↔ JS mirror contract** for motion tokens.
@@ -48,7 +49,7 @@ import {
  *    and JS may reach it only through `EXIT_TRANSITION`.
  */
 
-const CSS = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
+const CSS = readGlobalCss();
 
 /** Reads the first `--name: value;` declaration, wherever it is declared. */
 function cssVar(name: string): string {

@@ -1,11 +1,10 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   MAX_FRAME_DELTA_SECONDS,
   SPRING_STABILITY_LIMIT,
   stepSpring,
 } from "@/widgets/ontology-map/engine/spring";
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Measures the spring's **stability margin** — a hole created by the token and the
@@ -29,7 +28,7 @@ import {
  * `type-ramp-step-defined`.
  */
 
-const CSS = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
+const CSS = readGlobalCss();
 
 /** Every angular-frequency token declared on the ramp — names are never hand-listed (a missed one is a blind spot). */
 function angularFrequencyTokens(): Array<{ name: string; value: number }> {

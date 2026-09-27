@@ -14,17 +14,17 @@ export const SCOPE_CONFIGS = Object.freeze({
   frontend: Object.freeze({
     cwd: '.',
     runtime: source(
-      ['app/**/{page,layout,template,error,loading,not-found,global-error,default,route}.{ts,tsx}', 'app/**/{icon,apple-icon,opengraph-image,twitter-image,sitemap,robots}.{ts,tsx}'],
+      ['app/**/{page,layout,template,error,loading,not-found,global-error,default,route}.{ts,tsx}', 'app/**/{icon,apple-icon,opengraph-image,twitter-image,sitemap,robots}.{ts,tsx}', 'app/styles/*.css'],
       ['app/**/*.{ts,tsx,css}', 'src/**/*.{ts,tsx}', '!**/*.{test,spec}.{ts,tsx}', '!src/entities/docs-vault/data/**'],
       ALL_ISSUES,
       {},
     ),
-    verification: source(['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}', 'app/globals.css'], ['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}', 'app/**/*.css'], WITHOUT_MANIFEST, { next: false }),
+    verification: source(['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}', 'app/globals.css', 'app/styles/*.css'], ['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}', 'app/**/*.css'], WITHOUT_MANIFEST, { next: false }),
   }),
   scripts: Object.freeze({
     cwd: '.',
-    runtime: source(['app/globals.css', 'scripts/lib/check-rules/*.mjs'], ['scripts/**/*.mjs', '!scripts/**/*.test.mjs', '!scripts/quality/dead-code/**', 'app/**/*.css'], WITHOUT_MANIFEST, { next: false }),
-    verification: source(['scripts/**/*.test.mjs', 'app/globals.css'], ['scripts/**/*.test.mjs', 'app/**/*.css'], WITHOUT_MANIFEST, { next: false }),
+    runtime: source(['app/globals.css', 'app/styles/*.css', 'scripts/lib/check-rules/*.mjs'], ['scripts/**/*.mjs', '!scripts/**/*.test.mjs', '!scripts/quality/dead-code/**', 'app/**/*.css'], WITHOUT_MANIFEST, { next: false }),
+    verification: source(['scripts/**/*.test.mjs', 'app/globals.css', 'app/styles/*.css'], ['scripts/**/*.test.mjs', 'app/**/*.css'], WITHOUT_MANIFEST, { next: false }),
   }),
   cli: Object.freeze({
     cwd: 'cli',

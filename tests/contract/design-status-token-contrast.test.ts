@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Design-token gate — verifies the status signal colours meet WCAG AA (>= 4.5:1) on
@@ -10,7 +9,7 @@ import path from 'node:path';
  * Parses the `@theme` block in globals.css and checks the real dark token values.
  */
 
-const GLOBALS = readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
+const GLOBALS = readGlobalCss();
 
 const STATUS_TOKENS = [
   '--color-status-success',

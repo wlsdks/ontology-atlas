@@ -1,7 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * `font-mono` is used for slugs, paths, tabular numerals **and** for the uppercase
@@ -17,7 +16,7 @@ import { describe, expect, it } from 'vitest';
  * system monospace).
  */
 describe('mono font stack', () => {
-  const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+  const css = readGlobalCss();
 
   it('resolves Hangul to the Korean face instead of a system monospace fallback', () => {
     const match = css.match(/--font-mono:\s*([^;]+);/);

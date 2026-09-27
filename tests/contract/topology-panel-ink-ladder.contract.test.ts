@@ -1,11 +1,10 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // Uses the same ESM import as its sibling contract (`contrast.contract.test.ts`).
 // `require` bypasses the Vitest module graph, so editing `contrast.mjs` would stop
 // `pnpm checks:changed` from **recommending this contract** (2026-08-07 review).
 import { composite, contrastRatio, parseColor } from '../../scripts/lib/contrast.mjs';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Holds the map panel's **second ink ramp** as a spec.
@@ -44,7 +43,7 @@ import { composite, contrastRatio, parseColor } from '../../scripts/lib/contrast
  * decision, recorded with its falsifier in `docs/DECISIONS.md` under 2026-08-06.
  */
 
-const CSS = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+const CSS = readGlobalCss();
 
 /**
  * Reads the **base declaration** of `--x: <value>;`.

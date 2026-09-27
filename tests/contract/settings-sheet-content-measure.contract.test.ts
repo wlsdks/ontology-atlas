@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
  * Prose in the settings sheet keeps the prose measure.
@@ -20,7 +21,7 @@ const PRIMITIVES = readFileSync(
   path.join(ROOT, 'src/widgets/app-settings-menu/ui/settings-primitives.tsx'),
   'utf8',
 );
-const CSS = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
+const CSS = readGlobalCss();
 
 describe('설정 시트 — 산문은 읽는 폭을 지킨다', () => {
   it('창 머리 문장은 산문 measure 를 쓴다', () => {
