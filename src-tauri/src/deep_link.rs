@@ -95,9 +95,7 @@ pub(crate) fn parse_install_deep_link(raw: &str) -> Result<String, DeepLinkRefus
     Ok(payload.to_string())
 }
 
-/// Reads the locale from the current address and returns `true` once there, so
-/// the caller can retry on cold start. One `location.assign` per link, marked in
-/// session storage, or re-evaluation restarts the navigation before it commits.
+/// Escaped again although `parse_install_deep_link` refused literal-ending characters: a new caller would skip that check.
 pub(crate) fn build_install_route_script(payload: &str) -> String {
     let payload = crate::js_string_literal(payload);
     format!(

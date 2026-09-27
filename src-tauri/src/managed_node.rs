@@ -108,11 +108,11 @@ pub(crate) fn sha256_matches(bytes: &[u8], expected: &str) -> bool {
     actual.eq_ignore_ascii_case(expected)
 }
 
-/// Fails closed: a hash mismatch deletes the download, or the next run would use
-/// it. A callback keeps this module free of Tauri; unknown sizes are `None` so the
+/// A callback keeps this module free of Tauri; unknown sizes are `None` so the
 /// screen draws no fake percentage.
 pub(crate) type NodeProgress<'a> = &'a dyn Fn(&'static str, Option<u64>, Option<u64>);
 
+/// Fails closed: a hash mismatch deletes the download, or the next run would use it.
 pub(crate) fn ensure_managed_node(
     app_data_dir: &Path,
     report: NodeProgress<'_>,

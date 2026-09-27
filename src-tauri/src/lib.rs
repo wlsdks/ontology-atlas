@@ -157,7 +157,7 @@ const WEBVIEW_VERIFY_MARKER_INTERVAL_MS: u64 = 500;
 type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
 
 /// Keeping the root lets a repeat call for the same folder skip rebuilding the
-/// FSEvents stream on the main thread.
+/// FSEvents stream.
 struct VaultWatch {
     root: PathBuf,
     // Holding it is the behaviour: dropping the debouncer stops the watcher.
@@ -1021,7 +1021,7 @@ const DEAD_SESSION_WINDOW: Duration = Duration::from_secs(10);
 const DEAD_SESSION_LOG_LINES: usize = 3;
 const DEAD_SESSION_LOG_CHARS: usize = 200;
 
-/// The cap keeps token-bearing URLs and long stacks out of a log people paste into issues.
+/// Bounds a child's stderr in a log people paste into issues (three lines, 200 chars); it does not redact.
 fn clip_for_log(line: &str) -> String {
     let trimmed = line.trim();
     if trimmed.chars().count() <= DEAD_SESSION_LOG_CHARS {
@@ -3147,6 +3147,7 @@ fn schedule_show_main_window(app: AppHandle) {
 /// Emits `vault-changed` for `.md` changes, debounced 500ms. Idempotent per canonical
 /// root, and a replaced debouncer drops on a background thread because FSEvents
 /// teardown joins its run loop.
+/// Deliberately `async` with no await: Tauri then runs it off the macOS main thread.
 #[tauri::command]
 async fn start_vault_watch(
     app: AppHandle,
@@ -5112,7 +5113,10 @@ mod atomic_write_tests {
             .map(|e| e.file_name().to_string_lossy().to_string())
             .filter(|name| name.contains("oatlas-tmp"))
             .collect();
-        assert!(leftovers.is_empty(), "temporary files remain: {leftovers:?}");
+        assert!(
+            leftovers.is_empty(),
+            "temporary files remain: {leftovers:?}"
+        );
         std::fs::remove_dir_all(&dir).ok();
     }
 

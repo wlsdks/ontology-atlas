@@ -1055,13 +1055,17 @@ mod tests {
     fn no_command_here_hands_the_key_back_to_the_webview() {
         // Commands here return only types that cannot hold a key.
         let source = include_str!("llm.rs").replace("\r\n", "\n");
-        // Both attribute spellings count, or the matcher could see zero commands and pass.
+        // Both spellings count: `(async)` keeps curl's wait off the macOS main thread, and a bare-form matcher would see zero commands.
         let commands: Vec<usize> = source
             .match_indices("\n#[tauri::command")
             .filter(|(idx, _)| source[*idx..].contains("]\npub fn "))
             .map(|(idx, _)| idx)
             .collect();
-        assert_eq!(commands.len(), 2, "only the connection probe and chat round trip");
+        assert_eq!(
+            commands.len(),
+            2,
+            "only the connection probe and chat round trip"
+        );
         for idx in commands {
             let signature = &source[idx..(idx + 600).min(source.len())];
             assert!(
@@ -1072,7 +1076,6 @@ mod tests {
             );
         }
     }
-
 
     #[test]
     fn a_chat_key_never_appears_in_argv_and_neither_does_the_vault_excerpt() {
@@ -1383,7 +1386,6 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
-
     #[test]
     fn the_address_branch_carries_no_authorization_header_at_all() {
         let request = verify_request(
@@ -1557,7 +1559,10 @@ mod tests {
         assert_eq!(line["host"], "localhost:11434");
         assert_eq!(line["outcome"], "ok");
         assert_eq!(line["scope"]["vaultChars"], 0);
-        assert!(!raw.contains("qwen3:8b"), "the probe response body was logged");
+        assert!(
+            !raw.contains("qwen3:8b"),
+            "the probe response body was logged"
+        );
         assert_eq!(line["responseChars"], listing.chars().count());
         fs::remove_dir_all(&vault).ok();
     }
@@ -1584,7 +1589,10 @@ mod tests {
         .unwrap();
         assert!(!result.ok);
         assert_eq!(result.http_status, Some(404));
-        assert!(result.body.is_none(), "a failure body does not reach the UI");
+        assert!(
+            result.body.is_none(),
+            "a failure body does not reach the UI"
+        );
         fs::remove_dir_all(&vault).ok();
     }
 

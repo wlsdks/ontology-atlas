@@ -758,7 +758,6 @@ pub struct GitPullResult {
     summary: String,
 }
 
-
 /// Reports `initialized:false` outside a repo instead of an error, since auto-init is forbidden.
 #[tauri::command]
 pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
@@ -1312,7 +1311,6 @@ pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
     })
 }
 
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitDocumentDiffResult {
@@ -1438,7 +1436,6 @@ pub fn git_document_diff(
     }
     Ok(cap_document_diff(repo_rel, diff, false))
 }
-
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -1681,8 +1678,7 @@ fn host_platform() -> &'static str {
     }
 }
 
-/// Read-only detection so the UI can pick platform install guidance; it installs
-/// nothing.
+/// One historical version of one vault file: when it landed and what it said.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NodeRevision {
@@ -1890,6 +1886,8 @@ fn safe_relative_path(raw: &str) -> Option<String> {
 /// Bounds `git show` processes per paint.
 const MAX_FRESHNESS_SLUGS: usize = 64;
 
+/// Read-only detection so the UI can pick platform install guidance; it installs
+/// nothing.
 #[tauri::command]
 pub fn git_probe() -> GitProbe {
     let platform = host_platform().to_string();

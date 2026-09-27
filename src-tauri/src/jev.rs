@@ -269,7 +269,8 @@ where
     parsed.ok_or_else(|| coded("jev-response-invalid", "missing parsed answer"))?
 }
 
-/// `async` keeps the up-to-30-second network wait off the macOS main thread.
+/// `async` keeps the up-to-30-second network wait off the macOS main thread,
+/// as the `secret_verify` and `llm_chat` commands do in `llm.rs`.
 #[tauri::command(async)]
 pub fn jev_judge(vault_path: String, payload: String) -> Result<JevJudgment, String> {
     validate_payload(&payload)?;

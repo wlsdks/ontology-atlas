@@ -1,6 +1,7 @@
 // LLM call audit log in the vault's `.ontology-atlas/llm-audit.jsonl`. Log before
 // send: if `reserve()` cannot sync a line, the caller sends nothing. `finalize`
 // rewrites only that tail line under a lock; response bodies are never recorded.
+// Rust writes it because Rust sends, or a front-end bug could send without a record.
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -331,6 +332,7 @@ fn ensure_reservation_path(path: &Path, file: &fs::File) -> Result<(), String> {
 }
 
 /// On failure the caller must send nothing.
+/// Call only from `(async)` commands: the fsync and 13 ms lock budget must stay off the macOS main thread.
 pub fn reserve(vault_dir: &Path, draft: AuditDraft) -> Result<AuditReservation, String> {
     // Claim first, so a second reservation is refused here rather than by `flock`.
     let canonical_vault = canonical_vault_dir(vault_dir)?;
@@ -650,7 +652,10 @@ mod tests {
         fs::remove_file(audit_log_path(&vault)).ok();
         fs::remove_dir_all(&vault).ok();
         fs::remove_dir_all(&outside).ok();
-        assert!(result.is_err(), "must not write a hard link as the audit file");
+        assert!(
+            result.is_err(),
+            "must not write a hard link as the audit file"
+        );
         assert_eq!(outside_after, b"outside-sentinel\n");
     }
 
@@ -670,7 +675,10 @@ mod tests {
         drop(reservation);
 
         fs::remove_dir_all(&vault).ok();
-        assert_eq!(mode, 0o600, "audit questions must not be readable by other accounts");
+        assert_eq!(
+            mode, 0o600,
+            "audit questions must not be readable by other accounts"
+        );
     }
 
     #[cfg(unix)]

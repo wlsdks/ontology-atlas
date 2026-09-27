@@ -121,6 +121,7 @@ pub fn secret_clear(provider: String) -> Result<SecretStatus, String> {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Step {
+    /// Delete succeeded, or on read-back a value was still read.
     Done,
     Missing,
     /// Failed for another reason, such as a locked keychain: unknown.

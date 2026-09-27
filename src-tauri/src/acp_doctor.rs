@@ -108,8 +108,7 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
         None => AcpCheck::problem("launcher", false, None),
     });
 
-    // Reports which gate mechanism applies. Neither is a problem the app must fix,
-    // so no fix button is attached.
+    // With neither mechanism the gate is a `problem`, ours to fix rather than the user's, so no fix button.
     // Controlling codex's config directory is not holding its write gate (decision
     // (111)); report the compound boundary instead.
     out.push(
@@ -263,7 +262,6 @@ pub(crate) fn reset_connection(ctx: &DoctorContext<'_>) -> Result<(), String> {
         return Ok(());
     };
 
-    // Remove the keychain item first so a failure leaves no half-deleted state.
     acp::remove_shadow_credentials(&dir);
 
     match std::fs::remove_dir_all(&dir) {
@@ -330,11 +328,7 @@ mod tests {
 
         for check in checks.iter().filter(|x| !PREREQUISITE_IDS.contains(&x.id)) {
             assert!(check.blocked, "{} is not marked blocked", check.id);
-            assert!(
-                !check.fixable,
-                "{} offers a fix that cannot work",
-                check.id
-            );
+            assert!(!check.fixable, "{} offers a fix that cannot work", check.id);
         }
         let _ = std::fs::remove_dir_all(&base);
     }
@@ -431,7 +425,10 @@ mod tests {
             "the old file survived relinking"
         );
         // Deleting alone leaves the next session without a gate.
-        assert!(dir.join("settings.json").is_file(), "settings.json was not recreated");
+        assert!(
+            dir.join("settings.json").is_file(),
+            "settings.json was not recreated"
+        );
         assert!(
             dir.join(".credentials.json").exists(),
             "the link was not recreated"
@@ -551,7 +548,10 @@ mod tests {
 
         let before = diagnose(&c);
         let cfg = before.iter().find(|c| c.id == "config-dir").unwrap();
-        assert_eq!(cfg.state, "problem", "a missing config folder is not reported as a problem");
+        assert_eq!(
+            cfg.state, "problem",
+            "a missing config folder is not reported as a problem"
+        );
         assert!(cfg.fixable);
 
         repair(&c, "config-dir").unwrap();

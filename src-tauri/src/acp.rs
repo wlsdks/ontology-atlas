@@ -40,7 +40,7 @@ pub(crate) enum RegistryLaunch {
         args: Vec<String>,
     },
     /// Launches what is already on PATH. App-managed installs follow the rules in the
-    /// agent-install section of `.claude/rules/forbidden.md`.
+    /// agent-install section of `.claude/rules/surfaces.md`.
     Binary {
         command: String,
         #[serde(default)]
@@ -93,8 +93,8 @@ pub(crate) const ISOLATION: &[IsolationSpec] = &[
     },
 ];
 
-// Listing codex here only lets the app control its config directory; chat
-// eligibility is decided in `runtime-gate.ts`. Its `read-only` mode is a vault-scoped
+// Listing codex here only lets the app control its config directory; whether
+// the UI offers chat is decided in `runtime-gate.ts`. Its `read-only` mode is a vault-scoped
 // write sandbox (`mode-safety.ts` reads `_meta.kind`), so Git history is the undo.
 
 /// Runtimes whose permission gate was measured; not the same as `ISOLATION`
@@ -122,9 +122,9 @@ const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
 }
 "#;
 
-/// Not inherited from `~/.codex/config.toml`. `approval_policy = "on-request"` keeps
-/// escalation as a question. The `ontology-atlas` block gates the vault's own project
-/// registration, which a session loads even from an isolated home (decision (111)).
+/// Not inherited from `~/.codex/config.toml`. The `ontology-atlas` block gates the vault's own
+/// project registration, which a session loads even from an isolated home (decision (111)).
+/// Its `command`/`args` are placeholders: codex merges this env into the vault's own entry, and `mcp/src/write-consent.mjs` reads the switch.
 const ISOLATED_CODEX_CONFIG: &str = r#"approval_policy = "on-request"
 sandbox_mode = "read-only"
 
@@ -664,9 +664,14 @@ pub(crate) enum NpxCachePreflight {
     CacheReady,
     /// Tens of MB on first download.
     FirstDownload,
-    HealedBrokenEntry { reason: &'static str },
+    HealedBrokenEntry {
+        reason: &'static str,
+    },
     /// Leaving it fails as before; the reason lets the UI diagnose it.
-    HealFailed { reason: &'static str, error: String },
+    HealFailed {
+        reason: &'static str,
+        error: String,
+    },
 }
 
 /// Deletes only that one entry, never all of `_npx`, so other npx tools keep their cache.
@@ -1147,8 +1152,8 @@ pub(crate) fn merge_oauth_account(
 }
 
 /// Mirrors the terminal's login into the app-scoped keychain item before every
-/// session, because that item shadows the linked file. The secret passes only through `security`,
-/// filed under the account Claude Code reads; failure is silent.
+/// session, because that item shadows the linked file. Failure is silent.
+/// The secret rides one `security` argv, as when Claude Code writes the item itself; only its digest is logged.
 fn mirror_terminal_login(config_dir: &Path, home: &Path) -> bool {
     #[allow(unused_mut)]
     let mut mirrored = false;
@@ -1478,9 +1483,7 @@ fn signal_group_or_leader(pid: u32, signal: i32) -> Result<(), String> {
     }
     let group_err = std::io::Error::last_os_error();
     match group_err.raw_os_error() {
-        Some(libc::ESRCH) if !process_is_running(pid) => {
-            Ok(())
-        }
+        Some(libc::ESRCH) if !process_is_running(pid) => Ok(()),
         Some(libc::ESRCH) => {
             if unsafe { libc::kill(pid as i32, signal) } == 0 {
                 return Ok(());
@@ -1674,7 +1677,7 @@ const LOGIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(
 /// A locked keychain waits on an unlock dialog, which must not eat session start.
 const KEYCHAIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
 
-/// Only CLIs meeting all four conditions of `.claude/rules/forbidden.md`
+/// Only CLIs meeting all four conditions of `.claude/rules/surfaces.md`
 /// ("Installing an agent tool for the user"): version pinned and installed under the
 /// app's own prefix, never global npm or the system PATH.
 pub(crate) const INSTALLABLE_CLI: &[(&str, &str)] = &[
@@ -2667,7 +2670,10 @@ mod tests {
             let mut out = BufReader::new(child.stdout.take().unwrap());
             let mut line = String::new();
             out.read_line(&mut line).unwrap();
-            let grandchild: u32 = line.trim().parse().expect("failed to read the grandchild pid");
+            let grandchild: u32 = line
+                .trim()
+                .parse()
+                .expect("failed to read the grandchild pid");
             (child, grandchild)
         };
 
@@ -2918,7 +2924,10 @@ mod tests {
         assert!(managed_install_command("gemini-acp", Path::new("/tmp/x")).is_none());
         assert!(installable_package("gemini-acp").is_none());
         for (id, _) in INSTALLABLE_CLI {
-            assert!(registry_agent(id).is_some(), "{id} is missing from the registry");
+            assert!(
+                registry_agent(id).is_some(),
+                "{id} is missing from the registry"
+            );
         }
     }
 
@@ -2934,7 +2943,11 @@ mod tests {
         let path = std::env::join_paths([Path::new("/usr/local/bin")]).unwrap();
         let dirs = candidate_bin_dirs(None, Some(&path), &probe, Some(&managed), None);
 
-        assert_eq!(dirs.last(), Some(&managed), "the app-managed directory is not last");
+        assert_eq!(
+            dirs.last(),
+            Some(&managed),
+            "the app-managed directory is not last"
+        );
         assert!(dirs.len() > 1);
     }
 
