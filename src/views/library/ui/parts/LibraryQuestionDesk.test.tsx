@@ -136,6 +136,7 @@ describe('Library question desk transfer boundary', () => {
     expect(draft).toHaveTextContent('A freeform heading');
     expect(draft).not.toHaveTextContent('Source-backed evidence');
     const cited = within(draft).getAllByRole('button', { name: 'sources/refund.md#l2' })[0]!;
+    expect(cited).toHaveClass('text-body');
     fireEvent.click(cited);
     expect(onOpenSource).toHaveBeenCalledWith('sources/refund.md', 'l2');
     expect(draft).toHaveTextContent('refund policy · sources/refund.md#l2');
@@ -167,14 +168,19 @@ describe('Library question desk transfer boundary', () => {
     const request = onSummarize.mock.calls[0]![0];
     const report: QuestionDeskReportDraft = {
       question: request.question, searchId: request.searchId, listingVersion: request.listingVersion, vaultScope: request.vaultScope,
-      text: '## Answer\nNo owner is recorded in the originals.\n## Source-backed evidence\n- The plan lists no owner. [[src:sources/refund.md#l2]]\n## Disagreements or changed claims\n- One page suggests an owner.\n## Unknowns and search limits\n- Another-language documents may be missed.',
+      text: '## Answer\nNo owner is recorded in the originals.\n\n> A later quoted note remains ordinary prose.\n\n- A loose list note remains ordinary prose.\n\n  Its second paragraph also stays ordinary.\n## Source-backed evidence\n- The plan lists no owner. [[src:sources/refund.md#l2]]\n## Disagreements or changed claims\n- One page suggests an owner.\n## Unknowns and search limits\n- Another-language documents may be missed.',
       coverage: request.coverage, limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
     };
     rendered.rerender(<Desk report={report} onSummarize={onSummarize} />);
     expect(screen.queryByTestId('question-desk-unknown')).not.toBeInTheDocument();
     expect(screen.queryByTestId('question-desk-summarize')).not.toBeInTheDocument();
     const answer = screen.getByTestId('question-desk-report-section-0');
+    expect(within(answer).getByText('Answer')).toHaveClass('text-title');
     expect(answer).toHaveTextContent('No owner is recorded in the originals.');
+    const answerParagraphs = Array.from(answer.querySelectorAll('p'));
+    expect(answerParagraphs.length).toBeGreaterThanOrEqual(3);
+    expect(answerParagraphs[0]).toHaveClass('text-display');
+    expect(answerParagraphs.slice(1).every((paragraph) => !paragraph.classList.contains('text-display'))).toBe(true);
     expect(within(answer).getByTestId('question-desk-download-markdown')).toBeInTheDocument();
     expect(screen.getByTestId('question-desk-report-section-1')).toHaveTextContent('The plan lists no owner.');
     expect(screen.getByTestId('question-desk-report-section-2')).toHaveTextContent('One page suggests an owner.');

@@ -121,8 +121,8 @@ function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
       h1: ({ children }) => <h3 className="mb-2 mt-5 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] first:mt-0">{children}</h3>,
       h2: ({ children }) => <h3 className="mb-2 mt-5 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] first:mt-0">{children}</h3>,
       h3: ({ children }) => <h4 className="mb-2 mt-4 text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{children}</h4>,
-      p: ({ children }) => <p className={headlineAnswer
-        ? 'my-3 break-words first-of-type:mt-0 first-of-type:text-display first-of-type:leading-display lg:first-of-type:text-hero lg:first-of-type:leading-hero'
+      p: ({ children, node }) => <p className={headlineAnswer && node?.position?.start.offset === 0
+        ? 'my-3 break-words mt-0 text-display leading-display lg:text-hero lg:leading-hero'
         : 'my-3 break-words'}>{children}</p>,
       ul: ({ children }) => <ul className="my-3 list-disc pl-5">{children}</ul>,
       ol: ({ children }) => <ol className="my-3 list-decimal pl-5">{children}</ol>,
@@ -136,7 +136,7 @@ function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
           const address = `${citation.path}#${citation.anchor}`;
           return <button type="button" data-source-path={citation.path} data-source-anchor={citation.anchor}
             aria-label={address} onClick={() => onOpenSource(citation.path!, citation.anchor!)}
-            className={controlClass({ shape: 'link', tone: 'accentOnTint', hoverInk: 'strong', className: 'inline break-all underline' })}>
+            className={controlClass({ shape: 'link', size: 'lg', tone: 'accentOnTint', hoverInk: 'strong', className: 'inline break-all underline' })}>
             {wikilink?.labelled ? <>{children} · {address}</> : address}
           </button>;
         }
@@ -172,8 +172,8 @@ function DraftReport({ text, sources, onOpenSource, actions }: {
       className={index === 0 ? 'border-b border-[color:var(--color-border-soft)] pb-6' : 'border-t border-[color:var(--color-border-soft)] pt-5'}>
       <div className={index === 0 ? 'mb-4' : 'mb-2'}>
         <h5 className={index === 0
-          ? 'text-label font-[var(--font-weight-strong)] leading-label text-[color:var(--color-indigo-text-soft)]'
-          : 'text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]'}>{section.title}</h5>
+          ? 'text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-indigo-text-soft)]'
+          : 'text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]'}>{section.title}</h5>
       </div>
       {section.markdown ? <SafeReportMarkdown text={section.markdown} sources={sources} onOpenSource={onOpenSource} answer={index === 0} />
         : <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.emptySection')}</p>}
