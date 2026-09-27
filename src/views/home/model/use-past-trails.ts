@@ -15,6 +15,7 @@ import {
 } from "../lib/past-trail-record";
 import { createVaultFilePastTrailStore, type PastTrailStore } from "../lib/past-trail-store";
 import type { TopologyPastWalkRow } from "../ui/TopologyTrailChip";
+import { useDerived } from "@/shared/lib/use-derived";
 
 // Debounce before writing the past trail, so every step does not hit the user's
 // disk. Kept short on purpose: whatever we wait here is a window in which closing
@@ -69,6 +70,25 @@ export interface UsePastTrailsResult {
  * write to, and falling back to browser storage would recreate exactly that
  * web/app split. Sample browsing loses nothing by being volatile.
  */
+/**
+ * Stored walks are refined against the live map so the row's text (title, count) and the steps a
+ * replay actually loads are **the same thing**. A row that says 12 places and replays 9 is a
+ * quiet lie.
+ */
+function refinePastWalks(
+  pastWalks: readonly PastWalk[],
+  footprintNodeLookup: UsePastTrailsArgs["footprintNodeLookup"],
+) {
+  const lookup = (id: string) => {
+    const node = footprintNodeLookup.get(id);
+    return node ? { title: node.label, kind: node.kind } : null;
+  };
+  return pastWalks.map((walk) => ({
+    walk,
+    entries: refinePastWalkEntries(walk.entries, lookup),
+  }));
+}
+
 export function usePastTrails({
   vaultHandle,
   vaultLoaded,
@@ -174,19 +194,7 @@ export function usePastTrails({
     setSessionWalkId(newPastWalkId());
     void pastTrailStore.clear().then(setPastWalks);
   }, [pastTrailStore]);
-  // Stored walks are refined against the live map so the row's text (title, count)
-  // and the steps a replay actually loads are **the same thing**. A row that says 12
-  // places and replays 9 is a quiet lie.
-  const refinedPastWalks = useMemo(() => {
-    const lookup = (id: string) => {
-      const node = footprintNodeLookup.get(id);
-      return node ? { title: node.label, kind: node.kind } : null;
-    };
-    return pastWalks.map((walk) => ({
-      walk,
-      entries: refinePastWalkEntries(walk.entries, lookup),
-    }));
-  }, [pastWalks, footprintNodeLookup]);
+  const refinedPastWalks = useDerived(refinePastWalks, pastWalks, footprintNodeLookup);
   /**
    * **Replays a past trail as the walk in progress.** The order is the contract:
    *

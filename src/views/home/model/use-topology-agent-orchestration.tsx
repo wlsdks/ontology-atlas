@@ -13,6 +13,7 @@ import { consumeQueuedAgentChatIntent, subscribeAgentChatIntent } from "@/shared
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
+import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { agentChatDoor } from "./agent-chat-door";
 import { planRouteAskDockSync, type RouteAskDockRequest } from "./route-ask-dock-sync";
@@ -83,6 +84,10 @@ export function useTopologyAgentOrchestration({
 }: Options) {
   const { selectedOntologyNode, spotlightOn, gitVaultPath, tAgent, vaultConceptFacts, llmBridgeAvailable, vault } = topologyVaultReadModel;
   const { realmTitle, ontologyMapGraph } = topologyGraphProjection;
+  // Callbacks read these, never the graph, the vault or the facts themselves.
+  const visibleNodeCount = ontologyMapGraph.nodes.length;
+  const vaultHandle = vault.handle;
+  const vaultConceptFactsRef = useLatestRef(vaultConceptFacts);
   const {
     acpRuntime, cancelAcpSessionStart, setChatMounted, setAgentOpeningRequest, chatWidth,
     requestedAcpRuntimeRef, setAcpRuntimeId, pendingAgentChatPromptRef, setPendingAgentChatRuntimeId,
@@ -113,9 +118,9 @@ export function useTopologyAgentOrchestration({
       focusedKind: selectedOntologyNode?.kind ?? null,
       lenses: spotlightOn ? ["recent-changes"] : [],
       projectTitle: realmTitle ?? null,
-      visibleNodeCount: ontologyMapGraph.nodes.length,
+      visibleNodeCount,
     };
-  }, [selectedOntologyNode, spotlightOn, realmTitle, ontologyMapGraph.nodes.length]);
+  }, [selectedOntologyNode, spotlightOn, realmTitle, visibleNodeCount]);
 
   /**
    * **One chat panel** (owner decision, 2026-08-16).
@@ -189,14 +194,14 @@ export function useTopologyAgentOrchestration({
    * seats the sentence in the input; sending is still the send button.
    */
   const askAgentAboutSelectedNode = useCallback(() => {
-    const intent = screenIntentFor(selectedOntologyNode, vaultConceptFacts);
+    const intent = screenIntentFor(selectedOntologyNode, vaultConceptFactsRef.current);
     if (!intent) return;
     setVaultAgentPrefill({
       text: sentenceForIntent(intent, firstWordsLabels),
       nonce: Date.now(),
     });
     openVaultAgent();
-  }, [selectedOntologyNode, vaultConceptFacts, setVaultAgentPrefill, firstWordsLabels, openVaultAgent]);
+  }, [selectedOntologyNode, vaultConceptFactsRef, setVaultAgentPrefill, firstWordsLabels, openVaultAgent]);
 
   /**
    * Arriving from the insight queue with `?ask=` in the URL.
@@ -347,11 +352,11 @@ export function useTopologyAgentOrchestration({
     () =>
       buildAgentAnalyzePrompt({
         vaultPath:
-          (vault.handle ? getTauriVaultRootPath(vault.handle) : null) ??
-          vault.handle?.name ??
+          (vaultHandle ? getTauriVaultRootPath(vaultHandle) : null) ??
+          vaultHandle?.name ??
           null,
       }),
-    [vault.handle],
+    [vaultHandle],
   );
 
   /**

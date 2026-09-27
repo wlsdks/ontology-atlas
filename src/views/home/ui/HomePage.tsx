@@ -300,6 +300,9 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     vault, selectedOntologyNode, ontologyInsight, recentChanges, docFreshnessIndex, docFileDateIndex, docDatesReading,
     updatedAgoNowMs, spotlightOn, changedSlugs, dustySlugs, deeplinkSourceReady, handoffSource, vaultIdentity
   } = topologyVaultReadModel;
+  // Callbacks read these, never `vault`, which carries the manifest.
+  const vaultStatus = vault.status;
+  const openVault = vault.open;
   // `AppNavRail` lives in the layout, so this page cannot mount it. It registers the
   // node the rail should render through context instead (`useNavRailSettingsSlot`),
   // and effect cleanup clears it on navigation. Only this page overrides the shell's
@@ -316,7 +319,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             handles its own ⌘K demotion, so the old gear's mutual-exclusion signal
             is no longer needed. */}
         <AppSettingsMenu
-          mode={vault.status === 'loaded' ? 'local' : 'static'}
+          mode={vaultStatus === 'loaded' ? 'local' : 'static'}
           triggerVariant="rail-tile"
           screenControls={{
             audiencePlain,
@@ -332,7 +335,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       handleChangeIndexDefaultCollapsed,
       audiencePlain,
       setAudiencePlain,
-      vault.status,
+      vaultStatus,
     ],
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
@@ -347,15 +350,15 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   // response at all — the kind of silence that makes people press the same button
   // again. When something cannot be done, say why and give somewhere to go: open
   // the same sheet the card uses, in its unsupported mode.
-  const fsaUnsupported = vault.status === "unsupported";
+  const fsaUnsupported = vaultStatus === "unsupported";
   const [unsupportedGuideOpen, setUnsupportedGuideOpen] = useState(false);
   const requestVaultOpen = useCallback(() => {
     if (fsaUnsupported) {
       setUnsupportedGuideOpen(true);
       return;
     }
-    void vault.open();
-  }, [fsaUnsupported, vault, setUnsupportedGuideOpen]);
+    void openVault();
+  }, [fsaUnsupported, openVault, setUnsupportedGuideOpen]);
   // Auto-start accepts **both** the sample and a real folder settling. The earlier
   // condition only watched the sample, so anyone who picked a folder never got the
   // tour (`use-auto-start-ready.ts`).

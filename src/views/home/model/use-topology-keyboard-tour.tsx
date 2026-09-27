@@ -11,6 +11,7 @@ import { type ProjectImpactMode } from "@/entities/project";
 import { useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 import { canAutoStartGuidedTour, readGuideAutoStart, readGuidedTourStatus, resolveAnchorRect, useGuidedTour, useGuidedTourAutoStartReady, useRegisterGuideReplay, watchGuidedTourAutoStartCancel, type TourAnchor } from "@/features/guided-tour";
 import { useClaimShellKey } from "@/shared/lib/shell-key-claims";
+import { useDerived } from "@/shared/lib/use-derived";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useCallback, useEffect, useEffectEvent, useRef } from "react";
 import { shouldSuppressGlobalShortcuts } from "../lib/blocking-surface";
@@ -24,6 +25,16 @@ const BOOTSTRAP_RETURN = ["topology-index-uncataloged-docs", "ontology-map-canva
 /** The popover's own "full detail" button, still there under the closed overlay. */
 const FULL_DETAIL_RETURN = ["map-detail-panel-open-full-detail", "ontology-map-canvas"] as const;
 const TOUR_RETURN = ["topology-tour-button", "ontology-map-canvas"] as const;
+
+function tourAnchorResolver(nodes: Parameters<typeof resolveTourAnchorNodeId>[0]) {
+  return (anchor: TourAnchor): boolean => {
+    if (anchor === null) return true;
+    if (anchor.type === "canvas-node") {
+      return resolveTourAnchorNodeId(nodes, anchor.target) !== null;
+    }
+    return resolveAnchorRect(anchor.value) !== null;
+  };
+}
 
 interface Options {
   setOntologySearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -86,16 +97,7 @@ export function useTopologyKeyboardTour({
   // tour. `canResolveTourAnchor` lets this view resolve a testid (DOM) or canvas-node
   // (graph) anchor and hand the feature only a boolean, because the feature may not
   // import widgets (FSD import direction).
-  const canResolveTourAnchor = useCallback(
-    (anchor: TourAnchor) => {
-      if (anchor === null) return true;
-      if (anchor.type === "canvas-node") {
-        return resolveTourAnchorNodeId(ontologyMapGraph.nodes, anchor.target) !== null;
-      }
-      return resolveAnchorRect(anchor.value) !== null;
-    },
-    [ontologyMapGraph],
-  );
+  const canResolveTourAnchor = useDerived(tourAnchorResolver, ontologyMapGraph.nodes);
   const tour = useGuidedTour({
     hasSelection: canvasSelectedSlug != null,
     canResolveAnchor: canResolveTourAnchor,

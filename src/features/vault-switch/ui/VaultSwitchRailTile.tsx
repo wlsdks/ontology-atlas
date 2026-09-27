@@ -67,6 +67,8 @@ const POPOVER_MAX_HEIGHT_PX = 640;
 export function VaultSwitchRailTile() {
   const t = useTranslations('vaultSwitch');
   const vault = useLocalVault();
+  // Callbacks read these, never `vault`, which carries the manifest.
+  const { open: pickFolder, openRecent, forgetRecent, status: vaultStatus } = vault;
   const { open, setOpen, ref, surfaceRef } = useDismissibleMenu();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   /*
@@ -94,7 +96,7 @@ export function VaultSwitchRailTile() {
     window.addEventListener('resize', place);
     return () => window.removeEventListener('resize', place);
   }, [open, place]);
-  const busy = vault.status === 'opening' || vault.status === 'loading';
+  const busy = vaultStatus === 'opening' || vaultStatus === 'loading';
 
   /* Focus the popover once on open; an inline ref callback re-runs every commit and steals focus. */
   const setSurface = useCallback(
@@ -132,8 +134,8 @@ export function VaultSwitchRailTile() {
   useEffect(() => {
     if (!switchingRef.current || busy) return;
     switchingRef.current = false;
-    if (vault.status === 'loaded') returnFocusIfLost();
-  }, [busy, vault.status, returnFocusIfLost]);
+    if (vaultStatus === 'loaded') returnFocusIfLost();
+  }, [busy, vaultStatus, returnFocusIfLost]);
 
   /*
    * Tab past either edge closes the popover and continues where Tab from the chip would go.
@@ -184,25 +186,25 @@ export function VaultSwitchRailTile() {
     (record: LocalFsHandleRecord) => {
       switchingRef.current = true;
       setOpen(false);
-      void vault.openRecent(record);
+      void openRecent(record);
     },
-    [setOpen, vault],
+    [setOpen, openRecent],
   );
   const handleForget = useCallback(
     (target: LocalFsHandleRecord | readonly LocalFsHandleRecord[]) => {
-      void vault.forgetRecent(target);
+      void forgetRecent(target);
     },
-    [vault],
+    [forgetRecent],
   );
   const handlePick = useCallback(() => {
     switchingRef.current = true;
     setOpen(false);
-    void vault.open();
-  }, [setOpen, vault]);
+    void pickFolder();
+  }, [setOpen, pickFolder]);
 
   /* The chip stays, marked busy, while the next folder opens, so the rail items do not jump. */
   const handle = vault.handle;
-  if (!handle || (vault.status !== 'loaded' && !busy)) return null;
+  if (!handle || (vaultStatus !== 'loaded' && !busy)) return null;
 
   const name = handle.name;
   // The absolute path is knowable only on the desktop - a web FSA handle has no path.
