@@ -6,7 +6,7 @@
  * list drew one row per file. That is the same command offered two or three times, and choosing
  * between identical rows teaches a person nothing.
  *
- * **What makes two entries the same thing** is the transport plus the command and its arguments,
+ * **What makes two entries the same thing** is the transport plus the command line, if any,
  * or the URL. Not the name: somebody who wrote `notion` in one file and `notion-mcp` in another
  * still registered one server, and the name is the part they were free to invent. The first
  * spelling seen wins the row, and every file it appeared in becomes a chip.
@@ -28,9 +28,9 @@ export function groupDiscovered(servers: readonly DiscoveredConnector[]): Discov
   const groups = new Map<string, DiscoveredGroup>();
   for (const server of servers) {
     const runs =
-      server.transport === 'http'
+      server.transport === 'http' || server.command === null
         ? (server.url ?? '').trim()
-        : [server.command ?? '', ...server.args].join(' ').trim();
+        : [server.command, ...server.args].join(' ').trim();
     const key = `${server.transport} ${runs}`;
     const existing = groups.get(key);
     if (!existing) {

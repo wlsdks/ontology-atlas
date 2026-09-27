@@ -999,7 +999,7 @@ function CatalogueSection({
                     data-testid={`${testIdPrefix}-catalogue-runs`}
                     className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-2 text-label leading-label text-[color:var(--color-text-quaternary)]"
                   >
-                    <code className="min-w-0 max-w-full truncate font-mono">
+                    <code className="min-w-0 max-w-full break-all font-mono">
                       {variantRuns(primary, primaryPath)}
                     </code>
                     <span className="break-keep">{asksClause(t, primary)}</span>
