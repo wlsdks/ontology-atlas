@@ -251,13 +251,8 @@ export function ConnectorsPanel({
    * from `store.connectors` would blank mid-sentence.
    */
   const [pending, setPending] = useState<ConnectorRecord | null>(null);
-  /** Empty until something has happened. */
-  const [announcement, setAnnouncement] = useState('');
+  const [removalAnnouncement, setRemovalAnnouncement] = useState('');
   const addOpenRef = useRef<HTMLButtonElement | null>(null);
-  /**
-   * Bumped when a removal completes, so an effect places focus after `useDialogFocusTrap`'s
-   * cleanup; focusing in the click handler would be undone by that restore.
-   */
   /** No folder, so there is no file to write into; not an empty list. */
   const noFolder = store.status === 'unavailable';
   /**
@@ -295,6 +290,10 @@ export function ConnectorsPanel({
       : arrival.droppedValues.length > 0
         ? { kind: 'dropped', keys: arrival.droppedValues }
         : null;
+  /**
+   * Bumped when a removal completes, so an effect places focus after `useDialogFocusTrap`'s
+   * cleanup; focusing in the click handler would be undone by that restore.
+   */
   const [removedTick, setRemovedTick] = useState(0);
   useEffect(() => {
     if (removedTick === 0) return;
@@ -331,9 +330,6 @@ export function ConnectorsPanel({
        * The column holds the whole card, so the rows and the sentences share a left edge.
        */}
       <div className={PAGE_COLUMN_FORM}>
-      {/*
-       * The title and the way in stand on one row, where the eye lands.
-       */}
       {/*
        * No title inside the card: the tab already says Connectors.
        */}
@@ -426,9 +422,6 @@ export function ConnectorsPanel({
         </div>
       ) : null}
 
-      {/*
-       * While this computer is being read, say so beside the list; empty is not still looking.
-       */}
       {linkNotice ? (
         <p
           role="status"
@@ -442,6 +435,9 @@ export function ConnectorsPanel({
         </p>
       ) : null}
 
+      {/*
+       * While this computer is being read, say so beside the list; empty is not still looking.
+       */}
       {canDiscover && !isEmpty && discovery.status !== 'done' ? (
         <p
           role="status"
@@ -547,7 +543,7 @@ export function ConnectorsPanel({
            * a connector" instead of `main#main`.
            */
           setRemovedTick((tick) => tick + 1);
-          setAnnouncement(t('removedAnnouncement', { name: connector.name }));
+          setRemovalAnnouncement(t('removedAnnouncement', { name: connector.name }));
           void forgetSecrets([...connector.env, ...connector.headers]).then(() =>
             store.remove(connector.id),
           );
@@ -556,7 +552,7 @@ export function ConnectorsPanel({
       />
 
       {/* Removal is silent otherwise: the row simply disappears. */}
-      <LiveAnnouncer message={announcement} />
+      <LiveAnnouncer message={removalAnnouncement} />
         </>
       )}
       </div>
@@ -1022,7 +1018,7 @@ function VariableFields({
   ].filter(({ entries }) => entries.length > 0);
   if (slots.length === 0) return null;
 
-  const change = (
+  const rewriteVariable = (
     slot: 'env' | 'headers',
     name: string,
     next: (entry: ConnectorValueEntry) => ConnectorValueEntry,
@@ -1055,7 +1051,7 @@ function VariableFields({
                 disabled={!canStoreSecrets}
                 onChange={(event) => {
                   if (event.target.checked) {
-                    change(slot, entry.name, (current) => ({
+                    rewriteVariable(slot, entry.name, (current) => ({
                       name: current.name,
                       secretRef: connectorSecretRef(connector.id, current.name),
                     }));
@@ -1064,7 +1060,7 @@ function VariableFields({
                   // Turning the choice off means the value should not be on this machine; dropping only the
                   // reference would orphan it.
                   void forgetSecrets([entry]).then(() =>
-                    change(slot, entry.name, (current) => ({ name: current.name })),
+                    rewriteVariable(slot, entry.name, (current) => ({ name: current.name })),
                   );
                 }}
                 className="text-label text-[color:var(--color-text-secondary)]"
@@ -1148,7 +1144,7 @@ function VariableFields({
                   data-testid={`${testIdPrefix}-item-variable-value`}
                   onChange={(event) => {
                     const next = event.target.value;
-                    change(slot, entry.name, (current) =>
+                    rewriteVariable(slot, entry.name, (current) =>
                       next ? { name: current.name, value: next } : { name: current.name },
                     );
                   }}

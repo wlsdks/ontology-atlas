@@ -96,7 +96,7 @@ export interface CardPlacement {
 /**
  * Places the card beside the cutout: the first candidate that fits, in the order below, above,
  * right, left, else the clamped first. With `avoidTarget` the order is roomiest-first.
- * Tries a fixed handful of candidates against each avoid box: O(candidates × boxes).
+ * At most 16 candidates, each against every avoid and keep-clear box: O(16 × (avoid + keepClear)).
  */
 export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
   const gap = input.gap ?? 12;

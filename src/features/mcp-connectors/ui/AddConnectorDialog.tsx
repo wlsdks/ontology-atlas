@@ -201,6 +201,13 @@ function pressOutcome(variant: CatalogueVariant): PressOutcome {
   return requiredVariables(variant).length > 0 ? 'asks' : 'attaches';
 }
 
+/** jsdom has no `scrollIntoView`; the form is still unfolded, which is the contract. */
+function scrollFormIntoView(node: HTMLElement | null, reducedMotion: boolean): void {
+  if (node && typeof node.scrollIntoView === 'function') {
+    node.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
+  }
+}
+
 export function AddConnectorDialog({
   open,
   onClose,
@@ -294,11 +301,7 @@ export function AddConnectorDialog({
   const customRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (prefillTick === 0 || !customOpen) return;
-    const node = customRef.current;
-    // jsdom has no `scrollIntoView`; the form is still unfolded, which is the contract.
-    if (node && typeof node.scrollIntoView === 'function') {
-      node.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
-    }
+    scrollFormIntoView(customRef.current, reducedMotion);
   }, [customOpen, prefillTick, reducedMotion]);
 
   /*
@@ -309,10 +312,7 @@ export function AddConnectorDialog({
   useEffect(() => {
     if (!focusCustomNameRef.current || !customOpen) return;
     focusCustomNameRef.current = false;
-    const node = customRef.current;
-    if (node && typeof node.scrollIntoView === 'function') {
-      node.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
-    }
+    scrollFormIntoView(customRef.current, reducedMotion);
     document.getElementById(`${testIdPrefix}-custom-name`)?.focus({ preventScroll: true });
   }, [customOpen, reducedMotion, testIdPrefix]);
 
@@ -775,8 +775,8 @@ function FoundSection({
                     ))}
                   </div>
                   {/*
-                   * Verbatim and unwrapped: a confirmation that hides an argument is the DeepJack shape
-                   * (`mcp-install-link.ts`).
+                   * Verbatim and wrapped, never truncated: a confirmation that hides an argument is the
+                   * DeepJack shape (`mcp-install-link.ts`).
                    */}
                   <code className="mt-0.5 block break-all font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">
                     {runs}
@@ -1212,7 +1212,7 @@ function CustomConnectorForm({
       name: name.trim(),
       transport,
       ...(transport === 'stdio'
-        ? { command: command.trim(), args: args.split(/\s+/).filter(Boolean) }
+        ? { command: command.trim() }
         : { url: url.trim() }),
       args: transport === 'stdio' ? args.split(/\s+/).filter(Boolean) : [],
       env: transport === 'stdio' ? entries : [],
@@ -1458,8 +1458,9 @@ function CustomConnectorForm({
                     label={t('variableSecret')}
                     checked={secret}
                     /*
-                     * A credential name cannot be unchecked, since `serializeConnectorState` would drop
-                     * the literal silently. Disabled on the web: there is no keychain.
+                     * A credential name cannot be unchecked: `serializeConnectorState` refuses a
+                     * literal under one, so the whole write would fail. Disabled on the web: there is
+                     * no keychain.
                      */
                     disabled={locked || !canStoreSecrets}
                     onChange={(event) => changeVariable(index, { secret: event.target.checked })}

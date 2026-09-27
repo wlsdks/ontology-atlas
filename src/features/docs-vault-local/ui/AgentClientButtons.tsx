@@ -16,7 +16,7 @@ import { useToast } from "@/shared/ui";
 /**
  * One-click connect controls for Claude Code, Cursor, Antigravity and Codex. The installed app
  * writes the config files into the folder; the web has no absolute path for a deeplink, so it
- * copies the config with instructions. Feature layer, so both widgets can use it.
+ * copies the config with instructions. Feature layer, so widgets can use it.
  */
 
 import type { AgentClientId } from "@/entities/vault-session";
@@ -75,15 +75,10 @@ export interface AgentClientControlsProps {
   codexConfigSnippet?: string;
   /** No known absolute path, so copy instructions replace the deeplink. */
   needsManualPath: boolean;
-  /**
-   * `stack` is the map sheet's full-width column; `grid` is two columns inside the collapsed
-   * settings step, so the four read as one set of peers (one person often attaches several).
-   */
 }
 
 /**
- * The write, copy and deeplink state machine for the four clients, shared by the grid or stack
- * layout and the Agents MCP rows so the two screens cannot disagree on which button says ready.
+ * The write, copy and deeplink state machine for the four clients; callers lay out the controls.
  */
 export function useAgentClientControls({
   serverAvailability,

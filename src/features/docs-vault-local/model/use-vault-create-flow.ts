@@ -59,7 +59,7 @@ export function useVaultCreateFlow(
 
   return {
     handleCreate,
-    /** The chosen folder is being read and seeded; the picker itself is not. */
+    /** The chosen folder is being read and, when empty, seeded; not the picker itself. */
     scaffolding: creating && vault.status === 'loading',
     actionError,
     setActionError,

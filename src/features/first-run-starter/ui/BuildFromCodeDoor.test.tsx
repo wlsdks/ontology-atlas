@@ -56,7 +56,7 @@ describe('BuildFromCodeDoor shows failures as sentences rather than codes', () =
   });
 
   it('falls back to the door sentence for an unrecognised failure', () => {
-    // `messageOf` returns `''` when nothing recognised the failure.
+    // `failureCodeOrEmpty` returns `''` when nothing recognised the failure.
     renderDoor('', 'ko');
     const line = screen.getByTestId('first-run-build-error');
     expect(line.textContent).toBe(koMessages.firstRunStarter.buildFromCodeFailed);

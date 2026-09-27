@@ -30,15 +30,15 @@ import {
  * An all-clear folds to one line; only blocked checks unfold.
  */
 /**
- * Returns the check button and the results separately: the button sits in the row and the
- * results go full width beneath it.
- */
-/**
  * Checks with a written next step; meaningful only for problems the app cannot fix.
  * An id absent here has no copy, and asking for it would print the key.
  */
 const NEXT_STEP = new Set(['cli', 'launcher', 'login', 'gate']);
 
+/**
+ * Returns the check button and the results separately: the button sits in the row and the
+ * results go full width beneath it.
+ */
 export function useAgentDoctor(
   runtimeId: string,
   /**
@@ -93,36 +93,32 @@ export function useAgentDoctor(
     }
   }, [runtimeId]);
 
-  const fix = useCallback(
-    async (checkId: string) => {
-      setBusy(checkId);
+  /** Runs one app-side change and draws the re-measured checks it returns. */
+  const applyChange = useCallback(
+    async (busyKey: string, change: () => Promise<AcpCheck[]>) => {
+      setBusy(busyKey);
       setFailed(false);
       try {
-        setChecks(await repairAgentCheck(runtimeId, checkId));
-      onChanged?.();
+        setChecks(await change());
+        onChanged?.();
       } catch {
         setFailed(true);
       } finally {
         setBusy(null);
       }
     },
-    [runtimeId, onChanged],
+    [onChanged],
   );
 
-  const reset = useCallback(async () => {
-    setBusy('reset');
-    setFailed(false);
-    try {
-      setChecks(await resetAgentConnection(runtimeId));
-      onChanged?.();
-    } catch {
-      setFailed(true);
-    } finally {
-      setBusy(null);
-    }
-  }, [runtimeId, onChanged]);
+  const fix = useCallback(
+    (checkId: string) => applyChange(checkId, () => repairAgentCheck(runtimeId, checkId)),
+    [applyChange, runtimeId],
+  );
+  const reset = useCallback(
+    () => applyChange('reset', () => resetAgentConnection(runtimeId)),
+    [applyChange, runtimeId],
+  );
 
-  /** An earlier step is blocked, so rebuilding the config (reconnect) would achieve nothing. */
   /**
    * The install command, shown before pressing. Asked only when the tool is missing, so a healthy
    * tool gets no install offer.
@@ -162,32 +158,16 @@ export function useAgentDoctor(
     };
   }, [launcherMissing]);
 
-  const getNode = useCallback(async () => {
-    setBusy('node');
-    setFailed(false);
-    try {
-      setChecks(await installManagedNode(runtimeId));
-      onChanged?.();
-    } catch {
-      setFailed(true);
-    } finally {
-      setBusy(null);
-    }
-  }, [runtimeId, onChanged]);
+  const getNode = useCallback(
+    () => applyChange('node', () => installManagedNode(runtimeId)),
+    [applyChange, runtimeId],
+  );
+  const install = useCallback(
+    () => applyChange('install', () => installAgentCli(runtimeId)),
+    [applyChange, runtimeId],
+  );
 
-  const install = useCallback(async () => {
-    setBusy('install');
-    setFailed(false);
-    try {
-      setChecks(await installAgentCli(runtimeId));
-      onChanged?.();
-    } catch {
-      setFailed(true);
-    } finally {
-      setBusy(null);
-    }
-  }, [runtimeId, onChanged]);
-
+  /** True when an earlier step is blocked; reconnect is hidden then, because rebuilding the config cannot help. */
   const prerequisiteBlocked = useMemo(
     () => (checks ?? []).some((check) => check.blocked),
     [checks],
@@ -394,9 +374,6 @@ export function useAgentDoctor(
                     {t(`state.${check.state}`)}
                   </span>
                 </span>
-                {/*
-                  Where the app cannot fix it, say what the person should do, or it is a dead end.
-                */}
                 {check.state === 'problem' && check.fixable ? (
                   <Chip
                     size="sm"
@@ -473,7 +450,8 @@ export function useAgentDoctor(
                   </span>
                 ) : null}
                 {/*
-                  Speaks only when the app has no install path, so it never contradicts the install button.
+                  Where the app cannot fix it, say what the person should do, or it is a dead end.
+                  Only when the app has no install path, so it never contradicts the install button.
                 */}
                 {check.state === 'problem' &&
                 !check.fixable &&

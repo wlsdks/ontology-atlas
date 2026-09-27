@@ -73,6 +73,14 @@ export interface UseGuidedTourResult {
  * The tour state machine: advance, back, skip, auto-advance on a selection at step 4
  * (try-click), and the 7→8 developer branch.
  */
+/** Step ids are unique, so the one `agent` step decides. */
+function agentStepResolvable(
+  steps: readonly TourStep[],
+  canResolveAnchor: (anchor: TourAnchor) => boolean,
+): boolean {
+  return steps.some((s) => s.id === "agent" && (s.anchor === null || canResolveAnchor(s.anchor)));
+}
+
 export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
   const {
     steps = TOUR_STEPS,
@@ -177,7 +185,6 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     setOpen(true);
   }, [steps]);
 
-  // Must match `advance()`'s end condition, or the label lies.
   const leavesDatasheetOnAdvance = Boolean(
     step?.id === "datasheet" && onLeaveDatasheet && hasSelection,
   );
@@ -186,9 +193,9 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
 
   const advance = useCallback(() => {
     if (stepIndex < 0) return;
-    if (step?.id === "datasheet" && onLeaveDatasheet && hasSelection) {
+    if (leavesDatasheetOnAdvance) {
       setPendingLeaveDatasheet(true);
-      onLeaveDatasheet();
+      onLeaveDatasheet?.();
       return;
     }
     const next = visibleSteps[stepIndex + 1];
@@ -197,7 +204,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
       return;
     }
     setStepId(next.id);
-  }, [stepIndex, visibleSteps, step, onLeaveDatasheet, hasSelection, finish]);
+  }, [stepIndex, visibleSteps, leavesDatasheetOnAdvance, onLeaveDatasheet, finish]);
 
   // Once `hasSelection` settles false, re-read the DOM and choose the next step; the same
   // commit race as the try-click auto-advance.
@@ -244,19 +251,13 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
   // Shares `resolveTick` with `visibleSteps` so it follows DOM changes such as a dismissed
   // first-run card.
   const devBranchAvailable = useMemo(() => {
-    const agentStep = steps.find((s) => s.id === "agent");
-    if (!agentStep) return false;
-    return agentStep.anchor === null ? true : canResolveAnchor(agentStep.anchor);
+    return agentStepResolvable(steps, canResolveAnchor);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- resolveTick only triggers DOM re-resolution; its value is never read
   }, [steps, canResolveAnchor, resolveTick]);
 
   const chooseDevBranch = useCallback(() => {
-  // A backstop: a stale click after the button hid finishes normally instead of looping.
-    const agentStep = steps.find((s) => s.id === "agent");
-    const resolvable =
-      agentStep !== undefined &&
-      (agentStep.anchor === null || canResolveAnchor(agentStep.anchor));
-    if (!resolvable) {
+    // A backstop: a stale click after the button hid finishes normally instead of looping.
+    if (!agentStepResolvable(steps, canResolveAnchor)) {
       finish("done");
       return;
     }

@@ -44,7 +44,8 @@ const BULLETS = [
   { icon: HardDrive, key: "bulletLocal", browserOnly: false },
   { icon: Sparkles, key: "bulletStarter", browserOnly: false },
   // Announces the browser's permission prompt after folder selection, which first-time users took
-  // for a malfunction. Browser-only: the installed app opens an OS folder window without it.
+  // for a malfunction. Browser-only: the installed app opens an OS folder window without it;
+  // claiming a prompt that never comes breaks `.claude/rules/surfaces.md`.
   { icon: ShieldCheck, key: "bulletPermission", browserOnly: true },
 ] as const;
 

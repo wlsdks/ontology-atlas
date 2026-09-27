@@ -100,7 +100,7 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
       }
       setState({ stage: 'confirm', location, reusesExisting, pickedMapFolder, errorText: null });
     } catch (err) {
-      setState({ ...IDLE, errorText: messageOf(err) });
+      setState({ ...IDLE, errorText: failureCodeOrEmpty(err) });
     }
   }, []);
 
@@ -126,17 +126,14 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
       setState(IDLE);
     } catch (err) {
       // Staying on `confirm` keeps the path and button, so a fixable failure is one press from retry.
-      setState((s) => ({ ...s, stage: 'confirm', errorText: messageOf(err) }));
+      setState((s) => ({ ...s, stage: 'confirm', errorText: failureCodeOrEmpty(err) }));
     }
   }, [state.location, state.stage, openRecord, handoff]);
 
   return { ...state, chooseProject, confirm, reset };
 }
 
-/**
- * A failure code for the screen, or `''` when nothing recognised it. Never the thrown English,
- * which cannot know the reader's language.
- */
-function messageOf(err: unknown): string {
+/** Never the thrown English, which cannot know the reader's language. */
+function failureCodeOrEmpty(err: unknown): string {
   return failureCodeOf(err) ?? '';
 }

@@ -137,9 +137,7 @@ export function FirstRunStarterModule({
   } = useFirstRunStarter();
   const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
   // Latin-only eyebrow decoration widens Korean space glyphs, so it is per locale.
-  const eyebrowWide = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
   const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
-  const eyebrowTight = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
   // The storefront sample lands with non-developers where the dogfood vault does not. Only
   // static mode consumes it; `useOntologyInsight` ignores it in local mode.
   const [sampleSource, setSampleSource] = useSampleSource();
@@ -151,6 +149,7 @@ export function FirstRunStarterModule({
   const cliBridgeRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!agentSpotlit) return;
+    // Optional call: jsdom has no scrollIntoView.
     cliBridgeRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [agentSpotlit]);
   // Both folder CTAs pass through a guidance sheet first; the card renders only for a new user.
@@ -316,11 +315,11 @@ export function FirstRunStarterModule({
        * The amber dot sits beside its own sentence so colour and words form one cluster.
        */}
       <p
-        className={`mb-3 flex items-center gap-2 text-caption text-[color:var(--map-panel-text-secondary)] ${eyebrowWide}`}
+        className={`mb-3 flex items-center gap-2 text-caption text-[color:var(--map-panel-text-secondary)] ${eyebrow}`}
       >
         {t("caption")}
         <span
-          className={`ml-auto inline-flex items-center gap-1.5 text-caption text-[color:var(--color-status-warning)] ${eyebrowTight}`}
+          className={`ml-auto inline-flex items-center gap-1.5 text-caption text-[color:var(--color-status-warning)] ${eyebrow}`}
         >
           <span className="relative h-2 w-2 shrink-0" aria-hidden>
             <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
