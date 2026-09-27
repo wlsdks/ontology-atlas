@@ -195,9 +195,9 @@ describe("램프 lint 커버리지 — 새 표면이 첫날부터 덮이는가",
 
     expect(
       uncovered,
-      `아직 만들지 않은 경로가 램프 룰 밖에 있다. 이건 정확히 2026-08-04 실사용\n` +
-        `시험이 잡은 결함이다 — 새 화면이 규격을 하나도 안 받는 자리였다.\n` +
-        `eslint.config.mjs 의 rampCoveredGlobs 를 좁히지 마라.\n` +
+      `A path that does not exist yet is outside the ramp rule. This is exactly the defect the 2026-08-04\n` +
+        `real-use trial caught: a new screen that received none of the spec.\n` +
+        `Do not narrow rampCoveredGlobs in eslint.config.mjs.\n` +
         uncovered.join("\n"),
     ).toEqual([]);
   }, ESLINT_CASE_TIMEOUT_MS);
@@ -208,8 +208,8 @@ describe("램프 lint 커버리지 — 새 표면이 첫날부터 덮이는가",
     // text-[13px] · rounded-[5px] · leading-[1.9] · duration-300 — four.
     expect(
       ramp.length,
-      `새 디렉터리에 심은 램프 위반이 안 잡혔다. 게이트가 항상 통과하기만 하면\n` +
-        `게이트가 없는 것과 구별되지 않는다.`,
+      `A ramp violation planted in a new directory was not caught. A gate that always passes\n` +
+        `cannot be told apart from no gate.`,
     ).toBe(4);
     expect(result.errorCount).toBeGreaterThanOrEqual(4);
   }, ESLINT_CASE_TIMEOUT_MS);
@@ -231,8 +231,8 @@ describe("램프 부채 예외 장부", () => {
     const globby = exemptions.filter((entry) => /[*?[\]]/.test(entry));
     expect(
       globby,
-      `예외에 글롭이 들어왔다. 부채를 진 **파일**을 하나씩 적어라 — 그래야\n` +
-        `그 옆에 새로 만드는 파일이 첫날부터 덮인다.\n${globby.join("\n")}`,
+      `A glob entered the exemptions. List each indebted **file** one by one, so that\n` +
+        `a file created next to them is covered from its first day.\n${globby.join("\n")}`,
     ).toEqual([]);
   });
 
@@ -290,13 +290,13 @@ describe("램프 부채 예외 장부", () => {
 
     expect(
       [...grown, ...cleared],
-      `램프 예외 장부가 어긋났다.\n` +
-        `- 늘었다면: 이 파일들은 유산 부채 때문에 lint 에서 한시적으로 빠져 있을\n` +
-        `  뿐이고 래칫은 **내려가기만** 한다. text-caption/label/body/body-lg/\n` +
+      `The ramp exemption ledger is out of step.\n` +
+        `- If it grew: these files are only temporarily out of lint because of legacy debt,\n` +
+        `  and the ratchet **only goes down**. Use text-caption/label/body/body-lg/\n` +
         `  title/display/hero · rounded-micro/chip/card/panel/sheet · leading-* ·\n` +
-        `  --motion-* 를 쓰고, 램프에 없는 값이 필요하면 토큰 신설 PR 을 먼저 내라.\n` +
-        `- 0이 됐다면: eslint.config.mjs 의 rampDebtExemptions 와 이 파일의 장부\n` +
-        `  에서 빼라 — 예외는 한시적인 것이고 진짜 게이트는 lint 다.\n` +
+        `  --motion-*, and if you need a value the ramp lacks, open a new-token PR first.\n` +
+        `- If it reached 0: remove it from rampDebtExemptions in eslint.config.mjs and from this\n` +
+        `  file's ledger; exemptions are temporary and lint is the real gate.\n` +
         `${[...grown, ...cleared].join("\n")}`,
     ).toEqual([]);
   }, ESLINT_CASE_TIMEOUT_MS);

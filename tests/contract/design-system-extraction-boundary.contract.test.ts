@@ -109,9 +109,9 @@ describe("디자인 시스템 추출 경계", () => {
     }
     expect(
       offenders,
-      "코어 부품이 이 앱에 묶였다. 문자열은 **prop 으로 주입**하고(toast.tsx 의 " +
-        "notificationsLabel 이 선례), 라우팅이 필요하면 그 부품은 코어가 아니라 " +
-        "ATLAS_BOUND 다 — 근거와 함께 등재하라.",
+      "A core primitive is bound to this app. **Inject strings as props** (the precedent is " +
+        "notificationsLabel in toast.tsx); if it needs routing, the primitive is not core but " +
+        "ATLAS_BOUND, so register it there with the reason.",
     ).toEqual([]);
   });
 

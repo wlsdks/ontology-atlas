@@ -170,8 +170,8 @@ describe('워크플로 분기가 살아 있다', () => {
     for (const block of suiteBlocks) {
       expect(
         new Set(block.indents).size,
-        `샤드 실행 블록의 연속 줄 들여쓰기가 균일하지 않다(${block.indents.join(',')}) — ` +
-          'YAML 접힘에서 더 들여쓴 줄은 별도의 literal 줄이 된다',
+        `The shard run block's continuation lines are not indented evenly (${block.indents.join(',')}). ` +
+          'In a folded YAML scalar, a more-indented line becomes a separate literal line',
       ).toBeLessThanOrEqual(1);
     }
   });

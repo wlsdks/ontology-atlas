@@ -268,10 +268,74 @@ function normalize(raw, brandInk = {}) {
   return {
     source: SOURCE,
     registryVersion: raw.version ?? null,
+    npmDependencyCutoff: null,
     agents,
     // Fetching icons needs the upstream absolute URLs. They are not persisted.
     __raw: (raw.agents ?? []).filter((a) => agents.some((n) => n.id === a.id)),
   };
+}
+
+/** npx's `--before` for the hardened runtimes (src-tauri/src/acp.rs); moves with the snapshot. */
+export function withDependencyCutoff(normalized, committed, now = new Date()) {
+  const bare = (snapshot) => JSON.stringify({ ...snapshot, npmDependencyCutoff: null });
+  const kept = committed?.npmDependencyCutoff && bare(committed) === bare(normalized);
+  return { ...normalized, npmDependencyCutoff: kept ? committed.npmDependencyCutoff : now.toISOString() };
+}
+
+export function hardenedRuntimeIds() {
+  const rust = readFileSync(join(ROOT, 'src-tauri', 'src', 'acp.rs'), 'utf8');
+  const list = /NPM_HARDENED_RUNTIMES: &\[&str\] = &\[([^\]]*)\]/.exec(rust)?.[1] ?? '';
+  const ids = [...list.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  if (ids.length === 0) {
+    console.error('[acp-registry] NPM_HARDENED_RUNTIMES parsed to zero runtimes; refusing to pass');
+    process.exit(1);
+  }
+  return ids;
+}
+
+export function npmPackageSpec(spec) {
+  const match = /^((?:@[^/@]+\/)?[^/@]+)@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/.exec(spec ?? '');
+  return match ? { name: match[1], version: match[2] } : null;
+}
+
+export function cutoffProblems({ snapshot, hardened, publishedAt }) {
+  const cutoff = Date.parse(snapshot.npmDependencyCutoff ?? '');
+  if (!Number.isFinite(cutoff)) {
+    return [`npmDependencyCutoff is missing or not a date: ${snapshot.npmDependencyCutoff}`];
+  }
+  const problems = [];
+  for (const id of hardened) {
+    const launch = snapshot.agents.find((agent) => agent.id === id)?.launch;
+    const spec = launch?.kind === 'npx' ? npmPackageSpec(launch.package) : null;
+    if (!spec) {
+      problems.push(`${id}: no exact npx version to check`);
+      continue;
+    }
+    const published = publishedAt(spec.name, spec.version);
+    if (!published) problems.push(`${id}: npm does not say when ${spec.name}@${spec.version} was published`);
+    else if (Date.parse(published) > cutoff) {
+      problems.push(`${id}: ${spec.name}@${spec.version} was published ${published}, after ${snapshot.npmDependencyCutoff}`);
+    }
+  }
+  return problems;
+}
+
+async function npmPublishTimes(snapshot, hardened) {
+  const times = new Map();
+  for (const id of hardened) {
+    const launch = snapshot.agents.find((agent) => agent.id === id)?.launch;
+    const spec = launch?.kind === 'npx' ? npmPackageSpec(launch.package) : null;
+    if (!spec) continue;
+    const res = await fetch(`https://registry.npmjs.org/${spec.name.replace('/', '%2f')}`, {
+      headers: { accept: 'application/json' },
+    });
+    if (!res.ok) {
+      console.error(`[acp-registry] npm answered HTTP ${res.status} for ${spec.name}`);
+      process.exit(1);
+    }
+    times.set(`${spec.name}@${spec.version}`, (await res.json()).time?.[spec.version] ?? null);
+  }
+  return (name, version) => times.get(`${name}@${version}`) ?? null;
 }
 
 /** Fetches and stores one icon. On failure that entry alone goes without one. */
@@ -382,8 +446,21 @@ async function main() {
     // is what stops "one icon fetch failed" from masquerading as a list mismatch.
     const normalized = normalize(rawJson);
     const committed = JSON.parse(readFileSync(OUT, 'utf8'));
+    const hardened = hardenedRuntimeIds();
+    const cutoffIssues = cutoffProblems({
+      snapshot: committed,
+      hardened,
+      publishedAt: await npmPublishTimes(committed, hardened),
+    });
+    if (cutoffIssues.length > 0) {
+      console.error('[acp-registry] npx would refuse a pinned adapter under the dependency cutoff:');
+      for (const issue of cutoffIssues) console.error(`    ${issue}`);
+      console.error('  Run node scripts/build-acp-registry.mjs to move the cutoff, review the diff, and commit.');
+      process.exit(1);
+    }
     const byId = new Map(committed.agents.map((a) => [a.id, a]));
     delete normalized.__raw;
+    normalized.npmDependencyCutoff = committed.npmDependencyCutoff ?? null;
     for (const agent of normalized.agents) {
       agent.icon = byId.get(agent.id)?.icon ?? null;
       agent.brandInk = byId.get(agent.id)?.brandInk ?? null;
@@ -436,7 +513,13 @@ async function main() {
       if (entry) entry.icon = null;
     }
   }
-  writeFileSync(OUT, `${JSON.stringify(normalized, null, 2)}\n`);
+  let committed = null;
+  try {
+    committed = JSON.parse(readFileSync(OUT, 'utf8'));
+  } catch {
+    committed = null;
+  }
+  writeFileSync(OUT, `${JSON.stringify(withDependencyCutoff(normalized, committed), null, 2)}\n`);
   const verified = normalized.agents.filter((a) => a.verified).length;
   console.log(`[acp-registry] ${icons} icons → public/acp-icons/`);
   console.log(

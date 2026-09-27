@@ -51,9 +51,9 @@ describe('docs:check — 하위 검사가 전부 CI 에서 불린다', () => {
     const called = new RegExp(`['\"]pnpm\\s+${script.replace(/[:]/g, '\\:')}(?![a-z0-9:-])`, 'm');
     expect(
       called.test(registry),
-      `${script} 가 ${CI_REGISTRY} 의 exhaustive lane 에 없다 — ` +
-        `docs:check 에 하위 검사를 더했으면 CI 스텝도 같이 만든다. ` +
-        `(워크플로는 이 레지스트리를 실행하고, 서버를 띄우는 검사는 mcp lane 에 둔다)`,
+      `${script} is missing from the exhaustive lane of ${CI_REGISTRY}. ` +
+        `A sub-check added to docs:check needs its CI step too. ` +
+        `(The workflow runs this registry; checks that start a server belong in the mcp lane.)`,
     ).toBe(true);
     expect(workflow).toContain('node scripts/run-ci-lane.mjs');
   });

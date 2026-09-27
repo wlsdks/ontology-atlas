@@ -125,8 +125,8 @@ test.describe("데스크톱 셸의 좌측 레일", () => {
     const bordered = tiles.filter((t) => t.borderWidth !== "0px" && t.borderStyle !== "none");
     expect(
       bordered,
-      "레일 타일에 테두리가 그려졌다 — 값 층 모양이 싣고 온 헤어라인이다. " +
-        "이 타일은 초점 링 기하만 card 에서 빌린다(border-0)",
+      "A border was drawn on a rail tile: the hairline the value-layer shape brought along. " +
+        "This tile borrows only the focus-ring geometry from card (border-0)",
     ).toEqual([]);
   });
 });

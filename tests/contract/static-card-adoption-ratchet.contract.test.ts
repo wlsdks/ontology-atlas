@@ -106,9 +106,9 @@ describe("섹션 카드 채택 래칫", () => {
     }
     expect(
       over,
-      "구획 상자(rounded-panel)의 인셋은 `p-[var(--card-pad)]` 다 — 16px 을 손으로 다시 적지 마라. " +
-        "항목 상자(rounded-card)의 인셋은 강제하지 않으니, 새 상자가 정말 항목이면 그 사실이 " +
-        "반경으로 드러나야 한다(구획이면 panel · 항목이면 card).",
+      "A section box (rounded-panel) is inset with `p-[var(--card-pad)]`; do not write 16px by hand again. " +
+        "An item box (rounded-card) inset is not enforced, so if the new box really is an item, " +
+        "its radius has to say so (a section is panel, an item is card).",
     ).toEqual([]);
   });
 

@@ -70,7 +70,6 @@ on:
 
 permissions:
   contents: read
-  checks: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -91,49 +90,48 @@ env:
   CARGO_PROFILE_TEST_DEBUG: line-tables-only
 
 jobs:
-  # The JavaScript production audit needs the lockfile and the npm registry, not Windows.
-  # It lived inside the Windows job until 2026-09-04, where a registry.npmjs.org socket
-  # timeout (observed four times that day, 113–192 s of retries even when it passed) failed
-  # or delayed a job whose other 17 minutes had nothing to do with the registry. As its own
-  # Linux job it finishes in under a minute, fails on its own, and reruns for cents.
-  audit-js:
-    name: Audit JavaScript production dependencies
+  # The one write here is this job's check run. Its checkout holds only the lockfile, so
+  # no pull-request code or Cargo config runs beside the token (JS audit: dependency-audit.yml).
+  audit-rust:
+    name: Audit Rust dependencies
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    # budget: 30s
+    # budget: 40s (the two audit steps took 10 s inside the Windows job)
     timeout-minutes: 2
+    permissions:
+      contents: read
+      checks: write
     steps:
-      - name: Checkout
+      - name: Checkout the lockfile only
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 24
+          persist-credentials: false
+          sparse-checkout: src-tauri/Cargo.lock
+          sparse-checkout-cone-mode: false
 
-      - name: Enable Corepack pnpm
+      - name: Install cargo-audit
+        env:
+          CARGO_AUDIT_VERSION: v0.22.2
+          CARGO_AUDIT_SHA256: ab28a1bdb54db4d5d8ad5981cf1f959410370b3d28250dbd35f6a44248620e39
         run: |
-          corepack enable
-          corepack prepare pnpm@10.18.0 --activate
-          pnpm --version
+          curl -fsSLo cargo-audit.tgz \
+            "https://github.com/rustsec/rustsec/releases/download/cargo-audit%2F${CARGO_AUDIT_VERSION}/cargo-audit-x86_64-unknown-linux-gnu-${CARGO_AUDIT_VERSION}.tgz"
+          echo "${CARGO_AUDIT_SHA256}  cargo-audit.tgz" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/cargo-audit"
+          tar xzf cargo-audit.tgz --strip-components=1 -C "$RUNNER_TEMP/cargo-audit"
+          echo "$RUNNER_TEMP/cargo-audit" >> "$GITHUB_PATH"
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Audit Rust dependencies
+        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
+        with:
+          token: ${{ github.token }}
+          working-directory: src-tauri
 
-      - name: Install bundled MCP server dependencies
-        run: pnpm --dir mcp install --frozen-lockfile
-
-      # A bounded outer retry around pnpm audit's own two retries keeps the same scope and
-      # level and still fails on a real advisory: the final attempt's exit code is honoured.
-      - name: Audit JavaScript production dependencies
-        run: |
-          for attempt in 1 2 3 4; do
-            if pnpm audit --prod --audit-level=high; then exit 0; else status=$?; fi
-            if [ "$attempt" -eq 4 ]; then exit "$status"; fi
-            delay=$((attempt * 30))
-            echo "pnpm audit failed (exit $status); retrying in ${delay} s (attempt $attempt of 4)..."
-            sleep "$delay"
-          done
+      # audit-check reports informational advisories but does not fail on them.
+      # GTK3's glib advisory is Linux-only in Tauri's dependency tree; every other
+      # Rust unsoundness warning still fails here.
+      - name: Deny unsound Rust advisories
+        run: cargo audit --file src-tauri/Cargo.lock --deny unsound --ignore RUSTSEC-2024-0429
 
   verify-windows:
     name: Verify unsigned Windows x64 beta
@@ -144,6 +142,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -158,7 +158,9 @@ jobs:
           pnpm --version
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
+        with:
+          toolchain: stable
 
       # Almost all of this job's time is Rust compilation (measurement on 2026-08-02, step durations from the last successful run): of 720 seconds, **637 seconds (88%)** — 437 seconds for the release bundle +
       # 200 seconds for `cargo test`'s debug compilation. Even if we set all other steps to 0,
@@ -178,28 +180,13 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: latest
+          bun-version-file: .bun-version
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Install bundled MCP server dependencies
         run: pnpm --dir mcp install --frozen-lockfile
-
-      # The JavaScript production audit runs in the `audit-js` job above; this lane keeps
-      # only the checks that need a Windows runner.
-
-      - name: Audit Rust dependencies
-        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
-        with:
-          token: ${{ github.token }}
-          working-directory: src-tauri
-
-      # audit-check reports informational advisories but does not fail on them.
-      # GTK3's glib advisory is Linux-only in Tauri's dependency tree; this
-      # native Windows lane still fails on every other Rust unsoundness warning.
-      - name: Deny unsound Rust advisories
-        run: cargo audit --file src-tauri/Cargo.lock --deny unsound --ignore RUSTSEC-2024-0429
 
       - name: Windows release contract tests
         run: node --test scripts/lib/mcp-binary.test.mjs scripts/stage-windows-release-assets.test.mjs scripts/verify-mcp-binary.test.mjs
