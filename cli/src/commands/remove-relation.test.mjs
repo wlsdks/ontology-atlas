@@ -7,12 +7,8 @@ import { describe, it } from 'node:test';
 import { planRemoval, runRemoveRelation } from './remove-relation.mjs';
 
 /**
- * Owner, 2026-08-25: *"make every feature usable from the CLI alone."* Measured the same day: the
- * CLI could **create** a relation with `relate` and had nothing to remove one, so a person working
- * only in the terminal had to open the Markdown and hand-edit frontmatter to undo their own typo.
- *
- * These hold the part a wrong answer would quietly corrupt: which key is touched, what survives it,
- * and that a relation which is not there is reported rather than invented.
+ * The parts a wrong answer would quietly corrupt: which key is touched, what survives, and that a
+ * relation which is not there is reported rather than invented.
  */
 describe('remove-relation removes exactly one relation', () => {
   it('removes only that entry and keeps the rest of the array', () => {
@@ -35,9 +31,7 @@ describe('remove-relation removes exactly one relation', () => {
   });
 
   it('hand-authored depends_on: aliases read as the dependencies edge family', () => {
-    // Bug sweep 2026-09-01: the remover read only the literal canonical key, so a
-    // doc carrying `depends_on: [x]` answered "this document has no dependencies"
-    // for an edge the map plainly renders. The MCP remover already folds the alias.
+    // A doc carrying `depends_on: [x]` holds the dependencies edge; the MCP remover folds the alias too.
     const plan = planRemoval({ depends_on: ['capabilities/x'] }, 'depends_on', 'capabilities/x');
     assert.equal(plan.found, true);
     assert.equal(plan.key, 'dependencies');
@@ -94,10 +88,8 @@ describe('remove-relation removes exactly one relation', () => {
 });
 
 /*
- * Owner inspection, 2026-09-26: removing the only `relates` entry of capabilities/wiki-pages left
- * `relates: []` in the file (the map's editor), and this command wrote the same residue plus
- * `relation_notes: {  }`. The file must read as if the relation had never been written; only a
- * kind's scaffold list (a capability's `elements`) returns to the `[]` creating the node writes.
+ * The file must read as if the relation had never been written; only a kind's scaffold list (a
+ * capability's `elements`) returns to the `[]` that creating the node writes.
  */
 describe('remove-relation — the bytes it leaves', () => {
   const doc = (lines) =>

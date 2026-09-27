@@ -80,7 +80,6 @@ function render(result, query) {
       `  ${COLORS.bold}${rank}${COLORS.reset} ${scoreColor}${score}${COLORS.reset}` +
         ` ${kc}${(n.kind || '?').padEnd(11)}${COLORS.reset} ${kc}${n.slug || '?'}${COLORS.reset}${title}\n`,
     );
-    // signals — one line on where the score came from (non-zero signals only)
     const signals = m.signals ?? {};
     const active = Object.entries(signals)
       .filter(([, v]) => typeof v === 'number' && v > 0)
@@ -95,7 +94,6 @@ function render(result, query) {
       );
     }
   }
-  // What to do next (one line)
   const top = matches[0];
   if (top && top.score >= 0.5) {
     process.stdout.write(
@@ -135,18 +133,8 @@ function parseArgs(args) {
   }
   const kindError = validateKindValue('--kind', flags.kind, VAULT_KINDS);
   if (kindError) return { error: kindError };
-  // **With `--slug`, the first positional is the vault, not a title** (measured 2026-07-29).
-  //
-  // The usage documents two forms side by side: `similar "<title>" [vault]` and
-  // `similar --slug X`. Combining them (`similar --slug X /path/to/vault`) made
-  // `vaultIndex: 1` unconditionally consume `positional[0]` as the title, so **the
-  // vault path became the similarity query and the vault fell back to cwd.** The
-  // user gets answers from **a different vault** than the folder they named.
-  //
-  // This command's whole job is duplicate avoidance (the `/ontology-extract`
-  // counterpart), so the failure shows up as **false reassurance** — "nothing
-  // similar, safe to create a new one" — the failure mode that hurts most as a
-  // vault grows.
+  // With `--slug`, the first positional is the vault, not a title. Reading it as the title would
+  // query a different vault and falsely report nothing similar, the one answer this command must not fake.
   const titleFromPositional = flags.slug ? null : positional[0] || null;
   const vaultResult = resolveTrailingVaultArg({
     vault: flags.vault,

@@ -1,28 +1,6 @@
-// `ontology-atlas install-shim [--dir <path>] [--force] [--uninstall]`
-//
-// ⚠️ **Why this exists instead of `npm i -g`** (owner, 2026-08-25: *"make `atlas`
-// take you in… but no npm yet"*).
-//
-// The CLI has 56 commands and no way to reach them. `bin` names `atlas`, but a
-// name in `package.json` only becomes a command through an install, and
-// `.claude/rules/forbidden.md` forbids publishing to a registry until the owner
-// asks. The remaining honest path is a **shim**: one executable line, in a
-// directory the person already owns, pointing at the checkout they already have.
-//
-// `.claude/rules/surfaces.md` governs installing a command for somebody, and its
-// four conditions are the shape of this file:
-//
-//   1. the user initiates it — this is a command they type, never an app action;
-//   2. they see the exact contents first — printed before anything is written,
-//      and `--dry-run` is the default when the target already exists;
-//   3. it stays in a user-owned location — `~/.local/bin` by default, never
-//      `/usr/local/bin`, so no `sudo` and nothing outside their home;
-//   4. it is pinned — the shim names this checkout's absolute path, so it cannot
-//      silently start running a different copy.
-//
-// It is undone by `--uninstall`, which removes only a shim this command wrote.
-// A file it does not recognise is left alone and reported, because the worst
-// outcome here is deleting something a person put there themselves.
+// Installs a one-line `atlas` shim instead of `npm i -g`, which `.claude/rules/forbidden.md` forbids.
+// `.claude/rules/surfaces.md` shapes it: the user runs it and sees the exact contents first, it stays in a
+// user-owned directory (~/.local/bin, no sudo), and it pins this checkout. `--uninstall` removes only our shim.
 
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -43,18 +21,13 @@ export function cliEntrypoint() {
 }
 
 /**
- * The shim's exact contents, so the caller can print what will be written before writing it.
- *
- * `exec` replaces the shell rather than wrapping it, so signals and the exit code pass through
- * untouched — a wrapper that swallowed Ctrl-C would make every long command feel broken.
+ * The shim's exact contents, printed before writing. `exec` replaces the shell, so signals and the
+ * exit code pass through; a wrapper that swallowed Ctrl-C would break every long command.
  */
 export function shimBody(entrypoint) {
   const quoted = JSON.stringify(entrypoint);
-  // ⚠️ Checked before exec, because the failure is otherwise unreadable (observed 2026-08-25, the
-  // falsifier this decision recorded and then met the same hour). A shim whose checkout has moved or
-  // been deleted hands the person a Node module-loader stack trace — a wall of internal frames that
-  // names neither `atlas` nor the folder that went missing. One `test -f` turns that into a sentence
-  // they can act on, and costs nothing on every successful run.
+  // Checked before exec: a moved checkout otherwise yields a Node loader stack trace naming neither
+  // `atlas` nor the missing folder.
   return (
     `#!/bin/sh\n${SHIM_SIGNATURE}\n` +
     `if [ ! -f ${quoted} ]; then\n` +
@@ -171,10 +144,8 @@ export async function runInstallShim(args) {
   const entrypoint = cliEntrypoint();
   const body = shimBody(entrypoint);
 
-  // Condition 2: the exact contents, before anything is written. With --json the
-  // preview goes to stderr and the same body rides in the JSON as `shim`, so
-  // stdout stays one parseable document (audit 2026-09-04: the preview made
-  // `--json` unparseable) and the person still sees what lands on disk.
+  // The exact contents before anything is written. With --json the preview goes to stderr and the
+  // body rides in the JSON as `shim`, keeping stdout one parseable document.
   const previewStream = parsed.json ? process.stderr : process.stdout;
   previewStream.write(`${COLORS.bold}will write${COLORS.reset} ${target}\n\n${body}\n`);
 

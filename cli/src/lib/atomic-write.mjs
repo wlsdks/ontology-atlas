@@ -57,28 +57,9 @@ function existingRegularFileMode(filePath) {
 }
 
 /**
- * Writes one file **without a torn window** — write to a temp file, commit it to
- * disk, then rename.
- *
- * **Why** (review 2026-08-16, confirmed by measurement): `writeFileSync`
- * **truncates the original first**. The review caught that moment by measuring the
- * file size from outside during a real write:
- *
- * ```
- * FULL_SIZE 420000102   MIN_OBSERVED_DURING_WRITE 0
- * ```
- *
- * If the process dies or the disk fills in that window, the user's markdown is
- * left at **zero bytes**. Commands that **rewrite an existing document**, like
- * `relate`, take exactly that path.
- *
- * ⚠️ This repository **already had** a safe write — it was just only used for
- * `.mcp.json` and `config.toml`. That shape protects the config files and leaves
- * the user's data unprotected. The MCP side was fixed the same day; the CLI was
- * not. With two mirrors, only one of them getting fixed is the default outcome.
- *
- * A rename within one filesystem is atomic, so however the process dies the file
- * holds **either the old content or the new one**, never half of each.
+ * Writes one file without a torn window: temp file, fsync, then rename. `writeFileSync` truncates the
+ * original first, so a crash or a full disk would leave the user's markdown at zero bytes; a rename
+ * within one filesystem leaves either the old content or the new one.
  */
 export function writeFileAtomically(filePath, text, { expectedRevision = null } = {}) {
   const temporaryPath = `${filePath}.oatlas-tmp-${process.pid}`;

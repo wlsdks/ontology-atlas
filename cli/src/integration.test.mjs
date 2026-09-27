@@ -1,9 +1,5 @@
-// Integration tests for the CLI commands, reusing the pattern of mcp's
-// integration.test.mjs: a tmp vault fixture, a CLI spawn, and assertions on stdout
-// and the exit code.
-//
-// Source-checkout only. Run via `pnpm integration:cli` or
-// `node --test cli/src/integration.test.mjs` from the repo root.
+// CLI integration: a tmp vault fixture, a CLI spawn, and assertions on stdout and the exit code.
+// Source checkout only: `pnpm integration:cli` from the repo root.
 
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -93,16 +89,9 @@ function withFixtureUid(content) {
 }
 
 /**
- * A finished body, per kind.
- *
- * Since 2026-09-22 `validate` reads the prose as well as the frontmatter, so a
- * node with an empty body carries `definition-missing`, both `boundary-missing`
- * sides, and `uncertainty-missing`. Nearly every fixture below is about
- * something else — a command's output shape, a graph write, an exit code — and
- * was written when a bodyless document was silent. `withVault` fills the body in
- * wherever a fixture left it blank, exactly as it already fills in a `uid:`. A
- * fixture that writes its own body keeps it, so a case that wants a thin one
- * still gets the findings.
+ * A finished body per kind. `validate` reads prose, so a bodyless node carries definition, boundary
+ * and uncertainty findings; `withVault` fills a blank body in, as it fills `uid:`, so fixtures about
+ * other things stay clean. A fixture that writes its own body keeps it.
  */
 const FINISHED_BODY_BY_KIND = {
   domain:
@@ -129,10 +118,7 @@ function withFinishedBody(content) {
   const close = content.search(/\r?\n---\r?\n/);
   if (close === -1) return content;
   /*
-   * "Blank" includes a body that is only the `# Title` line. The heading repeats
-   * the frontmatter `title`, so a node whose whole body is its own name says
-   * exactly as much as one with no body at all — and dozens of fixtures below
-   * write that shape to look like a real document.
+   * A body that is only the `# Title` line counts as blank: it says no more than the node's own name.
    */
   const afterClose = content
     .slice(close)
@@ -328,8 +314,7 @@ await test('top-level command typos include closest command hints', async () => 
     assert.equal(r.code, 1);
     const clean = stripAnsi(r.stderr);
     assert.match(clean, c.stderr);
-    // One pointer instead of the whole help: the 159-line dump buried the hint
-    // (audit 2026-09-04).
+    // One pointer instead of the whole help, which buried the hint.
     assert.match(clean, /--help for the command list/);
     assert.ok(clean.trim().split('\n').length <= 3, `stderr should stay short:\n${clean}`);
     assert.equal(r.stdout, '');
@@ -407,30 +392,12 @@ await test('init — vault config resolves the repository through a canonical pa
 });
 
 /**
- * The **time limit** given to `mcp-verify` (2026-08-11).
- *
- * ⚠️ All four used to hard-code 3,000ms, which **made machine speed a test
- * condition** — measured 4.1s on this repository while a build was running, so it
- * was red three times in a row locally and green in CI. That is load at that
- * moment, not a product signal.
- *
- * **A limit is not a wait** — verify finishes the instant every response arrives
- * (given 30s it still finished in 4.1s). A generous limit therefore costs a fast
- * machine nothing. This applies the discipline the repository already set (never
- * lock a gate to milliseconds) to the tests as well.
- *
- * What then catches "too slow"? Not time — that is the **performance budget gate**
- * (`desktop:performance`). What is measured here is "does every tool answer".
+ * The time limit given to `mcp-verify`. Generous on purpose: a limit is not a wait, and machine speed
+ * must not be a test condition; `desktop:performance` owns too slow.
  */
 const MCP_VERIFY_TIMEOUT_MS = '30000';
 
-// ── init --quick-start (Slice 0 — docs/plans/PRODUCT-PLAN-2026-07.md §9) ──────
-//
-// One command = scaffold (no prompts, already the default) + bootstrap from
-// the repo (reuses the existing analyze/infer-imports pipeline, no
-// reimplementation) + .mcp.json (already unconditional) + an absorb
-// suggestion when CLAUDE.md/AGENTS.md exists (never auto-absorbed — human
-// opt-in) + a compact 3-line next-steps block.
+// init --quick-start (docs/plans/PRODUCT-PLAN-2026-07.md §9).
 
 function makeQuickStartRepoFixture() {
   const repo = mkdtempSync(join(tmpdir(), 'cli-quick-start-'));
@@ -444,10 +411,8 @@ function makeQuickStartRepoFixture() {
 }
 
 await test('init --locale=ko — Korean starter bodies, identical graph, English default unchanged', async () => {
-  // A vault created through the Korean UI is unreadable if it is filled with
-  // English prose. The file set and the frontmatter must be identical regardless
-  // of locale: whichever language it was created in, the same graph comes out, and
-  // the canonical `title` — search's single source of truth — stays the same.
+  // A vault created through the Korean UI gets Korean prose, while files and frontmatter stay identical
+  // across locales, so the same graph and canonical `title` come out.
   const repo = mkdtempSync(join(tmpdir(), 'cli-init-locale-'));
   try {
     const ko = await run(['init', 'vault-ko', '--locale=ko'], { cwd: repo });
@@ -457,9 +422,7 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
     // The canonical title is locale-independent; display_* carries the on-screen name.
     assert.match(koReadme, /title: My ontology vault/);
 
-    // The space form works like every other command's value flags — it used to
-    // fail with the self-contradictory "unknown flag: --locale. Did you mean
-    // --locale?" (bug sweep 2026-09-01).
+    // The space form works like every other command's value flags.
     const koSpace = await run(['init', 'vault-ko-space', '--locale', 'ko'], { cwd: repo });
     assert.equal(koSpace.code, 0, `stdout: ${koSpace.stdout}\nstderr: ${koSpace.stderr}`);
     assert.match(
@@ -470,9 +433,7 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
     assert.notEqual(missing.code, 0, 'a dangling --locale must be rejected');
     assert.match(missing.stderr, /--locale requires a value/);
 
-    // When the vault lands outside cwd, the pasteable follow-ups must name the
-    // scaffolded vault, never `--vault .` (which pointed at wherever the person
-    // stood — bug sweep 2026-09-01).
+    // When the vault lands outside cwd, the pasteable follow-ups name the scaffolded vault, never `--vault .`.
     const outsideVault = mkdtempSync(join(tmpdir(), 'cli-init-outside-'));
     try {
       const standDir = mkdtempSync(join(tmpdir(), 'cli-init-stand-'));
@@ -481,8 +442,7 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
         assert.equal(outside.code, 0, `stdout: ${outside.stdout}\nstderr: ${outside.stderr}`);
         assert.ok(!/--vault '?\.'?\s/.test(outside.stdout), 'follow-ups must not target cwd');
         assert.ok(outside.stdout.includes('ov'), 'follow-ups must name the scaffolded vault');
-        // cwd is merely where the person stood: no skills, no config, nothing
-        // (measured 2026-09-04: six skill files landed in an unrelated repository).
+        // cwd is merely where the person stood: no skills, no config, nothing.
         assert.deepEqual(
           readdirSync(standDir).filter((name) => name !== '.DS_Store'),
           [],
@@ -544,18 +504,9 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
       const v = await run(['validate', dir], { cwd: repo });
       assert.equal(v.code, 0, `${dir} validate failed: ${v.stdout}${v.stderr}`);
       /*
-       * **Not every `.md` on disk is a vault document** (2026-08-17), and the
-       * procedures are no longer among them.
-       *
-       * The vault scan skips dot-prefixed folders (`cli/src/lib/walk-vault.mjs`,
-       * and the discipline comes from `.claude/rules/local-first.md` — the promise
-       * never to scan system folders such as `.git/`). The starter's three skills
-       * used to sit under the vault's own `.claude/skills/`, which kept them out
-       * of the document count but also out of reach: a coding agent started at the
-       * repository root never finds skills in a nested folder. They install at the
-       * root now, so this asserts **where they went** as well as that the vault
-       * document count is unaffected — in Korean too, because a localized starter
-       * that strands its procedures is the same defect in another language.
+       * Not every `.md` on disk is a vault document: the scan skips dot folders (`cli/src/lib/walk-vault.mjs`,
+       * `.claude/rules/local-first.md`). Skills install at the repository root, so this asserts where they went
+       * and that the document count is unaffected, in Korean too.
        */
       const vaultRoot = join(repo, dir);
       const markdownEntries = readdirSync(vaultRoot, {
@@ -614,12 +565,7 @@ await test('init --quick-start — scaffolds, previews candidates, and ends with
 
     // compact next-steps block, not the long 6-step default block.
     assert.match(clean, /quick start review ready/);
-    // Assert the two promises, not the sentences that carried them. The block
-    // used to say "semantic writes are blocked" and name
-    // `constructionQualification:v1` to a first-time user; a 2026-08-31 council
-    // judged both as implementation vocabulary in a first-run surface, and the
-    // same block was naming a skill `init` does not install. What must survive
-    // any rewording is that the CLI does not write meaning on its own, and that
+    // Assert the two promises, not the sentences: the CLI does not write meaning on its own, and
     // landing a whole plan needs an evaluator who is not the builder.
     assert.match(clean, /writes no meaning|writes nothing|does not write/i);
     assert.match(clean, /evaluator is not its builder|independently identified/i);
@@ -677,43 +623,13 @@ await test('init --quick-start — bootstrap failure reports written configs as 
 });
 
 /**
- * **A freshly created vault must pass its own checks** (2026-08-11, measured on
- * the north-star journey).
- *
- * This defect came from **walking the journey**, not from reading code. Running
- * the commands the guide names next, on a vault made by `init --quick-start`,
- * three of eight exited 1 — `health`, `mcp-verify`, `agent-brief`. Exactly one
- * warning was responsible (`missing-expected-field: domain`), and its wording was
- * *"a parent can be found in the tree"* while the project node **already contained
- * those capabilities via `contains:`**.
- *
- * To a person that reads as *"what did I do wrong"*; to an agent it is **a
- * connection-failure signal** — half this product's users are agents, and
- * `mcp-verify` exiting 1 right after setup reads as "it did not connect". The
- * server and all 35 tools were fine.
- *
- * So this test locks **the state the first command creates is never reported as a
- * failure by the next one**. Having no domain is still reported (we do not invent
- * boundaries in a repository whose README has no title) — what changed is
- * **telling a node with a parent that it has none**.
+ * A freshly created vault must pass its own checks: the next command must never report the state the
+ * first one created as a failure. Missing domains are still reported; a node with a parent is never
+ * told it has none.
  */
 /**
- * **At the moment it exits 1, say that this is not a failure** (2026-08-11,
- * measured in a walkthrough).
- *
- * `agent-brief` exiting 1 does not mean "the command failed" — it signals **"the
- * graph is not mature yet"**. That judgement was already deliberate and is written
- * in `--help` and in the code comments (which recorded this misreading as
- * *"agent-persona-2026-07 QA friction #5"*). The escape hatch `--exit-zero`
- * already existed too.
- *
- * The problem was that **none of it was where the friction happens**: the screen
- * showing the 1 on a fresh vault said nothing, and the guide never mentions
- * `--exit-zero` once. People do not reread `--help`, and an agent seeing a 1
- * usually stops.
- *
- * So the contract is unchanged and **one line goes on screen** — the same shape as
- * this repository's refusal cards (why, and where to go).
+ * When agent-brief exits 1 for readiness, the screen says it is not a failure and names `--exit-zero`,
+ * since people and agents do not reread --help.
  */
 await test('agent-brief — exit 1 for readiness says on screen that it is not a failure', async () => {
   const repo = makeQuickStartRepoFixture();
@@ -742,9 +658,7 @@ await test('init --quick-start — fresh starter validates and reports health at
     assert.equal(init.code, 3, `stdout: ${init.stdout}\nstderr: ${init.stderr}`);
 
     /*
-     * ⚠️ **Do not lock this with the exit code** — `validate` exits 0 on warnings.
-     * The first version was therefore green even with the narrowing removed (a pass
-     * was not evidence). What must be locked is **zero warnings**.
+     * Lock zero warnings, not the exit code: `validate` exits 0 on warnings.
      */
     const validate = await run(['validate', 'ontology'], { cwd: repo });
     const validateOut = stripAnsi(validate.stdout) + stripAnsi(validate.stderr);
@@ -1264,9 +1178,8 @@ await test('moment — end-to-end via init --quick-start then agent-brief', asyn
     assert.equal(beforeData.hasBaseline, true);
     assert.equal(beforeData.moment, null);
 
-    // agent-brief's exit code reflects vault readiness (not telemetry) — a
-    // The semantic bootstrap is review-only, so the starter vault can be
-    // `needs_shape`. Only the telemetry side effect matters here.
+    // agent-brief exits by vault readiness, and the review-only bootstrap can leave the starter
+    // `needs_shape`; only the telemetry side effect matters here.
     const brief = await run(['agent-brief', vault]);
     assert.equal(brief.stderr, '', `agent-brief errored: ${brief.stderr}`);
 
@@ -2077,9 +1990,7 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     const r = await run(['mcp-verify', 'ontology', '--timeout-ms', MCP_VERIFY_TIMEOUT_MS], { cwd: root });
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    // Locks **that the value passed appears on screen**, not the value itself.
-    // Pinning the cap number makes this test fail like a product defect on the day
-    // that number changes (which is what just happened).
+    // Locks that the value passed appears on screen, not the value, so a changed cap is not a defect.
     assert.match(clean, new RegExp(`timeout=${MCP_VERIFY_TIMEOUT_MS}ms`));
     assert.match(clean, new RegExp(`tools/list ${EXPECTED_TOOL_COUNT}/${EXPECTED_TOOL_COUNT}`));
     assert.match(clean, new RegExp(escapeRegExp(expectedToolsListAnnotationSummary())));
@@ -2167,12 +2078,8 @@ await test('mcp-verify — verifies maintenance cursor resume when actions exist
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     /*
-     * Four, not two, since `slug_outside_kind_folder` joined `maintenance_plan`
-     * (2026-09-21): this fixture writes `slug: core` and `slug: capabilities/x`
-     * -style nodes at the vault root, which is valid and now reported. The
-     * number is the queue's length, so it moves whenever the queue learns a new
-     * kind of finding; what the case is testing is that the cursor pages
-     * through it stably.
+     * The queue's length moves whenever it learns a new finding (here `slug_outside_kind_folder` adds two);
+     * the case tests that the cursor pages through it stably.
      */
     assert.match(clean, /maintenance cursor: ready page stable \(4 remaining actions/);
     assert.match(clean, /kind slug_outside_kind_folder:2,add_missing_relation:1,capability_without_evidence:1/);
@@ -2402,14 +2309,9 @@ await test('mcp-verify — times out a stalled verify script override', async ()
   );
 
   /*
-   * ⚠️ A wall-clock limit is **never pinned as an absolute**. It used to be
-   * `< 1000ms`, and inside that second two node processes (the CLI and the verify
-   * script) had to finish booting — the subject under test is a 25ms time limit
-   * while the floor was machine speed. Instead, run the same path once with a
-   * script that **returns immediately** to measure this machine's floor, then
-   * compare against that plus headroom. The real regression ("it ignores its own
-   * time limit and waits for the 15s default") is still caught, and slow runners
-   * pass (full check inventory, 2026-08-17).
+   * A wall-clock limit is never absolute: run the same path with a script that returns at once to
+   * measure this machine's floor, then compare against that plus headroom. It still catches waiting for
+   * the 15s default.
    */
   const instantScript = join(root, 'instant-verify.mjs');
   writeFileSync(instantScript, 'process.exit(1);', 'utf-8');
@@ -3138,12 +3040,8 @@ await test('add — an explicit empty --body= is not replaced by the default bod
 });
 
 await test('validate — clean vault: exit 0', async () => {
-  // A capability or element needs `domain` set to be clean of the
-  // missing-expected-field warning. This fixture tests canonical kind recognition
-  // itself, hence the added domain.
-  // `capabilities/a` rather than a flat `a`: a node outside its kind folder is
-  // valid but now reported (`slug-outside-kind-folder`), and this fixture is the
-  // one that has to come back clean.
+  // A capability needs `domain` and must sit in its kind folder to come back clean; this fixture tests
+  // canonical kind recognition itself.
   const root = withVault([
     { slug: 'capabilities/a', content: '---\nkind: capability\ndomain: domains/auth\n---\n' },
     { slug: 'domains/auth', content: '---\nkind: domain\ntitle: Auth\n---\n' },
@@ -3180,13 +3078,10 @@ await test('validate — two or more of one code produce a "grouped by code" sum
   ]);
   try {
     const r = await run(['validate', root]);
-    // capability missing domain → warning, exit 0 (warning only)
     assert.equal(r.code, 0);
     const clean = stripAnsi(r.stdout);
-    // Per-file detail preserved
     assert.match(clean, /cap1\.md/);
     assert.match(clean, /cap2\.md/);
-    // Grouped section appears
     assert.match(clean, /grouped by code/);
     assert.match(clean, /missing-expected-field · 3 occurrences/);
   } finally {
@@ -3226,7 +3121,6 @@ await test('validate --list-codes — prints the issue codes', async () => {
   ]) {
     assert.match(clean, new RegExp(code), `${code} missing from output`);
   }
-    // Severity marker
   assert.match(clean, /error/i);
   assert.match(clean, /warning/i);
 });
@@ -3359,7 +3253,6 @@ await test('validate --strict — exits 1 on warnings alone', async () => {
     assert.equal(strict.code, 1, '--strict: warning → exit 1');
     const clean = stripAnsi(strict.stdout);
     assert.match(clean, /missing-expected-field|warning/);
-    // Strict-mode marker.
     assert.match(clean, /--strict/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -3467,16 +3360,8 @@ await test('validate --json — dangling graph reference warning', async () => {
 });
 
 /**
- * **A graph reference must resolve to a node** (measured 2026-08-08).
- *
- * Resolution used to target «every .md in the vault». Markdown that is not a node
- * (meeting notes, memos, drafts) legitimately lives in a vault, and those counted
- * as «an existing slug» — so a node → loose-document relation **passed**.
- *
- * That was worse than silence: in that state the CLI printed
- * *"frontmatter · graph reference issue 0 ✓"* in green while `compile` on the same
- * vault reported `unresolved 1 · issues 1`. **Two tools said opposite things about
- * one vault, and the one a person reads first was the wrong one.**
+ * A graph reference must resolve to a node, not to any .md in the vault: a loose memo is not a node,
+ * and counting it contradicted `compile`.
  */
 await test('validate — a graph reference resolving to a non-node document is dangling', async () => {
   const root = withVault([
@@ -3541,11 +3426,11 @@ await test('add — creates a node and rejects a duplicate', async () => {
       root,
     ]);
     assert.equal(r1.code, 0, `first add should succeed, got ${r1.code}: ${r1.stderr}`);
-    // R15 — auto-prefix default on, capability → capabilities/ folder
+    // auto-prefix is on by default: capability → capabilities/
     const written = readFileSync(join(root, 'capabilities/foo.md'), 'utf-8');
     assert.match(written, /kind: capability/);
     assert.match(written, /title: Foo/);
-    // Authorship stamp (decision ledger, 2026-08-01) — the same default as MCP add_concept.
+    // Authorship stamp: the same default as MCP add_concept.
     assert.match(written, /created_by: "?agent:unknown"?/);
 
     const r2 = await run([
@@ -3686,7 +3571,7 @@ await test('add (default) — places the file in its kind folder', async () => {
       root,
     ]);
     assert.equal(r.code, 0);
-    // R15 — default auto-prefix → capabilities/bar.md
+    // Default auto-prefix → capabilities/bar.md
     const written = readFileSync(join(root, 'capabilities/bar.md'), 'utf-8');
     assert.match(written, /slug: capabilities\/bar/);
   } finally {
@@ -3717,9 +3602,7 @@ await test('add --raw-slug — opts out of the kind folder prefix', async () => 
 });
 
 await test('add element path-style slug → rejected (slugs are flat identifiers)', async () => {
-  // Path-style slugs used to pass with a cyan hint. They are a hard error now:
-  // tail-alias collisions folded nodes together on screen (43 cases measured in the
-  // dogfood vault).
+  // Path-style slugs are a hard error: tail-alias collisions fold nodes together on screen.
   const root = withVault([]);
   try {
     const r = await run([
@@ -3905,7 +3788,6 @@ await test('find --kind filters by kind', async () => {
   }
 });
 
-// ── import command integration ───────────────────────────────────────────
 
 function withTmpDir() {
   return mkdtempSync(join(tmpdir(), 'cli-import-src-'));
@@ -3923,13 +3805,12 @@ await test('import — uses the input frontmatter kind and applies schema arrayD
     );
     const r = await run(['import', file, '--vault', vault]);
     assert.equal(r.code, 0);
-    // R15 — auto-prefix default on, capability → capabilities/ folder
+    // auto-prefix is on by default: capability → capabilities/
     const written = readFileSync(join(vault, 'capabilities/token-issue.md'), 'utf-8');
     assert.match(written, /kind: capability/);
     assert.match(written, /domain: domains\/auth/);
     // schema arrayDefaults — a capability gains elements: [] automatically.
     assert.match(written, /elements:/);
-    // Body preserved.
     assert.match(written, /body\./);
   } finally {
     rmSync(vault, { recursive: true, force: true });
@@ -3952,12 +3833,11 @@ await test('import — falls back to --kind without a frontmatter kind', async (
       'capability',
     ]);
     assert.equal(r.code, 0);
-    // R15 — auto-prefix default on, capability → capabilities/ folder
+    // auto-prefix is on by default: capability → capabilities/
     const written = readFileSync(join(vault, 'capabilities/foo.md'), 'utf-8');
     assert.match(written, /kind: capability/);
     // The title is extracted from the first H1, 'Foo'.
     assert.match(written, /title: Foo/);
-    // Body preserved.
     assert.match(written, /bare markdown/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
@@ -4233,7 +4113,7 @@ await test('import — walks directories recursively', async () => {
     );
     const r = await run(['import', src, '--vault', vault]);
     assert.equal(r.code, 0);
-    // R15 — auto-prefix default on, domain → domains/ folder
+    // auto-prefix is on by default: domain → domains/
     assert.equal(existsSyncTest(join(vault, 'domains/a.md')), true);
     assert.equal(existsSyncTest(join(vault, 'domains/b.md')), true);
   } finally {
@@ -4251,10 +4131,8 @@ function existsSyncTest(p) {
   }
 }
 
-// ── graph-level commands (backlinks/query/rename/merge/delete) ───────────
-//
-// These commands spawn mcp as a child process, working in a monorepo dev
-// environment through the relative-path fallback (../../mcp/src/index.js).
+// Graph-level commands spawn mcp as a child process, resolved through the relative-path fallback
+// (../../mcp/src/index.js) in the monorepo.
 
 async function buildGraphFixture() {
   const root = withVault([
@@ -4312,9 +4190,7 @@ await test('backlinks — capabilities/foo backlinks (bar relates + auth capabil
 });
 
 await test('install-shim --json — stdout is one JSON document on install and uninstall', async () => {
-  // The pre-write preview used to precede the JSON on stdout, so `--json` could
-  // not be parsed (audit 2026-09-04). The preview now goes to stderr and rides
-  // in the JSON as `shim`, so the person still sees what lands on disk.
+  // The preview goes to stderr and rides in the JSON as `shim`, so `--json` stays parseable.
   const dir = mkdtempSync(join(tmpdir(), 'cli-shim-json-'));
   try {
     const installed = await run(['install-shim', '--dir', dir, '--json']);
@@ -4367,9 +4243,8 @@ await test('agent-activity --show — no heartbeat yet is a normal state, not a 
 });
 
 await test('backlinks — a slug that names no node fails closed with the closest real slug', async () => {
-  // A typo used to return exit 0 and an empty list — the one answer that
-  // licenses a delete (audit 2026-09-04). Non-zero means "I could not answer
-  // the input you gave me"; a real node with zero backlinks still exits 0.
+  // A typo must not return exit 0 and an empty list, the one answer that licenses a delete; a real
+  // node with zero backlinks still exits 0.
   const root = await buildGraphFixture();
   try {
     const typo = await run(['backlinks', 'capabilities/fooo', root]);
@@ -6244,12 +6119,9 @@ await test('overview — exact counts and hubs for the graph fixture', async () 
     const r = await run(['overview', root]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    // header — 3 nodes (no vault-readme)
     assert.match(clean, /3 nodes/);
-    // KIND distribution — capability 2 / domain 1
     assert.match(clean, /capability\s+2/);
     assert.match(clean, /domain\s+1/);
-    // Hubs — domains/auth has the highest degree, so it is top
     assert.match(clean, /domains\/auth/);
     assert.match(clean, /domains\/auth\s+· Auth/);
   } finally {
@@ -6270,7 +6142,6 @@ await test('overview --json — exposes graph/byKind/hubs keys', async () => {
     assert.equal(data.byKind.capability, 2);
     assert.equal(data.byKind.domain, 1);
     assert.ok(Array.isArray(data.hubs));
-    // domains/auth must appear in hubs (highest degree)
     assert.ok(data.hubs.some((h) => h.slug === 'domains/auth'));
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -7147,12 +7018,9 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
 });
 
 await test('agent-brief --verify-fallbacks --json — advisory exit 1 (needs_attention / no-result) stays green', async () => {
-  // Regression (C8b): fallback CLI commands signal an ADVISORY result with exit
-  // 1 (health needs_attention; all-paths/explain "no path / unrelated"). The
-  // command ran and printed valid data on stdout, so the setup gate must stay
-  // green — a fresh 5-node starter vault (example nodes with no relations yet)
-  // trips health AND all-paths AND explain, and the gate must still pass.
-  // Only a real run failure (exit >= 2, timeout, or exit-1-with-stderr) fails.
+  // Fallback commands signal an advisory result with exit 1 (health needs_attention, no path), so a
+  // fresh starter vault must still pass the setup gate; only exit >= 2, a timeout, or exit 1 with stderr
+  // fails it.
   const root = buildCycleFixture();
   try {
     const health = await run(['health', root]);
@@ -7351,7 +7219,7 @@ await test('agent-brief --help — documents handoff and exit gates', async () =
   assert.match(clean, /--fallback-slow-ms N/);
   assert.match(clean, /OATLAS_AGENT_FALLBACK_TIMEOUT_MS=N/);
   assert.match(clean, /OATLAS_AGENT_FALLBACK_SLOW_MS=N/);
-  // The exit semantics were widened to a 0/1/2 description, so assert the new contract rather than the old one-liner.
+  // Assert the 0/1/2 exit description.
   assert.match(clean, /0 = ready and healthy/);
   assert.match(clean, /pass --exit-zero to always exit 0/);
   assert.match(clean, /Tuning flags forward to query_ontology agent_brief/);
@@ -7782,7 +7650,6 @@ await test('node — deep dive on capabilities/foo in the graph fixture', async 
     const r = await run(['node', 'capabilities/foo', root]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    // header
     assert.match(clean, /capability/);
     assert.match(clean, /slug\s+capabilities\/foo/);
     // foo is referenced by bar via relates and by the auth domain via capabilities
@@ -8407,11 +8274,8 @@ await test('repo analysis commands — reject invalid numeric option values befo
   }
 });
 
-// ── analyze review/apply compatibility guard ────────────────────────────
-//
-// The CLI only displays analyze_repo_structure candidates. `--apply` is a
-// compatibility flag for existing callers and does not bypass the
-// constructionQualification lifecycle.
+// The CLI only displays analyze_repo_structure candidates; `--apply` is kept for existing callers and
+// does not bypass the constructionQualification lifecycle.
 
 function makeRepoFixture() {
   const repo = mkdtempSync(join(tmpdir(), 'cli-repo-'));
@@ -8495,12 +8359,8 @@ await test('architecture --json — returns the same fail-closed agent brief as 
   }
 });
 
-// ── architecture --record: opt-in dated machine receipt ─────────────────
-//
-// 2026-08-27 decision: the record is a JSON envelope wrapping the stamped
-// brief at .ontology-atlas/architecture/<profile-slug>.json, written only by
-// this CLI flag, refused mechanically when the scan cannot discriminate
-// import usage.
+// `architecture --record` writes a dated JSON receipt at .ontology-atlas/architecture/<profile-slug>.json,
+// refused when the scan cannot discriminate import usage.
 
 const RECORD_PROFILE_DOC = {
   slug: 'architecture/payments',
@@ -8517,8 +8377,7 @@ const RECORD_PROFILE_DOC = {
     'role_adapter: [src/payments/adapters/**]',
     'allow_domain: []',
     'allow_adapter: [domain]',
-    // Reconciled 2026-08-29: the branch relied on a tool default that left type-only edges out of
-    // the verdict. Under the encoding that shipped, that exclusion is a reviewed declaration.
+    // Excluding type-only edges from the verdict is a reviewed declaration under the shipped encoding.
     'dependency_usages: [value]',
     'evidence: [ARCHITECTURE.md]',
     '---',
@@ -8652,13 +8511,8 @@ await test('architecture --record — refuses a scan with no import-usage discri
       roles: [],
       observedRoleEdges: [],
       /*
-       * ⚠️ No violations, on purpose. Reconciled 2026-08-29: an edge whose usage the scanner could
-       * not classify is routed to `unknown`, never to `violations`, so a violation always carries a
-       * usage — which is why the result validator rejects one that does not. The fixture used to
-       * carry `importUsage: 'unknown'` on a violation, a shape the evaluator cannot produce, and it
-       * made this test fail for the wrong reason: the validator refused the payload before the
-       * record gate could refuse the receipt. The point of the case is the gate, so the scan is
-       * shaped the way an undiscriminated scan actually arrives.
+       * No violations, on purpose: an unclassified edge is routed to `unknown`, never to `violations`, so
+       * the scan arrives the way an undiscriminated scan does and the record gate is what refuses.
        */
       violationCount: 0,
       violations: [],
@@ -8921,9 +8775,7 @@ await test('analyze --json — fails closed when analyze_repo_structure framewor
   }
 });
 
-// ── infer-imports --apply (agent-less depends_on landing) ───────────────
-//
-// The counterpart of analyze --apply: batch-lands moduleEdges as depends_on relations.
+// infer-imports --apply, the counterpart of analyze --apply.
 
 function makeImportRepo() {
   // Two capabilities (a, b) where a imports b, producing one moduleEdge.
@@ -9365,7 +9217,6 @@ await test('infer-imports --json — fails closed when unresolved reason payload
   }
 });
 
-// ── infer-imports --threshold N (blocking weak edges) ────────────────────
 
 function makeStrongImportRepo() {
   // a imports b 3 times (count 3) and c once (count 1).
@@ -9526,12 +9377,10 @@ await test('infer-imports --threshold abc — rejects invalid input', async () =
   }
 });
 
-// ── bootstrap (analyze --apply + infer-imports --apply combined) ─────────
 
 function makeFullRepo() {
-  // FSD-ish layout — analyze and infer_imports now produce the same slugs
-  // ("auth" / "billing"), so bootstrap's imports stage can match endpoints. An
-  // earlier version worked around this with a generic generated layout.
+  // FSD-ish layout: analyze and infer_imports produce the same slugs ("auth" / "billing"), so the
+  // imports stage can match endpoints.
   const repo = mkdtempSync(join(tmpdir(), 'cli-bs-'));
   writeFileSync(
     join(repo, 'package.json'),
@@ -9908,7 +9757,6 @@ await test('bootstrap --json — approval response has no mutable vault census',
   }
 });
 
-// ── index (R+ — long-running project ontology indexing entrypoint) ─────
 
 await test('index --full — rejects combinations that silently skip or write imports', async () => {
   const skipped = await run(['index', '--full', '--skip-imports']);
@@ -9931,9 +9779,8 @@ await test('index --json — analyzes and verifies a repo without mutating the v
     assert.equal(data.rootPath, realpathSync(repo));
     assert.equal(data.analyze.framework, 'fsd');
     assert.equal(data.plan.concepts, 3);
-    // The project containment spine includes the project node plus both FSD
-    // capability candidates; keep this expectation aligned with the analyzer
-    // relation contract rather than the old capability-only count.
+    // The containment spine includes the project node plus both FSD capability candidates, per the
+    // analyzer relation contract.
     assert.equal(data.plan.suggestedRelations, 3);
     assert.ok(data.imports.filesScanned >= 2);
     assert.ok(data.plan.importRelations >= 1);

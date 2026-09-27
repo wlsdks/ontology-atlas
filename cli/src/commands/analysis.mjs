@@ -1,15 +1,6 @@
-// `ontology-atlas analysis [rootPath]` — write a dated analysis record and
-// compare it with the last one.
-//
-// The record answers the question a count cannot: *what is worse than last time,
-// and what should I look at first.* It is committed Markdown with no `kind:`, so
-// it is versioned and readable in a diff without becoming reviewed meaning.
-//
-// It derives nothing itself. It runs this CLI's own `health`, `validate`, and
-// `architecture` and turns their output into findings, because a second
-// implementation of "what counts as a problem" is exactly how the insights
-// surface once told people to fix 83 things that could not be fixed
-// (docs/DECISIONS.md, 2026-08-16 (16)).
+// `ontology-atlas analysis [rootPath]`: writes a dated record (committed Markdown, no `kind:`) and compares it
+// with the last one. Findings come from this CLI's `health`, `validate` and `architecture`, never a second
+// definition of a problem (docs/DECISIONS.md, 2026-08-16 (16)).
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -27,16 +18,8 @@ import { loadMcpModule } from '../lib/mcp-module.mjs';
 
 const CLI_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), '../index.mjs');
 
-// Beside the vault, not inside it.
-//
-// Inside, `validate` warns `missing-kind` on every record — and it is right to:
-// a `kind:`-less file in a vault folder is usually a mistake, and teaching it an
-// exception is a change to the vault contract. That change may well be worth
-// making, because the app reads the vault folder and a record it cannot see
-// cannot be shown in a tab. It is not this slice's to make: a vault-schema
-// change is a council decision, and the point of this slice is to prove that
-// two runs can be compared at all. So the record sits next to the vault, where
-// it is committed and diffable and nothing has to be redefined.
+// Beside the vault, not inside it: inside, `validate` would warn `missing-kind` on every record,
+// and exempting records is a vault-schema decision.
 const ANALYSES_DIRNAME = 'analyses';
 
 function runCli(args) {

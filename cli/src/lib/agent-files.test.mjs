@@ -201,21 +201,9 @@ describe('agent-files — drift check ② duplicated skill trees byte diff', () 
 });
 
 /**
- * The seat-brief pair exists for a **different reason** than the skill pair. For
- * Claude Code `.claude/agents/*.md` is the subagent summoning registry (a seat
- * missing from it cannot be spawned); for a tool without subagents
- * `.agents/agents/*.md` is the reference document it opens while walking a council
- * sequentially. Different purposes, identical content.
- *
- * Measured 2026-08-04: 15 seats existed only under `.claude/agents/`, and both
- * council skills summoned them **by name alone**. A Codex session received five
- * (PO) and nine (design) names it could neither summon nor read, and improvised —
- * silently.
- *
- * Why a one-sided seat is **not** informational the way a one-sided skill is: a
- * skill may legitimately belong to one tool, but council seats exist so both tools
- * can run the same protocol, and a seat present on one side only means the protocol
- * does not hold for the other tool.
+ * The seat-brief pair (`.claude/agents/*.md` ↔ `.agents/agents/*.md`) exists for a different reason than
+ * the skill pair: council seats exist so both tools run the same protocol, so a seat on one side only is
+ * drift, not informational.
  */
 describe('agent-files — drift check: .claude/agents ↔ .agents/agents', () => {
   const claudeAgent = (name, content) => ({ path: `.claude/agents/${name}`, content });

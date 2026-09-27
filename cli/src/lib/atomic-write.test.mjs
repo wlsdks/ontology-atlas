@@ -7,14 +7,8 @@ import { tmpdir } from 'node:os';
 import { readFileRevision, writeFileAtomically } from './atomic-write.mjs';
 
 /**
- * **The original is never truncated first.**
- *
- * The 2026-08-16 review caught that moment by measuring the file size from outside
- * during a real write: `FULL_SIZE 420000102 · MIN_OBSERVED_DURING_WRITE 0`. If the
- * process dies in that window, the user's markdown is left at zero bytes.
- *
- * The two implementations are indistinguishable by their end result, so what is
- * measured here is **when the original disappears**.
+ * The original is never truncated first. Both implementations end the same, so this measures when the
+ * original disappears.
  */
 test('never leaves the original at zero bytes during a write', () => {
   const dir = mkdtempSync(join(tmpdir(), 'oatlas-atomic-'));

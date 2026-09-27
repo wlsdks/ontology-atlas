@@ -17,12 +17,7 @@ import { validateVaultDocument } from './validate.mjs';
 const TEST_UID = '00000000-0000-4000-8000-000000000001';
 
 /**
- * A finished capability body.
- *
- * The validator reads the prose too since 2026-09-22, so a case written to test
- * one frontmatter rule needs a body that answers every meaning question, or the
- * rule under test arrives buried under findings about a body nobody meant to
- * write.
+ * A finished capability body, so a case about one frontmatter rule is not buried under body findings.
  */
 const FINISHED_CAPABILITY_BODY =
   '\n# Ability\n\n' +
@@ -36,10 +31,8 @@ describe('relation_notes guard (swallowed entries and orphaned keys)', () => {
   const tail = `---\n${FINISHED_CAPABILITY_BODY}`;
 
   it('an unquoted value that ran past its comma leaves a pseudo-key: orphaned-relation-note', () => {
-    // The exact shape found in docs/ontology/capabilities/acp-runtime.md on
-    // 2026-08-30: the first value ends at the comma, and the rest of the sentence
-    // plus the next entry's slug become the second KEY. The value test alone saw
-    // nothing, so validate_vault reported 0 problems.
+    // The exact shape once found in docs/ontology/capabilities/acp-runtime.md: the first value ends at the comma,
+    // and the rest of the sentence plus the next slug become a second key, which the value test alone missed.
     const r = validateVaultDocument(
       head +
         'dependencies: [capabilities/mcp-server]\nrelates: [capabilities/reviewed-ontology-writing]\n' +
@@ -116,14 +109,8 @@ describe('relation_notes guard (swallowed entries and orphaned keys)', () => {
 });
 
 /**
- * The whole-vault half of the validator.
- *
- * `dependency-unwitnessed` cannot live in `validateVaultDocument` for two
- * reasons at once: it opens the source file a node cites, which only means
- * something against a repository root, and it needs the `path:` of the node at
- * the *far* end of the edge, which no single document carries. So it runs as a
- * pass over the whole vault, and the only honest way to prove that wiring is to
- * run the command the way a person does.
+ * The whole-vault half of the validator. `dependency-unwitnessed` opens the cited source against a
+ * repository root and needs the far node's `path:`, so it runs over the vault; the proof runs the command.
  */
 describe('dependency-unwitnessed — the whole-vault pass in `validate`', () => {
   function fixture() {

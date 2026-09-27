@@ -1,6 +1,3 @@
-// Contract for the CLI write audit-log helper: does recordCliWrite reuse mcp's
-// activity-log module to append to the same `.ontology-atlas/activity.jsonl`, does
-// it copy the heartbeat agent, and is it best-effort (never throwing on any input).
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';

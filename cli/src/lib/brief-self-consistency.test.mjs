@@ -1,18 +1,5 @@
-// A brief must state **the same number it is carrying**.
-//
-// **Why** (measured 2026-08-17): within one `agent-brief` response —
-//
-//   readiness.healthChecks : 7
-//   health.checks          : 8   ← vault_present … meaning_assessment
-//
-// The headline says "7 health checks" while the same payload carries eight. The
-// reader here is an agent, and an agent can trust the headline number without
-// counting the rest.
-//
-// This repository already has the same discipline — the check that makes the
-// gateway caption state the same number as the graph it draws
-// (`DownloadPage.test.tsx`). **Pin nothing; assert the two values agree**, so it
-// does not rot as the vault changes.
+// A brief must state the same number it carries: an agent trusts the headline count without counting.
+// Pin nothing; assert the two values agree, so it does not rot as the vault changes.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';

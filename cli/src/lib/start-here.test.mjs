@@ -3,11 +3,6 @@ import { describe, it } from 'node:test';
 
 import { startHereContext, startHereRows } from './start-here.mjs';
 
-/**
- * Owner, 2026-08-25: *"if we are doing this, make it much better than it is now."* Bare
- * `ontology-atlas` printed all 56 commands — a reference answering a question nobody asked. The
- * person who types the bare command has said they do not know the next word.
- */
 describe('start here suggestions for a bare invocation', () => {
   it('suggests reading the code first in a code folder without an ontology', () => {
     const [first] = startHereRows({ looksLikeCode: true });
@@ -20,8 +15,7 @@ describe('start here suggestions for a bare invocation', () => {
   });
 
   /*
-   * ⚠️ The CLI equivalent of the empty map offering 「browse concepts」. Suggesting a query to
-   * somebody with nothing to query sends them to an empty answer they cannot act on.
+   * Suggesting a query to somebody with nothing to query sends them to an empty answer.
    */
   it('does not suggest queries with zero concepts', () => {
     const rows = startHereRows({ inVault: true, conceptCount: 0 });

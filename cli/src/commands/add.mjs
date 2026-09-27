@@ -19,12 +19,7 @@ import { readHeartbeatAgentName, recordCliWrite } from '../lib/activity-log.mjs'
 const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--path', '--body', '--auto-prefix', '--raw-slug', '--no-auto-prefix', '--created-by'];
 
 
-/**
- * `ontology-atlas add <kind> <slug> --title=... [--domain X] [--path repo/path] [--body "..."] [--vault path]`
- *
- * Writes a new ontology node `.md`. An existing slug throws — it never overwrites,
- * to protect the user's work. Same contract as MCP's add_concept.
- */
+/** Writes a new node `.md`; an existing slug throws rather than overwrite. Same contract as MCP add_concept. */
 export async function runAdd(args) {
   const opts = parseArgs(args);
   if (opts.help) {
@@ -40,28 +35,19 @@ export async function runAdd(args) {
   const { kind, slug: rawSlug, title, domain, path, body, vault, autoPrefix } = opts;
   const vaultPath = resolve(vault);
 
-  // Default folder prefix (capability → capabilities/foo), skipped when the user
-  // already wrote the prefix (`capabilities/foo`) so it is not applied twice. The
-  // folder mapping comes from the single source in schema.mjs, matching MCP.
+  // Prefix the kind folder unless the user already wrote it, using the schema.mjs mapping MCP uses.
   const folder = folderForKind(kind);
   const slug =
     autoPrefix && folder && !rawSlug.startsWith(folder)
       ? `${folder}${rawSlug}`
       : rawSlug;
 
-  // Authorship (decision ledger 2026-08-01 — «the CLI is the same door as MCP»).
-  // MCP add_concept stamps `agent:<heartbeat|unknown>` because the call path proves
-  // an agent made it, while CLI add stamped nothing — a hole where an agent
-  // choosing the convenient door produced nodes with no provenance. The two doors
-  // are now the same: the default is the heartbeat-based `agent:*` exactly as in
-  // MCP, and a person typing it themselves passes `--created-by human`.
+  // Stamps `agent:*` from the heartbeat exactly as MCP add_concept does, so the CLI door leaves
+  // provenance too; a person typing it passes `--created-by human`.
   const createdBy =
     opts.createdBy ?? agentCreatedBy(await readHeartbeatAgentName(vaultPath));
 
-  // The schema fills the per-kind shape automatically (project: empty
-  // domains/capabilities/elements arrays, capability: empty elements array), giving
-  // the same result as an agent's add_concept — so both entry points always produce
-  // the same frontmatter shape.
+  // The schema fills per-kind array defaults, so CLI add and add_concept write the same frontmatter shape.
   const fm = buildFrontmatter({ slug, kind, title, domain, path, [CREATED_BY_KEY]: createdBy });
 
   try {

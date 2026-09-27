@@ -1,16 +1,6 @@
-// The sentence a coding agent needs and the MCP server cannot say.
-//
-// The server sends its own `instructions` at initialize, and they are good: they
-// tell an agent which tool answers which question. What they cannot tell it is
-// that *this* repository has a reviewed ontology, where it sits, or when reading
-// it comes before reading code. That is a fact about one codebase, and it
-// belongs in that codebase's own agent instructions.
-//
-// Atlas does not write it. `CLAUDE.md` and `AGENTS.md` are files the user — or
-// their team, or another tool — wrote, and appending to them silently would make
-// Atlas the second author of a document nobody asked it to co-write. So the
-// scaffold prints the exact text and the person decides. Whether that should
-// ever become automatic is an open question with its own record.
+// The sentence a coding agent needs and the MCP server cannot say: that this repository has a reviewed
+// ontology, where, and when to read it before code. Atlas does not write it into `CLAUDE.md` or `AGENTS.md`,
+// files someone else authored; the scaffold prints the text and the person decides.
 
 /** Relative path from the repository root to the vault, in POSIX form. */
 function posix(relativePath) {

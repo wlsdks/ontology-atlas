@@ -4,13 +4,8 @@ import { describe, it } from 'node:test';
 import { partitionReadmeOnlyDomains } from './bootstrap.mjs';
 
 /**
- * Withholding README-only domains — the contract of the discriminating function.
- *
- * Field review 2026-08-08: all 11 README headings landed as domains, producing a
- * star graph with a single relation type (attunegraph). A hand-sewn stopword sieve
- * loses structurally — every new README invents a heading the list does not know —
- * so **corroboration** decides instead: only a domain with code evidence, or one
- * named as a parent by a code-derived candidate, is planted automatically.
+ * README-only domains are withheld; code evidence, or a code-derived candidate naming it as
+ * parent, corroborates a domain.
  */
 describe('partitionReadmeOnlyDomains', () => {
   const d = (slug, source) => ({ slug, title: slug, evidence: { source } });

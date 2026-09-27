@@ -4,10 +4,7 @@ import { describe, it } from 'node:test';
 import { cwdBindingScope } from './cwd-binding-scope.mjs';
 
 /**
- * Measured damage, 2026-08-24: running `init <somewhere-else>` from this repository rewrote *this
- * repository's* `.mcp.json` and `.codex/config.toml` to point at a scratch vault, silently. The old
- * guard asked only "is cwd different from the target", which is true of every unrelated directory on
- * the disk.
+ * Only containment licenses writing cwd's config; being a different directory from the target does not.
  */
 describe('cwd binding scope — whose agents may this command repoint', () => {
   it('wires cwd when the vault is created inside it', () => {
@@ -19,7 +16,7 @@ describe('cwd binding scope — whose agents may this command repoint', () => {
   });
 
   it('refuses to touch cwd when the vault lands outside it', () => {
-    // ⚠️ The regression. cwd is not the codebase for that vault; it is where the person stood.
+    // cwd is not the codebase for that vault; it is where the person stood.
     const scope = cwdBindingScope('/Users/dana/oh-my-ontology', '/tmp/scratch-vault');
     assert.equal(scope.write, false, 'rewrote an unrelated project agent config');
     assert.equal(scope.reason, 'outside');

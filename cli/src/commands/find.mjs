@@ -17,13 +17,7 @@ const NODE_UID_RE =
 
 
 
-/**
- * `ontology-atlas find <query> [vault] [--kind X] [--json]`
- *
- * Substring-matches (case-insensitive) the query against the slug or title of the
- * vault's ontology nodes (`.md` with a frontmatter `kind:`). Same coloured table
- * output as list.
- */
+/** Case-insensitive substring match of the query against node slugs and titles; same table as `list`. */
 export function runFind(args) {
   const opts = parseArgs(args);
   if (opts.help) {

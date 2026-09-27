@@ -166,9 +166,7 @@ test('relate stops with a conflict when a person deletes the source after the re
 });
 
 test('relate consolidates a hand-authored depends_on: alias instead of splitting the edge family', { concurrency: false }, async () => {
-  // Bug sweep 2026-09-01: reading only the canonical key appended a second
-  // `dependencies:` array beside `depends_on:` — one edge type split across two
-  // keys that MCP would have folded.
+  // Reading only the canonical key would append a second `dependencies:` array beside `depends_on:`.
   await withVault(async ({ root, source }) => {
     writeFileSync(
       source,
@@ -198,8 +196,7 @@ test('relate consolidates a hand-authored depends_on: alias instead of splitting
 });
 
 test('relate --why refuses a flag-like value — a preview must never become a write', { concurrency: false }, async () => {
-  // `--why --dry-run` used to consume `--dry-run` as the rationale: the user
-  // asked for a preview and got a real vault write with that literal persisted.
+  // `--why --dry-run` must not consume `--dry-run` as the rationale and write for real.
   await withVault(async ({ root, source }) => {
     const before = readFileSync(source, 'utf-8');
     const result = await captureCommand(() =>

@@ -1,18 +1,5 @@
-// `--dry-run` must give the same answer the real command gives.
-//
-// **Why** (measured 2026-08-16): the same arguments called twice gave opposite answers:
-//
-//   relate … --dry-run   → `dry-run would write …` · `safe_to_add` · exit 0
-//   relate …             → `error  why is required …`             · exit 1
-//
-// A preview's only use is **knowing the outcome before doing it for real**. Saying
-// «will write» about something that will be refused is not a preview, it is a
-// wrong forecast — above all when the caller is an agent rather than a person,
-// because a green preview is followed by the real call.
-//
-// The cause was that the refusal rule lived **inside the writing function**. A dry
-// run never calls it, so it could not help but skip the rule. The rule was
-// extracted as a pure function so **both paths call the same thing**.
+// `--dry-run` must give the same answer as the real command: an agent follows a green preview with
+// the real call. Both paths now call the same pure refusal rule.
 
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';

@@ -7,13 +7,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 /**
- * Owner, 2026-08-25: *"make `atlas` take you in… but no npm yet."* A name in `package.json` only
- * becomes a command through an install, and publishing is forbidden until asked — so the CLI writes
- * its own one-line launcher into a directory the person owns.
- *
- * `.claude/rules/surfaces.md` allows installing a command only under four conditions, and the two a
- * test can hold are here: the contents are exact and printable before writing, and a file this
- * command did not write is never touched.
+ * No registry install is allowed, so the CLI writes its own one-line launcher. Of the four
+ * `.claude/rules/surfaces.md` conditions, a test can hold two: the contents are exact and printable
+ * before writing, and a file this command did not write is never touched.
  */
 describe('install-shim puts atlas on PATH without touching foreign files', () => {
   it('writes a one-line launcher that execs the CLI', () => {
@@ -26,9 +22,8 @@ describe('install-shim puts atlas on PATH without touching foreign files', () =>
   });
 
   /*
-   * ⚠️ The falsifier this decision recorded, then met within the hour. A shim whose checkout moved
-   * hands the person a Node module-loader stack trace naming neither `atlas` nor the missing folder.
-   * One `test -f` turns that into a sentence they can act on.
+   * A shim whose checkout moved otherwise hands the person a Node loader stack trace naming neither
+   * `atlas` nor the missing folder.
    */
   it('checks for a missing checkout before exec and prints a sentence', () => {
     const body = shimBody('/checkout/cli/src/index.mjs');
@@ -45,9 +40,8 @@ describe('install-shim puts atlas on PATH without touching foreign files', () =>
   });
 
   /*
-   * ⚠️ The distinction the safety rests on. Deleting or overwriting a file somebody put there
-   * themselves is the worst thing this command could do, so "ours" is decided by a marker we wrote,
-   * never by the filename.
+   * Overwriting a file somebody put there is the worst outcome, so ours is decided by a marker we
+   * wrote, never by the filename.
    */
   it('tells its own shim from a foreign file by the signature', () => {
     const dir = mkdtempSync(join(tmpdir(), 'shim-'));

@@ -26,11 +26,8 @@ export function slugToPath(rootPath, slug) {
   ) {
     throw new Error(`slug points outside the vault root: "${slug}"`);
   }
-  // A string check alone cannot stop a symlink — same contract as
-  // `mcp/src/vault.mjs`. Measured 2026-07-29: with an `escape.md` inside the vault
-  // pointing outside it, the string was perfectly inside the root while
-  // `writeFileSync` followed the link and **wrote outside**, and the success line
-  // reported the path inside the vault.
+  // A string check alone cannot stop a symlink: `writeFileSync` follows a link inside the vault and writes
+  // outside it. Same contract as `mcp/src/vault.mjs`.
   assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
 }

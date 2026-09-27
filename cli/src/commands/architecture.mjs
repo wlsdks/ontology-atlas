@@ -114,15 +114,9 @@ export async function runArchitecture(args) {
 }
 
 /**
- * Opt-in `--record` writer (2026-08-27 decision, point 4). The normal report
- * has already been printed by the time this runs; the record is a dated machine
- * receipt persisted at `.ontology-atlas/architecture/<profile-slug>.json`.
- *
- * Mechanical hard gate: a scan whose observed edges carry no usage
- * discrimination (edges exist, and none is classified `value` or `type_only`)
- * must not mint a receipt, because the 2026-08-27 measured fact was exactly
- * such a scan stamping a false red. The refusal is a clear stderr message with
- * no file written; the exit code stays 0 because the report itself is honest.
+ * Opt-in `--record` writer for `.ontology-atlas/architecture/<profile-slug>.json`. A scan whose edges
+ * carry no `value`/`type_only` classification mints no receipt, since it would stamp a false red;
+ * the refusal goes to stderr and the exit stays 0 because the printed report is honest.
  */
 function recordArchitectureBrief(result, vaultRoot, { json }) {
   const confirm = (line) => {

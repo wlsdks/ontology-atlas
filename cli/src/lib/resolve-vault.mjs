@@ -23,14 +23,12 @@ export class VaultRootError extends Error {
  * Always returns an absolute path.
  */
 export function resolveVaultRoot(explicit) {
-  // 1) explicit user choice wins
   if (typeof explicit === 'string' && explicit && explicit !== '.') {
     const root = resolve(process.cwd(), explicit);
     assertVaultDirectory(root);
     return root;
   }
 
-  // 2) OATLAS_VAULT env — same convention as the MCP server
   const env = process.env.OATLAS_VAULT;
   if (typeof env === 'string' && env.length > 0) {
     const root = resolve(process.cwd(), env);
@@ -38,11 +36,9 @@ export function resolveVaultRoot(explicit) {
     return root;
   }
 
-  // 3) a docs/ontology directory in cwd — auto-detects a repository dogfooding itself
   const candidate = resolve(process.cwd(), 'docs/ontology');
   if (isDirectory(candidate)) return candidate;
 
-  // 4) fallback — cwd
   return process.cwd();
 }
 

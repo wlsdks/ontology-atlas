@@ -15,12 +15,7 @@ const ALLOWED_FLAGS = ['--vault', '--kind', '--json'];
 
 
 
-/**
- * `ontology-atlas list [vault]`
- *
- * Prints the vault's ontology nodes (`.md` with a frontmatter `kind:`) as a table.
- * `--kind <kind>` filters; `--json` gives machine-readable output.
- */
+/** Prints the vault's nodes (`.md` with a frontmatter `kind:`) as a table; `--kind` filters, `--json` for machines. */
 export function runList(args) {
   const parsed = parseArgs(args);
   if (parsed.help) {

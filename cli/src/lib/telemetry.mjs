@@ -1,25 +1,6 @@
-// Magic-moment instrumentation for the north star in
-// docs/plans/PRODUCT-PLAN-2026-07.md §4/§9: reaching, within 5 minutes of
-// absorb/init, the first moment an agent answers while citing a vault node.
-//
-// LOCAL ONLY — this file never leaves the user's disk and is never
-// transmitted anywhere (docs/plans/PRODUCT-PLAN-2026-07.md §7, trust charter
-// clause ②: zero silent collection). It records two kinds of timestamp:
-//   - a baseline: `init`'s completion time, or `absorb --write`'s completion
-//     time if that ran more recently (either counts as "the moment the vault
-//     became worth asking").
-//   - `moment`: the first time an agent-facing read happened afterward. This
-//     is stamped from the CLI's own `agent-brief` command (the cheapest safe
-//     proxy for "an agent read the vault and answered") — NOT from the MCP
-//     `query_ontology(operation:'agent_brief')` / `get_concept` tools. Those
-//     two are declared read-only (`readOnlyHint: true`) in the MCP tool
-//     inventory; adding a disk write as a side effect of a "read" tool would
-//     quietly break that contract. If you drive the vault through an AI
-//     agent's direct MCP calls instead of the CLI, run
-//     `ontology-atlas moment --mark` by hand right after it answers citing a
-//     node to record the same moment.
-//
-// `cli/src/commands/moment.mjs` is the human-facing surface for this file.
+// Local-only magic-moment instrumentation (docs/plans/PRODUCT-PLAN-2026-07.md §4/§7/§9), never transmitted.
+// Records a baseline (init or absorb --write) and the first agent-facing read after it, stamped by the CLI's
+// `agent-brief`; MCP read tools stay unstamped (readOnlyHint), so `moment --mark` records it by hand.
 
 import {
   readVaultSidecarText,

@@ -1,32 +1,8 @@
 /**
- * Ontology interop serializers — turn a compiled ontology graph into portable
- * standard exchange formats (JSON-LD 1.1 and GraphML) that academic /
- * data-science / graph-database tooling reads directly (Neo4j, Gephi,
- * Cytoscape, rdflib, Protégé).
- *
- * Input is the deterministic *compile artifact shape*:
- *
- *     { nodes: [{ uid, slug, kind, title, domain? }],
- *       edges: [{ from, to, via }] }
- *
- * — the same node/edge records `mcp/src/ontology-compiler.mjs` emits. Node
- * identity is the node's permanent UUIDv4:
- *
- *     urn:uuid:<uid>
- *
- * Interop contract with external tools: an export is a *snapshot*; the
- * compiler's `graphHash` is its *version*. Consumers key on the UID URN;
- * renaming the readable slug does not mint a new identity.
- *
- * Mirror copy: `src/shared/lib/interop-format.ts` (the web ERD builder export).
- * The contract test `tests/contract/interop-format.contract.test.ts` keeps the
- * two in lock-step — the same input must yield byte-identical output. If you
- * change anything here, mirror it there (and vice versa).
- *
- * Pure + deterministic: no ambient state, no time, endpoints sorted internally
- * so output does not depend on input ordering. Edges whose `from`/`to` do not
- * both resolve to an emitted node are dropped — an interop snapshot never mints
- * phantom nodes for dangling/external refs.
+ * Ontology interop serializers: a compiled graph (`{ nodes, edges }` as `mcp/src/ontology-compiler.mjs` emits)
+ * to JSON-LD 1.1 and GraphML. Node identity is `urn:uuid:<uid>`; the compiler's `graphHash` versions a snapshot.
+ * Twin of `src/shared/lib/interop-format.ts`, byte-identical per `tests/contract/interop-format.contract.test.ts`.
+ * Pure and deterministic; an edge without both endpoints emitted is dropped, never minted as a phantom node.
  */
 
 const INTEROP_URN_BASE = 'urn:uuid';
@@ -112,12 +88,8 @@ function normalizeGraph(graph) {
     if (!from || !to || !via) continue;
     // Snapshot only the resolved graph — never mint phantom endpoints.
     if (!nodeBySlug.has(from) || !nodeBySlug.has(to)) continue;
-    // ⚠️ **Never use NUL as a composite-key separator** (2026-08-08). Choosing
-    // NUL (U+0000) because it cannot appear in a slug makes the file **binary** to
-    // git, so ① its diff is invisible in a PR and ② grep/ripgrep skip the file
-    // entirely. Five files in this repository were in that state, and a review lost
-    // time to grep silently answering "0 matches". `JSON.stringify` is printable
-    // and still unambiguous.
+    // Never use NUL as a composite-key separator: it makes the file binary to git, hiding its diff and
+    // making grep skip it. `JSON.stringify` is printable and still unambiguous.
     const key = JSON.stringify([from, via, to]);
     if (seenEdge.has(key)) continue;
     seenEdge.add(key);

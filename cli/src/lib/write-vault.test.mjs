@@ -1,12 +1,6 @@
-// Wiring test for writeDoc slug flatness (decision 2026-08-01,
-// 「A slug is a flat identifier」 — a slug is a flat identifier; docs/DECISIONS.md).
-//
-// The rule itself — which slugs are rejected — is measured by FLAT_SLUG_CASES in
-// `tests/contract/vault-schema.contract.test.ts`, including mcp/cli mirror
-// equality. What is measured here is one thing: the **wiring**, i.e. whether the
-// CLI's write door (write-vault writeDoc, which `add` and `import` pass through)
-// actually applies that rule. The mcp side's wiring is measured by
-// `mcp/src/write-path-gate.test.mjs`.
+// Wiring test: the CLI write door (writeDoc, used by `add` and `import`) applies slug flatness
+// (docs/DECISIONS.md, 2026-08-01). The rule is measured in `tests/contract/vault-schema.contract.test.ts`,
+// the mcp wiring in `mcp/src/write-path-gate.test.mjs`.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';

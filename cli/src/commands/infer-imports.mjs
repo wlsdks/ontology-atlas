@@ -1,5 +1,4 @@
-// R17 — `ontology-atlas infer-imports [rootPath]`
-// MCP infer_imports wrapper. moduleEdges (capability A → B) are source-backed
+// `ontology-atlas infer-imports [rootPath]` wraps MCP infer_imports. moduleEdges are source-backed
 // review candidates, never self-approving semantic depends_on relations.
 
 import { COLORS } from '../lib/colors.mjs';

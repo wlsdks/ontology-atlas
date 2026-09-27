@@ -1,16 +1,6 @@
-// Read-only "agent files" detection — pure logic, no filesystem access.
-//
-// Multi-agent-tool repos scatter instructions across 6+ formats (CLAUDE.md,
-// AGENTS.md, .claude/rules|skills|agents, .agents/skills, .cursor, .codex,
-// .mcp.json). Nobody sees which tool reads which file, and physically
-// duplicated skill trees drift byte-by-byte with no watchdog. This module
-// classifies known agent-file paths (data-driven table — one update point)
-// and runs seven read-only drift checks. It never converts, syncs, or repairs.
-//
-// The web workbench mirrors this logic in
-// `src/views/docs-vault/lib/agent-files.ts`; the two implementations are held
-// together by `tests/contract/agent-files.contract.test.ts` over the shared
-// fixture matrix `tests/fixtures/agent-files-cases.mjs` (R11 contract pattern).
+// Read-only agent-file detection, pure logic: classifies known agent-file paths (one data table) and runs
+// drift checks; never converts, syncs or repairs. Web twin `src/views/docs-vault/lib/agent-files.ts`, held
+// equal by `tests/contract/agent-files.contract.test.ts` over `tests/fixtures/agent-files-cases.mjs`.
 
 export const CODEX_PROJECT_DOC_CAP_BYTES = 32 * 1024;
 
@@ -24,11 +14,8 @@ const AGENTS_AGENTS_PREFIX = '.agents/agents/';
  * client appears, this is the single update point (with AGENT_FILE_RULES).
  */
 /**
- * `gemini-cli` stays beside `antigravity` rather than being replaced by it.
- * Gemini CLI stopped serving free, Pro and Ultra requests on 2026-06-18 and
- * Antigravity CLI is the successor, but Gemini Code Assist Standard/Enterprise,
- * Google Cloud access and paid API keys still reach it. Dropping the label would
- * be as wrong as leaving Antigravity out was.
+ * `gemini-cli` stays beside `antigravity`: paid Gemini Code Assist tiers and API keys still reach
+ * Gemini CLI although Antigravity CLI succeeds it.
  */
 export const AGENT_TOOL_LABELS = Object.freeze({
   'claude-code': 'Claude Code',
@@ -60,10 +47,8 @@ export const AGENT_FILE_RULES = Object.freeze([
   // **opens and reads** the same brief. The purposes differ but the content must
   // match, which is what agent-copy enforces.
   Object.freeze({ id: 'agents-agents', kind: 'agent', tools: Object.freeze(['codex']), pattern: /^\.agents\/agents\/.+/ }),
-  // `.cursorrules` is the legacy single-file form. Cursor still reads it, but
-  // silently ignores it in agent mode — which is the mode every consumer of this
-  // classifier runs in. `.cursor/rules/*.mdc` is the current format and the one
-  // to write (verified 2026-08-24).
+  // `.cursorrules` is the legacy form Cursor ignores in agent mode, the mode every consumer here runs in;
+  // `.cursor/rules/*.mdc` is the format to write.
   Object.freeze({ id: 'cursor-rules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursor\/rules\/.+\.mdc$/ }),
   Object.freeze({ id: 'cursorrules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursorrules$/ }),
   Object.freeze({ id: 'copilot-instructions', kind: 'instructions', tools: Object.freeze(['copilot']), pattern: /^\.github\/copilot-instructions\.md$/ }),
@@ -94,7 +79,6 @@ export function classifyAgentFilePath(path) {
   return null;
 }
 
-// ── @reference extraction ──────────────────────────────────────────────────
 
 /** Extensions an @reference must end with to count as a file reference. */
 const AT_REF_EXTENSIONS = Object.freeze([
@@ -127,7 +111,6 @@ export function extractAtRefs(content) {
   return out;
 }
 
-// ── helpers ────────────────────────────────────────────────────────────────
 
 function utf8ByteLength(content) {
   return new TextEncoder().encode(String(content ?? '')).length;
@@ -169,7 +152,6 @@ function hasClaudeAgentsImport(content) {
   return /(^|\s)@AGENTS\.md(?=\s|$)/m.test(withoutInlineCode);
 }
 
-// ── the seven drift checks ──────────────────────────────────────────────────
 
 function checkClaudeAgentsBridge(recordByPath, existingPathSet, drift) {
   const claude = recordByPath.get('CLAUDE.md');
@@ -203,19 +185,9 @@ function checkClaudeAgentsBridge(recordByPath, existingPathSet, drift) {
 }
 
 /**
- * `.claude/agents` ↔ `.agents/agents` — the cross-tool pair for seat briefs.
- *
- * **Why this is separate from the skill pair.** Two tools read a skill for the
- * *same* purpose; seat briefs serve different ones. For Claude Code
- * `.claude/agents/*.md` is the subagent **registry** (a seat absent from it cannot
- * be summoned); for Codex `.agents/agents/*.md` is a **reference document it
- * opens** while walking a council sequentially. Different purposes, identical
- * content — so the pair is required, and a pair with no gate drifts by default.
- * This repository already lived that failure with duplicated skills.
- *
- * A file present on one side only is drift too. Adding a Claude-only seat leaves a
- * Codex session with a name it can **neither summon nor read** (measured
- * 2026-08-04: all 15 seats were in that state).
+ * `.claude/agents` ↔ `.agents/agents`: seat briefs serve a different purpose per tool (Claude Code's
+ * summoning registry, a reference Codex opens) with identical content, so the pair is required, and a
+ * file on one side only is drift: a name the other tool can neither summon nor read.
  */
 function checkAgentCopy(records, drift) {
   const claudeByName = new Map();
@@ -411,17 +383,9 @@ function checkAtRefs(records, options, drift) {
 }
 
 /**
- * Every agent file is read by an agent, so its whole content — not only its
- * comments — is steering text. A guard whose `permissionDecisionReason` was
- * Korean shipped for months because `scripts/quality/source-language` audits
- * comments in `.sh` and skips `.json` entirely, and the string literal that
- * an agent actually reads sat in neither subject set (2026-08-23 audit). This
- * repository is open source and English-only, and a Codex, Cursor or Gemini
- * run has no reason to parse Hangul, kana or Han at the moment it is blocked.
- *
- * Localized product data is not an agent file: `cli/templates/vault-ko/**` and
- * `display_<locale>` frontmatter never match AGENT_FILE_RULES, so they are out
- * of this subject set by construction rather than by exception.
+ * An agent reads every agent file whole, so its string literals steer too; this repository is
+ * English-only. Localized product data (`cli/templates/vault-ko/**`, `display_<locale>`) never matches
+ * AGENT_FILE_RULES, so it is out of scope by construction.
  */
 // Kept in sync with .githooks/commit-msg-language.mjs: Jamo blocks and
 // halfwidth Kana/Hangul included, so jamo-only Korean cannot slip either gate.
@@ -429,10 +393,8 @@ const NON_ENGLISH_SCRIPT_RE =
   /[\u1100-\u11ff\u3040-\u30ff\u3130-\u318f\u3400-\u4dbf\u4e00-\u9fff\ua960-\ua97f\uac00-\ud7ff\uf900-\ufaff\uff65-\uffdc]/gu;
 
 function checkAgentLanguage(records, drift, requireEnglish) {
-  // Opt-in. This is one repository's policy, not a truth about agent files, and
-  // the same analyzer reads a user's own vault through the web docs workbench —
-  // where `cli/templates/vault-ko` is a supported starter. Imposing English
-  // there would call a correct Korean vault broken (contract, 2026-08-24).
+  // Opt-in: one repository's policy, not a truth about agent files. The web docs workbench reads a user's
+  // vault with this analyzer, where `cli/templates/vault-ko` is a supported starter.
   if (!requireEnglish) {
     return { status: 'not-applicable', scannedFiles: 0, flaggedFiles: 0, codePoints: 0 };
   }
@@ -478,11 +440,8 @@ function checkAgentLanguage(records, drift, requireEnglish) {
  * so the worst case any path can reach is root plus the largest of them.
  */
 /**
- * `absent` and `unparseable` must not collapse together. A vault with no config
- * has nothing to contradict, so the check does not apply. A config that exists
- * but declares nothing makes every grant undeclared — reading that as a pass is
- * the fail-open shape this repository has already been bitten by (probe,
- * 2026-08-24).
+ * `absent` and `unparseable` must not collapse: no config has nothing to contradict, but a config that
+ * declares nothing makes every grant undeclared, and passing it would fail open.
  */
 function declaredFromMcpJson(record) {
   if (!record || typeof record.entry.content !== 'string') {
@@ -522,24 +481,9 @@ function declaredFromCodexConfig(record) {
 }
 
 /**
- * An agent brief's `tools:` list is an allowlist, not a request. Naming
- * `mcp__chrome-devtools__evaluate_script` on a seat whose server no repository
- * config declares does not fail loudly — the tool is simply absent, and the seat
- * runs on with no way to measure anything. Eight design seats and one PO seat
- * granted exactly that for months while `.mcp.json` declared one server; the
- * design gate AGENTS.md calls mandatory was inoperable for anyone but the author,
- * whose personal `~/.claude.json` happened to carry it (2026-08-24 audit).
- *
- * Each tree is measured against the config its own reader consults: `.claude`
- * briefs against `.mcp.json`, `.agents` briefs against `.codex/config.toml`. The
- * first version measured both against `.mcp.json` and therefore passed while
- * `.codex/config.toml` declared one server and the eight mirrored Codex seats
- * granted two — the same defect the check was written to catch, hidden by the
- * wrong denominator. Because the two brief trees are byte identical, this means
- * in practice that every granted server must be declared in both configs.
- *
- * A personal config cannot be the repository's contract. What a fresh clone can
- * start is what these files say, so that is what this measures.
+ * A brief's `tools:` list is an allowlist: a tool whose server no repository config declares is silently
+ * absent, and the seat runs without it. Each tree is measured against its own reader's config (`.claude`
+ * briefs against `.mcp.json`, `.agents` against `.codex/config.toml`); a personal config is not the contract.
  */
 const MCP_TOOL_RE = /\bmcp__([a-z0-9][a-z0-9_-]*)__[a-z0-9_]+/gi;
 
@@ -669,7 +613,6 @@ function checkCodexSizeCap(recordByPath, records, drift) {
   return { status: 'ok', ...shared };
 }
 
-// ── entry point ────────────────────────────────────────────────────────────
 
 /**
  * Analyze a scanned file set. Pure — the caller supplies everything:

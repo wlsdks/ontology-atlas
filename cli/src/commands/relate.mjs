@@ -1,21 +1,6 @@
-// `ontology-atlas relate <from> <to> <type> [vault]`
-// R+ (agent-persona-2026-07 QA log — agent wishlist #1, friction #2). The CLI
-// had a read/propose command (`relation-check`) that computes the exact
-// `add_relation` payload, but no CLI writer to execute it — only hand-editing
-// frontmatter or the MCP `add_relation` tool could actually land a relation.
-// Every other read/propose pair in this surface (analyze/infer-imports,
-// growth/maintenance) already has a CLI apply path; this closes the gap for
-// the single most basic ontology-editing verb.
-//
-// Same argument shape as `relation-check` on purpose (drop-in — preflight
-// then land). Reuses relation-check's MCP query_ontology(relation_check) call
-// for slug/type validation + schema/recommendation display (see
-// ../lib/relation-preflight.mjs), then writes the relation directly onto the
-// `from` doc's frontmatter with the CLI's own fs primitives — mirroring
-// mcp/src/vault.mjs's addRelation semantics (canonical slugs, sorted/deduped
-// arrays, domain is a single scalar not an array) but following the existing
-// CLI convention (see `add`/`import`) of writing vault files directly instead
-// of spawning the MCP `add_relation` write tool.
+// `ontology-atlas relate <from> <to> <type> [vault]`: the CLI writer for `relation-check`, with the same argument
+// shape. Validates through relation-check's MCP call (../lib/relation-preflight.mjs), then writes the `from` doc's
+// frontmatter directly like `add`/`import`, mirroring mcp/src/vault.mjs addRelation (canonical, sorted, deduped; domain is a scalar).
 
 import { COLORS } from '../lib/colors.mjs';
 import { runRelationCheckQuery, renderRelationCheckResult } from '../lib/relation-preflight.mjs';
@@ -32,10 +17,8 @@ import { recordCliWrite } from '../lib/activity-log.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--json', '--dry-run', '--why'];
 
-// type (public, what relation-check/add_relation accept) → frontmatter array
-// key. Mirrors mcp/src/index.js's RELATION_KEY — CLI keeps its own copy
-// rather than importing across the mcp/cli package boundary, same as
-// relation-types.mjs already does for the type enum itself.
+// Public relation type → frontmatter array key. Mirrors mcp/src/index.js RELATION_KEY; the CLI keeps
+// its own copy rather than import across the mcp/cli package boundary.
 const RELATION_KEY = Object.freeze({
   depends_on: 'dependencies',
   relates: 'relates',
@@ -47,10 +30,8 @@ const RELATION_KEY = Object.freeze({
   domain: 'domain',
 });
 
-// Legal authoring aliases per canonical key (mcp/src/vault.mjs
-// NEIGHBOR_KEY_ALIASES). Reading only the canonical key appended a second
-// array under `dependencies:` beside a hand-authored `depends_on:` — one edge
-// type split across two keys that MCP would have folded (bug sweep 2026-09-01).
+// Authoring aliases per canonical key (mcp/src/vault.mjs NEIGHBOR_KEY_ALIASES). Reading only the
+// canonical key would split one edge type across two keys that MCP folds.
 const LEGACY_KEYS = Object.freeze({ dependencies: ['depends_on'] });
 
 /** Refs under the canonical key plus its authoring aliases. */
@@ -122,8 +103,7 @@ export async function runRelate(args, runtimeOverrides = {}) {
   }
 
   if (dryRun) {
-    // Apply the rules the real command will apply here too — otherwise the preview
-    // says «will write» and the real command refuses (measured 2026-08-16).
+    // Apply the rules the real command applies, or the preview says it will write while the write refuses.
     let refusal = null;
     try {
       const { frontmatter } = runtime.readDocFrontmatter(vaultRoot, check.from);
@@ -182,25 +162,13 @@ export async function runRelate(args, runtimeOverrides = {}) {
 }
 
 /**
- * relation_check has already resolved from/to/relation to canonical slugs (alias
- * input comes back canonical), so the canonical values are used as-is here. Same
- * two branches as addRelation in mcp/src/index.js:
- *  - relation === 'domain' → replaces a single scalar field. An existing different
- *    value is refused (as in add_relation), steering to patch_concept or a direct edit.
- *  - otherwise → appends to the array, then normalizeRelationRefs (sort + dedupe).
+ * relation_check already returned canonical slugs. Same two branches as mcp/src/index.js addRelation:
+ * `domain` replaces a scalar and refuses a different existing value; anything else appends and then
+ * normalizeRelationRefs sorts and dedupes.
  */
 /**
- * Returns the sentence explaining why this relation cannot be written, or `null`.
- *
- * **Why it is a pure function** (measured 2026-08-16): this verdict lived **inside**
- * `writeRelation`. A dry run never calls that function, so it could not help but
- * skip the verdict — and for identical arguments the preview answered «will write»
- * (exit 0) while the real command answered «refused» (exit 1). A preview's only
- * use is knowing the outcome before doing it for real, so a wrong forecast is
- * worse than no preview: a green light is followed by the real call.
- *
- * Now **both paths call this one function.** Gate:
- * `cli/src/commands/relate.dry-run-parity.test.mjs`.
+ * The sentence explaining why this relation cannot be written, or `null`. Pure so that dry-run and
+ * the real write call the same rule (`cli/src/commands/relate.dry-run-parity.test.mjs`).
  */
 export function relationWriteRefusal({ frontmatter, relation, to, why = null }) {
   const key = RELATION_KEY[relation] ?? relation;
@@ -254,9 +222,8 @@ function parseArgs(args) {
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
     else if (a === '--dry-run') flags.dryRun = true;
-    // Flag-like next tokens are rejected, like every other value flag here —
-    // `--why --dry-run` used to consume `--dry-run` as the rationale and turn a
-    // requested preview into a real vault write (bug sweep 2026-09-01).
+    // Flag-like next tokens are rejected, like every other value flag here, so `--why --dry-run`
+    // cannot swallow `--dry-run` and turn a preview into a real write.
     else if (a === '--why') flags.why = parseRawRequiredFlagValue('--why', args[++i]);
     else if (a.startsWith('--why=')) flags.why = a.slice('--why='.length);
     else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };

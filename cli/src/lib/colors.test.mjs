@@ -20,8 +20,7 @@ describe('COLORS shared palette', () => {
 
 describe('KIND_COLORS shared kind palette', () => {
   it('gives each kind its own colour (element green, capability cyan, document dim)', () => {
-    // Regression gate for two drifts: pattern-walk's element=cyan (colliding with
-    // capability) and find/orphans/list's document=white.
+    // element must not share capability's cyan, and document is dim, not white.
     assert.equal(KIND_COLORS.project, COLORS.magenta);
     assert.equal(KIND_COLORS.domain, COLORS.blue);
     assert.equal(KIND_COLORS.capability, COLORS.cyan);

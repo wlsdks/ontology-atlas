@@ -1,6 +1,5 @@
-// `ontology-atlas overview [vault]`
-// The vault's first-contact dashboard — counts, relation distribution, hub nodes.
-// Thin wrapper over MCP `query_ontology({operation: 'overview'})`.
+// `ontology-atlas overview [vault]`: counts, relation distribution and hub nodes, over MCP
+// `query_ontology({operation: 'overview'})`.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -58,7 +57,6 @@ function renderOverview(result, hubsLimit) {
   const byRelation = result?.byRelation ?? {};
   const hubs = Array.isArray(result?.hubs) ? result.hubs : [];
 
-  // Header — the graph in one line.
   const nodes = graph.nodes ?? 0;
   const edges = graph.edges ?? 0;
   const resolved = graph.resolvedEdges ?? 0;
@@ -77,11 +75,8 @@ function renderOverview(result, hubsLimit) {
       `${COLORS.dim}  ${nodes} concepts with a document + ${referencedOnly} named only in a reference = ${nodes + referencedOnly} counted by the map${COLORS.reset}\n`,
     );
   }
-  // The relation count states its scope for the same reason (measured 2026-07-27:
-  // web 448 vs here 542). Here, **one relation per reference written in the
-  // frontmatter** is counted — a domain writing `capabilities:` and a capability
-  // writing `domain:` for the same containment counts as 2. The map and insights
-  // fold that one fact into a single relation.
+  // The relation count states its scope for the same reason: here each frontmatter reference counts,
+  // so one containment written on both sides counts twice, while the map and insights fold it into one.
   if (edges > 0) {
     process.stdout.write(
       `${COLORS.dim}  ${edges} relations counts written references: when both documents write the same relation it counts twice (the map folds it to one)${COLORS.reset}\n`,
@@ -89,7 +84,6 @@ function renderOverview(result, hubsLimit) {
   }
   process.stdout.write('\n');
 
-  // Kind distribution — count per kind plus a coloured bar.
   if (Object.keys(byKind).length > 0) {
     process.stdout.write(`${COLORS.dim}KIND distribution${COLORS.reset}\n`);
     const total = Object.values(byKind).reduce((sum, n) => sum + n, 0) || 1;
@@ -104,7 +98,6 @@ function renderOverview(result, hubsLimit) {
     process.stdout.write('\n');
   }
 
-  // Relation type distribution.
   if (Object.keys(byRelation).length > 0) {
     process.stdout.write(`${COLORS.dim}Relation-type distribution${COLORS.reset}\n`);
     const total = Object.values(byRelation).reduce((sum, n) => sum + n, 0) || 1;
@@ -118,7 +111,6 @@ function renderOverview(result, hubsLimit) {
     process.stdout.write('\n');
   }
 
-  // Domain distribution (only when present).
   if (Object.keys(byDomain).length > 0) {
     process.stdout.write(`${COLORS.dim}Domain distribution${COLORS.reset}\n`);
     for (const [dom, count] of sortByCount(byDomain)) {
@@ -129,7 +121,6 @@ function renderOverview(result, hubsLimit) {
     process.stdout.write('\n');
   }
 
-  // Hub nodes — highest degree, excluding document / vault-readme.
   if (hubs.length > 0) {
     const cap = Math.min(hubs.length, hubsLimit);
     process.stdout.write(`${COLORS.dim}Hub nodes${COLORS.reset} ${COLORS.dim}(top ${cap} by degree, document/project excluded)${COLORS.reset}\n`);

@@ -1,23 +1,6 @@
-// Counts and states **what an export did not carry**.
-//
-// **Why** (measured 2026-08-17): the status line of `export --format jsonld` read
-// `80 nodes · 174 edges`. Nodes and relations really do all go out (174 = 174,
-// confirmed). But none of our vault's **7 relation rationales**
-// (`relation_notes`) went, and neither did the implementation paths (`path`) or
-// the descriptions.
-//
-// This repository wrote the rule itself: *"an edge with no rationale is a
-// mind-map line, not an ontology claim."* Someone moving to Protégé sees
-// "80 nodes · 174 relations" and believes the whole ontology came across — while
-// what makes this product this product is missing.
-//
-// Same degradation discipline as `.claude/rules/surfaces.md`: **say plainly what
-// cannot be done.**
-//
-// **The list is never hand-written.** A constant naming "what gets dropped" rots
-// silently as the schema grows, so this compares **the fields actually present in
-// the vault** against **the fields the format carries**. A new field the format
-// does not carry is reported from the day it appears.
+// Counts and states what an export did not carry (relation rationales, paths, descriptions), per
+// `.claude/rules/surfaces.md`: say plainly what cannot be done. Computed from the fields present in the
+// vault against the fields the format carries, never a hand-written list.
 
 /**
  * Graph-internal derived fields — attached by the compiler, not written by the

@@ -4,19 +4,9 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /**
- * One resolution rule for every MCP module the CLI reuses.
- *
- * The CLI and the MCP server ship as two packages and run as two entry points,
- * but that never meant the code had to exist twice. `cli/package.json` declares
- * `ontology-atlas-mcp` as a dependency, and `mcp/package.json` ships the modules
- * in its `files` list, so the CLI can resolve the canonical module at runtime:
- * the monorepo source checkout first, then the installed package. Both shapes
- * therefore execute the *same* file rather than two copies a contract test has
- * to keep in step.
- *
- * Before this helper the same eight-line resolver was written out three times
- * (`vault-sidecar.mjs`, `architecture-record.mjs`, `activity-log.mjs`), each with
- * its own spelling of the fallback. One rule is now stated once.
+ * One resolution rule for every MCP module the CLI reuses: the monorepo source checkout first, then the
+ * installed `ontology-atlas-mcp` package (a declared dependency shipping these files), so both shapes run
+ * the same file rather than two copies.
  */
 const here = dirname(fileURLToPath(import.meta.url));
 const sourceCheckoutMcpSource = resolve(here, '../../../mcp/src');

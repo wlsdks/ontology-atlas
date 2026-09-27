@@ -1,14 +1,5 @@
-// A command `init` prints must **actually run when pasted**.
-//
-// Dogfooding, measured 2026-07-28: "Next steps" told the user to run
-// `ontology-atlas list`, which gave `command not found` (exit 127). That name is
-// not in any registry and never will be (`docs/DECISIONS.md` 2026-07-27). Stranger
-// still, **the README the same `init` writes was correct** — the generated artifact
-// and the generating tool's own guidance followed different rules.
-//
-// Why the check lives here: the existing `npm-channel-retired` contract scans
-// **files** (markdown, YAML). This violation lives in **runtime stdout**, outside
-// that gate's reach, so this runs the process and reads the characters it emits.
+// A command `init` prints must run when pasted; `ontology-atlas` is in no registry (`docs/DECISIONS.md` 2026-07-27).
+// This lives here because the `npm-channel-retired` contract scans files, and this violation lives in runtime stdout.
 
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';

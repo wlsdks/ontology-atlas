@@ -1,8 +1,5 @@
-// `ontology-atlas path <from> <to> [vault]`
-// Shortest path between two slugs (BFS, undirected). Thin wrapper over MCP
-// find_path — same authority as a coding AI agent. find_path's `edges[]` (the
-// relation type per hop) is exposed to the user as well, so *why* two nodes are
-// connected reads in one line.
+// `ontology-atlas path <from> <to> [vault]`: shortest path (undirected BFS) over MCP find_path, with
+// the relation type per hop so why two nodes connect reads in one line.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -72,7 +69,6 @@ export async function runPath(args) {
   );
   const hopCount = typeof result.hopCount === 'number' ? result.hopCount : hops.length - 1;
 
-  // Trivial path (from === to).
   if (hopCount === 0) {
     process.stdout.write(
       `${formatHop(hops[0], nodesBySlug)} ${COLORS.dim}(same slug: 0 hops)${COLORS.reset}\n`,
@@ -85,7 +81,6 @@ export async function runPath(args) {
       ` ${COLORS.dim}· ${hopCount} hop${hopCount === 1 ? '' : 's'}${COLORS.reset}\n\n`,
   );
 
-  // Render: hop i  --(via)-->  hop i+1
   for (let i = 0; i < hops.length; i += 1) {
     process.stdout.write(`  ${formatHop(hops[i], nodesBySlug)}\n`);
     if (i < hops.length - 1) {

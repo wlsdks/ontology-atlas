@@ -61,7 +61,6 @@ function render(result) {
       ` · ${sum.projects ?? 0} projects · ${sum.domains ?? 0} domains${COLORS.reset}\n\n`,
   );
 
-  // Hotspots (highest degree)
   const hotspots = Array.isArray(result?.hotspots) ? result.hotspots : [];
   if (hotspots.length > 0) {
     process.stdout.write(`${COLORS.dim}HOTSPOTS${COLORS.reset} ${COLORS.dim}(highest degree)${COLORS.reset}\n`);
@@ -78,7 +77,6 @@ function render(result) {
     process.stdout.write('\n');
   }
 
-  // Projects summary
   const projects = result?.projects?.maps ?? [];
   if (projects.length > 0) {
     process.stdout.write(`${COLORS.dim}NODES PER PROJECT (project_scope)${COLORS.reset}\n`);
@@ -111,7 +109,6 @@ function render(result) {
     process.stdout.write(`${COLORS.dim}GROWTH${COLORS.reset} ${COLORS.dim}${parts.join(', ')}${COLORS.reset}\n\n`);
   }
 
-  // Next actions
   const next = Array.isArray(result?.nextActions) ? result.nextActions : [];
   if (next.length > 0) {
     process.stdout.write(`${COLORS.dim}NEXT ACTIONS${COLORS.reset}\n`);

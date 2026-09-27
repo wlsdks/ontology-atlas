@@ -1,20 +1,6 @@
-// Pure git/frontmatter logic behind `ontology-atlas snapshot`; the command file
-// (`cli/src/commands/snapshot.mjs`) is a thin CLI wrapper over this module.
-//
-// Trust charter: the default is a local commit only (nothing transmitted). Every
-// git call takes an injectable `run`, so unit tests need no git process — the
-// same pattern as `git-staged.mjs`. The vault's own tests use a real temporary
-// git repository fixture, because only that proves the partial-commit pathspec
-// behaviour (other staged files stay protected).
-//
-// Safety design — "never add a file outside the vault, never pollute what is
-// already staged": `git commit -m <msg> -- <pathspec>` (git's "partial commit"
-// form) commits working-tree changes and deletions of already-tracked files
-// within the pathspec without touching the rest of the index, so changes staged
-// outside the vault stay staged and do not join this commit. Untracked new files
-// — the ones git does not know yet — are not picked up by a pathspec commit, so
-// untracked files inside the vault are `git add`ed first (files outside it are
-// never touched).
+// Pure git/frontmatter logic behind `ontology-atlas snapshot`; every git call takes an injectable `run`.
+// `git commit -- <pathspec>` commits tracked changes inside the vault without touching what is staged outside
+// it; untracked vault files are `git add`ed first, and nothing outside the vault ever is.
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -77,13 +63,9 @@ export function getFullPorcelainStatus({ repoRoot, run = defaultRun }) {
 }
 
 /*
- * `-z` (NUL-separated) output is parsed, never the newline form. With git's
- * default `core.quotePath`, the newline form C-quotes any non-ASCII path —
- * an untracked Korean-named file printed as `?? "\355\225\234..."` — and the
- * old parser kept the quotes and octal escapes literally, so `git add` on that
- * "path" exited 128 and the whole snapshot aborted, misclassified as a hook
- * rejection (bug sweep 2026-09-01, reproduced). `-z` emits raw bytes with no
- * quoting; a rename record is `XY new\0orig\0` (new path first, no ` -> `).
+ * `-z` output is parsed, never the newline form: with the default `core.quotePath` the newline form
+ * C-quotes non-ASCII paths (`?? "\355\225\234..."`), and `git add` on the quoted text fails. A rename
+ * record is `XY new\0orig\0` (new path first, no ` -> `).
  */
 function parsePorcelain(out) {
   const tokens = out.split('\0');
@@ -229,11 +211,8 @@ export function getRemoteUrl({ repoRoot, remoteName, run = defaultRun }) {
   return run(['remote', 'get-url', remoteName], repoRoot).trim();
 }
 
-// ── Graceful failure ──────────────────────────────────────────────────────
-// commitPathspec / pushCurrentBranch / pullCurrentBranch propagate execFileSync's
-// throw unchanged. The command wrapper hands that error to `classifyGitError`,
-// which turns a raw stack-trace crash into "one line of cause + what to do next".
-// Pure functions — no I/O here; the wrapper writes to stderr.
+// commitPathspec / pushCurrentBranch / pullCurrentBranch propagate execFileSync's throw; the command
+// wrapper hands it to `classifyGitError`, which turns it into one line of cause plus the next action.
 
 /** Joins an execFileSync error's stderr/stdout/message into one string. */
 function gitErrorText(err) {
@@ -364,7 +343,6 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   };
 }
 
-// ── Obsidian Git parity (read-only, transmission is opt-in) ───────────────
 const LOG_FIELD_SEP = '\x1f';
 
 /**

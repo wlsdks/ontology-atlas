@@ -23,10 +23,8 @@ export async function runDisconnectSource(args) {
     return 1;
   }
 
-  // The shared resolution order (explicit → OATLAS_VAULT → docs/ontology
-  // auto-detect), like every other vault command. The bare cwd resolve this
-  // used meant a destructive write could target a different vault than the
-  // read/write siblings in the same shell (bug sweep 2026-09-01).
+  // Shared resolution order (explicit → OATLAS_VAULT → docs/ontology), so a destructive write
+  // targets the same vault as its read and write siblings.
   const vaultRoot = resolveVaultRoot(vault);
   let result;
   try {

@@ -1,16 +1,6 @@
-// `ontology-atlas preflight [vault] [--staged] [--depth N] [--json]`
-//
-// Commit preflight — reverse-matches the git staged file list onto vault
-// capability and element nodes, then summarises each node's blast radius (reusing
-// query_ontology) to show which ontology nodes a commit touches *before* it lands.
-// Designed to be called from a pre-commit hook: `agent-setup --install-pre-commit-hook`.
-//
-// Informational and non-blocking: if any stage comes up empty (not a git
-// repository, no vault, no staged file touching a vault node) it exits 0 quietly —
-// avoiding disable fatigue is a pre-commit hook's first requirement. A failed
-// individual blast-radius call marks that row as an error and carries on. A
-// `kind: decision` node inside the blast radius is only flagged with ⚠; it never
-// blocks the commit, for the same reason — a commit hook is a guide, not a gate.
+// `ontology-atlas preflight [vault] [--staged] [--depth N] [--json]`: maps staged files onto capability and element
+// nodes and summarises each node's blast radius before the commit lands. Non-blocking by design: empty stages exit 0
+// quietly, a failed row is marked and skipped, and a decision node is only flagged, because a hook people disable guards nothing.
 
 import { readFileSync } from 'node:fs';
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';

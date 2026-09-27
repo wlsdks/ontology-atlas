@@ -1,16 +1,6 @@
-// CLI writes land in the local audit log too.
-//
-// The `.ontology-atlas/activity.jsonl` audit log used to record only the MCP write
-// path (logWrite in mcp/src/index.js). The CLI's add/import/relate write vault
-// files through fs directly, so they left no record and put a hole in the promise
-// that "an agent writing to your vault leaves a record". (rename/merge/delete
-// already go through the MCP server via callMcpTool, so logWrite records those.)
-//
-// This **reuses** the mcp package's activity-log module, so the schema, the
-// rotation, and the best-effort append stay in one place. Resolution goes through
-// mcp-module.mjs, the one rule every CLI re-export of an MCP module shares
-// (monorepo source, then installed package), and it caches, so a batch write
-// (`import`) never re-resolves per file.
+// CLI writes (add, import, relate) land in `.ontology-atlas/activity.jsonl` too; rename, merge and delete
+// go through MCP and its logWrite. Reuses mcp's activity-log module through mcp-module.mjs, cached so a
+// batch `import` resolves it once.
 
 import { loadMcpModule } from './mcp-module.mjs';
 
@@ -18,12 +8,8 @@ import { loadMcpModule } from './mcp-module.mjs';
 const loadActivityLogModule = () => loadMcpModule('activity-log.mjs');
 
 /**
- * Reads the agent name from the heartbeat file, best-effort (null when absent).
- *
- * This is what lets the `created_by` stamp (decision ledger 2026-08-01 — the CLI
- * uses the same door as MCP) draw on **the same identity source** as MCP's
- * `agentProvenance()`, keeping the 2026-07-31 decision that no second identity
- * scheme is created.
+ * Reads the agent name from the heartbeat file, best-effort (null when absent), so `created_by` uses
+ * the same identity source as MCP `agentProvenance()`.
  */
 export async function readHeartbeatAgentName(vaultRoot) {
   try {
@@ -35,14 +21,12 @@ export async function readHeartbeatAgentName(vaultRoot) {
 }
 
 /**
- * Appends one CLI write to the audit log. Purely best-effort: it never throws and
- * never changes the caller's exit code or output contract. **Do not call it** for
- * a dry run or a failed write — the audit log carries what happened, nothing else.
+ * Appends one CLI write to the audit log, best-effort: it never throws or changes the caller's exit
+ * code or output. Do not call it for a dry run or a failed write.
  *
  * @param {string} vaultRoot absolute path.
- * @param {{tool:string, target:string, summary:string, why?:string|null}} entry
- *   `tool` is prefixed (`cli:add`) so a CLI write is distinguishable. The agent
- *   field is copied from the heartbeat file (null when absent), as in MCP logWrite.
+ * @param {{tool:string, target:string, summary:string, why?:string|null}} entry `tool` is prefixed
+ *   (`cli:add`); the agent is copied from the heartbeat file, as in MCP logWrite.
  */
 export async function recordCliWrite(vaultRoot, { tool, target, summary, why = null }) {
   try {
