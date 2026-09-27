@@ -1396,22 +1396,6 @@ if (
   );
 }
 
-/*
- * ⚠️ **Routes are not pinned down to the slug** (relaxed 2026-08-10).
- *
- * This used to pin the whole string
- * `--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'`. That
- * `views` domain **disappeared** while the dogfood vault was rebuilt — nine
- * verifiers were quietly failing against a node that did not exist, and when
- * someone went to fix it **this check blocked the fix**. A gate that breaks in the
- * direction of a better spec makes the next person revert the spec instead
- * (.claude/rules/documentation.md).
- *
- * So the roles are split: here only the **shape of the flag** is checked (a deep
- * link is present and the mode is right), while "does that node exist" is checked
- * by a contract test that reads the vault directly
- * (`tests/contract/script-vault-references.contract.test.ts`, runs in CI).
- */
 
 if (
   pkg.scripts?.["desktop:build"] ===
