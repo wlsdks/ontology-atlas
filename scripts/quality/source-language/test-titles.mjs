@@ -5,7 +5,6 @@ const TITLE_MODIFIERS = new Set([
   'each', 'skip', 'only', 'todo', 'concurrent', 'sequential', 'describe', 'step',
   'fails', 'serial', 'parallel', 'fixme', 'skipIf', 'runIf', 'for',
 ]);
-/** Node `assert.*` calls whose message is the third argument; the rest take it second. */
 const THIRD_ARGUMENT_ASSERTS = new Set([
   'equal', 'notEqual', 'strictEqual', 'notStrictEqual', 'deepEqual', 'notDeepEqual',
   'deepStrictEqual', 'notDeepStrictEqual', 'match', 'doesNotMatch', 'throws',
@@ -23,7 +22,6 @@ export function hasHangul(text) {
   return HANGUL.test(text);
 }
 
-/** `describe.each(table)` and `test.describe.skip` both resolve to their root name. */
 function titleRoot(expression) {
   let node = expression;
   while (true) {
@@ -58,11 +56,6 @@ function messageArgument(call) {
   return undefined;
 }
 
-/**
- * Literal test titles (`describe`/`it`/`test`/`suite`/`bench` and their modifiers) and
- * assertion messages (`expect`/`expect.soft` second argument, node `assert` message) in
- * one file, each with its 1-based line. One parse and one walk: O(source length).
- */
 export function extractTestTitles(path, source) {
   const jsx = /x$/.test(path);
   const sourceFile = ts.createSourceFile(
@@ -91,7 +84,6 @@ export function extractTestTitles(path, source) {
   return found;
 }
 
-/** Titles and messages in `source` that contain Hangul. */
 export function hangulTestTitles(path, source) {
   return extractTestTitles(path, source).filter((entry) => hasHangul(entry.text));
 }

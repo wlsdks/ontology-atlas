@@ -1,5 +1,0 @@
-{
-  "gate": "comment-bytes.scripts",
-  "raise": 1215,
-  "why": "The new source-area and test-title modules document their area list, argument positions and complexity, which the names alone cannot say."
-}

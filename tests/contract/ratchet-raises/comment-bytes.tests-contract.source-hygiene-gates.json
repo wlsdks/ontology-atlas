@@ -1,5 +1,0 @@
-{
-  "gate": "comment-bytes.tests-contract",
-  "raise": 836,
-  "why": "The three new hygiene contracts each name the rule they enforce and why only changed files are measured at the merge base."
-}

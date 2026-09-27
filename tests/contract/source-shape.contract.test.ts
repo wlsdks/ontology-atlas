@@ -13,13 +13,6 @@ import {
 import { isSupportedSourcePath } from "../../scripts/quality/source-language/inventory.mjs";
 import { judgeRatchet, resolveRatchetBase, type RatchetJudgement } from "./lib/ratchet-base";
 
-/**
- * A file stays under 800 lines and a folder under 30 direct files
- * (`.claude/rules/architecture.md`, "Code explains itself"). Per area, the count of
- * oversize changed files and of wide parent folders of changed paths only falls
- * against the merge base.
- */
-
 const MAX_FILE_LINES = 800;
 const MAX_DIRECT_FILES = 30;
 
@@ -85,7 +78,6 @@ describe("source shape", () => {
       judgements.push(
         judgeRatchet({
           gate,
-          // The base is counted from git objects; the extracted tree holds only changed paths.
           measure: (root) => names.filter((d) => count(d, root !== cwd) > MAX_DIRECT_FILES).length,
           reads: [],
           fallback: Number.POSITIVE_INFINITY,

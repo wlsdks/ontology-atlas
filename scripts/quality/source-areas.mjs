@@ -2,7 +2,6 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** Paths whose content is data or generated output, never source a person maintains. */
 const EXCLUDED_PREFIXES = [
   'docs/',
   'public/',
@@ -14,10 +13,6 @@ const EXCLUDED_PREFIXES = [
 const HARNESS_ROOTS = new Set(['.claude', '.agents', '.codex', '.githooks', '.github']);
 const PACKAGE_ROOTS = new Set(['app', 'mcp', 'cli', 'scripts', 'src-tauri']);
 
-/**
- * The area a hygiene ratchet judges `path` in: `src/<layer>`, `app`, `tests/<dir>`,
- * `mcp`, `cli`, `scripts`, `src-tauri`, `harness` or `root`; `null` when excluded.
- */
 export function sourceArea(path) {
   if (EXCLUDED_PREFIXES.some((prefix) => path.startsWith(prefix))) return null;
   const [top, second, ...rest] = path.split('/');
@@ -29,7 +24,6 @@ export function sourceArea(path) {
   return 'root';
 }
 
-/** A ratchet gate id for an area; raise records are named after it, so it holds no `/`. */
 export function areaGate(prefix, area) {
   return `${prefix}.${area.replaceAll('/', '-')}`;
 }
@@ -40,10 +34,6 @@ function git(args, cwd) {
 
 const lines = (text) => text.split('\n').filter(Boolean);
 
-/**
- * Paths this change touches against `base` (committed, staged, unstaged and untracked),
- * outside the excluded areas. Deleted paths stay in the list: they still count at the base.
- */
 export function changedPaths(base, cwd = process.cwd()) {
   if (base === null) return [];
   const paths = new Set([
@@ -53,7 +43,6 @@ export function changedPaths(base, cwd = process.cwd()) {
   return [...paths].filter((path) => sourceArea(path) !== null).sort();
 }
 
-/** Direct files of `dir` in the working tree: tracked and still present, or untracked. */
 export function directFilesInWorktree(dir, cwd = process.cwd()) {
   const prefix = dir === '' ? '' : `${dir}/`;
   const listed = lines(git(['ls-files', '--cached', '--others', '--exclude-standard', '--', prefix || '.'], cwd));
@@ -61,7 +50,6 @@ export function directFilesInWorktree(dir, cwd = process.cwd()) {
   return [...direct].filter((p) => existsSync(join(cwd, p))).length;
 }
 
-/** Direct files of `dir` in commit `sha`; 0 when the folder did not exist. */
 export function directFilesAtCommit(dir, sha, cwd = process.cwd()) {
   try {
     const rows = lines(git(['ls-tree', sha, '--', dir === '' ? '.' : `${dir}/`], cwd));

@@ -7,12 +7,6 @@ import { areaGate, changedPaths, sourceArea } from "../../scripts/quality/source
 import { hangulTestTitles, isTestSourcePath } from "../../scripts/quality/source-language/test-titles.mjs";
 import { judgeRatchet, resolveRatchetBase } from "./lib/ratchet-base";
 
-/**
- * Test titles and assertion messages are English (`.claude/rules/testing.md`). Only the
- * files this change touches are measured, at the merge base and here, so an area's
- * Hangul titles can fall but never grow; the target is zero.
- */
-
 const base = resolveRatchetBase();
 const changed = changedPaths(base).filter(isTestSourcePath);
 

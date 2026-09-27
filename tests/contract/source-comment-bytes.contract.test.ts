@@ -7,12 +7,6 @@ import { areaGate, changedPaths, sourceArea } from "../../scripts/quality/source
 import { extractCommentTokens, isSupportedSourcePath } from "../../scripts/quality/source-language/inventory.mjs";
 import { judgeRatchet, resolveRatchetBase } from "./lib/ratchet-base";
 
-/**
- * Comments carry only current reasons the code cannot show (`.claude/rules/architecture.md`,
- * "Code explains itself"), so comment bytes per area only fall. Only files this change
- * touches are measured, at the merge base and here.
- */
-
 const base = resolveRatchetBase();
 const changed = changedPaths(base).filter(isSupportedSourcePath);
 
