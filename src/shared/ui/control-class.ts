@@ -57,8 +57,8 @@ import { cn } from '@/shared/lib/cn';
  * > **Moving an existing control onto this function is normalisation, not a
  * > refactor — pixels change.**
  *
- * A bulk migration is therefore the design gate's call (`/design-council`
- * system, the design-systems seat), not this file's. What this file guarantees
+ * A bulk migration is therefore the design gate's call (a declared
+ * `design-contract` change reviewed through the `reviewer`'s `tokens` lens), not this file's. What this file guarantees
  * today is narrower — **a newly written control does not turn 50 combinations
  * into 51** — enforced by
  * `tests/contract/control-adoption-ratchet.contract.test.ts`.
