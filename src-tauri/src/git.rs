@@ -758,6 +758,18 @@ pub struct GitDiffResult {
     diff: String,
 }
 
+/// The largest of this repository's 1,500 vault commits is 565 KB.
+const MAX_TREE_DIFF_BYTES: usize = 2 * 1024 * 1024;
+
+/// The same all-or-nothing rule as `cap_document_diff`.
+fn cap_tree_diff(diff: String) -> String {
+    if diff.len() > MAX_TREE_DIFF_BYTES {
+        String::new()
+    } else {
+        diff
+    }
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitFetchResult {
@@ -1161,8 +1173,8 @@ fn history_change_entry(
     })
 }
 
-#[tauri::command]
-pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
+#[tauri::command(async)]
+pub fn git_diff(vault_path: String, include_patch: Option<bool>) -> Result<GitDiffResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
@@ -1170,13 +1182,17 @@ pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
     let rows = get_porcelain_status(&repo_root, &pathspec)?;
     let changes = build_change_summary(&rows, &repo_root, &vault_dir);
 
-    // Falls back to the index when there is no HEAD.
-    let diff = match run_git(&repo_root, &["diff", "HEAD", "--", &pathspec]) {
-        Ok(out) if out.success => out.stdout,
-        _ => match run_git(&repo_root, &["diff", "--", &pathspec]) {
-            Ok(out) if out.success => out.stdout,
-            _ => String::new(),
-        },
+    let diff = if include_patch == Some(false) {
+        String::new()
+    } else {
+        // Falls back to the index when there is no HEAD.
+        match run_git(&repo_root, &["diff", "HEAD", "--", &pathspec]) {
+            Ok(out) if out.success => cap_tree_diff(out.stdout),
+            _ => match run_git(&repo_root, &["diff", "--", &pathspec]) {
+                Ok(out) if out.success => cap_tree_diff(out.stdout),
+                _ => String::new(),
+            },
+        }
     };
 
     Ok(GitDiffResult {
@@ -1188,7 +1204,7 @@ pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
 
 /// One commit's vault-scope patch; separate from `git_diff`, which reads the
 /// uncommitted tree, so each signature says what it asks.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
@@ -1213,7 +1229,7 @@ pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult
         ],
     )?;
     let diff = if out.success {
-        out.stdout
+        cap_tree_diff(out.stdout)
     } else {
         String::new()
     };
@@ -2503,6 +2519,26 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.dir);
         }
+    }
+
+    #[test]
+    fn the_file_list_alone_carries_no_patch() {
+        let scratch = Scratch::new("diff-list");
+        fs::write(scratch.work.join("one.md"), "changed\n").unwrap();
+
+        let list = git_diff(scratch.vault(), Some(false)).unwrap();
+        assert_eq!(list.files.len(), 1);
+        assert!(list.diff.is_empty());
+
+        let full = git_diff(scratch.vault(), None).unwrap();
+        assert!(full.diff.contains("+changed"));
+    }
+
+    #[test]
+    fn a_tree_diff_past_the_cap_is_dropped_whole() {
+        assert_eq!(cap_tree_diff("+small\n".to_string()), "+small\n");
+        let huge = "+line\n".repeat(MAX_TREE_DIFF_BYTES / 6 + 1);
+        assert_eq!(cap_tree_diff(huge), "");
     }
 
     #[test]
