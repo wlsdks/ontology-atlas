@@ -37,7 +37,7 @@ import type { useTranslations } from "next-intl";
  * ## The English message is still the machine's copy
  *
  * `problem.message` is written once, in English, for the things that read it —
- * `ontology-atlas wiki-validate`, `validate_wiki`, an agent's retry. A person gets
+ * the CLI's `wiki-validate`, `validate_wiki`, an agent's retry. A person gets
  * `problem.detail`, the sentence's pieces, reassembled in their own language. `t.has`
  * rather than a table of known keys: the validator owns which sentence it just found, and
  * a key it grows before this catalogue does degrades to that English message rather than
