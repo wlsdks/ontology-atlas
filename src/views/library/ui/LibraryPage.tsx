@@ -2947,12 +2947,12 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               visible={homeVisible && indexSegment === 'wiki'}
               turnRunning={turnRunning}
               navigationActions={questionDeskVisible ? <>
-                {retainedAnswers.length > 0 ? <Chip ref={questionsDoorRef} tone="muted"
+                {retainedAnswers.length > 0 ? <Chip ref={questionsDoorRef} tone="muted" className="min-w-0 max-w-full"
                   active={homeDoors[1]!.open === true} aria-expanded={homeDoors[1]!.open}
                   title={homeDoors[1]!.label} data-testid="library-questions-open"
                   onClick={homeDoors[1]!.onPress}>
                   <BookOpen size={ICON_SIZE.sm} aria-hidden />
-                  <span className="max-w-[12rem] truncate">{homeDoors[1]!.label}</span>
+                  <span className="min-w-0 max-w-[12rem] truncate">{homeDoors[1]!.label}</span>
                 </Chip> : null}
                 {conversationDoor}
               </> : null}

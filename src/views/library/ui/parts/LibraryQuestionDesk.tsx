@@ -551,7 +551,7 @@ export function LibraryQuestionDesk({
         {!activeReport ? <header className="mb-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-label leading-label text-[color:var(--color-indigo-text-soft)]">{t('eyebrow')}</p>
-            <div className="flex max-w-full flex-wrap items-center gap-2">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
               {navigationActions}
               <Chip className="lg:hidden" tone="muted" onClick={onBrowse} data-testid="question-desk-browse">{t('browse')}</Chip>
             </div>

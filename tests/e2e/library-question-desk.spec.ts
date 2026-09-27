@@ -16,6 +16,31 @@ const wiki = (title: string, source: string, hash: string, fact: string) => [
   `- ${fact} [[src:${source}#l2]]`, '## Decisions', '## Open questions', '## Not in sources',
 ].join('\n');
 
+test('a long retained question stays inside the inquiry at 200 percent text on a narrow screen', async ({ page }) => {
+  const title = 'Which original explains refund approval, inventory restoration timing, exceptions, and the next batch conditions?';
+  await installLibraryWorkHarness(page, { files: {
+    'project.md': '---\nuid: 00000000-0000-4000-8000-000000000001\nkind: project\ntitle: Refunds\nslug: refunds\n---\n',
+    'sources/refund-handling.md': refund,
+    'wiki/answers/retained.md': wiki(title, 'sources/refund-handling.md', digest(refund), 'Approval queues a restoration job.')
+      .replace('status: draft', 'status: draft\nanswer_thread: wiki/answers/retained'),
+  } });
+  await page.goto('/en/docs/');
+  await page.getByRole('button', { name: /^Open my folder/ }).first().click();
+  await expect(page.getByRole('heading', { name: 'Map', exact: true })).toBeVisible();
+  await page.goto('/en/library/?tab=wiki&guides=off');
+  const question = page.getByTestId('library-questions-open');
+  await expect(question).toContainText(title);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
+  await expect.poll(() => question.evaluate((element) => {
+    const button = element.getBoundingClientRect();
+    const pane = element.closest('[data-question-desk-container]')!.getBoundingClientRect();
+    return Math.max(pane.left - button.left, button.right - pane.right);
+  })).toBeLessThanOrEqual(1);
+  await question.click();
+  await expect(page.getByTestId('retained-answer-context')).toBeVisible();
+});
+
 test('keeps a short positive inquiry centered and expanded evidence reachable', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 949 });
   await installLibraryWorkHarness(page, { files: {
