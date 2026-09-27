@@ -13,7 +13,6 @@ export interface MeaningCompetencyQuestionContract {
   readonly requiredWitnesses: readonly ("concepts" | "relations" | "evidence" | "paths")[];
 }
 
-export const MEANING_ASSESSMENT_CONTRACT: "meaningAssessment:v1";
 export const MEANING_COMPETENCY_CONTRACT: "meaningCompetency:v1";
 export const MEANING_COMPETENCY_EVALUATOR: "meaningProposalValidator:v1";
 export const MEANING_WITNESS_INVENTORY_CONTRACT: "meaningWitnessInventory:v1";
