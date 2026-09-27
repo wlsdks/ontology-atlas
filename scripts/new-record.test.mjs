@@ -52,6 +52,11 @@ describe('new record writer', () => {
     assert.throws(() => createRecord({ kind: 'release', date: '2026-09-13', version: 'v1.0.0', title: 'again', changes: ['12345678-1234-4123-8123-123456789abc'], root }), /already exists/);
     assert.equal(existsSync(path.join(root, 'docs/records/releases/v1.0.0.md')), false);
   });
+  it('rejects a pre-release version before creating a marker', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'new-release-rc-'));
+    assert.throws(() => createRecord({ kind: 'release', date: '2026-09-13', version: 'v1.4.0-rc.1', title: 'candidate', changes: ['12345678-1234-4123-8123-123456789abc'], root }), /release version must be vX\.Y\.Z/);
+    assert.equal(existsSync(path.join(root, 'docs')), false);
+  });
   it('rejects duplicate ids, backdating, and invalid current state before writing', () => {
     const root = ledgerRepo();
     const id = '12345678-1234-4123-8123-123456789abc';

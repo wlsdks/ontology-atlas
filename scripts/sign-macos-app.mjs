@@ -12,18 +12,9 @@ const { appBundleName } = names;
 /**
  * `--dmg` signs **the DMG container itself**.
  *
- * Signing only the `.app` and wrapping it in a DMG passes notarisation, but leaves
- * no signature for Gatekeeper to evaluate when it looks at the DMG. Measured on
- * v1.0.0-rc.1, 2026-07-27:
- *
- *   [desktop-notarize] notarized and stapled ...aarch64.dmg      ← notarised
- *   spctl --assess --type open ... : rejected
- *   source=no usable signature                                    ← yet rejected
- *
- * The notarisation ticket attached but **the wrapper had no signature.** This is
- * why Apple's distribution procedure signs the app and the container separately,
- * and the order is fixed: sign app → package DMG → **sign DMG** → notarise →
- * staple.
+ * Gatekeeper evaluates the container, so a notarised but unsigned DMG around a
+ * signed `.app` is still rejected. Order: sign app → package DMG → sign DMG →
+ * notarise → staple.
  *
  * Hardened runtime is not used here. That applies to executing code, and a DMG is a
  * container.
