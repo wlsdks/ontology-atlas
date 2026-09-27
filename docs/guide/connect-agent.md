@@ -7,7 +7,9 @@ area: agents
 
 # Connecting an AI Agent
 
-It’s just one click on the app's **"Connect Agent"** button. Once you select the tool you're using, it writes a configuration file for that tool containing the **actual absolute path of the vault**.
+It takes one click. In "Agents" › "MCP", press "Connect" on the row for the tool
+you use. It writes that tool's configuration file with the **actual absolute path
+of the vault**.
 
 | Tool | File used |
 |---|---|
@@ -43,11 +45,8 @@ It generates the tool-specific configuration text and verification command right
 
 Incomplete configurations are not copied. Unconnected settings are a trap, not a help.
 
-## Scope: This folder / Entire computer
-
-"This folder" writes to the repository's config file. It persists in `git diff` and is shared by the team.
-
-"Entire computer" refers to settings in the home folder, which **the app does not use directly**. That file is a state store updated by tools at runtime; if a third party modifies it, silent data loss occurs. Instead, provide a single command with the Vault absolute path already embedded, letting the tool use its own copy. The fact that changes to the home folder do not appear in `git diff` is also evident from the screen.
+The connect buttons write only into this folder, and only a file that is missing,
+so the change shows in `git diff` and is shared with the team.
 
 ## Verifying Connection
 
@@ -146,7 +145,8 @@ CLI FALLBACKS (MCP connector unavailable)
 
 It provides both the **entry node** (most connected) and the **first call**. For agents that haven't yet attached to MCP, it also includes the equivalent CLI commands.
 
-The map view also has an "AI Summary Copy" button for each node, allowing you to copy and paste just the context of that single concept.
+On the map, "Copy handoff" in a concept's summary or right-click menu copies the
+context of that one concept to paste into an agent.
 
 ## Humans Are the Judges
 

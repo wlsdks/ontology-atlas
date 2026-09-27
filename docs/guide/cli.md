@@ -95,7 +95,7 @@ If you want to view the same queue in the UI, [Maintenance Board](/guide/insight
 | Is frontmatter broken? | `validate`: **does not check code paths** |
 | Did files cited as evidence disappear? | `health`: six checks, including code path verification |
 | Are there nodes no one points to? | `orphans` |
-| Do "required items" relations form cycles? | `cycles` |
+| Do "leans on" relations form cycles? | `cycles` |
 | Is the graph split into islands? | `components` |
 | Is the agent connection config correct? | `mcp-verify` · `agent-setup` · `agent-files` |
 

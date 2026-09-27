@@ -77,7 +77,7 @@ What you can see here: The two domain candidates above were **extracted from the
 node cli/src/index.mjs infer-imports . --vault my-vault
 ```
 
-Read the TS/JS import graph to generate `depends_on` relationship candidates for "required items".
+Read the TS/JS import graph to generate `depends_on` relationship candidates for "leans on".
 
 ```
 infer-imports /path/to/repo — 300 files / 714 edges / 273 external
@@ -120,7 +120,7 @@ The last line is this command's contract. **Content is never destroyed.**
 
 ## 4. In apps: Folders that already have documents
 
-Even without `kind:` frontmatter, opening a folder containing markdown causes the map to report the **number of documents found** instead of saying "0 concepts," and proposes "Create map from my documents."
+Even without `kind:` frontmatter, opening a folder containing markdown makes the map say "Found your documents: they are not on the map yet" with the number found, instead of an empty map, and offers "Build the map from my documents".
 
 Clicking it generates candidates from the already-scanned list.
 
@@ -137,7 +137,7 @@ Upon approval, **only the approved documents get frontmatter**; the body remains
 If you've already connected an agent ([Connect an AI Agent](/guide/connect-agent)), you can just tell it what to do. The tools the agent uses are **the same** as the CLI.
 
 - `analyze_repo_structure`: Scans the repository to propose candidates.
-- `infer_imports`: Proposes "required items" from the import graph.
+- `infer_imports`: Proposes "leans on" relations from the import graph.
 - `index_project`: Combines both into a plan with verification.
 
 The agent's advantage comes next. To know "what this folder does," you must read
