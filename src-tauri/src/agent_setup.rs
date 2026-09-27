@@ -518,7 +518,11 @@ fn rpc_line(id: u64, method: &str, params: serde_json::Value) -> String {
 /// that cannot read the vault must not show green.
 #[tauri::command(async)]
 pub fn verify_mcp_server(vault_path: String, sample_slug: Option<String>) -> McpVerifyResult {
-    match verify_inner(&vault_path, sample_slug.as_deref()) {
+    // The bundled MCP is spawned against this folder; only a granted vault may be one.
+    let gated = crate::canonical_root(&vault_path).and_then(|root| {
+        verify_inner(&root.to_string_lossy(), sample_slug.as_deref())
+    });
+    match gated {
         Ok(result) => result,
         Err(failure) => McpVerifyResult {
             ok: false,
