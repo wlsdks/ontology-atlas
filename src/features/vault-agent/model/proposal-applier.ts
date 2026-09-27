@@ -5,23 +5,9 @@ import {
 } from './competency-qualification-boundary';
 
 /**
- * The **only** module that writes a consented proposal to disk.
- *
- * **Why this file exists.** The price of stopping the executor from writing is
- * that writes gather in this one place. It should be called from exactly one
- * place — the consent card's [apply] handler. Calling it elsewhere breaks "it
- * writes only when the user presses".
- *
- * **The order is the contract:**
- *
- * 1. Re-check mtime — if a person edited the same file after the proposal,
- *    **nothing is written.**
- * 2. (When checked and this is a git repository) the save point first.
- * 3. Write the `after` string **verbatim** — the same value the card drew.
- * 4. Re-read to refresh the map.
- *
- * Blocking at any stage ends with **zero files changed**. To avoid a half-applied
- * state, every mtime check completes before any write begins.
+ * The only module that writes a consented proposal, called only from the card's [apply]. Order:
+ * check every mtime, take the save point, write each `after` verbatim, refresh. Any block
+ * leaves zero files changed.
  */
 
 export interface VaultWritePort {
@@ -33,11 +19,7 @@ export interface VaultWritePort {
   currentMtime(slug: string): number | undefined;
   /** Reload the manifest, refreshing the map. */
   refresh(): Promise<void>;
-  /**
-   * A git save point taken right before applying. Returns null when this is not a
-   * git vault — and the card states that honestly ("this folder is not a git
-   * repository, so no save point can be made").
-   */
+  /** A git save point before applying; null outside git, which the card states. */
   snapshot(label: string): Promise<string | null>;
 }
 
@@ -67,25 +49,22 @@ export async function applyProposal(
     return { status: 'failed', message: SOURCE_BACKED_COMPETENCY_MESSAGE };
   }
 
-  // ── 1. Check everything before writing ──────────────────────────────
   const conflicted: string[] = [];
   for (const change of selected) {
     if (change.expectedMtime === undefined) continue;
     for (const file of change.files) {
       if (file.kind !== 'modify') continue;
       const current = port.currentMtime(slugOf(file.path));
-      // With an unknown mtime (static mode, say) no guard can be applied — do not
-      // invent a conflict from a fact that does not exist, and do not claim safety either.
+      // An unknown mtime cannot guard: neither invent a conflict nor claim safety.
       if (current === undefined) continue;
       if (current !== change.expectedMtime) conflicted.push(file.path);
     }
   }
   if (conflicted.length > 0) {
-    // Zero files changed. The card degrades to "this document just changed".
+    // Zero files changed.
     return { status: 'conflict', conflictedPaths: conflicted };
   }
 
-  // ── 2. Save point ───────────────────────────────────────────────────
   let snapshotSha: string | null = null;
   if (proposal.snapshotRequested) {
     try {
@@ -96,22 +75,9 @@ export async function applyProposal(
     }
   }
 
-  // ── 3. Write — one write per file ───────────────────────────────────
   /*
-   * Changes touching one file form a chain: the builder computes each `after`
-   * on top of the previous change's `after`, so each card's diff is exactly
-   * that change's delta. Two consequences at apply time (bug sweep 2026-09-01):
-   *
-   *  - Writing every selected `after` in sequence made the second write fail
-   *    its own mtime guard (the first write changed the file) — a half-applied
-   *    proposal, violating this module's "zero files changed" contract.
-   *  - A deselected change whose later sibling stayed selected still reached
-   *    disk, because the later `after` embeds it — consent violated, and the
-   *    smuggled content never appeared in the selected card's diff.
-   *
-   * So: per file, the selected changes must form an unbroken prefix of that
-   * file's chain, and the last selected `after` — the composition of exactly
-   * the approved changes — is written once.
+   * Changes to one file chain on each other's `after`. Selected changes must form an unbroken
+   * prefix of the chain, or deselected content reaches disk; the last selected `after` is written once.
    */
   const chains = new Map<string, { change: ProposalChange; file: ProposalChange['files'][number] }[]>();
   for (const change of proposal.changes) {
@@ -159,7 +125,6 @@ export async function applyProposal(
     return { status: 'failed', message: String(error) };
   }
 
-  // ── 4. Refresh the map ──────────────────────────────────────────────
   await port.refresh();
   return { status: 'applied', snapshotSha, writtenPaths: written };
 }
@@ -185,7 +150,7 @@ export function proposalToClipboardPacket(proposal: AgentProposal): string {
   return lines.join('\n');
 }
 
-/** The card header's totals — "3 files · +42 −3". Stops the diff from being a folded rubber stamp. */
+/** The card header's totals, such as "3 files · +42 −3". */
 export function summarizeChangeVolume(changes: readonly ProposalChange[]): {
   files: number;
   added: number;

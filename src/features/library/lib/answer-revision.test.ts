@@ -46,13 +46,7 @@ describe('retained answer evidence', () => {
     expect(answerObservation({ ...fm, answer_scope_sources: [source] }, new Set([source, 'sources/amendment.md']), new Map([[source, oldHash]]))).toMatchObject({ state: 'new-sources', added: ['sources/amendment.md'] });
   });
 
-  /*
-   * Measured in the installed app on 2026-09-20. A lint turn found the answer's figure
-   * superseded, the fix door rewrote the page from the new source and put the old figure
-   * under the new one, and the reader still offered "ask for a fresh draft" while the wiki
-   * row beside it said the confirmed version was unchanged. The observation is immutable by
-   * design, so the page's own `source_hash` is the only thing that can say it caught up.
-   */
+  /* The observation is immutable, so only the page's `source_hash` can say it caught up. */
   it('reads a page rewritten from the new bytes as caught up, not as drifted', () => {
     const fm = {
       sources: [source],
@@ -124,17 +118,9 @@ describe('retained answer evidence', () => {
       expect(automaticWikiWriteAllowed(path)).toBe(false);
     }
   });
-  /**
-   * **The card and the button must not disagree** (installed-app inspection before v1.2.2, B2).
-   *
-   * The fixture's answer carried `answer_thread: "dispute-records"`. `retainedAnswerHeads` read
-   * that as a broken edge and the index card said `answers.version.unresolved`, while the answer page offered
-   * the refresh anyway; the press then threw, and its English landed in the page body. Both sides
-   * now read `answerHistoryUnreadable`, so a malformed thread is refused before it is offered.
-   */
+  /** The card and the refresh button read one predicate, so they never disagree. */
   it('names a malformed thread edge to the card and to the refusal alike', () => {
-    // `frontmatter`, not the row's derived `title`: this is the same object
-    // `prepareAnswerRefresh` reads back out of the file, which is what makes the two agree.
+    // The same object `prepareAnswerRefresh` reads back from the file.
     const malformed = { title: 'When?', answer_thread: 'dispute-records' };
     const heads = retainedAnswerHeads([{ slug: previous, title: 'When?', frontmatter: malformed }]);
     expect(heads[0]!.historyProblem, 'the index card would not have marked this').toBe('invalid');

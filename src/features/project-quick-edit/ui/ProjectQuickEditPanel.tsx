@@ -23,17 +23,9 @@ interface Props {
   project: Project;
   documentNewHref?: string | null;
   settingsHref?: string | null;
-  /**
-   * The closed trigger's weight. `ghost` on its own; a caller whose control row is already one
-   * filled primary plus outline siblings passes `outline` so the row reads as one group.
-   */
+  /** `ghost` alone; `outline` when the caller's control row is a primary plus outline siblings. */
   triggerVariant?: "ghost" | "outline";
-  /**
-   * The name this page shows, when it is a localized `display_<locale>` rather than the title.
-   * The field below edits the title; without this the drawer showed "Online Store" under
-   * "project name" while the page's h1 read the Korean name, and editing it changed a name the
-   * reader never sees (2026-09-25 sweep).
-   */
+  /** The localized name the page shows, so the hint says which key holds it; the field edits the title. */
   displayName?: string | null;
   /** The locale `displayName` belongs to, named in the hint as the key that holds it. */
   displayLocale?: string;
@@ -49,10 +41,7 @@ interface QuickEditValues {
 // The canonical control: `--control-h-lg` (40px) height, rounded-chip, five surface steps.
 const FIELD_INPUT_CLASS = fieldClass({ size: "lg", className: "mt-1.5 w-full" });
 
-/*
- * The way out to full edit: a quiet text control at the ramp's 24px floor, standing in the
- * footer's one row beside the two actions rather than alone on a line under them.
- */
+/* The way out to full edit: a quiet text control on the footer row. */
 const TERTIARY_LINK_CLASS = controlClass({
   shape: "link",
   className:
@@ -128,8 +117,7 @@ function QuickEditDrawerFrame({
 function toQuickEditValues(project: Project): QuickEditValues {
   return {
     name: project.name,
-    // The starter's default description (English boilerplate) is treated as a placeholder
-    // rather than a real value, so the field starts empty. Nobody should have to delete it before writing.
+    // The starter's English boilerplate description starts empty, so nobody deletes it first.
     description: isStarterProjectDescription(project.description)
       ? ""
       : project.description,
@@ -169,23 +157,14 @@ export function ProjectQuickEditPanel({
     toQuickEditValues(project),
   );
   const [pending, setPending] = useState(false);
-  /*
-   * Both halves of the failure. The empty-name refusal is copy this panel wrote, so its `detail`
-   * is null; a rejected patch carries the vault layer's English on `detail` and shows a sentence.
-   */
+  /* Panel-written refusals have a null `detail`; a rejected patch carries the vault layer's English. */
   const [error, setError] = useState<FailureCopy | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const { patchProject } = useProjectMutations();
 
   /*
-   * Re-seed on a real subject change only (bug sweep 2026-09-01). The Project
-   * object is rebuilt by every external vault refresh — an agent write, the
-   * folder-watch poll, another surface's save — and this effect used to reset
-   * `values` unconditionally on each rebuild, silently discarding whatever the
-   * user had typed into the open drawer. A different project always re-seeds;
-   * the same project re-seeds only while the buffer carries no local edits.
-   * The baseline always follows disk, so Save's dirty check compares against
-   * the latest external content (the mtime guard still protects the file).
+   * Re-seed on a real subject change only: every vault refresh rebuilds the Project, and a reset
+   * would discard typed edits. The same project re-seeds only while nothing is edited locally.
    */
   const baselineRef = useRef(baseline);
   const lastProjectSlugRef = useRef(project.slug);
@@ -239,8 +218,7 @@ export function ProjectQuickEditPanel({
   const handleSubmit = async () => {
     const nextPatch = toProjectPatch(values);
 
-    // Only the name is required — the description is optional (the counterpart of not
-    // making anyone delete the starter default).
+    // Only the name is required.
     if (!nextPatch.name?.trim()) {
       setError({ sentence: t("errorEmpty"), detail: null });
       return;
@@ -276,12 +254,7 @@ export function ProjectQuickEditPanel({
     <>
       <Button
         type="button"
-        /*
-         * The hero's control row is one filled primary and outline siblings, so this trigger can
-         * be told to join them. Left to itself it is `ghost`, which beside a filled and an outline
-         * button made three weights in one row — the owner read the result as the page looking
-         * crooked (2026-09-19).
-         */
+        /* Joins the hero row's weights when told; otherwise `ghost`. */
         variant={open ? "outline" : triggerVariant}
         size="sm"
         data-testid="public-quick-edit-toggle"
@@ -296,21 +269,10 @@ export function ProjectQuickEditPanel({
         {open ? t("closeLabel") : t("openLabel")}
       </Button>
 
-      {/* It has a way out. This used to be `{open ? … : null}`, so the dim and the drawer
-          appeared and disappeared together **in one frame** (no entrance, no exit).
-          `Surface` owns the exit window (`EXIT_WINDOW_MS`), the exit class
-          (`topology-chrome-out`), and `inert`, so nothing extra is needed here. Zero new
-          tokens, durations, or colours — it rides the chrome motion family as is.
-
-          `origin` is **the trigger's direction**. The button that opens this drawer is at
-          the hero's top right and the drawer lives on the right — being born in the centre
-          would put the birth place somewhere other than where it was pressed (the motion
-          seat's rejection reason).
-
-          The form values are owned by this component (`values`/`baseline`/`notice`), so
-          there is **no external model to hold** during the exit window — the departing
-          surface never becomes an empty box. (HomePage's edge panel uses `useHeldValue`
-          because its model is owned by the parent.) */}
+      {/*
+ `Surface` owns the exit window, class and `inert`; `origin` is the trigger's side. This
+ component owns the values, so nothing needs holding during the exit.
+ */}
       <Surface
         open={open}
         origin="top right"
@@ -426,10 +388,7 @@ export function ProjectQuickEditPanel({
             ) : null}
           </div>
 
-          {/* Footer: one row (2026-09-25 sweep). The way out to full edit on the left, the
-              quiet revert and the one primary action on the right, all three on the same 40px
-              step: revert was a 32px ghost beside the 40px apply, and full edit an 11px link
-              alone on a line under them. */}
+          {/* Footer: full edit on the left, revert and apply on the right, all on the 40px step. */}
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 border-t border-[color:var(--color-border-soft)] px-5 py-4">
             <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
               {documentNewHref ? (

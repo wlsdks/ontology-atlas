@@ -1,47 +1,9 @@
 import type { useTranslations } from "next-intl";
 
 /**
- * **One finding, retold as something a person can act on — in one place.**
- *
- * ⚠️ **This function existed twice and the copy it produced was unreadable.** A
- * `describeWikiProblem` sat in `WikiTemplateProblems.tsx` and a `describe` with the same
- * body sat in `AnswerRevisionComparison.tsx` (carry-forward, 2026-09-11), while
- * `LibraryCheckReport.tsx` carried a third as `describeStructuralRow`. Three copies of one
- * decision is three places to fix a sentence and two places to forget.
- *
- * What the owner read on 2026-09-12, on a page their agent had just written:
- *
- * > *"I cannot tell what this is saying from a person's side — it just looks like
- * > alien script. This needs fixing right now."*
- *
- * The card above the page said `uncited-fact:31` followed by backticks, a citation
- * grammar, and the names of a CLI command and an MCP tool. Every one of those is true and
- * none of them is addressed to the person reading. So the retelling is split into pieces a
- * surface can place:
- *
- * | Piece | What it answers |
- * |---|---|
- * | `sentence` | what is wrong, in their language, with every name already a title |
- * | `action` | what to do about it, as its own sentence |
- * | `where` | the place in the page, in words — never a code glued to a number |
- * | `targets` | the pages and originals the sentence names, each openable |
- * | `segments` | the sentence in order, so a surface makes each name pressable in place |
- * | `code` | the machine word, for the disclosure that holds it |
- *
- * `segments` is the sixth piece rather than five because of the rule it serves: a name in
- * the sentence is a **link to the thing**, which a surface cannot build from a finished
- * string without parsing its own prose back out. `sentence` stays beside it because two
- * consumers need a plain string and neither can press anything: the row-collapsing key in
- * `LibraryCheckReport` and the blocking reason beside a disabled Save button.
- *
- * ## The English message is still the machine's copy
- *
- * `problem.message` is written once, in English, for the things that read it —
- * the CLI's `wiki-validate`, `validate_wiki`, an agent's retry. A person gets
- * `problem.detail`, the sentence's pieces, reassembled in their own language. `t.has`
- * rather than a table of known keys: the validator owns which sentence it just found, and
- * a key it grows before this catalogue does degrades to that English message rather than
- * rendering a raw `library.wiki.problem.…` path.
+ * One finding retold for a person, in pieces a surface can place: its `sentence`,
+ * its `action`, `where`, `targets`, `segments` (names pressable in place) and `code`.
+ * The English message in `problem.message` stays the machine copy the CLI and MCP print.
  */
 
 /** One finding as the validator hands it over. */
@@ -54,13 +16,7 @@ export interface WikiTemplateProblem {
   detail?: { key: string; values?: Record<string, string> };
 }
 
-/**
- * A thing the sentence names that a person can open.
- *
- * `name` is what they read — a page's own title, a file's name with no folder in front of
- * it — because a path is an address and a title is a thing. `id` is what the surface
- * opens with: a wiki slug for a page, a folder-relative path for an original.
- */
+/** A named thing a person can open: `name` is what they read, `id` is what the surface opens. */
 export interface WikiProblemTarget {
   kind: "page" | "source";
   name: string;
@@ -71,24 +27,14 @@ export interface WikiProblemTarget {
 export interface WikiProblemWhere {
   /** "line 31 under Facts" — already localised, never `uncited-fact:31`. */
   label: string;
-  /**
-   * The same place with the section left off ("line 31"), for the second and later place
-   * in one row: *"line 19 under Facts, line 20 under Facts"* says the section twice about
-   * one section. Absent where the label carries no section to leave off.
-   */
+  /** The place without its section, for the second and later place in one row. */
   lineLabel?: string;
   /** The section the line sits under, when the finding's code fixes one. */
   section?: string;
   line?: number;
 }
 
-/**
- * A sentence in order: text, a name to press, or the place to press.
- *
- * Not exported: every consumer reaches it through `WikiProblemWords.segments`, and an
- * exported name with no importer is the kind of misinformation the dead-code ratchet
- * exists to refuse.
- */
+/** A sentence in order: text, a name to press, or the place to press. */
 type WikiProblemSegment =
   | { kind: "text"; text: string }
   | { kind: "target"; target: WikiProblemTarget }
@@ -114,16 +60,8 @@ export interface WikiProblemContext {
   /** A wiki page's own title, by slug (`wiki/payments-01`). Absent falls back to the name. */
   pageTitle?: (slug: string) => string | undefined;
   /**
-   * **How precisely the place is named in the sentence.** `full` is the default and the
-   * page's own card: a person standing on the page wants the line.
-   *
-   * `section` is the computed check report, and it is not a downgrade for its own sake.
-   * That page collapses findings that name one page and retell one sentence into a single
-   * row whose door carries every line (`merchant-onboarding · :19 · :20`, council
-   * 2026-09-12). A line inside the sentence would make two identical findings two
-   * different sentences and undo it, while printing the same number twice in one row.
-   * Where a code has no section to name, the line comes back — two mistyped citations on
-   * two lines *are* two rows.
+   * The `full` place names the line; `section` serves the check report, which collapses identical
+   * findings into one row whose door carries every line.
    */
   place?: "full" | "section";
 }
@@ -143,11 +81,7 @@ function pageName(slug: string): string {
   return fileName(pageSlugOf(slug));
 }
 
-/**
- * The validator joins a list of paths already wrapped in backticks, because its own
- * consumer prints Markdown. A person is not reading Markdown, so the wrapper comes off
- * here rather than being left on screen as punctuation nobody typed.
- */
+/** The validator wraps paths in Markdown backticks; a person is not reading Markdown. */
 function pathList(value: string): string[] {
   return value
     .split(",")
@@ -183,10 +117,7 @@ function whereOf(
   };
 }
 
-/**
- * **Which names in the catalogue are absent files, measured rather than assumed.** A door
- * may be built only for a thing that is there; everything else is a name in words.
- */
+/** Catalogue names that are absent files; a door is built only for a thing that is there. */
 const MISSING_PATH_KEYS = new Set([
   // The citation names a file the folder walk did not find — that is the finding.
   "citation-target-missing-folder",
@@ -196,16 +127,8 @@ const MISSING_PATH_KEYS = new Set([
 ]);
 
 /**
- * What each placeholder in a retelling stands for.
- *
- * The validator's `values` are addresses; the screen wants things. `other` is another
- * page, `sources` is a list of originals, `path` is one original, and `target` is a page
- * that does **not** exist — which is why it is a name and never a door: a link to a page
- * nobody wrote is a link to nothing. ⚠️ `path` follows the same rule, and it took a
- * capture to see it (2026-09-12): `citation-target-missing-folder` *means* the file is not
- * in the folder, and the report drew its name as a live indigo press to a file nothing
- * could open. Everything else is text the sentence interpolates and nobody can press: a
- * field name, a section list, a citation somebody mistyped.
+ * What each placeholder stands for. `target` and a missing-file `path` name things that do
+ * not exist, so they are names, never doors; the rest is text nobody can press.
  */
 function slotsFor(
   name: string,
@@ -243,13 +166,8 @@ function slotsFor(
 }
 
 /**
- * Split a raw retelling on its placeholders and fill each one with a thing.
- *
- * `t.raw` rather than `t`: a finished string cannot say which of its words is a page and
- * which is punctuation, and re-finding a title inside prose by substring is how a page
- * called `Facts` would turn a section heading into a link. The messages here carry only
- * simple `{name}` placeholders — `icu-message-tags.contract.test.ts` owns the rule that
- * keeps richer ICU out of them — so the split is exact.
+ * Split a raw retelling on its placeholders. `t.raw`, not `t`, so a title is never re-found in
+ * prose by substring; `icu-message-tags.contract.test.ts` keeps the placeholders simple.
  */
 function segmentsOf(
   template: string,
@@ -299,14 +217,7 @@ function flatten(segments: readonly WikiProblemSegment[]): string {
     .join("");
 }
 
-/**
- * The finding in the reader's language, in pieces a surface can place.
- *
- * Every surface that shows a wiki finding calls this: the two cards beside a page, the
- * rows of the computed check report, and the blocking reason in the revision dialog. That
- * is the point — a person who reads the same finding on the report and then on the page
- * must read the same sentence, or the two screens are describing two folders.
- */
+/** The finding in the reader's language; every surface calls this so all read one sentence. */
 export function describeWikiProblem(
   problem: WikiTemplateProblem,
   t: Translate,
@@ -339,34 +250,14 @@ export function describeWikiProblem(
   };
 }
 
-/**
- * The machine's own line for one finding: the code, its line anchor, and the English
- * sentence the CLI and the MCP tool print.
- *
- * It is deliberately **not** localised. A person opening the technical disclosure is
- * comparing this screen with a terminal or an agent transcript, and a translated synonym
- * there is a word they then have to map back (the same reason the check report's group
- * headings keep the code — both design seats, council 2026-09-12).
- */
+/** Code, anchor and English message, deliberately not localised so it matches the CLI and MCP. */
 export function wikiProblemMachineLine(problem: WikiTemplateProblem): string {
   return `${problem.code}${problem.line ? `:${problem.line}` : ""} — ${problem.message}`;
 }
 
 /**
- * One row per thing a person fixes, not per time the validator fired.
- *
- * Two bullets under `## Facts` with no citation are two findings with one sentence and
- * one action; printed as two rows the card said *"there is no source behind line 19"* and
- * then, verbatim, *"add one place from an original, or move it under Not in sources"*
- * twice — four lines to say one thing about two places (measured 2026-09-12 on the
- * four-page fixture). So identical findings become **one** row whose place is two
- * presses. It is the same dedup the computed report already does on its door (council
- * 2026-09-12); the difference is that here the places stay inside the sentence, because
- * on the page itself the place is what a person acts on.
- *
- * The technical disclosure still lists every finding separately: a code and its line
- * anchor are the machine's enumeration, and collapsing those would change what the screen
- * says `wiki-validate` found.
+ * One row per thing a person fixes: identical findings merge and keep each place in the
+ * sentence. The technical disclosure still lists every finding separately.
  */
 export interface WikiProblemRow {
   /** The row's sentence, from the first finding it stands for. */
@@ -386,10 +277,8 @@ export function groupWikiProblems(
   const at = new Map<string, number>();
   for (const problem of problems) {
     const words = describeWikiProblem(problem, t, context);
-    // The sentence with its place taken out: two findings that differ only in where they
-    // are are one thing to fix in two places. Field by field with a unit separator — the
-    // same key discipline `LibraryCheckReport` records, because a page title or a file
-    // name can hold any character a folder allows.
+    // Findings that differ only in place are one fix. Unit-separated fields, because a title
+    // or file name can hold any character a folder allows.
     const shape = words.segments
       .map((segment) =>
         segment.kind === "where" ? "␟" : segment.kind === "text" ? segment.text : segment.target.id,

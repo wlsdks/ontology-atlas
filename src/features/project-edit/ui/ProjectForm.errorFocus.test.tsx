@@ -15,28 +15,8 @@ vi.mock('@/shared/lib/use-prefers-reduced-motion', () => ({
 }));
 
 /**
- * When a save is rejected, **the reason must reach the eye of the person who pressed it.**
- *
- * ## Why this test exists (measured 2026-08-07)
- *
- * Pressing save on the edit screen put the rejection notice at **top 802 · bottom 872 at
- * 390×844** — with a viewport of 844 it was clipped at both ends and caught behind the
- * bottom tab bar. At 1512×900 it was perfectly visible at 628–676. **The longer the form
- * and the shorter the screen, the worse the mismatch** — that is, a defect invisible
- * forever if you only check on a wide screen.
- *
- * The cause in that instance (being able to press save with no vault) is now prevented by
- * disabling the button up front. But errors **with no field** remain — a failed save, a
- * write conflict. `focusField` takes validation errors to their field; those errors have
- * nowhere to go but this banner.
- *
- * ## Why focus is measured rather than pixels
- *
- * "Is it in a visible position" varies with form length, viewport, and translation length,
- * so pinning one combination goes quietly wrong in another. **Is focus on that banner**
- * means the same thing across all of them, and gives the same value to someone who cannot
- * see the screen. Scrolling is what the browser adds to that focus move (jsdom does not
- * implement `scrollIntoView`, so only focus is asserted here — the same discipline as `focusField`).
+ * A rejected save must move focus to the reason. Focus is asserted rather than pixels because
+ * visibility varies with form length and viewport; jsdom lacks `scrollIntoView`.
  */
 
 const project: Project = {
@@ -108,12 +88,7 @@ describe("ProjectForm save rejection focus", () => {
     expect(onSubmit, "submit was never called, so this test proves nothing").toHaveBeenCalledTimes(1);
 
     const banner = await screen.findByTestId("project-error-banner");
-    /*
-     * ⚠️ The banner shows **the copy written for a failed save**, not the thrown message
-     * (v1.2.2: `no-raw-error-copy` R1). This fixture throws Korean; the real rejections throw
-     * English from the vault layer, and a screen cannot translate either of them. The thrown
-     * text is kept where a developer reads it and a reader does not.
-     */
+    /* The banner shows the copy written for a failed save, not the thrown message (`no-raw-error-copy`). */
     expect(banner).toHaveTextContent(koMessages.settings.projectForm.validation.saveFailed);
     expect(banner.getAttribute("data-failure-detail")).toContain(
       "데모 모드에서는 저장할 수 없습니다",

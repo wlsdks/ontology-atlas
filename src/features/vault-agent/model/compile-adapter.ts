@@ -81,9 +81,7 @@ function finalProposalStatuses(exchanges: TurnAssembly['exchanges']): Map<string
       const path = wikiPath(payload.path);
       if (!path) continue;
       if (result.name === 'propose_wiki_page') statuses.set(path, !result.isError);
-      // Any later Wiki read for the same path starts a new read attempt (or reports a
-      // changed/unavailable continuation), so a previous proposal for that path is no
-      // longer current. The next model request must not finish on stale history.
+      // A later read of the same path makes an earlier proposal for it stale.
       if (result.name === 'read_wiki_page' && statuses.has(path)) statuses.set(path, false);
     }
   }
@@ -91,26 +89,9 @@ function finalProposalStatuses(exchanges: TurnAssembly['exchanges']): Map<string
 }
 
 /**
- * The adapter a Compile turn uses on the connect-by-address route.
- *
- * **Why not `localAdapter`.** That adapter is the ontology conversation's, and it
- * enforces that conversation's shape: the first round trip is pinned to `get_concept` or
- * `list_kinds` by name, the allowed tools are narrowed to that one, and after three tool
- * rounds the tools are withdrawn and an answer is forced. Every one of those is right for
- * "answer a question about the map" and wrong here — a Compile turn's first call is
- * `read_source_text`, and narrowing the tool list to `list_kinds` would leave it with no
- * tool at all. Sharing that adapter would mean adding a job-kind branch to a file whose
- * rules were each written for one measured failure of a different job.
- *
- * What is kept is the one measurement that is about the runner rather than the job:
- * `reasoning_effort: 'none'`. Measured 2026-08-02 against Ollama with gemma4:12b, the
- * first tool call took 59.7s at `low` and 0.632s at `none`. A local runner thinking for a
- * minute before opening a file it was told to open is time a person spends watching
- * nothing happen.
- *
- * Body assembly and response parsing are the OpenAI-compatible ones, which is what lets
- * Ollama, LM Studio, llama.cpp server, and vLLM run this unchanged with only the address
- * swapped.
+ * The Compile adapter for the connect-by-address route, apart from `localAdapter`, whose
+ * pinned first tool would leave Compile no tool. It keeps `reasoning_effort: 'none'` (first tool
+ * call 59.7s at `low`, 0.632s at `none`, gemma4:12b on Ollama).
  */
 export const compileAdapter: ProviderAdapter = {
   provider: 'local',
@@ -125,21 +106,7 @@ export const compileAdapter: ProviderAdapter = {
     return openaiAdapter.parseResponse(body);
   },
 
-  /**
-   * **A turn that read a file and then talked about it is not finished.**
-   *
-   * Measured 2026-09-06 in the installed app against Ollama: gemma4:12b called
-   * `read_source_text` once, received the text, and answered in prose. The loop takes a
-   * response with no tool call as a completed turn, so the person got a spinner that
-   * vanished and no card — the whole transfer spent for nothing. The same model produced
-   * two clean pages once told, in one deterministic sentence, to call the tool.
-   *
-   * This is the mechanism `providers/local.ts` already uses for the ontology conversation
-   * and for the same reason: a small model's compliance with a prompt-only instruction
-   * cannot be assumed, so the execution contract asks again. It is bounded — two nudges,
-   * inside the turn's own round cap — and it never fires once a page has been proposed,
-   * because then the turn really is finished.
-   */
+  /** A turn that read a file and answered in prose is nudged to propose, at most twice. */
   reviewResponse(turn: TurnAssembly, parsed: NormalizedResponse) {
     if (parsed.toolCalls.length > 0) return { action: 'accept' as const };
     if (turn.tools.length === 0) return { action: 'accept' as const };

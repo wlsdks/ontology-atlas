@@ -1,13 +1,6 @@
 /**
- * The in-app update state machine — pure, with no UI.
- *
- * Why it is separate: what is actually easy to get wrong here is not the drawing but **when to speak
- * up**. Asking too often is noise, failing to remember a dismissal is rude, and drawing a failure as
- * a success is a lie. None of those judgements involve rendering, so they become testable functions here.
- *
- * The nature of this surface — **the app spoke, the user did not ask.** So it does not steal
- * attention, is easy to dismiss, and remembers the dismissal. This app's charter of restraint applies
- * here as everywhere: no glow, no badge, no shake.
+ * The in-app update state machine, pure, so the rules of when to speak up are testable. The app
+ * spoke, the user did not ask: easy to dismiss, and the dismissal is remembered.
  */
 
 export type UpdatePhase =
@@ -41,12 +34,7 @@ export interface CheckPolicyInput {
   readonly manual?: boolean;
 }
 
-/**
- * May it check now?
- *
- * On the web the answer is **never** — a browser tab cannot replace itself, and speaking of updates
- * there proposes something impossible.
- */
+/** Never on the web, where a tab cannot replace itself. */
 export function shouldCheckForUpdate({
   isDesktop,
   now,
@@ -56,28 +44,18 @@ export function shouldCheckForUpdate({
   if (!isDesktop) return false;
   if (manual) return true;
   if (lastCheckedAt === null) return true;
-  // A clock that went backwards (a timezone change, a manual adjustment) is also due. Leaving the
-  // elapsed time negative means the next check never comes.
+  // A clock that went backwards is also due, or the next check never comes.
   const elapsed = now - lastCheckedAt;
   return elapsed < 0 || elapsed >= CHECK_INTERVAL_MS;
 }
 
-/**
- * May this version be shown to the user?
- *
- * A version already dismissed is not raised again. A dismissal means "not now", not "never", so
- * **the memory expires when the version goes up.**
- */
+/** A dismissal means "not now" and expires when the version goes up. */
 export function shouldSurfaceVersion(version: string, dismissedVersion: string | null): boolean {
   if (!version) return false;
   return version !== dismissedVersion;
 }
 
-/**
- * The progress copy **moved down to `shared/lib`** — the agent tool install needed the same
- * discipline, and when two features on one layer make the same judgement, one layer down is where it
- * belongs. It is re-exported here so existing callers of this module are untouched.
- */
+/** Re-exported from `shared/lib`, where the agent tool install shares it. */
 export { formatDownloadProgress } from '@/shared/lib/progress-format';
 
 /** One paragraph of release notes is enough. A popover that becomes reading material goes unread. */

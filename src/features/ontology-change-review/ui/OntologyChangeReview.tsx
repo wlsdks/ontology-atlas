@@ -19,19 +19,13 @@ import {
   type OntologyChangeSentence,
 } from '../lib/change-summary';
 
-/*
- * `none` is the plain word for a field that holds nothing: an empty list, or a key the change
- * deletes (`null`). `[]` and `null` are serialization, not the change — and since 2026-09-26 an
- * emptied relation key is deleted rather than written as `[]`, so printing the literal would show
- * the person a value the file never holds (owner inspection: "After []" on a removal).
- */
+/* `none` for an empty list or a deleted key: `[]` and `null` are serialization, not the change. */
 function formatValue(value: unknown, none: string): string {
   if (value === null || value === undefined) return none;
   if (Array.isArray(value) && value.length === 0) return none;
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  // A list of slugs is a list, and it reads as one per line. `["a","b"]` is the request's
-  // serialization, not the change (owner, 2026-09-06: the card read as a debugger's dump).
+  // A slug list reads one per line, not as its serialization.
   const list = stringList(value);
   if (list) return list.join('\n');
   try {
@@ -41,16 +35,7 @@ function formatValue(value: unknown, none: string): string {
   }
 }
 
-/**
- * Past this many characters a field value is folded to its first lines behind 「show more」.
- *
- * ⚠️ Measured on the owner's phone-height screenshot (2026-09-03): an agent's `add_concept` body
- * ran to about 2,400 characters of element lists, decision citations and a confidence paragraph,
- * and the permission card printed all of it — the 「Don't / Allow once」 buttons sat two screens
- * below the question. A checkpoint whose answer buttons are out of reach is a wall, not a
- * question. The first lines say what the change is; the rest is there on request, unclamped,
- * because nothing is hidden from a person who wants to read it before deciding.
- */
+/** Longer values fold behind "show more" so the answer buttons stay in reach. */
 const LONG_VALUE_CHARS = 320;
 const LONG_VALUE_LINES = 6;
 
@@ -58,11 +43,7 @@ function isLongValue(text: string): boolean {
   return text.length > LONG_VALUE_CHARS || text.split('\n').length > LONG_VALUE_LINES;
 }
 
-/**
- * A block of the change's own text, folded when it is long enough to push the two answers out of
- * reach. Shared by a field value and by one sentence of a sentence map, so a long reason folds the
- * same way a long body does rather than growing the card until the buttons leave the frame.
- */
+/** Change text folded when long enough to push the two answers out of reach. */
 function FoldedText({ id, text, tone, onExpandedChange }: { id: string; text: string; tone: 'value' | 'sentence'; onExpandedChange?: (expanded: boolean) => void }) {
   const t = useTranslations('ontologyChangeReview');
   const [open, setOpen] = useState(false);
@@ -71,11 +52,7 @@ function FoldedText({ id, text, tone, onExpandedChange }: { id: string; text: st
     <>
       <span
         id={id}
-        /*
-          The fold marker sits on the text itself rather than on the row around it: one row can now
-          carry a previous value and a new one, and a sentence map carries one of these per target,
-          so 「is this folded?」 is a fact about a block of text and not about the field.
-        */
+        /* The fold marker sits on the text block, since one row can carry a previous and a new value. */
         data-testid="ontology-change-review-text"
         data-long={long ? 'true' : undefined}
         data-folded={long ? String(!open) : undefined}
@@ -117,14 +94,8 @@ function FoldedText({ id, text, tone, onExpandedChange }: { id: string; text: st
 }
 
 /**
- * The name of a frontmatter key, in this product's words, with the key itself kept beneath it.
- *
- * ⚠️ Both halves are load-bearing. The plain word is what makes the row answerable — 「connection
- * reasons」 says what is being written where `relation_notes` only says which key holds it. The raw key stays
- * because it is what will literally appear in the Markdown, and because a person who opens the file
- * afterwards must find the same word there. A key this product cannot name in plain words shows
- * only its raw spelling; a friendly name invented for an unknown key is the one thing this card
- * must never do.
+ * A frontmatter key in plain words with the raw key beneath, as it appears in the file. An
+ * unknown key shows only its raw spelling; never invent a friendly name for it.
  */
 function FieldName({ fieldKey, testId }: { fieldKey: string; testId: string }) {
   const t = useTranslations('ontologyChangeReview');
@@ -147,14 +118,7 @@ function FieldName({ fieldKey, testId }: { fieldKey: string; testId: string }) {
   );
 }
 
-/**
- * One target and the sentence that will be written about it.
- *
- * `relation_notes` arrives as a map — eight reasons for eight targets — and it used to be printed
- * as one JSON string, then as one text block of alternating lines. Neither is a row a person reads.
- * One row per target, the target quiet and the sentence at reading size, is the only shape in which
- * 「is this right?」 can be answered per line.
- */
+/** One target and the sentence written about it, so each can be judged per line. */
 function SentenceRow({
   id,
   entry,
@@ -181,10 +145,7 @@ function SentenceRow({
         </p>
       )}
       {entry.change === 'removed' ? (
-        /*
-          A sentence that is going away says so in the field rows' own words — 「after: none」 —
-          rather than leaving an empty line under the one being removed.
-        */
+        /* A sentence going away says "after: none" in the field rows' words. */
         <p className="text-label leading-label text-[color:var(--color-text-secondary)]">
           <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">{t('afterLabel')}</span>
           {t('noValue')}
@@ -237,30 +198,15 @@ function ChangeDetails({
       return next;
     });
   };
-  /*
-   * ⚠️ **Never draw a before-value the request did not carry.** `OntologyChangeField.before` is
-   * populated only by an editor that already holds the document on disk; an ACP request carries the
-   * requested after-values and nothing else. So the card states which of the two situations it is
-   * in rather than letting a person read a bare value as 「this replaces nothing」.
-   */
+  /* Never draw a before-value the request did not carry: ACP requests carry only after-values. */
   const carriesBefore = item.fields.some((field) => field.before !== undefined);
 
   return (
     <>
       {/*
-        ⚠️ **One grid for the whole list, not one grid per row.** Each row used to be its own
-        `grid grid-cols-[4.5rem_…]`, so the labels lined up only because 4.5rem was written four
-        times — and 4.5rem is 72px holding four 11px labels of two characters each, about 22px of
-        text. The remaining 50px read as a gap between a label and its own value, which is what
-        made this block look crooked (owner, on the installed rc.13 build).
-
-        `auto` sizes the shared column to the widest label instead, so alignment is a property of
-        the structure rather than of a number that has to be kept true by hand, and a longer word
-        or another locale cannot break it.
-
-        The field list below keeps its explicit 6rem: those keys are raw frontmatter names, and
-        `contextual-meaning-editor.spec.ts` measures that column at 96px inside a 352px panel.
-      */}
+ One grid for the whole list, whose `auto` column fits the widest label. The field list keeps
+ 6rem, which `contextual-meaning-editor.spec.ts` measures at 96px.
+ */}
       {item.relation ? (
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-label">
           {([
@@ -275,8 +221,7 @@ function ChangeDetails({
           ))}
           {item.relation.why ? (
             <>
-              {/* The reason is prose and the only new thing here: from/relation/to already appear
-                  in the row's own summary, so this line gets the space to be read. */}
+              {/* The reason gets the space; from/relation/to already appear in the row summary. */}
               <dt className="text-[color:var(--color-text-quaternary)]">{t('why')}</dt>
               <dd className="break-words leading-prose text-[color:var(--color-text-secondary)]">
                 {item.relation.why}
@@ -291,11 +236,7 @@ function ChangeDetails({
           {visibleFields.map((field) => {
             const sentences = sentenceMapChange(field.after, field.before);
             if (sentences) {
-              /*
-                A sentence map takes the full width instead of the 6rem key track: its values are
-                sentences, and 96px of label beside them would leave about 240px of the 352px panel
-                for prose that is the whole point of the row.
-              */
+              /* A sentence map takes the full width: 96px of label would leave too little room for prose. */
               return (
                 <div key={field.key} data-testid="ontology-change-review-entry-group" className="grid gap-1.5">
                   <FieldName fieldKey={field.key} testId="ontology-change-review-entry-key" />
@@ -330,12 +271,7 @@ function ChangeDetails({
                   className="min-w-0 break-words text-[color:var(--color-text-primary)]"
                 >
                   {field.before === undefined ? null : (
-                    /*
-                      Before and after are stacked and labelled rather than joined by an arrow.
-                      A body, an element list and a reason are all multi-line values here, and
-                      `old → new` on one line is legible only while both sides are short — one
-                      shape that holds for every value beats two that depend on its length.
-                    */
+                    /* Before and after stacked and labelled, since multi-line values break an inline arrow. */
                     <>
                       <span className="mb-1 block whitespace-pre-line break-words text-[color:var(--color-text-quaternary)]">
                         <span className="mr-1.5 text-caption">{t('beforeLabel')}</span>
@@ -466,11 +402,7 @@ function ChangeItemRow({
         {mounted ? (
           <div
             ref={contentRef}
-            /*
-              ⚠️ `pt` matters here in a way it does not on the other disclosures: this row carries a
-              filled active background, so without it the first label sits flush against that fill and
-              reads as part of the header rather than as the start of the detail.
-            */
+            /* The top padding separates the detail from this row's filled active background. */
             className="ai-row-disclosure-body grid gap-2 pb-2.5 pl-7 pr-1 pt-1.5"
           >
             <ChangeDetails key={item.key} item={item} operation={operation} valueBasis={valueBasis} />
@@ -518,14 +450,7 @@ export function OntologyChangeReview({
       data-active-item={activeIndex}
       className="grid gap-2"
     >
-      {/*
-        ⚠️ **The address line, not a second title.** The card's own headline now says the change in
-        plain words, so repeating 「Update concept」 at the same weight underneath would be the
-        duplicate line this card has been criticised for twice. What is left here is what the
-        sentence above cannot carry: the exact document the bytes land in — a file header, the way a
-        pull request names the file before showing the hunk — with the operation demoted to a chip
-        beside it.
-      */}
+      {/* The address line names the exact document, with the operation as a chip beside it. */}
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span

@@ -3,25 +3,9 @@ import { slugify } from '@/shared/lib/slugify';
 import type { BlockManifest } from './block-manifest';
 
 /**
- * The merge plan for a block import — **a pure dry run**. This module never touches the
- * vault: it takes the inputs (raw `.md` files plus the set of existing slugs) and returns,
- * as data only, "what will be written under which slug". The actual write happens after
- * the user approves in the dialog, through the existing vault write path (`createDoc`).
- * Zero writes before approval is an absolute contract.
- *
- * Consistency with the CLI's `node $ATLAS/cli/src/index.mjs import`
- * (`cli/src/commands/import.mjs`):
- * - kind: only frontmatter `kind:` is trusted; kindless files are skipped (identical).
- * - slug: frontmatter `slug:` wins, otherwise the file path with `.md` removed (identical —
- *   export preserves the folder structure, so the CLI's kind-folder auto-prefix is unnecessary).
- * - Duplicate slugs within one batch also count as conflicts (identical — `claimedSlugs`).
- * - A `-2`/`-3` suffix when conflict avoidance fails (identical — `nextFreeSlug`).
- * - One deliberate difference: the CLI's `--rename` does not rewrite wiki links after a
- *   rename, but a block is "a bundle of a subgraph that references itself", so when the
- *   user chooses prefix resolution the `[[old]]` and `(...old.md)` references *inside* the
- *   block follow the new slug too — the same regex contract as the app's
- *   `renameDoc(rewriteBacklinks)`. Existing documents in the vault are untouched (their
- *   slugs still exist).
+ * The block import merge plan, a pure dry run matching the CLI's `import`
+ * (`cli/src/commands/import.mjs`) on kind, slug, conflicts and suffixes. The one difference:
+ * prefix resolution rewrites references inside the block, as `renameDoc(rewriteBacklinks)` does.
  */
 
 export type BlockConflictResolution = 'skip' | 'prefix';

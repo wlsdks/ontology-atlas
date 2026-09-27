@@ -21,16 +21,8 @@ import { useRecentVaultReachability } from '../model/use-recent-vault-reachabili
 import { MissingFolderGroup, type MissingFolderReviewMode } from './MissingFolderGroup';
 
 /**
- * The known folders, each stating what it holds and whether it opens.
- *
- * **One component, two seats**, and that is the point rather than a convenience: the same
- * list is the launch chooser (`DesktopVaultWelcome`) and the body of the rail's switcher.
- * Two implementations would be two answers to "what does this folder contain", and the
- * whole defect being fixed here is the app being unclear about which folder is which.
- *
- * **Not a list of bare names.** A folder name alone does not distinguish `atlas` from
- * `atlas-old`, which is exactly the moment a person is in when they reach this list. Every
- * row carries what is inside it, when it was last open, and whether it can be opened now.
+ * The known folders, each stating what it holds and whether it opens. One component for the
+ * launch chooser and the rail switcher, so both answer "which folder is which" the same way.
  */
 export function RecentVaultList({
   records,
@@ -52,32 +44,11 @@ export function RecentVaultList({
   busy: boolean;
   onOpen: (record: LocalFsHandleRecord) => void;
   onForget: (record: LocalFsHandleRecord) => void;
-  /**
-   * Stops listing several folders in one write — the missing-folder group's "forget all".
-   * Without it each folder goes through `onForget`, and the list redraws once per folder.
-   */
+  /** Forgets several folders in one write, so the list redraws once. */
   onForgetAll?: (records: readonly LocalFsHandleRecord[]) => void;
-  /**
-   * Opens the folder picker, so a row that cannot be pressed is still not a dead end.
-   *
-   * A `missing` or `blocked` row states a problem and offers no open. Without this the only
-   * action ever offered for it was to throw the folder out of the list, and the control that
-   * would actually recover it sat elsewhere on the screen, labelled for folders the list does
-   * not hold - which is not what the person is looking at (interaction seat, 2026-09-13).
-   * Missing folders offer it once, from their group; a `blocked` row keeps its own.
-   */
+  /** Opens the folder picker, so a row that cannot be pressed is still not a dead end. */
   onLocate?: () => void;
-  /**
-   * **This list is the screen's answer, so it takes the screen's one accent stroke.**
-   *
-   * Set on the launch chooser and nowhere else. Without it the chooser lit the wrong thing:
-   * the rows were border-less panels while the "open another folder" and "just start" cards
-   * below carried `--color-indigo-brand`, so on a screen asking which of your two folders
-   * to open, the only saturated stroke was the door that makes a third (design-lead seat,
-   * 2026-09-13, measured by scanning the column at x=547 - the single indigo run sat at
-   * y=555-622, below the list entirely). The rail switcher leaves it off: there the list is
-   * one part of a popover, not the whole question.
-   */
+  /** The chooser's one accent stroke; the rail switcher leaves it off. */
   emphasis?: boolean;
   /** The viewport chooser fills its allocated space; popovers retain their compact cap. */
   scroll?: 'page' | 'contained' | 'viewport';
@@ -86,35 +57,19 @@ export function RecentVaultList({
    * a popover that grows downward. `MissingFolderReviewMode` says why the two differ.
    */
   missingReview?: MissingFolderReviewMode;
-  /**
-   * A line that belongs under the list — the chooser's release valve. It is drawn by the list,
-   * with the list, so it never stands under an empty space for the frames before the list
-   * appears and then jumps down by the list's height.
-   */
+  /** A line under the list, drawn with it so it never jumps down when the list appears. */
   footnote?: ReactNode;
   className?: string;
 }) {
   const t = useTranslations('vaultSwitch');
   const reachability = useRecentVaultReachability(records);
   /*
-   * One clock for the whole list, **taken once when the list mounts**. Reading `Date.now()`
-   * per row would let two rows drawn in the same paint disagree about what "now" is, and
-   * the ladder's boundaries (59 vs 60 minutes) are exactly where that shows.
-   *
-   * It is mount-time state rather than a read during render because a read during render is
-   * impure - the same list would age slightly on every unrelated re-render, which
-   * `react-hooks/purity` rejects by name. `DocFrontmatterBlock`'s `viewOpenedAtMs` is the
-   * same pattern for the same ladder.
+   * One clock for the whole list, taken at mount: per-row reads disagree at ladder boundaries,
+   * and a read during render is impure (`react-hooks/purity`).
    */
   const [nowMs] = useState(() => Date.now());
   const listRef = useRef<HTMLDivElement | null>(null);
-  /*
-   * **Where focus goes once the last missing folder is forgotten.** The pressed button leaves the
-   * page with the group, and focus left on nothing drops to `<body>` (or, from the review dialog,
-   * to the page's `<main>`), so the next Tab restarts from the top. It lands on the list's first
-   * control instead: the person is back to choosing a folder. While missing folders remain, the
-   * group keeps focus itself (`MissingFolderGroup`).
-   */
+  /* After the last missing folder is forgotten, focus lands on the list's first control. */
   const refocusAfterForget = useRef(false);
   const rows = reachability ? buildRecentVaultRows({ records, reachability, currentKey }) : [];
   const { listed, missing } = partitionRecentVaultRows(rows);
@@ -140,10 +95,7 @@ export function RecentVaultList({
     [onForget, onForgetAll],
   );
 
-  /*
-   * Nothing is drawn until the probe has answered (`useRecentVaultReachability`): the first
-   * frame of this list is its real shape, not five pressable rows that fold a frame later.
-   */
+  /* Nothing is drawn until the probe answers, so the first frame is the real shape. */
   if (!reachability || rows.length === 0) return null;
   const wide = scroll !== 'contained';
 
@@ -249,20 +201,8 @@ function RecentVaultRowView({
       })
     : t('contentsUncounted');
   /*
-   * ⚠️ **The count carries its own age, not the row's.**
-   *
-   * `lastAccessedAt` and `countedAt` are two clocks and they really do diverge: `openRecent`
-   * writes `lastAccessedAt: now` to the recent list *before* it loads the folder
-   * (`use-local-vault.ts`), and the counts are written only after a load that succeeds. So a
-   * folder that was opened and then refused - permission denied, path gone, the very states
-   * this list exists to warn about - showed weeks-old counts beside "opened just now". The
-   * type comment and the decision record both claimed the age was labelled while only the
-   * opening's age was on screen, which made the cache look audited when it was not (steward
-   * and evidence seats, 2026-09-13).
-   *
-   * Shown only when the two ages differ, so an ordinary row stays one line: on the common
-   * path the counts were taken by the load that the opening triggered, and repeating the
-   * same age twice would be noise.
+   * The count carries its own age: `openRecent` writes `lastAccessedAt` before loading, so a
+   * refused folder can show old counts beside "opened just now". Shown only when the ages differ.
    */
   const countedAge = row.counts ? computeEditAge(row.counts.countedAt, nowMs) : null;
   const countedLabel =
@@ -272,11 +212,7 @@ function RecentVaultRowView({
   const notice = noticeFor(row.reachability, t);
   const openable = canOpenReachability(row.reachability);
   const compactNotice = wrapName && !openable;
-  /*
-   * The accessible name carries the facts the sighted reader gets from the three lines,
-   * because a row whose name is only the folder's name is the bare-name list again for
-   * anyone using a screen reader.
-   */
+  /* The accessible name carries the facts, or a screen reader hears only the bare name. */
   const openAriaLabel = [
     t('openFolder', { name: row.name }),
     row.path,
@@ -316,13 +252,7 @@ function RecentVaultRowView({
               {t('lastOpenBadge')}
             </span>
           ) : null}
-          {/*
-            In the compact popover the row's "Open" wears the same chip face as the "Forget"
-            beside it. It was 11px plain text next to a bordered 9.5px chip, so one row spoke two
-            grammars for its two actions (inspection, 2026-09-25). It stays a label, not a
-            second button - the whole row is the press target - so it is hidden from the
-            accessibility tree, which already has the row's own name.
-          */}
+          {/* The compact "Open" wears the chip face; it is a label, hidden from the accessibility tree. */}
           {openable ? (
             <span
               aria-hidden={wrapName ? undefined : true}
@@ -381,8 +311,7 @@ function RecentVaultRowView({
     </>
   );
 
-  // The divider is drawn once, by the wrapper. Repeating it on the pressable child put two
-  // hairlines on one seam.
+  // The wrapper draws the divider; repeating it here doubles the hairline.
   const rowClass = cn(
     'grid min-w-0 gap-3',
     wrapName
@@ -410,9 +339,7 @@ function RecentVaultRowView({
           onClick={() => onOpen(row.record)}
           disabled={busy}
           aria-label={openAriaLabel}
-          // The neutral hover lift comes from the axis, not a hand-written declaration: the
-          // hover-axis ratchet counts hand hovers inside `controlClass` and only ever lets
-          // that count fall.
+          // Hover comes from the axis; the hover-axis ratchet only lets hand hovers fall.
           className={controlClass({
             shape: 'row',
             stacked: true,
@@ -423,20 +350,9 @@ function RecentVaultRowView({
           {body}
         </button>
       ) : (
-        /*
-         * **A folder that cannot be opened is not a button.** Leaving it pressable and
-         * failing afterwards spends the person's press to tell them something the probe
-         * already knew, and it teaches that a press here may or may not mean anything. The
-         * row keeps its facts, states the reason, and offers the action that is actually
-         * available: stop listing it.
-         */
+        /* A folder that cannot be opened is not a button; the row states why and offers forget. */
         <div className={rowClass}>{body}</div>
       )}
-      {/*
-        The recovery action, on the rows that need one. It is the same picker the screen
-        offers elsewhere, but labelled for the folder in front of the person rather than for
-        a folder Atlas has never seen.
-      */}
       {!openable && onLocate ? (
         <div className={wrapName ? 'mb-3 ml-15 flex shrink-0 sm:mb-0 sm:ml-0' : 'flex justify-start px-3 pb-2.5 pl-[52px]'}>
           <button
@@ -447,13 +363,7 @@ function RecentVaultRowView({
             aria-label={[t('locateFolder', { name: row.name }), row.path]
               .filter(Boolean)
               .join(' · ')}
-            /*
-             * `atlas-touch-floor-wide` — `shape: 'chip'` carries only the height half of the
-             * touch floor, so this measured 41.5x44 under a coarse pointer, which the repo's
-             * own `touch-target-contract.spec.ts` rejects at 42 < 44 (responsive seat,
-             * 2026-09-13). No existing sweep reaches this surface, so the floor is applied
-             * here rather than discovered later.
-             */
+            /* `shape: 'chip'` carries only the height half of the touch floor; 44 is the floor. */
             className={controlClass({
               shape: 'chip',
               size: wrapName ? 'md' : 'xs',
@@ -466,17 +376,9 @@ function RecentVaultRowView({
         </div>
       ) : null}
       {/*
-        **Forget is not offered for the folder you were last in.** It is the release valve
-        for the launch rule (drop back to one folder and the next launch resumes directly),
-        and pointing it at the current folder would make the only obvious way to use it the
-        one that throws away where you were.
-
-        It is laid over the row's top-right rather than given a band underneath it. In a band
-        the rows that offered it stood taller than the rows that did not, so a list of
-        identical folders had ragged heights for a reason that was not about the folders
-        (inspection, 2026-09-13). The pressable row reserves the space with `pr-20`, so the
-        chip never sits on top of a folder name.
-      */}
+ Forget is not offered for the current folder, or its obvious use throws away where you were.
+ Laid over the top-right corner so rows keep equal height; `pr-20` keeps it off the name.
+ */}
       {row.isCurrent && openable ? null : (
       <div className={wrapName ? 'mb-3 flex shrink-0 sm:mb-0' : 'absolute right-2 top-2'}>
         <button

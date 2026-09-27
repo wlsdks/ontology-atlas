@@ -21,18 +21,11 @@ interface Props {
   /** The slug of the project being edited. It cannot select itself. */
   selfSlug?: string;
   invalidSlugs?: string[];
-  /**
-   * Auto-link suggestions. When another project's name is found in the description or
-   * detail it appears at the top as a dashed chip, and accepting adds it to `value`.
-   * (Rejecting hides it locally for the session.)
-   */
+  /** Names of other projects found in the description; accepted into `value`, rejected for the session. */
   suggestions?: SuggestedDependency[];
 }
 
-/**
- * A slug-chip multi-select. Search filters the list; selected items render as chips at the
- * top and unselected ones as outlined chips below. Far safer than typing CSV.
- */
+/** A slug-chip multi-select, far safer than typed CSV. */
 export function DependencyPicker({
   value,
   onChange,
@@ -49,8 +42,6 @@ export function DependencyPicker({
   const { categoryLabel } = useTaxonomy();
   const invalidSlugSet = useMemo(() => new Set(invalidSlugs), [invalidSlugs]);
 
-  // Hide suggestions that are already selected or were rejected this session. Recomputed
-  // whenever `value` or `suggestions` changes.
   const visibleSuggestions = useMemo(() => {
     const selectedSet = new Set(value);
     return suggestions.filter(
@@ -81,7 +72,6 @@ export function DependencyPicker({
     [availableSlugSet, value],
   );
 
-  // Unselected, matching the search text.
   const filtered = useMemo(() => {
     const selectedSet = new Set(value);
     const q = query.trim().toLowerCase();
@@ -124,13 +114,7 @@ export function DependencyPicker({
               className={controlClass({
                 shape: 'pill',
                 size: 'lg',
-                /*
-                 * Both of these sit on an indigo tint surface (a20/a12 below), where accent
-                 * ink falls below AA (composite 3.5–4.4:1 — the accent-ink-contrast contract).
-                 * Hub emphasis is carried by `accentOnTint`, in the same indigo family. This
-                 * line is a ternary inside an object, which slipped past the old pairing rule
-                 * (gate hole fixed 2026-08-13).
-                 */
+                /* On the indigo tint accent ink falls below AA, so hubs use `accentOnTint`. */
                 tone: p.isHub ? 'accentOnTint' : 'strong',
                 className: cn(
                   'group gap-1.5 border-[color:var(--color-indigo-brand)]',

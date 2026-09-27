@@ -20,21 +20,8 @@ import { classifySourceFormat } from "./source-text";
 import type { AgentTurn, ToolCallRecord } from "./types";
 
 /**
- * **Compile, run by the model on this computer.**
- *
- * The 2026-09-06 record left `local` as a named brain and wrote its own reopening
- * condition: *"a local tool catalogue that reads a source and writes a page under one
- * consent card reopens local Compile."* This hook is that catalogue's home on the screen.
- * It is deliberately not `use-vault-agent.ts`: that hook runs the ontology conversation,
- * with the ontology tool list, the ontology consent card and the ontology adapter's forced
- * first read. Sharing it would mean a job-kind branch through a file whose every rule was
- * written for a different job.
- *
- * What it does **not** own is the write. The turn produces proposals; `applyProposal` —
- * the one module in this repository that writes a consented proposal — is called from
- * `allow()`, and it reaches the folder through `useLocalVault`'s own `createDoc` /
- * `saveDoc`, the same path a person's own edit takes. There is no second write path here
- * to keep honest.
+ * Compile run by the model on this computer, apart from `use-vault-agent.ts`'s ontology
+ * conversation. Writes go only through `applyProposal` from `allow()`.
  */
 
 type LocalCompileStatus = "idle" | "running" | "waiting" | "applying" | "written" | "failed";
@@ -84,9 +71,8 @@ export interface UseLocalCompileArgs {
 }
 
 async function hashReadBytes(bytes: ArrayBuffer): Promise<string | null> {
-  // Same measurement `use-library-model.ts` makes for the shelf's own rows, and the same
-  // honest null: a browser without a secure context has no digest, and a page that cannot
-  // record what it read is refused rather than written with an empty `source_hash`.
+  // Same measurement and honest null as `use-library-model.ts`: a page that cannot record
+  // what it read is refused rather than written with an empty `source_hash`.
   if (typeof crypto === "undefined" || !crypto.subtle) return null;
   try {
     const digest = await crypto.subtle.digest("SHA-256", bytes);
@@ -96,23 +82,13 @@ async function hashReadBytes(bytes: ArrayBuffer): Promise<string | null> {
   }
 }
 
-/**
- * Waiting sources this route can actually open.
- *
- * A PDF is left out rather than attempted. Sending a turn that can only come back saying
- * "this is a PDF" spends the person's time and their runner's on a fact the screen
- * already knows, and it leaves ② Compile offering a turn it cannot finish, folder visit
- * after folder visit (PO evidence, 2026-09-06). The shelf names those formats and points
- * at a coding agent instead.
- */
+/** Waiting sources this route can open; a PDF is left out, and the shelf points it at a coding agent. */
 export function selectLocalCompileTargets(
   sources: readonly LibrarySourceRow[],
 ): LibrarySourceRow[] {
   return sources.filter(
     (row) =>
-      // `partial` counts with them: the rest of a file read only in part is work this
-      // route can do, and leaving it out told a folder of part-read sources that its
-      // formats were the problem (`blockedLocalFormats`) when they were not.
+      // Part-read sources are work this route can do, not a format problem.
       sourceNeedsCompile(row) &&
       classifySourceFormat(row.format) === "readable",
   );
@@ -136,14 +112,7 @@ export function useLocalCompile({
   const [toolActivity, setToolActivity] = useState<LocalCompileSession["toolActivity"]>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  /**
-   * The files this turn takes on: waiting sources this route can actually open, capped.
-   *
-   * A PDF is left out rather than attempted. Sending a turn that can only come back
-   * saying "this is a PDF" spends the person's time and their model's on a fact the
-   * screen already knows (PO evidence, 2026-09-06); the shelf says which formats need a
-   * coding agent instead.
-   */
+  /* Capped waiting sources this route can open (see `selectLocalCompileTargets`). */
   const targets = useMemo(
     () =>
       // Leave the existing three-page/ten-round budget for related reads and revisions.
@@ -167,9 +136,7 @@ export function useLocalCompile({
         return (await handle.getFile()).arrayBuffer();
       },
       async hashSource(_path, bytes) {
-        // Whole-file sha256, never the capped slice: `deriveSourceState` compares a
-        // page's recorded hash against the file's own, so a partial-bytes hash would
-        // render a brand-new page stale the moment it landed.
+        // Whole-file sha256, never the capped slice, or a new page would read stale on landing.
         return hashReadBytes(bytes);
       },
     };
@@ -288,20 +255,13 @@ export function useLocalCompile({
         if (controller.signal.aborted) return;
         setTurn(result.turn);
         const built = buildCompileConsentCard(executor.proposals(), {
-          // A save point belongs to the surfaces that own Git (settings, Atlas Git), the
-          // same choice `use-vault-agent.ts` makes; when none can be taken the card says so
-          // rather than implying one was.
+          // A save point belongs to the surfaces that own Git, as in `use-vault-agent.ts`; the card
+          // says none was taken.
           vaultIsGit: false,
           labels: { createFile: labels.createFile, modifyFile: labels.modifyFile },
         });
         setCard(built);
-        /*
-         * **A turn that proposed nothing still has to say so.** Going back to `idle` made
-         * the running block disappear with nothing in its place — measured in the
-         * installed app, 2026-09-06: the transfer had happened, the person had watched a
-         * spinner, and the screen ended exactly where it started. The card stands with its
-         * own sentence and no Allow, which is the honest end of that turn.
-         */
+        /* A turn that proposed nothing still ends on a card with its own sentence and no Allow. */
         setStatus("waiting");
       } catch (error) {
         if (controller.signal.aborted) return;
@@ -321,9 +281,8 @@ export function useLocalCompile({
     setStatus("applying");
     const currentMtimes = new Map<string, number>();
     try {
-      // Compare the exact before text as well as time: timestamp precision alone
-      // can miss a correction made while the consent card is open. Check every
-      // selected replacement before the applier starts its sequential writes.
+      // Compare the exact before text as well as the time, which can miss an edit made while the
+      // card is open; check every selected change before the sequential writes start.
       for (const change of proposal.changes.filter((candidate) => candidate.selected)) {
         for (const file of change.files) {
           if (file.kind !== "modify") continue;
@@ -376,14 +335,7 @@ export function useLocalCompile({
   return { status, originVaultScope, turn, card, errorMessage, writtenPaths, targets, toolActivity, run, allow, dismiss, stop };
 }
 
-/**
- * The loop's closing lines.
- *
- * They are English rather than translated, and that is the honest choice here: each is a
- * sentence the model may be shown as its own instruction, and `system-prompt.ts` owns the
- * boundary that says the model channel is English. The person-facing copy for this
- * surface lives in `messages/*.json` and is drawn by the card.
- */
+/** English: the model may see these as instructions, and `system-prompt.ts` keeps that channel English. */
 const COMPILE_NOTICES = {
   roundCap: "It ran out of rounds. What it proposed before that is below.",
   noToolCall: ({ round, cap }: { round: number; cap: number }) =>

@@ -1,8 +1,4 @@
-// Whether the three vendors fold into one shape — a fixture-based normalization contract.
-//
-// When a vendor changes its format this breaks first. Fixing only the adapter and
-// leaving the fixture would test "the vendor our code imagined", so the two are
-// updated together.
+// Fixture-based normalization contract: update fixtures with the adapter, never the adapter alone.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -138,17 +134,14 @@ describe('vendor adapters fold into one shape', () => {
   });
 
   it('defines a default model for all three vendors', () => {
-    // Shipping key registration for three vendors while the conversation supports two
-    // makes the screen contradict itself.
+    // Registering three vendors while the conversation supports two would contradict the screen.
     for (const provider of ['anthropic', 'openai', 'gemini'] as const) {
       expect(PROVIDER_ADAPTERS[provider].defaultModel).toBeTruthy();
     }
   });
 
   it('local endpoint disables thinking and forces an answer after three reads', () => {
-    // System discipline requires the first round trip to choose a read tool. A generic
-    // `required` can be ignored by real Ollama, so the whole-map case pins the name to
-    // list_concepts.
+    // Ollama can ignore a generic `required`, so the whole-map case pins list_concepts by name.
     const firstTurn = assembly({ model: 'qwen3:8b' });
     const firstLocal = JSON.parse(
       PROVIDER_ADAPTERS.local.buildBody(firstTurn),
@@ -605,9 +598,7 @@ describe('vendor adapters fold into one shape', () => {
   });
 
   it('local endpoint has no default model because only that machine knows it', () => {
-    // Pinning any name as a default kills the first round trip with "model not found",
-    // with the reason nowhere on screen. This branch does not turn on until the user
-    // picks from the list (`isLocalEndpointReady`).
+    // A pinned default fails the first round trip with "model not found".
     expect(PROVIDER_ADAPTERS.local.defaultModel).toBe('');
   });
 
