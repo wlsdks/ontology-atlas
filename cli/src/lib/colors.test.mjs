@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert';
 import { COLORS, KIND_COLORS } from './colors.mjs';
 
 describe('KIND_COLORS shared kind palette', () => {
-  it('gives each kind its own colour (element green, capability cyan, document dim)', () => {
+  it('colours project, domain, capability and element distinctly, and documents dim', () => {
     // element must not share capability's cyan, and document is dim, not white.
     assert.equal(KIND_COLORS.project, COLORS.magenta);
     assert.equal(KIND_COLORS.domain, COLORS.blue);

@@ -33,7 +33,7 @@ describe('start here suggestions for a bare invocation', () => {
     assert.ok(rows[0].command.includes('./atlas'));
   });
 
-  it('mentions last when atlas is not on PATH', () => {
+  it('suggests install-shim only when atlas is not on PATH', () => {
     const rows = startHereRows({ inVault: true, conceptCount: 5, shimInstalled: false });
     assert.ok(rows.some((r) => /install-shim/.test(r.command)));
     assert.equal(startHereRows({ inVault: true, conceptCount: 5, shimInstalled: true })

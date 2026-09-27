@@ -7953,7 +7953,7 @@ await test('rename --confirm --overwrite — replaces an existing target slug', 
   }
 });
 
-await test('delete — dry-run warns about backlinks', async () => {
+await test('delete — dry-run warns when backlinks exist', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['delete', 'capabilities/foo', root]);
