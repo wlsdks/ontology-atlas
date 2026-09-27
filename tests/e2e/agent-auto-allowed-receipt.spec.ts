@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import enMessages from '../../messages/en.json';
 
 import { seedFirstRunSeen } from './first-run-seed';
 import { openFolderFromFirstRun } from './open-folder';
@@ -100,5 +101,61 @@ test('an explicit question report still asks before a write when the folder allo
   expect((await harness.snapshot(page)).writes).toEqual([]);
   await permission.getByRole('button', { name: 'No thanks', exact: true }).click();
   await expect(permission).toHaveCount(0);
+  expect((await harness.snapshot(page)).writes).toEqual([]);
+});
+
+async function switchReportRuntime(page: import('@playwright/test').Page, editQuestionBeforeSwitch = false) {
+  await seedFirstRunSeen(page);
+  const harness = await installLibraryWorkHarness(page, {
+    runtimeIds: ['claude-acp', 'codex-acp'], writeMode: 'auto', filePermission: true, permissionText: FITTING_PAGE,
+  });
+  await openFolderFromFirstRun(page, 'en');
+  await page.goto('/en/library/?tab=wiki&guides=off&e2e=1');
+  await page.getByTestId('question-desk-input').fill('What does the architecture build?');
+  await page.getByTestId('question-desk-search').click();
+  await page.getByTestId('question-desk-summarize').click();
+  await expect.poll(async () => (await harness.snapshot(page)).calls.filter(call => call.method === 'session/prompt').length).toBe(1);
+  if (editQuestionBeforeSwitch) await page.getByTestId('question-desk-input').fill('A different current question');
+  await page.getByTestId('acp-chat-runtime').click();
+  await page.getByRole('option', { name: 'Codex', exact: true }).click();
+  await expect.poll(async () => (await harness.snapshot(page)).calls.filter(call => call.method === 'session/prompt').length).toBe(2);
+  return harness;
+}
+
+test('an exact report retry on another runtime keeps its read-only authority', async ({ page }) => {
+  const harness = await switchReportRuntime(page);
+  await harness.read(page);
+  await harness.wait(page);
+  const permission = page.getByTestId('acp-permission-card');
+  await expect(permission).toBeVisible();
+  await permission.getByRole('button', { name: 'No thanks', exact: true }).click();
+  await expect(permission).toHaveCount(0);
+  expect((await harness.snapshot(page)).writes).toEqual([]);
+});
+
+test('a switched-runtime report retains strict filing instead of becoming an ordinary answer', async ({ page }) => {
+  const harness = await switchReportRuntime(page);
+  await harness.answer(page, 'This freeform response is not a four-section report. [[src:sources/architecture.docx#p1]]');
+  const file = page.getByTestId('library-file-answer');
+  await expect(file).toBeVisible();
+  await file.click();
+  await expect.poll(async () => {
+    if ((await harness.snapshot(page)).writes.length > 0) return 'wrote';
+    return await page.getByTestId('library-file-answer-note').isVisible() ? 'refused' : 'pending';
+  }).toBe('refused');
+  await expect(page.getByTestId('library-file-answer-note')).toHaveText(enMessages.library.questionDesk.report.fileRefused.shape);
+  await expect(page.getByTestId('question-desk-report')).toBeVisible();
+  await expect(page.locator('#question-desk-report-title')).toHaveText('What does the architecture build?');
+  await expect(page.getByTestId('question-desk-report-raw')).toBeVisible();
+  expect((await harness.snapshot(page)).writes).toEqual([]);
+});
+
+test('editing the question invalidates the old retry context without offering generic filing', async ({ page }) => {
+  const harness = await switchReportRuntime(page, true);
+  await harness.answer(page, 'An old report reply. [[src:sources/architecture.docx#p1]]');
+  await expect(page.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready');
+  await expect(page.getByTestId('question-desk-input')).toHaveValue('A different current question');
+  await expect(page.getByTestId('question-desk-report')).toHaveCount(0);
+  await expect(page.getByTestId('library-file-answer')).toHaveCount(0);
   expect((await harness.snapshot(page)).writes).toEqual([]);
 });

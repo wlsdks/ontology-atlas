@@ -213,7 +213,7 @@ import { LibrarySynapseField } from "./parts/LibrarySynapseField";
  * across it. The screen is now `LibraryStartStage`, and the guide is only ever a press.
  */
 
-/** Presentation/capture only: a normal conversation retains the same write permission path. */
+/** Match opening text; presentation may additionally consume its nonce once. */
 export function matchLibraryOpeningRequest(
   text: string,
   request: LibraryAgentOpeningRequest | null,
@@ -229,7 +229,14 @@ export interface RetainedLibraryAnswer {
   question: string;
   text: string;
   askedOn: string | null;
+  origin?: 'question-report';
 }
+
+type LibraryAskContext = {
+  question: string;
+  askedOn: string | null;
+  report?: Pick<QuestionDeskReportRequest, 'searchId' | 'listingVersion' | 'vaultScope' | 'coverage' | 'limits'> & { epoch: number };
+};
 
 export function clearFiledAnswer(current: RetainedLibraryAnswer | null, filed: RetainedLibraryAnswer): RetainedLibraryAnswer | null {
   return current === filed ? null : current;
@@ -1196,7 +1203,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const writeMode = useWikiWriteMode();
   /* The last question asked from a page and the answer it got: the pair a person can file
      back as a wiki page (owner direction 2026-09-07, the LLM Wiki pattern). */
-  const pendingAskRef = useRef<{ question: string; askedOn: string | null; report?: Pick<QuestionDeskReportRequest, 'searchId' | 'listingVersion' | 'vaultScope' | 'coverage' | 'limits'> & { epoch: number } } | null>(null);
+  const pendingAskRef = useRef<LibraryAskContext | null>(null);
+  const retryAskRef = useRef<{ nonce: number; text: string; scope: string; context: LibraryAskContext } | null>(null);
   const activeReadOnlyTurnRef = useRef(false);
   const [lastAnswer, setLastAnswer] = useState<RetainedLibraryAnswer | null>(null);
   const [deskReport, setDeskReport] = useState<{ answer: RetainedLibraryAnswer; searchId: number; listingVersion: string; vaultScope: string; coverage: string; limits: string; generatedAt: string } | null>(null);
@@ -1207,6 +1215,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const reportEpochRef = useRef(0);
   const invalidateDeskReport = useCallback(() => {
     reportEpochRef.current += 1;
+    retryAskRef.current = null;
+    if (pendingAskRef.current?.report) pendingAskRef.current = null;
     const previous = latestDeskReportRef.current;
     latestDeskReportRef.current = null;
     if (previous) setLastAnswer((current) => current === previous.answer ? null : current);
@@ -1216,7 +1226,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   useEffect(() => {
     if (previousReportScopeRef.current === workVaultScope) return;
     previousReportScopeRef.current = workVaultScope;
-    if (pendingAskRef.current?.report) pendingAskRef.current = null;
+    pendingAskRef.current = null;
+    retryAskRef.current = null;
     queueMicrotask(invalidateDeskReport);
   }, [invalidateDeskReport, workVaultScope]);
   const answerGenerationRef = useRef(0);
@@ -1298,6 +1309,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
 
   const handleFileAnswer = useCallback(async (answerOverride?: string) => {
     if (!lastAnswer || !handle || lastAnswer.generation !== answerGenerationRef.current || filedAnswersRef.current.has(lastAnswer)) return;
+    if (lastAnswer.origin === 'question-report' && answerOverride === undefined) return;
     const filed = lastAnswer;
     const selectionAtFileStart = latestSelectedRef.current;
     const input = {
@@ -1477,17 +1489,29 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       const generation = ++answerGenerationRef.current;
       const opening = matchLibraryOpeningRequest(start.text, agent.openingRequest, consumedOpeningNonceRef.current);
       if (opening) consumedOpeningNonceRef.current = opening.nonce;
-      // Only explicit Ask briefs impose read-only; ordinary conversation keeps its write policy.
+      const exactAsk = matchLibraryOpeningRequest(start.text, agent.openingRequest, null);
       const kind = opening?.kind ?? "ask";
-      activeReadOnlyTurnRef.current = opening?.kind === 'ask';
+      activeReadOnlyTurnRef.current = exactAsk?.kind === 'ask';
       const refreshTurn = kind === 'refresh' ? captureAnswerRefresh() : null;
       const selectionAtStart = latestSelectedRef.current;
-      const asked: { question: string; askedOn: string | null; report?: Pick<QuestionDeskReportRequest, 'searchId' | 'listingVersion' | 'vaultScope' | 'coverage' | 'limits'> & { epoch: number } } | null = kind === "ask"
-        ? opening && pendingAskRef.current
-          ? pendingAskRef.current
-          : { question: start.text.trim(), askedOn: selectionAtStart?.kind === "wiki" ? selectionAtStart.slug : null }
-        : null;
-      if (opening?.kind === "ask") pendingAskRef.current = null;
+      let asked: LibraryAskContext | null = null;
+      if (exactAsk?.kind === 'ask') {
+        if (opening && pendingAskRef.current) {
+          retryAskRef.current = { nonce: exactAsk.nonce, text: exactAsk.text.trim(), scope: workVaultScope, context: pendingAskRef.current };
+          pendingAskRef.current = null;
+        }
+        const retry = retryAskRef.current;
+        if (retry?.nonce === exactAsk.nonce && retry.text === start.text.trim() && retry.scope === workVaultScope
+          && (!retry.context.report || (retry.context.report.epoch === reportEpochRef.current
+            && retry.context.report.vaultScope === workVaultScope
+            && retry.context.report.listingVersion === currentDeskListingVersion))) {
+          asked = retry.context;
+          if (asked.report) setDeskWorkRequest({ scope: workVaultScope, startedAt: Date.now() });
+        }
+      } else {
+        retryAskRef.current = null;
+        if (kind === 'ask') asked = { question: start.text.trim(), askedOn: selectionAtStart?.kind === 'wiki' ? selectionAtStart.slug : null };
+      }
       setLastAnswer(null);
       setDeskReport(null);
       setFileAnswerNote(null);
@@ -1504,6 +1528,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       if (kind === "compile") setCompileRunning(true);
       if (kind === "lint") setLintRunning(true);
       return async (completion: AcpTurnCompletion) => {
+        if (generation !== answerGenerationRef.current) return;
         activeReadOnlyTurnRef.current = false;
         setTurnRunning(false);
         setCompileRunning(false);
@@ -1564,7 +1589,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         if (kind === "ask") {
           if (generation === answerGenerationRef.current && asked && lastAgentText && lastAgentText.trim()
             && (!asked.report || asked.report.epoch === reportEpochRef.current)) {
-            const answer = { generation, question: asked.question, text: lastAgentText, askedOn: asked.askedOn };
+            const answer: RetainedLibraryAnswer = { generation, question: asked.question, text: lastAgentText, askedOn: asked.askedOn,
+              ...(asked.report ? { origin: 'question-report' as const } : {}) };
             setLastAnswer(answer);
             if (asked.report) {
               const { epoch: _epoch, ...report } = asked.report;
@@ -1586,7 +1612,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         }
       };
     },
-    [agent.openingRequest, agent.runtime, captureAnswerRefresh, choose, handle, model.sources, receiveAnswerRefresh],
+    [agent.openingRequest, agent.runtime, captureAnswerRefresh, choose, currentDeskListingVersion, handle, model.sources, receiveAnswerRefresh, workVaultScope],
   );
 
   /**
@@ -3557,8 +3583,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onTurnActivityChange={setAgentActivity}
           onTurnToolActivityChange={handleAcpToolActivityChange}
           onTerminalToolObservation={handleTerminalToolObservation}
-          onFileAnswer={lastAnswer ? deskReport?.answer === lastAnswer
-            ? deskReport.vaultScope === workVaultScope ? handleFileReport : null
+          onFileAnswer={lastAnswer ? lastAnswer.origin === 'question-report'
+            ? deskReport?.answer === lastAnswer && deskReport.vaultScope === workVaultScope ? handleFileReport : null
             : () => void handleFileAnswer() : null}
           filingAnswer={lastAnswer !== null && filingAnswer === lastAnswer}
           fileAnswerNote={fileAnswerNote}

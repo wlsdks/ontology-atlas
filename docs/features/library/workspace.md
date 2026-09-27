@@ -44,6 +44,9 @@ person can choose a runtime or return to the transcript before starting another
 report request. Saved questions retain their direct entry there too. Opening a
 conversation does not submit a question or change permissions; only an explicit
 Ask brief suppresses the folder's ordinary automatic-write policy.
+Exact Ask retries retain that authority and their original report context across
+runtime changes. A changed question, vault, or report version cannot turn a stale
+report reply into an ordinary fileable answer.
 
 **Report and document (2026-09-27).** One explicit ACP action turns the current
 question into a report request: answer, cited originals, disagreements or
