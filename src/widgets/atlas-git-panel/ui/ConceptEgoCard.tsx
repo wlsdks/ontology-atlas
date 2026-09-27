@@ -7,33 +7,11 @@ import { ConceptEgoGraph } from "./ConceptEgoGraph";
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * The chosen concept's **properties plus its immediate neighbours** — the trail
- * ends here instead of sending the reader out to the map.
- *
- * Reading on the left, drawing on the right. Since round four (2026-09-25) the reading
- * table is the one place a neighbour is named and the drawing is the structure; pointing at
- * either lights its twin. Relation names were pulled out of
- * the drawing and moved left because inside it they sit outside the fan and
- * widen the box, and a wider box shrinks the height-bound drawing (measured
- * fill rate 24%). The reading table's line swatches use the same tokens as the
- * drawing's lines, so no separate legend is needed.
- *
- * ## What it carries (2026-08-02 expansion)
- *
- * It used to be three cells (domain · evidence document · connection count),
- * while the graph node already carried a **one-line summary, an agent reference and
- * a project** that the screen was not using — withholding what you already know
- * is an omission, not a demotion.
- *
- * The order is the order a person reads in: name → **one-line summary** → what
- * it belongs to → where it is written down → **the reference an agent can use**
- * → what it connects to. The last two correspond to this product's
- * two users.
- *
- * ⚠️ **A missing field gets no slot** — a cell nobody fills is misinformation,
- * not a specification, so `summary`/`projectLabels` produce a cell only when
- * they have a value. (This is a single card, not a repeated set, so the
- * dimension-regularity rule does not apply.)
+ * The chosen concept's properties plus its immediate neighbours, so the trail ends here
+ * instead of at the map. The table on the left names neighbours, the drawing on the right
+ * shows structure, and pointing at either lights its twin. Cells appear in reading order
+ * (name, summary, owner, document, agent reference, relations), and a field without a
+ * value gets no cell.
  */
 export function ConceptEgoCard({
   ego,
@@ -43,46 +21,28 @@ export function ConceptEgoCard({
 }: {
   ego: ConceptEgo | null;
   t: (key: string, values?: Record<string, string | number>) => string;
-  /**
-   * Kind names — the existing `kinds` namespace is the source of truth. Minting
-   * a key here writes the same fact in two places, and drift starts there.
-   */
+  /** Kind names from the existing `kinds` namespace; a key minted here would drift from it. */
   kindLabel: (kind: string) => string;
   onSelect?: (nodeId: string) => void;
 }) {
-  /*
-   * The neighbour pointed at or focused, in the table or on the drawing. The table carries
-   * the names and the drawing the structure (round four); this is the one thread between
-   * them, lighting the mark of the name under the pointer and naming the mark under it.
-   */
+  // The neighbour pointed at or focused in either the table or the drawing; it links the two.
   const [activeId, setActiveId] = useState<string | null>(null);
   if (!ego) return null;
 
-  /*
-   * Said once (round four, 2026-09-25). For a capability the owning domain is also its
-   * "Belongs to" neighbour, so a "Domain" cell printed the same name one row above the
-   * relation that already carries it, and carries it as a door. The cell stays only when
-   * the domain is not among the drawn neighbours.
-   */
+  // The Domain cell appears only when the domain is not already a drawn Belongs-to neighbour.
   const domainIsNeighbour =
     ego.domainLabel !== null && ego.neighbors.belongsTo.some((neighbor) => neighbor.label === ego.domainLabel);
 
   const facts: { label: string; value: string | null; mono?: boolean }[] = [
-    // A domain or a project has no owning domain; "Domain: none" on one is a slot nobody
-    // could ever fill, which the rule above says gets no cell.
+    // A domain or project never has an owning domain, so it gets no cell.
     ...(ego.kind === "domain" || ego.kind === "project" || domainIsNeighbour
       ? []
       : [{ label: t("egoDomain"), value: ego.domainLabel }]),
     ...(ego.projectLabels.length > 0
       ? [{ label: t("egoProject"), value: ego.projectLabels.join(", ") }]
       : []),
-    /*
-     * Nothing said twice (round three, 2026-09-25). A concept without its own agent slug
-     * falls back to its document's slug, so the two cells printed one value under two labels
-     * on the screen's main view. When they agree, one cell carries it, under the name an agent
-     * uses — the fact the second of this product's two users needs. They are two cells only
-     * when they say two different things.
-     */
+    // The agent slug falls back to the document slug; when they agree, one cell under the
+    // agent label carries both.
     ...(ego.agentSlug && ego.agentSlug === ego.docSlug
       ? []
       : [{ label: t("egoDoc"), value: ego.docSlug, mono: true }]),
@@ -112,7 +72,6 @@ export function ConceptEgoCard({
             {t("egoLinkedCount", { count: ego.total })}
           </span>
         </div>
-        {/* The human-written line. It is the first fact a person reads on this card. */}
         {ego.summary ? (
           <p className="line-clamp-2 text-label leading-prose text-[color:var(--color-text-secondary)]">
             {ego.summary}
@@ -122,9 +81,7 @@ export function ConceptEgoCard({
 
       {/*
         Side by side only when the card itself is 48rem or wider (a container query, not the
-        window): at a 1280 window the card is about 610px, and beside the table the drawing
-        got a 328px cell where a dense concept's labels could not stay apart (round three,
-        2026-09-25). There it sits under the table at the card's full width instead.
+        window); a narrower cell beside the table cannot keep dense labels apart.
       */}
       <div className="@container/ego">
       <div className="grid grid-cols-1 @3xl/ego:grid-cols-[minmax(220px,var(--git-ego-facts-w))_minmax(0,1fr)]">
@@ -157,12 +114,7 @@ export function ConceptEgoCard({
               </dd>
             </div>
           ))}
-          {/*
-            Relations show **names, not counts**. "Contains 3" cannot answer what
-            the 3 are, and getting that answer meant counting them by eye in the
-            drawing. With names this cell is enough on its own, and clicking one
-            navigates there — a second door onto what the drawing's click does.
-          */}
+          {/* Relations list names, not counts; each name navigates like a click on the drawing. */}
           {bearings.map((row) => (
             <div
               key={row.bearing}
@@ -217,12 +169,7 @@ export function ConceptEgoCard({
             onSelect={onSelect}
             activeId={activeId}
             onActive={setActiveId}
-            /*
-             * The table sets the card's height and the drawing meets it (round four): with its
-             * names moved to the table the drawing needs no label room of its own, so the
-             * token's 280-440px floor gave way to 13rem. A domain with four links no longer
-             * leaves a 140px hole under a short table beside a tall drawing.
-             */
+            // The table sets the card's height and the drawing meets it from a 13rem floor.
             className="min-h-52"
           />
         ) : (

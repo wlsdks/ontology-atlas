@@ -39,7 +39,7 @@ export function LibraryConversationDoor({
         shape: "chip",
         tone: "muted",
         hoverInk: "strong",
-        className: "flex-none gap-1.5",
+        className: "min-w-0 max-w-full flex-none gap-1.5",
       })}
     >
       {phase ? (
@@ -55,7 +55,7 @@ export function LibraryConversationDoor({
         One line, bounded. The target is a tool name or a page path and can run long; a chip that
         grows with it would push the shelf and index controls beside it off their row.
       */}
-      <span className="max-w-[14rem] truncate">
+      <span className="min-w-0 max-w-[14rem] truncate">
         {phase ? `${t('conversation.open')} · ${phase}` : t("conversation.open")}
       </span>
     </button>

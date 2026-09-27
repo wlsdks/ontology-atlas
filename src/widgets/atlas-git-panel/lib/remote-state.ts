@@ -1,13 +1,8 @@
 import type { GitStatusResult } from "@/shared/lib/tauri-git";
 
 /**
- * Where this branch's steps can go, read from one status.
- *
- * The screen used to have two answers: an upstream, or "no remote yet" with a button that
- * registers `origin`. The second answer was also given to a repository whose `origin` exists
- * but whose branch was never pushed, and to a detached HEAD — and the button there ran
- * `git remote set-url origin`, replacing a real remote (2026-09-25). Each state below has its
- * own next step:
+ * Where this branch's steps can go, read from one status. Only `no-remote` may offer to
+ * register `origin`; offering it elsewhere would rewrite a real remote. Each state's next step:
  *
  * - `tracking` — the branch follows an upstream; Fetch, Pull and Push work.
  * - `no-remote` — there is no `origin`; the next step is connecting one.

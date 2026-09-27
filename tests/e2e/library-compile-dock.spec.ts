@@ -223,6 +223,7 @@ test.describe("Compile opens the agent dock", () => {
     await openFolder(page);
     await expect(page.getByTestId("library-compile")).toBeVisible({ timeout: 25_000 });
     await expect(page.getByTestId("library-compile")).toBeEnabled();
+    await page.getByTestId("library-workspace-sources").click();
     /*
      * Four sources, none written up, so the chip has work to do and says so.
      *
@@ -285,6 +286,7 @@ test.describe("Compile opens the agent dock", () => {
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);
     await expect(inlineDisclosure).toHaveCount(0);
+    await page.getByTestId("library-workspace-sources").click();
 
     /*
      * The two popups the home's strip opens (`docs/DECISIONS.md`, 2026-09-12 — "The
@@ -307,6 +309,7 @@ test.describe("Compile opens the agent dock", () => {
     await expect(inlineDisclosure).toHaveCount(0);
     await page.keyboard.press("Escape");
 
+    await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki-wiki/notes").click();
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);

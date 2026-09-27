@@ -185,14 +185,28 @@ async function walk(
   return acc.entries;
 }
 
-function insertIntoTree(root: VaultTreeNode, slug: string, title: string) {
+/** One collator for every sort: `localeCompare(x, 'ko')` resolves the locale per comparison. */
+const KO_COLLATOR = new Intl.Collator('ko');
+
+/** `childIndex` finds a child by name; a linear search made a flat folder quadratic. */
+function insertIntoTree(
+  root: VaultTreeNode,
+  slug: string,
+  title: string,
+  childIndex: Map<VaultTreeNode, Map<string, VaultTreeNode>>,
+) {
   const parts = slug.split('/');
   let node = root;
   for (let i = 0; i < parts.length; i += 1) {
     const name = parts[i];
     const isLeaf = i === parts.length - 1;
     if (!node.children) node.children = [];
-    let child = node.children.find((c) => c.name === name);
+    let index = childIndex.get(node);
+    if (!index) {
+      index = new Map();
+      childIndex.set(node, index);
+    }
+    let child = index.get(name);
     if (!child) {
       child = {
         name,
@@ -204,6 +218,7 @@ function insertIntoTree(root: VaultTreeNode, slug: string, title: string) {
         child.title = title;
       }
       node.children.push(child);
+      index.set(name, child);
     } else if (isLeaf && !child.slug) {
       child.type = 'doc';
       child.slug = slug;
@@ -217,7 +232,7 @@ function sortTree(node: VaultTreeNode) {
   if (!node.children) return;
   node.children.sort((a, b) => {
     if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-    return a.name.localeCompare(b.name, 'ko');
+    return KO_COLLATOR.compare(a.name, b.name);
   });
   for (const c of node.children) sortTree(c);
 }
@@ -386,8 +401,10 @@ function buildMdEntry(
     lastModified,
     handle: entry.handle,
     kind: 'md',
-    doc,
-    linkContexts,
+    /* Fresh copies: a V8 substring of 13+ characters keeps its whole parent alive, so the title,
+     * excerpt, display names and link text would pin every file's full text (58 MB at 12k). */
+    doc: structuredClone(doc),
+    linkContexts: structuredClone(linkContexts),
   };
 }
 
@@ -473,11 +490,12 @@ function aggregateBuild(
     }
   }
 
-  docs.sort((a, b) => a.slug.localeCompare(b.slug, 'ko'));
-  sources.sort((a, b) => a.path.localeCompare(b.path, 'ko'));
+  docs.sort((a, b) => KO_COLLATOR.compare(a.slug, b.slug));
+  sources.sort((a, b) => KO_COLLATOR.compare(a.path, b.path));
 
   const tree: VaultTreeNode = { name: rootName, path: '', type: 'dir' };
-  for (const doc of docs) insertIntoTree(tree, doc.slug, doc.title);
+  const childIndex = new Map<VaultTreeNode, Map<string, VaultTreeNode>>();
+  for (const doc of docs) insertIntoTree(tree, doc.slug, doc.title, childIndex);
   sortTree(tree);
 
   const backlinksDetail: Record<string, VaultBacklinkEntry[]> = {};
@@ -487,7 +505,7 @@ function aggregateBuild(
       if (!byFrom.has(entry.fromSlug)) byFrom.set(entry.fromSlug, entry);
     }
     backlinksDetail[slug] = [...byFrom.values()].sort((a, b) =>
-      a.fromSlug.localeCompare(b.fromSlug, 'ko'),
+      KO_COLLATOR.compare(a.fromSlug, b.fromSlug),
     );
   }
   const tags: Record<string, string[]> = {};
@@ -517,9 +535,43 @@ function aggregateBuild(
   };
 }
 
+/** Reads in flight at once (study D7): overlaps each bridge or FSA wait without flooding it. */
+const VAULT_READ_CONCURRENCY = 16;
+
+/**
+ * Maps `items` through `read` with at most `concurrency` in flight, results in input order. The
+ * first failure in time rejects the call, and no worker starts another read after it.
+ */
+async function mapPooled<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  read: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  let failed = false;
+  const worker = async () => {
+    while (!failed && next < items.length) {
+      const at = next;
+      next += 1;
+      try {
+        results[at] = await read(items[at]);
+      } catch (error) {
+        failed = true;
+        throw error;
+      }
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(Math.max(1, concurrency), items.length) }, worker),
+  );
+  return results;
+}
+
 async function collectEntries(
   root: FileSystemDirectoryHandle,
   walkInfo?: { truncated: boolean; prunedDirs: string[]; sourceFileCount?: number },
+  concurrency = VAULT_READ_CONCURRENCY,
 ): Promise<BuiltVaultEntry[]> {
   const walked = await walkVault(root);
   if (walkInfo) {
@@ -528,42 +580,37 @@ async function collectEntries(
     walkInfo.sourceFileCount = walked.sourceFileCount;
   }
   const files = walked.entries;
-  const entries: BuiltVaultEntry[] = [];
-  /* Sources and images are listed from native stamps, never opened (`getFile()` under
-   * Tauri transfers the whole file). On the web a directory `File` is metadata only. */
+  /* Images and sources are listed from native stamps, never opened (`getFile()` under Tauri
+   * transfers the whole file). On the web a directory `File` is metadata only. */
   const stamps = files.some((entry) => entry.kind !== 'md')
     ? await nativeStampIndex(root)
     : null;
-  for (const entry of files) {
+  const readOne = async (entry: WalkEntry): Promise<BuiltVaultEntry> => {
     if (entry.kind === 'source') {
       const stamp = stamps?.get(entry.relativePath);
       const { lastModified, bytes } = stamp
         ? { lastModified: stamp.lastModified, bytes: stamp.size }
         : await sourceStampFromHandle(entry.handle);
-      entries.push({
+      return {
         relativePath: entry.relativePath,
         lastModified,
         bytes,
         handle: entry.handle,
         kind: 'source',
-      });
-      continue;
+      };
     }
     if (entry.kind === 'image') {
       const stamp = stamps?.get(entry.relativePath);
-      entries.push({
-        relativePath: entry.relativePath,
-        lastModified: stamp ? stamp.lastModified : (await entry.handle.getFile()).lastModified,
-        handle: entry.handle,
-        kind: 'image',
-      });
-      continue;
+      const lastModified = stamp
+        ? stamp.lastModified
+        : (await entry.handle.getFile()).lastModified;
+      return { relativePath: entry.relativePath, lastModified, handle: entry.handle, kind: 'image' };
     }
     const file = await entry.handle.getFile();
     const raw = await file.text();
-    entries.push(buildMdEntry(entry, raw, file.lastModified));
-  }
-  return entries;
+    return buildMdEntry(entry, raw, file.lastModified);
+  };
+  return mapPooled(files, concurrency, readOne);
 }
 
 async function sourceStampFromHandle(
@@ -585,9 +632,11 @@ export async function buildLocalManifestWithEntries(
 /** Builds a local manifest in the same VaultManifest shape as `scripts/build-docs-vault.mjs`. */
 export async function buildLocalManifest(
   root: FileSystemDirectoryHandle,
+  /** Tests pass 1 as a one-at-a-time reference. */
+  readConcurrency = VAULT_READ_CONCURRENCY,
 ): Promise<LocalVaultBuild> {
   const walkInfo = { truncated: false, prunedDirs: [] as string[], sourceFileCount: 0 };
-  const entries = await collectEntries(root, walkInfo);
+  const entries = await collectEntries(root, walkInfo, readConcurrency);
   return aggregateBuild(entries, root.name, walkInfo);
 }
 
@@ -600,6 +649,8 @@ export async function rebuildLocalManifestIncremental(
   previous: BuiltVaultEntry[],
   /** Native stamps already fetched by the caller's change check, so the vault is walked once. */
   providedStamps?: VaultStampIndex | null,
+  /** Tests pass 1 as a one-at-a-time reference. */
+  readConcurrency = VAULT_READ_CONCURRENCY,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
   /* The walk info must survive an incremental rebuild: the first-run card reads
    * `sourceFileCount`, and its absence reorders the card while it is on screen. */
@@ -614,8 +665,7 @@ export async function rebuildLocalManifestIncremental(
   /* Decide from native mtimes before calling `getFile()`, which under Tauri transfers the whole
    * body. The web has no batch API and gets null (`.claude/rules/surfaces.md`). */
   const nativeStamps: VaultStampIndex | null = providedStamps ?? (await nativeStampIndex(root));
-  const entries: BuiltVaultEntry[] = [];
-  for (const entry of files) {
+  const readOne = async (entry: WalkEntry): Promise<BuiltVaultEntry> => {
     // An unchanged native mtime means the file is never opened; an unknown path is read to be safe.
     const nativeStamp = nativeStamps?.get(entry.relativePath);
     if (nativeStamp !== undefined) {
@@ -625,8 +675,7 @@ export async function rebuildLocalManifestIncremental(
         prevNative.kind === entry.kind &&
         prevNative.lastModified === nativeStamp.lastModified
       ) {
-        entries.push({ ...prevNative, handle: entry.handle });
-        continue;
+        return { ...prevNative, handle: entry.handle };
       }
     }
     if (entry.kind === 'source') {
@@ -634,23 +683,22 @@ export async function rebuildLocalManifestIncremental(
       const { lastModified, bytes } = nativeStamp
         ? { lastModified: nativeStamp.lastModified, bytes: nativeStamp.size }
         : await sourceStampFromHandle(entry.handle);
-      entries.push({
+      return {
         relativePath: entry.relativePath,
         lastModified,
         bytes,
         handle: entry.handle,
         kind: 'source',
-      });
-      continue;
+      };
     }
     if (entry.kind === 'image' && nativeStamp) {
-      entries.push({
+      // An image's mtime is all the build needs; its bytes stay native.
+      return {
         relativePath: entry.relativePath,
         lastModified: nativeStamp.lastModified,
         handle: entry.handle,
         kind: 'image',
-      });
-      continue;
+      };
     }
     const file = await entry.handle.getFile();
     const prev = prevByPath.get(entry.relativePath);
@@ -660,20 +708,19 @@ export async function rebuildLocalManifestIncremental(
       prev.lastModified === file.lastModified
     ) {
       // Unchanged — reuse the previous result without re-reading; take the fresh handle.
-      entries.push({ ...prev, handle: entry.handle });
-      continue;
+      return { ...prev, handle: entry.handle };
     }
     if (entry.kind === 'image') {
-      entries.push({
+      return {
         relativePath: entry.relativePath,
         lastModified: file.lastModified,
         handle: entry.handle,
         kind: 'image',
-      });
-      continue;
+      };
     }
     const raw = await file.text();
-    entries.push(buildMdEntry(entry, raw, file.lastModified));
-  }
+    return buildMdEntry(entry, raw, file.lastModified);
+  };
+  const entries = await mapPooled(files, readConcurrency, readOne);
   return { build: aggregateBuild(entries, root.name, walkInfo), entries };
 }
