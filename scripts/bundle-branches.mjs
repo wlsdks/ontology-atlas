@@ -1,24 +1,25 @@
 #!/usr/bin/env node
 /**
- * `pnpm bundle:plan` / `pnpm bundle:prune` — land many branches as one pull request.
+ * `pnpm bundle:plan` / `pnpm bundle:prune` — plan landing many branches, and prune what landed.
  *
  * **Why this exists** (2026-09-26). A Workflow or a parallel round leaves one
  * branch per agent. Landing each through `pnpm pr:land` costs one lock turn, one
  * main merge, one local lane run and one CI run per branch; on 2026-09-24 nine
  * `design/polish-*` branches landed one by one and the queue took most of a day.
  * Every hand-made bundle (#1787, #1874, #1883) landed the same work behind one CI
- * run. The `/land-bundle` skill owns the procedure; this script owns the two
+ * run. The `/review-and-land` skill owns the procedure; this script owns the two
  * mechanical questions an agent should not answer by eye:
  *
  *   - **plan**: which selected branches still carry work, which files two of them
  *     both touch, and whether merging them in order conflicts. The trial merge
  *     runs on `git merge-tree` and throwaway commits, so no worktree, index or
  *     ref changes.
- *   - **prune**: after the bundle landed, which component branches `main` provably
- *     contains (merging the branch into `main` would change nothing). Only those
- *     lose their worktree, local branch, remote branch and draft pull request.
- *     A branch that is not provably contained is reported and kept, because a
- *     "superseded" label is not evidence that the content arrived.
+ *   - **prune**: after a landing, which selected branches `main` provably landed:
+ *     merging the branch into `main`, or into the commit that landed it, would
+ *     change nothing. Only those lose their worktree (unlocked only when the
+ *     process that locked it has exited), local branch, `worktree-agent-*` twin,
+ *     remote branch and draft pull request. Anything else is reported and kept,
+ *     because a "superseded" label is not evidence that the content arrived.
  *
  * Selection is always explicit: branch names, `--match=<glob>` over local
  * branches, or `--worktrees=<dir>` for the branches checked out under a
@@ -27,7 +28,7 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { resolve, sep } from 'node:path';
+import { basename, resolve, sep } from 'node:path';
 
 export function parseArgs(argv) {
   const args = { command: null, base: 'origin/main', fetch: true, apply: false, json: false, match: [], worktrees: [], branches: [] };
@@ -70,10 +71,12 @@ export function parseWorktrees(porcelain) {
   let current = null;
   for (const line of porcelain.split('\n')) {
     if (line.startsWith('worktree ')) {
-      current = { path: line.slice('worktree '.length), branch: null };
+      current = { path: line.slice('worktree '.length), branch: null, locked: null };
       trees.push(current);
     } else if (current && line.startsWith('branch refs/heads/')) {
       current.branch = line.slice('branch refs/heads/'.length);
+    } else if (current && (line === 'locked' || line.startsWith('locked '))) {
+      current.locked = line.slice('locked'.length).trim() || 'no reason given';
     }
   }
   return trees;
@@ -113,6 +116,49 @@ export function isContained(git, base, branch) {
 export function landedPoint(git, base, branch) {
   const commits = git.out('rev-list', '--first-parent', '--max-count=200', `${base}..${branch}`).split('\n').filter(Boolean);
   return commits.find((sha) => isContained(git, base, sha)) ?? null;
+}
+
+/** Containment checks per branch are capped; a landing sits among the first commits that touch its files. */
+const LANDING_CANDIDATE_LIMIT = 50;
+
+/**
+ * The first commit on `base`'s first-parent line after the merge base that touches
+ * the branch's files and contains the branch, so a landing stays provable after
+ * later commits edit the same lines. Null when no such commit exists.
+ */
+export function landingCommit(git, base, branch) {
+  const mergeBase = git.try('merge-base', base, branch).stdout;
+  if (!mergeBase) return null;
+  const files = git.out('diff', '--name-only', mergeBase, branch).split('\n').filter(Boolean);
+  if (files.length === 0) return null;
+  const candidates = git.out('rev-list', '--reverse', '--first-parent', `${mergeBase}..${base}`, '--', ...files)
+    .split('\n').filter(Boolean).slice(0, LANDING_CANDIDATE_LIMIT);
+  return candidates.find((sha) => isContained(git, sha, branch)) ?? null;
+}
+
+function processIsAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code === 'EPERM';
+  }
+}
+
+/** Why a locked worktree must stay, or null when only an exited process holds the lock. */
+export function lockHold(reason, isAlive = processIsAlive) {
+  const pid = Number(/\bpid (\d+)\b/.exec(reason)?.[1]);
+  if (!pid) return `worktree locked: ${reason}`;
+  return isAlive(pid) ? `worktree locked by a running process (pid ${pid})` : null;
+}
+
+/** The `worktree-agent-<id>` branch created beside an agent worktree, when main has it and nothing else checks it out. */
+function agentTwin(git, base, tree, trees) {
+  const twin = `worktree-${basename(tree.path)}`;
+  if (!/^worktree-agent-[0-9a-f]+$/.test(twin) || twin === tree.branch) return null;
+  if (git.try('rev-parse', '--verify', '--quiet', `refs/heads/${twin}`).status !== 0) return null;
+  if (trees.some((other) => other.branch === twin)) return null;
+  return isContained(git, base, twin) || landingCommit(git, base, twin) ? twin : null;
 }
 
 export function planBundle(git, base, branches) {
@@ -179,20 +225,25 @@ function ghJson(args) {
   }
 }
 
-export function prunePlan(git, base, branches, { currentPath = process.cwd() } = {}) {
+export function prunePlan(git, base, branches, { currentPath = process.cwd(), isAlive = processIsAlive } = {}) {
   const trees = parseWorktrees(git.out('worktree', 'list', '--porcelain'));
   return branches.map((branch) => {
     const exists = git.try('rev-parse', '--verify', '--quiet', `refs/heads/${branch}`).status === 0;
     if (!exists) return { branch, keep: 'no local branch' };
     const head = git.out('rev-parse', branch);
-    if (!isContained(git, base, branch)) return { branch, head, keep: `not provably contained in ${base}` };
+    const contained = isContained(git, base, branch);
+    const landedAt = contained ? null : landingCommit(git, base, branch);
+    if (!contained && landedAt === null) return { branch, head, keep: `not provably landed in ${base}` };
     const tree = trees.find((t) => t.branch === branch) ?? null;
     if (tree && resolve(tree.path) === resolve(currentPath)) return { branch, head, keep: 'checked out in this worktree' };
     if (tree && git.try('-C', tree.path, 'status', '--porcelain').stdout !== '') {
       return { branch, head, keep: `worktree ${tree.path} has uncommitted changes` };
     }
+    const hold = tree?.locked ? lockHold(tree.locked, isAlive) : null;
+    if (hold) return { branch, head, keep: hold };
+    const twin = tree ? agentTwin(git, base, tree, trees) : null;
     const remote = git.try('rev-parse', '--verify', '--quiet', `refs/remotes/origin/${branch}`).status === 0;
-    return { branch, head, worktree: tree?.path ?? null, remote };
+    return { branch, head, landedAt, worktree: tree?.path ?? null, unlock: Boolean(tree?.locked), twin, remote };
   });
 }
 
@@ -213,6 +264,13 @@ export function runBundle(argv, io = console) {
 
   if (args.fetch) git.try('fetch', '--quiet', '--prune', 'origin');
   const actions = prunePlan(git, args.base, branches);
+  applyPrune(git, actions, { apply: args.apply, base: args.base, io });
+  return actions;
+}
+
+/** Prints each action and, with `apply`, performs it; worktree metadata is pruned once at the end. */
+export function applyPrune(git, actions, { apply, base = 'origin/main', io = console }) {
+  let removedWorktree = false;
   for (const action of actions) {
     if (action.keep) {
       io.log(`keep   ${action.branch}: ${action.keep}`);
@@ -220,18 +278,28 @@ export function runBundle(argv, io = console) {
     }
     const pr = action.remote ? ghJson(['pr', 'list', '--head', action.branch, '--state', 'open', '--json', 'number']) : null;
     const prNumber = pr?.[0]?.number ?? null;
-    io.log(`${args.apply ? 'prune ' : 'would prune'} ${action.branch} @ ${action.head.slice(0, 9)}`
-      + `${action.worktree ? `  worktree ${action.worktree}` : ''}${action.remote ? '  origin branch' : ''}${prNumber ? `  PR #${prNumber}` : ''}`);
-    if (!args.apply) continue;
+    io.log(`${apply ? 'prune ' : 'would prune'} ${action.branch} @ ${action.head.slice(0, 9)}`
+      + `${action.landedAt ? `  landed in ${action.landedAt.slice(0, 9)}` : ''}`
+      + `${action.worktree ? `  worktree ${action.worktree}${action.unlock ? ' (unlock)' : ''}` : ''}`
+      + `${action.twin ? `  twin ${action.twin}` : ''}${action.remote ? '  origin branch' : ''}${prNumber ? `  PR #${prNumber}` : ''}`);
+    if (!apply) continue;
     if (prNumber) {
-      spawnSync('gh', ['pr', 'close', String(prNumber), '--comment', `Contained in ${args.base} through a bundle landing; closing the component.`], { stdio: 'ignore' });
+      spawnSync('gh', ['pr', 'close', String(prNumber), '--comment', `Contained in ${base} through a bundle landing; closing the component.`], { stdio: 'ignore' });
     }
-    if (action.worktree) git.try('worktree', 'remove', action.worktree);
+    if (action.worktree) {
+      if (action.unlock) git.try('worktree', 'unlock', action.worktree);
+      if (git.try('worktree', 'remove', action.worktree).status !== 0) {
+        io.log(`keep   ${action.branch}: worktree ${action.worktree} could not be removed`);
+        continue;
+      }
+      removedWorktree = true;
+    }
     git.try('branch', '-D', action.branch);
+    if (action.twin) git.try('branch', '-D', action.twin);
     if (action.remote) git.try('push', '--quiet', 'origin', '--delete', action.branch);
   }
-  if (!args.apply) io.log('\nDry run. Re-run with --apply to prune the branches listed above; each head sha is printed for recovery.');
-  return actions;
+  if (apply && removedWorktree) git.try('worktree', 'prune');
+  if (!apply) io.log('\nDry run. Re-run with --apply to prune the branches listed above; each head sha is printed for recovery.');
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
