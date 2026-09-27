@@ -183,6 +183,7 @@
     "pr:queue": "node scripts/pr-land.mjs --queue",
     "pr:ci": "node scripts/pr-land.mjs --ci",
     "bundle:plan": "node scripts/bundle-branches.mjs plan",
+    "e2e:durations": "node scripts/refresh-playwright-durations.mjs",
     "e2e:sleeps:check": "node scripts/check-e2e-sleeps.mjs",
     "test:e2e:sleeps": "node --test scripts/check-e2e-sleeps.test.mjs",
     "bundle:prune": "node scripts/bundle-branches.mjs prune",

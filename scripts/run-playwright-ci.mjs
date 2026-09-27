@@ -64,6 +64,10 @@ export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), 
   mkdirSync(resolve(cwd, 'output/playwright'), { recursive: true });
   writeFileSync(resolve(cwd, `output/playwright/assignment-${index}.json`), JSON.stringify({ shard, excluded, assignment }, null, 2));
   console.log(`[playwright-ci] shard ${shard}: ${selected.files.length} files, ${selected.tests} tests, estimated ${selected.seconds.toFixed(1)} test-seconds`);
+  const unmeasured = files.filter((row) => !history.files?.[row.file]).map((row) => row.file);
+  if (unmeasured.length > 0) {
+    console.log(`[playwright-ci] ${unmeasured.length} file(s) balanced on a guess; refresh with pnpm e2e:durations: ${unmeasured.join(', ')}`);
+  }
   if (selected.files.length === 0) {
     console.log('[playwright-ci] no files assigned; every collected file belongs to another shard');
     return 0;

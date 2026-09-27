@@ -32,7 +32,7 @@ export const rules = [
     order: 50,
     command: 'node --test scripts/run-playwright-ci.test.mjs',
     reason: 'browser file allocation, coverage verification, or timing estimates changed',
-    matches: [/^scripts\/run-playwright-ci(?:\.test)?\.mjs$/, /^scripts\/data\/playwright-file-durations\.json$/, /^scripts\/run-ci-lane(?:\.test)?\.mjs$/],
+    matches: [/^scripts\/run-playwright-ci(?:\.test)?\.mjs$/, /^scripts\/data\/playwright-file-durations\.json$/, /^scripts\/refresh-playwright-durations\.mjs$/, /^scripts\/run-ci-lane(?:\.test)?\.mjs$/],
   },
   { order: 60, command: 'node --test scripts/prepush.test.mjs', reason: 'pre-push scope or failure propagation changed', matches: [/^scripts\/prepush(?:-unit-plan)?(?:\.test)?\.mjs$/, /^\.githooks\/pre-push$/, /^scripts\/suggest-focused-checks\.mjs$/] },
   {

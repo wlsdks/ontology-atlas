@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { inventoryFiles, balanceFiles, runPlaywrightCi } from './run-playwright-ci.mjs';
+import { measureReport, mergeDurations } from './refresh-playwright-durations.mjs';
 
 const report = (names) => ({ suites: [{ specs: names.map((file) => ({ file, tests: [{}] })) }] });
 test('discovery rejects errors, empty subjects and unsupported paths', () => {
@@ -78,3 +79,17 @@ test('executed inventory must equal the assigned inventory before success is acc
     assert.equal(runPlaywrightCi(['--shard=1/1'],{cwd,spawn}),0);
   } finally {rmSync(cwd,{recursive:true,force:true});}
 });
+
+test('refreshed weights count every attempt, keep unmeasured files, and never record an empty file', () => {
+  const attempt = (duration) => ({ duration });
+  const report = { suites: [{ specs: [
+    { file: 'a.spec.ts', tests: [{ results: [attempt(1500), attempt(500)] }, { results: [attempt(1000)] }] },
+  ], suites: [{ specs: [{ file: 'b.spec.ts', tests: [] }] }] }] };
+  const measured = measureReport(report);
+  assert.deepEqual(measured.get('a.spec.ts'), { seconds: 3, tests: 2 });
+  const history = { sourceRuns: [1, 2], files: { 'b.spec.ts': { seconds: 9, tests: 1 }, 'a.spec.ts': { seconds: 99, tests: 9 } } };
+  const merged = mergeDurations(history, measured, '7');
+  assert.deepEqual(merged.files, { 'a.spec.ts': { seconds: 3, tests: 2 }, 'b.spec.ts': { seconds: 9, tests: 1 } });
+  assert.deepEqual(merged.sourceRuns, [7, 1, 2]);
+});
+
