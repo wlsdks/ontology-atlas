@@ -147,7 +147,7 @@ describe('AppUpdateSettings', () => {
       </NextIntlClientProvider>,
     );
     await screen.findByText(copy.versionUnknownRetried);
-    // The row no longer promises the retry that just ran, and only the result line warns.
+    // The row does not promise the retry that just ran, and only the result line warns.
     expect(row.textContent).not.toContain(copy.versionUnknown);
     const warnings = Array.from(view.container.querySelectorAll('[class*="status-warning"]'));
     expect(warnings.map((node) => node.textContent)).toEqual([copy.resultFailed]);

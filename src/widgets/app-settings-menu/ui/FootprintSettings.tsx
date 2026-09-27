@@ -249,7 +249,6 @@ export function FootprintSettings() {
             format={(v) => `${v}px`}
             onChange={(gap) => set({ gap })}
           />
-          {/* `FootprintPreference` records what happens to a saved setting for a retired glyph control. */}
           <button
             type="button"
             data-testid="app-settings-footprint-reset"

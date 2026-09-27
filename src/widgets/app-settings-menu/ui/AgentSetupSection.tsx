@@ -19,12 +19,6 @@ import { McpProofPacket } from './McpProofPacket';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
 /**
- * The MCP connection pane, self-contained so the settings sheet and the Agents destination
- * share one derivation and state the same warning counts. It is drawn on the web too: MCP
- * attaches to the folder, and a browser only lacks the absolute path, so the config is
- * built on screen to paste.
- */
-/**
  * The terminal path, for someone who will not hand the browser a folder. Two lines copied as
  * one block so the order survives the paste: `init` makes the vault, `agent-setup --write`
  * points the coding tools at it.
@@ -34,6 +28,12 @@ const CLI_TERMINAL_SETUP = [
   'node $ATLAS/cli/src/index.mjs agent-setup my-vault --write',
 ].join('\n');
 
+/**
+ * The MCP connection pane, self-contained so the settings sheet and the Agents destination
+ * share one derivation and state the same warning counts. It is drawn on the web too: MCP
+ * attaches to the folder, and a browser only lacks the absolute path, so the config is
+ * built on screen to paste.
+ */
 export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () => void } = {}) {
   const t = useTranslations('nav.settingsMenu');
   const localVault = useLocalVault();

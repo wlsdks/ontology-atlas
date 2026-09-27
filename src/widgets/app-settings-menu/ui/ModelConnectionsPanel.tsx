@@ -518,8 +518,6 @@ function StoredKey({ last4, checked }: { last4: string; checked: boolean }) {
   );
 }
 
-// ─── API keys ──────────────────────────────────────────────────────────────────────────
-
 function KeyRow({
   provider,
   status,
@@ -670,7 +668,6 @@ function KeyRow({
               if (next) {
                 setVerify({ kind: 'idle' });
                 onStatus(next);
-                // The row now shows the key's last four; the announcer reads the same fact out.
                 announce(`${label} · ${t('saved')}`);
               }
             }}
@@ -841,8 +838,6 @@ function ClearKeyChip({ testId, onClear }: { testId: string; onClear: () => Prom
     </Chip>
   );
 }
-
-// ─── Local runners ─────────────────────────────────────────────────────────────────────
 
 /**
  * One runner row. There is one saved runner (`local-endpoint.ts`); a row is the one in use when
@@ -1208,8 +1203,6 @@ function isLoopbackHost(authority: string): boolean {
   return host === 'localhost' || host === '::1' || host.startsWith('127.');
 }
 
-// ─── External check (Jev, experimental) ────────────────────────────────────────────────
-
 function JevRow({
   status,
   read,
@@ -1334,8 +1327,6 @@ function JevRow({
     />
   );
 }
-
-// ─── Sent log ──────────────────────────────────────────────────────────────────────────
 
 /** The sent log — only real JSONL lines, and the count of all of them. It never invents a summary. */
 function AuditSection({

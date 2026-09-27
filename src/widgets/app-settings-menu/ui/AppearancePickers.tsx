@@ -30,6 +30,13 @@ const PICKER_TILE_INK = (active: boolean) =>
     ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)]'
     : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]';
 
+/**
+ * Label ink on a picker tile. Marker indigo over the active tile's `line-a13` tint is 4.12:1,
+ * below AA (`tests/contract/accent-ink-contrast.contract.test.ts`), so the active label is soft.
+ */
+const PICKER_LABEL_INK = (active: boolean) =>
+  active ? 'text-[color:var(--color-indigo-text-soft)]' : 'text-[color:var(--color-text-tertiary)]';
+
 /** Grid-cell placement plus focus ring — the layer the value layer does not supply. */
 const PICKER_TILE_FRAME =
   'w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
@@ -122,8 +129,8 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
 export function CanvasBackgroundPicker() {
   const t = useTranslations('nav.settingsMenu');
   const value = useCanvasBackground();
-  // A grid tile with its active ink split across parent and child (see the gate comment
-  // below) fits neither canonical radio shape, so only the behaviour comes from the hook.
+  // A grid tile with its active ink split across parent and child (`PICKER_TILE_INK`
+  // and `PICKER_LABEL_INK`) fits neither canonical radio shape, so only the behaviour comes from the hook.
   const group = useRovingRadioGroup({
     value,
     values: CANVAS_BACKGROUNDS,
@@ -153,18 +160,7 @@ export function CanvasBackgroundPicker() {
             >
               <CanvasBgSwatch variant={variant} />
               <span
-                className={cn(
-                  'text-label',
-                  /* The active tile's parent carries a line-a13 tint, and marker
-                     indigo over that composite is 4.12:1 — below AA (measured with
-                     the open-surface instrument). The ink that carries the tint is
-                     soft. Ink and tint are split across parent and child, which the
-                     same-tag inventory could not see, so this comment is the gate —
-                     the runtime decision belongs to a11y-open-surfaces. */
-                  active
-                    ? 'text-[color:var(--color-indigo-text-soft)]'
-                    : 'text-[color:var(--color-text-tertiary)]',
-                )}
+                className={cn('text-label', PICKER_LABEL_INK(active))}
               >
                 {t(`canvasBg.${variant}`)}
               </span>
@@ -208,18 +204,7 @@ export function GlyphSetPicker() {
                 ))}
               </span>
               <span
-                className={cn(
-                  'text-label',
-                  /* The active tile's parent carries a line-a13 tint, and marker
-                     indigo over that composite is 4.12:1 — below AA (measured with
-                     the open-surface instrument). The ink that carries the tint is
-                     soft. Ink and tint are split across parent and child, which the
-                     same-tag inventory could not see, so this comment is the gate —
-                     the runtime decision belongs to a11y-open-surfaces. */
-                  active
-                    ? 'text-[color:var(--color-indigo-text-soft)]'
-                    : 'text-[color:var(--color-text-tertiary)]',
-                )}
+                className={cn('text-label', PICKER_LABEL_INK(active))}
               >
                 {t(`glyphSet.${set}`)}
               </span>
@@ -281,13 +266,7 @@ export function AccentPicker() {
             >
               <AccentSwatch variant={accent} />
               <span
-                className={cn(
-                  'text-label',
-                  /* Same reason as the two pickers above — soft over the active tile's tint. */
-                  active
-                    ? 'text-[color:var(--color-indigo-text-soft)]'
-                    : 'text-[color:var(--color-text-tertiary)]',
-                )}
+                className={cn('text-label', PICKER_LABEL_INK(active))}
               >
                 {t(`accent.${accent}`)}
               </span>

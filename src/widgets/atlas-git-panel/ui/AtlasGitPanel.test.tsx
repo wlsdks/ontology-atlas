@@ -196,18 +196,13 @@ describe("AtlasGitPanel web fallback for a browser vault", () => {
 
     renderPanel(<AtlasGitPanel sessionChangeset={changeset} />);
 
-    // The old `atlas-git-web-body` became the setup frame (2026-07-26). The web
-    // degradation is now one of the "cannot do its job yet" states, and all three
-    // (web · no folder · not yet recording) share one frame and measure.
+    // The web state shares the one setup frame with no-folder and not-yet-recording.
     const setup = await screen.findByTestId("atlas-git-setup");
     expect(setup).toHaveAttribute("data-setup-state", "web");
     expect(screen.getByText("개념 추가 1")).toBeInTheDocument();
     expect(screen.getByText("개념 수정 2")).toBeInTheDocument();
     expect(screen.getByText("관계 추가 1")).toBeInTheDocument();
-    // **There is no terminal escape** (owner call, 2026-08-09). The command only
-    // ran if `$ATLAS` pointed at this repository's source folder, so only people
-    // who cloned could use it, and a vault that is a git repo needs nothing but
-    // `git commit`. This stops it coming back.
+    // No terminal escape: it needs a source checkout, and a git vault needs only `git commit`.
     expect(screen.queryByTestId("atlas-git-web-copy")).toBeNull();
     expect(screen.queryByText(/cli\/src\/index\.mjs snapshot/)).toBeNull();
     expect(
@@ -220,8 +215,6 @@ describe("AtlasGitPanel web fallback for a browser vault", () => {
 
   it("shows the empty-session message when the changeset has no changes", async () => {
     renderPanel(<AtlasGitPanel sessionChangeset={null} />);
-    // The empty-state sentence no longer repeats the section label; it is short
-    // status copy instead.
     expect(await screen.findByText("아직 없어요. 문서를 고치면 여기에 나타나요.")).toBeInTheDocument();
   });
 });
@@ -231,8 +224,7 @@ describe("AtlasGitPanel desktop", () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    // The pane reads documents (owner direction B, 2026-09-19): one line of totals, then a
-    // chip per changed document named by its concept — no kind label over a single row.
+    // One line of totals, then a chip per changed document named by its concept, with no kind label.
     const groups = await screen.findByTestId("atlas-git-change-groups");
     expect(groups).toHaveTextContent("추가 1");
     expect(groups).toHaveTextContent("수정 1");
@@ -242,17 +234,11 @@ describe("AtlasGitPanel desktop", () => {
     // The document with changed lines opens by default, whole, with its path named once.
     expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/elements/bar.md");
 
-    // #85 — history is the evidence pane's second tab (left: what to record, right: evidence).
+    // A step row reads in human language; the hash and the raw subject stay in the detail.
     const step = screen.getByTestId("atlas-git-history-item");
-    // 2026-07-27 — a step's summary reads in **human language**. The commit
-    // subject `ontology snapshot: +1 concept (…)` is a string we wrote, and
-    // letting it be read raw on a Korean screen means we did not translate our own
-    // string.
     expect(step).toHaveTextContent("추가 1");
     expect(step).toHaveTextContent("capabilities/foo");
-    // The hash belongs to **the detail, not the row** (measured on the mockup). A
-    // list's job is scanning, and squeezing the hash into one row of three columns
-    // (time · name · why) pushes "why" out.
+    // The hash belongs to the detail, not the row, or the why column is pushed out.
     expect(step).not.toHaveTextContent("abc1234");
     expect(step).not.toHaveTextContent("ontology snapshot");
 
@@ -398,11 +384,7 @@ describe("AtlasGitPanel desktop", () => {
 
     // The defect on this screen was "guidance with nothing to press", so the
     // button's existence is itself the contract.
-    //
-    // 2026-08-02: the title and 「How to undo」 **moved** to the
-    // stage's h1 and last line. The contract is "it is on this screen", not "it is
-    // inside this div", so the scope rises to the setup stage — otherwise the gate
-    // holds a DOM position rather than content every time the layout changes.
+    // Scoped to the setup stage, since the title and undo line sit in its h1 and last line.
     await screen.findByTestId("atlas-git-not-initialized");
     const setup = screen.getByTestId("atlas-git-setup");
     expect(setup).toHaveTextContent("git을 연동하면 변경이 쌓여요");
@@ -469,10 +451,7 @@ describe("AtlasGitPanel desktop", () => {
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    // 2026-07-27 — **the fact in the chrome, the input on demand.** The same fact
-    // used to sit **above** the content as a rounded card with a left amber rail,
-    // so a user who came to read history got a settings pitch as a first
-    // impression (a charter-forbidden pattern plus amber creep).
+    // The fact sits in the chrome, and the input opens on demand.
     const location = await screen.findByTestId("atlas-git-location");
     expect(location).toHaveTextContent("원격 저장소가 아직 없어요");
     // The input is not there yet — it does not sit there permanently.
@@ -518,11 +497,8 @@ describe("AtlasGitPanel desktop", () => {
     expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("new line");
     // The uncommitted row is at the top of the list and is the one selected.
     const pending = screen.getByTestId("atlas-git-pending-row");
-    // 2026-08-15 (8) — this row is "what I am looking at", not a pressed button.
-    // The sibling commit rows already use `aria-expanded`, so pressed here would
-    // split one list across two vocabularies.
+    // The row marks what the detail shows, not a pressed button; siblings use `aria-expanded`.
     expect(pending).toHaveAttribute("aria-current", "true");
-    // The tab buttons no longer exist.
     expect(screen.queryByTestId("atlas-git-diff-toggle")).toBeNull();
     expect(screen.queryByTestId("atlas-git-history-tab")).toBeNull();
   });
@@ -552,8 +528,7 @@ describe("AtlasGitPanel desktop", () => {
     // Without this assertion, the next person could revert the parser unnoticed.
     expect(patch.textContent).not.toContain("diff --git");
     expect(patch.textContent).not.toContain("index 05d74bf");
-    // The files lens reads the file with the same document reader the uncommitted pane
-    // uses (2026-09-19): one header names the document once, then its lines in prose.
+    // The files lens uses the uncommitted pane's reader: one header, then the lines in prose.
     expect(patch).toHaveTextContent("추가된 줄:");
   });
 
@@ -653,21 +628,14 @@ describe("AtlasGitPanel desktop", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     await screen.findByTestId("atlas-git-panel");
 
-    // When the modal was deleted (#78 Scope 2) this panel's only consumer became
-    // the `/git/` destination. A destination has no "close" — leaving is going
-    // elsewhere on the rail.
+    // A destination has no close; leaving is going elsewhere on the rail.
     expect(screen.queryByTestId("atlas-git-close")).not.toBeInTheDocument();
-    // An h1, not an 11px mono eyebrow — measured, that was far too small for a page title.
-    // The destination is named for what it is (owner, 2026-09-19): "Git", in both locales.
-    // Git's trademark policy permits naming the software a feature operates on.
+    // Named "Git" in both locales; the trademark policy permits naming the software used.
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Git");
   });
 });
 
-/**
- * 2026-07-26 redesign — the contract for the two shapes (setup / workbench) split
- * by "can this screen do its job right now".
- */
+/** Setup and workbench shapes, split by whether the screen can record right now. */
 describe("AtlasGitPanel setup mode", () => {
   it("uses one setup frame for all three pre-connection states", async () => {
     // ① web
@@ -711,9 +679,7 @@ describe("AtlasGitPanel setup mode", () => {
   });
 
   it("sends a folderless app user to the folder picker, not the download", async () => {
-    // Regression guard: this state used to fall through to the web degradation,
-    // showing a user **already in the app** the false guidance "the browser has no
-    // permission to run git / get the app →".
+    // A user already in the app must never be told to get the app.
     tauriApiMock.runtimeAvailable = true;
     renderPanel(<AtlasGitPanel vaultPath={null} />);
 
@@ -1013,8 +979,7 @@ describe("AtlasGitPanel step rows name concepts", () => {
   });
 
   it("shows one full name and counts the rest for three or more concepts", async () => {
-    // Two slots cut both names to a few characters when a third stood behind them
-    // ("Agent … Agent… and 25 more" in the Korean UI, installed app, 2026-09-24).
+    // Two slots would cut both names to a few characters when a third stands behind them.
     const node = (id: string, display: string) => ({
       ...GRAPH.nodes[0],
       id: `capability:${id}`,
@@ -1480,9 +1445,9 @@ describe("AtlasGitPanel follows the folder while open", () => {
 
 describe("AtlasGitPanel single-document revert", () => {
   /*
-     * Discard says the lines are unrecoverable, restore says the result stays uncommitted; both
-     * name the untouched documents, and nothing runs before the confirm click.
-     */
+   * Discard says the lines are unrecoverable, restore says the result stays uncommitted; both
+   * name the untouched documents, and nothing runs before the confirm click.
+   */
   const restoreCalls = () =>
     tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_restore_file");
 
@@ -1515,8 +1480,6 @@ describe("AtlasGitPanel single-document revert", () => {
   });
 
   it("puts the discard control in the document header at readable size and touch floor", async () => {
-    // It used to sit under the whole document at 9.5px in the faintest ink, below the
-    // touch floor: a footnote where a control belongs (2026-09-21).
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     await screen.findByTestId("atlas-git-change-groups");
@@ -1524,7 +1487,7 @@ describe("AtlasGitPanel single-document revert", () => {
     fireEvent.click(rows.find((row) => row.textContent?.includes("bar"))!);
 
     const discard = await screen.findByTestId("atlas-git-discard");
-    // The same 32px / text-body step as the restore door and every confirm pair (2026-09-25).
+    // The same 32px text-body step as the restore door and every confirm pair.
     expect(discard.className).toContain("text-body");
     expect(discard.className).not.toContain("text-caption");
     expect(discard.className).toContain("atlas-touch-floor");
@@ -1597,9 +1560,9 @@ describe("AtlasGitPanel single-document revert", () => {
   });
 
   /*
-     * Two documents whose paths differ only by folder share a slug tail (`matchNodeId`); the
-     * restore door must reach only the chosen one.
-     */
+   * Two documents whose paths differ only by folder share a slug tail (`matchNodeId`); the
+   * restore door must reach only the chosen one.
+   */
   const SAME_TAIL_GRAPH = {
     nodes: [
       {
@@ -1698,9 +1661,9 @@ describe("AtlasGitPanel single-document revert", () => {
 
 describe("AtlasGitPanel single-document history", () => {
   /*
-     * The detail lists other steps that touched the focused document; a row jumps there, reading
-     * further pages when needed.
-     */
+   * The detail lists other steps that touched the focused document; a row jumps there, reading
+   * further pages when needed.
+   */
   const step = (n: number, subject: string) => ({
     shortHash: `d${n.toString().padStart(6, "0")}`,
     hash: `d${n.toString().padStart(6, "0")}${"0".repeat(33)}`,
@@ -1874,9 +1837,9 @@ describe("AtlasGitPanel one reader at a time", () => {
 
 describe("AtlasGitPanel reader states what it renders", () => {
   /*
-     * A document past the ceiling draws hunks, and a renamed document is asked for with its old
-     * name, or git reports every line as added.
-     */
+   * A document past the ceiling draws hunks, and a renamed document is asked for with its old
+   * name, or git reports every line as added.
+   */
   it("renders hunks and says why when a document exceeds the limit", async () => {
     installDesktopGit({
       documentDiff: () => ({ path: "docs/elements/bar.md", diff: "", untracked: false, tooLarge: true }),
@@ -2051,10 +2014,9 @@ describe("AtlasGitPanel explains a missing control", () => {
   });
 });
 
-describe("AtlasGitPanel — confirms that swap in take and return focus (2026-09-25)", () => {
+describe("AtlasGitPanel — confirms that swap in take and return focus", () => {
   it("Push with uncommitted changes opens the commit confirm instead of committing silently", async () => {
-    // `git_snapshot(push:true)` records pending changes under the automatic subject first, so a
-    // press on "Push" used to write a commit nobody confirmed or named.
+    // `git_snapshot(push:true)` records pending changes first, so Push must confirm them.
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     const push = await screen.findByTestId("atlas-git-remote-push");
@@ -2112,11 +2074,11 @@ describe("AtlasGitPanel — confirms that swap in take and return focus (2026-09
   });
 });
 
-describe("AtlasGitPanel — a jump along one document's history keeps that document (2026-09-25)", () => {
+describe("AtlasGitPanel — a jump along one document's history keeps that document", () => {
   /*
-     * A jump from a document's history must open on that document, or the restore door would
-     * restore the step's first document instead.
-     */
+   * A jump from a document's history must open on that document, or the restore door would
+   * restore the step's first document instead.
+   */
   const node = (id: string, kind: string, slug: string, display: string) => ({
     id,
     title: display,
@@ -2477,7 +2439,7 @@ describe("AtlasGitPanel — the remote state is told as it is", () => {
   });
 });
 
-describe("AtlasGitPanel — a step names only concepts (real-bridge QA, 2026-09-25)", () => {
+describe("AtlasGitPanel — a step names only concepts", () => {
   // The vault README (`vault-readme`) has a graph node but must never count as a concept.
   const node = (id: string, kind: string, display: string, slug: string) => ({
     id,
@@ -2533,7 +2495,7 @@ describe("AtlasGitPanel — a step names only concepts (real-bridge QA, 2026-09-
   });
 });
 
-describe("AtlasGitPanel — the concepts lens reads what changed (real-bridge QA, 2026-09-25)", () => {
+describe("AtlasGitPanel — the concepts lens reads what changed", () => {
   // The default concepts lens also reads the change itself, not only the card and history.
   const GRAPH = {
     nodes: [
@@ -2605,11 +2567,11 @@ describe("AtlasGitPanel — the concepts lens reads what changed (real-bridge QA
   });
 });
 
-describe("AtlasGitPanel — a saved remote is not a dead end (real-bridge QA, 2026-09-25)", () => {
+describe("AtlasGitPanel — a saved remote is not a dead end", () => {
   /*
-     * A saved address without an upstream is the never-sent state (`describeRemoteState`), whose
-     * one press is the first send.
-     */
+   * A saved address without an upstream is the never-sent state (`describeRemoteState`), whose
+   * one press is the first send.
+   */
   const SAVED_NOT_SENT = { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null, hasOrigin: true };
   const NO_REMOTE = { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null, hasOrigin: false };
   const PUBLISHED = {

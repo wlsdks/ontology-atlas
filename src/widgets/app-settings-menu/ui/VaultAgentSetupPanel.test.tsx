@@ -99,9 +99,7 @@ function renderPanel(
       onOpenWorkflowGuide={vi.fn()}
     />,
   );
-  // 2026-09-19 — restart, check and the "not working?" fold live in the verification dialog;
-  // C13 (2026-08) had already demoted the detailed verification behind the fold. Both are
-  // opened here so the existing assertions can see the content (the tool rows stay exposed).
+  // Opens the verification dialog and its "not working?" fold so assertions can see their content.
   const verifyOpen = screen.queryByTestId('agent-setup-verify-open');
   if (verifyOpen) fireEvent.click(verifyOpen);
   const advancedToggle = screen.queryByTestId('agent-setup-advanced-toggle');
@@ -137,9 +135,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByRole('region', { name: '에이전트 연결(MCP)' }),
     ).toBeInTheDocument();
-    // The amber badge that stated the same fact a third time is gone (design
-    // council S2, 2026-08-02) — the row stating the number is still directly below
-    // it, and that is the single statement.
+    // One statement of the count: the row below says it, so no amber badge repeats it.
     expect(screen.queryByText('누락')).toBeNull();
     expect(screen.getByText(
         setupCopy.statusSummary.replace('{tools}', 'Claude Code · Codex').replace('{ready}', '1').replace('{total}', '2'),
@@ -184,7 +180,6 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('이 폴더에서 문서 1개를 읽었어요')).toBeInTheDocument();
     expect(screen.getByText('상태')).toBeInTheDocument();
     expect(screen.getByText('아직 검사 결과가 없어요')).toBeInTheDocument();
-    // The 「Connection file {ready}/{total}」 row was removed — the header summary always states the same number.
     expect(screen.getByText('여는 자리')).toBeInTheDocument();
     expect(
       screen.getByText('다른 코드 폴더에서 열기 전에 연결 설정을 복사하세요'),
@@ -233,8 +228,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByLabelText('확인 명령 결과 읽는 법'),
     ).toBeInTheDocument();
-    // Scoped to the gate-rules list: the ready word is also a tool row's button label since
-    // 2026-09-19, when those buttons dropped the tool name the row already carries.
+    // Scoped to the gate-rules list: the ready word is also a tool row's button label.
     const gateRules = screen.getByLabelText('확인 명령 결과 읽는 법');
     expect(within(gateRules).getByText('안 됨')).toBeInTheDocument();
     expect(within(gateRules).getByText('느림')).toBeInTheDocument();
@@ -298,9 +292,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    // The amber badge that stated the same fact a third time is gone (design
-    // council S2, 2026-08-02) — the row stating the number is still directly below
-    // it, and that is the single statement.
+    // One statement of the count: the row below says it, so no amber badge repeats it.
     expect(screen.queryByText('누락')).toBeNull();
     expect(screen.getByText('Claude Code · Codex 연결 파일 2/2개 준비됨')).toBeInTheDocument();
     expect(
@@ -380,11 +372,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText(/오류 1개: 커밋을/)).toBeInTheDocument();
   });
 
-  // ⑤ — 「5 are blocking」 gets somewhere to go. This block previously had 0
-  // interactive elements and not one character saying which file was wrong: after
-  // reading the number, all a person could do was close the window. The gate checks
-  // not only «the link exists» but also «it is absent when clean», because a link
-  // that is always there carries no state.
+  // Present with findings and absent when clean, since an always-present link carries no state.
   it('links the validation row to the to-do queue when there are findings', () => {
     renderPanel(
       { agentConfigStatus: { mcpJson: true, codexConfig: true, mcpExample: true } },
@@ -448,9 +436,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    // The amber badge that stated the same fact a third time is gone (design
-    // council S2, 2026-08-02) — the row stating the number is still directly below
-    // it, and that is the single statement.
+    // One statement of the count: the row below says it, so no amber badge repeats it.
     expect(screen.queryByText('누락')).toBeNull();
     expect(screen.getByText('Claude Code · Codex 연결 파일 1/2개 준비됨')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-status-next')).toHaveTextContent(
@@ -1274,9 +1260,7 @@ describe('VaultAgentSetupPanel', () => {
   });
 
   it("states on the row that another server's config exists", () => {
-    // Caught by rendering the mixed state, 2026-09-19: the control changed to "copy a correct
-    // one" while the row said only the file path, so the page showed three rows offering to
-    // connect and one offering a replacement for no visible reason.
+    // A row offering a replacement must say why, or it reads as unexplained among connect rows.
     render(
       <VaultAgentSetupPanel
         canEditCurrent
@@ -1331,10 +1315,9 @@ describe('VaultAgentSetupPanel', () => {
         onOpenWorkflowGuide={vi.fn()}
       />,
     );
-    // One row per tool, each with its file and its own control (owner, 2026-09-19).
+    // One row per tool, each with its file and its own control.
     const rows = screen.getByTestId('agent-setup-steps');
-    // Render order is derived from `AGENT_CLIENTS` — "one list, two truths" (2026-07-30) stays
-    // closed: change the array order and the rows must follow.
+    // Render order is derived from `AGENT_CLIENTS`: change the array order and the rows follow.
     expect(
       [...rows.querySelectorAll("[data-testid^='agent-setup-row-']")].map((el) =>
         el.getAttribute('data-testid'),
@@ -1512,7 +1495,7 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
-    // With all three ready, the rows stay where they are and say so (2026-09-19: no fold).
+    // With all three ready, the rows stay where they are and say so.
     expect(screen.getByRole('status', { name: '.mcp.json 준비됨' })).toBeInTheDocument();
     expect(screen.getByRole('status', { name: 'Codex 설정 준비됨' })).toBeInTheDocument();
     expect(
@@ -1545,9 +1528,7 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
-    // 2026-08-01 — the old assertion was 「Cannot connect」 and that sentence was
-    // false. The one thing a browser cannot do is **save it automatically** (ledger
-    // 2026-08-01).
+    // A browser can connect; the one thing it cannot do is save the config automatically.
     const card = screen.getByTestId('agent-server-unavailable');
     expect(card).toHaveTextContent('설정 파일을 대신 저장하지 못해요');
     expect(card).not.toHaveTextContent('연결할 수 없어요');

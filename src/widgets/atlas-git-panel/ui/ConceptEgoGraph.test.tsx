@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 import { ConceptEgoGraph } from "./ConceptEgoGraph";
 import type { ConceptEgo } from "../model/build-concept-ego";
 
-/** The count the reading table shows and the count the drawing renders must agree. */
 function ego(count: number): ConceptEgo {
   return {
     id: "self",

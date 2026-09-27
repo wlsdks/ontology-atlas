@@ -14,11 +14,6 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 
 /**
- * The agent's first-contact proof packet, a typed handoff pasted into an agent. One component
- * in two placements (`.claude/rules/surfaces.md`): last in step 3 with a runnable server, and
- * standalone where there is no step 3, so the packet cannot drift between copies.
- */
-/**
  * The commands are built, not frozen, so they run wherever the packet is pasted: `ATLAS_CLI`
  * gives the one invocation form, `vaultPathForPacket` the absolute path or a fill-in
  * instruction, and `shellQuoteForPacket` keeps a path with spaces intact.
@@ -56,6 +51,11 @@ function buildMcpFirstCallsPacket(vaultName: string, vaultPath: string | null): 
   ].join('\n');
 }
 
+/**
+ * The agent's first-contact proof packet, a typed handoff pasted into an agent. One component
+ * in two placements (`.claude/rules/surfaces.md`): last in step 3 with a runnable server, and
+ * standalone where there is no step 3, so the packet cannot drift between copies.
+ */
 export function McpProofPacket({
   /** `boxed` draws its own card; `inline` sits inside a step that already has one. */
   frame = 'boxed',

@@ -11,14 +11,6 @@ import {
   type EgoView,
 } from "../lib/ego-layout";
 
-/**
- * One concept and its immediate neighbours, a read-only preview drawn from the result of
- * the pure `layoutConceptEgo`. Kind is shape, as on the map; solid lines are contains/belongs to,
- * dashed are depends on/used by. The SVG ports `OntologyMapKindGlyph`'s silhouettes and
- * must stay within the `node-kind-shape-parity` contract. The relation table carries names,
- * so a neighbour is named here only while pointed at or focused, over a canvas halo.
- */
-
 /** The geometry comes from the `--git-ego-*` tokens. */
 function readGeometry(el: Element | null): EgoGeometry {
   const fallback = DEFAULT_EGO_GEOMETRY;
@@ -113,6 +105,13 @@ function pullBack(x1: number, y1: number, x2: number, y2: number, inset: number)
   return [x2 - (dx / length) * inset, y2 - (dy / length) * inset];
 }
 
+/**
+ * One concept and its immediate neighbours, a read-only preview drawn from the result of
+ * the pure `layoutConceptEgo`. Kind is shape, as on the map; solid lines are contains/belongs to,
+ * dashed are depends on/used by. The SVG ports `OntologyMapKindGlyph`'s silhouettes and
+ * must stay within the `node-kind-shape-parity` contract. The relation table carries names,
+ * so a neighbour is named here only while pointed at or focused, over a canvas halo.
+ */
 export function ConceptEgoGraph({
   ego,
   bearingLabel,

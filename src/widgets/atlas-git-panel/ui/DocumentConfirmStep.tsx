@@ -38,9 +38,9 @@ const DOCUMENT_DOOR_CLASS = controlClass({
 });
 
 /**
- * Focus for a confirm that swaps in where its trigger stood. The trigger unmounts on press,
- * or focus would fall to `<body>`; opening focuses the step, and Escape or cancel returns
- * focus to the opener if still mounted, else to the restored trigger.
+ * Focus for a confirm that swaps in where its trigger stood. The trigger unmounts on press, so
+ * without this hook, focus falls to `<body>` and Escape does nothing. Opening focuses the step;
+ * Escape or cancel returns focus to the opener if still mounted (Push), else to the trigger.
  */
 export function useInlineConfirmFocus(
   open: boolean,

@@ -63,46 +63,27 @@ import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
- * The single settings surface: a modal sheet with an always-visible LNB and one pane per
- * section, no drill-in. Map screen rows appear only where the host injects `screenControls`.
- * The `open`/`onOpenChange` props are optional controlled props, ⌘K yields to the palette, and Escape
- * stops propagation so it does not reach the map's Esc dismissal order.
- */
-
-/**
  * LNB items: the left list's order and grouping is this array. Group titles say why items sit
  * in that order, and icons are a scanning channel. Item dimensions come from this sheet, not
  * the workbench chrome (`design.md` locked-scale scope): `px-3 py-2` like `SettingsRow`, the
  * body text step so the pane head stays the loudest line, and 16px icons.
  */
 const SETTINGS_GROUPS = [
-  // Why "Expand" sits **between** background and the walked path (owner, 2026-08-01:
-  // *"It seems like putting one above footprints would work"*, said when the mark was prints):
-  // the first two are what the map is drawn from (ground, glyphs) and expand is
-  // what opens on top of that. The walked path is the trace left after everything is
-  // drawn, so last is right.
-  // Why "Notifications" (notify) sits **after** the walked path: the first four follow how the
-  // map is drawn (ground · glyph · expand · trace), and notify is the layer where
-  // the app speaks on top of it. Why it is not moved under "Connected" is in the
-  // render-branch comment.
+  // Ordered as the map is drawn (ground, glyphs, expand, the walked path), then notifications,
+  // the layer where the app speaks on top of it.
   { key: 'look', items: ['screen', 'background', 'expand', 'footprint', 'notify'] },
-  // Why "My Agent Connection" and "In-App Agent" sit **side by side** here: they
-  // are two different destinations, not two summary rows of one section. One is
-  // the **config file** that lets outside tools read this folder; the other is the
-  // **key** for talking to an agent inside the app.
   /*
-     * Agents, MCP and API Key stay in English: words the target user already knows, with each
-     * pane's first line saying what it does. The names have changed three times; the Agents label
-     * is not a vendor condition (`tests/contract/vendor-naming.contract.test.ts`).
-     */
+   * Agents, MCP and API Key stay in English: words the target user already knows, with each
+   * pane's first line saying what it does. The Agents label is not a vendor condition (`tests/contract/vendor-naming.contract.test.ts`).
+   */
   /*
-     * Only values set once stay here; operational work with progress (runtimes, agent
-     * connection) lives on the Agents destination, reached by signpost rows at this group's head.
-     */
+   * Only values set once stay here; operational work with progress (runtimes, agent
+   * connection) lives on the Agents destination, reached by signpost rows at this group's head.
+   */
   { key: 'connect', items: ['workspace'] },
   /*
-     * App is last, as in macOS convention; desktop only, since a browser tab cannot replace itself.
-     */
+   * App is last, as in macOS convention; desktop only, since a browser tab cannot replace itself.
+   */
   { key: 'app', items: ['update'] },
 ] as const;
 
@@ -141,10 +122,7 @@ const SETTINGS_LOCALE_FOCUS_MAX_AGE_MS = 10_000;
  */
 const INDIGO_ACTION_CHIP =
   'shrink-0 border-[color:var(--color-indigo-line-a32)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]';
-// The single source for the value is `@/shared/config` — writing it again here
-// makes it diverge from the sheet's copy, which is what actually happened on
-// 2026-08-01. This file only consumes it and re-exports the name for existing
-// consumers.
+// @/shared/config owns the value; re-exported here for existing consumers.
 export { AGENT_GRAPH_WORKFLOW_HREF };
 
 interface SettingsLocaleFocusIntent {
@@ -229,12 +207,18 @@ export interface AppSettingsMenuProps {
    */
   screenControls?: AppSettingsScreenControls;
   /**
-     * Trigger surface: `header-pill` (default) is the page header's settings pill, `rail-tile`
-     * the nav rail's lower utility tile, `chrome-tile` the `<lg` top utility lane tile.
-     */
+   * Trigger surface: `header-pill` (default) is the page header's settings pill, `rail-tile`
+   * the nav rail's lower utility tile, `chrome-tile` the `<lg` top utility lane tile.
+   */
   triggerVariant?: SettingsTriggerVariant;
 }
 
+/**
+ * The single settings surface: a modal sheet with an always-visible LNB and one pane per
+ * section, no drill-in. Map screen rows appear only where the host injects `screenControls`.
+ * The `open`/`onOpenChange` props are optional controlled props, ⌘K yields to the palette, and Escape
+ * stops propagation so it does not reach the map's Esc dismissal order.
+ */
 export function AppSettingsMenu({
   mode,
   open: openProp,
@@ -243,14 +227,12 @@ export function AppSettingsMenu({
   triggerVariant = 'header-pill',
 }: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
-  // #72 — the copy-path and Finder strings reuse the keys the old
-  // LocalVaultPicker used, so only the surface moves and no copy is duplicated.
+  // The copy-path and Finder strings reuse the localVaultPicker keys, so no copy is duplicated.
   const tPicker = useTranslations('featuresMisc.localVaultPicker');
   const locale = useLocale();
   const { state: copyState, copy } = useCopyFeedback();
   const router = useRouter();
   const localVault = useLocalVault();
-  // Whether the bundled MCP server exists — decides whether one-click is possible.
   // The guide the current screen registered for "reopen the guide". On a screen
   // with no registration the row itself is absent (no empty rows, no dead buttons).
   const replayGuide = useGuideReplay();
@@ -282,24 +264,21 @@ export function AppSettingsMenu({
     // closePanel owns the return target so ⌘K can intentionally yield focus
     // to the command palette without the modal cleanup stealing it back.
     restoreFocus: false,
-    // ⚠️ trapTab defaults to true — this sheet regressed to modal plus dim on
-    // 2026-07-30 (`aria-modal="true"`) and really does trap Tab. The "the dock is
-    // non-modal" comment that used to sit here predated that and was deleted as
-    // misinformation.
+    // Tab stays trapped (the default): the sheet is aria-modal over a scrim.
   });
   const titleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
   /*
-     * The web lists no pane it cannot fill: `AppUpdateSettings` is null outside the desktop
-     * shell, so the App group is dropped there.
-     */
+   * The web lists no pane it cannot fill: `AppUpdateSettings` is null outside the desktop
+   * shell, so the App group is dropped there.
+   */
   const desktopShell = isDesktopShell();
   const settingsGroups = SETTINGS_GROUPS.filter((group) => group.key !== 'app' || desktopShell);
   const shownSection: SettingsSection =
     section === 'update' && !desktopShell ? 'screen' : section;
 
   const isLocalVaultLoaded = localVault.status === 'loaded';
-  // #72 — the absolute path is knowable only on the desktop (a web FSA handle has no path).
+  // The absolute path is knowable only on the desktop (a web FSA handle has no path).
   const vaultRootPath =
     isLocalVaultLoaded && localVault.handle
       ? (getTauriVaultRootPath(localVault.handle) ?? null)
@@ -339,18 +318,17 @@ export function AppSettingsMenu({
   };
 
 
-  // P3 defect ⑥ — in controlled mode React state must be the source of truth for
-  // this `<details>`. Re-aligning the DOM `open` to the React value on every render
-  // removes the race structurally (in uncontrolled mode the same value is a no-op).
   /**
-     * Exit presence, so the sheet leaves the way it came in. Focus return, scroll lock and Esc
-     * still read `open`; while leaving the sheet is `inert` and `aria-hidden`, so two modals are
-     * never read at once.
-     */
+   * Exit presence, so the sheet leaves the way it came in. Focus return, scroll lock and Esc
+   * still read `open`; while leaving the sheet is `inert` and `aria-hidden`, so two modals are
+   * never read at once.
+   */
   const settingsPresence = usePanelPresence(open);
   const settingsMounted = settingsPresence.mounted;
   const settingsExiting = settingsPresence.exiting;
 
+  // In controlled mode React state is the truth for this `<details>`: re-aligning the DOM
+  // open state on every change removes the race (a no-op when uncontrolled).
   useEffect(() => {
     if (detailsRef.current) detailsRef.current.open = open;
     if (open) {
@@ -361,9 +339,9 @@ export function AppSettingsMenu({
   }, [open]);
 
   /*
-     * A language switch remounts the `[locale]` layout, so the sheet reopens on the same pane
-     * instead of dropping focus to `<body>`; `RouteFocusManager` leaves the `aria-modal` sheet alone.
-     */
+   * A language switch remounts the `[locale]` layout, so the sheet reopens on the same pane
+   * instead of dropping focus to `<body>`; `RouteFocusManager` leaves the `aria-modal` sheet alone.
+   */
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const reopen = consumeSettingsLocaleFocus(
@@ -406,24 +384,18 @@ export function AppSettingsMenu({
       open={open}
       className="group relative shrink-0"
       onKeyDown={(event) => {
-        // Guardian B2 — transient mutual exclusion: when ⌘K (the palette) opens,
-        // settings demotes (no simultaneous stack, design.md popup-soup contract).
-        // It closes without returning focus so the palette can take it.
+        // ⌘K opens the palette, so settings closes without returning focus: one transient
+        // surface at a time (design.md).
         if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
           closePanel(false);
           return;
         }
-        // Only an open sheet owns Escape. The gear keeps focus after it is pressed
-        // and after the sheet hands focus back, and a closed sheet that still took
-        // the key left the page's own dismissal order unreachable from it: on the
-        // map a selected node stayed selected however often Escape was pressed
-        // (measured 2026-09-26).
+        // Only an open sheet owns Escape: the gear keeps focus after closing, and a closed sheet
+        // that took the key would leave the map's own dismissal order unreachable.
         if (event.key !== 'Escape' || !open) return;
         event.preventDefault();
-        // This dialog owns Escape so the map's Esc dismissal order (a window
-        // keydown) does not react twice to the same keypress — "one overlay owns
-        // one Escape" (the same contract as the old settings gear). With drill-in
-        // subviews gone the order is one rung: this sheet closes.
+        // This dialog owns Escape, so the map's window-level Esc order does not react to the
+        // same keypress twice; with no subviews the sheet simply closes.
         event.stopPropagation();
         closePanel();
       }}
@@ -470,26 +442,26 @@ export function AppSettingsMenu({
         ) : null}
       </summary>
       {/* `open ||` first, so the portal mounts in the opening commit and autofocus and the trap
-                find the panel; the presence check extends only the closing side. */}
+          find the panel; the presence check extends only the closing side. */}
       {(open || settingsMounted) && typeof document !== 'undefined'
         ? createPortal(
       <div
         ref={overlayRef}
         /*
-                 * A centred modal with a scrim; the map-affecting panes carry live previews, so covering
-                 * the map costs nothing. Because it truly blocks, `aria-modal` and the focus trap are set.
-                 * Portalled to body so no chrome stacking context traps it.
-                 */
+         * A centred modal with a scrim; the map-affecting panes carry live previews, so covering
+         * the map costs nothing. Because it truly blocks, `aria-modal` and the focus trap are set.
+         * Portalled to body so no chrome stacking context traps it.
+         */
         className={`${settingsExiting ? 'app-settings-scrim-out' : 'app-settings-scrim-in'} fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-backdrop-medium)] p-3 sm:p-6`}
         aria-hidden={settingsExiting || undefined}
         inert={settingsExiting || undefined}
         {...transientSurface("sheet")}
       data-testid="app-settings-overlay"
         /*
-                 * A press that starts and ends on the scrim closes the sheet, as for every `<Dialog>`; a
-                 * drag out of the panel is not a dismissal. The press is kept from moving focus, since
-                 * WebKit would hand it to `<body>`, outside the trap and Escape.
-                 */
+         * A press that starts and ends on the scrim closes the sheet, as for every `<Dialog>`; a
+         * drag out of the panel is not a dismissal. The press is kept from moving focus, since
+         * WebKit would hand it to `<body>`, outside the trap and Escape.
+         */
         onMouseDown={(event) => {
           scrimPressRef.current = event.target === event.currentTarget;
           if (scrimPressRef.current) event.preventDefault();
@@ -503,19 +475,16 @@ export function AppSettingsMenu({
         <div
           ref={panelRef}
           role="dialog"
-          // The dim really does block what is behind, so `aria-modal` is **true**.
-          // It was not set while this was a non-modal dock — the outside was alive
-          // then, and telling anyone to "pretend it is gone" would have been a lie.
           aria-modal="true"
           aria-labelledby={titleId}
           data-surface-role="settings-dock"
           tabIndex={-1}
           /*
-                     * Fixed size, so the window never changes between sections; overflow scrolls the right
-                     * pane, and only a narrow viewport shrinks it. 672 = the 720 minimum window minus two
-                     * 12px overlay margins on each side (720 − 24 − 24); wider than 880 only stretches the
-                     * gap between label and control.
-                     */
+           * Fixed size, so the window never changes between sections; overflow scrolls the right
+           * pane, and only a narrow viewport shrinks it. 672 = the 720 minimum window minus two
+           * 12px overlay margins on each side (720 − 24 − 24); wider than 880 only stretches the
+           * gap between label and control.
+           */
           className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[672px] max-h-[calc(100dvh-1.5rem)] w-[880px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
           data-testid="app-settings-popover"
         >
@@ -535,7 +504,7 @@ export function AppSettingsMenu({
               </h2>
             </div>
             {/* `IconButton` enforces the accessible name and takes size and tone from the ramp;
-                            hover and focus come from the consumer. */}
+                hover and focus come from the consumer. */}
             <IconButton
               label={t('closeLabel')}
               onClick={() => closePanel()}
@@ -560,14 +529,14 @@ export function AppSettingsMenu({
                       {t(`sectionGroup.${group.key}`)}
                     </p>
                     {/*
-                                          Signpost rows at the Connection group's head tell where moved panes went
-                                          (`surfaces.md`): no indigo, one navigation glyph, and a press closes the sheet
-                                          and goes rather than drawing that pane here.
-                                        */}
+                      Signpost rows at the Connection group's head tell where moved panes went
+                      (`surfaces.md`): no indigo, one navigation glyph, and a press closes the sheet
+                      and goes rather than drawing that pane here.
+                    */}
                     {/*
-                                          Points at `/mcp`, the folder's connection; the runner list is one named hop
-                                          further through its connector dialog, and `AcpRuntimeSettings` links back.
-                                        */}
+                      Points at `/mcp`, the folder's connection; the runner list is one named hop
+                      further through its connector dialog, and `AcpRuntimeSettings` links back.
+                    */}
                     {group.key === 'connect' ? (
                       <button
                         type="button"
@@ -723,10 +692,8 @@ export function AppSettingsMenu({
                 <GlyphSetPicker />
                 {/* The accent is the app's colour, not only the map's, so it stays here too. */}
                 <AccentPicker />
-                {/* Guides show once per destination, so replay lives in the one menu every screen has.
-                                    The sheet closes before the guide opens (no-transient-stacking contract). */}
-                {/* Off only stops the guide appearing by itself; replay and the map's compass tile still open it. */}
-                {/* One row: the auto-display switch, and the replay chip, which the switch never hides. */}
+                {/* Guides show once per destination, so replay lives here, and the sheet closes before
+                    the guide opens. Off only stops automatic display; replay and the compass still open it. */}
                 <SettingsRow
                   testId="app-settings-guide-auto-start"
                   label={t('replayGuideLabel')}
@@ -764,9 +731,9 @@ export function AppSettingsMenu({
                   </>
                 ) : shownSection === 'notify' ? (
                   /*
-                                     * Notifications get their own pane: they are what the app tells me, not how the map
-                                     * is drawn, and they sit under the visible-things group because they appear on screen.
-                                     */
+                   * Notifications get their own pane: they are what the app tells me, not how the map
+                   * is drawn, and they sit under the visible-things group because they appear on screen.
+                   */
                   <AgentActivitySettings />
                 ) : shownSection === 'background' ? (
                   <>
@@ -809,9 +776,9 @@ export function AppSettingsMenu({
                     caption={
                       localVault.status === 'error'
                         ? /*
-                                                   * The caption comes from the error code, never the raw browser message, and
-                                                   * matches how `FirstRunPage` branches on the same code.
-                                                   */
+                           * The caption comes from the error code, never the raw browser message, and
+                           * matches how `FirstRunPage` branches on the same code.
+                           */
                           localVault.errorCode === 'path-missing'
                           ? t('workspaceFolderErrorPathMissing')
                           : localVault.errorCode === 'permission-denied'
@@ -987,9 +954,9 @@ export function AppSettingsMenu({
                   }
                 />
                     {/*
-                                          Importing nodes is about what comes into this folder, so it is this group's
-                                          last row; the module owns the pick, the preview and its states.
-                                        */}
+                      Importing nodes is about what comes into this folder, so it is this group's
+                      last row; the module owns the pick, the preview and its states.
+                    */}
                     <BlockImportModule
                       renderTrigger={(trigger) => (
                         <SettingsRow

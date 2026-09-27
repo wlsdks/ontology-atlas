@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import type { ConceptEgo, EgoBearing } from "../model/build-concept-ego";
 import { EGO_VIEW_H, EGO_VIEW_W, layoutConceptEgo, rectsIntersect, type Rect } from "./ego-layout";
 
-/** No two label boxes intersect across the densities the drawing meets. */
 const NAMES = [
   "청구서 발행",
   "결제 게이트웨이 어댑터",

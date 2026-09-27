@@ -53,10 +53,8 @@ vi.mock('@/features/locale-switch', () => ({
   ),
 }));
 
-// Settings consolidation 2026-07-24 — AppSettingsMenu reads the app-wide
-// LocalVaultProvider through useLocalVault. This test renders without a provider,
-// so an idle vault is mocked (the agent detail panel appears only with a loaded
-// vault, and VaultAgentSetupPanel.test.tsx covers that separately).
+// Rendered without a LocalVaultProvider, so an idle vault is mocked; VaultAgentSetupPanel.test.tsx
+// covers the loaded case.
 vi.mock('@/entities/vault-session/model/use-agent-server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/entities/vault-session/model/use-agent-server')>()),
   useAgentServer: () => ({
@@ -349,9 +347,9 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   /*
-     * WebKit does not focus the clicked `<summary>`, so the sheet must take focus itself or
-     * Escape and the Tab trap start from `<body>`.
-     */
+   * WebKit does not focus the clicked `<summary>`, so the sheet must take focus itself or
+   * Escape and the Tab trap start from `<body>`.
+   */
   it('opened by the mouse, focus lands in the panel; Escape there closes and returns it to the gear', async () => {
     openSheet();
     const trigger = screen.getByTestId('app-settings-trigger');
@@ -428,9 +426,9 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   /*
-     * A language switch reopens the sheet on the same pane. jsdom lays nothing out, so every
-     * element's offsetParent is null; these cases mark the triggers as rendered.
-     */
+   * A language switch reopens the sheet on the same pane. jsdom lays nothing out, so every
+   * element's offsetParent is null; these cases mark the triggers as rendered.
+   */
   const renderedTriggers = () =>
     vi.spyOn(HTMLElement.prototype, 'offsetParent', 'get').mockImplementation(() => document.body);
 
@@ -611,10 +609,7 @@ describe('AppSettingsMenu controlled open', () => {
   });
 });
 
-// Phase 5 #20/#21 — whether the personalisation pickers (3 canvas backgrounds, 2
-// node icon sets) appear in the [screen] group, persist locally, and are reflected
-// in aria-checked.
-describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
+describe('AppSettingsMenu appearance pickers', () => {
   beforeEach(() => {
     mocks.isDesktopRuntime = false;
     window.localStorage.clear();
@@ -627,9 +622,9 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
   };
 
   /**
-     * jsdom computes no layout, so the fixed size is pinned by the size classes being identical
-     * in every section.
-     */
+   * jsdom computes no layout, so the fixed size is pinned by the size classes being identical
+   * in every section.
+   */
   it('keeps the dialog size fixed across sections', () => {
     openSheet();
     const panel = screen.getByTestId('app-settings-popover');
@@ -655,14 +650,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     // Pinned by **structure**, not copy — it must not break every time a label is refined.
     const groups = [...nav.children];
     expect(groups.length, 'the LNB needs three groups').toBe(3);
-    // 「Connected」 went from 3 to 4 on 2026-08-16 (the runners section was added), and
-    // a third group 「App」 appeared on 2026-08-20 (the update-check section). What this
-    // check holds is not the counts but the structure that **every group has a
-    // title** — the counts are a by-product of that structure, updated when a section
-    // is added. The 「Connection」 group is 2 items + **1 signpost row** = 3 buttons; the
-    // signpost sends you to a destination rather than opening a pane, so the item
-    // count and the button count differ. Since 2026-09-25 the group is 1 item + 2 signposts
-    // (MCP, and Models where the API Key pane was).
+    // The counts follow the sections: the Connection group is one item plus two signpost rows.
     expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 3, 1]);
     for (const g of groups) {
       expect(g.querySelector('p'), 'every LNB group needs a title').not.toBeNull();
@@ -788,8 +776,6 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     await waitFor(() => expect(screen.queryByTestId(controlId)).not.toBeInTheDocument());
   });
 
-  /* ── Expand section (2026-08-01, ported from the mockup `.qa-scratch/proto-expand.html`) ──── */
-
   it('offers three affordances, four structures and three sliders in the Expand section', () => {
     openSection('expand');
     expect(screen.getByTestId('app-settings-expand')).toBeInTheDocument();
@@ -799,10 +785,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     for (const value of ['disc', 'fan', 'ring', 'column']) {
       expect(screen.getByTestId(`app-settings-expand-structure-${value}`)).toBeInTheDocument();
     }
-    // The three numbers **start collapsed** (design audit, 2026-08-02) — six items
-    // standing at equal weight make this section read as a list rather than «a place
-    // to choose». It reuses the grammar the neighbouring 「Footprints」 already uses
-    // (「Manual Adjustment」).
+    // The three numbers start collapsed behind the two decisions, as in Footprints.
     for (const id of [
       'app-settings-expand-batch',
       'app-settings-expand-label-attempts',
@@ -839,7 +822,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     expect(range('app-settings-expand-max-open')).toEqual(['1', '6']);
   });
 
-  // The rendered side is measured in `tests/contract/expand-affordance.contract.test.ts`.
+  // The default value itself is pinned in tests/contract/expand-settings.contract.test.ts.
   it('defaults the affordance to the overhead bar', () => {
     openSection('expand');
     expect(screen.getByTestId('app-settings-expand-affordance-bar')).toHaveAttribute(
@@ -902,11 +885,6 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
 });
 
 
-// #72 — seeing, copying and revealing the selected vault's absolute path. The B2
-// merge deleted `VaultToolsMenu`, orphaning the `LocalVaultPicker` that owned this
-// surface so that nothing mounted it, and desktop users lost any way to see where
-// the vault sits on disk (review 2026-07-25). That component was rendering directly
-// in its own test and passing — a false green.
 describe('AppSettingsMenu vault absolute path', () => {
   beforeEach(() => {
     mocks.vaultRootPath = null;

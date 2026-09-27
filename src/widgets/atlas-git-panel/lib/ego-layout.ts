@@ -1,10 +1,9 @@
 import { EGO_BEARINGS, type ConceptEgo, type EgoBearing } from "../model/build-concept-ego";
 
 /**
- * Where every mark of a concept's ego drawing sits, computed without a DOM.
- * Each label tries the four sides of its node and takes the first that collides
- * with nothing already placed, else the least-overlapping side, so adjacent
- * labels never draw through each other.
+ * Where every mark of a concept's ego drawing sits, computed without a DOM. Each label takes
+ * the first of its node's four sides that collides with nothing placed, else the least costly
+ * one: a greedy pass, so four full fans (28 labels) can still meet in a narrow cell.
  */
 
 export const EGO_VIEW_W = 660;
@@ -34,7 +33,7 @@ export type EgoGeometry = {
   ey: number;
 };
 
-/** The token values from `app/globals.css` (`--git-ego-*`); the component reads the live ones. */
+/** The `--git-ego-*` values from `app/styles/base-map-tokens.css`; the component reads the live ones. */
 export const DEFAULT_EGO_GEOMETRY: EgoGeometry = {
   self: { project: 25, domain: 21, capability: 16, element: 13.5 },
   neighbor: { project: 14, domain: 12, capability: 9.5, element: 8 },
@@ -227,7 +226,7 @@ export function layoutConceptEgo(
     const span = (group.slots / slotTotal) * usable;
     const cap = labelCapForSlots(group.slots);
     // A fan spanning the whole circle has equal end angles, so it divides by `slots`;
-    // `slots - 1` would put the first and last neighbour on the same spot.
+    // dividing by `slots - 1` would put the first and last neighbour on the same spot.
     const closed = groups.length === 1;
     for (let i = 0; i < group.slots; i += 1) {
       const ratio = group.slots === 1 ? 0.5 : closed ? i / group.slots : i / (group.slots - 1);
@@ -258,7 +257,8 @@ export function layoutConceptEgo(
     cursor += span + gap;
   }
 
-  // The centre's own name is drawn at `text-body-lg` (14px) with its baseline 18 below the node.
+  // Room kept under the centre for its name at text-body-lg (14px). `ConceptEgoGraph` does not
+  // draw it (the card header names the concept), but neighbour labels still keep off it.
   const selfText = truncate(ego.label, 22);
   const selfWidth = estimateLabelWidth(selfText, 14);
   const selfLabel: EgoLabel = {
@@ -270,8 +270,8 @@ export function layoutConceptEgo(
   };
   const placed: Rect[] = [selfLabel.rect];
 
-  // Greedy placement: n labels × ≤2 texts × 4 sides, each scored against the placed and
-  // obstacle rect arrays, so O(n²) with n ≤ 4 fans × 8 slots.
+  // Greedy placement: each of n labels scores ≤2 texts × 4 sides against the placed and
+  // obstacle rect arrays, so O(n²) with n ≤ 4 × EGO_FAN_CAP = 28.
   const placedNodes = new Map<string, EgoLabel>();
   for (const node of nodes) {
     const { x, y, r } = node.slot;

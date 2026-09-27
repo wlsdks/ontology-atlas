@@ -66,10 +66,6 @@ export function SettingsPaneHead({
 }
 
 /**
- * A group of settings rows. `label` is optional: a group is named only when its pane holds
- * more than one, since the LNB already names the pane.
- */
-/**
  * A group's heading row: the eyebrow on the left and, when a group carries one, its own control
  * on the right (a hint, an opener). Exported on its own for a group whose body is not the row
  * container — the connectors card on the MCP tab draws its own frame.
@@ -94,6 +90,10 @@ export function SettingsGroupHeading({
   );
 }
 
+/**
+ * A group of settings rows. `label` is optional: a group is named only when its pane holds
+ * more than one, since the LNB already names the pane.
+ */
 export function SettingsGroup({
   label,
   trailing,
@@ -106,8 +106,8 @@ export function SettingsGroup({
   children: ReactNode;
   testId?: string;
 }) {
-  // `min-w-0`: as a grid item it would size to its widest caption (a long folder path) and
-  // `overflow-hidden` would clip the controls on the right.
+  // `min-w-0`: as a grid item it would size to its widest caption (a long folder path), and
+  // the group's `overflow-hidden` would clip the controls on the right.
   return (
     <section aria-label={label} className="min-w-0" data-testid={testId}>
       {label ? <SettingsGroupHeading label={label} trailing={trailing} /> : null}

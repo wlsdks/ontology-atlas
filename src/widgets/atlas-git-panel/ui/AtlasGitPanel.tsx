@@ -10,11 +10,8 @@ import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { stepFileNames, stripConventionalPrefix } from "../lib/step-title";
 import type { DocumentFollow } from "../lib/document-follow";
 import { useFormatter, useTranslations } from "next-intl";
-// `History as HistoryIcon` — usability review P0 (2026-07-23): under certain
-// HMR/bundle states the bare `History` identifier resolved to the global DOM
-// History constructor, and `<History>` JSX dropped the whole screen into the
-// error boundary with "Illegal constructor" (intermittent, stack captured). An
-// alias can never collide with a global.
+// Aliased: under HMR a bare `History` can resolve to the DOM's global `History` constructor
+// and throw "Illegal constructor"; an alias cannot collide with a global.
 import {
   Check,
   Download,
@@ -81,16 +78,15 @@ import { cn } from "@/shared/lib/cn";
 /**
  * Atlas Git, the body of the history destination. When the screen cannot record yet it is
  * setup mode: one centred column, one primary action and the three-step `ConnectLadder`
- * (a remote is optional, not a step). Otherwise it is the workbench, whose job is to check
- * which concepts changed and decide whether to record them: `decide` shows the list and dock
- * with evidence beside it, `recall` a single column of past steps, and the evidence column
- * renders only when it has something to show. Raw diff headers and automatic subjects are
- * read back in human language by `atlas-git-record.ts`; the raw text stays in the detail.
+ * (a remote is optional, not a step). Otherwise it is one workbench: the step list and commit
+ * dock on the left and, whenever there is anything to show, the selection's detail on the
+ * right. Raw diff headers and automatic subjects are read back in human language by
+ * the `atlas-git-record.ts` helpers; the raw text stays in the detail.
  *
  * Desktop uses the `src-tauri/src/git.rs` commands through `tauri-git.ts`; a browser cannot
- * spawn a process, so it offers the app first and the CLI second. Trust charter: mount-time
- * queries are read-only, and `git_init`, `git_set_remote` and `git_snapshot` run only from
- * their own button's click, which tests pin.
+ * spawn a process, so getting the app is its one action. Trust charter: mount-time queries
+ * are read-only, and `git_init`, `git_set_remote` and `git_snapshot` run only from their own
+ * button's click, which tests pin.
  */
 
 export interface AtlasGitPanelProps {
@@ -103,9 +99,9 @@ export interface AtlasGitPanelProps {
   /** Session changeset for the web degradation summary — HomePage's `ontologyChangeset`. */
   sessionChangeset?: OntologyChangeset | null;
   /**
-     * The vault graph, used to map a step's files onto concepts. Passed in rather than read
-     * through `useOntologyInsight`, which would make every test of this widget need a provider.
-     */
+   * The vault graph, used to map a step's files onto concepts. Passed in rather than read
+   * through `useOntologyInsight`, which would make every test of this widget need a provider.
+   */
   graph?: { nodes: readonly KnowledgeGraphNode[]; edges: readonly KnowledgeGraphEdge[] } | null;
   className?: string;
 }
@@ -228,10 +224,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * The stage: only `workbench` can record. `loading` and `error` use the setup frame too,
- * since waiting or re-checking is all the user can do.
- */
-/**
  * What the workbench is currently showing. `pending` = changes not yet
  * committed, `commit` = the commit at that hash.
  */
@@ -244,6 +236,10 @@ export type WorkbenchSelection = { kind: "pending" } | { kind: "commit"; hash: s
  */
 type RemoteAction = "fetch" | "pull" | "push";
 
+/**
+ * The stage: only `workbench` can record. `loading` and `error` use the setup frame too,
+ * since waiting or re-checking is all the user can do.
+ */
 type GitStage = "web" | "no-vault" | "loading" | "not-installed" | "error" | "not-initialized" | "workbench";
 
 type SetupStep = 1 | 2 | 3;
@@ -257,9 +253,9 @@ export function AtlasGitPanel({
   const t = useTranslations("atlasGit");
   const nativeErrors = useNativeErrorLookup();
   /**
-     * Turns a `git_fetch` code into the reader's language with `ahead`/`behind` filled in; any
-     * other summary, which is git's own output, passes through.
-     */
+   * Turns a `git_fetch` code into the reader's language with `ahead`/`behind` filled in; any
+   * other summary, which is git's own output, passes through.
+   */
   const remoteSummary = useCallback(
     (summary: string, ahead: number | null, behind: number | null) => {
       if (summary === "remote-no-upstream") return t("summaryNoUpstream");
@@ -291,11 +287,11 @@ export function AtlasGitPanel({
   const desktop = bridgeAvailable && Boolean(vaultPath);
 
   /*
-     * One workspace read remembered across route changes, so a return arrival does not flash
-     * the loading skeleton inside the route crossfade. One unit, so status, diff and history are
-     * always from the same read, with `referenceMs` the instant they were read. Keyed on the
-     * vault path (`shared/lib/route-arrival-memory.ts`); `refresh()` still runs on every mount.
-     */
+   * One workspace read remembered across route changes, so a return arrival does not flash
+   * the loading skeleton inside the route crossfade. One unit, so status, diff and history are
+   * always from the same read, with `referenceMs` the instant they were read. Keyed on the
+   * vault path (`shared/lib/route-arrival-memory.ts`); `refresh()` still runs on every mount.
+   */
   const [workspace, rememberWorkspace] = useArrivalMemory<GitWorkspaceMemory | null>(
     vaultPath ? `atlas-git-workspace:${vaultPath}` : null,
     null,
@@ -352,14 +348,10 @@ export function AtlasGitPanel({
   );
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   /*
-     * Whether git is installed, `null` until known. `git_probe` only tests for an executable, so
-     * calling it automatically keeps the no-automatic-write charter.
-     */
-  /*
-     * The concepts each step changed, from the per-commit files' kind and slug matched to vault
-     * nodes. Both the node and the file's own kind go through `isCanonicalConcept`, so the
-     * vault README (`vault-readme`) is never counted as a concept.
-     */
+   * The concepts each step changed, from the per-commit files' kind and slug matched to vault
+   * nodes. Both the node and the file's own kind go through `isCanonicalConcept`, so the
+   * vault README (`vault-readme`) is never counted as a concept.
+   */
   const conceptsByHash = useMemo(() => {
     const nodes = (graph?.nodes ?? []).filter(isCanonicalConcept);
     const map = new Map<string, { id: string; label: string; kind: string }[]>();
@@ -389,9 +381,10 @@ export function AtlasGitPanel({
   const [focusedConceptId, setFocusedConceptId] = useState<string | null>(null);
 
   /*
-     * Remembered like the workspace read, so a machine without git does not swap screens on
-     * every arrival; unkeyed, since git's presence is a fact about the computer.
-     */
+   * Whether git is installed, `null` until known; `git_probe` only tests for an executable, so
+   * calling it automatically keeps the charter. Remembered like the workspace read, so a machine
+   * without git does not swap screens on every arrival; unkeyed, since it is a fact about the computer.
+   */
   const [gitInstalled, setGitInstalled] = useArrivalMemory<boolean | null>(
     "atlas-git-installed",
     null,
@@ -403,9 +396,9 @@ export function AtlasGitPanel({
       setGitInstalled(probe === null ? null : probe.installed);
     } catch {
       /*
-             * A failed probe does not mean absent: `null` keeps the normal path instead of claiming
-             * git is missing, and the catch prevents an unhandled rejection.
-             */
+       * A failed probe does not mean absent: `null` keeps the normal path instead of claiming
+       * git is missing, and the catch prevents an unhandled rejection.
+       */
       setGitInstalled(null);
     }
   }, [setGitInstalled]);
@@ -416,9 +409,9 @@ export function AtlasGitPanel({
     setGitInstalled(null);
   });
   /*
-     * Only after a folder is chosen: without one no IPC is needed, and invoking git without the
-     * command line tools makes macOS open its install dialog unasked.
-     */
+   * Only after a folder is chosen: without one no IPC is needed, and invoking git without the
+   * command line tools makes macOS open its install dialog unasked.
+   */
   useEffect(() => {
     if (!vaultPath) return;
     let cancelled = false;
@@ -438,9 +431,9 @@ export function AtlasGitPanel({
   const [confirming, setConfirmingState] = useState(false);
   const [pushOptIn, setPushOptIn] = useState(false);
   /*
-     * The send opt-in belongs to one opened confirm: every close resets it, or a cancelled Push
-     * would turn the next plain commit into commit-and-push.
-     */
+   * The send opt-in belongs to one opened confirm: every close resets it, or a cancelled Push
+   * would turn the next plain commit into commit-and-push.
+   */
   const setConfirming = useCallback((open: boolean) => {
     setConfirmingState(open);
     if (!open) setPushOptIn(false);
@@ -455,14 +448,10 @@ export function AtlasGitPanel({
     return push.message ? gitErrorMessage(push.message, nativeErrors) : push.guidance;
   }, [snapshotResult, nativeErrors]);
 
-  /**
-     * Evidence pane tab. `null` follows state: Changed Lines when there are parsed diff files,
-     * else Past Steps; new documents alone have no lines to compare.
-     */
   /*
-     * The workbench selection, instead of tabs: the list's position already separates
-     * uncommitted from committed. `null` lets `selection` below decide from state.
-     */
+   * The workbench selection, instead of tabs: the list's position already separates
+   * uncommitted from committed. `null` lets `selection` below decide from state.
+   */
   const [selectionChoice, setSelectionChoice] = useState<WorkbenchSelection | null>(null);
 
   /** Path of the document chosen in the list; `null` shows every changed concept (overview first). */
@@ -470,7 +459,6 @@ export function AtlasGitPanel({
   /** The remote input — opened only from the location line's button; it never sits there as a card. */
   const [remoteOpen, setRemoteOpen] = useState(false);
 
-  // State for S1 (start recording) and S4 (register a remote).
   const [initRunning, setInitRunning] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [remoteUrl, setRemoteUrl] = useState("");
@@ -590,10 +578,10 @@ export function AtlasGitPanel({
    */
   const [followed, setFollowed] = useState<(DocumentFollow & { hash: string }) | null>(null);
   /**
-     * Jump to a step named by a document's history, reading further pages until its row exists.
-     * The focused concept and the document's path go with the jump, or the step would open, and
-     * aim its restore door, at its first document instead of the followed one.
-     */
+   * Jump to a step named by a document's history, reading further pages until its row exists.
+   * The focused concept and the document's path go with the jump, or the step would open, and
+   * aim its restore door, at its first document instead of the followed one.
+   */
   const jumpToCommit = useCallback(
     (hash: string, follow: DocumentFollow) => {
       setSelectionChoice({ kind: "commit", hash });
@@ -638,15 +626,13 @@ export function AtlasGitPanel({
   const predictedSubject = useMemo(() => formatSnapshotSummary(changes), [changes]);
   const hasChanges = changes.length > 0;
 
-  // Per-file diffs with the git plumbing stripped. Computed here because the
-  // default-tab decision and the per-row line counts both need this value, and
-  // computing it twice in children would let two places on screen state
-  // different facts.
+  // Per-file diffs with the git plumbing stripped, computed once: the default selection and
+  // the per-row line counts both read it, and two computations could state two facts.
   const diffFiles = useMemo(() => parseUnifiedDiff(diffText), [diffText]);
   /*
-     * Default: uncommitted changes when there are parsed diff files, else the latest commit;
-     * new documents alone have no lines to compare.
-     */
+   * Default: uncommitted changes when there are parsed diff files, else the latest commit;
+   * new documents alone have no lines to compare.
+   */
   const selection: WorkbenchSelection =
     selectionChoice ??
     (diffFiles.length > 0
@@ -660,9 +646,9 @@ export function AtlasGitPanel({
     : !vaultPath
       ? "no-vault"
       /*
-             * Missing git is its own state, not an error: it shows the `gitInstallGuide()` guidance
-             * under `surfaces.md`'s degradation-card contract.
-             */
+       * Missing git is its own state, not an error: it shows the `gitInstallGuide()` guidance
+       * under `surfaces.md`'s degradation-card contract.
+       */
       : gitInstalled === false
         ? "not-installed"
       : loadState === "error"
@@ -674,9 +660,9 @@ export function AtlasGitPanel({
             : "not-initialized";
 
   /**
-     * A commit subject the user wrote, so history can say why; an empty string means the
-     * automatic subject, as `git_snapshot(message: Option<String>)` expects.
-     */
+   * A commit subject the user wrote, so history can say why; an empty string means the
+   * automatic subject, as `git_snapshot(message: Option<String>)` expects.
+   */
   const [snapshotMessage, setSnapshotMessage] = useState("");
 
   const confirmSnapshot = useCallback(async () => {
@@ -696,9 +682,9 @@ export function AtlasGitPanel({
       setConfirming(false);
       setSnapshotMessage("");
       /*
-             * After a commit the default selection shows its result: the remaining changes, else the
-             * new commit.
-             */
+       * After a commit the default selection shows its result: the remaining changes, else the
+       * new commit.
+       */
       setSelectionChoice(null);
       setSelectedPath(null);
       setFollowed(null);
@@ -718,9 +704,9 @@ export function AtlasGitPanel({
   );
 
   /**
-     * Start recording, only from a button's onClick, never from mount, focus or refresh (trust
-     * charter). Init does not chain into a commit.
-     */
+   * Start recording, only from a button's onClick, never from mount, focus or refresh (trust
+   * charter). Init does not chain into a commit.
+   */
   const startTracking = useCallback(async () => {
     if (!vaultPath) return;
     setInitRunning(true);
@@ -736,17 +722,17 @@ export function AtlasGitPanel({
   }, [vaultPath, refresh, nativeErrors]);
 
   /*
-     * Fetch, Pull and Push, each only after an explicit click (trust charter); Push also sends
-     * existing commits when there is nothing to record.
-     */
+   * Fetch, Pull and Push, each only after an explicit click (trust charter); Push also sends
+   * existing commits when there is nothing to record.
+   */
   const [remoteBusy, setRemoteBusy] = useState<null | RemoteAction>(null);
   const [remoteActionNotice, setRemoteActionNotice] = useState<string | null>(null);
   const [remoteActionError, setRemoteActionError] = useState<string | null>(null);
   /**
-     * Put one document back: `HEAD` discards its uncommitted changes, a hash restores that
-     * commit's version as an uncommitted change. Only from a confirm button; Rust touches only
-     * the named path and refuses what the vault's identity rules would not survive.
-     */
+   * Put one document back: `HEAD` discards its uncommitted changes, a hash restores that
+   * commit's version as an uncommitted change. Only from a confirm button; Rust touches only
+   * the named path and refuses what the vault's identity rules would not survive.
+   */
   const [restoreBusy, setRestoreBusy] = useState(false);
   const [restoreNotice, setRestoreNotice] = useState<string | null>(null);
   const [restoreError, setRestoreError] = useState<string | null>(null);
@@ -771,8 +757,8 @@ export function AtlasGitPanel({
           setSelectedPath(null);
         } else {
           /*
-                     * Show the result, as after a commit: the uncommitted row with this document chosen.
-                     */
+           * Show the result, as after a commit: the uncommitted row with this document chosen.
+           */
           setSelectionChoice({ kind: "pending" });
           setSelectedPath(path);
           setJumpHash(null);
@@ -791,15 +777,15 @@ export function AtlasGitPanel({
   );
 
   /*
-     * Follow the folder while open by re-reading on each `vault-changed` from the watcher
-     * that `TauriVaultWatchBridge` starts. Reads only, so the charter holds. While this side writes, the
-     * echo is skipped: the write re-reads when done, and a mid-commit read would show a half state.
-     */
+   * Follow the folder while open by re-reading on each `vault-changed` from the watcher
+   * that `TauriVaultWatchBridge` starts. Reads only, so the charter holds. While this side writes, the
+   * echo is skipped: the write re-reads when done, and a mid-commit read would show a half state.
+   */
   const followBusy = snapshotting || initRunning || remoteRunning || remoteBusy !== null || restoreBusy;
   /*
-     * A notice that elapses mid-write is deferred, not dropped: the write's own re-read may miss
-     * an edit saved while it ran.
-     */
+   * A notice that elapses mid-write is deferred, not dropped: the write's own re-read may miss
+   * an edit saved while it ran.
+   */
   const missedWhileBusy = useRef(false);
   const followVaultChange = useEffectEvent(() => {
     if (followBusy) {
@@ -844,9 +830,9 @@ export function AtlasGitPanel({
     async (kind: RemoteAction) => {
       if (!vaultPath) return;
       /*
-             * Push never commits unconfirmed: `git_snapshot(push:true)` records pending changes first,
-             * so with changes Push opens the commit confirm with the send ticked.
-             */
+       * Push never commits unconfirmed: `git_snapshot(push:true)` records pending changes first,
+       * so with changes Push opens the commit confirm with the send ticked.
+       */
       if (kind === "push" && hasChanges) {
         setPushOptIn(true);
         setConfirming(true);
@@ -866,9 +852,9 @@ export function AtlasGitPanel({
           if (r) notice = t("remoteDonePull", { summary: r.summary });
         } else {
           /*
-                     * Push is `git_snapshot(push:true)`; with nothing to record it returns a
-                     * no-changes result (`committed:false`) and only sends existing commits.
-                     */
+           * Push is `git_snapshot(push:true)`; with nothing to record it returns a
+           * no-changes result (`committed:false`) and only sends existing commits.
+           */
           /* On a branch `origin` has never seen this is the first send, the only place an upstream is set. */
           const firstSend = remoteState === "never-sent";
           const r = await gitSnapshot(vaultPath, { push: true, ...(firstSend ? { setUpstream: true } : {}) });
@@ -905,9 +891,9 @@ export function AtlasGitPanel({
       const result = await gitSetRemote(vaultPath, remoteUrl);
       if (result) {
         /*
-                 * With `origin` saved the form closes and the result speaks from the remote-action line,
-                 * beside the first send that is now the next step.
-                 */
+         * With `origin` saved the form closes and the result speaks from the remote-action line,
+         * beside the first send that is now the next step.
+         */
         const savedNotice = result.replaced
           ? t("remoteReplaced", { previous: result.replaced })
           : t("remoteSaved");
@@ -934,31 +920,18 @@ export function AtlasGitPanel({
       aria-label={t("title")}
       data-testid="atlas-git-panel"
       data-stage={stage}
-      // The sheet's skeleton belongs to the host (HomePage's scrim + card shell).
-      // Adding a border or background here produces a double card (owner report
-      // 2026-07-23: "it does not look good" — it does not look good). Same division of
-      // labour as AgentConnectSheet: the panel carries content only.
+      // No border or background: GitPage owns the frame, so a card shell here would double it.
       className={cn("flex w-full min-h-0 flex-col", className)}
     >
-      {/* Scroll frame.
-          - Setup: the single column stands centred via `m-auto` (auto margin
-            rather than `justify-center`, so it collapses to 0 when the content
-            grows and the top is never clipped).
-          - Workbench (lg+): **each column owns its scroll**. If the frame
-            scrolled, the bottom dock — the primary action — would be pushed off
-            screen and the one thing this page asks for would hide behind a
-            scroll. Below `lg` the two columns stack, so page scroll is right and
-            the dock sits above the tab bar reserve.
-          - The header draws **inside its own width** on the workbench: a
-            full-width divider above a 920px column makes the line's promised
-            width disagree with the content's. */}
+      {/* Setup centres with `m-auto` (not `justify-center`, which clips the top of tall content).
+          From `xl` each workbench column scrolls on its own so the commit dock stays in view;
+          below `xl` the columns stack and the page scrolls. */}
       <div
         className={cn(
           "flex min-h-0 flex-1 flex-col overflow-y-auto px-5",
           stage === "workbench"
-            ? // Below `lg` the two columns stack and the page scrolls, so the
-              // last surface reserves space rather than sliding under the bottom
-              // tab bar (design.md touch contract).
+            ? // Below `lg` the bottom tab bar overlays the page, so the last surface reserves
+              // its height (design.md touch contract).
               "py-5 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)] xl:overflow-hidden"
             : "py-6",
         )}
@@ -1092,8 +1065,8 @@ function PageHeader({
     >
       <div className="flex min-w-0 flex-col gap-1.5">
         {/* Ramp utilities only: an arbitrary-length token raises the size but keeps the smaller step's
-                    leading. The display step matches every destination's h1; the pane's selection headline
-                    outranks it with `text-hero`. */}
+            leading. The display step matches every destination's h1; the pane's selection headline
+            outranks it with `text-hero`. */}
         <h1 className="flex items-center gap-2 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)] sm:text-display">
           <HistoryIcon size={ICON_SIZE.lg} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
@@ -1212,7 +1185,6 @@ function SetupPreview({ t }: { t: Translator }) {
         data-testid="atlas-git-setup-preview"
         className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] opacity-45"
       >
-        {/* Location line */}
         <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
           <span className="h-1.5 w-24 rounded-full bg-[color:var(--color-overlay-3)]" />
           <span className="ml-auto h-4 w-10 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)]" />
@@ -1220,7 +1192,6 @@ function SetupPreview({ t }: { t: Translator }) {
         {/* Between `lg` and `xl` only the timeline survives — forcing two cells
             into a narrow width gives a mangled diagram, not a smaller one. */}
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-          {/* Timeline */}
           <div className="flex flex-col py-1.5 xl:border-r xl:border-[color:var(--color-divider)]">
             <span className="flex h-[var(--git-row-h)] items-center gap-2 border-l-2 border-dashed border-l-[color:var(--color-indigo-a46)] pr-3 pl-2.5">
               <span className="h-1.5 w-8 rounded-full bg-[color:var(--color-overlay-2)]" />
@@ -1245,11 +1216,10 @@ function SetupPreview({ t }: { t: Translator }) {
               </span>
             ))}
           </div>
-          {/* The chosen step's detail */}
           <div className="hidden min-w-0 flex-col gap-2.5 p-3 xl:flex">
             <span className="h-1.5 w-2/3 rounded-full bg-[color:var(--color-overlay-3)]" />
             {/* Bars, not words: no ink passes AA at `opacity-45`. The caption step stays for its
-                            leading, which sets the chip height. */}
+                leading, which sets the chip height. */}
             <div className="flex flex-wrap gap-1.5">
               {(["capability", "element"] as const).map((kind) => (
                 <span
@@ -1366,8 +1336,6 @@ function SetupFrame({
   );
 }
 
-/** The browser state: git cannot run here, so getting the app is the primary action and the CLI a secondary escape. */
-
 /**
  * What changed this session, independent of git: `computeOntologyChangeset` against the
  * per-vault `change-baseline-store` baseline, which survives a reload. Shown on desktop and web.
@@ -1446,10 +1414,10 @@ function WebSetup({
       <SessionChangeSummary t={t} changeset={sessionChangeset} title={t("webSummaryTitle")} />
 
       {/*
-             * No CLI escape here: it needs a source checkout, and plain `git commit` already works.
-             * The degradation card (`surfaces.md`) is complete: why in the body, where in `/download`,
-             * what works here in the session summary below.
-             */}
+       * No CLI escape here: it needs a source checkout, and plain `git commit` already works.
+       * The degradation card (`surfaces.md`) is complete: why in the body, where in `/download`,
+       * what works here in the session summary below.
+       */}
     </SetupFrame>
   );
 }
@@ -1479,11 +1447,6 @@ function NoVaultSetup({ t }: { t: Translator }) {
 
 
 /**
- * The location line: where this folder's steps go, as one chrome line at the header's right
- * with a quiet action; the remote input opens only when pressed. Not a railed callout card,
- * which `design.md` forbids.
- */
-/**
  * One remote action: the label in the reader's locale, and a tooltip, opening on focus as well
  * as hover, with what it does and the git verb it runs.
  */
@@ -1509,9 +1472,8 @@ function RemoteActionButton({
     <Tooltip
       side="bottom"
       align="end"
-      // The hint opens under the button across the "now / uncommitted changes" row (246x34
-      // at every width). It holds nothing to press, so it never catches the pointer: shown by
-      // keyboard focus it swallowed clicks on that row (2026-09-25 interaction review).
+      // The hint opens across the "now / uncommitted changes" row below the button and holds
+      // nothing to press, so it never takes the pointer, or it would swallow clicks on that row.
       panelClassName="pointer-events-none"
       content={
         <span className="flex flex-col gap-0.5" data-testid={`atlas-git-remote-${id}-hint`}>
@@ -1526,9 +1488,9 @@ function RemoteActionButton({
       disabled={disabled}
       onClick={() => onClick(id)}
       /*
-             * Visibly pressable, since these reach the remote and are the hardest to undo; `lg`
-             * matches the commit confirm pair Push opens.
-             */
+       * Visibly pressable, since these reach the remote and are the hardest to undo; `lg`
+       * matches the commit confirm pair Push opens.
+       */
       className={controlClass({
         shape: "chip",
         size: "lg",
@@ -1543,6 +1505,11 @@ function RemoteActionButton({
   );
 }
 
+/**
+ * The location line: where this folder's steps go, as one chrome line at the header's right
+ * with a quiet action; the remote input opens only when pressed. Not a railed callout card,
+ * which `design.md` forbids.
+ */
 function LocationLine({
   t,
   branch,
@@ -1584,12 +1551,12 @@ function LocationLine({
       className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-label text-[color:var(--color-text-quaternary)]"
     >
       {/*
-              Branch and remote names are the user's own, untranslated. Ahead and behind counts sit on
-              the Push and Pull buttons they justify.
-            */}
+        Branch and remote names are the user's own, untranslated. Ahead and behind counts sit on
+        the Push and Pull buttons they justify.
+      */}
       {/*
-              Branch, tracking arrow and upstream are one fact, drawn as one `tag` badge (`badgeClass`).
-            */}
+        Branch, tracking arrow and upstream are one fact, drawn as one `tag` badge (`badgeClass`).
+      */}
       <span
         data-testid="atlas-git-location-ref"
         className={badgeClass({
@@ -1613,8 +1580,8 @@ function LocationLine({
         ) : null}
       </span>
       {/*
-              Keyed apart, or React reuses the pressed first-send button as Pull and a second Enter pulls.
-            */}
+        Keyed apart, or React reuses the pressed first-send button as Pull and a second Enter pulls.
+      */}
       {upstream ? (
         <Fragment key="tracked">
           {/* "identical" appears only when there are no numbers — it says why both buttons are disabled. */}
@@ -1748,9 +1715,9 @@ function RemoteResultLine({
   const ref = useRef<HTMLParagraphElement | null>(null);
   const text = error ?? notice;
   /*
-     * When the pressed button leaves with its result (a first send), the result takes focus
-     * instead of `<body>`; a button still present keeps it.
-     */
+   * When the pressed button leaves with its result (a first send), the result takes focus
+   * instead of `<body>`; a button still present keeps it.
+   */
   useEffect(() => {
     if (!text || typeof document === "undefined") return;
     const active = document.activeElement;
@@ -1963,11 +1930,6 @@ function StepConceptNames({
 }
 
 /**
- * One list row: a full-width table row whose 2px indigo edge marks selection (not a railed
- * card, which `design.md` forbids). Columns are time, name and why; below `xl` the why drops
- * under the name so a wide row does not split into islands.
- */
-/**
  * The step list's scroll box: while it has room for another row and older steps exist it
  * reads the next page itself, so it is never half empty.
  */
@@ -1987,9 +1949,9 @@ function StepListScroller({
   const ref = useRef<HTMLDivElement>(null);
   const [roomy, setRoomy] = useState(false);
   /*
-     * Which edges hide rows; each such edge fades by `--tabbar-edge-fade`, the mask other
-     * scrolling lists use, so hidden rows are visible as such.
-     */
+   * Which edges hide rows; each such edge fades by `--tabbar-edge-fade`, the mask other
+   * scrolling lists use, so hidden rows are visible as such.
+   */
   const [edge, setEdge] = useState({ top: false, bottom: false });
   const readEdge = useCallback(() => {
     const el = ref.current;
@@ -2005,9 +1967,8 @@ function StepListScroller({
       readEdge();
       // An unmeasured box (a test DOM, a hidden panel) has no room to fill.
       if (el.clientHeight < 1) return setRoomy(false);
-      // Room for one more row at the list's own row height.
-      const row = Number.parseFloat(getComputedStyle(el).getPropertyValue("--git-row-h")) || 40;
-      setRoomy(el.scrollHeight - el.clientHeight < row);
+      const rowHeightPx = Number.parseFloat(getComputedStyle(el).getPropertyValue("--git-row-h")) || 40;
+      setRoomy(el.scrollHeight - el.clientHeight < rowHeightPx);
     };
     read();
     const observer = new ResizeObserver(read);
@@ -2042,6 +2003,11 @@ function StepListScroller({
   );
 }
 
+/**
+ * One list row: a full-width table row whose 2px indigo edge marks selection (not a railed
+ * card, which `design.md` forbids). Columns are time, name and why; below `xl` the why drops
+ * under the name so a wide row does not split into islands.
+ */
 const STEP_ROW =
   "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1fr)] xl:grid-cols-[var(--git-when-w)_minmax(0,1.7fr)_minmax(0,1fr)] min-h-[var(--git-row-h)] items-center gap-x-3 gap-y-0.5 xl:gap-y-3 border-b border-l-2 border-b-[color:var(--color-divider)] px-4 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] max-xl:[&>*:first-child]:row-span-2 max-xl:[&>*:nth-child(3)]:col-start-2";
 
@@ -2091,9 +2057,9 @@ function StepList({
     if (node && typeof node.scrollIntoView === "function") node.scrollIntoView({ block: "nearest" });
   }, []);
   /*
-     * One tab stop with arrows between rows, the Library lists' hook; Enter or Space is the row's
-     * click, so selection stays a deliberate press.
-     */
+   * One tab stop with arrows between rows, the Library lists' hook; Enter or Space is the row's
+   * click, so selection stays a deliberate press.
+   */
   const rowCount =
     (behind && behind > 0 ? 1 : 0) + (pendingCount > 0 ? 1 : 0) + history.length + (hasMore ? 1 : 0);
   const listRef = useRef<HTMLUListElement | null>(null);
@@ -2119,9 +2085,9 @@ function StepList({
   }
 
   /*
-     * No tabs: remote-only, uncommitted and unpushed are stretches of one timeline, separated
-     * by boundaries (a test holds that history never hides behind a tab).
-     *
+   * No tabs: remote-only, uncommitted and unpushed are stretches of one timeline, separated
+   * by boundaries (a test holds that history never hides behind a tab).
+   *
    *   [remote only ↓N]     ← not local, so guidance plus fetch rather than a row
    *   [now · uncommitted]  ← a change bundle that has no name yet
    *   ── not yet pushed N ──
@@ -2162,9 +2128,9 @@ function StepList({
             data-testid="atlas-git-pending-row"
             {...rowProps()}
             /*
-                         * The `aria-current` attribute, not pressed: this row marks what the detail shows, and
-                         * the sibling rows already use `aria-expanded`.
-                         */
+             * The `aria-current` attribute, not pressed: this row marks what the detail shows, and
+             * the sibling rows already use `aria-expanded`.
+             */
             aria-current={selection.kind === "pending" ? "true" : undefined}
             onClick={() => setSelection({ kind: "pending" })}
             className={cn(STEP_ROW, "border-l-dashed border-l-[color:var(--color-indigo-a46)] aria-[current=true]:border-l-[color:var(--color-indigo-brand)] aria-[current=true]:bg-[color:var(--color-overlay-2)]")}
@@ -2187,12 +2153,11 @@ function StepList({
         const human = humanizeStepSubject(t, commit.subject);
         const headline = human ?? stripConventionalPrefix(commit.subject);
         /*
-                 * The why column: a person's subject, or for an automatic subject its counts in the
-                 * reader's language instead of the raw snapshot string.
-                 */
+         * The why column: a person's subject, or for an automatic subject its counts in the
+         * reader's language instead of the raw snapshot string.
+         */
         const why = human ? t("stepAutoSubject", { summary: human }) : stripConventionalPrefix(commit.subject);
         const stepConcepts = concepts.get(commit.hash) ?? [];
-        /* Two names only when there are exactly two; otherwise one whole name and a count. */
         const names = summary.slugs.join(", ");
         const trail = summary.overflow > 0 ? t("moreSlugs", { count: summary.overflow }) : "";
         const expanded = selection.kind === "commit" && selection.hash === commit.hash;
@@ -2216,8 +2181,6 @@ function StepList({
             </li>
           ) : null}
           <li
-            // Only the row just recorded gets the settle signature — re-birthing
-            // history that was already there blurs what just happened.
             className={stepRowMotionClass(commit.hash, settledHash)}
             style={stepRowUsesStagger(commit.hash, settledHash) ? staggerStyle(index) : undefined}
           >
@@ -2238,10 +2201,9 @@ function StepList({
               <span className="flex min-w-0 items-center gap-2.5 truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {stepConcepts.length > 0 ? (
                   <>
-                    {/*
-                                          Truncated to keep the fixed `--git-step-h` rhythm (`forbidden.md`), but the
-                                          full name stays recoverable.
-                                        */}
+                    {/* Truncated, never wrapped, so a long name cannot change the row's height
+                        (`forbidden.md`); the full name stays recoverable. Its floor is the
+                        row's `--git-row-h`; the declared `--git-step-h` is unused. */}
                     <StepConceptNames
                       concepts={stepConcepts}
                       more={(count) => t("moreSlugs", { count })}
@@ -2269,9 +2231,9 @@ function StepList({
         );
       })}
       {/*
-              The list ends with a fact: a row that fetches older steps in place, or the folder's first
-              step.
-            */}
+        The list ends with a fact: a row that fetches older steps in place, or the folder's first
+        step.
+      */}
       {hasMore ? (
         <li className="grid grid-cols-[var(--git-when-w)_minmax(0,1fr)] items-center gap-3 border-b border-[color:var(--color-divider)] px-4 py-1.5">
           <span aria-hidden />
@@ -2325,9 +2287,9 @@ function SnapshotResultLine({
   const remote = result.push?.remoteUrl ?? "";
   const saved = result.committed ? t("snapshotDone", { count }) : t("snapshotNoChanges");
   /*
-     * One sentence per outcome (`pushDone` already covers save and send). A failed send carries
-     * git's reason, since `remoteUrl` is filled only on success.
-     */
+   * One sentence per outcome (`pushDone` already covers save and send). A failed send carries
+   * git's reason, since `remoteUrl` is filled only on success.
+   */
   const line = !result.push
     ? saved
     : result.push.pushed
@@ -2345,11 +2307,6 @@ function SnapshotResultLine({
   );
 }
 
-/**
- * The bottom dock with the screen's one decision, pinned (`mt-auto`) at the surface's heaviest
- * weight, with the recording-scope notice at the decision point. The confirm's mono line shows
- * the exact subject that will be recorded.
- */
 /** The dock's next-remote-step door (connect, or send once saved), one class since both share a slot. */
 const DOCK_DOOR_CLASS = controlClass({
   shape: "chip",
@@ -2358,6 +2315,11 @@ const DOCK_DOOR_CLASS = controlClass({
     "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
 });
 
+/**
+ * The bottom dock with the screen's one decision, pinned (`mt-auto`) at the surface's heaviest
+ * weight, with the recording-scope notice at the decision point. The confirm's mono line shows
+ * the exact subject that will be recorded.
+ */
 function ActionDock({
   t,
   onConnectRemote,
@@ -2414,9 +2376,9 @@ function ActionDock({
     busy: snapshotting,
   });
   /*
-     * A finished commit's result takes focus, since the commit button it would return to is
-     * inert once nothing is pending.
-     */
+   * A finished commit's result takes focus, since the commit button it would return to is
+   * inert once nothing is pending.
+   */
   const resultRef = useRef<HTMLDivElement | null>(null);
   const confirmingBeforeRef = useRef(confirming);
   useEffect(() => {
@@ -2531,11 +2493,10 @@ function ActionDock({
         </div>
       ) : null}
 
-      {/* The dock's last line states the next step for the current remote state. */}
       {/*
-              One next step per remote state; offering to connect where `origin` exists or HEAD is
-              detached would rewrite the real remote.
-            */}
+        One next step per remote state; offering to connect where `origin` exists or HEAD is
+        detached would rewrite the real remote.
+      */}
       {upstream || remoteState === "unknown" ? (
         <p className="flex items-center gap-1.5 text-caption leading-label text-[color:var(--color-text-quaternary)]">
           <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
@@ -2661,7 +2622,7 @@ function DesktopBody({
   vaultPath: string | null;
   /** `navigator.platform ?? userAgent` — the hint that picks per-platform install guidance. */
   hostPlatformHint: string;
-  /** "re-check" (re-check) — so someone who just installed git need not restart the app. */
+  /** Re-checks for git, so someone who just installed it need not restart the app. */
   onRecheckGit: () => void;
   t: Translator;
   stage: Extract<GitStage, "loading" | "not-installed" | "error" | "not-initialized" | "workbench">;
@@ -2738,9 +2699,9 @@ function DesktopBody({
   setFocusedConceptId: (id: string) => void;
 }) {
   /**
-     * Hash of the commit just recorded; only that row settles with `--motion-settle`. Rows are
-     * keyed by hash, so existing rows keep their DOM and do not replay.
-     */
+   * Hash of the commit just recorded; only that row settles with `--motion-settle`. Rows are
+   * keyed by hash, so existing rows keep their DOM and do not replay.
+   */
   const settledHash = snapshotResult?.commitHash ?? null;
 
   if (stage === "loading") {
@@ -2756,10 +2717,10 @@ function DesktopBody({
   }
   if (stage === "not-installed") {
     /*
-         * The degradation card (`surfaces.md`): why (`install.title`, `install.body`), where
-         * (`gitInstallGuide(platform)` command and download link, prefixed ↗ per design.md), and
-         * re-check (`install.recheck`).
-         */
+     * The degradation card (`surfaces.md`): why (`install.title`, `install.body`), where
+     * (`gitInstallGuide(platform)` command and download link, prefixed ↗ per design.md), and
+     * re-check (`install.recheck`).
+     */
     const guide = gitInstallGuide(gitHostPlatformFrom(hostPlatformHint));
     const options = [guide.primary, ...guide.alternatives];
     return (
@@ -2839,18 +2800,8 @@ function DesktopBody({
     );
   }
   if (stage === "not-initialized") {
-    // S2 — the screen that opens the dead end the owner hit (2026-07-25).
-    //
-    // The old code ended at "Atlas does not run git init for you — run it in the
-    // terminal", with nothing to press, so the user had to leave the app. What the
-    // charter forbids is **automatic** execution, not a user pressing a button in a
-    // folder they chose themselves (owner decision plus a Guardian ruling).
-    // Automatic execution is still zero — `onInit` is called only from this
-    // button's onClick, and init does not chain into a commit (an empty repository
-    // lands on "N changes not yet recorded").
-    //
-    // 2026-07-26 — from full-width top-left alignment to the setup frame. The user
-    // has one job in this moment, and the screen must say one thing.
+    // A press in a folder the person chose is not automatic execution, so init is offered here
+    // instead of sending them to a terminal; `startTracking` holds the click-only rule.
     return (
       <SetupFrame
         t={t}
@@ -2912,7 +2863,6 @@ function DesktopBody({
     );
   }
 
-  // ── Workbench ──────────────────────────────────────────────────────────
   const upstream = status?.upstream ?? null;
   const branch = status?.branch ?? null;
   // The address form only without any `origin`; with one it would rewrite the real remote.
@@ -2939,9 +2889,9 @@ function DesktopBody({
   );
 
   /*
-     * A step named by what it changed, for a document's history rows: its concepts, then the
-     * documents an automatic subject names, then the person's sentence without its code.
-     */
+   * A step named by what it changed, for a document's history rows: its concepts, then the
+   * documents an automatic subject names, then the person's sentence without its code.
+   */
   const stepTitleOf = (commit: GitCommitInfo): string => {
     const stepConcepts = concepts.get(commit.hash) ?? [];
     const more = (count: number) => t("moreSlugs", { count });
@@ -2997,35 +2947,32 @@ function DesktopBody({
     />
   ) : null;
 
+  // The evidence column is `minmax(0,1fr)` from `xl` and stacks under the list below it; the
+  // declared `--git-evidence-min` (600px) is not applied.
   /*
-     * One workbench shape: the right column is the selection's detail, so it has content even
-     * with nothing to commit. Uncommitted work shows only as the list's top row.
-     */
-  // `decide` — there is something to record. Left: what changed and what to
-  // record. Right: the evidence. The evidence column's minimum width is
-  // `--git-evidence-min` (600px) because 80 columns of 11px mono ≈ 528px plus
-  // gutter and padding. Mockup v1's 420px clipped every line, and **a clipped diff
-  // is not evidence**. Below `lg` the two stack (evidence under the list).
-  /*
-     * The detail column exists whenever there is anything to commit, a diff or history; new
-     * documents alone produce no diff lines but still need the change list.
-     */
+   * The detail column exists whenever there is anything to commit, a diff or history; new
+   * documents alone produce no diff lines but still need the change list.
+   */
   const showEvidence = statusCounts.total > 0 || diffFiles.length > 0 || history.length > 0;
 
+  /*
+   * One workbench shape: the right column is the selection's detail, so it has content even
+   * with nothing to commit. Uncommitted work shows only as the list's top row.
+   */
   return (
     <div
       data-testid="atlas-git-workbench"
       data-shape="decide"
       /*
-             * Below `xl` the columns stack and the page scrolls, so the workbench grows with content
-             * instead of squeezing the reader to nothing; only at `xl` is height a budget.
-             */
+       * Below `xl` the columns stack and the page scrolls, so the workbench grows with content
+       * instead of squeezing the reader to nothing; only at `xl` is height a budget.
+       */
       className="git-fade-in flex flex-1 flex-col xl:min-h-0"
     >
       {/*
-              No card shell: the workbench is the whole surface, fills the viewport and scrolls inside,
-              under one top bar (title, location, actions) and a divider.
-            */}
+        No card shell: the workbench is the whole surface, fills the viewport and scrolls inside,
+        under one top bar (title, location, actions) and a divider.
+      */}
       <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-divider)] px-1 pb-3">
         <PageHeader t={t} inColumn showScope={false} />
         <div className="ml-auto flex min-w-0 items-center gap-3">{locationLine}</div>
@@ -3033,7 +2980,6 @@ function DesktopBody({
       <RemoteResultLine notice={remoteActionNotice} error={remoteActionError} />
       <RemoteResultLine kind="restore" notice={restoreNotice} error={restoreError} />
 
-      {/* Body — down to the floor. The two columns are separated by a divider and scroll independently. */}
       <div
         className={cn(
           // `content-start` below `xl`: a short list must not be stretched to the window,
@@ -3053,17 +2999,17 @@ function DesktopBody({
             </p>
           ) : null}
           {/*
-                      Below `xl` the list is capped and scrolls in place, so the picked step's headline
-                      starts inside the first window.
-                    */}
+            Below `xl` the list is capped and scrolls in place, so the picked step's headline
+            starts inside the first window.
+          */}
           <StepListScroller
             hasMore={historyHasMore}
             busy={historyMoreBusy}
             onMore={onMoreHistory}
             /*
-                         * With a step picked the stacked list shrinks further and `revealSelectedRow` keeps
-                         * the picked row in view.
-                         */
+             * With a step picked the stacked list shrinks further and `revealSelectedRow` keeps
+             * the picked row in view.
+             */
             /* About three two-line steps; the faded bottom edge says the rest scrolls here. */
             className={
               selection.kind === "commit"
@@ -3095,12 +3041,12 @@ function DesktopBody({
           <div
             data-testid="atlas-git-evidence"
             /*
-                         * The whole column is one scroll region; two `flex-1` halves would silently clip rows.
-                         */
+             * The whole column is one scroll region; two `flex-1` halves would silently clip rows.
+             */
             /*
-                         * Below `xl` the column is capped, so a long document does not push the discard door
-                         * to the page bottom.
-                         */
+             * Below `xl` the column is capped, so a long document does not push the discard door
+             * to the page bottom.
+             */
             className="flex min-w-0 flex-col max-xl:max-h-[var(--git-evidence-stack-max)] max-xl:overflow-y-auto xl:min-h-0 xl:overflow-y-auto"
           >
             {/* The right side draws the one thing selected on the left. */}

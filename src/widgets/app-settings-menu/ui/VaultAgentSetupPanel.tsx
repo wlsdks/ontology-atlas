@@ -49,19 +49,13 @@ import {
 
 import { McpProofPacket } from './McpProofPacket';
 
-/**
- * The AI-agent connection panel: config file status, repair, copy packets and the validation
- * gate. Renders only for a loaded vault with `agentConfigStatus`; the copy packets fill in the
- * vault's absolute path. Strings live in the `docsVault` namespace.
- */
+/** One label/value row shape for every definition list in the fold, sized by the widest term. */
+const DEFINITION_ROW = 'grid grid-cols-[92px_1fr] gap-2';
 
 /**
  * Copy-chip ink for this panel: the hover, border and background layers `controlClass`
  * deliberately omits, defined once for every copy chip here.
  */
-/** One label/value row shape for every definition list in the fold, sized by the widest term. */
-const DEFINITION_ROW = 'grid grid-cols-[92px_1fr] gap-2';
-
 const NEUTRAL_COPY_CHIP =
   'border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
 
@@ -72,11 +66,8 @@ const ACCENT_ACTION_CHIP =
 function buildAgentVerifyCliCommand(vaultPath?: string | null): string {
   const target = vaultPath ? shellQuoteForPacket(vaultPath) : '.';
   return [
-    // **What gets copied is several command lines, so the first line has to define
-    // `$ATLAS`.** This block is meant to be pasted straight into a terminal, yet all
-    // nine lines began with `$ATLAS` and nobody filled that variable in. Pasted, the
-    // shell expands it to empty and runs `node /cli/src/index.mjs` nine times
-    // (dogfooding, 2026-07-29). One comment line ends it in a single paste.
+    // Pasted into a shell, an unset `$ATLAS` expands to empty and runs `node /cli/src/index.mjs`,
+    // so the block's first line says to define it.
     `# export ATLAS=<path to your ontology-atlas source checkout>`,
     `${ATLAS_CLI} validate ${target}`,
     `${ATLAS_CLI} workspace-brief ${target}`,
@@ -290,6 +281,11 @@ interface Props {
   onOpenWorkflowGuide: () => void;
 }
 
+/**
+ * The AI-agent connection panel: config file status, repair, copy packets and the validation
+ * gate. Renders only for a loaded vault with `agentConfigStatus`; the copy packets fill in the
+ * vault's absolute path. Strings live in the `docsVault` namespace.
+ */
 export function VaultAgentSetupPanel({
   canEditCurrent,
   localVault,
@@ -304,20 +300,16 @@ export function VaultAgentSetupPanel({
   const tMcp = useTranslations('mcp');
   const [advancedOpen, setAdvancedOpen] = useState(false);
   /**
-     * The "Having trouble?" drawer collapses in flow, so it uses the list-row disclosure. It is
-     * declared before `publicPackagesReady`, so it reads the launch prop directly.
-     */
+   * The "Having trouble?" drawer collapses in flow, so it uses the list-row disclosure. It is
+   * declared before `serverLaunchable`, so it reads the launch prop directly.
+   */
   const advancedRevealOpen = serverAvailability.launch !== null && advancedOpen;
   const {
     mounted: advancedMounted,
     boxRef: advancedBoxRef,
     contentRef: advancedContentRef,
   } = useRowDisclosure(advancedRevealOpen);
-  /**
-     * The expanded step: `null` follows whatever is next to do, a number is the person's choice,
-     * and `0` collapses all three.
-     */
-  /** The verification dialog (2026-09-19): restart, check, and "not working?" behind one press. */
+  /** The verification dialog: restart, check, and "not working?" behind one press. */
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [agentSetupBusy, setAgentSetupBusy] = useState(false);
   const [agentSetupError, setAgentSetupError] = useState<string | null>(null);
@@ -359,10 +351,10 @@ export function VaultAgentSetupPanel({
   const cursorDeeplink = buildCursorMcpDeeplink(vaultRootPath, serverAvailability.launch);
 
   /**
-     * Write one tool's file, or all of them when no tool is given. On failure the message names
-     * the file and says the folder is unchanged, and the rejection is re-thrown, or the
-     * awaiting `AgentClientButtons.writeAndConfirm` would show done for a write that never happened.
-     */
+   * Write one tool's file, or all of them when no tool is given. On failure the message names
+   * the file and says the folder is unchanged, and the rejection is re-thrown, or the
+   * awaiting `AgentClientButtons.writeAndConfirm` would show done for a write that never happened.
+   */
   async function handleEnsureAgentConfigs(client?: AgentClientId) {
     setAgentSetupError(null);
     setAgentSetupBusy(true);
@@ -454,8 +446,7 @@ export function VaultAgentSetupPanel({
     setAgentCodexCliCopyState(copied ? 'copied' : 'failed');
   }
 
-  // Do we know how to launch the server? This one thing decides whether one-click is possible.
-  const publicPackagesReady = serverAvailability.launch !== null;
+  const serverLaunchable = serverAvailability.launch !== null;
   const mcpJsonState = !agentStatus?.mcpJson
     ? 'missing'
     : agentStatus.mcpJsonValid === false
@@ -467,14 +458,14 @@ export function VaultAgentSetupPanel({
       ? 'invalid'
       : 'ready';
   /*
-     * The per-client controls, shared with the map sheet (`useAgentClientControls`). Called
-     * before the early return below because it holds hooks.
-     */
+   * The per-client controls, shared with the map sheet (`useAgentClientControls`). Called
+   * before the early return below because it holds hooks.
+   */
   const clientControls = useAgentClientControls({
     serverAvailability,
     /* Passes the tool through and returns the promise: the button awaits it to show written or failed. */
     onWriteConfigs:
-      publicPackagesReady && canEditCurrent ? (client) => handleEnsureAgentConfigs(client) : null,
+      serverLaunchable && canEditCurrent ? (client) => handleEnsureAgentConfigs(client) : null,
     cursorDeeplink,
     mcpJsonSnippet: buildMcpConfigJson(vaultNameForConfig, vaultRootPath),
     replacementMcpJsonSnippet: buildMcpConfigJson(vaultNameForConfig, '.'),
@@ -487,13 +478,13 @@ export function VaultAgentSetupPanel({
 
   if (localVault.status !== 'loaded' || !agentStatus) return null;
   /*
-     * Nothing until the server lookup answers: `launch: null` alone cannot tell a browser from the
-     * app still asking, and the browser card would tell an app user to download the app.
-     */
+   * Nothing until the server lookup answers: `launch: null` alone cannot tell a browser from the
+   * app still asking, and the browser card would tell an app user to download the app.
+   */
   if (serverAvailability.pending) return null;
 
   const agentSetupReady = Boolean(
-    publicPackagesReady &&
+    serverLaunchable &&
       agentStatus.mcpJson &&
       agentStatus.codexConfig &&
       agentStatus.mcpJsonValid !== false &&
@@ -514,9 +505,9 @@ export function VaultAgentSetupPanel({
   const agentSetupConnections = [
     {
       /*
-             * The `.mcp.json` file is Claude Code's only; Cursor's is `.cursor/mcp.json`, which Atlas
-             * writes but never reads back, so this row must not claim to have checked it.
-             */
+       * The `.mcp.json` file is Claude Code's only; Cursor's is `.cursor/mcp.json`, which Atlas
+       * writes but never reads back, so this row must not claim to have checked it.
+       */
       key: 'claudeCursor',
       file: agentSetupFiles[0],
       label: t('agentSetup.connectionClaudeCursor'),
@@ -620,11 +611,7 @@ export function VaultAgentSetupPanel({
           : validationState === 'error'
             ? 'blocked'
             : 'warning',
-      // **「5 are blocking」 gets somewhere to go** (2026-08-04). This block previously
-      // had **0** interactive elements and not one character saying which file was
-      // wrong — after reading the number, all a person could do was close the window.
-      // The readiness meter on the 「To-Do」 screen counts the same check results, so
-      // this sends them there.
+      // The To-Do readiness meter counts the same check results, so a blocking count links there.
       href:
         validationState === 'error' || validationState === 'warning'
           ? '/ontology/insights/?tab=do-next'
@@ -766,10 +753,10 @@ export function VaultAgentSetupPanel({
       data-testid="vault-agent-setup-panel"
     >
       {/*
-              The verbatim diagnosis `agent_setup.rs` composes when it cannot find the bundled server;
-              a web session sets no reason, so only the installed app draws this row.
-            */}
-      {!publicPackagesReady && serverAvailability.reason ? (
+        The verbatim diagnosis `agent_setup.rs` composes when it cannot find the bundled server;
+        a web session sets no reason, so only the installed app draws this row.
+      */}
+      {!serverLaunchable && serverAvailability.reason ? (
         <p
           role="status"
           data-testid="agent-setup-server-reason"
@@ -780,14 +767,14 @@ export function VaultAgentSetupPanel({
       ) : null}
 
       {/*
-              One row per tool (mark, name, the file it writes) with the one control for its state.
-              What Atlas cannot know itself (restart, attach) opens as a dialog from the heading.
-            */}
+        One row per tool (mark, name, the file it writes) with the one control for its state.
+        What Atlas cannot know itself (restart, attach) opens as a dialog from the heading.
+      */}
       <SettingsGroup
         label={tMcp('shareHeading')}
         testId="agent-setup-steps"
         trailing={
-          publicPackagesReady ? (
+          serverLaunchable ? (
             <>
               <InfoHint label={t('agentSetup.serverHintLabel')} align="right">
                 <p
@@ -820,9 +807,9 @@ export function VaultAgentSetupPanel({
         {clientRows ? (
           AGENT_CLIENTS.map((client) => {
             /*
-                         * A row that offers a replacement says on the row what it replaces. Only Claude Code
-                         * and Codex reach this state: Atlas never reads back Cursor's or Antigravity's file.
-                         */
+             * A row that offers a replacement says on the row what it replaces. Only Claude Code
+             * and Codex reach this state: Atlas never reads back Cursor's or Antigravity's file.
+             */
             const inspected =
               client.id === 'claude-code'
                 ? { state: mcpJsonState, path: agentSetupFiles[0].path }
@@ -860,10 +847,10 @@ export function VaultAgentSetupPanel({
       ) : null}
 
       {/*
-              The check dialog: restart and verify steps Atlas cannot observe itself, ending in the
-              proof packet, with the "not working?" fold under them.
-            */}
-      {publicPackagesReady ? (
+        The check dialog: restart and verify steps Atlas cannot observe itself, ending in the
+        proof packet, with the "not working?" fold under them.
+      */}
+      {serverLaunchable ? (
         <Dialog
           open={verifyOpen}
           onClose={closeVerify}
@@ -898,9 +885,9 @@ export function VaultAgentSetupPanel({
             </h3>
               <div className="divide-y divide-[color:var(--color-divider)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)]">
                 {/*
-                                  The one statement of the count, naming whose files it counts (Atlas reads back
-                                  only Claude Code's and Codex's); the next step follows only when one is missing.
-                                */}
+                  The one statement of the count, naming whose files it counts (Atlas reads back
+                  only Claude Code's and Codex's); the next step follows only when one is missing.
+                */}
                 <div className="flex items-start gap-2 px-2.5 py-2">
                   <span
                     aria-hidden
@@ -995,7 +982,6 @@ export function VaultAgentSetupPanel({
           >
         <div data-testid="agent-setup-inspection" className="flex flex-col gap-2">
           <SectionLabel>{t('agentSetup.groupFiles')}</SectionLabel>
-          {/* One list of the config files: name, path and status. */}
           <ul aria-label={t('agentSetup.connectionStatusHeading')} className="grid gap-1">
             {agentSetupConnections.map(({ key, file, label }) => {
               const present = Boolean(agentStatus[file.key]);
@@ -1068,9 +1054,9 @@ export function VaultAgentSetupPanel({
           </p>
 
           {/*
-                      Validation errors block nothing but `git_snapshot({confirm:true})`; MCP writes have no
-                      such gate, so this box must not claim the agent is blocked.
-                    */}
+            Validation errors block nothing but `git_snapshot({confirm:true})`; MCP writes have no
+            such gate, so this box must not claim the agent is blocked.
+          */}
           <div
             role="status"
             aria-label={t('agentSetup.validationGateAriaLabel')}
@@ -1182,7 +1168,6 @@ export function VaultAgentSetupPanel({
           </dl>
         </div>
 
-        {/* ── How agents use this folder ────────────────────────────────── */}
         <div className="flex flex-col gap-2">
           <SectionLabel>{t('agentSetup.groupHowAgentsUse')}</SectionLabel>
           <p className="break-keep rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
@@ -1272,7 +1257,6 @@ export function VaultAgentSetupPanel({
           </div>
         </div>
 
-        {/* ── Verify from the command line ──────────────────────────────── */}
         <div className="flex flex-col gap-2">
           <SectionLabel>{t('agentSetup.verifyGroup')}</SectionLabel>
           <div
@@ -1374,7 +1358,6 @@ export function VaultAgentSetupPanel({
           </div>
         </div>
 
-        {/* ── Opening from another code folder ──────────────────────────── */}
         <div className="flex flex-col gap-2">
           <SectionLabel>{t('agentSetup.connectGroup')}</SectionLabel>
           <dl aria-label={t('agentSetup.rootContractAriaLabel')} className="grid gap-1">

@@ -38,15 +38,6 @@ import { APP_CODING_TOOLS } from '../model/app-coding-tools';
  * group and names the guarded tools from the data rather than as a per-row badge.
  */
 
-/**
- * State → badge ink (`badgeClass` supplies geometry only). Only Ready uses success, matching
- * the one in `CommitDetail`; the other states differ in words, never by colour alone.
- */
-/*
- * Ready is a green dot with a neutral label (`RowStateBadge`, shared with the MCP tab), so the
- * row's least important element does not outshout its action. `CommitDetail` keeps a filled pill
- * because there the status is the line's subject.
- */
 export function AcpRuntimeSettings({
   embedded = false,
   onOpenChat = requestAgentChat,
@@ -56,19 +47,19 @@ export function AcpRuntimeSettings({
 } = {}) {
   const t = useTranslations('nav.settingsMenu.runtimes');
   /*
-     * The last known list survives a route change, so a return arrival does not flash the
-     * searching row inside the route crossfade. Unkeyed, since installed tools are a fact about
-     * this computer; both detection passes still run on every mount and replace it in place.
-     */
+   * The last known list survives a route change, so a return arrival does not flash the
+   * searching row inside the route crossfade. Unkeyed, since installed tools are a fact about
+   * this computer; both detection passes still run on every mount and replace it in place.
+   */
   const [runtimes, setRuntimes] = useArrivalMemory<AcpRuntimeStatus[] | null>(
     "acp-runtimes",
     null,
   );
   const [checking, setChecking] = useState(false);
   /*
-     * Expanded when nothing is confirmed, since the install instructions live in these rows;
-     * collapsing only keeps a long list from burying a short one.
-     */
+   * Expanded when nothing is confirmed, since the install instructions live in these rows;
+   * collapsing only keeps a long list from burying a short one.
+   */
   const [othersOpen, setOthersOpen] = useState(false);
   /** What the person is typing in the other-tools dialog. Set every time it opens. */
   const [othersQuery, setOthersQuery] = useState('');
@@ -98,9 +89,9 @@ export function AcpRuntimeSettings({
     if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
     /*
-         * Two passes: a disk-only scan draws at once, then the login check corrects it. A row
-         * turning from Ready to Login Required is the sign the check finished.
-         */
+     * Two passes: a disk-only scan draws at once, then the login check corrects it. A row
+     * turning from Ready to Login Required is the sign the check finished.
+     */
     void detectAcpRuntimes().then((fast) => {
       if (cancelled) return;
       setRuntimes(fast);
@@ -117,9 +108,9 @@ export function AcpRuntimeSettings({
   // the place to go are stated together (`.claude/rules/surfaces.md`).
   if (!isAcpBridgeAvailable()) {
     /*
-         * On the web this empty state is the tab: why, what works from here, then the app and MCP
-         * as the ways on. No icon tile, which `EmptyState` would indent apart from the actions.
-         */
+     * On the web this empty state is the tab: why, what works from here, then the app and MCP
+     * as the ways on. No icon tile, which `EmptyState` would indent apart from the actions.
+     */
     return (
       <div data-testid="app-settings-runtimes-web" className="grid min-w-0 gap-3">
         <EmptyState
@@ -139,8 +130,7 @@ export function AcpRuntimeSettings({
                 <Download size={ICON_SIZE.md} aria-hidden />
                 {t('webGetApp')}
               </Link>
-              {/* A link, because MCP is another destination, not a section on this screen. */}
-              {/* A link, so the Mac app stays the one first press. */}
+              {/* A link, not a button: MCP is another destination, and the Mac app stays the one first press. */}
               <Link
                 href={DESTINATION_HREF.mcp}
                 data-testid="app-settings-runtimes-mcp-link"
@@ -157,9 +147,9 @@ export function AcpRuntimeSettings({
           }
         />
         {/*
-                  The tools the app would look for, from the bundled registry: marks and names only,
-                  since a browser has no state to report and nothing to press.
-                */}
+          The tools the app would look for, from the bundled registry: marks and names only,
+          since a browser has no state to report and nothing to press.
+        */}
         <section
           className="min-w-0"
           aria-labelledby="app-settings-runtimes-web-tools-heading"
@@ -197,8 +187,7 @@ export function AcpRuntimeSettings({
   const nextUp = others
     .filter((r) => r.state !== 'cli-unknown')
     .sort((a, b) => nextStepRank(a.state) - nextStepRank(b.state));
-  /** What Atlas cannot detect on this computer, whatever is really installed. */
-  const unknown = others.filter((r) => r.state === 'cli-unknown');
+  const undetectable = others.filter((r) => r.state === 'cli-unknown');
 
   // The setup window's door, on the first shelf group's heading; emphasised when nothing is confirmed.
   const searchChip = (
@@ -220,9 +209,9 @@ export function AcpRuntimeSettings({
   );
 
   /*
-     * The re-scan press sits in the group heading it re-counts, as on the MCP tab. Disabled until
-     * the first scan answers (`runtimes` is null until then), or a press would start a second scan.
-     */
+   * The re-scan press sits in the group heading it re-counts, as on the MCP tab. Disabled until
+   * the first scan answers (`runtimes` is null until then), or a press would start a second scan.
+   */
   const recheck = (
     <Chip
       size="lg"
@@ -240,15 +229,15 @@ export function AcpRuntimeSettings({
   const guardedNames = ready
     .filter((r) => isGuardedRuntime(r.id, r.isolated))
     .map((r) => r.label);
-  /*
-      Discloses that starting a chat symlinks the user's credential files into the app's data folder
-      (`link_credentials` in `src-tauri/src/acp.rs`; gate: `tests/contract/acp-disk-disclosure.contract.test.ts`).
-      Shown only where a chat can start, the chat button's own condition, as a hint in the group
-      heading beside the re-scan press.
-    */
   /** Whether any confirmed tool cannot open a chat — the one line this row still carries. */
   const showGuardNote =
     runtimes !== null && ready.some((r) => !isGuardedRuntime(r.id, r.isolated));
+  /*
+    Discloses that starting a chat symlinks the user's credential files into the app's data folder
+    (`link_credentials` in `src-tauri/src/acp.rs`; gate: `tests/contract/acp-disk-disclosure.contract.test.ts`).
+    Shown only where a chat can start, the chat button's own condition, as a hint in the group
+    heading beside the re-scan press.
+  */
   const diskHint =
     runtimes !== null && ready.some((r) => isGuardedRuntime(r.id, r.isolated)) ? (
       <InfoHint label={t('hintLabel')} align="right">
@@ -264,9 +253,9 @@ export function AcpRuntimeSettings({
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-runtimes">
       {/*
-              One row above the list: in the sheet the intro line, and the guard note naming the tools
-              that open a chat. Not drawn when empty, or it would still spend the grid gap.
-            */}
+        One row above the list: in the sheet the intro line, and the guard note naming the tools
+        that open a chat. Not drawn when empty, or it would still spend the grid gap.
+      */}
       {!embedded || showGuardNote ? (
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           {embedded ? null : (
@@ -304,9 +293,9 @@ export function AcpRuntimeSettings({
 
       {runtimes === null ? (
         /*
-                 * Named while the scan runs and counted once it answers, so the heading that holds the
-                 * re-scan press (a guided-tour anchor) exists from the start.
-                 */
+         * Named while the scan runs and counted once it answers, so the heading that holds the
+         * re-scan press (a guided-tour anchor) exists from the start.
+         */
         <SettingsGroup label={t('heading')} trailing={recheck}>
           <SettingsRow label={t('checking')} control={null} testId="app-settings-runtimes-loading" />
         </SettingsGroup>
@@ -339,12 +328,12 @@ export function AcpRuntimeSettings({
 
           {others.length > 0 ? (
             /*
-                         * The other tools: a shelf of marks sorted by next step (sign-in, then installs, then
-                         * the undetectable group), each opening the searchable setup `Dialog` at its tool, the
-                         * same primitive as the connector dialog. With nothing confirmed the door carries the
-                         * indigo, since the install instructions live there. Falsifier: if people read the
-                         * shelf instead of reaching the ready tools, it goes back behind the chip.
-                         */
+             * The other tools: a shelf of marks sorted by next step (sign-in, then installs, then
+             * the undetectable group), each opening the searchable setup `Dialog` at its tool, the
+             * same primitive as the connector dialog. With nothing confirmed the door carries the
+             * indigo, since the install instructions live there. Falsifier: if people read the
+             * shelf instead of reaching the ready tools, it goes back behind the chip.
+             */
             <>
               {nextUp.length > 0 ? (
                 <section
@@ -367,11 +356,11 @@ export function AcpRuntimeSettings({
                   </ul>
                 </section>
               ) : null}
-              {unknown.length > 0 ? (
+              {undetectable.length > 0 ? (
                 /*
-                                 * What Atlas cannot detect: the heading names the state once and the tiles are
-                                 * name-only entries, still opening each tool's install guide.
-                                 */
+                 * What Atlas cannot detect: the heading names the state once and the tiles are
+                 * name-only entries, still opening each tool's install guide.
+                 */
                 <section
                   className="min-w-0"
                   aria-labelledby="app-settings-runtimes-unknown-heading"
@@ -379,7 +368,7 @@ export function AcpRuntimeSettings({
                 >
                   <SettingsGroupHeading
                     id="app-settings-runtimes-unknown-heading"
-                    label={t('unknownHeading', { count: unknown.length })}
+                    label={t('unknownHeading', { count: undetectable.length })}
                     trailing={nextUp.length > 0 ? null : searchChip}
                   />
                   <p
@@ -392,7 +381,7 @@ export function AcpRuntimeSettings({
                     data-testid="app-settings-runtimes-unknown-shelf"
                     className="mt-1 grid min-w-0 grid-cols-2 gap-x-2 md:grid-cols-3 xl:grid-cols-4"
                   >
-                    {unknown.map((runtime) => (
+                    {undetectable.map((runtime) => (
                       <ShelfTile key={runtime.id} runtime={runtime} onOpen={openOthers} quiet />
                     ))}
                   </ul>
@@ -634,37 +623,33 @@ function RuntimeRow({
   onRuntimesChanged?: () => void;
 }) {
   const t = useTranslations('nav.settingsMenu.runtimes');
-  /** Confirmed — this is what earns the green dot and the 「Ready」 word. */
   const isReady = runtime.state === 'ready';
-  /** Present and launchable; `login-unknown` is here too, without the claim. */
   const isUsable = isRuntimeUsable(runtime.state);
 
   /*
-     * A link to the tool's own instructions, never an install button: a script behind a URL can
-     * change and cannot be shown as a diff (`forbidden.md`). The pinned `npx` a chat runs differs:
-     * versioned, child-process only, and started by the person. No install command is copied here.
-     */
+   * A link to the tool's own instructions, never an install button: a script behind a URL can
+   * change and cannot be shown as a diff (`forbidden.md`). The pinned `npx` a chat runs differs:
+   * versioned, child-process only, and started by the person. No install command is copied here.
+   */
   const website = isUsable ? null : runtime.website;
 
   /*
-     * The doctor is offered only for gated tools: an unmeasured tool has no app-owned config or
-     * credential links to check, and the web has no process or keychain.
-     */
+   * The doctor is offered only for gated tools: an unmeasured tool has no app-owned config or
+   * credential links to check, and the web has no process or keychain.
+   */
   const doctor = useAgentDoctor(runtime.id, onRuntimesChanged);
   const mark = runtimeMark(runtime);
   const showDoctor = isGuardedRuntime(runtime.id, runtime.isolated) && isAgentDoctorAvailable();
 
   /*
-     * Results go below the row, full width: in the control slot of the one-line `SettingsRow`
-     * they would take over the row.
-     */
+   * Results go below the row, full width: in the control slot of the one-line `SettingsRow`
+   * they would take over the row.
+   */
   return (
     <div className="min-w-0">
         <SettingsRow
         label={runtime.label}
-        // A tool that only lacks a login gets **the thing to do** written out — that
-        // state had a badge and nothing anywhere in the code told you what to do
-        // (review 2026-08-16).
+        // A tool that only lacks a login gets the command to run, not only a badge.
         caption={
           runtime.state === 'login-needed'
             ? t('loginHint')
@@ -679,29 +664,29 @@ function RuntimeRow({
         monogram={runtime.label}
         control={
           /* Right-aligned, with the controls every row has (check, badge) at the right end and the
-                       optional ones to their left, so the fixed columns share one edge down the list. */
+             optional ones to their left, so the fixed columns share one edge down the list. */
         <span className="flex items-center gap-2">
             {/*
-                         * No guard badge or per-row sentence, visible or `sr-only`: the guard fact needs a
-                         * condition and a consequence, so it is said once above the group, before the list.
-                         */}
+             * No guard badge or per-row sentence, visible or `sr-only`: the guard fact needs a
+             * condition and a consequence, so it is said once above the group, before the list.
+             */}
             {/*
-                         * The way to open a chat from here, for gated tools only: an ungated tool would break
-                         * the promise above that the app asks before going outside the folder.
-                         */}
+             * The way to open a chat from here, for gated tools only: an ungated tool would break
+             * the promise above that the app asks before going outside the folder.
+             */}
             {isUsable && isGuardedRuntime(runtime.id, runtime.isolated) ? (
               /*
-                             * Filled (`onAccent`): opening a chat is the tab's one action. The inset indigo focus
-                             * ring would vanish on the fill, so the ring takes the primary ink.
-                             */
+               * Filled (`onAccent`): opening a chat is the tab's one action. The inset indigo focus
+               * ring would vanish on the fill, so the ring takes the primary ink.
+               */
               <Chip
                 size="lg"
                 tone="onAccent"
                 data-testid={`app-settings-runtime-chat-${runtime.id}`}
                 /*
-                                 * The verb as the label, the full sentence as the accessible name: a screen reader
-                                 * moving between controls does not see the row's tool name.
-                                 */
+                 * The verb as the label, the full sentence as the accessible name: a screen reader
+                 * moving between controls does not see the row's tool name.
+                 */
                 aria-label={t('openChat')}
                 onClick={() => onOpenChat(runtime.id)}
                 className="shrink-0 focus-visible:ring-[color:var(--color-text-primary)]"
@@ -711,9 +696,9 @@ function RuntimeRow({
               </Chip>
             ) : null}
             {/*
-                         * Here, not only in the chat's problem card: someone whose chat will not open at all
-                         * comes to this screen.
-                         */}
+             * Here, not only in the chat's problem card: someone whose chat will not open at all
+             * comes to this screen.
+             */}
             {/* A tool that only needs a login gets no install link. */}
             {runtime.state === 'login-needed' ? null : website ? (
               <a
@@ -739,7 +724,9 @@ function RuntimeRow({
               </a>
             ) : null}
             {showDoctor ? doctor.scanButton : null}
-            {/* A state, not a control, so it keeps a badge shape. */}
+            {/* A state, not a control: a green dot and a neutral label (`RowStateBadge`, as on the
+                MCP tab), so it does not outshout the row's action. `CommitDetail` keeps a filled
+                pill because there the status is the line's subject. */}
             <RowStateBadge ready={isReady} data-runtime-state={runtime.state}>
               {t(`state.${runtime.state}`)}
             </RowStateBadge>
@@ -748,7 +735,7 @@ function RuntimeRow({
       />
       {/* Only when there is a result, or an empty strip sits under every guarded row. */}
       {/* Through `Surface` for the ramp's enter/exit and reduced-motion cut, not a hard cut; a
-                re-run keeps the previous checks, so the exit never fades an empty box. */}
+          re-run keeps the previous checks, so the exit never fades an empty box. */}
       {showDoctor ? (
         <Surface open={Boolean(doctor.result)} className="min-w-0 px-3 pb-2.5">
           {doctor.result}

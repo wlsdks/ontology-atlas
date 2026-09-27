@@ -216,8 +216,7 @@ describe('API key rows', () => {
     fireEvent.click(screen.getByTestId('ai-save-openai'));
     await waitFor(() => expect(applyStatus).toHaveBeenCalledWith('openai', { provider: 'openai', stored: true, last4: 'wxyz' }));
     expect(mocks.secretSet).toHaveBeenCalledWith('openai', 'sk-openai-real');
-    // Said by the row and read out by the announcer — not by a toast over the page
-    // (2026-09-26: on this tall tab the toast stood over the sent-log caption).
+    // Said by the row and read out by the announcer, not by a toast over the page.
     await waitFor(() =>
       expect(screen.getByTestId('models-announcer')).toHaveTextContent(`${NS}.providerOpenai · ${NS}.saved`),
     );

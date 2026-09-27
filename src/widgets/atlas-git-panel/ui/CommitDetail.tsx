@@ -571,7 +571,6 @@ export function CommitDetail({
   );
 }
 
-/** One-character file status — the letter carries the meaning, not the colour. */
 /**
  * Restore: this commit's content for one document, landing as an uncommitted change. The
  * confirm says it is reversible, whether uncommitted lines go with it, and which documents stay.
@@ -791,6 +790,7 @@ function DocumentHistory({
   );
 }
 
+/** One-character file status — the letter carries the meaning, not the colour. */
 function statusMark(status: string): string {
   switch (status) {
     case "added":
@@ -803,12 +803,6 @@ function statusMark(status: string): string {
       return "M";
   }
 }
-
-
-/**
- * Raw patch → rows grouped per file, dropping the `diff --git`, `index`, `---` and `+++`
- * headers the file list already names. The +/- sign stays so colour is not the only channel.
- */
 
 /**
  * Find a patch by file path, exact first, then by tail: list paths are vault-relative and

@@ -1,10 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
-/**
- * One concept's immediate neighbours (depth 1) and the typed facts it holds.
- * Only facts the derivation guarantees are carried; a field it lacks would be a
- * permanently empty cell.
- */
 export type EgoBearing = "belongsTo" | "contains" | "dependsOn" | "usedBy";
 
 /** Fixed order of the four bearings, so positions never shift between concepts. */
@@ -21,6 +16,11 @@ interface EgoNeighbor {
   kind: string;
 }
 
+/**
+ * One concept's immediate neighbours (depth 1) and the typed facts it holds.
+ * Only facts the derivation guarantees are carried; a field it lacks would be a
+ * permanently empty cell.
+ */
 export interface ConceptEgo {
   id: string;
   label: string;

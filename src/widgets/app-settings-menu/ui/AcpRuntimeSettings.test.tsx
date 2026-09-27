@@ -117,8 +117,7 @@ describe('runtime list: what works now comes first', () => {
   });
 
   it('disables Check again until the first scan finishes', async () => {
-    // The row used to offer a re-scan beside a list that says it is still looking, and a press
-    // started a second scan over the first. `runtimes` is null exactly until the first answer.
+    // A press during the first scan would start a second one; `runtimes` is null until it answers.
     let settle: (value: unknown) => void = () => undefined;
     bridge.detect.mockReturnValue(new Promise((resolve) => { settle = resolve; }));
     render(<AcpRuntimeSettings embedded />);
@@ -428,8 +427,6 @@ describe('runtime list: unavailable states', () => {
   });
 
   it('does not point at the list below when the list is empty', async () => {
-    // The caption promised install guides "in the list below"; with no other tool found there
-    // was no list below at all (design sweep, 2026-09-23).
     bridge.detect.mockResolvedValue([]);
     render(<AcpRuntimeSettings />);
     await waitFor(() => expect(screen.getByText('noneReady')).toBeInTheDocument());
@@ -449,9 +446,9 @@ export type { Runtime };
 
 describe('runtime list: installation stays with the vendor', () => {
   /*
-     * No install button that runs a script behind a URL (`forbidden.md`): it can change and
-     * cannot be shown as a diff.
-     */
+   * No install button that runs a script behind a URL (`forbidden.md`): it can change and
+   * cannot be shown as a diff.
+   */
   it("links a not-ready row to the tool's official install guide", async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'goose', state: 'cli-missing', isolated: false }),
@@ -562,7 +559,7 @@ describe('runtime list: render first, verify later', () => {
   });
 });
 
-describe('runtime rows: marks, columns and the result block (design polish, 2026-09-25)', () => {
+describe('runtime rows: marks, columns and the result block', () => {
   it('borrows the MCP tab mark when the registry has none for the same product', async () => {
     bridge.detect.mockResolvedValue([makeRuntime({ id: 'claude-acp', isolated: true, icon: null })]);
     render(<AcpRuntimeSettings embedded />);
@@ -616,8 +613,7 @@ describe('runtime rows: marks, columns and the result block (design polish, 2026
     render(<AcpRuntimeSettings embedded />);
     const getApp = screen.getByTestId('app-settings-runtimes-get-app');
     expect(getApp).toHaveAttribute('href', '/download/');
-    // The primary Button's own classes, 32px on the chip corner: not a pill, which the system
-    // keeps for a state or a count (owner review, 2026-09-26).
+    // The primary Button's own classes: pills are kept for a state or a count.
     for (const cls of buttonVariants({ variant: 'primary', size: 'sm' }).split(' ')) {
       expect(getApp).toHaveClass(cls);
     }
@@ -650,7 +646,7 @@ describe('runtime rows: marks, columns and the result block (design polish, 2026
   });
 });
 
-describe('the other-tools shelf (round 3, 2026-09-25)', () => {
+describe('the other-tools shelf', () => {
   it('puts what a person can make ready first — a sign-in, then installs — and says the undetectable state once', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
