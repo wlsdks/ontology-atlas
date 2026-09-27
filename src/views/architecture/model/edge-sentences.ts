@@ -1,24 +1,11 @@
 import { splitSummaryLines } from './summary-lines';
 
 /**
- * Where each stroke's sentence sits on the canvas, and which sentences give way.
- *
- * ⚠️ **Every stroke at rest says what the dock said** (Direction B, owner, 2026-08-30). The two
- * references the owner pointed at both put a sentence on the line: one as a label mid-stroke, one
- * beside a dashed edge. Ours carried nothing but a count on focus, and the sentences lived in a
- * dock that was closed by default. The dock's own strings are reused verbatim; nothing is
- * generated, and a stroke whose sentence has no room draws no sentence rather than a cropped one.
- *
- * Placement is decided by the axis the chain runs on:
- * - **down** (1512): an adjacent pair's sentence sits in the ground left of the column,
- *   right-aligned to the boxes, on the gap between the two boxes it joins. A skip's sentence sits
- *   right of the column beside its own arc, at the swing point that belongs to that arc alone.
- * - **across** (1920): an adjacent pair's sentence sits above the chain on one of two alternating
- *   tiers, centred on the gap, so neighbours never touch. A skip's sentence sits below its arc.
- *
- * Every candidate gets a character budget from the room it has (same 4.7px glyph the box captions
- * use), then a rectangle; a rectangle that would touch a box or an earlier sentence is dropped,
- * and the drop is stated (`hidden`) so a gate can count it.
+ * Where each stroke's sentence sits on the canvas, and which sentences give way. Sentences reuse the
+ * dock's strings verbatim. On a downward chain an adjacent pair's sentence sits left of the column
+ * (or beside its arrow) and a skip's right of its arc; across, adjacent sentences alternate two tiers
+ * above the chain and skips sit below. Each candidate gets a character budget and a rectangle; one
+ * that touches a box or an earlier sentence is dropped and reported as `hidden`, never cropped.
  */
 
 type SentenceAxis = 'across' | 'down';
@@ -31,22 +18,15 @@ export interface SentenceEdge {
   columnSpan: number;
   violated: boolean;
   /**
-   * Whether the stroke is drawn right now (a skip appears only on focus or when violated).
-   * Defaults to true. A stroke that is not drawn places last and holds no ground, so an
-   * invisible sentence never silences a visible one, and its arc is no obstacle to anyone.
+   * Whether the stroke is drawn now (a skip appears only on focus or when violated); default true.
+   * An undrawn stroke places last and holds no ground.
    */
   drawn?: boolean;
 }
 
 export interface SentencePlacement {
   key: string;
-  /**
-   * The stroke's kind. A rule and a measurement can join the same pair, and a placement keyed
-   * on the pair alone gave two placements one identity: React reconciled the pair's two
-   * sentences under one key and, after a selection re-rendered the list, left a stale copy in
-   * the DOM on top of the live one (measured 2026-08-30: the rule drawn twice, the count's
-   * sentence coloured as a rule).
-   */
+  /** A rule and a measurement can join the same pair, so the kind is part of the placement's identity. */
   kind: SentenceEdge['kind'];
   from: string;
   to: string;
@@ -78,27 +58,18 @@ export interface SentenceLayoutInput {
   /** Downward skip arcs can leave either side so paired evidence rails never cross each other. */
   skipSide?: 'negative' | 'positive';
   /**
-   * Where an adjacent pair's sentence sits on a downward chain. `lead` is the ground left of the
-   * column (the compact ladder). `connector` seats it beside the arrow it describes, in the row
-   * gap between the two faces it joins, reading to the right — the comparison ladder (2026-09-03:
-   * the lead-lane sentence ended 160px from its arrow and read as a floating caption).
+   * Where an adjacent pair's sentence sits on a downward chain: `lead` left of the column (compact
+   * ladder), or `connector` beside the arrow it describes, in the gap between the two faces.
    */
   adjacentSeat?: 'lead' | 'connector';
   /** Ground beside the arrow that a `connector` sentence may use, in SVG units. */
   connectorRoom?: number;
   /**
-   * Which side of the arrow a `connector` sentence reads on. The contract lane reads to the right,
-   * over the gutter; the observation lane reads to the left, into the gutter, because its right
-   * side is the lane the skip arcs travel in (e2e, 2026-09-03: the outermost arc ran through the
-   * sentence beside the last adjacent arrow).
+   * Which side of the arrow a `connector` sentence reads on. The observation lane reads left because
+   * its right side is where the skip arcs travel.
    */
   connectorSide?: 'right' | 'left' | 'split';
-  /**
-   * Rectangles another lane already holds, in the same units. The ladder places its two lanes in
-   * two calls; without this the rule sentence reading right and the count sentence reading left
-   * met in the shared gutter and touched (e2e, 2026-09-03). A later lane gives way, as a later
-   * sentence in one lane always did.
-   */
+  /** Rectangles another lane already holds; a later lane gives way, as a later sentence does. */
   occupied?: readonly { x: number; y: number; width: number; height: number }[];
   sentenceOf: (edge: SentenceEdge) => string;
   /**
@@ -171,17 +142,12 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
   const taken: { x: number; y: number; width: number; height: number }[] = [...occupied];
   const pitch = axis === 'across' ? boxW + colGap : boxH + rowGap;
 
-  /* Rules first, then the busiest traffic: when two sentences compete for one place the one a
-     reader needs to see the chain wins. What is not drawn goes last and takes nothing. */
+  /* Focus first, then rules, then the busiest traffic; what is not drawn goes last and takes nothing. */
   const touchesFocus = (e: SentenceEdge) => focus !== null && (e.from === focus || e.to === focus);
   const isDrawn = (e: SentenceEdge) => e.drawn !== false;
   /*
-   * ⚠️ **A skip's sentence sits outside every arc that passes it, not only its own.** Measured
-   * 2026-08-30 (review, 1920, Entities hovered): the sentence beside the shorter of two nested
-   * arcs was placed at its own apex, and the longer arc, swinging further out, ran straight
-   * through the words. The arcs are the one obstacle the rectangle check could not see. So the
-   * swing a sentence keeps clear of is the widest swing of any drawn skip whose run covers the
-   * sentence's own midpoint, and the sentence sits just past it.
+   * A skip's sentence sits outside every drawn arc whose run covers its midpoint, not only its own:
+   * arcs are the one obstacle the rectangle check cannot see.
    */
   const alongOf = (p: { x: number; y: number }) => (axis === 'down' ? p.y : p.x);
   const alongSize = axis === 'down' ? boxH : boxW;
@@ -225,21 +191,12 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       const sy = a.y + boxH;
       const ty = b.y;
       if (!isSkip) {
-        /*
-         * A reviewed rule and measured traffic commonly join the same two roles. Putting both
-         * sentences on the left made the rule win the collision test and hid the observation,
-         * even after their strokes were drawn apart. The evidence grammar already owns two sides:
-         * reviewed policy reads on the left, measured traffic on the right.
-         */
+        /* When a rule and traffic join the same roles, the rule reads on the left and the traffic on the right. */
         const isTraffic = edge.kind === 'traffic';
         if (adjacentSeat === 'connector') {
-          /* Beside the arrow: it leaves the lower face's centre, so the words start just right
-             of that line and run over the gap that the two faces leave between them. The
-             observation lane seats its measured count the same way (installed app, 2026-09-03:
-             the count sentence sat 40px right of the column and was cut to "import…"). */
+          /* Beside the arrow: the words start right of the lower face's centre line and run over the gap. */
           const centre = Math.min(a.x, b.x) + boxW / 2;
-          /* `split` is the one-lane ladder: the rule reads right of the arrow and the count reads
-             left of it, so a pair that carries both never seats them on top of each other. */
+          /* `split`, the one-lane ladder: the rule reads right of the arrow and the count left of it. */
           const side =
             connectorSide === 'split' ? (isTraffic ? 'left' : 'right') : connectorSide;
           x = side === 'left' ? centre - GAP_TO_ARC : centre + GAP_TO_ARC;
@@ -306,9 +263,7 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       width > roomPx ||
       boxes.some((box) => intersects(rect, box)) ||
       taken.some((item) => intersects(rect, item));
-    /* A focused role can reveal two nested skips on one baseline. Preserve both sentences by
-       tightening only the later candidate until their measured script-aware rectangles clear;
-       hiding the whole second sentence made a selected stroke less informative than rest. */
+    /* Two nested focused skips can share a baseline: tighten only the later budget until both clear. */
     while (collision && fittedBudget > MIN_CHARS) {
       fittedBudget -= 1;
       [text] = splitSummaryLines(full, fittedBudget, 1);

@@ -20,23 +20,10 @@ import {
 import { buildHarnessBrief } from '../model/harness-brief';
 
 /**
- * **What this repository hands an agent, in the order the agent meets it.**
- *
- * The three bands are the coverage matrix's three columns — *told · gated · watched* — and that
- * repetition is the point: one destination, one vocabulary, two cuts through it. The matrix asks
- * the three questions of each **area** of the product; this view asks them of each **part** of the
- * harness. A reader who learns the words on either screen keeps them on the other.
- *
- * A fourth band sits under those three and holds one row that is not a count: the agent loop and
- * the model. Every public account of a harness puts them at its centre, and no file in a checkout
- * knows them — they belong to the tool a person launched. Printing that row as "0" would be a lie
- * with a number on it, so it carries words instead, and the band's own heading says why.
- *
- * ⚠️ **No score, no grade, no percentage.** The competing tools in this space all rank a repository
- * out of ten, and this repository measured why that fails: a maturity scanner put Anthropic's own
- * skills repository at the same grade as an abandoned toy, because files alone cannot tell *absent*
- * from *rightly absent* (2026-09-13). What this screen prints instead is what is there, what is
- * not, and what a checkout cannot answer.
+ * What this repository hands an agent, in the order the agent meets it. The bands are the coverage
+ * matrix's columns (told, gated, watched) cut by part instead of by area. A fourth band holds the
+ * agent loop and model, which no checkout knows, in words rather than a false "0". No score, grade
+ * or percentage: files alone cannot tell absent from rightly absent.
  */
 
 const BAND_ORDER: readonly AnatomyBand[] = ['tells', 'gates', 'watches'];
@@ -44,10 +31,7 @@ const BAND_ORDER: readonly AnatomyBand[] = ['tells', 'gates', 'watches'];
 /** The copied-acknowledgement key for the handover, which is not one of the slots. */
 const BRIEF_ID = '__brief__';
 
-/**
- * The amber pair this screen's one warning wears, taken from the guides view's `WARNING_BADGE` so
- * the two sibling views mark an unresolved state the same way.
- */
+/** The guides view's `WARNING_BADGE` pair, so both views mark an unresolved state alike. */
 const WARNING_TONE =
   'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]';
 
@@ -68,10 +52,8 @@ const BAND_CAPTION: Readonly<Record<AnatomyBand, string>> = Object.freeze({
 type TranslateFn = ReturnType<typeof useTranslations<'harness'>>;
 
 /**
- * A path or config key that breaks only after `/` and `.`. With `break-words` alone the text view
- * split `.claude/settings.json → hooks.PostToolUse` as `hooks.PostToo` / `lUse` at 1040
- * (2026-09-25); `<wbr>` after each separator gives the line a place to break first, and the
- * overflow fallback is left for a segment longer than the whole line.
+ * Breaks a path or config key only after `/` and `.` (via `<wbr>`), so
+ * `.claude/settings.json → hooks.PostToolUse` never splits mid-word.
  */
 function breakAtSeparators(text: string): ReactNode {
   return text.split(/(?<=[/.])/).map((part, index) => (
@@ -82,11 +64,7 @@ function breakAtSeparators(text: string): ReactNode {
   ));
 }
 
-/**
- * A sentence with its hint button, where the button never lands alone on a line: the sentence's
- * last word and the button share a `nowrap` span. As a separate flex item the hint wrapped onto a
- * line of its own under the "kept out of the agent's view" and "attached by path" rows (2026-09-25).
- */
+/** The sentence's last word and the hint button share a `nowrap` span, so the button never wraps alone. */
 function SentenceWithHint({ text, hint }: { text: string; hint: ReactNode }) {
   const cut = text.lastIndexOf(' ');
   const head = cut < 0 ? '' : text.slice(0, cut + 1);
@@ -147,11 +125,7 @@ function SlotRow({
         >
           {t(`anatomySlots.${slot.id}.title`)}
         </h3>
-        {/*
-          The count is the only number on the row and it is never bare: its unit is beside it, in
-          the noun the repository would use — documents, servers, scripts, hooks. "4" over a title
-          reads as a rank in a product category full of ranks.
-        */}
+        {/* The count is never bare: its unit is the repository's own noun, so it does not read as a rank. */}
         <span
           data-testid={`harness-anatomy-count-${slot.id}`}
           className={cn(
@@ -167,13 +141,7 @@ function SlotRow({
         </span>
       </div>
       <div className={cn('max-w-prose text-label text-[color:var(--color-text-tertiary)]', !hideTitle && 'mt-1')}>
-        {/*
-          ⚠️ **A row's body is one sentence, and a row that needed five product names was four
-          lines long** while every other row was one or two (measured 1512×949, 2026-09-20). The
-          list is a real fact and it is not the row's claim, so it moves behind the same hint the
-          rest of this destination uses for "here is the working behind that". The sentence keeps
-          the limit that matters — the repository writes the file, the tool decides.
-        */}
+        {/* A row's body is one sentence; the product-name list moves behind the hint. */}
         {bodyHint ? (
           <SentenceWithHint
             text={t(`anatomySlots.${slot.id}.body`)}
@@ -188,9 +156,7 @@ function SlotRow({
         )}
       </div>
       {extra ? (
-        /* ⚠️ A `div`, not a `p`. `InfoHint` renders its panel as a `div`, and a `div` inside a `p`
-           is invalid HTML that React reports as a hydration error — which is exactly what the
-           dev overlay's issue counter was showing after this line was added (2026-09-20). */
+        /* A `div`, not a `p`: `InfoHint` renders a `div` panel, and a `div` inside a `p` is a hydration error. */
         <div className="mt-1 break-words text-label tabular-nums text-[color:var(--color-text-tertiary)]">
           {extraHint ? (
             <SentenceWithHint
@@ -207,8 +173,7 @@ function SlotRow({
         </div>
       ) : null}
       {slot.items.length > 0 ? (
-        /* The names are the citation: a reader who doubts the count opens one of them. Monospace,
-           because every one of them is a path or a server key that can be typed. */
+        /* The names are the citation a doubting reader opens; monospace because each can be typed. */
         <p className="mt-1.5 break-words font-mono text-label text-[color:var(--color-text-quaternary)]">
           {slot.items.map((item, index) => (
             <Fragment key={`${item}-${index}`}>
@@ -220,17 +185,7 @@ function SlotRow({
         </p>
       ) : null}
       {absent && slot.fillPath ? (
-        /*
-          ⚠️ **An address, not advice.** The owner's goal for this tab is that an empty place is
-          visible *and addable*; until this line an absent row said "none yet" and stopped. What it
-          adds is the conventional path a part like this lives at, from the tool's own docs — never
-          "you should have one", because plenty of repositories rightly have no sub-agents and no
-          MCP servers, and a screen that turns every blank into a to-do is the maturity score this
-          view refuses in another costume.
-
-          Copy rather than a write: Atlas puts nothing into a source repository, and the person
-          pasting the path into their editor is the step where they decide.
-        */
+        /* An address, not advice: the conventional path from the tool's docs, copied rather than written, since Atlas puts nothing into a source repository. */
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="text-label text-[color:var(--color-text-quaternary)]">
             {t('anatomyFillHere')}
@@ -238,8 +193,7 @@ function SlotRow({
           <code className="min-w-0 break-words font-mono text-label text-[color:var(--color-text-tertiary)]">
             {breakAtSeparators(slot.fillPath)}
           </code>
-          {/* `min-h-8`: the 32px of the view toggle and the handoff button in the same header,
-              not the copy pill's own 36 (2026-09-25). */}
+          {/* `min-h-8` matches the 32px view toggle and handoff button in the same header. */}
           <CompactCopyButton
             className="min-h-8"
             data-testid={`harness-anatomy-copy-${slot.id}`}
@@ -254,10 +208,7 @@ function SlotRow({
   );
 }
 
-/**
- * KB with one decimal, the same shape the guides table prints sizes in. One formatter, because two
- * screens rounding the same bytes differently is a defect a reader cannot resolve.
- */
+/** KB with one decimal, the guides table's format, so two screens never round the same bytes differently. */
 function formatKb(bytes: number): string {
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
@@ -277,8 +228,7 @@ export function HarnessAnatomyView({
   const detailId = useId();
   const selected = anatomy.slots.find(slot => slot.id === selectedSlot);
   const toolSlot = anatomy.slots.find((slot) => slot.band === 'tool');
-  /* One id, not a set: a second copy replaces the first acknowledgement rather than leaving a
-     column of green checks behind, which is what the other copy affordances in this product do. */
+  /* One id, not a set: a second copy replaces the first acknowledgement, as elsewhere in the product. */
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const copyBrief = useCallback(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -304,30 +254,12 @@ export function HarnessAnatomyView({
       aria-label={t('anatomyTitle')}
       className="flex min-h-0 flex-1 flex-col gap-3"
     >
-      {/*
-        ⚠️ **One line, not a second masthead.** The shell above already prints the destination's
-        name, its explainer and the census sentence with its breakdown caption; a titled section
-        under that made a sixth stacked text block, and the tab that opens it is called Structure —
-        so "Harness structure" as a heading said the word twice and pushed the first card 78px
-        down (measured 1512×949, 2026-09-20). The name survives as the region's accessible label,
-        where it names the landmark without spending a row.
-      */}
-      {/*
-        The view's controls are one row: how to read it on the left, what to do with it on the
-        right. The counting caption that used to sit between them is the header's working line now,
-        where every other view prints its own, and the handover stopped floating on a line of its
-        own 60px below the switch it belongs beside.
-      */}
+      {/* One line, not a second masthead: the shell already prints the name; it survives as the region's label. */}
+      {/* One control row: how to read it on the left, what to do with it on the right. */}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
         <SegmentedControl ariaLabel={t('structurePresentation')} value={presentation} onChange={setPresentation}
           options={[{value:'diagram',label:t('diagramView'),testId:'harness-view-diagram'},{value:'text',label:t('textView'),testId:'harness-view-text'}]} className="shrink-0" />
-        {/*
-          **The half the rows cannot do.** The screen shows what is here and offers the address for
-          what is not, and then the person has to retype all of it into whatever agent they use.
-          This hands it over once and correctly — as a description, in English, carrying its own
-          limits, because an agent given "5 gates" with no qualifier will tell its user the
-          repository is protected.
-        */}
+        {/* Hands the screen to an agent as an English description that carries its own limits. */}
         <CompactCopyButton
           data-testid="harness-anatomy-brief"
           copied={copiedId === BRIEF_ID}
@@ -338,8 +270,7 @@ export function HarnessAnatomyView({
         />
       </div>
 
-      {/* Only the work area scrolls. Headers and view switching stay anchored even
-          when evidence expands or the reader enlarges text. No evidence is clipped. */}
+      {/* Only the work area scrolls; headers and view switching stay anchored. No evidence is clipped. */}
       <div data-testid="harness-structure-scroll" className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pr-1">
 
       {presentation === 'diagram' ? <>
@@ -348,12 +279,7 @@ export function HarnessAnatomyView({
             {selected ? <SlotRow slot={selected} t={t} copied={copiedId===selected.id} onCopy={copy} hideTitle /> : null}
           </ul>} />
         {anatomy.silentGuards.missing.length > 0 || anatomy.approvalGates.length > 0 ? (
-          /*
-            **One stack for what the files cannot settle.** The missing-script warning was an amber
-            bar and the trust note a bare sentence under it, with no surface, icon or tone — two
-            grammars for two facts of the same kind. They share one bordered surface now, each row
-            led by its icon, and only the warning wears amber.
-          */
+          /* One bordered stack for what the files cannot settle; only the warning wears amber. */
           <ul data-testid="harness-anatomy-notes" className="shrink-0 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
             {anatomy.silentGuards.missing.length > 0 ? (
               <li data-testid="harness-anatomy-silent" className="flex items-start gap-2.5 border-b border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-[var(--card-pad)] py-2.5 text-body text-[color:var(--color-amber-source-a90)] last:border-b-0">
@@ -371,11 +297,7 @@ export function HarnessAnatomyView({
         ) : null}
       </> : <>
 
-      {/*
-        Three equal columns, one per question. Equal height by the grid rather than by content, the
-        rule this repository's `forbidden.md` states for cards in a row: the band with four parts
-        and the band with two must not read as different weights of claim.
-      */}
+      {/* Equal height by the grid, per `forbidden.md`: bands with four parts and with two must not read as different weights. */}
       <div className="grid shrink-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {BAND_ORDER.map((band) => {
           const slots = anatomy.slots.filter((slot) => slot.band === band);
@@ -426,26 +348,14 @@ export function HarnessAnatomyView({
                               ),
                             })
                           : slot.id === 'always' && anatomy.alwaysBytes > 0
-                          ? /*
-                              The turn's standing cost, beside the count that cannot carry it:
-                              three documents of 2 KB and three of 40 KB are the same "3", and the
-                              difference is what harness engineering is about.
-                            */
+                          ? /* The turn's standing cost beside the count, which cannot carry it. */
                             t('anatomyAlwaysWeight', { size: formatKb(anatomy.alwaysBytes) })
                           : null
                     }
                   />
                 ))}
                 {band === 'gates' && anatomy.silentGuards.missing.length > 0 ? (
-                  /*
-                    ⚠️ **The one line on this screen that is a warning.** Every count above says
-                    what is there; this says what a config promises and the disk does not have. A
-                    hook whose script is missing produces no block and no error — the guard is
-                    simply absent, and every number here still reads healthy. So it is amber, it
-                    names the scripts, and it sits under the rows rather than inside one, because
-                    it is not a part of the harness: it is a part that was asked for and is not
-                    there.
-                  */
+                  /* The one warning: a missing hook script produces no block and no error, so every number still reads healthy. */
                   <li
                     data-testid="harness-anatomy-silent"
                     className={cn(
@@ -460,9 +370,7 @@ export function HarnessAnatomyView({
                   </li>
                 ) : null}
                 {band === 'gates' && anatomy.approvalGates.length > 0 ? (
-                  /* The strongest gate on the screen is one no file records: Codex refuses a hook
-                     it has not been trusted with, and that trust is session state. The band says so
-                     once rather than every hook row carrying a caveat. */
+                  /* Codex refuses a hook it has not been trusted with, and that trust is session state no file records. */
                   <li
                     data-testid="harness-anatomy-approval"
                     className="mt-1 border-t border-[color:var(--color-divider)] pt-3 text-label text-[color:var(--color-text-quaternary)]"
@@ -476,24 +384,14 @@ export function HarnessAnatomyView({
         })}
       </div>
       </>}
-      {/* The diagram names the loop in its centre card and explains it there; the text reading has
-          no centre, so it keeps this band. */}
+      {/* The diagram explains the loop in its centre card; the text reading has no centre, so it keeps this band. */}
       {toolSlot && presentation === 'text' ? (
-        /*
-          Outside the grid and quieter than it, because this row is the screen's honesty rather than
-          its content: the part of the harness the repository does not own. Dashed, so it is legible
-          as an area deliberately left blank rather than as a card that failed to load.
-        */
+        /* Dashed and quieter: an area deliberately left blank, not a card that failed to load. */
         <section
           data-testid="harness-anatomy-band-tool"
           className="shrink-0 rounded-card border border-dashed border-[color:var(--color-border-soft)] p-[var(--card-pad)]"
         >
-          {/*
-            Two columns, because one prose column inside a full-width card left 930 of 1400px empty
-            and the band read as a card that had failed to load rather than as a deliberate blank
-            (measured 1512×949, 2026-09-20). The heading pair sits in the narrow column and the two
-            sentences in the wide one, so both texts start on one line and the card is used.
-          */}
+          {/* Two columns, so both texts start on one line and the wide card is used. */}
           <div className="grid gap-x-8 gap-y-2 md:grid-cols-[minmax(0,15rem)_1fr]">
             <div data-testid="harness-anatomy-slot-loop" data-status={toolSlot.status}>
               <h2 className="text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
@@ -515,7 +413,6 @@ export function HarnessAnatomyView({
         </section>
       ) : null}
       {presentation === 'text' ? (
-        /* The diagram prints this path in its own header, next to the folder's name. */
         <p className="break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
           {t('sourceRoot', { path: sourceRoot })}
         </p>

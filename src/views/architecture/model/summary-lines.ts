@@ -1,15 +1,7 @@
 /**
- * Break a role's sentence into the caption lines its box can hold.
- *
- * Budgeted by characters rather than by CSS, because an SVG text node neither wraps nor
- * ellipsizes on its own. Words wrap greedily; only the last line is ellipsized, and only when
- * something was actually left out. A single word longer than the budget is hard-cut rather than
- * allowed to cross the outline.
- *
- * ⚠️ **Two lines, not one** (Direction C, 2026-08-30). One 34-character line cut every one of the
- * dogfood profile's seven sentences before its first clause carried meaning; the record that put
- * the sentence there had written that outcome down as its own falsifier, and it fired at 7 of 7.
- * Two lines of the same budget carry every first clause (the longest is 51 characters).
+ * Breaks a role's sentence into the caption lines its box can hold, by character budget because an
+ * SVG text node neither wraps nor ellipsizes. Words wrap greedily; only the last line is ellipsized,
+ * only when something was left out; an over-long word is hard-cut. Two lines carry every first clause.
  */
 export function splitSummaryLines(
   summary: string,
@@ -53,11 +45,7 @@ export function splitSummaryLines(
   return lines;
 }
 
-/**
- * A conservative width for one narrow caption glyph at 9.5px. Linux Pretendard measured one seeded
- * ledger caption at 157px against 156px of room when the former 4.7 estimate allowed 33
- * characters. 4.8 lowers that case to 32 without changing the type or box geometry.
- */
+/** A conservative caption glyph width at 9.5px; Linux Pretendard overflowed at 4.7. */
 const CAPTION_CHAR_PX = 4.8;
 /** The box's side padding, and the smallest budget a line may fall to before it stops being a line. */
 const CAPTION_SIDE_PAD = 12;
@@ -67,15 +55,9 @@ const GLYPH_ABOVE = 8;
 const GLYPH_BELOW = 3;
 
 /**
- * How many characters each caption line may hold, read off the box it sits in.
- *
- * ⚠️ **The box tells the sentence how much room each line has** (owner, 2026-08-30, pointing at
- * the Adapters pill on the four-role profile, where both lines crossed the outline). The first
- * budget was one constant, measured once on the 180px receipt box and never on the 148px one,
- * and it treated a stadium as a rectangle. A stadium's caps are circles of radius `boxH / 2`, so
- * the width available at a given height is the straight middle plus the chord of the cap at that
- * height: a line lower in the box has less room than one at the equator. The budget for a line
- * is the narrower of the chords at its glyph top and bottom, less the side padding.
+ * Characters per caption line, read off the box. A stadium's caps are circles of radius `boxH / 2`,
+ * so a line's room is the straight middle plus the narrower cap chord at its glyph top and bottom,
+ * less the side padding.
  */
 export function captionLineBudgets({
   boxW,
@@ -105,11 +87,7 @@ export function captionLineBudgets({
   });
 }
 
-/**
- * The width a caption glyph takes at 9.5px, by script. A Hangul or Han glyph is close to square
- * (about 8px); Latin averages 4.8px. The character budgets above assumed Latin, so the first
- * Korean role sentences ran past both outlines of a 280px face (owner, 2026-09-03).
- */
+/** Caption glyph width at 9.5px by script: Hangul and Han are near square (8px), Latin averages 4.8px. */
 const WIDE_CAPTION_CHAR_PX = 8;
 const WIDE_SCRIPT = /[\u1100-\u11ff\u3130-\u318f\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\u3000-\u303f\uff00-\uffef]/u;
 
@@ -124,11 +102,7 @@ export function estimateCaptionWidth(text: string): number {
 /** The type size the caption estimates above were measured at. */
 const CAPTION_FONT_PX = 9.5;
 
-/**
- * The caption estimate read at another step of the type ramp. Glyph width grows linearly with
- * the size, so a line of `fontPx` type is `fontPx / 9.5` times as wide as the same line at the
- * caption step.
- */
+/** Glyph width grows linearly with size, so a line at `fontPx` is `fontPx / 9.5` times as wide. */
 export function estimateTextWidthAt(text: string, fontPx: number): number {
   return (estimateCaptionWidth(text) * fontPx) / CAPTION_FONT_PX;
 }
@@ -152,13 +126,9 @@ const CLAUSE_END = /[,.;:!?、。，]$/u;
 const CLAUSE_BREAK_SLACK = 1.08;
 
 /**
- * `text-wrap: balance` for SVG text, which has no wrapping of its own: the same number of lines
- * the greedy wrap needs, at the narrowest room that still holds them, so the last line is never a
- * lone word under a full one ("…where that / differs." measured on the architecture canvas's
- * empty column, 2026-09-26). Among breaks within a few percent of that measure, the one that ends
- * lines on a clause wins: the Korean sentence of that empty column balanced 9px narrower with its
- * verb pushed under its object than with the break after its comma, and read worse. A wrap that
- * had to ellipsize is returned as it was.
+ * `text-wrap: balance` for SVG text: the greedy line count at the narrowest room that holds it, so
+ * the last line is never a lone word. Within `CLAUSE_BREAK_SLACK`, a break ending on a clause wins.
+ * A wrap that had to ellipsize is returned as it was.
  */
 export function balanceLinesByWidthAt(
   text: string,
@@ -203,10 +173,8 @@ export function captionLineRoom(boxW: number): number {
 }
 
 /**
- * `splitSummaryLines`, budgeted by estimated width instead of by character count, so a Korean
- * sentence wraps where its glyphs actually reach. Words wrap greedily; a single word wider than
- * the room is cut by width; only the last line is ellipsized, and only when something was left
- * out, with the ellipsis itself counted against the room.
+ * `splitSummaryLines` budgeted by estimated width, so a Korean sentence wraps where its glyphs
+ * reach; the ellipsis itself counts against the room.
  */
 export function splitSummaryLinesByWidth(
   summary: string,

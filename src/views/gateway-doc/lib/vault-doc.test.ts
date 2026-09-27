@@ -9,17 +9,10 @@ import {
   trimToRecentSections,
 } from './vault-doc';
 
-/**
- * The gateway's reading material **takes its content from the vault** — this test holds that contract.
- *
- * The most plausible regression is reverting to a hand-written copy ("just inline the string when in a
- * hurry"). That splits the document a visitor sees from the document the repository reviews, and nobody
- * finds out that it split.
- */
+/** A hand-written copy would split the page a visitor sees from the document the repository reviews. */
 describe('gateway reading comes from vault documents', () => {
   it('finds the first guide page and the changelog in the vault', () => {
-    // The guide split from one page (`GUIDE`) into six (`guide/*`) on 2026-07-31. Verifying the full list
-    // is `tests/contract/gateway-routes.contract.test.ts`'s job.
+    // The full guide page list is `tests/contract/gateway-routes.contract.test.ts`'s job.
     expect(readVaultDoc('guide/what-is-atlas')).toBeTruthy();
     expect(readVaultDoc('CHANGELOG')).toBeTruthy();
   });
@@ -75,10 +68,7 @@ describe('trimToRecentSections', () => {
     expect(trimToRecentSections(doc, 1).body).toContain('머리말 문단.');
   });
 
-  /**
-   * Counting a `## ` inside a code fence as a section puts the cut in the middle of a document and makes
-   * the folded count false. CHANGELOG is a document full of code blocks.
-   */
+  /** CHANGELOG is full of code blocks; a fenced `## ` counted as a section would cut mid-document. */
   it('does not treat a `##` inside a code fence as a section', () => {
     const withFence = [
       '## 진짜 절',
@@ -96,11 +86,8 @@ describe('trimToRecentSections', () => {
   });
 
   /**
-   * Since 2026-08-19 `readVaultDoc('CHANGELOG')` returns the **bundled preview** (the most recent 16
-   * sections, `gateway-changelog.json`) rather than the full text — the 634KB full text pushed every
-   * route's shared chunk past the performance budget. So beyond "does the screen truncation reduce it",
-   * this test measures **the accounting of folded sections**: bundle-time folds + screen-time folds +
-   * sections shown = the original's total sections. Either truncation drifting silently fails here.
+   * `readVaultDoc('CHANGELOG')` returns the bundled preview (`gateway-changelog.json`), not the full
+   * text. Bundle folds + screen folds + shown sections must equal the original's total.
    */
   it('folded counts of the bundle and screen cuts of the real CHANGELOG add up to the source', () => {
     const preview = readVaultDoc('CHANGELOG') ?? '';
@@ -111,20 +98,12 @@ describe('trimToRecentSections', () => {
     expect(bundledOmitted).toBeGreaterThan(0);
 
     const raw = readLedgerSource('docs/CHANGELOG.md')!.content;
-    // With limit 0 every section is folded — the cheapest way to count the total.
     const totalSections = trimToRecentSections(raw, 0).omittedSections;
     expect(bundledOmitted + omittedSections + 12).toBe(totalSections);
   });
 });
 
 
-/**
- * The entry list's links must point at **a place that really exists in the body**.
- *
- * ⚠️ Measured defect (2026-07-31): the list keyed on the raw heading while the body `h2` keyed on the
- * **rendered** text. Three headings containing backticks had their anchors silently broken — a failure
- * invisible until someone clicks, so it is caught here.
- */
 describe('separateCategoryLines', () => {
   it('puts a blank line between consecutive category lines so they stop folding into one paragraph', () => {
     const out = separateCategoryLines('## 2026-09-01 · v1.0.0: x\n\n**Added**: a.\n**Fixed**: b.\n');
@@ -136,11 +115,7 @@ describe('separateCategoryLines', () => {
     expect(separateCategoryLines(src)).toBe(src);
   });
 
-  /**
-   * The rendered changelog must never be one wall paragraph again (2026-09-25: 9,997
-   * characters and 99 ".;" seams in one entry). Measured on the bundled body the gateway
-   * actually draws, after the same normalisation the page applies.
-   */
+  /** The rendered changelog must never be one wall paragraph; measured on the bundled body after the page's normalisation. */
   it('keeps every bundled changelog paragraph short and free of ".;" seams', () => {
     const body = separateCategoryLines(readVaultDoc('CHANGELOG') ?? '');
     const paragraphs = body.split(/\n\s*\n/).filter((block) => !/^\s*(#|>|- |```)/.test(block));
@@ -181,7 +156,6 @@ describe('extractEntries', () => {
   });
 
   it('normalizes a title with inline markdown to its rendered text', () => {
-    // The moment this equality breaks, the anchor breaks.
     const raw = '2026-07-30 — 관문에 읽을거리 둘: `/guide` · **강조**';
     const rendered = '2026-07-30 — 관문에 읽을거리 둘: /guide · 강조';
     expect(normalizeHeadingKey(raw)).toBe(normalizeHeadingKey(rendered));

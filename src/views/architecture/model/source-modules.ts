@@ -1,15 +1,9 @@
 import { matchesArchitecturePath, type ArchitectureProfile } from '@/entities/architecture-profile';
 
 /**
- * The blueprint's occupants are **source modules, not ontology concepts** (owner correction,
- * 2026-08-27): the ontology is the meaning map, and architecture is literally about what the
- * project source contains inside each reviewed role. So a band is filled by walking the role's
- * globs over a **read-only directory listing** of the bound project source.
- *
- * ⚠️ This is a listing, never an analysis. No file is opened, no import is read — the standing
- * falsifier ("the profile must not become a second source of observed imports") stays intact, and
- * conformance remains the MCP's and CLI's job. A browser cannot list a source folder at all, which
- * the surface states as an impossibility rather than pretending emptiness.
+ * The blueprint's occupants are source modules from a read-only directory listing of the bound
+ * source, not ontology concepts. It is a listing, never an analysis: no file is opened and no
+ * import is read, so conformance stays the MCP's and CLI's job.
  */
 
 export interface RoleSourceModule {
@@ -18,7 +12,6 @@ export interface RoleSourceModule {
    * (`checkout/domain`) — the plain segment would collapse every service to the same word.
    */
   name: string;
-  /** Repo-relative path. */
   path: string;
   kind: 'dir' | 'file';
 }
@@ -47,16 +40,9 @@ function segmentToRegExp(segment: string): RegExp {
 }
 
 /**
- * The modules one pattern names, from a directory walk:
- *
- * - `src/views/**` (a concrete base): the base's own children are the modules — the base itself
- *   would be one card repeating the glob.
- * - `services/*&#47;domain/**` (a branched base): each concrete branch (`services/checkout/domain`)
- *   is a module; its children belong to it, not beside it.
- * - A wildcard leaf (`src/shared/lib/*`): the matching entries are the modules.
- *
- * Only directories are walked; the listing never follows a `**` downward, so the walk touches at
- * most one directory level per pattern segment.
+ * The modules one pattern names: a concrete base's children; each concrete branch of a branched
+ * base (`services/*&#47;domain/**`); or the entries matching a wildcard leaf. Only directories are
+ * walked, one level per pattern segment; `**` is never followed downward.
  */
 export async function listPatternModules(
   pattern: string,
@@ -65,16 +51,9 @@ export async function listPatternModules(
   const normalized = normalizePattern(pattern);
   if (!normalized) return [];
   /*
-   * ⚠️ **Dot-prefixed entries are not modules**, and the filter belongs at the entrance so that
-   * none of the three walks below can forget it. Found in the installed app on 2026-08-28: the
-   * widgets role listed `.gitkeep` as its first module and counted it among 23, so the screen
-   * stated a number that was wrong by one and led with a git placeholder.
-   *
-   * On somebody else's project this matters more than a placeholder. The same walk would show
-   * `.DS_Store` and `.eslintrc.js` as modules of a role, and `.env.local` — which
-   * `.claude/rules/local-first.md` names by name when it says to skip dotfiles while reading the
-   * user's disk. A `null` still means "no such directory", which is a different fact from "a
-   * directory holding nothing worth showing".
+   * Dot-prefixed entries are not modules (`.gitkeep`, `.DS_Store`, `.env.local`), and
+   * `.claude/rules/local-first.md` says to skip dotfiles; filtered at the entrance so no walk
+   * forgets it. `null` still means "no such directory", a different fact from an empty one.
    */
   const listVisible: SourceDirLister = async (relativePath) => {
     const entries = await listDir(relativePath);

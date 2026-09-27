@@ -17,20 +17,10 @@ import { ArchitectureSketch } from './ArchitectureSketch';
 
 
 /**
- * The architecture canvas: a measured graph of reviewed roles with an adjacent dock for the role
- * a person selects.
- *
- * ⚠️ **The diagram and the document are separate artifacts** (`docs/DECISIONS.md`, 2026-08-28 (3)).
- * This used to be a stack of full-width bands that carried their own prose, modules and concepts
- * inside them. Drawing edges onto that was tried and reverted: a 250px-tall full-width block gives
- * a stroke nothing to attach to, so every arc left and arrived at the same x and the set collapsed
- * into an unreadable bundle. The boxes are small now precisely so an edge has a side to leave
- * from, and everything they used to hold lives in the panel beside them.
- *
- * ⚠️ **A stroke has to carry something the columns cannot.** `buildArchitectureGraph` owns that
- * rule and reports which case this profile is in through `edgeSource`; the legend states it rather
- * than assuming. Under `lower-only`, adjacent roles keep the readable spine while skip rules are
- * withheld until selection because the column order already carries them.
+ * The architecture canvas: a graph of reviewed roles with a dock for the selected one. The
+ * diagram and the document are separate artifacts (`docs/DECISIONS.md`, 2026-08-28 (3)): boxes
+ * stay small so an edge has a side to leave from. `buildArchitectureGraph` decides which strokes
+ * earn a line and reports it through `edgeSource`.
  */
 export function ArchitectureFlow({
   profile,
@@ -72,15 +62,9 @@ export function ArchitectureFlow({
   modules: Readonly<Record<string, RoleSourceModule[]>> | null;
   /** The labeled meaning layer: reviewed concepts whose `path` sits inside the role's globs. */
   concepts: Readonly<Record<string, RoleConcept[]>>;
-  /**
-   * Measured crossings between roles, from the persisted conformance record. Undefined where no
-   * record exists; the canvas then draws no traffic at all rather than guessing at any.
-   */
+  /** Measured crossings from the persisted record; undefined draws no traffic rather than guessing. */
   roleTraffic?: readonly ArchitectureRoleEdge[];
-  /**
-   * The persisted receipt, or null. Only what each role's own outgoing edges did is read from it
-   * here; the whole-profile verdict stays where it already is, in the evidence summary.
-   */
+  /** Only each role's own outgoing edges are read here; the profile verdict stays in the evidence summary. */
   record?: ArchitectureRecord | null;
   /** The profile's own sentence for a role, or null; the box prints it in place of counts. */
   roleSummary: (id: string) => string | null;

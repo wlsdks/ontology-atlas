@@ -70,14 +70,7 @@ function draw(
 
 describe('the count of what is below', () => {
   it('sits over the fade and takes no height from the scroller it counts against', () => {
-    /*
-     * ⚠️ Measured in the installed app 2026-08-30 at a 1512x949 window: the pill lived in a flow
-     * row under the scroller, so the moment it appeared it took 32px from the very height that
-     * decided whether it should appear, and a chain that fit by 13px stayed "1 more below" for
-     * good. jsdom lays nothing out, so the scroller's geometry is stubbed to a cut chain; what is
-     * asserted is where the pill is put, which is the whole fix.
-     */
-    /* A 1200px-wide, 100px-tall scroller holding a 700px drawing: the chain runs down and is cut. */
+    /* A flow-row pill took the height that decided whether it should appear; jsdom lays nothing out, so geometry is stubbed and the pill's placement asserted. */
     const geometry: Record<string, number> = { clientWidth: 1200, scrollWidth: 1200, clientHeight: 100, scrollHeight: 700 };
     const originals = Object.fromEntries(
       Object.keys(geometry).map((key) => [key, Object.getOwnPropertyDescriptor(HTMLElement.prototype, key)]),
@@ -110,11 +103,7 @@ describe('the role ledger', () => {
     ...over,
   });
 
-  /*
-   * ⚠️ **Without a receipt the box says nothing, and stays the size it was.** A ledger line of
-   * zeros would read as "no violations" — a claim about source nobody listed. This is the normal
-   * case in a browser, where source cannot be listed at all.
-   */
+  /* A ledger line of zeros would claim "no violations" about source nobody listed. */
   it('draws no ledger line and keeps the short box when no record was measured', () => {
     const { container } = draw();
     expect(container.querySelector('[data-testid^="architecture-role-ledger-"]')).toBeNull();
@@ -124,8 +113,7 @@ describe('the role ledger', () => {
   });
 
   it('grows every box in lockstep once any role carries a ledger', () => {
-    /* One tall box beside six short ones is a row of different things; the boxes are one row of
-       the same thing, so the height is decided by the profile, not by the role. */
+    /* The boxes are one row of the same thing, so the profile decides the height, not the role. */
     const { container } = draw({ domain: ledger() });
     const heights = [
       ...container.querySelectorAll('[data-testid^="architecture-graph-box-"]'),
@@ -138,15 +126,11 @@ describe('the role ledger', () => {
     const line = container.querySelector('[data-testid="architecture-role-ledger-domain"]');
     expect(line?.getAttribute('data-ledger-state')).toBe('violated');
     expect(line?.textContent).toContain('3 violated');
-    /* One line, not two: the receipt and the traffic behind the stroke read as one sentence so a
-       seven-role chain still fits a laptop canvas without scrolling. */
+    /* One line, so a seven-role chain still fits a laptop canvas. */
     expect(line?.textContent).toContain('314 imports out');
   });
 
-  /*
-   * ⚠️ Status is a shape here, never a colour. The design system is neutrals plus one indigo, and
-   * a red/green ledger would be a second colour system — a rule change to request, not to assume.
-   */
+  /* Status is a shape, never a colour: a red/green ledger would be a second colour system. */
   it('marks state with an achromatic glyph rather than a status colour', () => {
     const { container } = draw({ domain: ledger({ state: 'violated', violated: 1 }) });
     const line = container.querySelector('[data-testid="architecture-role-ledger-domain"]');
@@ -181,40 +165,20 @@ describe('the evidence split plane', () => {
       expect(graph).toHaveAttribute('data-architecture-axis', 'down');
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
       /*
-       * ⚠️ **The drawing takes the canvas it is given, centred** (inspection 122, S8, 2026-09-13).
-       * It used to be 1120 in a 1200 canvas with the faces frozen at 280/72/240: the contract face
-       * held its width however much ground the card had, so at 1512 the band was 592px inside a
-       * 1448px card and all seven role sentences ended in an ellipsis. The face now grows into the
-       * spare width up to `PAIRED_CONTRACT_W_MAX`, and whatever the two lanes still do not need is
-       * split evenly, so the width is the canvas and the band sits on its centre line.
-       *
+       * The drawing takes the canvas it is given, centred: the contract face grows to
+       * `PAIRED_CONTRACT_W_MAX` and the rest is split evenly. The skip-arc reserve applies only when a
+       * traffic-side skip exists.
        * 1200 = 56 padding + 560 contract + 160 gutter + 240 observation + 92 on each side.
-       *
-       * ⚠️ **Re-derived 2026-09-13** after two reserves were measured as fictions. The contract
-       * face used to stop at 424 and the gutter at 72, because the spare width was computed after
-       * subtracting the observation lane's 360px skip-arc cap — ground this profile, and every
-       * profile the dogfood vault ships, never uses, since none of them declares a skip on the
-       * traffic side. With the reserve made conditional the face reaches its own `560` cap and the
-       * gutter its `160`, which is what stops the observation lane's sentence being cut at 146px of
-       * room. The side lanes fall from 204 to 92 each: the drawing is still centred, on less empty
-       * ground.
        */
       expect(graph).toHaveAttribute('width', '1200');
-      /* 8 + 20 + 7×72 + 6×24 + 8, plus the 8px head room the top plane's lit edge needs to stop
-         reading as a rule under the lane headings and the 3px ledge under the last role. The
-         column notes' `--leading-label` line (2026-09-13) left with the notes on 2026-09-26. */
+      /* 8 + 20 + 7×72 + 6×24 + 8, plus 8px head room for the top plane's lit edge and a 3px ledge. */
       expect(graph).toHaveAttribute('height', '695');
       const headings = screen.getByTestId('architecture-paired-lane-headings');
       expect(headings).toHaveTextContent('Contract');
       expect(headings).toHaveTextContent('Observation');
-      /* No delta column exists before an inspection, so its heading waits for the marks it names. */
       expect(screen.queryByTestId('architecture-delta-heading')).toBeNull();
       expect(screen.getAllByTestId(/^architecture-role-index-/)).toHaveLength(7);
-      /*
-       * ⚠️ **One empty state, not fourteen placeholders** (owner review, 2026-09-26). Before any
-       * inspection the ladder drew seven dashed observation faces and seven hollow delta marks
-       * for one fact. The measured columns are one panel now, saying it once.
-       */
+      /* One empty state for the measured columns, not a placeholder per role. */
       expect(screen.queryAllByTestId(/^architecture-observation-box-/)).toHaveLength(0);
       expect(screen.queryAllByTestId(/^architecture-delta-marker-/)).toHaveLength(0);
       expect(screen.queryAllByTestId(/^architecture-delta-connector-/)).toHaveLength(0);
@@ -230,21 +194,12 @@ describe('the evidence split plane', () => {
         'data-box-width',
         '560',
       );
-      /* The whole point of the wider face: the sentence finishes. An ellipsis anywhere in the
-         contract lane means the face went back to being narrower than its own copy. */
+      /* An ellipsis in the contract lane means the face is narrower than its copy. */
       const sentences = [...container.querySelectorAll('[data-testid^="architecture-box-line-"]')]
         .map((node) => node.textContent ?? '');
       expect(sentences.length).toBeGreaterThan(0);
       expect(sentences.filter((line) => line.trimEnd().endsWith('…'))).toEqual([]);
-      /*
-       * ⚠️ **Every layer plane ends on one line.** The stack used to be one fixed-width
-       * parallelogram translated left by a `PLANE_STEP` per rank, so both of its vertical edges
-       * stepped together: measured on the built export at 1512 (2026-09-13) the seven left edges
-       * ran 324→240 and the seven right edges ran 1336→1252, an 84px staircase on the side the
-       * stack does not recede from. Depth is the leftward stagger, the lean of the lit top face and
-       * the rank numeral; a ragged right edge was never carrying any of it, and the owner read the
-       * result as a drawing that failed to line up.
-       */
+      /* Every layer plane ends on one right edge; depth is the leftward stagger, the lit top face and the numeral. */
       const planeEdges = [...container.querySelectorAll('[data-testid^="architecture-layer-plane-"]')]
         .map((plane) => {
           const d = plane.querySelector('path')!.getAttribute('d') ?? '';
@@ -253,17 +208,11 @@ describe('the evidence split plane', () => {
         });
       expect(planeEdges.length).toBe(7);
       expect(new Set(planeEdges.map((edge) => edge.right)).size).toBe(1);
-      /* The stagger itself is untouched: one `PLANE_STEP` of depth per rank, still going left. */
       const lefts = planeEdges.map((edge) => edge.left);
       expect(new Set(lefts).size).toBe(7);
       expect(Math.max(...lefts) - Math.min(...lefts)).toBe(6 * 14);
 
-      /*
-       * ⚠️ **The chrome row does not sit on what is under it.** Measured on the built export at 1512
-       * in both locales (2026-09-13): a column note drawn over the first dashed face by 3px. The
-       * notes are gone; the headings sit above the first row of faces and above the panel, which
-       * starts on the first face's top line and ends on the last face's bottom line.
-       */
+      /* The chrome row does not sit on what is under it: headings stand above the first row and the panel. */
       const laneHeading = container.querySelector('[data-testid="architecture-paired-lane-headings"] text')!;
       const panel = empties[0].querySelector('rect')!;
       const faces = [...container.querySelectorAll('[data-graph-box] rect.architecture-node-face')];
@@ -274,16 +223,13 @@ describe('the evidence split plane', () => {
       expect(panelY).toBe(Math.min(...faceTops));
       expect(panelY + Number(panel.getAttribute('height'))).toBe(faceBottom);
       expect(panelY).toBeGreaterThan(Number(laneHeading.getAttribute('y')));
-      /* It stands where the delta gutter and the observation face stand, and ends on their edge. */
       const contractRight = Number(faces[0].getAttribute('x')) + 560;
       expect(panelX + Number(panel.getAttribute('width'))).toBe(contractRight + 160 + 240);
-      /* Clear of the planes' ledge beside the faces, and of every rule sentence's end. */
       expect(Math.max(...planeEdges.map((edge) => edge.right))).toBeLessThan(panelX);
       for (const sentence of container.querySelectorAll('[data-edge-sentence-kind="permitted"]')) {
         const end = Number(sentence.getAttribute('x')) + estimateCaptionWidth(sentence.textContent ?? '');
         expect(end).toBeLessThanOrEqual(panelX - 12);
       }
-      /* The panel's words fit inside it, and no role's name repeats "not inspected". */
       const lines = [...empties[0].querySelectorAll('[data-testid="architecture-observation-empty-line"]')];
       expect(lines.length).toBeGreaterThan(0);
       expect(lines.every((line) => !(line.textContent ?? '').endsWith('…'))).toBe(true);
@@ -291,11 +237,9 @@ describe('the evidence split plane', () => {
       expect(screen.getByTestId('architecture-graph-box-widgets').getAttribute('aria-label')).not.toContain(
         'Not inspected',
       );
-      /* The observation heading centres on the empty state it heads, like the words under it. */
       expect(Number(screen.getByTestId('architecture-observation-heading').getAttribute('x'))).toBe(
         panelX + Number(panel.getAttribute('width')) / 2,
       );
-      /* A role's hit area is its contract face: a press on the empty column selects nothing. */
       const hitAreas = [...container.querySelectorAll('[data-architecture-role-hit-area="true"]')];
       expect(hitAreas).toHaveLength(7);
       expect(hitAreas.every((area) => area.getAttribute('width') === '560')).toBe(true);
@@ -308,10 +252,7 @@ describe('the evidence split plane', () => {
     }
   });
 
-  /*
-   * Once a receipt exists the ladder is two measured columns again: a face and a mark per role,
-   * the delta heading back over its marks with the limit of what a mark asserts as its hover text.
-   */
+  /* With a receipt the ladder has a face and a mark per role, and the delta heading returns with its hover limit. */
   it('draws the per-role faces and the delta heading once every role carries a receipt', () => {
     const geometry: Record<string, number> = {
       clientWidth: 1200,
@@ -356,14 +297,9 @@ describe('the evidence split plane', () => {
     }
   });
 
-  /*
-   * ⚠️ Measured 2026-09-03 at 1920×1080: "across while it fits across" drew 151px cards, 205px of
-   * ink in a 918px canvas, and cut every role sentence. The 280/72/240 rows the 2026-09-03 record
-   * decided are preferred whenever the canvas at rest is tall enough for them.
-   */
+  /* An across chain at 1920 cut every role sentence; the ladder rows win whenever the canvas is tall enough. */
   it('prefers the comparison ladder over an across chain when the rows fit the height', () => {
-    /* The height rule applies only at workbench width (xl), where the canvas column is
-       height-bounded; below it the column is content-sized and the width rule alone decides. */
+    /* The height rule applies only at xl, where the canvas column is height-bounded. */
     const originalMatchMedia = window.matchMedia;
     window.matchMedia = ((query: string) => ({
       matches: query.includes('1280'),
@@ -399,7 +335,6 @@ describe('the evidence split plane', () => {
       expect(graph).toHaveAttribute('data-architecture-axis', 'down');
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
       expect(graph).toHaveAttribute('data-ladder-density', 'roomy');
-      /* Every adjacent rule sentence is drawn beside its arrow, none held or cut. */
       const sentences = [...document.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
       expect(sentences).toHaveLength(6);
       expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'drawn')).toBe(true);
@@ -413,12 +348,7 @@ describe('the evidence split plane', () => {
     }
   });
 
-  /*
-   * ⚠️ Measured 2026-09-03 at 1280x800, the widest laptop the product ships to: the canvas column
-   * is 638px and the roomy rows ask for 684, so the seventh role was cut and the canvas counted it
-   * as hidden. Fixed-readable faces and connector space yield with the canvas before any role is
-   * hidden, so the same 280/72/240 comparison draws on tighter rows instead.
-   */
+  /* At 1280x800 the roomy rows do not fit; faces and connector space yield before any role is hidden. */
   it('tightens the ladder rows rather than hiding a role when the canvas is short', () => {
     const originalMatchMedia = window.matchMedia;
     window.matchMedia = ((query: string) => ({
@@ -455,15 +385,11 @@ describe('the evidence split plane', () => {
       expect(graph).toHaveAttribute('data-architecture-axis', 'down');
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
       expect(graph).toHaveAttribute('data-ladder-density', 'tight');
-      /* 4 + 20 + 7x58 + 6x22 + 4: one summary line per role, and the gap the sentence needs,
-         plus the layer stack's 8px head room and its 3px bottom ledge. This is exactly the
-         height the density rule budgets (`pairedTightH`); the column notes' 16px line, which that
-         rule never counted, left with the notes on 2026-09-26. */
+      /* 4 + 20 + 7x58 + 6x22 + 4, plus 8px head room and a 3px ledge: exactly `pairedTightH`. */
       expect(graph).toHaveAttribute('height', '577');
       const boxes = screen.getAllByTestId(/^architecture-graph-box-/);
       expect(boxes).toHaveLength(7);
       expect(boxes.every((box) => box.getAttribute('data-box-height') === '58')).toBe(true);
-      /* The rows are tighter, and every rule still says its sentence beside its own arrow. */
       const sentences = [...document.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
       expect(sentences).toHaveLength(6);
       expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'drawn')).toBe(
@@ -479,8 +405,7 @@ describe('the evidence split plane', () => {
   });
 
   it('expands into aligned contract and observation lanes only when the full role set fits', () => {
-    /* A canvas too short for the four paired rows (16 + 20 + 4×72 + 3×24 = 396), so the across
-       chain is the honest answer; a taller one takes the comparison ladder, tested below. */
+    /* Too short for four paired rows (16 + 20 + 4×72 + 3×24 = 396), so the across chain is honest. */
     const geometry: Record<string, number> = {
       clientWidth: 1600,
       scrollWidth: 1600,
@@ -504,7 +429,6 @@ describe('the evidence split plane', () => {
       const graph = screen.getByTestId('architecture-graph');
       expect(graph).toHaveAttribute('data-box-width-mode', 'roomy');
       expect(graph).toHaveAttribute('data-architecture-axis', 'across');
-      /* Nothing measured: the lane under the row is one band that says so, not four faces. */
       expect(screen.queryAllByTestId(/^architecture-observation-box-/)).toHaveLength(0);
       expect(screen.queryAllByTestId(/^architecture-delta-connector-/)).toHaveLength(0);
       const band = screen.getByTestId('architecture-observation-empty');
@@ -633,9 +557,7 @@ describe('the evidence split plane', () => {
   });
 
   it('keeps a violated edge and arrowhead red while shared ports remain indigo', () => {
-    /* Ports for the observed lane exist only once the measured canvas can split contract from
-       observation. jsdom reports a zero-width canvas unless this test supplies the same wide
-       geometry the assertion is about. */
+    /* Observed-lane ports exist only on a canvas wide enough to split the lanes; jsdom reports zero width. */
     const originalClientWidth = Object.getOwnPropertyDescriptor(
       HTMLElement.prototype,
       'clientWidth',
@@ -672,14 +594,9 @@ describe('the evidence split plane', () => {
 });
 
 /**
- * **Direction B, 2026-09-08 — the import direction is drawn as depth.**
- *
- * `app → views → widgets → features → entities → shared` is a rule about what may reach what, and
- * the ladder stated it only as row order. Seven stacked rows of one surface say "these came in
- * this sequence"; a stack of planes says "this one is under that one", which is the actual rule.
- * These gates hold the three facts the drawing now depends on: the stack is ordered and steps by
- * one constant, every role sits inside its own layer's plane, and the one import that travels *up*
- * the stack carries a halo that answers when its role is chosen.
+ * The import direction is drawn as depth: a stack of planes says "this one is under that one".
+ * These gates hold that the stack is ordered and steps by one constant, every role sits inside its
+ * layer's plane, and the one upward import carries a halo that answers when its role is chosen.
  */
 describe('the layer planes', () => {
   const LADDER_GEOMETRY: Record<string, number> = {
@@ -732,12 +649,11 @@ describe('the layer planes', () => {
         '5',
         '6',
       ]);
-      /* Depth is the fact the DOM carries; the two ends of the ramp stay in CSS tokens. */
+      /* Depth is the fact the DOM carries; the ramp ends stay in CSS tokens. */
       const depths = planes.map((plane) => Number(plane.getAttribute('data-layer-depth')));
       expect(depths[0]).toBe(1);
       expect(depths[depths.length - 1]).toBe(0);
       expect(depths.every((depth, index) => index === 0 || depth < depths[index - 1])).toBe(true);
-      /* One step per layer, so the whole stack shears along a single line. */
       const origins = planes.map(planeOriginX);
       const steps = origins.slice(1).map((x, index) => origins[index] - x);
       expect(new Set(steps)).toEqual(new Set([14]));
@@ -751,8 +667,7 @@ describe('the layer planes', () => {
       expect(group).toHaveAttribute('aria-hidden', 'true');
       expect(group).toHaveAttribute('pointer-events', 'none');
       expect(group?.querySelectorAll('text')).toHaveLength(0);
-      /* The nearest layer's plane is the one shifted furthest along the stack, so it is the
-         tightest containment case: its ground still starts left of the reviewed face. */
+      /* The nearest plane shifts furthest, so it is the tightest containment case. */
       const faceX = Number(
         container
           .querySelector('[data-testid="architecture-graph-box-app"] rect')
@@ -779,8 +694,7 @@ describe('the layer planes', () => {
       expect(halo).toHaveAttribute('stroke', 'var(--color-danger-text)');
       expect(halo).toHaveAttribute('data-edge-raised', 'false');
       expect(halo).toHaveAttribute('stroke-width', '4');
-      /* The halo is a second painted pass, never a second crossing: a gate that counts strokes
-         by `data-edge-from` must still see one path per crossing. */
+      /* The halo is a second painted pass, never a second crossing: stroke counts by `data-edge-from` stay one per crossing. */
       expect(halo).not.toHaveAttribute('data-edge-from');
       const restStrokeWidth = Number(
         container
@@ -803,7 +717,7 @@ describe('the layer planes', () => {
       );
       expect(raisedHalo).toHaveAttribute('data-edge-raised', 'true');
       expect(raisedHalo).toHaveAttribute('stroke-width', '7');
-      /* Its own stroke rises with it, so the raise is one event rather than a lit outline. */
+      /* Its own stroke rises with it, so the raise is one event. */
       expect(
         Number(
           raised

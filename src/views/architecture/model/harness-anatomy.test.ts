@@ -97,8 +97,7 @@ describe('buildHarnessAnatomy', () => {
   });
 
   it('counts skills and briefs by name, and keeps them in separate rows', () => {
-    /* Folding at the directory put this repository's 18 skills and 15 briefs on screen as "4
-       folders" — true, and useless. The reader is asking what can be called. */
+    /* Folding at the directory shows "4 folders"; the reader is asking what can be called. */
     const anatomy = buildHarnessAnatomy(
       report({
         analysis: {
@@ -199,9 +198,7 @@ describe('buildHarnessAnatomy', () => {
   });
 
   it('counts and names git hooks without the coverage pass', () => {
-    /* The coverage pass runs only when the vault records implementation paths. Neither the number
-       nor the names may depend on that, or a repository with no ontology reads as having a
-       commit-time guard nobody can open. */
+    /* The coverage pass runs only with implementation paths; the gate count must not depend on it. */
     const anatomy = buildHarnessAnatomy(
       report({
         checks: { wiredHooks: 0, gitHooks: 3, scripts: [], total: 3 },
@@ -258,12 +255,7 @@ describe('buildHarnessAnatomy', () => {
     expect(slotOf(without, 'permissions').status).toBe('absent');
   });
 
-  /*
-   * Claude reads both files and the local one adds to the shared one — it does not replace it.
-   * Taking the first that parsed made every rule a person had added locally invisible, and on a
-   * checkout whose `.claude/settings.json` is absent the row reported only the local file as if
-   * it were the whole policy.
-   */
+  /* Claude reads both files: the local one adds to `.claude/settings.json`, it does not replace it. */
   it('adds the local settings file to the shared one rather than choosing between them', () => {
     const both = buildHarnessAnatomy(
       report({
@@ -284,8 +276,7 @@ describe('buildHarnessAnatomy', () => {
   });
 
   it('folds discovered tests to the folder the runner walks, not to every subtree', () => {
-    /* Depth three produced 689 names for 1471 files on this repository; the citation became a list
-       nobody reads. Where the runner finds them is the answer. */
+    /* Deeper paths list hundreds of names; where the runner finds them is the answer. */
     const anatomy = buildHarnessAnatomy(
       report({
         testFiles: [
@@ -342,8 +333,6 @@ describe('permissionCounts', () => {
 
 describe('the pipeline slot', () => {
   it('names workflow files without their directory, and counts them from the scan', () => {
-    /* The phase the first build of this view had no row for at all: a repository whose only gate
-       is a pipeline was drawn with nothing watching it. */
     const anatomy = buildHarnessAnatomy(
       report({
         workflowFiles: ['.github/workflows/ci.yml', '.github/workflows/release.yml'],
@@ -362,8 +351,7 @@ describe('the pipeline slot', () => {
 
 describe('the always-read weight', () => {
   it('sums only what every turn pays, not the conditional guides', () => {
-    /* The number a count cannot carry: three 2 KB documents and three 40 KB documents are both
-       "3", and the difference is the standing cost of a turn in this repository. */
+    /* Three 2 KB and three 40 KB documents are both "3"; bytes are the standing cost of a turn. */
     const anatomy = buildHarnessAnatomy(
       report({
         analysis: {
@@ -402,9 +390,7 @@ describe('the always-read weight', () => {
 
 describe('what the repository keeps out of sight', () => {
   it('files an exclusion under what gates, with the name each product actually uses', () => {
-    /* `.aiexclude` is Gemini Code Assist's and `.geminiignore` is Gemini CLI's. Naming the wrong
-       product is the failure this row exists to avoid, so the classifier's mapping is asserted
-       here as well as in the cross-implementation contract. */
+    /* `.aiexclude` is Gemini Code Assist's and `.geminiignore` is Gemini CLI's. */
     const anatomy = buildHarnessAnatomy(
       report({
         analysis: {
@@ -425,8 +411,6 @@ describe('what the repository keeps out of sight', () => {
   });
 
   it('does not count an exclusion as a document the repository speaks through', () => {
-    /* `isGuideRecord` feeds the census sentence. A file that says what an agent may not see is the
-       opposite of a thing the repository says. */
     expect(isGuideRecord({ kind: 'exclusion' })).toBe(false);
     expect(isGuideRecord({ kind: 'instructions' })).toBe(true);
   });
@@ -434,8 +418,7 @@ describe('what the repository keeps out of sight', () => {
 
 describe('a guard that fails in silence', () => {
   it('keeps a missing script out of the count and names it anyway', () => {
-    /* A `settings.json` entry whose path does not resolve produces no block and no error. The
-       count of wired hooks stays honest; the absence is stated beside it rather than hidden. */
+    /* An unresolved hook path yields no block and no error; the absence is stated beside the count. */
     const anatomy = buildHarnessAnatomy(
       report({
         hookGroups: [
@@ -475,8 +458,7 @@ describe('a guard that fails in silence', () => {
 
 describe('the instruction chain', () => {
   it('names the deepest nested file and what it adds, not the whole nested set', () => {
-    /* A turn does not have one cost per repository: the tool concatenates root-down to the folder
-       being worked in, so the standing cost is the always-read set plus what that folder adds. */
+    /* The tool concatenates root-down, so a turn's cost is the always-read set plus the folder's additions. */
     const anatomy = buildHarnessAnatomy(
       report({
         analysis: {
@@ -488,8 +470,7 @@ describe('the instruction chain', () => {
         } as never,
       }),
     );
-    /* Same depth, so the heavier one is the honest example: it is the most a turn can be asked to
-       carry. */
+    /* Same depth, so the heavier one is the honest example. */
     expect(anatomy.deepestNested).toEqual({ path: 'mcp/AGENTS.md', bytes: 4_096 });
     expect(anatomy.alwaysBytes).toBe(10_240);
   });

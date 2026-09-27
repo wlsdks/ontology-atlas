@@ -12,19 +12,9 @@ import type {
 import { HarnessCoverageView } from './HarnessCoverageView';
 
 /**
- * **What every mark on the coverage matrix encodes, asserted as the encoding rather than as a class.**
- *
- * The owner read the first build and could not tell what the marks were saying or why they were
- * there. The repair was to give each one a single sentence and delete anything that could not earn
- * one, so these tests are written against those sentences:
- *
- * - the square says *something* or *nothing*, and nothing else;
- * - the number beside it says how many, as a number;
- * - the card's numeral is the count of empty squares below it, verifiable by counting;
- * - a mirrored name appears once, and the tools carry the multiplicity.
- *
- * Each one names the defect it would catch, because a gate whose failure mode is not written down
- * is a gate nobody can tell is aimed at the wrong thing.
+ * What every coverage mark encodes, asserted as the encoding: the square says something or
+ * nothing; the number says how many; the card numeral counts the empty squares below it; a
+ * mirrored name appears once while the tools carry the multiplicity.
  */
 
 /* jsdom has no `scrollIntoView`; the open detail scrolls itself into view in every real browser. */
@@ -65,10 +55,7 @@ const areas: CoverageAreaInput[] = [
   },
 ];
 
-/*
- * Front is named by twelve checks and Api by two, which is the spread that killed the bar: the
- * previous mark drew both at a full track because each was its column's own maximum.
- */
+/* Front has twelve checks and Api two: the spread a per-column-max bar drew at equal length. */
 const coverage: ScopeDeclaration[] = [
   ...Array.from({ length: 12 }, (_, index) =>
     declaration({ id: `package.json#test:front-${index}`, column: 'watched', origin: 'script', scopes: ['src/front'] }),
@@ -76,7 +63,6 @@ const coverage: ScopeDeclaration[] = [
   declaration({ id: 'package.json#test:api-a', column: 'watched', origin: 'script', scopes: ['api/orders'] }),
   declaration({ id: 'package.json#test:api-b', column: 'watched', origin: 'script', scopes: ['api/orders'] }),
   declaration({ id: 'src/AGENTS.md', column: 'told', origin: 'nested-agents', scopes: ['src'] }),
-  /* One guard, mirrored for two tools, exactly as nine of this repository's hooks are. */
   declaration({
     id: '.claude/hooks/fast-sensor.sh',
     label: 'fast-sensor',
@@ -93,11 +79,7 @@ const coverage: ScopeDeclaration[] = [
     namedBy: '.codex/hooks.json',
     scopes: ['src/front'],
   }),
-  /*
-   * Declares no path at all, so it reaches every area by declaration and belongs in the band rather
-   * than in eight rows. Mirrored across both hook trees, which is what nine of this repository's
-   * real hooks are.
-   */
+  /* Declares no path, so it reaches every area and belongs in the band; mirrored across both hook trees. */
   declaration({
     id: '.claude/hooks/block-npm-publish.sh',
     label: 'block-npm-publish',
@@ -152,13 +134,7 @@ function mount() {
 
 describe('what the marks encode', () => {
   it('draws the square as a container — filled, or drawn and empty — and never as a magnitude', () => {
-    /*
-     * ⚠️ **The defect this catches.** The first build drew `count ÷ (largest count in the column)`,
-     * floored at 18%, as an inline width. Measured on this repository: a Gated 2 filled 24.0px and
-     * the Watched 2 beside it filled 4.3px; a Gated 2 and a Watched 12 both filled the whole track.
-     * A mark whose length is not a fixed unit of anything cannot be decoded, which is what the
-     * owner reported. So there are exactly two states and no inline sizing anywhere in a mark.
-     */
+    /* A mark scaled to its column's maximum cannot be decoded, so a mark has exactly two states and no inline size. */
     mount();
     const marks = document.querySelectorAll('[data-harness-mark]');
     expect(marks.length).toBe(areas.length * 3);
@@ -178,8 +154,7 @@ describe('what the marks encode', () => {
     mount();
     const filled = document.querySelector('[data-harness-mark="filled"]')!;
     const empty = document.querySelector('[data-harness-mark="empty"]')!;
-    /* Filled has a background; empty is an outline with nothing in it. A reader who cannot separate
-       indigo from amber still reads the difference (design-infoviz). */
+    /* Filled has a background, empty is an outline: readable without separating indigo from amber. */
     expect(filled.className).toMatch(/bg-\[color:var\(--color-indigo/);
     expect(empty.className).not.toMatch(/\bbg-\[/);
   });
@@ -199,12 +174,7 @@ describe('what the marks encode', () => {
   });
 
   it("makes the card's numeral the count of empty squares in its own column", () => {
-    /*
-     * ⚠️ **The defect this catches.** A card whose number is computed one way while the marks below
-     * it are computed another would be worse than the undecodable bar it replaced: a reader who
-     * counted would find the screen contradicting itself. The card's claim is verifiable by
-     * counting, so this counts.
-     */
+    /* The card's number must equal a count of the marks below it, or the screen contradicts itself. */
     mount();
     for (const column of ['told', 'gated', 'watched'] as const) {
       const card = document.querySelector(
@@ -218,7 +188,7 @@ describe('what the marks encode', () => {
       ).length;
       expect(declared, `the ${column} card disagrees with its own column`).toBe(emptyMarks);
     }
-    /* And the fixture actually exercises both branches, so the equality is not trivially 0 = 0. */
+    /* Both branches are exercised, so the equality is not 0 = 0. */
     expect(document.querySelectorAll('[data-harness-mark="empty"]').length).toBeGreaterThan(0);
     expect(document.querySelectorAll('[data-harness-mark="filled"]').length).toBeGreaterThan(0);
   });
@@ -231,13 +201,7 @@ describe('what the marks encode', () => {
 
 describe('two census strips, one subject', () => {
   it('gives the card surface only to the strip that heads the table', () => {
-    /*
-     * ⚠️ **The defect this catches.** Six tiles at one numeral step, one border token and one
-     * surface — 172,653px² of `--color-panel` against the subject's 207,183px² at 1512×901 — left
-     * the screen reading strip · table · strip with nothing saying which strip it was about. The
-     * numerals are deliberately still equal: both strips print the same kind of fact. Surface is
-     * the only channel allowed to differ.
-     */
+    /* The numerals stay equal in both strips; surface is the only channel allowed to differ. */
     mount();
     const panelled = [...document.querySelectorAll('[data-census-surface="panel"]')];
     const bare = [...document.querySelectorAll('[data-census-surface="bare"]')];
@@ -247,7 +211,6 @@ describe('two census strips, one subject', () => {
     expect(bare.map((el) => el.getAttribute('data-testid'))).toEqual(
       Array(3).fill('harness-reach-tile'),
     );
-    /* The bones survive the demotion: same numeral element, same step, in both strips. */
     expect(document.querySelectorAll('[data-testid="harness-reach-number"]').length).toBe(3);
   });
 
@@ -260,7 +223,7 @@ describe('two census strips, one subject', () => {
       (row) => reach.querySelector(`[data-census-row="${row}"] > div > span`)?.textContent,
     );
     expect(terms).toEqual(labels);
-    /* One control for one definition — three per-tile hints is what put a panel at x −89.97. */
+    /* One control for one definition; per-tile hints overflowed the viewport. */
     expect(reach.querySelectorAll('[aria-describedby]').length).toBe(1);
   });
 });
@@ -276,12 +239,7 @@ describe('the always-loaded band', () => {
   }
 
   it('shows on its own toggle that it is open, through geometry rather than ink', () => {
-    /*
-     * ⚠️ **The defect this catches.** For `shape: 'link'` the only state channel `controlClass`
-     * offers is text colour, and this button's only child sets its own colour explicitly — so the
-     * active ink painted nothing and all three toggles rendered identically whether the band was
-     * open or shut. The chevron's rotation is a channel no child can override.
-     */
+    /* For `shape: 'link'` the only state channel is text colour, which the child overrides; the chevron's rotation cannot be. */
     const toggle = openBand();
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(toggle.getAttribute('data-harness-everywhere-open')).toBe('true');
@@ -293,8 +251,7 @@ describe('the always-loaded band', () => {
   });
 
   it('closes on Escape and puts focus back on the toggle that opened it', () => {
-    /* Its close button lives in a different subtree from the toggle, so without this focus fell to
-       `<body>` and the next Tab restarted at the top of the document. */
+    /* The close button lives in another subtree, so without this focus falls to `<body>`. */
     const toggle = openBand();
     expect(screen.getByTestId('harness-coverage-everywhere')).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'Escape' });
@@ -309,8 +266,7 @@ describe('the always-loaded band', () => {
   });
 
   it('prints a mirrored always-loaded guard once, with both tools', () => {
-    /* The band is where the owner met nine names printed twice. Its count stays a count of files
-       and its list stays one row per name. */
+    /* The band's count stays a count of files and its list one row per name. */
     const toggle = openBand();
     expect(toggle.textContent).toContain('1');
     const band = screen.getByTestId('harness-coverage-everywhere');
@@ -320,12 +276,7 @@ describe('the always-loaded band', () => {
   });
 
   it('re-reveals an open cell detail when the band inserts itself above the table', () => {
-    /*
-     * ⚠️ **The defect this catches.** Opening the band inserts 142px above the table (measured
-     * 1512×901: the header row moving from y 371 to y 513). As a mount-only ref callback the
-     * detail's reveal never ran again, so an already-open detail was pushed down with nothing
-     * scrolling it back. The reveal key changing is what makes the effect fire.
-     */
+    /* Opening the band pushes the table down; the reveal key changing re-scrolls an open detail. */
     mount();
     const cell = document
       .querySelector('[data-harness-area="domains/front"]')!
@@ -344,12 +295,7 @@ describe('the always-loaded band', () => {
 
 describe('a mirrored guard', () => {
   it('appears once with both tools, and both files stay behind it', () => {
-    /*
-     * ⚠️ **The defect this catches.** Nine hook names exist in both `.claude/hooks/` and
-     * `.codex/hooks/`; the first build printed the bare name twice, which reads as a rendering
-     * fault. The repair must not be to drop one of the files either, so the configs that name each
-     * one are asserted alongside.
-     */
+    /* Hooks mirrored in `.claude/hooks/` and `.codex/hooks/` print once, with the naming configs asserted. */
     mount();
     const cell = document
       .querySelector('[data-harness-area="domains/front"]')!
@@ -361,8 +307,7 @@ describe('a mirrored guard', () => {
     expect(detail).toHaveTextContent('Codex');
     expect(detail).toHaveTextContent('.claude/settings.json');
     expect(detail).toHaveTextContent('.codex/hooks.json');
-    /* The cell still counts files, so the count and the tool list agree: two declarations, two
-       tools, one guard. */
+    /* Two declarations, two tools, one guard: the count and the tool list agree. */
     expect(cell.getAttribute('aria-label')).toContain('2');
   });
 });

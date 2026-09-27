@@ -24,38 +24,18 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
 
-/** The amber signal pair every "unresolved state" badge on this screen wears. One definition site. */
+/** The amber pair every unresolved-state badge on this screen wears. */
 const WARNING_BADGE =
   'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]';
 
 /**
- * **The guide inventory, with the limits of each column said out loud.**
- *
- * Every cell here is one of two kinds of fact, and the screen never lets them look alike:
- *
- * - **Measured from this repository** — the file is there, it is this many bytes, these two files
- *   the repository itself calls a pair differ, this script the config names exists.
- * - **Read from somebody else's documentation** — which tool reads which file. That claim carries
- *   its source URL and the date a person last opened it, and a claim with no document behind it
- *   says so in place of the source link, instead of rendering like the sourced rows.
- *
- * Three things this view deliberately does not do, each because a reader would take it as more
- * than it is (Evidence seat, 2026-09-13):
- *
- * 1. **No invented conformance.** Counts describe reference comparisons, not matching pairs.
- *    Tool-specific guidance may differ; those differences do not require synchronization.
- * 2. **No verified hooks.** A hook row says the script exists. The Codex group carries the
- *    approval gate as standing text, because that state lives in no file.
- * 3. **No commit dates.** The change column is a filesystem mtime and says so: a fresh clone
- *    stamps every file with the moment it arrived.
+ * The guide inventory, with each column's limits said out loud. A cell is either measured from this
+ * repository or read from another tool's documentation (with its source URL and date, or a stated
+ * lack of one). No invented conformance, no verified hooks (a row says the script exists), and no
+ * commit dates: the change column is a filesystem mtime.
  */
 
-/**
- * Only a difference wears a tag in the pair column. "Same content" is plain text and "not
- * applicable" is the dash the changed column already uses for no value: outlining every row made
- * four identical "not applicable" tags the column's loudest ink, and the one finding beat them by a
- * single step (design review, 2026-09-25).
- */
+/** Only a difference wears a tag; "same content" is plain text and "not applicable" is the dash. */
 const PAIR_DRIFT_BADGE =
   'border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-secondary)]';
 
@@ -77,10 +57,7 @@ interface GuideRow {
   declaredPair: string | null;
 }
 
-/**
- * Directory slots, labelled by the path a person would type. Only the nested-`AGENTS.md` slot needs
- * words rather than a path, and those words live in the catalogue like every other visible string.
- */
+/** Directory slots labelled by the path a person would type; only nested `AGENTS.md` needs words, from the catalogue. */
 const TREE_RULES: Readonly<Record<string, string>> = Object.freeze({
   'claude-rules': '.claude/rules/',
   'claude-skills': '.claude/skills/',
@@ -100,14 +77,12 @@ function formatWhen(value: number | null, locale: string): string {
   return new Date(value).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
 
-/** Groups the classifier's per-file records into the rows a person reads. */
 function buildRows(report: HarnessReport, nestedLabel: string): GuideRow[] {
   const byRule = new Map<string, GuideRow>();
   const mtimeByPath = new Map(report.times.map((time) => [time.path, time.lastModified]));
 
   for (const record of report.analysis.records) {
-    /* Guides only. The enforcement layer is the hooks section below, and the sentence's first
-       number counts the same predicate, so the table and the number always agree. */
+    /* Guides only, the same predicate the sentence's first number counts, so table and number agree. */
     if (!isGuideRecord(record)) continue;
     const treeLabel = record.ruleId === 'nested-agents-md' ? nestedLabel : TREE_RULES[record.ruleId];
     const key = treeLabel ? record.ruleId : record.path;
@@ -137,8 +112,7 @@ function buildRows(report: HarnessReport, nestedLabel: string): GuideRow[] {
     });
   }
 
-  /* Root instruction files first — they are what a person looks for — then the trees, alphabetically
-     inside each group so the order does not depend on which directory the walk reached first. */
+  /* Root instruction files first, then trees, alphabetical within each, independent of walk order. */
   const rank = (row: GuideRow) => (TREE_RULES[row.ruleId] || row.ruleId === 'nested-agents-md' ? 1 : 0);
   return [...byRule.values()].sort(
     (a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label),
@@ -166,16 +140,13 @@ function ToolsCell({ row, t }: { row: GuideRow; t: TranslateFn }) {
               </span>
             ) : null}
             {citation ? (
-              /* The one arrow this screen uses: ↗ prefixes an external destination, which the
-                 label-decoration rule keeps as meaningful rather than decorative. */
+              /* The screen's one arrow: ↗ prefixes an external destination. */
               <a
                 href={citation.source}
                 target="_blank"
                 rel="noreferrer"
                 title={citation.source}
-                /* Every citation link carried the same one-word name, fourteen times. It now
-                   names whose document it is and where that document lives — which is also the
-                   only way to see a destination in a WKWebView, since it has no status bar. */
+                /* Names whose document it is and where it lives: a WKWebView has no status bar to show the destination. */
                 aria-label={t('toolsSourceFor', {
                   tool: AGENT_TOOL_LABELS[tool] ?? tool,
                   host: new URL(citation.source).host,
@@ -214,12 +185,7 @@ function SizeCell({
   t: TranslateFn;
 }) {
   const cap = report.analysis.checks.codexSizeCap;
-  /*
-   * The bar belongs to the merged Codex document, not to any single file. Drawing a per-file bar
-   * was the shape that let a 39,617 B AGENTS.md read as healthy while the merge it sat in was
-   * already being truncated — so only the two rows Codex actually merges carry a bar, and the bar
-   * they carry is the same merged number.
-   */
+  /* The bar is the merged Codex document's, not a file's: only the rows Codex merges carry it, all with the merged number. */
   const merged = row.ruleId === 'agents-md' || row.ruleId === 'nested-agents-md';
   if (!merged || cap.worstCaseBytes == null) {
     return (
@@ -238,12 +204,7 @@ function SizeCell({
   /* "0%" for 157 B of 32 KB would read as "empty"; under one percent says what is true. */
   const percent = percentValue < 1 && cap.worstCaseBytes > 0 ? '<1' : String(percentValue);
   const over = cap.status === 'drift';
-  /*
-    Value over caption, the same two lines every other row prints, so the table keeps one row
-    height. The bar used to stand in for the value and at 157 B of 32 KB it was an empty 2px track
-    that said nothing; it now draws only once the merge is large enough to show (5%), and the
-    caption carries the percent in words either way.
-  */
+  /* Value over caption, one row height; the bar draws only from 5%, the caption carries the percent in words. */
   return (
     <div className="flex flex-col gap-0.5" title={t('capMerged')}>
       <span className="text-body tabular-nums text-[color:var(--color-text-secondary)]">
@@ -293,11 +254,7 @@ function HookGroup({ group, t }: { group: HookConfigFacts; t: TranslateFn }) {
           {group.configPath}
         </span>
         {group.approvalGate ? (
-          /*
-           * Never a green. Codex hashes each entry and refuses to run a new or changed one until a
-           * person trusts it in /hooks; that approval is session state in no file. Printing the
-           * requirement is the whole truth this screen has.
-           */
+          /* Never green: Codex refuses a new or changed hook until a person trusts it in /hooks, session state in no file. */
           <span
             title={t('hookApprovalGateHint')}
             data-testid="harness-hook-approval-gate"
@@ -386,12 +343,7 @@ function DriftList({
                   {finding.path}
                 </span>
                 {left && right ? (
-                  /*
-                   * A disclosure, so it says so: `aria-expanded` and the pressed token carry the
-                   * state. The label deliberately does not flip — a control that renames itself
-                   * under the cursor while also announcing `aria-expanded` states the same thing
-                   * twice, and the two readings disagree (design-interaction, 2026-09-13).
-                   */
+                  /* A disclosure: `aria-expanded` carries the state, so the label does not also flip. */
                   <Chip
                     data-testid={`harness-drift-open-${finding.path}`}
                     active={isOpen}
@@ -409,8 +361,7 @@ function DriftList({
                 ) : null}
               </div>
               {isOpen && left && right ? (
-                /* The diff opens in the reading column, beneath the row it belongs to — two
-                   complete texts side by side rather than a floating panel over the table. */
+                /* The diff opens in the reading column beneath its row, two complete texts side by side. */
                 <div
                   className="mt-3 grid gap-3 md:grid-cols-2"
                   id={`harness-drift-diff-${finding.path}`}
@@ -421,9 +372,7 @@ function DriftList({
                       <p className="font-mono text-label text-[color:var(--color-text-tertiary)]">
                         {path}
                       </p>
-                      {/* Reachable and named: a bare `<pre>` is not in the tab order in a
-                          WKWebView at all, and a byte comparison behind a horizontal scroller is
-                          not a comparison. */}
+                      {/* Focusable and named: a bare `<pre>` is not in a WKWebView's tab order. */}
                       <pre
                         tabIndex={0}
                         role="group"
@@ -465,9 +414,7 @@ export function HarnessGuidesView({
   return (
     <div className="flex flex-col gap-4" data-testid="harness-guides">
       <header>
-        {/* A section head, on the same step as the two below it. At `text-title` it stood 30px
-            under the census sentence at the same size, and the screen had two headlines; the
-            thesis above is the one step over body here (design review, 2026-09-25). */}
+        {/* A section head on the same step as the two below; the thesis above is the only step over body. */}
         <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
           {t('guidesTitle')}
         </h2>
@@ -490,9 +437,7 @@ export function HarnessGuidesView({
                 <th
                   key={key}
                   scope="col"
-                  /* `scope="col"` hands this cell's text to every cell under it as its header
-                     name, and the hint panel inside it is a 137-character paragraph. The label is
-                     the column's name; the hint stays reachable on its own button. */
+                  /* `scope="col"` names every cell below with this text, so the label is the column name; the hint keeps its own button. */
                   aria-label={t(key)}
                   className="whitespace-nowrap pb-2 pr-4 text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-label)] text-[color:var(--color-text-quaternary)]"
                 >
@@ -528,13 +473,7 @@ export function HarnessGuidesView({
                   <SizeCell row={row} report={report} t={t} />
                 </td>
                 <td className="py-2 pr-4">
-                  {/*
-                    The pair column shows the named reference comparison. It does not declare
-                    that independent tool guidance must be identical. A row with no reference says
-                    "not applicable" rather than borrowing a finding from another check. The first
-                    build printed a drift count beside `.codex/`, which has no pair at all (measured
-                    in the browser, 2026-09-13).
-                  */}
+                  {/* The named reference comparison only, never a demand that tool guidance be identical; no reference reads "not applicable". */}
                   {row.declaredPair === null ? (
                     <span
                       title={t('pairNotApplicable')}
@@ -565,8 +504,7 @@ export function HarnessGuidesView({
         </table>
       </div>
 
-      {/* Never a bare zero: what is true is that the declared pairs match and nothing
-          else was compared, and both halves of that are said together. */}
+      {/* Never a bare zero: the declared pairs match and nothing else was compared, said together. */}
       <p className="text-label text-[color:var(--color-text-quaternary)]">
         {t('pairCompared', { count: comparedPairs })} · {t('pairNotMeasured')} ·{' '}
         {t('reviewedOn', { date: CITATIONS_REVIEWED })}

@@ -33,10 +33,7 @@ function renderWorkbench(handoffContext?: ArchitectureHandoffContext) {
 }
 
 
-/*
- * A persisted conformance receipt, parsed the way the page reads the sidecar — through
- * `parseArchitectureRecord`, so these tests also fail if the surface and the parser drift apart.
- */
+/* A receipt parsed through `parseArchitectureRecord`, so a surface/parser drift fails here too. */
 function buildRecord({
   source = { kind: 'git', revision: 'a8df66d', dirty: false },
   status = 'violated',
@@ -91,15 +88,8 @@ function openEvidence() {
   return screen.getByTestId('architecture-evidence-dock');
 }
 
-/*
- * ⚠️ **The empty state is what a real user actually sees, and it is not reachable from a browser.**
- * Both bundled samples carry a profile by contract, and `useDataSourceMode` needs a real folder
- * handle — so this jsdom render is the only place the zero-profile screen can be measured at all.
- * It was inert on the installed rc.15: the button navigated to the map and carried nothing, while
- * the sentence above it promised an agent would read the folder and the imports and draft this.
- */
-/* The chosen role lives in the address, and jsdom shares one window across a file — so a case that
-   selects a role would otherwise hand the next one a pre-selected screen. */
+/* The zero-profile screen is unreachable in a browser (both samples carry a profile), so jsdom is the only place to measure it. */
+/* The chosen role lives in the address and jsdom shares one window per file, so reset it. */
 beforeEach(() => {
   window.history.replaceState({}, '', '/ko/architecture/');
 });
@@ -122,14 +112,7 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
     window.sessionStorage.clear();
   });
 
-  /*
-   * ⚠️ **The agent door was silently a dead end without an agent, and that hole was shipped.**
-   *
-   * The button queues the sentence and moves to the map, but the map resolves the runner as
-   * `runtimeId ?? acpRuntime?.id` and with neither it returns early — the queued sentence is
-   * consumed and discarded. So the person pressed a button, changed screens, and nothing happened:
-   * the very defect the button was built to fix, one route to the right.
-   */
+  /* Without an agent the map discards the queued sentence, so the door must offer only the clipboard. */
   it('offers only the clipboard where a process cannot be spawned, and says why', async () => {
     renderEmpty();
     await waitFor(() =>
@@ -166,10 +149,7 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
     expect(window.location.pathname).toBe('/ko/architecture/');
   });
 
-  /*
-   * `login-needed` is present but will die with an authentication error once a conversation opens —
-   * the exact failure that state exists to stop. It must not read as a reachable agent.
-   */
+  /* `login-needed` would fail with an authentication error once a conversation opens. */
   it('keeps the guarded agent action inert while runtime verification is still pending', () => {
     renderEmpty({ agentRoute: 'checking' });
     expect(screen.getByTestId('architecture-agent-checking')).toBeDisabled();
@@ -177,10 +157,7 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
     expect(screen.getByTestId('architecture-copy-draft-handoff')).toBeInTheDocument();
   });
 
-  /*
-   * The copy stated as present fact something the product did not do. It may promise only what the
-   * click can keep — a proposal the person reviews, from an agent that has to be connected.
-   */
+  /* The copy may promise only what the click keeps: a proposal to review, from a connected agent. */
   it('promises a proposal from a connected agent, not a finished file', async () => {
     renderEmpty();
     await waitFor(() => expect(screen.getByText(/A connected agent/)).toBeInTheDocument());
@@ -261,7 +238,6 @@ describe('ArchitectureWorkbench', () => {
       'false',
     );
     openEvidence();
-    /* The on-demand evidence plane owns the pattern identity; the header no longer repeats it. */
     expect(screen.getAllByText(/Feature-Sliced Design/)).toHaveLength(3);
     const evidencePlane = screen.getByTestId('architecture-evidence-plane');
     expect(evidencePlane).toHaveTextContent('Human contract');
@@ -301,14 +277,7 @@ describe('ArchitectureWorkbench', () => {
     expect(screen.getByTestId('architecture-graph-box-adapter')).toBeInTheDocument();
   });
 
-  /*
-   * ⚠️ **The screen used to say everything twice.** A diagram of the roles sat above a list of the
-   * same roles, so `adapter` and its globs appeared in two places at once. The owner's reaction to
-   * the installed build was that it neither looked good nor read as a flow -- and the redundancy is
-   * why: with the information split across two blocks neither half could use the width, leaving a
-   * screen that was simultaneously repetitive and empty. One band per role now carries the name,
-   * the globs and the allowances together.
-   */
+  /* One band per role carries name, globs and allowances; a separate list repeated them. */
   it('draws each role exactly once', () => {
     renderWorkbench();
     for (const id of ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared']) {
@@ -317,19 +286,14 @@ describe('ArchitectureWorkbench', () => {
         `${id} must be drawn once, not once per block`,
       ).toHaveLength(1);
     }
-    /* The glob lives in the detail panel now, and only for the selected role, so it appears
-       nowhere at all until a box is chosen. That is the strongest form of "not duplicated". */
+    /* The glob appears only in the detail panel of a selected role. */
     expect(screen.queryByText('src/shared/**')).toBeNull();
   });
 
   /*
-   * ⚠️ **The policy is still fully stated; the columns and the spine share the work.** Under
-   * `lower-only` the permitted set is "everything to my right", and this profile has 21 of them
-   * among 7 roles. Drawing all 21 restates the order twenty-one times and stays refused
-   * (`docs/DECISIONS.md`, 2026-08-28 (3)); drawing none left the measured screen a stack of seven
-   * boxes rather than a chain, which the 2026-08-30 record overturns. What this test pins now:
-   * the boxes appear in dependency order; exactly the six adjacent pairs are drawn and no skip is;
-   * and the assistive list still reads every layer's full reach aloud, layer by layer.
+   * Under `lower-only` drawing all 21 permitted edges restates the order (`docs/DECISIONS.md`,
+   * 2026-08-28 (3)); the six adjacent pairs make it a chain. Boxes follow dependency order and the
+   * assistive list reads every layer's full reach.
    */
   it('states the whole policy through the columns and the spine, drawing no skip', () => {
     renderWorkbench();
@@ -353,7 +317,6 @@ describe('ArchitectureWorkbench', () => {
       'widgets>features',
     ]);
 
-    // The assistive list keeps stating the same reach in its own words.
     expect(
       screen.getByText(
         'Routes: may depend on Application shell, Views, Widgets, Features, Entities, Shared foundation',
@@ -363,11 +326,7 @@ describe('ArchitectureWorkbench', () => {
   });
 
   it("draws every permitted edge when the policy is an explicit graph", () => {
-    /*
-     * The mirror of the test above. Under `explicit` the permitted set cannot be read off the
-     * order at all: adapter reaches three roles directly, and a reader who assumed a chain would
-     * be wrong. So here the strokes are the information and every one of them is drawn.
-     */
+    /* Under `explicit` the strokes are the information: adapter reaches three roles directly. */
     const profile = parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
@@ -401,14 +360,7 @@ describe('ArchitectureWorkbench', () => {
     );
   });
 
-  /*
-   * ⚠️ **Two interactions were removed with the band shape, and this test replaces both**
-   * (`docs/DECISIONS.md`, 2026-08-28 (3)). Hover focus used to raise a layer and everything it
-   * could reach while receding the rest, and a staggered pulse used to run down the gaps between
-   * a focused layer and its deepest reach. Neither survives a graph whose boxes are 64px tall and
-   * whose edges are drawn between them rather than implied by adjacency. What replaces them is
-   * selection: a box is chosen, it says so, and the panel answers with that role.
-   */
+  /* Selection replaced hover focus and the reach pulse (`docs/DECISIONS.md`, 2026-08-28 (3)). */
   it('selects a role, says so, and answers with that role in the panel', () => {
     renderWorkbench();
     const views = screen.getByTestId('architecture-graph-box-views');
@@ -426,28 +378,20 @@ describe('ArchitectureWorkbench', () => {
     const shared = screen.getByTestId('architecture-graph-box-shared');
     expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'shared');
 
-    /* Closing the panel lets go of the role: a pressed face with no answer beside it read as a
-       screen stuck mid-selection (2026-09-03). */
+    /* Closing the panel lets go of the role, so no pressed face sits without an answer. */
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(shared).toHaveAttribute('aria-pressed', 'false');
     expect(shared).toHaveAttribute('aria-expanded', 'false');
 
-    /* Choosing it again opens its answer again. */
     fireEvent.click(shared);
     expect(shared).toHaveAttribute('aria-pressed', 'true');
     expect(shared).toHaveAttribute('aria-expanded', 'true');
 
-    /* Clicking the chosen box again lets go of it, so a reader can get back to the whole map. */
     fireEvent.click(shared);
     expect(screen.getByTestId('architecture-role-detail-empty')).toBeInTheDocument();
   });
 
-  /*
-   * ⚠️ **A role's source modules come from a read-only directory walk of the bound project
-   * source** (owner correction, 2026-08-27: the ontology is the meaning map, architecture is what
-   * the source contains). Never an import scan, so they exist only where a listing exists. They
-   * live in the detail panel now rather than inside a band; the box carries only the count.
-   */
+  /* Modules come from a read-only directory walk, never an import scan, so they exist only with a listing. */
   it('fills the panel with the source modules a role\'s globs contain, when a listing exists', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
@@ -468,15 +412,8 @@ describe('ArchitectureWorkbench', () => {
       </NextIntlClientProvider>,
     );
 
-    /*
-     * ⚠️ **The box says what the role is; the counts wait in the panel** (2026-08-30). The count
-     * line used to sit here so a reader could see where the weight was without choosing anything,
-     * and on a browser-opened vault every one of those lines read `0 modules · 0 concepts` — a row
-     * of zeros where a sentence could be. A role that declared a summary prints it instead, and
-     * `widgets`, which declares none, keeps its counts.
-     */
-    /* The sentence is drawn on two caption lines whose break the box decides, so the readable
-       whole is asserted on the box's accessible name, and the drawing on its first words. */
+    /* A role that declares a summary prints it instead of counts; `widgets` declares none and keeps them. */
+    /* The break is the box's, so the whole sentence is asserted on the accessible name. */
     expect(screen.getByTestId('architecture-graph-box-views').getAttribute('aria-label')).toContain(
       'One module per route-level screen',
     );
@@ -489,10 +426,7 @@ describe('ArchitectureWorkbench', () => {
     expect(listed).toHaveTextContent('src/views/docs-vault');
   });
 
-  /*
-   * The reviewed concepts are the meaning layer, kept named and separate from the source layer
-   * above them, and they answer the selection the same way the modules do.
-   */
+  /* Reviewed concepts are the meaning layer, separate from source modules, answering the selection alike. */
   it("answers a selection with the role's reviewed concepts, labeled as concepts", () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
@@ -516,7 +450,6 @@ describe('ArchitectureWorkbench', () => {
         />
       </NextIntlClientProvider>,
     );
-    /* The count moved into the panel with the modules; the box carries the role's sentence. */
     expect(screen.getByTestId('architecture-graph-box-views').getAttribute('aria-label')).toContain(
       'One module per route-level screen',
     );
@@ -552,8 +485,7 @@ describe('ArchitectureWorkbench', () => {
       expect.stringContaining("--vault '/Users/dana/Atlas Source/docs/ontology'"),
     );
     await waitFor(() => {
-      /* The button says the short state and keeps its width; the sentence naming the task is
-         announced by the polite status region instead of stretching the toolbar. */
+      /* The button keeps its width; the polite status region announces the task sentence. */
       const buttons = screen.getAllByRole('button', { name: 'Copied' });
       expect(buttons).toHaveLength(1);
       for (const button of buttons) {
@@ -565,11 +497,7 @@ describe('ArchitectureWorkbench', () => {
     });
   });
 
-  /*
-   * The button's task is derived from the receipt; the chooser beside it offers the other two
-   * with one line each. Choosing one hands or copies *that* task, not the default (owner,
-   * 2026-09-03: an analysed vault still needs further analysis and improvement).
-   */
+  /* The chooser offers the other two tasks; choosing one hands or copies that task, not the default. */
   it('offers the other agent tasks beside the derived one and copies the chosen sentence', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
@@ -583,7 +511,6 @@ describe('ArchitectureWorkbench', () => {
       'change',
       'improve',
     ]);
-    /* Without a receipt the inspection is a first one, and the default is marked as current. */
     expect(items[0]).toHaveTextContent('Inspect source');
     expect(items[0]).toHaveAttribute('aria-current', 'true');
     expect(menu).toHaveTextContent("Choosing copies that task's sentence.");
@@ -593,19 +520,16 @@ describe('ArchitectureWorkbench', () => {
     );
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('"kind":"improve"'));
     await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
-    /* The confirmation names the task, then leaves: a walker who chose "find improvements" saw
-       only "copied" and, thirty seconds later, still no way to copy again (2026-09-03). */
+    /* The confirmation names the task, then leaves so the copy action returns. */
     await waitFor(() =>
       expect(
         screen.getAllByRole('status').some((node) => node.textContent === 'Copied “Find improvements”. Paste it into your agent'),
       ).toBe(true),
     );
     expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument();
-    /* The confirmation leaves, and the chosen task stays on the button. */
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Copy the “Find improvements” task' })).toBeInTheDocument(),
     );
-    /* Activating an item returns focus to the trigger, never to body. */
     expect(screen.getByRole('button', { name: 'Choose another agent task' })).toHaveFocus();
   });
 
@@ -624,12 +548,9 @@ describe('ArchitectureWorkbench', () => {
 });
 
 /*
- * ⚠️ **A conformance receipt is a dated machine measurement, not a live claim** (2026-08-27
- * council, point 5). What these tests pin: the stamp renders the receipt's own vocabulary (date,
- * commit short sha for git, the fingerprint sentence — never a sha — for folders, the dirty
- * suffix); the verdict never appears as a bare status word (the counts always ride beside it);
- * the tones reuse the existing signal families; and the surface admits it cannot re-verify the
- * source rather than presenting the stamp as current.
+ * A receipt is a dated measurement, not a live claim: the stamp uses the receipt's vocabulary
+ * (a short sha for git, the fingerprint sentence for folders, the dirty suffix), the verdict always
+ * rides with its counts, and the surface admits it cannot re-verify the source.
  */
 describe('ArchitectureWorkbench — persisted conformance receipt', () => {
   it('renders a git receipt as a dated stamp with counts beside the verdict, never a bare status', () => {
@@ -639,14 +560,12 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     );
     openEvidence();
     const pill = screen.getByTestId('architecture-record-summary');
-    // The verdict and its accounting are one line: N violations · M edges unmapped · type-only labelled.
     expect(pill).toHaveTextContent('Violated · 3 rule violations · 2 dependencies with no assigned role · 18 type-only edges');
     expect(screen.getByTestId('architecture-record-stamp')).toHaveTextContent(
       'Checked 2026-08-27 at commit a8df66d',
     );
     // The receipt replaces the amber "not measured" pill; both at once would be two claims.
     expect(screen.queryByText('Source check required')).toBeNull();
-    // This surface cannot re-probe the source, and must say so instead of claiming currency.
     expect(screen.getByTestId('architecture-record-cannot-confirm')).toHaveTextContent(
       'This screen does not re-check now. The record below is the result of the last check.',
     );
@@ -660,7 +579,6 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     );
   });
 
-  /* A fingerprint is not a revision: the folder stamp must never show a sha-looking token. */
   it('renders a folder receipt with the fingerprint sentence and no sha-looking token', () => {
     renderWithRecord(
       buildRecord({
@@ -674,7 +592,6 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     const stamp = screen.getByTestId('architecture-record-stamp');
     expect(stamp).toHaveTextContent('Checked 2026-08-27 against a content fingerprint of the source folder');
     expect(stamp.textContent).not.toMatch(/\b[0-9a-f]{7,}\b/);
-    // Counts still ride beside the verdict even when everything is zero.
     expect(screen.getByTestId('architecture-record-summary')).toHaveTextContent(
       'Conforms · 0 rule violations · 2 dependencies with no assigned role',
     );
@@ -700,16 +617,11 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     renderWorkbench();
     expect(screen.getByText('Source check required')).toBeInTheDocument();
     expect(screen.queryByTestId('architecture-record-summary')).toBeNull();
-    // No record means no date anywhere: an absent measurement must not look dated.
     expect(screen.queryByTestId('architecture-record-stamp')).toBeNull();
     expect(screen.queryByTestId('architecture-record-cannot-confirm')).toBeNull();
   });
 
-  /*
-   * ⚠️ The pill used to end the sentence: a warning naming an absence with nowhere to go
-   * (fresh-eyes walkthrough, 2026-08-28). It must name the command that writes the record —
-   * and it must not grow a control claiming this screen can measure the source, which it cannot.
-   */
+  /* It names the command that writes the record, and offers no control to measure source itself. */
   it('tells the reader what produces the missing measurement, without offering to run it', () => {
     renderWorkbench();
     openEvidence();
@@ -728,12 +640,7 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
   });
 });
 
-/*
- * ⚠️ **The note names an absence a browser cannot lift on its own.** Source modules need a source
- * folder, and only the installed app can read one — so where the note appears in a browser it ends
- * in the one thing that changes the answer. Inside the app the same note names a folder to open,
- * and the app must never offer its own download (`AGENTS.md`), so the page decides by runtime.
- */
+/* Only the installed app reads a source folder, and it must never offer its own download (`AGENTS.md`). */
 describe('the source-listing note', () => {
   it('offers the installed app only when the runtime is not the app itself', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
@@ -758,11 +665,8 @@ describe('the source-listing note', () => {
 
 
 /*
- * ⚠️ **A reviewed sentence a person cannot read explains nothing.** The seven sentences on this
- * canvas are the only place `/architecture` says what a layer is *for*, and they were English
- * only, so a Korean reader got the layer names in Korean and the answer in a second language.
- * `summary_<role>_<locale>` restates the canonical sentence for the screen; `summary_<role>`
- * stays the fact, and is what every agent brief, prompt and CLI line still prints.
+ * `summary_<role>_<locale>` restates the canonical sentence for the screen; `summary_<role>` stays
+ * the fact that briefs, prompts and CLI lines print.
  */
 describe('the role sentence in the reader\'s language', () => {
   const KOREAN_VIEWS = '라우트가 열 수 있는 화면 하나마다 모듈 하나입니다.';
@@ -781,7 +685,6 @@ describe('the role sentence in the reader\'s language', () => {
     expect(screen.getByTestId('architecture-graph-box-views').getAttribute('aria-label')).toContain(
       KOREAN_VIEWS,
     );
-    /* The canvas budgets the sentence across caption lines, so the drawing is read on its start. */
     expect(screen.getByTestId('architecture-box-line-views')).toHaveTextContent(/^라우트가/);
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
@@ -796,11 +699,7 @@ describe('the role sentence in the reader\'s language', () => {
     expect(screen.getByTestId('architecture-box-line-views')).toHaveTextContent(/^One module per/);
   });
 
-  /*
-   * The fallback is the whole reason `summaries` sits beside `summary` instead of replacing it: a
-   * profile translated one role at a time must show the reviewed English for the rest, never a
-   * blank where a sentence was.
-   */
+  /* A profile translated one role at a time shows reviewed English for the rest, never a blank. */
   it('falls back to the canonical sentence for a role nobody translated', () => {
     renderIn('ko');
     fireEvent.click(screen.getByTestId('architecture-graph-box-routing'));
@@ -810,11 +709,7 @@ describe('the role sentence in the reader\'s language', () => {
   });
 });
 
-/*
- * ⚠️ **The document that could not be read is named on the screen.** Before 2026-09-03 one
- * unreadable profile threw for the whole route, so the person who added one bad line saw an error
- * boundary instead of the screen that would have told them which file and which key.
- */
+/* An unreadable profile is named on the screen instead of failing the whole route. */
 describe('an unreadable architecture document', () => {
   it('names the document and the parser sentence beside the profiles that did load', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
@@ -835,7 +730,6 @@ describe('an unreadable architecture document', () => {
     expect(notice).toHaveAttribute('role', 'status');
     expect(notice).toHaveTextContent('architecture/broken');
     expect(notice).toHaveTextContent('summary_ghost_ko describes a role that does not exist.');
-    /* The profile that did parse is still drawn. */
     expect(screen.getByTestId('architecture-graph-box-views')).toBeInTheDocument();
   });
 });

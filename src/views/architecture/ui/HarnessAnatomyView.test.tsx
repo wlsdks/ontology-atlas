@@ -7,15 +7,7 @@ import type { HarnessReport } from '@/entities/agent-files';
 
 import { HarnessAnatomyView } from './HarnessAnatomyView';
 
-/**
- * **The structure view's one job: say what is here, what is not, and what a checkout cannot know.**
- *
- * Each test below names the reading it refuses. The screen competes with a field of tools that
- * grade a repository out of ten, and this repository measured why that fails — a maturity scanner
- * put Anthropic's own skills repository at the same grade as an abandoned toy, because files alone
- * cannot tell *absent* from *rightly absent*. So an absent part says "none yet" and the agent loop
- * says something else entirely, and both of those are assertions here rather than styling.
- */
+/** Each test names the reading it refuses: absent, rightly absent and unknowable stay three answers. */
 
 function report(partial: Partial<HarnessReport> = {}): HarnessReport {
   return {
@@ -154,9 +146,7 @@ describe('HarnessAnatomyView', () => {
   });
 
   it('offers the address that would fill an empty part, and only for the empty ones', () => {
-    /* The owner's goal for this tab: an empty place is visible *and addable*. The line is an
-       address from the tool's own documentation, never "you should have one" — which is the
-       maturity score this view refuses, wearing a different hat. */
+    /* An address from the tool's own documentation, never "you should have one". */
     mount(
       report({
         checks: { wiredHooks: 0, gitHooks: 0, scripts: ['lint'], total: 1 },
@@ -166,7 +156,6 @@ describe('HarnessAnatomyView', () => {
     expect(empty).toHaveTextContent('이런 것이 사는 자리');
     expect(empty).toHaveTextContent('.mcp.json');
 
-    /* A part that is there is not told where it could have been. */
     const present = screen.getByTestId('harness-anatomy-slot-checks');
     expect(present).not.toHaveTextContent('이런 것이 사는 자리');
   });
@@ -199,7 +188,6 @@ describe('HarnessAnatomyView', () => {
     );
     const always = screen.getByTestId('harness-anatomy-slot-always');
     expect(always).toHaveTextContent('매 턴 읽는 분량 30.0 KB');
-    /* And the number carries its own argument rather than standing bare. */
     expect(within(always).getByRole('button', { name: '이 분량이 왜 중요한가' })).toBeInTheDocument();
   });
 
@@ -251,7 +239,7 @@ describe('HarnessAnatomyView', () => {
     );
     const scoped = screen.getByTestId('harness-anatomy-slot-scoped');
     expect(scoped).toHaveTextContent('5.0 KB');
-    /* The sum is the point: 10 KB always plus 5 KB in that folder is what a turn there costs. */
+    /* 10 KB always plus 5 KB in that folder is what a turn there costs. */
     expect(scoped).toHaveTextContent('15.0 KB');
     expect(scoped).toHaveTextContent('mcp/AGENTS.md');
   });
