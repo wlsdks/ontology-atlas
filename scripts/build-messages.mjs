@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Composes the i18n message catalogues from one file per namespace.
  *
