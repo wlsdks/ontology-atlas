@@ -31,7 +31,9 @@ competing baselines.
 - Never run `git add -A`; a worktree directory can be staged as an empty gitlink.
 - Subagents do not remove worktrees. After a landing, the coordinating owner
   removes task-created worktrees with `pnpm bundle:prune` (`/review-and-land`);
-  a worktree it keeps is reported by path, never deleted by hand.
+  one kept as `not provably landed` did not land as-is and is read; one kept
+  for a lock or uncommitted changes landed and waits for its holder. Either is
+  reported by path, never deleted by hand.
 - Never use `git stash`; stash is repository-wide and has erased another agent's
   work in this project.
 

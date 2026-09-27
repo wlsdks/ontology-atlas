@@ -19,7 +19,9 @@ Spawn one `reviewer`, never the author and never yourself. The brief carries:
 - **Its brief**: the scratch path the author followed, and the author's report
   with each command as run and its result.
 - **Lenses** from the table below, and the files in this diff that most need
-  each one.
+  each one. Run `pnpm checks:changed` without `--run` in the branch worktree
+  and add every lens its reasons name; the author's report carries only the
+  pass count.
 - **Output**: the verdict first (`land` or `fix`), then numbered findings, each
   with file:line, the defect in one sentence, and the exact replacement.
 
@@ -73,8 +75,9 @@ each as `empty`, `contained` or `pending`, the files two branches share, and
 the trial-merge conflicts. Select only branches you created.
 
 - **The train**, the default when each branch stands alone and the trial
-  merge is clean: in each branch run `pnpm conflicts:scan`, push, open a draft,
-  and `pnpm pr:land <number> --no-wait`; then run `pnpm pr:land --conduct`, or
+  merge is clean: each branch pushed with an open draft (the author's, when
+  its brief said so); in each run `pnpm conflicts:scan` and
+  `pnpm pr:land <number> --no-wait`; then run `pnpm pr:land --conduct`, or
   keep one landing waiting. `pnpm pr:land --plan <n...>` is the dry run.
 - **One integration branch**, when the trial merge conflicts, a shared file
   needs a reading neither branch can do alone, or one slice does not build
@@ -86,20 +89,25 @@ the trial-merge conflicts. Select only branches you created.
   `pnpm docs-vault:resolve-conflicts -- --dry-run` and then its write command,
   and recount a ratchet once on the merged tree. Read every file the plan
   listed as shared, run `node scripts/classify-change.mjs --base=origin/main`
-  and `pnpm checks:changed -- --run`, push, and open one draft whose body lists
+  (`gates=true` means also run `pnpm lint`) and `pnpm checks:changed -- --run`, push, and open one draft whose body lists
   each component (branch @ short sha, and its pull request number) and a
   `### Conflicts` section naming each shared file and how it was resolved.
   Land it with `pnpm pr:land <number>`; leave the component drafts unqueued.
 
 ## 4. Clean up after the proof
 
-Only after `pnpm pr:land` exits 0 for that pull request:
+Only after it landed: a waiting `pnpm pr:land <number>` exited 0, or
+`pnpm pr:queue` shows it landed:
 
     pnpm bundle:prune -- <branch...>            # dry run: the landing commit, or why it keeps
     pnpm bundle:prune -- <branch...> --apply
 
-The apply step closes an open component draft, removes the worktree (unlocking
-it only when the process that locked it has exited), deletes the local branch,
-its `worktree-agent-*` twin and the origin branch, and prunes worktree
-metadata. A branch it keeps did not land as-is: read it before deleting
-anything by hand, and never select a branch another session created.
+The apply step removes the worktree, closes an open component draft, deletes
+the local branch, its `worktree-agent-*` twin and the origin branch, and
+prunes worktree metadata. It lifts a worktree lock only when the locking
+process has exited, or when the lock is your own session's (the prune process
+or one of its ancestors) on a branch proven landed with a clean worktree; a
+lock held by any other live process stays. `not provably landed` means it did
+not land as-is: read it. A branch kept for a lock or uncommitted changes landed
+and waits for its holder. Never delete either by hand, and never select a
+branch another session created.
