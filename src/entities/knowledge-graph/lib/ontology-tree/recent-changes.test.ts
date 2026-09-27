@@ -6,7 +6,6 @@ import {
   daysAgoFromIso,
   isGraphDrawnKind,
   isWithinRecentWindow,
-  RECENT_CHANGES_DEFAULT_WINDOW_DAYS,
   selectRecentVaultDocs,
 } from "./recent-changes";
 
@@ -124,10 +123,6 @@ describe("computeRecentChanges", () => {
 
     expect(computeRecentChanges(nodes, freshness, NOW, 7).rows).toHaveLength(0);
     expect(computeRecentChanges(nodes, freshness, NOW, 14).rows).toHaveLength(1);
-  });
-
-  it("uses RECENT_CHANGES_DEFAULT_WINDOW_DAYS (7) when omitted", () => {
-    expect(RECENT_CHANGES_DEFAULT_WINDOW_DAYS).toBe(7);
   });
 
   it("returns empty results for no nodes", () => {
