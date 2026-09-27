@@ -27,6 +27,8 @@ export interface GalaxyLayout {
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
+const compareIds = (left: string, right: string): number => (left < right ? -1 : left > right ? 1 : 0);
+
 export function galaxySpiralPoint(
   t: number,
   arm: number,
@@ -85,12 +87,10 @@ export function computeGalaxyLayout(
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const domains = nodes
     .filter((node) => node.kind === "domain")
-    .slice()
-    .sort((left, right) => left.id.localeCompare(right.id));
+    .sort((left, right) => compareIds(left.id, right.id));
   const projects = nodes
     .filter((node) => node.kind === "project")
-    .slice()
-    .sort((left, right) => left.id.localeCompare(right.id));
+    .sort((left, right) => compareIds(left.id, right.id));
 
   // Wider than the ring tokens' scale: each arm holds whole domain clouds, not a thin fan.
   const radius = Math.max(rings.domain * 3.15, 420 + Math.sqrt(Math.max(1, nodes.length)) * 24);
@@ -151,7 +151,7 @@ export function computeGalaxyLayout(
     const members = (membersByDomain.get(domain.id) ?? []).slice().sort((left, right) => {
       const kindRank = (kind: LayoutGraphNode["kind"]) =>
         kind === "capability" ? 0 : kind === "element" ? 1 : 2;
-      return kindRank(left.kind) - kindRank(right.kind) || left.id.localeCompare(right.id);
+      return kindRank(left.kind) - kindRank(right.kind) || compareIds(left.id, right.id);
     });
     const phase = phaseForId(domain.id) * TAU + anchor.tangent;
     // Golden-angle cloud; spacing stays above the node diameters hit testing uses.
@@ -168,8 +168,7 @@ export function computeGalaxyLayout(
   }
 
   ungrouped
-    .slice()
-    .sort((left, right) => left.id.localeCompare(right.id))
+    .sort((left, right) => compareIds(left.id, right.id))
     .forEach((node, index) => {
       const arm = index % GALAXY_ARM_COUNT;
       const base = galaxySpiralPoint(1, arm, radius);
