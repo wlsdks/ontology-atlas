@@ -47,8 +47,8 @@ const FLOW_COLUMN_GAP_MAX = 260;
 
 const COLUMN_ORDER: readonly LibraryGraphNodeKind[] = ["source", "page", "concept"];
 
-function byLabel(a: { label: string }, b: { label: string }): number {
-  return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" });
+function byLabelThenId(a: { id: string; label: string }, b: { id: string; label: string }): number {
+  return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" }) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
 
 /** Mean row index of a node's neighbours in `reference`, or +Infinity when it has none. */
@@ -109,16 +109,16 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
    * the middle column never shuffles when a file is added and pages naming one concept
    * stand together; a page naming none goes last.
    */
-  const conceptRank = new Map([...(nodesByKind.get("concept") ?? [])].sort(byLabel).map((node, row) => [node.id, row]));
+  const conceptRank = new Map([...(nodesByKind.get("concept") ?? [])].sort(byLabelThenId).map((node, row) => [node.id, row]));
   const pages = [...(nodesByKind.get("page") ?? [])]
     .map((node) => ({ node, key: barycentre(node.id, neighbours, conceptRank) }))
-    .sort((a, b) => a.key - b.key || byLabel(a.node, b.node))
+    .sort((a, b) => a.key - b.key || byLabelThenId(a.node, b.node))
     .map((entry) => entry.node);
   const pageRow = new Map(pages.map((node, row) => [node.id, row]));
   const outer = (kind: LibraryGraphNodeKind) =>
     [...(nodesByKind.get(kind) ?? [])]
       .map((node) => ({ node, key: barycentre(node.id, neighbours, pageRow) }))
-      .sort((a, b) => a.key - b.key || byLabel(a.node, b.node))
+      .sort((a, b) => a.key - b.key || byLabelThenId(a.node, b.node))
       .map((entry) => entry.node);
   const candidates: Array<{ kind: LibraryGraphNodeKind; nodes: typeof graph.nodes }> = [
     { kind: "source", nodes: outer("source") },

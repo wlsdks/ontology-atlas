@@ -16,6 +16,12 @@ function graph(input: { sources?: string[]; pages?: string[]; concepts?: string[
   return { nodes, edges, counts: { sources: input.sources?.length ?? 0, pages: input.pages?.length ?? 0, concepts: input.concepts?.length ?? 0, cites: input.cites?.length ?? 0, mentions: input.mentions?.length ?? 0 } };
 }
 
+function sameTitles(folder: LibraryGraph, reversed: boolean): LibraryGraph {
+  const title = { source: "notes.md", page: "Notes", concept: "Payments" } as const;
+  const nodes = folder.nodes.map((node) => ({ ...node, label: title[node.kind] }));
+  return reversed ? { ...folder, nodes: nodes.reverse(), edges: [...folder.edges].reverse() } : { ...folder, nodes };
+}
+
 const WORLD = { width: 1000, height: 600 };
 const LABELS = { unsorted: "Unsorted", unread: "Unread" };
 
@@ -152,6 +158,18 @@ describe("islands layout", () => {
   it("is the same map for the same folder whatever order the nodes arrived in", () => {
     const one = islandsLayout(graph({ sources: ["b.md", "a.md"], pages: ["b", "a"], cites: [["a", "a.md"], ["b", "b.md"]] }), WORLD, LABELS);
     const two = islandsLayout(graph({ sources: ["a.md", "b.md"], pages: ["a", "b"], cites: [["b", "b.md"], ["a", "a.md"]] }), WORLD, LABELS);
+    expect([...one.positions.entries()].sort()).toEqual([...two.positions.entries()].sort());
+  });
+
+  it("keeps same-titled files, pages and concepts in their places whatever order they arrived in", () => {
+    const folder = graph({
+      sources: ["a/notes.md", "b/notes.md"],
+      pages: ["one", "two", "names-both"],
+      concepts: ["x", "y"],
+      mentions: [["names-both", "x"], ["names-both", "y"]],
+    });
+    const one = islandsLayout(sameTitles(folder, false), WORLD, LABELS);
+    const two = islandsLayout(sameTitles(folder, true), WORLD, LABELS);
     expect([...one.positions.entries()].sort()).toEqual([...two.positions.entries()].sort());
   });
 });
