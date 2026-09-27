@@ -205,7 +205,7 @@ describe("SegmentedControl chips variant", () => {
     }
   });
 
-  it("passes an option title through and offers no per-option className", () => {
+  it("passes an option title through", () => {
     render(
       <SegmentedControl
         ariaLabel="모양"
@@ -216,8 +216,5 @@ describe("SegmentedControl chips variant", () => {
       />,
     );
     expect(screen.getAllByRole("radio")[0]).toHaveAttribute("title", "가나다");
-    // The contract lives in the types; this assertion breaks with it.
-    const optionKeys = Object.keys({ value: "", label: "", ariaLabel: "", title: "", testId: "" });
-    expect(optionKeys).not.toContain("className");
   });
 });
