@@ -139,6 +139,8 @@ describe('focused check suggestions', () => {
     assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && !isScriptLint(command)), [
       SOURCE_LANGUAGE_COMMAND,
       'pnpm test:source:language',
+      'pnpm design:ontology',
+      'pnpm desktop:check',
     ]);
 
     assert.ok(!commandNames(suggestFocusedChecks(['messages/ko.json'])).includes(SOURCE_LANGUAGE_COMMAND));
