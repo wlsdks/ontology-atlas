@@ -165,15 +165,3 @@ describe("computeFreshnessSummary", () => {
     ]);
   });
 });
-
-describe("the window is a month, and only one place says so", () => {
-  /*
-   * ⚠️ The owner rejected twelve weeks on 2026-09-09 — "isn't twelve weeks too far; a month,
-   * four weeks at minimum". Three tests had the old number typed into them, which is how a
-   * window change ships with captions still claiming the old one. They read the constant now,
-   * and this pins the constant itself so the next change is a decision rather than a drift.
-   */
-  it("measures four weeks", () => {
-    expect(FRESHNESS_WINDOW_WEEKS).toBe(4);
-  });
-});

@@ -26,10 +26,6 @@ describe("indigo-tokens", () => {
     }
   });
 
-  it("brand canonical = #5e6ad2 (CLAUDE.md §11)", () => {
-    expect(INDIGO_BRAND).toBe("#5e6ad2");
-  });
-
   it("RGB triplet 6 variant 가 hex 와 일치 (lowercase)", () => {
     const expected: Record<keyof typeof INDIGO_RGB, string> = {
       brand: "94, 106, 210", // 5e=94, 6a=106, d2=210

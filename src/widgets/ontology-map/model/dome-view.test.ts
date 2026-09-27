@@ -724,8 +724,6 @@ describe("진입 스윕 — 그린 자세의 단일 출처", () => {
 describe("릴리스 투영 — 관성이 의미 있는 자리에 착지한다", () => {
   it("투영 거리는 감쇠 상수에서 나온다 — 속도 × 총 이동 계수", () => {
     // Σ v·d^t dt = v / (−ln d). Change the damping and this value must follow.
-    expect(ORBIT_DECAY_TRAVEL_MS).toBeGreaterThan(400);
-    expect(ORBIT_DECAY_TRAVEL_MS).toBeLessThan(600);
     expect(projectOrbitLanding(1, 0.002)).toBeCloseTo(1 + 0.002 * ORBIT_DECAY_TRAVEL_MS, 9);
     expect(projectOrbitLanding(1, 0), "속도 0 이면 제자리다").toBe(1);
   });

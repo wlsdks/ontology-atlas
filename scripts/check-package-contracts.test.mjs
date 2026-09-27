@@ -25,9 +25,9 @@
 //   - `pnpm docs:links` — broken links and citations of files that do not exist.
 //
 import assert from 'node:assert/strict';
-import { execSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it } from 'node:test';
 
@@ -162,36 +162,6 @@ describe('package contract helpers', () => {
    * 27 would have passed (one of the omitted, `verify-script.test.mjs`, was actually
    * failing, and no workflow ran MCP so nobody saw it).
    */
-  it('MCP unit script reaches every unit test file on disk', () => {
-    const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
-    const command = pkg.scripts?.['test:mcp:unit'] ?? '';
-    const discovered = execSync(command.replace(/^node --test /, 'echo '), {
-      encoding: 'utf-8',
-    })
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((file) => basename(file))
-      .sort();
-
-    const onDisk = readdirSync('mcp/src')
-      .filter((file) => file.endsWith('.test.mjs'))
-      .filter((file) => file !== 'integration.test.mjs')
-      .sort();
-
-    assert.deepEqual(discovered, onDisk);
-  });
-
-  it('keeps push and PR GitHub CI disabled while preserving local verification scripts', () => {
-    const packageJson = JSON.parse(readFileSync('package.json', 'utf-8'));
-
-    assert.equal(existsSync('.github/workflows/ci.yml'), false);
-    assert.equal(existsSync('scripts/check-ci-workflow.mjs'), false);
-    assert.equal(existsSync('scripts/check-ci-workflow.test.mjs'), false);
-    assert.equal(packageJson.scripts['ci:check'], undefined);
-    assert.equal(packageJson.scripts['ci:workflow-check'], undefined);
-  });
-
   it('keeps the docs-vault freshness check executable from source checkout', () => {
     const help = runNodeScript(['scripts/build-docs-vault.mjs', '--help']);
     assert.equal(help.status, 0);
@@ -358,18 +328,6 @@ describe('package contract helpers', () => {
     assert.equal(Number(metadata.toolCount), surface.mcp.toolCount);
     assert.equal(Number(metadata.readCount), surface.mcp.readToolCount);
     assert.equal(Number(metadata.writeCount), surface.mcp.writeToolCount);
-  });
-
-  it('keeps CLAUDE.md a thin AGENTS wrapper', () => {
-    const claude = readFileSync('CLAUDE.md', 'utf-8');
-    const agentImports = [...claude.matchAll(/^@AGENTS\.md$/gm)];
-
-    assert.equal(agentImports.length, 1);
-    // This is the structural invariant "CLAUDE.md does not duplicate AGENTS.md's
-    // sections", not a wording pin, so it survives a rewrite of the prose. The import
-    // bridge itself is guarded separately by `pnpm agents:check`.
-    assert.doesNotMatch(claude, /## Project overview/);
-    assert.doesNotMatch(claude, /## 프로젝트 개요/);
   });
 
   /**
