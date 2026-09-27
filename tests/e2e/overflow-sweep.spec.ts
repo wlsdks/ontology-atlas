@@ -5,10 +5,9 @@ import { test, expect } from "@playwright/test";
  * Opens the main routes at several viewports and checks that the document's
  * scrollWidth never exceeds the viewport. Any horizontal scroll fails immediately.
  *
- * The viewport list follows the owner's responsive sweep matrix: desktop
- * 1280 · 1440 · 1512 (the MBP14's real resolution) · 1920 · 2560, plus mobile smoke
- * at 390 · 360 (breakage prevention only — this is a desktop-first product and they
- * are not an optimisation target), plus the existing tablet-768 regression. 1920 and
+ * The viewport list follows the owner's responsive sweep matrix: the app floor
+ * 1040 and desktop 1280 · 1440 · 1512 (the MBP14's real resolution) · 1920 · 2560.
+ * Phone and tablet widths are not a target (owner direction, 2026-09-27). 1920 and
  * 2560 coincide with `.topology-ui-scale`'s real zoom breakpoints (1.15 / 1.3) in
  * app/globals.css, so chrome scaling is covered at the same time and no separate
  * zoom-simulation viewport is needed — those are real min-width media queries, so
@@ -16,18 +15,13 @@ import { test, expect } from "@playwright/test";
  */
 
 const VIEWPORTS = [
-  { label: "mobile-390", w: 390, h: 844 },
-  { label: "mobile-360", w: 360, h: 780 },
-  { label: "tablet-768", w: 768, h: 1024 },
   /*
    * ⚠️ **The app's own floor was not in this list.** `src-tauri/tauri.conf.json` enforces a
-   * 1040x720 minimum window, and the band from there to 1263 behaves differently from both
-   * neighbours: above `lg` the rail takes 64px, so a container query written against the scroll
-   * slot fires later than its number suggests. A census strip measured only at 1280 and up read
-   * 172px there and 344px at the app floor (design-responsive, 2026-09-20). 1024x768 is the
-   * landscape tablet in the same band, under a finger.
+   * 1040x720 minimum window, and the band from there to 1263 behaves differently from its
+   * wider neighbours: above `lg` the rail takes 64px, so a container query written against the
+   * scroll slot fires later than its number suggests. A census strip measured only at 1280 and
+   * up read 172px there and 344px at the app floor (design-responsive, 2026-09-20).
    */
-  { label: "tablet-1024", w: 1024, h: 768 },
   { label: "app-floor-1040", w: 1040, h: 720 },
   { label: "desktop-1280", w: 1280, h: 800 },
   { label: "desktop-1440", w: 1440, h: 900 },
@@ -140,17 +134,17 @@ for (const vp of VIEWPORTS) {
  * This sweep always reports 0, which leaves no way to distinguish "0 because it is
  * clean" from "0 because it cannot see" (`/gate-probe`). A throwaway instrument
  * built the same day **reported 0** even with a 900px element planted in a 390px
- * viewport.
+ * viewport (the probe below now plants 1400px in the 1040px app floor).
  *
  * The cause is that this repository sets `overflow-x: hidden` on `html` and `body`,
- * so **`documentElement.scrollWidth` does not grow** (390 → 390). The only thing
- * that reports the overflow is **`body.scrollWidth`** (390 → 900).
+ * so **`documentElement.scrollWidth` does not grow**. The only thing that
+ * reports the overflow is **`body.scrollWidth`**.
  *
  * This check watched both from the start. This probe pins that the `bodyScroll` term
  * is **actually doing work** — deleting it as "looks redundant" turns this red.
  */
 test("계기 프로브 — 넘친 원소를 실제로 잡고, documentElement 만으로는 못 잡는다", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 1040, height: 720 });
   await page.goto("/ko/library/?tab=ontology&guides=off", { waitUntil: "domcontentloaded" });
   await waitForDocumentPaint(page);
   await expect(
@@ -166,7 +160,7 @@ test("계기 프로브 — 넘친 원소를 실제로 잡고, documentElement �
   await page.evaluate(() => {
     document.body.insertAdjacentHTML(
       "beforeend",
-      '<div data-testid="ovf-probe" style="width:900px;height:8px"></div>',
+      '<div data-testid="ovf-probe" style="width:1400px;height:8px"></div>',
     );
   });
   await waitForDocumentPaint(page);
@@ -175,7 +169,7 @@ test("계기 프로브 — 넘친 원소를 실제로 잡고, documentElement �
   /* **Calls the gate's own predicate** — asserting the measurement alone stays green when a term is deleted. */
   expect(
     isOverflowing(dirty),
-    "심어 둔 900px 을 게이트 판정식이 못 잡았다 — 이 스윕의 0은 증거가 아니다",
+    "심어 둔 1400px 을 게이트 판정식이 못 잡았다 — 이 스윕의 0은 증거가 아니다",
   ).toBe(true);
   expect(
     dirty.scroll,

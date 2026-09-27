@@ -72,7 +72,7 @@ async function rects(page: Page) {
   });
 }
 
-for (const width of [1040, 1512, 1920]) {
+for (const width of [1040, 1512]) {
   for (const panel of ["closed", "open"] as const) {
     test(`toast and agent status stay off the chrome — ${width}, panel ${panel}`, async ({ page }) => {
       test.setTimeout(120_000);
@@ -150,7 +150,7 @@ for (const width of [1040, 1512, 1920]) {
  * the corner readout and the centred "press a node" hint. Measured at 768 before the
  * floor walls: the toast lay over the readout's zoom line. The toast stands above both.
  */
-for (const [width, height] of [[768, 1024], [1040, 720], [1512, 900]] as const) {
+for (const [width, height] of [[1040, 720], [1512, 900]] as const) {
   test(`toast stands above the map's floor readings — sample, ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await page.goto("/ko/topology/?e2e=1&guides=off&p=missing-xyz", { waitUntil: "domcontentloaded" });

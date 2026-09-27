@@ -32,7 +32,8 @@ import { waitForAnimationsDone } from "./settle";
  *
  * **Inventory when switched on: 0.** The six routes below were measured at 390×844
  * with no overflow and no console errors, so this check locks today's state rather
- * than creating new debt.
+ * than creating new debt. Since 2026-09-27 only the gateway stays at 390; the
+ * workbench routes are read at 1512.
  */
 
 /** Screens anyone can open without signing in — first impressions are decided here. */
@@ -45,8 +46,17 @@ const PUBLIC_ROUTES = [
   "/en/guide/",
 ] as const;
 
-/** The phone reference width — the same as the narrowest band this repository's responsive contract measures. */
+/**
+ * The width each route is opened at.
+ *
+ * The workbench is a desktop surface (window floor 1040×720) and phone widths are not a
+ * target (owner direction, 2026-09-27), so its routes are read at the installed app's
+ * opening window. The public gateway (`/` and `/download`) is the one place a phone
+ * visitor still lands from a shared link, so it keeps the phone reference width.
+ */
 const PHONE = { width: 390, height: 844 };
+const DESKTOP = { width: 1512, height: 900 };
+const GATEWAY_ROUTES = new Set<string>(["/en/", "/en/download/"]);
 
 /**
  * Noise to filter out.
@@ -58,7 +68,7 @@ const PHONE = { width: 390, height: 844 };
  */
 const IGNORED_CONSOLE: RegExp[] = [];
 
-test.describe("공개 화면 건강 — 좁은 화면과 콘솔", () => {
+test.describe("공개 화면 건강 — 가로 넘침과 콘솔", () => {
   for (const route of PUBLIC_ROUTES) {
     test(`${route} — 가로로 넘치지 않고 콘솔이 조용하다`, async ({ page }) => {
       const problems: string[] = [];
@@ -72,7 +82,8 @@ test.describe("공개 화면 건강 — 좁은 화면과 콘솔", () => {
         problems.push(`pageerror: ${error.message.slice(0, 200)}`);
       });
 
-      await page.setViewportSize(PHONE);
+      const viewport = GATEWAY_ROUTES.has(route) ? PHONE : DESKTOP;
+      await page.setViewportSize(viewport);
       const response = await page.goto(
         route === "/en/docs/" ? "/en/library/?tab=ontology" : route,
         { waitUntil: "domcontentloaded" },
@@ -116,7 +127,7 @@ test.describe("공개 화면 건강 — 좁은 화면과 콘솔", () => {
        */
       expect(
         width.scroll,
-        `${route} 가 ${PHONE.width}px 에서 가로로 넘친다 (${width.scroll} > ${width.client}). ` +
+        `${route} 가 ${viewport.width}px 에서 가로로 넘친다 (${width.scroll} > ${width.client}). ` +
           "표·코드블록·도해처럼 넓은 것은 자기 상자 안에서 스크롤해야 한다.",
       ).toBeLessThanOrEqual(width.client + 1);
 

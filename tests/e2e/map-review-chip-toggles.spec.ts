@@ -34,7 +34,9 @@ test("의미 검토 칩은 자기 상태를 말하고, 다시 누르면 닫힌�
   await expect(panel).toHaveCount(0);
   await expect(chip).toHaveAttribute("aria-pressed", "false");
 
-  // The map gets its width back when the panel goes.
-  const width = await page.evaluate(() => document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect().width);
-  expect(width).toBeGreaterThan(1200);
+  // The map gets its width back when the panel goes. The panel leaves on a transition, so the
+  // width is read until it has come back rather than once on the frame the panel unmounted.
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect().width))
+    .toBeGreaterThan(1200);
 });

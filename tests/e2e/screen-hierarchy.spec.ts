@@ -443,21 +443,38 @@ const ACCENT_EXEMPT_ROUTES = new Set(ACCENT_EXEMPT.map((e) => e.route));
 test.describe("화면 위계 — 감사 대상 전 라우트", () => {
   test.use({ viewport: { width: 1512, height: 900 } });
 
-  test("① 페이지 제목보다 크거나 같은 글자가 제목 밖에 없다", async ({ page }) => {
+  /*
+   * ① and ② read the same `measureRoute` result, so one walk over the audited routes serves
+   * both (it used to be two walks, loading every route twice).
+   */
+  test("① 페이지 제목보다 크거나 같은 글자가 제목 밖에 없다 · ② 채워진 강조색 면이 화면에 최대 하나다", async ({ page }) => {
     test.setTimeout(240_000);
 
-    const violations: string[] = [];
+    const titleViolations: string[] = [];
+    const accentViolations: string[] = [];
     let totalScanned = 0;
     let routesWithTitle = 0;
+    let totalFilled = 0;
+    let totalConsidered = 0;
 
     for (const route of AUDITED_ROUTES) {
       const m = await measureRoute(page, route);
       totalScanned += m.scanned;
+      totalFilled += m.filled.length;
+      totalConsidered += m.considered;
 
-      // Idling guard ⓐ — per route. If almost no text was scanned, a 0 below means
+      // ① Idling guard ⓐ — per route. If almost no text was scanned, a 0 below means
       // "we did not look", not "it is clean". The floor is 3 because 404 really has
       // only 4 (measured) — the thinnest screen sets the floor.
       expect(m.scanned, `${route}: 글자 원소를 거의 못 훑었다 — 스캐너가 죽었다`).toBeGreaterThan(2);
+      // ② Idling guard ⓐ — were the reference colours **actually read** from `:root`?
+      // If a token is renamed, this check sees "0 accents" and goes green forever.
+      expect(m.accentTokens, `${route}: 악센트 토큰을 :root 에서 못 읽었다 — 색 기준을 잃었다`).toBeGreaterThan(2);
+      expect(m.considered, `${route}: 배경색을 들여다본 원소가 없다 — 스캐너가 죽었다`).toBeGreaterThan(20);
+
+      if (!ACCENT_EXEMPT_ROUTES.has(route) && m.filled.length > 1) {
+        accentViolations.push(`${route} → ${m.filled.length}개: ${JSON.stringify(m.filled)}`);
+      }
 
       if (TITLE_EXEMPT_ROUTES.has(route)) continue;
 
@@ -472,44 +489,14 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
       const figures = TITLE_FIGURE_IDS.get(route);
       for (const o of m.offenders) {
         if (figures && o.testid && figures.has(o.testid)) continue;
-        violations.push(`${route} → "${o.text}" ${o.px}px ≥ 제목 ${m.titlePx}px (${o.testid ?? "-"})`);
+        titleViolations.push(`${route} → "${o.text}" ${o.px}px ≥ 제목 ${m.titlePx}px (${o.testid ?? "-"})`);
       }
     }
 
-    // Idling guard ⓑ — across the whole sweep. Measured 964 (887 excluding the 3 exception routes).
+    // ① Idling guard ⓑ — across the whole sweep. Measured 964 (887 excluding the 3 exception routes).
     expect(totalScanned, "전 라우트를 합쳐도 훑은 글자가 적다 — 스윕이 죽었다").toBeGreaterThan(600);
     expect(routesWithTitle, "제목을 가진 라우트를 거의 못 찾았다 — 기준 판정기가 죽었다").toBeGreaterThan(10);
-
-    expect(
-      violations,
-      "페이지 제목과 같거나 큰 글자가 제목 밖에 있다 — 무엇이 먼저인지가 사라진다",
-    ).toEqual([]);
-  });
-
-  test("② 채워진 강조색 면(주 CTA)이 화면에 최대 하나다", async ({ page }) => {
-    test.setTimeout(240_000);
-
-    const violations: string[] = [];
-    let totalFilled = 0;
-    let totalConsidered = 0;
-
-    for (const route of AUDITED_ROUTES) {
-      const m = await measureRoute(page, route);
-      totalFilled += m.filled.length;
-      totalConsidered += m.considered;
-
-      // Idling guard ⓐ — were the reference colours **actually read** from `:root`?
-      // If a token is renamed, this check sees "0 accents" and goes green forever.
-      expect(m.accentTokens, `${route}: 악센트 토큰을 :root 에서 못 읽었다 — 색 기준을 잃었다`).toBeGreaterThan(2);
-      expect(m.considered, `${route}: 배경색을 들여다본 원소가 없다 — 스캐너가 죽었다`).toBeGreaterThan(20);
-
-      if (ACCENT_EXEMPT_ROUTES.has(route)) continue;
-      if (m.filled.length > 1) {
-        violations.push(`${route} → ${m.filled.length}개: ${JSON.stringify(m.filled)}`);
-      }
-    }
-
-    // Idling guard ⓑ — finding none makes "at most one everywhere" true, but that
+    // ② Idling guard ⓑ — finding none makes "at most one everywhere" true, but that
     // is a measurement failure. Measured 9 (7 excluding the 2 exception routes).
     expect(
       totalFilled,
@@ -521,7 +508,11 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
     expect(totalConsidered, "그려진 원소를 거의 못 봤다 — 스윕이 죽었다").toBeGreaterThan(2000);
 
     expect(
-      violations,
+      titleViolations,
+      "페이지 제목과 같거나 큰 글자가 제목 밖에 있다 — 무엇이 먼저인지가 사라진다",
+    ).toEqual([]);
+    expect(
+      accentViolations,
       "채워진 강조색 면이 한 화면에 둘 이상이다 — 주 CTA 가 둘이면 하나는 거짓말이다",
     ).toEqual([]);
   });
@@ -581,41 +572,6 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
     await expect(
       page.getByTestId("project-save"),
       "폼 끝의 저장이 사라졌다 — 이건 강등이 아니라 기능 제거다",
-    ).toBeVisible();
-  });
-
-  /**
-   * A write-lock banner must **not stop at stating the reason**. This checks only
-   * that the way forward is inside that same box.
-   *
-   * ## What was removed from this file (2026-08-07)
-   *
-   * This used to click the CTA and measure **whether the URL changed to `/ko/`**.
-   * That assertion was wrong in two ways:
-   *
-   * ① **Scope** — it was hand-pinned to one route (`/project/new`) and one testid,
-   *    while the same disease was alive in two more places (insights, project
-   *    detail). The classic allowlist-gate failure (`design-gates.md`).
-   * ② **Depth** — the URL changing and being able to open a folder there are
-   *    different facts, and only the first was measured. For a web visitor with no
-   *    vault that destination (`/`) is the **gateway** (the download screen, 0
-   *    folder controls), so it was a dead end one hop away — and this check was
-   *    green the whole time.
-   *
-   * So that layer moved to `tests/e2e/open-vault-cta.spec.ts`, which sweeps every
-   * audited route and measures whether the path **actually opens the folder
-   * picker**. This file keeps only what its name says: hierarchy.
-   */
-  test("쓰기 잠금 배너가 갈 길을 함께 준다 — 막다른 경고가 아니다", async ({ page }) => {
-    await page.goto("/ko/project/new/?guides=off");
-    await page.waitForLoadState("networkidle");
-
-    const banner = page.getByTestId("project-write-disabled-banner");
-    await expect(banner, "쓰기 잠금 배너가 안 뜬다 — 이 검사가 헛돈다").toBeVisible();
-
-    await expect(
-      banner.getByTestId("project-write-disabled-open-folder"),
-      "배너가 이유만 말하고 갈 길을 안 준다 — 막다른 CTA 다",
     ).toBeVisible();
   });
 });

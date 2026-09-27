@@ -35,36 +35,34 @@ async function navigationRows(page: Page): Promise<string[]> {
   });
 }
 
-test.describe("? and ⌘K on every rail screen", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.setViewportSize({ width: 1512, height: 949 });
-    await installDesktopRailRuntime(page);
-    await mountDesktopVault(page);
-  });
+// One folder mount serves every screen: the keys belong to the shell, so walking the rail
+// under one mount proves them per screen without paying the mount five times.
+test("? opens the shortcut sheet and ⌘K opens the search on every rail screen", async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 949 });
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page);
 
   for (const id of SCREENS) {
-    test(`${id}: ? opens the shortcut sheet and ⌘K opens the search`, async ({ page }) => {
-      const tile = page.getByTestId(`app-nav-rail-item-${id}`);
-      await tile.click();
-      await expect(tile).toHaveAttribute("aria-current", "page");
+    const tile = page.getByTestId(`app-nav-rail-item-${id}`);
+    await tile.click();
+    await expect(tile, `${id}: the rail did not arrive`).toHaveAttribute("aria-current", "page");
 
-      await focusContent(page);
-      await page.keyboard.press("?");
-      const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
-      await expect(sheet).toBeVisible();
-      const rows = await navigationRows(page);
-      expect(rows.filter((row) => row.endsWith("⌘ K"))).toEqual(["Open the search palette: ⌘ K"]);
-      expect(rows.some((row) => row.includes("⇧")), "⇧⌘K is the same search, not a second row").toBe(false);
-      expect(rows.some((row) => row.endsWith(": D")), "only the map binds D").toBe(false);
-      await page.keyboard.press("Escape");
-      await expect(sheet).toHaveCount(0);
+    await focusContent(page);
+    await page.keyboard.press("?");
+    const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+    await expect(sheet, `${id}: ? did not open the sheet`).toBeVisible();
+    const rows = await navigationRows(page);
+    expect(rows.filter((row) => row.endsWith("⌘ K")), id).toEqual(["Open the search palette: ⌘ K"]);
+    expect(rows.some((row) => row.includes("⇧")), `${id}: ⇧⌘K is the same search, not a second row`).toBe(false);
+    expect(rows.some((row) => row.endsWith(": D")), `${id}: only the map binds D`).toBe(false);
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
 
-      await focusContent(page);
-      await page.keyboard.press("ControlOrMeta+k");
-      const search = page.locator("[data-global-search-responsive-contract]");
-      await expect(search).toBeVisible();
-      await page.keyboard.press("Escape");
-      await expect(search).toHaveCount(0);
-    });
+    await focusContent(page);
+    await page.keyboard.press("ControlOrMeta+k");
+    const search = page.locator("[data-global-search-responsive-contract]");
+    await expect(search, `${id}: ⌘K did not open the search`).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(search).toHaveCount(0);
   }
 });

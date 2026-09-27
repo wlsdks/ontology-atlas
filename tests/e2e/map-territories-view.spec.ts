@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { parseFrontmatter } from "../../src/shared/lib/parse-frontmatter";
@@ -20,13 +20,10 @@ import { waitForMapStill } from "./settle";
  * - the stale count the view shows equals the count this spec computes itself, from the same
  *   rule (`shared/lib/evidence-verdict.mjs`) over the same Git times;
  * - clicking a capability opens the same inspector the flat map opens.
- *
- * Captures land in the owner's scratch folder when it exists, for the design review.
  */
 
 const REPO = path.resolve(__dirname, "../..");
 const VAULT = path.join(REPO, "docs/ontology");
-const CAPTURE_DIR = "/Users/jinan/scratch/map-concepts/app-territories";
 
 interface VaultDocFacts {
   rel: string;
@@ -136,10 +133,8 @@ const overlap = (a: { x: number; y: number; w: number; h: number }, b: { x: numb
 // A Retina display, as the owner reads the app: hairlines must land on whole device pixels.
 test.use({ deviceScaleFactor: 2 });
 
-for (const viewport of [
-  { width: 1512, height: 982 },
-  { width: 1280, height: 800 },
-]) {
+// The installed app's 14-inch window; a second desktop size repeated the same claims.
+for (const viewport of [{ width: 1512, height: 982 }]) {
   test(`territories on the dogfood vault at ${viewport.width}: every capability named, nothing overlapping, stale counted honestly`, async ({ page }) => {
     test.setTimeout(180_000);
     const vault = dogfoodVault();
@@ -207,12 +202,6 @@ for (const viewport of [
     const domainStale = drawn.domains.reduce((sum, d) => sum + Number(/낡음 (\d+)/.exec(d.stats)?.[1] ?? 0), 0);
     expect(domainStale).toBe(vault.expectedStale);
 
-    const canCapture = existsSync(path.dirname(CAPTURE_DIR));
-    if (canCapture) {
-      mkdirSync(CAPTURE_DIR, { recursive: true });
-      await page.screenshot({ path: path.join(CAPTURE_DIR, `overview-${viewport.width}.png`) });
-    }
-
     // Clicking a capability opens the same inspector the flat map opens. The largest one on
     // screen is chosen, so the click lands on a mark inside the viewport.
     const target = [...drawn.caps]
@@ -239,21 +228,5 @@ for (const viewport of [
     expect(focused.satellites).toBeGreaterThan(0);
     expect(focused.arrows).toBeGreaterThan(0);
     expect(focused.rollups).toBe(0);
-    if (canCapture) {
-      // The camera makes room beside the inspector; capture once it has stopped.
-      let last = "";
-      await expect
-        .poll(
-          async () => {
-            const now = JSON.stringify(((await frame()) as { offset?: number[] }).offset);
-            const still = now === last;
-            last = now;
-            return still;
-          },
-          { intervals: [300, 300, 300, 300, 300] },
-        )
-        .toBe(true);
-      await page.screenshot({ path: path.join(CAPTURE_DIR, `capability-${viewport.width}.png`) });
-    }
   });
 }

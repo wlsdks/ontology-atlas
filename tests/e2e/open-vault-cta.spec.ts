@@ -387,10 +387,9 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
  * in both directions (`/gate-probe` §0).
  */
 test.describe("관문은 폴더를 여는 화면이 아니다 — 대신 그 화면에 닿는다", () => {
-  const REACH_WIDTHS = [
-    { width: 1512, height: 900 },
-    { width: 390, height: 844 },
-  ] as const;
+  // Phone widths are not a target (owner direction, 2026-09-27): the 390 point walked on into
+  // the phone-width workbench, so only the installed app's opening window remains.
+  const REACH_WIDTHS = [{ width: 1512, height: 900 }] as const;
 
   for (const viewport of REACH_WIDTHS) {
     test(`${viewport.width}: 접힘 안 홉 → 지도 → 시트 → 선택기 호출`, async ({ page, context }) => {

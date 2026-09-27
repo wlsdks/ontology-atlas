@@ -1,14 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { installDesktopRailRuntime } from './desktop-rail-arrival-harness';
 
-for (const width of [390, 768, 1040, 1440]) {
+// The app's window floor and a common desktop window; phone and tablet widths are not a
+// target (owner direction, 2026-09-27).
+for (const width of [1040, 1440]) {
   test.describe(`settings at ${width}`, () => {
-    test.use({ viewport: { width, height: 900 }, hasTouch: width < 1024 });
+    test.use({ viewport: { width, height: 900 } });
     test('notification choices leave their explanation readable', async ({ page }) => {
       await installDesktopRailRuntime(page);
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto('/ko/?guides=off');
-      await page.getByTestId('first-run-open').click();
+  await page.getByTestId('first-run-open').click();
       await page.locator('[data-testid="app-settings-trigger"]:visible').click();
       const panel = page.getByTestId('app-settings-popover');
       await panel.getByRole('button', { name: '알림', exact: true }).click();
@@ -24,7 +26,6 @@ for (const width of [390, 768, 1040, 1440]) {
       for (const button of geometry.buttons) {
         expect(button.top).toBeGreaterThanOrEqual(geometry.caption.bottom);
         expect(button.right).toBeLessThanOrEqual(geometry.row.right);
-        if (width < 1024) expect(Math.min(button.width, button.height)).toBeGreaterThanOrEqual(44);
       }
     });
 
@@ -65,7 +66,7 @@ test('each accent preview matches its actual palette under either selected accen
   await installDesktopRailRuntime(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/ko/?guides=off');
-      await page.getByTestId('first-run-open').click();
+  await page.getByTestId('first-run-open').click();
   await page.locator('[data-testid="app-settings-trigger"]:visible').click();
   const read = () => page.evaluate(() => {
     const ctx = document.createElement('canvas').getContext('2d')!;

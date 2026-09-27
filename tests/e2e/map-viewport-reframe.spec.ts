@@ -79,47 +79,6 @@ test("짧은 선택 인스펙터도 실제 자유 영역으로 카메라를 민�
   );
 });
 
-test("390px의 넓은 하단 시트는 수평 카메라 인셋으로 오인되지 않는다", async ({ page }) => {
-  test.setTimeout(90_000);
-  await page.setViewportSize({ width: 390, height: 844 });
-  await seedFirstRunSeen(page);
-  await page.addInitScript(() => {
-    window.localStorage.setItem("demo:sample-source:v1", "storefront");
-    window.sessionStorage.setItem("demo:first-run-starter-dismissed:v1", "1");
-  });
-  await page.goto(
-    "/ko/topology/?e2e=1&guides=off&p=element%3Acart-session&open=capability%3Acart%2Cdomain%3Aorder%2Cproject%3Astorefront",
-    { waitUntil: "domcontentloaded" },
-  );
-
-  const panel = page.getByTestId("topology-node-popover-positioner");
-  await expect(panel).toBeVisible({ timeout: 20_000 });
-  await settleCamera(page);
-  const withWideSheet = await readCamera(page);
-  expect(withWideSheet).not.toBeNull();
-
-  const geometry = await page.evaluate(() => {
-    const canvas = document.querySelector<HTMLElement>('[data-testid="ontology-map-canvas"]');
-    const obstacle = document.querySelector<HTMLElement>('[data-testid="topology-node-popover-positioner"]');
-    if (!canvas || !obstacle) return null;
-    const canvasRect = canvas.getBoundingClientRect();
-    const obstacleRect = obstacle.getBoundingClientRect();
-    return {
-      marker: obstacle.dataset.topologyCameraObstacle,
-      widthRatio: obstacleRect.width / canvasRect.width,
-      intersects: obstacleRect.left < canvasRect.right && obstacleRect.right > canvasRect.left,
-    };
-  });
-  expect(geometry).not.toBeNull();
-  expect(geometry!.marker).toBe("side-panel");
-  expect(geometry!.widthRatio).toBeGreaterThanOrEqual(0.6);
-  expect(geometry!.intersects).toBe(true);
-  expect(
-    await page.evaluate(() => window.__atlasMap?.obstacleInsets() ?? null),
-    "a full-width mobile sheet must contribute no left/right camera inset",
-  ).toEqual({ left: 0, right: 0 });
-});
-
 /**
  * Reproduces the actual geometry when the agent dock appears, without an ACP process.
  *

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
-import { waitForAnimationsDone, waitForBoxStill } from "./settle";
+import { waitForAnimationsDone } from "./settle";
 
 /**
  * The map's controls stand on the **control-height ladder**, and the ladder is
@@ -110,55 +110,4 @@ test("검색 팔레트 결과 행이 사다리 위 단계다", async ({ page }) 
   );
   expect(measured.length, "결과 행을 하나도 못 쟀다").toBeGreaterThan(3);
   expect([...new Set(measured)].filter((h) => !steps.includes(h)), "결과 행 높이").toEqual([]);
-});
-
-test.describe("coarse 포인터", () => {
-  test.use({ hasTouch: true });
-
-  test("검색 팔레트 결과 행이 손가락 앞에서 44px 로 자란다", async ({ page }) => {
-    test.setTimeout(90_000);
-    await openMap(page, 390, 844);
-    await page.getByTestId("topology-index-fold").click();
-    await page.getByTestId("topology-concept-search").click();
-    await expect(page.locator("[cmdk-item]").first()).toBeVisible({ timeout: 15_000 });
-
-    const measured = await page.evaluate(() =>
-      [...document.querySelectorAll("[cmdk-item]")]
-        .map((el) => Math.round(el.getBoundingClientRect().height * 10) / 10)
-        .filter((h) => h > 0),
-    );
-    expect(measured.length, "결과 행을 하나도 못 쟀다").toBeGreaterThan(3);
-    // Measured 38px before this change — the rows read no height token at all, so the
-    // coarse block's promotion had nothing to reach.
-    expect(Math.min(...measured), "가장 낮은 결과 행").toBeGreaterThanOrEqual(44);
-  });
-
-  test("선택 상세의 「+N 더 보기」가 44px 히트 영역을 갖는다", async ({ page }) => {
-    test.setTimeout(90_000);
-    await openMap(page, 390, 844);
-    await page.getByTestId("topology-index-row").first().click();
-    await expect(page.getByTestId("map-detail-panel")).toBeVisible({ timeout: 20_000 });
-    // The sheet arrives on a scale transition; measuring the frame it becomes visible
-    // reads 43.52 for a 44px box and turns this gate into a coin flip.
-    await waitForAnimationsDone(page.locator("body"));
-    await waitForBoxStill(page.getByTestId("map-detail-panel"));
-
-    const measured = await page.evaluate(() => {
-      const el = document.querySelector<HTMLElement>(
-        '[data-testid^="map-group-more-"]',
-      );
-      if (!el) return null;
-      const box = el.getBoundingClientRect();
-      const after = getComputedStyle(el, "::after");
-      const expanded =
-        after.content && after.content !== "none" && after.position === "absolute"
-          ? Number.parseFloat(after.height) || 0
-          : 0;
-      return Math.max(box.height, expanded);
-    });
-    // Measured 302×24 on 2026-09-05 — under the 44px floor and under WCAG's own 24
-    // once the border is counted out.
-    expect(measured, "「+N 더 보기」를 못 찾았다").not.toBeNull();
-    expect(measured!, "「+N 더 보기」 히트 높이").toBeGreaterThanOrEqual(44);
-  });
 });
