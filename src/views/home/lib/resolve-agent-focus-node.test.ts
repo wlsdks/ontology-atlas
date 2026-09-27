@@ -62,7 +62,7 @@ describe("resolveAgentFocusNodeId", () => {
     ).toBeNull();
   });
 
-  it("관계 변경안의 두 vault slug를 실제 지도 node id로 함께 해석한다", () => {
+  it("resolves both vault slugs of a relation proposal to real map node ids", () => {
     expect(
       resolveOntologyRelationPreview(
         {
@@ -81,7 +81,7 @@ describe("resolveAgentFocusNodeId", () => {
     });
   });
 
-  it("두 끝점 중 하나라도 지도에 없으면 관계를 지어내지 않는다", () => {
+  it("does not invent a relation when either endpoint is missing from the map", () => {
     expect(
       resolveOntologyRelationPreview(
         {

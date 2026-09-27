@@ -30,8 +30,8 @@ export function useAcpRuntimeController(setAcpChatOpen: (open: boolean) => void)
   }, []);
   const scheduleAcpSessionStart = useCallback(() => {
     cancelAcpSessionStart();
-    // Let the dock-width reflow and camera spring land before ACP process boot
-    // competes for WebKit's main thread; otherwise the map stalls mid-move.
+    // Lets the dock reflow and camera spring land before ACP boot competes for WebKit's main
+    // thread.
     acpSessionStartTimerRef.current = window.setTimeout(() => {
       acpSessionStartTimerRef.current = null;
       setAcpChatOpen(true);

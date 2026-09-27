@@ -13,13 +13,8 @@ export function useTopologySourceReadiness({ topologyVaultReadModel, topologyPre
   const { selectedOntologyNode, vault, ontologyInsight } = topologyVaultReadModel;
   const { t, activeLocale } = topologyPreferences;
 
-  /*
-   * Lifts the diagnosis **out of the selection**. `useProjectSourceModel` below only
-   * ever sees the one selected project, so unless somebody clicks that node, "no code
-   * folder is linked" exists nowhere on screen (measured 2026-08-04: zero occurrences
-   * on the first screen). This hook reads the sidecar once and puts that one fact in
-   * a quiet INDEX row.
-   */
+  // Only the selected project reaches `useProjectSourceModel`, so one sidecar read lifts "no code
+  // folder is linked" into a quiet INDEX row.
   const sourceProjectSlug = projectSlugForSource(selectedOntologyNode);
   const usableVaultHandle =
     vault.status === "loaded" || vault.isReloadingSameVault ? vault.handle : null;
@@ -28,9 +23,7 @@ export function useTopologySourceReadiness({ topologyVaultReadModel, topologyPre
     vaultHandle: usableVaultHandle,
     nodes: ontologyInsight?.nodes ?? [],
     docs: vault.manifest?.docs ?? [],
-    // Even the OS folder picker's title must be in the screen's language: measured
-    // 2026-08-04, the installed app opened an English-titled picker over a Korean
-    // screen.
+    // The OS folder picker's title follows the screen's language.
     pickerTitle: t("nodeDatasheet.sourcePickerTitle"),
   });
   const projectSourceReadinessRefreshToken = useMemo(
@@ -53,9 +46,8 @@ export function useTopologySourceReadiness({ topologyVaultReadModel, topologyPre
   const projectSourceReadiness = useProjectSourceReadiness({
     vaultHandle: usableVaultHandle,
     nodes: ontologyInsight?.nodes ?? [],
-    // Since connections/measurement do not change the markdown graph, waiting for manifest update means it will never
-    // re-parse. The selected project model and the latest completed ACP source-binding receipt
-    // invalidate this read-only sidecar summary without rescanning the ontology.
+    // Binding and measuring do not change Markdown, so the manifest never re-parses; the project
+    // model and the latest ACP binding receipt invalidate this sidecar read instead.
     refreshToken: projectSourceReadinessRefreshToken,
   });
   const unboundProjectSource = projectSourceReadiness.unbound;
