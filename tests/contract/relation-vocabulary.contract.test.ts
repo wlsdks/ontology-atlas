@@ -51,8 +51,8 @@ describe('relation-vocabulary contract — 3 표면 공용 사전', () => {
     }
     expect(
       missing,
-      `다음 표면이 공유 relation-vocabulary 사전을 쓰지 않습니다 — 자체 라벨을 새로 만들면 ` +
-        `표면마다 다른 단어족이 재발합니다(N5):\n${missing.join('\n')}`,
+      `These surfaces do not use the shared relation-vocabulary dictionary. Coining their own labels ` +
+        `brings back a different word family per surface (N5):\n${missing.join('\n')}`,
     ).toEqual([]);
   });
 

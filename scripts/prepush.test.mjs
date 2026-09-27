@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, copyFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -88,6 +88,31 @@ test('planner CLI exits nonzero when the exact Git scope cannot be read', () => 
     writeFileSync(join(cwd,'probe.rs'),'// source comment\n');
     git('add','probe.rs'); git('commit','-m','source');
     const source=run(0,9); assert.equal(source.status,1); assert.match(source.stdout,/FAIL\s+source_language/);
+  } finally {rmSync(cwd,{recursive:true,force:true});}
+ });
+
+ test('a changed file name reaches eslint as data and is never executed', () => {
+  const cwd=mkdtempSync(join(tmpdir(),'atlas-hook-names-'));
+  try {
+    const git=(...args)=>execFileSync('git',args,{cwd,stdio:'pipe'});
+    git('init'); git('config','user.email','test@example.com'); git('config','user.name','Test');
+    writeFileSync(join(cwd,'README.md'),'base'); git('add','.'); git('commit','-m','base');
+    git('update-ref','refs/remotes/origin/main','HEAD');
+    const hostile = ['src/probe$(touch PWNED).ts', "src/quote'`touch PWNED2`.ts"];
+    mkdirSync(join(cwd,'src'));
+    for (const name of hostile) writeFileSync(join(cwd,name),'export {};\n');
+    git('add','.'); git('commit','-m','names');
+    const bin=join(cwd,'bin'); mkdirSync(bin);
+    const eslintArgs=join(cwd,'eslint-args');
+    writeFileSync(join(bin,'pnpm'),`#!/bin/sh\nif [ "$1" = exec ] && [ "$2" = eslint ]; then shift 2; printf '%s\\n' "$@" >'${eslintArgs}'; fi\nexit 0\n`,{mode:0o755});
+    const realNode = "'" + process.execPath.replaceAll("'", "'\"'\"'") + "'";
+    writeFileSync(join(bin,'node'),`#!/bin/sh\nif [ "$1" = "--input-type=module" ]; then exec ${realNode} "$@"; fi\nexit 0\n`,{mode:0o755});
+    const hook=new URL('../.githooks/pre-push',import.meta.url).pathname;
+    const result=spawnSync('sh',[hook],{cwd,encoding:'utf8',input:'refs/heads/test abc refs/heads/test def\n',env:{...process.env,PATH:bin+':'+process.env.PATH}});
+    assert.equal(result.status,0,result.stdout+result.stderr);
+    assert.equal(existsSync(join(cwd,'PWNED')),false,'a file name ran as a command substitution');
+    assert.equal(existsSync(join(cwd,'PWNED2')),false,'a file name ran as a backtick substitution');
+    assert.deepEqual(readFileSync(eslintArgs,'utf8').trim().split('\n'),['--max-warnings=0',...hostile]);
   } finally {rmSync(cwd,{recursive:true,force:true});}
  });
 

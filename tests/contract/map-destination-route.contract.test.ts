@@ -137,16 +137,16 @@ describe("지도를 약속하는 링크의 목적지", () => {
 
       expect(
         hrefs.length,
-        `${testid} 를 가진 링크를 못 찾았다. testid 가 사라졌거나 이름이 바뀌었다면 ` +
-          `이 게이트도 함께 갱신해야 한다 — 조용히 통과시키지 않는다.`,
+        `No link with ${testid} was found. If the testid was removed or renamed, ` +
+          `update this gate with it; it does not pass silently.`,
       ).toBeGreaterThan(0);
 
       for (const href of hrefs) {
         expect(
           href,
-          `${testid} 가 "${href}" 를 가리킨다. \`/\` 는 2026-07-29 부터 마케팅 ` +
-            `페이지다 — 지도를 약속한 컨트롤이 그리로 가면 사용자는 방금 떠난 ` +
-            `화면으로 되돌아온다. 지도는 ${MAP_ROUTE} 다.`,
+          `${testid} points at "${href}". Since 2026-07-29 \`/\` is the marketing ` +
+            `page: a control that promises the map and goes there returns the person to the screen ` +
+            `they just left. The map is ${MAP_ROUTE}.`,
         ).toBe(MAP_ROUTE);
       }
     });
@@ -301,9 +301,9 @@ describe("라벨이 「지도」인 링크는 등록 없이도 감시된다", ()
     }
     expect(
       violations,
-      `라벨이 「지도」인데 ${MAP_ROUTE} 가 아닌 곳으로 가는 링크가 있다. ` +
-        `\`/\` 는 2026-07-30 부터 관문(마케팅)이라, 지도라고 적어 놓고 그리로 ` +
-        `보내면 사용자는 방금 떠난 화면으로 되돌아온다.`,
+      `A link labelled Map goes somewhere other than ${MAP_ROUTE}. ` +
+        `Since 2026-07-30 \`/\` is the gateway (marketing), so a link that says Map and sends people there ` +
+        `returns them to the screen they just left.`,
     ).toEqual([]);
   });
 

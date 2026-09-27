@@ -32,10 +32,10 @@ describe('Tailwind 소스 스캔 범위', () => {
   it('자동 탐지를 끈다 — 안 끄면 문서·산문까지 훑는다', () => {
     expect(
       /@import\s+"tailwindcss"\s+source\(none\)\s*;/.test(css),
-      '`@import "tailwindcss" source(none);` 이어야 한다. `source(none)` 을 빼면 ' +
-        'Tailwind 가 저장소를 자동으로 훑어 `.md` 산문 속 `text-[var(…)]` 같은 글자를 ' +
-        '클래스로 만들고, Turbopack 이 그 CSS 를 거절해 `pnpm dev` 가 500 이 된다 ' +
-        '(2026-08-04 실제 사고 — 프로덕션 빌드는 멀쩡해서 CI 가 못 잡았다).',
+      'It must be `@import "tailwindcss" source(none);`. Without `source(none)` ' +
+        'Tailwind scans the repository on its own, turns text like `text-[var(…)]` inside `.md` prose ' +
+        'into classes, Turbopack rejects that CSS and `pnpm dev` answers 500 ' +
+        '(a real incident on 2026-08-04; the production build was fine, so CI missed it).',
     ).toBe(true);
   });
 
@@ -47,8 +47,8 @@ describe('Tailwind 소스 스캔 범위', () => {
     const docLike = sources.filter((s) => /\.md|docs\/|\.claude\/|\.agents\//.test(s));
     expect(
       docLike,
-      `문서를 훑는 @source 가 있다: ${docLike.join(' · ')}. 산문 속 클래스 모양 글자가 ` +
-        'CSS 가 되어 개발 서버를 깨뜨린다.',
+      `An @source scans documents: ${docLike.join(' · ')}. Class-shaped text inside prose ` +
+        'becomes CSS and breaks the dev server.',
     ).toEqual([]);
 
     // If code drops out, classes vanish silently — the screen collapses with no error.

@@ -102,8 +102,8 @@ describe("정적 배지 채택 래칫", () => {
     }
     expect(
       over,
-      "배지 기하를 손으로 쓰지 마라 — `badgeClass({ shape })`(src/shared/ui/badge-class.ts)가 " +
-        "반경·인셋·타입단을 소유한다. 색과 자간은 그대로 className 으로 넘기면 된다.",
+      "Do not hand-write badge geometry: `badgeClass({ shape })` (src/shared/ui/badge-class.ts) " +
+        "owns the radius, inset and type step. Colour and tracking still go through className.",
     ).toEqual([]);
   });
 

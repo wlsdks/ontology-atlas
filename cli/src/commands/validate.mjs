@@ -7,6 +7,7 @@ import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   dependencyWitnessFinding,
   folderOnlyEvidenceFinding,
+  rawSourceKindIssues,
   starterExampleFindings,
   validateVaultDocument,
   suppressLibraryKindIssues,
@@ -138,6 +139,12 @@ export const KNOWN_CODES = [
     description: 'a declared dependency whose citing file never names the file the target cites, so nothing in the source witnesses the edge.',
   },
   {
+    code: 'dependency-unjudged',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a declared dependency whose citing file is too large to read, so no witness was looked for and the edge is not judged.',
+  },
+  {
     code: 'starter-example-node',
     severity: 'warning',
     scope: 'vault',
@@ -154,6 +161,12 @@ export const KNOWN_CODES = [
     severity: 'error',
     scope: 'vault',
     description: 'two nodes claim the same primary or merged UID as their permanent identity.',
+  },
+  {
+    code: 'kind-under-sources',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a file under `sources/` carries `kind:`, but every file there is a raw source, never a node.',
   },
 ];
 
@@ -266,6 +279,10 @@ export function runValidate(args) {
     });
     if (report.issues.some((i) => i.severity === 'error')) errorFiles += 1;
     else warningFiles += 1;
+  }
+  for (const { path, issue } of rawSourceKindIssues(vaultPath)) {
+    reports.push({ file: path, report: { ok: true, issues: [issue] } });
+    warningFiles += 1;
   }
 
   // Count issues, not files: counting files with a problem hid a warning inside a file that also had

@@ -20,6 +20,29 @@ export const MCP_BINARY_OUTPUT_DIR = 'src-tauri/binaries';
 /** The MCP server entry — the compile input. */
 export const MCP_SERVER_ENTRY = 'mcp/src/index.js';
 
+/** CI installs bun from this file too; the sidecar embeds that runtime. */
+export const BUN_VERSION_FILE = '.bun-version';
+
+export function pinnedBunVersion(text) {
+  const version = String(text).trim();
+  if (!/^\d+\.\d+\.\d+$/.test(version)) {
+    throw new Error(`${BUN_VERSION_FILE} must name one exact bun release, found "${version}"`);
+  }
+  return version;
+}
+
+/** A release build (CI) refuses another bun; a local build says so and continues. */
+export function bunVersionVerdict(pinned, reported, { ci = false } = {}) {
+  const actual = String(reported ?? '').trim();
+  if (actual === pinned) return null;
+  return {
+    fatal: ci,
+    message:
+      `bun ${actual || '(unknown)'} is not the pinned ${pinned} (${BUN_VERSION_FILE}); the sidecar embeds its runtime.\n` +
+      `  Install it: curl -fsSL https://bun.sh/install | bash -s "bun-v${pinned}"`,
+  };
+}
+
 /**
  * Rust target triple → bun `--target` value. Supporting one would suffice, but an
  * explicit mapping removes guesswork when x64 is added.

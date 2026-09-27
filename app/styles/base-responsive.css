@@ -167,7 +167,6 @@
          directly to touch means hitting adjacent rows — pointer, not width, determines this
          (design.md touch contract). */
       --git-row-h: var(--touch-target-min);
-      --git-step-h: max(44px, var(--touch-target-min));
     }
 
     /*

@@ -599,7 +599,7 @@ of 31 citations resolving — the other five are two pointing at a file the fold
 hold and three addresses their files no longer have, all of which a reader could only
 discover before by opening the documents themselves.
 
-- **Sources** — every non-`.md` file under `sources/**`, listed by name, format, size and
+- **Sources** — every file under `sources/**`, Markdown included, listed by name, format, size and
   one state. Listing one opens nothing; the walk records what a directory listing already
   holds, which is why a folder of PDFs adds nothing to the map. The one read is a
   **citation's press** (below), and it is that file only.
@@ -616,7 +616,10 @@ discover before by opening the documents themselves.
   - `checking` — cited with a hash, not yet measured. Hashing is lazy and only ever asked
     for on cited files; the app hashes natively, a browser with `crypto.subtle`.
   - A row opens the file: the app reveals it in Finder (reveal, never launch), the browser
-    hands over the bytes it was already granted.
+    hands over the bytes it was already granted. It opens a copy only of a kind it shows
+    without running anything (PDF, PNG, JPEG, GIF, WebP, AVIF, and plain text for `.txt`,
+    `.md`, `.csv`, `.tsv`, `.json`, `.yaml` and `.log`) and saves everything else, `.html`
+    and `.svg` included, as a download: a copy opened in the page would run in its origin.
 - **Wiki** — Markdown under `wiki/**` with no `kind:`. Each row shows `created_by` and,
   when the page does not fit the contract, the first problem code `wiki-validate` prints
   (`section-order`, `uncited-fact`, …), the folder's own findings included

@@ -138,9 +138,9 @@ describe('가이드 본문 링크 — 실재하는 라우트만 가리킨다', (
     });
     expect(
       dead.map((d) => `${d.file} → ${d.href}`),
-      '가이드 본문의 내부 링크는 실재하는 가이드 장만 가리킨다. 볼트 문서는 ' +
-        '볼트를 안 고른 방문자에게 안 열리므로 GitHub 로 보내라. ' +
-        '로케일은 렌더러가 붙이므로 원본에 적지 마라',
+      'Internal links in a guide body point only at guide chapters that exist. A vault document ' +
+        'does not open for a visitor who has not chosen a vault, so link to GitHub instead. ' +
+        'The renderer adds the locale, so do not write it in the source',
     ).toEqual([]);
   });
 
@@ -175,9 +175,9 @@ describe('가이드 본문 링크 — 실재하는 라우트만 가리킨다', (
     const relative = all.filter(({ href }) => !/^(\/|https?:\/\/)/.test(href));
     expect(
       relative.map((d) => `${d.file} → ${d.href}`),
-      '가이드 본문에 상대 경로 링크가 있다 — 라우터가 /guide/<파일명> 으로 풀고 ' +
-        '폴백이 엉뚱한 장을 그린다. 가이드 장은 /guide/<segment> 절대 경로로, ' +
-        '저장소 문서는 GitHub blob URL 로 적어라',
+      'A guide body has a relative link: the router resolves it to /guide/<file name> ' +
+        'and the fallback renders the wrong chapter. Write guide chapters as absolute /guide/<segment> paths ' +
+        'and repository documents as GitHub blob URLs',
     ).toEqual([]);
   });
 

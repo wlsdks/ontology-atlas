@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -275,6 +275,18 @@ describe("DocsVaultViewer", () => {
     expect(link).toHaveAttribute("href", "/docs/README");
     fireEvent.click(link);
     expect(onNavigate).toHaveBeenCalledWith("README");
+  });
+
+  it("loads no remote image, and names its host with a way to open it elsewhere", async () => {
+    const { container } = renderViewer("![Diagram](https://tracker.example/pixel.png?reader=me)");
+    const placeholder = await screen.findByTestId("docs-viewer-remote-image");
+    expect(placeholder).toHaveTextContent("Diagram");
+    expect(placeholder).toHaveTextContent("tracker.example");
+    expect(container.querySelector('img[src*="tracker.example"]')).toBeNull();
+    const open = within(placeholder).getByRole("link");
+    expect(open).toHaveAttribute("href", "https://tracker.example/pixel.png?reader=me");
+    expect(open).toHaveAttribute("target", "_blank");
+    expect(open).toHaveAttribute("rel", "noopener noreferrer");
   });
 
   it("keeps an ordinary wikilink on the existing in-vault navigation path", async () => {

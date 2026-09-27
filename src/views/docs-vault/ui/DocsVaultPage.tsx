@@ -48,6 +48,7 @@ import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { useNavRailSettingsSlot } from '@/widgets/app-nav-rail';
 import { copyText } from '@/shared/lib/copy-text';
 import { codedFailure } from '@/shared/lib/failure-code';
+import { vaultImageUrl } from '@/shared/lib/open-vault-file';
 import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { useClaimShellKey } from '@/shared/lib/shell-key-claims';
@@ -749,8 +750,7 @@ function DocsVaultContent({
     return async (path: string) => {
       const fh = handles.get(path);
       if (!fh) return null;
-      const file = await fh.getFile();
-      return URL.createObjectURL(file);
+      return vaultImageUrl(await fh.getFile());
     };
   }, [source, localVault.imageHandles]);
 

@@ -31,7 +31,7 @@ import {
   findBacklinks,
   readDoc,
   redirectBacklinks,
-  slugToPath,
+  slugToWritePath,
   vaultSlugExists,
 } from '../vault.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
@@ -43,6 +43,10 @@ import {
   requireNodeNotReservedForHuman,
   resolveExistingVaultSlug,
 } from './vault-nodes.mjs';
+
+function warningsOf(list) {
+  return list.length > 0 ? { warnings: list } : {};
+}
 
 function publicBacklinkUpdates(result) {
   return {
@@ -58,6 +62,12 @@ function publicBacklinkUpdates(result) {
 function keptEntryWarnings(result, newKind) {
   const kept = Array.isArray(result?.keptInPlace) ? result.keptInPlace : [];
   return kept.map((entry) => containmentEntryKeptMessage({ ...entry, newKind }));
+}
+
+function unwritableReferrerWarnings(result, oldSlug) {
+  return (result?.unwritableReferrers ?? []).map((slug) =>
+    `${slug} refers to ${oldSlug}, but write tools never edit an agent instruction file or a hidden path, ` +
+    'so that reference was left as it was: update it by hand.');
 }
 
 function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, expected_mtime }) {
@@ -108,8 +118,8 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     requireNodeNotReservedForHuman(readDocIfPresent(newSlug), 'rename_concept');
   }
 
-  const sourcePath = slugToPath(VAULT_ROOT, diskOldSlug);
-  const targetPath = slugToPath(VAULT_ROOT, newSlug);
+  const sourcePath = slugToWritePath(VAULT_ROOT, diskOldSlug);
+  const targetPath = slugToWritePath(VAULT_ROOT, newSlug);
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
   const targetDoc = overwrite && targetExists ? readDoc(VAULT_ROOT, targetPath) : null;
 
@@ -145,6 +155,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
       targetPath,
       moved: false,
       backlinkUpdates: publicBacklinkUpdates(preview),
+      ...warningsOf(unwritableReferrerWarnings(preview, diskOldSlug)),
       message: `dry-run — pass confirm:true to actually move the file and redirect ${preview.totalUpdated} backlinks.`,
     };
   }
@@ -198,6 +209,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     targetPath,
     moved: true,
     backlinkUpdates: publicBacklinkUpdates(result),
+    ...warningsOf(unwritableReferrerWarnings(result, diskOldSlug)),
     changed: true,
     postWriteMaintenance: compactPostWriteMaintenance(),
   };
@@ -233,8 +245,8 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   if (!canonicalOld) throw new Error(missingSlugMessage('Source slug does not exist in vault', slug));
   const canonicalNew = newSlug || canonicalOld;
   if (canonicalNew !== canonicalOld && vaultSlugExists(VAULT_ROOT, canonicalNew)) throw new Error(`Target slug already exists: "${canonicalNew}".`);
-  const sourcePath = slugToPath(VAULT_ROOT, canonicalOld);
-  const targetPath = slugToPath(VAULT_ROOT, canonicalNew);
+  const sourcePath = slugToWritePath(VAULT_ROOT, canonicalOld);
+  const targetPath = slugToWritePath(VAULT_ROOT, canonicalNew);
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
   if (typeof expected_mtime === 'number' && sourceDoc.mtime !== expected_mtime) throw new VaultConflictError(canonicalOld, expected_mtime, sourceDoc.mtime);
   const oldKind = sourceDoc.frontmatter.kind;
@@ -260,7 +272,10 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   const backlinkUpdates = rewritesReferrers
     ? redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: true, ...kindOption })
     : { updates: [], totalUpdated: 0 };
-  const previewWarnings = keptEntryWarnings(backlinkUpdates, newKind);
+  const previewWarnings = [
+    ...keptEntryWarnings(backlinkUpdates, newKind),
+    ...unwritableReferrerWarnings(backlinkUpdates, canonicalOld),
+  ];
   const dryRun = !confirm;
   const base = {
     ok: false,
@@ -292,7 +307,10 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   const appliedBacklinks = rewritesReferrers
     ? redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: false, deferWrite: true, ...kindOption })
     : backlinkUpdates;
-  const appliedWarnings = keptEntryWarnings(appliedBacklinks, newKind);
+  const appliedWarnings = [
+    ...keptEntryWarnings(appliedBacklinks, newKind),
+    ...unwritableReferrerWarnings(appliedBacklinks, canonicalOld),
+  ];
   applyAllOrNothing([
     {
       op: 'write',
@@ -354,9 +372,9 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   fromSlug = diskFromSlug;
   intoSlug = diskIntoSlug;
 
-  const fromPath = slugToPath(VAULT_ROOT, fromSlug);
+  const fromPath = slugToWritePath(VAULT_ROOT, fromSlug);
   const fromDoc = readDoc(VAULT_ROOT, fromPath);
-  const intoPath = slugToPath(VAULT_ROOT, intoSlug);
+  const intoPath = slugToWritePath(VAULT_ROOT, intoSlug);
   const intoDoc = readDoc(VAULT_ROOT, intoPath);
   const identityHistory = mergeNodeIdentityHistory(fromDoc.frontmatter, intoDoc.frontmatter);
   const absorbedUids = identityHistory.absorbedUids;
@@ -376,7 +394,10 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   const fromKind = typeof fromDoc.frontmatter?.kind === 'string' ? fromDoc.frontmatter.kind.trim() : '';
   const kindOption = intoKind && fromKind && intoKind !== fromKind ? { targetKind: intoKind } : {};
   const preview = redirectBacklinks(VAULT_ROOT, fromSlug, intoSlug, { dryRun: true, ...kindOption });
-  const previewWarnings = keptEntryWarnings(preview, intoKind);
+  const previewWarnings = [
+    ...keptEntryWarnings(preview, intoKind),
+    ...unwritableReferrerWarnings(preview, fromSlug),
+  ];
 
   if (!confirm) {
     return {
@@ -436,7 +457,10 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
       expectedMtime: fromDoc.mtime,
     },
   ], { requireRevisions: true });
-  const appliedWarnings = keptEntryWarnings(result, intoKind);
+  const appliedWarnings = [
+    ...keptEntryWarnings(result, intoKind),
+    ...unwritableReferrerWarnings(result, fromSlug),
+  ];
 
   return {
     ok: true,
@@ -469,7 +493,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   // Existence check, so a dry run never falsely reports "deletable". (deleteDoc
   // throws again at the real delete step, but the dry-run path never reaches
   // deleteDoc, hence the separate check.)
-  let filePath = slugToPath(VAULT_ROOT, slug);
+  let filePath = slugToWritePath(VAULT_ROOT, slug);
   // Resolve to the disk's spelling before the backlink safety check: a wrong-case
   // slug passes `existsSync` on macOS/Windows while `findBacklinks` is
   // case-sensitive, so a referenced node would be deletable without force.
@@ -478,7 +502,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
     throw new Error(missingSlugMessage('Doc not found', slug));
   }
   slug = diskSlug;
-  filePath = slugToPath(VAULT_ROOT, slug);
+  filePath = slugToWritePath(VAULT_ROOT, slug);
   const sourceDoc = readDoc(VAULT_ROOT, filePath);
   requireNodeNotReservedForHuman(sourceDoc, 'delete_concept');
   // Ambiguous-tail referrers count too: a doc whose ref could mean this node still

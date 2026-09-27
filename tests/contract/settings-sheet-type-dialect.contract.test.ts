@@ -143,9 +143,9 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
     });
     expect(
       offenders,
-      `9.5px 은 "마이크로 라벨·범례·타임스탬프" 의 단이다. 설정 행의 라벨·설명·` +
-        `버튼 글자는 그 셋이 아니다 — 설명은 text-label(11px), 누르는 글자는 ` +
-        `text-body(12.5px).`,
+      `9.5px is the step for micro labels, legends and timestamps. A settings row's label, description and ` +
+        `button text are none of those: descriptions are text-label (11px) and pressable text is ` +
+        `text-body (12.5px).`,
     ).toEqual([]);
   });
 
@@ -161,8 +161,8 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
     );
     expect(
       offenders,
-      "드릴인 칸이 루트 시트보다 한 단 작아졌다. 이름은 text-body(12.5), " +
-        "설명·값·경로는 text-label(11). 절 이름은 SETTINGS_SECTION_LABEL 을 쓴다.",
+      "The drill-in pane became one step smaller than the root sheet. Names are text-body (12.5), " +
+        "descriptions, values and paths are text-label (11). Section names use SETTINGS_SECTION_LABEL.",
     ).toEqual([]);
   });
 

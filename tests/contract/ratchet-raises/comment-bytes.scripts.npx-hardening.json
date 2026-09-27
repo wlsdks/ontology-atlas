@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.scripts", "raise": 98, "why": "withDependencyCutoff names the Rust function that consumes the registry cutoff, the only link between the snapshot field and the npx --before flag the app passes." }

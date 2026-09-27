@@ -11,6 +11,13 @@ const THIRD_ARGUMENT_ASSERTS = new Set([
   'doesNotThrow', 'rejects', 'doesNotReject', 'partialDeepStrictEqual',
 ]);
 const SECOND_ARGUMENT_ASSERTS = new Set(['ok', 'ifError']);
+const PRINTED_LITERALS = new Set([
+  ts.SyntaxKind.StringLiteral,
+  ts.SyntaxKind.NoSubstitutionTemplateLiteral,
+  ts.SyntaxKind.TemplateHead,
+  ts.SyntaxKind.TemplateMiddle,
+  ts.SyntaxKind.TemplateTail,
+]);
 
 const HANGUL = /\p{Script=Hangul}/u;
 
@@ -32,11 +39,48 @@ function titleRoot(expression) {
   }
 }
 
-function literalText(node, sourceFile) {
+const hole = (node, sourceFile) => `\${${node.getText(sourceFile)}}`;
+
+function evaluatedText(node, sourceFile) {
   if (!node) return null;
+  if (ts.isParenthesizedExpression(node)) return evaluatedText(node.expression, sourceFile);
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
-  if (ts.isTemplateExpression(node)) return node.getText(sourceFile);
-  return null;
+  if (ts.isTemplateExpression(node)) {
+    return node.templateSpans.reduce(
+      (text, span) => text + (evaluatedText(span.expression, sourceFile) ?? hole(span.expression, sourceFile)) + span.literal.text,
+      node.head.text,
+    );
+  }
+  if (!ts.isBinaryExpression(node) || node.operatorToken.kind !== ts.SyntaxKind.PlusToken) return null;
+  const left = evaluatedText(node.left, sourceFile);
+  const right = evaluatedText(node.right, sourceFile);
+  if (left === null && right === null) return null;
+  return (left ?? hole(node.left, sourceFile)) + (right ?? hole(node.right, sourceFile));
+}
+
+function printedLiterals(node) {
+  const parts = [];
+  const visit = (child) => {
+    if (PRINTED_LITERALS.has(child.kind) && child.text.trim() !== '') parts.push(child.text.trim());
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return parts.length > 0 ? parts.join(' … ') : null;
+}
+
+function messageText(node, sourceFile) {
+  return evaluatedText(node, sourceFile) ?? printedLiterals(node);
+}
+
+function optionsMessage(options) {
+  if (!options || !ts.isObjectLiteralExpression(options)) return undefined;
+  const message = options.properties.find(
+    (property) =>
+      ts.isPropertyAssignment(property) &&
+      (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) &&
+      property.name.text === 'message',
+  );
+  return message?.initializer;
 }
 
 function messageArgument(call) {
@@ -50,6 +94,7 @@ function messageArgument(call) {
   const owner = callee.expression.text;
   const method = callee.name.text;
   if (owner === 'expect' && method === 'soft') return call.arguments[1];
+  if (owner === 'expect' && method === 'poll') return optionsMessage(call.arguments[1]);
   if (owner !== 'assert') return undefined;
   if (SECOND_ARGUMENT_ASSERTS.has(method)) return call.arguments[1];
   if (THIRD_ARGUMENT_ASSERTS.has(method)) return call.arguments[2];
@@ -66,17 +111,17 @@ export function extractTestTitles(path, source) {
     jsx ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
   const found = [];
-  const record = (kind, node) => {
-    const text = literalText(node, sourceFile);
+  const record = (kind, node, text) => {
     if (text === null) return;
     const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
     found.push({ kind, text, line });
   };
   const visit = (node) => {
     if (ts.isCallExpression(node)) {
-      if (titleRoot(node.expression)) record('title', node.arguments[0]);
+      const title = node.arguments[0];
+      if (titleRoot(node.expression)) record('title', title, evaluatedText(title, sourceFile));
       const message = messageArgument(node);
-      if (message) record('message', message);
+      if (message) record('message', message, messageText(message, sourceFile));
     }
     ts.forEachChild(node, visit);
   };

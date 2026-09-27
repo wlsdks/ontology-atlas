@@ -214,19 +214,29 @@ function dynamicTables(reader: BitReader): { literal: HuffmanTable; distance: Hu
   };
 }
 
+const INFLATE_MAX_BYTES = 256 * 1024 * 1024;
+
 /** An output buffer that grows by doubling; a zip entry's size is known but not trusted. */
 class OutputBuffer {
   private bytes: Uint8Array;
   private length = 0;
 
-  constructor(initialCapacity: number) {
-    this.bytes = new Uint8Array(Math.max(64, initialCapacity));
+  constructor(
+    initialCapacity: number,
+    private readonly limit: number,
+  ) {
+    this.bytes = new Uint8Array(Math.max(64, Math.min(initialCapacity, limit)));
   }
 
   private reserve(extra: number): void {
-    if (this.length + extra <= this.bytes.length) return;
+    const needed = this.length + extra;
+    if (needed > this.limit) {
+      throw new InflateError(`the stream inflates past ${this.limit} bytes, more than the entry declares`);
+    }
+    if (needed <= this.bytes.length) return;
     let capacity = this.bytes.length;
-    while (capacity < this.length + extra) capacity *= 2;
+    while (capacity < needed) capacity *= 2;
+    capacity = Math.min(capacity, this.limit);
     const grown = new Uint8Array(capacity);
     grown.set(this.bytes.subarray(0, this.length));
     this.bytes = grown;
@@ -267,16 +277,18 @@ class OutputBuffer {
  * Raw DEFLATE bytes → the bytes they encode.
  *
  * @param bytes one zip entry's compressed body (no zlib or gzip header)
- * @param expectedSize the size the zip's directory claims, used only to size the first
- *   allocation; a stream that decodes to a different length is still returned, and the
- *   caller compares — the same division `mcp/src/source-text.mjs` keeps.
+ * @param expectedSize the size the zip's directory claims: decoding stops past it, or past
+ *   `cap` when none is claimed, so a bomb fails early; a shorter stream is returned and the
+ *   caller compares, as `mcp/src/source-text.mjs` does.
  */
-export function inflateRaw(bytes: Uint8Array, expectedSize?: number): Uint8Array {
+export function inflateRaw(bytes: Uint8Array, expectedSize?: number, cap = INFLATE_MAX_BYTES): Uint8Array {
   const reader = new BitReader(bytes);
+  const limit = Math.max(1, Math.min(typeof expectedSize === 'number' ? expectedSize : Infinity, cap));
   const output = new OutputBuffer(
     typeof expectedSize === 'number' && expectedSize > 0 && expectedSize < 1 << 26
       ? expectedSize
       : bytes.length * 4,
+    limit,
   );
   for (;;) {
     const isFinal = reader.bit() === 1;

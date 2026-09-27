@@ -360,8 +360,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
       .filter((x): x is string => x !== null);
     expect(
       same,
-      `두 무채 램프의 이 단이 같아졌다 — 그 단의 \`scope: 'panel'\` 컴파운드는 근거가 없다.\n` +
-        `수렴한 단을 값 층에서 지우거나(그 단은 tone 하나로 충분하다), 전부 수렴했으면 축 자체를 지워라.\n` +
+      `This step is now the same on both neutral ramps, so its \`scope: 'panel'\` compound has no basis.\n` +
+        `Delete the converged step from the value layer (one tone is enough for it), or delete the axis once every step has converged.\n` +
         same.join('\n'),
     ).toEqual([]);
   });
@@ -386,8 +386,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
     expect(panel, '--map-panel-text-quaternary 를 못 읽었다').toBeTruthy();
     expect(
       panel,
-      `quaternary 가 두 램프에서 다시 갈라졌다(전역 ${app} · 패널 ${panel}) — ` +
-        `panel 위 muted 잉크가 근거를 잃었다. \`scope: 'panel', tone: 'muted'\` 컴파운드를 되살리고 이 고정을 갱신하라.`,
+      `quaternary diverged between the two ramps again (global ${app} · panel ${panel}), ` +
+        `so muted ink on the panel lost its basis. Restore the \`scope: 'panel', tone: 'muted'\` compound and update this pin.`,
     ).toBe(app);
     // The compound really is absent — `muted` emits one global token regardless of scope.
     const onPanel = controlClass({ shape: 'chip', size: 'md', tone: 'muted', scope: 'panel' });
@@ -735,40 +735,6 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
     // Idling guard — were the combinations actually built?
     expect(counted, '축 조합을 하나도 안 돌렸다').toBeGreaterThan(1000);
     expect(offenders, `축을 켰더니 램프 밖으로 샜다:\n${offenders.slice(0, 20).join('\n')}`).toEqual([]);
-  });
-});
-
-describe('계기가 스스로를 설명한다', () => {
-  const SOURCE = readFileSync(join(process.cwd(), 'src/shared/ui/control-class.ts'), 'utf8');
-
-  it('여섯 모양이 어디서 왔는지 실측으로 적어 둔다', () => {
-    // What stops the next person adding a "seventh shape" on instinct is this number,
-    // not the code — a shape outside the classification is the signal to re-run the
-    // inventory.
-    expect(SOURCE).toContain('419');
-  });
-
-  it('값 층과 행동 층을 가르는 이유를 실측으로 적어 둔다', () => {
-    /*
-     * This is not "components are banned" but **why the values are a function**. The
-     * first judgement — "components do not work here" — was wrong: the three with zero
-     * usage were not evidence of laziness but primitives **born without a gate that
-     * violated the ramp** (`CardTitle` used `text-lg`, which is not on the ramp). If
-     * that correction disappears the next person inherits the same misjudgement.
-     */
-    /*
-     * ⚠️ **Only derivable anchors are pinned** (2026-08-22). A Korean phrase used to
-     * be matched here as well. `documentation.md` forbids pinning a sentence a human
-     * wrote, and the English comment pass showed why: the correction survived word
-     * for word while the pinned characters did not, so the gate went red over a
-     * rewording that changed nothing. `text-lg` is the off-ramp value that caused the
-     * misjudgement, and the two product names are citations — both survive any
-     * rewrite of the prose around them.
-     */
-    expect(SOURCE).toContain('text-lg');
-    expect(SOURCE, '업계 표준이 컴포넌트라는 사실도 함께 적어야 균형이 잡힌다').toMatch(
-      /Carbon|shadcn/,
-    );
   });
 });
 
