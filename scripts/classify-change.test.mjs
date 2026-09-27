@@ -74,6 +74,17 @@ test('app tests run affected Vitest without waking Playwright', () => {
   assert.equal(plan.lanes.e2e.mode, 'skip');
 });
 
+test('a widely imported source leaves related tests to the sharded affected run', () => {
+  const plan = buildImpactPlan({ files: ['src/shared/ui/control-class.ts'] });
+
+  assert.equal(plan.lanes.unit.affected, true);
+  assert.equal(
+    plan.lanes.unit.extraCommands.some((command) => command.startsWith('pnpm exec vitest related ')),
+    false,
+    'vitest related repeated the affected run unsharded on shard 1',
+  );
+});
+
 test('a filesystem-scanned UI file runs affected units, contracts, and mapped e2e only', () => {
   const plan = buildImpactPlan({
     files: ['src/widgets/docs-vault/ui/DocsVaultEditor.tsx'],
