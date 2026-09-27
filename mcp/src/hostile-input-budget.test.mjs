@@ -125,6 +125,16 @@ describe('hostile document sources cost time linear in their size', () => {
     );
     assert.throws(() => readSourceText(bytes, 'sources/a.xlsx'), /past \d+ unpacked bytes/);
   });
+
+  it('refuses a workbook whose sheets share one entry\'s data instead of unpacking it once per name', () => {
+    const bytes = zipped(
+      { name: 'xl/workbook.xml', text: '<sheet name="a" r:id="r1"/><sheet name="b" r:id="r2"/><sheet name="c" r:id="r3"/>' },
+      { name: 'xl/worksheets/sheet1.xml', text: '<row r="1"></row>'.repeat(4096), store: true },
+      { name: 'xl/worksheets/sheet2.xml', aliasOf: 'xl/worksheets/sheet1.xml' },
+      { name: 'xl/worksheets/sheet3.xml', aliasOf: 'xl/worksheets/sheet1.xml' },
+    );
+    assert.throws(() => readSourceText(bytes, 'sources/a.xlsx'), /overlaps an entry already read/);
+  });
 });
 
 describe('oversized files are named, not read', () => {

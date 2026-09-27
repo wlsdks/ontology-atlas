@@ -135,6 +135,7 @@ function readZipEntries(bytes: Uint8Array): Map<string, () => Uint8Array> {
   const entryCount = view.getUint16(eocd + 10, true);
   let offset = view.getUint32(eocd + 16, true);
   let unpackBudget = SOURCE_UNPACK_MAX_BYTES;
+  let compressedBudget = bytes.length;
   const entries = new Map<string, () => Uint8Array>();
   for (let index = 0; index < entryCount; index += 1) {
     if (view.getUint32(offset, true) !== CENTRAL_SIGNATURE) {
@@ -157,6 +158,12 @@ function readZipEntries(bytes: Uint8Array): Map<string, () => Uint8Array> {
       const localExtraLength = view.getUint16(localOffset + 28, true);
       const start = localOffset + 30 + localNameLength + localExtraLength;
       const raw = bytes.subarray(start, start + compressedSize);
+      if (raw.length > compressedBudget) {
+        throw new Error(
+          `zip entry ${name} would take this read past the file's ${bytes.length} bytes: its data overlaps an entry already read`,
+        );
+      }
+      compressedBudget -= raw.length;
       const verified = (out: Uint8Array): Uint8Array => {
         if (uncompressedSize !== 0xffffffff && out.length !== uncompressedSize) {
           throw new Error(

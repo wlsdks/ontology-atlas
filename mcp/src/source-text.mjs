@@ -44,6 +44,7 @@ export function readZipEntries(buffer) {
   const entryCount = buffer.readUInt16LE(eocd + 10);
   let offset = buffer.readUInt32LE(eocd + 16);
   let unpackBudget = SOURCE_UNPACK_MAX_BYTES;
+  let compressedBudget = buffer.length;
   const entries = new Map();
   for (let index = 0; index < entryCount; index += 1) {
     if (buffer.readUInt32LE(offset) !== CENTRAL_SIGNATURE) throw new Error('zip central directory is damaged');
@@ -61,6 +62,10 @@ export function readZipEntries(buffer) {
       const localExtraLength = buffer.readUInt16LE(localOffset + 28);
       const start = localOffset + 30 + localNameLength + localExtraLength;
       const raw = buffer.subarray(start, start + compressedSize);
+      if (raw.length > compressedBudget) {
+        throw new Error(`zip entry ${name} would take this read past the file's ${buffer.length} bytes: its data overlaps an entry already read`);
+      }
+      compressedBudget -= raw.length;
       if (method === 0) return Buffer.from(raw);
       if (method === 8) {
         const limit = Math.max(1, Math.min(uncompressedSize === 0xffffffff ? Infinity : uncompressedSize, unpackBudget));
