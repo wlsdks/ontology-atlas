@@ -176,9 +176,9 @@ export function DocsVaultViewer({
     ): React.ReactNode => {
       if (!q) return children;
       if (typeof children === 'string') {
-        // Reuses splitHighlightSegments; the `.docs-match` class is what the scroll effect looks
-        // for.
-        return splitHighlightSegments(children, q).map((seg, i) =>
+        // Literal only: searchDocs found this document by literal text, not Hangul keystrokes.
+        // The `.docs-match` class is what the scroll effect looks for.
+        return splitHighlightSegments(children, q, false).map((seg, i) =>
           seg.match ? (
             <mark
               key={`${key}-${i}`}

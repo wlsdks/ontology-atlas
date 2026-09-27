@@ -112,6 +112,20 @@ describe("findHangulMatch on a two-set keyboard", () => {
     expect(findHangulMatch("장바구니", "장밥")).toBeNull();
     expect(findHangulMatch("달걀", "닮")).toBeNull();
   });
+
+  it("carries a final neither across a space nor past the last syllable", () => {
+    expect(findHangulMatch("가 게", "각")).toBeNull();
+    expect(findHangulMatch("장바구니", "장바구닌")).toBeNull();
+  });
+
+  it("treats a double consonant as one key", () => {
+    expect(findHangulMatch("가까", "갂")).toEqual({ start: 0, end: 2 });
+    expect(findHangulMatch("가까", "각")).toBeNull();
+  });
+
+  it("carries a final after a compound medial", () => {
+    expect(findHangulMatch("과일", "광")).toEqual({ start: 0, end: 2 });
+  });
 });
 
 describe("findHangulMatch — 한글이 없는 질의", () => {

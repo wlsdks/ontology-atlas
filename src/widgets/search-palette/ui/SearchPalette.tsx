@@ -20,6 +20,7 @@ import {
   useExitLockout,
 } from '@/shared/motion';
 import { mergeRefs } from "@/shared/lib/merge-refs";
+import { splitHighlightSegments } from '@/shared/lib/highlight-match';
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
 import {
   projectDisplayName,
@@ -98,23 +99,19 @@ function pushRecentSlug(slug: string) {
   }
 }
 
-/**
- * Wrap the part matching the query in <mark>. Case-insensitive, first match only.
- * Returns the source text on no match or an empty query.
- */
+/** Marks what the shared matcher matched, Hangul initials and keystroke states included. */
 function highlightMatch(text: string, query: string): React.ReactNode {
-  const q = query.trim().toLowerCase();
-  if (!q) return text;
-  const idx = text.toLowerCase().indexOf(q);
-  if (idx < 0) return text;
-  return (
-    <>
-      {text.slice(0, idx)}
-      <mark className="rounded-micro bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:var(--color-text-primary)]">
-        {text.slice(idx, idx + q.length)}
+  return splitHighlightSegments(text, query).map((segment, i) =>
+    segment.match ? (
+      <mark
+        key={i}
+        className="rounded-micro bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:var(--color-text-primary)]"
+      >
+        {segment.text}
       </mark>
-      {text.slice(idx + q.length)}
-    </>
+    ) : (
+      segment.text
+    ),
   );
 }
 
