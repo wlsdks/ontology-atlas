@@ -18,7 +18,7 @@ import { controlClass } from '@/shared/ui/control-class';
  * **No new copy is written here.** The headline and lead reuse the sentences the
  * gateway page already uses (`download.heroTitleLine1/2` and `heroLead`, the
  * monument headline from the 2026-08-18 gateway remake). Inventing positioning here
- * would be a PO-council trigger, and above all **a fallback saying something other
+ * would be a positioning change routed through `pnpm po:route`, and above all **a fallback saying something other
  * than the real screen** is precisely the defect this fixes.
  *
  * (The old `stageTitle`/`stageLead` left the catalogue during that remake while this
