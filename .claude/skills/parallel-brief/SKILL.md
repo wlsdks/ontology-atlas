@@ -66,7 +66,8 @@ Before assigning scopes, run `pnpm conflicts:scan` so no scope includes a file a
 
 Spawn each slice as `implementer` (Opus, low effort) and review what returns with
 `reviewer` (Opus, max); a slice that still needs judgment goes back to the
-`planner` first. The Agent tool takes no per-call effort, so the agent type is
+`planner` first, and debugging or a flake goes to `investigator` (max), never
+`general-purpose`. The Agent tool takes no per-call effort, so the agent type is
 the dial; in a Workflow script pass `effort` to `agent()`. Every delegated brief
 states:
 
