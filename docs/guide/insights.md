@@ -7,7 +7,7 @@ area: analysis
 
 # Maintenance Board: Analyzing My Folders
 
-[After the folder has grown](/guide/growing-vault), you answered "what should I fix now" via CLI. There is a **screen that does the same thing**: "Analysis" in the left rail, at `/ontology/insights`.
+[After the folder has grown](/guide/growing-vault), you answered "what should I fix now" via CLI. There is a **screen that does the same thing**: "Insights" in the left rail, at `/ontology/insights`.
 
 The screen describes its own purpose like this:
 
@@ -16,24 +16,30 @@ The screen describes its own purpose like this:
 If the map is "what exists now," this is **"what is less done now."**
 And the header emphasizes one thing: "All numbers are automatically calculated from documents." This means no numbers are manually entered anywhere.
 
-## 1. Five measured branches plus Flow
+## 1. Two rows of tabs
 
-The six tabs at the top each answer a different question. The first five are
-computed from the graph; Flow gives an agent one visible request to explain the
-product from the ontology without reading source code.
+The first row names what a tab is about: "Brief" · "Concepts" · "Wiki" ·
+"Guidance". "Brief" opens first; it is one screen across the ontology, the wiki
+and the harness. "Wiki" counts the library's sources and pages, and "Guidance"
+reads the declared guidance by domain.
+
+Choosing "Concepts" opens a second row with one question per tab. It lands on
+"To fix", and the address carries the tab (`?tab=`), so a shared link reopens it.
 
 | Tab | Question Answered |
 |---|---|
-| "To-Do" | How many things need fixing now, and what to start with today |
-| "Structure" | What exists in what quantities, which domain is heavy |
-| "Connections" | Which relationships are skewed towards which nature, where is the hub |
-| "Boundaries" | How much domains are leaking into each other |
-| "Freshness" | Where hasn't been touched for a long time |
-| "Flow" | What this product is and how its domains and capabilities form one business flow |
+| "To fix" | How many things need fixing now, and what to start with today |
+| "Missing concepts" | Which names a document points at that no concept answers to |
+| "Inventory" | What exists in what quantities, which domain is heavy |
+| "Relations" | Which relation types dominate, where the hubs are, what a change reaches |
+| "Domain boundaries" | How much domains are leaking into each other |
+| "Accumulation" | What the folder has grown into, and where it has stopped |
+| "Product flow" | What this product is and how its domains and capabilities form one business flow |
 
-The number next to a measured tab name is the size of that branch. If the number
-next to "To-Do" is not 0, that is the count of today's tasks. Freshness and Flow
-have no badge because neither has one honest count.
+The number next to a question tab is the size of that question; hover it to read
+what it counts. "Accumulation" and "Product flow" have no badge because neither
+has one honest count. The tab list lives in
+`src/views/ontology-insights/lib/insights-tab-state.ts`.
 
 ## 2. "First things first today": The three items for the day
 
@@ -98,43 +104,53 @@ Looking at the example folder, the screen tells you this first.
 
 It follows the same rule as the save button in [Studio](/guide/studio). Instead of silently failing in a place where you can't write, it provides **what to pass to those who can**.
 
-## 5. What the Remaining Four Tabs Answer
+## 5. What the remaining question tabs answer
 
-### "Configuration": How many of each thing
+### "Missing concepts": asked for, not held
 
-Counts by type (elements · capabilities · domains · projects), counts by relationship type (includes · depends on · related to), and four health indicators: "Orphan Concepts", "Disconnected Groups", "Tangled Loops", and "Evidence Links".
+Each row is a name written into this folder that no concept answers to, with the
+number of times it appears.
 
-The "Domain Capacity" bar divides the number of capabilities and elements per domain. If one domain is unusually long, it's time to split it.
+### "Inventory": how many of each thing
 
-> Concepts belonging to multiple domains are counted once for each domain, so the total may exceed the overall count. The screen notes this in a footnote.
+"Kind census" counts concepts by kind. "Domain capacity" fills each domain's bar
+with capabilities from the left and elements from the right; a domain leaning
+hard one way has claims without evidence, or the reverse. A concept in several
+domains counts once in each, so the totals can exceed the whole.
 
-### "Connections": Where is the center
+The strip above the question tabs carries "Concepts", "Relations" and the health
+indicators "Lone concepts", "Disconnected groups", "Tangled loops" and
+"Evidence linked".
 
-The screen adds a judgment to the relationship type distribution.
+### "Relations": where is the center
 
-> If you are biased toward containment relations, it signals that you need to draw more 'expectation' relations.
+"Relation types" adds a judgment to the distribution: if containment dominates,
+draw more "leans on" links. This is [how relations arise](/guide/relations) in
+numbers: with only containment it is a tree; it becomes a graph once semantic
+relations are attached.
 
-This is a place to view the story of [how relations arise](/guide/relations) in numbers: if there is only structure (containment), it is a tree; it becomes a graph only when semantic relations are attached.
+The counting rule differs from the CLI and MCP. A relation written in both
+documents counts once here, while the CLI and MCP count every written reference,
+so their numbers are higher. Neither side is wrong.
 
-**We also clarify here that the counting rules differ per screen.**
+"Most connected concepts" lists the hubs. "Dependency impact" is the same
+question as `blast-radius` in the CLI: how much must be re-checked if this
+changes, split into "direct" and "indirect". It follows only human-approved
+"leans on" declarations, so it does not prove complete source dependencies.
 
-> Here, we count each distinct relation once (both documents list at least one reference to the same relation).
-> The CLI/MCP counts written references as-is, so its numbers will be higher.
+### "Domain boundaries": are domains leaking?
 
-It is just counting the same graph differently; neither side is wrong.
+The "Domain coupling" grid shows which domain pairs are connected; pick a cell to
+see the connections linking those two domains. "Cross-domain share" gives each
+domain's ratio of "self" to "cross" connections. A domain dominated by cross
+connections signals a boundary drawn in the wrong place.
 
-"Concepts that spread far when changed" is the same question as `blast-radius` in the CLI. How many items need re-verification if this is fixed? We count separately those that are "directly" connected and those that reach "across".
+### "Accumulation": what the folder has grown into
 
-### "Boundaries": Are domains leaking?
-
-The "domain coupling" grid shows which domain pairs are actually connected, and **clicking a cell** displays the connections linking those two domains. The horizontal lines go out from the source,
-and the vertical lines come into the target.
-
-"Boundary pressure" outputs the ratio of "internal" (connections within the same domain) to "cross" (connections going in/out) for each domain. A domain with an overwhelmingly high proportion of cross-connections signals that its boundary is drawn incorrectly.
-
-### "Freshness": Where has it stopped?
-
-For each domain, we draw a heatstrip of updates over the last 12 weeks and provide a list of "recently updated" items and a count of "not updated for 90+ days." The first thing to rot in a vault is **areas no one opens**, so this tab names them.
+"What the folder holds" is recomputed from the folder's version history and
+stores nothing. Below it, "Recent changes by domain" draws a heatstrip of
+document updates, with "Recent updates" and a "Not updated in 90+ days" count.
+The first thing to rot in a vault is the area no one opens, so this tab names it.
 
 ## 6. Asking for the business flow
 
@@ -158,9 +174,9 @@ query_ontology({operation:"maintenance_plan"}) → Execute per item → Re-verif
 ## Summary
 
 - The analysis is the **maintenance board**. The map shows "what exists," while this section shows "what has been less addressed."
-- Six tabs: Todo · Composition · Connections · Boundaries · Freshness · Flow.
-  The first five are measured maintenance questions; Flow is a visible,
-  reviewable agent request and never sends on its own.
+- Two rows: "Brief" · "Concepts" · "Wiki" · "Guidance", and under "Concepts"
+  one question per tab. "Product flow" is a visible, reviewable agent request
+  and never sends on its own.
 - "What to see first today" selects that day's items **with reasons**, and each line provides links to the map, original text, studio, and agent commands.
 - What is copied is not just a single command line, but the **preview → execute → confirm → re-evaluate procedure**.
 - In read-only folders, commands to skip appear instead of fix commands.
