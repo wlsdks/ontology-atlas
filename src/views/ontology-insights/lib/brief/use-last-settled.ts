@@ -34,6 +34,7 @@ export function useLastSettled<T>(value: (T & SettledData<T>) | null, scope: str
   // Stored during render (React's "adjust state while rendering"): an effect would land one frame late, the frame a
   // recount starts in.
   if (value === null) {
+    // Another scope's value is dropped, not parked for a return to that scope.
     if (held !== null && heldHere === null) setHeld(null);
     return heldHere;
   }
