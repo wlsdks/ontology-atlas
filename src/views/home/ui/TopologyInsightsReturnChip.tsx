@@ -7,25 +7,19 @@ import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/chrome-chip";
 import { controlClass } from "@/shared/ui/control-class";
 
 export interface TopologyInsightsReturnChipProps {
-  /** Where to return to — the insights tab they came from (`buildOntologyInsightsReturnHref`). */
+  /** `buildOntologyInsightsReturnHref`. */
   href: string;
   label: string;
   ariaLabel: string;
   dismissAriaLabel: string;
-  /** Explicit dismiss: clears the `via` marker in the URL. The only way this chip goes away. */
+  /** Clears the `via` marker; the only way the chip goes. */
   onDismiss: () => void;
 }
 
 /**
- * The "back to insights" chip, shown only when the map was entered through an
- * insights deep link (`?via=insights:<tab>`). Transient chrome in the same
- * top-centre row as `TopologyPathChip`. Browser back is not enough here: every
- * interaction on the map pushes history, so returning costs many steps.
- *
- * Lifetime contract (see url-state `insightsReturnTab`): it survives map
- * exploration and goes away only through the X. Following the link does not clear
- * the marker. It sits out the Esc ladder (`topology-esc-ladder.ts`) because it
- * owns no focus.
+ * Shown only after an insights deep link (`?via=insights:<tab>`), since Back costs many steps after
+ * map interactions. It survives exploration, following the link keeps the marker, and it sits out
+ * the Esc ladder.
  */
 export function TopologyInsightsReturnChip({
   href,

@@ -192,11 +192,8 @@ export function TopologyInspectorSurfaces({
         containerLabel={null}
       />
     ) : null}
-    {/* Presence gate: even after `panelOpen` goes false, this stays mounted until the
-            exit animation finishes (~140 ms), drawing the same content from the retained
-            `panelDatasheetModel` as it folds away. The window belongs to the `<Surface>`
-            inside the panel; this gate only takes the positioner down when that surface
-            reports `onExited`. */}
+    {/* Stays mounted until the panel's `<Surface>` reports `onExited`, drawing the retained model
+       as it folds. */}
     {nodePanelMounted && panelDatasheetModel ? (
       <div
         ref={nodePopoverPositionerRef}
@@ -209,36 +206,12 @@ export function TopologyInspectorSurfaces({
         data-selected-inspector-gutter-contract="no-phantom-utility-rail"
         data-position-top-token="--topology-node-popover-top"
         data-position-right-inset-token="--topology-node-popover-right-inset"
-        // `topology-ui-scale` is a plain CSS class, not a Tailwind variant, so it is
-        // always applied (zoom 1 by default, real zoom only at ≥1920px / ≥2400px). It
-        // must scale at the same ratio as the brand pill or the clearance against
-        // `--topology-index-top` stops holding at those widths.
-        /*
-         * `<lg` this is a **bottom sheet**, not a top-anchored full-bleed one
-         * (2026-09-05 audit, F1/F4/F5). Three things changed together and they
-         * are one decision:
-         *
-         * ① `bottom-…` instead of `top-[72px]`. Anchored to the top, the sheet
-         *    grew downward with its content — measured 366×691 at 390×844, 76.8%
-         *    of the canvas with 93 of 125 nodes under it, and at taller content it
-         *    ran 41px past the bottom tab bar and took its own primary action out
-         *    of reach. Anchored to the bottom above
-         *    `--map-panel-bottom-reserve` (which already carries the tab
-         *    bar plus safe area below `lg`) the footer cannot reach the bar, and
-         *    the height cap on `--map-inspector-max-height` decides the
-         *    top edge, so the ego graph stays on screen above it. That cap is the
-         *    inspector's alone — the meaning editor shares this positioner and
-         *    keeps the full `--map-panel-max-height`, because a form must
-         *    be able to show its own submit row.
-         * ② `pointer-events-none` here with `pointer-events-auto` on the painted
-         *    child. This element is a positioning wrapper: at 834 it measured
-         *    810px wide while only 520px painted, so 290px of the map answered
-         *    taps as if it were the sheet.
-         * ③ The camera obstacle marker stays — `computeFreeArea` now reads the
-         *    measured width first and treats a full-width declaration as the bar
-         *    it is, so the same attribute means «right panel» at `lg` and «bottom
-         *    sheet» below it without a second marker.
-         */
+        // `topology-ui-scale`: the same wide-screen zoom as INDEX and the toolbar. Below `lg` this
+        // is a bottom sheet above `--map-panel-bottom-reserve`: top-anchored it grew over the ego
+        // graph and past the tab bar. `--map-inspector-max-height` caps the inspector only; the
+        // meaning editor keeps `--map-panel-max-height` for its submit row. The wrapper ignores
+        // pointers so its unpainted width does not eat map taps; `computeFreeArea` reads the
+        // measured width of the obstacle marker.
         className="topology-ui-scale pointer-events-none fixed inset-x-3 bottom-[var(--map-panel-bottom-reserve)] z-30 flex justify-center lg:inset-x-auto lg:bottom-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
       >
         <div className="pointer-events-none grid">
@@ -278,12 +251,8 @@ export function TopologyInspectorSurfaces({
                 domainLabel: t("nodeDatasheet.domainLabel"),
                 poweredOn: t("nodeDatasheet.poweredOn"),
                 poweredOff: t("nodeDatasheet.poweredOff"),
-                // `usedBy` aggregates a direction rather than one relation type, so it
-                // keeps its own i18n key. `contains`, `dependsOn`, `belongsTo`, and
-                // `evidence` map 1:1 onto relation types and come from the shared
-                // vocabulary's plain register, so the map, the editor, and this panel
-                // manage the same word in one place. The wording is unchanged; the point
-                // is preventing drift.
+                // `usedBy` is a direction with its own key; the others map 1:1 to relation types
+                // in the shared plain register.
                 metricContains: relationVocabulary("contains", "plain"),
                 containsShowAll: t("nodeDatasheet.containsShowAll"),
                 groupShowMore: t("nodeDatasheet.groupShowMore"),
@@ -294,19 +263,17 @@ export function TopologyInspectorSurfaces({
                 metricDependsOn: relationVocabulary("depends_on", "plain"),
                 metricBelongsTo: relationVocabulary("belongs_to", "plain"),
                 metricEvidence: relationVocabulary("describes", "plain"),
-                // H1 B2/A — typed-fact label hover explanation + explicit scope for "direct" connection.
                 metricContainsHelp: t("nodeDatasheet.metricContainsHelp"),
                 metricUsedByHelp: t("nodeDatasheet.metricUsedByHelp"),
                 metricDependsOnHelp: t("nodeDatasheet.metricDependsOnHelp"),
                 metricBelongsToHelp: t("nodeDatasheet.metricBelongsToHelp"),
                 metricEvidenceHelp: t("nodeDatasheet.metricEvidenceHelp"),
                 noConnections: t("nodeDatasheet.noConnections"),
-                // 「Code locations」 (Code locations): the actual code evidence — source file paths.
+                // Actual code evidence: source file paths.
                 codeLocationsLabel: t("nodeDatasheet.codeLocationsLabel"),
                 codeLocationsCopyLabel: t("nodeDatasheet.codeLocationsCopyLabel"),
                 codeLocationsCopiedLabel: t("nodeDatasheet.codeLocationsCopiedLabel"),
-                // The same `editProvenance` namespace as `DocFrontmatterBlock` — one
-                // source, no drift.
+                // Same `editProvenance` namespace as `DocFrontmatterBlock`.
                 editSubjectPrefix: tEditProvenance("prefix"),
                 summaryFreshnessPrefix: tSummaryFreshness("prefix"),
                 summaryFreshnessLag: summaryFreshness.has(panelDatasheetModel.slug)
@@ -332,11 +299,9 @@ export function TopologyInspectorSurfaces({
                   ? t("nodeDatasheet.actionAskAgent")
                   : undefined,
                 actionRealm: t("realm.enterAction"),
-                // Result-description tooltip (owner approved) — plain text explaining "what happens when pressed"
-                // rather than label repetition. Area expansion reuses existing orbit button tooltips.
+                // Tooltips say what pressing does rather than repeating the label.
                 actionAskAgentTip: t("nodeDatasheet.actionAskAgentTip"),
-                // The heading names the section before its receipt is read, so it does not
-                // wait for the receipt's labels.
+                // Named before the receipt is read.
                 sourceHeading: t("nodeDatasheet.sourceHeading"),
                 sourcePending: t("nodeDatasheet.sourcePending"),
                 sourceKind: projectSourceLabels?.sourceKind,
@@ -373,42 +338,25 @@ export function TopologyInspectorSurfaces({
                   }
                 }
               }
-              /*
-               * "Create one from here" is passed **only on a domain node**.
-               *
-               * Domain → capability is expressed by one `domain:` key in the new
-               * document, so no new write semantics are needed. Other combinations
-               * (capability → element, say) require editing the parent document's list,
-               * which makes it *editing someone else's document* rather than *creating*
-               * — a different act, and drawing a door where that cannot happen is a
-               * false affordance.
-               *
-               * It is **visible on the sample too**. Owner, 2026-08-03: *"Show it in sample mode
-               * as well, and have pressing it lead into connecting a folder."* (show it in sample mode
-               * as well, and have pressing it lead into connecting a folder). Previously
-               * the tile vanished entirely when `canCreateNode` was false, which is why
-               * the owner asked *"Why did creating a node right here disappear?"* (why did
-               * creating a node right here disappear?) — a locked feature that quietly
-               * goes away becomes "was that ever there?". The same pattern was already
-               * fixed once on the recent-changes chip. Now the place stays and pressing
-               * it offers **the route to a folder**.
-               */
+              // Only on a domain node: domain -> capability is one `domain:` key, while other
+              // pairs edit the parent's document, a different act. It shows on the sample too and
+              // leads to connecting a folder, since a locked feature that vanishes reads as never
+              // having existed.
               onCreateLinked={
                 canvasSelectedGraphNode?.kind === "domain" && !canCreateNode
                   ? () => setNeedsVaultReason("createNeedsVault")
                   : canCreateNode && canvasSelectedGraphNode?.kind === "domain"
                     ? () => {
-                      // The domain's own address, the value the composer's picker offers
-                      // for it — the graph id's bare tail wrote a second spelling of the
-                      // same relation (map-edit QA D10, 2026-09-26).
+                      // The domain's own address; the bare id tail wrote a second spelling of the
+                      // relation.
                       setCreateNodeSeedDomain(resolveNodeVaultRef(canvasSelectedGraphNode));
                       setCreateNodeDefaultKind("capability");
                       openCreateNode();
                     }
                     : undefined
               }
-              // In environments without an agent surface (web), we do not inject; handoff copy
-              // takes over as the primary action. We do not draw a door that will not open.
+              // Without an agent surface (web) handoff copy is the primary action; no door that
+              // will not open.
               onAskAgent={llmBridgeAvailable ? askAgentAboutSelectedNode : undefined}
               meaningReview={{ label: tWorkbench('meaningTitle'), onOpen: openMeaningWorkbench }}
               suppressPrimaryAction={acpPresentationVisible}
@@ -426,9 +374,7 @@ export function TopologyInspectorSurfaces({
                 ? handleProjectSourceAction
                 : undefined}
               onEnterRealm={
-                // The secondary discovery path is offered only for a container node
-                // (one with children) outside any realm. For a leaf, or when already
-                // inside a realm, it is omitted and no button renders.
+                // Only for a container outside any realm.
                 resolvedRealmSlug === null && panelDatasheetModel.groups.contains.total > 0
                   ? () => handleEnterRealm(panelDatasheetModel.nodeId)
                   : undefined
@@ -438,8 +384,7 @@ export function TopologyInspectorSurfaces({
                   ? () => setFullDetailSlug(selectedOntologyNode.id)
                   : undefined
               }
-              // Slice C — non-developer (plain) mode treats handoff copy action + original
-              // path subline (slice B) as developer chrome and hides them.
+              // Plain mode hides handoff copy and the path subline as developer chrome.
               showHandoff={!audiencePlain}
               showSourcePath={!audiencePlain}
               className="col-start-1 row-start-1 max-lg:w-[min(520px,calc(100vw-1.5rem))]"
@@ -466,10 +411,8 @@ export function TopologyInspectorSurfaces({
         </div>
       </div>
     ) : null}
-    {/* The edge hover card renders even while a node has focus — user report: "with
-            a node clicked, hovering a line shows no tooltip". It is mutually exclusive
-            with the edge popover only, since that would be two surfaces for the same
-            meaning. */}
+    {/* Shows even with node focus; exclusive only with the edge popover, which carries the same
+       meaning. */}
     {hoverEdgeCardModel && !selectedEdge && !createNodeOpen ? (
       <OntologyMapEdgeHoverCard
         sentence={hoverEdgeCardModel.sentence}
@@ -481,9 +424,7 @@ export function TopologyInspectorSurfaces({
         avoid={hoverEdgeCardModel.avoid}
       />
     ) : null}
-    {/* Cluster-chip hover tooltip, mutually exclusive with the edge card and the
-            create composer. (The pointer handler already clears the edge hover when a
-            chip is hovered; this is belt and braces.) */}
+    {/* Exclusive with the edge card and the create composer. */}
     {clusterHoverCardModel && !hoverEdgeCardModel && !createNodeOpen ? (
       <OntologyMapClusterHoverCard
         sentence={clusterHoverCardModel.sentence}
@@ -491,16 +432,14 @@ export function TopologyInspectorSurfaces({
         y={clusterHoverCardModel.y}
       />
     ) : null}
-    {/* This one has an exit: it used to vanish in one frame on close, having an
-            entrance and no way out. `Surface` owns the exit window, the exit class, and
-            `inert`, while `useHeldValue` holds the model through it. */}
+    {/* `Surface` owns the exit window, class and `inert`; `useHeldValue` holds the model through
+       it. */}
     {heldEdgePanelModel ? (
       <Surface
         open={edgePanelOpen}
         data-testid="topology-edge-popover-positioner"
-        /* The same reserved right as the node inspector: with the dock open the rule in
-                           globals.css moves this card left by the dock's width, so the two never cover
-                           each other (measured overlapping at 1512 before the role was set). */
+        // With the dock open, globals.css moves this card left by the dock width, like the node
+        // inspector.
         data-fixed-surface-role="selected-node-inspector"
         className="topology-ui-scale fixed inset-x-3 top-[72px] z-30 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
       >
@@ -549,10 +488,8 @@ export function TopologyInspectorSurfaces({
         />
       </Surface>
     ) : null}
-    {/* Same skeleton as the edge panel: once a held model exists the slot stays, and
-            `Surface`'s `open` decides visibility (closed, it renders `null`, so the DOM
-            cost is zero). A separate mount flag would mean calling setState inside an
-            effect, which is a cascading render. */}
+    {/* A held model keeps the slot and `Surface`'s `open` decides visibility; a separate mount
+       flag would need setState in an effect. */}
     {heldContextMenu ? (
       <OntologyMapContextMenu
         open={Boolean(contextMenuNode && contextMenuModel)}
@@ -584,16 +521,11 @@ export function TopologyInspectorSurfaces({
         }}
         onClose={closeContextMenu}
         ariaLabel={t("nodeDatasheet.contextMenuAriaLabel", { name: heldContextMenu.model.title })}
-        // The menu held focus; once it has gone the canvas takes it back, so the
-        // arrow keys walk the map again from where they were.
+        // The canvas takes focus back so arrow keys walk the map again.
         onExited={() => returnFocusIfDropped("ontology-map-canvas")}
       />
     ) : null}
-    {/* Full-bleed surface, **opacity only** (`motion="overlay"`). It used to have
-            `map-overlay-in` applied by hand and therefore only a way in; closing made the
-            whole screen vanish in one frame, giving the protagonist zero frames while the
-            map got 200 ms. `Surface` now owns the matching way out (`map-overlay-out`),
-            `inert`, and the exit window. */}
+    {/* Opacity only (`motion="overlay"`); `Surface` owns the matching exit, `inert` and window. */}
     {heldFullDetailA1Model && FullDetailCard ? (
       <Surface
         open={fullDetailOpen && fullDetailA1Model !== null}

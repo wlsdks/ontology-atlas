@@ -2,19 +2,9 @@ import type { DoNextHandoffProse } from "./do-next-queue";
 import type { MeaningGapProse } from "./meaning-gap-rows";
 
 /**
- * The locale-resolved handoff prose — typed locale data, deliberately NOT in
- * `messages/*.json`.
- *
- * These strings interleave literal MCP calls (`query_ontology({operation:…})`)
- * with prose, and the messages catalog requires every entry to compile as ICU —
- * the braces read as malformed arguments there (the `validate-messages` gate
- * exists precisely so a malformed entry cannot render a raw key path). Keeping
- * them as a typed per-locale record follows the same rule as `display_<locale>`
- * frontmatter: localized data lives in data, and the strings stay verbatim so
- * the copied payload runs as written. They were previously hardcoded Korean in
- * the builders, so an English-locale user copied Korean operating instructions
- * (bug sweep 2026-09-01); `%ref%`-style tokens are filled by
- * `fillHandoffTemplate`.
+ * Handoff prose as typed locale data, not in `messages/*.json`: the strings embed literal MCP calls whose braces fail
+ * the catalog's ICU compile (`validate-messages`). Kept verbatim so the copied payload runs as written; `%ref%`-style
+ * tokens are filled by `fillHandoffTemplate`.
  */
 
 type HandoffLocale = "en" | "ko";
@@ -29,11 +19,7 @@ export interface InsightsHandoffProse extends DoNextHandoffProse, MeaningGapPros
   tabComposition: string;
   tabConnections: string;
   tabBoundaries: string;
-  /*
-   * ⚠️ Renamed with the tab on 2026-09-09. The key kept pointing at a *maintenance* plan
-   * after the tab became growth, so the one act-out on the screen handed an agent orphan
-   * hunting while the figure beside it drew four accumulating layers (design-interaction).
-   */
+  // Growth's handoff, keyed to the tab's current question.
   tabGrowth: string;
   tabFlow: string;
 }

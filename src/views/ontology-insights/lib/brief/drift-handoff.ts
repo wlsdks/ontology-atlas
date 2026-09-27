@@ -1,26 +1,14 @@
 import type { BriefLineDetail } from './brief-model';
 
-/** How many concepts one request may name. Beyond this the agent is reading, not checking. */
+/** Concepts one request may name; beyond this the agent is reading, not checking. */
 const DRIFT_HANDOFF_LIMIT = 5;
 
 /**
- * **The request a person hands their agent about drifted meaning.**
- *
- * The brief can name which concepts stand on code that moved; the work of judging whether
- * the recorded meaning is now wrong is reading, and that is what a coding agent is for. So
- * the line offers one bounded request naming the exact concepts, the exact files, and both
- * dates — the same facts the screen shows, in the words the agent will need.
- *
- * It asks for a judgement and an explicit proposal, never a write: Atlas writes pause on the
- * typed review card, and a request that told an agent to "fix the vault" would be asking for
- * approval the person has not given. The person owns Send; nothing here submits.
- *
- * ⚠️ **It says where the unknown goes, because the cheapest repair is deletion.** Asked only to
- * "propose the sentence to change", an agent that cannot verify a claim proposes striking it, and
- * the vault then reads as if that boundary had been checked and found absent. The vault has a
- * place for the difference — the concept's `## Uncertainty` line, which the MCP write door names
- * as the repair for an unstated unknown — so the request names it, and asks for the file the
- * judgement was read in, since a quoted line with no file cannot be rechecked.
+ * The request a person hands their agent about drifted meaning: one bounded request naming the concepts, files
+ * and both dates the screen shows. It asks for a judgement and a proposal, never a write, since Atlas writes pause
+ * on the review card and the person owns Send. It names the `## Uncertainty` line for what cannot be verified,
+ * or an agent that cannot verify a claim deletes it and the vault reads as checked; it asks for the file each
+ * judgement was read in, since a quote without a file cannot be rechecked.
  */
 export function buildDriftHandoff({
   rows,
@@ -35,14 +23,8 @@ export function buildDriftHandoff({
   const named = rows.slice(0, limit);
   const hidden = rows.length - named.length;
   const ko = locale === 'ko';
-  /*
-   * ⚠️ **The slug, because that is what the tool takes.** The request told the agent to read the
-   * recorded meaning with `get_concept` and then named the concept by its display title, which
-   * `get_concept` does not accept — the agent had to go looking for the document before it could
-   * read anything (2026-09-20). The walk already knew the slug; carrying it turns the request into
-   * calls the agent can make. A concept with no document of its own has no slug, and the request
-   * says so rather than inventing one.
-   */
+  // Names each concept by slug, which `get_concept` takes; a concept without its own document has none, and the
+  // request says so.
   const identify = (row: (typeof named)[number]) =>
     row.slug ? `${row.name} (${row.slug})` : row.name;
   const lines = named.map((row) =>

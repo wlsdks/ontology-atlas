@@ -1,10 +1,7 @@
 /**
- * Corrects the health signal for containment the project-deps lens cannot see.
- * `detectOrphanProjects` ignores ontology containment, but a vault's project
- * root owns whole domains and capabilities through `contains` edges even with
- * an empty `project.dependencies`, so it is not unattached. One false positive
- * is enough to destroy trust in the maintenance entry point, because it becomes
- * the chip's only "needs fixing" item on the first click.
+ * A project root owns domains through `contains` edges even with empty `project.dependencies`,
+ * so `detectOrphanProjects` would flag it; one false positive becomes the chip's only "needs
+ * fixing" item.
  */
 
 interface OntologyEdgeEndpoints {
@@ -12,11 +9,7 @@ interface OntologyEdgeEndpoints {
   to: string;
 }
 
-/**
- * Drops projects that take part in an ontology edge in either direction. Both
- * spellings coexist on the ontology side — a bare slug and a `project:` prefix —
- * so both are matched.
- */
+/** Both spellings exist on the ontology side, a bare slug and a `project:` prefix. */
 export function filterOntologyConnectedOrphans<T extends { slug: string }>(
   orphans: readonly T[],
   ontologyEdges: readonly OntologyEdgeEndpoints[],

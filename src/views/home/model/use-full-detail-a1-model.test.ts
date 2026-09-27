@@ -3,16 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
 /**
- * Regression guard for "a closed full-detail card traversed the graph on every
- * click".
- *
- * Measured 2026-07-28 (isolated Chromium, dogfood vault): one node click ran
- * `buildConnections` 11 times, 9 of them for a full-detail card **not on
- * screen** — including a depth-3 BFS and a full edge scan per neighbour row.
- *
- * This test locks the **count**, not milliseconds: absolute ms differ per
- * machine and flake, while "closed means zero" is true on every machine.
- * Removing the `open` gate fails it immediately.
+ * Locks the traversal count, not milliseconds: "closed means zero" holds on every machine, and
+ * removing the `open` gate fails it.
  */
 
 const groupsSpy = vi.fn(() => ({
@@ -67,8 +59,7 @@ const nodeFocus = {
   mentionedInSlug: null,
 } as never;
 
-// Stable references: the hook's memo contract holds only when input identity is
-// stable, and HomePage's real inputs are all useMemo/useCallback derivations.
+// Stable references, as HomePage's real inputs are memoised.
 const insight = { nodes, edges };
 const changedSlugs: ReadonlySet<string> = new Set<string>();
 const onSaveExplanation = () => undefined;
@@ -90,14 +81,14 @@ function render(open: boolean) {
   );
 }
 
-describe("useFullDetailA1Model — 닫힌 표면은 그래프를 순회하지 않는다", () => {
+describe("useFullDetailA1Model: a closed surface does not traverse the graph", () => {
   beforeEach(() => {
     groupsSpy.mockClear();
     reachSpy.mockClear();
     codeLocationsSpy.mockClear();
   });
 
-  it("open=false 면 모델은 null 이고 그래프 순회는 0회다", () => {
+  it("open=false gives a null model and zero graph traversals", () => {
     const { result } = render(false);
     expect(result.current).toBeNull();
     expect(groupsSpy).toHaveBeenCalledTimes(0);
@@ -105,7 +96,7 @@ describe("useFullDetailA1Model — 닫힌 표면은 그래프를 순회하지 �
     expect(codeLocationsSpy).toHaveBeenCalledTimes(0);
   });
 
-  it("open=true 면 같은 입력으로 모델을 조립하고 순회는 각 1회다", () => {
+  it("open=true assembles the model from the same input with one traversal each", () => {
     const { result } = render(true);
     expect(result.current).not.toBeNull();
     expect(result.current?.node.id).toBe("capability:alpha");
@@ -115,7 +106,7 @@ describe("useFullDetailA1Model — 닫힌 표면은 그래프를 순회하지 �
     expect(codeLocationsSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("같은 선택을 다시 렌더해도 순회가 늘지 않는다 (memo 계약)", () => {
+  it("rerendering the same selection adds no traversal (memo contract)", () => {
     const { result, rerender } = render(true);
     rerender();
     rerender();

@@ -2,23 +2,13 @@ import type { BriefLineDetail } from './brief-model';
 import type { EvidenceRow } from '@/shared/lib/evidence-states';
 
 /**
- * **The named concepts under each evidence line.**
- *
- * A count with no way to reach the concept, the file and the date sends a reader back to the
- * agent's summary, which is the failure this brief exists to end (PO evidence seat,
- * 2026-09-19). These are the rows the line opens into.
- *
- * ⚠️ **One row per concept, because the sentence above it counts concepts.** An earlier version
- * pushed one row per changed file, so a concept citing four moved files filled four rows: the
- * line read "3 concepts" while the disclosure listed eleven and the hidden-count line under it
- * agreed with the disclosure rather than with the sentence (2026-09-20). Each row carries the
- * newest path, which is the one the verdict rests on, and the concept's own verdict decides
- * which list it joins — a concept with both a vanished path and a moved one is counted once, as
- * missing, exactly as `ontology-brief` counted it.
+ * The named concepts under each evidence line, one row per concept because the sentence counts concepts. Each row
+ * carries its newest path, the one the verdict rests on, and the concept's verdict picks its list: a concept with
+ * a vanished path and a moved one counts once, as missing, as `ontology-brief` counts it.
  */
 export function buildEvidenceDetails(input: {
   rows: readonly EvidenceRow[];
-  /** Concept id → display title. A missing title falls back to the id. */
+  /** Concept id to display title; a missing title falls back to the id. */
   titleById: ReadonlyMap<string, string>;
   /** Where a named concept opens. */
   hrefOf?: (id: string) => string;
@@ -50,7 +40,7 @@ export function buildEvidenceDetails(input: {
 
 type EvidenceFile = { path: string; changedAt: string };
 
-/** The entry the verdict rests on: the one that changed last. `undefined` for an empty list. */
+/** The entry the verdict rests on, the most recently changed; `undefined` for an empty list. */
 function newest(entries: readonly EvidenceFile[]): EvidenceFile | undefined {
   return entries.reduce<EvidenceFile | undefined>(
     (best, entry) => (!best || (Date.parse(entry.changedAt) || 0) > (Date.parse(best.changedAt) || 0) ? entry : best),

@@ -7,20 +7,10 @@ const KINDS = ["project", "domain", "capability", "element"] as const;
 type Kind = (typeof KINDS)[number];
 
 /**
- * **The lit 3D map's key** (2026-09-25) — what each colour of light is, and what the
- * evidence light is standing on.
- *
- * The light on the 3D map carries two facts, and a reader cannot be asked to guess either:
- * the **hue** is the node's kind (the product's kind ramp, the same one every kind chip
- * wears), and the **brightness** is its evidence — current emits, stale emits less and wears
- * an amber ring, unknown emits nothing and wears a dashed ring. The counts are the
- * measurement's, over the concepts on the map; when nothing was measured the note says why,
- * so an unlit map is never read as a map of current concepts.
- *
- * One strip along the bottom of the canvas, between the panels, that wraps rather than cuts.
- * It used to be a 176px card in the bottom-left corner, and the camera did not know it was
- * there: at 1040 it stood over nine drawn nodes (interaction audit, 2026-09-25). The strip is
- * marked `data-map-fit-obstacle="bottom"`, and the 3D fit keeps the drawing above it.
+ * The lit 3D map's key: hue is the node's kind, brightness its evidence (stale dims with an amber
+ * ring, unknown emits nothing with a dashed ring). Counts are over the concepts on the map; with
+ * nothing measured the note says why. A bottom strip marked `data-map-fit-obstacle="bottom"`, so
+ * the 3D fit stays above it.
  */
 export function TopologyLightLegend({
   evidence,
@@ -28,7 +18,7 @@ export function TopologyLightLegend({
   kindLabels,
 }: {
   evidence: MapEvidence;
-  /** The concepts on the map — the counts are over these. */
+  /** The counts are over these. */
   nodeIds: readonly string[];
   kindLabels: Readonly<Partial<Record<Kind, string>>> | null;
 }) {
@@ -61,14 +51,8 @@ export function TopologyLightLegend({
       aria-label={t("legendLabel")}
       className="pointer-events-none absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px+16px)] right-[max(calc(var(--map-safe-inset-right)*1px),calc(var(--map-live-inset-right,0px)+16px))] z-20 hidden justify-center md:flex"
     >
-      {/*
-        **One row below `xl`** (2026-09-25). The fit keeps the drawing above this strip, so every
-        row it wraps to is canvas the map gives up: at 1040 the strip took two rows (three on the
-        CI runner's fonts), reserved 72px and more, and Strata packed its planes until nodes on one
-        plane fused. Below `xl` the strip speaks at the legend size with tighter gaps, and the
-        availability note is read to assistive technology rather than drawn; the "Unknown" count
-        beside it still says the same thing on screen.
-      */}
+      {/* One row below `xl`: every wrapped row is canvas the fit gives up. The availability
+         note goes to assistive technology there; the "Unknown" count still shows it. */}
       <div className="flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-1 text-caption text-[color:var(--map-panel-text-secondary)] xl:gap-x-3 xl:px-3.5 xl:py-1.5 xl:text-label">
         {kindLabels ? (
           <>
