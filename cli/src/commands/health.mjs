@@ -66,7 +66,6 @@ export async function runHealth(args) {
         ` ${COLORS.dim}${c.message ?? ''}${COLORS.reset}\n`,
     );
   }
-  // Highlights dependency cycles and disconnected islands, naming the drill-down command for each failing check.
   if (sum.dependencyCycles) {
     process.stdout.write(`\n${COLORS.red}cycles ${sum.dependencyCycles}${COLORS.reset}: run \`cycles\` for detail\n`);
   }

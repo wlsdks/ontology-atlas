@@ -1,18 +1,6 @@
-// `ontology-atlas moment [vault]` — Slice 0 magic-moment instrumentation readout.
-// North star (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9): reaching "the first
-// moment, right after absorb or init, when an agent answers by citing vault
-// nodes" in ≤5 minutes.
-//
-// Reads `.ontology-atlas/telemetry.local.json` (written by `init`, `absorb
-// --write`, and `agent-brief` — see ../lib/telemetry.mjs) and prints the
-// elapsed init/absorb → first-agent-read time, if it has been recorded yet.
-//
-// --mark manually records the moment right now. This is the fallback for
-// workflows where an AI agent calls the MCP tools (query_ontology
-// operation:'agent_brief' / get_concept) directly instead of going through
-// this CLI: both are declared read-only (readOnlyHint: true) in the MCP
-// tool inventory, so adding a disk write as a side effect there would
-// quietly break that contract — they are intentionally NOT instrumented.
+// `ontology-atlas moment [vault]`: time from init/absorb to the first agent read (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9),
+// from `.ontology-atlas/telemetry.local.json` (../lib/telemetry.mjs). `--mark` records it by hand for agents calling
+// MCP read tools directly, which stay uninstrumented because they declare readOnlyHint: true.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';

@@ -1,5 +1,3 @@
-// `ontology-atlas project-map <project> [vault]` — domain-by-domain project map.
-// MCP `query_ontology({operation: 'project_map'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';

@@ -1,15 +1,7 @@
 #!/usr/bin/env node
-// ontology-atlas CLI — vault scaffold + setup helper.
-//
-// `ontology-atlas init [folder]` seeds a frontmatter-based ontology vault in the
-// folder and prints the MCP registration guide. An empty folder is used as-is, a
-// missing one is created, and existing files are left alone (a collision skips
-// with a notice).
-//
-// This CLI is not published to npm (docs/DECISIONS.md 2026-07-27) — it runs from a
-// source checkout as `node cli/src/index.mjs <command>`. The help below writes
-// commands as `ontology-atlas <command>` to keep the table narrow; the help's
-// first paragraph states the real invocation.
+// ontology-atlas CLI: vault scaffold and setup helper. Not published to npm (docs/DECISIONS.md 2026-07-27); it runs
+// from a checkout as `node cli/src/index.mjs <command>`. The help writes `ontology-atlas <command>` to stay narrow
+// and states the real invocation first.
 
 import { COLORS } from './lib/colors.mjs';
 import { cliInvocation } from './lib/self-invocation.mjs';
@@ -52,14 +44,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_ROOT = resolve(__dirname, '..', 'templates', 'vault');
 
 /**
- * Starter body locale. The file set and the frontmatter
- * (slug/kind/title/display_*) are **identical** across locales and only the prose
- * body differs, so whichever locale created it yields the same graph and the
- * canonical `title` — search's single source of truth — is unchanged.
- *
- * The web workbench knows the UI language; the CLI does not, so it takes an
- * explicit flag. The default stays English, so an existing user's `init` result
- * does not change.
+ * Starter body locale: only the prose differs across locales, so every locale yields the same graph and
+ * canonical `title`. The CLI cannot see the UI language, so it takes a flag; English is the default.
  */
 const TEMPLATE_ROOTS = {
   en: TEMPLATE_ROOT,
@@ -273,10 +259,7 @@ function parseInitArgs(args) {
   }
   const positional = [];
   let quickStart = false;
-  // A folder of documents, not a codebase: `sources/` and `wiki/` only, no node folders,
-  // no project file, no agent files. The wiki stands on its own until a map is wanted.
   let documents = false;
-  // Starter body language. The file set and frontmatter are identical; only the prose differs.
   let locale = 'en';
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
@@ -288,9 +271,6 @@ function parseInitArgs(args) {
       documents = true;
       continue;
     }
-    // Both value forms, like every other command. Supporting only `=` made the
-    // space form fail with the self-contradictory "unknown flag: --locale. Did
-    // you mean --locale?" (bug sweep 2026-09-01).
     if (arg === '--locale') {
       const value = args[i + 1];
       if (value === undefined || value.startsWith('-')) {
@@ -460,22 +440,9 @@ async function runInit(targetArg, opts = {}) {
     return 2;
   }
 
-  // Where the agent runs decides where its procedures go.
-  //
-  // The starter carries three skills. They belong wherever the coding agent is
-  // started, and that is the repository root — Claude Code discovers skills from
-  // the root `.claude/skills/`, not from an arbitrary sub-folder. When the vault
-  // *is* the root (`init .` in a vault-only repo) the template lands them in the
-  // right place already. When it is nested, which is the ordinary case for a
-  // code repository, copying them into the vault would leave three files nobody
-  // can invoke while the README promises they appear "with no extra setup". So
-  // in that case they are skipped here and installed at the root below.
-  // ⚠️ Same containment rule as the agent configs below (`cwdBindingScope`).
-  // Measured 2026-09-04: `init <folder outside cwd>` run from this repository
-  // wrote six skill files into *this repository's* `.claude/skills/` and
-  // `.agents/skills/` while the config writer, one screen lower, correctly
-  // refused to touch cwd for the same reason. A vault outside cwd is its own
-  // root: its skills go with it, and cwd is left exactly as it was.
+  // Skills go where the coding agent starts, the repository root: Claude Code reads the root `.claude/skills/`.
+  // A nested vault skips them here and they install at the root below. Same containment rule as the agent
+  // configs (`cwdBindingScope`): a vault outside cwd is its own root, and cwd is left untouched.
   const skillsScope = cwdBindingScope(realpathOrSelf(cwd()), realpathOrSelf(target));
   const vaultIsRepoRoot = skillsScope.reason === 'same';
   const skillsStayInVault = vaultIsRepoRoot || skillsScope.reason === 'outside';
@@ -484,10 +451,9 @@ async function runInit(targetArg, opts = {}) {
   // agent reaching the folder is how pages get compiled.
   const installSkills = !documentsOnly;
   const skillsRelativeRoot = join('.claude', 'skills');
-  // `--documents`: only the wiki's furniture comes from the template. The rest of the tree
-  // — node folders, `project.md`, the agent files and skills — is the map's scaffolding,
-  // and a person who opened Atlas on a folder of documents did not ask for a map. The
-  // folder reads as `sources/` and `wiki/`, which is the whole shape of a wiki on its own.
+  // `--documents`: only the wiki's furniture comes from the template. Node folders, `project.md`,
+  // the agent files and skills are the map's scaffolding, which a person who opened a folder of
+  // documents did not ask for.
   const wikiRoot = 'wiki';
   const documentsSkip = (rel) => rel !== wikiRoot && !rel.startsWith(`${wikiRoot}${sep}`);
   const { created, skipped } = copyTree(templateRoot, target, {
@@ -500,32 +466,22 @@ async function runInit(targetArg, opts = {}) {
   // first minute tells the person where files go without a sentence.
   mkdirSync(join(target, 'sources'), { recursive: true });
 
-  // The same three skills, put where the agent will actually look for them.
-  // Existing files are preserved: a person who has already written their own
-  // `atlas-review` keeps it.
-  //
-  // Two trees, one source. Claude Code reads `.claude/skills/`; Codex and Cursor
-  // read `.agents/skills/` and never look inside `.claude/`. `agent-setup`
-  // advertises all three clients and the README promises the skills appear with
-  // no extra setup, so installing only the Claude tree left two of the three
-  // supported clients with the server wired and no procedure at all. Copying
-  // from one template directory into both keeps them byte identical by
-  // construction rather than by a checker on a second committed copy.
+  // The same skills where the agent will look, keeping any file a person already wrote. Claude Code reads
+  // `.claude/skills/`; Codex and Cursor read only `.agents/skills/`. Copying from one template into both
+  // keeps them identical by construction.
   const agentsSkillsRelativeRoot = join('.agents', 'skills');
   const installedSkills = [];
   const skillsSource = join(templateRoot, skillsRelativeRoot);
   if (installSkills && existsSync(skillsSource)) {
     for (const name of readdirSync(skillsSource)) installedSkills.push(name);
-    // Where the agent will be started from: cwd when the vault sits inside it,
-    // the vault itself when the vault is its own root or lies elsewhere.
-    const skillsRoot = skillsStayInVault ? target : cwd();
+    const agentStartDir = skillsStayInVault ? target : cwd();
     const destinations = skillsStayInVault
       // The template already wrote `.claude/skills` here; only the mirror is missing.
       ? [agentsSkillsRelativeRoot]
       : [skillsRelativeRoot, agentsSkillsRelativeRoot];
     const written = [];
     for (const relativeRoot of destinations) {
-      if (copyTree(skillsSource, join(skillsRoot, relativeRoot)).created > 0) written.push(relativeRoot);
+      if (copyTree(skillsSource, join(agentStartDir, relativeRoot)).created > 0) written.push(relativeRoot);
     }
     if (written.length > 0) {
       const where = skillsStayInVault
@@ -550,14 +506,8 @@ async function runInit(targetArg, opts = {}) {
   }
   const clientBindingIssues = [];
 
-  // .mcp.json — wired to *this* vault. Two locations covered:
-  //   1. cwd (codebase root) — typical "open myproject in Claude Code" flow.
-  //      OATLAS_VAULT points to the vault sub-folder relative to cwd.
-  //   2. vault target — for "open the vault folder itself in Claude Code"
-  //      flow. OATLAS_VAULT='.' (vault is cwd).
-  // Existing parseable configs keep every unrelated server/section while the
-  // single ontology-atlas binding is moved to this requested vault. Malformed
-  // or ambiguous configs remain untouched and receive a merge example.
+  // .mcp.json is wired to this vault in cwd and in the vault itself; parseable configs keep every
+  // unrelated server, and malformed or ambiguous ones stay untouched and get a merge example.
   function mcpConfigForVault(omotVault, repoRoot) {
     return {
       mcpServers: {
@@ -643,12 +593,9 @@ async function runInit(targetArg, opts = {}) {
     }
   }
 
-  // macOS exposes the same temporary directory through aliases such as
-  // `/tmp` and `/private/tmp`. Mixing an aliased absolute target with the
-  // canonical process cwd makes `relative()` produce `/private/private/...`
-  // when the generated config is resolved from the vault. Both directories
-  // exist after scaffolding, so calculate every config path in one canonical
-  // coordinate system.
+  // macOS aliases temporary directories (`/tmp` and `/private/tmp`), and mixing an aliased target
+  // with the canonical cwd makes `relative()` produce `/private/private/...`. Both directories exist
+  // now, so every config path is computed from their realpaths.
   const cwdPath = realpathSync(cwd());
   const canonicalTarget = realpathSync(target);
   let vaultRepoArg = relative(canonicalTarget, cwdPath) || '.';
@@ -657,20 +604,11 @@ async function runInit(targetArg, opts = {}) {
   writeMcpJson(target, '.', vaultRepoArg, 'vault');
   writeCodexConfig(target, '.', vaultRepoArg, 'vault');
 
-  // 2. cwd (codebase root) — only when the vault is created *inside* it.
-  //
-  // ⚠️ The condition used to be merely "cwd is not the target", which is true of every unrelated
-  // directory on the disk. Measured 2026-08-24: running `init <somewhere-else>` from this repository
-  // rewrote *this repository's* .mcp.json and .codex/config.toml to point at the scratch vault,
-  // silently. This write exists for "I am standing in my project, put a vault inside it"; when the
-  // vault lands outside cwd, cwd is merely where the person stood. See lib/cwd-binding-scope.mjs.
+  // 2. cwd (codebase root), only when the vault is created inside it. Otherwise cwd is merely where the
+  // person stood, and rewriting its configs would silently rebind an unrelated project (lib/cwd-binding-scope.mjs).
   const bindingScope = cwdBindingScope(cwdPath, canonicalTarget);
-  // Every printed follow-up (`bootstrap --vault`, `mcp-verify`, the absorb
-  // suggestion) and the quick-start bootstrap itself must name the vault that
-  // was just scaffolded. This used to stay '.' whenever the vault landed
-  // outside cwd, so the pasteable commands — including `absorb --write` —
-  // targeted the directory the person happened to stand in, not the new vault
-  // (bug sweep 2026-09-01).
+  // Every printed follow-up and the quick-start bootstrap name the vault just scaffolded, never '.',
+  // or pasted commands (including `absorb --write`) would target wherever the person stood.
   let cwdVaultArg = relative(cwdPath, canonicalTarget) || '.';
   if (bindingScope.write) {
     cwdVaultArg = bindingScope.relativeVault;
@@ -684,8 +622,6 @@ async function runInit(targetArg, opts = {}) {
     );
   }
 
-  // The closing summary must name what was actually wired. It used to promise both folders
-  // unconditionally, which became false the moment cwd was deliberately left alone.
   const wiredFolders = bindingScope.write
     ? 'Both your codebase root (cwd) and the vault folder now have'
     : 'The vault folder now has';
@@ -712,11 +648,8 @@ async function runInit(targetArg, opts = {}) {
     serverCommand.command,
     ...serverCommand.args,
   ].map(shellQuote);
-  // Joined with backslash-newline at the `--env` / `--` boundaries rather than
-  // on one line. Measured 2026-08-31: the single-line form reached 354 columns
-  // and wrapped into five ragged lines in an 80-column terminal, so the one
-  // thing it exists for — being copied — was the thing it could not survive.
-  // The continuation form is a single POSIX command either way.
+  // Joined with backslash-newline at the `--env` / `--` boundaries so it survives copying from an
+  // 80-column terminal; the continuation form is still one POSIX command.
   const codexSetupCommand = codexSetupArgv
     .reduce((lines, token) => {
       if (token === '--env' || token === '--') lines.push([token]);
@@ -735,9 +668,7 @@ async function runInit(targetArg, opts = {}) {
     ...['bootstrap', '.', '--vault', cwdVaultArg].map(shellQuote),
   ].join(' ');
 
-  // Slice 0 magic-moment instrumentation (PRODUCT-PLAN-2026-07.md §4/§9) —
-  // local-only baseline for "vault worth asking" (see lib/telemetry.mjs).
-  // Applies to every init, quick-start or not.
+  // Local-only telemetry baseline for every init (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9, lib/telemetry.mjs).
   stampInitCompleted(target);
 
   if (quickStart) {
@@ -828,13 +759,9 @@ ${COLORS.dim}AI agents and humans now share the same vault. Have fun.${COLORS.re
   return 0;
 }
 
-// `init --quick-start` (Slice 0 — docs/plans/PRODUCT-PLAN-2026-07.md §9): one
-// command = scaffold (already done by the time this runs, no prompts either
-// way) + bootstrap from the repo (reuses the existing analyze/infer-imports
-// pipeline via `runBootstrap` — no reimplementation) + .mcp.json (already
-// unconditional above) + an absorb suggestion when CLAUDE.md/AGENTS.md
-// exists (approval-tier principle: never auto-absorbed, human opt-in only)
-// + a compact next-steps block (3 lines max).
+// `init --quick-start` (docs/plans/PRODUCT-PLAN-2026-07.md §9): scaffold, bootstrap through `runBootstrap`,
+// .mcp.json, an absorb suggestion when CLAUDE.md/AGENTS.md exists (never auto-absorbed), and a next-steps
+// block of at most three lines.
 async function runQuickStart({ target, cwdVaultArg }) {
   stdout.write(`\n${COLORS.bold}quick start${COLORS.reset}: bootstrapping from your repo...\n`);
   const bootstrapCode = await runBootstrap(['.', '--vault', cwdVaultArg]);
@@ -882,9 +809,7 @@ ${COLORS.dim}Do not treat the agent connection or ontology bootstrap as ready un
         `${foundGuides.length > 1 ? 'them' : 'it'} into the vault (never automatic: your call):\n`,
     );
     for (const guide of foundGuides) {
-      // Printed in cyan to be pasted and run, so it must pass through
-      // `cliInvocation()` (the discipline in `self-invocation.mjs`). The «Next»
-      // line just below already used the CLI; only this line carried a dead name.
+      // Printed to be pasted and run, so it goes through `cliInvocation()` (`self-invocation.mjs`).
       const absorbCommand = [
         CLI,
         ...['absorb', guide, '--vault', cwdVaultArg].map(shellQuote),
@@ -924,11 +849,8 @@ async function runCommandHelp(command) {
 }
 
 /**
- * Reads enough of the working directory to say what the person should do next.
- *
- * Deliberately shallow — three `existsSync` calls and one directory read. Bare `atlas` must answer
- * instantly; a start screen that pauses to walk a repository has already failed the moment it exists
- * for.
+ * Reads enough of the working directory to say what to do next. Deliberately shallow (three
+ * `existsSync` calls and one directory read): bare `atlas` must answer instantly.
  */
 function readSituation() {
   const here = process.cwd();
@@ -968,10 +890,8 @@ function readSituation() {
 }
 
 /**
- * ⚠️ **The bare command is not the reference** (owner, 2026-08-25: *"if we are doing this, make it
- * much better"*). It used to print all 56 commands, which answers *"what else can this do"* — a
- * question the person has not asked yet. Somebody typing the bare word has said they do not know the
- * next one, and fifty-six answers put the work back on them. `--help` still has the full list.
+ * The bare command suggests the next step instead of listing every command: typing the bare word
+ * says the person does not know the next one. `--help` keeps the full list.
  */
 function printStartHere(stream = stdout) {
   const situation = readSituation();
@@ -1069,9 +989,7 @@ async function main() {
     `unknown command: ${SUBCOMMAND}.` +
       (commandSuggestion ? ` Did you mean ${commandSuggestion}?` : ''),
   );
-  // One pointer, not the whole command list: the ninety-line help used to bury
-  // the one line that mattered (audit 2026-09-04). An unknown flag on a real
-  // command already prints only that command's usage.
+  // One pointer, not the whole command list; an unknown flag on a real command already prints its usage.
   stderr.write(`Run ${COLORS.bold}${CLI} --help${COLORS.reset} for the command list.\n`);
   return 1;
 }

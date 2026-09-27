@@ -1,20 +1,6 @@
-// Pure git/frontmatter logic behind `ontology-atlas snapshot`; the command file
-// (`cli/src/commands/snapshot.mjs`) is a thin CLI wrapper over this module.
-//
-// Trust charter: the default is a local commit only (nothing transmitted). Every
-// git call takes an injectable `run`, so unit tests need no git process — the
-// same pattern as `git-staged.mjs`. The vault's own tests use a real temporary
-// git repository fixture, because only that proves the partial-commit pathspec
-// behaviour (other staged files stay protected).
-//
-// Safety design — "never add a file outside the vault, never pollute what is
-// already staged": `git commit -m <msg> -- <pathspec>` (git's "partial commit"
-// form) commits working-tree changes and deletions of already-tracked files
-// within the pathspec without touching the rest of the index, so changes staged
-// outside the vault stay staged and do not join this commit. Untracked new files
-// — the ones git does not know yet — are not picked up by a pathspec commit, so
-// untracked files inside the vault are `git add`ed first (files outside it are
-// never touched).
+// Pure git/frontmatter logic behind `ontology-atlas snapshot`; every git call takes an injectable `run`.
+// `git commit -- <pathspec>` commits tracked changes inside the vault without touching what is staged outside
+// it; untracked vault files are `git add`ed first, and nothing outside the vault ever is.
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -47,9 +33,7 @@ export function vaultPathspec(repoRoot, vaultRoot) {
 }
 
 /**
- * Parsed rows of `git status --porcelain -- <pathspec>`.
- * `null` when the git call fails (not a repository, or any other error) — the
- * caller decides what that means.
+ * Parsed rows of `git status --porcelain -- <pathspec>`, or `null` when git fails; the caller decides.
  *
  * @returns {{ index: string, worktree: string, path: string, renamedFrom: string|null }[] | null}
  */
@@ -77,13 +61,8 @@ export function getFullPorcelainStatus({ repoRoot, run = defaultRun }) {
 }
 
 /*
- * `-z` (NUL-separated) output is parsed, never the newline form. With git's
- * default `core.quotePath`, the newline form C-quotes any non-ASCII path —
- * an untracked Korean-named file printed as `?? "\355\225\234..."` — and the
- * old parser kept the quotes and octal escapes literally, so `git add` on that
- * "path" exited 128 and the whole snapshot aborted, misclassified as a hook
- * rejection (bug sweep 2026-09-01, reproduced). `-z` emits raw bytes with no
- * quoting; a rename record is `XY new\0orig\0` (new path first, no ` -> `).
+ * `-z` output only: with the default `core.quotePath` the newline form C-quotes non-ASCII paths
+ * (`?? "\355\225\234..."`), which `git add` rejects. A rename record is `XY new\0orig\0` (new path first).
  */
 function parsePorcelain(out) {
   const tokens = out.split('\0');
@@ -113,9 +92,7 @@ export function classifyChange(row) {
 }
 
 /**
- * Enriches porcelain rows with meaning read from frontmatter.
- * Only `.md` files that were not deleted are read: a deleted file is not on disk,
- * and a non-markdown file has no frontmatter to begin with.
+ * Enriches porcelain rows with frontmatter meaning; only undeleted `.md` files are read.
  */
 export function buildChangeSummary(rows, { repoRoot, vaultRoot }) {
   return rows.map((row) => {
@@ -145,9 +122,8 @@ export function buildChangeSummary(rows, { repoRoot, vaultRoot }) {
 }
 
 /**
- * One-line commit summary in units of meaning — added/modified/removed counts
- * plus up to 3 representative slugs. Example:
- * `ontology snapshot: +2 concepts, ~3 updated (capabilities/foo, elements/bar, +1)`
+ * One-line commit summary in units of meaning, for example
+ * `ontology snapshot: +2 concepts, ~3 updated (capabilities/foo, elements/bar, +1)`.
  */
 export function formatSnapshotSummary(changes) {
   const added = changes.filter((c) => c.status === 'added').length;
@@ -229,11 +205,8 @@ export function getRemoteUrl({ repoRoot, remoteName, run = defaultRun }) {
   return run(['remote', 'get-url', remoteName], repoRoot).trim();
 }
 
-// ── Graceful failure ──────────────────────────────────────────────────────
-// commitPathspec / pushCurrentBranch / pullCurrentBranch propagate execFileSync's
-// throw unchanged. The command wrapper hands that error to `classifyGitError`,
-// which turns a raw stack-trace crash into "one line of cause + what to do next".
-// Pure functions — no I/O here; the wrapper writes to stderr.
+// commitPathspec / pushCurrentBranch / pullCurrentBranch propagate execFileSync's throw; the command
+// wrapper hands it to `classifyGitError`, which turns it into one line of cause plus the next action.
 
 /** Joins an execFileSync error's stderr/stdout/message into one string. */
 function gitErrorText(err) {
@@ -364,13 +337,10 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   };
 }
 
-// ── Obsidian Git parity (read-only, transmission is opt-in) ───────────────
 const LOG_FIELD_SEP = '\x1f';
 
 /**
- * The most recent N commits touching the vault pathspec (git log -- <pathspec>).
- * `null` when there are no commits or the repository errors — the caller then
- * says "no history".
+ * The last N commits touching the vault pathspec, or `null` without commits or on error ("no history").
  * @returns {{ shortHash: string, hash: string, subject: string, relativeTime: string, isoTime: string }[] | null}
  */
 export function getVaultLog({ repoRoot, pathspec, limit = 10, run = defaultRun }) {
@@ -402,10 +372,8 @@ export function getVaultLog({ repoRoot, pathspec, limit = 10, run = defaultRun }
 }
 
 /**
- * Diff of uncommitted changes inside the vault (git diff HEAD -- <pathspec>).
- * Falls back to the index when there is no HEAD (zero commits); null on failure.
- * Untracked new files never appear in a diff, so they are shown separately as a
- * file list.
+ * Uncommitted diff inside the vault (against the index when there is no HEAD); null on failure. Untracked
+ * files never appear in a diff, so they are listed separately.
  */
 export function getVaultDiff({ repoRoot, pathspec, run = defaultRun }) {
   try {
@@ -420,9 +388,8 @@ export function getVaultDiff({ repoRoot, pathspec, run = defaultRun }) {
 }
 
 /**
- * Pulls the current branch from its upstream (opt-in). Conflicts,
- * non-fast-forwards, and a missing remote propagate as a throw, which the wrapper
- * converts gracefully through `classifyGitError`.
+ * Pulls the current branch from its upstream (opt-in). Failures throw, and the wrapper explains them
+ * through `classifyGitError`.
  */
 export function pullCurrentBranch({ repoRoot, run = defaultRun }) {
   return run(['pull'], repoRoot);

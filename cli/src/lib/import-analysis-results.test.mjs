@@ -639,7 +639,7 @@ describe('import-analysis-results', () => {
   });
 });
 
-it('infer_imports module evidence는 bounded exact file edge 계약을 지킨다', () => {
+it('infer_imports module evidence keeps the bounded exact file-edge contract', () => {
   assert.doesNotThrow(() =>
     assertInferImportsResult({
       rootPath: '/repo',

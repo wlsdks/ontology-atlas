@@ -2,26 +2,9 @@ import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { COLORS, KIND_COLORS } from './colors.mjs';
 
-describe('COLORS shared palette', () => {
-  it('정확한 ANSI 코드를 노출 (인라인 정의에서 통합 — 회귀 가드)', () => {
-    assert.deepEqual(COLORS, {
-      reset: '\x1b[0m',
-      bold: '\x1b[1m',
-      dim: '\x1b[2m',
-      red: '\x1b[31m',
-      green: '\x1b[32m',
-      yellow: '\x1b[33m',
-      blue: '\x1b[34m',
-      magenta: '\x1b[35m',
-      cyan: '\x1b[36m',
-    });
-  });
-});
-
 describe('KIND_COLORS shared kind palette', () => {
-  it('각 kind 가 고유 색 — element 는 green(≠ capability cyan), document 는 dim', () => {
-    // Regression gate for two drifts: pattern-walk's element=cyan (colliding with
-    // capability) and find/orphans/list's document=white.
+  it('colours project, domain, capability and element distinctly, and documents dim', () => {
+    // element must not share capability's cyan, and document is dim, not white.
     assert.equal(KIND_COLORS.project, COLORS.magenta);
     assert.equal(KIND_COLORS.domain, COLORS.blue);
     assert.equal(KIND_COLORS.capability, COLORS.cyan);

@@ -1,8 +1,5 @@
-// R15 follow-up — `ontology-atlas merge <fromSlug> <intoSlug> [vault]`
-// Atomic graph-level merge: every backlink fromSlug → intoSlug, then
-// fromSlug.md is deleted. intoSlug node is preserved as-is (frontmatter +
-// body — use `add`/manual edit if you want to combine bodies).
-// Thin wrapper over MCP merge_concepts (dry-run + confirm pattern).
+// `ontology-atlas merge <fromSlug> <intoSlug> [vault]`: moves every backlink from fromSlug to intoSlug,
+// then deletes fromSlug.md; intoSlug is kept as-is. Thin wrapper over MCP merge_concepts (dry-run + confirm).
 
 import { COLORS } from '../lib/colors.mjs';
 import { formatCapturedSummary } from '../lib/captured-summary.mjs';
@@ -25,10 +22,8 @@ export async function runMerge(args) {
     return 1;
   }
 
-  // The shared resolution order (explicit → OATLAS_VAULT → docs/ontology
-  // auto-detect), like every other vault command. The bare cwd resolve this
-  // used meant a destructive write could target a different vault than the
-  // read/write siblings in the same shell (bug sweep 2026-09-01).
+  // Shared resolution order (explicit → OATLAS_VAULT → docs/ontology), so a destructive write
+  // targets the same vault as its read and write siblings.
   const vaultRoot = resolveVaultRoot(vault);
 
   if (!confirm) {

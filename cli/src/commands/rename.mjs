@@ -1,7 +1,5 @@
-// R15 follow-up — `ontology-atlas rename <oldSlug> <newSlug> [vault]`
-// Atomic graph-level rename: moves the .md, updates `slug:`, rewrites every
-// backlink (frontmatter array entries, inline strings, body links).
-// Thin wrapper over MCP rename_concept (dry-run + confirm pattern).
+// `ontology-atlas rename <oldSlug> <newSlug> [vault]`: moves the .md, updates `slug:` and rewrites every
+// backlink. Thin wrapper over MCP rename_concept (dry-run + confirm).
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -23,14 +21,11 @@ export async function runRename(args) {
     return 1;
   }
 
-  // The shared resolution order (explicit → OATLAS_VAULT → docs/ontology
-  // auto-detect), like every other vault command. The bare cwd resolve this
-  // used meant a destructive write could target a different vault than the
-  // read/write siblings in the same shell (bug sweep 2026-09-01).
+  // Shared resolution order (explicit → OATLAS_VAULT → docs/ontology), so a destructive write
+  // targets the same vault as its read and write siblings.
   const vaultRoot = resolveVaultRoot(vault);
 
   if (!confirm) {
-    // Dry-run preview.
     let preview;
     try {
       preview = await callMcpTool(vaultRoot, 'rename_concept', {
@@ -67,7 +62,6 @@ export async function runRename(args) {
     return 0;
   }
 
-  // Apply.
   let result;
   try {
     result = await callMcpTool(vaultRoot, 'rename_concept', {

@@ -110,8 +110,7 @@ function buildHeartbeat(parsed) {
 function showActivity({ vaultRoot, activityPath, json }) {
   const stored = readVaultSidecarText(vaultRoot, ACTIVITY_FILENAME);
   if (!stored) {
-    // Nothing recorded yet is the ordinary state before the first heartbeat, not
-    // a failure of the read (audit 2026-09-04). `exists: false` carries the fact.
+    // No heartbeat yet is the ordinary state before the first one, not a read failure; `exists: false` says so.
     const result = baseResult({ vaultRoot, sideEffect: false, exists: false });
     if (json) process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     else process.stdout.write(`${COLORS.dim}no heartbeat yet${COLORS.reset} ${ACTIVITY_RELATIVE_PATH} does not exist\n`);
@@ -619,10 +618,8 @@ function printUsage(stream = process.stderr) {
 }
 
 /**
- * Tails the local audit log (`.ontology-atlas/activity.jsonl`). The reader reuses
- * the activity-log module from the ontology-atlas-mcp package through
- * `loadMcpModule`, the one resolution rule the CLI applies to every MCP module:
- * monorepo source checkout first, installed package second.
+ * Tails the local audit log (`.ontology-atlas/activity.jsonl`) with the MCP package's activity-log
+ * module, resolved through `loadMcpModule`.
  */
 async function showActivityLog({ vaultRoot, json, limit }) {
   const { readActivityEntries } = await loadMcpModule('activity-log.mjs');

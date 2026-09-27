@@ -1,14 +1,6 @@
-// Matching logic for the commit preflight (`ontology-atlas preflight`).
-//
-// A vault node's frontmatter points at source files through two fields:
-//   - `path:` (element) — a single source-file path
-//   - `elements:` (capability) — a list of source paths (or ontology slug refs)
-// `mcp/src/detect-drift.mjs` uses that convention forwards (does the node's path
-// exist on disk); this goes backwards — given the files git changed, find the vault
-// nodes referencing those paths. The CLI ships separately and cannot import
-// mcp/src directly (the monorepo relative path is not always there), so it mirrors
-// just the looksLikePath / isOntologySlug decisions. **Change a value here and
-// check mcp/src/detect-drift.mjs in the same pass.**
+// Commit preflight matching: given changed files, find vault nodes whose `path:` or `elements:` name them
+// (mcp/src/detect-drift.mjs goes the other way). The CLI cannot import mcp/src here, so it mirrors
+// looksLikePath / isOntologySlug: change a value here and check mcp/src/detect-drift.mjs in the same pass.
 
 const ONTOLOGY_SLUG_PREFIXES = ['capabilities/', 'domains/', 'elements/', 'documents/'];
 

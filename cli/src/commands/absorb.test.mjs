@@ -18,9 +18,7 @@ import { runAbsorb } from './absorb.mjs';
 import { writeDoc } from '../lib/write-vault.mjs';
 import { readTelemetry, TELEMETRY_RELATIVE_PATH } from '../lib/telemetry.mjs';
 
-// `ontology-atlas absorb` — dry-run default, --write lands the plan,
-// backup + slim-pointer rewrite, injection-suspect exclusion. See
-// docs/plans/PRODUCT-PLAN-2026-07.md §9 Slice 0.
+// `ontology-atlas absorb` (docs/plans/PRODUCT-PLAN-2026-07.md §9).
 
 let tmp;
 let vault;
@@ -152,10 +150,7 @@ describe('runAbsorb --write', () => {
   });
 
   it('a mid-loop write failure rolls the landed sections back — re-running never duplicates', () => {
-    // Bug sweep 2026-09-01: a failure on section 2 left section 1's node on
-    // disk while the source/backup step never ran; the promised safe re-run
-    // then saw the landed slug as taken and re-absorbed it under a -2 suffix.
-    // Two policy sections, so the injected failure lands after one real write.
+    // Two policy sections, so the injected failure lands after one real write and must roll back.
     const TWO_POLICY = (
       '# Demo Guide\n\n' +
       '## Git workflow\n\nCommit messages must follow conventional prefixes.\n\n' +
@@ -177,7 +172,6 @@ describe('runAbsorb --write', () => {
     assert.equal(readFileSync(file, 'utf-8'), TWO_POLICY, 'the source must stay untouched');
     assert.equal(existsSync(`${file}.pre-absorb.bak`), false);
 
-    // And the re-run (nothing injected) produces exactly one node per section, no -2 suffixes.
     const rerun = runAbsorb([file, '--vault', vault, '--write']);
     assert.equal(rerun, 0);
     const written = readdirRecursive(vault).filter((p) => p.endsWith('.md'));
