@@ -19,7 +19,7 @@ const STOPS: { go: { rail?: string; tab?: string; push?: string }; ready: string
   { go: { tab: "agents-tab-mcp" }, ready: '[data-testid="mcp-page"]' },
   { go: { rail: "git" }, ready: '[data-testid="git-page"]' },
   { go: { push: "/en/guide/" }, ready: '[data-testid="gateway-doc-body"]' },
-  { go: { push: "/en/download/" }, ready: '[data-testid="download-stage-map-frame"]' },
+  { go: { push: "/en/download/?hero=three" }, ready: '[data-testid="gateway-hero-object"][data-hero-engine="three"] canvas' },
 ];
 
 async function visit(page: Page, go: (typeof STOPS)[number]["go"], ready: string): Promise<void> {
@@ -34,14 +34,19 @@ async function routerPush(page: Page, url: string): Promise<void> {
   await page.evaluate((to) => (window as unknown as { next: { router: { push: (u: string) => void } } }).next.router.push(to), url);
 }
 
-async function backToMap(page: Page): Promise<void> {
-  await routerPush(page, "/en/topology/?guides=off");
+async function mapHoldsTheFolder(page: Page, hangTimeout?: number): Promise<void> {
   await page.waitForFunction(
     (count) =>
       Number(document.querySelector('[data-testid="ontology-map"]')?.getAttribute("data-source-node-count")) >= count,
     Math.floor(Object.keys(DOCS).length * 0.9),
+    { timeout: hangTimeout },
   );
   await waitForPageSettled(page);
+}
+
+async function backToMap(page: Page): Promise<void> {
+  await routerPush(page, "/en/topology/?guides=off");
+  await mapHoldsTheFolder(page);
 }
 
 async function census(cdp: CDPSession): Promise<{ nodes: number; listeners: number }> {
@@ -60,7 +65,7 @@ test("three tours of every destination leave the map's DOM and listeners flat", 
   await page.goto("/en/topology/?guides=off");
   await page.getByTestId("first-run-starter-open").click();
   await page.getByTestId("vault-guide-pick-existing").click();
-  await backToMap(page);
+  await mapHoldsTheFolder(page, 90_000);
 
   const afterTour: { nodes: number; listeners: number }[] = [];
   for (let tour = 1; tour <= 3; tour += 1) {

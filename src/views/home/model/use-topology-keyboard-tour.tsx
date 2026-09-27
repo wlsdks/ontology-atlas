@@ -27,10 +27,12 @@ const FULL_DETAIL_RETURN = ["map-detail-panel-open-full-detail", "ontology-map-c
 const TOUR_RETURN = ["topology-tour-button", "ontology-map-canvas"] as const;
 
 function tourAnchorResolver(nodes: Parameters<typeof resolveTourAnchorNodeId>[0]) {
+  const graph = new WeakRef(nodes);
   return (anchor: TourAnchor): boolean => {
     if (anchor === null) return true;
     if (anchor.type === "canvas-node") {
-      return resolveTourAnchorNodeId(nodes, anchor.target) !== null;
+      const live = graph.deref();
+      return live !== undefined && resolveTourAnchorNodeId(live, anchor.target) !== null;
     }
     return resolveAnchorRect(anchor.value) !== null;
   };
