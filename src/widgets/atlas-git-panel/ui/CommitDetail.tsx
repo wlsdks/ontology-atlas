@@ -197,6 +197,7 @@ export function CommitDetail({
   );
   const [openFile, setOpenFile] = useState<string | null>(followEntry?.path ?? null);
   const [diff, setDiff] = useState<string | null>(null);
+  const [diffTooLarge, setDiffTooLarge] = useState(false);
   // After a jump the kept selection is scrolled into view once; `nearest` leaves a visible one.
   const detailRef = useRef<HTMLDivElement>(null);
   const revealOnArrival = useRef(follow !== null);
@@ -214,7 +215,9 @@ export function CommitDetail({
     let cancelled = false;
     void gitCommitDiff(vaultPath, hash)
       .then((result) => {
-        if (!cancelled) setDiff(result?.diff ?? "");
+        if (cancelled) return;
+        setDiff(result?.diff ?? "");
+        setDiffTooLarge(result?.tooLarge ?? false);
       })
       // A failed read leaves that section saying "none".
       .catch(() => {
@@ -281,6 +284,7 @@ export function CommitDetail({
         vaultPath={vaultPath}
         document={focusedDocument}
         fallback={focusedFallback}
+        fallbackTooLarge={diffTooLarge}
         source={hash}
         heading={t("changedLines")}
       />
@@ -543,6 +547,7 @@ export function CommitDetail({
                   vaultPath={vaultPath}
                   document={activeDocument}
                   fallback={activeFallback}
+                  fallbackTooLarge={diffTooLarge}
                   source={hash}
                 />
               </div>

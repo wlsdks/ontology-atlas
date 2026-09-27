@@ -760,17 +760,19 @@ pub struct GitDiffResult {
     files: Vec<ChangeEntry>,
     /// New files appear only in the list.
     diff: String,
+    too_large: bool,
 }
 
 /// The largest of this repository's 1,500 vault commits is 565 KB.
 const MAX_TREE_DIFF_BYTES: usize = 2 * 1024 * 1024;
 
-/// The same all-or-nothing rule as `cap_document_diff`.
-fn cap_tree_diff(diff: String) -> String {
-    if diff.len() > MAX_TREE_DIFF_BYTES {
-        String::new()
-    } else {
-        diff
+fn diff_result(files: Vec<ChangeEntry>, diff: String) -> GitDiffResult {
+    let too_large = diff.len() > MAX_TREE_DIFF_BYTES;
+    GitDiffResult {
+        count: files.len(),
+        files,
+        diff: if too_large { String::new() } else { diff },
+        too_large,
     }
 }
 
@@ -1191,19 +1193,15 @@ pub fn git_diff(vault_path: String, include_patch: Option<bool>) -> Result<GitDi
     } else {
         // Falls back to the index when there is no HEAD.
         match run_git(&repo_root, &["diff", "HEAD", "--", &pathspec]) {
-            Ok(out) if out.success => cap_tree_diff(out.stdout),
+            Ok(out) if out.success => out.stdout,
             _ => match run_git(&repo_root, &["diff", "--", &pathspec]) {
-                Ok(out) if out.success => cap_tree_diff(out.stdout),
+                Ok(out) if out.success => out.stdout,
                 _ => String::new(),
             },
         }
     };
 
-    Ok(GitDiffResult {
-        count: changes.len(),
-        files: changes,
-        diff,
-    })
+    Ok(diff_result(changes, diff))
 }
 
 /// One commit's vault-scope patch; separate from `git_diff`, which reads the
@@ -1233,16 +1231,12 @@ pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult
         ],
     )?;
     let diff = if out.success {
-        cap_tree_diff(out.stdout)
+        out.stdout
     } else {
         String::new()
     };
 
-    Ok(GitDiffResult {
-        count: 0,
-        files: Vec::new(),
-        diff,
-    })
+    Ok(diff_result(Vec::new(), diff))
 }
 
 /// Opt-in. Missing upstream, conflict and non-fast-forward return a clean `Err`.
@@ -2568,10 +2562,11 @@ mod tests {
     }
 
     #[test]
-    fn a_tree_diff_past_the_cap_is_dropped_whole() {
-        assert_eq!(cap_tree_diff("+small\n".to_string()), "+small\n");
-        let huge = "+line\n".repeat(MAX_TREE_DIFF_BYTES / 6 + 1);
-        assert_eq!(cap_tree_diff(huge), "");
+    fn a_tree_diff_past_the_cap_is_dropped_whole_and_says_so() {
+        let small = diff_result(Vec::new(), "+small\n".to_string());
+        assert_eq!((small.diff.as_str(), small.too_large), ("+small\n", false));
+        let huge = diff_result(Vec::new(), "+line\n".repeat(MAX_TREE_DIFF_BYTES / 6 + 1));
+        assert_eq!((huge.diff.as_str(), huge.too_large), ("", true));
     }
 
     #[test]

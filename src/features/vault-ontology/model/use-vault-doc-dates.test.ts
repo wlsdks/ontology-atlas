@@ -64,7 +64,7 @@ function manifest(docs: VaultDoc[]): VaultManifest {
 
 const committed = (path: string, lastChangedAt: string | null): GitPathLastChange => ({ path, exists: true, isDir: false, lastChangedAt });
 const change = (path: string): GitChangeEntry => ({ path, status: 'modified', kind: null, slug: path.replace(/\.md$/, ''), renamedFrom: null });
-const diff = (paths: string[]): GitDiffResult => ({ count: paths.length, files: paths.map(change), diff: '' });
+const diff = (paths: string[]): GitDiffResult => ({ count: paths.length, files: paths.map(change), diff: '', tooLarge: false });
 
 function deferred<T>() {
   let resolve!: (value: T) => void;

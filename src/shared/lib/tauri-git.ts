@@ -155,6 +155,7 @@ export interface GitDiffResult {
   files: GitChangeEntry[];
   /** Text diff of tracked files; untracked new files appear only in `files`. */
   diff: string;
+  tooLarge: boolean;
 }
 
 /** Rust `GitPullResult`. */
