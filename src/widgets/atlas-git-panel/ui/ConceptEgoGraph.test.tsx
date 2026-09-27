@@ -39,9 +39,9 @@ function ego(count: number): ConceptEgo {
   };
 }
 
-describe("ConceptEgoGraph — 그린 이웃 수", () => {
+describe("ConceptEgoGraph drawn neighbour count", () => {
   for (const count of [2, 3, 4, 5]) {
-    it(`관계가 한 종류뿐이어도 ${count}개를 다 그린다 (겹침 0)`, () => {
+    it(`draws all ${count} neighbours of a single relation kind without overlap`, () => {
       render(
         <ConceptEgoGraph
           ego={ego(count)}

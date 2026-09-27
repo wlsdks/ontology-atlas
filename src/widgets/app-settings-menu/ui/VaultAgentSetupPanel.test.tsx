@@ -115,7 +115,7 @@ describe('VaultAgentSetupPanel', () => {
     copyTextMock.mockReset();
   });
 
-  it('vault가 loaded가 아니면 렌더하지 않는다', () => {
+  it('renders nothing unless the vault is loaded', () => {
     const { container } = rtlRender(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <TooltipProvider>
@@ -132,7 +132,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('로컬 vault의 AI agent 설정 누락 상태와 복구 버튼을 보여준다', async () => {
+  it('shows missing agent setup for a local vault with a repair button', async () => {
     const localVault = renderPanel();
 
     expect(
@@ -272,7 +272,7 @@ describe('VaultAgentSetupPanel', () => {
     await waitFor(() => expect(localVault.ensureAgentConfigs).toHaveBeenCalledTimes(1));
   });
 
-  it('Tauri 데스크톱 vault 경로가 있으면 mcp-verify 미리보기에 절대경로를 넣는다', () => {
+  it('puts the absolute desktop vault path in the mcp-verify preview', () => {
     renderPanel({
       handle: {
         name: 'ontology',
@@ -287,7 +287,7 @@ describe('VaultAgentSetupPanel', () => {
     );
   });
 
-  it('실제 연결 설정 둘이 유효하면 본보기 파일 없이도 준비됨으로 표시한다', () => {
+  it('shows ready when both real connection configs are valid, without the example file', () => {
     renderPanel({
       agentConfigStatus: {
         mcpJson: true,
@@ -309,7 +309,7 @@ describe('VaultAgentSetupPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('AI 에이전트별 MCP 연결 상태와 확인 명령을 분리해 보여준다', () => {
+  it('shows MCP connection status and the check command per agent', () => {
     renderPanel({
       agentConfigStatus: {
         mcpJson: true,
@@ -342,7 +342,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(within(step3).getByText('codex mcp list로 확인')).toBeInTheDocument();
   });
 
-  it('AI agent setup gate proof에 validation 결과를 반영한다', () => {
+  it('reflects the validation result in the setup gate proof', () => {
     renderPanel(
       {
         agentConfigStatus: {
@@ -366,7 +366,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('AI agent setup gate proof에서 validation 오류를 agent 수정 차단으로 표시한다', () => {
+  it('shows validation errors as blocking agent edits in the setup gate proof', () => {
     renderPanel(
       {
         agentConfigStatus: {
@@ -386,7 +386,7 @@ describe('VaultAgentSetupPanel', () => {
   // reading the number, all a person could do was close the window. The gate checks
   // not only «the link exists» but also «it is absent when clean», because a link
   // that is always there carries no state.
-  it('검사 결과 행이 「할 일」 큐로 가는 길을 준다 (깨끗하면 주지 않는다)', () => {
+  it('links the validation row to the to-do queue when there are findings', () => {
     renderPanel(
       { agentConfigStatus: { mcpJson: true, codexConfig: true, mcpExample: true } },
       { validationSummary: { errorCount: 5, warningCount: 4 } },
@@ -402,7 +402,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(link).toHaveTextContent('할 일에서 보기');
   });
 
-  it('검사 결과가 깨끗하면 「할 일에서 보기」 링크가 없다', () => {
+  it('omits the to-do link when validation is clean', () => {
     renderPanel(
       { agentConfigStatus: { mcpJson: true, codexConfig: true, mcpExample: true } },
       { validationSummary: null },
@@ -410,7 +410,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.queryByTestId('agent-setup-proof-health-link')).toBeNull();
   });
 
-  it('AI agent handoff 전에 vault validation gate를 별도 상태로 보여준다', () => {
+  it('shows the vault validation gate as its own status before agent handoff', () => {
     renderPanel(
       {
         agentConfigStatus: {
@@ -437,7 +437,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('AI agent 설정 파일이 있어도 ontology-atlas MCP 설정이 아니면 점검 대상으로 표시한다', () => {
+  it('flags an agent config without the ontology-atlas MCP entry for review', () => {
     renderPanel({
       agentConfigStatus: {
         mcpJson: true,
@@ -468,7 +468,7 @@ describe('VaultAgentSetupPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('AI agent 설정 패널에서 첫 연결 검증 프롬프트를 복사한다', async () => {
+  it('copies the first-connection verification prompt', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       agentConfigStatus: {
@@ -504,7 +504,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('AI agent 설정 패널에서 기능 문서를 열 수 있다', () => {
+  it('opens the capability documents', () => {
     const onOpenWorkflowGuide = vi.fn();
     const localVault = makeLocalVault({
       agentConfigStatus: {
@@ -530,7 +530,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(onOpenWorkflowGuide).toHaveBeenCalledTimes(1);
   });
 
-  it('AI agent 설정 패널에서 전체 연결 설정을 복사한다', async () => {
+  it('copies the full connection config', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
@@ -713,7 +713,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('Tauri vault 경로가 있으면 연결 설정이 selected path를 사용한다', async () => {
+  it('uses the selected desktop vault path in the connection config', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: {
@@ -758,7 +758,7 @@ describe('VaultAgentSetupPanel', () => {
     );
   });
 
-  it('AI agent 설정 패널에서 codebase-root agent-setup 명령을 복사한다', async () => {
+  it('copies the codebase-root agent-setup command', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
@@ -784,7 +784,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('Tauri vault 경로가 있으면 codebase-root agent-setup 명령에 selected path를 넣는다', async () => {
+  it('puts the selected desktop vault path in the agent-setup command', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: {
@@ -808,7 +808,7 @@ describe('VaultAgentSetupPanel', () => {
     );
   });
 
-  it('AI agent 설정 패널에서 codebase-root setup state 확인 명령을 먼저 복사한다', async () => {
+  it('copies the codebase-root setup state check command first', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
@@ -834,7 +834,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('Tauri vault 경로가 있으면 setup state 확인 명령에 selected path를 넣는다', async () => {
+  it('puts the selected desktop vault path in the setup state check command', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: {
@@ -858,7 +858,7 @@ describe('VaultAgentSetupPanel', () => {
     );
   });
 
-  it('AI agent 설정 패널에서 CLI graph runbook을 복사한다', async () => {
+  it('copies the CLI graph runbook', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       agentConfigStatus: {
@@ -913,7 +913,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('Tauri vault 경로가 있으면 CLI graph runbook을 절대경로 기준으로 복사한다', async () => {
+  it('copies the CLI graph runbook with the absolute desktop vault path', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: {
@@ -949,7 +949,7 @@ describe('VaultAgentSetupPanel', () => {
     );
   });
 
-  it('AI agent 설정 패널에서 첫 연결 증거 패킷을 복사한다', async () => {
+  it('copies the first-connection evidence packet', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
@@ -1055,7 +1055,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('Tauri vault 경로가 있으면 첫 연결 증거 패킷이 selected path를 사용한다', async () => {
+  it('uses the selected desktop vault path in the evidence packet', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: {
@@ -1099,7 +1099,7 @@ describe('VaultAgentSetupPanel', () => {
     );
   });
 
-  it('AI agent 설정 패널에서 자동화 JSON gate 명령을 복사한다', async () => {
+  it('copies the automation JSON gate command', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: {
@@ -1131,7 +1131,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('AI agent 설정 패널에서 post-change ontology sync gate를 독립적으로 복사한다', async () => {
+  it('copies the post-change ontology sync gate on its own', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       agentConfigStatus: {
@@ -1170,7 +1170,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('AI agent 설정 패널에서 codebase-root MCP JSON 템플릿을 복사한다', async () => {
+  it('copies the codebase-root MCP JSON template', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
@@ -1202,7 +1202,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('AI agent 설정 패널에서 codebase-root Codex TOML 템플릿을 복사한다', async () => {
+  it('copies the codebase-root Codex TOML template', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
@@ -1236,7 +1236,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('AI agent 설정 패널에서 Codex mcp add 한 줄 명령을 복사한다', async () => {
+  it('copies the one-line Codex mcp add command', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
@@ -1274,7 +1274,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('남의 설정이 있는 행은 그 사실을 자기 줄에서 말한다 — 동사만 바뀌지 않는다', () => {
+  it("states on the row that another server's config exists", () => {
     // Caught by rendering the mixed state, 2026-09-19: the control changed to "copy a correct
     // one" while the row said only the file path, so the page showed three rows offering to
     // connect and one offering a replacement for no visible reason.
@@ -1305,7 +1305,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByTestId('agent-setup-row-claude-code')).not.toHaveTextContent('점검:');
   });
 
-  it('서버 조회가 답하기 전에는 아무 주장도 그리지 않는다', () => {
+  it('renders no claim before the server lookup answers', () => {
     // `launch: null` alone cannot tell a browser from the app still asking, so this panel used
     // to open on the browser's degradation card inside the installed app.
     const { container } = render(
@@ -1322,7 +1322,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.queryByTestId('agent-setup-steps')).toBeNull();
   });
 
-  it('첫 화면은 도구 행 넷이고, 확인과 상세 검증은 대화상자 뒤에 있다', () => {
+  it('shows four tool rows first, with checks and detailed validation behind a dialog', () => {
     render(
       <VaultAgentSetupPanel
         canEditCurrent
@@ -1373,7 +1373,7 @@ describe('VaultAgentSetupPanel', () => {
    * Counted rather than matched on a sentence: the rule is "not twice", and a wording change
    * that keeps it once should not redden this.
    */
-  it('확인 대화상자는 제 이름과 개수를 한 번씩만 말한다', () => {
+  it("states the check dialog's name and count once each", () => {
     render(
       <VaultAgentSetupPanel
         canEditCurrent
@@ -1435,7 +1435,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(within(dialog).getByTestId('agent-setup-status-next')).toBeInTheDocument();
   });
 
-  it('missing 설정은 생성 버튼이고 이미 유효한 설정은 준비 상태다', () => {
+  it('offers create for a missing config and shows ready for a valid one', () => {
     render(
       <VaultAgentSetupPanel
         canEditCurrent
@@ -1453,7 +1453,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('기존 설정이 invalid면 완료나 자동 생성으로 오판하지 않고 교체 설정을 복사한다', async () => {
+  it('copies a replacement for an invalid config instead of claiming done or creating it', async () => {
     copyTextMock.mockResolvedValue(true);
     const localVault = makeLocalVault({
       handle: {
@@ -1507,7 +1507,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(localVault.ensureAgentConfigs).not.toHaveBeenCalled();
   });
 
-  it('유효한 설정은 다시 누르는 버튼이 아니라 준비 상태로 표시한다', () => {
+  it('shows a valid config as ready, not as a button', () => {
     render(
       <VaultAgentSetupPanel
         canEditCurrent
@@ -1538,7 +1538,7 @@ describe('VaultAgentSetupPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('공개 패키지가 없으면 실행 불가능한 설정과 후속 단계를 숨긴다', () => {
+  it('hides unrunnable configs and later steps without a public package', () => {
     const localVault = makeLocalVault({
       agentConfigStatus: {
         mcpJson: true,
@@ -1579,7 +1579,7 @@ describe('VaultAgentSetupPanel', () => {
    * component in `src/` read the field, so an app whose bundled server is missing dropped the
    * connect option and explained nothing at all.
    */
-  it('앱 안의 서버 파일을 찾지 못한 까닭을 화면에 옮긴다', () => {
+  it('shows why the bundled server file was not found', () => {
     render(
       <VaultAgentSetupPanel
         canEditCurrent
@@ -1595,7 +1595,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(row).toHaveTextContent('The bundled MCP server is missing at');
   });
 
-  it('웹에서는 진단할 것이 없으므로 그 줄을 만들지 않는다', () => {
+  it('omits the diagnosis row on the web', () => {
     render(
       <VaultAgentSetupPanel
         canEditCurrent
@@ -1614,7 +1614,7 @@ describe('VaultAgentSetupPanel', () => {
    * per-tool button (which decides its state by awaiting this handler) then drew the success tick
    * on a write that never happened.
    */
-  it('설정 파일을 쓰지 못하면 어떤 파일이었는지, 폴더는 그대로라는 사실을 말한다', async () => {
+  it('names the config file that failed to write and says the folder is unchanged', async () => {
     const localVault = makeLocalVault({
       ensureAgentConfigs: vi
         .fn()
@@ -1645,7 +1645,7 @@ describe('VaultAgentSetupPanel', () => {
     );
   });
 
-  it('까닭이 돌아오지 않아도 빈 괄호를 그리지 않는다', async () => {
+  it('draws no empty parentheses when no reason is returned', async () => {
     const localVault = makeLocalVault({
       ensureAgentConfigs: vi.fn().mockRejectedValue(new Error('')),
     });

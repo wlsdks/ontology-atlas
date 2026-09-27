@@ -70,8 +70,8 @@ afterEach(() => {
   bridge.detect.mockReset();
 });
 
-describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
-  it('준비된 도구의 큰 대화 버튼은 고른 runtime을 호출한다', async () => {
+describe('runtime list: what works now comes first', () => {
+  it("calls the chosen runtime from a ready tool's chat button", async () => {
     const onOpenChat = vi.fn();
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
@@ -84,7 +84,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(onOpenChat).toHaveBeenCalledWith('claude-acp');
   });
 
-  it('목적지 안에서는 MCP 링크를 그리지 않는다 — 탭이 같은 띠에 있다', async () => {
+  it('omits the MCP link inside the destination, whose tab bar already has it', async () => {
     /*
      * 2026-09-05 measured that the installed app had no way to MCP from here and put a link in
      * this row. 2026-09-19 gave the page a tab strip with MCP on it, one press from any point of
@@ -104,7 +104,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(screen.queryByTestId('app-settings-runtimes-web')).toBeNull();
   });
 
-  it('대화를 열 수 있는 도구가 없으면 디스크 고지를 그리지 않는다 — 물음표만 남지 않게', async () => {
+  it('omits the disk notice when no tool can open a chat', async () => {
     // The disclosure is about what opening a chat writes to disk, and a chat opens only for a
     // tool this screen confirmed and guards. With none, the hint was a lone question mark
     // beside a list that says no tool was found.
@@ -114,7 +114,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(screen.queryByTestId('app-settings-runtimes-disk-note')).toBeNull();
   });
 
-  it('시트에서는 MCP 링크가 남는다 — 띠가 없는 곳에서 이름만 대지 않는다', async () => {
+  it('keeps the MCP link in the sheet, which has no tab bar', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
     ]);
@@ -123,7 +123,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/agents/?tab=mcp');
   });
 
-  it('첫 탐색이 끝나기 전에는 「다시 확인」을 누를 수 없다', async () => {
+  it('disables Check again until the first scan finishes', async () => {
     // The row used to offer a re-scan beside a list that says it is still looking, and a press
     // started a second scan over the first. `runtimes` is null exactly until the first answer.
     let settle: (value: unknown) => void = () => undefined;
@@ -147,7 +147,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
    * Containment rather than coordinates: the chip sits inside the heading's own row, which
    * stays true at every width and says the thing the layout is for.
    */
-  it('「다시 확인」은 자기 묶음의 머리글 줄에 선다', async () => {
+  it("puts Check again on its group's header row", async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
     ]);
@@ -159,7 +159,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(heading.parentElement?.contains(chip)).toBe(true);
   });
 
-  it('첫 탐색 중에도 묶음은 이름을 갖고, 그 줄에 「다시 확인」이 있다', async () => {
+  it('names the group and shows Check again during the first scan', async () => {
     let settle: (value: unknown) => void = () => undefined;
     bridge.detect.mockReturnValue(new Promise((resolve) => { settle = resolve; }));
     render(<AcpRuntimeSettings embedded />);
@@ -170,7 +170,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     await screen.findByTestId('app-settings-runtime-claude-acp');
   });
 
-  it('디스크에 무엇이 생기는지는 힌트 안에서 말한다 — 목록 위 문단이 아니라', async () => {
+  it('states what lands on disk inside the hint, not in a paragraph above the list', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
     ]);
@@ -178,7 +178,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     await screen.findByTestId('app-settings-runtime-claude-acp');
     const note = screen.getByTestId('app-settings-runtimes-disk-note');
     expect(note).toHaveTextContent('diskNote');
-    expect(note.closest('[role="tooltip"]'), '알림이 힌트 판 밖에 있다').not.toBeNull();
+    expect(note.closest('[role="tooltip"]'), 'the disk note sits outside the hint tooltip').not.toBeNull();
   });
 
   /*
@@ -189,7 +189,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
    * on a row of its own, above the heading, marking nothing. In the group heading it reads
    * name · hint · re-scan — the order the MCP tab's own heading already uses.
    */
-  it('디스크 힌트는 묶음 머리글 줄에 선다 — 목록 위에 혼자 뜬 물음표가 아니라', async () => {
+  it('puts the disk hint on the group header row', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
     ]);
@@ -206,7 +206,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(row.contains(chip)).toBe(true);
   });
 
-  it('대화를 열 수 있는 도구만 있으면 목록 위에 빈 줄을 두지 않는다', async () => {
+  it('leaves no empty row above the list when every tool can open a chat', async () => {
     // With every confirmed tool guarded there is no guard note, and on this tab the intro and the
     // MCP link belong to the sheet — so the row would render empty and still spend a grid gap.
     bridge.detect.mockResolvedValue([
@@ -221,7 +221,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(group.firstElementChild?.contains(heading)).toBe(true);
   });
 
-  it('바로 쓸 수 있는 것은 펼쳐 두고, 설치가 필요한 것은 접어 둔다', async () => {
+  it('expands ready tools and collapses tools that need installing', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
       makeRuntime({ id: 'cursor', state: 'cli-missing' }),
@@ -246,7 +246,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(screen.queryByTestId('app-settings-runtimes-others-dialog')).toBeNull();
   });
 
-  it('나머지는 창을 열면 전부 나오고, 검색으로 좁힐 수 있다 — 목록에서 빼지 않는다', async () => {
+  it('lists every remaining tool in the dialog, filterable by search', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
       makeRuntime({ id: 'cursor', state: 'cli-missing' }),
@@ -278,13 +278,13 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
   });
 });
 
-describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다', () => {
+describe('runtime list: what the app cannot block', () => {
   /*
    * Owner call (2026-08-16): neither drop it from the list nor leave it silent. Let
    * people choose knowingly. Without this check, someone later reads the caption as
    * "wasted ink" and deletes it, and the screen stops saying that it cannot block.
    */
-  it('줄에는 배지를 안 단다 — 이 사실은 배지 한 칸에 안 들어간다', async () => {
+  it('puts no guard badge on a row', async () => {
     /*
      * Removed after **three** revisions driven by owner reports (2026-08-16). All
      * three taught the same thing: a badge of 4–6 characters cannot say "can the app
@@ -311,7 +311,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     }
   });
 
-  it('설명은 목록 **앞에** 한 번만 — 안 보이는 층에도 복사하지 않는다', async () => {
+  it('states the explanation once, before the list', async () => {
     /*
      * This sentence was once left on every row as `sr-only`. The screen went quiet,
      * but someone listening with a screen reader hears the same sentence 19 times —
@@ -331,16 +331,16 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     const sentence = note.textContent ?? '';
     expect(sentence.length).toBeGreaterThan(0);
     // That explanation appears in this pane **exactly once** — a per-row copy trips here.
-    expect(root.textContent?.split(sentence).length, '설명이 두 번 이상 나온다').toBe(2);
+    expect(root.textContent?.split(sentence).length, 'the explanation appears more than once').toBe(2);
     // And it comes before the list (document order).
     const group = root.querySelector('section[aria-label]');
     expect(
       note.compareDocumentPosition(group!) & Node.DOCUMENT_POSITION_FOLLOWING,
-      '설명이 목록 뒤에 있으면 순서대로 읽는 사람은 목록을 다 지난 뒤에 듣는다',
+      'the explanation must precede the list in reading order',
     ).toBeTruthy();
   });
 
-  it('묶음 위 설명이 막아 주는 도구의 **이름**을 댄다 — 손으로 적은 문장이 아니다', async () => {
+  it('names the guarded tools in the group explanation', async () => {
     /*
      * Baking "only Claude Code for now" into a string makes that sentence false from
      * the day a second one appears. The names have to come from the data.
@@ -355,7 +355,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     expect(note.textContent).toContain('claude-acp'); // makeRuntime uses the label as the id
   });
 
-  it('Codex는 read-only 모드와 서버 체크포인트가 함께 증명되면 인앱 대화를 연다', async () => {
+  it('opens an in-app Codex chat when read-only mode and the server checkpoint are both proven', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
       makeRuntime({ id: 'codex-acp', isolated: false }),
@@ -368,7 +368,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     expect(screen.queryByTestId('app-settings-runtimes-guard-note')).not.toBeInTheDocument();
   });
 
-  it('같은 설명을 줄마다 반복하지 않는다 — 묶음 위에 한 번만', async () => {
+  it('does not repeat the explanation on each row', async () => {
     /*
      * A defect caught by actually running it: 18 of 20 rows carried the same
      * sentence, so half the screen was one sentence copied, and the names and states
@@ -389,7 +389,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     expect(document.querySelectorAll('[data-runtime-unguarded]')).toHaveLength(0);
   });
 
-  it('상태는 한 번만 말한다 — 배지 하나', async () => {
+  it("states a row's status once, in one badge", async () => {
     // Saying the same thing twice makes that row's ink teach nothing new.
     bridge.detect.mockResolvedValue([makeRuntime({ id: 'cursor', state: 'cli-missing', isolated: true })]);
     render(<AcpRuntimeSettings />);
@@ -400,7 +400,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     expect(row.textContent?.match(/state\.cli-missing/g) ?? []).toHaveLength(1);
   });
 
-  it('아이콘 자리는 아이콘이 없어도 유지된다 — 목록이 들쭉날쭉해지지 않게', async () => {
+  it('keeps the icon slot when a runtime has no icon', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'with-icon', isolated: true, icon: '/acp-icons/with-icon.svg' }),
       makeRuntime({ id: 'no-icon', isolated: true, icon: null }),
@@ -417,7 +417,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     const slots = screen
       .getByTestId('app-settings-runtime-no-icon')
       .querySelectorAll('span.size-8');
-    expect(slots.length, '마크가 없어도 같은 크기의 타일 자리가 있어야 한다').toBeGreaterThan(0);
+    expect(slots.length, 'a runtime without a mark keeps a same-size tile slot').toBeGreaterThan(0);
   });
 
   /*
@@ -426,7 +426,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
    * drawing on a black plate** — nothing visible on screen and nothing wrong in the
    * code (the owner found it).
    */
-  it('마크는 색을 우리가 칠한다 — 벤더가 공표한 색이 있으면 그 색으로', async () => {
+  it("paints the mark with the vendor's published colour", async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, icon: '/acp-icons/claude-acp.svg', brandInk: '#D97757' }),
     ]);
@@ -440,7 +440,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     expect(ink?.style.maskImage).toContain('/acp-icons/claude-acp.svg');
   });
 
-  it('확인된 색이 없으면 무채색으로 그린다 — 브랜드 색을 지어내지 않는다', async () => {
+  it('paints the mark neutral without a verified colour', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'unknown', isolated: true, icon: '/acp-icons/unknown.svg', brandInk: null }),
     ]);
@@ -452,7 +452,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     expect(ink?.style.backgroundColor).toContain('--color-vendor-mark-ink');
   });
 
-  it('번들된 마크 경로가 아니면 그리지 않는다 — CSS url() 안으로 들어가는 값이다', async () => {
+  it('skips a mark path that is not bundled, since it goes into a CSS url()', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'evil', isolated: true, icon: '/acp-icons/x.svg") ; background: url("http://evil' }),
     ]);
@@ -463,7 +463,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     expect(row.querySelector('[data-vendor-mark-ink]')).toBeNull();
   });
 
-  it('상태를 기계가 읽을 수 있게 남긴다 — 색만으로 구별하지 않는다', async () => {
+  it('exposes the status as a machine-readable attribute', async () => {
     bridge.detect.mockResolvedValue([makeRuntime({ id: 'claude-acp', isolated: true })]);
     render(<AcpRuntimeSettings />);
     await waitFor(() => expect(screen.getByTestId('app-settings-runtime-claude-acp')).toBeInTheDocument());
@@ -476,8 +476,8 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
   });
 });
 
-describe('실행기 목록 — 못 하는 일은 정직하게', () => {
-  it('브라우저에서는 이유와 갈 곳을 말한다', () => {
+describe('runtime list: unavailable states', () => {
+  it('gives the reason and the way forward in a browser', () => {
     bridge.available = false;
     render(<AcpRuntimeSettings />);
     expect(screen.getByTestId('app-settings-runtimes-web')).toHaveTextContent('webLabel');
@@ -492,14 +492,14 @@ describe('실행기 목록 — 못 하는 일은 정직하게', () => {
     expect(bridge.detect).not.toHaveBeenCalled();
   });
 
-  it('쓸 수 있는 것이 하나도 없으면 무엇을 하면 되는지 말한다', async () => {
+  it('says what to do when no runtime is usable', async () => {
     bridge.detect.mockResolvedValue([makeRuntime({ id: 'cursor', state: 'cli-missing' })]);
     render(<AcpRuntimeSettings />);
     await waitFor(() => expect(screen.getByText('noneReady')).toBeInTheDocument());
     expect(screen.getByText('noneReadyCaption')).toBeInTheDocument();
   });
 
-  it('목록이 아예 비었으면 「아래 목록」을 가리키지 않는다', async () => {
+  it('does not point at the list below when the list is empty', async () => {
     // The caption promised install guides "in the list below"; with no other tool found there
     // was no list below at all (design sweep, 2026-09-23).
     bridge.detect.mockResolvedValue([]);
@@ -509,7 +509,7 @@ describe('실행기 목록 — 못 하는 일은 정직하게', () => {
     expect(screen.queryByText('noneReadyCaption')).toBeNull();
   });
 
-  it('다 찾기 전에는 「찾는 중」이라고만 한다 — 없다고 단정하지 않는다', () => {
+  it('says searching, not none found, before the scan finishes', () => {
     bridge.detect.mockReturnValue(new Promise(() => {}));
     render(<AcpRuntimeSettings />);
     expect(screen.getByTestId('app-settings-runtimes-loading')).toBeInTheDocument();
@@ -519,7 +519,7 @@ describe('실행기 목록 — 못 하는 일은 정직하게', () => {
 
 export type { Runtime };
 
-describe('실행기 목록 — 설치는 우리가 대신 하지 않는다', () => {
+describe('runtime list: installation stays with the vendor', () => {
   /*
    * The reference product (Buzz) has an `Install` button in this same place, and
    * pressing it **actually runs an install script** (measured: it runs `curl … |
@@ -529,7 +529,7 @@ describe('실행기 목록 — 설치는 우리가 대신 하지 않는다', () 
    *
    * What this check holds is that **an execute button never reappears in that place**.
    */
-  it('준비 안 된 줄은 그 도구의 공식 안내로 보낸다 — 우리가 설치하지 않는다', async () => {
+  it("links a not-ready row to the tool's official install guide", async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'goose', state: 'cli-missing', isolated: false }),
     ]);
@@ -543,14 +543,14 @@ describe('실행기 목록 — 설치는 우리가 대신 하지 않는다', () 
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
 
-  it('준비된 줄에는 설치 안내가 없다 — 이미 있는 것에 설치를 권하지 않는다', async () => {
+  it('shows no install guide on a ready row', async () => {
     bridge.detect.mockResolvedValue([makeRuntime({ id: 'claude-acp', isolated: true })]);
     render(<AcpRuntimeSettings />);
     await screen.findByTestId('app-settings-runtime-claude-acp');
     expect(screen.queryByTestId('app-settings-runtime-install')).toBeNull();
   });
 
-  it('설치 명령을 화면에 베껴 두지 않는다', async () => {
+  it('does not copy install commands onto the screen', async () => {
     /*
      * Transcribing the command makes our copy go stale (the vendor changes it). And
      * `curl … | bash` visible on our screen reads to the user as something we
@@ -567,7 +567,7 @@ describe('실행기 목록 — 설치는 우리가 대신 하지 않는다', () 
   });
 });
 
-describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
+describe('runtime list: render first, verify later', () => {
   /*
    * Owner report, 2026-08-16: *"When I press the Agents tab, the loading speed is about 1 second slow — shouldn't it load first and update after?"*
    *
@@ -575,7 +575,7 @@ describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
    * appear.** The list could have been drawn first, and nothing was shown until the
    * check finished.
    */
-  it('첫 그림은 로그인 확인 없이 — 확인은 그다음에 한 번 더', async () => {
+  it('renders first without the login check, then checks once more', async () => {
     /*
      * The checking side is made to answer **deliberately late**. If both finished in
      * the same frame there would be no way to see whether "draw first" held — and
@@ -612,7 +612,7 @@ describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
     expect(calls).toEqual([false, true]);
   });
 
-  it('「다시 확인」은 처음부터 로그인까지 확인한다 — 기다릴 각오를 한 것이다', async () => {
+  it('runs the full scan including login from Check again', async () => {
     bridge.detect.mockResolvedValue([makeRuntime({ id: 'claude-acp', isolated: true })]);
     render(<AcpRuntimeSettings />);
     await screen.findByTestId('app-settings-runtime-claude-acp');
@@ -629,7 +629,7 @@ describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
    * exited 0 from a shell; relaunching cleared it. A failed check must not spend the person's
    * afternoon logging in to something they are already logged in to.
    */
-  it('로그인 확인이 실패하면 「확인 못 함」이라고 말하고, 도구는 그대로 쓸 수 있게 둔다', async () => {
+  it('says unverified when the login check fails and keeps the tool usable', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, state: 'login-unknown' }),
     ]);
@@ -642,7 +642,7 @@ describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
       'data-runtime-state',
       'login-unknown',
     );
-    expect(row.textContent, '확인 못 한 것에 확인됐다는 초록 점을 달면 안 된다').not.toContain(
+    expect(row.textContent, 'an unverified login must not show the ready dot').not.toContain(
       'state.ready',
     );
 

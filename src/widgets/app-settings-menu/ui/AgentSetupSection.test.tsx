@@ -46,8 +46,8 @@ function renderSection() {
   );
 }
 
-describe('MCP 연결 칸', () => {
-  it('폴더를 아직 안 열었으면 빈 설정판 대신 그 사실을 말한다', () => {
+describe('AgentSetupSection', () => {
+  it('says no folder is open instead of an empty setup panel', () => {
     vaultStatus.current = 'idle';
     renderSection();
     expect(screen.getByText('agentStatusNoVault')).toBeInTheDocument();
@@ -83,13 +83,13 @@ describe('MCP 연결 칸', () => {
    * open it in the same place, it is the **dead-end CTA** this repository forbids by
    * name.
    */
-  it('폴더를 열라고 말한 자리에서 폴더를 열 수 있다', () => {
+  it('opens a folder from the no-folder notice', () => {
     vaultStatus.current = 'idle';
     renderSection();
     expect(screen.getByTestId('agents-open-vault')).toBeInTheDocument();
   });
 
-  it('폴더가 열려 있으면 설정판과 첫 접촉 증명 패킷을 함께 낸다', () => {
+  it('shows the setup panel and the first-contact proof packet when a folder is open', () => {
     vaultStatus.current = 'loaded';
     renderSection();
     expect(screen.getByTestId('vault-agent-setup-panel')).toBeInTheDocument();

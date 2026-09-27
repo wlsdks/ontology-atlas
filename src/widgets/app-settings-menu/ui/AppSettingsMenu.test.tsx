@@ -240,7 +240,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
    * row, while `path-missing` (which deliberately carries no message) fell through to a sentence
    * that never said why. `FirstRunPage` already branches on the code; this row now does the same.
    */
-  it('폴더 실패의 까닭을 코드로 갈라 말하고, 날 것 그대로의 예외 문장은 쓰지 않는다', () => {
+  it('explains a folder failure by its code, never with the raw exception text', () => {
     const raw =
       'A requested file or directory could not be found at the time an operation was processed.';
     for (const [code, key] of [
@@ -283,7 +283,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
    * you to the destination.** `surfaces.md`'s "Blocking only half is the worst option" is the basis — removed from the nav, the way in
    * still has to answer.
    */
-  it('빠져나간 자리에 이정표가 서서 목적지로 보낸다', () => {
+  it('leaves a signpost that sends a moved section to its destination', () => {
     openSheet();
     // The section itself is no longer in the sheet.
     expect(screen.queryByTestId('app-settings-nav-runtimes')).toBeNull();
@@ -308,7 +308,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
    * protagonist.** The winner is "Open Conversation" inside the destination, and the
    * signpost must not compete with it.
    */
-  it('이정표 행은 인디고를 쓰지 않는다', () => {
+  it('does not paint the signpost row indigo', () => {
     openSheet();
     const row = screen.getByTestId('app-settings-nav-mcp');
     // The focus ring's indigo is an app-wide specification and is not measured — what is measured is **surface and text**.
@@ -387,7 +387,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
    * repeatedly — setting `aria-modal` while non-modal is a lie, and not setting it
    * while modal leaves assistive technology unaware of the blocking.
    */
-  it('딤이 있고, 그 사실과 aria-modal 이 일치한다', () => {
+  it('has a scrim that agrees with aria-modal', () => {
     openSheet();
     const overlay = screen.getByTestId('app-settings-overlay');
     const panel = screen.getByTestId('app-settings-popover');
@@ -403,7 +403,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   /** Modal means focus stays inside — Tab escaping behind the dim makes the blocking half-real. */
-  it('모달이므로 Tab 이 창 안에 머문다', async () => {
+  it('traps Tab inside the modal', async () => {
     openSheet(undefined, 'workspace');
     const panel = screen.getByTestId('app-settings-popover');
     // The last focusable differs per section, so **the end of DOM order** is picked
@@ -501,7 +501,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
    * with another surface". The settings window lost that attribute, so without a
    * marker to carry it, a guide would appear over settings.
    */
-  it('설정 창에 안내 가드용 마커가 있다', () => {
+  it('marks the settings dialog for the guide guard', () => {
     openSheet();
     expect(screen.getByTestId('app-settings-popover')).toHaveAttribute(
       'data-surface-role',
@@ -630,7 +630,7 @@ describe('AppSettingsMenu screenControls injection', () => {
  * controlled; omitting them keeps the previous self-managed behaviour (backwards
  * compatible).
  */
-describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
+describe('AppSettingsMenu controlled open', () => {
   beforeEach(() => {
     mocks.isDesktopRuntime = false;
   });
@@ -737,7 +737,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * regardless of section** — the only way this property breaks is "a different class
    * appears in one section", which is exactly what this aims at.
    */
-  it('창 크기는 절을 바꿔도 고정이다', () => {
+  it('keeps the dialog size fixed across sections', () => {
     openSheet();
     const panel = screen.getByTestId('app-settings-popover');
     const sizeClasses = () =>
@@ -747,11 +747,11 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
         .sort()
         .join(' ');
     const baseline = sizeClasses();
-    expect(baseline, '고정 높이가 없다 — 내용이 창 크기를 정하고 있다').toMatch(/h-\[\d+px\]/);
-    expect(baseline, '고정 폭이 없다').toMatch(/w-\[\d+px\]/);
+    expect(baseline, 'the dialog needs a fixed height so content does not size it').toMatch(/h-\[\d+px\]/);
+    expect(baseline, 'the dialog needs a fixed width').toMatch(/w-\[\d+px\]/);
     for (const item of ['background', 'expand', 'footprint', 'notify', 'workspace']) {
       fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
-      expect(sizeClasses(), `${item} 절에서 창 크기가 바뀐다`).toBe(baseline);
+      expect(sizeClasses(), `the dialog size changes in the ${item} section`).toBe(baseline);
     }
   });
 
@@ -759,13 +759,13 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * The LNB has **groups**. A group's job is to say why five items are in that
    * order, and without it the list is just five rows.
    */
-  it('LNB 는 세 묶음으로 나뉘고 5·2·1 로 갈린다 (이정표 행 별도)', () => {
+  it('splits the LNB into three titled groups', () => {
     mocks.isDesktopRuntime = true;
     openSheet();
     const nav = screen.getByTestId('app-settings-nav');
     // Pinned by **structure**, not copy — it must not break every time a label is refined.
     const groups = [...nav.children];
-    expect(groups.length, '묶음이 셋이 아니다').toBe(3);
+    expect(groups.length, 'the LNB needs three groups').toBe(3);
     // 「Connected」 went from 3 to 4 on 2026-08-16 (the runners section was added), and
     // a third group 「App」 appeared on 2026-08-20 (the update-check section). What this
     // check holds is not the counts but the structure that **every group has a
@@ -776,7 +776,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     // (MCP, and Models where the API Key pane was).
     expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 3, 1]);
     for (const g of groups) {
-      expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 열 줄이다').not.toBeNull();
+      expect(g.querySelector('p'), 'every LNB group needs a title').not.toBeNull();
     }
   });
 
@@ -785,12 +785,12 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * found by reading, which makes the channel worthless — hence "all five" is the
    * contract.
    */
-  it('LNB 항목마다 아이콘이 하나씩 있다', () => {
+  it('gives every LNB item one icon', () => {
     mocks.isDesktopRuntime = true;
     openSheet();
     for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'update']) {
       const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
-      expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
+      expect(svgs.length, `the ${item} item needs one icon`).toBe(1);
     }
   });
 
@@ -798,7 +798,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * On the web the 「App」 group's one pane (Updates) can draw nothing, so neither the group nor
    * the item is listed (inspection, 2026-09-25: a heading, one promise and a 470px empty pane).
    */
-  it('웹에서는 앱 전용 「업데이트」 묶음이 없다', () => {
+  it('omits the app-only Updates group on the web', () => {
     mocks.isDesktopRuntime = false;
     openSheet();
     expect(screen.queryByTestId('app-settings-nav-update')).toBeNull();
@@ -806,7 +806,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
   });
 
   // The desktop shell lists all seven panes; the web drops Updates (above).
-  it('LNB 일곱 절을 모두 싣는다', () => {
+  it('lists all seven LNB sections', () => {
     mocks.isDesktopRuntime = true;
     openSheet();
     for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'update']) {
@@ -827,7 +827,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * 「Notifications」 section, and must not be in the 「Screen」 section. Pinning only one side lets
    * duplication (present in both) through.
    */
-  it('알림 컨트롤은 「알림」 절에 있고 「화면」 절에는 없다', () => {
+  it('places notification controls in Notifications, not Screen', () => {
     const NOTIFY_CONTROLS = [
       'app-settings-agent-status',
       'app-settings-agent-notifications',
@@ -840,18 +840,18 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     for (const testId of NOTIFY_CONTROLS) {
       expect(
         screen.queryByTestId(testId),
-        `${testId} 가 「화면」 절에 남아 있다 — 알림은 자기 절로 빠졌다`,
+        `${testId} must not stay in the Screen section`,
       ).toBeNull();
     }
 
     fireEvent.click(screen.getByTestId('app-settings-nav-notify'));
     expect(screen.getByTestId('app-settings-pane-notify')).toBeInTheDocument();
     for (const testId of NOTIFY_CONTROLS) {
-      expect(screen.getByTestId(testId), `${testId} 가 「알림」 절에 없다`).toBeInTheDocument();
+      expect(screen.getByTestId(testId), `${testId} must be in the Notifications section`).toBeInTheDocument();
     }
   });
 
-  it('첫 화면은 화면 절이고, 다른 절 내용은 아직 없다', () => {
+  it('opens on the Screen section without rendering other sections', () => {
     openSheet();
     expect(screen.getByTestId('app-settings-pane-screen')).toBeInTheDocument();
     expect(screen.queryByTestId('app-settings-canvas-background')).toBeNull();
@@ -859,7 +859,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     expect(screen.queryByTestId('app-settings-footprint')).toBeNull();
   });
 
-  it('배경 절이 3택을 싣는다', () => {
+  it('offers three choices in the Background section', () => {
     openSection('background');
     expect(screen.getByTestId('app-settings-canvas-background')).toBeInTheDocument();
     for (const variant of ['dot', 'web', 'depth']) {
@@ -868,7 +868,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
   });
 
   /** The icon set applies outside the map too, so it stays in the screen section — it must not follow the background section. */
-  it('노드 아이콘은 화면 절에 있다', () => {
+  it('places node icons in the Screen section', () => {
     openSheet();
     expect(screen.getByTestId('app-settings-glyph-set')).toBeInTheDocument();
   });
@@ -888,7 +888,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     expect(window.localStorage.getItem('ontology-atlas:canvas-background:v1')).toBe('web');
   });
 
-  it('발자국 절은 프리셋이 먼저고 슬라이더는 접혀 있다', () => {
+  it('shows footprint presets first with sliders collapsed', () => {
     openSection('footprint');
     expect(screen.getByTestId('app-settings-footprint')).toBeInTheDocument();
     expect(screen.getByTestId('app-settings-footprint-preset-default')).toBeInTheDocument();
@@ -922,7 +922,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
 
   /* ── Expand section (2026-08-01, ported from the mockup `.qa-scratch/proto-expand.html`) ──── */
 
-  it('확장 절은 어포던스 3안 · 구조 4안 · 슬라이더 3개를 싣는다', () => {
+  it('offers three affordances, four structures and three sliders in the Expand section', () => {
     openSection('expand');
     expect(screen.getByTestId('app-settings-expand')).toBeInTheDocument();
     for (const value of ['pill', 'bar', 'badge']) {
@@ -957,7 +957,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * was a handle the mockup built to measure itself, not a product setting — landing
    * it here would show users a control for «choosing» the size of their own data.
    */
-  it('시안의 「볼트 규모」는 제품 설정에 없다', () => {
+  it("omits the mockup's vault size setting", () => {
     openSection('expand');
     for (const value of ['small', 'real', 'huge']) {
       expect(screen.queryByTestId(`app-settings-expand-scale-${value}`)).toBeNull();
@@ -969,7 +969,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * would ship screens outside the range the mockup actually measured across its 27
    * combinations.
    */
-  it('슬라이더 범위가 시안 값과 같다', () => {
+  it("uses the mockup's slider ranges", () => {
     openSection('expand');
     fireEvent.click(screen.getByTestId('app-settings-expand-detail-toggle'));
     const range = (id: string) => {
@@ -988,7 +988,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * contract is measured by rendering in
    * `tests/contract/expand-affordance.contract.test.ts`.
    */
-  it('설정을 안 건드리면 어포던스는 「머리 위 막대」다', () => {
+  it('defaults the affordance to the overhead bar', () => {
     openSection('expand');
     expect(screen.getByTestId('app-settings-expand-affordance-bar')).toHaveAttribute(
       'aria-checked',
@@ -1000,7 +1000,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     );
   });
 
-  it('어포던스를 고르면 저장되고 aria-checked 가 따라간다', () => {
+  it('saves a chosen affordance and updates aria-checked', () => {
     openSection('expand');
     fireEvent.click(screen.getByTestId('app-settings-expand-affordance-badge'));
     expect(screen.getByTestId('app-settings-expand-affordance-badge')).toHaveAttribute(
@@ -1013,7 +1013,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
   });
 
   /** One line on what the chosen value does — the names alone do not separate the three. */
-  it('고른 어포던스·구조의 설명이 바뀐다', () => {
+  it('updates the description for the chosen affordance and structure', () => {
     openSection('expand');
     const hint = () => screen.getByTestId('app-settings-expand-affordance-hint').textContent;
     const before = hint();
@@ -1034,13 +1034,13 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * drawing when the walked mark became the node's own light (2026-09-10). The same principle,
    * applied to the whole set, deletes them rather than hiding one conditionally.
    */
-  it('걸어온 길 설정에는 사라진 자국을 다루는 손잡이가 남아 있지 않다', () => {
+  it('offers no footprint control for a retired mark', () => {
     openSection('footprint');
     fireEvent.click(screen.getByTestId('app-settings-footprint-detail-toggle'));
     for (const retired of ['fill', 'stroke', 'bloom', 'on-edges', 'density', 'placement']) {
       expect(
         screen.queryByTestId(`app-settings-footprint-${retired}`),
-        `app-settings-footprint-${retired} 는 그리지 않는 마크를 조절한다`,
+        `app-settings-footprint-${retired} controls a mark that is no longer drawn`,
       ).toBeNull();
     }
     // The four that still reach the canvas stay reachable.
@@ -1063,7 +1063,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
 // surface so that nothing mounted it, and desktop users lost any way to see where
 // the vault sits on disk (review 2026-07-25). That component was rendering directly
 // in its own test and passing — a false green.
-describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
+describe('AppSettingsMenu vault absolute path', () => {
   beforeEach(() => {
     mocks.vaultRootPath = null;
     mocks.vaultStatus = 'idle';
@@ -1072,7 +1072,7 @@ describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
     mocks.copyPath.mockClear();
   });
 
-  it('웹(경로 없음)에서는 경로 행이 없다 — 없는 값을 있는 척하지 않는다', () => {
+  it('omits the path row on the web, where there is no path', () => {
     mocks.vaultStatus = 'loaded';
     mocks.vaultHandleName = 'my-vault';
     openSheet();
@@ -1080,7 +1080,7 @@ describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
     expect(screen.queryByTestId('app-settings-vault-path')).not.toBeInTheDocument();
   });
 
-  it('데스크톱에서 절대 경로를 보여주고 복사/Finder 열기를 제공한다', () => {
+  it('shows the absolute path with copy and reveal-in-Finder on desktop', () => {
     mocks.vaultStatus = 'loaded';
     mocks.vaultHandleName = 'my-vault';
     mocks.vaultRootPath = '/Users/me/Team Vault/docs/ontology';
@@ -1096,7 +1096,7 @@ describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
     expect(mocks.revealInFinder).toHaveBeenCalledWith('/Users/me/Team Vault/docs/ontology');
   });
 
-  it('vault 가 안 열려 있으면 경로 행도 없다', () => {
+  it('omits the path row when no vault is open', () => {
     mocks.vaultRootPath = '/Users/me/stale';
     openSheet();
 
@@ -1113,8 +1113,8 @@ describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
  * **absent from everywhere** through (the module is self-contained, so deleting one
  * call line makes it vanish silently).
  */
-describe('AppSettingsMenu — 가져오기 모듈의 자리', () => {
-  it('작업 공간 절이 가져오기 모듈을 싣는다', () => {
+describe('AppSettingsMenu import module placement', () => {
+  it('renders the import module in the Workspace section', () => {
     // The module is self-contained and renders itself **only with a loaded vault**,
     // so this test's idle vault mock leaves nothing in the DOM. So it inspects **the
     // wiring itself** rather than the render result — the way this repository handles
@@ -1127,10 +1127,10 @@ describe('AppSettingsMenu — 가져오기 모듈의 자리', () => {
       source.indexOf("shownSection === 'workspace' ?"),
       source.indexOf("shownSection === 'update' ?"),
     );
-    expect(workspaceBranch, '작업 공간 절이 없다').not.toBe('');
+    expect(workspaceBranch, 'the Workspace section branch is missing').not.toBe('');
     expect(
       workspaceBranch,
-      '가져오기 모듈이 작업 공간 절에서 사라졌다 — INDEX 로 되돌아갔거나 통째로 없어졌다',
+      'the import module must render in the Workspace section',
     ).toContain('<BlockImportModule');
   });
 });
