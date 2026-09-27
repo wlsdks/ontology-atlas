@@ -592,7 +592,7 @@ Tour one-click doors: hree one-click doors, plus one that reaches outside this c
 - **Bring from a service** (new 2026-09-07) — the door for documents that are not on
   this computer at all. Owner: *"connecting a service is mostly for the Library anyway —
   people want the things they already wrote somewhere else."* Tiles name services, not
-  protocols — Notion, GitHub, and last, a way out to the technical dialog on `/mcp` for
+  protocols — Notion, GitHub, and last, a way out to the technical dialog on the Agents page's MCP tab (`/agents/?tab=mcp`) for
   anything else. **This path never says MCP, stdio, npx or environment variable**; a
   component test asserts that. Three steps: ① the person pastes the one value the service
   issues, with a link to where; Atlas puts it in the keychain, writes the connection into
