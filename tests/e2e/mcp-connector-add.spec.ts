@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { FIXTURE_VAULT } from "./fixture-vault";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForBoxStill } from "./settle";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
@@ -51,7 +52,11 @@ test("연결 도구 딥링크는 그 칸에 내려선다 — 짧은 창에서도
    * 1280×900 the group is in view without scrolling at all, which is why a desktop-sized
    * check saw nothing.
    */
-  await page.setViewportSize({ width: 1440, height: 600 });
+  /*
+   * The app's window floor is 720 tall, so the short window is read there (2026-09-27); the
+   * 600 the defect was first measured at is below any window the app opens.
+   */
+  await page.setViewportSize({ width: 1440, height: 720 });
   /*
    * **Attached connectors are the state that catches it**, and the empty fixture is not: the
    * list is what renders after the scroll and pushes the group down, so with nothing attached
@@ -67,6 +72,9 @@ test("연결 도구 딥링크는 그 칸에 내려선다 — 짧은 창에서도
     }),
   });
   await expect(page.getByTestId("connectors-list")).toBeVisible({ timeout: 20_000 });
+  // The list renders under the scroll and pushes the group down; read where it comes to rest,
+  // not the frame the list first appeared on.
+  await waitForBoxStill(page.locator("#mcp-connectors"));
 
   const landing = await page.evaluate(() => {
     const group = document.getElementById("mcp-connectors");

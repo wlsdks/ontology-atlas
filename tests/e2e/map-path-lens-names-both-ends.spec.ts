@@ -49,9 +49,13 @@ test("경로는 두 끝의 이름을 모두 보여준다", async ({ page }) => {
 
   // The lens found the path: both ends are on the map at full ink.
   await expect.poll(async () => (await read()).to?.drawn, { timeout: 15_000, message: "경로의 끝이 지도에 없다" }).toBe(true);
-  const state = (await read())!;
-  expect(state.from!.alpha).toBeGreaterThan(0.8);
-  expect(state.to!.alpha).toBeGreaterThan(0.8);
+  // The lens ramps its ends up on its own clock; poll until both have arrived at full ink.
+  await expect
+    .poll(async () => {
+      const state = await read();
+      return Math.min(state.from?.alpha ?? 0, state.to?.alpha ?? 0);
+    }, { timeout: 15_000, message: "경로의 끝이 온전한 잉크로 그려지지 않았다" })
+    .toBeGreaterThan(0.8);
 
   await expect
     .poll(async () => [(await read()).from?.named, (await read()).to?.named], {
