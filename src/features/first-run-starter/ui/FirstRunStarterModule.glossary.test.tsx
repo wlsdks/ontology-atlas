@@ -7,16 +7,9 @@ import { FIRST_RUN_STARTER_DISMISSED_KEY } from "../model/first-run-starter-dism
 import { FirstRunStarterModule } from "./FirstRunStarterModule";
 
 /**
- * Regression guard — the three-term definitions (domain / capability / element) used
- * to live only inside the "?" shortcut modal (ShortcutSheet), where a complete
- * beginner could not see them the moment they first opened the map. They were
- * promoted to the INDEX first-run card (FirstRunStarterModule), so this pins that
- * (1) they are always visible with no fold, and (2) they reference the same i18n keys
- * as ShortcutSheet so the real Korean and English strings match exactly.
- *
- * The other FirstRunStarterModule.test.tsx replaces all of 'next-intl' with an
- * identity mock and does not verify real translations — this file alone uses a real
- * NextIntlClientProvider to catch actual copy drift.
+ * The three-term definitions are always visible on the first-run card and use the same i18n keys
+ * as ShortcutSheet. Uses a real NextIntlClientProvider, unlike FirstRunStarterModule.test.tsx,
+ * to catch copy drift.
  */
 
 interface MockVault {
@@ -24,7 +17,7 @@ interface MockVault {
   manifest: { docs: unknown[] } | null;
   errorMessage: string | null;
   restoreAttempted: boolean;
-  /** "Has a vault ever been connected?" — the input deciding who the sample notice targets (2026-08-02). */
+  /** Decides who the sample notice targets. */
   recentVaults: unknown[];
   open: ReturnType<typeof vi.fn>;
   scaffoldOntology: ReturnType<typeof vi.fn>;
@@ -73,7 +66,7 @@ function renderWithLocale(locale: "ko" | "en") {
   );
 }
 
-describe("FirstRunStarterModule 3-용어 glossary 승격 (rank17)", () => {
+describe("FirstRunStarterModule three-term glossary", () => {
   beforeEach(() => {
     mocks.vault = makeVault();
     mocks.mode = "static";
@@ -81,14 +74,14 @@ describe("FirstRunStarterModule 3-용어 glossary 승격 (rank17)", () => {
     window.localStorage.removeItem("demo:sample-source:v1");
   });
 
-  it("접힘 없이(disclosure 뒤 아님) 항상 도메인/역량/요소 정의가 보인다 (ko)", () => {
+  it("always shows domain, capability and element definitions outside a disclosure (ko)", () => {
     renderWithLocale("ko");
 
     const glossary = screen.getByTestId("first-run-starter-glossary");
-    // It must be a directly rendered <dl>, not inside a folding container such as <details>.
+    // A directly rendered <dl>, not inside a folding container such as <details>.
     expect(glossary.tagName).toBe("DL");
 
-    // The title is a label (<p>) above the <dl>, so it is searched for outside the dl.
+    // The title is a <p> above the <dl>.
     expect(
       screen.getByText(koMessages.searchWidgets.shortcuts.glossary.title),
     ).toBeInTheDocument();
@@ -109,7 +102,7 @@ describe("FirstRunStarterModule 3-용어 glossary 승격 (rank17)", () => {
     ).toBeInTheDocument();
   });
 
-  it("영문 로케일에서도 같은 키로 렌더된다 (en)", () => {
+  it("renders the same keys in the English locale (en)", () => {
     renderWithLocale("en");
 
     const glossary = within(screen.getByTestId("first-run-starter-glossary"));
@@ -120,7 +113,7 @@ describe("FirstRunStarterModule 3-용어 glossary 승격 (rank17)", () => {
     expect(glossary.getByText(enMessages.searchWidgets.shortcuts.glossary.elementTerm)).toBeInTheDocument();
   });
 
-  it("지도 계층 순서(도메인 → 역량 → 요소)로 렌더된다", () => {
+  it("renders in map hierarchy order domain, capability, element", () => {
     renderWithLocale("ko");
 
     const glossary = screen.getByTestId("first-run-starter-glossary");

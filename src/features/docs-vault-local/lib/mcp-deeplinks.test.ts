@@ -40,7 +40,6 @@ describe("utf8ToBase64", () => {
   it("encodes unicode (Korean) paths without corruption", () => {
     const input = "/Users/j/한글-vault";
     const encoded = utf8ToBase64(input);
-    // decode via Buffer to verify byte fidelity
     expect(Buffer.from(encoded, "base64").toString("utf-8")).toBe(input);
   });
 });

@@ -14,18 +14,9 @@ import { Chip } from "@/shared/ui/controls";
 import { useToast } from "@/shared/ui";
 
 /**
- * The one-click connect buttons, per client — four buttons (Claude Code · Cursor ·
- * Antigravity · Codex) plus one plain-language line saying there is no server to keep
- * running. The map sheet and the settings panel share **this same component**.
- *
- * Honest degradation:
- * - Tauri (installed app): `onWriteConfigs` writes the config files into the folder and
- *   confirms completion.
- * - Web: no absolute path is available, so a deeplink cannot be formed — it degrades to
- *   copying the config plus instructions.
- *
- * It lives at the feature layer so both widgets (agent-connect, app-settings-menu) can use
- * it without a same-layer cross-import.
+ * One-click connect controls for Claude Code, Cursor, Antigravity and Codex. The installed app
+ * writes the config files into the folder; the web has no absolute path for a deeplink, so it
+ * copies the config with instructions. Feature layer, so widgets can use it.
  */
 
 import type { AgentClientId } from "@/entities/vault-session";
@@ -35,11 +26,8 @@ import { controlClass } from '@/shared/ui/control-class';
 type ClientId = "claudeCode" | "cursor" | "antigravity" | "codex";
 
 /**
- * This component's internal id → the file contract's tool id.
- *
- * Two naming systems exist for historical reasons (camelCase label keys here, kebab slugs
- * there). Merging them is right but is a separate cleanup, so for now the translation lives
- * in **exactly one place** — translating by hand in several places means one of them is wrong.
+ * Component id to file-contract tool id. The two naming systems are translated only here, so a
+ * second hand translation cannot disagree.
  */
 const CLIENT_TO_ID: Record<ClientId, AgentClientId> = {
   claudeCode: "claude-code",
@@ -48,80 +36,49 @@ const CLIENT_TO_ID: Record<ClientId, AgentClientId> = {
   codex: "codex",
 };
 
-/** The reverse direction, used to derive render order from `AGENT_CLIENTS`. */
 type Feedback = "idle" | "busy" | "done" | "copied" | "failed";
 
 /**
- * **What the control says, and what it is called** (2026-09-19).
- *
- * Each control now sits on a row that already carries the tool's mark, its name and the file it
- * writes, so a button reading "Connect to Claude Code" states the tool's name a second time and
- * ".mcp.json ready" states the file a second time — the duplicate-statement defect this screen
- * has been through before, and at 390 it was also what pushed the label column to 60px. The
- * visible word is therefore the verb and the state alone. The **accessible** name keeps the long
- * sentence: a screen reader moving control to control does not see the row beside it, and four
- * buttons all called "Connect" would be four buttons nobody can tell apart.
+ * The row already names the tool and its file, so the visible word is the verb and state only.
+ * The accessible name keeps the full sentence, because a screen reader moving between controls
+ * does not see the row, and four buttons called "Connect" are indistinguishable.
  */
 type Wording = { full: string; short: string };
 type AgentClientConfigState = "missing" | "invalid" | "ready";
 
 export interface AgentClientControlsProps {
   /**
-   * Do we know how to launch a server from here? If not (a web session), no config is written
-   * or copied — a config that will not connect is a trap, not help.
+   * Without a known server launch (a web session), no config is written or copied: a config that
+   * will not connect is a trap.
    */
   serverAvailability: AgentServerAvailability;
   /**
-   * Writes the config — **and takes which tool to write it for.**
-   *
-   * There used to be no argument, so the implementation wrote "everything it could". Every
-   * button therefore produced the same result: the label named a tool while the action did not
-   * know one. Taking the argument is itself what stops that recurring — ignoring the tool now
-   * has to be deliberate.
-   *
-   * Tauri only (creates `.mcp.json`, `.codex/config.toml`, and the rest inside the vault
-   * folder); null on the web.
+   * Writes the config for the given tool, so a button can never write for every tool at once.
+   * Installed app only; null on the web.
    */
   onWriteConfigs: ((client: AgentClientId) => void | Promise<void>) | null;
-  /** Cursor deeplink, when an absolute path exists. Without one it degrades to copying. */
+  /** Without an absolute path it degrades to copying. */
   cursorDeeplink: string | null;
-  /** The `.mcp.json` body, for the copy fallback. */
+  /** For the copy fallback. */
   mcpJsonSnippet: string;
-  /** Body used to replace an invalid vault-local `.mcp.json`. Usually `OATLAS_VAULT=.`. */
+  /** Replaces an invalid vault-local `.mcp.json`; usually `OATLAS_VAULT=.`. */
   replacementMcpJsonSnippet?: string;
-  /** The one-line Codex registration command, for the copy fallback. */
+  /** For the copy fallback. */
   codexCommand: string;
-  /** Whether `.mcp.json` already exists (installed app) — shows the confirmation copy first. */
+  /** Installed app; shows the confirmation copy first. */
   mcpJsonReady?: boolean;
-  /** Current `.mcp.json` state, keeping existence and validity separate. */
+  /** Keeps existence and validity separate. */
   mcpJsonState?: AgentClientConfigState;
-  /** Current `.codex/config.toml` state, keeping existence and validity separate. */
+  /** Keeps existence and validity separate. */
   codexConfigState?: AgentClientConfigState;
-  /** The vault-local TOML to copy when a user reviews and replaces an invalid Codex config. */
+  /** Copied when a user replaces an invalid Codex config. */
   codexConfigSnippet?: string;
-  /** A web session with no known absolute path — copy instructions instead of a deeplink. */
+  /** No known absolute path, so copy instructions replace the deeplink. */
   needsManualPath: boolean;
-  /**
-   * How the four tools are laid out.
-   *
-   * The default `stack` belongs to the map sheet, where this column is the sheet's main content
-   * and full-width rows are right. `grid` is for **inside the collapsed step** in settings: the
-   * four are «pick one», not «one right answer and three rejects», and four full-width rows made
-   * each read as a large decision (owner report, 2026-08-04). Two columns read as one set and
-   * halve the vertical space.
-   *
-   * ⚠️ The axis was not added on a hunch. The four write to different files, so one person
-   * attaching two or more is normal — a fact the 2026-08-02 round already confirmed when it
-   * removed the fill. This says that same fact through **layout** as well.
-   */
 }
 
 /**
- * **The per-client controls, without a layout.** One hook holds the write/copy/deeplink state
- * machine for the four clients; `AgentClientButtons` lays the controls out as a grid or a stack
- * (the map sheet), and the Agents destination's MCP tab lays them out as rows beside each tool's
- * name and file (2026-09-19). Two layouts, one state machine — a second copy would be the two
- * screens drifting on which button says "ready".
+ * The write, copy and deeplink state machine for the four clients; callers lay out the controls.
  */
 export function useAgentClientControls({
   serverAvailability,
@@ -163,11 +120,8 @@ export function useAgentClientControls({
       setState(id, "done");
     } catch (error) {
       /*
-       * ⚠️ **A swallowed write failure looked exactly like never having pressed** (census state
-       * 5e, 2026-08-31). This caught with no binding and `failed` had no render branch, so a
-       * refused write left the button in its resting label with nothing said anywhere. The
-       * button now says it failed, and the panel that owns the write (`onWriteConfigs`) owns the
-       * sentence naming the file and the cause — one fact, said once in each place it belongs.
+       * Without this branch a refused write looked like never having pressed. The button says it
+       * failed; the panel that owns `onWriteConfigs` names the file and the cause.
        */
       setState(id, "failed");
       console.error("Writing the agent config failed", error);
@@ -177,7 +131,7 @@ export function useAgentClientControls({
   async function copyAndConfirm(id: ClientId, value: string) {
     const ok = await copyText(value);
     setState(id, ok ? "copied" : "failed");
-    // The inline label swap (2s) plus the canonical toast, so the confirmation is unmissable.
+    // The inline label swap (2s) plus the canonical toast.
     if (ok) {
       toast.show(t("copiedToast"), "success");
       window.setTimeout(() => setState(id, "idle"), 2000);
@@ -186,18 +140,9 @@ export function useAgentClientControls({
 
   if (!serverAvailability.launch) {
     /**
-     * **The web is not a dead end.** This slot used to hold one sentence — "you cannot connect
-     * from this screen" — and a link dropping the reader into long documentation. That sentence
-     * is false: MCP attaches to the **folder**, not to Atlas, and the agent launches the server
-     * in its own session. A web user can connect.
-     *
-     * The one thing a browser cannot do is **write the config for you** (FSA gives a handle, not
-     * a path). So rather than understating what is possible, we **ask the person who knows** the
-     * value the browser does not.
-     *
-     * The "why plus where" contract (`.claude/rules/surfaces.md`) is unchanged: say why it cannot
-     * be automatic, and give somewhere to go. What changed is that the somewhere is now **here
-     * too**, while the app (one button) remains the easier path.
+     * The web is not a dead end: MCP attaches to the folder, so a web user can connect; the browser
+     * only cannot write the config (a handle, not a path), so the person supplies the path here.
+     * The "why plus where" contract of `.claude/rules/surfaces.md` holds; the app stays easier.
      */
     return {
       controls: null,
@@ -230,9 +175,7 @@ export function useAgentClientControls({
                 >
                   {t("serverUnavailableGetApp")}
                 </Link>
-                {/* Only for someone who wants to read more — **not the primary path.** This used
-                    to be the only alternative, so a person trying to connect lost the sheet and
-                    landed in the middle of a document. */}
+                {/* Only for someone who wants to read more; not the primary path. */}
                 <Link
                   href={AGENT_GRAPH_WORKFLOW_HREF}
                   className={controlClass({ shape: "link", tone: "secondary", className: "text-label hover:text-[color:var(--color-text-secondary)]" })}
@@ -250,26 +193,12 @@ export function useAgentClientControls({
   }
 
   /**
-   * The per-tool render fragments — **order is not decided here.** This button column had the
-   * order hardcoded as Claude Code → Cursor → Antigravity → Codex while the global-scope tab in
-   * the same sheet used `AGENT_CLIENTS` (Claude Code → Codex → Cursor → Antigravity): one list
-   * with two orders inside one sheet. Deriving render order from that array removes the place
-   * they can diverge again. Gate: `AgentClientButtons.test.tsx` "render order follows
-   * AGENT_CLIENTS".
+   * Per-tool render fragments. Render order comes from `AGENT_CLIENTS`, not from here, so one
+   * list cannot show two orders.
    */
   const clientRenderers: Record<ClientId, () => React.ReactNode> = {
-    // Claude Code — Tauri writes `.mcp.json` automatically; the web copies it.
-    //
-    // **The fill was removed** (2026-08-02, design council). This branch alone hardcoded
-    // `primary` to true and wore the indigo wash, while the other three had no path to receive
-    // that value at all. Measured, all four were `750×38, x=407` with zero dimensional variance
-    // and only one filled, so it read as **«one right answer and three rejects»** rather than
-    // four options. The four write to different files (`.mcp.json`, `.codex/config.toml`,
-    // `.cursor/mcp.json`, `.agents/mcp_config.json`) — attaching more than one is a normal
-    // scenario, so there cannot be a «right answer».
-    //
-    // There is still no signal for which tool someone uses (`recommendedClientId`). Rather than
-    // wiring a signal that does not exist, **the wrong signal is switched off first**.
+    // Claude Code: the installed app writes `.mcp.json`; the web copies it. No fill: the four
+    // write different files, and there is no signal for which tool someone uses.
     claudeCode: () =>
       mcpJsonIsReady ? (
         <ClientStatus
@@ -310,10 +239,8 @@ export function useAgentClientControls({
         />
       ),
 
-    // Cursor — **the installed app writes the file.** Research on 2026-07-30 confirmed the
-    // `.cursor/mcp.json` project scope, while the deeplink's landing file is not stated in the
-    // official documentation. One predictable file inside the vault beats convenience whose
-    // destination is unknown. On the web, files cannot be written, so the deeplink remains.
+    // Cursor: the installed app writes `.cursor/mcp.json`, because the deeplink's landing file is
+    // undocumented. The web cannot write files, so the deeplink remains there.
     cursor: () =>
       onWriteConfigs ? (
         <ClientAction
@@ -342,12 +269,9 @@ export function useAgentClientControls({
         />
       ),
 
-    // Antigravity — the workspace `.agents/mcp_config.json`, stdio explicit, and its key is
-    // `mcpServers`, so the existing writer handles it as-is (research 2026-07-30).
-    //
-    // **VS Code is absent from this row.** It supports `.vscode/mcp.json` but its key is
-    // `servers` rather than `mcpServers`, which demands a second writer — too costly against the
-    // overlap. Its snippet stays in the "other tools" table under the advanced fold.
+    // Antigravity: workspace `.agents/mcp_config.json` with the `mcpServers` key, so the existing
+    // writer handles it. VS Code is absent: its `servers` key would need a second writer; its
+    // snippet stays in the "other tools" table under the advanced fold.
     antigravity: () =>
       onWriteConfigs ? (
         <ClientAction
@@ -369,7 +293,7 @@ export function useAgentClientControls({
         />
       ),
 
-    // Codex — Tauri writes the config automatically; the web copies a one-line command.
+    // Codex: the installed app writes the config; the web copies a one-line command.
     codex: () =>
       codexConfigIsReady ? (
         <ClientStatus
@@ -435,37 +359,25 @@ export function useAgentClientControls({
 }
 
 export interface AgentClientControls {
-  /** The degradation card plus the by-hand panel, when no server can be launched; the controls are null then. */
+  /** When no server can be launched; the controls are null then. */
   serverUnavailable: React.ReactNode | null;
-  /** One control per client, in the client's own current state (write, copy, deeplink, or ready). */
+  /** One control per client in its current state. */
   controls: Record<AgentClientId, React.ReactNode> | null;
-  /** The web note under the controls — a deeplink needs a path a browser does not know. */
+  /** A deeplink needs a path a browser does not know. */
   manualPathNote: React.ReactNode | null;
 }
 
 /**
- * **The row grammar of the Agents destination** (2026-09-25, round 3).
- *
- * These controls used to be the `Button` primitive's `outline/sm` stretched to a fixed 144px slot
- * (`w-full` inside `w-36`), bold and on its own fill, while every other row and heading action on
- * the same destination (open a chat, check the connection, install guide, check again, confirm
- * the connection) is a 32px `Chip` at `lg`, natural width, a glyph before its verb. Two grammars
- * one tab apart read as two products. They now wear the chip the rows of the agents tab wear; the
- * four are still peers (the 2026-08-02 council's "no right answer" call holds: same tone on all
- * four, no accent).
- *
- * The primitive (`controlClass`) owns the focus ring, the press and the disabled state; what is written here
- * is only the border step `DETAIL_TOGGLE_CHIP` gives the sibling chips (that constant lives in a
- * widget this feature cannot import).
+ * The Agents row chip grammar: a 32px `Chip` at `lg`, natural width, glyph before the verb, same
+ * tone on all four. `controlClass` owns focus, press and disabled; this adds only the border
+ * step of `DETAIL_TOGGLE_CHIP`, which lives in a widget this feature cannot import.
  */
 const ROW_CHIP_EDGE =
   'shrink-0 whitespace-nowrap border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]';
 
 /**
- * **A settled state is a badge, the same one the agents tab uses** (round 3). "Ready" used to be
- * drawn as a button-shaped box with a check, so on the MCP tab a finished row looked pressable,
- * while the agents tab one press away says the same word as a dot and a tag. One word, one shape.
- * Exported so the runtime rows read it from here rather than keeping a second copy.
+ * A settled state is the same badge the agents tab uses, so a finished row does not look
+ * pressable. Exported so the runtime rows do not keep a second copy.
  */
 export function RowStateBadge({
   ready,
@@ -482,8 +394,7 @@ export function RowStateBadge({
       {...rest}
       className={badgeClass({
         shape: "tag",
-        /* A fixed floor with the word centred, so the badges form one column down a list
-           instead of ending wherever their word does. */
+        /* A fixed floor with the word centred, so badges form one column. */
         className: cn(
           "inline-flex min-w-18 shrink-0 items-center justify-center gap-1.5 py-0.5 bg-[color:var(--color-overlay-2)]",
           ready ? "text-[color:var(--color-text-secondary)]" : "text-[color:var(--color-text-tertiary)]",
@@ -529,9 +440,7 @@ function ClientAction({
 }: {
   testId: string;
   /**
-   * The verb's glyph. Every row action on this destination leads with one (round 3), so a write
-   * without its own glyph falls back to the plug rather than standing bare beside chips that
-   * carry theirs.
+   * The verb's glyph; a write without one falls back to the plug.
    */
   icon?: React.ReactNode;
   label: Wording;
@@ -546,10 +455,9 @@ function ClientAction({
   const isDone = feedback === "done";
   const isCopied = feedback === "copied";
   const isBusy = feedback === "busy";
-  // A failure is a state of this control, so it is said on this control. One sentence serves
-  // every action here: what did not happen is already in the label beside it.
+  // A failure is said on this control; the label beside it already says what did not happen.
   const isFailed = feedback === "failed";
-  // The native 16px micro mark sits in the existing 14px slot, keeping the label in place.
+  // The native 16px micro mark sits in the 14px slot, keeping the label in place.
   const shownIcon = isBusy ? (
     <span className="relative inline-flex size-3.5 shrink-0" aria-hidden="true">
       <BrandMark detail="micro" alt="" className="atlas-inline-waiting-mark absolute left-1/2 top-1/2 size-4 max-w-none -translate-x-1/2 -translate-y-1/2" />
@@ -578,16 +486,13 @@ function ClientAction({
       data-testid={testId}
       data-state={feedback}
       /*
-       * Busy is `aria-disabled`, not `disabled` (2026-09-25 sweep). A disabled button cannot hold
-       * focus, so pressing Enter on "connect" dropped the keyboard to `<body>` for the length of
-       * the write and the person lost their place in the list. `aria-busy` says why it does not
-       * answer; the press is ignored here instead of by the browser.
+       * Busy is `aria-disabled`, not `disabled`: a disabled button drops keyboard focus to
+       * `<body>` during the write. `aria-busy` says why; the press is ignored here.
        */
       onClick={isBusy ? undefined : onClick}
       aria-disabled={isBusy || undefined}
       aria-busy={isBusy || undefined}
-      /* The row beside this button already names the tool and its file, so only the verb is
-         drawn; the sentence stays as the accessible name (see `Wording`). */
+      /* Only the verb is drawn; the sentence is the accessible name (see `Wording`). */
       aria-label={shownLabel.full}
       className={ROW_CHIP_EDGE}
     >
@@ -608,8 +513,7 @@ function ClientLink({
   label: Wording;
   href: string;
 }) {
-  // A deeplink uses a custom URL scheme, so this is a plain anchor rather than a next Link. The
-  // OS wakes the client with no new window.
+  // A custom URL scheme, so a plain anchor rather than a next Link; the OS wakes the client.
   return (
     <a
       href={href}

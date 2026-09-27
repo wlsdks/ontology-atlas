@@ -11,22 +11,15 @@ import {
 } from '@/shared/lib/connector-store';
 
 /**
- * The connectors stored beside the open vault, as one piece of screen state.
- *
- * The file is the source of truth and this is a view of it: every change re-reads before it writes
- * (`connector-store.ts` serializes that pair), and the result of the write is what updates the
- * screen. Holding an optimistic copy here would let the screen and the folder disagree, and the
- * folder is the thing another surface — or the person, in an editor — can change underneath us.
- *
- * Both surfaces use this. The store is built from the directory handle, which the browser has too,
- * so the *list* works on the web. What the web cannot do is put a token in a keychain or spawn the
- * agent that would use one; that boundary belongs to the screen, which says so.
+ * The connectors beside the open vault as screen state. The file is the source of truth: each
+ * change re-reads before writing (`connector-store.ts`) and the write result updates the
+ * screen, because an optimistic copy could disagree with a folder edited elsewhere. The list
+ * works on the web too; keychain tokens and agent spawning stay app-only, and the screen says so.
  */
 export interface VaultConnectorsState {
   /**
-   * `loading` before the first read, `unavailable` with no folder open. `malformed` means the
-   * file exists and is not ours — which blocks writing, so the screen must say it rather than
-   * showing an empty list somebody would happily add to.
+   * `malformed` means the file exists and is not ours, which blocks writing, so the screen must
+   * say so rather than show an empty list.
    */
   status: 'loading' | 'ready' | 'malformed' | 'unavailable';
   connectors: ConnectorRecord[];
@@ -39,14 +32,12 @@ export interface VaultConnectorsState {
 }
 
 /**
- * A stable empty array, so a consumer memoising on `connectors` does not rebuild its session
- * descriptor on every render of a vault that has none.
+ * Stable, so a consumer memoising on `connectors` does not rebuild its session descriptor.
  */
 const NONE: ConnectorRecord[] = [];
 const NO_KEYS: string[] = [];
 
-/** What the file said, and **which folder said it** — a late answer from the previous vault is
- * dropped rather than painted over the current one. */
+/** Keyed by the folder that answered, so a late answer from the previous vault is dropped. */
 interface Loaded {
   store: ConnectorStore;
   status: 'ready' | 'malformed' | 'unavailable';
@@ -97,8 +88,8 @@ export function useVaultConnectors(
     async (job: (store: ConnectorStore) => Promise<ConnectorWriteResult>) => {
       if (!store) return null;
       const result = await job(store);
-      // A refused write leaves the screen showing what the file still says; only the status
-      // changes, so the reason can be stated beside a list that is still true.
+      // A refused write changes only the status, so the reason sits beside a list that is still
+      // true.
       setLoaded((previous) => ({
         store,
         status:
@@ -115,8 +106,8 @@ export function useVaultConnectors(
     [store],
   );
 
-  // The answer for **this** folder only. Before the first read lands — and after the folder
-  // changes — the honest state is "loading", not the previous vault's list.
+  // Only this folder's answer; before the first read, and after the folder changes, the state
+  // is loading, not the previous vault's list.
   const current = loaded && loaded.store === store ? loaded : null;
 
   return {

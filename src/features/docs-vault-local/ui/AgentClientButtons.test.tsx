@@ -1,10 +1,5 @@
-// The per-client control state machine — write, copy, deeplink, ready, and a refused write.
-//
-// Until 2026-09-19 this file also rendered the tool buttons as a column and locked their order
-// to `AGENT_CLIENTS` ("one list, two truths", measured 2026-07-30). The column left with the
-// three-step accordion: the Agents destination's MCP tab lays the same controls out as rows, so
-// the order contract now lives beside those rows (`VaultAgentSetupPanel.test.tsx`), and this
-// file measures the hook through the smallest harness that draws every control it returns.
+// The per-client control state machine: write, copy, deeplink, ready, and a refused write.
+// The row order contract lives beside the Agents rows (`VaultAgentSetupPanel.test.tsx`).
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
@@ -52,55 +47,33 @@ function renderButtons() {
   );
 }
 
-/**
- * The four are **equal options** (2026-08-02, design council).
- *
- * Only the `claudeCode` render function used to hardcode `primary` to true, and the other three had
- * no path to receive that value at all. Measured: all four were `750×38, x=407` with zero
- * dimensional variance, and one alone was filled `rgba(94,106,210,0.24)` — reading as **"one right
- * answer and three rejects"** rather than four options. They write to different files, so this is not
- * an exclusive single choice and there cannot be a "right answer".
- */
-describe("AgentClientButtons — 넷은 같은 무게다", () => {
+/** The four clients write different files, so none is styled as the right answer. */
+describe("AgentClientButtons gives the four clients equal weight", () => {
   it("gives no client a filled treatment the others cannot get", () => {
     renderButtons();
     const classNames = AGENT_CLIENTS.map(
       (client) => screen.getByTestId(CLIENT_TESTID[client.id]).className,
     );
-    // A set meant to read as one unit must have **one** surface class.
     expect(new Set(classNames).size).toBe(1);
-    // And that one class carries no indigo fill wash.
     for (const className of classNames) {
       expect(className).not.toContain("--color-indigo-a24");
     }
   });
 
-  /**
-   * The four `>_` terminal glyphs were removed once (Tufte: Terminal carried no state). Round 3
-   * (2026-09-25) overturns the "no glyph at rest" half of that: these are now row chips on the
-   * Agents destination, where every other row and heading chip leads with its verb's glyph, and a
-   * bare "Connect" was the one control that read as a different object. What survives is the part
-   * that was about ink: **one** glyph per control, and the state glyph (check, copy, alert, the
-   * waiting mark) replaces the resting one rather than joining it.
-   */
+  /** One glyph per control; a state glyph replaces the resting one rather than joining it. */
   it("draws exactly one glyph on each connect action", () => {
     renderButtons();
     for (const client of AGENT_CLIENTS) {
       const control = screen.getByTestId(CLIENT_TESTID[client.id]);
       expect(
         control.querySelectorAll("svg").length,
-        `${client.id} 연결 버튼의 글리프 수`,
+        `${client.id} connect button glyph count`,
       ).toBe(1);
     }
   });
 });
 
-/*
- * ⚠️ Census state 5e, 2026-08-31. `writeAndConfirm` caught with **no binding** and `failed` had no
- * render branch, so a refused write left the button in its resting label with nothing said
- * anywhere. What a person saw was indistinguishable from never having pressed it.
- */
-describe("AgentClientButtons — 쓰지 못한 write 는 성공처럼 보이지 않는다", () => {
+describe("AgentClientButtons does not show a failed write as success", () => {
   function renderWithWriter(onWriteConfigs: () => Promise<void>) {
     return render(
       <NextIntlClientProvider locale="ko" messages={ko}>
@@ -145,7 +118,7 @@ describe("AgentClientButtons — 쓰지 못한 write 는 성공처럼 보이지 
     expect(ready.querySelector('[data-brand-detail]')).toBeNull();
   });
 
-  it("실패한 write 는 실패라고 말한다", async () => {
+  it("reports a failed write as failed", async () => {
     const onWriteConfigs = vi.fn(() => Promise.reject(new Error("Permission denied")));
     renderWithWriter(onWriteConfigs);
 
@@ -157,8 +130,6 @@ describe("AgentClientButtons — 쓰지 못한 write 는 성공처럼 보이지 
         "failed",
       ),
     );
-    // The button shows the short state and is *called* by the full sentence (2026-09-19): the
-    // row beside it names the tool, but a screen reader moving control to control does not.
     expect(screen.getByTestId("agent-client-claude-code")).toHaveTextContent("안 됐어요");
     expect(screen.getByTestId("agent-client-claude-code")).toHaveAttribute(
       "aria-label",
@@ -166,14 +137,12 @@ describe("AgentClientButtons — 쓰지 못한 write 는 성공처럼 보이지 
     );
   });
 
-  it("성공한 write 만 완료 표시를 받는다", async () => {
+  it("marks only a successful write as done", async () => {
     const onWriteConfigs = vi.fn(() => Promise.resolve());
     renderWithWriter(onWriteConfigs);
 
     fireEvent.click(screen.getByTestId("agent-client-claude-code"));
 
-    // A finished write flips the control to the ready status, which is the opposite outcome from
-    // the failed branch above — the point is that the two cannot look the same any more.
     await waitFor(() =>
       expect(screen.getByTestId("agent-client-claude-code")).toHaveAttribute("data-state", "ready"),
     );
