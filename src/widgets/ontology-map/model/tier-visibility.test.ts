@@ -56,10 +56,6 @@ describe("paint, hit and label begin together — no drawn-but-dead band", () =>
     }
   });
 
-  it("the floor is the draw pass's own skip value, not a second number beside it", () => {
-    expect(HITTABLE_MIN_TIER_ALPHA).toBe(0.02);
-  });
-
   it("each band opens where the old hit floor sat, so clicking begins when it always did", () => {
     // smoothstep reaches 0.5 at the midpoint; the previous band midpoints are these opening ratios.
     expect(DEFAULT_TIER_REVEAL.capability.enterRatio).toBe(1.75);

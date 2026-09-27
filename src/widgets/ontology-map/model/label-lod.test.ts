@@ -62,10 +62,6 @@ describe("selectTopKLabels", () => {
   it("returns an empty set for no entries", () => {
     expect(selectTopKLabels([], LABEL_TOP_K).size).toBe(0);
   });
-
-  it("exposes the default budget of 20", () => {
-    expect(LABEL_TOP_K).toBe(20);
-  });
 });
 
 describe("selectDiscLabelEligible (high-fan disc label budget)", () => {

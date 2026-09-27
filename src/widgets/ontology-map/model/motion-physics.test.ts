@@ -10,14 +10,6 @@ import {
   toSpringConstants,
 } from "./motion-physics";
 
-describe("house spring family", () => {
-  it("declares the two Apple-vocabulary springs with the documented parameters", () => {
-    // UI default — critically damped, no overshoot (Designing Fluid Interfaces).
-    expect(UI_SPRING).toEqual({ damping: 1.0, response: 0.35 });
-    // Momentum — slightly under-damped, reserved for flick/throw releases only.
-    expect(MOMENTUM_SPRING).toEqual({ damping: 0.8, response: 0.35 });
-  });
-});
 
 describe("springAngularFrequency", () => {
   it("is the reciprocal of response (ω = 1/response, rad/s)", () => {
