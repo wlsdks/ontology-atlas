@@ -62,7 +62,8 @@ export function DocMetaBar({
    */
   const inGraph = topologyHref != null;
   // The explanation shows only for documents not on the map; for the rest the chip and link
-  // already say it.
+  // already say it. A wiki page gets its own sentence: the generic one would have it add
+  // the `kind:` that `validateWikiPage` rejects.
   const proofBody = inGraph ? null : t(isWikiPage(doc) ? "notOnMapWikiBody" : "notOnMapBody");
 
   return (

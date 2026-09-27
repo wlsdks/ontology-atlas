@@ -333,7 +333,6 @@ export function DesktopVaultWelcome({
 
           </section>
 
-          {/* On the chooser the list already leads the main column. */}
           {choosing ? null : recentSection}
           {choosing || recentVaults.length > 0 ? null : (
             <p className="border-t border-[color:var(--color-border-soft)] pt-2 text-body leading-body text-[color:var(--color-text-tertiary)]">

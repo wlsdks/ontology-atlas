@@ -40,12 +40,6 @@ import { kindFolderAddress, reclassifyMoveTarget } from "../../lib/kind-folder-m
 import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolve-doc-edit-subject";
 import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
 
-/**
- * The ontology subset of `doc.frontmatter` that `deriveOntologyFromVault` reads, as a mono block.
- * Collapsed by default but never removed from the DOM; the caller remounts it per document
- * with `key={doc.slug}`.
- */
-
 // Stable empty Map keeps `useMemo` deps stable.
 const EMPTY_SELF_EDIT_TIMESTAMPS: ReadonlyMap<string, number> = new Map();
 
@@ -264,6 +258,11 @@ export interface DocFrontmatterBlockProps {
   selfEditTimestamps?: ReadonlyMap<string, number>;
 }
 
+/**
+ * The ontology subset of `doc.frontmatter` that `deriveOntologyFromVault` reads, as a mono block.
+ * Collapsed by default but never removed from the DOM; the caller remounts it per document
+ * with `key={doc.slug}`.
+ */
 export function DocFrontmatterBlock({
   doc,
   canEdit = false,

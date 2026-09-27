@@ -21,6 +21,8 @@ export interface DocsVaultTabStripProps {
  * The open-document tab strip in zone-c; the URL `?slug=` stays the active source of truth.
  * The active tab's canvas background covers the header's 1px baseline and draws its own
  * 2px indigo underline.
+ * It uses `nav` + `aria-current`, not `role="tablist"`: with no `tabpanel` or roving tabindex
+ * that role promises arrow keys.
  */
 export function DocsVaultTabStrip({
   tabs,

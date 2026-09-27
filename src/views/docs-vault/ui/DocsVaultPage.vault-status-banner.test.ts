@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 /**
  * The banner must never print an empty pair of brackets: `path-missing` carries no cause, and a
  * browser's English error must not fill them on a Korean screen. Reads the source because
- * mounting the whole route costs more than the fact; `AppSettingsMenu.test.tsx` renders the branch.
+ * mounting the whole route costs more than the fact; `AppSettingsMenu.test.tsx` renders its twin, not this copy.
  */
 const SOURCE = readFileSync(
   join(import.meta.dirname, 'DocsVaultPage.tsx'),

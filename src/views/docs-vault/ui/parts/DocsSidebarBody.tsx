@@ -43,7 +43,7 @@ import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { normalizeForMatch } from "@/shared/lib/node-name-match";
 
 /**
- * The docs file tree: Pinned, the Vault tree and Recent stay open; only the tag filter collapses.
+ * The docs file tree: Pinned, the Vault tree and Recent stay open; recently changed and tags collapse.
  * The caller wraps `onSelect` to close the mobile drawer.
  */
 export interface DocsSidebarBodyProps {
@@ -88,6 +88,7 @@ const RECENTLY_CHANGED_STRIP_MAX = 5;
 /**
  * The row's widest state needs 301.3px (`.claude/shots-2026-09-07/docshead-before-measurements.json`);
  * 320 adds the next gap step so a label never appears with nowhere to go.
+ * The className writes it out as `@min-[320px]`: Tailwind cannot read a template, and the test compares them.
  */
 export const DOCS_HEAD_LABEL_MIN_PX = 320;
 
@@ -411,7 +412,6 @@ export function DocsSidebarBody({
                 ))}
             </Surface>
           </div>
-          {/* State left of the hairline, action right. */}
           {showCreateDocument ? (
             <span
               aria-hidden
@@ -476,7 +476,6 @@ export function DocsSidebarBody({
               setTreeQuery("");
               onTagSelect(null);
             }}
-            // `link`'s 44px minimum would inflate this 28px bar.
             className={controlClass({ shape: "link", className: "flex-none rounded-chip px-1.5 py-0.5 hover:text-[color:var(--color-text-primary)]" })}
           >
             {t("clearFilter")}
@@ -486,7 +485,7 @@ export function DocsSidebarBody({
 
       {/* Only the tree fills the remaining space and scrolls. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {/* What waits on a person comes first; draws nothing when both lists are empty. */}
+        {/* What waits on a person comes first; draws nothing when the queue is empty. */}
         <ReviewQueueSection
           rows={reviewQueue}
           selectedSlug={selectedSlug}

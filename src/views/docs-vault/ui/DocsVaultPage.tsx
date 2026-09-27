@@ -297,7 +297,7 @@ function DocsVaultContent({
     useState<DocsVaultCollection>(initialCollection);
   const [treeSort, setTreeSort] = useState<DocsTreeSort>(queryTreeSort);
   const [treeGroup, setTreeGroup] = useState<DocsTreeGroup>(queryTreeGroup);
-  // `?intent=local` (the landing CTA) starts on the local source so the picker shows first.
+  // A loaded local vault starts local; `?intent=local` switches after mount, in the effect below.
   const [source, setSource] = useState<Source>(() =>
     localWinsInitialSource ? 'local' : querySource ?? 'server',
   );
@@ -476,7 +476,7 @@ function DocsVaultContent({
       });
       return;
     }
-    // `?intent=local` opens local work only inside the installed app.
+    // `?intent=local` holds in every runtime; the mount effect above switches the source.
     if (typeof window !== 'undefined') {
       const intent = new URLSearchParams(window.location.search).get('intent');
       if (shouldHonorLocalIntent(intent, isDesktopRuntime)) {
@@ -585,7 +585,7 @@ function DocsVaultContent({
     useDocReadingScrollSpy(selectedSlug, source);
   const backToTop = useBackToTop(articleScrollRef, selectedSlug);
 
-  // A hosted browser does not open local vault work, even with a stored local source.
+  // Fall back to the sample only when FSA is unsupported; a local web session is valid.
   useEffect(() => {
     if (source === 'local' && localVaultStatus === 'unsupported') {
       scheduleStateSync(() => {
@@ -607,7 +607,7 @@ function DocsVaultContent({
   }, [source, localVaultStatus, setAdvancedOpen]);
 
   const handleSourceChange = useCallback((next: Source) => {
-    // The installed app has no bundled sample entry.
+    // The installed app has no bundled sample; legacy commands and links must not reopen it.
     if (installedShell && next === 'server') return;
     setSource(next);
     setStaticSampleOverride(null);
@@ -917,7 +917,6 @@ function DocsVaultContent({
       toast.show(t('dialog.noHeadings'), 'info');
       return;
     }
-      // h2 has no indent, h3 gets two spaces.
     const tocLines = headings.map((h) => {
       const indent = h.depth === 3 ? '  ' : '';
       return `${indent}- [${h.text}](#${h.slug})`;
@@ -1508,6 +1507,7 @@ function DocsVaultContent({
                   selectedDoc.frontmatter,
                   parseFrontmatter(await getDocContent(selectedDoc.slug)).body,
                 ),
+                // Confirming answers the reservation, so its question is cleared.
                 review_note: null,
               };
         await localVault.updateFrontmatter(selectedDoc.slug, patch, {
@@ -2034,7 +2034,6 @@ function DocsVaultContent({
           : descendant.children?.some(containsScopedDoc) ?? false;
       }) ?? false),
   ).length ?? 0;
-  // The vault pill keeps only the swap; other vault actions live in the settings vault tab.
 
   // One neutral frame until source and restored manifest settle, so the static manifest
   // never paints as the installed app's data.
@@ -2049,7 +2048,8 @@ function DocsVaultContent({
       {/* Header zones: [zone-l identity] [zone-c tabs] [zone-r tools]. */}
       {/* From md the header is one row; below md it wraps. */}
       {/* `isolate` and `z-10` are a pair: `isolate` confines the header's stacking, and `z-10`
-         lifts the header over the reading pane so its dropdowns are not covered. */}
+         lifts the header over the reading pane so its dropdowns are not covered. Keep it
+         below `--z-map-scrim` (25) and `--z-dialog` (60). */}
       <header className="relative isolate z-10 flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 bg-[color:var(--color-panel)] px-3 py-2 md:h-11 md:min-h-0 md:flex-nowrap md:gap-2 md:px-4 md:py-0">
         <h1 className="sr-only">
           {legacyDocumentMode ? t('compatibility.title') : t('header.title')}
@@ -2171,7 +2171,7 @@ function DocsVaultContent({
             t={t}
           />
         </div>
-        {/* zone-c: open-document tabs; empty with zero tabs. `self-stretch` covers the baseline. */}
+        {/* `self-stretch` fills the header height so the active tab covers the baseline. */}
         <div
           data-docs-header-zone="tabs"
           className="hidden min-w-0 flex-1 self-stretch lg:flex"
@@ -2553,7 +2553,6 @@ function DocsVaultContent({
                       </>
                     )}
                 </DocReadingPane>
-                {/* Right side: outline, share and file management, closed by default. */}
               </div>
 
               {/* Always visible; zero backlinks shows an empty-state line. */}
