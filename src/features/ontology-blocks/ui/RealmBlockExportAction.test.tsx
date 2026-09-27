@@ -128,13 +128,15 @@ describe('RealmBlockExportAction', () => {
   it('is disabled with a "open your folder" hint (not hidden) when no vault is loaded', () => {
     // Without a vault it stays in place, disabled with a hint, rather than vanishing.
     mocks.vault = { ...makeVault(), status: 'idle', manifest: null };
+    const picker = vi.fn();
+    (window as unknown as { showDirectoryPicker: () => Promise<unknown> }).showDirectoryPicker = picker;
     render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);
     const button = screen.getByTestId('realm-block-export');
     expect(button).toBeInTheDocument();
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('title', 'vaultRequiredHint');
     fireEvent.click(button);
-    expect(mocks.vault.fileHandles).toBeDefined();
+    expect(picker).not.toHaveBeenCalled();
   });
 
   it('is disabled with a hint when the environment has no directory picker', () => {

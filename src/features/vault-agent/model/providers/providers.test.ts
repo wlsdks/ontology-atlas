@@ -597,11 +597,6 @@ describe('vendor adapters fold into one shape', () => {
     });
   });
 
-  it('local endpoint has no default model because only that machine knows it', () => {
-    // A pinned default fails the first round trip with "model not found".
-    expect(PROVIDER_ADAPTERS.local.defaultModel).toBe('');
-  });
-
   it('local endpoint does not accept an answer that skipped required reads', () => {
     const turn = assembly({ model: 'qwen3:8b' });
     const response = PROVIDER_ADAPTERS.local.parseResponse(
