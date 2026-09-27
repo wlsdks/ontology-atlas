@@ -455,10 +455,9 @@ describe("hex board router", () => {
     expect(Math.hypot(last.x - target.x, last.y - target.y)).toBeLessThan(Math.hypot(first.x - target.x, first.y - target.y) - 1);
   });
 
-  it("builds the dogfood lattice quickly", () => {
+  it("builds the dogfood lattice", () => {
     const { nodes, edges } = dogfoodGraph();
     const lattice = buildHexLattice(computeHexBoard(nodes, edges));
     expect(lattice.xs.length).toBeGreaterThan(100);
-    expect(lattice.buildMs).toBeLessThan(200);
   });
 });

@@ -484,7 +484,7 @@ function SelectedPairDetail({
           ⚠️ Widening only the hit area with `.touch-hit-expand` is **forbidden**. At a 26px row
           pitch a 44px expansion overlaps neighbours by 18px, and in DOM order a later row steals
           the earlier row's tap — "too small to press" becomes "pressed it and something else
-          opened". Gate: `tests/e2e/dense-row-target-size.spec.ts`. */}
+          opened". Gate: the coupling-detail state in `tests/e2e/a11y-vault-backed.spec.ts`. */}
       <div className="flex flex-col gap-2.5">
         {pair.examples.map((example) => (
           <div

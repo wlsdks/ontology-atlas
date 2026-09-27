@@ -1,11 +1,10 @@
 # Browser CI uses the same impact plan as unit/MCP CI. Exact source-to-spec
 # mappings run on shard 1 only; unmapped rendered dependencies fail closed to
-# the three-shard PR smoke project. Scheduled/manual runs and planner changes run every project.
+# the five-shard PR smoke project. Scheduled/manual runs and planner changes run every project.
 #
-# A pull request is opened as a **draft** and runs nothing. When it is that
-# branch's turn, `pnpm pr:land` merges today's main into it, runs the local
-# lanes, and marks it ready; `ready_for_review` fires this workflow **once**, on
-# exactly the tree that is about to land. Owner's shape, 2026-09-12: most
+# A pull request is opened as a **draft** and runs nothing. `pnpm pr:land` puts
+# it on a landing train built from today's main, and the train's pull request
+# fires this workflow **once**, on exactly the tree that is about to land. Owner's shape, 2026-09-12: most
 # changes overlap, so CI on a branch that is not yet the thing being merged is a
 # round paid twice. An identical main tree reuses that successful review;
 # unproven main pushes and scheduled/manual runs still execute their evidence.
@@ -91,6 +90,9 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build once
         run: pnpm build
+        env:
+          # `pnpm typecheck` in Checks owns types for this tree (next.config.ts).
+          ATLAS_BUILD_SKIP_TYPECHECK: "1"
       - name: Pack static export
         run: tar -czf "$RUNNER_TEMP/playwright-export.tgz" out
       - name: Upload static export
@@ -222,8 +224,13 @@ jobs:
           path: output/playwright
           retention-days: 1
 
+  # Five runners, not more workers. A runner here has four vCPUs, but the suite is
+  # CPU-bound: on the same four cores (2026-09-27) four workers ran a 129-test sample
+  # in 219 s against two workers' 242 s, because each test took 44% longer. Machines
+  # scale; workers on one machine do not. Three shards of a full run took 16.4 minutes
+  # (5,163 test-seconds); five split it into about 1,030 test-seconds each.
   suite:
-    name: Playwright (chromium ${{ matrix.shard }}/3)
+    name: Playwright (chromium ${{ matrix.shard }}/5)
     needs: [changes, build]
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
@@ -233,7 +240,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     env:
       ACTIVE: ${{ needs.changes.outputs.playwright == 'full' || needs.changes.outputs.playwright == 'smoke' || (needs.changes.outputs.playwright == 'targeted' && matrix.shard == 1) }}
       CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
@@ -268,9 +275,9 @@ jobs:
         if: env.ACTIVE == 'true'
         uses: ./.github/actions/setup-playwright
 
-      - name: Run browser evidence (shard ${{ matrix.shard }}/3)
+      - name: Run browser evidence (shard ${{ matrix.shard }}/5)
         if: env.ACTIVE == 'true'
-        run: node scripts/run-ci-lane.mjs --lane=e2e --shard=${{ matrix.shard }}/3
+        run: node scripts/run-ci-lane.mjs --lane=e2e --shard=${{ matrix.shard }}/5
         env:
           CI: true
 
@@ -296,3 +303,35 @@ jobs:
             output/playwright/assignment-*.json
             output/playwright/results-*.json
           retention-days: 7
+
+  # `Playwright (chromium 1/3)`, `2/3` and `3/3` are required status contexts on `main`,
+  # and a required context that never reports again blocks every merge. As with
+  # `Unit · Contract` in checks.yml, the names stay and this job carries them: each leg
+  # passes only if every browser shard did. Once branch protection names one context
+  # for the suite, this collapses to a single leg.
+  suite-required:
+    name: Playwright (chromium ${{ matrix.shard }}/3)
+    needs: [changes, suite]
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    runs-on: ubuntu-latest
+    # budget: 10s
+    timeout-minutes: 2
+    strategy:
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - name: Require every browser shard
+        env:
+          PLAN: ${{ needs.changes.result }}
+          SHARDS: ${{ needs.suite.result }}
+        run: |
+          if [ "$PLAN" != "success" ]; then
+            echo "::error::E2E impact planning failed; refusing to turn a missing verdict into green"
+            exit 1
+          fi
+          # A matrix `needs` result is `success` only when every leg succeeded.
+          if [ "$SHARDS" != "success" ]; then
+            echo "::error::a Playwright (chromium) shard reported $SHARDS"
+            exit 1
+          fi
+          echo "all five Playwright (chromium) shards passed"

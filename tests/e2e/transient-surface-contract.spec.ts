@@ -15,6 +15,9 @@ import { waitForAnimationsDone, waitForBoxStill, waitForMapStill, waitFrames } f
  * hang ceiling (measured 2026-09-13). The body's box repeating across frames is the
  * condition these measurements actually need.
  */
+/** Frames a trigger gets to put a declared surface on screen before it counts as opening none. */
+const SURFACE_FRAMES = 30;
+
 async function routeSettled(page: import("@playwright/test").Page) {
   await page.waitForLoadState("networkidle");
   await waitForBoxStill(page.locator("body"));
@@ -188,32 +191,55 @@ test.describe("잠깐 뜨는 표면 3계약", () => {
         await page.locator("[data-sweep-trigger]").first().focus();
         await page.keyboard.press("Enter");
         /*
-         * Just after the first frame of the entrance — measuring **here** is the point:
-         * this sample has to land while the animation is still alive, so the 70 ms is the
-         * subject of the measurement and not a settle to wait out.
+         * The first painted frame of the entrance — measuring **there** is the point: the
+         * sample has to land while the animation is still alive. It is found in the page, frame
+         * by frame, rather than after a fixed 70 ms, which on a slow runner could land before
+         * the surface mounted and on a fast one after a short entrance had ended. A trigger
+         * that opens nothing is given up on after `SURFACE_FRAMES` frames.
          */
-        // measurement window: the sample must land mid-entrance (see above).
-        await page.waitForTimeout(70);
-
-        const shot = await page.evaluate(() => {
-          const el = [...document.querySelectorAll("[data-transient-surface]")].find((candidate) => {
-            const box = candidate.getBoundingClientRect();
-            const style = getComputedStyle(candidate);
-            return box.width > 8 && box.height > 8 && style.visibility !== "hidden" && Number(style.opacity) > 0.02;
-          }) as HTMLElement | undefined;
-          if (!el) return null;
-          const box = el.getBoundingClientRect();
-          const style = getComputedStyle(el);
-          return {
-            kind: el.dataset.transientSurface!,
-            animated:
-              (el.getAnimations?.({ subtree: true }) ?? []).length > 0 ||
-              (style.transitionDuration !== "0s" && style.transitionProperty !== "none"),
-            tookFocus: el.contains(document.activeElement),
-            cx: box.x + box.width / 2,
-            cy: box.y + box.height / 2,
-          };
-        });
+        const shot = await page.evaluate(
+          (maxFrames) =>
+            new Promise<{
+              kind: string;
+              animated: boolean;
+              tookFocus: boolean;
+              cx: number;
+              cy: number;
+            } | null>((resolve) => {
+              let frames = 0;
+              const nextFrame = () => new Promise<void>((done) => requestAnimationFrame(() => done()));
+              const tick = async () => {
+                frames += 1;
+                const el = [...document.querySelectorAll("[data-transient-surface]")].find((candidate) => {
+                  const box = candidate.getBoundingClientRect();
+                  const style = getComputedStyle(candidate);
+                  return box.width > 8 && box.height > 8 && style.visibility !== "hidden" && Number(style.opacity) > 0.02;
+                }) as HTMLElement | undefined;
+                if (!el) {
+                  if (frames < maxFrames) requestAnimationFrame(() => void tick());
+                  else resolve(null);
+                  return;
+                }
+                const box = el.getBoundingClientRect();
+                const style = getComputedStyle(el);
+                const animated =
+                  (el.getAnimations?.({ subtree: true }) ?? []).length > 0 ||
+                  (style.transitionDuration !== "0s" && style.transitionProperty !== "none");
+                // Focus moves in an effect after the surface commits; give it two frames.
+                await nextFrame();
+                await nextFrame();
+                resolve({
+                  kind: el.dataset.transientSurface!,
+                  animated,
+                  tookFocus: el.contains(document.activeElement),
+                  cx: box.x + box.width / 2,
+                  cy: box.y + box.height / 2,
+                });
+              };
+              requestAnimationFrame(() => void tick());
+            }),
+          SURFACE_FRAMES,
+        );
 
         if (shot) {
           opened.push({

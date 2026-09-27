@@ -23,8 +23,6 @@ import { stubDirectoryPicker } from './vault-picker-stub';
  * folders in the recent list, deduped by the same identity rule the store uses.
  */
 
-const SHOT_DIR = '.tmp/vault-switch-shots';
-
 const VAULT_SEED = {
   'project.md': [
     '---',
@@ -166,13 +164,11 @@ test.describe('the launch asks which folder when it knows more than one', () => 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('vault-switch-rail-tile')).toBeVisible({ timeout: 60_000 });
     await expect(page.getByTestId('recent-vault-list')).toHaveCount(0);
-    await page.screenshot({ path: `${SHOT_DIR}/01-one-folder-resumes.png`, fullPage: false });
 
     // ── Second folder, opened through the rail switcher — the way out that did not exist.
     await page.getByTestId('vault-switch-rail-tile').click();
     await expect(page.getByTestId('vault-switch-popover')).toBeVisible();
     await settled(page, 'vault-switch-popover');
-    await page.screenshot({ path: `${SHOT_DIR}/02-rail-switcher-open.png` });
     await page.getByTestId('vault-switch-pick-other').click();
     await switchSettled(page);
     await expect
@@ -205,7 +201,6 @@ test.describe('the launch asks which folder when it knows more than one', () => 
     await expect(page.locator('[data-testid="recent-vault-row"][data-current="true"]')).toHaveCount(
       1,
     );
-    await page.screenshot({ path: `${SHOT_DIR}/03-launch-chooser-app-surface.png` });
 
     // ── The list is what the screen points at. See `strongestChroma` for why this is
     // measured across every colour channel instead of read off a class name.
@@ -226,7 +221,6 @@ test.describe('the launch asks which folder when it knows more than one', () => 
     await page.goto('/en/docs/?source=local&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('recent-vault-list')).toBeVisible({ timeout: 60_000 });
     await expect(page.getByTestId('recent-vault-row')).toHaveCount(2, { timeout: 30_000 });
-    await page.screenshot({ path: `${SHOT_DIR}/03b-launch-chooser-docs-surface.png` });
 
     // The second seat owes the same ranking, or the answer depends on how you arrived.
     const docsList = await strongestChroma(page, '[data-testid="recent-vault-list"]');
@@ -278,7 +272,6 @@ test.describe('the launch asks which folder when it knows more than one', () => 
       labelFits!.scrollWidth,
       `rail label overflows its box (${labelFits!.scrollWidth} > ${labelFits!.clientWidth}), so CSS adds a second ellipsis`,
     ).toBeLessThanOrEqual(labelFits!.clientWidth);
-    await page.screenshot({ path: `${SHOT_DIR}/04-chosen-folder-named-on-rail.png` });
   });
 
   test('a folder whose permission is refused says so before it is pressed', async ({ page }) => {
@@ -314,67 +307,5 @@ test.describe('the launch asks which folder when it knows more than one', () => 
     await expect(page.getByTestId('recent-vault-open')).toHaveCount(0);
     // The action that is actually available on a folder that will not open.
     await expect(page.getByTestId('recent-vault-forget').first()).toBeVisible();
-    await page.screenshot({ path: `${SHOT_DIR}/05-blocked-rows-say-why.png`, fullPage: false });
-  });
-});
-
-/**
- * **The chooser is reachable by no existing sweep, so it brings its own touch floor.**
- *
- * `touch-target-contract.spec.ts` measures every control it can reach, and it cannot reach
- * this one: the chooser needs two folders already in IndexedDB, which no sweep arranges. So
- * that gate stayed green while the row's action chips measured 41.5x44 under a coarse
- * pointer - height promoted, width not, because `shape: 'chip'` carries only the height half
- * of the floor (responsive seat, 2026-09-13, measured). This case is the floor for this
- * surface, with the same `Math.round(...) < 44` filter that gate uses.
- */
-test.describe('the chooser meets the touch floor it is never swept for', () => {
-  test.use({ hasTouch: true, isMobile: false });
-
-  test('every control on a known-folder row is at least 44 by 44', async ({ page }) => {
-    test.setTimeout(240_000);
-    await seedFirstRunSeen(page);
-    await stubDirectoryPicker(page, VAULT_SEED);
-
-    /*
-     * The two folders are picked at a width where the rail exists, because below `lg` the
-     * rail and its switcher are hidden — which is itself a named limit of this change. The
-     * measurement then happens at 390, where the chooser still renders on the docs surface.
-     */
-    await page.setViewportSize({ width: 1512, height: 945 });
-    await pickFolderFromFirstRun(page);
-    await page.getByTestId('vault-switch-rail-tile').click();
-    await page.getByTestId('vault-switch-pick-other').click();
-    await switchSettled(page);
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/en/docs/?source=local&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('recent-vault-list')).toBeVisible({ timeout: 60_000 });
-
-    const undersized = await page.evaluate(() => {
-      const rows = Array.from(document.querySelectorAll('[data-testid="recent-vault-row"]'));
-      const bad: string[] = [];
-      for (const row of rows) {
-        for (const control of Array.from(row.querySelectorAll('button'))) {
-          const r = control.getBoundingClientRect();
-          if (Math.round(r.width) < 44 || Math.round(r.height) < 44) {
-            bad.push(
-              `${control.getAttribute('data-testid') ?? control.tagName}: ${Math.round(r.width)}x${Math.round(r.height)}`,
-            );
-          }
-        }
-      }
-      return bad;
-    });
-
-    // Anti-idle: a chooser with no rows would pass this with an empty list.
-    await expect(page.getByTestId('recent-vault-row')).toHaveCount(2, { timeout: 30_000 });
-    expect(undersized, undersized.join(' · ')).toEqual([]);
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-      ),
-      'the chooser must not scroll sideways at 390',
-    ).toBe(true);
   });
 });

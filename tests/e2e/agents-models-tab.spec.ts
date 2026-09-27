@@ -115,6 +115,9 @@ for (const width of [1280, 1512]) {
       await expect(page.getByTestId("ai-connection-view")).toBeVisible();
     });
 
+    // The flows below are width-independent; they run once, at the narrower desk width.
+    if (width !== 1280) return;
+
     test("runner rows tell connected, empty and unreachable apart, and each check is recorded", async ({ page }) => {
       await openModelsTab(page);
       // Ollama answers with three models; pick one and it becomes the connected runner.

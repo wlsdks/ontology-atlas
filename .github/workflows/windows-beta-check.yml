@@ -43,6 +43,8 @@ on:
       - ".github/workflows/release-macos.yml"
       - ".github/workflows/windows-beta-check.yml"
       - "mcp/**"
+      - "!mcp/**/*.test.mjs"
+      - "!mcp/**/*.md"
       - "scripts/build-mcp-binary.mjs"
       - "scripts/verify-mcp-binary.mjs"
       - "scripts/stage-windows-release-assets.mjs"
@@ -56,6 +58,8 @@ on:
       - ".github/workflows/release-macos.yml"
       - ".github/workflows/windows-beta-check.yml"
       - "mcp/**"
+      - "!mcp/**/*.test.mjs"
+      - "!mcp/**/*.md"
       - "scripts/build-mcp-binary.mjs"
       - "scripts/verify-mcp-binary.mjs"
       - "scripts/stage-windows-release-assets.mjs"
@@ -135,7 +139,7 @@ jobs:
     name: Verify unsigned Windows x64 beta
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: windows-2022
-    # budget: 700s
+    # budget: 700s on a push to main; a pull request stops before the installer (about 5 min)
     timeout-minutes: 17
     steps:
       - name: Checkout
@@ -209,11 +213,16 @@ jobs:
       - name: Native bridge tests on Windows
         run: pnpm test:desktop:bridge
 
+      # The installer (9 of a PR run's 15 minutes) is built after merge, on the push to
+      # `main`, and for release from the tag in `release-macos.yml`. A pull request stops at
+      # the native bridge tests above, which is where Windows-only code breaks first.
       - name: Build Windows NSIS installer without updater signing
+        if: github.event_name != 'pull_request'
         shell: pwsh
         run: pnpm tauri build --bundles nsis --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
       - name: Require the beta installer to be unsigned
+        if: github.event_name != 'pull_request'
         shell: pwsh
         run: |
           $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe"
@@ -224,6 +233,7 @@ jobs:
           }
 
       - name: Scan installer with Microsoft Defender
+        if: github.event_name != 'pull_request'
         shell: pwsh
         run: |
           $installer = (Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe").FullName
@@ -243,6 +253,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Microsoft Defender scan failed or found a threat (exit $LASTEXITCODE)." }
 
       - name: Silent install and installed-app smoke
+        if: github.event_name != 'pull_request'
         shell: pwsh
         run: |
           $installer = (Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe").FullName
@@ -264,12 +275,14 @@ jobs:
           Stop-Process -Id $process.Id -Force
 
       - name: Stage Windows beta artifact
+        if: github.event_name != 'pull_request'
         shell: pwsh
         run: |
           $packageVersion = (Get-Content package.json | ConvertFrom-Json).version
           node scripts/stage-windows-release-assets.mjs "--version=$packageVersion"
 
       - name: Upload verified Windows beta artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ontology-atlas-windows-x64-pr-${{ github.event.pull_request.number || github.run_number }}

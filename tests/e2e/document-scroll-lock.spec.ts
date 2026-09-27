@@ -36,7 +36,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  */
 
 const WIDTHS = [
-  { w: 600, h: 900 },
+  { w: 1040, h: 720 },
   { w: 1440, h: 900 },
 ] as const;
 

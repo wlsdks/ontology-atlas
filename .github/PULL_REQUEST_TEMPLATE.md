@@ -13,7 +13,7 @@ Korean or English both fine.
 
 <!-- How you verified. Paste relevant command output. Tick all that apply. -->
 
-- [ ] `pnpm exec tsc --noEmit` — 0 errors
+- [ ] `pnpm typecheck` — 0 errors
 - [ ] `pnpm test:run` — all pass
 - [ ] `pnpm lint` — 0 errors (warnings OK to retain, not to add new)
 - [ ] `pnpm build` — static export succeeds

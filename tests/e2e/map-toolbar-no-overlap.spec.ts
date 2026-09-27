@@ -20,7 +20,7 @@ import { waitForAnimationsDone, waitForBoxStill, waitForMapStill, waitFrames } f
  * what takes the width away.
  */
 
-const WIDTHS = [1040, 1280, 1512, 1920, 2560] as const;
+const WIDTHS = [1040, 1280, 1512, 2560] as const;
 const HEIGHT = 949;
 
 const ACTIVITY_LINE = JSON.stringify({
@@ -187,13 +187,13 @@ test("the map's top toolbar never draws one control over another, with or withou
 });
 
 /*
- * **The toolbar comes to rest at every width, not only at the five above** (2026-09-24).
+ * **The toolbar comes to rest at every width, not only at the fixed ones above** (2026-09-24).
  *
  * When the agent status joined the bell inside the utility row, a reserve that hid the
  * status whenever the search lane did not fit beside it became a loop: hiding it
  * shrank the row, so the lane fit, so the status came back, so the lane no longer
  * fit. It oscillated only in a band a few pixels wide where the lane's text width sat
- * on that edge, which is why the five widths above passed locally and one of them
+ * on that edge, which is why the fixed widths above passed locally and one of them
  * failed on CI's fonts ("box never stopped moving"). A sweep across the band where
  * the lanes meet with the panel open finds the edge whatever the fonts measure.
  */
@@ -254,7 +254,7 @@ test("the toolbar settles at every width while the panel is open — no lane ref
       restless.push(`${width}: ${changes} layout changes in 30 frames`);
       continue;
     }
-    // At rest, the same per-control invariant as the five widths above.
+    // At rest, the same per-control invariant as the fixed widths above.
     const report = await measureToolbar(page);
     for (const overlap of report.overlaps) restless.push(`${width}: overlap ${overlap}`);
     for (const outside of report.outside) restless.push(`${width}: outside the map ${outside}`);

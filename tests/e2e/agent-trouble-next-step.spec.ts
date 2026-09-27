@@ -65,6 +65,10 @@ test('the card that cannot offer a retry offers the screen it names instead', as
 
   // Still no retry, on purpose. The door replaces it; it does not join it.
   await expect(card.getByTestId('acp-chat-error-retry')).toHaveCount(0);
+
+  // And the door actually arrives at Agents.
+  await door.click();
+  await expect(page).toHaveURL(/\/en\/agents/);
 });
 
 test('a kind whose retry can work keeps the retry, and gets no door', async ({ page }) => {
@@ -73,10 +77,4 @@ test('a kind whose retry can work keeps the retry, and gets no door', async ({ p
   await expect(card).toHaveAttribute('data-trouble', 'network');
   await expect(card.getByTestId('acp-chat-error-retry')).toBeVisible();
   await expect(card.getByTestId('acp-chat-error-agents')).toHaveCount(0);
-});
-
-test('the door actually arrives at Agents', async ({ page }) => {
-  const card = await openDockWithFailingStart(page, LAUNCH);
-  await card.getByTestId('acp-chat-error-agents').click();
-  await expect(page).toHaveURL(/\/en\/agents/);
 });

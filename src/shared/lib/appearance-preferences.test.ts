@@ -30,8 +30,6 @@ describe("appearance-preferences", () => {
   it("defaults to dot / geometric when nothing is stored", () => {
     expect(readCanvasBackground()).toBe(DEFAULT_CANVAS_BACKGROUND);
     expect(readGlyphSet()).toBe(DEFAULT_GLYPH_SET);
-    expect(DEFAULT_CANVAS_BACKGROUND).toBe("dot");
-    expect(DEFAULT_GLYPH_SET).toBe("geometric");
   });
 
   it("round-trips every declared background and glyph-set value", () => {

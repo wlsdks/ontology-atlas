@@ -25,7 +25,7 @@ describe('parseHarnessView', () => {
     expect(parseHarnessView(undefined)).toBe('structure');
     expect(parseHarnessView('')).toBe('structure');
     expect(parseHarnessView('not-a-view')).toBe('structure');
-    expect(DEFAULT_HARNESS_VIEW).toBe('structure');
+    expect(parseHarnessView(null)).toBe(DEFAULT_HARNESS_VIEW);
   });
 
   it('sends the retired sensors address to the view that answers it', () => {

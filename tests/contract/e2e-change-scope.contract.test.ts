@@ -42,8 +42,8 @@ describe('E2E impact planning precedes expensive setup', () => {
     for (const id of PROTECTED_JOB_IDS) {
       expect(jobBlock(id), `${id} job is missing`).not.toBe('');
     }
-    expect(jobBlock('suite'), 'the three Playwright shards disappeared').toContain(
-      'shard: [1, 2, 3]',
+    expect(jobBlock('suite'), 'the five Playwright shards disappeared').toContain(
+      'shard: [1, 2, 3, 4, 5]',
     );
   });
 

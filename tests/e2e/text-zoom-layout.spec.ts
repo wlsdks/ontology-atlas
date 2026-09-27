@@ -3,7 +3,6 @@ import { expect, test } from "@playwright/test";
 import {
   CUT_TEXT,
   TEXT_ZOOM_ROUTES,
-  TEXT_ZOOM_WIDTHS,
   ZOOMED_ROOT_PX,
 } from "./text-zoom-probes";
 import { seedFirstRunSeen } from "./first-run-seed";
@@ -107,7 +106,9 @@ test.describe("실제 브라우저 글자 크기 설정 200%", () => {
     ).toBe(true);
   });
 
-  for (const width of TEXT_ZOOM_WIDTHS) {
+  // At a 32px default font size every `rem` breakpoint reads the 1512 window as below `lg`
+  // too, so the app floor alone draws the narrowest layout the reader meets.
+  for (const width of [1040] as const) {
     for (const route of TEXT_ZOOM_ROUTES) {
       test(`${route} · ${width}px — 잘린 채 닿을 수 없는 글자가 없다`, async ({ page }) => {
         await page.setViewportSize({ width, height: 900 });
@@ -128,66 +129,6 @@ test.describe("실제 브라우저 글자 크기 설정 200%", () => {
         ).toEqual([]);
       });
     }
-  }
-
-  for (const width of [600, 768] as const) {
-    test(`${width}px — 하단 탭 바가 예약한 자리에 실제로 들어간다`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 900 });
-      await openOntologyAudit(page);
-      await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
-      // The bar mounts with the below-`lg` shell rather than with the route, so it is waited
-      // for by name — an absent bar would otherwise read as a reserve that fits.
-      await page
-        .locator('[data-testid^="bottom-tab-"]')
-        .first()
-        .waitFor({ state: "attached", timeout: 30_000 });
-
-      // A reserve derived from a `min-height` is a reserve only while the minimum binds. The
-      // bar is an icon shell plus a gap plus one `leading-caption` line, and that line now
-      // follows the reader: measured before the repair, the bar stood 73.13px tall against a
-      // 56px reserve and three text leaves on this route at 600 wide sat behind it.
-      //
-      // ⚠️ **This asserts the token, not every consumer of it.** Two things a bigger reserve
-      // cannot reach were measured on this route at a 32px root and are recorded with the
-      // other open costs in `docs/DECISIONS.md` rather than gated here: the frontmatter
-      // disclosure's box is 178px tall around 375–449px of content with `overflow: visible`,
-      // so its lines paint past any reserve; and the reading scroller's own box ends well
-      // above the bar, so which box owes the bar room is a question about that view. Gating
-      // either would make this test unfixable by the token it is about.
-      const measured = await page.evaluate(() => {
-        const item = document.querySelector('[data-testid^="bottom-tab-"]');
-        // The bar is whichever ancestor is actually pinned to the bottom; the markup's own
-        // element is not a `nav`, so the fixed ancestor is what is looked for.
-        let bar: HTMLElement | null = null;
-        for (let node = item?.parentElement ?? null; node; node = node.parentElement) {
-          const position = getComputedStyle(node).position;
-          if (position === "fixed" || position === "sticky") {
-            bar = node;
-            break;
-          }
-        }
-        bar ??=
-          (item?.closest('nav,[class*="fixed"]') as HTMLElement | null) ??
-          (item?.parentElement as HTMLElement | null) ??
-          null;
-        const probe = document.createElement("div");
-        probe.style.cssText =
-          "position:absolute;visibility:hidden;transition:none;width:var(--topology-mobile-bottom-tab-reserve)";
-        document.body.appendChild(probe);
-        const reserve = probe.getBoundingClientRect().width;
-        probe.remove();
-        if (!bar) return { reserve, barHeight: null as number | null };
-        const barRect = bar.getBoundingClientRect();
-        return { reserve, barHeight: barRect.height };
-      });
-
-      expect(measured.barHeight, "하단 탭 바를 못 찾았다 — 측정 대상이 없다").not.toBeNull();
-      expect(
-        measured.reserve,
-        `예약(${measured.reserve}px)이 바의 실제 높이(${measured.barHeight}px)보다 작다`,
-      ).toBeGreaterThanOrEqual(measured.barHeight!);
-
-    });
   }
 
   test("the first-run folder picker remains reachable above the bottom tab bar", async ({ page }) => {
@@ -237,7 +178,7 @@ test.describe("실제 브라우저 글자 크기 설정 200%", () => {
   });
 
   test("게이트웨이 헤드라인이 자기 섹션 제목보다 작아지지 않는다", async ({ page }) => {
-    await page.setViewportSize({ width: 1024, height: 900 });
+    await page.setViewportSize({ width: 1040, height: 900 });
     await page.goto("/ko/download/", { waitUntil: "domcontentloaded" });
     await expect(page.locator("h1").first()).toBeVisible({ timeout: 30_000 });
 

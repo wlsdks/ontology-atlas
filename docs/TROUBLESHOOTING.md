@@ -179,7 +179,7 @@ from any AI agent.
 
 ## Build / test / lint
 
-### `pnpm exec tsc --noEmit` fails after a vault change
+### `pnpm typecheck` fails after a vault change
 
 Vault is `.md` only — TypeScript shouldn't care. If it errors, you probably changed `src/entities/vault-session/lib/ontology-starter.ts` (the in-app scaffold mirror). Make sure the strings match `cli/templates/vault/`.
 

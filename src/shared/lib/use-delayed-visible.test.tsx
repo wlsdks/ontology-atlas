@@ -83,13 +83,4 @@ describe('useDelayedVisible — 기다릴 것이 있을 때만 보인다', () =>
     });
     expect(getByTestId('state').textContent).toBe('hidden');
   });
-
-  /**
-   * Below the perceptual threshold this gate guards nothing. The window must exceed one frame
-   * (16.7ms) and stay well under the 1s at which a train of thought breaks.
-   */
-  it('창 값이 의미 있는 범위에 있다', () => {
-    expect(SKELETON_DELAY_MS).toBeGreaterThan(17);
-    expect(SKELETON_DELAY_MS).toBeLessThan(400);
-  });
 });

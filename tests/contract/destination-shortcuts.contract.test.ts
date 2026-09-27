@@ -5,7 +5,6 @@ import {
   DESTINATION_HREF,
   DESTINATION_IDS,
   DESTINATION_KEY,
-  MOBILE_DESTINATION_IDS,
   NAV_LEADER_KEY,
   NAV_LEADER_WINDOW_MS,
 } from "@/shared/config/destinations";
@@ -137,45 +136,14 @@ describe("목적지 이동 단축키 — 표가 정본이다", () => {
 });
 
 describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
-  it("모바일 셸에서도 현재 아키텍처 목적지가 사라지지 않는다", () => {
-    expect(MOBILE_DESTINATION_IDS).toContain("architecture");
-    expect(new Set(MOBILE_DESTINATION_IDS).size).toBe(MOBILE_DESTINATION_IDS.length);
-    for (const id of MOBILE_DESTINATION_IDS) expect(DESTINATION_IDS).toContain(id);
-
-    const bottomTabs = read("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
-    expect(bottomTabs).toContain("MOBILE_DESTINATION_IDS.map");
-    expect(bottomTabs).toContain("DESTINATION_HREF[id]");
-  });
-
-  /**
-   * **MCP's absence from the five mobile slots is a decision** (design council, 2026-09-05).
-   *
-   * Handing a coding tool a config and switching external servers on are both desk work with that
-   * tool open beside you; 1024 is the width floor the seat named. Its contextual entry points
-   * (the `/agents` runner row, and the address typed) still reach it below `lg`, so the route is
-   * never a trap there. Without this line the next person reads the absence as an oversight and
-   * "fixes" it.
-   */
-  it("MCP 는 에이전트의 둘째 탭이다 — 레일과 모바일 자리에 일부러 없다", () => {
+  it("MCP 는 에이전트의 둘째 탭이다 — 레일에 일부러 없다", () => {
     // 2026-09-17: the tile folded into Agents; the address stays as a tab.
     expect(DESTINATION_IDS).not.toContain("mcp");
     expect(DESTINATION_HREF.mcp).toBe("/agents/?tab=mcp");
-    expect(
-      MOBILE_DESTINATION_IDS as readonly string[],
-      "MCP 가 모바일 슬롯에 들어왔다 — 결정이 바뀐 것이라면 destinations.ts 의 주석부터 고쳐라",
-    ).not.toContain("mcp");
-    const table = read("src/shared/config/destinations.ts");
-    expect(table, "폭 하한(1024)이 표에 적혀 있지 않다").toContain("1024");
   });
 
-  /** Library now contains the former Docs surface, so it owns that mobile slot too. */
-  it("자료실이 문서함의 모바일 자리를 이어받고 낡은 문을 남기지 않는다", () => {
+  it("자료실이 문서함을 이어받고 낡은 문을 남기지 않는다", () => {
     expect(DESTINATION_IDS).toContain("library");
-    expect(
-      MOBILE_DESTINATION_IDS as readonly string[],
-      "자료실이 문서함의 모바일 슬롯을 이어받지 않았다",
-    ).toContain("library");
-    expect(MOBILE_DESTINATION_IDS as readonly string[]).not.toContain("docs");
     const sidebar = read("src/views/docs-vault/ui/parts/DocsSidebarBody.tsx");
     expect(sidebar, "합쳐진 화면 안에 예전 자료실 이동 줄이 남았다").not.toContain(
       'data-testid="docs-sidebar-library-link"',

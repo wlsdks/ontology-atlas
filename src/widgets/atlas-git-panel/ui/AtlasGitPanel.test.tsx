@@ -766,14 +766,6 @@ describe("AtlasGitPanel — 연결 셋업 모드", () => {
     expect(steps[2]).toHaveAttribute("data-step-state", "current");
   });
 
-  it("셋업 주 동작은 터치 승격 토큰으로 높이를 잡는다 (coarse 44px 계약)", async () => {
-    // This button is the only thing this page does, so if someone reverts it to a
-    // fixed height like h-9, the `@media (pointer: coarse)` promotion silently disappears.
-    renderPanel(<AtlasGitPanel />);
-    const cta = await screen.findByTestId("atlas-git-web-get-app");
-    expect(cta.className).toContain("h-[var(--git-setup-action-height)]");
-  });
-
   it("읽기 실패도 막다른 길이 아니다 — 같은 자리에서 다시 확인한다", async () => {
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockRejectedValue("not a git repository");
@@ -1531,9 +1523,8 @@ describe("AtlasGitPanel — 열려 있는 동안 폴더를 따라간다", () => 
     await waitFor(() => expect(tauriEventMock.listen).toHaveBeenCalledWith("vault-changed", expect.any(Function)));
 
     const before = tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_status").length;
-    await act(async () => {
+    act(() => {
       for (const handler of tauriEventMock.handlers) handler({ payload: null });
-      await new Promise((resolve) => setTimeout(resolve, 700));
     });
     await waitFor(() =>
       expect(tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_status").length).toBeGreaterThan(before),
@@ -1566,12 +1557,17 @@ describe("AtlasGitPanel — 열려 있는 동안 폴더를 따라간다", () => 
     const statusCalls = () =>
       tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_status").length;
     const before = statusCalls();
-    await act(async () => {
-      for (const handler of tauriEventMock.handlers) handler({ payload: null });
-      // The debounce window itself (FOLLOW_DEBOUNCE_MS), measured rather than waited on:
-      // the point is that it elapses *while the commit is still running*.
-      await new Promise((resolve) => setTimeout(resolve, 700));
-    });
+    // The debounce window (FOLLOW_DEBOUNCE_MS) elapses *while the commit is still running*:
+    // fake only the timer the notice schedules and run it, instead of sleeping past it.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      await act(async () => {
+        for (const handler of tauriEventMock.handlers) handler({ payload: null });
+        await vi.runOnlyPendingTimersAsync();
+      });
+    } finally {
+      vi.useRealTimers();
+    }
     expect(statusCalls(), "쓰는 중에는 읽지 않는다").toBe(before);
 
     await act(async () => {

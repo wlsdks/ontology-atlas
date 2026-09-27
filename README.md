@@ -731,6 +731,7 @@ be resolved together land through `/land-bundle` as one integration branch.
 | `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check`, `pnpm docs:meta` |
 | `pnpm docs:meta` · `pnpm doc:history -- <path>` | Whether every living document carries its kind, status and area with pointers that resolve; one document's commits across moves, which is its version |
 | `pnpm docs:move` | Moves the documents listed in `docs/.moved.json` and rewrites every reference; rerun it after merging main into an older branch (`-- --check` only reports) |
+| `pnpm e2e:durations -- <timings dir>` | Rewrites the per-file weights that balance the browser shards from downloaded `playwright-timings-*` reports |
 | `pnpm e2e:sleeps:check` | A change may not add a fixed `waitForTimeout` to an e2e spec unless a `// measurement window:` note says why |
 | `pnpm gates:yield -- --runs=200` | Which CI checks ever failed, per distinct run, from the lane reports `checks.yml` uploads (cached in `~/.cache/atlas-gate-yield`); a row with 50+ runs, no failed run and 60+ days of history reads `no CI failure`, a check to examine rather than delete, since pre-push and `pnpm checks:changed` catches are not in this data. Reports start with the change that added them |
 | `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the six app screens the download page shows, Korean and English (`public/gateway/<screen>.<locale>.png`), from a served `pnpm build`, against this repository's own ontology |
@@ -740,6 +741,7 @@ be resolved together land through `/land-bundle` as one integration branch.
 | `pnpm pr:ci <n>` | Fire CI on a draft now, so a green, disjoint change can take the fast path |
 | `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run what a landing would do without writing to GitHub, and run trains until the queue is empty |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request for the landing train (or merge it on the fast path), and show the queue and the train in flight |
+| `pnpm typecheck` | Types across every file, with Next's generated route and page types, so the browser build need not check them again |
 
 Rows stay sorted by command, and the reference's entries by area, so two
 branches that each add one land on different lines; `pnpm dev-checks:check`

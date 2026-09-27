@@ -1,14 +1,16 @@
 import {expect,it} from 'vitest';
 import {actCompanionGame,advanceCompanionGame,maxHp,monsterMaxHp,newCompanionGame,parseCompanionGame,TURN_MS,type GameAction} from './companion-game';
 import {blessingChoices} from './companion-run';
-it('keeps saves readable through 4800 mixed actions, deaths, retries and offline windows',()=>{
+// 500 actions (5 seeds x 100) keep every action type, deaths and several offline windows per
+// seed in play; 4,800 cost 5 s per run for the same invariants.
+it('keeps saves readable through 500 mixed actions, deaths, retries and offline windows',()=>{
  let checked=0;
- for(let seed=1;seed<=12;seed++){
+ for(let seed=1;seed<=5;seed++){
   let rng=seed;const random=()=>{rng^=rng<<13;rng^=rng>>>17;rng^=rng<<5;return rng>>>0;};
   let now=1000,game={...newCompanionGame(now),knowledge:seed*80};
   const area={uid:'area',slug:'domains/area',title:'Area',difficulty:seed%6,requiredKnowledge:5};
-  for(let i=0;i<400;i++){
-   now+=i%97===0?4*60*60*1000:random()%(TURN_MS*8);
+  for(let i=0;i<100;i++){
+   now+=i%29===0?4*60*60*1000:random()%(TURN_MS*8);
    game=advanceCompanionGame(game,now);
    const choices=blessingChoices(game.run,game.encounter);
    const actions:GameAction[]=[{type:'depart',area},{type:'return'},{type:'skill'},{type:'dodge'},{type:'heal'},{type:'buy-potion'},{type:'chest'},{type:'upgrade',kind:'sword'},{type:'upgrade',kind:'armor'},{type:'upgrade',kind:'library'},{type:'learn-skill',skill:'ward'},{type:'repeat',enabled:random()%2===0}];
@@ -20,5 +22,5 @@ it('keeps saves readable through 4800 mixed actions, deaths, retries and offline
    expect(advanceCompanionGame(game,game.lastAt)).toBe(game);checked++;
   }
  }
- expect(checked).toBe(4800);
+ expect(checked).toBe(500);
 });

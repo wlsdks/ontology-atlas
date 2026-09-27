@@ -76,10 +76,8 @@ async function readInspector(page: Page) {
   });
 }
 
-for (const viewport of [
-  { width: 1512, height: 949 },
-  { width: 1280, height: 800 },
-] as const) {
+// The installed app's opening window; the arrival order is width-independent.
+for (const viewport of [{ width: 1512, height: 949 }] as const) {
   test(`the project inspector holds its receipt's place and nothing jumps when it lands at ${viewport.width}`, async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize(viewport);

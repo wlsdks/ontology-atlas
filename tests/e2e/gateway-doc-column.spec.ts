@@ -13,7 +13,7 @@ import { expect, test } from "@playwright/test";
  * 1920 it must still sit on the page's true centre (the owner's "bunched on the left" fix).
  */
 const ROUTES = ["/ko/guide/", "/ko/changelog/"] as const;
-const WIDTHS = [1040, 1280, 1512, 1920] as const;
+const WIDTHS = [1040, 1512, 1920] as const;
 
 for (const route of ROUTES) {
   for (const width of WIDTHS) {
@@ -67,7 +67,7 @@ for (const [route, testId] of [
   ["/ko/guide/", "guide-sidebar"],
   ["/ko/changelog/", "entry-sidebar"],
 ] as const) {
-  for (const width of [1280, 1512, 1920] as const) {
+  for (const width of [1280, 1920] as const) {
     test(`${route} at ${width}: the table of contents starts on the brand's line`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });

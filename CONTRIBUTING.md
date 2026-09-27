@@ -16,7 +16,7 @@ pnpm install
 pnpm dev                          # http://localhost:3000
 
 # Before opening a PR
-pnpm exec tsc --noEmit
+pnpm typecheck
 pnpm test:run
 pnpm lint
 pnpm build                        # static export
@@ -90,7 +90,7 @@ full picture and for how to report a vulnerability.
 ### Verification before PR
 
 ```bash
-pnpm exec tsc --noEmit          # 0 errors
+pnpm typecheck          # 0 errors
 pnpm lint                       # 0 errors (warnings OK to keep)
 pnpm test:run                   # all unit + component tests pass
 pnpm exec playwright test       # if you touched user-facing flows

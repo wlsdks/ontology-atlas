@@ -31,16 +31,15 @@ import {
  *   focus somewhere a keyboard can continue from, not on `<body>`;
  * - "add to map" on a vault that already has a project says so.
  *
- * Captures land in the owner's scratch folder when it exists.
+ * Captures are written only when `MAP_CANVAS_CAPTURE_DIR` names a folder outside the repository;
+ * a gate run takes none, because a screenshot per step was time spent on evidence nobody read.
  */
 
-const CAPTURE_DIR = process.env.MAP_CANVAS_CAPTURE_DIR ?? "/Users/jinan/scratch/ix/map-canvas/after";
-try {
-  mkdirSync(CAPTURE_DIR, { recursive: true });
-} catch {
-  /* not on the owner's machine */
-}
-const capture = (page: Page, name: string) => page.screenshot({ path: `${CAPTURE_DIR}/${name}.png` }).catch(() => {});
+const CAPTURE_DIR = process.env.MAP_CANVAS_CAPTURE_DIR;
+if (CAPTURE_DIR) mkdirSync(CAPTURE_DIR, { recursive: true });
+const capture = async (page: Page, name: string) => {
+  if (CAPTURE_DIR) await page.screenshot({ path: `${CAPTURE_DIR}/${name}.png` });
+};
 
 type Box = { x: number; y: number; w: number; h: number };
 const intersects = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
@@ -423,7 +422,6 @@ test.describe("map canvas interactions on the dogfood vault", () => {
 
   for (const viewport of [
     { width: 1040, height: 720 },
-    { width: 1280, height: 800 },
     { width: 1512, height: 949 },
   ]) {
     test(`MC-02: every name Territories shows at rest is readable at ${viewport.width}`, async ({ page }) => {

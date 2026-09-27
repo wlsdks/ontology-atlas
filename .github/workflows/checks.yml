@@ -3,10 +3,9 @@
 # seconds. A missing plan is RED. Scheduled/manual runs and planner changes run every
 # command registered in `scripts/classify-change.mjs`.
 #
-# A pull request is opened as a **draft** and runs nothing. When it is that
-# branch's turn, `pnpm pr:land` merges today's main into it, runs the local
-# lanes, and marks it ready; `ready_for_review` fires this workflow **once**, on
-# exactly the tree that is about to land. Owner's shape, 2026-09-12: most
+# A pull request is opened as a **draft** and runs nothing. `pnpm pr:land` puts
+# it on a landing train built from today's main, and the train's pull request
+# fires this workflow **once**, on exactly the tree that is about to land. Owner's shape, 2026-09-12: most
 # changes overlap, so CI on a branch that is not yet the thing being merged is a
 # round paid twice. An identical main tree reuses that successful review;
 # unproven main pushes and scheduled/manual runs still execute their evidence.

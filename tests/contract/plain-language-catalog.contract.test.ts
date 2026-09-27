@@ -281,6 +281,16 @@ describe('한국어 카탈로그 — 번역되지 않은 영어 문장', () => {
     }
   });
 
+  // One Latin word slips past the rule above ("Kind", "Project · {count}"), and on the map's
+  // search palette two such group labels sat on the Korean screen (formerly an e2e spec).
+  it('검색 팔레트의 한국어 문자열은 모두 한글을 담는다', () => {
+    const latinOnly = flatten(CATALOG)
+      .filter(({ key }) => key.startsWith('searchWidgets.globalSearch.'))
+      .filter(({ text }) => /[A-Za-z]/.test(stripIcu(text)) && !HANGUL.test(text))
+      .map(({ key }) => key);
+    expect(latinOnly).toEqual([]);
+  });
+
   it('probe: 심어 놓은 영어 문장을 잡고, 이름과 자리표시자는 놓아준다', () => {
     const none = new Set<string>();
     expect(untranslatedEnglish({ card: { hint: 'Missing dependency reference' } }, none)).toEqual([

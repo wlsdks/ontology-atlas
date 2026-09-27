@@ -76,7 +76,7 @@ served at `/en/topology/`). Most hosts handle this out of the box.
 
 ```bash
 pnpm test:run        # unit + component
-pnpm exec tsc --noEmit
+pnpm typecheck
 pnpm lint
 pnpm build
 ```

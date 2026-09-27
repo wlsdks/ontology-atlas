@@ -142,11 +142,16 @@ test.describe("download hero — the typing echo", () => {
     // a headline or an object part-way through, because one that merely finishes quickly is not
     // a still one.
     const seen: { typed: number; total: number; lit: number; count: number }[] = [];
-    const deadline = Date.now() + 1500;
-    while (Date.now() < deadline) {
+    /*
+     * Sampled until the page is complete, not for 1.5s of wall time: on a loaded runner hydration
+     * alone can outlast that window, and the last sample was then the server's dark headline — a
+     * red run that said nothing about motion. The frame ceiling is a hang guard, never reached by
+     * a healthy page.
+     */
+    for (let frame = 0; frame < 3_000; frame += 1) {
       const s = await readEcho(page);
       seen.push(s);
-      if (s.typed === s.total && s.lit === s.count) break;
+      if (s.total > 0 && s.typed === s.total && s.lit === s.count) break;
       // One sample per painted frame, so a partial frame cannot fall between two samples.
       await waitFrames(page, 1);
     }

@@ -92,16 +92,13 @@ test('--best-effort 면 다 실패해도 0으로 끝나되, 조용히 넘어가�
 
 test('멈춘 명령은 타임아웃에 죽고, 그 자리가 재시도로 이어진다', async () => {
   // A command that wants to sleep 60 s per attempt. Without the timeout this test takes
-  // over 60 s and fails on its own — proving "it was killed" by wall clock too.
+  // over 60 s; the attempt count and the timeout message prove the kill without a clock.
   const fake = fakeCommand({ name: 'hang', hangMs: 60_000 });
-  const started = Date.now();
   const result = await run(['--attempts=2', '--timeout-ms=700', '--backoff-ms=1', '--', ...fake.argv]);
-  const elapsed = Date.now() - started;
 
   assert.equal(result.code, 1);
   assert.equal(fake.attempts(), 2, '타임아웃 뒤에 재시도가 안 일어났다');
   assert.match(result.stdout, /did not finish within 700ms/);
-  assert.ok(elapsed < 20_000, `타임아웃이 안 먹었다 — ${elapsed}ms 걸렸다`);
 });
 
 test('없는 명령은 spawn 단계에서 실패로 잡힌다', async () => {

@@ -31,9 +31,12 @@ export default defineConfig({
   },
   fullyParallel: false,
   // Local/dev remains sequential because Turbopack compiles routes on demand. CI's read-only
-  // static export has no compilation race or shared writable state, so it uses both runner CPUs.
+  // static export has no compilation race or shared writable state, so it runs two workers.
   // Pre-enable proof (2026-09-01): the same slowest 107-test shard passed with zero retries
   // in 4.4 minutes locally at two workers; its preceding one-worker GitHub run took 9.7 minutes.
+  // Not four, although a public repository's runner has four vCPUs: the suite is CPU-bound,
+  // and on the same four cores four workers ran a 129-test sample only 10% faster, each test
+  // 44% slower (2026-09-27). More shards in e2e.yml buy the time instead.
   workers: resolvePlaywrightWorkers(process.env),
   // CI retries absorb runner variance but remain visible in the report; true regressions fail
   // after every attempt. Local runs keep retries at zero so flakiness is exposed directly.

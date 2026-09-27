@@ -18,31 +18,11 @@ async function expectSingleLibraryPageHeading(page: Page, name: string | RegExp)
   await expect(page.getByRole('heading', { level: 1, name })).toHaveCount(1);
 }
 
-test('Library reads Markdown evidence and keeps ontology in the same mobile home', async ({ page }) => {
-  await page.setViewportSize({ width: 600, height: 900 });
-  await openLibrary(page);
-  await expectSingleLibraryPageHeading(page, 'Sources 4');
-  const mobile = page.locator('nav[data-tabbar="primary"]');
-  await expect(mobile.getByRole('link', { name: 'Library', exact: true })).toHaveAttribute('aria-current', 'page');
-  await expect(mobile.getByRole('link', { name: 'Docs', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: /settlement-policy.md/ }).first().click();
-  await page.getByRole('button', { name: 'Settlement cycle', exact: true }).click();
-  await expect(page.getByTestId('library-source-passage')).toContainText('Card payments settle on T+2 business days');
-  await expect(page.getByTestId('library-source-passage')).toContainText('#l9');
-  await expectSingleLibraryPageHeading(page, 'Sources 4');
-  await page.getByTestId('library-workspace-wiki').click();
-  await expectSingleLibraryPageHeading(page, 'Wiki 0');
-  await page.getByTestId('library-workspace-ontology').click();
-  await expect(page.getByTestId('library-workspace-ontology')).toHaveAttribute('aria-selected', 'true');
-  await expectSingleLibraryPageHeading(page, 'Ontology');
-  await expect(mobile.getByRole('link', { name: 'Library', exact: true })).toHaveAttribute('aria-current', 'page');
-  await expect(page.locator('main')).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-});
-
 test('a no-slug Ontology entry opens graph-backed evidence instead of a Wiki guide', async ({ page }) => {
   await openLibrary(page);
   await page.getByTestId('library-workspace-ontology').click();
+  // One page title per tab: the tab's own name, never a second heading from the viewer.
+  await expectSingleLibraryPageHeading(page, 'Ontology');
   await expect(page.getByTestId('docs-sidebar-collection-all')).toHaveCount(0);
   await expect(page.getByTestId('docs-sidebar-collection-guides')).toHaveCount(0);
   await expect(page.getByTestId('docs-sidebar-collection-ontology')).toHaveCount(0);

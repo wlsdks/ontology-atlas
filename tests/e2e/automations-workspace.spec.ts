@@ -17,16 +17,6 @@ test.describe('Automations workspace', () => {
     await expect(page.locator('[role="tabpanel"]')).toHaveAttribute('id', 'automations-tabpanel-documents');
   });
 
-  test('keeps the lane strip and no-vault stage inside a narrow viewport', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/ko/automations/?guides=off&kind=documents', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('automations')).toBeVisible();
-    const overflow = await page.evaluate(() => ({
-      documentWidth: document.documentElement.scrollWidth,
-      viewportWidth: window.innerWidth,
-    }));
-    expect(overflow.documentWidth).toBeLessThanOrEqual(overflow.viewportWidth + 1);
-  });
 });
 
 
@@ -144,7 +134,7 @@ test('a pass that had no agent says why in its run history, on the history colum
   const note = report.locator('[data-run-note="no-agent"]');
   await expect(note).toHaveText('No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again.');
 
-  for (const width of [1280, 390]) {
+  for (const width of [1280, 1040]) {
     await page.setViewportSize({ width, height: 800 });
     const row = page.locator('li', { has: page.getByTestId('automation-r-consistency') });
     const geometry = await row.evaluate((li) => {

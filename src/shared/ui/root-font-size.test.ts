@@ -39,7 +39,7 @@ describe("cssLengthToPx", () => {
   });
 
   it("defaults the root to 16, the value a browser starts at", () => {
-    expect(DEFAULT_ROOT_FONT_PX).toBe(16);
+    expect(cssLengthToPx("1rem")).toBe(DEFAULT_ROOT_FONT_PX);
     expect(cssLengthToPx("0.6875rem")).toBeCloseTo(11, 10);
   });
 });

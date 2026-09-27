@@ -22,10 +22,9 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * ② **no control's right edge passes the row's content box** — nothing is drawn under the
  *    pane border, so every control keeps its full hit area.
  *
- * Both widths matter and they are not the same layout. 1040 is the desktop pane (280px,
- * `lg` and up, labels collapsed to glyphs). 390 is the drawer (300px), where the same
- * component renders inside a different container — a viewport breakpoint would answer for
- * neither, which is why the component measures **the row** with a container query.
+ * 1040 is the app's minimum window and the desktop pane (280px, `lg` and up, labels collapsed to
+ * glyphs). The component measures **the row** with a container query rather than a viewport
+ * breakpoint, so the row is what is measured here too.
  *
  * Why e2e rather than jsdom: a container query and a flex row's `scrollWidth` are rendered
  * geometry. jsdom reports zero for both, so a unit test of this row cannot fail on the
@@ -112,18 +111,5 @@ test("문서함 머리줄이 데스크톱 280px 칸에서 잘리지 않는다", 
   await expect(page.getByTestId("docs-sidebar-collection-guides")).toHaveCount(0);
   await expect(page.getByTestId("docs-sidebar-collection-ontology")).toHaveCount(0);
   await expect(page.getByTestId("docs-vault-doc-list").getByTestId("docs-sidebar-new-doc")).toBeVisible();
-  expectHeadHolds(await measureHead(page, HEAD_CONTROL_IDS));
-});
-
-test("문서함 머리줄이 390px 서랍에서도 잘리지 않는다", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/library/?tab=ontology");
-  await expect(page.getByTestId("docs-sidebar-collection-all")).toHaveCount(0);
-  await expect(page.getByTestId("docs-sidebar-collection-guides")).toHaveCount(0);
-  await expect(page.getByTestId("docs-sidebar-collection-ontology")).toHaveCount(0);
-  // Below `lg` the pane is a drawer, so the head only exists once it is opened.
-  await page.getByRole("button", { name: "문서 목록 열기" }).click();
-  await expect(page.getByRole("complementary").getByTestId("docs-sidebar-new-doc")).toBeVisible();
   expectHeadHolds(await measureHead(page, HEAD_CONTROL_IDS));
 });

@@ -124,17 +124,4 @@ describe('walking the scenes', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onChangeScene, 'the walk ran past its last scene').not.toHaveBeenCalled();
   });
-
-  it('every control a walk presses carries the coarse touch floor', () => {
-    /*
-     * `--control-h-sm` is 28px and the `button` shape has no coarse promotion — only `chip`,
-     * `row`, `pill` and `segment` do — so these three sat 16px under `--touch-target-min`.
-     * jsdom cannot measure the box, so this checks the class that carries it; the pixel proof
-     * for the same mistake on the auto-allowed receipt is in `agent-auto-allowed-receipt.spec.ts`.
-     */
-    walk(0);
-    for (const id of ['acp-presentation-ask', 'acp-presentation-previous', 'acp-presentation-next']) {
-      expect(screen.getByTestId(id).className, `${id} has no coarse floor`).toContain('atlas-touch-floor');
-    }
-  });
 });

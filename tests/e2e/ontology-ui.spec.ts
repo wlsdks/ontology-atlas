@@ -21,10 +21,13 @@ import { useDogfoodSample } from "./sample-source";
  * assertion passes vacuously forever regardless of actual empty-state
  * behavior, so it stopped being a real regression guard.
  *
- * The five tests below survive because they exercise routes/testids that
- * are still live today (`/`, `/download/`, `/projects/`, and `/ontology/`'s
+ * The three tests below survive because they exercise routes/testids that
+ * are still live today (`/download/`, `/projects/`, and `/ontology/`'s
  * redirect-then-render-topology behavior) and still fail for a real reason
- * if broken.
+ * if broken. The `/` and `/topology` first-paint checks live in
+ * `web-surface-smoke.spec.ts`; the `/download` scroll end and overflow in
+ * `scroll-end-gap.spec.ts` and `overflow-sweep.spec.ts`. Phone widths are not
+ * a target (owner direction, 2026-09-27).
  */
 test.describe("ontology view UI", () => {
   // Every assertion in this file depends on dogfood vault data (project name, deep-link
@@ -32,33 +35,6 @@ test.describe("ontology view UI", () => {
   // 2026-07-26, this selects explicitly per file rather than relying on the default.
   test.beforeEach(async ({ page }) => {
     await useDogfoodSample(page);
-  });
-
-  /**
-   * **This check's address split on 2026-07-30.**
-   *
-   * The original sentence was *"root renders the topology map directly (no marketing
-   * landing detour)"*, encoding the 2026-07 root-first-open decision. The owner signed a
-   * reversal: `/` became the web visitor's face and the map moved to `/topology`.
-   *
-   * **The check was not deleted but moved into two.** The guarantee that the map appears
-   * directly still stands; only the address it asks about changed. Deleting it would have
-   * made this transition remove a guarantee.
-   */
-  test("desktop: /topology renders the map directly (no detour)", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/en/topology/");
-    await expect(page.getByTestId("topology-index-panel")).toBeVisible();
-    // The old marketing landing's hero copy remains at no address.
-    await expect(page.getByText("Codebase ontology that grows with AI")).toHaveCount(0);
-  });
-
-  test("desktop: root renders the gateway face, not the workbench", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/en/");
-    // The face's top bar appears, and the workbench's INDEX does not.
-    await expect(page.getByTestId("download-gnb")).toBeVisible();
-    await expect(page.getByTestId("topology-index-panel")).toHaveCount(0);
   });
 
   test("desktop: /download states installability before it explains the product", async ({ page }) => {
@@ -105,94 +81,8 @@ test.describe("ontology view UI", () => {
     await expect(page.getByText(/version alignment/i)).toHaveCount(0);
   });
 
-  // A sibling of the #712 regression guard — this is the only route without a bottom
-  // tab bar, so it reserves no height for one. That layer cannot be measured without a
-  // browser, so it is measured here.
-  test("desktop: /download keeps breathing room at the scroll end and never scrolls sideways", async ({
-    page,
-  }) => {
-    for (const width of [1280, 1024, 768]) {
-      await page.setViewportSize({ width, height: 800 });
-      await page.goto("/en/download/");
-      await page.waitForLoadState("networkidle");
-
-      const measured = await page.evaluate(() => {
-        const main = document.getElementById("main");
-        if (!main) return null;
-        let scroller: HTMLElement = main;
-        let node: HTMLElement | null = main;
-        while (node && node !== document.documentElement) {
-          const style = getComputedStyle(node);
-          if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight) {
-            scroller = node;
-            break;
-          }
-          node = node.parentElement;
-        }
-        scroller.scrollTop = scroller.scrollHeight;
-        /**
-         * ⚠️ **A box is not ink.**
-         *
-         * In recent Chromium the contents of a closed `<details>` are handled with
-         * **`content-visibility: hidden`** rather than `display: none` (changed to make
-         * expansion animations possible). So they are neither painted nor hit-tested while
-         * **the layout box remains** — counting by height alone makes a 561px ghost that is not
-         * on screen into the "last ink" (measured 2026-07-29: the "why it is safe to download"
-         * disclosure on `/download` produced a margin of −505px).
-         *
-         * `checkVisibility()` is the standard answer to this distinction. As long as this
-         * check is named for *ink*, its predicate must be whether it paints.
-         */
-        const lastInk = [...main.querySelectorAll("*")]
-          .filter((element) => {
-            // ② **Leaves only.** A container's bottom padding is margin, not content — the
-            // sibling spec (`scroll-end-gap.spec.ts`) already uses the same rule. Without it the
-            // outer wrapper's `pb-…` becomes the "last ink" and the gap is reported as **absent**
-            // by exactly the size of that padding (measured 2026-07-29: real text ended at 760
-            // while the wrapper box reached 800, so the gap read as 0).
-            if (element.children.length > 0) return false;
-            const rect = element.getBoundingClientRect();
-            if (rect.height <= 2 || rect.width <= 2) return false;
-            // ① Does it paint — see the comment above.
-            return typeof element.checkVisibility === "function" ? element.checkVisibility() : true;
-          })
-          .reduce((max, element) => Math.max(max, element.getBoundingClientRect().bottom), 0);
-        return {
-          gap: Math.round(scroller.getBoundingClientRect().bottom - lastInk),
-          overflowX: main.scrollWidth - main.clientWidth,
-        };
-      });
-
-      expect(measured, `#main must exist at ${width}px`).not.toBeNull();
-      expect(measured!.gap, `scroll-end breathing room at ${width}px`).toBeGreaterThanOrEqual(24);
-      expect(measured!.overflowX, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(0);
-    }
-  });
-
-  // The compact project index keeps creation and per-project map navigation
-  // directly reachable at mobile widths.
-  test("mobile: new-project CTA is tappable and opens the create form", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/en/projects/");
-    // `next dev` can transiently double-render this page's client tree
-    // (streaming/hydration artifact, not visible in a production static
-    // export) — under load from other tests this occasionally leaves two
-    // `project-selector-new-cta` nodes in the DOM for one frame, which trips
-    // Playwright's strict-mode locator. Letting the network settle first
-    // gives that duplicate time to collapse before the strict-mode query.
-    await page.waitForLoadState("networkidle");
-
-    const newProjectCta = page.getByTestId("project-selector-new-cta");
-    await expect(newProjectCta).toBeVisible();
-    const ctaBox = await newProjectCta.boundingBox();
-    expect(ctaBox).not.toBeNull();
-    expect(ctaBox?.height).toBeGreaterThanOrEqual(32);
-    await newProjectCta.click();
-    await expect(page).toHaveURL(/\/en\/project\/new\/?(\?|$)/);
-  });
-
-  test("mobile: project cards expose a tappable topology link", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+  test("project cards expose a working topology link", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/projects/");
 
     const topologyLink = page
@@ -200,9 +90,6 @@ test.describe("ontology view UI", () => {
       .filter({ has: page.getByRole("link", { name: "Ontology Atlas", exact: true }) })
       .getByRole("link", { name: "View on map" });
     await expect(topologyLink).toBeVisible();
-    const linkBox = await topologyLink.boundingBox();
-    expect(linkBox).not.toBeNull();
-    expect(linkBox?.height).toBeGreaterThanOrEqual(32);
     await topologyLink.click();
     // The project's own node, whose inspector carries its code evidence (2026-09-25 sweep);
     // the bare slug opened the project drawer, which cannot connect the code folder.
@@ -211,22 +98,6 @@ test.describe("ontology view UI", () => {
       "data-selected-node-id",
       "project:ontology-atlas",
     );
-  });
-
-  test("mobile: dogfood tree content is visible without horizontal overflow", async ({ page }) => {
-    // `/ontology/` redirects to `/topology/?index=expanded` — this still
-    // exercises real current behavior (the redirect + the expanded INDEX
-    // panel rendering dogfood content), not the retired tree page.
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/en/ontology/");
-
-    // Both the on-screen form (`Ontology Atlas`) and the slug (`ontology-atlas`) are
-    // accepted — this test watches whether dogfood content renders, not its notation.
-    await expect(page.getByText(/ontology[- ]atlas/i).first()).toBeVisible();
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    );
-    expect(overflow).toBe(false);
   });
 
   test("legacy node redirect keeps the explicitly requested INDEX beside the selection", async ({

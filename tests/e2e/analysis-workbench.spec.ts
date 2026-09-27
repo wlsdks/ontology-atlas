@@ -1,4 +1,3 @@
-import { writeFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import en from '../../messages/en.json';
 import ko from '../../messages/ko.json';
@@ -6,7 +5,7 @@ import { seedFirstRunSeen } from './first-run-seed';
 
 type CaptionBox = { edgeId: string; text: string; minX: number; maxX: number; minY: number; maxY: number };
 
-for (const width of [1280, 1440, 1512, 1680, 1728, 1920]) {
+for (const width of [1280, 1920]) {
   test(`expanded INDEX keeps search and meaning reachable at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/en/topology/?e2e=1&guides=off&index=expanded');
@@ -47,9 +46,9 @@ test('a selected concept opens meaning and draws bounded directional relation ca
 });
 
 for (const locale of ['en', 'ko'] as const) {
-for (const width of [390, 744, 1023, 1024, 1040, 1280, 1512, 1920, 2560]) {
-  test(`${locale}: meaning review and close remain reachable at ${width}px`, async ({ page }, info) => {
-    const height = width <= 744 ? 900 : width <= 1040 ? 720 : 1080;
+for (const width of [1040, 2560]) {
+  test(`${locale}: meaning review and close remain reachable at ${width}px`, async ({ page }) => {
+    const height = width <= 1040 ? 720 : 1080;
     await page.setViewportSize({ width, height });
     await page.goto(`/${locale}/topology/?e2e=1&guides=off&index=collapsed`);
     await page.getByTestId('topology-meaning-workbench-toggle').click();
@@ -73,19 +72,8 @@ for (const width of [390, 744, 1023, 1024, 1040, 1280, 1512, 1920, 2560]) {
     expect(proof.right).toBeLessThanOrEqual(proof.viewportWidth);
     expect(proof.bottom).toBeLessThanOrEqual(proof.viewportHeight);
     expect(proof.closeReachable).toBe(true);
-    if (width >= 1024) {
-      expect(proof.canvasWidth).toBeGreaterThanOrEqual(480);
-      expect(proof.canvasRight).toBeLessThanOrEqual(proof.left);
-    }
-    const geometryPath = info.outputPath('workbench-geometry.json');
-    const ariaPath = info.outputPath('workbench-aria.txt');
-    const imagePath = info.outputPath('workbench-headless.png');
-    await writeFile(geometryPath, JSON.stringify(proof));
-    await writeFile(ariaPath, await page.locator('body').ariaSnapshot());
-    await page.screenshot({ path: imagePath });
-    await info.attach('workbench-geometry', { path: geometryPath, contentType: 'application/json' });
-    await info.attach('workbench-aria', { path: ariaPath, contentType: 'text/plain' });
-    await info.attach('workbench-headless', { path: imagePath, contentType: 'image/png' });
+    expect(proof.canvasWidth).toBeGreaterThanOrEqual(480);
+    expect(proof.canvasRight).toBeLessThanOrEqual(proof.left);
     await panel.getByRole('button', { name: closeLabel }).click();
     await expect(panel).toBeHidden();
   });
@@ -112,8 +100,8 @@ test('the map meaning action returns an open history dock to meaning without clo
   await expect(panel.getByRole('tab', { name: en.analysisWorkbench.meaning })).toHaveAttribute('aria-selected', 'true');
 });
 
-test.describe('keyboard review at a coarse viewport', () => {
-  test.use({ hasTouch: true, viewport: { width: 744, height: 900 } });
+test.describe('keyboard review at the app minimum window', () => {
+  test.use({ viewport: { width: 1040, height: 720 } });
   for (const route of ['topology', 'architecture']) {
     test(`${route}: review takes visible focus and restores its opener`, async ({ page }) => {
       await page.goto(`/en/${route}/?e2e=1&guides=off&index=collapsed`);

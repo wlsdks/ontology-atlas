@@ -70,31 +70,13 @@ describe("DocsVaultViewer", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps section copy anchors inside the mobile reading column", async () => {
+  it("shows the section copy anchor on hover and on keyboard focus", async () => {
     renderViewer("## Section One\n\nBody text.");
 
     const anchor = await screen.findByRole("button", {
       name: "Copy link to this section",
     });
 
-    expect(anchor.className).toContain("right-0");
-    expect(anchor.className).toContain("h-8");
-    expect(anchor.className).toContain("w-8");
-    expect(anchor.className).toContain("sm:-left-9");
-    expect(anchor.className).not.toContain("sm:h-5");
-    expect(anchor.className).not.toContain("sm:w-5");
-    /*
-     * 2026-08-15 — the basis for hiding changed **from width to hover capability**.
-     * The old `sm:opacity-0` guessed "narrow means touch", which the touch contract
-     * forbids precisely (`design.md`: *"Do not guess touch from viewport width"* — do not
-     * guess touch from viewport width). The real defect was on **wide touch devices**
-     * (tablets, touch laptops), where this anchor stays invisible until a hover that
-     * never happens.
-     *
-     * `[@media(hover:hover)]:opacity-0` hides it only on devices that really hover.
-     * Behaviour on narrow screens is unchanged (they mostly lack hover too).
-     */
-    expect(anchor.className).not.toContain("sm:opacity-0");
     expect(anchor.className).toContain("[@media(hover:hover)]:opacity-0");
     expect(anchor.className).toContain("group-hover:opacity-100");
     // The keyboard does not stop on an invisible cell.

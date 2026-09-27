@@ -27,7 +27,7 @@ export const rules = [
   },
   {
     order: 970,
-    command: 'pnpm exec tsc --noEmit',
+    command: 'pnpm typecheck',
     reason: 'TypeScript or Next.js static export config changed',
     /*
      * ⚠️ **Do not exclude test files** (corrected 2026-08-21).

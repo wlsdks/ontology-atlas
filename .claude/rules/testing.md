@@ -81,7 +81,7 @@ sleeping.
 Start from `checks:changed` and any sibling test. Escalate only when the change
 reaches the named risk:
 
-- `pnpm exec tsc --noEmit`: shared types, public interfaces, route seams,
+- `pnpm typecheck`: shared types, public interfaces, route seams,
   Next/TypeScript configuration, or a cross-cutting refactor.
 - `pnpm lint`: ESLint configuration, import direction, structural moves, or
   anything a lint rule governs.

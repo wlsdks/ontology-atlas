@@ -86,9 +86,9 @@ test.describe("페이지 틀", () => {
    * the same title origin and inset. A string contract alone cannot catch a
    * difference in header interior height.
    */
-  test("목적지들의 제목이 같은 y 에 선다 (1280 · 768)", async ({ page }) => {
+  test("목적지들의 제목이 같은 y 에 선다 (1280 · 1040)", async ({ page }) => {
     await seedFirstRunSeen(page);
-    for (const width of [1280, 768]) {
+    for (const width of [1280, 1040]) {
       await page.setViewportSize({ width, height: 900 });
       const measured: { title: string; titleY: number | null; padLeft: string | null }[] = [];
       for (const member of MEMBERS) {

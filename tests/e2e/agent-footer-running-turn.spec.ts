@@ -221,8 +221,9 @@ async function expectRowClean(page: Page, state: string) {
 }
 
 for (const locale of ['en', 'ko'] as const) {
-  // 480 is the width the overlap was first reported at (a 462px panel in a 1512 window).
-  for (const width of [MIN, BELOW_FIT, 440, 480]) {
+  // 480 is the width the overlap was first reported at (a 462px panel in a 1512 window); 440 sat
+  // between two points that already bracket it.
+  for (const width of [MIN, BELOW_FIT, 480]) {
     test(`with two tools and a mode, nothing on the row is drawn over or cut at ${width} (${locale})`, async ({ page }) => {
       const harness = await open(page, width, locale, TWO_TOOLS);
       await expect(page.getByTestId('acp-chat-history')).toBeVisible();

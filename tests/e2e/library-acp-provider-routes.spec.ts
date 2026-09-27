@@ -4,7 +4,6 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { parseFrontmatter } from '../../src/shared/lib/parse-frontmatter';
 import { seedFirstRunSeen } from './first-run-seed';
-import enMessages from '../../messages/en.json';
 import {
   installLibraryWorkHarness,
   LIBRARY_WORK_CODEX_CONFIG,
@@ -17,7 +16,6 @@ const VAULT_ROOT = '/Users/probe/Ontology Atlas/launch';
 const SOURCE = 'sources/retention.md';
 const AUDIT = 'sources/audit.md';
 const ANSWER = 'wiki/answers/retention.md';
-const TURN_INCOMPLETE = enMessages.failures['answer-turn-incomplete'];
 const ORIGINAL = 'Keep records for 24 days.\nThe owner must approve external communication.\n';
 const REVISED = 'Keep records for 18 days, replacing the previous 24-day guidance.\nThe owner must approve external communication.\n';
 const AUDIT_TEXT = 'The audit worksheet lists 24 days.\nThe worksheet review is pending.\n';
@@ -174,61 +172,46 @@ for (const runtimeId of ['claude-acp', 'codex-acp'] as const) {
     expect(snapshot.files[SOURCE]).toBe(ORIGINAL);
     expect(snapshot.writes).toHaveLength(0);
   });
-
-  test(`${runtimeId} refreshes the same retained answer through ACP and waits for confirmation`, async ({ page }) => {
-    const harness = await openLibrary(page, runtimeId);
-    await startRefresh(page, harness);
-    await expectProviderSession(page, harness, runtimeId);
-
-    await harness.answer(page, REFRESH_BODY);
-    await page.getByTestId('answer-review-open').click();
-    const comparison = page.getByTestId('answer-comparison');
-    await expect(comparison).toBeVisible();
-    await expect(comparison.getByTestId('answer-comparison-before')).toContainText('24 days');
-    await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Both accounts remain unresolved');
-    await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Summary');
-    await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Facts');
-    await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Decisions');
-    await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Open questions');
-    await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Not in sources');
-
-    const beforeConfirm = await harness.snapshot(page);
-    expect(beforeConfirm.files[ANSWER]).toBe(OLD_PAGE);
-    expect(beforeConfirm.writes).toHaveLength(1);
-    expect(beforeConfirm.writes[0]?.relativePath).toBe(SOURCE);
-
-    await comparison.getByTestId('answer-revision-save').click();
-    await expect(comparison).not.toBeVisible();
-    const saved = await harness.snapshot(page);
-    const nextPath = Object.keys(saved.files).find((path) => path.startsWith('wiki/answers/') && path !== ANSWER);
-    expect(nextPath).toBeDefined();
-    expect(saved.files[ANSWER]).toBe(OLD_PAGE);
-    expect(saved.files[SOURCE]).toBe(REVISED);
-    expect(parseFrontmatter(saved.files[nextPath!]).frontmatter.answer_previous).toBe('wiki/answers/retention');
-    expect(saved.writes).toHaveLength(2);
-    expect(saved.writes[1]?.relativePath).toBe(nextPath);
-  });
-
-  test(`${runtimeId} cancels an in-flight retained answer refresh without writing`, async ({ page }) => {
-    const harness = await openLibrary(page, runtimeId);
-    await startRefresh(page, harness);
-    await expectProviderSession(page, harness, runtimeId);
-
-    const beforeCancel = await harness.snapshot(page);
-    await page.getByRole('button', { name: 'Stop', exact: true }).click();
-/*
-     * The sentence is read from the catalogue rather than typed here. It used to be the string
-     * `answer-revision-store.ts` threw, which is exactly what finding B2 replaced: a Korean reader
-     * met it in English. Pinning a literal would put this spec back in the business of asserting
-     * the developer's wording instead of the reader's.
-     */
-    await expect(page.getByTestId('retained-answer-context')).toContainText(TURN_INCOMPLETE);
-    await expect.poll(async () => (await harness.snapshot(page)).calls.some((call) => call.method === 'session/cancel')).toBe(true);
-
-    const afterCancel = await harness.snapshot(page);
-    expect(afterCancel.files[ANSWER]).toBe(beforeCancel.files[ANSWER]);
-    expect(afterCancel.files[SOURCE]).toBe(beforeCancel.files[SOURCE]);
-    expect(afterCancel.writes).toEqual(beforeCancel.writes);
-    expect(Object.keys(afterCancel.files).filter((path) => path.startsWith('wiki/answers/'))).toEqual([ANSWER]);
-  });
 }
+
+/*
+ * The refresh walk itself — comparison, confirmation, `answer_previous` — is
+ * `library-answer-refresh.spec.ts`'s, on the default runtime, and so is cancelling it. What
+ * this file adds is the Codex route's own wiring under a refresh: read-only mode and no
+ * second MCP server, asserted by `expectProviderSession` in the middle of that walk.
+ */
+test('codex-acp refreshes the same retained answer through ACP and waits for confirmation', async ({ page }) => {
+  const runtimeId = 'codex-acp' as const;
+  const harness = await openLibrary(page, runtimeId);
+  await startRefresh(page, harness);
+  await expectProviderSession(page, harness, runtimeId);
+
+  await harness.answer(page, REFRESH_BODY);
+  await page.getByTestId('answer-review-open').click();
+  const comparison = page.getByTestId('answer-comparison');
+  await expect(comparison).toBeVisible();
+  await expect(comparison.getByTestId('answer-comparison-before')).toContainText('24 days');
+  await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Both accounts remain unresolved');
+  await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Summary');
+  await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Facts');
+  await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Decisions');
+  await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Open questions');
+  await expect(comparison.getByTestId('answer-comparison-after')).toContainText('Not in sources');
+
+  const beforeConfirm = await harness.snapshot(page);
+  expect(beforeConfirm.files[ANSWER]).toBe(OLD_PAGE);
+  expect(beforeConfirm.writes).toHaveLength(1);
+  expect(beforeConfirm.writes[0]?.relativePath).toBe(SOURCE);
+
+  await comparison.getByTestId('answer-revision-save').click();
+  await expect(comparison).not.toBeVisible();
+  const saved = await harness.snapshot(page);
+  const nextPath = Object.keys(saved.files).find((path) => path.startsWith('wiki/answers/') && path !== ANSWER);
+  expect(nextPath).toBeDefined();
+  expect(saved.files[ANSWER]).toBe(OLD_PAGE);
+  expect(saved.files[SOURCE]).toBe(REVISED);
+  expect(parseFrontmatter(saved.files[nextPath!]).frontmatter.answer_previous).toBe('wiki/answers/retention');
+  expect(saved.writes).toHaveLength(2);
+  expect(saved.writes[1]?.relativePath).toBe(nextPath);
+});
+

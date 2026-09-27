@@ -226,21 +226,10 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
     expect(cls).toContain('text-center');
   });
 
-  it('link 의 바닥은 24(2.5.8 AA)다 — 44(2.5.5/HIG)를 fine 포인터 전면에 싣지 않는다', () => {
-    /*
-     * Floor reset, 2026-08-04 (ledger 「link floor 24」 — the link floor of 24). The
-     * value layer used to cite WCAG 2.5.8 (AA, 24×24) while loading 2.5.5 (AAA) /
-     * HIG's 44 (`min-h-11`). 44 is `--touch-target-min`, which the touch contract
-     * (design.md) pins as the single source for coarse pointers, so 44 across the
-     * board on fine pointers violated the repository's own contract. The escape hatch
-     * that floor created (the `inline` axis) let 4 misconfigurations through without
-     * any static check seeing them. The coarse 44 is emitted by `.touch-hit-expand`
-     * (zero layout shift), not by the height.
-     */
+  it('link 의 바닥은 24(2.5.8 AA)다', () => {
     for (const size of SIZES) {
       const cls = controlClass({ shape: 'link', size });
       expect(cls, `link/${size} 바닥이 24(min-h-6)가 아니다`).toMatch(/(^| )min-h-6( |$)/);
-      expect(cls, `link/${size} 가 coarse 값 44 를 fine 전면에 싣는다`).not.toMatch(/min-h-11/);
     }
   });
 

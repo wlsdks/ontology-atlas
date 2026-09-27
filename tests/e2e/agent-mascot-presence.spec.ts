@@ -137,9 +137,6 @@ test('reduced motion keeps the verified READ fact as a static pose', async ({ pa
   if (evidenceDir) {
     await page.keyboard.press('Escape');
     await page.screenshot({ path: `${evidenceDir}/mascot-read-1512x900.png` });
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expect(mascot).toBeVisible();
-    await page.screenshot({ path: `${evidenceDir}/mascot-compact-390x844.png` });
   }
 });
 
@@ -158,10 +155,7 @@ test('mascot presence respects every responsive chrome band', async ({ page }) =
   await expect(mascot).toHaveAttribute('data-state', 'read', { timeout: 30_000 });
 
   const matrix = [
-    [600, 900],
-    [768, 1024],
-    [834, 1112],
-    [1024, 768],
+    [1040, 720],
     [1440, 900],
     [1920, 1080],
     [2560, 1440],

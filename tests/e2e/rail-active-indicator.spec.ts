@@ -19,8 +19,9 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 2. At every destination it **overlaps the active tile exactly** — a misaligned
  *    indicator is the kind of thing people do not reliably localise by eye, so it must
  *    be measured in pixels.
- * 3. The travel uses the **base ramp plus the house easing** — chosen by use, not by
- *    value (a surface changing position = travel = 180 ms).
+ *
+ * Which duration and easing the travel wears is a token choice, owned by the motion
+ * tokens and their contracts rather than pinned here.
  *
  * Not one bit of content moves, so the attention budget goes to the destination the
  * user asked for while the chrome follows with a single dot.
@@ -50,7 +51,6 @@ async function readIndicator(page: Page) {
     if (!tile) return null;
     const i = indicator.getBoundingClientRect();
     const t = tile.getBoundingClientRect();
-    const style = getComputedStyle(indicator);
     return {
       count: document.querySelectorAll('[data-testid="app-nav-rail-active-indicator"]').length,
       offsetY: Math.round(i.top - t.top),
@@ -61,8 +61,6 @@ async function readIndicator(page: Page) {
       // question about all four edges.
       offsetX: Math.round(i.left - t.left),
       offsetWidth: Math.round(i.width - t.width),
-      duration: style.transitionDuration,
-      easing: style.transitionTimingFunction,
     };
   });
 }
@@ -100,21 +98,5 @@ test.describe("레일 활성 표시 — 같은 것이 옮겨간다", () => {
       expect(settled!.offsetX, `${destination.id}: 가로로 밀렸다`).toBe(0);
       expect(settled!.offsetWidth, `${destination.id}: 폭이 타일과 다르다`).toBe(0);
     }
-  });
-
-  test("이동은 base 램프와 하우스 이징을 탄다", async ({ page }) => {
-    await seedFirstRunSeen(page);
-    await page.goto("/ko/topology/?guides=off", { waitUntil: "networkidle" });
-
-    // The transition only switches on after the first layout — sliding in on first paint
-    // would be an entrance rather than travel, i.e. motion the user did not ask for.
-    await expect
-      .poll(async () => (await readIndicator(page))?.duration, { timeout: 5_000 })
-      .not.toBe("0s");
-
-    const measured = await readIndicator(page);
-    // 180ms = `--motion-base` (a surface changing position = travel).
-    expect(measured!.duration).toContain("0.18s");
-    expect(measured!.easing).toBe("cubic-bezier(0.25, 0.1, 0.25, 1)");
   });
 });

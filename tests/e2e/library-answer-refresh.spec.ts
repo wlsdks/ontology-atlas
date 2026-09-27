@@ -125,27 +125,14 @@ test('a changed original becomes a compared, retained answer revision without lo
     await page.screenshot({ path: `${evidence}/08-comparison.png`, animations: 'disabled' });
     writeFileSync(`${evidence}/08-comparison-ax.txt`, await page.locator('body').ariaSnapshot());
   }
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByTestId('answer-revision-save')).toBeInViewport();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  if (evidence) await page.screenshot({ path: `${evidence}/09-comparison-mobile.png`, animations: 'disabled' });
-  await comparison.getByRole('radio', { name: 'Previous retained answer' }).click();
-  await page.setViewportSize({ width: 1024, height: 768 });
+  // At the app's minimum window both versions still stand side by side and the save is reachable.
+  await page.setViewportSize({ width: 1040, height: 720 });
   await expect(comparison.getByTestId('answer-comparison-before')).toBeVisible();
   await expect(comparison.getByTestId('answer-comparison-after')).toBeVisible();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(comparison.getByRole('radio', { name: 'Previous retained answer' })).toBeChecked();
-  await comparison.getByRole('radio', { name: 'Proposed new draft' }).click();
-  const finalGap = comparison.getByTestId('answer-comparison-after').getByText('No signed approval was provided.', { exact: true });
-  await finalGap.scrollIntoViewIfNeeded();
-  await expect(finalGap).toBeInViewport();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await tabTo(page, 'answer-revision-save');
   await expect(page.getByTestId('answer-revision-save')).toBeFocused();
   await expect(page.getByTestId('answer-revision-save')).toBeInViewport();
-  if (evidence) {
-    await page.screenshot({ path: `${evidence}/09-comparison-mobile-end.png`, animations: 'disabled' });
-    writeFileSync(`${evidence}/09-comparison-mobile-end-ax.txt`, await page.locator('body').ariaSnapshot());
-  }
   await page.setViewportSize({ width: 1512, height: 900 });
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('answer-review-open')).toBeFocused();

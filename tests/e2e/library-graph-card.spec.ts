@@ -427,7 +427,11 @@ test.describe("a press on a mark opens a card beside it", () => {
     });
     // The drift is running, so the loop is awake: a measurement over no frames would pass.
     expect(paint.frames, "the card's drift scheduled no frames").toBeGreaterThan(20);
-    expect(paint.mean).toBeLessThan(2);
+    // A product budget with 5x headroom: the mean measured 0.74-0.90 ms on a four-core
+    // runner (2026-09-27), so 4.5 ms catches a card that makes every frame expensive
+    // without failing on a busy machine.
+    console.log(`[library-graph-card] paint mean ${paint.mean.toFixed(2)} ms over ${paint.frames} frames`);
+    expect(paint.mean).toBeLessThan(4.5);
   });
 });
 

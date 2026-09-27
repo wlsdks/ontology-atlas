@@ -3549,9 +3549,7 @@ describe('queryCompiledOntology', () => {
     }
     const artifact = compileOntology(docs);
 
-    const started = Date.now();
     const result = queryCompiledOntology(artifact, { operation: 'cycles' });
-    const elapsed = Date.now() - started;
 
     // Wall time varies by machine, so the gate is locked on **a count** — it only
     // checks that the budget really is a ceiling (`.claude/rules/architecture.md`
@@ -3569,8 +3567,6 @@ describe('queryCompiledOntology', () => {
       assert.match(result.evidence.recommendation, /does NOT mean acyclic/);
       assert.ok(result.evidence.saferQuery);
     }
-    // One loose ceiling — if the budget ever disappears, this blows up in seconds.
-    assert.ok(elapsed < 5000, `cycles took ${elapsed}ms on an acyclic graph`);
   });
 
   it('reports an exhausted small graph as complete — zero really means acyclic', () => {

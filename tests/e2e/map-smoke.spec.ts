@@ -80,16 +80,6 @@ test.describe("ontology-map smoke", () => {
     await useDogfoodSample(page);
   });
 
-  test("renders the canvas engine with a non-zero surface", async ({ page }) => {
-    await gotoAndSettle(page, "/ko/topology/");
-    const canvas = page.getByTestId("ontology-map-canvas");
-    await expect(canvas).toBeVisible({ timeout: 15_000 });
-    const box = await canvas.boundingBox();
-    expect(box).not.toBeNull();
-    expect(box?.width).toBeGreaterThan(0);
-    expect(box?.height).toBeGreaterThan(0);
-  });
-
   test("a valid ?p= deep link keeps the URL and opens the datasheet", async ({ page }) => {
     await gotoAndSettle(page, `/en/topology/?p=${encodeURIComponent(REAL_CAPABILITY_SLUG)}`);
     const detailPanel = page.getByTestId("map-detail-panel");

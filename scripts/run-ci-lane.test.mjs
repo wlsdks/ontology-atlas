@@ -188,9 +188,9 @@ test('comparison refs remain one shell argument and malformed shards fail closed
   );
 });
 
-test('the lane runner reports every independent failure', () => {
+test('the lane runner reports every independent failure', async () => {
   const seen = [];
-  const status = runCommands({
+  const status = await runCommands({
     commands: ['first', 'second', 'third'],
     stdout: { write() {} },
     stderr: { write() {} },
@@ -202,6 +202,29 @@ test('the lane runner reports every independent failure', () => {
 
   assert.equal(status, 1);
   assert.deepEqual(seen, ['first', 'second', 'third']);
+});
+
+test('lint runs beside the serial commands and its failure still fails the lane', async () => {
+  const serial = [];
+  const beside = [];
+  const run = (lintStatus) => runCommands({
+    commands: ['pnpm lint', 'first', 'second'],
+    stdout: { write() {} },
+    stderr: { write() {} },
+    spawn(command) { serial.push(command); return { status: 0 }; },
+    startBeside(command) {
+      beside.push(command);
+      return Promise.resolve({ status: lintStatus, output: '', started: Date.now() });
+    },
+  });
+  assert.equal(await run(0), 0);
+  assert.deepEqual(serial, ['first', 'second'], 'lint never joins the serial loop');
+  assert.deepEqual(beside, ['pnpm lint']);
+  assert.equal(await run(3), 1, 'a lint failure beside the lane still fails it');
+  serial.length = 0;
+  await runCommands({ commands: ['pnpm lint'], stdout: { write() {} }, stderr: { write() {} },
+    spawn(command) { serial.push(command); return { status: 0 }; } });
+  assert.deepEqual(serial, ['pnpm lint'], 'a lane of one runs it in the foreground');
 });
 
 /*
@@ -248,9 +271,9 @@ test('shared build consumers omit rebuilding and dedicated surface tests have a 
  * The lane report feeds `pnpm gates:yield`. It must record every command with its verdict,
  * and a report that cannot be written must never change the lane's exit code.
  */
-test('the lane runner appends one report line per command when CI_LANE_REPORT is set', () => {
+test('the lane runner appends one report line per command when CI_LANE_REPORT is set', async () => {
   const writes = [];
-  const status = runCommands({
+  const status = await runCommands({
     commands: ['ok', 'bad'],
     env: { CI_LANE_REPORT: 'report.jsonl', GITHUB_SHA: 'abc', GITHUB_RUN_ID: '42' },
     lane: 'unit',
@@ -276,10 +299,10 @@ test('the lane runner appends one report line per command when CI_LANE_REPORT is
   ]);
 });
 
-test('a lane report that cannot be written is reported and never changes the verdict', () => {
+test('a lane report that cannot be written is reported and never changes the verdict', async () => {
   for (const verdict of [0, 3]) {
     let errors = '';
-    const status = runCommands({
+    const status = await runCommands({
       commands: ['only'],
       env: { CI_LANE_REPORT: '/nowhere/report.jsonl' },
       stdout: { write() {} },
@@ -292,9 +315,9 @@ test('a lane report that cannot be written is reported and never changes the ver
   }
 });
 
-test('the lane runner writes no report without CI_LANE_REPORT', () => {
+test('the lane runner writes no report without CI_LANE_REPORT', async () => {
   let wrote = false;
-  runCommands({
+  await runCommands({
     commands: ['only'],
     env: {},
     stdout: { write() {} },
@@ -303,4 +326,24 @@ test('the lane runner writes no report without CI_LANE_REPORT', () => {
     appendFile() { wrote = true; },
   });
   assert.equal(wrote, false);
+});
+
+test('a command run beside the lane is reported with its own status and duration', async () => {
+  const writes = [];
+  const status = await runCommands({
+    commands: ['pnpm lint', 'serial'],
+    env: { CI_LANE_REPORT: 'report.jsonl', GITHUB_RUN_ID: '9' },
+    lane: 'gates',
+    stdout: { write() {} },
+    stderr: { write() {} },
+    spawn: () => ({ status: 0 }),
+    startBeside(command, options) {
+      assert.equal('CI_LANE_REPORT' in options.env, false, 'the concurrent child must not inherit the report path');
+      return Promise.resolve({ status: 2, output: '', started: 1_000, finished: 1_250 });
+    },
+    appendFile: (_file, text) => writes.push(JSON.parse(text)),
+  });
+  assert.equal(status, 1);
+  assert.deepEqual(writes.map(({ command, status: verdict }) => [command, verdict]), [['serial', 'pass'], ['pnpm lint', 'fail']]);
+  assert.equal(writes[1].ms, 250, 'measured from its own start to its own finish');
 });
