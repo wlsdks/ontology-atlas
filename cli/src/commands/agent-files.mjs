@@ -102,7 +102,7 @@ function buildAgentFilesReport(parsed) {
 
 /** Scan only the known agent-file patterns: never the whole disk (local-first). */
 function scanAgentFiles(root) {
-  const realRoot = realpathSync(root);
+  const realRoot = realpathSync.native(root);
   const entries = [];
   for (const candidate of ROOT_FILE_CANDIDATES) {
     const abs = join(root, candidate);
@@ -133,36 +133,32 @@ function scanAgentFiles(root) {
   return entries;
 }
 
-function walkFiles(absDir, relDir, visitedDirectories = new Set()) {
+function walkFiles(absDir, relDir, ancestors = new Set()) {
+  const realDirectory = realpathSync.native(absDir);
+  if (ancestors.has(realDirectory)) return [];
+  ancestors.add(realDirectory);
   const out = [];
-  let names;
-  try {
-    const realDirectory = realpathSync(absDir);
-    if (visitedDirectories.has(realDirectory)) return out;
-    visitedDirectories.add(realDirectory);
-    names = readdirSync(absDir);
-  } catch {
-    return out;
-  }
-  for (const name of names) {
+  for (const name of readdirSync(absDir)) {
     const absChild = join(absDir, name);
     const relChild = `${relDir}/${name}`;
     let stat;
     try {
       stat = statSync(absChild);
-    } catch {
-      continue;
+    } catch (error) {
+      if (error.code === 'ENOENT' || error.code === 'ELOOP' || error.code === 'ENOTDIR') continue;
+      throw error;
     }
-    if (stat.isDirectory()) out.push(...walkFiles(absChild, relChild, visitedDirectories));
+    if (stat.isDirectory()) out.push(...walkFiles(absChild, relChild, ancestors));
     else if (stat.isFile()) out.push(relChild);
   }
+  ancestors.delete(realDirectory);
   return out;
 }
 
 function readEntry(absPath, relativePath, realRoot) {
   const bytes = statSync(absPath).size;
   const content = bytes <= MAX_CONTENT_BYTES ? readFileSync(absPath, 'utf-8') : null;
-  const realPath = realpathSync(absPath);
+  const realPath = realpathSync.native(absPath);
   const fromRoot = relative(realRoot, realPath);
   const outside = fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot);
   return outside
