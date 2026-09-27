@@ -22,7 +22,12 @@ pub(crate) fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
     if !metadata.is_dir() {
         return Err(coded("vault-path-not-a-folder", ""));
     }
-    fs::canonicalize(&path).map_err(|err| coded("vault-path-unresolvable", err))
+    let canonical = fs::canonicalize(&path).map_err(|err| coded("vault-path-unresolvable", err))?;
+    // Git runs in the vault's directory; only a root the user granted may be one.
+    if !crate::vault_grants::is_vault_granted(&canonical) {
+        return Err(coded("vault-root-not-granted", ""));
+    }
+    Ok(canonical)
 }
 
 struct GitRun {
