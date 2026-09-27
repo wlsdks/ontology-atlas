@@ -22,6 +22,17 @@ function routeKey(route:HomeRouteState){return JSON.stringify([route.selectedSlu
 export function useTopologyGrayArea({docs,nodes,selectedSlug,memberSlugs,vaultPath,locale,routeState,setRouteState,onOpen,onPrepare}:Options){
   const t=useTranslations('grayArea');
   const idBySlug=useMemo(()=>new Map(nodes.flatMap(n=>{const slug=resolveNodeDocument(n).ownSlug;return slug?[[slug,n.id] as const]:[];})),[nodes]);
+  const memberIdentities=useMemo(()=>{
+    if(!memberSlugs)return null;
+    const identities=new Map<string,string>();
+    for(const doc of docs){
+      if(typeof doc.frontmatter.uid!=='string')continue;
+      identities.set(doc.slug,doc.frontmatter.uid);
+      const id=idBySlug.get(doc.slug);if(id)identities.set(id,doc.frontmatter.uid);
+    }
+    return [...new Set([...memberSlugs].map(slug=>identities.get(slug)??`unresolved:${slug}`))].sort();
+  },[docs,idBySlug,memberSlugs]);
+  const scopeKey=JSON.stringify([routeState.constellationIntent,memberIdentities]);
   const manifestKey=docs.map(d=>`${d.slug}:${d.mtime??d.updatedAt}`).join('|');
   const selected=useMemo(()=>{
     const slugs=memberSlugs?.size?memberSlugs:new Set(selectedSlug?[selectedSlug]:[]);
@@ -43,11 +54,12 @@ export function useTopologyGrayArea({docs,nodes,selectedSlug,memberSlugs,vaultPa
   const expectedFocus=useRef<string|null>(null);
   const priorRoute=useRef(routeKey(routeState));
   const priorVault=useRef(vaultPath);
+  const priorScope=useRef(scopeKey);
   useEffect(()=>{
     const next=routeKey(routeState);
-    if(priorVault.current!==vaultPath || (priorRoute.current!==next&&expectedFocus.current!==next))setOpen(false);
-    priorVault.current=vaultPath;priorRoute.current=next;expectedFocus.current=null;
-  },[routeState,vaultPath]);
+    if(priorVault.current!==vaultPath || priorScope.current!==scopeKey || (priorRoute.current!==next&&expectedFocus.current!==next))setOpen(false);
+    priorVault.current=vaultPath;priorScope.current=scopeKey;priorRoute.current=next;expectedFocus.current=null;
+  },[routeState,vaultPath,scopeKey]);
   const close=useCallback(()=>setOpen(false),[]);
   const launch=useCallback(()=>{
     if(!selected)return;

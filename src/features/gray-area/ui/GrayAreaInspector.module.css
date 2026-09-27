@@ -1,0 +1,8 @@
+/* Use the existing map-sheet geometry in the same rem band as BottomTabBar.
+   Root map tokens use px bands, which disagree at enlarged browser text sizes. */
+@media (width < 64rem) {
+  .inspector {
+    --map-panel-bottom-reserve: calc(var(--topology-mobile-bottom-tab-reserve) + 8px);
+    --map-inspector-max-height: calc(45dvh / var(--topology-ui-scale-factor));
+  }
+}
