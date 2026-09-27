@@ -29,10 +29,9 @@ const WARNING_BADGE =
   'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]';
 
 /**
- * The guide inventory, with each column's limits said out loud. A cell is either measured from this
- * repository or read from another tool's documentation (with its source URL and date, or a stated
- * lack of one). No invented conformance, no verified hooks (a row says the script exists), and no
- * commit dates: the change column is a filesystem mtime.
+ * The guide inventory with each column's limits said out loud: a cell is measured here or read from a
+ * tool's docs (source URL and date, or their absence). No invented conformance, no verified hooks, and
+ * the change column is a filesystem mtime, not a commit date.
  */
 
 /** Only a difference wears a tag; "same content" is plain text and "not applicable" is the dash. */

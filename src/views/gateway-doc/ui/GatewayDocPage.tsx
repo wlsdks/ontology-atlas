@@ -25,11 +25,9 @@ import { Link } from '@/i18n/navigation';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * One page of gateway reading, shared by `/guide` and `/changelog`: a reading surface, not a work
- * surface. Lines hold the prose measure (`--measure-prose`; `ch` is the digit `0`'s advance, so the
- * derivation lives in `app/globals.css` and `tests/e2e/prose-measure-calibration.spec.ts` holds it),
- * the body uses `leading-prose` (`.claude/rules/design.md`), and wide section gaps carry hierarchy.
- * The palette stays neutrals plus one indigo.
+ * One reading page for `/guide` and `/changelog`: the prose measure (`--measure-prose`, derived in
+ * `app/globals.css`, held by `tests/e2e/prose-measure-calibration.spec.ts`), `leading-prose`
+ * (`.claude/rules/design.md`), wide section gaps, and the neutrals-plus-indigo palette.
  */
 export interface GatewayDocPageProps {
   /** Vault slug: `GUIDE` or `CHANGELOG`. */
@@ -134,11 +132,9 @@ export function GatewayDocPage({
         <div className={cn(PAGE_COLUMN, 'mx-auto')}>
           {/* Two columns only with a table of contents, which folds below xl; GuideChapterPicker stands in, since the chrome's guide chip also folds below sm. */}
           {/*
-           * The grid waits for `xl`, and the middle track reaches the full measure before either side
-           * gets a pixel; the `1fr` sides split the rest, so text sits on the centre when there is room.
-           * The right side collapses first; the left minimum is
-           * `clamp(9rem, 100% - measure - 4rem, 11.5rem)` so the list yields before the measure does.
-           * The list starts on the gutter, sharing the brand's line at every width.
+           * From `xl` the middle track reaches the full measure before the `1fr` sides grow, the right side
+           * collapses first, and the left minimum `clamp(9rem, 100% - measure - 4rem, 11.5rem)` yields
+           * before the measure does; the list starts on the gutter, on the brand's line.
            */}
           <div
             className={cn(
@@ -258,10 +254,9 @@ function ReadFullSourceLink({ sourcePath, label }: { sourcePath: string; label: 
 const GUIDE_SEGMENTS = new Set(GUIDE_PAGES.map((page) => page.segment));
 
 /**
- * Resolves a prose link's `href` for this locale, since one markdown copy serves every locale.
- * Internal body links point only at guide chapters: a visitor without a vault sees the sample, so
- * vault-document links would open nothing with a 200. Vault documents go to GitHub instead
- * (`tests/contract/guide-inbody-links.contract.test.ts`).
+ * Resolves a prose link for this locale (one markdown copy serves all). Body links point only at
+ * guide chapters, since a vault-less visitor sees the sample and vault links would open nothing;
+ * vault documents go to GitHub (`tests/contract/guide-inbody-links.contract.test.ts`).
  */
 function resolveProseHref(href: string, locale: string): string {
   if (!href.startsWith('/')) return href;
@@ -273,11 +268,9 @@ function resolveProseHref(href: string, locale: string): string {
 }
 
 /**
- * Body links: a root-absolute link is a vault slug, resolved to a locale-prefixed route here.
- * It stays an `<a>` with `.prose-link` because a link inside prose is prose, not a control
- * (`.claude/rules/design.md`, `prose-link.contract`); only the address is resolved. `docs:links`
- * cannot see this class of defect: `tests/contract/guide-inbody-links.contract.test.ts` checks
- * where the source points and `tests/e2e/guide-inbody-links.spec.ts` that it returns 200.
+ * Body links: a root-absolute vault slug becomes a locale-prefixed route, kept as an `<a>` with
+ * `.prose-link` (`.claude/rules/design.md`). `tests/contract/guide-inbody-links.contract.test.ts`
+ * checks where it points and `tests/e2e/guide-inbody-links.spec.ts` that it returns 200.
  */
 function ProseLink({ href, children, ...rest }: React.ComponentPropsWithoutRef<'a'>) {
   const locale = useLocale();

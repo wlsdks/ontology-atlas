@@ -11,10 +11,9 @@ export function gridColumnsForWidth(width: number, minColumn: number, gap: numbe
 }
 
 /**
- * A callback ref, not a `RefObject`: the measured element may mount after the hook (the module
- * column waits for the source walk), and a ref-keyed layout effect would never re-run.
- * `inset` is the padding between the measured element and the grid. Where layout is unmeasurable
- * (server, jsdom) `fallback` stands in rather than narrowing to one column.
+ * A callback ref, because the measured element may mount after the hook and a ref-keyed layout effect
+ * would never re-run. `inset` is the padding between that element and the grid; `fallback` stands in
+ * where layout is unmeasurable (server, jsdom) rather than narrowing to one column.
  */
 export function useGridColumns(
   minColumn: number,

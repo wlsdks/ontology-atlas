@@ -165,10 +165,9 @@ describe('the evidence split plane', () => {
       expect(graph).toHaveAttribute('data-architecture-axis', 'down');
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
       /*
-       * The drawing takes the canvas it is given, centred: the contract face grows to
-       * `PAIRED_CONTRACT_W_MAX` and the rest is split evenly. The skip-arc reserve applies only when a
-       * traffic-side skip exists.
-       * 1200 = 56 padding + 560 contract + 160 gutter + 240 observation + 92 on each side.
+       * The contract face grows to `PAIRED_CONTRACT_W_MAX` and the rest is split evenly; no skip-arc
+       * reserve without a traffic-side skip. 1200 = 56 padding + 560 contract + 160 gutter + 240
+       * observation + 92 on each side.
        */
       expect(graph).toHaveAttribute('width', '1200');
       /* 8 + 20 + 7×72 + 6×24 + 8, plus 8px head room for the top plane's lit edge and a 3px ledge. */

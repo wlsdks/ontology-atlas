@@ -1310,10 +1310,9 @@ export function ArchitectureSketch({
         ) : null}
 
         {/*
-          The layer planes draw import direction as depth: parallelograms stepping one `PLANE_STEP`
-          per layer so the stack shears along one line. Fill is capped under `--color-panel`, so a
-          face is never darker than its plane, and every plane takes the same fill: depth is the
-          shear, the rank numeral and the arrows. `data-layer-depth` carries the normalised fact.
+          Layer planes draw import direction as depth, stepping one `PLANE_STEP` per layer. One fill,
+          capped under `--color-panel` so no face is darker than its plane; depth is the shear, the
+          numeral and the arrows, with `data-layer-depth` carrying the normalised fact.
         */}
         {usesLayerPlanes ? (
           <g

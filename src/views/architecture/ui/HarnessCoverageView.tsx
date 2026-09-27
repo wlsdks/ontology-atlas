@@ -28,19 +28,9 @@ import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
 
 /**
- * The coverage matrix: the repository's own areas on the rows, three questions (told, gated,
- * watched) on the columns. No score, grade, maturity level or percentage: files cannot say what an
- * area is for, so they cannot tell a missing guard from a rightly absent one. The vault's purpose
- * sentence is the row.
- *
- * Marks: a cell's square is filled when anything names the area for that question and an empty
- * amber outline when nothing does; the number beside it is the declaration count; a column card's
- * numeral counts that column's empty squares, so it can be checked by counting. Length is not
- * used: at 0 to 12 a number is exact and the carried distinction is binary. The card grammar is
- * `shared/ui/census-tile`. A name mirrored in `.claude/hooks/` and `.codex/hooks/` prints once
- * with the tools that read it. Always-loaded lanes open on their column card rather than filling
- * every row, and every entry carries the text that put it there; a wired gate says its script
- * exists, never that it ran. Counting rules live behind `coverageProvenance`.
+ * Areas by three questions (told, gated, watched); no score. A square is filled or an empty amber outline, the number beside it is the
+ * declaration count, a card's numeral counts its column's empty squares, and a name mirrored in
+ * `.claude/hooks/` and `.codex/hooks/` prints once.
  */
 
 type TranslateFn = ReturnType<typeof useTranslations<'harness'>>;
@@ -334,11 +324,9 @@ const REACH_BUCKETS = [
 ] as const;
 
 /**
- * Three states an authored document can be in: read unasked (a guide), reached when needed (named by
- * path), or never opened (named by nothing), the silent failure. The counts keep the display step
- * but no card, so the strip does not compete with the column cards on surface. One hint on the
- * heading defines all three; per-tile hints overflowed at 390 (`harness-tab.spec.ts`). The folders
- * behind the third count stay one press away, since some documents are rightly unreferenced.
+ * A document is read unasked (a guide), reached when needed (named by path) or never opened (named by
+ * nothing). One heading hint defines all three (per-tile hints overflowed, `harness-tab.spec.ts`); the
+ * third count's folders stay one press away, since some documents are rightly unreferenced.
  */
 function DocumentReachBlock({
   reach,
@@ -549,10 +537,8 @@ export function HarnessCoverageView({
       <div
         data-testid="harness-coverage-columns"
         /*
-         * Three columns at every width in the table's order, but not on its tracks: the cards carry
-         * the question and total, the `<th>` row the position. 3-up keeps the matrix visible on a
-         * phone's first screen. Not `lg:grid-cols-[46fr_18fr_18fr_18fr]`: the grid's gaps would
-         * miss the gapless table by a constant 7.6px, near-alignment claiming alignment.
+         * Three columns at every width in the table's order, not on its tracks: `46fr_18fr_18fr_18fr`
+         * with gaps would miss the gapless table by 7.6px. 3-up keeps the matrix on a phone's first screen.
          */
         className="grid grid-cols-3 gap-[var(--card-gap)]"
       >

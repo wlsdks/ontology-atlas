@@ -20,10 +20,9 @@ import {
 import { buildHarnessBrief } from '../model/harness-brief';
 
 /**
- * What this repository hands an agent, in the order the agent meets it. The bands are the coverage
- * matrix's columns (told, gated, watched) cut by part instead of by area. A fourth band holds the
- * agent loop and model, which no checkout knows, in words rather than a false "0". No score, grade
- * or percentage: files alone cannot tell absent from rightly absent.
+ * What this repository hands an agent, in the order the agent meets it: the coverage columns (told,
+ * gated, watched) cut by part, plus a band for the loop and model no checkout knows, in words rather
+ * than a false "0". No score: files cannot tell absent from rightly absent.
  */
 
 const BAND_ORDER: readonly AnatomyBand[] = ['tells', 'gates', 'watches'];

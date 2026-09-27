@@ -1,11 +1,9 @@
 import { isGuideRecord, type HarnessReport } from '@/entities/agent-files';
 
 /**
- * The harness's own anatomy, read from this repository's files. Vocabulary from public sources:
- * Fowler/Böckeler (guides and sensors), arXiv 2609.00006 (seven subsystems, CC BY 4.0), OpenAI's
- * AGENTS.md instruction chain, and Anthropic's long-running-agent harnesses. The agent loop and
- * model wiring belong to the tool, so that row is shown as not the repository's to decide. The
- * three bands are the coverage matrix's columns (tells, gates, watches); no score or grade.
+ * The harness's own anatomy from this repository's files, in the vocabulary of Fowler/Böckeler, arXiv
+ * 2609.00006 (CC BY 4.0), OpenAI's AGENTS.md chain and Anthropic's harness notes. Bands are the
+ * coverage columns (tells, gates, watches); the tool-owned loop is shown as undecidable here; no score.
  */
 
 /** Which of the three questions a part answers, plus the band for what no checkout can answer. */

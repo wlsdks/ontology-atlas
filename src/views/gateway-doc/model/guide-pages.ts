@@ -1,8 +1,7 @@
 /**
- * The guide's table of contents, the single source of order and slugs for the sidebar,
- * `generateStaticParams` and prev/next. Titles are translated message keys
- * (`gatewayNav.guidePages` in `messages/*.json`), so the sidebar renders without reading bodies; a
- * contract test keeps the list and the keys in step.
+ * The guide's table of contents: the one source of order and slugs for the sidebar,
+ * `generateStaticParams` and prev/next. Titles are `gatewayNav.guidePages` keys in `messages/*.json`,
+ * so the sidebar needs no bodies; a contract test keeps list and keys in step.
  */
 export interface GuidePage {
   /** The vault slug (`guide/…`) — where the body lives. */

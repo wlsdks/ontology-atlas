@@ -17,10 +17,9 @@ import { ArchitectureSketch } from './ArchitectureSketch';
 
 
 /**
- * The architecture canvas: a graph of reviewed roles with a dock for the selected one. The
- * diagram and the document are separate artifacts (`docs/DECISIONS.md`, 2026-08-28 (3)): boxes
- * stay small so an edge has a side to leave from. `buildArchitectureGraph` decides which strokes
- * earn a line and reports it through `edgeSource`.
+ * The architecture canvas with a dock for the selected role. Diagram and document are separate
+ * artifacts (`docs/DECISIONS.md`, 2026-08-28 (3)), so boxes stay small enough for an edge to leave
+ * from; `buildArchitectureGraph` picks the strokes and reports `edgeSource`.
  */
 export function ArchitectureFlow({
   profile,

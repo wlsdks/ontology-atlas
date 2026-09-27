@@ -6,10 +6,9 @@ import type { HarnessScanProgress } from '@/entities/agent-files';
 import { cn } from '@/shared/lib/cn';
 
 /**
- * The wait shows the work: each pass names itself; a bar fills only where the denominator was
- * known before the pass; a pass of unknown length draws a sweep, not an invented percentage.
- * Under reduced motion the sweep rests at a third of the track and the React-driven stage name,
- * count and route keep changing, so nothing is carried by motion alone.
+ * The wait shows the work: each pass names itself, a bar fills only with a known denominator, and an
+ * unknown length sweeps. Under reduced motion the sweep rests at a third of the track while the
+ * React-driven stage, count and route keep changing.
  */
 const STAGE_LABEL: Readonly<Record<HarnessScanProgress['stage'], string>> = {
   roots: 'loadingStageRoots',

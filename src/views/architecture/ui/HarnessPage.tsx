@@ -37,12 +37,9 @@ import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
 import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
 
 /**
- * The Harness destination: the coverage matrix is its spine (`?view=coverage`), with views that
- * detail it; `?view=sensors` resolves to the matrix (`harness-view-state.ts`). One chrome row holds
- * the `h1` and the single tab set above every panel: a stacked header pushed the seventh role below
- * the fold at 1280x800 (`architecture-workbench.spec.ts`), and tabs inside the workbench vanish on
- * its early empty return. The census sentence prints its working, because a bare number reads as
- * "N things protect you" when what was measured is "N things are declared".
+ * The Harness destination; its spine is the coverage matrix (`?view=sensors` resolves there,
+ * `harness-view-state.ts`). One chrome row holds the `h1` and the single tab set, so the ladder keeps
+ * its height (`architecture-workbench.spec.ts`); the census prints its working, not a bare number.
  */
 
 /**
@@ -321,10 +318,9 @@ function HarnessPageInner() {
               </div>
             ) : reportState.status === 'loading' ? (
               /*
-                Nothing until the read outlasts the threshold. A `Surface` for a real 180ms entrance
-                on `map-overlay-in`; no exit, because the status ternary unmounts the branch in the
-                same commit the read finishes. `overlay`, not `chrome`: `globals.css` records why a
-                large surface moves on brightness alone.
+                Nothing until the read outlasts the threshold; a `Surface` for its entrance but no exit,
+                since the ternary unmounts the branch as the read finishes. an `overlay`,
+                not a `chrome`, surface: the `globals.css` note records why a large surface moves on brightness alone.
               */
               <Surface
                 open={waitedPastThreshold}

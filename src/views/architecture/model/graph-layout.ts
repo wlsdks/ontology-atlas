@@ -38,11 +38,9 @@ export interface ArchitectureGraph {
 }
 
 /**
- * Places roles in columns and decides which relationships earn a stroke; a stroke must carry
- * something the columns cannot. Rank is the column, never a line. Permitted edges are drawn in full
- * under `explicit`; under `lower-only` only the adjacent spine is drawn, since skips follow from the
- * order. Measured traffic is always drawn.
- * Ranks come from `buildArchitectureLayout` unchanged.
+ * Places roles in columns (ranks from `buildArchitectureLayout`) and picks strokes that carry what the
+ * columns cannot: every permitted edge under `explicit`, only the adjacent spine under `lower-only`
+ * (skips follow from the order), and all measured traffic.
  */
 export function buildArchitectureGraph(
   layout: ArchitectureLayout,

@@ -1,11 +1,9 @@
 import { splitSummaryLines } from './summary-lines';
 
 /**
- * Where each stroke's sentence sits on the canvas, and which sentences give way. Sentences reuse the
- * dock's strings verbatim. On a downward chain an adjacent pair's sentence sits left of the column
- * (or beside its arrow) and a skip's right of its arc; across, adjacent sentences alternate two tiers
- * above the chain and skips sit below. Each candidate gets a character budget and a rectangle; one
- * that touches a box or an earlier sentence is dropped and reported as `hidden`, never cropped.
+ * Where each stroke's sentence sits (dock strings verbatim): beside or left of a downward chain, on
+ * alternating tiers above an across one, skips beyond their arc. A candidate that touches a box or an
+ * earlier sentence is dropped and reported as `hidden`, never cropped.
  */
 
 type SentenceAxis = 'across' | 'down';

@@ -488,10 +488,9 @@ export function ArchitectureWorkbench({
 
   const selectedModules = sourceModulesByProfile[selected.slug] ?? null;
   /*
-   * The receipt is a dated machine measurement, not a live claim (`docs/DECISIONS.md`).
-   * No record keeps the amber "Source check required". A record shows its stamp (git short sha,
-   * the folder fingerprint sentence, the dirty suffix) with counts beside the verdict, and says this
-   * surface cannot re-probe the source.
+   * A receipt is a dated measurement, not a live claim (`docs/DECISIONS.md`): no record keeps the amber
+   * "Source check required"; a record shows its stamp (git short sha, folder fingerprint, dirty suffix)
+   * with counts beside the verdict, and says this surface cannot re-probe the source.
    */
   const record = recordsByProfile[selected.slug] ?? null;
   const conformance = record?.brief.conformance ?? null;

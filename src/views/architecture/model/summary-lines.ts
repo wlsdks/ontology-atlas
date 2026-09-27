@@ -133,10 +133,9 @@ const CLAUSE_END = /[,.;:!?、。，]$/u;
 const CLAUSE_BREAK_SLACK = 1.08;
 
 /**
- * `text-wrap: balance` for SVG text: the greedy line count at the narrowest room that holds it, so
- * the last line is never a lone word under a full line. Within `CLAUSE_BREAK_SLACK`, a break ending on a clause wins.
- * A wrap that had to ellipsize is returned as it was. O(W²) candidate rooms for W words, each a full
- * re-wrap: sized for one caption sentence.
+ * `text-wrap: balance` for SVG text: the greedy line count at the narrowest room that holds it, so no
+ * lone word sits under a full line; within `CLAUSE_BREAK_SLACK` a clause break wins; an ellipsized wrap
+ * is returned as it was. O(W²) candidate rooms for W words, each a full re-wrap: one caption sentence.
  */
 export function balanceLinesByWidthAt(
   text: string,

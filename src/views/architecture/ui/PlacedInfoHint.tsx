@@ -48,12 +48,9 @@ function hintField(from: HTMLElement): { top: number; right: number; bottom: num
 }
 
 /**
- * An `InfoHint` whose panel is `position: fixed`, measured and clamped: below the button when it
- * fits, above when only that fits, else the roomier side with its text scrolling; horizontally the
- * `preferred` edge, then the others, then a clamp. Re-placed on arrival, resize and scroll. The panel
- * resets inherited text. For WCAG 1.4.13 a hit strip bridges the gap (hoverable) and Escape, taken
- * in capture and stopped, closes only the hint (dismissible); arriving again restores it.
- * This belongs in `shared/ui/info-hint.tsx`; move it there once that file is free.
+ * An `InfoHint` with a fixed, measured, clamped panel (below, above, else roomier side; `preferred`
+ * edge first), re-placed on arrival, resize and scroll. WCAG 1.4.13: a hit strip bridges the gap and a
+ * captured Escape closes only the hint. Belongs in `shared/ui/info-hint.tsx` once that file is free.
  */
 export function PlacedInfoHint({
   label,
