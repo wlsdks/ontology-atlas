@@ -69,7 +69,8 @@ record format. Before reversing an existing product or architecture choice, find
 it with `pnpm decisions:find <terms>` and cite or explicitly overturn it, keeping
 dissent and a falsifier. A record is context from its date, not proof it still
 holds: recheck its conditions and figures against the present before relying on
-it. `pnpm record:new` creates immutable fragments; routine work needs none.
+it. When a document and the code disagree, the code is the fact: fix the
+document in the same change. `pnpm record:new` creates immutable fragments; routine work needs none.
 
 ## Rendered work and source authorities
 
