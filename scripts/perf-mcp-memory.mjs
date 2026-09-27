@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SERVER = join(ROOT, 'mcp', 'src', 'index.js');
-const PROBE = join(ROOT, 'scripts', 'lib', 'mcp-memory-probe.mjs');
+const PROBE = join(ROOT, 'scripts/lib/mcp-memory-probe.mjs');
 const KB = 1024;
 const MB = 1024 * 1024;
 
