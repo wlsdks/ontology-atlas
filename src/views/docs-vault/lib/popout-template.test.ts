@@ -7,11 +7,10 @@ describe("buildDocsVaultPopoutHtml", () => {
       `로그인 < script > "spec"`,
       `<article>본문</article>`,
     );
-    // The title is escaped.
     expect(html).toContain(
       "<title>로그인 &lt; script &gt; &quot;spec&quot;</title>",
     );
-    // The body passes through (the caller is assumed to hand over already-safe HTML as outerHTML).
+    // The caller hands over already-safe HTML.
     expect(html).toContain("<article>본문</article>");
   });
 
@@ -31,14 +30,12 @@ describe("buildDocsVaultPopoutHtml", () => {
     expect(html).toContain("color: #d0d6e0"); // text-secondary (body)
     // Indigo alpha (link, code background) — one colour only.
     expect(html).toContain("rgba(139,151,255,0.9)");
-    // No glow, no scale, no purple-to-pink gradient.
     expect(html).not.toMatch(/linear-gradient/);
     expect(html).not.toMatch(/box-shadow/);
   });
 
   it("uses no var(--...) tokens that a standalone document cannot resolve", () => {
-    // A popout is self-contained HTML outside the app — with no `:root` tokens, `var()` did not
-    // resolve and the border silently broke. Literal values only.
+    // Standalone HTML has no `:root` tokens, so `var()` would not resolve.
     const html = buildDocsVaultPopoutHtml("a", "<p>x</p>");
     expect(html).not.toMatch(/var\(--/);
   });

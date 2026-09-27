@@ -11,36 +11,27 @@ import { Button, Dialog } from "@/shared/ui";
 export interface DeleteDocTarget {
   slug: string;
   title: string;
-  /** The documents that still point here, by the name each one is shown by. */
+  /** By display name. */
   referrers: ReadonlyArray<{ slug: string; title: string }>;
 }
 
-/** How many referrers the warning names before it counts the rest. */
+/** Named before the rest are counted. */
 const REFERRERS_NAMED_MAX = 3;
 
 /**
- * **A delete names what it leaves pointing at nothing** (2026-09-26, map-edit QA D7 and D9).
- *
- * Deleting was a native `window.confirm` reading only the title, the path and "this cannot be
- * undone", reachable from the command palette alone — and it removed a document three others
- * still listed in their `dependencies:` without a word. The references are left in place,
- * as MCP `delete_concept` leaves them when a person confirms past its backlink check
- * (`force: true`): they are the person's record of a relation, not the app's to erase. So
- * the confirmation names them before anything is removed, and the referrer's own page flags
- * the missing target afterwards (`DocFrontmatterBlock`).
- *
- * `role="alertdialog"` because the body is the warning, and `initialFocus="container"` keeps
- * the caret off the destructive button (`Dialog`'s own note for exactly this case).
+ * Names the referrers a delete leaves pointing at nothing. The references stay, as the
+ * MCP `delete_concept` leaves them with `force: true`: they are the person's record, not the app's
+ * to erase.
  */
 export function DeleteDocDialog({
   target,
   onCancel,
   onConfirm,
 }: {
-  /** The document to delete; null closes the dialog. */
+  /** Null closes the dialog. */
   target: DeleteDocTarget | null;
   onCancel: () => void;
-  /** Deletes the document; rejects with the reason when the vault refuses. */
+  /** Rejects with the reason when the vault refuses. */
   onConfirm: () => Promise<void>;
 }) {
   const held = useHeldValue(target, target?.slug ?? null);

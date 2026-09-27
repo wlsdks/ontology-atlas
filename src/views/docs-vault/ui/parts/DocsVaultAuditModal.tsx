@@ -23,13 +23,9 @@ const SOURCE_VAULT_RUNTIME_REPLAY_MARKERS = [
 ] as const;
 
 export interface DocsVaultAuditModalProps {
-  /**
-   * Skill-copy parity — non-null **only on desktop, when the absolute path is known**.
-   * `null` means the row is not drawn at all: not drawing a half-true row is this modal's
-   * existing convention (the same grammar as the `useAgentFilesModel` gate).
-   */
+  /** Non-null only on desktop with a known absolute path; `null` draws no row rather than a half-true one. */
   skillParity?: SkillParityModel | null;
-  /** Copies the diverged rows as a sentence to hand an agent — the caller composes the string. */
+  /** The caller composes the handoff sentence. */
   onCopySkillParityHandoff?: (rows: SkillParityRow[]) => void;
   open: boolean;
   manifest: VaultManifest;
@@ -43,14 +39,8 @@ export interface DocsVaultAuditModalProps {
 }
 
 /**
- * The docs check is a centre modal, replacing the old absolute band
- * (`DocsVaultSourceContractBar` with its uneven three-card grid): a vertical three-row stack
- * with hairline dividers, a scrim, and a focus trap. The proof markers
- * (`SOURCE_VAULT_RUNTIME_REPLAY_MARKERS`) and the graph-check copy gate are preserved
- * literally — they are the agent handoff contract.
- *
- * The open state is not persisted — a modal appearing on every page load violates modality, so
- * it always starts closed (the caller holds `contractOpen` as plain state).
+ * The docs check modal. The proof markers (`SOURCE_VAULT_RUNTIME_REPLAY_MARKERS`) and the
+ * graph-check copy are the agent handoff contract and stay literal. Open state is not persisted.
  */
 export function DocsVaultAuditModal({
   skillParity = null,
@@ -72,7 +62,6 @@ export function DocsVaultAuditModal({
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
 
-    // Close on Esc.
   useEffect(() => {
     if (!open) return;
     const handler = (event: KeyboardEvent) => {
@@ -82,8 +71,7 @@ export function DocsVaultAuditModal({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  // Focus trap — on open, focus moves to the first focusable inside the dialog and Tab cycles
-  // rather than escaping. On close, focus is restored to the trigger (the check tile).
+  // Focus trap: focus the first control on open, cycle Tab, restore the trigger on close.
   useEffect(() => {
     if (!open) return;
     previousFocusRef.current = document.activeElement as HTMLElement | null;
@@ -120,8 +108,7 @@ export function DocsVaultAuditModal({
     };
   }, [open]);
 
-  // This modal is inline framer, outside the reach of the global reduced-motion kill layer, so
-  // it branches here directly.
+  // Inline framer sits outside the global reduced-motion layer, so it branches here.
   const reducedMotion = useReducedMotion();
 
   const sourceLabel = isLocalSourceLoaded
@@ -134,9 +121,7 @@ export function DocsVaultAuditModal({
       icon: HardDrive,
       label: t("sourceContract.filesLabel"),
       value: sourceLabel,
-      // **Silent truncation reads as "we saw everything".** If the walk hit a limit or skipped a
-      // cache directory, it is said **right where** the user reads the document count — written
-      // on another screen, whoever trusts this number never sees it.
+      // A limited or skipped walk is said beside the document count, or the count reads as complete.
       body: [
         t("sourceContract.filesBody"),
         manifest.walkTruncated ? t("sourceContract.filesTruncated") : "",
@@ -183,20 +168,8 @@ export function DocsVaultAuditModal({
   ] as const;
 
   /**
-   * Row 4 — skill copies. **Why here and not the sidebar:** frequency decides placement. This
-   * fact is looked at right after `agent-setup` and right after editing a skill — a few times a
-   * month, not a few times a day. The sidebar is the permanent navigation surface for choosing a
-   * document daily, and a permanent slot belongs to a permanent question.
-   *
-   * Measurement settled it (design council, hierarchy seat, 2026-07-29): at 1512×900, putting the
-   * skill list in the sidebar makes the chrome above the tree **519px of 856px (61%)**, pushing
-   * the vault tree — the docs surface's protagonist — below the fold. At 390px the sidebar is a
-   * drawer and is not visible at all, whereas this modal's trigger is still in the top chrome at
-   * that width.
-   *
-   * And this modal **already has the grammar for the job** — label, chip, value, one sentence, a
-   * copy action on the right. This is a place to add one row to an existing workflow rather than
-   * build new chrome.
+   * Skill copies live here, not in the sidebar: they are checked a few times a month, and a
+   * sidebar slot pushes the vault tree down.
    */
   const skillParityRows = skillParity?.rows ?? [];
   const disagreeing = skillParityRows.filter((row) => row.verdict !== "agreed");
@@ -216,7 +189,7 @@ export function DocsVaultAuditModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: EXIT_TRANSITION }}
-          // Leaving is faster than entering — measured, the two were the same speed.
+          // Leaving is faster than entering.
           transition={reducedMotion ? MOTION.fast : MOTION.base}
           className="fixed inset-0 z-50 flex justify-center px-4"
           style={{ paddingTop: "max(96px, 18vh)" }}
@@ -224,11 +197,8 @@ export function DocsVaultAuditModal({
             if (event.target === event.currentTarget) onClose();
           }}
         >
-          {/* The scrim **does not receive clicks.** If it did, the outside-click test
-              (`event.target === event.currentTarget`) would be false forever — the real target
-              being this child — making outside-click-to-close a dead affordance (measured
-              2026-07-29: the modal did not close). It handles the visuals only; the parent
-              receives the event. */}
+          {/* The scrim takes no clicks, or the parent's `event.target === event.currentTarget`
+             outside-click check never matches. */}
           <div
             className="pointer-events-none fixed inset-0 -z-10 bg-[color:var(--docs-scrim)]"
             aria-hidden
@@ -353,8 +323,7 @@ export function DocsVaultAuditModal({
                       {tSkillParity("chip")}
                     </span>
                   </div>
-                  {/* The value is this row's attention winner — the same step as other rows'
-                      values, but **the zero state does not shout**: all-agreed is neutral. */}
+                  {/* All-agreed is neutral; only a divergence draws attention. */}
                   <p
                     data-testid="docs-audit-skill-parity-value"
                     className="mt-0.5 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
@@ -369,19 +338,14 @@ export function DocsVaultAuditModal({
                   <p className="mt-0.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
                     {tSkillParity("body")}
                   </p>
-                  {/* **A mark every object receives carries zero bits** — what agrees is not
-                      named. Only what diverges appears by name. */}
+                  {/* Only what diverges is named. */}
                   {disagreeing.length > 0 ? (
                     <div className="mt-1.5 flex flex-wrap gap-1">
                       {disagreeing.map((row) => (
                         <span key={row.name}
                           data-testid={`docs-audit-skill-parity-${row.name}`}
                           data-verdict={row.verdict}
-                          // `--color-amber-source-*` is the **warning ramp** — globals.css states
-                          // `amber-source(244,183,49 == --color-status-warning)`. The quarantined
-                          // token is the differently named `--color-amber-docs-*`.
-                          // (The hierarchy seat confused the two and prescribed a swap; the
-                          // design-system seat corrected it, catching a token with no gate.)
+                          // `--color-amber-source-*` is the warning ramp (globals.css); the quarantined one is `--color-amber-docs-*`.
                           className={badgeClass({ shape: "micro", className: "border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] font-mono text-[color:var(--color-amber-source-a90)]" })}
                         >
                           {row.name}

@@ -21,8 +21,7 @@ import {
 } from "./persistence";
 
 describe("parseDocsVaultView", () => {
-  // Since folder-topology was removed, 'doc' is the only view. An unknown value is always
-  // normalized to 'doc' too.
+  // 'doc' is the only view; unknown values normalize to it.
   it("always returns 'doc'", () => {
     expect(parseDocsVaultView("doc")).toBe("doc");
     expect(parseDocsVaultView(null)).toBe("doc");
@@ -42,10 +41,8 @@ describe("parseDocsVaultSource", () => {
 });
 
 describe("persistEditorSave", () => {
-  // Data-loss regression guard: if the editor's onSave swallows `VaultConflictError` (as an older
-  // version did), `doSave` marks the buffer phantom-clean, shows "saved", and the next poll
-  // re-fetch overwrites the unsaved edit. `persistEditorSave` never swallows a conflict; it
-  // re-throws so the editor keeps the buffer dirty.
+  // A swallowed `VaultConflictError` would mark the buffer clean and let the next poll overwrite
+  // the unsaved edit.
   it("resolves on success without calling onConflict", async () => {
     const saveDoc = vi.fn().mockResolvedValue(undefined);
     const onConflict = vi.fn();
@@ -144,15 +141,13 @@ describe("shouldPreferLocalOnLanding (C5)", () => {
   });
 
   it("prefers local when the launch stopped for the person to choose a folder", () => {
-    // A deferred launch has loaded no manifest **by design**, so the 'loaded' arm cannot
-    // see it. The folder screen is reached through the local source and nothing else would
-    // select it, so without this arm the person who is meant to be picking a folder lands
-    // on the sample instead.
+    // A deferred launch loads no manifest by design; without this arm the person meant to pick
+    // a folder lands on the sample.
     expect(shouldPreferLocalOnLanding("idle", "server", null, true)).toBe(true);
   });
 
   it("still respects an explicit Sample deep link while choosing", () => {
-    // Choosing a folder does not outrank the person having asked for the sample by URL.
+    // An explicit sample URL still wins.
     expect(shouldPreferLocalOnLanding("idle", "server", "server", true)).toBe(false);
   });
 
@@ -161,8 +156,7 @@ describe("shouldPreferLocalOnLanding (C5)", () => {
   });
 
   it("leaves the idle verdict unchanged when nothing is being chosen", () => {
-    // The flag is the whole difference between "no folder is open" and "no folder is open
-    // on purpose"; an idle vault with no pending choice must still not force local.
+    // Without a pending choice an idle vault must not force local.
     expect(shouldPreferLocalOnLanding("idle", "server", null, false)).toBe(false);
   });
 });
@@ -197,9 +191,7 @@ describe("doc list collapse storage", () => {
   });
 });
 
-// Contract change: the gate looks only at capability (FSA support), not the runtime — resolving the
-// contradiction where the map could write to the vault in the same web session while only the docs
-// surface was locked behind macOS.
+// Capability (FSA support) gates the source, not the runtime.
 describe("capability-gated local vault source", () => {
   it("honors ?intent=local in every runtime (web included — builder parity)", () => {
     expect(shouldHonorLocalIntent("local", true)).toBe(true);
@@ -348,7 +340,7 @@ describe("capability-gated local vault source", () => {
         hasLocalManifest: true,
       }),
     ).toBe(false);
-    // A web session gets the welcome (with its open CTA) too, under the capability contract.
+    // A web session gets the welcome with its open CTA too.
     expect(
       shouldShowDesktopVaultWelcome({
         isDesktopRuntime: false,

@@ -104,7 +104,6 @@ describe('docs vault collections', () => {
     expect(
       resolveDocsVaultSlugAlias('ANALYSIS-RECORDS', [doc('contracts/analysis-records')], aliases),
     ).toBe('contracts/analysis-records');
-    // An alias whose target is not in this vault is not followed.
     expect(resolveDocsVaultSlugAlias('ANALYSIS-RECORDS', [doc('FEATURES')], aliases)).toBe('ANALYSIS-RECORDS');
   });
 
@@ -162,8 +161,7 @@ describe('docs vault collections', () => {
         dismissed: false,
       }),
     ).toBe(true);
-    // Arriving with an explicit deeplink (?slug=) skips the note — a shared link must go straight
-    // to that document.
+    // A shared `?slug=` link goes straight to its document.
     expect(
       shouldShowSampleWelcomeNote({
         source: 'server',
@@ -171,7 +169,6 @@ describe('docs vault collections', () => {
         dismissed: false,
       }),
     ).toBe(false);
-    // Once the user has selected a real document (dismissed), it is not pushed again.
     expect(
       shouldShowSampleWelcomeNote({
         source: 'server',
@@ -179,7 +176,6 @@ describe('docs vault collections', () => {
         dismissed: true,
       }),
     ).toBe(false);
-    // Not applicable at all to a local (the user's own) vault.
     expect(
       shouldShowSampleWelcomeNote({
         source: 'local',
@@ -190,16 +186,7 @@ describe('docs vault collections', () => {
   });
 });
 
-/**
- * The first screen **shows what it actually has** (measured defect, 2026-07-28).
- *
- * The default collection was pinned to `'guides'`, so opening a vault where that collection is
- * empty left the vault pill saying "31 documents" while the list was empty. There was no fallback
- * (every `setDocCollection` call goes through a user action), and a first-time visitor saw 0 of 31.
- *
- * This is a question of **honesty** before complexity — the screen was lying about its own state.
- * So the verdict is not "what looks nicer" but "does what was counted match what was shown".
- */
+/** The first screen must not show zero documents while the pill counts them. */
 describe('resolveInitialDocsCollection never opens on an empty list', () => {
   it('opens the preferred collection when it has docs', () => {
     const docs = [doc('a'), doc('b', { kind: 'capability' })];
@@ -207,14 +194,11 @@ describe('resolveInitialDocsCollection never opens on an empty list', () => {
   });
 
   it('opens all docs when the preferred collection is empty but others are not', () => {
-    // This repository's dogfood sample has exactly this shape — everything is an ontology node, so
-    // guides is zero.
+    // The dogfood sample has this shape: every document is an ontology node.
     const docs = [doc('a', { kind: 'domain' }), doc('b', { kind: 'element' })];
     expect(resolveInitialDocsCollection(docs)).toBe('all');
   });
 
-  // Switching to 'all' in an empty vault still gives zero. A fallback that says nothing only churns
-  // state and gives the user nothing, so the preference is kept.
   it('keeps the preferred collection when the vault is empty', () => {
     expect(resolveInitialDocsCollection([])).toBe('guides');
   });

@@ -1,14 +1,6 @@
 /**
- * Open document tabs — pure state logic plus localStorage persistence.
- *
- * A tab is a "working set", not a "mode": the source of truth for the active tab is the URL
- * `?slug=` (the same principle as the other UI state in `persistence.ts`), and this module
- * manages only the list of open slugs plus each tab's last activation time. `DocsVaultPage`
- * wires it by observing `selectedSlug` changes and calling `openOrActivateDocTab` — it never
- * fights the URL.
- *
- * **Owner decision (2026-07):** tab lifetime is permanent in localStorage — "still there after
- * restarting the macOS app" (overriding the draft contract's sessionStorage proposal).
+ * Open document tabs: pure state plus localStorage. A working set, not a mode; the
+ * URL `?slug=` is the active source of truth. Tabs persist across app restarts by owner decision.
  */
 
 export interface DocTab {
@@ -17,13 +9,13 @@ export interface DocTab {
   lastActivatedAt: number;
 }
 
-/** The tab ceiling — a proliferation guard (owner's concern: "top-level mode tabs multiplying"). Over it, LRU evicts. */
+/** A proliferation guard; past it, LRU evicts. */
 export const DOC_TABS_MAX = 8;
 
 const DOC_TABS_KEY_PREFIX = "docsVault:openTabs:";
 const DOC_ACTIVE_TAB_KEY_PREFIX = "docsVault:activeTab:";
 
-/** Keys are separated per vault (sourceKey), so sample tabs never leak into a local vault. */
+/** One key per vault, so sample tabs never leak into a local vault. */
 export function docTabsStorageKey(sourceKey: string): string {
   return `${DOC_TABS_KEY_PREFIX}${sourceKey}`;
 }
@@ -42,7 +34,7 @@ function isDocTab(value: unknown): value is DocTab {
   );
 }
 
-/** Reads the tab list for a sourceKey from localStorage. Corrupt or absent yields []. */
+/** Corrupt or absent yields []. */
 export function readStoredDocTabs(sourceKey: string): DocTab[] {
   if (typeof window === "undefined") return [];
   try {
@@ -61,7 +53,7 @@ export function storeDocTabs(sourceKey: string, tabs: DocTab[]): void {
   try {
     window.localStorage.setItem(docTabsStorageKey(sourceKey), JSON.stringify(tabs));
   } catch {
-    /* private mode / quota — skip; the next session simply refills it */
+    // private mode / quota: the next session refills it
   }
 }
 
@@ -80,14 +72,11 @@ export function storeActiveDocSlug(sourceKey: string, slug: string): void {
   try {
     window.localStorage.setItem(activeDocTabStorageKey(sourceKey), slug);
   } catch {
-    /* private mode / quota — fall back to the tab list's lastActivatedAt */
+    // private mode / quota: fall back to the tab list's lastActivatedAt
   }
 }
 
-/**
- * Silently drops restored tabs whose slug no longer exists (renamed or deleted documents). When
- * nothing is removed the original reference is returned as-is, avoiding a needless re-render.
- */
+/** Returns the same reference when nothing is removed, avoiding a re-render. */
 export function pruneMissingDocTabs(
   tabs: DocTab[],
   validSlugs: ReadonlySet<string>,
@@ -97,9 +86,8 @@ export function pruneMissingDocTabs(
 }
 
 /**
- * Restores the previously active document only when an app restart or vault switch has no URL
- * deeplink. The active slug saved from an explicit selection wins; if there is none, or it no
- * longer exists in the current vault, the tabs' `lastActivatedAt` is the safe fallback.
+ * Only without a URL deeplink. The explicitly selected active slug wins; otherwise the
+ * tabs' `lastActivatedAt` is the fallback.
  */
 export function resolveRestoredActiveDocSlug({
   tabs,
@@ -124,7 +112,6 @@ export function resolveRestoredActiveDocSlug({
   return latest?.slug ?? null;
 }
 
-/** Past eight, evict from the least recently activated tab (LRU). */
 function evictLru(tabs: DocTab[], max: number): DocTab[] {
   if (tabs.length <= max) return tabs;
   const next = tabs.slice();
@@ -140,11 +127,7 @@ function evictLru(tabs: DocTab[], max: number): DocTab[] {
   return next;
 }
 
-/**
- * The side effect of selecting a document — already open means activate (and refresh the title);
- * otherwise append a new tab and evict past the `DOC_TABS_MAX` ceiling by LRU. A newly opened or
- * activated tab always carries the newest timestamp, so it can never be evicted by the same call.
- */
+/** A newly opened or activated tab carries the newest timestamp, so the same call never evicts it. */
 export function openOrActivateDocTab(
   tabs: DocTab[],
   next: { slug: string; title: string },
@@ -162,17 +145,13 @@ export function openOrActivateDocTab(
 
 export interface CloseDocTabResult {
   tabs: DocTab[];
-  /** null = there are zero tabs — the caller falls back to "the first document in the list, or README". */
+  /** Null when no tabs remain; the caller falls back to the first document or README. */
   nextActiveSlug: string | null;
 }
 
 /**
- * Closes a tab.
- * - Closing a non-active tab leaves the active selection untouched.
- * - Closing the active tab moves to an adjacent one — **left first**, or right when there is no
- *   left (the leftmost tab was closed).
- * - Closing the last remaining tab yields `nextActiveSlug: null`; the fallback (the first
- *   document in the list, or README) is the caller's responsibility.
+ * Closing the active tab moves left first, then right; closing the last yields null and the
+ * caller falls back.
  */
 export function closeDocTab(
   tabs: DocTab[],

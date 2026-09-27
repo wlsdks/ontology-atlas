@@ -12,17 +12,11 @@ function render(ui: React.ReactElement) {
   );
 }
 
-/**
- * Pins the shared a11y contract of the three DOM overlays here in NewDocKindDialog: focus moves to
- * the first focusable on open, ESC closes, Tab does not leak outside the dialog (trap), and focus
- * returns to the trigger on close.
- */
 describe("NewDocKindDialog", () => {
   const triggers: HTMLButtonElement[] = [];
   afterEach(() => {
-    // ⚠️ Do not clear everything with `document.body.innerHTML = ""` — Dialog mounts a portal on
-    // body, and removing that node before React unmounts makes removeChild throw NotFoundError.
-    // Only the triggers are cleared.
+    // Do not clear `document.body`: Dialog's portal lives there and React's unmount would throw
+    // NotFoundError. Only the triggers are removed.
     for (const trigger of triggers.splice(0)) trigger.remove();
   });
 

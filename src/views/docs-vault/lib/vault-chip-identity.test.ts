@@ -12,11 +12,7 @@ describe("vault chip identity names the chosen source", () => {
     ).toEqual({ kind: "local", label: "my-notes", showDocCount: true });
   });
 
-  /**
-   * This is the exact reproduction of the defect — local was chosen while the chip read "31 sample
-   * documents". That number belongs to the sample manifest, so putting it on a local screen reads
-   * as "my folder has 31 documents".
-   */
+  /** The sample's count on a local screen would read as "my folder has 31 documents". */
   it("hides the count for local without a folder and is not the sample", () => {
     const pending = resolveVaultChipIdentity({
       source: "local",

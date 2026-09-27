@@ -67,7 +67,6 @@ describe('useAdvancedMenu', () => {
 
   it('registers no listeners while closed', () => {
     render(<MenuFixture />);
-    // An outside pointerdown while closed must change nothing (zero state changes).
     act(() => {
       const ev = new PointerEvent('pointerdown', { bubbles: true });
       Object.defineProperty(ev, 'target', {

@@ -105,7 +105,6 @@ describe("DocsSidebarBody recently changed docs section", () => {
   it("is collapsed by default and shows only recent docs when opened", () => {
     renderSidebar([makeDoc("a", "Recent Doc", recentIso), makeDoc("b", "Old Doc", oldIso)]);
 
-    // Collapsed by default, so the list is hidden at first.
     expect(screen.queryByTestId("docs-sidebar-recently-changed-list")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("docs-sidebar-recently-changed-toggle"));
     expect(screen.getByTestId("docs-sidebar-recently-changed-list")).toBeInTheDocument();
@@ -145,7 +144,6 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
       makeDoc("order", "주문 문서", new Date().toISOString()),
       makeDoc("ship", "배송 문서", new Date().toISOString()),
     ]);
-    // No search box by default (density).
     expect(
       screen.queryByPlaceholderText(
         koMessages.vaultWidgets.parts.sidebar.searchPlaceholder,
@@ -227,19 +225,7 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
     expect(screen.getByTestId("docs-sidebar-new-doc")).toBeInTheDocument();
   });
 
-  /**
-   * **The property held is the same; only where it is stated moved** (2026-08-08).
-   *
-   * The three icons used to keep their labels in tooltips only, so «which filter is this
-   * list under» was answered instead by the grey caption line below. These tests exist to
-   * stop the regression, reproduced in the installed app, where that line was the constant
-   * "all documents".
-   *
-   * Now **the active chip states its own name** — the information moved inside the control,
-   * so the caption line is left only for values a control cannot hold, such as search and
-   * tags. So the tests look for the name **on the chip**. The regression they were written
-   * for (choosing "map documents" while the screen says "all documents") is still caught.
-   */
+  /** The active chip states its own name, so the name is looked for on the chip. */
   it("shows the name of the active view", () => {
     const docs = [
       makeDoc("a", "A", new Date().toISOString()),
@@ -252,10 +238,9 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
     });
     const active = screen.getByTestId("docs-sidebar-collection-ontology");
     expect(active).toHaveTextContent("지도 문서");
-    // Exclusive single selection, hence radiogroup + aria-checked.
     expect(active).toHaveAttribute("aria-checked", "true");
     expect(active).toHaveAttribute("role", "radio");
-    // An unselected view states no name — only the active one speaks, so «now» is readable.
+    // Only the active view speaks, so an unselected chip has no name.
     expect(screen.getByTestId("docs-sidebar-collection-all")).toHaveTextContent("");
     expect(screen.queryByText("전체 문서")).not.toBeInTheDocument();
   });
@@ -272,23 +257,15 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
     });
     const active = screen.getByTestId("docs-sidebar-collection-all");
     expect(active).toHaveTextContent("전체 문서");
-    // Exclusive single selection, hence radiogroup + aria-checked.
     expect(active).toHaveAttribute("aria-checked", "true");
     expect(active).toHaveAttribute("role", "radio");
-    // The count stays in the tooltip (the accessible name), so the chip label does not eat width.
+    // The count stays in the accessible name so the label does not eat width.
     expect(active.getAttribute("aria-label")).toContain("3");
   });
 
   /**
-   * **The threshold in the class and the threshold in the constant are one number**
-   * (2026-09-07).
-   *
-   * Tailwind extracts class names statically, so `@min-[…px]/docs-head:` has to be written
-   * out literally; the constant beside it carries the arithmetic and the measurement that
-   * chose it. Two copies of a number drift, and this one drifting is invisible — the label
-   * would simply start appearing at a width that cannot hold it, which is the defect this
-   * round was opened for. jsdom computes no container query, so the pair is what can be
-   * checked here; `docs-sidebar-head.spec.ts` measures the rendered rects.
+   * Tailwind needs the `@min-[…px]/docs-head:` threshold written literally, so this checks it equals
+   * the constant; jsdom has no container queries (`docs-sidebar-head.spec.ts` measures the render).
    */
   it("draws the active name only when the row is wide enough", () => {
     const docs = [makeDoc("a", "A", new Date().toISOString())];
@@ -299,20 +276,14 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
     const label = screen.getByText("전체 문서");
     expect(label.className).toContain("hidden");
     expect(label.className).toContain(`@min-[${DOCS_HEAD_LABEL_MIN_PX}px]/docs-head:inline`);
-    // The row is the container being measured — not the window, which says nothing about a
-    // pane that renders at 280, 300 and 340 inside one viewport.
+    // The row, not the window, is the container: the pane renders at several widths in one viewport.
     const row = screen.getByTestId("docs-sidebar-head-row");
     expect(row.className).toContain("@container/docs-head");
-    // The trailing cluster holds the edge, so it is the collection well that gives way.
     expect(screen.getByTestId("docs-sidebar-new-doc").parentElement?.className).toContain(
       "flex-none",
     );
   });
 
-  /**
-   * The caption line appears only for **values a control cannot hold**. An empty line left
-   * behind when there is no state at all is just a placeholder for information that is gone.
-   */
   it("renders no caption row without a query or tag", () => {
     renderSidebar([makeDoc("a", "A", new Date().toISOString())], {
       collection: "all",
@@ -381,34 +352,22 @@ describe("DocsSidebarBody new doc entry point", () => {
   });
 
   /**
-   * It is **pressable even in the read-only sample** (owner report from real use, 2026-07-28).
-   *
-   * The old contract was "disabled plus a tooltip hint", and this test enforced it. But a
-   * **hover-only** explanation on a 40%-opacity icon never arrived — to the owner that screen
-   * read as "there is no create-document feature", and a keyboard user was dropped from the
-   * Tab order entirely by `disabled`, so could not even learn it existed.
-   *
-   * The charter's degradation grammar is "why it is unavailable **and where to go**". So
-   * pressing it now goes to what makes it possible: open my folder. The label says so in
-   * advance, so nothing is surprising.
+   * Pressable in the read-only sample, since `disabled` drops it from the Tab order; it leads to
+   * opening a folder and says so in its label.
    */
   it("keeps the new-doc button reachable in read-only sample mode — it routes to what unblocks it", () => {
     const { onCreateNewDoc } = renderSidebar([], { canCreateNewDoc: false });
     const button = screen.getByTestId("docs-sidebar-new-doc");
     expect(button).toBeInTheDocument();
-    // Not a dead affordance — it presses, and it stays in the keyboard Tab order.
     expect(button).toBeEnabled();
     fireEvent.click(button);
     expect(onCreateNewDoc).toHaveBeenCalledTimes(1);
-    // The label states the why and the where in advance.
     expect(button.getAttribute("aria-label")).toMatch(/폴더/);
   });
 });
 
 describe("DocsSidebarBody list order menu", () => {
-  // A miniature of the dogfood top-level folder. With folders and documents mixed into one
-  // alphabetical run, folders get buried among documents (measured: the 96-document ontology
-  // folder landed 23rd of 36 rows).
+  // A miniature of the dogfood top level, where alphabetical order buried folders among documents.
   const tree: VaultManifest["tree"] = {
     name: "root",
     path: "",
@@ -442,7 +401,7 @@ describe("DocsSidebarBody list order menu", () => {
     makeDoc("benchmark/run", "Run", iso),
   ];
 
-  /** Labels of top-level tree rows only — inside collapsed folders is not inspected. */
+  /** Top-level rows only; collapsed folders are not inspected. */
   function treeLabels() {
     const nav = screen.getByRole("navigation", {
       name: koMessages.vaultWidgets.tree.navAria,
@@ -485,9 +444,7 @@ describe("DocsSidebarBody list order menu", () => {
     fireEvent.click(screen.getByTestId("docs-sidebar-order-sort-recent"));
     expect(onSortChange).toHaveBeenCalledWith("recent");
     expect(onGroupChange).not.toHaveBeenCalled();
-    // "Closed" is not an immediate unmount (2026-08-04) — this menu lives on `Surface`, so it
-    // remains for the exit window (≈140ms) and is `inert` throughout, accepting no input.
-    // An assertion demanding immediate removal is demanding a hard cut.
+    // "Closed" means inert during the `Surface` exit window, not unmounted at once.
     const menu = screen.getByTestId("docs-sidebar-order-menu");
     expect(menu).toHaveAttribute("data-surface-state", "exiting");
     expect(menu).toHaveAttribute("inert");
@@ -495,17 +452,8 @@ describe("DocsSidebarBody list order menu", () => {
 });
 
 /**
- * **Which state a rail button reports** — the three consumers are three different things
- * (2026-08-15).
- *
- * The defect survived because these tests did not exist. The twenty above checked only
- * «does it press» and «what opens», and **never once** looked at what reaches the
- * accessibility tree. Meanwhile `RailIconButton` attached `aria-pressed={active}`
- * unconditionally — the automatic pairing `Chip`'s header in `controls.tsx` already forbids.
- *
- * Neither lint nor axe can see this: an absent attribute cannot be caught by a selector, and
- * `button[aria-pressed]` is perfectly valid markup to axe. Whether a button really is a
- * toggle depends on **what its handler does**, and that has to be measured.
+ * Which state reaches the accessibility tree per rail button; lint and axe cannot see a missing
+ * or wrongly paired attribute, so these tests do.
  */
 describe("DocsSidebarBody rail button state semantics", () => {
   const orderTree: VaultManifest["tree"] = {
@@ -521,8 +469,7 @@ describe("DocsSidebarBody rail button state semantics", () => {
   it("announces no pressed state for the new doc action", () => {
     renderSidebar([], { canCreateNewDoc: true });
     const button = screen.getByTestId("docs-sidebar-new-doc");
-    // It used to keep announcing aria-pressed="false". This button has no pressed state —
-    // pressing it opens a dialog or routes to open-folder.
+    // An action has no pressed state.
     expect(button).not.toHaveAttribute("aria-pressed");
     expect(button).not.toHaveAttribute("aria-expanded");
   });
@@ -545,19 +492,9 @@ describe("DocsSidebarBody rail button state semantics", () => {
     expect(screen.getByTestId("docs-sidebar-order-toggle")).toHaveAttribute("aria-expanded", "true");
   });
 
-  /**
-   * This test is the core of the round — **the visible state and the spoken state really do
-   * separate.** It used to be `aria-pressed={orderMenuOpen || !orderIsDefault}`, mixing the
-   * two into one value, so closing the menu left "pressed" behind whenever the order was not
-   * the default.
-   */
+  /** The visible state and the spoken state are separate facts. */
   it("highlights a non-default sort while reporting the menu closed", () => {
-    /*
-     * No specific class name is pinned — a value-layer ramp change would turn this red while
-     * the content is still correct (`.claude/rules/documentation.md`: do not pin a string a
-     * human wrote). What is locked here is the property that **the two facts separated**: the
-     * visible one follows the order, the spoken one follows only the menu state.
-     */
+    // No class name is pinned (`.claude/rules/documentation.md`); only that the two facts separate.
     const { unmount } = renderSidebar(orderDocs, { tree: orderTree });
     const atDefault = screen.getByTestId("docs-sidebar-order-toggle");
     const defaultClass = atDefault.className;
@@ -566,10 +503,8 @@ describe("DocsSidebarBody rail button state semantics", () => {
 
     renderSidebar(orderDocs, { tree: orderTree, sort: "recent" });
     const atRecent = screen.getByTestId("docs-sidebar-order-toggle");
-    // The visible state changed — the indigo says the order is not the default.
     expect(atRecent.className).not.toBe(defaultClass);
-    // The spoken state is unchanged — the menu is still closed. This used to flip to
-    // aria-pressed="true" and read as a pressed button.
+    // The spoken state follows only the menu.
     expect(atRecent).toHaveAttribute("aria-expanded", "false");
   });
 });

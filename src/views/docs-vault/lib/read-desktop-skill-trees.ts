@@ -3,31 +3,17 @@ import { listTauriVaultEntries, readTauriVaultText } from '@/shared/lib/tauri-va
 import type { AgentFileEntry } from '@/entities/agent-files';
 
 /**
- * Reads both skill trees **by absolute path** — desktop only.
- *
- * **Why not the manifest.** `build-local-manifest.ts` and `build-docs-vault.mjs` both skip dot
- * directories with `if (name.startsWith('.')) continue;`. So `.claude/skills` **never enters the
- * manifest**, and a check that consumes the manifest can never fire even though the code exists
- * (found by the PO council, 2026-07-29).
- *
- * Not fixing the walker is this slice's decision. That filter is the rule defining a vault as "a
- * folder of documents a person reads and writes", and mixing agent configuration files into the
- * document list blurs what the docs surface shows. Instead they are read **separately**, where
- * needed.
- *
- * **Why there is no web equivalent.** An FSA handle has no absolute path and cannot leave the
- * folder the user chose. Not seeing `.claude/` is a browser limitation in principle, so no web
- * equivalent is built (`.claude/rules/surfaces.md` — a desktop capability carries no obligation to
- * backfill the web). With no bridge this function returns an **empty array** and the caller draws
- * nothing in that slot.
+ * Reads both skill trees by absolute path, desktop only. The manifest walkers skip dot
+ * directories by design, so `.claude/skills` never enters the manifest. An FSA handle has no
+ * absolute path, so the web returns an empty array (`.claude/rules/surfaces.md`: a desktop
+ * capability need not be backfilled).
  */
 
 const SKILL_TREES = ['.claude/skills', '.agents/skills'] as const;
 
-/** Files inside a skill tree worth comparing — configuration and instructions are text. */
 const READABLE = /\.(md|mdc|txt|json|ya?ml|toml)$/i;
 
-/** A runaway guard — there is no reason for a skill tree to hold thousands of files. */
+/** A runaway guard; a skill tree has no reason to hold thousands of files. */
 const MAX_FILES = 400;
 const MAX_DEPTH = 4;
 
@@ -42,7 +28,7 @@ async function walk(
   try {
     entries = await listTauriVaultEntries(rootPath, relative);
   } catch {
-    // A missing tree is not a defect — most vaults have no `.claude/`.
+    // Most vaults have no `.claude/`.
     return;
   }
   for (const entry of entries) {
@@ -57,8 +43,7 @@ async function walk(
       const text = await readTauriVaultText(rootPath, path);
       out.push({ path, content: text });
     } catch {
-      // A file that failed to read is **not pretended away** — the path is carried with no
-      // content, so a "present in one tree only" verdict is never really a read failure.
+      // Carry a failed read with null content, so it never reads as "present in one tree only".
       out.push({ path, content: null });
     }
   }

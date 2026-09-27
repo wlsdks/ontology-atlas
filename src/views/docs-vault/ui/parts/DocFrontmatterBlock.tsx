@@ -41,30 +41,12 @@ import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolv
 import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
 
 /**
- * Engraved frontmatter visualization — "the frontmatter is the graph" made literal
- * in the editor. Renders the ontology-shaped subset of `doc.frontmatter`
- * (kind/slug/title/domain/depends_on/relates_to/contains/belongs_to/evidence)
- * as a machined mono block, mirroring exactly what `deriveOntologyFromVault`
- * reads to build the topology graph.
- *
- * Collapsed by default (`<details open={false}>`) — on long documents this block
- * used to push the H1 below the first screen. Frontmatter is the graph source, so
- * it is never deleted or hidden from the DOM, only collapsed; the summary line
- * still surfaces the kind and the field count so the reader knows what is inside
- * before expanding. The caller mounts this with `key={doc.slug}`, so switching
- * documents remounts it and resets the collapse state — no cross-document memory,
- * no URL or session pollution.
- *
- * Quick-patch action: when a writable local vault is loaded (`canEdit` plus
- * `onPatch`) and the doc's kind is one the vault schema recognizes, an inline edit
- * affordance lets the reader fix kind/domain/title in place — a typed field gets a
- * typed (select) tool instead of hand-edited raw YAML. Saves go through the same
- * conflict-guarded `updateFrontmatter` write path the map's contextual editor uses
- * for its relation writes — one write path, shared.
+ * The ontology subset of `doc.frontmatter` that `deriveOntologyFromVault` reads, as a mono block.
+ * Collapsed by default but never removed from the DOM; the caller remounts it per document
+ * with `key={doc.slug}`.
  */
 
-// A stable empty Map reference, so a render without the prop does not build a new
-// Map each time (keeping `useMemo` deps stable).
+// Stable empty Map keeps `useMemo` deps stable.
 const EMPTY_SELF_EDIT_TIMESTAMPS: ReadonlyMap<string, number> = new Map();
 
 const GRAPH_KEYS = [
@@ -82,13 +64,7 @@ const GRAPH_KEYS = [
   "evidence",
 ] as const;
 
-/**
- * **The per-language names are graph facts too** (2026-09-26, map-edit QA D2). The map, the
- * tree and the search list call a concept by `display_<locale>` before `title`, yet this block
- * never listed those keys: `capabilities/analysis-archive.md` carries `display_en` and
- * `display_ko` on the two lines after `title`, and the expanded block printed kind, slug, title
- * and domain only. They sit beside `title`, the name they stand in for.
- */
+/** Per-language names are graph facts: screens show `display_<locale>` before `title`. */
 const DISPLAY_NAME_KEY = /^display_[a-z]{2}$/;
 
 function graphFieldKeys(frontmatter: Record<string, unknown> | undefined): string[] {
@@ -99,19 +75,15 @@ function graphFieldKeys(frontmatter: Record<string, unknown> | undefined): strin
   return [...GRAPH_KEYS.slice(0, titleAt), ...displayKeys, ...GRAPH_KEYS.slice(titleAt)];
 }
 
-/**
- * The languages this app writes names in, the reader's own first — the order the "create
- * concept" form asks them in (screen language, then the other).
- */
+/** Reader's locale first, the order the "create concept" form asks in. */
 function nameLocalesFor(current: string): string[] {
   const all: readonly string[] = routing.locales;
   return all.includes(current) ? [current, ...all.filter((code) => code !== current)] : [...all];
 }
 
 /**
- * Every frontmatter key whose value names another node — the MCP neighbour-key family
- * (`vault-health.ts`, `mcp/src/vault.mjs`) plus the two legacy keys this block lists.
- * `elements:` also carries code paths, which are evidence rather than references.
+ * Keys whose value names another node (the MCP neighbour-key family); `elements:` also
+ * carries code paths, which are evidence.
  */
 const DANGLING_CHECK_KEYS = [
   "domain",
@@ -129,14 +101,8 @@ const DANGLING_CHECK_KEYS = [
 ] as const;
 
 /**
- * References this document makes that nothing in the folder answers to — what the compiler
- * reports as `dangling-graph-reference` (a warning; the write is never refused).
- *
- * **Why it is shown here** (2026-09-26, map-edit QA D7). Deleting a document left its
- * referrers pointing at a name that no longer exists, and the referrer's own page said
- * nothing: the loss was silent everywhere but the Insights board. `resolveRef` is the page's
- * resolver — path, declared `slug:`, then unique tail — which never resolves less than the
- * compiler does, so every name listed here is one the compiler also cannot place.
+ * References nothing in the folder answers to (the compiler's `dangling-graph-reference`).
+ * The page resolver never resolves less than the compiler, so every name here is also unplaced there.
  */
 function collectDanglingRefs(
   frontmatter: Record<string, unknown> | undefined,
@@ -157,17 +123,8 @@ function collectDanglingRefs(
 const DANGLING_NAMED_MAX = 3;
 
 /**
- * Entries in a list named for a kind whose document is another kind — an element under
- * `capabilities:`, or a `domain:` parent that is not a domain.
- *
- * **Why it is shown here** (2026-09-26, map-edit review). Reclassifying a capability into an
- * element used to leave its domain reading `capabilities: [..., elements/companion-memories]`.
- * The entry resolved, so the dangling warning above never fired and nothing on any screen said
- * so, while the map and the dense-parent count took it as one of the domain's capabilities. A
- * kind change now moves such an entry — but only into a list the referrer's kind may keep, so an
- * entry it may not keep stays, and this is where the person learns about it (as do entries a
- * hand edit or an older write left behind). Code paths under `elements:` are evidence, not
- * references, and are skipped like the dangling check skips them.
+ * Entries in a list named for a kind whose document is another kind; they resolve, so the
+ * dangling warning misses them, but the map counts them by their list.
  */
 function collectMisfiledRefs(
   frontmatter: Record<string, unknown> | undefined,
@@ -199,11 +156,7 @@ export interface KindChangeReferrerRow extends KindChangeReferrer {
 /** How many referrers the quick patch names before Save, before it counts the rest. */
 const KIND_CHANGE_ROWS_MAX = 4;
 
-/**
- * The plain name of a list named for a kind — the reader's word, not the schema key
- * (`capabilities` → the reader's word for capabilities, in their language). Shared with the
- * receipt the page shows after Save.
- */
+/** The reader's word for a kind-named list key; shared with the page's receipt. */
 export function useReferrerListName(): (key: string) => string {
   const t = useTranslations("docsVault.frontmatterBlock.referrerLists.listName");
   return useCallback(
@@ -225,8 +178,7 @@ export function useReferrerListName(): (key: string) => string {
   );
 }
 
-// Only the kinds the vault frontmatter schema treats as editable — sentinel kinds
-// such as vault-readme and unknown are not touched by this select.
+// Sentinel kinds such as vault-readme are not editable here.
 const EDITABLE_KINDS = ["project", "domain", "capability", "element", "document"] as const;
 type EditableKind = (typeof EDITABLE_KINDS)[number];
 
@@ -234,9 +186,7 @@ function isEditableKind(kind: string): kind is EditableKind {
   return (EDITABLE_KINDS as readonly string[]).includes(kind);
 }
 
-// Reference keys that point at another vault node by slug — in read mode a resolvable
-// token gets click navigation. `evidence` (file paths), `category`, and `status` (enums)
-// are not node references and are excluded.
+// Keys that reference another node by slug; `evidence`, `category` and `status` are not references.
 const REFERENCE_KEYS = new Set<string>([
   "domain",
   "depends_on",
@@ -287,36 +237,30 @@ export interface DocFrontmatterPatch {
 
 export interface DocFrontmatterBlockProps {
   doc: VaultDoc;
-  /** True only when a writable local vault is loaded — read-only on server/sample vaults. */
+  /** Read-only on server and sample vaults. */
   canEdit?: boolean;
   /** Domain candidates for a capability or element — the vault's `kind: domain` documents. */
   domainOptions?: Array<{ slug: string; title: string }>;
-  /** Called with confirmed fields only. Saving is the caller's responsibility, through the
-   *  conflict-guarded `updateFrontmatter` — or, when the kind change moves the file into its
-   *  new kind's folder (`reclassifyMoveTarget`), through the same guarded rename. A rejection
-   *  is shown in the form in the reader's language. */
+  /**
+   * Confirmed fields only. The caller saves through the conflict-guarded `updateFrontmatter`,
+   * or the guarded rename when the kind change moves the file; rejections show in the form.
+   */
   onPatch?: (patch: DocFrontmatterPatch) => Promise<void>;
-  /** Moves this document into its kind's folder — the remedy beside the
-   *  `slug-outside-kind-folder` warning. Without it the warning stands alone. */
+  /** The remedy beside the `slug-outside-kind-folder` warning. */
   onMoveToKindFolder?: (target: string) => void;
-  /** The documents that list this one by kind, and what a change to `newKind` (at `newSlug`)
-   *  does to each list — named in the form before Save. Without it nothing is previewed. */
+  /** Previews, before Save, what changing to `newKind` at `newSlug` does to each referrer's list. */
   kindChangeReferrers?: (newKind: string, newSlug: string) => KindChangeReferrerRow[];
-  /** Navigates to a reference slug when clicked — without it, references stay plain text. */
   onNavigate?: (slug: string) => void;
-  /** Resolves a bare slug (the frontmatter reference spelling) to a real navigation slug.
-   *  Null means the reference is not in the vault, so it is not rendered as a link. */
+  /** Null means the reference is not in the vault and is not a link. */
   resolveRef?: (token: string) => string | null;
-  /** The kind of a resolved document — with `resolveRef`, it finds an entry listed under a
-   *  list for another kind. Without it (a sample or server vault) nothing is judged. */
+  /** Without it (sample or server vault) nothing is judged misfiled. */
   kindOf?: (slug: string) => string | null;
-  /** The real data behind the "last edited · AI agent" fact. Without it (a server or sample
-   *  vault) the AI subject row is never rendered. */
+  /** Without it (sample or server vault) the AI subject row is not rendered. */
   agentActivityStatus?: AgentActivityStatus | null;
-  /** The real data behind "last edited · me" and the conflict badge — the record of slugs
-   *  this browser session actually wrote through the vault write API
-   *  (`useLocalVault().selfEditTimestamps`). Without it (a server or sample vault) neither
-   *  is ever rendered. */
+  /**
+   * Slugs this session wrote (`useLocalVault().selfEditTimestamps`); without it neither the
+   * "me" row nor the conflict badge renders.
+   */
   selfEditTimestamps?: ReadonlyMap<string, number>;
 }
 
@@ -343,26 +287,14 @@ export function DocFrontmatterBlock({
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  /*
-   * ⚠️ **The failure carries two halves** (2026-09-26, map-edit QA D4). It used to be the
-   * caught error's `.message`, so a refused save printed the vault layer's English —
-   * `Vault conflict — "capabilities/agent-environment-doctor" was modified externally between
-   * read and write.` — in the danger ink under the Title field of a Korean screen. `sentence`
-   * is the reader's language and the only half that reaches the page; `detail` is the machine's
-   * English and only ever reaches `data-failure-detail` (`use-failure-sentence.ts`).
-   */
+  // `sentence` is the reader's language and the only half on the page; `detail` is the
+  // machine's English for `data-failure-detail` (`use-failure-sentence.ts`).
   const [error, setError] = useState<FailureCopy | null>(null);
-  // The mtime baseline at the moment this document was "opened", plus a "now" snapshot.
-  // The lazy `useState(() => Date.now())` matches this app's existing `updatedAgoNowMs`
-  // contract — `Date.now()` is never called during render. The caller remounts this
-  // component per document via `key={doc.slug}` (see the file docstring), so both reset to
-  // a fresh baseline for each new document.
+  // Lazy initial state keeps `Date.now()` out of render; the per-document key resets both.
   const [openedMtime] = useState(() => doc.mtime);
   const [viewOpenedAtMs] = useState(() => Date.now());
   const resolvedSelfEditTimestamps = selfEditTimestamps ?? EMPTY_SELF_EDIT_TIMESTAMPS;
-  // Only two real-data candidates go in: a heartbeat match, and a self-write this session.
-  // With neither, this is null and the subject row is not rendered at all — no recycled
-  // marketing chip.
+  // Only real data: a heartbeat match or a self-write this session; otherwise no row.
   const lastEditSubjectFact = useMemo(
     () =>
       resolveDocLastEditSubject({
@@ -384,7 +316,6 @@ export function DocFrontmatterBlock({
       ageLabel: tProvenance(`age.${age.key}`, { count: age.count }),
     };
   })();
-  // True only on a real mtime mismatch — no signal inflation.
   const mtimeConflict = hasDocMtimeConflict({
     doc: { slug: doc.slug, mtime: doc.mtime },
     baselineMtime: openedMtime,
@@ -394,7 +325,6 @@ export function DocFrontmatterBlock({
   const currentKind = formatValue(doc.frontmatter?.kind);
   const currentDomain = formatValue(doc.frontmatter?.domain) ?? "";
   const currentTitle = formatValue(doc.frontmatter?.title) ?? doc.title;
-  // The per-language names this form edits (D2) — one field per language the app writes.
   const nameLocales = nameLocalesFor(locale);
   const currentNames = Object.fromEntries(
     nameLocales.map((code) => [code, formatValue(doc.frontmatter?.[`display_${code}`]) ?? ""]),
@@ -403,11 +333,8 @@ export function DocFrontmatterBlock({
   const [draftDomain, setDraftDomain] = useState(currentDomain);
   const [draftTitle, setDraftTitle] = useState(currentTitle);
   const [draftNames, setDraftNames] = useState<Record<string, string>>(currentNames);
-  // Where saving this kind change moves the file (D8): into the new kind's folder, when the
-  // document is filed under its old kind's folder. Stated in the form before Save is pressed.
+  // Where a kind change's Save moves the file, stated before Save.
   const moveTarget = editing ? reclassifyMoveTarget(doc.slug, currentKind, draftKind) : null;
-  // What that kind change does to the documents that list this one by kind — named before
-  // Save, from the verdict the write applies (2026-09-26, map-edit review).
   const kindChangeRows = useMemo(
     () =>
       editing && currentKind && draftKind && draftKind !== currentKind && kindChangeReferrers
@@ -416,14 +343,8 @@ export function DocFrontmatterBlock({
     [editing, currentKind, draftKind, kindChangeReferrers, moveTarget, doc.slug],
   );
 
-  // Inline validator diagnostics — while editing, the draft (kind/domain) is validated;
-  // otherwise the saved frontmatter is, after a 400ms debounce.
-  //
-  // **Errors are shown too** (corrected 2026-08-04). It used to filter on
-  // `severity === "warning"`, so **errors were hidden and only warnings shown** —
-  // exactly backwards. Measured: in a folder with 5 errors, all that appeared beside the
-  // files were 3 warnings, and the errors that actually remove a node from the map were
-  // nowhere on screen.
+  // The draft is validated while editing, otherwise the saved frontmatter after 400ms.
+  // Errors are shown as well as warnings.
   const activeKind = editing ? draftKind : currentKind ?? "";
   const activeDomain = editing ? draftDomain : currentDomain;
   const [debouncedValidation, setDebouncedValidation] = useState({
@@ -440,12 +361,8 @@ export function DocFrontmatterBlock({
 
   const validationIssues = useMemo<VaultDocumentIssue[]>(() => {
     const stored = doc.frontmatter ?? {};
-    // With no kind yet, **the saved frontmatter is validated as-is**. It used to bail out
-    // with `if (!kind) return []`, so the screen went silent in exactly the two most common
-    // ways a node disappears: a missing kind and an empty one.
-    // A kind change that moves the file is previewed at the address it will have, so the
-    // form does not warn about a folder mismatch its own Save is about to resolve. `slug:`
-    // follows a move only when it mirrors the file's address (`rewriteMovedDocSelf`).
+    // A document without a kind is still validated. A moving kind change is validated at its new
+    // address; `slug:` follows only when it mirrors the address (`rewriteMovedDocSelf`).
     const movedSlug =
       debouncedValidation.moveTarget && stored.slug === doc.slug
         ? { slug: debouncedValidation.moveTarget }
@@ -453,13 +370,12 @@ export function DocFrontmatterBlock({
     const frontmatterForValidation: Record<string, unknown> = debouncedValidation.kind
       ? { ...stored, kind: debouncedValidation.kind, domain: debouncedValidation.domain, ...movedSlug }
       : stored;
-    // The parser's own complaints about this file travel with the doc, so a line it could not
-    // read is shown here rather than silently dropped (census state 3e, 2026-08-31).
+    // Parser diagnostics travel with the doc so an unreadable line is shown, not dropped.
     const issues = validateVaultDocFrontmatter(
       frontmatterForValidation,
       doc.diagnostics,
     ).issues;
-    // Errors first — reading order is repair order.
+    // Errors first: reading order is repair order.
     return [
       ...issues.filter((issue) => issue.severity === "error"),
       ...issues.filter((issue) => issue.severity !== "error"),
@@ -475,21 +391,14 @@ export function DocFrontmatterBlock({
       "missing-expected-field": t("validatorIssues.missingExpectedField"),
       "non-canonical-graph-array": t("validatorIssues.nonCanonicalGraphArray"),
       "parse-zero-keys": t("validatorIssues.parseZeroKeys"),
-    // The four error codes had no entries in this dictionary before. The screen was
-    // filtering errors out, so no plain-language text was needed — which measures the size
-    // of that defect.
       "missing-uid": t("validatorIssues.missingUid"),
       "invalid-uid": t("validatorIssues.invalidUid"),
       "duplicate-uid": t("validatorIssues.duplicateUid"),
       "invalid-merged-uids": t("validatorIssues.invalidMergedUids"),
       "non-canonical-merged-uids": t("validatorIssues.nonCanonicalMergedUids"),
-      // The parser's two complaints. They had no entry here, so before the diagnostics were
-      // routed in they would have surfaced as the bare code string.
       "malformed-frontmatter-line": t("validatorIssues.malformedFrontmatterLine"),
       "malformed-quoted-scalar": t("validatorIssues.malformedQuotedScalar"),
-      // The meaning findings a write can see in the body, and the two the
-      // validators add with a repository root. Without a sentence here the
-      // strip showed the raw code (seen in the broken-vault e2e, 2026-09-22).
+      // Without an entry here the strip shows the raw code.
       "definition-missing": t("validatorIssues.definitionMissing"),
       "boundary-missing": t("validatorIssues.boundaryMissing"),
       "uncertainty-missing": t("validatorIssues.uncertaintyMissing"),
@@ -501,9 +410,7 @@ export function DocFrontmatterBlock({
     [t],
   );
 
-  // "See a spec example" — a complete example for the current document's kind, derived from
-  // the same schema starter new-document creation already uses (NewDocKindDialog →
-  // buildNewNodeDoc → buildVaultMarkdown). No duplicate; the same source reused.
+  // A complete example for the current kind from the new-document starter (`buildNewNodeDoc`).
   const [exampleOpen, setExampleOpen] = useState(false);
   const { state: exampleCopyState, copy: copyExample } = useCopyFeedback();
   const exampleDoc = useMemo(() => {
@@ -536,13 +443,8 @@ export function DocFrontmatterBlock({
     } => f.value !== null,
   );
 
-  // The code-location section — the REAL code evidence: raw file paths from frontmatter
-  // `elements: [...]`. `elements` isn't in `GRAPH_KEYS` above (it's not a
-  // single-line key:value fact, and its entries need a distinct visual
-  // treatment — raw code paths are NOT vault-node references, so they must
-  // not read as clickable like the `REFERENCE_KEYS` tokens above). Filtered
-  // through `looksLikeCodePath` so a folder-prefixed vault ref accidentally
-  // placed in `elements:` doesn't masquerade as a code path.
+  // Raw code paths from `elements:` are evidence, not node references, so they are not links;
+  // a misplaced vault ref is kept out by `looksLikeCodePath`.
   const hasReferenceField = fields.some((f) => REFERENCE_KEYS.has(f.key));
 
   const codeLocations: string[] = [];
@@ -560,60 +462,29 @@ export function DocFrontmatterBlock({
     }
   }
 
-  // The CREATE writer stores a node's meaning in a `definition:` frontmatter key. It is not
-  // in GRAPH_KEYS, so it used to be invisible in the read view (a hidden typed fact violates
-  // the charter). It is surfaced as a plain, always-visible lede at the top of the block, so
-  // the reader sees the node's meaning without expanding the frontmatter or hunting the body.
+  // A `definition:` key is shown as an always-visible lede.
   const definitionValue = formatValue(doc.frontmatter?.definition);
 
   const kindValue = currentKind;
-  // Only a node's references are checked, and only against a resolver that knows the folder
-  // (a sample or server vault passes none, so it is never accused of anything).
+  // Only with a resolver that knows the folder; sample and server vaults are never accused.
   const danglingRefs = kindValue && resolveRef ? collectDanglingRefs(doc.frontmatter, resolveRef) : [];
   const danglingSet = new Set(danglingRefs);
   const misfiledRefs =
     kindValue && resolveRef && kindOf ? collectMisfiledRefs(doc.frontmatter, resolveRef, kindOf) : [];
-  // The remedy the folder warning names: move the file into its kind's folder (D8).
   const kindFolderTarget =
     kindValue && canEdit && onMoveToKindFolder ? kindFolderAddress(doc.slug, kindValue) : null;
 
-  // **A document with no kind states its own problem** (2026-08-04).
-  //
-  // The call site (`DocsVaultPage`) used to gate on `typeof kind === 'string' && kind` and
-  // not draw the block at all. But a missing or empty kind is **the two most common ways a
-  // node disappears from the map** — so the screen went silent in exactly the two cases that
-  // most needed explaining.
-  //
-  // It is still not drawn on just any document. The verdict borrows the heuristic the
-  // validator already has: `validateVaultDocFrontmatter` raises no issue at all for a
-  // document with no ontology intent (no kind and no signal key such as domain or
-  // capabilities). So «there are issues» means «this document tried to be a node and
-  // failed». The verdict is borrowed rather than duplicated.
+  // A document with no kind states its own problem, but only when it shows ontology intent,
+  // matching the validator's heuristic.
   const diagnosticOnly = !kindValue;
-  /*
-   * ⚠️ **A wiki page is not a document that tried to be a node and failed** (2026-09-09).
-   *
-   * This block's whole subject is the diagnosis above — *no `kind:`, so it is not on the
-   * map, and here is where to set one*. A page under `wiki/` has no `kind:` **by
-   * contract**: that absence is exactly what keeps a write-up about sources out of the
-   * graph, and `validateWikiPage` reports `kind-present` on any page that grows one. So
-   * the diagnosis would be handing a person a button whose result the Library then flags
-   * as a problem.
-   *
-   * It stayed invisible only by luck — a wiki page usually carries no `validationIssues`,
-   * and the next line returns null on that count rather than on the kind of file this is.
-   * One frontmatter typo was enough to surface the whole block. The Library's own
-   * `WikiTemplateProblems` is where a wiki page's shape is judged, and it is judged
-   * against the wiki contract rather than the node one.
-   */
+  // A wiki page has no `kind:` by contract (`validateWikiPage` flags one), so no diagnosis.
   if (isWikiPage(doc)) return null;
   if (diagnosticOnly && validationIssues.length === 0) return null;
   if (!diagnosticOnly && fields.length === 0 && codeLocations.length === 0 && !definitionValue) {
     return null;
   }
 
-  // It must be fixable even when kind is empty — a diagnosis with no way to act on it is a
-  // dead end.
+  // Fixable even when kind is empty.
   const canQuickPatch =
     canEdit && Boolean(onPatch) && (kindValue == null || isEditableKind(kindValue));
 
@@ -641,8 +512,7 @@ export function DocFrontmatterBlock({
       if (nextDomain !== currentDomain) {
         patch.domain = nextDomain || null;
       }
-      // An emptied name is removed rather than written blank: with no `display_<locale>`
-      // the screens fall back to `title`, which is what an empty field means.
+      // An emptied name is removed; screens then fall back to `title`.
       for (const code of nameLocales) {
         const nextName = (draftNames[code] ?? "").trim();
         if (nextName !== currentNames[code]) patch[`display_${code}`] = nextName || null;
@@ -662,15 +532,9 @@ export function DocFrontmatterBlock({
     }
   }
 
-  /**
-   * A diagnostic row — severity comes through **both colour and a data attribute**.
-   *
-   * Splitting on colour alone would make colour the only distinguishing channel (a charter
-   * violation), so an error row also carries a `!` in the icon slot and a label.
-   */
+  /** Severity comes through colour, a data attribute, and an error `!`, never colour alone. */
   const issueRowClass = (severity: VaultDocumentIssue["severity"]) =>
-    // Shared geometry stays on one line — **only the tone** varies by severity.
-    // (Copying the whole class string per branch raises the off-ramp utility ratchet.)
+    // Only the tone varies by severity; duplicating the class raises the utility ratchet.
     `flex items-start gap-2 rounded-micro border px-2 py-1.5 text-label leading-label ${
       severity === "error"
         ? "border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-status-danger)]"
@@ -700,8 +564,7 @@ export function DocFrontmatterBlock({
               {severityTag(issue.severity)}
               {mapVaultIssueCodeToPlainMessage(issue.code, issueMessageDict)}
             </p>
-            {/* The warning names a move; this is the move (D8). The file keeps its name and
-                every document pointing at it is rewritten with it. */}
+            {/* The file keeps its name and every referrer is rewritten. */}
             {issue.code === "slug-outside-kind-folder" && kindFolderTarget && !editing ? (
               <button
                 type="button"
@@ -741,8 +604,6 @@ export function DocFrontmatterBlock({
             </p>
           </div>
         ) : null}
-        {/* An entry that resolves but sits in a list for another kind (2026-09-26): the
-            dangling warning never sees it, and the map counts it by its list. */}
         {misfiledRefs.length > 0 ? (
           <div
             data-testid="doc-frontmatter-issue"
@@ -775,7 +636,6 @@ export function DocFrontmatterBlock({
       </div>
     ) : null;
 
-  /** One referrer's line before Save: where its entry moves, or why it stays and is flagged. */
   function kindChangeSentence(row: KindChangeReferrerRow): string {
     const move = row.moved[0];
     if (move) {
@@ -814,9 +674,7 @@ export function DocFrontmatterBlock({
             }
             className={fieldClass({ size: "xs" })}
           >
-            {/* A document with no kind has an empty draft too. Without a placeholder the
-                browser appears to have selected the first option, which lies that a kind is
-                already decided. */}
+            {/* Without a placeholder the browser shows the first option as if a kind were chosen. */}
             {draftKind === "" ? <option value="">{t("editKindUnset")}</option> : null}
             {EDITABLE_KINDS.map((kind) => (
               <option key={kind} value={kind}>
@@ -825,8 +683,6 @@ export function DocFrontmatterBlock({
             ))}
           </select>
         </label>
-        {/* Said before Save, not discovered after: a kind change that moves the file names
-            the new address (D8). */}
         {moveTarget ? (
           <p
             id={`doc-frontmatter-move-hint-${doc.slug}`}
@@ -836,8 +692,6 @@ export function DocFrontmatterBlock({
             {t("editKindMoveHint", { path: `${moveTarget}.md` })}
           </p>
         ) : null}
-        {/* The documents that list this one by kind, named before Save: which list each entry
-            moves to, or why it stays (2026-09-26, map-edit review). */}
         {kindChangeRows.length > 0 ? (
           <ul
             id={`doc-frontmatter-kind-referrers-${doc.slug}`}
@@ -890,8 +744,6 @@ export function DocFrontmatterBlock({
             className={fieldClass({ size: "xs" })}
           />
         </label>
-        {/* The names screens show in each language, beside the canonical title they stand in
-            for (D2). Creating a concept asked for them once; this is where they change. */}
         {nameLocales.map((code, index) => (
           <Input
             key={code}
@@ -961,9 +813,7 @@ export function DocFrontmatterBlock({
     )
   ) : null;
 
-  // The short diagnostic block — the engraved frontmatter is not drawn whole. This document
-  // is not a node yet, so there are no graph facts to show; what is needed is one line of
-  // «why it is not on the map» and one place to fix it.
+  // Not a node yet: one line of why it is not on the map and one place to fix it.
   if (diagnosticOnly) {
     return (
       <section
@@ -976,7 +826,7 @@ export function DocFrontmatterBlock({
           <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {t("notOnMapTitle")}
           </p>
-          {/* No `leading-*` — `text-label` carries its own line height. */}
+          {/* `text-label` carries its own line height. */}
           <p className="mt-1 text-label text-[color:var(--color-text-tertiary)]">
             {t("notOnMapBody")}
           </p>
@@ -1022,14 +872,7 @@ export function DocFrontmatterBlock({
             aria-hidden
             className="flex-none text-[color:var(--color-text-quaternary)] transition-transform group-open:rotate-90"
           />
-          {/*
-            **The collapsed line is read, not parsed** (2026-09-25). It used to be a line of YAML,
-            `--- kind: capability slug: capabilities/cart-pricing`, in the mono face: the slug
-            repeated the path the document header shows 80px above it, and the kind was the
-            schema word rather than the one the tree and the map use. It now says what the node
-            is, with the map's own glyph, and how many fields sit behind the chevron. The YAML
-            itself is still one press away, in mono, where it is literally what the file holds.
-          */}
+          {/* The collapsed line names the kind with the map's glyph and a field count; the YAML is one press away. */}
           {kindValue ? (
             <span data-testid="doc-frontmatter-summary-kind" data-kind={kindValue} className="inline-flex min-w-0 items-center gap-1.5 text-[color:var(--color-text-secondary)]">
               <OntologyMapKindGlyph kind={kindValue} size={12} className="flex-none" />
@@ -1045,8 +888,7 @@ export function DocFrontmatterBlock({
             ---
           </div>
           {fields.map(({ key, value, refTokens }) => {
-            // Token by token whenever one of them resolves — or is missing from the folder,
-            // so a name the warning below reports is marked on its own line too (D7).
+            // Tokenize when a token resolves or is missing, so the missing name is marked too.
             const linkable =
               refTokens != null &&
               refTokens.length > 0 &&
@@ -1067,14 +909,8 @@ export function DocFrontmatterBlock({
                               type="button"
                               onClick={() => onNavigate!(target)}
                               data-testid={`doc-frontmatter-ref-${tok}`}
-                              // A reference control inside a line of text. An earlier comment
-                              // called 44 "WCAG 2.5.8", but that is the 2.5.5 (AAA) / HIG value
-                              // (floor reset 2026-08-04, ledger "link floor 24"). 2.5.8 (AA)'s
-                              // floor of 24 is set with `min-h-6`, which raises a wrapped
-                              // reference row's pitch from 21 to 24 and clears the 24px overlap
-                              // measured at runtime. It cannot move into the value layer because
-                              // of type inheritance: the link ramp forces `text-label` while this
-                              // reference must inherit the parent font size.
+                              // `min-h-6` meets WCAG 2.5.8's 24px floor; the link ramp would force `text-label`,
+                              // but a reference inherits the parent font size.
                               className={controlClass({ shape: "link", className: "min-h-6 rounded-chip text-[color:var(--color-indigo-pale-a90)] underline decoration-[color:var(--color-indigo-line-a35)] underline-offset-2 hover:text-[color:var(--color-text-primary)] hover:decoration-[color:var(--color-indigo-line-a45)]" })}
                             >
                               {tok}
@@ -1111,17 +947,8 @@ export function DocFrontmatterBlock({
           <div className="text-[color:var(--color-text-quaternary)]" aria-hidden>
             ---
           </div>
-          {/*
-            What the relation keys above go on to do, stated once for the group
-            rather than per key. `depends_on`, `relates_to`, `contains`,
-            `belongs_to` and `evidence` are all read by the same consumer — the
-            compiler, which turns each entry into a typed edge and reports one
-            that resolves to no document in this folder. It reports; it does not
-            refuse (`ontology-compiler.mjs` emits `dangling-graph-reference` at
-            severity `warning`), and the sentence must not promise otherwise.
-            `tests/contract/field-help-consumers.contract.test.ts` holds both
-            halves.
-          */}
+          {/* One consumer reads all relation keys: the compiler, which reports, never refuses, an
+             unresolved entry (`tests/contract/field-help-consumers.contract.test.ts`). */}
           {hasReferenceField ? (
             <p
               data-testid="doc-frontmatter-relations-help"
@@ -1151,12 +978,8 @@ export function DocFrontmatterBlock({
                 />
               ))}
             </ul>
-            {/* Who reads these paths: `deriveProjectSourceWitnessesFromDocs`
-                turns each one into a source-role witness, and the receipt marks
-                it supported only when the connected code folder actually holds
-                it. A path that is not there turns the receipt to
-                `review_required` — that is the consequence a person can act on,
-                so it is what the sentence says. */}
+            {/* `deriveProjectSourceWitnessesFromDocs` turns each path into a witness; a missing one
+               turns the receipt to `review_required`. */}
             <p
               data-testid="doc-frontmatter-code-locations-help"
               className="text-label leading-label text-[color:var(--color-text-quaternary)]"
@@ -1181,11 +1004,7 @@ export function DocFrontmatterBlock({
           </svg>
           {t("note")}
         </p>
-        {/* The spec example earns its place **when the properties are expanded** (2026-08-08).
-            A teaching line that does not vary per document was sitting above 112 documents —
-            noise costing a line to someone who came to read, while the moment it is actually
-            wanted (finding out what a property accepts) is the moment this block is opened.
-            So it moved to that moment. */}
+        {/* The spec example appears only when the properties are expanded. */}
         {exampleDoc ? (
           <div className="mt-2 font-sans">
             <button
@@ -1250,12 +1069,7 @@ export function DocFrontmatterBlock({
   );
 }
 
-/**
- * One code-location row — a raw code path (truncated in the middle, full path on
- * hover) plus a per-row copy button. Deliberately plain text, not a `Link` or
- * button like the `REFERENCE_KEYS` tokens above — a code path is not a vault node,
- * so it must not visually promise navigation it cannot deliver.
- */
+/** Plain text, not a link: a code path is not a vault node. */
 function CodeLocationRow({
   path,
   copyLabel,

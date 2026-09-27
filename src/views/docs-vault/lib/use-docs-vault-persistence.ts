@@ -17,14 +17,8 @@ import type { VaultRecentKey } from '@/widgets/docs-vault';
 import { scheduleStateSync } from './persistence';
 
 /**
- * The pinned/recent document persistence flow extracted from `DocsVaultPage`.
- *
- * Encapsulated here: the `recentKey` memo (the current vault's namespace — the local folder name,
- * or 'server'), the `recentSlugs` / `pinnedSlugs` state, rehydration on `recentKey` change, the
- * `togglePin` callback (which persists automatically), and the derived `pinnedSet`.
- *
- * The setters (`setRecentSlugs`, `setPinnedSlugs`) are exposed as well, because the view's various
- * mutation sites (delete, new document, and so on) call them directly.
+ * Pinned and recent documents for `DocsVaultPage`, per vault `recentKey`. The setters are
+ * exposed for the view's delete and create paths.
  */
 
 interface LocalVaultLike {
@@ -51,16 +45,8 @@ export function useDocsVaultPersistence({
   localVault,
 }: UseDocsVaultPersistenceArgs): UseDocsVaultPersistenceResult {
   /**
-   * This vault's storage namespace.
-   *
-   * **A local source with no folder chosen yet is still not `server`** (owner report from real
-   * use, 2026-07-28). It used to fall back to `'server'` whenever `source === 'local'` had no
-   * handle. So switching to local with documents open from the sample — the state before choosing
-   * a folder — left **the sample's open tabs sitting on the local screen**. The user changes the
-   * source and sees the previous source's documents still pinned at the top.
-   *
-   * The source the user chose decides the namespace. "No folder chosen" is not "sample"; it is the
-   * separate state **"local, without a folder yet"**.
+   * The chosen source decides the namespace: a local source with no folder is not `server`,
+   * or the sample's tabs stay on the local screen.
    */
   const recentKey = useMemo<VaultRecentKey>(() => {
     if (source === 'local') {
@@ -72,9 +58,7 @@ export function useDocsVaultPersistence({
   const [recentSlugs, setRecentSlugsInternal] = useState<string[]>([]);
   const [pinnedSlugs, setPinnedSlugsInternal] = useState<string[]>([]);
 
-  // ESLint's react-hooks/exhaustive-deps cannot track the stability of a destructured setter, so
-  // the `useCallback` wrapper states it is ref-stable. A setState setter is stable by construction,
-  // so there is no functional effect.
+  // Wrapped so exhaustive-deps sees a stable setter; no functional effect.
   const setRecentSlugs = useCallback<typeof setRecentSlugsInternal>(
     (next) => setRecentSlugsInternal(next),
     [],
@@ -84,7 +68,6 @@ export function useDocsVaultPersistence({
     [],
   );
 
-  // Load that vault's recent and pinned lists whenever `recentKey` changes.
   useEffect(() => {
     scheduleStateSync(() => {
       setRecentSlugsInternal(readRecentDocs(recentKey));

@@ -5,10 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
 import { DeleteDocDialog, type DeleteDocTarget } from "./DeleteDocDialog";
 
-/*
- * Map-edit QA D7 (2026-09-26): the delete confirmation read only the title, the path and
- * "this cannot be undone" while another document still listed the file in `dependencies:`.
- */
 function renderDialog(target: DeleteDocTarget, onConfirm = vi.fn().mockResolvedValue(undefined)) {
   render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>

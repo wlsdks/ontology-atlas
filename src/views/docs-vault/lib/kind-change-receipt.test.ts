@@ -41,7 +41,7 @@ describe("kindChangeReceipt", () => {
       ],
     });
     expect(receipt?.tone).toBe("warning");
-    // Two different lists were left, so the sentence names only the one arrived at.
+    // Two different lists were left, so only the destination is named.
     expect(receipt?.moved).toEqual({ slugs: ["ontology-atlas", "domains/d"], from: null, to: "capabilities" });
     expect(receipt?.kept.slugs).toEqual(["capabilities/recall"]);
     expect(receipt?.failed.slugs).toEqual(["domains/locked"]);

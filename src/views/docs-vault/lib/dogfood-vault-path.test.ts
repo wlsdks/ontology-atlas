@@ -1,19 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-/**
- * The dogfood vault shortcut — **the path comes from build configuration.**
- *
- * **Why these tests changed** (2026-07-29). Two of the maintainer's home paths used to be constants
- * in the source, and this test held those values as its expectations. Those strings **shipped
- * verbatim in the public bundle** (verified live). The on-screen condition was narrow enough that
- * an ordinary visitor never saw them, but anyone opening the bundle reads them, and a macOS
- * username and directory structure ship together. That path also exists only on the maintainer's
- * machine, making it **dead code for the other 100% of users**.
- *
- * The value now comes from `NEXT_PUBLIC_DOGFOOD_VAULT_PATHS`, and this test measures **the rule
- * rather than the path**: how it parses, which candidate is chosen, and whether it quietly ceases
- * to exist when unconfigured (a public build).
- */
+/** The dogfood path comes only from build configuration, so no personal path ships in the bundle. */
 
 async function loadWith(paths: string | undefined) {
   vi.resetModules();
@@ -39,11 +26,7 @@ describe("dogfood vault path config parsing", () => {
     expect([...m.DOGFOOD_VAULT_PATH_CANDIDATES]).toEqual(["/a/docs/ontology", "/b/docs/ontology"]);
   });
 
-  /**
-   * **This is the public build's case.** Unconfigured, there are zero candidates and the shortcut
-   * quietly does not exist — more honest than pretending to open a path that is not there. And no
-   * personal path ships in the bundle.
-   */
+  /** The public build: no candidates, no shortcut. */
   it("has no candidates and no shortcut without config", async () => {
     const m = await loadWith(undefined);
     expect([...m.DOGFOOD_VAULT_PATH_CANDIDATES]).toEqual([]);

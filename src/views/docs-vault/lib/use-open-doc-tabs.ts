@@ -15,36 +15,29 @@ import {
 import { scheduleStateSync } from "./persistence";
 
 /**
- * The React hook wiring `doc-tabs.ts`'s pure logic to `DocsVaultPage` state — the component
- * consumes only this hook, and localStorage plus effect timing are encapsulated here.
- *
- * Wiring contract: this hook never decides the active tab itself (the source of truth is the URL
- * `?slug=` → `selectedSlug` state). The caller observes `selectedSlug` changes and calls
- * `openTab`, and the tab strip's `×` calls `closeTab`.
+ * Wires `doc-tabs.ts` to `DocsVaultPage`. It never decides the active tab: the URL `?slug=`
+ * does. The caller calls `openTab` on `selectedSlug` changes and the strip's `×` calls `closeTab`.
  */
 
 export interface UseOpenDocTabsArgs {
-  /** The per-vault separation key — reuses `useDocsVaultPersistence`'s `recentKey`
-   *  ('server' | `local:<handle.name>`). No second convention is invented. */
+  /** Reuses `useDocsVaultPersistence`'s `recentKey` ('server' | `local:<handle.name>`). */
   sourceKey: string;
-  /** The slugs that actually exist in the current vault — tabs for deleted documents are pruned quietly. */
+  /** Tabs for slugs missing here are pruned quietly. */
   validSlugs: ReadonlySet<string>;
-  /** The subset this reader may expose. Hidden tabs stay persisted for another honest reader. */
+  /** Hidden tabs stay persisted for another reader. */
   visibleSlugs?: ReadonlySet<string>;
 }
 
 export interface UseOpenDocTabsResult {
   tabs: DocTab[];
-  /** True only after the stored tabs for the current sourceKey have been read. */
   hydrated: boolean;
-  /** The previously active document, for the caller to restore once when there is no URL deeplink. */
+  /** Restored once by the caller when there is no URL deeplink. */
   restoredActiveSlug: string | null;
-  /** Only an explicit user document selection is remembered under the separate active key. */
+  /** Only an explicit user selection is remembered under the active key. */
   rememberActiveSlug: (slug: string) => void;
-  /** Already open → activate (and refresh the title); otherwise add a new tab (with LRU). */
+  /** Activates (and retitles) an open tab, otherwise adds one with LRU eviction. */
   openTab: (slug: string, title: string) => void;
-  /** Closes a tab and returns, synchronously, the slug to activate next (or null on the last
-   *  tab) — the caller uses it to move the URL and `selectedSlug`. */
+  /** Returns the next slug to activate synchronously, or null for the last tab. */
   closeTab: (slug: string, activeSlug: string | null) => string | null;
 }
 
@@ -59,16 +52,11 @@ export function useOpenDocTabs({
     sourceKey: string;
     slug: string | null;
   } | null>(null);
-  // A ref so `storeDocTabs` can read the sourceKey as of "now" without recreating openTab and
-  // closeTab on every sourceKey change.
+  // A ref keeps `openTab` and `closeTab` stable across sourceKey changes.
   const sourceKeyRef = useRef(sourceKey);
 
-  // When the sourceKey (the vault) changes, the tab set is replaced wholesale with that vault's,
-  // so sample tabs never leak into a local vault or vice versa.
-  //
-  // The storage read happens inside the updater because React runs a setState updater at the
-  // "next render", not at the call. Reading the value and passing it in would miss — and
-  // overwrite — what an openTab updater queued earlier in the same batch had written.
+  // Replace the tab set wholesale on a vault change so tabs never leak between vaults. Read
+  // storage inside the updater, or an `openTab` update queued in the same batch is overwritten.
   useEffect(() => {
     sourceKeyRef.current = sourceKey;
     scheduleStateSync(() => {
@@ -81,9 +69,7 @@ export function useOpenDocTabs({
     });
   }, [sourceKey]);
 
-  // Every time the vault's real slug list changes (a document renamed or deleted, or the vault's
-  // first load), tabs for vanished documents are pruned. Guarded so a loading state where
-  // `validSlugs` is still empty does not hastily clear everything.
+  // Guarded so an empty `validSlugs` while loading does not clear everything.
   useEffect(() => {
     if (validSlugs.size === 0) return;
     setTabs((prev) => {
@@ -93,12 +79,8 @@ export function useOpenDocTabs({
     });
   }, [validSlugs]);
 
-  // The merge base is always **storage**, never in-memory state. At mount the caller's
-  // document-selection effect can run before hydration, leaving a window where `prev` is an empty
-  // array, and right after a vault switch `prev` holds the *previous* vault's tabs, which would
-  // leak into the new one. Making storage the source of truth removes both races — the owner's
-  // contract is "the tabs are still there after restarting the app". The cost is one localStorage
-  // read when opening a document.
+  // Merge from storage, never from state: before hydration `prev` is empty, and right after a
+  // vault switch it holds the previous vault's tabs.
   const openTab = useCallback((slug: string, title: string) => {
     setTabs(() => {
       const key = sourceKeyRef.current;
@@ -108,10 +90,8 @@ export function useOpenDocTabs({
     });
   }, []);
 
-  // `closeTab` must return the next activation target **synchronously** so the caller can call
-  // `handleSelect` inside the same event handler. The base is storage, as in openTab — a
-  // synchronous read keeps the return-timing contract while removing the state dependency, so the
-  // callback stays stable.
+  // Returns synchronously so the caller can `handleSelect` in the same handler; reads storage
+  // like `openTab`, so the callback stays stable.
   const closeTab = useCallback(
     (slug: string, activeSlug: string | null): string | null => {
       const key = sourceKeyRef.current;

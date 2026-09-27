@@ -165,7 +165,7 @@ describe("openOrActivateDocTab", () => {
     );
     expect(next).toHaveLength(2);
     expect(next[0]).toEqual({ slug: "README", title: "새 타이틀", lastActivatedAt: 99 });
-    // Tab order (position) is preserved — activating does not reorder.
+    // Activating does not reorder.
     expect(next.map((t) => t.slug)).toEqual(["README", "FEATURES"]);
   });
 
@@ -175,9 +175,7 @@ describe("openOrActivateDocTab", () => {
       tabs = openOrActivateDocTab(tabs, { slug: `doc-${i}`, title: `doc-${i}` }, i);
     }
     expect(tabs).toHaveLength(DOC_TABS_MAX);
-    // Refresh doc-3's activation time so it is no longer the oldest candidate.
     tabs = openOrActivateDocTab(tabs, { slug: "doc-3", title: "doc-3" }, 100);
-    // Adding a new document exceeds the ceiling, so the least recently activated tab is evicted.
     tabs = openOrActivateDocTab(tabs, { slug: "doc-new", title: "doc-new" }, 101);
     expect(tabs).toHaveLength(DOC_TABS_MAX);
     expect(tabs.map((t) => t.slug)).not.toContain("doc-0");

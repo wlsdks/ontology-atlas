@@ -3,27 +3,14 @@ import { pickLastEditSubject, type LastEditSubjectFact } from "@/shared/lib/last
 import { hasUnaccountedMtimeChange } from "@/shared/lib/mtime-conflict";
 
 /**
- * Resolves `DocFrontmatterBlock`'s "last edited · person/AI" fact from the ONLY two real data
- * sources this surface has:
- *
- * - **AI agent**: a fresh (valid, non-stale) activity heartbeat whose `focus` names THIS doc.
- *   `ontologySlug` may be a folder-prefixed vault path ("capabilities/foo"), a bare slug ("foo"),
- *   or already canonical, matched the same permissive bare-slug-suffix way
- *   `resolveAgentFocusNodeId` (home) matches graph node ids, just against the doc's own slug or
- *   path instead of a graph id.
- * - **Human**: `selfEditTimestamps` — the real record of THIS browser session actually writing
- *   this exact slug through the local vault (see `markSelfWrite` in `use-local-vault.ts`). Never
- *   inferred from mtime alone — an mtime change could come from a git checkout, another editor, or
- *   a different AI agent session with no heartbeat, none of which is "me".
- *
- * When neither source has evidence for this doc, it returns null and the caller renders nothing
- * rather than guessing a subject.
+ * "Last edited · person/AI" from the only two real sources: a fresh heartbeat whose `focus`
+ * names this doc (matched by bare-slug suffix like `resolveAgentFocusNodeId`), or this session's
+ * self-writes (`markSelfWrite` in `use-local-vault.ts`). Never inferred from mtime alone, which
+ * a checkout or another editor can change. Null when neither has evidence.
  */
 export function resolveDocLastEditSubject(params: {
   doc: { slug: string; path: string };
-  /** null — a surface where the caller receives no heartbeat source at all (a server or sample
-   *  vault). The agent candidate is automatically treated as unevidenced; the human candidate is
-   *  still evaluated. */
+  /** Null on server and sample vaults: the agent candidate is unevidenced, the human one still evaluated. */
   agentActivityStatus: AgentActivityStatus | null;
   selfEditTimestamps: ReadonlyMap<string, number>;
 }): LastEditSubjectFact | null {
@@ -61,10 +48,8 @@ function doesHeartbeatFocusMatchDoc(
 }
 
 /**
- * The expected_mtime conflict badge — true only when `doc.mtime` differs from `baselineMtime` (its
- * value when the document was opened) AND that difference is not explained by a self-write this
- * session. The verdict itself reuses the shared `hasUnaccountedMtimeChange` — the same rule as the
- * topology panel's freshness-ISO version.
+ * True only when `doc.mtime` moved from `baselineMtime` and no self-write explains it
+ * (`hasUnaccountedMtimeChange`, the topology panel's rule).
  */
 export function hasDocMtimeConflict(params: {
   doc: { slug: string; mtime?: number };

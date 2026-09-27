@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { replaceDocsVaultUrlState } from './url-state';
 
-// jsdom allows only same-origin replaceState — the fixture URL is built from
-// `window.location.origin`.
+// jsdom allows only same-origin replaceState.
 const ORIGINAL_HREF = `${window.location.origin}/docs/`;
 
 afterEach(() => {
@@ -25,9 +24,6 @@ describe('replaceDocsVaultUrlState', () => {
     expect(currentSearch()).toBe('');
   });
 
-  // Since folder-topology was removed, 'doc' is the only view value, so it is always removed from
-  // the query as the default. With no non-default view value, the "?view=X is set" case no longer
-  // exists.
   it('removes the view query for the default doc view', () => {
     window.history.replaceState({}, '', `${ORIGINAL_HREF}?view=doc`);
     replaceDocsVaultUrlState({ view: 'doc' });

@@ -5,45 +5,34 @@ import type { useTranslations } from "next-intl";
 import { Chip, RowButton, Surface } from "@/shared/ui";
 
 export interface DocsVaultVaultChipProps {
-  /** The vault's short name — the folder name for local, the sample label for server. */
   label: string;
-  /** `null` means the document count is not stated at all — showing the sample's number for a
-   *  local source with no folder chosen reads as "my folder has N documents". */
+  /** `null` states no count: the sample's number would read as "my folder has N documents". */
   docCount: number | null;
   folderCount: number;
-  /** The local vault's real root path (or the dogfood path) — shown in full inside the popover. */
+  /** Shown in full inside the popover. */
   path: string;
   isLocalSourceLoaded: boolean;
   open: boolean;
   onToggle: () => void;
   onSwap: () => void;
-  /**
-   * **The source is stated by this chip alone** (2026-08-08). A radio pair at the screen's right
-   * edge used to state the same fact (sample or my folder) a second time and carry its own way to
-   * change it — one fact stated in two places leaves you unsure which is real. The chip label
-   * displays it; this menu switches it.
-   */
+  /** The chip alone states the source; this menu switches it. */
   isSample: boolean;
   onUseSample: () => void;
-  /** False in the installed app: bundled sample vaults belong to the web demo only. */
+  /** False in the installed app: bundled samples are web-only. */
   allowSample?: boolean;
-  /** A browser without FSA — locked, with the reason "my folder" cannot be chosen. */
+  /** A browser without FSA locks "my folder" with the reason. */
   localDisabled?: boolean;
   localDisabledReason?: string;
-  /** The docs check — folded into this menu from the clipboard tile at the right edge. */
   onOpenAudit: () => void;
   menuRef: RefObject<HTMLDivElement | null>;
-  /** A one-line bridge saying the vault tools moved into settings (this release only). Shown
-   *  quietly at the bottom of the popover. */
+  /** A one-line note that vault tools moved into settings. */
   toolsMovedHint?: string;
   t: ReturnType<typeof useTranslations<"docsVault">>;
 }
 
 /**
- * The VaultChip in the header's zone-l. It folds the old vault pill (path, document count,
- * folder count, a swap text button) into a chip plus a popover menu. The census (concepts and
- * relations) is owned solely by the breadcrumb strip and so is not repeated here, and the local
- * badge is demoted from the chip into the menu.
+ * The header's vault chip: source, name and count, with a menu to switch. The census belongs
+ * to the breadcrumb strip.
  */
 export function DocsVaultVaultChip({
   label,
@@ -71,23 +60,17 @@ export function DocsVaultVaultChip({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t("vaultChip.menuAriaLabel")}
-        /* The menu items have testids but this trigger did not, so two e2e specs were finding it
-           by its localized label ("Workspace info menu"). That is a seam where
-           editing a translation silently kills a spec — give it a locale-independent handle. */
+        // A locale-independent handle for e2e specs.
         data-testid="vault-chip-menu-trigger"
         className="min-w-0 max-w-[200px] flex-none hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
-        {/* The chip's icon states the source — this one glyph replaces the radio pair removed
-            from the right (2026-08-08). */}
+        {/* The icon states the source. */}
         {isSample ? (
           <Package size={ICON_SIZE.sm} aria-hidden className="flex-none" />
         ) : (
           <HardDrive size={ICON_SIZE.sm} aria-hidden className="flex-none" />
         )}
-        {/* One face for the whole chip (2026-09-25, round four). The folder's name is the name
-            the person gave their work, not a path: the rail's vault label draws it in the sans
-            face, and a mono name beside a sans count read as two families in one control. Paths
-            keep mono where they appear (the editor head); DESIGN-SYSTEM "Machine strings". */}
+        {/* One sans face for name and count; paths keep mono elsewhere (DESIGN-SYSTEM "Machine strings"). */}
         <span className="hidden min-w-0 truncate text-[color:var(--color-text-secondary)] sm:inline">
           {label}
         </span>
@@ -100,7 +83,7 @@ export function DocsVaultVaultChip({
           className={`flex-none transition-transform ${open ? "rotate-180" : ""}`}
         />
       </Chip>
-      {/* The menu is anchored to the chip's left edge, and grows from that edge. */}
+      {/* Anchored to the chip's left edge and grows from it. */}
       <Surface
         open={open}
         origin="top left"
@@ -120,10 +103,8 @@ export function DocsVaultVaultChip({
               {t("header.localBadge")}
             </p>
           ) : null}
-          {/* The web offers two source rows on one exclusive axis. The installed app is the
-              local-vault home, so it gets one ordinary "switch folder" action and no bundled
-              sample choice. Keeping the sample row disabled or hidden with CSS would leave the
-              wrong source in the accessibility tree; it is not rendered at all. */}
+          {/* The installed app gets one "switch folder" action and no sample row; a hidden row would
+             leave the wrong source in the accessibility tree, so it is not rendered. */}
           <div
             role={allowSample ? "group" : undefined}
             aria-label={allowSample ? t("header.sourceAriaLabel") : undefined}
@@ -165,18 +146,14 @@ export function DocsVaultVaultChip({
                 className={`flex-none ${!isSample ? "opacity-100" : "opacity-40"}`}
               />
               <span className="min-w-0 flex-1 truncate">
-                {/* Both radio rows must state **what you are looking at**. If one of them is an
-                    action name ("switch folder") instead, it stops reading as an option on the
-                    same axis. Only when you are already looking at your own folder does choosing
-                    it become switching, so only then is it "switch folder". */}
+                {/* Both rows name what you are looking at; only your own open folder reads "switch folder". */}
                 {allowSample && isSample
                   ? t("header.sourcePickLocal")
                   : t("header.vaultPillSwap")}
               </span>
             </RowButton>
             {localDisabled && localDisabledReason ? (
-              /* Why it cannot be chosen is written **on screen** too — from a dimmed row alone,
-                 «broken» and «not possible in this browser» look identical. */
+              // A dimmed row alone cannot tell broken from not possible in this browser.
               <p
                 id="vault-chip-local-blocked"
                 className="px-1.5 pb-1 pt-0.5 text-caption leading-label text-[color:var(--color-text-quaternary)]"
