@@ -1,3 +1,11 @@
+---
+title: "Findings — can a frontmatter review mark constrain an agent? (2026-09-02)"
+doc_type: finding
+status: historical
+area: ontology-model
+date: 2026-09-02
+---
+
 # Findings — can a frontmatter review mark constrain an agent? (2026-09-02)
 
 A pre-implementation probe for the proposed human-judgment layer: before adding

@@ -1,3 +1,11 @@
+---
+title: "Most of the published gap was our own vocabulary — 2026-08-31"
+doc_type: finding
+status: historical
+area: agents
+date: 2026-08-31
+---
+
 # Most of the published gap was our own vocabulary — 2026-08-31
 
 > Read this before quoting any number from

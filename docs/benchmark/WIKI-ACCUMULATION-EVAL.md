@@ -1,3 +1,10 @@
+---
+title: "Wiki accumulation evaluation"
+doc_type: runbook
+status: current
+area: library
+---
+
 # Wiki accumulation evaluation
 
 The evaluation asks whether a new original helps update a related saved answer

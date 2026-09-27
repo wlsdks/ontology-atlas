@@ -1,3 +1,11 @@
+---
+title: "Findings — 2026-08-31 end-to-end change flow"
+doc_type: finding
+status: historical
+area: agents
+date: 2026-08-31
+---
+
 # Findings — 2026-08-31 end-to-end change flow
 
 ## Question

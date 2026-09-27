@@ -1,3 +1,11 @@
+---
+title: "Findings 2026-09-06 · the sealed five-question wiki probe"
+doc_type: finding
+status: historical
+area: library
+date: 2026-09-06
+---
+
 # Findings 2026-09-06 · the sealed five-question wiki probe
 
 **Question**: does a compiled wiki page carry understanding, or only provenance? The 2026-09-05 record "A vault holds three kinds of file and only one is the graph" made this its falsifier: a compiled page that passes provenance yet loses a sealed five-question test to a raw-folder control retires Compile to a file list.

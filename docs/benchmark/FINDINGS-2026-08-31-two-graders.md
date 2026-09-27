@@ -1,3 +1,11 @@
+---
+title: "The difference is smaller than the ruler — 2026-08-31-gb-r3"
+doc_type: finding
+status: historical
+area: agents
+date: 2026-08-31
+---
+
 # The difference is smaller than the ruler — 2026-08-31-gb-r3
 
 A second reader was given the same 24 answers, then asked to read them three

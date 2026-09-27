@@ -1,3 +1,11 @@
+---
+title: "How other open-source clients make an MCP server one press — 2026-09-07"
+doc_type: finding
+status: historical
+area: mcp
+date: 2026-09-07
+---
+
 # How other open-source clients make an MCP server one press — 2026-09-07
 
 > Written to answer two owner questions on 2026-09-07: *"one-click MCP

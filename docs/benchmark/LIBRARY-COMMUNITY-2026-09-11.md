@@ -1,3 +1,11 @@
+---
+title: "Library community evidence — 2026-09-11"
+doc_type: finding
+status: historical
+area: library
+date: 2026-09-11
+---
+
 # Library community evidence — 2026-09-11
 
 This research informs the [Library quality program](../plans/LIBRARY-QUALITY-PROGRAM.md).

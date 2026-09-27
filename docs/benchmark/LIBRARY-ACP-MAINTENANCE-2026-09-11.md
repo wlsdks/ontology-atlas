@@ -1,3 +1,11 @@
+---
+title: "Library maintenance across ordered source arrivals — 2026-09-11"
+doc_type: finding
+status: historical
+area: library
+date: 2026-09-11
+---
+
 # Library maintenance across ordered source arrivals — 2026-09-11
 
 An ACP compilation read and cited a newly arrived handbook while leaving the old
