@@ -253,6 +253,24 @@ const STATES: readonly VaultState[] = [
       await page.getByTestId("domain-coupling-cell").first().click({ timeout: EVIDENCE_TIMEOUT });
       await expect(page.getByTestId("domain-coupling-pair").first()).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
     },
+    /*
+     * axe's `target-size` (WCAG 2.5.8, in `wcag22aa`) is what guards these rows, and it only means
+     * something while the rows are actually dense: example links stacked one under another. This
+     * state replaced `dense-row-target-size.spec.ts`, which measured the same DOM by hand.
+     */
+    async verify(page) {
+      const links = await page.getByTestId("domain-coupling-example-link").evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const r = node.getBoundingClientRect();
+          return { x: r.x, y: r.y };
+        }),
+      );
+      expect(links.length, "밀집 행의 예시 링크가 두 줄도 안 된다 — 밀집 행을 재고 있지 않다").toBeGreaterThanOrEqual(2);
+      const stacked = links.some((a) =>
+        links.some((b) => a !== b && Math.abs(a.x - b.x) < 1 && Math.abs(a.y - b.y) > 1 && Math.abs(a.y - b.y) < 60),
+      );
+      expect(stacked, "세로로 쌓인 예시 링크 이웃이 없다 — 밀집 행을 재고 있지 않다").toBe(true);
+    },
   },
   {
     name: "인사이트 · 신선도",

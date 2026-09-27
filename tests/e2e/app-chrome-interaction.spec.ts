@@ -13,9 +13,6 @@ import { waitForMapSettled, waitForMapStill } from './settle';
  * rather than a class name, because every one of these passed a class-name check.
  */
 
-/** Screenshots land in this test's own output folder, never a fixed path outside the repo. */
-const shot = (name: string) => test.info().outputPath(name);
-
 async function openSwitcher(page: Page) {
   await page.getByTestId('vault-switch-rail-tile').click();
   const popover = page.getByTestId('vault-switch-popover');
@@ -60,9 +57,8 @@ test.describe('the vault switcher', () => {
       requestAnimationFrame(tick);
     });
     await page.getByTestId('vault-switch-pick-other').click();
-    // The capture shows the switch in progress: the chip is busy opening the folder.
+    // The switch is in progress: the chip is busy opening the folder.
     await expect(page.getByTestId('vault-switch-rail-tile')).toHaveAttribute('data-busy', 'true');
-    await page.screenshot({ path: shot('ch1-switching-400.png') });
     await page.waitForFunction(() => (window as unknown as { __chromeSamplesDone?: boolean }).__chromeSamplesDone === true, undefined, {
       timeout: 30_000,
     });
@@ -80,10 +76,7 @@ test.describe('the vault switcher', () => {
     await expect(page.getByTestId('vault-switch-rail-tile')).toBeFocused({ timeout: 10_000 });
   });
 
-  for (const viewport of [
-    { width: 1512, height: 949 },
-    { width: 1040, height: 720 },
-  ]) {
+  for (const viewport of [{ width: 1040, height: 720 }]) {
     test(`Escape plays the exit and returns focus to the chip at ${viewport.width}`, async ({ page }) => {
       test.setTimeout(120_000);
       await page.setViewportSize(viewport);
@@ -240,7 +233,6 @@ test.describe('the vault switcher', () => {
       return { caption: range.getBoundingClientRect().left, pick: pick.getBoundingClientRect().left };
     });
     expect(Math.abs(lines.caption - lines.pick), 'caption and picker glyph start on different lines').toBeLessThanOrEqual(1);
-    await page.screenshot({ path: shot('ch3-popover.png') });
   });
 
   /*
@@ -252,7 +244,7 @@ test.describe('the vault switcher', () => {
    * and 1280, stood ~350px from the chip under the toolbar's Expand all / Auto-arrange buttons,
    * and its gap to INDEX was 8px at one width and 6px at the others.
    *
-   * Measured here at each rail width, INDEX open and folded, en and ko:
+   * Measured at the app's minimum window and a wide one, INDEX open and folded, en and ko:
    * - anchored: one gap past the rail, top on the chip's top, the same rect at every width;
    * - every INDEX, toolbar and on-screen node point outside the popover hits the scrim, so
    *   nothing under it reads as live chrome, and the rail itself stays lit;
@@ -264,15 +256,14 @@ test.describe('the vault switcher', () => {
     await mountDesktopVault(page);
     const failures: string[] = [];
     const rects = new Set<string>();
+    // The app's minimum window and a wide display: two widths are what "the same rect at every
+    // width" needs, and the folded INDEX is the other layout the popover stands beside.
     for (const [locale, index] of [
-      ['en', 'expanded'],
       ['en', 'collapsed'],
       ['ko', 'expanded'],
     ] as const) {
       for (const viewport of [
         { width: 1040, height: 720 },
-        { width: 1280, height: 800 },
-        { width: 1512, height: 949 },
         { width: 1920, height: 1080 },
       ]) {
         await page.setViewportSize(viewport);
@@ -338,7 +329,6 @@ test.describe('the vault switcher', () => {
           failures.push(`${where}: the popover leaves the window`);
         }
         rects.add(`${Math.round(m.popover.left)},${Math.round(m.popover.top)}`);
-        await page.screenshot({ path: shot(`ch3-popover-${locale}-${index}-${viewport.width}.png`) }).catch(() => {});
         await page.keyboard.press('Escape');
         await expect(popover).toHaveCount(0);
         await expect(page.getByTestId('vault-switch-scrim')).toHaveCount(0);
@@ -438,7 +428,6 @@ test.describe('the keyboard shortcut sheet', () => {
       return region.height / dialog.height;
     });
     expect(shares, 'the shortcut list is squeezed under a fixed footer').toBeGreaterThan(0.6);
-    await page.screenshot({ path: shot('ch5-sheet-1040.png') });
   });
 });
 
@@ -473,7 +462,6 @@ test.describe('settings', () => {
       };
     });
     expect(Math.abs(lines.label - lines.result), 'result line is off the row start').toBeLessThanOrEqual(1);
-    await page.screenshot({ path: shot('ch6-update.png') });
   });
 
   // The key form lives on Agents → Models since 2026-09-25; the settings sheet's pointer row
@@ -495,7 +483,6 @@ test.describe('settings', () => {
     );
     expect(new Set(faces.map((f) => f.size)).size, JSON.stringify(faces)).toBe(1);
     expect(new Set(faces.map((f) => Math.round(f.height))).size, JSON.stringify(faces)).toBe(1);
-    await page.screenshot({ path: shot('ch7-key-form.png') });
   });
 
   test('neutral row actions read in one text tone across Settings → Workspace and Agents → Models', async ({ page }) => {
@@ -562,6 +549,5 @@ test.describe('settings', () => {
         }),
       )
       .toBe(true);
-    await page.screenshot({ path: shot('ch10-locale.png') });
   });
 });

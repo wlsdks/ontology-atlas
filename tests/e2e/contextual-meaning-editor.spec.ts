@@ -187,10 +187,7 @@ test('contextual editor stays inside the responsive workbench and every control 
   expect(revealedByPreview).toMatchObject({ hidden: false, previewEndpoint: true });
 
   const matrix = [
-    { width: 600, height: 900 },
-    { width: 768, height: 1024 },
-    { width: 834, height: 1112 },
-    { width: 1024, height: 768 },
+    { width: 1040, height: 720 },
     { width: 1440, height: 900 },
     { width: 1920, height: 1080 },
     { width: 2560, height: 1440 },
@@ -236,7 +233,7 @@ test('contextual editor stays inside the responsive workbench and every control 
     expect(metrics!.blocked).toEqual([]);
     expect(metrics!.docOverflow).toBeLessThanOrEqual(1);
     if (metrics!.tabTop !== null) expect(metrics!.rect.bottom).toBeLessThanOrEqual(metrics!.tabTop);
-    if (viewport.width >= 1024) expect(metrics!.mapGap).toBeGreaterThanOrEqual(480);
+    expect(metrics!.mapGap).toBeGreaterThanOrEqual(480);
     console.log(`[contextual-editor-responsive] ${viewport.width}x${viewport.height} ${JSON.stringify(metrics)}`);
   }
 });

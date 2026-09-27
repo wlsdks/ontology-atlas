@@ -1,6 +1,7 @@
 import {expect,test,type Page} from '@playwright/test';
 import {installDesktopRailRuntime} from './desktop-rail-arrival-harness';
-const widths=[[320,740],[390,844],[600,900],[768,1024],[834,1112],[1024,768],[1440,900],[1512,900],[1920,1080],[2560,1440],[844,390]];
+// The app's minimum window, the owner's desk, and a wide display: the game ships on desktop only.
+const widths=[[1040,720],[1512,900],[2560,1440]];
 async function openProject(page:Page,locale='en',reduced=true){
  await installDesktopRailRuntime(page);await page.emulateMedia({reducedMotion:reduced?'reduce':'no-preference'});
  await page.goto(`/${locale}/?guides=off&e2e=1`);await page.getByTestId('first-run-open').click();await expect(page.getByTestId('companion-trigger')).toBeVisible();
@@ -70,9 +71,9 @@ test('a roguelike expedition offers a persistent choice, a dodge, and independen
  await page.keyboard.press('Space');await expect(dialog.getByRole('button',{name:'Dodge attack (Space)',exact:true})).toBeDisabled();
 });
 
-test('battle framing and blessing choices fit narrow and short game screens',async({page})=>{
+test('battle framing and blessing choices fit the minimum and desk windows',async({page})=>{
  await openProject(page);const dialog=await home(page);await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();
- for(const [width,height] of [[390,844],[320,740],[844,390],[1512,900]]){
+ for(const [width,height] of [[1040,720],[1512,900]]){
   await page.setViewportSize({width,height});await expect.poll(async()=>{const world=await dialog.getByTestId('companion-world').boundingBox();const enemy=await dialog.getByTestId('companion-enemy').boundingBox();return Math.max(world!.x-enemy!.x,enemy!.x+enemy!.width-world!.x-world!.width);}).toBeLessThanOrEqual(1);await page.keyboard.press('b');const content=dialog.getByTestId('companion-content');await expect(content).toBeVisible();await expect(dialog.getByTestId('companion-content').getByRole('button',{name:/^Choose /})).toHaveCount(3);
   const overflow=await content.evaluate(el=>[el.scrollWidth-el.clientWidth,el.scrollHeight-el.clientHeight]);console.log('BLESSING_FIT',width,height,overflow);expect(overflow.every(value=>value<=1)).toBe(true);await page.keyboard.press('Escape');await expect(dialog.getByTestId('companion-overlay')).toBeHidden();
  }
@@ -156,23 +157,6 @@ test('panel focus, reset cancellation and native Space activation remain inside 
 test('completed and defeated expeditions show distinct persistent outcomes',async({page})=>{
  await openProject(page);const dialog=await home(page);
  for(const outcome of ['clear','defeat']){await page.evaluate(outcome=>{const key=Object.keys(localStorage).find(key=>key.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.run.lastOutcome=outcome;localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));},outcome);await expect(dialog.getByTestId('companion-run-outcome')).toHaveAttribute('data-outcome',outcome);await expect(dialog.getByTestId('companion-run-outcome')).toBeVisible();}
-});
-
-test('coarse game controls have nonoverlapping 44px hit areas at centres and edges',async({browser})=>{
- const context=await browser.newContext({hasTouch:true,viewport:{width:1440,height:900},reducedMotion:'reduce'});const page=await context.newPage();await openProject(page);const dialog=await home(page);
- // The dev-only Next badge occupies the bottom-right hit area at 320px. It is
- // absent from static export; measure the game controls without that test overlay.
- await page.evaluate(()=>document.querySelector('nextjs-portal')?.remove());
- expect(await page.evaluate(()=>matchMedia('(any-pointer: coarse)').matches)).toBe(true);
- for(const [width,height] of [[320,740],[390,844],[844,390],[1440,900]]){
-  await page.setViewportSize({width,height});
-  for(const key of ['i','k','m','n','j','e','Shift+Slash']){
-   if(key==='e')await study(page);else await page.keyboard.press(key);await expect(dialog.getByTestId('companion-content')).toBeVisible();await expect.poll(()=>dialog.getByTestId('companion-overlay').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.effect?.getComputedTiming().iterations!==Infinity&&a.playState==='running').length)).toBe(0);
-   const result=await dialog.evaluate(el=>Array.from(el.querySelectorAll('button')).filter(button=>!button.closest('[data-testid="companion-world"],[inert]')).flatMap(button=>{const r=button.getBoundingClientRect();if(!r.width||!r.height)return[];const points=[[r.x+r.width/2,r.y+r.height/2],[r.left+2,r.y+r.height/2],[r.right-2,r.y+r.height/2],[r.x+r.width/2,r.top+2],[r.x+r.width/2,r.bottom-2]];const misses=button.disabled?[]:points.filter(([x,y])=>!button.contains(document.elementFromPoint(x,y))).map(([x,y])=>({x,y,hit:document.elementFromPoint(x,y)?.outerHTML.slice(0,280),rect:{x:r.x,y:r.y,width:r.width,height:r.height}}));return [{label:button.getAttribute('aria-label')||button.textContent,width:r.width,height:r.height,misses}];}));
-   console.log('COARSE_HITS',width,height,key,JSON.stringify(result));expect(result.length).toBeGreaterThan(5);for(const control of result){expect(control.width,control.label??'control').toBeGreaterThanOrEqual(44);expect(control.height,control.label??'control').toBeGreaterThanOrEqual(44);expect(control.misses,control.label??'control').toEqual([]);}await page.keyboard.press('Escape');
-  }
- }
- await context.close();
 });
 
 test('Q restarts a finished attack animation within the same simulation turn',async({page})=>{

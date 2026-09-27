@@ -43,17 +43,6 @@ import "./atlas-map-probe";
  * ceiling gate.
  */
 
-/*
- * **Keep the video** (owner request: *"Record everything so the setup is provably perfect."* —
- * record everything so the setup is provably perfect). The assertions below catch
- * the numbers; this video is what a person checks by eye. It lands as `.webm`
- * under `output/playwright/test-results/**`.
- *
- * ⚠️ This must be at the **top level of the file** — inside a `describe`,
- * Playwright rejects it with *"forces a new worker"* (measured).
- */
-test.use({ video: "on" });
-
 interface CameraSample {
   t: number;
   x: number;

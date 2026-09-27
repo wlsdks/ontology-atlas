@@ -58,10 +58,8 @@ const STEP = {
   ],
 };
 
-const SIZES: Array<[number, number]> = [
-  [1512, 949],
-  [1280, 800],
-];
+/* The narrower desk width is the binding one: every geometry claim here holds at 1512 if it holds here. */
+const SIZES: Array<[number, number]> = [[1280, 800]];
 
 async function openGit(page: Page) {
   await mountDesktopVault(page);

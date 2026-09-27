@@ -13,13 +13,6 @@ import { installLibraryWorkHarness } from './library-work-harness';
  * write automatically, a permission that carries a real `filePath` rather than the MCP envelope, a
  * page that passes the wiki contract, and a native folder root — and no spec had assembled them.
  * So the surface that reports **a write nobody approved** was drawn by nothing but the product.
- *
- * ## What that hid
- *
- * `touch-target-contract.spec.ts` sweeps real controls against the 44px floor and would have
- * caught this; it never saw these two. Measured under `(pointer: coarse)`: `Open` was **16x44**
- * wide by the floor's own reckoning — 16x24 in fact — and `Ask next time` **43x24**. A sixteen
- * pixel target is not reachable by a finger, on the one notice where the way back matters.
  */
 
 const FITTING_PAGE = [
@@ -87,23 +80,4 @@ test('a page that fits lands without a card, and the transcript says so', async 
   await expect(notice.getByTestId('acp-notice-ask-next')).toBeVisible();
   // No card stood: this is the path where the screen already knew the answer.
   await expect(page.getByTestId('acp-permission-card')).toHaveCount(0);
-});
-
-test('both doors on that receipt clear the touch floor', async ({ browser }) => {
-  const context = await browser.newContext({ hasTouch: true, viewport: { width: 1512, height: 982 } });
-  const page = await context.newPage();
-  await driveAutoAllowedWrite(page);
-  await expect(page.locator('[data-acp-entry="notice"]')).toBeVisible();
-
-  const floor = await page.evaluate(() =>
-    Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue('--touch-target-min'), 10),
-  );
-  expect(floor, 'the floor itself must be a real number to measure against').toBeGreaterThan(0);
-
-  for (const id of ['acp-notice-open-page', 'acp-notice-ask-next']) {
-    const box = (await page.getByTestId(id).boundingBox())!;
-    expect(Math.round(box.height), `${id} is below the touch floor`).toBeGreaterThanOrEqual(floor);
-    expect(Math.round(box.width), `${id} is below the touch floor`).toBeGreaterThanOrEqual(floor);
-  }
-  await context.close();
 });

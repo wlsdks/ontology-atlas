@@ -8,7 +8,7 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  * The Dialog (center) responsive contract — merge condition ⓐ of the seat's
  * ratification (2026-08-15).
  *
- * Measures the first consumer of each variant at three widths (1280/768/390):
+ * Measures the first consumer of each variant at the desk and minimum widths (1512/1040):
  * ① does the scrim cover the whole viewport (the visual half of modality) ② is the
  * panel width exactly the formula `min(var(--dialog-w-sm), 100vw - 2rem)` ③ does the
  * panel sit entirely inside the viewport. These are rects rather than static
@@ -19,7 +19,7 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  * screen of a user who shrank the window afterwards never measured by anyone.
  */
 
-const WIDTHS = [1280, 768, 390] as const;
+const WIDTHS = [1512, 1040] as const;
 const DIALOG_W_SM = 420;
 const VIEWPORT_INSET = 32; // calc(100vw - 2rem)
 

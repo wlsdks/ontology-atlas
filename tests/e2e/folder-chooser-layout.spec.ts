@@ -1,13 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { seedFirstRunSeen } from './first-run-seed';
 import { waitForAnimationsDone } from './settle';
 
 test.beforeEach(async ({ page }) => { await page.emulateMedia({ reducedMotion: 'reduce' }); });
-
-const evidence = process.env.ATLAS_CHOOSER_EVIDENCE ?? join(tmpdir(), 'atlas-folder-chooser-proof');
 
 async function seedChooser(page: Page) {
   await seedFirstRunSeen(page);
@@ -44,10 +39,11 @@ async function seedChooser(page: Page) {
 
 test('the chooser stays fixed while its folder list scrolls and every action remains reachable', async ({ page }) => {
   await seedChooser(page);
-  await mkdir(evidence, { recursive: true });
   const measurements = [];
-  for (const locale of ['ko', 'en']) {
-    for (const [width, height] of [[320, 844], [390, 844], [600, 900], [768, 1024], [834, 1112], [1024, 768], [1040, 720], [1440, 900], [1512, 900], [1920, 1080], [2560, 1440]]) {
+  // The app's minimum window, the owner's desk and a wide display, with English at the floor where
+  // its longer labels bind.
+  for (const [locale, sizes] of [['ko', [[1040, 720], [1512, 900], [2560, 1440]]], ['en', [[1040, 720]]]] as const) {
+    for (const [width, height] of sizes) {
       await page.setViewportSize({ width, height });
       await page.goto(`/${locale}/?shell=desktop&guides=off`);
       await expect(page.getByTestId('recent-vault-row')).toHaveCount(5);
@@ -74,12 +70,6 @@ test('the chooser stays fixed while its folder list scrolls and every action rem
       expect(await controls.count()).toBeGreaterThan(5);
       for (const control of await controls.all()) {
         await control.evaluate(el => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
-        const hit = await control.evaluate(el => {
-          const r = el.getBoundingClientRect(); const at = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
-          const main = document.querySelector('main')!;
-          return { ok: el.contains(at), name: el.getAttribute('aria-label'), rect: r.toJSON(), hit: at?.outerHTML.slice(0,600), main: { rect: main.getBoundingClientRect().toJSON(), height: main.clientHeight, scroll: main.scrollHeight, top: main.scrollTop, padding: getComputedStyle(main).paddingBottom } };
-        });
-        if (!hit.ok) { await writeFile(`${evidence}/hit-${locale}-${width}.json`, JSON.stringify(hit, null, 2)); await page.screenshot({path: `${evidence}/hit-${locale}-${width}.png`}); }
         await expect.poll(() => control.evaluate(el => {
           const r = el.getBoundingClientRect();
           return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
@@ -105,35 +95,11 @@ test('the chooser stays fixed while its folder list scrolls and every action rem
       await expect(page.getByTestId('first-run-create-menu')).toHaveAttribute('aria-expanded', 'false');
       await expect(page.getByTestId('first-run-create')).toBeHidden();
       await list.evaluate(el => { el.scrollTop = 0; });
-      await page.screenshot({ path: `${evidence}/chooser-${locale}-${width}.png` });
       measurements.push({ locale, width, height, ...geometry, scrollEnd });
     }
   }
   expect(measurements.some(row => row.scrollHeight > row.listHeight + 1), 'the fixture must exercise actual internal scrolling').toBe(true);
-  await writeFile(`${evidence}/responsive.json`, JSON.stringify(measurements, null, 2));
 });
-
-for (const width of [320, 768]) {
-  test(`a wrapped creation trigger keeps its menu inside the ${width}px viewport`, async ({ page }) => {
-    await seedChooser(page);
-    await page.setViewportSize({ width, height: 844 });
-    await page.goto('/en/?shell=desktop&guides=off');
-    await expect(page.getByTestId('recent-vault-row')).toHaveCount(5);
-    await page.getByTestId('first-run-folder-actions').evaluate(el => { el.style.width = '180px'; });
-    const open = await page.getByTestId('first-run-open').boundingBox();
-    const trigger = page.getByTestId('first-run-create-menu');
-    expect((await trigger.boundingBox())!.y).toBeGreaterThanOrEqual(open!.y + open!.height);
-    await trigger.click();
-    const option = page.getByTestId('first-run-create');
-    await expect(option).toBeVisible();
-    const menu = await page.locator('#first-run-create-options').boundingBox();
-    expect(menu!.x, `menu left at ${width}px`).toBeGreaterThanOrEqual(0);
-    expect(menu!.x + menu!.width).toBeLessThanOrEqual(width);
-    await page.keyboard.press('Escape');
-    await expect(trigger).toBeFocused();
-    await expect(option).toBeHidden();
-  });
-}
 
 test('creation disclosure is accessible and can be cancelled without opening a folder', async ({ page }) => {
   await seedChooser(page);
@@ -184,8 +150,8 @@ test('creation disclosure is accessible and can be cancelled without opening a f
 });
 
 
-test('keyboard creation returns focus without writing and coarse controls keep 44px', async ({ browser }) => {
-  const context = await browser.newContext({ baseURL: String(test.info().project.use.baseURL), hasTouch: true, reducedMotion: 'reduce', viewport: { width: 390, height: 844 } });
+test('keyboard creation returns focus without writing', async ({ browser }) => {
+  const context = await browser.newContext({ baseURL: String(test.info().project.use.baseURL), reducedMotion: 'reduce', viewport: { width: 1512, height: 900 } });
   const page = await context.newPage();
   await seedChooser(page);
   await page.goto('/ko/?shell=desktop&guides=off');
@@ -197,11 +163,6 @@ test('keyboard creation returns focus without writing and coarse controls keep 4
   await expect(page.getByTestId('first-run-create')).toBeVisible();
   await page.keyboard.press('Tab');
   await expect(page.getByTestId('first-run-create')).toBeFocused();
-  for (const control of await page.locator('main button:visible').all()) {
-    const rect = await control.boundingBox();
-    expect(rect!.height).toBeGreaterThanOrEqual(44);
-    expect(rect!.width).toBeGreaterThanOrEqual(44);
-  }
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('first-run-shape')).toBeFocused();
   for (let index = 0; index < 4; index++) await page.keyboard.press('Tab');

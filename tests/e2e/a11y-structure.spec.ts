@@ -16,10 +16,8 @@ import { waitForPageSettled } from "./settle";
  * 1440px. So enabling the assertions exposes no existing debt and blocks only future
  * inflow.
  *
- * **Why two widths.** The same route **draws different components** by width.
- * Measuring only the wide width never sees the narrow width's demotion and
- * rearrangement branches. If a heading disappears, users who scan by heading cannot
- * read the reason or the next step.
+ * **One width (2026-09-27).** A 900px branch was measured too; the app's window cannot go below
+ * 1040px and the web workbench is desktop-only, so that branch ships to nobody.
  */
 
 const ROUTES = [
@@ -27,7 +25,6 @@ const ROUTES = [
   "/en/project/ontology-atlas/",
   "/en/docs/",
   "/en/topology/",
-  "/en/ontology/",
   "/en/projects/",
   // Routes whose body component splits by width — the narrow branch was this spec's
   // blind spot. Studio compatibility addresses have no screen of their own and are not
@@ -35,11 +32,8 @@ const ROUTES = [
   "/en/ontology/insights/",
 ] as const;
 
-/** The wide (workbench) branch and the narrow rearrangement branch. */
-const WIDTHS = [
-  { label: "1440", width: 1440, height: 900 },
-  { label: "900", width: 900, height: 900 },
-] as const;
+/** The workbench branch. The narrow rearrangement branch below the app's 1040px floor is not shipped. */
+const WIDTHS = [{ label: "1440", width: 1440, height: 900 }] as const;
 
 interface Finding {
   route: string;

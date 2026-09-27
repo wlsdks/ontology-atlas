@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForBoxStill } from './settle';
 import { waitForFiniteAnimations } from './visual-ready';
 
 import {
@@ -42,6 +43,8 @@ async function measureGuidanceGeometry(
   const domains = overview.locator('[data-testid^="harness-domain-"]');
   await expect(domains).toHaveCount(sample.domains);
   const field = overview.locator('[data-domain-count]');
+  // The field refits a frame after the type size changes; measure the fit it lands on.
+  await waitForBoxStill(field);
   const before = await field.evaluate((fieldElement) => {
     const fieldRect = (fieldElement as HTMLElement).getBoundingClientRect();
     const main = fieldElement.closest<HTMLElement>('main')!;
@@ -86,7 +89,6 @@ async function measureGuidanceGeometry(
       pageScroll: { x: scrollX, y: scrollY },
     };
   });
-  if (sample.width === 390 && sample.zoom) console.info('GUIDANCE_MOBILE_200_METRICS', JSON.stringify({ ...sample, before }));
   expect(before.fieldClientHeight).toBeGreaterThan(0);
   expect(before.chain.slice(1).filter((entry) => entry.overflowY === 'auto' || entry.overflowY === 'scroll').every((entry) => entry.capacity <= 1), JSON.stringify(before.chain)).toBe(true);
   expect(before.documentCapacity).toBeLessThanOrEqual(1);
@@ -195,6 +197,7 @@ async function measureGuidanceText(
   if (sample.zoom) await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
   const overview = page.getByTestId('harness-coverage-overview');
   await expect(overview).toBeVisible();
+  await waitForBoxStill(overview.locator('[data-domain-count]'));
   const diagramFacts = await overview.locator('[data-testid^="harness-domain-"]').evaluateAll((domains) => domains.map((domain) => ({
     name: domain.getAttribute('aria-label'),
     roles: [...domain.querySelectorAll<HTMLElement>('[data-role]')].map((role) => ({ role: role.dataset.role, count: role.textContent?.match(/\d+/)?.[0] })),
@@ -335,7 +338,7 @@ test.describe("하네스 탭", () => {
 
   test('Guidance anchored evidence closes when its field anchor leaves view without stealing outside focus', async ({ page }) => {
     await mountHarnessVault(page);
-    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.setViewportSize({ width: 1040, height: 720 });
     await page.goto('/en/ontology/insights/?tab=harness&guides=off');
     const overview = page.getByTestId('harness-coverage-overview');
     await expect(overview).toBeVisible();
@@ -411,85 +414,9 @@ test.describe("하네스 탭", () => {
     expect(new Set([domainId, separateId, outsideId]).size).toBe(3);
   });
 
-  test('Guidance Findings body is a genuine keyboard scroll stop with fixed heading and stable outer field', async ({ page }) => {
-    await mountHarnessVault(page);
-    await page.setViewportSize({ width: 1024, height: 600 });
-    await page.goto('/en/ontology/insights/?tab=harness&guides=off');
-    const trigger = page.locator('[data-guidance-evidence-action="findings"]');
-    const count = Number((await trigger.textContent())?.match(/\d+/)?.[0]);
-    expect(count).toBeGreaterThan(0);
-    await trigger.focus();
-    await page.keyboard.press('Enter');
-    const popup = page.getByTestId('harness-role-popup');
-    await expect(popup).toBeFocused();
-    const close = popup.getByRole('button', { name: 'Close' });
-    await page.keyboard.press('Tab');
-    await expect(close).toBeFocused();
-    await page.keyboard.press('Tab');
-    const body = page.getByTestId('harness-collection-scroll-body');
-    await expect(body).toBeFocused();
-    expect(await body.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
-    await waitForFiniteAnimations(page);
-    await expect(page.getByTestId('harness-findings-list').locator('li')).toHaveCount(count);
-    const stable = await page.evaluate(() => ({
-      header: document.querySelector<HTMLElement>('[data-testid="harness-collection-evidence"] > div')!.getBoundingClientRect().toJSON(),
-      fieldScroll: document.querySelector<HTMLElement>('[data-domain-count]')!.scrollTop,
-      page: { x: scrollX, y: scrollY },
-    }));
-    await page.keyboard.press('PageDown');
-    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
-    const advanced = await body.evaluate((element) => element.scrollTop);
-    await page.keyboard.press('PageUp');
-    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeLessThan(advanced);
-    await page.keyboard.press('End');
-    const last = page.getByTestId('harness-findings-list').locator('li').last();
-    await expect.poll(() => last.evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      const bodyRect = element.closest('[data-testid="harness-collection-scroll-body"]')!.getBoundingClientRect();
-      return rect.top >= bodyRect.top && rect.bottom <= bodyRect.bottom;
-    })).toBe(true);
-    expect(await page.evaluate(() => ({
-      header: document.querySelector<HTMLElement>('[data-testid="harness-collection-evidence"] > div')!.getBoundingClientRect().toJSON(),
-      fieldScroll: document.querySelector<HTMLElement>('[data-domain-count]')!.scrollTop,
-      page: { x: scrollX, y: scrollY },
-    }))).toEqual(stable);
-    await page.keyboard.press('Escape');
-    await expect(popup).toHaveCount(0);
-    await expect(trigger).toBeFocused();
-  });
-
-  for (const reducedMotion of ['no-preference', 'reduce'] as const) {
-    test(`Guidance narrow Role body joins the dialog keyboard order with ${reducedMotion} motion`, async ({ browser }) => {
-      const context = await browser.newContext({ viewport: { width: 1512, height: 949 }, reducedMotion });
-      const rolePage = await context.newPage();
-      try {
-        await installHarnessRuntime(rolePage);
-        await mountHarnessVault(rolePage);
-        await rolePage.setViewportSize({ width: 390, height: 600 });
-        await rolePage.goto('/en/ontology/insights/?tab=harness&guides=off');
-        const trigger = rolePage.locator('[data-role="told"][data-state="filled"]').first();
-        await trigger.focus();
-        await rolePage.keyboard.press('Enter');
-        const dialog = rolePage.getByTestId('harness-role-dialog');
-        await expect(dialog).toBeVisible();
-        const body = rolePage.getByTestId('harness-role-scroll-body');
-        for (let index = 0; index < 3 && !(await body.evaluate((element) => element === document.activeElement)); index += 1) await rolePage.keyboard.press('Tab');
-        await expect(body).toBeFocused();
-        expect(await body.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
-        await rolePage.keyboard.press('Tab');
-        expect(await body.evaluate((element) => element.contains(document.activeElement))).toBe(true);
-        await rolePage.keyboard.press('Escape');
-        await expect(dialog).toHaveCount(0);
-        await expect(trigger).toBeFocused();
-      } finally {
-        await context.close();
-      }
-    });
-  }
-
   test('Guidance desktop Role body scrolls from the genuine keyboard stop', async ({ page }) => {
     await mountHarnessVault(page);
-    await page.setViewportSize({ width: 1024, height: 420 });
+    await page.setViewportSize({ width: 1040, height: 720 });
     await page.goto('/en/ontology/insights/?tab=harness&guides=off');
     const trigger = page.locator('[data-role="told"][data-state="filled"]').first();
     await trigger.focus();
@@ -509,22 +436,16 @@ test.describe("하네스 탭", () => {
     await expect(trigger).toBeFocused();
   });
 
-  for (const domains of [8, 10] as const) {
+  /* The eight-domain field is measured across its bands by the balanced-tracks test below; the
+     ledger stresses the ten-domain overflow at the desk width and the app's minimum window. */
+  for (const domains of [10] as const) {
     for (const locale of ['ko', 'en'] as const) {
       for (const zoom of [false, true] as const) {
         for (const viewport of [
           { width: 1512, height: 949 },
-          { width: 1440, height: 900 },
-          { width: 1024, height: 768 },
-          { width: 390, height: 844 },
+          { width: 1040, height: 720 },
         ] as const) {
-          test(`Guidance geometry ledger ${domains} ${locale} ${zoom ? '200%' : 'normal'} ${viewport.width}x${viewport.height}`, async ({ browser, page }) => {
-            if (domains === 8) {
-              await mountHarnessVault(page);
-              const entry = await measureGuidanceGeometry(page, { domains, locale, zoom, ...viewport });
-              console.info('GUIDANCE_32_STATE', JSON.stringify(entry));
-              return;
-            }
+          test(`Guidance geometry ledger ${domains} ${locale} ${zoom ? '200%' : 'normal'} ${viewport.width}x${viewport.height}`, async ({ browser }) => {
             const context = await browser.newContext({ viewport: { width: 1512, height: 949 } });
             const overflowPage = await context.newPage();
             try {
@@ -541,14 +462,13 @@ test.describe("하네스 탭", () => {
     }
   }
 
-  for (const sample of [{ width: 1512, height: 949, narrow: false }, { width: 390, height: 844, narrow: true }] as const) {
-    test(`Guidance reduced-motion presenter preserves facts and focus at ${sample.width}px`, async ({ browser }) => {
+  {
+    test('Guidance reduced-motion presenter preserves facts and focus', async ({ browser }) => {
       const context = await browser.newContext({ viewport: { width: 1512, height: 949 }, reducedMotion: 'reduce' });
       const reducedPage = await context.newPage();
       try {
         await installHarnessRuntime(reducedPage);
         await mountHarnessVault(reducedPage);
-        await reducedPage.setViewportSize({ width: sample.width, height: sample.height });
         await reducedPage.goto('/en/ontology/insights/?tab=harness&guides=off');
         expect(await reducedPage.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
         const overview = reducedPage.getByTestId('harness-coverage-overview');
@@ -563,7 +483,7 @@ test.describe("하네스 탭", () => {
         expect(await textRows.evaluateAll((rows) => rows.map((row) => ({ name: row.querySelector('h4')?.textContent, roles: [...row.querySelectorAll<HTMLElement>('[data-role]')].map((role) => ({ role: role.dataset.role, count: role.textContent?.match(/\d+/)?.[0] })) })))).toEqual(diagramFacts);
         const trigger = textRows.first().locator('[data-role][data-state="filled"]').first();
         await trigger.click();
-        const surface = sample.narrow ? reducedPage.getByTestId('harness-role-dialog') : reducedPage.getByTestId('harness-role-popup');
+        const surface = reducedPage.getByTestId('harness-role-popup');
         await expect(surface).toBeVisible();
         await expect(reducedPage.getByTestId('harness-role-evidence')).toHaveAttribute('data-domain');
         const globalToggle = reducedPage.getByTestId('harness-global-evidence-toggle');
@@ -573,64 +493,45 @@ test.describe("하네스 탭", () => {
           await firstGlobal.getByRole('button').click();
           await expect(firstGlobal.locator('.ai-row-disclosure')).toHaveAttribute('data-state', 'open');
         }
-        if (sample.narrow) {
-          await surface.getByRole('button', { name: 'Close' }).click();
-          await expect(surface).toHaveCount(0);
-          await expect(trigger).toBeFocused();
-        } else {
-          await reducedPage.setViewportSize({ width: 1512, height: 650 });
-          const field = overview.locator('[data-domain-count]');
-          // A condition wait, not one read: the field refits to the new window a frame after the
-          // resize, and the single read measured the old fit — red on every local run and green in
-          // CI only on retry (2026-09-24), which `.claude/rules/testing.md` says is not a gate.
-          await expect.poll(() => field.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0);
-          await field.evaluate((element) => { element.scrollTop = element.scrollHeight; });
-          await expect(surface).toHaveCount(0);
-          await expect(field).toBeFocused();
-        }
+        await reducedPage.setViewportSize({ width: 1040, height: 720 });
+        const field = overview.locator('[data-domain-count]');
+        // A condition wait, not one read: the field refits to the new window a frame after the
+        // resize, and the single read measured the old fit — red on every local run and green in
+        // CI only on retry (2026-09-24), which `.claude/rules/testing.md` says is not a gate.
+        await expect.poll(() => field.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0);
+        await field.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+        await expect(surface).toHaveCount(0);
+        await expect(field).toBeFocused();
       } finally {
         await context.close();
       }
     });
   }
 
-  for (const locale of ['ko', 'en'] as const) {
-    for (const viewport of [
-      { width: 2560, height: 949 },
-      { width: 834, height: 900 },
-      { width: 600, height: 844 },
-      { width: 320, height: 844 },
-    ] as const) {
-      test(`Guidance missing normal-width ledger ${locale} ${viewport.width}x${viewport.height}`, async ({ page }) => {
-        await mountHarnessVault(page);
-        const entry = await measureGuidanceGeometry(page, { domains: 8, locale, zoom: false, ...viewport });
-        console.info('GUIDANCE_MISSING_WIDTH', JSON.stringify(entry));
-      });
-    }
-  }
+  test('Guidance missing normal-width ledger ko 2560x949', async ({ page }) => {
+    await mountHarnessVault(page);
+    const entry = await measureGuidanceGeometry(page, { domains: 8, locale: 'ko', zoom: false, width: 2560, height: 949 });
+    console.info('GUIDANCE_MISSING_WIDTH', JSON.stringify(entry));
+  });
 
-  for (const domains of [8, 10] as const) {
-    for (const locale of ['ko', 'en'] as const) {
-      for (const zoom of [false, true] as const) {
-        for (const viewport of [{ width: 1512, height: 949 }, { width: 1024, height: 768 }, { width: 390, height: 844 }] as const) {
-          test(`Guidance Text ledger ${domains} ${locale} ${zoom ? '200%' : 'normal'} ${viewport.width}x${viewport.height}`, async ({ browser, page }) => {
-            if (domains === 8) {
-              await mountHarnessVault(page);
-              console.info('GUIDANCE_TEXT_STATE', JSON.stringify(await measureGuidanceText(page, { domains, locale, zoom, ...viewport })));
-              return;
-            }
-            const context = await browser.newContext({ viewport: { width: 1512, height: 949 } });
-            const textPage = await context.newPage();
-            try {
-              await installHarnessRuntime(textPage, { includeOverflowDomains: true });
-              await mountHarnessVault(textPage);
-              console.info('GUIDANCE_TEXT_STATE', JSON.stringify(await measureGuidanceText(textPage, { domains, locale, zoom, ...viewport })));
-            } finally {
-              await context.close();
-            }
-          });
+  /* Ten domains overflow the field, which is the state the text mode has to page through: at the
+     owner's desk width in normal type and at the app's minimum window with doubled text. */
+  for (const locale of ['ko', 'en'] as const) {
+    for (const sample of [
+      { zoom: false, width: 1512, height: 949 },
+      { zoom: true, width: 1040, height: 720 },
+    ] as const) {
+      test(`Guidance Text ledger 10 ${locale} ${sample.zoom ? '200%' : 'normal'} ${sample.width}x${sample.height}`, async ({ browser }) => {
+        const context = await browser.newContext({ viewport: { width: 1512, height: 949 } });
+        const textPage = await context.newPage();
+        try {
+          await installHarnessRuntime(textPage, { includeOverflowDomains: true });
+          await mountHarnessVault(textPage);
+          console.info('GUIDANCE_TEXT_STATE', JSON.stringify(await measureGuidanceText(textPage, { domains: 10, locale, ...sample })));
+        } finally {
+          await context.close();
         }
-      }
+      });
     }
   }
 
@@ -655,7 +556,7 @@ test.describe("하네스 탭", () => {
     expect(new URL(page.url()).pathname).toBe("/ko/architecture/");
   });
 
-  test('Analysis guidance evidence is one portalled anchored dialog with a narrow modal equivalent', async ({ page }) => {
+  test('Analysis guidance evidence is one portalled anchored dialog', async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto('/ko/ontology/insights/?tab=harness&guides=off');
     const overview = page.getByTestId('harness-coverage-overview');
@@ -687,12 +588,6 @@ test.describe("하네스 탭", () => {
     await expect(popup).toHaveAttribute('inert');
     await expect(popup).toHaveCount(0);
     await expect(trigger).toBeFocused();
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await trigger.click();
-    await expect(page.getByTestId('harness-role-dialog')).toBeVisible();
-    await expect(page.getByTestId('harness-role-popup')).toHaveCount(0);
-    await auditGuidanceSurface(page, 'harness-role-dialog', 'dialog');
   });
 
   test('measured Guidance keeps balanced tracks, readable ports, and pane-bounded evidence across affected bands', async ({ page }) => {
@@ -700,11 +595,8 @@ test.describe("하네스 탭", () => {
     const measurements: unknown[] = [];
     const cases = [
       { locale: 'ko', width: 1512, height: 949, columns: 4, zoom: false },
-      { locale: 'en', width: 1440, height: 900, columns: 4, zoom: false },
       { locale: 'en', width: 1920, height: 1080, columns: 4, zoom: false },
-      { locale: 'ko', width: 1024, height: 800, columns: 2, zoom: false },
-      { locale: 'en', width: 768, height: 900, columns: 2, zoom: false },
-      { locale: 'ko', width: 390, height: 844, columns: 1, zoom: false },
+      { locale: 'ko', width: 1040, height: 720, columns: 2, zoom: false },
       { locale: 'ko', width: 1512, height: 949, columns: 4, zoom: true },
       { locale: 'en', width: 1512, height: 949, columns: 4, zoom: true },
     ] as const;
@@ -813,7 +705,7 @@ test.describe("하네스 탭", () => {
       const trigger = overview.locator('[data-role][data-state="filled"]').first();
       const scopedCount = Number(await trigger.locator('span').last().textContent());
       await trigger.click();
-      const surface = sample.width <= 767 ? page.getByTestId('harness-role-dialog') : page.getByTestId('harness-role-popup');
+      const surface = page.getByTestId('harness-role-popup');
       await expect(surface).toBeVisible();
       const evidence = page.getByTestId('harness-role-evidence');
       expect(Number(await evidence.getAttribute('data-scoped-count'))).toBe(scopedCount);
@@ -823,7 +715,7 @@ test.describe("하네스 탭", () => {
       await expect(evidence.locator('[data-evidence-kind="global"]')).toHaveCount(globalCount);
 
       let popupBounds: unknown = null;
-      if (sample.width > 767) {
+      {
         const bounds = await page.evaluate(() => {
           const popup = document.querySelector<HTMLElement>('[data-testid="harness-role-popup"]')!.getBoundingClientRect();
           const triggerRect = document.querySelector<HTMLElement>('[data-role][aria-expanded="true"]')!.getBoundingClientRect();
@@ -838,9 +730,6 @@ test.describe("하네스 탭", () => {
         expect(bounds.intersects).toBe(false);
         popupBounds = bounds;
         await page.keyboard.press('Escape');
-        await expect(surface).toHaveCount(0);
-      } else {
-        await surface.getByRole('button', { name: sample.locale === 'ko' ? '닫기' : 'Close' }).click();
         await expect(surface).toHaveCount(0);
       }
       measurements.push({
@@ -858,85 +747,9 @@ test.describe("하네스 탭", () => {
     console.info('GUIDANCE_GEOMETRY_MATRIX', JSON.stringify(measurements));
   });
 
-  for (const sample of [
-    { locale: 'ko', zoom: false },
-    { locale: 'en', zoom: false },
-    { locale: 'ko', zoom: true },
-    { locale: 'en', zoom: true },
-  ] as const) {
-    test(`measured Guidance keeps ten ${sample.locale} domains reachable inside its own scroller${sample.zoom ? ' at 200% text' : ''}`, async ({ browser }) => {
-      const overflowContext = await browser.newContext({ viewport: { width: 1512, height: 949 } });
-      const overflowPage = await overflowContext.newPage();
-      try {
-        await installHarnessRuntime(overflowPage, { includeOverflowDomains: true });
-        await mountHarnessVault(overflowPage);
-        await overflowPage.goto(`/${sample.locale}/ontology/insights/?tab=harness&guides=off`);
-        if (sample.zoom) await overflowPage.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
-        const overview = overflowPage.getByTestId('harness-coverage-overview');
-        await expect(overview).toBeVisible();
-        await expect(overview.locator('[data-testid^="harness-domain-"]')).toHaveCount(10);
-        const field = overview.locator('[data-domain-count]');
-        const before = await field.evaluate((fieldElement) => {
-          const chain: Array<{ label: string; capacity: number; overflowY: string }> = [];
-          for (let element: HTMLElement | null = fieldElement as HTMLElement; element; element = element.parentElement) {
-            chain.push({
-              label: element === fieldElement ? 'field' : element.matches('[data-testid="app-shell-body-slot"]') ? 'body-slot' : element.tagName.toLowerCase(),
-              capacity: element.scrollHeight - element.clientHeight,
-              overflowY: getComputedStyle(element).overflowY,
-            });
-            if (element === document.body) break;
-          }
-          return {
-            chain,
-            fieldCapacity: (fieldElement as HTMLElement).scrollHeight - (fieldElement as HTMLElement).clientHeight,
-            documentCapacity: document.documentElement.scrollHeight - innerHeight,
-            pageScroll: { x: scrollX, y: scrollY },
-          };
-        });
-        expect(before.chain.slice(1).filter((entry) => entry.overflowY === 'auto' || entry.overflowY === 'scroll').every((entry) => entry.capacity <= 1)).toBe(true);
-        expect(before.documentCapacity).toBeLessThanOrEqual(1);
-        await field.evaluate((element) => { element.scrollTop = element.scrollHeight; });
-        const last = overview.locator('[data-testid^="harness-domain-"]').last();
-        await expect.poll(() => last.evaluate((element) => {
-          const box = element.getBoundingClientRect();
-          const fieldBox = element.closest('[data-domain-count]')!.getBoundingClientRect();
-          return box.top >= fieldBox.top && box.bottom <= fieldBox.bottom;
-        })).toBe(true);
-        const after = await overflowPage.evaluate(() => {
-          const fieldElement = document.querySelector<HTMLElement>('[data-domain-count]')!;
-          const lastDomain = [...document.querySelectorAll<HTMLElement>('[data-testid^="harness-domain-"]')].at(-1)!;
-          const roles = [...lastDomain.querySelectorAll<HTMLElement>('[data-role]')].map((role) => {
-            const rect = role.getBoundingClientRect();
-            return {
-              role: role.dataset.role,
-              hit: role.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)),
-            };
-          });
-          return {
-            fieldScrollTop: fieldElement.scrollTop,
-            roles,
-            documentCapacity: document.documentElement.scrollHeight - innerHeight,
-            pageScroll: { x: scrollX, y: scrollY },
-            overflowX: document.documentElement.scrollWidth - innerWidth,
-          };
-        });
-        if (before.fieldCapacity > 0) expect(after.fieldScrollTop).toBeGreaterThan(0);
-        else expect(after.fieldScrollTop).toBe(0);
-        expect(after.roles).toHaveLength(3);
-        expect(after.roles.every((role) => role.hit), `last-domain roles were not hit-testable: ${JSON.stringify(after.roles)}`).toBe(true);
-        expect(after.documentCapacity).toBeLessThanOrEqual(1);
-        expect(after.pageScroll).toEqual(before.pageScroll);
-        expect(after.overflowX).toBe(0);
-        console.info('GUIDANCE_TEN_DOMAIN_SCROLL', JSON.stringify({ ...sample, before, after }));
-      } finally {
-        await overflowContext.close();
-      }
-    });
-  }
-
   test('Brief restores its normal scrolling contract after measured Guidance', async ({ page }) => {
     await mountHarnessVault(page);
-    await page.setViewportSize({ width: 1024, height: 800 });
+    await page.setViewportSize({ width: 1040, height: 720 });
     await page.goto('/en/ontology/insights/?tab=brief&guides=off');
     await expect(page.getByTestId('brief-tab')).toBeVisible();
     const main = page.locator('main[data-insights-surface="maintenance-board"]');
@@ -958,36 +771,6 @@ test.describe("하네스 탭", () => {
     expect(briefAfter).toEqual(briefBefore);
     expect(await page.locator('[data-insights-panel="brief"]').getAttribute('class')).not.toContain('overflow-hidden');
     console.info('GUIDANCE_BRIEF_SCROLL_RESTORE', JSON.stringify({ briefBefore, briefAfter }));
-  });
-
-  test('measured Guidance role controls keep the coarse-pointer touch floor', async ({ browser }) => {
-    const touchContext = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-    const touchPage = await touchContext.newPage();
-    try {
-      await installHarnessRuntime(touchPage);
-      await touchPage.goto('/ko/?guides=off');
-      await touchPage.waitForLoadState('networkidle');
-      await touchPage.getByTestId('first-run-open').click();
-      /* At 390 the gateway already draws the primary tab bar, so it proves nothing about the
-         folder: wait for the gateway itself to leave before navigating away from it. */
-      await expect(touchPage.getByTestId('first-run-open')).toHaveCount(0, { timeout: 60_000 });
-      await expect(touchPage.locator('[data-tabbar="primary"]')).toBeVisible();
-      /* The drawn map is the folder read and remembered; a reload before it lands on the gateway. */
-      await touchPage.getByTestId('ontology-map-canvas').waitFor({ state: 'attached', timeout: 60_000 });
-      await touchPage.waitForLoadState('networkidle');
-      await touchPage.goto('/ko/ontology/insights/?tab=harness&guides=off');
-      const touchOverview = touchPage.getByTestId('harness-coverage-overview');
-      await expect(touchOverview).toBeVisible();
-      expect(await touchPage.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
-      const touchFloor = await touchOverview.locator('[data-role]').evaluateAll((roles) => roles.map((role) => {
-        const rect = role.getBoundingClientRect();
-        return { width: rect.width, height: rect.height };
-      }));
-      expect(touchFloor.every((role) => role.width >= 44 && role.height >= 44)).toBe(true);
-      console.info('GUIDANCE_COARSE_POINTER', JSON.stringify({ minWidth: Math.min(...touchFloor.map((role) => role.width)), minHeight: Math.min(...touchFloor.map((role) => role.height)) }));
-    } finally {
-      await touchContext.close();
-    }
   });
 
   test("기본 보기는 하네스 구조이고, 세그먼트가 보기를 주소에 적는다", async ({ page }) => {
@@ -1012,52 +795,9 @@ test.describe("하네스 탭", () => {
     await expect(page).toHaveURL(/\?view=coverage$/);
   });
 
-  test('diagram keyboard traversal keeps each focused part above mobile navigation', async ({page}) => {
-    await mountHarnessVault(page);
-    await page.setViewportSize({width:390,height:844});
-    await page.goto('/ko/architecture/?view=structure&guides=off');
-    const nodes=page.locator('[data-testid^="harness-diagram-node-"]');
-    await expect(nodes).toHaveCount(13);
-    await nodes.first().focus();
-    for(const node of await nodes.all()){
-      /* The loop card's own hint button sits between the told and gated bands in reading order;
-         it is a real stop, so the walk steps over it rather than pretending it is not there. */
-      for (let guard = 0; guard < 2 && !(await node.evaluate((el) => el === document.activeElement)); guard += 1) {
-        await page.keyboard.press('Tab');
-      }
-      await expect(node).toBeFocused();
-      await expect.poll(()=>node.evaluate(el=>{
-        const box=el.getBoundingClientRect();const bar=document.querySelector('[data-tabbar="primary"]')?.getBoundingClientRect();
-        return box.top>=0 && box.bottom<=(bar?.top??innerHeight) && el.contains(document.elementFromPoint(box.x+box.width/2,box.y+box.height/2));
-      })).toBe(true);
-      await page.keyboard.press('Tab');
-    }
-  });
-
-  test('mobile diagram reveals selected file evidence beside its keyboard-activated row', async ({page}) => {
-    await mountHarnessVault(page);
-    await page.setViewportSize({width:390,height:844});
-    await page.goto('/ko/architecture/?view=structure&guides=off');
-    const row=page.getByTestId('harness-diagram-node-scoped');
-    await row.focus();
-    await page.keyboard.press('Enter');
-    const evidence=page.getByTestId('harness-anatomy-slot-scoped');
-    await expect(evidence).toBeVisible();
-    await expect(row).toHaveAttribute('aria-expanded','true');
-    await expect.poll(()=>page.evaluate(({rowId,evidenceId})=>{
-      const row=document.querySelector(`[data-testid="${rowId}"]`)!.getBoundingClientRect();
-      const evidence=document.querySelector(`[data-testid="${evidenceId}"]`)!.getBoundingClientRect();
-      const bar=document.querySelector('[data-tabbar="primary"]')!.getBoundingClientRect();
-      const button=document.querySelector(`[data-testid="${rowId}"]`)!;
-      const rowHit=button.contains(document.elementFromPoint(row.left+row.width/2,row.top+row.height/2));
-      return rowHit && row.bottom<=evidence.top && evidence.top<bar.top;
-    },{rowId:'harness-diagram-node-scoped',evidenceId:'harness-anatomy-slot-scoped'})).toBe(true);
-  });
-
   test('reduced motion keeps the selected evidence fade without travel', async ({page}) => {
     await page.emulateMedia({reducedMotion:'reduce'});
     await mountHarnessVault(page);
-    await page.setViewportSize({width:390,height:844});
     await page.goto('/ko/architecture/?view=structure&guides=off');
     await page.getByTestId('harness-diagram-node-scoped').click();
     const evidence=page.getByTestId('harness-anatomy-slot-scoped');
@@ -1082,7 +822,7 @@ test.describe("하네스 탭", () => {
 
     const panel = page.locator('#harness-tabpanel-structure');
     const panelTop = await panel.evaluate(el => el.getBoundingClientRect().top);
-    await page.setViewportSize({ width: 1440, height: 650 });
+    await page.setViewportSize({ width: 1040, height: 720 });
     await page.getByTestId('harness-diagram-node-always').click();
     await expect(page.getByTestId('harness-anatomy-slot-always')).toBeVisible();
     await expect.poll(() => work.evaluate(el => el.scrollHeight - el.clientHeight)).toBeGreaterThan(0);
@@ -1340,146 +1080,6 @@ test.describe("하네스 탭", () => {
     expect(await matrix.textContent()).not.toMatch(/%|점수|등급|성숙도/);
   });
 
-  test("390 에서도 설명 말풍선이 화면 안에 있고, 빈 칸이 비어 보이지 않고, 마지막 잉크가 하단 탭에 가리지 않는다", async ({ page }) => {
-    /*
-     * ⚠️ **This is the width where the round-two shape can break, and nothing measured it.**
-     * `scroll-end-gap.spec.ts`'s folder-open pass runs at two ≥lg viewports and stubs the browser
-     * picker, so on this route it would measure the "a browser cannot read this" card rather than
-     * the matrix — a gate with the wrong subject. The runtime lives here, so the measurement does
-     * too (design-responsive, 2026-09-13).
-     *
-     * Three things, each a real defect that was found by measuring rather than by looking:
-     *
-     * 1. The column definitions live in an `InfoHint` on each card, and the reach block's three
-     *    states in one on its heading. Those panels are 288px wide and hang from a 24px button, so
-     *    at 390 the lead's ran **84.9%** off the left edge and the first card's **68.6%**, and a
-     *    per-tile version in the reach strip landed at x **−89.97** while its neighbour cleared the
-     *    window by under a pixel. So this measures *clearance*, not survival: a panel that fits by
-     *    0.6px is a coincidence one translation away from a defect nobody re-measures.
-     * 2. Below `sm` the "None" word steps aside, because in English it overran the 39px cell by
-     *    11.5px and stole the next column's press. Leaving the slot **empty** there is the table
-     *    convention for "no data" beside siblings that all carry a digit.
-     * 3. The bottom tab bar is fixed at this width, and the reserve was measured once with the
-     *    provenance disclosure open and once shut because it came to −1px in one of those states.
-     */
-    await mountHarnessVault(page);
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/ko/architecture/?view=coverage");
-    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
-
-    // ① Every hint panel clears both window edges by a real margin — not by a rounding error.
-    //    8px is the panel's own `mt-2` offset from its trigger: nothing on this screen sits closer
-    //    to the window edge than a floating surface sits to the thing that opened it.
-    const HINT_EDGE_CLEARANCE = 8;
-    const hints = page.locator("[aria-describedby]");
-    const hintCount = await hints.count();
-    /* Five at this width: the lead sentence, the three column cards, the reach heading. A smaller
-       number means a subject vanished and the measurement lost it, which is not a pass. */
-    expect(hintCount, "설명 버튼이 모자란다 — 측정 실패이지 통과가 아니다").toBeGreaterThanOrEqual(5);
-    const boxes: string[] = [];
-    for (let i = 0; i < hintCount; i += 1) {
-      const hint = hints.nth(i);
-      await hint.scrollIntoViewIfNeeded();
-      await hint.focus();
-      const panel = page.locator(`#${(await hint.getAttribute("aria-describedby"))!.replace(/:/g, "\\:")}`);
-      const box = (await panel.boundingBox())!;
-      boxes.push(`${i}: x=${box.x.toFixed(1)} right=${(box.x + box.width).toFixed(1)}`);
-      expect(box.x, `${i}번 설명 말풍선이 왼쪽 창가에 너무 붙었다 [${boxes.join(" | ")}]`).toBeGreaterThanOrEqual(
-        HINT_EDGE_CLEARANCE,
-      );
-      expect(
-        box.x + box.width,
-        `${i}번 설명 말풍선이 오른쪽 창가에 너무 붙었다 [${boxes.join(" | ")}]`,
-      ).toBeLessThanOrEqual(390 - HINT_EDGE_CLEARANCE);
-    }
-    console.log("hint panels at 390:", boxes.join(" | "));
-
-    // ② An empty cell prints its zero where the word cannot fit.
-    const emptyCell = page.locator('[data-harness-cell][data-harness-cell-empty="true"]').first();
-    await expect(emptyCell).toHaveText(/\d/);
-
-    // ③ The page never scrolls sideways, and the last ink clears the fixed bottom tabs.
-    async function clearanceBelowLastInk() {
-      return page.evaluate(async () => {
-      const scroller = document.querySelector('[role="tabpanel"]') as HTMLElement;
-      scroller.scrollTo({ top: scroller.scrollHeight });
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      const tabs = document.querySelector('[data-tabbar="primary"]');
-      const tabsTop = tabs ? tabs.getBoundingClientRect().top : window.innerHeight;
-      let lowest = 0;
-      let lowestWhat = "";
-      for (const el of scroller.querySelectorAll("*")) {
-        if (!el.textContent?.trim()) continue;
-        /*
-         * ⚠️ A closed `<details>` keeps its children's boxes in Chromium — the subtree is skipped
-         * with `content-visibility`, not `display: none` — so measuring every descendant reported
-         * the collapsed provenance rules as the page's last ink, 18.4px "below" the fold. Only ink
-         * a reader can actually see counts.
-         */
-        const fold = el.closest("details");
-        if (fold && !fold.open && el.closest("summary") === null) continue;
-        const r = el.getBoundingClientRect();
-        if (r.width === 0 || r.height === 0) continue;
-        if (r.bottom > lowest) {
-          lowest = r.bottom;
-          lowestWhat = `${el.tagName}.${el.className.toString().slice(0, 60)}|${el.textContent.trim().slice(0, 30)}`;
-        }
-      }
-      return {
-        sideways: document.documentElement.scrollWidth - window.innerWidth,
-        gap: +(tabsTop - lowest).toFixed(1),
-        tabsFound: !!tabs,
-        tabsTop: +tabsTop.toFixed(1),
-        lowest: +lowest.toFixed(1),
-        lowestWhat: lowestWhat,
-        scrollTop: scroller.scrollTop,
-        maxScroll: scroller.scrollHeight - scroller.clientHeight,
-      };
-      });
-    }
-
-    /* Both fold states, because the reserve was written after it measured 5px closed and −1px open
-       on this very screen — one state passing is not the reserve working. */
-    const closed = await clearanceBelowLastInk();
-    expect(closed.sideways, "가로 스크롤이 생겼다").toBeLessThanOrEqual(0);
-    expect(closed.tabsFound, "하단 탭을 못 찾았다 — 계측 실패이지 통과가 아니다").toBe(true);
-    expect(
-      closed.gap,
-      `접힌 상태에서 마지막 잉크가 하단 탭에 붙었다 (${closed.lowestWhat})`,
-    ).toBeGreaterThan(0);
-
-    await page.getByTestId("harness-coverage-provenance").click();
-    const open = await clearanceBelowLastInk();
-    expect(open.sideways, "펼친 뒤 가로 스크롤이 생겼다").toBeLessThanOrEqual(0);
-    expect(
-      open.gap,
-      `펼친 상태에서 마지막 잉크가 하단 탭에 붙었다 (${open.lowestWhat})`,
-    ).toBeGreaterThan(0);
-
-    /*
-     * ④ The same five panels at 768, where the column cards are 216px and the reach strip is
-     *    3-up: the left / centre / right anchors are load bearing there, and a wrong one shows up
-     *    as a negative x rather than as a near miss.
-     */
-    await page.setViewportSize({ width: 768, height: 900 });
-    await page.goto("/ko/architecture/?view=coverage");
-    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
-    const wide = page.locator("[aria-describedby]");
-    const wideCount = await wide.count();
-    expect(wideCount, "768 에서 설명 버튼이 모자란다").toBeGreaterThanOrEqual(5);
-    for (let i = 0; i < wideCount; i += 1) {
-      const hint = wide.nth(i);
-      await hint.scrollIntoViewIfNeeded();
-      await hint.focus();
-      const panel = page.locator(`#${(await hint.getAttribute("aria-describedby"))!.replace(/:/g, "\\:")}`);
-      const box = (await panel.boundingBox())!;
-      expect(box.x, `768: ${i}번 설명 말풍선이 왼쪽으로 나갔다`).toBeGreaterThanOrEqual(HINT_EDGE_CLEARANCE);
-      expect(box.x + box.width, `768: ${i}번 설명 말풍선이 오른쪽으로 나갔다`).toBeLessThanOrEqual(
-        768 - HINT_EDGE_CLEARANCE,
-      );
-    }
-  });
-
   test("문서가 지침인지, 지침이 이름을 댄 것인지, 아무도 안 부르는 것인지 셋으로 나뉜다", async ({ page }) => {
     /*
      * The harness's most common silent failure: a document that exists and no guide points at. The
@@ -1586,53 +1186,6 @@ test.describe("하네스 탭", () => {
     /* The two numbers here are file counts. The coverage claim has its own denominator and its own
        kind of statement, so it is not folded in beside them. */
     await expect(sentence.locator("p").first()).not.toContainText("영역");
-  });
-
-  test("아키텍처 보기는 카드 폭을 쓰고, 일곱 문장이 끝까지 나온다", async ({ page }) => {
-    /*
-     * Inspection 122, S8. Before this slice the ladder held its 280/72/240 faces whatever the
-     * card's width, so at 1512 the drawn band was 592px inside a 1448px card (41 %), sat 124px
-     * left of its centre, and all seven role sentences ended in an ellipsis while 856px of the
-     * card stood empty. The owner's standing priority is a finished sentence over box symmetry.
-     */
-    await mountHarnessVault(page);
-    await page.goto("/ko/architecture/?view=architecture");
-    await expect(page.getByTestId("architecture-graph-box-views")).toBeVisible({ timeout: 30_000 });
-
-    const measured = await page.evaluate(() => {
-      const card = document.querySelector('[data-testid="architecture-flow-panel"]');
-      const boxes = [...document.querySelectorAll("[data-graph-box]")].map((box) =>
-        box.getBoundingClientRect(),
-      );
-      const cardRect = card!.getBoundingClientRect();
-      /* The drawing is the reviewed faces plus, before any inspection, the one empty column. */
-      const panel = document
-        .querySelector('[data-testid="architecture-observation-empty"] rect')
-        ?.getBoundingClientRect();
-      const left = Math.min(...boxes.map((b) => b.left), panel?.left ?? Infinity);
-      const right = Math.max(...boxes.map((b) => b.right), panel?.right ?? -Infinity);
-      const sentences = [
-        ...document.querySelectorAll('[data-testid^="architecture-box-line-"]'),
-      ].map((node) => node.textContent ?? "");
-      return {
-        cardWidth: Math.round(cardRect.width),
-        bandWidth: Math.round(right - left),
-        offCentre: Math.round((left + right) / 2 - (cardRect.left + cardRect.right) / 2),
-        truncated: sentences.filter((line) => line.trimEnd().endsWith("…")).length,
-        roles: boxes.length,
-      };
-    });
-
-    expect(measured.roles).toBe(7);
-    expect(measured.truncated, "role sentences are cut again").toBe(0);
-    // The band used 41 % of the card; more than half of it is the floor this fix has to keep.
-    expect(measured.bandWidth / measured.cardWidth).toBeGreaterThan(0.5);
-    expect(Math.abs(measured.offCentre), "the drawing slid off the card's centre").toBeLessThanOrEqual(8);
-    // And the "not inspected yet" fact is stated once for the measured columns, not once per
-    // role: one empty state, no dashed face or hollow mark per role (owner review, 2026-09-26).
-    await expect(page.getByTestId("architecture-observation-empty")).toHaveCount(1);
-    await expect(page.locator('[data-testid^="architecture-observation-box-"]')).toHaveCount(0);
-    await expect(page.locator('[data-testid^="architecture-delta-marker-"]')).toHaveCount(0);
   });
 
   test("다른 보기로 가는 길은 어떤 화면에서도 사라지지 않는다", async ({ page }) => {

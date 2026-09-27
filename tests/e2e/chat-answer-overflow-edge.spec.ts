@@ -77,28 +77,25 @@ test(`a command that fits is not faded (${FITS})`, async ({ page }) => {
   expect(block.masked, 'a mask over a command that fits blurs its ending for no reason').toBe(false);
 });
 
-test(`a command that runs past the edge fades there (${OVERFLOWS})`, async ({ page }) => {
+test(`at the floor a command fades at the edge that hides it, and a table that fits does not (${OVERFLOWS})`, async ({ page }) => {
+  // One boot at the documented floor serves all three facts: they read the same answer.
   await answerAt(page, OVERFLOWS);
   const block = await readBlock(page, 'acp-chat-code-block');
   expect(block.hidden, 'the command should not fit at the documented floor').toBeGreaterThan(1);
   expect(block.edge).toBe('end');
   expect(block.masked, 'the hidden end of a command has to be visible as hidden').toBe(true);
-});
 
-test(`scrolling a faded block moves the fade to the edge that is now hiding (${OVERFLOWS})`, async ({ page }) => {
-  await answerAt(page, OVERFLOWS);
+  // A table that fits carries no fade either.
+  const table = await readBlock(page, 'acp-chat-markdown-table');
+  expect(table.hidden).toBeLessThanOrEqual(1);
+  expect(table.edge).toBeNull();
+  expect(table.masked).toBe(false);
+
+  // Scrolling the faded block moves the fade to the edge that is now hiding.
   await page.getByTestId('acp-chat-code-block').evaluate((element) => {
     element.scrollLeft = element.scrollWidth;
   });
   await expect
     .poll(async () => (await readBlock(page, 'acp-chat-code-block')).edge)
     .toBe('start');
-});
-
-test(`a table that fits carries no fade either (${OVERFLOWS})`, async ({ page }) => {
-  await answerAt(page, OVERFLOWS);
-  const table = await readBlock(page, 'acp-chat-markdown-table');
-  expect(table.hidden).toBeLessThanOrEqual(1);
-  expect(table.edge).toBeNull();
-  expect(table.masked).toBe(false);
 });

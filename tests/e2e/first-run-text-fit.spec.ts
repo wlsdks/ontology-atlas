@@ -10,7 +10,7 @@ import { expect, test } from "@playwright/test";
  */
 const VIEWPORTS = [
   { label: "1512", width: 1512, height: 950 },
-  { label: "1024", width: 1024, height: 800 },
+  { label: "1040", width: 1040, height: 720 },
 ] as const;
 
 const LOCALES = ["en", "ko"] as const;

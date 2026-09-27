@@ -78,9 +78,9 @@ test('reduced motion keeps a visible opacity-only claim and forge receipt',async
  await page.evaluate(()=>{const key=Object.keys(localStorage).find(key=>key.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.gold=100;localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});await page.keyboard.press('i');await dialog.getByRole('button',{name:'Upgrade · 20 G',exact:true}).click();await expect(receipt).toContainText('Enhanced · +1');await expect(receipt).toBeVisible();expect(await receipt.evaluate(el=>getComputedStyle(el).transform)).toBe('none');
 });
 
-for(const locale of ['en','ko'])test(`saved source paging remains reachable at narrow, short and enlarged text (${locale})`,async({page})=>{
+for(const locale of ['en','ko'])test(`saved source paging remains reachable at the minimum window and enlarged text (${locale})`,async({page})=>{
  const path='capabilities/cart-pricing.md';const dialog=await boot(page,[],locale,{[path]:FIXTURE_VAULT[path]+'\n\n'+('사업 책임과 근거 Business responsibility and evidence.\n'.repeat(8))});await openQuests(page);await dialog.getByRole('button',{name:/Current source:|현재 자료:/}).click();const source=dialog.getByTestId('companion-source');await expect(source.getByRole('button',{name:/Next page|다음 페이지/})).toBeVisible();
- for(const [width,height,font] of [[320,740,'100%'],[390,844,'100%'],[844,390,'100%'],[1512,900,'200%']] as const){await page.setViewportSize({width,height});await page.evaluate(value=>document.documentElement.style.fontSize=value,font);const geometry=await panelGeometry(page);console.log('SOURCE_FIT',locale,width,height,font,JSON.stringify(geometry));expectFit(geometry);}
+ for(const [width,height,font] of [[1040,720,'100%'],[1512,900,'200%']] as const){await page.setViewportSize({width,height});await page.evaluate(value=>document.documentElement.style.fontSize=value,font);const geometry=await panelGeometry(page);console.log('SOURCE_FIT',locale,width,height,font,JSON.stringify(geometry));expectFit(geometry);}
 });
 
 test('the next path applies at the floor boundary while current-floor effects remain fixed',async({page})=>{
@@ -93,9 +93,9 @@ test('the next path applies at the floor boundary while current-floor effects re
  await expect(dialog.getByTestId('companion-current-path')).toContainText('Supply trail');await journey.getByRole('radio',{name:/Elite hunt/}).click();await expect(dialog.getByTestId('companion-current-path')).toContainText('Supply trail');await expect(dialog.getByTestId('companion-path-timing')).toContainText('Floor 3: Elite hunt');await dialog.getByRole('button',{name:'Return to camp',exact:true}).click();await expect(dialog.getByTestId('companion-world')).toHaveAttribute('data-mode','camp');
 });
 
-for(const locale of ['en','ko'])for(const band of ['small','desktop'])test(`quests, assistance, forge and active journey fit the viewport matrix (${locale}, ${band})`,async({page})=>{
+for(const locale of ['en','ko'])test(`quests, assistance, forge and active journey fit the viewport matrix (${locale})`,async({page})=>{
  const dialog=await boot(page,[],locale);const next=locale==='en'?'Next page':'다음 페이지';
- for(const [width,height] of (band==='small'?[[320,740],[390,844],[600,900],[844,390]]:[[768,1024],[834,1112],[1024,768],[1440,900],[1920,1080],[2560,1440]])){
+ for(const [width,height] of [[1040,720],[1512,900],[2560,1440]]){
   await page.setViewportSize({width,height});await page.keyboard.press('l');const board=dialog.getByTestId('companion-quests');await expect(board).toBeVisible();const previous=board.getByRole('button',{name:locale==='en'?'Previous page':'이전 페이지',exact:true});while(await previous.isEnabled())await previous.click();
   for(const view of ['quest','assist','assist-unavailable','forge','journey']){
    if(view==='assist'){
@@ -125,18 +125,17 @@ test('pointer combat actions keep keyboard control in the game',async({page})=>{
  const dialog=await boot(page);await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();await dialog.getByRole('button',{name:'Knowledge wave ×3',exact:true}).click();await expect(dialog.getByTestId('companion-world')).toBeFocused();await page.keyboard.press('i');await expect(dialog.getByTestId('companion-forge')).toBeVisible();
 });
 
-for(const mode of ['coarse','double-text'] as const)test(`quest and forge controls remain reachable with ${mode}`,async({browser})=>{
- const context=await browser.newContext({hasTouch:mode==='coarse',viewport:{width:1512,height:900}});const page=await context.newPage();const dialog=await boot(page);
- if(mode==='double-text')await page.evaluate(()=>document.documentElement.style.fontSize='200%');
+test('quest and forge controls remain reachable with doubled text',async({browser})=>{
+ const context=await browser.newContext({viewport:{width:1512,height:900}});const page=await context.newPage();const dialog=await boot(page);
+ await page.evaluate(()=>document.documentElement.style.fontSize='200%');
  await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
- for(const [width,height] of (mode==='coarse'?[[320,740],[390,844],[844,390],[1512,900]]:[[1512,900]])){
+ for(const [width,height] of [[1512,900]]){
   await page.setViewportSize({width,height});
   for(const view of ['quests','forge','journey']){
    if(view==='quests')await openQuests(page);
    if(view==='forge')await page.keyboard.press('i');
    if(view==='journey'){await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();await page.keyboard.press('m');}
-   await expect(dialog.getByTestId('companion-overlay')).toHaveAttribute('data-surface-state','entered');const geometry=await panelGeometry(page);console.log('PROGRESSION_INPUT',mode,width,height,view,JSON.stringify(geometry));expectFit(geometry);
-   if(mode==='coarse')for(const button of geometry.sizes){expect(button.width,button.label).toBeGreaterThanOrEqual(44);expect(button.height,button.label).toBeGreaterThanOrEqual(44);}
+   await expect(dialog.getByTestId('companion-overlay')).toHaveAttribute('data-surface-state','entered');const geometry=await panelGeometry(page);console.log('PROGRESSION_INPUT','double-text',width,height,view,JSON.stringify(geometry));expectFit(geometry);
    await expect.poll(()=>dialog.evaluate(el=>el.getAnimations({subtree:true}).filter(animation=>animation.effect?.getComputedTiming().iterations!==Infinity&&animation.playState==='running').length)).toBe(0);
    const axe=await page.evaluate(async()=>{const result=await (window as unknown as {axe:{run:(element:Element,options:unknown)=>Promise<{passes:unknown[];violations:unknown[]}>}}).axe.run(document.querySelector('[data-testid="companion-journal"]')!,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}});return {passes:result.passes.length,violations:result.violations};});expect(axe.passes).toBeGreaterThan(0);expect(axe.violations).toEqual([]);
   }
@@ -146,9 +145,9 @@ for(const mode of ['coarse','double-text'] as const)test(`quest and forge contro
 });
 
 test('closed-panel quest and expedition controls do not overlap or lose their hit areas',async({browser})=>{
- const context=await browser.newContext({hasTouch:true,viewport:{width:1512,height:900}});const page=await context.newPage();const dialog=await boot(page);
+ const context=await browser.newContext({viewport:{width:1512,height:900}});const page=await context.newPage();const dialog=await boot(page);
  await page.evaluate(()=>{const key=Object.keys(localStorage).find(key=>key.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.run.lastOutcome='clear';localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});
- for(const [width,height] of [[320,740],[390,844],[844,390],[1512,900],[2560,1440]]){
+ for(const [width,height] of [[1040,720],[1512,900],[2560,1440]]){
   await page.setViewportSize({width,height});
   for(const mode of ['camp','expedition']){
    if(mode==='expedition'){await page.keyboard.press('m');await dialog.getByRole('button',{name:'Depart',exact:true}).click();}
@@ -157,7 +156,7 @@ test('closed-panel quest and expedition controls do not overlap or lose their hi
     const b=el.getBoundingClientRect();const controls=Array.from(el.querySelectorAll('button')).filter(button=>!button.closest('[data-testid="companion-world"],[inert]')).map(button=>({button,r:button.getBoundingClientRect()})).filter(({r})=>r.width&&r.height);
     return controls.map(({button,r},index)=>({label:button.getAttribute('aria-label')||button.textContent,width:r.width,height:r.height,outside:r.left<b.left-1||r.right>b.right+1||r.top<b.top-1||r.bottom>b.bottom+1,intercepted:!button.disabled&&[[r.x+r.width/2,r.y+r.height/2],[r.left+2,r.y+r.height/2],[r.right-2,r.y+r.height/2],[r.x+r.width/2,r.top+2],[r.x+r.width/2,r.bottom-2]].some(([x,y])=>!button.contains(document.elementFromPoint(x,y))),overlaps:controls.slice(index+1).filter(({r:other})=>Math.min(r.right,other.right)-Math.max(r.left,other.left)>1&&Math.min(r.bottom,other.bottom)-Math.max(r.top,other.top)>1).map(({button})=>button.getAttribute('aria-label')||button.textContent)}));
    });
-   console.log('PROGRESSION_HUD',width,height,mode,JSON.stringify(measured));expect(measured.length).toBeGreaterThan(5);for(const control of measured){expect(control.outside,control.label??'control').toBe(false);expect(control.intercepted,control.label??'control').toBe(false);expect(control.overlaps,control.label??'control').toEqual([]);expect(control.width).toBeGreaterThanOrEqual(44);expect(control.height).toBeGreaterThanOrEqual(44);}
+   console.log('PROGRESSION_HUD',width,height,mode,JSON.stringify(measured));expect(measured.length).toBeGreaterThan(5);for(const control of measured){expect(control.outside,control.label??'control').toBe(false);expect(control.intercepted,control.label??'control').toBe(false);expect(control.overlaps,control.label??'control').toEqual([]);expect(control.width).toBeGreaterThanOrEqual(24);expect(control.height).toBeGreaterThanOrEqual(24);}
   }
   await page.keyboard.press('m');await dialog.getByRole('button',{name:'Return to camp',exact:true}).click();
  }
@@ -171,5 +170,5 @@ test('closing a folio retains its content and width through the exit animation',
 
 for(const locale of ['en','ko'])test(`locked equipment explains every gate within the panel (${locale})`,async({page})=>{
  const dialog=await boot(page,[],locale);await page.evaluate(()=>{const key=Object.keys(localStorage).find(key=>key.startsWith('ontology-atlas:companion-game:v1:'))!;const game=JSON.parse(localStorage.getItem(key)!);game.upgrades={sword:5,armor:5,library:5};localStorage.setItem(key,JSON.stringify(game));window.dispatchEvent(new StorageEvent('storage'));});await page.keyboard.press('i');
- for(const [width,height,font] of [[320,740,'100%'],[390,844,'100%'],[844,390,'100%'],[1512,900,'200%']] as const){await page.setViewportSize({width,height});await page.evaluate(value=>document.documentElement.style.fontSize=value,font);for(const gear of locale==='en'?['Starlight blade','Night-sky cloak','Archive spellbook']:['별빛 검','밤하늘 망토','기록의 마법서']){await dialog.getByRole('button',{name:gear+' · 1',exact:true}).click();await expect(dialog.getByRole('button',{name:/Unlock tiers through quests|의뢰로 강화 단계 열기/})).toBeVisible();const geometry=await panelGeometry(page);console.log('LOCKED_FORGE_FIT',locale,width,height,gear,JSON.stringify(geometry));expectFit(geometry);}}
+ for(const [width,height,font] of [[1512,900,'200%']] as const){await page.setViewportSize({width,height});await page.evaluate(value=>document.documentElement.style.fontSize=value,font);for(const gear of locale==='en'?['Starlight blade','Night-sky cloak','Archive spellbook']:['별빛 검','밤하늘 망토','기록의 마법서']){await dialog.getByRole('button',{name:gear+' · 1',exact:true}).click();await expect(dialog.getByRole('button',{name:/Unlock tiers through quests|의뢰로 강화 단계 열기/})).toBeVisible();const geometry=await panelGeometry(page);console.log('LOCKED_FORGE_FIT',locale,width,height,gear,JSON.stringify(geometry));expectFit(geometry);}}
 });

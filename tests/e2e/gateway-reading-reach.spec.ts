@@ -44,12 +44,11 @@ const GATEWAY_ROUTES = [
   "/ko/changelog/",
 ] as const;
 
-/** The narrow widths were the problem — wide is measured alongside to distinguish "it was never there". */
-const WIDTHS = [
-  { w: 1512, h: 900 },
-  { w: 768, h: 1024 },
-  { w: 390, h: 844 },
-] as const;
+/**
+ * The desk width. The narrow widths that first broke (2026-08-07) left this file on 2026-09-27: the
+ * one phone check the public gateway keeps is `public-surface-health.spec.ts` at 390.
+ */
+const WIDTHS = [{ w: 1512, h: 900 }] as const;
 
 const PAINTED = `(el) => {
   const c = getComputedStyle(el);
@@ -132,32 +131,4 @@ test.describe("관문 읽을거리 — 좁은 화면에서도 닿는다", () => 
       ).toEqual([]);
     });
   }
-
-  /**
-   * There is **one table of contents** — the wide sidebar and the narrow disclosure
-   * must render the same list. Two copies means adding a chapter grows only one.
-   */
-  test("좁은 폭 차례가 넓은 폭 차례와 같은 장을 담는다", async ({ page }) => {
-    const chapters = async () =>
-      page.evaluate(() =>
-        [...document.querySelectorAll('[data-testid^="guide-nav-"]')].map((a) =>
-          a.getAttribute("data-testid"),
-        ),
-      );
-
-    await page.setViewportSize({ width: 1512, height: 900 });
-    await page.goto("/ko/guide/connect-agent/?guides=off", { waitUntil: "domcontentloaded" });
-    await settled(page);
-    const wide = [...new Set(await chapters())].sort();
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/ko/guide/connect-agent/?guides=off", { waitUntil: "domcontentloaded" });
-    await settled(page);
-    await page.getByTestId("guide-chapter-picker-summary").click();
-    await settled(page);
-    const narrow = [...new Set(await chapters())].sort();
-
-    expect(wide.length, "넓은 폭에서 장을 못 찾았다 — 이 시험이 헛돈다").toBeGreaterThan(5);
-    expect(narrow, "좁은 폭 차례가 넓은 폭과 다른 장을 담는다 — 목록이 두 벌이 됐다").toEqual(wide);
-  });
 });

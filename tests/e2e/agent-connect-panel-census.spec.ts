@@ -126,7 +126,6 @@ test("「MCP 연결」 칸의 첫 화면 인구조사", async ({ page }, testInf
     body: JSON.stringify(census, null, 2),
     contentType: "application/json",
   });
-  await pane.screenshot({ path: testInfo.outputPath("agent-connect-panel.png") });
   console.log("[census]", JSON.stringify(census));
 
   // Idling guard — finding nothing and passing green makes this ratchet the same as no ratchet.
