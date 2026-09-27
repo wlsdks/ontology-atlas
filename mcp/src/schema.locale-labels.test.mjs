@@ -2,8 +2,6 @@ import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 import { buildFrontmatter, normalizeLocaleLabels, localeLabelCodes } from './schema.mjs';
 
-// Per-locale display names (owner decision, 2026-07-24) — pins that a `labels:
-// {ko, en}` value sent by an agent is normalised to `display_<locale>` frontmatter.
 test('normalizeLocaleLabels keeps 2-letter locale string values only', () => {
   assert.deepEqual(
     normalizeLocaleLabels({ ko: '결제', en: '  Payments  ', kor: 'x', en2: 'y', bad: 3, empty: '  ' }),

@@ -446,8 +446,7 @@ describe('compileOntology', () => {
     );
     assert.equal(result.nodeCount, 4);
     assert.equal(typeof result.graphHash, 'string');
-    // Each node contributes slug + tail alias → 3 of 4 nodes are path-style (tail
-    // split off) → 1 + 2*3 = 7
+    // Each node adds its slug, and a path-style one a tail alias: 1 + 2×3 = 7.
     assert.equal(result.aliasCount, 7);
     assert.deepEqual(result.byKind, {
       capability: 2,
@@ -455,7 +454,6 @@ describe('compileOntology', () => {
       project: 1,
     });
     assert.deepEqual(result.byDomain, { auth: 3 });
-    // arrays should NOT be present
     assert.equal(result.nodes, undefined);
     assert.equal(result.edges, undefined);
     assert.equal(result.aliases, undefined);
@@ -576,7 +574,6 @@ describe('compileOntology', () => {
     assert.equal(result.edgesPagination.offset, 1);
     assert.equal(result.edgesPagination.hasMore, true);
     assert.equal(result.edgesPagination.nextOffset, 3);
-    // nodes unchanged (no separate pagination applied)
     assert.equal(result.nodes.length, 5);
     assert.equal(result.nodesPagination, undefined);
   });

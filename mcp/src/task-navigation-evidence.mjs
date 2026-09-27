@@ -110,12 +110,9 @@ export function parseTaskNavigationEvidenceSource(value) {
 function reviewedCoordinates(docs) {
   const coordinates = [];
   const diagnostics = [];
-  // One element's coordinates per handoff. The brief hands over the selected
-  // capability plus up to three ranked element anchors; once every element
-  // carries its own `Primary implementation`, reading them as one list tripped
-  // the 1/1/3 cardinality cap and blocked every multi-anchor brief (measured
-  // 2026-09-04). The first element in ranked order that records any coordinate
-  // is the navigation source; the rest stay reachable through nextReads.
+  // One element's coordinates per handoff: reading every ranked anchor as one list
+  // trips the 1/1/3 cardinality cap. The first ranked element with a coordinate is
+  // the navigation source; the rest stay reachable through nextReads.
   let sourceDoc = null;
   for (const doc of Array.isArray(docs) ? docs : []) {
     if (doc?.frontmatter?.kind !== 'element') continue;
@@ -255,11 +252,8 @@ function javascriptSourcePath(path) {
 }
 
 function javascriptRegexLiteralStart(line, index) {
-  // `/>` closes a self-closing JSX element and `</div>` opens a closing tag;
-  // neither is `/` followed by a regex literal. Read as a regex they swallowed
-  // the rest of the line, left the brace depth odd, and every React component
-  // with an odd number of `/` characters resolved to `symbol_span_unresolved`
-  // (measured 2026-09-04: three dogfood elements could record no coordinate).
+  // `/>` and `</div>` are JSX, not `/` before a regex literal; read as a regex
+  // they swallow the line and leave components `symbol_span_unresolved`.
   if (line[index + 1] === '>') return false;
   const prefix = line.slice(0, index).trimEnd();
   if (prefix.endsWith('<')) return false;
@@ -732,12 +726,10 @@ function cardinalityProblem(coordinates) {
 
 export function buildTaskNavigationEvidence(input = {}) {
   const receiptCurrent = input.sourceStatus === 'verified_current' && input.sourceCurrentness === 'current';
-  // A receipt that is behind the source is not a reason to hide coordinates the
-  // live files still carry: when the same probe that found the change confirms
-  // every recorded witness still resolves, verification runs against those
-  // live files and says so. The receipt itself stays stale; the word `current`
-  // is reserved for a receipt a person measured (2026-09-04, overturning the
-  // 2026-08-30 clause that a stale receipt never emits a target).
+  // A receipt behind the source does not hide coordinates the live files still
+  // carry: when the change probe confirms every recorded witness resolves, verify
+  // against the live files and say so. `current` stays reserved for a receipt a
+  // person measured.
   const liveVerified = !receiptCurrent
     && typeof input.sourceRoot === 'string'
     && input.sourceRoot.length > 0

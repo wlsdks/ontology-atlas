@@ -1,37 +1,19 @@
 /**
- * Tiny filter DSL for `query_concepts` MCP tool.
+ * Filter DSL for `query_concepts`: "which X have or lack Y" without Cypher or
+ * SPARQL; paths use find_path, aggregates list_kinds / find_orphans. Recursive
+ * descent over tokens, O(tokens) to parse and O(tree) per document to evaluate.
  *
- * Goal: let AI agents (and humans) ask non-trivial vault questions
- * without learning Cypher / SPARQL. Tradeoffs: just enough for the
- * common "which X have/lack Y" cases — no path queries (use find_path),
- * no aggregations (use list_kinds / find_orphans).
+ *   filter    := orExpr
+ *   orExpr    := andExpr ( 'OR' andExpr )*
+ *   andExpr   := atom ( 'AND' atom )*
+ *   atom      := 'NOT'? primary
+ *   primary   := '(' filter ')' | predicate
+ *   predicate := key '=' value | key '!=' value | 'has' '(' key ')'
  *
- * Grammar (case-insensitive keywords, whitespace-tolerant):
- *
- *   filter   := orExpr
- *   orExpr   := andExpr ( 'OR' andExpr )*
- *   andExpr  := atom ( 'AND' atom )*
- *   atom     := 'NOT'? primary
- *   primary  := '(' filter ')'
- *             | predicate
- *   predicate := key '=' value          // exact match: kind=capability
- *              | key '!=' value         // not equal
- *              | 'has' '(' key ')'      // array key non-empty
- *
- * Supported keys: `kind`, `domain`, `slug`, `title` (string equality),
- * and any frontmatter array key for `has(...)` (e.g. `has(elements)`,
- * `has(capabilities)`, `has(depends_on)`).
- *
- * Operator precedence (highest → lowest): NOT > AND > OR. Use parens
- * to override: `(kind=domain OR kind=capability) AND has(elements)`.
- *
- * Examples:
- *   kind=capability AND domain=auth AND NOT has(elements)
- *   kind=domain AND has(capabilities)
- *   slug!=README AND has(depends_on)
- *   (kind=domain OR kind=capability) AND has(elements)
- *
- * Returns: { match: (doc) => boolean, repr: string } — `repr` is for debugging.
+ * Keywords are case-insensitive; precedence NOT > AND > OR. Equality keys
+ * are `kind`, `domain`, `slug`, `title`, `created_by`; `has(key)` takes any
+ * frontmatter array key. Example: `(kind=domain OR kind=capability) AND has(elements)`.
+ * Returns `{ match: (doc) => boolean, repr }`.
  */
 
 import { NODE_KIND_VALUES } from './ontology-engine.mjs';
@@ -39,10 +21,8 @@ import { formatAllowedValueError } from './suggestions.mjs';
 import { GRAPH_ARRAY_KEYS } from './vault.mjs';
 
 const KEY_RE = /^[a-z_][a-z0-9_]*$/i;
-// `created_by` — the key that makes "show only what a human made" work (decision
-// ledger, 2026-07-31). A value containing a colon (`agent:codex`) must be quoted
-// (`created_by="agent:codex"`), because the tokenizer's bare words hold no colon.
-// A node with no stamp matches neither side. That is what unknown means.
+// `created_by="agent:codex"` must be quoted (bare words hold no colon); a node
+// with no stamp matches neither side, which is what unknown means.
 const EQUALITY_KEYS = Object.freeze(['kind', 'domain', 'slug', 'title', 'created_by']);
 const HAS_KEY_ALIASES = Object.freeze({
   depends_on: 'dependencies',
@@ -68,7 +48,6 @@ export function parseFilter(input) {
   };
 }
 
-// ── tokenizer ─────────────────────────────────────────────────────────────
 
 function tokenize(input) {
   const tokens = [];
@@ -100,7 +79,6 @@ function tokenize(input) {
       continue;
     }
     if (ch === '"' || ch === "'") {
-      // quoted string value — lets users include whitespace.
       const quote = ch;
       let j = i + 1;
       let buf = '';
@@ -118,7 +96,6 @@ function tokenize(input) {
       i = j + 1;
       continue;
     }
-    // word — keyword or identifier or unquoted value
     let j = i;
     while (j < input.length && /[a-z0-9_/.\-가-힣]/i.test(input[j])) {
       j += 1;
@@ -140,11 +117,8 @@ function tokenize(input) {
   return tokens;
 }
 
-// ── parser ────────────────────────────────────────────────────────────────
-//
-// Precedence is split across parseExpr → parseOr → parseAnd → parseAtom →
-// parsePrimary. The earlier single-function implementation treated AND and OR as
-// equal left-associative operators, contradicting the documented `NOT > AND > OR`.
+// One function per precedence level (parseOr → parseAnd → parseAtom →
+// parsePrimary), so AND binds tighter than OR.
 
 function parseExpr(tokens, pos) {
   return parseOr(tokens, pos);
@@ -187,7 +161,6 @@ function parseAtom(tokens, pos) {
 function parsePrimary(tokens, pos) {
   const t = tokens[pos];
   if (!t) throw new Error('unexpected end of filter');
-  // parenthesized sub-expression — operator precedence override.
   if (t.type === 'paren' && t.value === '(') {
     const { node, next } = parseExpr(tokens, pos + 1);
     const closing = tokens[next];
@@ -197,7 +170,6 @@ function parsePrimary(tokens, pos) {
     return { node, next: next + 1 };
   }
   if (t.type === 'fn' && t.value === 'has') {
-    // has ( key )
     if (tokens[pos + 1]?.value !== '(') throw new Error('expected `(` after has');
     const keyTok = tokens[pos + 2];
     if (!keyTok || keyTok.type !== 'word') throw new Error('expected key inside has(...)');
@@ -207,7 +179,6 @@ function parsePrimary(tokens, pos) {
     return { node: { type: 'has', key }, next: pos + 4 };
   }
   if (t.type === 'word') {
-    // key = value or key != value
     if (!KEY_RE.test(t.value)) throw new Error(`invalid key: ${t.value}`);
     validateEqualityKey(t.value);
     const opTok = tokens[pos + 1];
@@ -248,7 +219,6 @@ function validateKindValue(value) {
   }
 }
 
-// ── evaluator ─────────────────────────────────────────────────────────────
 
 function evaluate(node, doc) {
   switch (node.type) {
@@ -260,9 +230,7 @@ function evaluate(node, doc) {
     case 'cmp': {
       const actual = readField(doc, node.key);
       const target = node.value;
-      // Case-insensitive comparison. Users and LLMs alike often write
-      // `kind=Capability` while the frontmatter says `kind: capability`, which
-      // used to be a silent 0-match foot-gun.
+      // Case-insensitive: `kind=Capability` must match `kind: capability`.
       const matches =
         String(actual ?? '').toLowerCase() === target.toLowerCase();
       return node.op === '=' ? matches : !matches;
@@ -279,7 +247,6 @@ function evaluate(node, doc) {
 }
 
 function readField(doc, key) {
-  // doc is { slug, frontmatter }. Special-case `slug` field.
   if (key === 'slug') return doc.slug;
   if (key === 'dependencies') {
     return doc.frontmatter?.dependencies ?? doc.frontmatter?.depends_on;

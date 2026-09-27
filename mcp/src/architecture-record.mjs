@@ -1,20 +1,10 @@
-// architectureRecord:v1 — a dated machine receipt for one architecture
-// conformance measurement (docs/DECISIONS.md, 2026-08-27 "Conformance records
-// are dated machine receipts").
-//
-// The record is a JSON envelope wrapping one stamped architectureBrief:v1 plus
-// the reviewed profile's identity (uid, slug, content hash) — never the profile
-// body. It is not an ontology kind and not in-vault Markdown: it lives at
-// `.ontology-atlas/architecture/<profile-slug>.json`, overwritten per slug
-// through the vault-sidecar atomic replacement, and is never committed.
-//
-// Fail-closed boundaries owned here:
-//   - a record must carry a measured stamp whose git/folder fields are never
-//     conflated (no fingerprint under git, no sha under folder)
-//   - no absolute machine path leaves the sidecar: every `rootPath` field is
-//     stripped recursively before the brief is wrapped
-//   - the validator rejects profile-shaped input outright, so a profile can
-//     never be mistaken for (or persisted as) a record
+// architectureRecord:v1, a dated machine receipt of one conformance measurement
+// (docs/DECISIONS.md, "Conformance records are dated machine receipts"): one
+// stamped architectureBrief:v1 plus the profile's uid, slug and content hash,
+// never its body. Stored at `.ontology-atlas/architecture/<profile-slug>.json`
+// through the sidecar's atomic replacement, never committed. Fails closed: the
+// stamp's git and folder fields are never conflated, no absolute `rootPath`
+// leaves the sidecar, and profile-shaped input is rejected outright.
 
 import { appendActivityEntry, buildActivityEntry } from './activity-log.mjs';
 import { replaceVaultSidecarText } from './vault-sidecar.mjs';
@@ -110,11 +100,7 @@ function assertMeasuredStamp(measured) {
   fail('brief.measured.source.kind must be git or folder.');
 }
 
-/**
- * The record-rejects-profile gate. A reviewed profile document and a machine
- * receipt must never be interchangeable: any input wearing profile frontmatter
- * keys is refused before shape validation even starts.
- */
+/** A profile and a receipt must never be interchangeable: profile frontmatter keys are refused first. */
 function assertNotProfileShaped(value) {
   const keys = Object.keys(value);
   if (
@@ -157,11 +143,7 @@ export function assertArchitectureRecord(value) {
   return value;
 }
 
-/**
- * Wrap one stamped architectureBrief:v1 into an architectureRecord:v1.
- * The brief must already carry its measured stamp; every rootPath field is
- * stripped recursively so the persisted receipt names no machine path.
- */
+/** Wraps one stamped brief; every `rootPath` is stripped so the receipt names no machine path. */
 export function buildArchitectureRecord(brief, { profileUid, profileSlug, profileContentHash } = {}) {
   requireObject(brief, 'architecture brief');
   if (brief.contract !== BRIEF_CONTRACT) {
@@ -180,9 +162,8 @@ export function buildArchitectureRecord(brief, { profileUid, profileSlug, profil
 }
 
 /**
- * Persist one record at `.ontology-atlas/architecture/<profile-slug>.json`
- * (atomic replacement, single-writer, no expected_mtime dance) and append one
- * activity.jsonl line through the existing audit-log API.
+ * Persists one record (atomic replacement, single writer, no expected_mtime) and
+ * appends one activity.jsonl line.
  */
 export function writeArchitectureRecord(vaultRoot, record, { agent = null } = {}) {
   assertArchitectureRecord(record);

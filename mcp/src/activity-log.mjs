@@ -1,13 +1,6 @@
-// Agent activity log — `.ontology-atlas/activity.jsonl`.
-//
-// The implementation of the trust charter's "local audit log". One line is
-// appended best-effort right after a successful vault write — **a failed append
-// never fails the write** (the log is the side effect, the write is the point).
-// Nothing is transmitted; the file never leaves the vault.
-//
-// Rejected alternatives: extending the heartbeat (it pollutes the snapshot
-// contract) and deriving the log from git (it cannot capture activity before a
-// commit). Append-only JSONL was adopted instead.
+// Agent activity log, `.ontology-atlas/activity.jsonl`: the local audit log.
+// One line is appended best-effort after a successful vault write, and a failed
+// append never fails the write. Nothing is transmitted.
 
 import {
   appendVaultSidecarLine,
@@ -23,7 +16,7 @@ const HEARTBEAT_FILENAME = 'agent-activity.json';
 export const ACTIVITY_LOG_MAX_LINES = 4000;
 
 /**
- * Line schema v1 (a minimal contract — new fields are optional and do not bump v):
+ * Line schema v1 (new fields are optional and keep v):
  *   {"v":1,"at":ISO,"tool":string,"target":string,"summary":string,
  *    "agent":string|null,"why":string|null}
  */
@@ -53,16 +46,9 @@ export function readHeartbeatAgent(rootPath) {
 }
 
 /**
- * The agent name for one activity line — **heartbeat > connect greeting > null**
- * (2026-08-13).
- *
- * Only the heartbeat file (registered explicitly via the CLI `agent-activity`)
- * used to be consulted, so every unregistered agent's activity piled up as
- * `agent: null` — while the MCP initialize greeting **already carries**
- * clientInfo.name ("claude-code" and friends). Do not throw away a fact the
- * server knows. The heartbeat wins because registration is intent (a person chose
- * that name) while the greeting is a default. With neither, null — no name is
- * invented, the same discipline as readHeartbeatAgent.
+ * Agent name for one line: heartbeat > connect greeting > null. A heartbeat is a
+ * person's registered intent, the greeting's clientInfo.name a default; with
+ * neither, no name is invented.
  */
 export function resolveAgentName(rootPath, clientInfo) {
   const heartbeat = readHeartbeatAgent(rootPath);
@@ -71,10 +57,7 @@ export function resolveAgentName(rootPath, clientInfo) {
   return typeof fromHello === 'string' && fromHello.trim() ? fromHello.trim() : null;
 }
 
-/**
- * Best-effort append plus rotation. Never throws, whatever fails.
- * Returns whether the line was recorded (for tests; callers may ignore it).
- */
+/** Best-effort append plus rotation; never throws. Returns whether the line was recorded. */
 export function appendActivityEntry(rootPath, entry) {
   try {
     appendVaultSidecarLine(rootPath, ACTIVITY_LOG_FILENAME, JSON.stringify(entry));
@@ -100,11 +83,7 @@ function rotateIfNeeded(rootPath) {
   }
 }
 
-/**
- * Reads the tail of the log for the digest and the CLI. Corrupt lines are skipped:
- * an audit log should be shown as it is, but a parser dying and hiding all of it
- * is worse.
- */
+/** The log's tail. Corrupt lines are skipped rather than letting one hide the rest. */
 export function readActivityEntries(rootPath, { limit = 100, sinceMs = null } = {}) {
   try {
     const stored = readVaultSidecarText(rootPath, ACTIVITY_LOG_FILENAME);

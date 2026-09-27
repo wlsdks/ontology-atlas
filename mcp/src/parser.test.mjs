@@ -1,6 +1,4 @@
-// Smoke test — node-native, no test runner. Run with `npm run test:smoke`.
-// Covers a subset of the same cases as this repo's vitest unit test
-// (parse-frontmatter.test.ts).
+// Node-native smoke test (`npm run test:smoke`), a subset of parse-frontmatter.test.ts.
 
 import assert from 'node:assert/strict';
 import {
@@ -135,7 +133,6 @@ test('serialize roundtrip', () => {
   assert.deepEqual(parsed.name, fm.name);
   assert.deepEqual(parsed.kind, fm.kind);
   assert.deepEqual(parsed.capabilities, fm.capabilities);
-  // Inline object serialised, then recognised as an inline object when parsed back.
   assert.deepEqual(parsed.position, fm.position);
 });
 

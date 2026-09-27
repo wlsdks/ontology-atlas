@@ -135,8 +135,8 @@ test('readProjectSourceView marks a changed bound Git source stale instead of re
   assert.equal(result.currentness, 'stale');
   assert.deepEqual(result.topGap, { id: 'source_changed' });
   assert.deepEqual(result.nextAction, { id: 'remeasure_source' });
-  // The receipt stays stale, and the same probe reports what the live source
-  // says about the recorded witnesses — without the absolute root.
+  // The receipt stays stale; the probe reports the live witnesses without the
+  // absolute root.
   assert.equal(result.live.contract, 'projectSourceLiveWitnesses:v1');
   assert.equal(result.live.status, 'witnesses_supported');
   assert.equal(result.live.witnessSummary.total, result.receipt.witnessSummary.total);

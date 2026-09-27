@@ -191,7 +191,6 @@ describe('vault sidecar path boundary', () => {
         readVaultSidecarText(vault, 'atlas-web.json', { subdirectory: 'architecture' })?.text,
         '{"a":1}\n',
       );
-      // Absent subdirectory reads as null instead of creating anything.
       assert.equal(readVaultSidecarText(vault, 'other.json', { subdirectory: 'missing' }), null);
       assert.equal(existsSync(join(vault, '.ontology-atlas', 'missing')), false);
     } finally {

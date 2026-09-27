@@ -172,9 +172,8 @@ test('the four phases expose independent, derived measurements without a quality
   );
   assert.equal(hallucination.unsupportedPresentedAsFact, 0);
 
-  // A fixture must not smuggle in the very source or private coordinates that
-  // phase 3 is meant to remove. It also must not accidentally become a pass
-  // certificate for the construction lifecycle.
+  // The fixture must carry none of the source or private coordinates phase 3
+  // removes, and must not become a lifecycle pass certificate.
   assert.ok(collectStrings(fixture).every((value) => (
     !value.includes('/Users/')
       && !value.includes('/private/')

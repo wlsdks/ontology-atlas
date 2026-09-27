@@ -11,11 +11,9 @@ import {
 } from './write-consent.mjs';
 
 /**
- * The measurement this file locks down: a client can hold a permission gate of its
- * own and still let an Atlas MCP write through untouched (installed rc.10, Codex in
- * `read-only` mode, a self-registered `add_relation` that changed the vault with no
- * card). The checkpoint therefore lives in the server, and the three outcomes below
- * are the whole contract — asked-and-allowed, asked-and-refused, and cannot-ask.
+ * A client's own permission gate can let an Atlas write through untouched, so
+ * the checkpoint lives in the server; its whole contract is asked-and-allowed,
+ * asked-and-refused, and cannot-ask.
  */
 
 function fakeServer({ capabilities, reply, throws }) {
@@ -72,11 +70,8 @@ test('an accepted confirmation lets the write through', async () => {
 
 test('a permission card with no form content is still a yes', async () => {
   /*
-   * Installed acceptance, 2026-08-24. `codex-acp` maps this request onto ACP
-   * `session/request_permission`; the app draws its permission card and 「allow once」
-   * returns `action: 'accept'` with **no content**. While the box was required, that was read as a
-   * refusal and the write was denied twice after the owner had approved it. Codex's own words:
-   * *"the permission response was invalid because it lacked the required `confirm` field."*
+   * The `codex-acp` adapter maps this request onto `session/request_permission`, and "allow
+   * once" returns `action: 'accept'` with no content: that must count as approval.
    */
   const server = fakeServer({ capabilities: { elicitation: {} }, reply: { action: 'accept' } });
   const result = await requestWriteConsent({

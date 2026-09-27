@@ -1354,10 +1354,8 @@ describe('verify.mjs first-contact gates', () => {
               type: 'string',
               enum: WRITE_RELATION_TYPE_VALUES,
             },
-            // Paired with the regression gate — the `why` (relation_notes
-            // rationale) block of the real server inputSchema. Dropping it from the
-            // fixture makes the base fixture itself read as drift, and the negative
-            // test stops holding.
+            // The real server's `why` field: without it the base fixture itself reads as
+            // drift and the negative test stops holding.
             why: { type: 'string', maxLength: 300 },
             expected_mtime: { type: 'number', minimum: 0 },
           },
@@ -5803,8 +5801,7 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('parses verify timeout env as a strict positive integer', () => {
-    // ⚠️ 30s, not 8s: verify walks the whole source tree, so it takes 12.6s here and the old
-    // 8s default could not survive this project's own vault. See `DEFAULT_VERIFY_TIMEOUT_MS`.
+    // 30s: verify walks the whole source tree (see `DEFAULT_VERIFY_TIMEOUT_MS`).
     assert.equal(parseVerifyTimeoutMs(undefined), 30000);
     assert.equal(parseVerifyTimeoutMs(''), 30000);
     assert.equal(parseVerifyTimeoutMs('15000'), 15000);
@@ -6140,10 +6137,8 @@ describe('verify.mjs first-contact gates', () => {
     assert.doesNotMatch(source, /\bprocess\.exit\s*\(/);
     assert.doesNotMatch(source, /spawn\('node', \[(PARSER_TEST|SERVER_ENTRY)\]/);
     assert.match(source, /spawn\(process\.execPath, \[PARSER_TEST\]/);
-    // Server startup gained a layer so it can take `SERVER_BIN_OVERRIDE` (the
-    // binary shipped in the app bundle). What must hold is not the literal shape
-    // but that **the default is this process's Node** — resolving `'node'` from
-    // PATH picks up whatever other Node the user's environment has.
+    // The default server command must be this process's Node, not whatever `node`
+    // PATH resolves; `SERVER_BIN_OVERRIDE` swaps in the app's binary.
     assert.match(source, /spawn\(SERVER_COMMAND, SERVER_COMMAND_ARGS/);
     assert.match(source, /const SERVER_COMMAND = SERVER_BIN_OVERRIDE \|\| process\.execPath;/);
     assert.match(source, /const SERVER_COMMAND_ARGS = SERVER_BIN_OVERRIDE \? \[\] : \[SERVER_ENTRY\];/);
@@ -8659,7 +8654,7 @@ Continue.`;
     assert.equal(typeof request.params.arguments.filePath, 'string');
     assert.ok(request.params.arguments.filePath.length > 0);
     assert.equal(request.params.arguments.allowOutsideRepo, true);
-    // dry-run — confirm must be omitted/false so the live walk never writes.
+    // A dry run: `confirm` omitted, so the live walk never writes.
     assert.equal(request.params.arguments.confirm, undefined);
   });
 
@@ -9763,7 +9758,7 @@ Continue.`;
   });
 
   it('fails malformed list_concepts vaultWarnings payloads', () => {
-    // Warning-level diagnostics warn; only errors fail (2026-09-04, matching `validate`).
+    // Warning-level diagnostics warn; only errors fail, matching `validate`.
     assert.equal(vaultWarningsFailure({ vaultWarnings: { errorCount: 0, warningCount: 2 } }), null);
     assert.equal(
       vaultWarningsNotice({ vaultWarnings: { errorCount: 0, warningCount: 2 } }),
@@ -11488,7 +11483,7 @@ Continue.`;
       'agent_brief response missing cliFallbackCommands',
     );
     assert.equal(
-      // 2026-08-17: the contract inverted — a **bare name** is now rejected (it cannot run).
+      // A bare name is rejected: it cannot run.
       agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas health'] }),
       'agent_brief response missing cliFallbackCommands',
     );

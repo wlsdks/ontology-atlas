@@ -1044,8 +1044,8 @@ describe('queryCompiledOntology', () => {
       filteredActions: 5,
       remainingActions: 5,
       executableActions: 2,
-      // One empty capability and one capability with a raw path in `elements:`
-      // both queue for review as "a capability that does not reach the code".
+      // An empty capability and one with a raw path in `elements:` both queue for
+      // review as not reaching the code.
       reviewActions: 3,
       compileIssues: 0,
       dependencyCycles: 0,
@@ -2870,9 +2870,8 @@ describe('queryCompiledOntology', () => {
     assert.equal(limited.edges.outgoing.edges.length, 1);
   });
 
-  // node_profile still throws on an unresolved slug (the existing contract is
-  // preserved), but the thrown Error carries growthHint, so a did-you-mean or
-  // scaffold is consumable immediately without a second search.
+  // node_profile still throws on an unresolved slug, but the Error carries a
+  // growthHint so the did-you-mean needs no second search.
   it('node_profile — unresolved slug throws with a growthHint (typo near-match)', () => {
     assert.throws(
       () => queryCompiledOntology(artifact(), { operation: 'node_profile', slug: 'capabilities/logn' }),
@@ -3516,19 +3515,10 @@ describe('queryCompiledOntology', () => {
   });
 
   /**
-   * `cycles` **runs longest when there are no cycles** — that paradox is why this
-   * gate exists.
-   *
-   * The DFS enumerates paths, so it is exponential, and the only early exit used to
-   * be `cycleMap.size > limit`, i.e. it fired **only once a cycle was found**. The
-   * very case a user calls it for ("check we are healthy", zero cycles) exhausts the
-   * whole path space. Measured: 60 nodes, 444 edges, 0 cycles → **10.9 seconds**.
-   * MCP is single-threaded stdio, so the entire agent surface stalls for that long.
-   * After the budget was added, the same graph takes 1ms.
-   *
-   * And **a "0" that hit the budget is not "there are none".** If the response does
-   * not state that difference, an agent misreads it as cycle-free — hence
-   * `totalCyclesExact` is measured alongside.
+   * The `cycles` operation runs longest when there are none: the path-enumerating DFS stopped
+   * early only after finding a cycle, so a healthy graph exhausted the path space
+   * and stalled the single-threaded stdio server. A budget bounds it, and a zero
+   * that hit the budget is reported through `totalCyclesExact`, never as acyclic.
    */
   it('bounds the acyclic worst case and says so instead of truncating silently', () => {
     const docs = [];
@@ -3551,15 +3541,14 @@ describe('queryCompiledOntology', () => {
 
     const result = queryCompiledOntology(artifact, { operation: 'cycles' });
 
-    // Wall time varies by machine, so the gate is locked on **a count** — it only
-    // checks that the budget really is a ceiling (`.claude/rules/architecture.md`
-    // "Gate is locked by count, not ms" — lock a gate on counts, not milliseconds).
+    // Locked on a count, not milliseconds (`.claude/rules/architecture.md`): the
+    // budget must be a real ceiling.
     assert.ok(
       result.expandedStates <= result.searchBudget,
       `expandedStates ${result.expandedStates} exceeded budget ${result.searchBudget}`,
     );
     assert.equal(result.totalCycles, 0);
-    // If the budget was hit, never report 0 as "there are none".
+    // A zero that hit the budget must never read as "there are none".
     if (result.truncatedByBudget) {
       assert.equal(result.totalCyclesExact, false);
       assert.equal(result.exhaustive, false);
@@ -3873,8 +3862,8 @@ describe('queryCompiledOntology', () => {
       danglingReferences: 1,
       unassignedNodes: 1,
       emptyDomains: 1,
-      // No `sourceDocs` on this call, so the uncertainty reader was handed no
-      // bodies and says so in the group rather than reporting a clean vault.
+      // No `sourceDocs`, so the uncertainty reader says it got no bodies instead of
+      // reporting a clean vault.
       nextReads: 0,
       totalActions: 3,
     });
@@ -3908,10 +3897,8 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(result.emptyDomains.rows.map((row) => row.slug), ['domains/empty']);
   });
 
-  // R+ (agent-persona-2026-07 QA #4) — a dangling reference that is a likely
-  // typo/missing-prefix of an EXISTING node should surface a `didYouMean`
-  // correction and suppress the (wrong, duplicate-creating) add_concept
-  // proposal, instead of blindly proposing to create a new node.
+  // A dangling reference that is a likely typo of an existing node surfaces
+  // a `didYouMean` and suppresses the duplicate-creating add_concept proposal.
   it('growth_plan dangling reference surfaces didYouMean and suppresses add_concept when an unambiguous near-match node exists', () => {
     const graph = compileOntology(
       [
@@ -3920,10 +3907,8 @@ describe('queryCompiledOntology', () => {
           kind: 'capability',
           title: 'Refund',
           domain: 'domains/checkout',
-          // "check" is a prefix of the existing "domains/checkout" tail —
-          // not an exact tail match (which the compiler's alias resolution
-          // would already have resolved before this ever reaches
-          // danglingReferenceCandidates), so it stays genuinely dangling.
+          // A prefix of the existing "domains/checkout" tail, not an exact tail match
+          // (the compiler would already have resolved that), so it stays dangling.
           relates: ['check'],
         }),
       ],
@@ -3943,9 +3928,7 @@ describe('queryCompiledOntology', () => {
     assert.match(row.reason, /node .*cli\/src\/index\.mjs relate capabilities\/refund domains\/checkout relates/);
   });
 
-  // Two existing nodes with the same ambiguous tail must not produce a
-  // confident (and possibly wrong) didYouMean guess — falls back to the
-  // original add_concept suggestion, same as before this feature existed.
+  // An ambiguous near-match tail must not produce a confident guess.
   it('growth_plan dangling reference does not guess didYouMean when the near-match tail is ambiguous', () => {
     const graph = compileOntology(
       [
@@ -3954,8 +3937,6 @@ describe('queryCompiledOntology', () => {
         doc('capabilities/refund', {
           kind: 'capability',
           title: 'Refund',
-          // both existing capabilities' tails start with "check" — ambiguous
-          // prefix match, must not guess either one.
           dependencies: ['check'],
         }),
       ],
@@ -3969,7 +3950,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(row.proposedAction?.tool, 'add_concept');
   });
 
-  it('ontologyAtlasIgnorePatterns 가 매치되는 external element ref 를 materialize 추천에서 제외 + ignored 카운트 노출', () => {
+  it('excludes external element refs matched by ontologyAtlasIgnorePatterns from materialize recommendations and reports the ignored count', () => {
     const graph = compileOntology(
       [
         doc('project', { kind: 'project', title: 'P', domains: ['domains/x'] }),
@@ -3982,8 +3963,7 @@ describe('queryCompiledOntology', () => {
           kind: 'capability',
           title: 'Foo',
           domain: 'x',
-          // Two external element refs (both path-like — the `.` makes them external).
-          // One matches src/**, one does not.
+          // The `.` makes both refs external; one matches src/**.
           elements: ['src/foo.ts', 'external/lib.ts'],
         }),
       ],
@@ -3991,7 +3971,6 @@ describe('queryCompiledOntology', () => {
     );
 
     const without = queryCompiledOntology(graph, { operation: 'growth_plan', limit: 10 });
-    // With no ignore file, both are candidates
     assert.equal(without.summary.externalElementRefs, 2);
     assert.equal(without.summary.externalElementRefsIgnored, 0);
 
@@ -4000,7 +3979,6 @@ describe('queryCompiledOntology', () => {
       { operation: 'growth_plan', limit: 10 },
       { ontologyAtlasIgnorePatterns: ['src/**'] },
     );
-    // 'src/foo.ts' matches, 'external/lib.ts' does not
     assert.equal(withIgnore.summary.externalElementRefs, 1);
     assert.equal(withIgnore.summary.externalElementRefsIgnored, 1);
     assert.equal(withIgnore.externalElementRefs.rows[0].ref, 'external/lib.ts');
@@ -4253,8 +4231,8 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(
       result.checks.map((check) => ({ id: check.id, status: check.status, count: check.count })),
       [
-        // Ask first whether there is anything to count — without that, the five
-        // `pass` results below prove nothing (`empty-vault-health.test.mjs`).
+        // Without `vault_present` the five passes below prove nothing
+        // (`empty-vault-health.test.mjs`).
         { id: 'vault_present', status: 'pass', count: 3 },
         { id: 'compile_issues', status: 'pass', count: 0 },
         { id: 'unresolved_edges', status: 'pass', count: 0 },
@@ -4431,17 +4409,10 @@ describe('queryCompiledOntology', () => {
 });
 
 /**
- * `retire_unearned_node` — the fourth bridge condition, enforced (2026-08-01 ledger).
- *
- * The construction rules tell an agent to insert a bridge node when siblings are
- * interchangeable. A rule that says "create a grouping node" can manufacture empty
- * buckets all by itself, so the condition that says "and then actually move the
- * children onto it" cannot live only in prose — weaker models drop it.
- *
- * The control case is the important one. "Capability with no children" is NOT the
- * signal: 20 of this repo's own 38 capabilities are childless and healthy. If this
- * audit fired on those, twenty false alarms would bury the one real row and the
- * whole channel would get filtered out.
+ * For `retire_unearned_node`: the rules can manufacture empty bridge buckets, and
+ * weaker models drop the "then move the children" condition, so it is checked.
+ * The control case matters: a childless capability is usually healthy, and
+ * flagging those would bury the one real row.
  */
 describe('maintenance_plan — unearned bridge nodes', () => {
   function bridgeDocs({ bridgeBody, bridgeParentKey }) {
@@ -4484,8 +4455,7 @@ describe('maintenance_plan — unearned bridge nodes', () => {
     assert.equal(rows.length, 1);
     assert.equal(rows[0].node.slug, 'capabilities/bridge');
     assert.match(rows[0].reason, /a node of its own kind, but groups nothing/);
-    // Review action, never executable — handing over a ready-made delete_concept
-    // call is how an advisory row becomes an accident.
+    // Review only: a ready-made delete_concept call turns an advisory into an accident.
     assert.equal(rows[0].executable, false);
   });
 
@@ -4498,7 +4468,7 @@ describe('maintenance_plan — unearned bridge nodes', () => {
   });
 
   it('stays silent on a documented capability that simply has no children yet', () => {
-    // This is 20 of 38 capabilities in this repo's own vault. It must never fire.
+    // The common healthy shape; it must never fire.
     const rows = unearnedRows(
       bridgeDocs({
         bridgeBody: '# Group A\nThis one is written up properly and simply has no element nodes yet.',
@@ -4509,8 +4479,7 @@ describe('maintenance_plan — unearned bridge nodes', () => {
   });
 
   it('stays silent without bodies rather than guessing', () => {
-    // No sourceDocs → the starter-body half cannot be evaluated. It degrades to the
-    // structural shape instead of inventing an answer.
+    // Without sourceDocs the starter-body half degrades to the structural shape.
     const docs = bridgeDocs({ bridgeBody: defaultBody('capability', 'Group A'), bridgeParentKey: {} });
     const graph = compileOntology(docs, { includeIndexes: true });
     const result = queryCompiledOntology(graph, { operation: 'maintenance_plan', limit: 25 });
@@ -4519,12 +4488,8 @@ describe('maintenance_plan — unearned bridge nodes', () => {
 });
 
 /**
- * `deriveBridgeShapes` — telling an inserted layer from an ordinary node, using
- * only the graph (2026-08-01 ledger: structural derivation, never a frontmatter
- * flag, because a flag can be forged and can be dropped by a hand edit).
- *
- * The measurements that chose this predicate are in the function's own doc
- * comment; these tests hold the behaviour those numbers were taken from.
+ * The function `deriveBridgeShapes` tells an inserted layer from the graph alone, never a
+ * frontmatter flag (forgeable, and lost on a hand edit).
  */
 describe('deriveBridgeShapes', () => {
   const flat = {
@@ -4542,8 +4507,6 @@ describe('deriveBridgeShapes', () => {
   };
 
   it('says nothing about an ordinary flat hierarchy', () => {
-    // project → domain → capability → element never puts a node beside its own
-    // kind, which is exactly why same-kind adjacency can mean "inserted layer".
     assert.equal(deriveBridgeShapes(flat).size, 0);
   });
 
@@ -4581,22 +4544,16 @@ describe('deriveBridgeShapes', () => {
   });
 
   it('does not fire on a leaf — the rejected candidate clause did', () => {
-    // The proposed second clause was "parent is a capability and all children are
-    // elements". A leaf has no children, so "all of none" holds and it matched
-    // every element: 28 of 98 nodes in this repo's vault, 1,898 of 3,000 in the
-    // synthetic one. Requiring a child instead collapses it into the rule above.
-    // Either way it contributes nothing, so it is not implemented.
+    // "Parent is a capability and all children are elements" is vacuously true of
+    // every leaf, so it is not implemented.
     assert.equal(deriveBridgeShapes(flat).has('elements/e'), false);
   });
 });
 
 /**
- * The durable half of the write-time body findings.
- *
- * The gate speaks once, while the author still has the file in hand, and then
- * the finding is drained. A queue that forgets is not a queue, so the same four
- * questions live in `maintenance_plan` too — asked from bodies, which means they
- * go quiet rather than guess when nobody handed any over.
+ * The durable half of the write-time body findings: the gate speaks once and
+ * drains, so maintenance_plan asks the same questions from bodies, and stays
+ * quiet rather than guessing when none are handed over.
  */
 describe('maintenance_plan — meaning gaps in the body', () => {
   const WRITTEN = [
@@ -4650,8 +4607,7 @@ describe('maintenance_plan — meaning gaps in the body', () => {
       'definition_missing',
       'uncertainty_missing',
     ]);
-    // Review items: no tool call writes a definition, and offering a scaffold
-    // for one is the shape that produced the problem.
+    // Review items: no tool call writes a definition, and a scaffold is what caused it.
     for (const action of found) {
       assert.equal(action.executable, false);
       assert.equal(action.phase, 'review');
@@ -4752,12 +4708,8 @@ describe('maintenance_plan — meaning gaps in the body', () => {
 });
 
 /**
- * The kind-folder convention as a durable review item.
- *
- * Unlike the three body questions this needs nothing a compiled artifact does
- * not already carry, so it answers whether or not the caller handed over
- * bodies — which matters precisely because the vault that was measured flat is
- * the one that would otherwise be told nothing.
+ * Needs nothing beyond the compiled artifact, so it answers with or without
+ * bodies, which is how a vault built flat hears about it.
  */
 describe('maintenance_plan — a node outside its kind folder', () => {
   function flatRows(docs, options = {}) {
@@ -4821,17 +4773,10 @@ describe('maintenance_plan — a node outside its kind folder', () => {
 });
 
 /*
- * ────────────────────────────────────────────────────────────────────────────
- * The read path, end to end.
- *
- * Everything above hands `sourceDocs` to the engine directly, which proves what
- * the engine decides and nothing about who gives it bodies. That distinction
- * was a real gap: `compactPostWriteMaintenance` passed bodies and the read
- * `query_ontology({operation:"maintenance_plan"})` did not, so the three body
- * review items existed only inside a write response. An unattended round reads
- * the queue; it does not write first to be told what is in it. This case runs
- * the real server over a real vault so the wiring itself is what is asserted.
- * ────────────────────────────────────────────────────────────────────────────
+ * The read path end to end: the cases above hand `sourceDocs` to the engine,
+ * which says nothing about who supplies bodies. An unattended round reads the
+ * queue without writing first, so the real server must pass bodies
+ * to `query_ontology({operation:"maintenance_plan"})`.
  */
 describe('query_ontology maintenance_plan — the read path sees the body too', () => {
   const __enginedir = dirname(fileURLToPath(import.meta.url));
@@ -4864,7 +4809,7 @@ describe('query_ontology maintenance_plan — the read path sees the body too', 
         '',
         '- Copying it anywhere else; team sync is a separate layer.',
       ].join('\n'));
-      // The measured shape: created through the door, never written up.
+      // Created through the door, never written up.
       writeVaultNode(vault, 'capabilities/folder-access', {
         uid: 'a2222222-2222-4222-8222-222222222222',
         kind: 'capability',
@@ -4911,8 +4856,8 @@ describe('query_ontology maintenance_plan — the read path sees the body too', 
       assert.equal(definition.node.slug, 'capabilities/folder-access');
       assert.equal(definition.executable, false);
       assert.equal(definition.phase, 'review');
-      // Write-path only, and this is a read: deciding whether a cited path is a
-      // directory needs the repository root a compiled snapshot does not carry.
+      // Write-path only: judging a directory needs the repository root a compiled
+      // snapshot lacks.
       assert.equal(kinds.includes('folder_only_evidence'), false, kinds.join(', '));
     } finally {
       rmSync(vault, { recursive: true, force: true });
@@ -4920,8 +4865,8 @@ describe('query_ontology maintenance_plan — the read path sees the body too', 
   });
 });
 
-// R3-B. Every node records what its author did not read; until `growth_plan`
-// could see bodies, nothing turned that record into the next step.
+// Every node records what its author did not read; growth_plan turns that into
+// the next read.
 describe('query_ontology growth_plan — the reads a vault asks for', () => {
   const __growthdir = dirname(fileURLToPath(import.meta.url));
   const GROWTH_SERVER_ENTRY = resolve(__growthdir, 'index.js');
@@ -4951,7 +4896,7 @@ describe('query_ontology growth_plan — the reads a vault asks for', () => {
 
     assert.equal(result.summary.nextReads, 0);
     assert.deepEqual(result.nextReads, { total: 0, limited: false, rows: [], reason: 'no_bodies' });
-    // The write queue is unchanged: a read is not a write.
+    // A read changes no write queue.
     assert.equal(
       result.summary.totalActions,
       result.summary.relationRecommendations
@@ -5041,7 +4986,7 @@ describe('query_ontology growth_plan — the reads a vault asks for', () => {
       assert.equal(plan.summary.nextReads, 2);
       assert.deepEqual(plan.nextReads.rows.map((row) => row.kind), ['unread-range', 'unopened-area']);
       const [bounded, unopened] = plan.nextReads.rows;
-      // Lines 1-110 were READ; the next read is the rest of the file (2026-09-23).
+      // Lines 1-110 were read, so the next read is the rest of the file.
       assert.deepEqual(bounded.ranges, [{ path: 'mcp/src/index.js', from: 111, to: 2790 }]);
       assert.deepEqual(bounded.readRanges, [{ path: 'mcp/src/index.js', from: 1, to: 110 }]);
       assert.equal(

@@ -1,65 +1,20 @@
-// reconcile-imports — the set-diff between code-derived import edges and the
-// vault's compiled `depends_on` edges.
-//
-// `inferImports()` already walks the source tree into folder-prefixed module
-// edges (capabilities/X, elements/src/…), and `compileOntology()` already
-// produces the vault's depends_on edges. They were never compared, so the agent
-// got a 454-edge firehose and had to diff it in its head. This turns "here are
-// all the imports" into "here is EXACTLY what to sync".
-//
-// Strictly read-only: it reports candidates only. The agent still lands changes
-// through the existing confirmed add_relation tool, so the vault stays the single
-// source of truth. Lives in the mcp/ package (no FSD or static-export surface).
+// The set difference between code-derived import edges (`inferImports()`) and
+// the vault's compiled depends_on edges, so the agent gets "exactly what to
+// sync" instead of every import. Read-only: changes still land through a
+// confirmed add_relation.
 
-/**
- * Diff code-derived import edges against compiled vault depends_on edges.
- *
- * @param {object} args
- * @param {Array<{from:string,to:string,count?:number}>} [args.moduleEdges]  inferImports().moduleEdges
- * @param {Array<{from:string,to:string,via?:string,ref?:string}>} [args.compiledEdges]  compileOntology().edges
- * @param {Map<string,string>|Record<string,string>} [args.aliasToSlug]  alias → canonical slug (compiler index)
- * @param {Set<string>|Array<string>} [args.nodeSlugs]  existing vault node slugs. When given, a code-missing edge
- *   whose endpoints are all real nodes goes to `inCodeMissingFromVault` (reviewable against existing concepts); one
- *   with a non-node endpoint (a folder-derived slug that isn't a vault node) goes to `inCodeMissingEndpointAbsent`
- *   (needs the nodes modelled first). Neither category is directly landable: an import is
- *   source evidence, not by itself a semantic ontology dependency.
- * @param {Record<string,string>|Map<string,string>} [args.pathBySlug]  slug → that node's `path:`.
- *   When given, edges whose implementation **the scanner cannot read** (C and other unsupported
- *   extensions, or an unknown path) are split out into `notJudgeableByImports`. Omit it and behaviour
- *   is unchanged.
- * @param {Set<string>|Array<string>} [args.scannedExtensions]  the extensions the scanner actually read
- *   (`inferImports().coverage.supportedExtensions`). Falls back to the default list.
- * @returns {{inBoth:Array,inCodeMissingFromVault:Array,inCodeMissingEndpointAbsent:Array,inVaultNotInCode:Array,notJudgeableByImports:Array}}
- */
-// The compiler canonicalizes the `depends_on` frontmatter key to the stored
-// relation key `dependencies` (NEIGHBOR_KEY_ALIASES in vault.mjs; the public
-// API name is `depends_on`, the compiled `via` is `dependencies`). Match the
-// compiled value — matching 'depends_on' alone silently swallows every real
-// dependency edge. Accept both so a future alias can't break the contract.
+// The compiler stores `depends_on` as `dependencies`; matching 'depends_on' alone
+// would swallow every real dependency edge.
 const DEPENDS_ON_VIA = new Set(['dependencies', 'depends_on']);
-/**
- * Default set of extensions the scanner reads — the same as `infer-imports`'s
- * `supportedExtensions`. The caller's actual value wins when supplied; it is
- * accepted precisely to stop the two drifting apart.
- */
+/** infer-imports' `supportedExtensions`; the caller's actual value wins so the two cannot drift. */
 const DEFAULT_SCANNED_EXTENSIONS = new Set([
   '.cjs', '.cts', '.go', '.js', '.jsx', '.mjs', '.mts', '.py', '.rs', '.ts', '.tsx',
 ]);
 
 /**
- * Can the scanner **read** this endpoint's implementation?
- *
- * **Why this verdict is needed** (measured 2026-08-17 on this repository itself):
- * all three of our vault's `depends_on` edges came back as "absent from the code →
- * review as stale", and all three were correct relations. The scanner missed them
- * not because the relation was absent but because it **could not see it** —
- * a native C endpoint is outside the supported extension set, so its missing
- * import cannot be judged as stale evidence.
- *
- * **Reporting "did not see" as "does not exist" makes an agent delete a correct
- * relation.** This repository's CodeGraph rule already says the same thing:
- * *"never use 'not found' as evidence of absence."* So the verdict must be able
- * to defer.
+ * Can the scanner read this endpoint's implementation? Reporting "did not see"
+ * as "does not exist" makes an agent delete a correct relation (a native C
+ * endpoint has no scannable imports), so the verdict must be able to defer.
  */
 function readabilityOf(slug, pathMap, extensions) {
   if (!pathMap) return { readable: true, reason: null };
@@ -69,8 +24,7 @@ function readabilityOf(slug, pathMap, extensions) {
   }
   const dot = raw.lastIndexOf('.');
   const slash = raw.lastIndexOf('/');
-  // No extension means it points at a directory, which may hold files the scanner
-  // does read — so do not conclude it is unreadable.
+  // No extension points at a directory, which may hold readable files.
   if (dot <= slash) return { readable: true, reason: null };
   const ext = raw.slice(dot).toLowerCase();
   return extensions.has(ext)
@@ -81,6 +35,23 @@ function readabilityOf(slug, pathMap, extensions) {
 const SOURCE_ROLE_VALUES = ['production', 'test', 'unknown'];
 const IMPORT_USAGE_VALUES = ['value', 'type_only', 'unknown'];
 
+/**
+ * Diffs code-derived import edges against compiled vault depends_on edges: Map
+ * joins keyed by JSON `[from, to]`, O(E_code + E_vault), then each output list is
+ * sorted, O(E log E).
+ *
+ * @param {object} args
+ * @param {Array<{from:string,to:string,count?:number}>} [args.moduleEdges]  inferImports().moduleEdges
+ * @param {Array<{from:string,to:string,via?:string,ref?:string}>} [args.compiledEdges]  compileOntology().edges
+ * @param {Map<string,string>|Record<string,string>} [args.aliasToSlug]  alias → canonical slug (compiler index)
+ * @param {Set<string>|Array<string>} [args.nodeSlugs]  existing node slugs. A code-only edge between real
+ *   nodes goes to `inCodeMissingFromVault`; one with a non-node endpoint to `inCodeMissingEndpointAbsent`.
+ *   Neither is directly landable: an import is source evidence, not a meaning dependency.
+ * @param {Record<string,string>|Map<string,string>} [args.pathBySlug]  slug → `path:`. Given, edges whose
+ *   implementation the scanner cannot read go to `notJudgeableByImports`.
+ * @param {Set<string>|Array<string>} [args.scannedExtensions]  `inferImports().coverage.supportedExtensions`
+ * @returns {{inBoth:Array,inCodeMissingFromVault:Array,inCodeMissingEndpointAbsent:Array,inVaultNotInCode:Array,notJudgeableByImports:Array}}
+ */
 export function reconcileImportEdges({
   moduleEdges = [],
   compiledEdges = [],
@@ -97,18 +68,16 @@ export function reconcileImportEdges({
         : DEFAULT_SCANNED_EXTENSIONS;
   const nodeSet =
     nodeSlugs instanceof Set ? nodeSlugs : Array.isArray(nodeSlugs) ? new Set(nodeSlugs) : null;
-  // Normalize through the compiler's alias map so an alias edge (alias-src→b)
-  // and its canonical form (capabilities/a→capabilities/b) compare equal. The
-  // compiled `to` is already alias-resolved; module-edge endpoints may not be.
+  // The compiled `to` is alias-resolved and module endpoints may not be, so both
+  // sides go through the compiler's alias map.
   const norm = (s) => {
     if (s == null) return s;
     const hit = aliasToSlug instanceof Map ? aliasToSlug.get(s) : aliasToSlug?.[s];
     return hit ?? s;
   };
-  // A NUL in the composite key would make this file binary to git (2026-08-08).
+  // JSON, not a NUL separator, keeps this file text to git.
   const key = (from, to) => JSON.stringify([from, to]);
 
-  // Vault side: depends_on edges only, normalized, self-edges dropped.
   const vaultMap = new Map();
   for (const e of compiledEdges) {
     if (!DEPENDS_ON_VIA.has(e?.via)) continue;
@@ -118,8 +87,7 @@ export function reconcileImportEdges({
     vaultMap.set(key(from, to), { from, to, ref: e.ref, via: e.via });
   }
 
-  // Code side: normalized, self-edges dropped, alias-collapsed (sum counts and
-  // retain a bounded exact source receipt for human review).
+  // Alias-collapsed: counts are summed, with a bounded source receipt for review.
   const codeMap = new Map();
   for (const e of moduleEdges) {
     const from = norm(e.from);
@@ -177,7 +145,6 @@ export function reconcileImportEdges({
       ? [edge.from, edge.to].filter((s) => !nodeSet.has(s))
       : [];
     if (absentEndpoints.length > 0) {
-      // Endpoint isn't a vault node (folder-derived slug) — not directly landable.
       inCodeMissingEndpointAbsent.push({
         from: edge.from,
         to: edge.to,
@@ -202,9 +169,7 @@ export function reconcileImportEdges({
   }
   for (const [k, edge] of vaultMap) {
     if (codeMap.has(k)) continue;
-    // **Defer the verdict** when either side has an unreadable implementation.
-    // Routing it to "may be stale" here makes an agent delete a correct relation
-    // (measured 2026-08-17).
+    // Defer when either side is unreadable, or an agent deletes a correct relation.
     const from = readabilityOf(edge.from, pathBySlug, extensions);
     const to = readabilityOf(edge.to, pathBySlug, extensions);
     if (!from.readable || !to.readable) {
@@ -241,9 +206,8 @@ export function reconcileImportEdges({
 }
 
 /**
- * Project exactly one import-backed relation candidate into an executable
- * review packet. The order is canonical from/to order from reconcileImportEdges;
- * it is a review cursor, never a meaning-confidence ranking.
+ * One import-backed candidate as an executable review packet, in the canonical
+ * from/to order: a review cursor, never a confidence ranking.
  */
 export function buildNextImportRelationReview(
   reconciliation,
@@ -255,9 +219,8 @@ export function buildNextImportRelationReview(
   const endpointModelling = Array.isArray(reconciliation?.inCodeMissingEndpointAbsent)
     ? reconciliation.inCodeMissingEndpointAbsent
     : [];
-  // Existing concepts remain the first review class, followed by endpoint
-  // modelling. Both classes stay in one cursor so a mixed queue cannot hide
-  // missing-endpoint recovery forever.
+  // Existing concepts first, then endpoint modelling, in one cursor so a mixed
+  // queue cannot starve missing-endpoint recovery.
   const candidates = [...directlyReviewable, ...endpointModelling];
   const rows = candidates.map((candidate) => ({
     candidate,

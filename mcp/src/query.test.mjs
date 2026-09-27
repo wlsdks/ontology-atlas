@@ -1,6 +1,3 @@
-// Smoke tests for the filter DSL — runs as a plain node script via
-// `node mcp/src/query.test.mjs`. Pattern matches the existing
-// parser.test.mjs in this folder.
 
 import { parseFilter } from './query.mjs';
 
@@ -103,10 +100,8 @@ test('OR widens the result', () => {
 
 console.log('parseFilter — operator precedence + parens');
 test('AND binds tighter than OR (NOT > AND > OR)', () => {
-  // a OR b AND c  →  a OR (b AND c).  Pre-fix would have grouped as (a OR b) AND c.
-  // With our docs: kind=domain OR kind=capability AND domain=auth
-  // Correct: kind=domain → {auth}, kind=capability AND domain=auth → {login, signup}
-  // Union: {auth, login, signup}.
+  // AND binds tighter: kind=domain → {auth}, kind=capability AND domain=auth →
+  // {login, signup}; union {auth, login, signup}.
   const { match } = parseFilter('kind=domain OR kind=capability AND domain=auth');
   const matched = docs.filter(match).map((d) => d.slug);
   if (JSON.stringify(matched) !== JSON.stringify(['auth', 'login', 'signup'])) {
@@ -115,10 +110,7 @@ test('AND binds tighter than OR (NOT > AND > OR)', () => {
 });
 
 test('parens override precedence — (kind=domain OR kind=capability) AND has(elements)', () => {
-  // Without parens this would mean: kind=domain OR (kind=capability AND has(elements))
-  //   → {auth} ∪ {login} = {auth, login}.
-  // With parens: (kind=domain OR kind=capability) AND has(elements)
-  //   → {auth, login, signup} ∩ {login} = {login}.
+  // Parens override: {auth, login, signup} ∩ has(elements) {login} = {login}.
   const { match } = parseFilter('(kind=domain OR kind=capability) AND has(elements)');
   const matched = docs.filter(match).map((d) => d.slug);
   if (JSON.stringify(matched) !== JSON.stringify(['login'])) {

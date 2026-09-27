@@ -1,5 +1,3 @@
-// redirectBacklinks smoke test — the core operation behind rename and merge.
-// Run with `node --test` or `npm run test`.
 
 import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync } from "node:fs";
@@ -39,7 +37,7 @@ function readMd(root, slug) {
 
 console.log("redirectBacklinks");
 
-test("absolute slug 매칭 — array 항목 치환", () => {
+test("absolute slug match replaces the array item", () => {
   const root = makeVault();
   writeMd(
     root,
@@ -61,7 +59,7 @@ test("absolute slug 매칭 — array 항목 치환", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("path-prefixed tail 매칭 — capabilities/foo 도 redirect", () => {
+test("path-prefixed tail match also redirects capabilities/foo", () => {
   const root = makeVault();
   writeMd(
     root,
@@ -79,7 +77,7 @@ test("path-prefixed tail 매칭 — capabilities/foo 도 redirect", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("dedup — 이미 nextSlug 가 있으면 중복 안 추가", () => {
+test("dedup: does not add nextSlug again when already present", () => {
   const root = makeVault();
   writeMd(root, "old-slug", "---\nkind: capability\n---\n");
   writeMd(root, "new-slug", "---\nkind: capability\n---\n");
@@ -90,12 +88,11 @@ test("dedup — 이미 nextSlug 가 있으면 중복 안 추가", () => {
   );
   redirectBacklinks(root, "old-slug", "new-slug");
   const after = readMd(root, "ref");
-  // both old → new becomes [new-slug, new-slug] → dedup [new-slug]
   assert.match(after, /dependencies: \[new-slug\]/);
   rmSync(root, { recursive: true, force: true });
 });
 
-test("relation array canonical sort — redirect 후 정렬", () => {
+test("relation array canonical sort after redirect", () => {
   const root = makeVault();
   writeMd(root, "old-slug", "---\nkind: capability\n---\n");
   writeMd(root, "b-slug", "---\nkind: capability\n---\n");
@@ -112,7 +109,7 @@ test("relation array canonical sort — redirect 후 정렬", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("body link [[slug]] 와 (slug.md) 도 치환", () => {
+test("also replaces body links [[slug]] and (slug.md)", () => {
   const root = makeVault();
   writeMd(root, "target", "---\nkind: capability\n---\n");
   writeMd(
@@ -127,10 +124,9 @@ test("body link [[slug]] 와 (slug.md) 도 치환", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("body link — alias([[x|라벨]])·heading([[x#절]])·tail(md)·경로 접두 형태도 치환", () => {
-  // Caught in the 2026-09-01 review: only the bare [[slug]]/[[tail]]/(slug.md)
-  // forms were rewritten, so an alias or anchor link dangled after a confirmed
-  // rename — and pointed at a deleted file after a merge.
+test("body link — also replaces alias, heading, tail (md) and path-prefixed forms", () => {
+  // Alias and anchor links must be rewritten too, or they dangle after a rename
+  // and point at a deleted file after a merge.
   const root = makeVault();
   writeMd(root, "capabilities/auth", "---\nkind: capability\ntitle: Auth\n---\n");
   writeMd(
@@ -160,7 +156,7 @@ test("body link — alias([[x|라벨]])·heading([[x#절]])·tail(md)·경로 �
   rmSync(root, { recursive: true, force: true });
 });
 
-test("findBacklinks — alias·heading 형태의 wikilink 도 backlink 로 센다", () => {
+test("findBacklinks counts alias and heading wikilinks as backlinks", () => {
   const root = makeVault();
   writeMd(root, "capabilities/auth", "---\nkind: capability\n---\n");
   writeMd(
@@ -181,7 +177,7 @@ test("findBacklinks — alias·heading 형태의 wikilink 도 backlink 로 센�
   rmSync(root, { recursive: true, force: true });
 });
 
-test("dryRun:true 면 디스크 변경 없음", () => {
+test("dryRun:true changes nothing on disk", () => {
   const root = makeVault();
   writeMd(root, "target", "---\nkind: capability\n---\n");
   writeMd(
@@ -196,7 +192,7 @@ test("dryRun:true 면 디스크 변경 없음", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("targetSlug === nextSlug 는 no-op", () => {
+test("targetSlug === nextSlug is a no-op", () => {
   const root = makeVault();
   writeMd(root, "target", "---\nkind: capability\n---\n");
   const result = redirectBacklinks(root, "target", "target");
@@ -204,7 +200,7 @@ test("targetSlug === nextSlug 는 no-op", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("inline string key 도 redirect (e.g. domain)", () => {
+test("also redirects an inline string key (e.g. domain)", () => {
   const root = makeVault();
   writeMd(root, "auth", "---\nkind: domain\ntitle: Auth\n---\n");
   writeMd(
@@ -218,8 +214,7 @@ test("inline string key 도 redirect (e.g. domain)", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-// Renaming the key of an object map value (as used by relation_notes).
-test("객체 맵 키 rename — why 노트가 고아가 되지 않는다", () => {
+test("renaming an object map key keeps its why note attached", () => {
   const root = makeVault();
   writeMd(
     root,
@@ -233,7 +228,7 @@ test("객체 맵 키 rename — why 노트가 고아가 되지 않는다", () =>
   rmSync(root, { recursive: true, force: true });
 });
 
-test("객체 맵 dry-run은 감사 값을 보존하되 내부 쓰기 plan을 공개하지 않는다", () => {
+test("object map dry-run keeps the audit values but hides the internal write plan", () => {
   const root = makeVault();
   writeMd(
     root,
@@ -262,7 +257,7 @@ test("객체 맵 dry-run은 감사 값을 보존하되 내부 쓰기 plan을 공
   rmSync(root, { recursive: true, force: true });
 });
 
-test("객체 맵 키 충돌 — 기존(new 키) 값이 이긴다 (조용한 덮어쓰기 금지)", () => {
+test("object map key collision: the existing new-key value wins (no silent overwrite)", () => {
   const root = makeVault();
   writeMd(
     root,
@@ -276,7 +271,7 @@ test("객체 맵 키 충돌 — 기존(new 키) 값이 이긴다 (조용한 덮�
   rmSync(root, { recursive: true, force: true });
 });
 
-test("동일 tail 이 여러 kind 에 있으면 exact target 만 redirect", () => {
+test("redirects only the exact target when one tail exists in several kinds", () => {
   const root = makeVault();
   writeMd(
     root,
@@ -314,7 +309,7 @@ test("동일 tail 이 여러 kind 에 있으면 exact target 만 redirect", () =
   rmSync(root, { recursive: true, force: true });
 });
 
-test("findBacklinks 는 ambiguous tail 을 exact target backlink 로 오인하지 않는다", () => {
+test("findBacklinks does not mistake an ambiguous tail for an exact target backlink", () => {
   const root = makeVault();
   writeMd(root, "capabilities/shared-name", "---\nkind: capability\n---\n");
   writeMd(root, "elements/shared-name", "---\nkind: element\n---\n");
@@ -327,8 +322,8 @@ test("findBacklinks 는 ambiguous tail 을 exact target backlink 로 오인하�
 });
 
 test("findBacklinks — includeAmbiguousTailRefs opts candidate referrers in, marked", () => {
-  // delete_concept's safety gate uses this: a doc whose ref only *could* mean
-  // the target must still block an un-forced delete (bug sweep 2026-09-01).
+  // delete_concept's gate: a doc whose ref only could mean the target must still
+  // block an unforced delete.
   const root = makeVault();
   writeMd(root, "capabilities/shared-name", "---\nkind: capability\n---\n");
   writeMd(root, "elements/shared-name", "---\nkind: element\n---\n");
@@ -347,9 +342,8 @@ test("findBacklinks — includeAmbiguousTailRefs opts candidate referrers in, ma
 });
 
 test("redirectBacklinks — the surviving doc's refs to the absorbed node are dropped, never turned into self-edges", () => {
-  // Reproduced (bug sweep 2026-09-01): merging capabilities/b into
-  // capabilities/a where a carried `relates: [capabilities/b]` wrote
-  // `relates: [capabilities/a]` — a self-loop on disk.
+  // Merging b into a where a carries `relates: [capabilities/b]` must not write a
+  // self-loop.
   const root = makeVault();
   writeMd(
     root,
@@ -362,8 +356,7 @@ test("redirectBacklinks — the surviving doc's refs to the absorbed node are dr
   const result = redirectBacklinks(root, "capabilities/b", "capabilities/a", { dryRun: false });
 
   assert.equal(result.totalUpdated, 2);
-  // A removal is reported with `after` omitted — the update-row contract's
-  // removal shape (mcp-verify rejects null / empty-array / empty-map values).
+  // A removal omits `after` (mcp-verify rejects null, [] and {} values).
   const survivorUpdate = result.updates.find((row) => row.slug === "capabilities/a");
   for (const keyRow of survivorUpdate.afterKeys) {
     assert.equal("after" in keyRow, false, `${keyRow.key} should be reported as a removal`);
@@ -376,13 +369,9 @@ test("redirectBacklinks — the surviving doc's refs to the absorbed node are dr
   rmSync(root, { recursive: true, force: true });
 });
 
-test("path: 증거 문자열은 참조가 아니다 — tail-suffix 절이 건드리지 않는다", () => {
-  // Measured regression (2026-08-01, while flattening the dogfood vault): the
-  // rename `elements/src/widgets/docs-vault` → `elements/docs-vault-widget`
-  // rewrote **another node's** `path: src/entities/docs-vault` to
-  // `…/docs-vault-widget`, pointing it at a file that does not exist. Only
-  // reference slots (domain plus the graph arrays) may be rewritten; evidence
-  // slots (`path` and other arbitrary string keys) must be preserved.
+test("a path: evidence string is not a reference; the tail-suffix clause leaves it alone", () => {
+  // Only reference slots (domain and the graph arrays) are rewritten; evidence
+  // such as `path:` is preserved, or a tail-suffix rename points it at a missing file.
   const root = makeVault();
   writeMd(root, "elements/docs-vault", "---\nkind: element\ntitle: DV\n---\n");
   writeMd(
@@ -400,14 +389,12 @@ test("path: 증거 문자열은 참조가 아니다 — tail-suffix 절이 건�
     dryRun: false,
   });
 
-  // References follow.
   assert.match(readMd(root, "capabilities/cap"), /elements\/docs-vault-widget/);
-  // Evidence stays.
   assert.match(readMd(root, "elements/other"), /path: src\/entities\/docs-vault\n/);
   rmSync(root, { recursive: true, force: true });
 });
 
-test("domain: 단일 문자열 참조는 여전히 따라간다", () => {
+test("a domain: single-string reference is still followed", () => {
   const root = makeVault();
   writeMd(root, "domains/auth", "---\nkind: domain\ntitle: Auth\n---\n");
   writeMd(
@@ -421,7 +408,7 @@ test("domain: 단일 문자열 참조는 여전히 따라간다", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("deferred plan은 다시 쓸 바로 그 snapshot 바이트와 mtime을 함께 싣는다", () => {
+test("a deferred plan carries the exact snapshot bytes and mtime it will rewrite", () => {
   const root = makeVault();
   writeMd(root, "target", "---\nkind: capability\n---\n");
   writeMd(
@@ -443,10 +430,8 @@ test("deferred plan은 다시 쓸 바로 그 snapshot 바이트와 mtime을 함�
 });
 
 /*
- * A kind change moves an entry between the lists named for kinds (2026-09-26, map-edit review).
- * reclassify_concept rewrote a domain's `capabilities: [capabilities/x]` to
- * `capabilities: [elements/x]` — an element in the capability list, resolving, flagged by
- * nothing, and counted by the dense-parent check as a capability child.
+ * A kind change moves an entry between kind-named lists: an element must not stay
+ * in `capabilities:`, where it resolves silently and counts as a capability.
  */
 test("targetKind — a typed list entry moves to the list for the new kind", () => {
   const root = makeVault();

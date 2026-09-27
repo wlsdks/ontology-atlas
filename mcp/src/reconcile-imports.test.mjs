@@ -1,8 +1,5 @@
-// reconcile-imports — unit test (node:test). Atlas roadmap Track A #1.
-// Diff code-derived import edges (inferImports moduleEdges) against compiled
-// vault depends_on edges. Validators (planner team 2026-05-31) insisted the
-// alias-normalization (aliasToSlug + ambiguous-alias) case be first-class, not
-// a follow-up — so it is fixture #1 below.
+// Import edges vs compiled depends_on edges; alias normalization
+// (aliasToSlug, ambiguous alias) is fixture #1.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -11,7 +8,6 @@ import {
 } from './reconcile-imports.mjs';
 import { compileOntology } from './ontology-compiler.mjs';
 
-// In-memory fixtures (no fs) — matches the lightweight contract-test style.
 const moduleEdges = [
   { from: 'capabilities/a', to: 'capabilities/b', count: 3, kindCounts: { static: 3 } }, // in both
   {
@@ -29,9 +25,7 @@ const moduleEdges = [
   }, // code-only → semantic review candidate, never an executable write
   { from: 'alias-src', to: 'b', count: 2, kindCounts: { static: 2 } }, // alias-src→capabilities/a, b→capabilities/b ⇒ normalizes to a→b (dupe of inBoth)
 ];
-// `via: 'dependencies'` is what the compiler ACTUALLY emits for a depends_on
-// frontmatter key (canonicalized). Matching 'depends_on' here was the bug the
-// adversarial gate caught — the compiler never emits that literal.
+// The compiler emits `via: 'dependencies'` for a depends_on key, never the literal.
 const compiledEdges = [
   { from: 'capabilities/a', to: 'capabilities/b', via: 'dependencies', ref: 'b', resolved: true }, // in both
   { from: 'capabilities/a', to: 'capabilities/c', via: 'dependencies', ref: 'c', resolved: true }, // vault-only → candidate stale
@@ -46,13 +40,12 @@ const aliasToSlug = new Map([
 test('reconcileImportEdges — three buckets, depends_on only', () => {
   const r = reconcileImportEdges({ moduleEdges, compiledEdges, aliasToSlug });
 
-  // inBoth: a→b (the alias-src→b edge normalizes to a→b and must NOT duplicate it)
+  // alias-src→b normalizes to a→b and must not duplicate it.
   assert.deepEqual(
     r.inBoth.map((e) => `${e.from}→${e.to}`).sort(),
     ['capabilities/a→capabilities/b'],
   );
 
-  // inCodeMissingFromVault: a→elements/src/x stays a read-only promotion candidate.
   assert.equal(r.inCodeMissingFromVault.length, 1);
   const miss = r.inCodeMissingFromVault[0];
   assert.equal(miss.from, 'capabilities/a');
@@ -70,7 +63,6 @@ test('reconcileImportEdges — three buckets, depends_on only', () => {
       'Review the exact import evidence and both ontology concepts, explain why the semantic dependency holds, ask the user, then write one explicit depends_on relation with why.',
   });
 
-  // inVaultNotInCode: a→c (depends_on edge with no matching import); belongs_to ignored
   assert.deepEqual(
     r.inVaultNotInCode.map((e) => `${e.from}→${e.to}`).sort(),
     ['capabilities/a→capabilities/c'],
@@ -130,11 +122,8 @@ test('reconcileImportEdges — accepts aliasToSlug as plain object too', () => {
   assert.equal(r.inVaultNotInCode.length, 0);
 });
 
-// Anti-drift guard (the gate's required fix): run the reconciler against REAL
-// compileOntology output, not synthetic via strings. The compiler canonicalizes
-// the `depends_on` frontmatter key to via:'dependencies' — if the reconciler's
-// filter ever drifts off that, inBoth/inVaultNotInCode silently go to 0 and this
-// test fails loudly.
+// Against real compileOntology output: if the reconciler's via filter drifts
+// off 'dependencies', inBoth and inVaultNotInCode silently drop to 0.
 test('reconcileImportEdges — matches REAL compileOntology depends_on edges (via=dependencies)', () => {
   const docs = [
     { slug: 'capabilities/a', frontmatter: { uid: '00000000-0000-4000-8000-000000000001', kind: 'capability', title: 'A', depends_on: ['capabilities/b', 'capabilities/stale'] }, body: '', mtime: 1 },
@@ -142,12 +131,10 @@ test('reconcileImportEdges — matches REAL compileOntology depends_on edges (vi
     { slug: 'capabilities/stale', frontmatter: { uid: '00000000-0000-4000-8000-000000000003', kind: 'capability', title: 'Stale' }, body: '', mtime: 1 },
   ];
   const art = compileOntology(docs, { includeIndexes: true });
-  // sanity: the compiler really emits via:'dependencies', not 'depends_on'
   assert.ok(art.edges.some((e) => e.via === 'dependencies'), 'compiler should emit via:dependencies');
   assert.ok(!art.edges.some((e) => e.via === 'depends_on'), 'compiler should NOT emit via:depends_on');
 
   const nodeSlugs = new Set((art.nodes ?? []).map((n) => n.slug));
-  // code import graph has a→b only (a→stale exists in vault but not code)
   const r = reconcileImportEdges({
     moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 1 }],
     compiledEdges: art.edges,
@@ -163,8 +150,7 @@ test('reconcileImportEdges — matches REAL compileOntology depends_on edges (vi
 
 test('reconcileImportEdges — empty inputs are safe', () => {
   const r = reconcileImportEdges({ moduleEdges: [], compiledEdges: [], aliasToSlug: new Map() });
-  // `notJudgeableByImports` is the bucket added 2026-08-17 — it separates "a
-  // relation implemented in a language we cannot read" from "absent from the code"
+  // `notJudgeableByImports`: unreadable language, not absent from code
   // (reconcile-unscannable.test.mjs).
   assert.deepEqual(r, { inBoth: [], inCodeMissingFromVault: [], inCodeMissingEndpointAbsent: [], inVaultNotInCode: [], notJudgeableByImports: [] });
 });
@@ -218,8 +204,7 @@ test('reconcileImportEdges — self-edges (A→A) are dropped (no self-dependenc
     compiledEdges: [],
     aliasToSlug: new Map(),
   });
-  // `notJudgeableByImports` is the bucket added 2026-08-17 — it separates "a
-  // relation implemented in a language we cannot read" from "absent from the code"
+  // `notJudgeableByImports`: unreadable language, not absent from code
   // (reconcile-unscannable.test.mjs).
   assert.deepEqual(r, { inBoth: [], inCodeMissingFromVault: [], inCodeMissingEndpointAbsent: [], inVaultNotInCode: [], notJudgeableByImports: [] });
 });

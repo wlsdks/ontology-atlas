@@ -8,9 +8,8 @@
 //   key:\n  - item1\n  - item2          (block list)
 //   key:\n  child: 1\n  other: 2        (block object)
 
-// These frontmatter keys are graph edges, not arbitrary metadata. A scalar or
-// object at one of these keys used to survive parsing and then disappear from
-// the compiler because collectNeighborRefs only consumes arrays.
+// Graph-edge keys: a scalar or object here would vanish from the compiler,
+// since collectNeighborRefs consumes arrays only.
 const GRAPH_ARRAY_KEYS = new Set([
   'domains',
   'capabilities',
@@ -38,22 +37,10 @@ function assignParsedKey(target, key, value, diagnostics, line) {
 }
 
 export function parseFrontmatter(input) {
-  // Newline and encoding normalisation — **on the read path only** (measured 2026-07-28).
-  //
-  // CRLF: splitting on `\n` leaves a trailing `\r` on every line, which the
-  // block-list regex cannot match (`.` does not consume `\r`, `$` only sees the
-  // end of the string) → no match → the list parses as an empty array. Scalars
-  // survive because `.trim()` rescues them, so the symptom presents as
-  // **"the nodes are there but every relation vanished"**. Zero warnings.
-  //
-  // BOM: `raw.startsWith('---')` is false for `\uFEFF---`, so the whole
-  // frontmatter block falls through into the body and `kind:` disappears — i.e.
-  // **the document itself vanishes from the graph as a node**.
-  //
-  // Both are produced by the default editor of a population
-  // `.claude/rules/surfaces.md` states we support (Windows Chromium). The 4-way
-  // contract test only guarantees the four parsers *agree*, and it was passing
-  // because **all four were wrong in the same way**.
+  // Normalized on the read path only. CRLF: splitting on `\n` leaves a `\r` the
+  // block-list regex cannot match (`.` does not consume `\r`), so lists parse
+  // empty and relations vanish. BOM: `\uFEFF---` misses the frontmatter and the
+  // node vanishes. Windows editors produce both (`.claude/rules/surfaces.md`).
   const raw = input.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   if (!raw.startsWith('---')) return { frontmatter: {}, body: raw };
   const end = raw.indexOf('\n---', 3);
@@ -86,9 +73,8 @@ export function parseFrontmatter(input) {
     const key = line.slice(0, idx).trim();
     const value = line.slice(idx + 1).trim();
     if (!key) continue;
-    // **Check for a block scalar before classifying the value.** The value of
-    // `definition: |` is `"|"`, not an empty string, so putting this inside the
-    // empty-value branch makes it unreachable.
+    // Before classifying the value: `definition: |` has the value "|", so this
+    // check would be unreachable inside the empty-value branch.
     const scalarIndicator = /^[|>](?:[1-9][-+]?|[-+][1-9]?)?$/.exec(value);
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
@@ -184,20 +170,10 @@ function pushGraphArrayDiagnostic(diagnostics, key, line, value) {
 }
 
 /**
- * Reports a scalar that **opens a quote the value never closes as its last
- * character** — `display_ko: "Agents" destination`, found in this repository's own
- * vault on 2026-08-31.
- *
- * `unquote` strips a wrapping pair only when the first and last characters are
- * the same quote, so a value that opens a quote it never closes falls through to
- * its lenient tail
- * (`replace(/^["']|["']$/g, '')`), which removes the opening quote and keeps the
- * rest verbatim, so every reader renders `Agents" destination`. Nothing else noticed:
- * the key parses, the node loads, and `validate` answered `0 issues` while the
- * map, the lists and the app title all showed the broken text.
- *
- * Top-level scalars only. Inline list and object members reach `unquote` through
- * the quote-aware `splitTopLevel`, and a block scalar carries no quoting at all.
+ * A top-level scalar that opens a quote it never closes as its last character
+ * (`display_ko: "Agents" destination`). `unquote` then strips only the opening
+ * quote and every reader renders the rest, while the node loads cleanly. Inline
+ * members go through the quote-aware `splitTopLevel`; block scalars carry no quoting.
  *
  * @param {string} value raw text after `key:`
  * @returns {'trailing' | 'unterminated' | null}
@@ -206,10 +182,9 @@ function quotedScalarFault(value) {
   const trimmed = value.trim();
   const quote = trimmed[0];
   if (quote !== '"' && quote !== "'") return null;
-  // **Match the renderer, not YAML.** `unquote` strips a wrapping pair whenever
-  // the last character is the same quote, so `'Owner's guide'` and
-  // `"He said "hi" today"` render exactly as written. Only a value that never
-  // closes is a fault; anything else would fail a vault that reads correctly.
+  // Match the renderer, not YAML: `unquote` strips a wrapping pair whenever the
+  // last character is the same quote, so `'Owner's guide'` renders as written.
+  // Only a value that never closes is a fault.
   if (closesWithQuote(trimmed, quote)) return null;
   for (let i = 1; i < trimmed.length; i += 1) {
     // The same escape rule `unquote` reverses, so a `\\"` is not a closer.
@@ -265,12 +240,9 @@ function parseScalar(value) {
 }
 
 /*
- * Top-level scalars are typed like nested ones (2026-09-01 review). The
- * serializer writes booleans and numbers unquoted, so reading them back as
- * strings inverted any consumer branching on the field after one round trip —
- * `draft: false` came back as the truthy string 'false', with the type
- * depending on nesting depth in the same file. A quoted scalar stays a string:
- * quoting is how an author forces text.
+ * Top-level scalars are typed like nested ones: the serializer writes booleans
+ * and numbers unquoted, so `draft: false` must not come back as the string
+ * 'false'. A quoted scalar stays a string.
  */
 function parseTopLevelScalar(value) {
   const trimmed = value.trim();
@@ -310,11 +282,7 @@ function unquote(value) {
   return value.replace(/^["']|["']$/g, '');
 }
 
-// Quote-aware separator splitting (fix measured 2026-07-28).
-//
-// Inline lists and objects used to go through a bare `split(',')`, which split on
-// commas inside values: the tail of `labels: { ko: "map, search" }` disappeared
-// silently. A separator inside quotes is data, not a separator.
+// A separator inside quotes is data: `labels: { ko: "map, search" }` is one value.
 function splitTopLevel(input, separator) {
   const parts = [];
   let current = '';
@@ -370,7 +338,6 @@ function serializeValue(v) {
   if (typeof v === 'boolean') return v ? 'true' : 'false';
   if (typeof v === 'number') return String(v);
   if (typeof v === 'object') {
-    // inline object
     const entries = Object.entries(v).map(
       ([k, val]) => `${k}: ${serializeValue(val)}`,
     );
@@ -396,10 +363,8 @@ function serializeValue(v) {
  */
 function needsQuote(s) {
   if (/[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s)) return true;
-  // A string the reader would re-type — 'true', 'false', or a number-like
-  // value ('2026') — must be quoted, or it comes back as a boolean/number and
-  // every consumer gating on typeof string silently drops it after one round
-  // trip (bug sweep 2026-09-01). Quoting is how an author forces text.
+  // A string the reader would re-type ('true', 'false', '2026') is quoted, or it
+  // returns as a boolean or number and typeof-string consumers drop it.
   return s === 'true' || s === 'false' || (s !== '' && !Number.isNaN(Number(s)));
 }
 
@@ -433,25 +398,18 @@ export function buildMarkdown({ frontmatter, body = '' }) {
 }
 
 /**
- * Consumes a block scalar (`|`, `>`, and their chomping variants) as the value.
- *
- * **Why it is needed** (dogfooding, measured 2026-07-29). Without it the
- * indicator is stored as the value (`definition: "|"`) and the indented body
- * lines that follow spill into the top-level loop. That loop `.trim()`s keys, so
- * the indentation is erased and a single line inside a prose description —
- * `kind: element` — **overwrote that node's kind**: a document changing its own
- * type by describing itself. Zero warnings.
+ * Consumes a block scalar (`|`, `>` and chomping variants) as the value.
+ * Otherwise its indented lines spill into the top-level loop, which trims keys,
+ * and a `kind: element` line inside prose overwrites the node's kind.
  */
 function readBlockScalar(lines, start, indicator) {
   const fold = indicator.startsWith('>');
   const chomp = indicator.includes('-') ? 'strip' : indicator.includes('+') ? 'keep' : 'clip';
   const collected = [];
   let j = start;
-  // An explicit indentation indicator (`|2-`) fixes the base indent. Without it
-  // the first non-blank line decides — which is exactly why the writer emits the
-  // digit whenever the value's own first line carries leading whitespace: a
-  // first-line-derived base would swallow that whitespace into the base and
-  // eject every shallower line back into the top-level key loop.
+  // An explicit indentation indicator (`|2-`) fixes the base indent; otherwise the
+  // first non-blank line decides, which is why the writer emits the digit when
+  // that line starts with whitespace.
   const explicitIndent = /[1-9]/.exec(indicator);
   let baseIndent = explicitIndent ? Number(explicitIndent[0]) : null;
   while (j < lines.length) {
@@ -489,28 +447,16 @@ function readBlockScalar(lines, start, indicator) {
 }
 
 /**
- * Multi-line strings are **written as block scalars** (dogfooding, 2026-07-29).
- *
- * The moment the parser could read `|`/`>`, it became clear the writer could not
- * produce them: it wrapped a multi-line value in one pair of double quotes and
- * **passed the newlines through raw**. Our parser reads line by line, so
- * everything from the second line became a top-level key — measured:
- * `definition` kept only its first line, and a nonexistent `Note:` key appeared.
- *
- * That is **the writer unable to read its own file**. `import` is the only path
- * that moves a user's markdown into the vault, so the loss is permanent.
+ * Writes a multi-line string as a block scalar: raw newlines inside quotes would
+ * turn every later line into a top-level key, and `import` would lose it permanently.
  */
 function serializeMultiline(key, text) {
   const lines = text.split('\n');
   const body = lines.map((line) => (line === '' ? '' : `  ${line}`)).join('\n');
-  // When the value's first non-blank line has its own leading whitespace, the
-  // reader's first-line base-indent heuristic would misread the base and eject
-  // the following lines as top-level keys (bug sweep 2026-09-01: a
-  // `kind: capability` line inside a description changed the node's kind on the
-  // next read). YAML's explicit indentation indicator pins the base at 2.
+  // A first line with its own leading whitespace would mislead the reader's
+  // base-indent heuristic, so the explicit indicator pins the base at 2.
   const firstContent = lines.find((line) => line !== '');
   const indent = firstContent !== undefined && /^\s/.test(firstContent) ? '2' : '';
-  // `-` (strip) — adds no trailing newline. It pairs with the parser's default
-  // clip, so a round trip never grows the value.
+  // `-` (strip) pairs with the parser's default clip, so a round trip never grows the value.
   return `${key}: |${indent}-\n${body}`;
 }

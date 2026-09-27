@@ -6,9 +6,8 @@ import {
   readVaultSidecarText,
   replaceVaultSidecarText,
 } from './vault-sidecar.mjs';
-// The vocabulary is declared in one place. This list used to exist twice, here
-// and in `project-meaning-inventory.mjs`, and editing one left the other quietly
-// rejecting (2026-08-17).
+// One vocabulary, shared with `project-meaning-inventory.mjs`, so neither side
+// rejects what the other accepts.
 import {
   PROJECT_SOURCE_ACTION_IDS as ACTION_IDS,
   PROJECT_SOURCE_GAP_IDS as GAP_IDS,
@@ -82,7 +81,7 @@ function safeRelativePath(value) {
     && !normalized.split('/').includes('..');
 }
 
-/** Pick only the public receipt contract. Unknown sidecar fields never reach MCP output. */
+/** Only the public receipt contract; unknown sidecar fields never reach MCP output. */
 function sanitizeReceipt(value, projectSlug) {
   if (!value || typeof value !== 'object') return null;
   const topGap = sanitizeGap(value.topGap);
@@ -164,11 +163,10 @@ function sanitizeReceipt(value, projectSlug) {
 }
 
 /**
- * Reads the local sidecar and returns the exact public view used by agent_brief.
- * A bound private root is used only to reproduce the app's bounded source probe;
- * neither the root nor raw inspection data crosses this public boundary. Graph
- * currentness is checked only when the caller could derive a complete
- * project-scoped hash; a bounded/unknown scope is not evidence of drift.
+ * The public view agent_brief reads from the local sidecar. A bound private root
+ * only reproduces the app's bounded probe; neither the root nor raw inspection
+ * data crosses this boundary. Graph currentness is checked only with a complete
+ * project-scoped hash: a bounded or unknown scope is no evidence of drift.
  */
 export function readProjectSourceView(vaultRoot, projectSlug, graphHash, options = {}) {
   let parsed;
@@ -231,14 +229,13 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash, options
   try {
     probe = inspectProjectSource(binding.rootPath);
   } catch {
-    // A transient permission, filesystem, or Git failure must not erase a
-    // previously valid receipt. It stays usable with unavailable currentness.
+    // A transient permission, filesystem or Git failure keeps a valid receipt,
+    // with currentness unavailable.
   }
   if (typeof graphHash === 'string' && receipt.graphHash !== graphHash) {
-    // The ontology moved since the receipt was measured (a new capability, a
-    // renamed path). The receipt's witnesses describe the old graph, so the
-    // live check uses the witnesses the current graph declares when the caller
-    // hands them in; without them it falls back to the recorded set and says so.
+    // Since the receipt, the ontology moved: the live check uses the witnesses the
+    // current graph declares when the caller passes them, else the recorded set,
+    // and says which.
     const currentWitnesses = Array.isArray(options.currentWitnesses) ? options.currentWitnesses : null;
     return {
       ...base(
@@ -300,24 +297,16 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash, options
   );
 }
 
-/**
- * What the changed source says *right now* about the receipt's witnesses.
- *
- * A receipt goes stale on the first commit after it was measured, which on an
- * actively developed repository is every day. The receipt stays stale — only
- * `connect_project_source` may restamp it — but the same bounded probe that
- * detected the change already holds the live inventory, so the witnesses are
- * re-checked against it here, in memory. `agent_brief` uses the answer to
- * verify reviewed coordinates against the live files instead of returning
- * `Primary: unknown` while every declared path still resolves (2026-09-04).
- *
- * Only relative witness paths and the probe's revision cross this boundary;
- * the absolute root never does.
- */
 function normalizeWitnessPath(value) {
   return String(value ?? '').replaceAll('\\', '/').replace(/^\.\//, '').replace(/^\/+/, '');
 }
 
+/**
+ * Re-checks the receipt's witnesses against the live inventory the change probe
+ * already holds, in memory, so agent_brief can verify coordinates instead of
+ * saying unknown. The receipt itself stays stale until connect_project_source
+ * restamps it. Only relative paths and the probe revision cross this boundary.
+ */
 function liveWitnessCheck(probe, receipt, basis) {
   const files = witnessInventoryPaths(probe);
   const witnesses = (Array.isArray(receipt?.witnesses) ? receipt.witnesses : [])
@@ -336,8 +325,8 @@ function liveWitnessCheck(probe, receipt, basis) {
   return {
     contract: 'projectSourceLiveWitnesses:v1',
     status,
-    // `receipt`: the witnesses a person measured; `current_graph`: the witnesses
-    // the ontology declares right now, used when the graph moved since then.
+    // `receipt`: the witnesses a person measured; `current_graph`: those the ontology
+    // declares now, used when the graph moved since.
     basis,
     sourceRevision: probe.revision,
     sourceFingerprint: probe.fingerprint,
@@ -350,11 +339,8 @@ function liveWitnessCheck(probe, receipt, basis) {
   };
 }
 
-// ── Minting and persisting a binding ──────────────────────────────────────
-// Until 2026-08-04 only the installed macOS app could do this, so the CLI and
-// every MCP agent could read `nextAction: connect_source` and had nothing to
-// call. These are the write half: same receipt shape, same sidecar file, same
-// bounded probe.
+// Minting and persisting a binding: the write half for the CLI and MCP agents,
+// with the app's receipt shape, sidecar file and bounded probe.
 
 function validBindingEnvelope(binding) {
   return Boolean(
@@ -368,10 +354,7 @@ function validBindingEnvelope(binding) {
   );
 }
 
-/**
- * Whole-sidecar read. `malformed` is never treated as empty — overwriting an
- * unreadable file would silently destroy another project's measurement.
- */
+/** Whole-sidecar read. `malformed` is never empty: overwriting it would destroy another project's measurement. */
 export function readProjectSourceBindings(vaultRoot) {
   let stored;
   try {
@@ -416,9 +399,8 @@ function commitState(vaultRoot, bindings, expectedRevision) {
 }
 
 /**
- * Replace this project's binding, preserving every other project's. A malformed
- * sidecar blocks the write instead of being clobbered — `repair` opts into
- * discarding it, which is the only way out and must be a stated intent.
+ * Replaces this project's binding and keeps every other. A malformed sidecar
+ * blocks the write; `repair` is the stated intent to discard it.
  */
 export function writeProjectSourceBinding(vaultRoot, binding, { repair = false } = {}) {
   const current = readProjectSourceBindings(vaultRoot);
