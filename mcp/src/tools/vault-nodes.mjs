@@ -260,23 +260,45 @@ function assertGraphNodeEndpoint(canonicalSlug, role) {
   );
 }
 
+/**
+ * The names one loaded document list answers to, built on its first lookup and
+ * dropped with the list. find_neighbors resolves every reference in the vault
+ * against one list; walking the disk and the list per reference took 140 s on a
+ * 12k-node vault.
+ */
+const slugIndexByDocs = new WeakMap();
+
+function slugIndexOf(docs) {
+  let index = slugIndexByDocs.get(docs);
+  if (index) return index;
+  index = { slugs: new Set(), byTail: new Map(), byFrontmatterSlug: new Map() };
+  const append = (map, key, slug) => {
+    const slugs = map.get(key);
+    if (slugs) slugs.push(slug);
+    else map.set(key, [slug]);
+  };
+  for (const doc of docs) {
+    index.slugs.add(doc.slug);
+    append(index.byTail, doc.slug.split('/').pop(), doc.slug);
+    const fmSlug = doc.frontmatter.slug;
+    if (typeof fmSlug === 'string') append(index.byFrontmatterSlug, fmSlug.trim(), doc.slug);
+  }
+  slugIndexByDocs.set(docs, index);
+  return index;
+}
+
 function resolveExistingVaultSlug(slug, docs = null) {
   if (typeof slug !== 'string' || slug.trim() === '') return null;
+  // A slug the loaded list holds names a file the walk just listed, and the disk
+  // lookup below would return it unchanged. Only other spellings go to the disk.
+  if (docs && slugIndexOf(docs).slugs.has(slug)) return slug;
   // Return the on-disk letter case: `existsSync` accepts a wrong-case slug on macOS
   // and Windows, but every backlink and relation match downstream is case-sensitive.
   const canonicalCase = canonicalDiskSlug(VAULT_ROOT, slug);
   if (canonicalCase) return canonicalCase;
-  const vaultDocs = docs ?? loadVaultDocs(VAULT_ROOT);
-  const tailMatches = [];
-  const frontmatterMatches = [];
-  for (const doc of vaultDocs) {
-    const tail = doc.slug.split('/').pop();
-    if (tail === slug) tailMatches.push(doc.slug);
-    const fmSlug = doc.frontmatter.slug;
-    if (typeof fmSlug === 'string' && fmSlug.trim() === slug) {
-      frontmatterMatches.push(doc.slug);
-    }
-  }
+  const index = slugIndexOf(docs ?? loadVaultDocs(VAULT_ROOT));
+  const tailMatches = index.byTail.get(slug) ?? [];
+  const frontmatterMatches = index.byFrontmatterSlug.get(slug) ?? [];
   if (frontmatterMatches.length > 1) {
     throw new Error(
       `Ambiguous frontmatter slug alias "${slug}" matches: ${frontmatterMatches.join(', ')}. Use an exact vault-relative slug.`

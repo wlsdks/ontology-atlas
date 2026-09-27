@@ -22,7 +22,7 @@ import {
 } from 'node:fs';
 import { join, relative, dirname, resolve, sep } from 'node:path';
 
-import { parseFrontmatter, buildMarkdown } from './parser.mjs';
+import { detachString, parseFrontmatter, buildMarkdown } from './parser.mjs';
 import { previewDocumentPatch } from './document-patch.mjs';
 import {
   CONTAINMENT_KEY_FOR_KIND,
@@ -705,7 +705,8 @@ function buildGateIndex(rootPath) {
     const tail = doc.slug.split('/').pop();
     if (tail) names.add(tail);
     const fmSlug = doc.frontmatter?.slug;
-    if (typeof fmSlug === 'string' && fmSlug.trim()) names.add(fmSlug.trim());
+    // Copied: the index outlives this read, and the parsed value would pin its whole file.
+    if (typeof fmSlug === 'string' && fmSlug.trim()) names.add(detachString(fmSlug.trim()));
   }
   return { rootPath, names };
 }

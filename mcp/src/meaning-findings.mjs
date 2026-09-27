@@ -202,6 +202,32 @@ function starterPlaceholders(starter) {
 }
 
 /**
+ * One document's sections with its kind's starter and placeholders. The body
+ * checks below run back to back on one document (validate_vault, the write door,
+ * the maintenance plan), and each parsed the body and rendered and parsed the
+ * starter itself, four to five times per document on every whole-vault pass.
+ * Keeping the last document's view makes it once. Callers only read it.
+ */
+let lastBodyView = null;
+
+function bodyView(kind, title, body) {
+  const text = String(body ?? '');
+  const heading = title ?? '';
+  const last = lastBodyView;
+  if (last && last.kind === kind && last.title === heading && last.text === text) return last;
+  const starter = starterShape(kind, heading);
+  lastBodyView = {
+    kind,
+    title: heading,
+    text,
+    ...parseBodySections(text),
+    starter,
+    placeholders: starterPlaceholders(starter),
+  };
+  return lastBodyView;
+}
+
+/**
  * Is this line still a slot? Either untouched (matches the template) or reworded
  * around a surviving `<…>` slot, which a counter reads as filled.
  */
@@ -226,9 +252,7 @@ function contentLines(section, placeholders) {
  */
 export function definitionFinding({ kind, slug, title, body }) {
   if (!DEFINITION_KINDS.has(kind)) return null;
-  const { lead, sections } = parseBodySections(body);
-  const starter = starterShape(kind, title);
-  const placeholders = starterPlaceholders(starter);
+  const { lead, sections, starter, placeholders } = bodyView(kind, title, body);
   const leadText = lead.join(' ');
   const starterLead = starter ? starter.lead.join(' ') : '';
   const leadIsStarter = Boolean(starterLead) && fold(leadText).includes(fold(starterLead));
@@ -259,8 +283,7 @@ export function definitionFinding({ kind, slug, title, body }) {
  */
 export function boundaryFindings({ kind, slug, title, body }) {
   if (!BOUNDARY_KINDS.has(kind)) return [];
-  const { sections } = parseBodySections(body);
-  const placeholders = starterPlaceholders(starterShape(kind, title));
+  const { sections, placeholders } = bodyView(kind, title, body);
   const findings = [];
   for (const side of ['includes', 'excludes']) {
     const section = findBoundarySection(sections, side);
@@ -284,8 +307,7 @@ export function boundaryFindings({ kind, slug, title, body }) {
  */
 export function uncertaintyFinding({ kind, slug, title, body }) {
   if (!UNCERTAINTY_KINDS.has(kind)) return null;
-  const { sections } = parseBodySections(body);
-  const placeholders = starterPlaceholders(starterShape(kind, title));
+  const { sections, placeholders } = bodyView(kind, title, body);
   const section = sections.find((row) => headingNames(row.heading, BODY_UNCERTAINTY_SECTIONS)) ?? null;
   if (contentLines(section, placeholders).length > 0) return null;
   return {
@@ -304,10 +326,10 @@ export function uncertaintyFinding({ kind, slug, title, body }) {
  * imports it so the write-time question and the read-time queue agree.
  */
 export function uncertaintySectionLines({ kind, title, body }) {
-  const { sections } = parseBodySections(body);
+  const { sections, placeholders } = bodyView(kind, title, body);
   const section =
     sections.find((row) => headingNames(row.heading, BODY_UNCERTAINTY_SECTIONS)) ?? null;
-  return contentLines(section, starterPlaceholders(starterShape(kind, title ?? '')));
+  return contentLines(section, placeholders);
 }
 
 /**
@@ -317,10 +339,9 @@ export function uncertaintySectionLines({ kind, title, body }) {
  */
 export function epistemicExclusionFinding({ kind, slug, title, body }) {
   if (!EPISTEMIC_KINDS.has(kind)) return null;
-  const { sections } = parseBodySections(body);
+  const { sections, placeholders } = bodyView(kind, title, body);
   const section = findBoundarySection(sections, 'excludes');
   if (!section) return null;
-  const placeholders = starterPlaceholders(starterShape(kind, title));
   const offending = contentLines(section, placeholders)
     .map((line) => stripMarker(line))
     .filter((text) => text && isEpistemicExclusionBoundary(text));
@@ -547,6 +568,29 @@ function relationNoteText(frontmatter, target) {
 }
 
 /**
+ * What one pass over many documents shares: each cited file's text (`null` when
+ * it is not a readable file), read once however many documents cite it, and the
+ * module names parsed from it. A whole-vault pass re-read a file once per citing
+ * document, 363 MB per `health` call at 12k nodes. Drop it when the pass ends.
+ */
+export function createDependencyWitnessReads() {
+  return { texts: new Map(), moduleNames: new Map() };
+}
+
+function citedFileText(reads, absolute) {
+  if (!reads.texts.has(absolute)) {
+    let text = null;
+    try {
+      if (statSync(absolute).isFile()) text = readFileSync(absolute, 'utf-8');
+    } catch {
+      text = null;
+    }
+    reads.texts.set(absolute, text);
+  }
+  return reads.texts.get(absolute);
+}
+
+/**
  * A declared dependency its file never mentions; `impact` keeps
  * answering `sourceBacked: false` for every declared edge, and this names the rows behind
  * it. New edges only when `previousFrontmatter` is given, so an old edge is not
@@ -563,6 +607,7 @@ function relationNoteText(frontmatter, target) {
  * @param {Record<string, unknown>} [args.previousFrontmatter] absent judges every dependency
  * @param {string|null} args.repoRoot
  * @param {(ref: string) => string|null} args.resolveTargetPath target slug → its `path:`, or null
+ * @param {ReturnType<typeof createDependencyWitnessReads>} [args.reads] shared by a whole-vault pass
  * @returns {Array<object>} one finding per unwitnessed target, `key` = target slug (a per-edge notice key)
  */
 export function dependencyWitnessFinding({
@@ -571,22 +616,20 @@ export function dependencyWitnessFinding({
   previousFrontmatter,
   repoRoot,
   resolveTargetPath,
+  reads = createDependencyWitnessReads(),
 }) {
   if (!repoRoot || typeof resolveTargetPath !== 'function') return [];
   const source = insideRepo(repoRoot, frontmatter?.path);
   if (!source) return [];
-  let sourceText;
-  try {
-    if (!statSync(source.absolute).isFile()) return [];
-    sourceText = readFileSync(source.absolute, 'utf-8');
-  } catch {
-    return [];
-  }
   const previous = previousFrontmatter ? declaredDependencies(previousFrontmatter) : new Set();
-  /** One read per file however many edges cite it; `null` marks unreadable. */
+  const targets = [...declaredDependencies(frontmatter)].filter((target) => !previous.has(target));
+  // Nothing to judge, so nothing to read.
+  if (targets.length === 0) return [];
+  const sourceText = citedFileText(reads, source.absolute);
+  if (sourceText === null) return [];
+  /** Each note path resolved once however many edges cite it; `null` marks unreadable. */
   const textCache = new Map([[source.path, sourceText]]);
-  // Parse each shared source or rationale file's imports once per invocation.
-  const moduleNamesByText = new Map();
+  const moduleNamesByText = reads.moduleNames;
   /**
    * A note path is tried from the repository root, then from each ancestor of the
    * citing file, nearest first, since writers copy editor-relative paths. Every
@@ -602,20 +645,14 @@ export function dependencyWitnessFinding({
     for (const base of ['', ...sourceAncestors]) {
       const resolved = insideRepo(repoRoot, base ? `${base}/${path}` : path);
       if (!resolved) continue;
-      try {
-        if (!statSync(resolved.absolute).isFile()) continue;
-        text = readFileSync(resolved.absolute, 'utf-8');
-        break;
-      } catch {
-        continue;
-      }
+      text = citedFileText(reads, resolved.absolute);
+      if (text !== null) break;
     }
     textCache.set(path, text);
     return text;
   };
   const findings = [];
-  for (const target of declaredDependencies(frontmatter)) {
-    if (previous.has(target)) continue;
+  for (const target of targets) {
     let targetPath;
     try {
       targetPath = resolveTargetPath(target);

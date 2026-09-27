@@ -2,10 +2,19 @@ import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
+import { detachString } from './parser.mjs';
+import { CONTAINMENT_KEYS, revisionClocks } from './stale-parent.mjs';
+
 const MAX_GIT_OUTPUT = 4 * 1024 * 1024;
 /** One screen paint asks about at most this many paths; documents are queued before code. */
 const MAX_WALK_PATHS = 512;
 const MAX_GIT_BATCH_OUTPUT = 64 * 1024 * 1024;
+/**
+ * Objects per `cat-file --batch` process. One process for the 6,040 revisions of
+ * a deep 12k-node history outgrew the output cap and fell back to a `git show`
+ * per revision: 6,040 processes and 140 s for one `health` call.
+ */
+const GIT_BATCH_CHUNK = 256;
 const NODE_REVISION_CACHE_LIMIT = 8;
 const nodeRevisionCache = new Map();
 const PATH_CHANGE_CACHE_LIMIT = 8;
@@ -249,11 +258,25 @@ function git(cwd, args, { allowFailure = false } = {}) {
 }
 
 /**
- * Reads many historical blobs through one `git cat-file --batch` process instead
- * of one `git show` per revision, with exact bytes. A malformed or oversized
- * batch returns null and the caller falls back to per-object reads.
+ * Reads historical blobs through one `git cat-file --batch` process per
+ * `GIT_BATCH_CHUNK` objects instead of one `git show` per revision, and hands
+ * each blob to `reduce` as it arrives, so at most one chunk of text is alive at a
+ * time. A malformed or oversized chunk leaves its entries null and the caller
+ * reads those objects one at a time.
  */
-function gitBatchBlobs(cwd, objectSpecs) {
+function gitBatchBlobs(cwd, objectSpecs, reduce) {
+  const reduced = new Array(objectSpecs.length).fill(null);
+  for (let start = 0; start < objectSpecs.length; start += GIT_BATCH_CHUNK) {
+    const blobs = gitBatchBlobChunk(cwd, objectSpecs.slice(start, start + GIT_BATCH_CHUNK));
+    if (blobs === null) continue;
+    blobs.forEach((blob, index) => {
+      if (blob !== null) reduced[start + index] = reduce(blob);
+    });
+  }
+  return reduced;
+}
+
+function gitBatchBlobChunk(cwd, objectSpecs) {
   if (objectSpecs.length === 0) return [];
   if (objectSpecs.some((spec) => /[\r\n]/.test(spec))) return null;
   const result = spawnSync('git', ['-C', cwd, 'cat-file', '--batch'], {
@@ -294,10 +317,7 @@ function cloneNodeRevisionResult(result) {
     revisionsBySlug: new Map(
       [...result.revisionsBySlug].map(([slug, revisions]) => [
         slug,
-        revisions.map((revision) => ({
-          ...revision,
-          children: [...revision.children],
-        })),
+        revisions.map((revision) => ({ ...revision })),
       ]),
     ),
   };
@@ -476,9 +496,11 @@ function unionRevisionRequests(gitRoot, entries, maxRevisions) {
 
 /**
  * Revisions of summary nodes, newest first, for the stale-parent
- * check: `{ changedAt, body, children }`, with `children` the union of containment
- * arrays. The union walk stops at `maxRevisions × nodes`; bodies are one object
- * batch, reused only under the same HEAD. Parsing is line-level, not YAML: old
+ * check: `{ changedAt, bodyDigest, membershipDigest }` (`revisionClocks`), the
+ * membership being the union of containment arrays. Digests, not text: the result
+ * is cached per HEAD, and a cached walk of whole files grew the heap by 83 MB per
+ * commit on a 5k-node vault. The union walk stops at `maxRevisions × nodes`; blobs
+ * are read in `cat-file` batches. Parsing is line-level, not YAML: old
  * revisions may predate the schema, and a strict parser would take the whole
  * advisory down. Outside a repository it returns `{ ok: false, reason }`.
  */
@@ -508,25 +530,27 @@ export function collectNodeRevisions({ repoRoot, vaultRoot, slugs, maxRevisions 
   }
   const revisionRequests = requestedSlugs.flatMap((slug) => requestsBySlug.get(slug) ?? []);
 
-  const batchBlobs = gitBatchBlobs(
+  const clocksOfBlob = (raw) => revisionClocks(splitNodeRevision(raw));
+  const batchClocks = gitBatchBlobs(
     gitRoot,
     revisionRequests.map((request) => request.objectSpec),
+    clocksOfBlob,
   );
-  const blobBySpec = new Map(
-    revisionRequests.map((request, index) => [request.objectSpec, batchBlobs?.[index] ?? null]),
+  const clocksBySpec = new Map(
+    revisionRequests.map((request, index) => [request.objectSpec, batchClocks[index]]),
   );
 
   for (const slug of requestedSlugs) {
     const revisions = [];
     for (const request of requestsBySlug.get(slug) ?? []) {
-      let raw = blobBySpec.get(request.objectSpec);
-      if (typeof raw !== 'string') {
+      let clocks = clocksBySpec.get(request.objectSpec);
+      if (!clocks) {
         const show = git(gitRoot, ['show', request.objectSpec], { allowFailure: true });
         if (!show.ok) continue;
-        raw = show.stdout;
+        clocks = clocksOfBlob(show.stdout);
       }
-      const { body, children } = splitNodeRevision(raw);
-      revisions.push({ changedAt: request.changedAt, body, children });
+      // `changedAt` is a slice of the whole log output, which it would keep alive in the cache.
+      revisions.push({ changedAt: detachString(request.changedAt), ...clocks });
     }
     if (revisions.length) revisionsBySlug.set(slug, revisions);
   }
@@ -536,9 +560,6 @@ export function collectNodeRevisions({ repoRoot, vaultRoot, slugs, maxRevisions 
   return cloneNodeRevisionResult(result);
 }
 
-/** Containment keys, mirrored from `stale-parent.mjs` so this module stays free of a cycle. */
-const REVISION_CONTAINMENT_KEYS = ['contains', 'capabilities', 'elements', 'domains'];
-
 /** Splits one historical revision into its body and its declared containment members. */
 function splitNodeRevision(text) {
   const source = String(text ?? '');
@@ -546,7 +567,7 @@ function splitNodeRevision(text) {
   const frontmatter = match ? match[1] : '';
   const body = match ? source.slice(match[0].length) : source;
   const children = [];
-  for (const key of REVISION_CONTAINMENT_KEYS) {
+  for (const key of CONTAINMENT_KEYS) {
     const inline = new RegExp(`^${key}:[ \\t]*\\[(.*?)\\]`, 'm').exec(frontmatter);
     if (inline) {
       for (const ref of inline[1].split(',')) {

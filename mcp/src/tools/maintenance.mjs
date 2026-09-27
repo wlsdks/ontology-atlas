@@ -10,15 +10,15 @@ import {
   COMPILED_ONTOLOGY_CACHE,
   VAULT_ROOT,
 } from '../server/runtime.mjs';
-import {
-  drainNodeEligibilityFindings,
-  loadVaultDocs,
-} from '../vault.mjs';
+import { drainNodeEligibilityFindings } from '../vault.mjs';
 import { validateVaultTool } from './validate-vault.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
 
-function attachVaultValidation(result, args = {}, loadedDocs = null) {
-  const validation = validateVaultTool({}, loadedDocs);
+/**
+ * `validation` is a `validate_vault({})` report the caller already computed over
+ * the same documents; without it the vault is validated here.
+ */
+function attachVaultValidation(result, args = {}, loadedDocs = null, validation = validateVaultTool({}, loadedDocs)) {
   const pathsChecked = validation.pathDrift?.checked !== false;
   const driftCount = validation.pathDrift?.drifts?.length ?? 0;
   const errorCount = validation.summary.errorFiles;
@@ -106,13 +106,13 @@ function attachVaultValidation(result, args = {}, loadedDocs = null) {
 
 function compactPostWriteMaintenance(limit = 5) {
   COMPILED_ONTOLOGY_CACHE.clear();
-  const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
+  // One read of the vault serves the compile and the bodies the plan needs below.
+  const { artifact, docs: maintenanceDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs();
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
   // The node-eligibility gate runs inside `commitDoc` for every write door. Draining
   // here, where a write response is assembled, lets batch rows accumulate findings
   // and the batch's closing call report them once.
   const nodeEligibilityFindings = drainNodeEligibilityFindings();
-  const maintenanceDocs = loadVaultDocs(VAULT_ROOT);
   // Same signal `validate_vault` reports as `summaryFreshness`, surfaced here as an
   // action so an agent planning work sees it without running a second tool. Reading
   // history is bounded to summary nodes and degrades to silence outside a repo.
@@ -125,7 +125,7 @@ function compactPostWriteMaintenance(limit = 5) {
     nodeEligibilityFindings,
     staleSummaries: freshness.checked ? freshness.stale : [],
     // The empty-bridge audit needs bodies to tell an abandoned node from a documented
-    // but childless one; the compiled-cache read above already loaded every doc.
+    // but childless one.
     sourceDocs: maintenanceDocs,
   });
   return {

@@ -14,7 +14,6 @@ import {
   buildImportImpactFocus,
   inferImports,
 } from '../infer-imports.mjs';
-import { compileOntology } from '../ontology-compiler.mjs';
 import { inspectProjectSource } from '../project-source-inspection.mjs';
 import { composeSourceDigest, readSourceEvidence, validateSourceReadSelectors } from '../source-evidence.mjs';
 import {
@@ -28,6 +27,7 @@ import {
   VAULT_ROOT,
   assertScanRootAllowed,
 } from '../server/runtime.mjs';
+import { okResponseBytes } from '../server/rpc.mjs';
 import {
   IGNORE_ARRAY_MAX_ITEMS,
   MEANING_GATE_EVIDENCE_ROW_LIMIT,
@@ -295,7 +295,7 @@ function inferImportsTool({
   // unreadable vault never fails the import scan.
   if (reconcile !== false) {
     try {
-      const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), { includeIndexes: true });
+      const artifact = COMPILED_ONTOLOGY_CACHE.get();
       const nodeSlugs = new Set((artifact.nodes ?? []).map((n) => n.slug).filter(Boolean));
       // Where each node says its implementation lives, to defer judgement on languages
       // the scanner cannot read rather than calling a correct relation absent from code.
@@ -306,7 +306,7 @@ function inferImportsTool({
       const r = reconcileImportEdges({
         moduleEdges: result.moduleEdges,
         compiledEdges: artifact.edges,
-        aliasToSlug: artifact.indexes?.aliasToSlug,
+        aliasToSlug: aliasToSlugOf(artifact),
         nodeSlugs,
         pathBySlug,
         scannedExtensions: result.coverage?.supportedExtensions,
@@ -460,12 +460,19 @@ function inferImportsTool({
   return result;
 }
 
+/**
+ * Alias → slug, the compiler's `indexes.aliasToSlug`, read from the `aliases` rows
+ * every artifact carries: the session's cached artifact is compiled without
+ * `indexes`, which no query reads and which held 14 MB at 12k nodes.
+ */
+function aliasToSlugOf(artifact) {
+  return Object.fromEntries((artifact?.aliases ?? []).map(({ alias, slug }) => [alias, slug]));
+}
+
 function estimateMcpToolResultUtf8Bytes(result) {
-  const response = {
-    content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-    structuredContent: result,
-  };
-  return Buffer.byteLength(JSON.stringify(response), 'utf8');
+  // Serialized once; building the response to measure it serialized the result
+  // three times over (5.6 MB for this repository's full import scan).
+  return okResponseBytes(result);
 }
 
 function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports = false } = {}) {
@@ -514,7 +521,8 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
     ...analyze.capabilities,
     ...analyze.elements,
   ];
-  const compiled = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
+  const compiled = COMPILED_ONTOLOGY_CACHE.get();
+  const aliasToSlug = aliasToSlugOf(compiled);
   const vaultProjectNodes = (compiled.nodes ?? []).filter((node) => node.kind === 'project');
   const analyzedProjectSlug = analyze.project?.slug ?? null;
   const matchingVaultProject = analyzedProjectSlug
@@ -522,7 +530,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
         (node) =>
           node.slug === analyzedProjectSlug ||
           node.frontmatter?.slug === analyzedProjectSlug ||
-          compiled.indexes?.aliasToSlug?.[analyzedProjectSlug] === node.slug,
+          aliasToSlug[analyzedProjectSlug] === node.slug,
       )
     : null;
   const vaultRelativeToTarget = relative(target, VAULT_ROOT);
@@ -548,7 +556,6 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       : 'The starter vault is inside the analyzed repository; validation is a pre-bootstrap baseline.'
     : 'The active vault is not proven to describe the analyzed repository; treat these counts as active-vault diagnostics, not analyzed-project quality.';
   const existingSlugs = new Set((compiled.nodes ?? []).map((node) => node.slug));
-  const aliasToSlug = compiled.indexes?.aliasToSlug ?? {};
   const ambiguousAliases = new Set(
     (compiled.ambiguousAliases ?? []).map((row) => row.alias),
   );

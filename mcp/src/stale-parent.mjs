@@ -10,8 +10,10 @@
 // containment array is the wrong proxy and the check should be withdrawn.
 // Revisions are injected, so the caller decides where history comes from.
 
+import { createHash } from 'node:crypto';
+
 /** Frontmatter arrays through which a parent holds what is below it. Mirrors `CONTAINMENT_KEYS` in `validate.mjs`. */
-const CONTAINMENT_KEYS = ['contains', 'capabilities', 'elements', 'domains'];
+export const CONTAINMENT_KEYS = Object.freeze(['contains', 'capabilities', 'elements', 'domains']);
 
 /**
  * Kinds whose body aggregates their membership. An element's prose describes
@@ -45,6 +47,32 @@ export function containedSlugs(frontmatter) {
   return [...new Set(slugs)];
 }
 
+function digest(text) {
+  return createHash('sha256').update(text).digest('base64url');
+}
+
+/**
+ * The two clocks of one revision as fixed-size digests: `lastMovementOf` only asks
+ * whether neighbouring revisions differ. A history reader keeps these instead of
+ * the text, so a cached walk costs bytes per revision rather than the file.
+ *
+ * @param {{ body?: string, children?: string[] }} revision
+ * @returns {{ bodyDigest: string, membershipDigest: string }}
+ */
+export function revisionClocks({ body, children } = {}) {
+  return {
+    bodyDigest: digest(String(body ?? '')),
+    membershipDigest: digest(membershipKey(children)),
+  };
+}
+
+/** A revision that already carries its digests is compared as it is. */
+function clocksOf(revision) {
+  return typeof revision.bodyDigest === 'string' && typeof revision.membershipDigest === 'string'
+    ? revision
+    : revisionClocks(revision);
+}
+
 function toTime(value) {
   if (value == null) return null;
   const time = value instanceof Date ? value.getTime() : Date.parse(value);
@@ -52,28 +80,27 @@ function toTime(value) {
 }
 
 /**
- * Walks revisions (`{ changedAt, body, children }`, newest first, the first is
- * current) and reports when each clock last moved. A value unchanged back to the
- * oldest revision is `null`: unknown, not "never".
+ * Walks revisions (newest first, the first is current) and reports when each clock
+ * last moved. A revision is `{ changedAt, body, children }` or, as the history
+ * reader returns it, `{ changedAt, bodyDigest, membershipDigest }` (`revisionClocks`).
+ * A value unchanged back to the oldest revision is `null`: unknown, not "never".
  */
 export function lastMovementOf(revisions) {
   const list = Array.isArray(revisions) ? revisions.filter(Boolean) : [];
   if (list.length === 0) return { bodyChangedAt: null, membershipChangedAt: null, truncated: true };
+  const clocks = list.map(clocksOf);
 
   let bodyChangedAt = null;
   let membershipChangedAt = null;
 
   for (let index = 0; index < list.length - 1; index += 1) {
-    const newer = list[index];
-    const older = list[index + 1];
-    if (bodyChangedAt == null && String(newer.body ?? '') !== String(older.body ?? '')) {
-      bodyChangedAt = newer.changedAt ?? null;
+    const newer = clocks[index];
+    const older = clocks[index + 1];
+    if (bodyChangedAt == null && newer.bodyDigest !== older.bodyDigest) {
+      bodyChangedAt = list[index].changedAt ?? null;
     }
-    if (
-      membershipChangedAt == null &&
-      membershipKey(newer.children) !== membershipKey(older.children)
-    ) {
-      membershipChangedAt = newer.changedAt ?? null;
+    if (membershipChangedAt == null && newer.membershipDigest !== older.membershipDigest) {
+      membershipChangedAt = list[index].changedAt ?? null;
     }
     if (bodyChangedAt != null && membershipChangedAt != null) break;
   }
@@ -93,8 +120,8 @@ export function lastMovementOf(revisions) {
  * Summary nodes whose membership changed after their description last did.
  *
  * @param docs `{ slug, frontmatter }` documents.
- * @param revisionsOf `(slug) => [{ changedAt, body, children }]`, newest first; a
- *   slug with no revisions is skipped, never guessed.
+ * @param revisionsOf `(slug) => revisions` in either shape `lastMovementOf` reads,
+ *   newest first; a slug with no revisions is skipped, never guessed.
  * @returns Rows by lag, then slug, stable across runs.
  */
 export function findStaleParentSummaries({ docs, revisionsOf } = {}) {

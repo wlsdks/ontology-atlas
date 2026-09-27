@@ -270,10 +270,13 @@ export function createTraversalQueries({
         candidates.push({ next: edge.from, edge });
       }
     }
-    candidates.sort((a, b) =>
-      `${a.next}:${edgeSortKey(a.edge)}`.localeCompare(`${b.next}:${edgeSortKey(b.edge)}`),
-    );
-    return candidates;
+    // Each key once, not twice per comparison: this runs for every node a traversal visits.
+    const keyed = candidates.map((candidate) => ({
+      candidate,
+      key: `${candidate.next}:${edgeSortKey(candidate.edge)}`,
+    }));
+    keyed.sort((left, right) => left.key.localeCompare(right.key));
+    return keyed.map(({ candidate }) => candidate);
   }
   
   

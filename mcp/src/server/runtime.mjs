@@ -11,6 +11,7 @@
 import { createCompiledOntologyCache } from '../compiled-cache.mjs';
 import { discoverGitRepositoryRoot } from '../git-tools.mjs';
 import { compileOntology } from '../ontology-compiler.mjs';
+import { shareArtifact } from '../ontology-engine.mjs';
 import {
   ensureVaultRoot,
   loadVaultDocs,
@@ -58,9 +59,11 @@ const REPO_RESOLUTION = process.env.OATLAS_REPO_ROOT
     ? 'git.rev-parse'
     : 'process.cwd';
 // SERVER_VERSION is embedded as a constant so the server stays compilable (see server-version.mjs).
+// Every call shares the cached artifact and none modifies it, so the query engine
+// indexes it once (`shareArtifact`).
 const COMPILED_ONTOLOGY_CACHE = createCompiledOntologyCache({
   loadDocs: () => loadVaultDocs(VAULT_ROOT),
-  compile: (docs, options) => compileOntology(docs, options),
+  compile: (docs, options) => shareArtifact(compileOntology(docs, options)),
 });
 
 // A throw at import time leaks a stack trace to stderr before the stdio

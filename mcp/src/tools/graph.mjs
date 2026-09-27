@@ -10,10 +10,6 @@ import {
   projectSourceSnapshotUnchanged,
 } from '../agent-brief-compact.mjs';
 import {
-  listAnalysisRecords,
-  readAnalysisRecord,
-} from '../analysis-records.mjs';
-import {
   attachMeaningRepair,
   buildMeaningRepair,
   buildMeaningRepairReviewPage,
@@ -31,6 +27,7 @@ import {
   RELATION_TYPE_VALUES,
   queryCompiledOntology,
   refreshAgentBriefHandoffPrompt,
+  shareArtifact,
 } from '../ontology-engine.mjs';
 import { buildProjectMeaningInventory } from '../project-meaning-inventory.mjs';
 import {
@@ -217,7 +214,7 @@ function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns, load
     if (cached?.projectSlug === projectSlug) {
       scopedArtifact = cached.artifact;
     } else {
-      scopedArtifact = compileOntology(scope.docs, { includeIndexes: true });
+      scopedArtifact = shareArtifact(compileOntology(scope.docs));
       lastProjectArtifact.set(artifact, { projectSlug, artifact: scopedArtifact });
     }
   }
@@ -266,13 +263,26 @@ function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash
   };
 }
 
+/**
+ * The analysis archive reader, imported on first use: its record schema is a
+ * TypeScript module, and loading it at startup pulled Node's type stripper into
+ * every source-run server (about 26 MB each) that never reads the archive.
+ */
+function analysisRecords() {
+  return import('../analysis-records.mjs');
+}
+
 async function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
   if (args.operation === 'analysis_history') {
+    const { listAnalysisRecords } = await analysisRecords();
     return listAnalysisRecords(VAULT_ROOT, { limit: args.limit ?? 30, cursor: args.analysisCursor ?? null, mode: args.analysisMode ?? null, project: args.project ?? null });
   }
-  if (args.operation === 'analysis_record') return readAnalysisRecord(VAULT_ROOT, args.recordId);
-  const { artifact, docs: loadedDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs({ includeIndexes: true });
+  if (args.operation === 'analysis_record') {
+    const { readAnalysisRecord } = await analysisRecords();
+    return readAnalysisRecord(VAULT_ROOT, args.recordId);
+  }
+  const { artifact, docs: loadedDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs();
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
   if (args.operation === 'meaning_repair_review') {
     const agentBrief = queryCompiledOntology(artifact, {
