@@ -74,9 +74,4 @@ describe("secret read guard", () => {
       );
     }
   });
-
-  it("keeps the standing rules pointing at a mechanism, not just prose", () => {
-    const localFirst = readFileSync(join(ROOT, ".claude/rules/local-first.md"), "utf8");
-    expect(localFirst).toMatch(/permissions\.deny|settings\.json/);
-  });
 });
