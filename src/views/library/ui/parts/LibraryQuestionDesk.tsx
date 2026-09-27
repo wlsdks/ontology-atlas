@@ -195,7 +195,7 @@ function DraftReport({ text, sources, onOpenSource }: {
       initial={reduced ? OVERLAY_RISE_REDUCED : OVERLAY_RISE} animate={OVERLAY_SETTLED}
       transition={{ ...(reduced ? MOTION.fast : MOTION.settle), delay: reduced ? 0 : index * STAGGER }}
       className={index === 0 ? 'max-w-[var(--measure-doc-column)] border-b border-[color:var(--color-border-soft)] pb-6'
-        : index === 1 ? '' : 'border-t border-[color:var(--color-border-soft)] pt-5'}>
+        : index === 3 ? 'border-t border-[color:var(--color-border-soft)] pt-5' : ''}>
       <div data-report-section-heading="true" className={index === 0 ? 'mb-4' : 'mb-2'}>
         <h5 className={index === 0
           ? 'text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-indigo-text-soft)]'

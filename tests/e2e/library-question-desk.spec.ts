@@ -17,6 +17,7 @@ const wiki = (title: string, source: string, hash: string, fact: string) => [
 ].join('\n');
 
 test('keeps the report scroll viewport and focused citations above mobile navigation', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 949 });
   const harness = await installLibraryWorkHarness(page, { files: {
     'project.md': '---\nuid: 00000000-0000-4000-8000-000000000001\nkind: project\ntitle: Refunds\nslug: refunds\n---\n',
     'sources/refund-handling.md': refund,
@@ -34,6 +35,11 @@ test('keeps the report scroll viewport and focused citations above mobile naviga
   await harness.answer(page, '## Answer\nA separate job restores stock. [[src:sources/refund-handling.md#l2]]\n\n## Source-backed evidence\n- Approval queues a restoration job. [[src:sources/refund-handling.md#l2]]\n- The job may finish in the next inventory batch. [[src:sources/refund-handling.md#l3]]\n\n## Disagreements or changed claims\nNo additional claims were read.\n\n## Unknowns and search limits\nThe completion time is unknown.');
   await expect(page.getByTestId('question-desk-report')).toBeVisible();
   await page.getByRole('button', { name: 'Close conversation', exact: true }).click();
+  await expect(page.locator('[data-report-evidence-pair]')).toHaveCSS('display', 'grid');
+  await expect.poll(() => page.locator('[data-report-evidence-pair]').evaluate((pair) => {
+    const headings = pair.querySelectorAll('[data-report-section-heading]');
+    return Math.abs(headings[0]!.getBoundingClientRect().top - headings[1]!.getBoundingClientRect().top);
+  })).toBeLessThanOrEqual(1);
   await page.setViewportSize({ width: 390, height: 844 });
   const desk = page.getByTestId('library-question-desk');
   await expect.poll(() => desk.evaluate((element) => {

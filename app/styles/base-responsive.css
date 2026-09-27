@@ -651,12 +651,21 @@
     gap: 28px;
   }
 
+  [data-report-section-index="2"] {
+    border-top: 1px solid var(--color-border-soft);
+    padding-top: 1.25rem;
+  }
+
   @container question-desk (min-width: 1024px) {
     [data-question-desk-report][data-dock-open="false"] [data-report-evidence-pair] {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 28px;
       align-items: start;
+    }
+    [data-question-desk-report][data-dock-open="false"] [data-report-section-index="2"] {
+      border-top: 0;
+      padding-top: 0;
     }
   }
 
