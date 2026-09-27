@@ -43,6 +43,8 @@ export const rules = [
       /^src\/features\/(?:acp-session|acp-doctor|mcp-connectors)\/model\/(?!.*\.test\.tsx?$).+\.tsx?$/,
       /^\.github\/(?:workflows|actions)\/.+\.ya?ml$/,
       /^(?:mcp\/)?pnpm-lock\.yaml$/,
+      /^src\/shared\/lib\/(?:machine-approvals(?:-format)?|connector-record)\.ts$/,
+      /^src\/features\/library-rounds\/model\/round-schedule\.ts$/,
       /^\.claude\/settings\.json$/,
       /^(?:\.mcp\.json|\.codex\/(?:config\.toml|hooks\.json))$/,
       /^\.(?:claude|codex)\/hooks\/.+\.sh$/,

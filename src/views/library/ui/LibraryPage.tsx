@@ -2371,7 +2371,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     <LibraryImportDialog
       open={importOpen}
       onClose={() => setImportOpen(false)}
-      onAttach={(connector) => connectors.upsert(connector)}
+      // A catalogue row written on a press here, switched on by request, so this Mac allows it.
+      onAttach={(connector) => connectors.upsert(connector, { allowHere: true })}
       onBrief={(brief) => agent.start(brief, "import")}
       /*
        * ⚠️ **Whether the last press can do anything** (cold walkthrough, 2026-09-07). Only the

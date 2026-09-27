@@ -103,6 +103,19 @@ export function looksLikeSecretKey(name: string): boolean {
   return SECRET_KEY_PATTERN.test(name.trim());
 }
 
+/** Keyed by the record's id, not its name, so a rename does not orphan the token. */
+export function connectorSecretRef(connectorId: string, variableName: string): string {
+  return `connector:${connectorId}:${variableName}`;
+}
+
+/**
+ * A reference naming another connector's entry would have Rust put that token in this line. Rust
+ * sees the server's name, not the record's id, so ownership can only be checked here.
+ */
+export function ownsSecretRef(connectorId: string, entry: ConnectorValueEntry): boolean {
+  return entry.secretRef === connectorSecretRef(connectorId, entry.name);
+}
+
 /** Problem codes a record can carry. The sentence for each lives in `messages/<locale>.json`. */
 export type ConnectorProblem =
   | 'name-empty'
@@ -112,6 +125,7 @@ export type ConnectorProblem =
   | 'url-missing'
   | 'url-not-http'
   | 'secret-literal'
+  | 'secret-ref-foreign'
   | 'value-missing';
 
 /**
@@ -157,6 +171,13 @@ export function connectorProblems(
   if ([...record.env, ...record.headers].some(entryHoldsSecretLiteral)) {
     problems.push('secret-literal');
   }
+  if (
+    [...record.env, ...record.headers].some(
+      (entry) => typeof entry.secretRef === 'string' && !ownsSecretRef(record.id, entry),
+    )
+  ) {
+    problems.push('secret-ref-foreign');
+  }
   /*
    * A variable the person put in the keychain, with nothing behind it. Left unsaid, the connector
    * attaches with its credential absent and every call it makes is refused by a service that has
@@ -165,12 +186,35 @@ export function connectorProblems(
   if (
     storedRefs
     && [...record.env, ...record.headers].some(
-      (entry) => typeof entry.secretRef === 'string' && !storedRefs.has(entry.secretRef),
+      (entry) => ownsSecretRef(record.id, entry) && !storedRefs.has(entry.secretRef!),
     )
   ) {
     problems.push('value-missing');
   }
   return problems;
+}
+
+/**
+ * What this Mac's allowance covers: everything but the switch and `origin`. Non-secret values
+ * count, because `NODE_OPTIONS` or a base address changes what runs and where a token goes.
+ */
+export function connectorFingerprint(connector: ConnectorRecord): string {
+  const entries = (list: readonly ConnectorValueEntry[]) =>
+    list.map((entry) => [
+      entry.name,
+      entry.secretRef ?? null,
+      entry.secretLiteral ? null : (entry.value ?? null),
+    ]);
+  return JSON.stringify({
+    v: 1,
+    name: connector.name.trim(),
+    transport: connector.transport,
+    command: connector.command?.trim() ?? null,
+    args: connector.args,
+    url: connector.url?.trim() ?? null,
+    env: entries(connector.env),
+    headers: entries(connector.headers),
+  });
 }
 
 function entryHoldsSecretLiteral(entry: ConnectorValueEntry): boolean {

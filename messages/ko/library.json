@@ -858,7 +858,8 @@
     "state": {
       "on": "켜짐",
       "paused": "멈춤",
-      "running": "도는 중"
+      "running": "도는 중",
+      "notHere": "이 맥에선 꺼짐"
     },
     "outcome": {
       "held": "바뀐 것 없음",
@@ -875,7 +876,8 @@
       "next": "다음 {time} · {name}",
       "running": "지금 도는 중 · {name}",
       "nothingYet": "아직 실행 없음",
-      "paused": "모두 멈춤"
+      "paused": "모두 멈춤",
+      "waitingHere": "자동화 화면에서 이 맥의 허용을 기다리는 중"
     },
     "runNow": "지금 돌리기",
     "runNowNamed": "{name} 지금 돌리기",
