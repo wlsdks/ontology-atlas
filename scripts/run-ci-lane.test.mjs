@@ -266,3 +266,84 @@ test('shared build consumers omit rebuilding and dedicated surface tests have a 
   const narrow={...plan,lanes:{...plan.lanes,e2e:{...plan.lanes.e2e,staticExport:false,webSurface:false}}};
   assert.doesNotMatch(commandsForLane({lane:'e2e',plan:narrow})[0],/--exclude/);
 });
+
+/*
+ * The lane report feeds `pnpm gates:yield`. It must record every command with its verdict,
+ * and a report that cannot be written must never change the lane's exit code.
+ */
+test('the lane runner appends one report line per command when CI_LANE_REPORT is set', async () => {
+  const writes = [];
+  const status = await runCommands({
+    commands: ['ok', 'bad'],
+    env: { CI_LANE_REPORT: 'report.jsonl', GITHUB_SHA: 'abc', GITHUB_RUN_ID: '42' },
+    lane: 'unit',
+    shard: '2/3',
+    stdout: { write() {} },
+    stderr: { write() {} },
+    spawn: (command, options) => {
+      assert.equal('CI_LANE_REPORT' in options.env, false, 'child commands must not inherit the report path');
+      assert.equal(options.env.GITHUB_SHA, 'abc');
+      return { status: command === 'bad' ? 1 : 0 };
+    },
+    appendFile: (file, text) => writes.push([file, text]),
+  });
+  assert.equal(status, 1);
+  const lines = writes.map(([file, text]) => {
+    assert.equal(file, 'report.jsonl');
+    assert.ok(text.endsWith('\n'));
+    return JSON.parse(text);
+  });
+  assert.deepEqual(lines.map(({ ms, ...rest }) => (assert.equal(typeof ms, 'number'), rest)), [
+    { lane: 'unit', shard: '2/3', command: 'ok', status: 'pass', sha: 'abc', runId: '42' },
+    { lane: 'unit', shard: '2/3', command: 'bad', status: 'fail', sha: 'abc', runId: '42' },
+  ]);
+});
+
+test('a lane report that cannot be written is reported and never changes the verdict', async () => {
+  for (const verdict of [0, 3]) {
+    let errors = '';
+    const status = await runCommands({
+      commands: ['only'],
+      env: { CI_LANE_REPORT: '/nowhere/report.jsonl' },
+      stdout: { write() {} },
+      stderr: { write(text) { errors += text; } },
+      spawn: () => ({ status: verdict }),
+      appendFile() { throw new Error('EACCES'); },
+    });
+    assert.equal(status, verdict === 0 ? 0 : 1);
+    assert.match(errors, /could not write lane report .*EACCES/);
+  }
+});
+
+test('the lane runner writes no report without CI_LANE_REPORT', async () => {
+  let wrote = false;
+  await runCommands({
+    commands: ['only'],
+    env: {},
+    stdout: { write() {} },
+    stderr: { write() {} },
+    spawn: () => ({ status: 0 }),
+    appendFile() { wrote = true; },
+  });
+  assert.equal(wrote, false);
+});
+
+test('a command run beside the lane is reported with its own status and duration', async () => {
+  const writes = [];
+  const status = await runCommands({
+    commands: ['pnpm lint', 'serial'],
+    env: { CI_LANE_REPORT: 'report.jsonl', GITHUB_RUN_ID: '9' },
+    lane: 'gates',
+    stdout: { write() {} },
+    stderr: { write() {} },
+    spawn: () => ({ status: 0 }),
+    startBeside(command, options) {
+      assert.equal('CI_LANE_REPORT' in options.env, false, 'the concurrent child must not inherit the report path');
+      return Promise.resolve({ status: 2, output: '', started: 1_000, finished: 1_250 });
+    },
+    appendFile: (_file, text) => writes.push(JSON.parse(text)),
+  });
+  assert.equal(status, 1);
+  assert.deepEqual(writes.map(({ command, status: verdict }) => [command, verdict]), [['serial', 'pass'], ['pnpm lint', 'fail']]);
+  assert.equal(writes[1].ms, 250, 'measured from its own start to its own finish');
+});

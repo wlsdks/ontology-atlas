@@ -733,6 +733,7 @@ be resolved together land through `/land-bundle` as one integration branch.
 | `pnpm docs:move` | Moves the documents listed in `docs/.moved.json` and rewrites every reference; rerun it after merging main into an older branch (`-- --check` only reports) |
 | `pnpm e2e:durations -- <timings dir>` | Rewrites the per-file weights that balance the browser shards from downloaded `playwright-timings-*` reports |
 | `pnpm e2e:sleeps:check` | A change may not add a fixed `waitForTimeout` to an e2e spec unless a `// measurement window:` note says why |
+| `pnpm gates:yield -- --runs=200` | Which CI checks ever failed, per distinct run, from the lane reports `checks.yml` uploads (cached in `~/.cache/atlas-gate-yield`); a row with 50+ runs, no failed run and 60+ days of history reads `no CI failure`, a check to examine rather than delete, since pre-push and `pnpm checks:changed` catches are not in this data. Reports start with the change that added them |
 | `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the six app screens the download page shows, Korean and English (`public/gateway/<screen>.<locale>.png`), from a served `pnpm build`, against this repository's own ontology |
 | `pnpm knip` | Dead files, exports and types across every scope |
 | `pnpm lessons` · `pnpm lessons:check` | Shared harness lessons that are open or verified but not yet fixed; record and review them with `/harness-retro` ([records guide](docs/records/README.md#harness-lessons)) |

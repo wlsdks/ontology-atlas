@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { appendFileSync, closeSync, mkdtempSync, openSync, readFileSync, rmSync } from 'node:fs';
+import { appendFileSync, closeSync, mkdtempSync, openSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { spawn as spawnAsync, spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -200,10 +200,37 @@ function startConcurrent(command, { cwd, env }) {
     child.once('exit', (code) => resolve(code ?? 1));
   });
   return done.then((status) => {
+    // The serial loop's spawnSync blocks the event loop, so this callback can run long after
+    // the child exited. The output file's last write is when the command itself finished.
+    let finished = Date.now();
+    try { finished = Math.max(started, Math.min(finished, statSync(file).mtimeMs)); } catch { /* keep now */ }
     const output = readFileSync(file, 'utf8');
     rmSync(dir, { recursive: true, force: true });
-    return { status, output, started };
+    return { status, output, started, finished };
   });
+}
+
+/**
+ * One JSON line per command into `CI_LANE_REPORT`, so `pnpm gates:yield` can later ask
+ * which gates ever caught anything. A report is evidence about the gate, never the gate:
+ * a write that fails says so on stderr and the lane's verdict stays what the commands made it.
+ */
+export function appendLaneReport({ env = process.env, record, appendFile = appendFileSync, stderr = process.stderr }) {
+  if (!env.CI_LANE_REPORT) return;
+  const line = {
+    lane: record.lane ?? '',
+    shard: record.shard ?? '',
+    command: record.command,
+    status: record.status,
+    ms: record.ms ?? 0,
+    sha: env.GITHUB_SHA || '',
+    runId: env.GITHUB_RUN_ID || '',
+  };
+  try {
+    appendFile(env.CI_LANE_REPORT, `${JSON.stringify(line)}\n`);
+  } catch (error) {
+    stderr.write(`[ci-lane] could not write lane report ${env.CI_LANE_REPORT}: ${error instanceof Error ? error.message : String(error)}\n`);
+  }
 }
 
 export async function runCommands({
@@ -214,10 +241,20 @@ export async function runCommands({
   startBeside = startConcurrent,
   stdout = process.stdout,
   stderr = process.stderr,
+  lane = '',
+  shard = '',
+  appendFile = appendFileSync,
 }) {
   const failures = [];
-  const report = (command, status, started) => {
-    const seconds = ((Date.now() - started) / 1000).toFixed(1);
+  // The report belongs to this runner: a nested runner or a test that runs `runCommands`
+  // must never append its own lines to the real CI report.
+  const { CI_LANE_REPORT: _report, ...childEnv } = env;
+  const report = (command, status, started, finished = Date.now()) => {
+    appendLaneReport({
+      env, appendFile, stderr,
+      record: { lane, shard, command, status: status === 0 ? 'pass' : 'fail', ms: Math.round(finished - started) },
+    });
+    const seconds = ((finished - started) / 1000).toFixed(1);
     stdout.write(`[ci-lane] ${status === 0 ? 'PASS' : 'FAIL'} ${seconds}s: ${command}\n`);
     if (env.GITHUB_STEP_SUMMARY) {
       const safe = command.replace(/[|`\r\n]/g, ' ');
@@ -228,19 +265,19 @@ export async function runCommands({
   const beside = commands.length > 1 ? commands.filter((command) => CONCURRENT_COMMANDS.includes(command)) : [];
   const running = beside.map((command) => {
     stdout.write(`\n[ci-lane] started beside the lane: ${command}\n`);
-    return { command, result: startBeside(command, { cwd, env }) };
+    return { command, result: startBeside(command, { cwd, env: childEnv }) };
   });
   const serial = commands.filter((command) => !beside.includes(command));
   for (const [index, command] of serial.entries()) {
     stdout.write(`\n[ci-lane] (${index + 1}/${serial.length}) ${command}\n`);
     const started = Date.now();
-    const result = spawn(command, { cwd, env, shell: true, stdio: 'inherit' });
+    const result = spawn(command, { cwd, env: childEnv, shell: true, stdio: 'inherit' });
     report(command, result.status ?? 1, started);
   }
   for (const { command, result } of running) {
-    const { status, output, started } = await result;
+    const { status, output, started, finished } = await result;
     stdout.write(`\n[ci-lane] beside the lane: ${command}\n${output}`);
-    report(command, status, started);
+    report(command, status, started, finished);
   }
   if (failures.length > 0) {
     stderr.write(
@@ -283,6 +320,7 @@ export async function runCiLane({ argv = process.argv.slice(2), env = process.en
         platform: 'darwin',
       });
       for (const command of planned.filter((entry) => !commands.includes(entry))) {
+        appendLaneReport({ env, record: { lane, shard, command, status: 'skip', ms: 0 } });
         process.stdout.write(
           `[ci-lane] ${lane}: ${command} needs a Tauri toolchain and runs on the Windows beta job and the macOS release rehearsal instead of this ${process.platform} runner\n`,
         );
@@ -292,7 +330,7 @@ export async function runCiLane({ argv = process.argv.slice(2), env = process.en
       process.stdout.write(`[ci-lane] ${lane}: no affected command\n`);
       return 0;
     }
-    return runCommands({ commands, env });
+    return runCommands({ commands, env, lane, shard });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`[ci-lane] ${message}\n`);
