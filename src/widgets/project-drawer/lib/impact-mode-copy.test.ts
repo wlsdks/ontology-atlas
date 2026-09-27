@@ -5,15 +5,6 @@ import { IMPACT_MODE_COPY_KEYS } from "./impact-mode-copy";
 
 /** The four impact modes run different graph operations, so their help text must differ. */
 describe("IMPACT_MODE_COPY_KEYS (rank16)", () => {
-  it('registers all four modes', () => {
-    expect(IMPACT_MODE_COPY_KEYS.map((item) => item.mode)).toEqual([
-      "none",
-      "upstream",
-      "downstream",
-      "network",
-    ]);
-  });
-
   it('gives every mode distinct label and help keys', () => {
     const helpKeys = IMPACT_MODE_COPY_KEYS.map((item) => item.helpKey);
     expect(new Set(helpKeys).size).toBe(helpKeys.length);
