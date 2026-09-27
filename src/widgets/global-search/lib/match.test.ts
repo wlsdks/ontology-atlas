@@ -208,6 +208,11 @@ describe("matchOntologyNodes", () => {
     it("초성이 안 맞으면 끌어오지 않는다", () => {
       expect(matchOntologyNodes("ㅋㅋㅋ", shop).results).toHaveLength(0);
     });
+
+    it("keeps the name listed while a two-set keyboard shows the next initial as a final", () => {
+      expect(matchOntologyNodes("장박", shop).results.map((m) => m.node.id)).toEqual(["cap-cart"]);
+      expect(matchOntologyNodes("줌", shop).results.map((m) => m.node.id)).toEqual(["cap-order"]);
+    });
   });
 
   // 2026-09-19 — measured on the bundled sample: 97 of 317 rows over thirty English
@@ -367,6 +372,16 @@ describe("matchOntologyNodes", () => {
       expect(emptySets).toHaveLength(filterCorpus.length);
     });
   });
+
+  it("counts every filtered match without returning rows when the limit is 0", () => {
+    const projectNodes = [
+      node({ id: "project:shop", title: "Online Store", kind: "project" }),
+      node({ id: "project:blog", title: "Store Blog", kind: "project" }),
+      node({ id: "project:docs", title: "Docs", kind: "project" }),
+    ];
+    expect(matchOntologyNodes("store", projectNodes, 0)).toEqual({ results: [], total: 2 });
+    expect(matchOntologyNodes("store", projectNodes, 0, { kinds: new Set(["domain"]) }).total).toBe(0);
+  });
 });
 
 function project(input: Partial<Project> & { slug: string; name: string }): Project {
@@ -476,6 +491,14 @@ describe("matchProjects", () => {
     expect(r).toHaveLength(2);
     expect(r[0]?.project.slug).toBe("reactor-runtime"); // 4-27
     expect(r[1]?.project.slug).toBe("demo-knowledge"); // 4-26
+  });
+
+  it("finds a project by a display name and returns that name as the evidence", () => {
+    const shops = [project({ slug: "shop", name: "Online Store", displayNames: { ko: "온라인 쇼핑몰" } })];
+    const exact = matchProjects("온라인 쇼핑몰", shops).results[0];
+    expect(exact?.score).toBe(7);
+    expect(exact?.matched).toEqual({ field: "name", text: "온라인 쇼핑몰" });
+    expect(matchProjects("ㅅㅍㅁ", shops).results[0]?.score).toBe(3);
   });
 });
 

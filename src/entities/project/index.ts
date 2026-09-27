@@ -25,8 +25,7 @@ export type {
 export type {
   ProjectImpactMode,
 } from "./model";
-// The cloud entity api was removed permanently, consistent with the vault frontmatter
-// being the source of truth. A future cloud-collaboration stage would add a new api/ folder.
+// No api/ folder: vault frontmatter is the source of truth.
 export {
   getProjectEditHref,
   getProjectRuntimeDetailHref,
@@ -38,3 +37,5 @@ export { ProjectCard } from "./ui/ProjectCard";
 export { ProjectMetaGrid } from "./ui/ProjectMetaGrid";
 export { projectToInput } from "./model/to-input";
 export { projectDisplayName, projectHasDisplayName, readDisplayNames } from "./lib/display-name";
+export { rankProjectMatches } from "./lib/match-projects";
+export type { ProjectMatchSource } from "./lib/match-projects";

@@ -21,11 +21,15 @@ import {
 } from '@/shared/motion';
 import { mergeRefs } from "@/shared/lib/merge-refs";
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
-import { projectDisplayName, type Project } from '@/entities/project';
+import {
+  projectDisplayName,
+  rankProjectMatches,
+  type Project,
+  type ProjectMatchSource,
+} from '@/entities/project';
 import { useTaxonomy } from '@/features/taxonomy';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { useStaticVaultSource } from '@/entities/vault-session';
-import { searchProjects } from '../model/fuzzy-search';
 import { fieldClass } from '@/shared/ui/control-class';
 import { transientSurface } from "@/shared/ui/transient-surface";
 
@@ -66,7 +70,8 @@ const MATCH_FIELD_KEYS = {
   tags: 'matchFieldTags',
   stack: 'matchFieldStack',
   description: 'matchFieldDescription',
-} as const;
+  category: 'matchFieldCategory',
+} as const satisfies Record<ProjectMatchSource, string>;
 
 const RECENT_SEARCH_KEY = 'demo:recent-search-slugs:v1';
 const RECENT_MAX = 5;
@@ -149,7 +154,7 @@ interface DialogProps {
 }
 
 type LayerFilter = 'all' | 'hub' | 'node';
-type ProjectSearchResult = ReturnType<typeof searchProjects>[number];
+type ProjectSearchResult = { project: Project; source?: ProjectMatchSource };
 type PaletteRow =
   | { kind: 'doc'; doc: VaultDoc }
   | { kind: 'project'; result: ProjectSearchResult };
@@ -208,15 +213,15 @@ function SearchPaletteDialog({
     () => projects.filter((p) => matchesLayerFilter(p, layerFilter)),
     [projects, layerFilter],
   );
-  const results = useMemo(() => {
+  const results = useMemo<ProjectSearchResult[]>(() => {
     if (!query.trim()) {
       return filteredProjects
         .slice()
         .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
         .slice(0, 10)
-        .map((p) => ({ project: p, score: 0, matchedField: 'name' as const }));
+        .map((project) => ({ project }));
     }
-    return searchProjects(filteredProjects, query).slice(0, 20);
+    return rankProjectMatches(filteredProjects, query).slice(0, 20);
   }, [filteredProjects, query]);
 
   // Vault document matching — the top 3 when there is a query. Importing the manifest
@@ -699,9 +704,9 @@ function SearchPaletteDialog({
                           <span className={badgeClass({ shape: "pill", className: "border border-[color:var(--color-divider)] font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]" })}>
                             {statusLabel(r.project.status)}
                           </span>
-                          {query.trim() && (
+                          {r.source && (
                             <span className={badgeClass({ shape: "pill", className: "border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]" })}>
-                              {t(MATCH_FIELD_KEYS[r.matchedField])}
+                              {t(MATCH_FIELD_KEYS[r.source])}
                             </span>
                           )}
                         </div>

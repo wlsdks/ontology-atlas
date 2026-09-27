@@ -1,11 +1,10 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import type { Project } from "@/entities/project";
-import { hangulIncludes, hangulStartsWith } from "@/shared/lib/hangul-match";
+import { rankProjectMatches, type Project } from "@/entities/project";
 import {
   findNameMatch,
   idSearchText,
+  NAME_TIER_SCORE,
   normalizeForMatch,
-  type NameMatchTier,
 } from "@/shared/lib/node-name-match";
 
 /**
@@ -149,15 +148,6 @@ export interface MatchOntologyOptions {
  * are scored). An empty query plus a filter becomes "the most recent N of this kind
  * or project".
  */
-/** The score each name tier earns. The ladder above is this table read downwards. */
-const NAME_TIER_SCORE: Readonly<Record<NameMatchTier, number>> = {
-  equals: 7,
-  prefix: 6,
-  includes: 5,
-  "hangul-prefix": 4,
-  "hangul-includes": 3,
-};
-
 export function matchOntologyNodes(
   query: string,
   nodes: readonly KnowledgeGraphNode[],
@@ -254,7 +244,7 @@ export interface ProjectSearchResult {
  *   5 — name / nameEn substring match
  *   4 — Hangul-aware name prefix (chosung, or a syllable still being typed)
  *   3 — Hangul-aware name substring
- *   2 — description / tags / category substring match
+ *   2 — description / tags / stack / category substring match
  *   1 — slug substring match (searching kebab-case directly)
  *   0 — no match (excluded)
  *
@@ -284,59 +274,11 @@ export function matchProjects(
     };
   }
 
-  const matches: ProjectSearchResult[] = [];
-  for (const project of projects) {
-    const name = normalizeForMatch(project.name);
-    const nameEn = normalizeForMatch(project.nameEn ?? "");
-    const slug = normalizeForMatch(project.slug);
-
-    // Which of the two names matched decides what the row shows, so the pair is
-    // resolved once rather than asked about twice.
-    const nameTier = (candidate: string): number => {
-      if (candidate === "") return 0;
-      if (candidate === trimmed) return 7;
-      if (candidate.startsWith(trimmed)) return 6;
-      if (candidate.includes(trimmed)) return 5;
-      if (hangulStartsWith(candidate, trimmed)) return 4;
-      if (hangulIncludes(candidate, trimmed)) return 3;
-      return 0;
-    };
-    /*
-     * A `display_<locale>` is a name a screen draws for this project, so it is a candidate on the
-     * same ladder as `name` and `nameEn` — including the Hangul rungs, since the Korean display
-     * name is the one a person types jamo into. It enters as a *candidate* rather than as extra
-     * score, so a row that matched on the Korean word shows the Korean word: the point of the
-     * display name is that the screen and the search agree about what this project is called.
-     */
-    const displays = Object.values(project.displayNames ?? {});
-    const named: ReadonlyArray<readonly [number, string]> = [
-      [nameTier(name), project.name],
-      [nameTier(nameEn), project.nameEn ?? ""],
-      ...displays.map((display) => [nameTier(normalizeForMatch(display)), display] as const),
-    ];
-    const bestName = named.reduce((best, entry) => (entry[0] > best[0] ? entry : best));
-
-    if (bestName[0] > 0) {
-      matches.push({ project, score: bestName[0], matched: { field: "name", text: bestName[1] } });
-      continue;
-    }
-
-    const prose = [project.description, ...project.tags, project.category]
-      .find((value) => typeof value === "string" && normalizeForMatch(value).includes(trimmed));
-    if (prose) {
-      matches.push({ project, score: 2, matched: { field: "summary", text: prose } });
-      continue;
-    }
-
-    if (slug.includes(trimmed)) {
-      matches.push({ project, score: 1, matched: { field: "id", text: project.slug } });
-    }
-  }
-
-  matches.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return b.project.updatedAt.getTime() - a.project.updatedAt.getTime();
-  });
-
-  return { results: matches.slice(0, limit), total: matches.length };
+  const matches = rankProjectMatches(projects, trimmed);
+  return {
+    results: matches
+      .slice(0, limit)
+      .map(({ project, score, field, text }) => ({ project, score, matched: { field, text } })),
+    total: matches.length,
+  };
 }
