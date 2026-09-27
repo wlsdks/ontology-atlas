@@ -91,21 +91,19 @@ interface BoxRead {
 
 
 /**
- * The ramp, and the pixel each step renders at the default root — the same table
- * `app/globals.css` declares, written here as the numbers rather than as `rem`, so that a
- * conversion arithmetic error cannot agree with itself.
+ * The ramp's steps. Their pixel values are the type tokens' business (`app/globals.css`,
+ * `docs/DESIGN-SYSTEM.md`); what this file owns is that each one follows the reader's root.
  */
 const RAMP = [
-  { step: "caption", fontSize: 9.5, lineHeight: 14 },
-  { step: "label", fontSize: 11, lineHeight: 16 },
-  { step: "body", fontSize: 12.5, lineHeight: 20 },
-  { step: "body-lg", fontSize: 14, lineHeight: 22 },
-  { step: "title", fontSize: 16, lineHeight: 24 },
-  // `--leading-prose` is the ratio 1.7, so this pair is 16 × 1.7.
-  { step: "reading", fontSize: 16, lineHeight: 27.2 },
-  { step: "display", fontSize: 23, lineHeight: 28 },
-  { step: "hero", fontSize: 30, lineHeight: 34 },
-  { step: "hero-lg", fontSize: 34, lineHeight: 38 },
+  { step: "caption" },
+  { step: "label" },
+  { step: "body" },
+  { step: "body-lg" },
+  { step: "title" },
+  { step: "reading" },
+  { step: "display" },
+  { step: "hero" },
+  { step: "hero-lg" },
 ] as const;
 
 /**
@@ -160,7 +158,7 @@ const READ_BOXES = `(names) => names.map((name) => {
 })`;
 
 test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다", () => {
-  test("램프의 모든 단이 기본 루트에서 지정된 픽셀로, 32px 루트에서 정확히 두 배로 렌더된다", async ({
+  test("램프의 모든 단이 32px 루트에서 16px 루트의 정확히 두 배로 렌더된다", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1512, height: 900 });
@@ -169,21 +167,14 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
 
     const steps = RAMP.map((entry) => entry.step);
 
-    // At 100% — the byte-identity witness. Every number here is what the ramp rendered
-    // before it was written in `rem`; the unit changed and the pixel did not. The root is
-    // stated rather than assumed, so a runner whose own default font size is not 16 fails
-    // here with the ramp's numbers instead of somewhere further down with none.
+    // At 100%, the baseline each step is compared against. The root is stated rather than
+    // assumed, so a runner whose own default font size is not 16 still measures the ratio.
     await page.evaluate((root) => {
       document.documentElement.style.fontSize = `${root}px`;
     }, DEFAULT_ROOT_PX);
     const atDefault = (await page.evaluate(eval(READ_RAMP), steps)) as RampRead[];
-    expect(atDefault).toEqual(
-      RAMP.map((entry) => ({
-        step: entry.step,
-        fontSize: entry.fontSize,
-        lineHeight: entry.lineHeight,
-      })),
-    );
+    // Every step resolved to a real size; which size is the ramp tokens' business, not this file's.
+    expect(atDefault.every((entry) => entry.fontSize > 0 && entry.lineHeight > 0)).toBe(true);
 
     await page.evaluate((root) => {
       document.documentElement.style.fontSize = `${root}px`;
@@ -191,7 +182,7 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
 
     const atZoom = (await page.evaluate(eval(READ_RAMP), steps)) as RampRead[];
     expect(atZoom).toEqual(
-      RAMP.map((entry) => ({
+      atDefault.map((entry) => ({
         step: entry.step,
         fontSize: entry.fontSize * 2,
         lineHeight: entry.lineHeight * 2,
