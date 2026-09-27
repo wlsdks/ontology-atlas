@@ -58,7 +58,7 @@ describe('TauriVaultWatchBridge', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
-      refresh: vi.fn(),
+      syncWithDisk: vi.fn(),
     });
     tauriFsMocks.isTauriVaultRuntime.mockReturnValue(false);
 
@@ -77,7 +77,7 @@ describe('TauriVaultWatchBridge', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
-      refresh: vi.fn(),
+      syncWithDisk: vi.fn(),
     });
 
     render(<TauriVaultWatchBridge />);
@@ -90,11 +90,11 @@ describe('TauriVaultWatchBridge', () => {
     await waitFor(() => expect(tauriMocks.listen).toHaveBeenCalledWith('vault-changed', expect.any(Function)));
   });
 
-  it('vault-changed 이벤트가 오면 refresh() 를 호출한다 — 이벤트→poll 트리거 매핑의 핵심', async () => {
+  it('checks the folder on every vault-changed event, the app\'s only live signal', async () => {
     tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriFsMocks.getTauriVaultRootPath.mockReturnValue('/Users/me/vault');
     tauriMocks.invoke.mockResolvedValue(undefined);
-    const refresh = vi.fn(async () => undefined);
+    const syncWithDisk = vi.fn(async () => false);
     let capturedHandler: (() => void) | null = null;
     tauriMocks.listen.mockImplementation(async (_event: string, handler: () => void) => {
       capturedHandler = handler;
@@ -103,7 +103,7 @@ describe('TauriVaultWatchBridge', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
-      refresh,
+      syncWithDisk,
     });
 
     render(<TauriVaultWatchBridge />);
@@ -113,10 +113,10 @@ describe('TauriVaultWatchBridge', () => {
       capturedHandler?.();
     });
 
-    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(syncWithDisk).toHaveBeenCalledTimes(1));
   });
 
-  it('refresh 참조는 ref 로 최신값을 따라간다 — status/rootPath 가 같으면 재구독하지 않는다', async () => {
+  it('follows the latest sync function without resubscribing while status and root stay', async () => {
     tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriFsMocks.getTauriVaultRootPath.mockReturnValue('/Users/me/vault');
     tauriMocks.invoke.mockResolvedValue(undefined);
@@ -125,23 +125,23 @@ describe('TauriVaultWatchBridge', () => {
       capturedHandler = handler;
       return vi.fn();
     });
-    const firstRefresh = vi.fn(async () => undefined);
-    const secondRefresh = vi.fn(async () => undefined);
+    const firstSync = vi.fn(async () => false);
+    const secondSync = vi.fn(async () => false);
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
-      refresh: firstRefresh,
+      syncWithDisk: firstSync,
     });
 
     const { rerender } = render(<TauriVaultWatchBridge />);
     await waitFor(() => expect(tauriMocks.listen).toHaveBeenCalledTimes(1));
 
-    // A re-render where only the `refresh` function reference changes while status and handle stay —
+    // A re-render where only the `syncWithDisk` reference changes while status and handle stay —
     // common after every load(). It must not resubscribe (call listen again).
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
-      refresh: secondRefresh,
+      syncWithDisk: secondSync,
     });
     rerender(<TauriVaultWatchBridge />);
 
@@ -150,8 +150,8 @@ describe('TauriVaultWatchBridge', () => {
     act(() => {
       capturedHandler?.();
     });
-    await waitFor(() => expect(secondRefresh).toHaveBeenCalledTimes(1));
-    expect(firstRefresh).not.toHaveBeenCalled();
+    await waitFor(() => expect(secondSync).toHaveBeenCalledTimes(1));
+    expect(firstSync).not.toHaveBeenCalled();
   });
 
   it('invoke 가 실패해도(권한 거부 등) throw 하지 않는다 — 폴링 fallback 이 계속 커버해야 한다', async () => {
@@ -161,7 +161,7 @@ describe('TauriVaultWatchBridge', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
-      refresh: vi.fn(),
+      syncWithDisk: vi.fn(),
     });
 
     expect(() => render(<TauriVaultWatchBridge />)).not.toThrow();

@@ -15,7 +15,6 @@ import {
   rebuildLocalManifestIncremental,
   computeLocalVaultFingerprintWithStamps,
   type VaultStampIndex,
-  computeLocalVaultFingerprint,
   type BuiltVaultEntry,
   type LocalVaultBuild,
   type VaultManifest,
@@ -54,6 +53,7 @@ import {
   isTauriVaultRuntime,
   listTauriDirectoryNames,
   pickTauriVaultDirectory,
+  readTauriVaultTextTail,
   vaultRootRejectionReason,
   tauriVaultPathExists,
 } from '@/shared/lib/tauri-vault-fs';
@@ -712,12 +712,16 @@ async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle): Prom
   return { agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts };
 }
 
+const ACTIVITY_LOG_SHOWN_ENTRIES = 50;
+
 /** Tail of the local audit log (read-only; empty array when absent). */
 async function readAgentActivityLog(handle: FileSystemDirectoryHandle): Promise<AgentActivityEntry[]> {
   try {
-    const dir = await handle.getDirectoryHandle('.ontology-atlas');
-    const raw = await readTextFileIfPresent(dir, 'activity.jsonl');
-    return raw ? parseAgentActivityLog(raw, { limit: 50 }) : [];
+    const rootPath = getTauriVaultRootPath(handle);
+    const raw = rootPath
+      ? await readTauriVaultTextTail(rootPath, '.ontology-atlas/activity.jsonl', ACTIVITY_LOG_SHOWN_ENTRIES)
+      : await readTextFileIfPresent(await handle.getDirectoryHandle('.ontology-atlas'), 'activity.jsonl');
+    return raw ? parseAgentActivityLog(raw, { limit: ACTIVITY_LOG_SHOWN_ENTRIES }) : [];
   } catch {
     return [];
   }
@@ -1500,54 +1504,62 @@ export function useLocalVaultInternal() {
   useEffect(() => {
     loadRef.current = load;
   }, [load]);
+  // Returns true when a change was detected (a reload was triggered) — drives
+  // the adaptive poll cadence (burst after a change, idle when quiet).
+  const syncWithDisk = useCallback(async (): Promise<boolean> => {
+    if (state.status !== 'loaded' || !state.handle) return false;
+    const handle = state.handle;
+    let nativeStamps: VaultStampIndex | null = null;
+    try {
+      const { fingerprint: fp, nativeStamps: stamps } =
+        await computeLocalVaultFingerprintWithStamps(handle);
+      nativeStamps = stamps;
+      if (fp === lastFingerprintRef.current) {
+        const sidecars = await readVaultSidecarStatuses(handle);
+        /*
+         * ⚠️ **Nothing changed means state is not touched** (review, 2026-08-16).
+         *
+         * This used to `setState` a fresh object even on a tick where nothing changed, and
+         * the context provider passed that straight through — so **the entire app re-rendered
+         * every five seconds**, forever, with nothing happening.
+         *
+         * `lastLoadedAt` is not read anywhere on screen (a new object was built every tick
+         * for it), while the three sidecar states genuinely can change. So update **only when
+         * something actually did.**
+         */
+        setState((s) => {
+          const same =
+            structurallyEqualStatus(s.agentConfigStatus, sidecars.agentConfigStatus) &&
+            // Volatile age fields are excluded — they advance on every parse
+            // and defeated this guard whenever a heartbeat file existed.
+            structurallyEqualStatus(
+              comparableAgentActivityStatus(s.agentActivityStatus),
+              comparableAgentActivityStatus(sidecars.agentActivityStatus),
+            ) &&
+            // Length alone misses an append once the log reaches its 50-entry
+            // read cap (tail replaced at identical length) — compare the last
+            // entry too.
+            s.agentActivityLog.length === sidecars.agentActivityLog.length &&
+            structurallyEqualStatus(s.agentActivityLog.at(-1), sidecars.agentActivityLog.at(-1)) &&
+            s.acpWorkReceipts.length === sidecars.acpWorkReceipts.length &&
+            s.acpWorkReceipts.at(-1)?.updatedAt === sidecars.acpWorkReceipts.at(-1)?.updatedAt;
+          return same ? s : { ...s, ...sidecars, lastLoadedAt: Date.now() };
+        });
+        return false;
+      }
+    } catch {
+      /* Ignore a fingerprint failure — fall back safely to a full rebuild. */
+    }
+    // Not awaited: the poll's cadence counts only its own check.
+    pendingStampsRef.current = nativeStamps;
+    void loadRef.current(handle).finally(() => {
+      if (pendingStampsRef.current === nativeStamps) pendingStampsRef.current = null;
+    });
+    return true;
+  }, [state.status, state.handle]);
   useEffect(() => {
     if (state.status !== 'loaded' || !state.handle) return;
-    const handle = state.handle;
     const tracker = autoRefreshRef.current;
-    // Returns true when a change was detected (a reload was triggered) — drives
-    // the adaptive poll cadence (burst after a change, idle when quiet).
-    const tryReload = async (): Promise<boolean> => {
-      try {
-        const fp = await computeLocalVaultFingerprint(handle);
-        if (fp === lastFingerprintRef.current) {
-          const sidecars = await readVaultSidecarStatuses(handle);
-          /*
-           * ⚠️ **Nothing changed means state is not touched** (review, 2026-08-16).
-           *
-           * This used to `setState` a fresh object even on a tick where nothing changed, and
-           * the context provider passed that straight through — so **the entire app re-rendered
-           * every five seconds**, forever, with nothing happening.
-           *
-           * `lastLoadedAt` is not read anywhere on screen (a new object was built every tick
-           * for it), while the three sidecar states genuinely can change. So update **only when
-           * something actually did.**
-           */
-          setState((s) => {
-            const same =
-              structurallyEqualStatus(s.agentConfigStatus, sidecars.agentConfigStatus) &&
-              // Volatile age fields are excluded — they advance on every parse
-              // and defeated this guard whenever a heartbeat file existed.
-              structurallyEqualStatus(
-                comparableAgentActivityStatus(s.agentActivityStatus),
-                comparableAgentActivityStatus(sidecars.agentActivityStatus),
-              ) &&
-              // Length alone misses an append once the log reaches its 50-entry
-              // read cap (tail replaced at identical length) — compare the last
-              // entry too.
-              s.agentActivityLog.length === sidecars.agentActivityLog.length &&
-              structurallyEqualStatus(s.agentActivityLog.at(-1), sidecars.agentActivityLog.at(-1)) &&
-              s.acpWorkReceipts.length === sidecars.acpWorkReceipts.length &&
-              s.acpWorkReceipts.at(-1)?.updatedAt === sidecars.acpWorkReceipts.at(-1)?.updatedAt;
-            return same ? s : { ...s, ...sidecars, lastLoadedAt: Date.now() };
-          });
-          return false;
-        }
-      } catch {
-        /* Ignore a fingerprint failure — fall back safely to a full rebuild. */
-      }
-      loadRef.current(handle);
-      return true;
-    };
     const fire = () => {
       const now = Date.now();
       const last = tracker.lastAt;
@@ -1555,12 +1567,12 @@ export function useLocalVaultInternal() {
         if (tracker.timer) clearTimeout(tracker.timer);
         tracker.timer = setTimeout(() => {
           tracker.lastAt = Date.now();
-          void tryReload();
+          void syncWithDisk();
         }, AUTO_REFRESH_DEBOUNCE_MS - (now - last));
         return;
       }
       tracker.lastAt = now;
-      void tryReload();
+      void syncWithDisk();
     };
     const onVisibility = () => {
       if (document.visibilityState === 'visible') fire();
@@ -1568,34 +1580,32 @@ export function useLocalVaultInternal() {
     window.addEventListener('focus', fire);
     document.addEventListener('visibilitychange', onVisibility);
 
-    // Adaptive self-rescheduling polling while the tab is visible. Focus and visibility alone
-    // never refresh while the user is looking at another tab or their IDE. Right after a
+    // Adaptive self-rescheduling polling while the tab is visible, on the web only: the app's
+    // OS watcher (`TauriVaultWatchBridge`) reports every change this would find. Right after a
     // detected change it bursts (~1.5 s) and decays to idle (5 s) when quiet
     // (`nextPollDelay`); with no change only the fingerprint is compared, so even a burst is
     // nearly free. The generation-token loop (`poll-cadence.createAdaptivePoller`) means an
-    // in-flight `tryReload` resolving after a stop/restart — hide→show during a burst — can
+    // in-flight check resolving after a stop/restart — hide→show during a burst — can
     // never re-arm an orphaned second loop. Unit-tested in poll-cadence.test.ts.
-    const poller = createAdaptivePoller({ poll: tryReload });
-    const startPolling = () => poller.start();
-    const stopPolling = () => poller.stop();
-    if (document.visibilityState === 'visible') startPolling();
+    const poller = isTauriVaultRuntime() ? null : createAdaptivePoller({ poll: syncWithDisk });
     const onVisibilityForPoll = () => {
-      if (document.visibilityState === 'visible') startPolling();
-      else stopPolling();
+      if (document.visibilityState === 'visible') poller?.start();
+      else poller?.stop();
     };
+    if (document.visibilityState === 'visible') poller?.start();
     document.addEventListener('visibilitychange', onVisibilityForPoll);
 
     return () => {
       window.removeEventListener('focus', fire);
       document.removeEventListener('visibilitychange', onVisibility);
       document.removeEventListener('visibilitychange', onVisibilityForPoll);
-      stopPolling();
+      poller?.stop();
       if (tracker.timer) {
         clearTimeout(tracker.timer);
         tracker.timer = null;
       }
     };
-  }, [state.status, state.handle]);
+  }, [state.status, state.handle, syncWithDisk]);
 
   const requestPermission = useCallback(async () => {
     if (!state.handle) return;
@@ -2305,6 +2315,7 @@ export function useLocalVaultInternal() {
     forgetRecent,
     close,
     refresh,
+    syncWithDisk,
     requestPermission,
     saveDoc,
     createDoc,

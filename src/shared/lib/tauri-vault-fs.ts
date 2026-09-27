@@ -529,6 +529,17 @@ export async function readTauriVaultText(
   return file.text;
 }
 
+/** The last `maxLines` lines; `null` without the bridge. */
+export async function readTauriVaultTextTail(
+  rootPath: string,
+  relativePath: string,
+  maxLines: number,
+): Promise<string | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<string>('read_vault_text_tail', { rootPath, relativePath, maxLines });
+}
+
 /**
  * Reads a text file *with* its modification time. `readTauriVaultText` drops the timestamp, which
  * is right for a caller that only wants content; the Harness screen needs to say when a guide last

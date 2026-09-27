@@ -1,5 +1,5 @@
 use notify_debouncer_full::notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, FileIdMap};
+use notify_debouncer_full::{new_debouncer_opt, DebounceEventResult, Debouncer, NoCache};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -154,7 +154,7 @@ const WEBVIEW_VERIFY_FIXTURE_SETTLE_MS: u64 = 1200;
 const WEBVIEW_VERIFY_MARKER_ATTEMPTS: usize = 12;
 const WEBVIEW_VERIFY_MARKER_INTERVAL_MS: u64 = 500;
 
-type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
+type VaultDebouncer = Debouncer<RecommendedWatcher, NoCache>;
 
 /// Keeping the root lets a repeat call for the same folder skip rebuilding the
 /// FSEvents stream.
@@ -2190,6 +2190,30 @@ fn vault_entry_is_tracked(name: &str) -> bool {
     }
 }
 
+const VAULT_AGENT_CONFIG_FILES: &[&str] = &[".mcp.json", ".mcp.json.example", ".codex/config.toml"];
+
+/// Without a poll this is the app's only live signal: everything a refresh reads.
+fn vault_change_is_visible(root: &Path, path: &Path) -> bool {
+    if path.extension().is_some_and(|ext| ext == "md") {
+        return true;
+    }
+    let Ok(relative) = path.strip_prefix(root) else {
+        return false;
+    };
+    let relative = relative.to_string_lossy().replace('\\', "/");
+    if relative.starts_with(".ontology-atlas/")
+        || VAULT_AGENT_CONFIG_FILES.contains(&relative.as_str())
+    {
+        return true;
+    }
+    let mut parts = relative.split('/');
+    let name = parts.next_back().unwrap_or_default();
+    let walked = parts.all(|part| !part.starts_with('.') && !VAULT_PRUNE_DIR_NAMES.contains(&part));
+    walked
+        && !name.starts_with('.')
+        && (vault_entry_is_tracked(name) || vault_relative_is_source(&relative))
+}
+
 fn walk_vault_stamps(
     dir: &Path,
     prefix: &str,
@@ -2282,6 +2306,47 @@ fn read_vault_text_file(root_path: String, relative_path: String) -> Result<Taur
         text,
         last_modified,
     })
+}
+
+#[tauri::command(async)]
+fn read_vault_text_tail(
+    root_path: String,
+    relative_path: String,
+    max_lines: usize,
+) -> Result<String, String> {
+    let path = resolve_existing_inside(&root_path, &relative_path)?;
+    read_text_tail(&path, max_lines, MAX_TEXT_TAIL_BYTES).map_err(|err| err.to_string())
+}
+
+const MAX_TEXT_TAIL_BYTES: u64 = 1024 * 1024;
+
+fn read_text_tail(path: &Path, max_lines: usize, max_bytes: u64) -> std::io::Result<String> {
+    use std::io::{Seek, SeekFrom};
+    const CHUNK_BYTES: u64 = 16 * 1024;
+
+    let mut file = fs::File::open(path)?;
+    let end = file.metadata()?.len();
+    let floor = end.saturating_sub(max_bytes);
+    let mut start = end;
+    let mut newlines = 0;
+    let mut chunks: Vec<Vec<u8>> = Vec::new();
+    while start > floor && newlines <= max_lines {
+        let from = start.saturating_sub(CHUNK_BYTES).max(floor);
+        let mut chunk = vec![0_u8; (start - from) as usize];
+        file.seek(SeekFrom::Start(from))?;
+        file.read_exact(&mut chunk)?;
+        newlines += chunk.iter().filter(|byte| **byte == b'\n').count();
+        chunks.push(chunk);
+        start = from;
+    }
+    let tail: Vec<u8> = chunks.into_iter().rev().flatten().collect();
+    let text = String::from_utf8_lossy(&tail);
+    let mut lines: Vec<&str> = text.lines().collect();
+    if start > 0 && !lines.is_empty() {
+        lines.remove(0);
+    }
+    let keep = lines.len().saturating_sub(max_lines);
+    Ok(lines[keep..].join("\n"))
 }
 
 /// A u64 LE mtime, then raw bytes: a serde `Vec<u8>` is one JSON number per byte.
@@ -3160,7 +3225,7 @@ fn schedule_show_main_window(app: AppHandle) {
     });
 }
 
-/// Emits `vault-changed` for `.md` changes, debounced 500ms. Idempotent per canonical
+/// Emits `vault-changed` for what a refresh reads, debounced 500ms. Idempotent per canonical
 /// root, and a replaced debouncer drops on a background thread because FSEvents
 /// teardown joins its run loop.
 /// Deliberately `async` with no await: Tauri then runs it off the macOS main thread.
@@ -3183,18 +3248,17 @@ async fn start_vault_watch(
         return Ok(());
     }
     let app_handle = app.clone();
-    let mut debouncer = new_debouncer(
+    let watched_root = canonical.clone();
+    let mut debouncer = new_debouncer_opt::<_, RecommendedWatcher, NoCache>(
         Duration::from_millis(500),
         None,
         move |result: DebounceEventResult| match result {
             Ok(events) => {
-                let md_changed = events.iter().any(|event| {
-                    event
-                        .paths
-                        .iter()
-                        .any(|path| path.extension().is_some_and(|ext| ext == "md"))
-                });
-                if md_changed {
+                let visible = events
+                    .iter()
+                    .flat_map(|event| event.paths.iter())
+                    .any(|path| vault_change_is_visible(&watched_root, path));
+                if visible {
                     let _ = app_handle.emit("vault-changed", ());
                 }
             }
@@ -3206,6 +3270,8 @@ async fn start_vault_watch(
                 }
             }
         },
+        NoCache,
+        notify_debouncer_full::notify::Config::default(),
     )
     .map_err(|err| err.to_string())?;
     debouncer
@@ -3707,6 +3773,7 @@ pub fn run() {
             list_vault_directory,
             vault_fingerprint,
             read_vault_text_file,
+            read_vault_text_tail,
             read_vault_binary_file,
             write_vault_text_file,
             read_library_collections,
@@ -3801,6 +3868,62 @@ mod tests {
         let expected = super::metadata_mtime_ms(&file).unwrap() as u64;
         assert_eq!(u64::from_le_bytes(stamp.try_into().unwrap()), expected);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_tail_read_returns_only_the_last_whole_lines() {
+        let dir = std::env::temp_dir().join(format!("atlas-tail-read-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let log = dir.join("activity.jsonl");
+        let lines: Vec<String> = (0..1000)
+            .map(|i| format!("{{\"v\":1,\"summary\":\"entry {i:04}\"}}"))
+            .collect();
+        std::fs::write(&log, format!("{}\n", lines.join("\n"))).unwrap();
+
+        let tail = super::read_text_tail(&log, 50, super::MAX_TEXT_TAIL_BYTES).unwrap();
+        assert_eq!(tail, lines[950..].join("\n"));
+
+        let short = super::read_text_tail(&log, 50, 100).unwrap();
+        assert!(!short.is_empty() && short.lines().count() < 50);
+        assert!(
+            lines[950..].join("\n").ends_with(&short),
+            "a capped read keeps whole lines only"
+        );
+
+        std::fs::write(&log, "one\ntwo").unwrap();
+        assert_eq!(
+            super::read_text_tail(&log, 50, super::MAX_TEXT_TAIL_BYTES).unwrap(),
+            "one\ntwo"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_watcher_reports_what_a_refresh_reads_and_nothing_under_git() {
+        let root = std::path::Path::new("/vault");
+        let visible = |relative: &str| super::vault_change_is_visible(root, &root.join(relative));
+        for path in [
+            "capabilities/a.md",
+            ".claude/skills/x.md",
+            "assets/diagram.PNG",
+            "sources/scan.pdf",
+            ".ontology-atlas/activity.jsonl",
+            ".ontology-atlas/agent-activity.json",
+            ".mcp.json",
+            ".codex/config.toml",
+        ] {
+            assert!(visible(path), "{path} changes what the screen shows");
+        }
+        for path in [
+            ".git/index",
+            ".git/objects/ab/cdef.png",
+            "node_modules/pkg/logo.png",
+            "notes/sources/a.pdf",
+            ".DS_Store",
+            "capabilities/.draft.png",
+        ] {
+            assert!(!visible(path), "{path} changes nothing on screen");
+        }
     }
 
     #[test]
