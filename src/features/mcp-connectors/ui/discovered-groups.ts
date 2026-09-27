@@ -1,6 +1,6 @@
 /**
  * One discovered row per server that actually runs. The same server is often registered in
- * several files; identity is the transport plus command and arguments, or the URL, not the
+ * several files; identity is the transport plus command line if any, else the URL, not the
  * invented name. The first spelling wins the row and every source becomes a chip.
  * One pass over a Map keyed by that identity: O(n × sources per group).
  */
@@ -17,9 +17,9 @@ export function groupDiscovered(servers: readonly DiscoveredConnector[]): Discov
   const groups = new Map<string, DiscoveredGroup>();
   for (const server of servers) {
     const runs =
-      server.transport === 'http'
+      server.transport === 'http' || server.command === null
         ? (server.url ?? '').trim()
-        : [server.command ?? '', ...server.args].join(' ').trim();
+        : [server.command, ...server.args].join(' ').trim();
     const key = `${server.transport} ${runs}`;
     const existing = groups.get(key);
     if (!existing) {

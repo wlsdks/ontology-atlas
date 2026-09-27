@@ -1016,6 +1016,20 @@ describe('one row per thing that actually runs', () => {
     expect(groups).toHaveLength(3);
   });
 
+  it.each(['sse', 'unknown'] as const)(
+    'tells %s servers without a command apart by their address',
+    (transport) => {
+      const remote = { transport, command: null, args: [], envKeys: [], headerKeys: [] };
+      const groups = groupDiscovered([
+        { ...remote, source: 'cursor-user', name: 'a', url: 'https://a.test/sse' },
+        { ...remote, source: 'cursor-user', name: 'b', url: 'https://b.test/sse' },
+        { ...remote, source: 'claude-user', name: 'a-again', url: 'https://a.test/sse' },
+      ]);
+      expect(groups.map((group) => group.server.name)).toEqual(['a', 'b']);
+      expect(groups[0].sources).toEqual(['cursor-user', 'claude-user']);
+    },
+  );
+
   it('reduces a source id to the tool a person recognises', () => {
     expect(shortSourceKey('claude-user')).toBe('claude');
     expect(shortSourceKey('claude-project')).toBe('claude');
