@@ -2452,11 +2452,10 @@ function validNodeSummary(row) {
   );
 }
 
-function validWikiPageSummary(row) {
+function validKindlessSummary(row) {
   return Boolean(
     isPlainObject(row)
-    && typeof row.slug === 'string'
-    && row.slug.startsWith('wiki/')
+    && hasNonEmptyString(row.slug)
     && row.kind === undefined
     && hasNonEmptyString(row.title)
     && (row.mtime === undefined || Number.isFinite(row.mtime))
@@ -2560,11 +2559,11 @@ function validAllPathsSuggestedQuery(query) {
 }
 
 /**
- * One backlink row: `matchedKeys` or `matchedInBody: true` (`mcp/src/vault.mjs`) is enough, and a row with
- * neither is rejected. `mcp/scripts/verify.mjs` is the authority; a stricter copy rejects valid server rows.
+ * A node, or a file with no `kind:` (spec §11), matched by `matchedKeys` or `matchedInBody: true`
+ * (`mcp/src/vault.mjs`). MCP's outputSchema and `mcp/scripts/verify.mjs` still require `kind`: a deferred drift.
  */
 function validBacklinkRow(row) {
-  if (!validNodeSummary(row) && !validWikiPageSummary(row)) return false;
+  if (!validNodeSummary(row) && !validKindlessSummary(row)) return false;
   if (row.matchedKeys !== undefined) {
     if (!Array.isArray(row.matchedKeys)) return false;
     if (!row.matchedKeys.every((key) => hasNonEmptyString(key))) return false;

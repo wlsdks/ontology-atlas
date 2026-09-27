@@ -4259,7 +4259,7 @@ await test('backlinks — a slug that names no node fails closed with the closes
   }
 });
 
-await test('backlinks — a wiki page that links the target is listed as a wiki page', async () => {
+await test('backlinks — files with no kind that link the target are listed, a wiki page as such', async () => {
   const root = await buildGraphFixture();
   mkdirSync(join(root, 'wiki'), { recursive: true });
   writeFileSync(
@@ -4268,16 +4268,22 @@ await test('backlinks — a wiki page that links the target is listed as a wiki 
       'status: draft\nsummary: Notes about Foo.\n---\n\n## Summary\n\nSee [[capabilities/foo]].\n',
     'utf-8',
   );
+  mkdirSync(join(root, 'notes'), { recursive: true });
+  writeFileSync(join(root, 'notes', 'meeting.md'), '---\ntitle: Meeting notes\n---\n\nWe discussed [[capabilities/foo]].\n', 'utf-8');
   try {
     const human = await run(['backlinks', 'capabilities/foo', root]);
     assert.equal(human.code, 0, `stdout: ${human.stdout}\nstderr: ${human.stderr}`);
-    assert.match(stripAnsi(human.stdout), /wiki page {2}wiki\/notes · Notes/);
-    assert.match(stripAnsi(human.stdout), /domains\/auth\s+· Auth/);
+    const listing = stripAnsi(human.stdout);
+    assert.match(listing, /wiki page {2}wiki\/notes · Notes/);
+    assert.match(listing, /no kind {2}notes\/meeting · Meeting notes/);
+    assert.match(listing, /domains\/auth\s+· Auth/);
     const json = await run(['backlinks', 'capabilities/foo', root, '--json']);
     assert.equal(json.code, 0, json.stderr);
-    const page = JSON.parse(json.stdout).matches.find((row) => row.slug === 'wiki/notes');
-    assert.equal(page.kind, undefined);
-    assert.equal(page.matchedInBody, true);
+    for (const slug of ['wiki/notes', 'notes/meeting']) {
+      const row = JSON.parse(json.stdout).matches.find((match) => match.slug === slug);
+      assert.equal(row.kind, undefined);
+      assert.equal(row.matchedInBody, true);
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
