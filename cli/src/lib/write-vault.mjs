@@ -1,6 +1,6 @@
-import { mkdirSync, existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
 import { readFileRevision, sameFileRevision, writeFileAtomically } from './atomic-write.mjs';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { buildMarkdown, parseFrontmatter } from './parse-frontmatter.mjs';
 import { VAULT_SOURCES_DIR, flatSlugIssue, inspectMergedUids, nodeUidIssue, rawSourceSlugIssue } from './schema.mjs';
 import { walkMd, pathToSlug } from './walk-vault.mjs';
@@ -24,7 +24,8 @@ export function slugToPath(rootPath, slug) {
   ) {
     throw new Error(`slug points outside the vault root: "${slug}"`);
   }
-  assertNotRawSource(normalizedRoot, candidate);
+  const rawSourceSlug = rawSourceSlugForPath(normalizedRoot, candidate);
+  if (rawSourceSlug) throw new Error(rawSourceSlugIssue(rawSourceSlug));
   // A string check alone cannot stop a symlink: `writeFileSync` follows a link inside the vault and writes
   // outside it. Same contract as `mcp/src/vault.mjs`.
   assertRealPathInside(candidate, normalizedRoot, slug);
@@ -59,19 +60,35 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
   }
 }
 
-function assertNotRawSource(normalizedRoot, candidate) {
-  const [top, ...below] = relative(normalizedRoot, candidate).split(sep);
-  if (below.length === 0 || top.toLowerCase() !== VAULT_SOURCES_DIR) return;
-  if (top !== VAULT_SOURCES_DIR && !opensAsVaultSourcesDir(normalizedRoot, top)) return;
-  throw new Error(rawSourceSlugIssue([VAULT_SOURCES_DIR, ...below].join('/').replace(/\.md$/, '')));
+function rawSourceSlugForPath(normalizedRoot, candidate) {
+  const spelled = relative(normalizedRoot, candidate).split(sep);
+  if (namesRawSource(spelled)) return segmentsToSlug(spelled);
+  const real = realSegmentsBelowRoot(normalizedRoot, candidate);
+  return real && namesRawSource(real) ? segmentsToSlug(real) : null;
 }
 
-function opensAsVaultSourcesDir(root, name) {
+function namesRawSource(segments) {
+  return segments.length > 1 && segments[0] === VAULT_SOURCES_DIR;
+}
+
+function segmentsToSlug(segments) {
+  return segments.join('/').replace(/\.md$/, '');
+}
+
+function realSegmentsBelowRoot(normalizedRoot, candidate) {
   try {
-    const names = readdirSync(root);
-    return !names.includes(name) && names.includes(VAULT_SOURCES_DIR) && existsSync(join(root, name));
+    const realRoot = realpathSync.native(normalizedRoot);
+    const unresolved = [];
+    for (let probe = candidate; ; probe = dirname(probe)) {
+      try {
+        return relative(realRoot, join(realpathSync.native(probe), ...unresolved)).split(sep);
+      } catch {
+        if (dirname(probe) === probe) return null;
+        unresolved.unshift(basename(probe));
+      }
+    }
   } catch {
-    return false;
+    return null;
   }
 }
 

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -14,13 +14,23 @@ import {
 import { loadVaultDocs } from './vault.mjs';
 
 const SERVER_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), 'index.js');
+const FOLDED_SLUG = 'ſources/Planning/roadmap';
 const call = (id, name, args = {}) => ({ jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: args } });
 
 let vault;
 let results;
+let docSlugs;
+let sourcesBefore;
+let diskFoldsCase;
+
+const listSources = () => readdirSync(join(vault, 'sources'), { recursive: true }).map(String).sort();
 
 before(async () => {
   vault = makeRawSourceVault();
+  symlinkSync('sources', join(vault, 'inbox'));
+  diskFoldsCase = existsSync(join(vault, 'ſources'));
+  docSlugs = loadVaultDocs(vault).map((doc) => doc.slug).sort();
+  sourcesBefore = listSources();
   const { responses } = await runJsonRpcProcess({
     command: process.execPath,
     args: [SERVER_ENTRY],
@@ -47,6 +57,12 @@ before(async () => {
       call(13, 'patch_concept', { slug: 'Sources/Planning/roadmap', frontmatter: { title: 'Changed' } }),
       call(14, 'delete_concept', { slug: RAW_SOURCE_SLUG, confirm: true }),
       call(15, 'rename_concept', { oldSlug: 'domains/planning', newSlug: 'sources/planning', confirm: true }),
+      call(16, 'get_concept', { slug: FOLDED_SLUG }),
+      call(17, 'patch_concept', { slug: FOLDED_SLUG, frontmatter: { title: 'Folded' } }),
+      call(18, 'add_concept', { slug: 'ſources/Planning/folded', kind: 'domain', title: 'Folded' }),
+      call(19, 'patch_concept', { slug: 'inbox/Planning/roadmap', frontmatter: { title: 'Aliased' } }),
+      call(20, 'add_relation', { from: 'domains/planning', to: RAW_SOURCE_SLUG, type: 'relates', why: 'probe' }),
+      call(21, 'rename_concept', { oldSlug: `./${RAW_SOURCE_SLUG}`, newSlug: 'domains/roadmap', confirm: true }),
     ],
     timeoutMs: 30_000,
   });
@@ -58,10 +74,7 @@ after(() => rmSync(vault, { recursive: true, force: true }));
 const structured = (id) => results.get(id).structuredContent;
 
 test('a Markdown file under sources/ that carries kind: is on no read surface', () => {
-  assert.deepEqual(
-    loadVaultDocs(vault).map((doc) => doc.slug).sort(),
-    ['domains/planning', 'wiki/roadmap-notes'],
-  );
+  assert.deepEqual(docSlugs, ['domains/planning', 'wiki/roadmap-notes']);
   assert.deepEqual(structured(2).nodes.map((node) => node.slug), ['domains/planning']);
   assert.deepEqual(structured(3).byKind, { domain: 1 });
   assert.deepEqual(structured(4).matches.map((match) => match.slug), ['domains/planning']);
@@ -83,7 +96,7 @@ test('validate_vault names the raw source once, as kind-under-sources, never as 
     [[RAW_SOURCE_SLUG, ['kind-under-sources']]],
   );
   assert.equal(report.summary.errorFiles, 0);
-  assert.match(report.problems[0].issues[0].message, /Move it into a kind folder/);
+  assert.match(report.problems[0].issues[0].message, /move it into domains\/, then patch_concept each node/);
 });
 
 test('a wiki page citing the raw source still validates, and read_source still reads it', () => {
@@ -100,4 +113,27 @@ test('write tools refuse a slug under sources/ and leave the raw source byte-ide
   assert.equal(readFileSync(join(vault, RAW_SOURCE_PATH), 'utf8'), RAW_SOURCE_TEXT);
   assert.equal(existsSync(join(vault, 'sources/Planning/next.md')), false);
   assert.equal(existsSync(join(vault, 'domains/planning.md')), true);
+});
+
+test('no other spelling and no in-vault link reaches the raw source', () => {
+  assert.equal(structured(19).errorCode, 'invalid_arguments', 'a link aliasing sources/ was written through');
+  if (diskFoldsCase) {
+    assert.equal(structured(16).errorCode, 'not_found');
+    assert.deepEqual(structured(16).recoveryTools, ['read_source']);
+    assert.equal(structured(17).errorCode, 'invalid_arguments', 'ſources/ was patched on a case-folding disk');
+    assert.equal(structured(18).errorCode, 'invalid_arguments', 'ſources/ was written on a case-folding disk');
+  } else {
+    assert.equal(results.get(16).isError, true);
+    assert.equal(results.get(17).isError, true);
+  }
+  assert.deepEqual(listSources(), sourcesBefore);
+  assert.equal(readFileSync(join(vault, RAW_SOURCE_PATH), 'utf8'), RAW_SOURCE_TEXT);
+});
+
+test('a relation or rename naming a raw source is refused with the raw-source reason', () => {
+  for (const id of [20, 21]) {
+    assert.equal(structured(id).errorCode, 'invalid_arguments', `request ${id}`);
+    assert.match(results.get(id).content[0].text, /must not name a file under sources\//, `request ${id}`);
+    assert.doesNotMatch(results.get(id).content[0].text, /list_concepts/, `request ${id}`);
+  }
 });

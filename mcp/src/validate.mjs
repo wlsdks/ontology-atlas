@@ -23,6 +23,7 @@ import {
 } from './meaning-findings.mjs';
 import { parseFrontmatter } from './parser.mjs';
 import {
+  VAULT_KINDS,
   VAULT_SOURCES_DIR,
   folderForKind,
   inspectMergedUids,
@@ -79,16 +80,12 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
 
 export function rawSourceKindIssues(rootPath) {
   const rows = [];
-  const stack = [VAULT_SOURCES_DIR];
+  const stack = directoryEntries(rootPath).some((entry) => entry.name === VAULT_SOURCES_DIR && entry.isDirectory())
+    ? [VAULT_SOURCES_DIR]
+    : [];
   while (stack.length > 0) {
     const dir = stack.pop();
-    let entries;
-    try {
-      entries = readdirSync(join(rootPath, dir), { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
+    for (const entry of directoryEntries(join(rootPath, dir))) {
       if (entry.name.startsWith('.')) continue;
       const path = `${dir}/${entry.name}`;
       if (entry.isDirectory()) stack.push(path);
@@ -102,6 +99,14 @@ export function rawSourceKindIssues(rootPath) {
   return rows.sort((a, b) => a.path.localeCompare(b.path));
 }
 
+function directoryEntries(directory) {
+  try {
+    return readdirSync(directory, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+
 function readFrontmatterKind(filePath) {
   try {
     const kind = parseFrontmatter(readFileSync(filePath, 'utf8')).frontmatter?.kind;
@@ -113,12 +118,14 @@ function readFrontmatterKind(filePath) {
 
 function rawSourceKindIssue(path, kind) {
   if (!kind) return null;
+  const home = folderForKind(kind) || (VAULT_KINDS.includes(kind) ? 'the vault root' : 'its kind folder');
   return {
     code: 'kind-under-sources',
     severity: 'warning',
     message:
       `${path} carries \`kind: ${kind}\`, but every file under sources/ is read as a raw source, never as a node. ` +
-      'Move it into a kind folder such as domains/ to make it a node.',
+      `To make it a node, move it into ${home}, then patch_concept each node that validate_vault reports with a ` +
+      `dangling-graph-reference to ${path.replace(/\.md$/, '')} so it names the new slug.`,
   };
 }
 

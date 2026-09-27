@@ -71,12 +71,17 @@ export function buildFindPathGrowthHint({ from, to, fromExists, toExists }) {
 }
 
 /** get_concept / node_profile miss; `candidateSlugs` come from the caller's real slug set. */
-export function buildSlugNotFoundGrowthHint({ slug, candidateSlugs = [], referencedBy = [] }) {
-  if (isVaultSourcePath(slug)) {
+export function buildSlugNotFoundGrowthHint({
+  slug,
+  candidateSlugs = [],
+  referencedBy = [],
+  rawSourceSlug = isVaultSourcePath(slug) ? slug : null,
+}) {
+  if (rawSourceSlug) {
     return {
-      reason: `"${slug}" is under sources/, where every file is a raw source and never a node.`,
-      suggestion: 'Read it as a source. To make it a node, move the file into a kind folder such as domains/.',
-      exampleCall: { tool: 'read_source', args: { path: rawSourceFileForSlug(slug) } },
+      reason: `"${slug}" opens ${rawSourceSlug} under sources/, where every file is a raw source and never a node.`,
+      suggestion: 'Read it as a source. To make it a node, move the file into its kind folder.',
+      exampleCall: { tool: 'read_source', args: { path: rawSourceFileForSlug(rawSourceSlug) } },
     };
   }
   // The vault already names this concept; only the document is missing. Say who

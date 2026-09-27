@@ -46,6 +46,7 @@ import {
   collectNeighborRefs,
   findGraphReferences,
   loadVaultDocs,
+  rawSourceSlugAt,
   readDoc,
   slugToPath,
   suggestSimilarSlugs,
@@ -57,11 +58,11 @@ import { join } from 'node:path';
 // verify contract depend on the literal string); only growthHint rides on the
 // Error instance, and error() lifts it into structuredContent.
 function docNotFoundError(slug, docs) {
-  const rawSourceIssue = rawSourceSlugIssue(slug);
-  if (rawSourceIssue) {
-    const err = new Error(`Doc not found: ${slug}. ${rawSourceIssue}`);
+  const rawSourceSlug = rawSourceSlugAt(VAULT_ROOT, slug);
+  if (rawSourceSlug) {
+    const err = new Error(`Doc not found: ${slug}. ${rawSourceSlugIssue(rawSourceSlug)}`);
     err.repairFields = { missingSubject: 'Doc not found', missingSlug: slug, recoveryTools: ['read_source'] };
-    err.growthHint = buildSlugNotFoundGrowthHint({ slug });
+    err.growthHint = buildSlugNotFoundGrowthHint({ slug, rawSourceSlug });
     return err;
   }
   const err = new Error(`Doc not found: ${slug}`);
@@ -324,8 +325,8 @@ function resolveExistingVaultUid(uid, docs = null) {
 }
 
 function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
-  const rawSourceIssue = rawSourceSlugIssue(slug);
-  if (rawSourceIssue) return `${prefix}: "${slug}". ${rawSourceIssue}`;
+  const rawSourceSlug = rawSourceSlugAt(VAULT_ROOT, slug);
+  if (rawSourceSlug) return rawSourceSlugIssue(rawSourceSlug);
   const suggestions = suggestSimilarSlugs(VAULT_ROOT, slug);
   const lines = [
     `${prefix}: "${slug}". Use list_concepts() to see all slugs, or find_evidence({title:"${slug}"}) to search by title.`,
