@@ -326,7 +326,12 @@ export function validateWikiPage(raw, options = {}) {
     : typeof frontmatter.sources === 'string' && frontmatter.sources.trim()
       ? [frontmatter.sources.trim()]
       : [];
-  const known = options.knownSources ? new Set(options.knownSources) : null;
+  // A caller validating many pages passes one Set; rebuilding it per page is O(P·S).
+  const known = options.knownSources
+    ? options.knownSources instanceof Set
+      ? (options.knownSources)
+      : new Set(options.knownSources)
+    : null;
 
   // The Library reads `sources_truncated` only for cited paths, so a path
   // outside `sources:` would reach no screen; it is reported here instead.
@@ -563,8 +568,35 @@ export function validateWikiFolder(pages) {
     }
   }
 
-  for (let a = 0; a < entries.length; a += 1) {
-    for (let b = a + 1; b < entries.length; b += 1) {
+  // Only a pair where one page's primary source is listed by the other can share a
+  // source that counts, so pages are indexed by the sources they list and only those
+  // pairs are visited, in the (a, b) order the all-pairs loop used: O(P + Σ kₛ) pair
+  // candidates instead of O(P²), where kₛ is the number of pages listing source s.
+  const listedBy = new Map();
+  entries.forEach((entry, index) => {
+    for (const source of entry.sources) {
+      const list = listedBy.get(source);
+      if (list) list.push(index);
+      else listedBy.set(source, [index]);
+    }
+  });
+  const pairKeys = new Set();
+  const pairs = [];
+  entries.forEach((entry, index) => {
+    if (entry.primary === null) return;
+    for (const other of listedBy.get(entry.primary) ?? []) {
+      if (other === index) continue;
+      const a = Math.min(index, other);
+      const b = Math.max(index, other);
+      const key = a * entries.length + b;
+      if (pairKeys.has(key)) continue;
+      pairKeys.add(key);
+      pairs.push([a, b]);
+    }
+  });
+  pairs.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
+  for (const [a, b] of pairs) {
+    {
       const first = entries[a];
       const second = entries[b];
       // Only a page's primary source (its first) counts: a source cited for a

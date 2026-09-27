@@ -415,5 +415,54 @@ export const WIKI_FOLDER_CASES = [
       folderPage('b', ['wiki/a'], ['sources/other.csv']),
     ],
     expected: { 'wiki/a.md': ['dangling-wikilink'], 'wiki/b.md': ['orphan-page'] },
+  },  /*
+   * The folder check visits only pairs that share a primary source (indexed by source,
+   * not every pair). These rows pin the answers that index must keep.
+   */
+  {
+    name: 'three pages from one primary source: the linked pair is quiet, each unlinked pair is reported',
+    pages: [
+      folderPage('a', ['wiki/b', 'wiki/d']),
+      folderPage('b', ['wiki/a', 'wiki/d']),
+      folderPage('c', ['wiki/d']),
+      folderPage('d', ['wiki/a', 'wiki/b', 'wiki/c'], ['sources/other.csv']),
+    ],
+    expected: {
+      'wiki/a.md': ['shared-source-unlinked'],
+      'wiki/b.md': ['shared-source-unlinked'],
+      'wiki/c.md': ['shared-source-unlinked', 'shared-source-unlinked'],
+      'wiki/d.md': [],
+    },
+  },
+  {
+    name: 'two primary sources in one folder pair only the pages written from the same one',
+    pages: [
+      folderPage('a', ['wiki/c', 'wiki/d'], ['sources/plan.pdf']),
+      folderPage('b', ['wiki/c'], ['sources/plan.pdf']),
+      folderPage('c', ['wiki/a', 'wiki/b'], ['sources/budget.xlsx']),
+      folderPage('d', ['wiki/a'], ['sources/budget.xlsx']),
+    ],
+    expected: {
+      'wiki/a.md': ['shared-source-unlinked'],
+      'wiki/b.md': ['shared-source-unlinked'],
+      'wiki/c.md': ['shared-source-unlinked'],
+      'wiki/d.md': ['shared-source-unlinked'],
+    },
+  },
+  {
+    name: 'a page listing another page\'s primary source second is paired, whichever comes first in the input',
+    pages: [
+      folderPage('b', ['wiki/c'], ['sources/b.pdf', 'sources/a.pdf']),
+      folderPage('a', ['wiki/c'], ['sources/a.pdf']),
+      folderPage('e', ['wiki/c'], ['sources/e.pdf', 'sources/a.pdf']),
+      folderPage('c', ['wiki/a', 'wiki/b', 'wiki/e'], ['sources/c.pdf']),
+    ],
+    // b and e both list a.pdf second: neither is the other's primary, so they are not paired.
+    expected: {
+      'wiki/b.md': ['shared-source-unlinked'],
+      'wiki/a.md': ['shared-source-unlinked', 'shared-source-unlinked'],
+      'wiki/e.md': ['shared-source-unlinked'],
+      'wiki/c.md': [],
+    },
   },
 ];
