@@ -23,8 +23,9 @@ export interface PackSlot {
 }
 
 /**
- * Above this many groups the O(k³) tangent search (pairs of placed circles × a test against
- * each) gives way to a golden-angle spiral; at 48 it is about 110,000 tests once, on mount.
+ * Above this many groups the tangent search gives way to a golden-angle spiral: each placement
+ * tests O(k²) tangent candidates against every placed circle, O(k⁴) over the packing; at 48
+ * equal groups that measured about 580,000 distance computations, once, on mount.
  */
 const TANGENT_SEARCH_MAX_GROUPS = 48;
 

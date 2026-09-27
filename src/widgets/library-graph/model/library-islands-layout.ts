@@ -4,11 +4,12 @@ import type { LayoutPoint } from "./library-graph-layout";
 /**
  * The islands layout: the Library's overview once a folder is too large to name, showing
  * shape and state instead. A topic is a concept; its island holds the pages naming it and
- * the files they read. Pages naming none go to Unsorted; unread files form a shore band.
+ * the files they read. Pages naming none join their wiki sub-folder's island, else
+ * Unsorted; unread files form a shore band.
  *
  * Pure and deterministic. Inside an island marks sit on a Vogel sunflower spiral, pages at
- * the centre; islands pack largest first by spiral search about the centre. O(n + k²·s)
- * for n marks, k islands and s spiral steps per island.
+ * the centre; islands pack largest first, each trying up to s = 4000 spiral steps against the
+ * k placed: O(n log n + E + k²·s) with the label sorts and the edge pass.
  */
 
 /** Below this many marks the flow picture names everything; from here the overview is islands. */
@@ -127,7 +128,7 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
   // Inside each island: a sunflower, pages first.
   const positions = new Map<string, LayoutPoint>();
   const radii = new Map<string, number>();
-  /** A page's dot grows with the files it read, up to a fifth wider, scaled within the folder. */
+  // A page's dot grows with the files it read, 0.85 to 1.25 page radii, scaled within the folder.
   const reads = new Map<string, number>();
   for (const page of pages) reads.set(page.id, (cites.get(page.id) ?? []).length);
   const mostRead = Math.max(1, ...reads.values());

@@ -24,9 +24,9 @@ import {
  * As an `anchored` surface (`src/shared/ui/transient-surface.ts`) it stands beside its
  * opener, closes on Escape and gives the keyboard back.
  *
- * Focus lands on the card itself, not its first door, or the Enter that opened it presses
- * `Open`. It is absolute in the canvas box, not a portal: the box is the region it must stay
- * inside, and it shares the mark's coordinates (`placeLibraryGraphCard`).
+ * Focus lands on the card itself, not its first door, or the Enter that opened it presses the
+ * card's `Open`. It is absolute in the canvas box, not a portal: the box is the region it must
+ * stay inside, and it shares the mark's coordinates (`placeLibraryGraphCard`).
  */
 export function LibraryMarkPopover({
   node,

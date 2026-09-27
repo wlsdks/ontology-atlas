@@ -158,8 +158,8 @@ describe("the library graph section", () => {
   it("stops offering the fit while the picture is already framed", () => {
     renderGraph();
     const tile = screen.getByTestId("library-graph-fit");
-    // jsdom paints no frames, so this asserts the wiring only; `isSameView` and
-    // `library-graph-picture.spec.ts` cover the arithmetic and the render.
+    // jsdom paints no frames, so this asserts the wiring only; the arithmetic is `isSameView`'s
+    // unit case and the render is `library-graph-picture.spec.ts`.
     expect(tile.getAttribute("data-framed")).toBe("false");
     expect(tile).not.toBeDisabled();
   });

@@ -18,10 +18,11 @@ import type { LibraryGraphInk } from "./library-graph-ink";
  * | mentions | dashed, 1px |
  * | either, unverified | broken once at its midpoint, with an amber dot in the break |
  *
- * Every distinction survives without colour: shape for kind, dash for relation, size for
- * degree; indigo only marks the selection. Every mark clears the 3:1 non-text floor on the
- * canvas ground. Edges bow so parallel lines stay apart, everything outside the pointed-at
- * neighbourhood dims, and each mark carries a 1px ground-coloured halo, not a glow.
+ * Every distinction survives without colour: shape for kind, dash and width for relation,
+ * size for a page's citations; indigo only marks the selection. Every mark clears the 3:1
+ * non-text floor on the canvas ground. Edges bow so parallel lines stay apart, everything
+ * outside the pointed-at neighbourhood dims, and each mark carries a halo of ground one
+ * citation width wide (`MARK_HALO_RATIO`), not a glow.
  */
 
 interface LibraryGraphIsland {
@@ -755,7 +756,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     const breath = flow === null ? 0 : flow.still ? 1 : flow.pulsePhase;
     /*
      * Above {@link STALE_DOT_STANDING_MAX} only citations in hand keep their dots: count is
-     * the only lever with range, since alpha fails the amber scan and radius is at its floor.
+     * the only lever with range, since alpha fails the amber scan and radius has one step left.
      * An open card's mark is the selection and in `focus`, so the card's `flowInlineStale`
      * sentence still names a drawn mark.
      */
@@ -953,8 +954,8 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
 
     /*
      * A just-written page brightens to the selection indigo and decays over its arrival
-     * while its citations drift toward it; both are bounded by the receipt's trail
-     * (`docs/DECISIONS.md`).
+     * while its citations drift toward it; both end with the receipt's trail
+     * (`docs/DECISIONS.md`, "A press on a Library mark opens a card beside it").
      */
     const arrival = flow?.arrived.get(node.id);
     if (arrival !== undefined) {

@@ -30,7 +30,7 @@ beforeEach(() => {
 });
 
 describe("View3dMenu view picker", () => {
-  it("names the radiogroup as the map view picker, flat view included", () => {
+  it("names the radiogroup as the map view picker", () => {
     mount();
     expect(screen.getByRole("radiogroup")).toHaveAccessibleName("지도 보기");
   });
@@ -61,7 +61,7 @@ describe("View3dMenu view picker", () => {
     expect(screen.queryByText("결합")).toBeNull();
   });
 
-  it("gives every row a hint line under its title", () => {
+  it("gives the flat, strata and coupling rows a hint line under their titles", () => {
     mount();
     for (const id of ["flat", "strata", "coupling"]) {
       const row = screen.getByTestId(`topology-view-3d-choice-${id}`);

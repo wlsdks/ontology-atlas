@@ -25,8 +25,8 @@ export const LIBRARY_MAX_MARK_PX = 36;
 /** The smallest a source's square may be drawn, across, in canvas pixels. */
 export const MIN_SOURCE_MARK_PX = 3;
 /**
- * Mirrors `LIBRARY_SOURCE_RADIUS`, repeated so the view keeps no model dependency;
- * `library-graph-view.test.ts` asserts they agree.
+ * Mirrors `LIBRARY_SOURCE_RADIUS`, repeated so the view keeps no model dependency; the
+ * view's test (`library-graph-view.test.ts`) asserts they agree.
  */
 export const SOURCE_MARK_WORLD_RADIUS = 3.5;
 /** Mirrors `LIBRARY_PAGE_RADIUS_MAX` — the top of the mark band — on the same terms. */
@@ -48,9 +48,10 @@ export function libraryZoomMax(widestWorldRadius: number): number {
 export const LIBRARY_ZOOM_MAX = libraryZoomMax(WIDEST_MARK_WORLD_RADIUS);
 
 /**
- * The zoom at which a file's name appears; pages always name themselves, since "which
- * write-ups exist" is the home's question. Between the fixtures' fitted scales (0.49–2.0)
- * and the ceiling: small folders name files at rest, large ones once zoomed in.
+ * The zoom from which files are named at rest; a pointed-at file, or one in the open page's
+ * neighbourhood, is named at any zoom, and pages are asked first, since "which write-ups
+ * exist" is the home's question. Between the fixtures' fitted scales (0.49–2.0) and the
+ * ceiling: small folders name files at rest, large ones once zoomed in.
  */
 export const SOURCE_LABEL_MIN_SCALE = 1.4;
 

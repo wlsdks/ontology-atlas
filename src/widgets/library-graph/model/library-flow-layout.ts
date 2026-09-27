@@ -171,7 +171,7 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   for (let turn = 0; turn < 6; turn += 1) {
     const breath = BREATH_PX / scale;
     const sourceBands = ordered.reduce((sum, column, index) => sum + (column.kind === "source" ? (grids[index] - 1) * FLOW_GRID_STEP : 0), 0);
-      const fixed = FLOW_SIDE_PAD * 2 + sourceBands + namedLanes * (WIDEST_MARK * 2 + NAME_GAP + breath) + Math.max(0, ordered.length - 1) * breath;
+    const fixed = FLOW_SIDE_PAD * 2 + sourceBands + namedLanes * (WIDEST_MARK * 2 + NAME_GAP + breath) + Math.max(0, ordered.length - 1) * breath;
     const budget = roomPlaces > 0 ? Math.max(FLOW_LABEL_ROOM_MIN_PX / scale, (worldWidth * (ceiling / scale) - fixed) / roomPlaces) : 0;
     labelRoom = roomPlaces > 0 ? Math.min(FLOW_LABEL_ROOM_PX / scale, budget) : 0;
     const nameStep = WIDEST_MARK * 2 + NAME_GAP + labelRoom + breath;
@@ -201,9 +201,9 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     kind === "source" ? FLOW_GRID_STEP : WIDEST_MARK * 2 + NAME_GAP + labelRoom + BREATH_PX / scale;
 
   /**
-   * The anchor column is spread evenly; every other mark takes the mean y of its neighbours
-   * in the column placed before it, is pushed apart to the row gap in order, and the column
-   * is re-centred so the push does not drift it downward.
+   * The anchor column and any folded band are spread evenly; every other mark takes the mean
+   * y of its neighbours in the column placed before it, is pushed apart to the row gap in
+   * order, and the column is re-centred so the push does not drift it downward.
    */
   const positions = new Map<string, LayoutPoint>();
   const yOf = new Map<string, number>();
@@ -321,7 +321,7 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
       const filesRight = x;
       x += group.length > 0 ? breath + ISLAND_STACK_GAP : 0;
       const pagesX = x;
-        x += WIDEST_MARK * 2 + NAME_GAP + labelRoom + breath;
+      x += WIDEST_MARK * 2 + NAME_GAP + labelRoom + breath;
       stackX.push({ files: (filesLeft + filesRight) / 2, pages: pagesX });
     });
     const conceptColumn = columns.find((column) => column.kind === "concept");

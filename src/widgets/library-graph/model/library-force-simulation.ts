@@ -7,7 +7,7 @@ import { packGroupsAroundCentre, type PackBox, type PackSlot } from "./library-g
 
 /**
  * The library graph as a live force simulation, so a dense graph can be pulled apart by
- * hand (`docs/DECISIONS.md`).
+ * hand (`docs/DECISIONS.md`, "The Library graph is a live force simulation").
  *
  * | Force | What it encodes |
  * |---|---|
@@ -17,9 +17,10 @@ import { packGroupsAroundCentre, type PackBox, type PackSlot } from "./library-g
  * | gravity, isotropic | each group is held to its own cell's centre |
  * | orphan ring | an unattached mark gets a slot on one ellipse, not a wall |
  *
- * The physics is told nothing about the window; the camera fits. A tick costs O(n log n)
- * with the Barnes–Hut quadtree past
- * {@link MANY_BODY_EXACT_MAX_ORDER}, O(n²) below it, plus O(E) springs.
+ * Only the orphan ring reads the window (its aspect); the camera fits the rest. A tick is
+ * per-group many-body, O(n log n) on the Barnes–Hut quadtree past
+ * {@link MANY_BODY_EXACT_MAX_ORDER} and O(n²) below it, plus O(E) springs and near-O(n) grid
+ * collisions (O(n²) up to {@link COLLISION_EXACT_MAX_ORDER}).
  *
  * Deterministic: no `Math.random` or clock, golden-angle seeds, fixed tie rules, so tests
  * assert positions. `stepLibrarySimulation` mutates its state and returns it, because an
@@ -98,9 +99,9 @@ const COLLISION_EXACT_MAX_ORDER = 150;
 export const LIBRARY_FIT_PADDING = 64;
 
 /**
- * The orphan ring: unattached marks, which no spring answers for, get evenly spaced slots
- * (by sorted id) on one ellipse with the canvas's aspect around the connected mass, or
- * repulsion throws each to a different wall. A gravity target, not a position.
+ * The orphan ring's standoff and the gutter between packed groups. Unattached marks get evenly
+ * spaced gravity slots by sorted id, or repulsion throws each at a wall: an ellipse of the
+ * canvas's aspect around a single mass, else a circle in their own cell.
  */
 const ORPHAN_RING_GAP = 56;
 /*
@@ -113,16 +114,16 @@ const ORPHAN_RING_MIN_RADIUS = 90;
 /** Pull toward the ring slot per tick; several times {@link GRAVITY}, to answer the whole mass's repulsion. */
 const ORPHAN_RING_GRAVITY = 0.085;
 /**
- * The first slot sits on the vertical axis with no half-slot offset. On a diagonal, four
- * orphans each hold two extremes and the fit pins them into the corners. Vertical, because
- * the mass settles wider than its canvas, so one loose mark on the long radius would decide
- * the scale and leave the height empty (measured at 1400×860 and 1040×720).
+ * The first slot sits on an axis, never half a slot off: on the diagonals four orphans each
+ * hold two extremes and the fit pins them into the corners. Vertical rather than horizontal
+ * is unmeasured under isotropic gravity.
  */
 const ORPHAN_RING_PHASE = Math.PI / 2;
 
 /*
  * No ambient drift: the arrived picture is still, and motion only answers what a person did
- * (arrival, drag, release, resize, a changed folder). `docs/DECISIONS.md` records why.
+ * (arrival, drag, release, resize, a changed folder); why is in `docs/DECISIONS.md`, "The
+ * Library graph stands still".
  */
 
 interface SimulationNode {
@@ -164,7 +165,7 @@ export interface LibrarySimulation {
   links: SimulationLink[];
   alpha: number;
   alphaTarget: number;
-  /** Half-width and half-height of the field, which is where the aspect-aware gravity comes from. */
+  /** The canvas's CSS size: gravity ignores it, and the orphan ring takes its aspect from it. */
   box: { width: number; height: number };
   /**
    * One place per group of the folder in simulation units (`library-graph-packing.ts`);
@@ -188,7 +189,7 @@ export interface LibrarySimulation {
    * written, so a composition change leaves no stale radius.
    */
   looseRadius: number;
-  /** False for a single-group folder and for a folder of only unattached files. */
+  /** False when the folder has fewer than two connected components, loose marks or not. */
   packed: boolean;
   /**
    * Barnes–Hut crossover, state only so the perf test can time both passes on one graph;
@@ -359,11 +360,12 @@ const PACK_PREPASS_MAX_ORDER = 1200;
 const PACK_ESTIMATE_AREA_PER_MARK = 2200;
 
 /**
- * Gives every group of the folder its own place: (1) connected components by union-find,
- * O(E α(n)), biggest first with the smallest id breaking ties, plus the unattached marks as
- * one more group; (2) each component settled alone so its cell has its real shape, or a wide
- * cluster overflows a square cell, with the offsets seeding the real run; (3) the boxes
- * packed around the centre with {@link ORPHAN_RING_GAP} between groups.
+ * Gives every group of the folder its own place: (1) connected components by union-find with
+ * path halving and no rank, O((n + E) log n) at worst, biggest first, ties by the id of each
+ * component's first mark, plus the unattached marks as one more group; (2) each component
+ * settled alone so its cell has its real shape, or a wide cluster overflows a square cell,
+ * with the offsets seeding the real run; (3) the boxes packed around the centre with
+ * {@link ORPHAN_RING_GAP} between groups.
  *
  * A single connected graph keeps one cell covering the field. `graph` is null when there is
  * no folder to measure a footprint from, and then the estimate stands in.
@@ -440,8 +442,8 @@ function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null
   }
 
   /*
-   * Each group settles alone against the canvas's aspect, the aspect its gravity keeps in its
-   * cell; the offsets seed the real run, or the arrival shows clusters crossing the canvas.
+   * Each group settles alone first; the offsets seed the real run, or the arrival shows
+   * clusters crossing the canvas.
    */
   const prepass = graph !== null && nodes.length <= PACK_PREPASS_MAX_ORDER;
   const looseIndex = loose.length > 0 ? groups.length - 1 : -1;
@@ -526,8 +528,8 @@ function looseRingRadius(loose: readonly SimulationNode[]): number {
 
 /**
  * Settles one group alone with this file's forces and returns its box and each mark's offset
- * from the box centre. Radii graded within the group and the canvas aspect move the box a
- * few per cent, which the packing gutter absorbs.
+ * from the box centre. Radii graded within the group move the box a few per cent, which the
+ * packing gutter absorbs.
  */
 function settledFootprint(
   graph: LibraryGraph,
@@ -577,11 +579,11 @@ function assignOrbits(nodes: SimulationNode[]): void {
 }
 
 /**
- * The ellipse the unattached marks stand on, or `null` when there are none; exported so a
- * test asks the claim rather than recomputing it. Centre and standoffs come from the
- * connected mass per axis plus {@link ORPHAN_RING_GAP}; the aspect is the box's, so the fit
- * fills both axes. Not clamped to the box: the fit's padding is the margin, and a clamp
- * would only pull loose marks into the cluster.
+ * The ring the unattached marks stand on, or `null` when there are none; exported so a test
+ * asks the claim rather than recomputing it. Packed, a circle in the loose group's cell;
+ * otherwise an ellipse of the box's aspect whose centre and standoffs come from the connected
+ * mass per axis plus {@link ORPHAN_RING_GAP}. Not clamped to the box: the fit's padding is the
+ * margin, and a clamp would only pull loose marks into the cluster.
  */
 export function libraryOrphanRing(
   sim: LibrarySimulation,
@@ -970,8 +972,8 @@ export function hasPinnedNode(sim: LibrarySimulation): boolean {
 }
 
 /**
- * Records the canvas's new shape; nothing moves, since a resize changes only the camera
- * (`fitLibraryView`). The box is kept for the orphan ring's aspect and the footprint prepass.
+ * Records the canvas's new shape and moves nothing: the camera refits (`fitView`), and the
+ * box feeds the orphan ring's aspect and the engine's re-laid flow or islands world.
  */
 export function resizeLibrarySimulation(
   sim: LibrarySimulation,

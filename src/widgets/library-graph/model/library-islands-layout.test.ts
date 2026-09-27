@@ -138,7 +138,7 @@ describe("islands layout", () => {
     expect(page / file).toBeLessThanOrEqual((ISLAND_PAGE_RADIUS / ISLAND_SOURCE_RADIUS) * 1.25 + 1e-6);
   });
 
-  it("grows a page's dot with the files it read, the busiest a fifth wider than the quietest", () => {
+  it("grows a page's dot with the files it read, the busiest about 1.47 times the quietest", () => {
     const layout = islandsLayout(
       graph({ sources: ["a.md", "b.md", "c.md", "d.md"], pages: ["quiet", "busy"], cites: [["quiet", "a.md"], ["busy", "b.md"], ["busy", "c.md"], ["busy", "d.md"]] }),
       WORLD,

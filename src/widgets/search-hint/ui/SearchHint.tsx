@@ -227,8 +227,6 @@ export function SearchHint({
             open={view3dMenuOpen}
             onClose={(returnFocus) => {
               setView3dMenuOpen(false);
-              // A choice or Escape hands focus back to the chip that opened the picker;
-              // a press elsewhere keeps it where that press put it.
               if (returnFocus) view3dChipRef.current?.focus();
             }}
             anchorRef={view3dAnchorRef}

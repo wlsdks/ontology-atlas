@@ -33,7 +33,8 @@ import { useLibraryGraphEngine, type LibraryGraphCardBox, type LibraryIslandPick
  * The library's graph: the paper trail under the ontology (which file was read, what was
  * written from it, which concepts it reaches), kept apart from the map so a PDF never
  * lands on the meaning graph. It is the pane whenever nothing is chosen. Motion only
- * answers something a person did; hover changes ink only (`docs/DECISIONS.md`).
+ * answers something a person did; hover changes ink only (`docs/DECISIONS.md`, "The
+ * Library graph stands still").
  */
 
 export interface LibraryGraphSelection {
@@ -234,7 +235,7 @@ export function LibraryGraph({
     [onSelect, router],
   );
 
-  // Pages always carry names; the camera decides which files do (`draw-library-graph.ts`).
+  // Every page asks for its name (a collision drops the quieter); the camera decides which files do.
   const standingLabels = true;
   const islandLabels = useMemo(() => ({ unsorted: t("graph.islandUnsorted"), unread: t("graph.islandUnread") }), [t]);
   const engine = useLibraryGraphEngine({
@@ -350,7 +351,10 @@ export function LibraryGraph({
       });
 
   return (
-    /* The pane, not a strip over the reader; the guide is a popup (`docs/DECISIONS.md`). */
+    /*
+     * The pane, not a strip over the reader; the guide is a popup (`docs/DECISIONS.md`,
+     * "The Library pane is the graph; the shelf is a popup").
+     */
     <section
       data-testid="library-graph"
       aria-label={t("graph.title")}
@@ -384,8 +388,8 @@ export function LibraryGraph({
 
       {graph.nodes.length === 0 ? (
         /*
-         * `LibraryPage` answers an empty folder itself, but this widget still says so rather
-         * than render a silent empty canvas.
+         * An empty folder is answered by `LibraryPage` itself, but this widget still says so
+         * rather than render a silent empty canvas.
          */
         <p
           data-testid="library-graph-empty"
@@ -502,8 +506,8 @@ export function LibraryGraph({
             t={t}
           />
         ) : null}
-        {/* Fit, desktop only: a phone pinches out, and a tile would cover its marks. No
-            `label`, since that mode wants a `.chrome-rail` ancestor; `title` names it. */}
+        {/* Fit, desktop only: a phone pinches out, and a tile would cover its marks. It takes
+            no `label`, since that mode wants a `.chrome-rail` ancestor; `title` names it. */}
         <div className="pointer-events-none absolute bottom-3 right-3 hidden md:block">
           <div className="pointer-events-auto">
             {/* Disabled while already framed, or a press repaints the same pixels; the tooltip names the state. */}

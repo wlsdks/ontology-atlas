@@ -206,7 +206,8 @@ describe("the arrival's settle budget", () => {
       process.stdout.write(
         `[library-graph] ${order} marks: mount (composition) ${mountMs.toFixed(0)}ms, settle ${settleMs.toFixed(0)}ms over ${sim.ticks} ticks, ${(settleMs / Math.max(1, sim.ticks)).toFixed(2)}ms per tick\n`,
       );
-      // The settle lands, so the loop may stop (`docs/DECISIONS.md`).
+      // A settle that never lands breaks the still picture at rest (`docs/DECISIONS.md`,
+      // "The Library graph stands still").
       expect(isLibrarySimulationRunning(sim)).toBe(false);
       expect(sim.ticks).toBeLessThanOrEqual(LIBRARY_SETTLE_MAX_TICKS);
       // A ceiling about ten times the local measurement.
@@ -218,10 +219,10 @@ describe("the arrival's settle budget", () => {
 });
 
 /**
- * An open card's per-frame cost at 372 and 992 marks, against the recorded budget of 2 ms
- * added (`docs/DECISIONS.md`). Only this repository's per-frame arithmetic is timed, on a
- * recording context; the rasterised cost is read in a browser through the probe,
- * window.__atlasLibraryGraph.paint().
+ * An open card's per-frame cost at 372 and 992 marks, against the recorded 2 ms budget
+ * (`docs/DECISIONS.md`, "A press on a Library mark opens a card beside it"). Only this
+ * repository's per-frame arithmetic is timed, on a recording context; the rasterised cost
+ * is read in a browser through the probe, window.__atlasLibraryGraph.paint().
  */
 describe("what an open card costs per frame", () => {
   /** A 2D context that records nothing and costs nothing: what is left is our own code. */

@@ -61,9 +61,9 @@ export function fitToBox(
 }
 
 /**
- * `--motion-ease` sampled for the canvas, from `MOTION_EASE`, never four literals
- * (src/shared/motion/tokens.ts is the gated copy). Newton's method converges in a few
- * steps on this monotone curve.
+ * The canvas's sample of `--motion-ease`, read from `MOTION_EASE` in
+ * src/shared/motion/tokens.ts (gated by motion-token-mirror.contract.test.ts), never four
+ * literals. Newton's method converges in a few steps on this monotone curve.
  */
 export function easeMotion(t: number): number {
   const clamped = t <= 0 ? 0 : t >= 1 ? 1 : t;

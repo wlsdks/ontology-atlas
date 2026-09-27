@@ -1,9 +1,9 @@
 import { cssLengthToPx, rootFontPx } from "@/shared/ui/root-font-size";
 
 /**
- * The canvas ink, resolved from CSS once, since canvas 2D cannot read `var()` (as the map's
- * `read-map-tokens.ts`). `app/globals.css` is the only source, so no literal colour lives
- * here, and a missing token throws, or it renders as an invisible off-system colour.
+ * The canvas ink, resolved from CSS once, since canvas 2D cannot read `var()`, as in the
+ * map's `read-map-tokens.ts`. The only source is `app/globals.css`, so no literal colour
+ * lives here, and a missing token throws, or it renders as an invisible off-system colour.
  */
 
 export interface LibraryGraphInk {
@@ -16,8 +16,9 @@ export interface LibraryGraphInk {
   /** A concept the page reaches into. Drawn as a ring, so this is its stroke. */
   concept: string;
   /**
-   * Every unselected edge; the dash alone names the relation, leaving value for selection.
-   * A text ink, not a border ink: edges are content, so WCAG 1.4.11's 3:1 applies (5.23:1).
+   * Every unselected edge, in one ink: dash and width name the relation, leaving value for
+   * the selection. A text ink, not a border ink: edges are content, so WCAG 1.4.11's 3:1
+   * applies (5.23:1).
    */
   edge: string;
   /** The one accent: the selected node and every edge that touches it — the base indigo. */
@@ -95,7 +96,7 @@ export function readLibraryGraphInk(element: Element): LibraryGraphInk {
   for (const [key, token] of Object.entries(TOKENS)) ink[key] = read(token);
   ink.fontFamily = style.fontFamily || "system-ui, sans-serif";
   // The ramp is in `rem`: `parseFloat` would pass the guard below and be off by sixteen, so
-  // `cssLengthToPx` resolves it against the live root size.
+  // the live root size resolves it through `cssLengthToPx`.
   const root = rootFontPx();
   for (const [key, token] of Object.entries(TYPE_TOKENS)) {
     const px = cssLengthToPx(read(token), root);

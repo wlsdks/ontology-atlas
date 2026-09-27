@@ -36,7 +36,8 @@ export interface LibraryGraphCardPlacement {
  * The card's place in canvas CSS pixels (each rule tested in `library-graph-card.test.ts`):
  * beside the mark, never over it, right first; flip left, then below or above, whichever
  * has more room; clamped into the canvas box, which lies below the caption row and strip,
- * scrolling if it must. The mark never moves (`docs/DECISIONS.md`).
+ * scrolling if it must. The mark never moves (`docs/DECISIONS.md`, "The Library graph
+ * stands still").
  */
 export function placeLibraryGraphCard({
   mark,
@@ -149,8 +150,8 @@ export interface LibraryGraphCardFacts {
   /** One sentence about the mark: a page's Summary, opening sentence only. */
   sentence?: string | null;
   /**
-   * A page's counts: cited files, citations in its body, concepts named, stale files.
-   * `cites` is null until the lazily loaded body is read, never zero.
+   * A page's counts: cited files, citations in its body, concepts named, stale files. The
+   * body loads lazily, so `cites` is null until it is read, never zero.
    */
   counts?: { sources: number; cites: number | null; mentions: number; stale: number };
   /** A file's own facts, in the words the source pane already uses. */

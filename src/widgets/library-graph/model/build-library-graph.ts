@@ -3,8 +3,9 @@ import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
 
 /**
  * The library's own graph: what this folder's write-ups are made of. It is not the map
- * (`docs/DECISIONS.md`): it draws the files the map never shows, raw `sources/` and `wiki/`
- * pages, plus the concepts (`kind:` docs) a page reaches into or that link a page back.
+ * (`docs/DECISIONS.md`, "The Library gets its own small graph, separate from the map"): it
+ * draws the files the map never shows, raw `sources/` and `wiki/` pages, plus the concepts
+ * (`kind:` docs) a page reaches into or that link a page back.
  *
  * | Node | Comes from | Why it is here |
  * |---|---|---|
@@ -19,7 +20,7 @@ import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
  *
  * An unresolved link (a `[[src:…]]` citation, a renamed-away target) is dropped here, once,
  * because a dot cannot tell a typo from a plan. Pure and deterministic, so the layout is
- * reproducible: O(docs + pages + links) with Map/Set lookups.
+ * reproducible: O(sources + docs + pages + citations + links) with Map/Set lookups.
  */
 
 export type LibraryGraphNodeKind = "source" | "page" | "concept";

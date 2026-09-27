@@ -1,8 +1,8 @@
 /**
  * A Barnes–Hut quadtree for the many-body force, written here because the repository takes
- * no new layout dependency (`docs/DECISIONS.md` (78)) and Graphology's is private to
- * ForceAtlas2. Build O(n log n), query O(log n) per point, so a tick is O(n log n) against
- * the exact O(n²); `MANY_BODY_EXACT_MAX_ORDER` sets the measured crossover.
+ * no new layout dependency (`docs/DECISIONS.md` (76), rejection 3) and Graphology's is
+ * private to ForceAtlas2. Build O(n log n), query O(log n) per point, so a tick is
+ * O(n log n) against the exact O(n²); `MANY_BODY_EXACT_MAX_ORDER` sets the measured crossover.
  *
  * θ = 0.85 is the loosest value that still matched the exact layout visually; 1.2 smeared
  * clusters and 0.5 lost most of the speed.
@@ -129,8 +129,8 @@ export class LibraryQuadtree {
     }
     if (cell.children === null) {
       if (distanceSquared < 1e-9) {
-        // The point itself contributes nothing (a zero distance); true duplicates separate
-        // along a fixed diagonal, so the result is deterministic.
+        // The point itself adds nothing (zero distance). Coincident copies all get the same
+        // fixed-diagonal push, so they move together until the collision pass parts them.
         const others = cell.mass - 1;
         if (others <= 0) return;
         const weight = (strength * others) / 2e-6;

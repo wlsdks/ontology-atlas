@@ -228,7 +228,7 @@ describe("the library graph's force simulation", () => {
     /*
      * Packed groups sit in adjacent cells (`library-graph-packing.ts`), so the claim is that
      * groups are separate places: boxes disjoint, every mark nearer its own group's centre.
-     * `docs/DECISIONS.md` carries the trade and its dissent.
+     * The trade and its dissent: `docs/DECISIONS.md`, "Each group of the folder gets a place".
      */
     const boxOf = (group: number) => {
       const points = [0, 1, 2, 3]
@@ -423,7 +423,8 @@ describe("the library graph's force simulation", () => {
       }
       /*
        * Packed, the ring sits in its own cell, so the claim is that no loose mark is inside
-       * any component's bounding box (`docs/DECISIONS.md`).
+       * any component's bounding box (`docs/DECISIONS.md`, "Each group of the folder gets a
+       * place, the ring included").
        */
       const clusters = new Map<number, { minX: number; minY: number; maxX: number; maxY: number }>();
       for (const node of sim.nodes) {
@@ -537,7 +538,7 @@ describe("the library graph's force simulation", () => {
   it("returns the same radii whatever the canvas is", () => {
     const graph = denseFolder();
     const radii = libraryMarkRadii(graph);
-      expect([...radii.entries()]).toEqual([...libraryMarkRadii(graph).entries()]);
+    expect([...radii.entries()]).toEqual([...libraryMarkRadii(graph).entries()]);
     const pages = graph.nodes.filter((node) => node.kind === "page");
     const top = Math.max(...pages.map((node) => radii.get(node.id)!));
     const bottom = Math.min(...pages.map((node) => radii.get(node.id)!));
@@ -566,9 +567,9 @@ describe("the library graph's force simulation", () => {
 });
 
 /**
- * `looseGroup` is a cell index only while packed; the one cell-shaped reader checks
- * `packed` first, and these cases state that invariant. They also cover the single-mass
- * branch, which `looseFolder()` (two masses) never enters.
+ * The loose group's index addresses `cells` only while packed; the one cell-shaped reader
+ * checks `packed` first, and these cases state that invariant. They also cover the
+ * single-mass branch, which `looseFolder()` (two masses) never enters.
  */
 
 /** One connected mass plus unattached marks: the single-mass branch, which had no fixture. */

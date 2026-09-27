@@ -77,8 +77,8 @@ import { readLibraryGraphInk, type LibraryGraphInk } from "../render/library-gra
  * loop never re-runs when the component's contract changes.
  *
  * A 60fps frame cannot afford a React render, so simulation, view and pointer live in refs;
- * React state holds only what the DOM must say: hover (announced), focus, and the picture's
- * aspect.
+ * React state holds only what a DOM surface reads: the picture kind and aspect, the islands
+ * list, the keyboard walk order and whether the view is framed.
  *
  * | Gesture | What happens |
  * |---|---|
@@ -560,7 +560,7 @@ export function useLibraryGraphEngine({
 
   /**
    * The drift's edge sets (`flowRef`), recomputed with the card or folder, never per frame;
-   * `pulseRef.homeAt` is the one breath stale citations get when the home settles.
+   * the home's one breath for stale citations as it settles is `pulseRef.homeAt`.
    */
   const flowRef = useRef<{ edges: Set<string>; stale: Set<string> }>({ edges: new Set(), stale: new Set() });
   const pulseRef = useRef<{ homeAt: number | null; armed: boolean }>({ homeAt: null, armed: true });
@@ -690,8 +690,8 @@ export function useLibraryGraphEngine({
       const sim = simRef.current;
       if (!canvas || !sim) return;
       /*
-       * Resolved from the canvas and cached. A throw means the palette is missing from
-       * `app/globals.css`; it propagates rather than falling back to a colourless default.
+       * Resolved from the canvas and cached. A throw means `app/globals.css` lacks the palette;
+       * it propagates rather than falling back to a colourless default.
        */
       inkRef.current ??= readLibraryGraphInk(canvas);
       const context = canvas.getContext("2d", { alpha: false });
@@ -699,8 +699,8 @@ export function useLibraryGraphEngine({
       const startedAt = performance.now();
 
       /*
-       * The backing store is resized in the frame, never in the ResizeObserver: writing
-       * `canvas.width` clears the bitmap, and an observer runs after rAF, so it ships a blank frame.
+       * The backing store is resized in the frame, never in the ResizeObserver: writing the
+       * canvas width clears the bitmap, and an observer runs after rAF, so it ships a blank frame.
        */
       const pending = pendingBoxRef.current;
       if (pending) {
@@ -834,7 +834,7 @@ export function useLibraryGraphEngine({
           : null;
       /*
        * The last set is kept while `dim` is above zero: the renderer draws full ink whenever
-       * `focus` is null, so dropping it at once makes the un-dim a hard cut.
+       * the focus set is null, so dropping it at once makes the un-dim a hard cut.
        */
       if (attention) lastFocusRef.current = attention;
       const focus = attention ?? (dimState.value > 0 ? lastFocusRef.current : null);
@@ -850,8 +850,8 @@ export function useLibraryGraphEngine({
       /*
        * Three motions: flow (an open card's citations drift toward the page), arrival (one
        * pass for a just-written page, bounded by its receipt) and pulse (the stale dot's
-       * breath while its card is open, or once as the home settles). Reduced motion takes
-       * `still`. At rest with no card every set is empty; `settling` schedules frames.
+       * breath while its card is open, or once as the home settles). Reduced motion sets
+       * the `still` flag. At rest with no card every set is empty; `settling` schedules frames.
        */
       const reduced = stateRef.current.reducedMotion;
       const period = Math.max(1, motionRef.current.activityCycle);
@@ -1002,7 +1002,7 @@ export function useLibraryGraphEngine({
 
       /*
        * Machine-readable state for e2e specs: `data-view-scale` tells a zoom from a pan, and
-       * `data-interaction` tells a node grab from a background pan.
+       * the `data-interaction` value tells a node grab from a background pan.
        */
       const scaleText = view.scale.toFixed(4);
       if (canvas.dataset.viewScale !== scaleText) canvas.dataset.viewScale = scaleText;
@@ -1014,7 +1014,8 @@ export function useLibraryGraphEngine({
             : "idle";
       if (canvas.dataset.interaction !== interaction) canvas.dataset.interaction = interaction;
 
-      // Frame cost for the `e2e` probe; the budget it is judged against is in `docs/DECISIONS.md`.
+      // Frame cost for the `e2e` probe, judged against the 2 ms budget in `docs/DECISIONS.md`,
+      // "A press on a Library mark opens a card beside it".
       const cost = performance.now() - startedAt;
       const record = paintCostRef.current;
       record.last = cost;
@@ -1348,7 +1349,8 @@ export function useLibraryGraphEngine({
       pendingBoxRef.current = { width: rect.width, height: rect.height, dpr };
       rectRef.current = { left: rect.left, top: rect.top };
       const sim = simRef.current;
-      // The mark scale and composition are facts about the folder, so a resize only records the box.
+      // The force picture's scale and composition are facts about the folder, so a resize only
+      // records the box there; the laid flow and islands pictures are re-laid below.
       if (sim) {
         const before = { ...sim.box };
         resizeLibrarySimulation(sim, { width: rect.width, height: rect.height });

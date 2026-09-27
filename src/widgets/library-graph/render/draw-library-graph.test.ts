@@ -230,7 +230,7 @@ describe("drawing the library graph", () => {
     expect(rec.ctx.quadraticCurveTo).toHaveBeenCalledTimes(edges.length);
   });
 
-  it("says the relation with the dash and nothing else — both edges take one ink", () => {
+  it("tells the relations apart by dash while both edges take one ink", () => {
     const rec = recorder();
     drawLibraryGraph(rec.ctx, frame());
     expect(rec.dashes.slice(0, 2)).toEqual([[], [2.5, 3.5]]);
