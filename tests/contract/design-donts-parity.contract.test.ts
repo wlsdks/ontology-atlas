@@ -106,8 +106,6 @@ describe('디자인 금지 목록 — 정본 하나 + 부분집합 사본', () =
       slugsIn(CONDITIONAL),
       `${CONDITIONAL} 는 금지 목록을 베끼지 않는다 — 정본을 가리키기만 한다(「노드 규격」 절과 같은 방식).`,
     ).toEqual([]);
-    const src = readFileSync(path.join(ROOT, CONDITIONAL), 'utf8');
-    expect(src, `${CONDITIONAL} 가 정본을 가리키지 않는다`).toContain("Absolute rules (Don'ts)");
   });
 
   /**

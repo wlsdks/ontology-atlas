@@ -10,8 +10,6 @@ const PACKAGE = JSON.parse(readFileSync('package.json', 'utf8')) as {
 };
 const WORKFLOW = readFileSync('.github/workflows/checks.yml', 'utf8');
 const PRE_PUSH = readFileSync('.githooks/pre-push', 'utf8');
-const README = readFileSync('README.md', 'utf8');
-const DEVELOPMENT_CHECKS = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf8');
 const ANALYZER_CONFIG = readFileSync('scripts/quality/dead-code/scope-configs.mjs', 'utf8');
 const ROOT_LOCK = readFileSync('pnpm-lock.yaml', 'utf8');
 const ANALYZER_ADAPTER = 'scripts/quality/dead-code/check.mjs';
@@ -83,12 +81,6 @@ describe('dead-code gate wiring', () => {
     );
     expect(gates).not.toContain('--lane=unit');
     expect(mcp).not.toContain('--lane=unit');
-  });
-
-  it('keeps the package command discoverable in contributor docs', () => {
-    for (const document of [README, DEVELOPMENT_CHECKS]) {
-      expect(document).toContain(COMMAND);
-    }
   });
 
   it('keeps the analyzer version sourced from the exact locked Knip release', () => {

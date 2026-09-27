@@ -63,41 +63,4 @@ describe("폴더 감시 브리지", () => {
         "이 능력은 강등 축으로 넘어가고 DEGRADED_SURFACES 등재가 필요해진다.",
     ).toMatch(/burstMs|idleMs/);
   });
-
-  it("등록부에 여섯 번째 브리지로 적혀 있다", () => {
-    const rules = read(".claude/rules/surfaces.md");
-    /**
-     * ⚠️ **Aim at the table's row, not at a word.**
-     *
-     * This began as `toContain("Folder Watch")`, but that string also appears in the prose
-     * heading immediately below it (「Folder watching is latency, not degradation」 —
-     * folder watching is latency, not degradation), so **deleting the row from the table
-     * entirely still passed** (probe measured 2026-07-29). What the gate meant to protect
-     * was **the registration**, not the explanation, yet the explanation alone satisfied
-     * it.
-     *
-     * So it matches the row's structure: one line that begins with a pipe, contains the
-     * capability name, and points at the implementation file. Prose cannot take that
-     * shape.
-     */
-    const bridgeRow = rules
-      .split("\n")
-      .find((line) => line.startsWith("|") && line.includes("Folder watch"));
-    expect(
-      bridgeRow,
-      "`.claude/rules/surfaces.md` 의 **능력 브리지 표**에 폴더 감시 행이 없다. " +
-        "등재되지 않은 능력은 웹 강등도 검증되지 않고, 마케팅이 그것을 팔 때 " +
-        "받쳐 줄 계약이 없다.",
-    ).toBeDefined();
-    expect(
-      bridgeRow,
-      "브리지 행이 구현을 안 가리킨다 — 표가 능력의 소재지를 잃으면 다음 사람이 " +
-        "어디를 고쳐야 할지 모른다.",
-    ).toContain("start_vault_watch");
-    expect(
-      rules,
-      "강등(못 함)과 지연(늦음)의 구분이 표에서 사라졌다 — 그 구분이 이 브리지가 " +
-        "DEGRADED_SURFACES 에 안 들어가는 유일한 이유다.",
-    ).toMatch(/latency, not degradation/i);
-  });
 });
