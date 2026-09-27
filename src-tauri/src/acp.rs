@@ -711,14 +711,24 @@ pub(crate) fn launch_from_npx_cache(
         .rsplit_once('@')
         .filter(|(name, _)| !name.is_empty())?;
     let modules = npx_cache_entry_dir(&npx_cache_root(home)?, package).join("node_modules");
-    let manifest = std::fs::read_to_string(modules.join(name).join("package.json")).ok()?;
+    let package_dir = std::fs::canonicalize(modules.join(name)).ok()?;
+    let manifest = std::fs::read_to_string(package_dir.join("package.json")).ok()?;
     let manifest: serde_json::Value = serde_json::from_str(&manifest).ok()?;
     if manifest.get("version")?.as_str()? != pinned {
         return None;
     }
+    let bin_name = adapter_bin_name(package)?;
+    let declared = match manifest.get("bin")? {
+        serde_json::Value::String(path) => path,
+        bins => bins.get(&bin_name)?.as_str()?,
+    };
+    let target = std::fs::canonicalize(package_dir.join(declared)).ok()?;
     let bin_dir = modules.join(".bin");
-    let program = bin_dir.join(adapter_bin_name(package)?);
-    if !is_executable(&program) {
+    let program = bin_dir.join(&bin_name);
+    if !target.starts_with(&package_dir)
+        || std::fs::canonicalize(&program).ok()? != target
+        || !is_executable(&program)
+    {
         return None;
     }
     let inherited =
@@ -3938,6 +3948,7 @@ mod npx_cache_tests {
         let _ = std::fs::remove_dir_all(&home);
     }
 
+    #[cfg(unix)]
     fn plant_adapter(home: &Path, installed_version: &str) -> PathBuf {
         let entry = npx_cache_entry_dir(&npx_cache_root(Some(home)).unwrap(), CLAUDE_SPEC);
         build_entry(
@@ -3945,16 +3956,44 @@ mod npx_cache_tests {
             &EntryShape {
                 package_json: Some(HEALTHY_MANIFEST),
                 node_modules: true,
-                bin_entries: &["claude-agent-acp"],
+                bin_entries: &[],
             },
         );
-        let manifest = entry
+        let package = adapter_package(&entry);
+        let manifest = serde_json::json!({
+            "version": installed_version,
+            "bin": { "claude-agent-acp": "dist/index.js" },
+        });
+        std::fs::write(package.join("package.json"), manifest.to_string()).unwrap();
+        std::fs::create_dir_all(package.join("dist")).unwrap();
+        std::fs::write(
+            package.join("dist").join("index.js"),
+            "#!/usr/bin/env node\n",
+        )
+        .unwrap();
+        link_bin(
+            &entry,
+            Path::new("../@agentclientprotocol/claude-agent-acp/dist/index.js"),
+        );
+        entry
+    }
+
+    #[cfg(unix)]
+    fn adapter_package(entry: &Path) -> PathBuf {
+        entry
             .join("node_modules")
             .join("@agentclientprotocol")
             .join("claude-agent-acp")
-            .join("package.json");
-        std::fs::write(manifest, format!(r#"{{"version":"{installed_version}"}}"#)).unwrap();
-        entry
+    }
+
+    #[cfg(unix)]
+    fn link_bin(entry: &Path, target: &Path) {
+        let link = entry
+            .join("node_modules")
+            .join(".bin")
+            .join("claude-agent-acp");
+        let _ = std::fs::remove_file(&link);
+        std::os::unix::fs::symlink(target, link).unwrap();
     }
 
     #[cfg(unix)]
@@ -3976,6 +4015,41 @@ mod npx_cache_tests {
         let _ = std::fs::remove_dir_all(&home);
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn a_bin_link_that_is_not_the_checked_packages_bin_is_not_run() {
+        let home = scratch("direct-planted");
+        let launch = npx_launch(CLAUDE_SPEC);
+        let entry = plant_adapter(&home, "0.69.0");
+        let planted = home.join("planted.sh");
+        std::fs::write(&planted, "#!/bin/sh\n").unwrap();
+
+        link_bin(&entry, &planted);
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+
+        let bin = entry
+            .join("node_modules")
+            .join(".bin")
+            .join("claude-agent-acp");
+        std::fs::remove_file(&bin).unwrap();
+        std::fs::write(&bin, "#!/bin/sh\n").unwrap();
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+
+        let leaving = serde_json::json!({
+            "version": "0.69.0",
+            "bin": { "claude-agent-acp": planted },
+        });
+        std::fs::write(
+            adapter_package(&entry).join("package.json"),
+            leaving.to_string(),
+        )
+        .unwrap();
+        link_bin(&entry, &planted);
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[cfg(unix)]
     #[test]
     fn a_direct_launch_needs_the_exact_pinned_version_and_a_runnable_bin() {
         let home = scratch("direct-refused");
