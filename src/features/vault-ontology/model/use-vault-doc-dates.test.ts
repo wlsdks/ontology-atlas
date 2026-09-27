@@ -104,6 +104,7 @@ describe('useVaultDocDates', () => {
     // Edited since its last commit: the edit is the change.
     expect(result.current.index.get('capabilities/library')).toBe(LANDED);
     expect(mocks.pathsLastChange).toHaveBeenCalledWith(`/vaults/atlas-${folder}`, [], ['capabilities/git-history.md', 'capabilities/library.md']);
+    expect(mocks.diff).toHaveBeenCalledWith(`/vaults/atlas-${folder}`, { includePatch: false });
   });
 
   it('keeps the last answer across a re-read of the same folder, dating only a rewritten file by its file', async () => {
