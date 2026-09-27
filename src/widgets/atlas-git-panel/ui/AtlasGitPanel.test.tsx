@@ -133,11 +133,7 @@ function installDesktopGit({
   // reader's language, and only the screen already holds `ahead`/`behind`.
   fetch = { ok: true, upstream: "origin/main", ahead: 2, behind: 0, summary: "remote-diverged" },
   pull = { ok: true, upstream: "origin/main", summary: "1개 받아옴" },
-  /**
-   * The whole document at a point in time. `null` stands for "this screen cannot read it
-   * whole", which is what the web and an older app answer, and the reader then draws the
-   * hunks it already has.
-   */
+  /** The whole document at a point in time; `null` means unreadable whole, so the reader draws hunks. */
   documentDiff = null as unknown,
   restore = (args: Record<string, unknown>) => ({
     restored: true,
@@ -515,13 +511,6 @@ describe("AtlasGitPanel desktop", () => {
     expect(screen.queryByTestId("atlas-git-remote-setup")).not.toBeInTheDocument();
   });
 
-  /*
-   * The tabs are gone (2026-08-02). 「Changes / Commit History」 are really *not
-   * committed vs committed*, which the list's position already states —
-   * uncommitted at the top, committed below. So this test now pins the **default
-   * selection**: when there is something to commit it is open and its changes are
-   * visible immediately.
-   */
   it("opens the pending changes by default when there is something to commit", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
@@ -797,18 +786,7 @@ describe("AtlasGitPanel setup mode", () => {
 
 describe("AtlasGitPanel empty workbench", () => {
   it("keeps the workbench columns when everything is committed", async () => {
-    /*
-     * The old contract was "with 0 uncommitted, do not make the column"
-     * (`data-shape="recall"`). That was **a judgement made before the two-column
-     * switch**, when the right side was 「Evidence」 (evidence) and there really was
-     * nothing to show. Now the right side is **the detail of what is selected**,
-     * and choosing a commit fills it with changed concepts, the ego drawing and
-     * the changed content. While that branch survived, a vault with four commits
-     * lost half the screen outright (owner measurement, 2026-08-02).
-     *
-     * There is one shape. Whether anything is uncommitted shows up only as the
-     * presence or absence of the list's top row.
-     */
+    // One workbench shape: with nothing uncommitted only the list's top row is absent.
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
       diff: { count: 0, files: [], diff: "" },
@@ -871,20 +849,7 @@ describe("AtlasGitPanel empty workbench", () => {
 });
 
 describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
-  /*
-   * Pull was **entirely absent** from this screen — present in both the bridge and
-   * Rust with 0 callers. Push lived only inside a checkbox on the record confirm
-   * step, so with 0 changes to record there was no way to send steps already piled
-   * up (owner measurement: ↑2 with nowhere to send). The four below catch that
-   * regression.
-   */
   it("puts each divergence count on the button it justifies", async () => {
-    /*
-     * A separate 「↑2 ↓1」 chip used to sit apart. The only job those numbers do is
-     * tell you which button to press, and apart from it you have to read them and
-     * move your eyes again. The chip went and the numbers moved into the labels —
-     * reverting that breaks here.
-     */
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("보내기 2");
@@ -894,12 +859,6 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
   });
 
   it("sends a typed commit title to git unchanged", async () => {
-    /*
-     * The automatic wording says what changed well but never **why**, and why is
-     * what someone reading the history later looks for. Leaving it empty still
-     * sends the automatic wording, so the path for someone who did nothing is
-     * unchanged.
-     */
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     fireEvent.click(await screen.findByTestId("atlas-git-snapshot-button"));
@@ -913,12 +872,7 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
   });
 
   it("keeps Pull and Push enabled when there is nothing to do", async () => {
-    /*
-     * Pull used to be disabled when `behind === 0`. But "there is nothing to pull"
-     * is **a fact you should be able to press and find out**, not something to
-     * answer with a dead button and silence — the screen only holds the count from
-     * the last check, and that count may already be stale (owner: *"The button should press first and tell you after."*).
-     */
+    // The shown counts may be stale, so pressing is how to find out there is nothing to do.
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, ahead: 0, behind: 0 },
     });
@@ -928,12 +882,6 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
   });
 
   it("marks the unpushed range in the list", async () => {
-    /*
-     * Splitting the three states (uncommitted · unpushed · remote-only) into tabs
-     * makes each tab hide the others, and this repository already has a decision
-     * against that plus a test that holds it. They are stretches of one timeline,
-     * so what is needed is a boundary, not a partition.
-     */
     installDesktopGit({ status: { ...STATUS_WITH_CHANGES, ahead: 1, behind: 2 } });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     const sections = await screen.findAllByTestId("atlas-git-section");
@@ -1014,12 +962,7 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
 });
 
 describe("AtlasGitPanel step rows name concepts", () => {
-  /*
-   * This used to guess what changed **by parsing the commit subject**. That only
-   * fit subjects our own tool wrote and never fit human commits, so the real
-   * screen showed no concepts at all and just listed subjects (owner measurement).
-   * #842 ships per-commit kind/slug, so nothing is guessed any more.
-   */
+  // Concepts come from per-commit kind and slug, never from parsing the subject.
   const GRAPH = {
     nodes: [
       {
@@ -1153,12 +1096,6 @@ describe("AtlasGitPanel step rows name concepts", () => {
 });
 
 describe("AtlasGitPanel selected concept properties and neighbours", () => {
-  /*
-   * This is where 「See this step on the map」 used to be
-   * (owner call: the point was to show everything here, so there is no reason for a
-   * button that leaves). So if this position is empty when a concept is clicked,
-   * the feature has disappeared.
-   */
   const EGO_GRAPH = {
     nodes: [
       {
@@ -1247,13 +1184,7 @@ describe("AtlasGitPanel selected concept properties and neighbours", () => {
     // The owning domain comes from the belongsTo neighbours — 「Belongs to」 has to be drawn.
     expect(ego).toHaveTextContent("상위 항목");
 
-    /*
-     * **Withholding what you already know is an omission, not a degradation.** The
-     * screen was not using three things the graph node already carries — the
-     * one-line summary a person reads first, the project this concept belongs to,
-     * and **the reference an agent uses for it**. Without the last one this screen has
-     * answered only one of its two users.
-     */
+    // The card carries the summary, the project and the agent reference the node already has.
     expect(ego).toHaveTextContent("첫 실행에서 볼트를 만들어 준다");
     expect(ego).toHaveTextContent("아틀라스");
     expect(ego).toHaveTextContent("capabilities/foo");
@@ -1264,11 +1195,7 @@ describe("AtlasGitPanel selected concept properties and neighbours", () => {
     const neighbors = screen.getAllByTestId("atlas-git-ego-neighbor");
     expect(neighbors.map((el) => el.textContent).join(" ")).toContain("온보딩·배포·앱 셸");
 
-    /*
-     * Said once (round four). The owning domain is the "Belongs to" neighbour, so a "Domain"
-     * cell above it printed the same name twice; and the names live in the table, so the
-     * drawing names nobody until a name is pointed at.
-     */
+    // No Domain cell when the domain is a Belongs-to neighbour; the drawing names nobody at rest.
     expect(ego).not.toHaveTextContent("도메인");
     // The mark's `<title>` is its tooltip and accessible name, not printed text.
     const printed = ego.cloneNode(true) as HTMLElement;
@@ -1292,11 +1219,6 @@ describe("AtlasGitPanel selected concept properties and neighbours", () => {
 });
 
 describe("AtlasGitPanel two-column selection", () => {
-  /*
-   * **Selection** took the tabs' place. So if "choose one and the right side
-   * changes" stops working, the screen looks fine while doing nothing — back when
-   * there were tabs, at least the tabs were visible.
-   */
   it("shows a selected commit's detail on the right", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
@@ -1337,16 +1259,7 @@ describe("AtlasGitPanel two-column selection", () => {
 });
 
 describe("AtlasGitPanel changes without git", () => {
-  /*
-   * Owner, 2026-08-02: *"Do people
-   * who don't use our git get no history at all?"*
-   *
-   * They do — `change-baseline-store` holds a per-vault baseline, so this session's
-   * changes are known independently of git. But that summary was drawn **only in
-   * the web degradation**, so a desktop user who had not turned git on was offered
-   * 「Connect」 and never saw what had changed. Withholding what you already know is
-   * an omission, not a degradation.
-   */
+  // This session's changes come from the per-vault baseline, independent of git, on desktop too.
   const CHANGESET = {
     addedNodes: ["a"],
     removedNodes: [],
@@ -1403,11 +1316,6 @@ describe("AtlasGitPanel changes without git", () => {
 });
 
 describe("AtlasGitPanel full history", () => {
-  /*
-   * The screen asked git for ten steps and drew ten, and the list simply stopped. A folder with
-   * forty steps kept thirty of them out of reach with no sign that anything was missing
-   * (measured with a fourteen-step stub, 2026-09-19: rows=10, then blank column).
-   */
   const step = (n: number) => ({
     shortHash: `s${n.toString().padStart(6, "0")}`,
     hash: `s${n.toString().padStart(6, "0")}${"0".repeat(33)}`,
@@ -1448,12 +1356,6 @@ describe("AtlasGitPanel full history", () => {
 });
 
 describe("AtlasGitPanel automatic titles with a graph", () => {
-  /*
-   * The 2026-07-27 rule ("a step's summary reads in human language") held only while the row
-   * had no concept to name. Once #842 put the concept in the name column, the third column
-   * fell back to the raw subject, so the real screen — the one with a graph — read
-   * `ontology snapshot: ~1 u…` on every automatic step (measured 2026-09-19).
-   */
   const GRAPH = {
     nodes: [
       {
@@ -1511,11 +1413,6 @@ describe("AtlasGitPanel automatic titles with a graph", () => {
 });
 
 describe("AtlasGitPanel follows the folder while open", () => {
-  /*
-   * Read-only follow. An editor or an agent writing to the folder while this screen is open used
-   * to leave the count and the preview stale until the next arrival, so the confirm step could
-   * say "3 to commit" for a folder that by then held five changes.
-   */
   it("rereads status on vault-changed without writing", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
@@ -1534,11 +1431,7 @@ describe("AtlasGitPanel follows the folder while open", () => {
   });
 
   it("follows a change notice received during a write once the write ends", async () => {
-    /*
-     * A commit that is still running holds the follow back, because a read landing mid-write
-     * shows a half state. But the commit's own re-read reports the commit, not the save an
-     * editor made while it ran — so the notice has to be answered once the write is over.
-     */
+    // The commit's own re-read misses a save made while it ran, so the deferred notice must follow.
     let finishSnapshot = (_: unknown) => {};
     const pending = new Promise((resolve) => {
       finishSnapshot = resolve;
@@ -1587,11 +1480,9 @@ describe("AtlasGitPanel follows the folder while open", () => {
 
 describe("AtlasGitPanel single-document revert", () => {
   /*
-   * The screen's own copy promised that earlier content can be brought back while no restore existed
-   * anywhere (2026-09-19). Two doors, two confirms: discard says the lines are unrecoverable,
-   * restore-from-commit says the result stays uncommitted and reversible. Both name the
-   * documents that stay untouched, and nothing runs before the confirm click.
-   */
+     * Discard says the lines are unrecoverable, restore says the result stays uncommitted; both
+     * name the untouched documents, and nothing runs before the confirm click.
+     */
   const restoreCalls = () =>
     tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_restore_file");
 
@@ -1706,10 +1597,9 @@ describe("AtlasGitPanel single-document revert", () => {
   });
 
   /*
-   * Two documents in one step whose file names differ only by folder. A node id is
-   * `<kind>:<slug tail>` (`matchNodeId`), so the tail alone answers for either of them —
-   * and the door that puts a document back must not be able to reach the other one.
-   */
+     * Two documents whose paths differ only by folder share a slug tail (`matchNodeId`); the
+     * restore door must reach only the chosen one.
+     */
   const SAME_TAIL_GRAPH = {
     nodes: [
       {
@@ -1808,11 +1698,9 @@ describe("AtlasGitPanel single-document revert", () => {
 
 describe("AtlasGitPanel single-document history", () => {
   /*
-   * "When else did this concept change" used to mean scanning every row for the concept's
-   * name. A commit's detail now lists the other steps that touched the focused document,
-   * read from git scoped to that path, and a row jumps to that step — reading the list on,
-   * page by page, when the step sits below the depth already loaded.
-   */
+     * The detail lists other steps that touched the focused document; a row jumps there, reading
+     * further pages when needed.
+     */
   const step = (n: number, subject: string) => ({
     shortHash: `d${n.toString().padStart(6, "0")}`,
     hash: `d${n.toString().padStart(6, "0")}${"0".repeat(33)}`,
@@ -1986,12 +1874,9 @@ describe("AtlasGitPanel one reader at a time", () => {
 
 describe("AtlasGitPanel reader states what it renders", () => {
   /*
-   * Two facts the reader used to get wrong. A long document has no ceiling: measured
-   * 2026-09-19, a 6,009-line document produced a 6,014-line diff (~600 KB over IPC, one DOM
-   * node per line) whose hunks were ten lines. And a renamed document asked for by its new
-   * name alone comes back from git as a brand-new file, every line "added", although its
-   * bytes never changed.
-   */
+     * A document past the ceiling draws hunks, and a renamed document is asked for with its old
+     * name, or git reports every line as added.
+     */
   it("renders hunks and says why when a document exceeds the limit", async () => {
     installDesktopGit({
       documentDiff: () => ({ path: "docs/elements/bar.md", diff: "", untracked: false, tooLarge: true }),
@@ -2122,10 +2007,7 @@ describe("AtlasGitPanel inline markdown", () => {
 });
 
 describe("AtlasGitPanel explains a missing control", () => {
-  /*
-   * Walked in the installed app on 2026-09-19: a concept whose document that step deleted
-   * showed no restore door and no reason, and a missing door reads as a missing feature.
-   */
+  // A step that deleted the document says so instead of silently omitting the restore door.
   const GRAPH = {
     nodes: [
       {
@@ -2232,11 +2114,9 @@ describe("AtlasGitPanel — confirms that swap in take and return focus (2026-09
 
 describe("AtlasGitPanel — a jump along one document's history keeps that document (2026-09-25)", () => {
   /*
-   * Found with the real-bridge QA harness on a real git vault: in a step's detail, "Other steps
-   * that changed this document" → a press on a step opened that step with its FIRST document
-   * selected (the vault's README), because the jump cleared the focused concept. "Restore this
-   * version" there then restored README.md — not the document the person was following.
-   */
+     * A jump from a document's history must open on that document, or the restore door would
+     * restore the step's first document instead.
+     */
   const node = (id: string, kind: string, slug: string, display: string) => ({
     id,
     title: display,
@@ -2455,12 +2335,10 @@ describe("AtlasGitPanel — a jump along one document's history keeps that docum
 });
 
 /*
- * "No remote yet" and "connect a remote" used to stand under every branch without an upstream.
- * A repository whose `origin` exists but whose branch was never pushed, and the owner's vault
- * checked out detached at `main`, were both told there was no remote — and "connect" there ran
- * `git remote set-url origin` over the real one (2026-09-25). Each state now says its own fact.
+ * Each remote state says its own fact; offering to connect where `origin` exists or HEAD is
+ * detached would overwrite the real remote with `git remote set-url origin`.
  */
-describe("AtlasGitPanel — the remote state is told as it is (2026-09-25)", () => {
+describe("AtlasGitPanel — the remote state is told as it is", () => {
   const CLEAN = { count: 0, files: [], diff: "" };
   const NEVER_SENT = {
     ...STATUS_WITH_CHANGES,
@@ -2600,12 +2478,7 @@ describe("AtlasGitPanel — the remote state is told as it is (2026-09-25)", () 
 });
 
 describe("AtlasGitPanel — a step names only concepts (real-bridge QA, 2026-09-25)", () => {
-  /*
-   * The vault's README carries a kind of its own (`vault-readme`, the reader guide Atlas writes,
-   * never authored) and a node in the graph. It matched like a concept: the founding step of a
-   * real vault read "Concepts changed 99" over 98 concept documents, README stood among the
-   * chips, and it led the "other steps" titles of every document from that step.
-   */
+  // The vault README (`vault-readme`) has a graph node but must never count as a concept.
   const node = (id: string, kind: string, display: string, slug: string) => ({
     id,
     title: display,
@@ -2661,11 +2534,7 @@ describe("AtlasGitPanel — a step names only concepts (real-bridge QA, 2026-09-
 });
 
 describe("AtlasGitPanel — the concepts lens reads what changed (real-bridge QA, 2026-09-25)", () => {
-  /*
-   * The concepts lens is the default, because it is what only this screen has, yet it drew the
-   * concept's card and its other steps and never the change: the whole document with its changed
-   * lines marked was one lens away, under "Files changed".
-   */
+  // The default concepts lens also reads the change itself, not only the card and history.
   const GRAPH = {
     nodes: [
       {
@@ -2738,12 +2607,9 @@ describe("AtlasGitPanel — the concepts lens reads what changed (real-bridge QA
 
 describe("AtlasGitPanel — a saved remote is not a dead end (real-bridge QA, 2026-09-25)", () => {
   /*
-   * Registering a remote stores an address; only a first push creates the upstream that Fetch,
-   * Pull and Push read. The screen used to say "no remote repository yet" right after its own
-   * "Connected the remote repository.", offer nothing but the same connect door, and keep the
-   * "also send" box disabled for good. The saved address now reads as the "never sent" state
-   * (`describeRemoteState`), whose one press is the first send.
-   */
+     * A saved address without an upstream is the never-sent state (`describeRemoteState`), whose
+     * one press is the first send.
+     */
   const SAVED_NOT_SENT = { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null, hasOrigin: true };
   const NO_REMOTE = { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null, hasOrigin: false };
   const PUBLISHED = {

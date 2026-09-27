@@ -60,20 +60,9 @@ import { useAiConnection, type AiConnectionState } from '../model/use-ai-connect
 import { SettingsGroupHeading } from './settings-primitives';
 
 /**
- * The Agents destination's **models tab** (owner, 2026-09-25): which model Atlas's own
- * conversation calls, and with whose key. It moved here whole from the settings sheet's API Key
- * pane; the sheet keeps one pointer row and nothing else, so no fact is stated in two places.
- *
- * Owner-approved layout, top to bottom:
- *
- *   Local models   Ollama  http://localhost:11434   ● connected · N models  [Check]
- *                  LM Studio http://localhost:1234   ○ not connected         [Connect]
- *   API keys       OpenAI   ● ····4f2                                        [Check][Replace]
- *                  Anthropic ○ no key                                         [Add]
- *   External check Jev evidence check  (experimental)  ○ no key               [Add]
- *   Sent log       N transfers · all recorded in this folder                  [Show in Finder]
- *
- * What this screen holds to:
+ * The Agents destination's models tab: which model Atlas's own conversation calls, and with
+ * whose key (local runners, API keys, the external check, the sent log). The settings sheet
+ * keeps only a pointer row, so no fact is stated twice. What this screen holds to:
  * - **There is no path that redraws a full key.** A draft lives only in `KeyDraftForm`, which
  *   unmounts when its row collapses; after a save the screen knows only `last4`.
  * - **Honest web degradation.** With no bridge it renders no input field at all, says why, and
@@ -187,13 +176,8 @@ export function ModelConnectionsPanel({
   }, []);
 
   /**
-   * **Every outcome on this tab is said by its row, and read out here — never in a toast**
-   * (2026-09-26). Saving, replacing or removing a key and choosing or dropping a runner each
-   * change the row they were pressed in (its status, its last four, its buttons). They also
-   * raised a toast repeating it, and on this tall page the toast had no free place to stand:
-   * measured on a real folder it covered the sent-log caption at 1512x949, and the Jev row's name
-   * and caption at 1280x800. The row is the confirmation; the announcer carries it to a screen
-   * reader.
+   * Every outcome is shown by its row and read out here, never in a toast: on this tall page a
+   * toast covers row content.
    */
   const announce = useCallback<Announce>((message) => {
     // Cleared first, so the same sentence twice in a row is still read twice.
@@ -229,8 +213,7 @@ export function ModelConnectionsPanel({
                 href={downloadHref}
                 onClick={onDownloadNavigate}
                 data-testid="ai-connection-download-link"
-                /* The standard primary `Button` every web-only door wears, not a pill: the
-                   system keeps the pill for a state or a count (owner review, 2026-09-26). */
+                /* The standard primary button every web-only door wears; pills are for a state or a count. */
                 className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor atlas-touch-floor-wide')}
               >
                 <Download size={ICON_SIZE.md} aria-hidden />
@@ -485,12 +468,9 @@ function StatusDot({ tone }: { tone: StatusTone }) {
 }
 
 /**
- * The trailing control that opens a row. It stays in place while its row is open, so the way
- * back is where the person pressed, but it is **not drawn pressed**: an indigo border there
- * would stand beside the row's indigo commit action (save, check), and two controls in one row
- * would claim to be primary (the settings sheet's own inspection, 2026-09-25). `aria-expanded`
- * carries the state; the accent belongs to the one action that commits. `data-row-opener` is
- * where focus returns when the row closes by any path.
+ * The trailing control that opens a row, staying in place while it is open. It is not drawn
+ * pressed, so the row's commit action keeps the only accent; `aria-expanded` carries the state
+ * and `data-row-opener` is where focus returns when the row closes.
  */
 function OpenChip({
   testId,
@@ -1262,11 +1242,7 @@ function JevRow({
       testId="ai-provider-jev"
       name={tJev('name')}
       badge={
-        /*
-         * Beside the name it qualifies, in the row's quiet ink (design council, 2026-09-25): an
-         * amber outlined badge was the most saturated mark on the tab, so the one experimental
-         * row won the first look over the connected runner the tab exists to show.
-         */
+        // Quiet ink beside the name, so the experimental row does not outrank the connected runner.
         <span data-testid="models-experimental" className="text-label text-[color:var(--color-text-tertiary)]">
           ({t('experimental')})
         </span>
@@ -1399,7 +1375,7 @@ function AuditSection({
           </p>
         )}
         {/* It selects the log file itself, and exists only once there is one: a button that
-            promised the file and opened a folder without it was the settings pane's defect. */}
+            promised the file and opened a folder without it would mislead. */}
         {hasLog && vaultRootPath ? (
           <Chip
             size="lg"

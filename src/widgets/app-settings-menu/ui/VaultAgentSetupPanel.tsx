@@ -50,55 +50,22 @@ import {
 import { McpProofPacket } from './McpProofPacket';
 
 /**
- * The presentational panel that moved the AI-agent settings block out of the old
- * `VaultToolsMenu` (the docs-vault header dropdown) into `AppSettingsMenu`'s
- * mcpAgents tab (B2 merge, feat/settings-vault-merge). Config file status, repair,
- * copy packets, the checklist, the mode chooser and the validation gate were all
- * absorbed here. The docs-vault header no longer carries this tool (duplicate
- * surface removed) and the settings menu is its only home.
- *
- * It depends on the localVault context and renders only when the vault is loaded
- * and `agentConfigStatus` exists (otherwise null). The copy packets take the
- * current vault path and name as arguments to fill in absolute paths. The
- * translation namespace reuses the original `docsVault`, so no i18n was migrated.
+ * The AI-agent connection panel: config file status, repair, copy packets and the validation
+ * gate. Renders only for a loaded vault with `agentConfigStatus`; the copy packets fill in the
+ * vault's absolute path. Strings live in the `docsVault` namespace.
  */
 
 /**
- * Copy-chip ink for this panel — **only the layers the value layer deliberately
- * omits** live here.
- *
- * `controlClass` does not supply hover (frequency eats the motion budget, so the
- * consumer decides). Border and background tints are not in the ramp yet either —
- * tone supplies **text colour only**. So the same string was scattered across six
- * sites, and written by hand six times one copy eventually diverges. One constant
- * removes that divergence.
+ * Copy-chip ink for this panel: the hover, border and background layers `controlClass`
+ * deliberately omits, defined once for every copy chip here.
  */
-/**
- * **One label/value row shape for the whole fold** (2026-09-05).
- *
- * The four definition lists inside "Not working?" carried four different term columns - 84, 92,
- * 52 and 92 - for the same kind of content: a short name on the left, a sentence on the right.
- * Nobody decided those numbers; each list was written beside the block that needed it and picked a
- * width by eye, which is the same drift `page-frame.ts` records for three destinations choosing
- * their own top spacing. The remedy is the same: one definition site, and the widest real term
- * decides it.
- *
- * The value is the majority of what was already there (92), so two of the four lists do not move
- * at all, and the other two stop being narrower than their neighbours for no reason.
- */
+/** One label/value row shape for every definition list in the fold, sized by the widest term. */
 const DEFINITION_ROW = 'grid grid-cols-[92px_1fr] gap-2';
 
 const NEUTRAL_COPY_CHIP =
   'border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
 
-/**
- * Only this section's **one primary action** gets the indigo tint.
- *
- * Before 2026-08-04 all 11 copy chips were stacked vertically at full width and
- * 32px tall — «the group's primary action» and «the secondary beside it» carried
- * the same weight, so the screen never said which to press. Width is left to the
- * content again too (`w-full` removed).
- */
+/** Only this section's one primary action gets the indigo tint, so the screen says which to press. */
 const ACCENT_ACTION_CHIP =
   'border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]';
 
@@ -309,11 +276,7 @@ interface VaultAgentSetupLocalVault {
     mcpExampleValid?: boolean;
   } | null;
   recentVaults: LocalFsHandleRecord[];
-  /**
-   * Writing configs — **it takes a tool.** This interface was re-declaring an
-   * argument-less signature, so fixing the hook side was swallowed again here. A
-   * duplicated signature is the classic place a contract gets reverted.
-   */
+  /** Writes the configs for one tool, or all of them when none is given. */
   ensureAgentConfigs: (
     client?: AgentClientId,
   ) => Promise<{ created: number; skipped: number }>;
@@ -341,13 +304,9 @@ export function VaultAgentSetupPanel({
   const tMcp = useTranslations('mcp');
   const [advancedOpen, setAdvancedOpen] = useState(false);
   /**
-   * The 「Having trouble?」 (having trouble?) drawer — in-flow collapsing, so it uses
-   * the list-row disclosure grammar. The first version's `Surface` (chrome grammar)
-   * belongs to a floating surface, so the siblings below jumped twice (frame
-   * measurement in the installed app — numbers in the `AgentSetupStep.tsx` preamble).
-   * This sits before `publicPackagesReady` (= can launch) is declared, so it counts
-   * from the prop directly.
-   */
+     * The "Having trouble?" drawer collapses in flow, so it uses the list-row disclosure. It is
+     * declared before `publicPackagesReady`, so it reads the launch prop directly.
+     */
   const advancedRevealOpen = serverAvailability.launch !== null && advancedOpen;
   const {
     mounted: advancedMounted,
@@ -355,13 +314,9 @@ export function VaultAgentSetupPanel({
     contentRef: advancedContentRef,
   } = useRowDisclosure(advancedRevealOpen);
   /**
-   * The expanded step — `null` means **follow whatever is next to do.**
-   *
-   * As a pure derived value, opening step 3 and then pressing step 1's button
-   * collapses the screen unpredictably. As pure state, step 1 stays open even after
-   * the connection is finished. So «follow (null)» and «the user chose (a number)»
-   * are distinguished — `0` means «all three collapsed».
-   */
+     * The expanded step: `null` follows whatever is next to do, a number is the person's choice,
+     * and `0` collapses all three.
+     */
   /** The verification dialog (2026-09-19): restart, check, and "not working?" behind one press. */
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [agentSetupBusy, setAgentSetupBusy] = useState(false);
@@ -404,17 +359,10 @@ export function VaultAgentSetupPanel({
   const cursorDeeplink = buildCursorMcpDeeplink(vaultRootPath, serverAvailability.launch);
 
   /**
-   * Take a tool and write only its file — omit it and all of them go, as before (the scaffold
-   * position).
-   *
-   * ⚠️ **A failed write must reach the button that started it** (census state 5e, 2026-08-31).
-   * Two things were wrong at once. This handler swallowed the rejection, so
-   * `AgentClientButtons.writeAndConfirm` — which decides its state by awaiting this — saw a
-   * resolved promise and drew the tick for `done` on a write that never happened. And the
-   * sentence it showed was the raw exception, which names neither the file it tried to write nor
-   * the fact that the folder is unchanged. So the message is composed here, and the rejection is
-   * re-thrown so the pressed button says it failed.
-   */
+     * Write one tool's file, or all of them when no tool is given. On failure the message names
+     * the file and says the folder is unchanged, and the rejection is re-thrown, or the
+     * awaiting `AgentClientButtons.writeAndConfirm` would show done for a write that never happened.
+     */
   async function handleEnsureAgentConfigs(client?: AgentClientId) {
     setAgentSetupError(null);
     setAgentSetupBusy(true);
@@ -519,15 +467,12 @@ export function VaultAgentSetupPanel({
       ? 'invalid'
       : 'ready';
   /*
-   * The per-client controls — one state machine shared with the map sheet's button column
-   * (`useAgentClientControls`). Called before the early return below because it holds hooks;
-   * with no loaded folder its output is simply never drawn.
-   */
+     * The per-client controls, shared with the map sheet (`useAgentClientControls`). Called
+     * before the early return below because it holds hooks.
+     */
   const clientControls = useAgentClientControls({
     serverAvailability,
-    /* Pass the tool through — `() => void handleEnsureAgentConfigs()` swallows the argument,
-       so whichever button was pressed, the same files went out. The promise is **returned**,
-       not voided: the button awaits it to decide between "written" and "failed". */
+    /* Passes the tool through and returns the promise: the button awaits it to show written or failed. */
     onWriteConfigs:
       publicPackagesReady && canEditCurrent ? (client) => handleEnsureAgentConfigs(client) : null,
     cursorDeeplink,
@@ -542,11 +487,9 @@ export function VaultAgentSetupPanel({
 
   if (localVault.status !== 'loaded' || !agentStatus) return null;
   /*
-   * **Nothing until the server lookup answers.** `launch: null` alone cannot tell "a browser,
-   * which cannot launch anything" from "the app, still asking", so this panel opened on the
-   * browser's degradation card inside the installed app — telling someone running the app to
-   * download it. One empty frame is honest; that sentence is not.
-   */
+     * Nothing until the server lookup answers: `launch: null` alone cannot tell a browser from the
+     * app still asking, and the browser card would tell an app user to download the app.
+     */
   if (serverAvailability.pending) return null;
 
   const agentSetupReady = Boolean(
@@ -556,11 +499,6 @@ export function VaultAgentSetupPanel({
       agentStatus.mcpJsonValid !== false &&
       agentStatus.codexConfigValid !== false,
   );
-  /**
-   * The file set — **the role label was removed** (2026-08-04). 「Claude Code ·
-   * Cursor Connection File」 was a fourth statement of what the tool name beside it, the
-   * path, and the 「Connection File Status」 group title already say three times.
-   */
   const agentSetupFiles = [
     {
       key: 'mcpJson',
@@ -576,13 +514,9 @@ export function VaultAgentSetupPanel({
   const agentSetupConnections = [
     {
       /*
-       * ⚠️ **`.mcp.json` is Claude Code's file, and only its** (2026-09-20). This row read
-       * "Claude Code · Cursor" and credited both to the same check, but Cursor's project scope
-       * is `.cursor/mcp.json` — the repo's own 2026-07-30 research, and what `AGENT_CLIENTS`
-       * writes for it. Atlas reads two files, this one and Codex's; the other two it writes and
-       * never reads back, which `connectionHint` already tells the reader to confirm inside the
-       * tool. Naming Cursor here said Atlas had checked something it had not looked at.
-       */
+             * The `.mcp.json` file is Claude Code's only; Cursor's is `.cursor/mcp.json`, which Atlas
+             * writes but never reads back, so this row must not claim to have checked it.
+             */
       key: 'claudeCursor',
       file: agentSetupFiles[0],
       label: t('agentSetup.connectionClaudeCursor'),
@@ -607,16 +541,7 @@ export function VaultAgentSetupPanel({
   const hasInvalidAgentConfig = agentSetupFiles.some(
     (file) => agentStatus[file.key] && agentStatus[file.validKey] === false,
   );
-  /**
-   * **Further checks** behind the fold — only what comes after step 3.
-   *
-   * There used to be 6 rows here, and the first three (config files · restart ·
-   * verify connection) repeated **the same things as the three steps above with
-   * different numbers**. That left this screen with four numbering systems (3 steps ·
-   * 6 flow · 4 evidence · 6 commands) and none of them pointing at "what to do now".
-   * The first three were promoted into steps, so only the last three remain here —
-   * they were **promoted, not deleted**, so reachability is unchanged.
-   */
+  /** Further checks behind the fold: only what comes after step 3. */
   const agentDeeperChecks = [
     { key: 'gate', label: t('agentSetup.stepGate') },
     { key: 'mcpVerify', label: t('agentSetup.stepMcpVerify') },
@@ -706,14 +631,7 @@ export function VaultAgentSetupPanel({
           : null,
     },
     {
-      /*
-       * ⚠️ The 「Connection File {ready}/{total}」 row that stood here was removed
-       * (2026-08-04). The screen was stating the same number **three times** — the
-       * header summary, this row, and step 3's status line. It is exactly the reason
-       * the 2026-08-02 design council removed the 「Missing」 badge (there the third
-       * statement shouted in colour), and that ruling resurfaced here. The header
-       * summary is **always visible**, so one of the two survivors is always on screen.
-       */
+      // No ready/total row: the always-visible header summary already states that count.
       key: 'agentRoot',
       label: t('agentSetup.proofAgentRoot'),
       value: agentSetupReady
@@ -848,12 +766,9 @@ export function VaultAgentSetupPanel({
       data-testid="vault-agent-setup-panel"
     >
       {/*
-        ⚠️ **The diagnosis that existed and was never drawn** (census state 5d, 2026-08-31).
-        `agent_setup.rs` composes a `reason` for a bundled server it cannot find, its own doc
-        comment says the UI shows it verbatim, and `AgentServerAvailability.reason` repeats the
-        promise — yet no component in `src/` read the field. It renders only when there is a real
-        diagnosis: a web session sets no reason, so this is the installed app's row alone.
-      */}
+              The verbatim diagnosis `agent_setup.rs` composes when it cannot find the bundled server;
+              a web session sets no reason, so only the installed app draws this row.
+            */}
       {!publicPackagesReady && serverAvailability.reason ? (
         <p
           role="status"
@@ -865,20 +780,9 @@ export function VaultAgentSetupPanel({
       ) : null}
 
       {/*
-        ── One row per tool (2026-09-19) ──────────────────────────────────
-        The owner, on the three-step accordion this replaced: *"this design is poor — make it
-        properly; a popup, say."* The step list buried the only decision a person makes here
-        (which tool) under a status sentence, a numbered title and a paragraph, and hid what
-        Atlas already knows (which file exists) behind a fold. Now the tab reads like the tool
-        list beside it: one row per tool — its mark, its name, the file it writes — and on the
-        right the one control in that tool's own state (connect, copy, or ready). What Atlas
-        cannot know on its own (did you restart, did it attach) opens as a dialog from the
-        heading, together with everything that used to sit under "not working?".
-
-        The server-lifetime sentence and the folder-root note stand in the hint beside the
-        heading: both are answers to a question a person asks once, not a paragraph to pass
-        every time.
-      */}
+              One row per tool (mark, name, the file it writes) with the one control for its state.
+              What Atlas cannot know itself (restart, attach) opens as a dialog from the heading.
+            */}
       <SettingsGroup
         label={tMcp('shareHeading')}
         testId="agent-setup-steps"
@@ -898,9 +802,7 @@ export function VaultAgentSetupPanel({
                     : t('agentSetup.rootSummaryMissing')}
                 </p>
               </InfoHint>
-              {/* The same control as the agents tab's 「check again」 in the same slot
-                  (2026-09-25): a 24px/9.5px chip here made the heading's action visibly shrink
-                  when the tab changed, and 9.5px is below this sheet's type floor. */}
+              {/* The same control, in the same slot, as the agents tab's Check again. */}
               <Chip
                 size="lg"
                 tone="secondary"
@@ -918,18 +820,9 @@ export function VaultAgentSetupPanel({
         {clientRows ? (
           AGENT_CLIENTS.map((client) => {
             /*
-             * ⚠️ **A row that offers a replacement says what it is replacing** (2026-09-19,
-             * caught by rendering the mixed state). Atlas reads two of these four files, and
-             * when one exists but is not ours the control changes to "copy a correct one" —
-             * which, on its own, is a verb with no fact behind it. The sentence that states
-             * the fact already exists and was already translated; it had moved into the
-             * verification dialog with the rest of the status line, leaving the page with
-             * three rows saying "connect" and one saying "copy a correct one" for no visible
-             * reason. It belongs on the row whose file it is about.
-             *
-             * Only Claude Code and Codex can reach this state: `agentSetupFiles` is what Atlas
-             * reads, and Cursor and Antigravity are written without being read back.
-             */
+                         * A row that offers a replacement says on the row what it replaces. Only Claude Code
+                         * and Codex reach this state: Atlas never reads back Cursor's or Antigravity's file.
+                         */
             const inspected =
               client.id === 'claude-code'
                 ? { state: mcpJsonState, path: agentSetupFiles[0].path }
@@ -951,11 +844,7 @@ export function VaultAgentSetupPanel({
                   : client.files.join(' · ')
               }
               captionTone={foreignConfig ? 'warning' : 'neutral'}
-              /* The control stands at its natural width, right-aligned like every runtime row on
-                 the agents tab (round 3, 2026-09-25). The fixed 144px slot this replaced kept
-                 the four edges flush only by stretching a bold, filled button across it — a
-                 second control grammar one tab away from the first. Four resting "Connect" chips
-                 carry the same verb and glyph, so they still share both edges. */
+              /* Natural width, right-aligned like every runtime row on the agents tab. */
               control={clientRows[client.id]}
             />
             );
@@ -971,12 +860,9 @@ export function VaultAgentSetupPanel({
       ) : null}
 
       {/*
-        ── Check the connection (dialog) ─────────────────────────────────
-        Steps 2 and 3 of the old list are unknowable in principle — Atlas does not connect to
-        the agent — so they never completed on their own and only ever guided the order. They
-        keep doing that, one press away, with the proof packet ending the step whose job is
-        proving it (2026-09-05) and the former "not working?" fold under them.
-      */}
+              The check dialog: restart and verify steps Atlas cannot observe itself, ending in the
+              proof packet, with the "not working?" fold under them.
+            */}
       {publicPackagesReady ? (
         <Dialog
           open={verifyOpen}
@@ -993,8 +879,7 @@ export function VaultAgentSetupPanel({
             {tc('step3Title')}
           </h2>
 
-          {/* Restarting "the tool you just connected" means nothing while no file exists yet, so
-              the step waits for the first one (2026-09-25). */}
+          {/* Restarting "the tool you just connected" means nothing until a file exists. */}
           {agentSetupReadyCount > 0 ? (
           <section data-testid="agent-setup-step-2" className="mt-4">
             <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
@@ -1006,30 +891,16 @@ export function VaultAgentSetupPanel({
           </section>
           ) : null}
 
-          {/*
-            ⚠️ **A section may not be named after the dialog it is in** (2026-09-20). This heading
-            was `step3Title` — the same three words as the chip that opens this dialog and as the
-            dialog's own title, so the same three words stood three times in one small box and the second
-            one named nothing a reader could not already see. The section's subject is the table
-            under it: which tool's connection file exists, and what to type in that tool to see
-            it. `connectionStatusHeading` (the words the panel's own list already used as its
-            accessible name) says exactly that, so the two surfaces name one thing once.
-          */}
+          {/* Named for the table under it (`connectionStatusHeading`), not after the dialog it is in. */}
           <section data-testid="agent-setup-step-3" className="mt-4 flex flex-col gap-2">
             <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               {t('agentSetup.connectionStatusHeading')}
             </h3>
               <div className="divide-y divide-[color:var(--color-divider)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)]">
                 {/*
-                  ⚠️ **One statement of the state, in the box that is about it** (round 3,
-                  2026-09-25). The dialog used to open with an 11px subtitle stacking three facts
-                  (whose files, how many, what next) and then this row said the zero state again
-                  in a sentence 70px lower. The count now lives here once, naming whose files it
-                  counts (Atlas reads back only Claude Code's and Codex's, so a bare "0/2" would
-                  disagree with the four tools behind the dialog), and the next step is the line
-                  under it. When nothing is missing there is no second line: the restart step
-                  above already says what comes after a file exists.
-                */}
+                                  The one statement of the count, naming whose files it counts (Atlas reads back
+                                  only Claude Code's and Codex's); the next step follows only when one is missing.
+                                */}
                 <div className="flex items-start gap-2 px-2.5 py-2">
                   <span
                     aria-hidden
@@ -1078,14 +949,7 @@ export function VaultAgentSetupPanel({
                   ))}
                 </dl>
               </div>
-              {/*
-                **The proof packet ends the step whose job is proving it** (2026-09-05). It used to
-                be a card below this whole pane, so on the installed app the thing that actually
-                confirms the connection stood after the three steps rather than inside the one
-                called "check the connection". What this screen knows on its own stops at the
-                config files' validity; the packet is how the agent answers for the rest, and that
-                is the same question this step asks.
-              */}
+              {/* The proof packet ends the step whose job is proving the connection. */}
               <McpProofPacket
                 frame="inline"
                 vaultName={vaultNameForConfig}
@@ -1093,12 +957,7 @@ export function VaultAgentSetupPanel({
               />
           </section>
 
-          {/*
-            ── Having trouble? ──────────────────────────────────────────────
-            Advanced, verification, CLI and connecting from another folder all sit behind
-            this. It is **collapsed, not deleted**, so everything collapsed must remain
-            reachable.
-          */}
+          {/* Advanced, verification, CLI and other-folder setup: collapsed, and all still reachable. */}
           <button
             type="button"
             onClick={() => setAdvancedOpen((v) => !v)}
@@ -1134,24 +993,9 @@ export function VaultAgentSetupPanel({
             data-testid="agent-setup-advanced"
             className="ai-row-disclosure-body flex flex-col gap-4 pt-2"
           >
-        {/*
-          ── Check group ────────────────────────────────────────────────
-          ⚠️ **This whole lump is soon moving to the "To Fix" tab** (owner call,
-          2026-08-04 — check, repair and delete go there). Rather than moving it this
-          round, it is gathered under one node in **a shape that is easy to move**.
-          Left scattered, someone would have to hunt down eight places again.
-        */}
         <div data-testid="agent-setup-inspection" className="flex flex-col gap-2">
           <SectionLabel>{t('agentSetup.groupFiles')}</SectionLabel>
-          {/*
-            **There is one list** (2026-08-04). The same three files used to be drawn
-            twice — above as 「tool name + check method + badge」, below as 「path +
-            role」. The two lists had the same row count and the same order, and the
-            only difference was which one stated the path. Stating the same fact in two
-            places leaves nobody knowing which is current. The check methods (`/mcp`
-            and so on) were promoted into step 3, so what remains here is three things:
-            **name · path · status**.
-          */}
+          {/* One list of the config files: name, path and status. */}
           <ul aria-label={t('agentSetup.connectionStatusHeading')} className="grid gap-1">
             {agentSetupConnections.map(({ key, file, label }) => {
               const present = Boolean(agentStatus[file.key]);
@@ -1224,19 +1068,9 @@ export function VaultAgentSetupPanel({
           </p>
 
           {/*
-            ── Folder status ──────────────────────────────────────────────
-            ⚠️ **Correction, 2026-08-04 — this box was lying.**
-            It carried a red "HANDOFF BLOCKED" badge and the sentence *"The agent
-            must resolve vault validation errors before modifying the
-            ontology"*
-            (the agent must resolve vault validation errors before modifying the
-            ontology) — but **nothing is blocked**. The MCP write paths
-            (`add_concept` · `patch_concept` …) have no such gate. The only thing an
-            error actually refuses is `git_snapshot({confirm:true})`
-            (`mcp/src/index.js` — *"git_snapshot blocked: validate_vault found N
-            file(s) with errors"*). When a screen asserts a fact with no basis, users
-            give up on things that would have worked.
-          */}
+                      Validation errors block nothing but `git_snapshot({confirm:true})`; MCP writes have no
+                      such gate, so this box must not claim the agent is blocked.
+                    */}
           <div
             role="status"
             aria-label={t('agentSetup.validationGateAriaLabel')}
@@ -1630,18 +1464,7 @@ export function VaultAgentSetupPanel({
   );
 }
 
-/**
- * A group title inside the fold — it points at **the same specification** as the
- * root sheet's group headers.
- *
- * ⚠️ The comment that stood here said *"the `text-caption` (9.5px) in this position
- * is not the forbidden usage — it is the «micro label» the ramp's definition names"*,
- * and **that was wrong** (2026-08-09, the owner's second report). `uppercase` does
- * nothing to Hangul, so the "uppercase micro label" typographic device does not
- * exist and all that remains is 9.5px of dim text. And the root sheet already used
- * 11px for the same role. The value lives in one place,
- * `SETTINGS_SECTION_LABEL`.
- */
+/** A group title inside the fold, in the root sheet's `SETTINGS_SECTION_LABEL` style. */
 function SectionLabel({ children }: { children: ReactNode }) {
   return <h4 className={SETTINGS_SECTION_LABEL}>{children}</h4>;
 }

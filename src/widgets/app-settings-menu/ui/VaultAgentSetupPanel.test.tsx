@@ -25,9 +25,8 @@ const bundledServer = agentServerFromBundle(
   '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp',
 );
 /*
- * A web session carries **no** reason: not being the installed app is the ordinary state of a
- * browser, and the panel already says so in the reader's own language. Filling `reason` there put
- * an untranslated English sentence one render away from a Korean screen.
+ * A web session carries no reason: the panel already explains the browser state in the reader's
+ * language.
  */
 const noServer = agentServerUnavailable(null);
 /** The installed app that cannot find its own bundled server — the case that had a diagnosis and no renderer. */
@@ -1362,17 +1361,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByTestId('agent-setup-advanced')).toBeInTheDocument();
   });
 
-  /*
-   * **One dialog, one name, one count** (2026-09-20).
-   *
-   * Rendered, the verification dialog said its own name three times — on the chip that opens it,
-   * as its own title, and again as the heading of the section holding the per-tool table — and
-   * stated how many connection files were ready twice, in the subtitle and again 130px below in
-   * the section's first line. Both are the duplicated prose the owner asked this screen to shed.
-   *
-   * Counted rather than matched on a sentence: the rule is "not twice", and a wording change
-   * that keeps it once should not redden this.
-   */
+  // Counted rather than matched on a sentence, so rewording that keeps it once still passes.
   it("states the check dialog's name and count once each", () => {
     render(
       <VaultAgentSetupPanel
@@ -1389,11 +1378,7 @@ describe('VaultAgentSetupPanel', () => {
     const headings = [...dialog.querySelectorAll('h2, h3')].map((h) => h.textContent?.trim());
     expect(headings.filter((h) => h === title)).toHaveLength(1);
 
-    /*
-     * "N/M connection files ready" is the status box's job (round 3: the subtitle that also said
-     * it is gone); the line under it states what to do about the missing one. Matched on the **shape** rather than the sentence, so the
-     * catalogue can be reworded and the rule still reads "said once".
-     */
+    // Matched on the count's shape, so the catalogue can be reworded.
     const countShape = /\d+\/\d+개 준비됨/;
     const saidTheCount = [...dialog.querySelectorAll('p, span')].filter((el) =>
       countShape.test(el.textContent ?? ''),
@@ -1573,12 +1558,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.queryByTestId('agent-setup-advanced-toggle')).not.toBeInTheDocument();
     expect(localVault.ensureAgentConfigs).not.toHaveBeenCalled();
   });
-  /*
-   * ⚠️ Census state 5d, 2026-08-31. `agent_setup.rs` writes this sentence, its doc comment says
-   * the UI shows it verbatim, and `AgentServerAvailability.reason` repeats the promise — but no
-   * component in `src/` read the field, so an app whose bundled server is missing dropped the
-   * connect option and explained nothing at all.
-   */
+  // The reason `agent_setup.rs` writes is shown verbatim.
   it('shows why the bundled server file was not found', () => {
     render(
       <VaultAgentSetupPanel
@@ -1609,11 +1589,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.queryByTestId('agent-setup-server-reason')).not.toBeInTheDocument();
   });
 
-  /*
-   * ⚠️ Census state 5e, 2026-08-31. The write failure was caught here and dropped, and the
-   * per-tool button (which decides its state by awaiting this handler) then drew the success tick
-   * on a write that never happened.
-   */
+  // The per-tool button awaits the handler, so a swallowed failure would show success.
   it('names the config file that failed to write and says the folder is unchanged', async () => {
     const localVault = makeLocalVault({
       ensureAgentConfigs: vi

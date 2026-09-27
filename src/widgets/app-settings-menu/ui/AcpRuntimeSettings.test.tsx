@@ -18,10 +18,8 @@ vi.mock('next-intl', () => ({
 }));
 
 /*
- * The locale-aware `Link` needs an intl provider this file deliberately does not mount (every
- * string here is its own key, so a real catalogue would hide which key each assertion is about).
- * A plain anchor keeps the href assertion below honest — what matters is the address the row
- * offers, not who prefixes the locale.
+ * A plain anchor instead of the locale-aware `Link`, which needs an intl provider; strings here
+ * are raw keys so each assertion names its key.
  */
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
@@ -85,12 +83,7 @@ describe('runtime list: what works now comes first', () => {
   });
 
   it('omits the MCP link inside the destination, whose tab bar already has it', async () => {
-    /*
-     * 2026-09-05 measured that the installed app had no way to MCP from here and put a link in
-     * this row. 2026-09-19 gave the page a tab strip with MCP on it, one press from any point of
-     * this list, so the sentence pointing "below" became the dead pointer it had once fixed. The
-     * sheet (not embedded) has no strip and keeps the link.
-     */
+    // Embedded, the page's tab strip already reaches MCP; only the sheet keeps the link.
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
     ]);
@@ -136,17 +129,7 @@ describe('runtime list: what works now comes first', () => {
     );
   });
 
-  /*
-   * **The press stands with the group it re-scans** (2026-09-20).
-   *
-   * It used to sit on the intro row, level with the sentence about which tools can open a chat
-   * and a whole line above the heading counting what it would re-count. The MCP tab beside this
-   * one puts its own group press in its group heading, so the two tabs were asking to be read
-   * differently for no reason a person could name.
-   *
-   * Containment rather than coordinates: the chip sits inside the heading's own row, which
-   * stays true at every width and says the thing the layout is for.
-   */
+  // Asserted by containment, not coordinates, so it holds at every width.
   it("puts Check again on its group's header row", async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
@@ -181,14 +164,6 @@ describe('runtime list: what works now comes first', () => {
     expect(note.closest('[role="tooltip"]'), 'the disk note sits outside the hint tooltip').not.toBeNull();
   });
 
-  /*
-   * **A hint has to hang off the thing it explains** (2026-09-21).
-   *
-   * On the agents tab the intro sentence and the MCP link belong to the sheet, so with one
-   * confirmed tool the row above the list held this hint and nothing else: a lone question mark
-   * on a row of its own, above the heading, marking nothing. In the group heading it reads
-   * name · hint · re-scan — the order the MCP tab's own heading already uses.
-   */
   it('puts the disk hint on the group header row', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
@@ -232,13 +207,7 @@ describe('runtime list: what works now comes first', () => {
     await waitFor(() => expect(screen.getByTestId('app-settings-runtime-claude-acp')).toBeInTheDocument());
     // What is behind the door is not on screen yet — 38 rows are not poured out as one block.
     expect(screen.queryByTestId('app-settings-runtime-cursor')).toBeNull();
-    /*
-     * ⚠️ **A door, not a fold** (owner, 2026-09-07). The chip used to carry `aria-expanded`
-     * because the rest of the list unfolded underneath it; it now opens a dialog with a search,
-     * so it announces `aria-haspopup="dialog"` instead. Announcing "expanded/collapsed" for a
-     * control that opens a modal tells assistive tech the wrong thing about where focus is
-     * about to go.
-     */
+    // It opens a dialog, so it announces `aria-haspopup="dialog"`, not expanded or collapsed.
     expect(screen.getByTestId('app-settings-runtimes-others-toggle')).toHaveAttribute(
       'aria-haspopup',
       'dialog',
@@ -260,11 +229,7 @@ describe('runtime list: what works now comes first', () => {
     expect(screen.getByTestId('app-settings-runtime-cursor')).toBeInTheDocument();
     expect(screen.getByTestId('app-settings-runtime-gemini')).toBeInTheDocument();
 
-    /*
-     * The search is the reason this is a dialog rather than a fold: finding one tool among 36 by
-     * reading all 36 is not finding it. It reads the label and the description together, because
-     * somebody looking for "the Google one" does not remember `gemini`.
-     */
+    // Search matches label and description together.
     fireEvent.change(screen.getByTestId('app-settings-runtimes-others-search'), {
       target: { value: 'curs' },
     });
@@ -279,22 +244,8 @@ describe('runtime list: what works now comes first', () => {
 });
 
 describe('runtime list: what the app cannot block', () => {
-  /*
-   * Owner call (2026-08-16): neither drop it from the list nor leave it silent. Let
-   * people choose knowingly. Without this check, someone later reads the caption as
-   * "wasted ink" and deletes it, and the screen stops saying that it cannot block.
-   */
   it('puts no guard badge on a row', async () => {
-    /*
-     * Removed after **three** revisions driven by owner reports (2026-08-16). All
-     * three taught the same thing: a badge of 4–6 characters cannot say "can the app
-     * ask on your behalf when a file outside the folder is touched". It needs both
-     * condition and consequence to mean anything.
-     *
-     * What this check holds is not "never build a badge again" but **that visible
-     * repetition does not appear on every row** — that was the symptom all three
-     * times.
-     */
+    // What is held is that no per-row repetition appears.
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
       makeRuntime({ id: 'gemini', isolated: false }),
@@ -312,13 +263,7 @@ describe('runtime list: what the app cannot block', () => {
   });
 
   it('states the explanation once, before the list', async () => {
-    /*
-     * This sentence was once left on every row as `sr-only`. The screen went quiet,
-     * but someone listening with a screen reader hears the same sentence 19 times —
-     * the defect being fixed was moved into an invisible layer. With the explanation
-     * **before** the list, it reaches anyone reading in order first, so no copy is
-     * needed.
-     */
+    // Including `sr-only` copies, which a screen reader would hear on every row.
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
       makeRuntime({ id: 'gemini', isolated: false }),
@@ -341,10 +286,7 @@ describe('runtime list: what the app cannot block', () => {
   });
 
   it('names the guarded tools in the group explanation', async () => {
-    /*
-     * Baking "only Claude Code for now" into a string makes that sentence false from
-     * the day a second one appears. The names have to come from the data.
-     */
+    // The names come from the data, so the sentence stays true as guarded tools change.
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
       makeRuntime({ id: 'gemini', isolated: false }),
@@ -369,11 +311,6 @@ describe('runtime list: what the app cannot block', () => {
   });
 
   it('does not repeat the explanation on each row', async () => {
-    /*
-     * A defect caught by actually running it: 18 of 20 rows carried the same
-     * sentence, so half the screen was one sentence copied, and the names and states
-     * that had to be read were buried between them.
-     */
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'a', isolated: false }),
       makeRuntime({ id: 'b', isolated: false }),
@@ -420,12 +357,7 @@ describe('runtime list: what the app cannot block', () => {
     expect(slots.length, 'a runtime without a mark keeps a same-size tile slot').toBeGreaterThan(0);
   });
 
-  /*
-   * These three catch a real defect. The first implementation used `<img>`, and
-   * because every registry icon is single-colour `currentColor`, it became **a black
-   * drawing on a black plate** — nothing visible on screen and nothing wrong in the
-   * code (the owner found it).
-   */
+  // Registry icons are single-colour `currentColor`, so an `<img>` would draw black on black.
   it("paints the mark with the vendor's published colour", async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, icon: '/acp-icons/claude-acp.svg', brandInk: '#D97757' }),
@@ -482,11 +414,7 @@ describe('runtime list: unavailable states', () => {
     render(<AcpRuntimeSettings />);
     expect(screen.getByTestId('app-settings-runtimes-web')).toHaveTextContent('webLabel');
     expect(screen.getByTestId('app-settings-runtimes-web')).toHaveTextContent('webCaption');
-    /*
-     * ⚠️ **The place it names has to be reachable** (2026-09-05). The caption used to point at a
-     * section of this same screen; MCP became its own destination, and a name with no way there is
-     * the dead-end guidance `.claude/rules/surfaces.md` forbids in a degradation card.
-     */
+    // The named destination must be reachable (`.claude/rules/surfaces.md`).
     expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/agents/?tab=mcp');
     // In a browser it does not even set out to look.
     expect(bridge.detect).not.toHaveBeenCalled();
@@ -521,14 +449,9 @@ export type { Runtime };
 
 describe('runtime list: installation stays with the vendor', () => {
   /*
-   * The reference product (Buzz) has an `Install` button in this same place, and
-   * pressing it **actually runs an install script** (measured: it runs `curl … |
-   * bash`, with retries). We do not — "there is no defensible reason to run code
-   * nobody has reviewed" (`forbidden.md`), and a script behind a URL can change at
-   * any time, so we cannot show what we execute as a diff.
-   *
-   * What this check holds is that **an execute button never reappears in that place**.
-   */
+     * No install button that runs a script behind a URL (`forbidden.md`): it can change and
+     * cannot be shown as a diff.
+     */
   it("links a not-ready row to the tool's official install guide", async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'goose', state: 'cli-missing', isolated: false }),
@@ -551,11 +474,7 @@ describe('runtime list: installation stays with the vendor', () => {
   });
 
   it('does not copy install commands onto the screen', async () => {
-    /*
-     * Transcribing the command makes our copy go stale (the vendor changes it). And
-     * `curl … | bash` visible on our screen reads to the user as something we
-     * vouched for.
-     */
+    // A copied command goes stale and reads as vouched for.
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'goose', state: 'cli-missing', isolated: false }),
     ]);
@@ -568,19 +487,8 @@ describe('runtime list: installation stays with the vendor', () => {
 });
 
 describe('runtime list: render first, verify later', () => {
-  /*
-   * Owner report, 2026-08-16: *"When I press the Agents tab, the loading speed is about 1 second slow — shouldn't it load first and update after?"*
-   *
-   * Adding the login check added its cost **directly to the time the screen took to
-   * appear.** The list could have been drawn first, and nothing was shown until the
-   * check finished.
-   */
   it('renders first without the login check, then checks once more', async () => {
-    /*
-     * The checking side is made to answer **deliberately late**. If both finished in
-     * the same frame there would be no way to see whether "draw first" held — and
-     * that is the whole of this check.
-     */
+    // The login check answers late on purpose, or draw-first could not be observed.
     let releaseSlow: () => void = () => {};
     const slow = new Promise<void>((resolve) => {
       releaseSlow = resolve;
@@ -623,12 +531,7 @@ describe('runtime list: render first, verify later', () => {
     expect(bridge.detect.mock.calls[0][0]?.probeLogin).toBe(true);
   });
 
-  /*
-   * Owner report, 2026-09-05: with a load average around 10, right after an in-app session ended,
-   * both runtimes wore 「Sign in needed」 while `claude auth status` and `codex login status`
-   * exited 0 from a shell; relaunching cleared it. A failed check must not spend the person's
-   * afternoon logging in to something they are already logged in to.
-   */
+  // A failed check under load is not a logged-out tool.
   it('says unverified when the login check fails and keeps the tool usable', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, state: 'login-unknown' }),

@@ -122,10 +122,7 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
-/**
- * Web degradation — a browser has nowhere safe to keep a key. The tab exists and says why, where
- * it works, and shows no example rows: a sample key or runner would be fake data.
- */
+/** A browser has nowhere safe to keep a key, so the tab explains and shows no sample rows. */
 describe('models tab on the web', () => {
   it('renders no key input, no runner row and no example data without the desktop bridge', () => {
     renderPanel(makeConnection({ bridgeAvailable: false }));
@@ -177,10 +174,7 @@ describe('models tab layout', () => {
   });
 });
 
-/**
- * Collapsing unregistered rows — three permanently visible password inputs would make the tab a
- * form gate. A collapsed row still states its status.
- */
+/** Unregistered rows stay collapsed but still state their status. */
 describe('API key rows', () => {
   it('lists every named vendor without opening three key fields at once', () => {
     renderPanel(makeConnection());
