@@ -38,6 +38,12 @@ export const POST_MERGE_SPECS = [
   "map-trail.spec.ts",
   "nav-yield-map-frames.spec.ts",
   "offscreen-node-census.spec.ts",
+  // ── Timing-paced sweeps (2026-09-27): an ease-out curve, a settle deadline, a press budget
+  // and an 81-width sweep whose verdict depends on how fast the runner paints ──
+  "map-3d-lit-strata.spec.ts",
+  "map-hex-board.spec.ts",
+  "map-toolbar-no-overlap.spec.ts",
+  "route-transition-input.spec.ts",
   // ── Every route × every width matrix — the layout and style drift sweep ──
   "cursor-affordance.spec.ts",
   "focus-ring-contrast.spec.ts",
