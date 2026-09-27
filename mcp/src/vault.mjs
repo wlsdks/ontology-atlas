@@ -470,11 +470,16 @@ export function slugToPath(rootPath, slug) {
   return candidate;
 }
 
-/** `slugToPath` for a file a write tool will create, change or delete; refuses what `unwritableSlugIssue` names. */
+/** `slugToPath` for a file a write tool will create, change or delete; refuses what `unwritableSlugIssue` names, as typed or where it resolves. */
 export function slugToWritePath(rootPath, slug) {
   const issue = unwritableSlugIssue(slug);
   if (issue) throw new Error(issue);
-  return slugToPath(rootPath, slug);
+  const filePath = slugToPath(rootPath, slug);
+  const real = realSegmentsBelowRoot(resolve(rootPath), filePath);
+  const resolved = real ? segmentsToSlug(real) : slug;
+  const resolvedIssue = resolved === slug ? null : unwritableSlugIssue(resolved);
+  if (resolvedIssue) throw new Error(`slug "${slug}" resolves through a link to "${resolved}". ${resolvedIssue}`);
+  return filePath;
 }
 
 /**

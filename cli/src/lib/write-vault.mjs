@@ -35,7 +35,12 @@ export function slugToPath(rootPath, slug) {
 function slugToWritePath(rootPath, slug) {
   const issue = unwritableSlugIssue(slug);
   if (issue) throw new Error(issue);
-  return slugToPath(rootPath, slug);
+  const filePath = slugToPath(rootPath, slug);
+  const real = realSegmentsBelowRoot(resolve(rootPath), filePath);
+  const resolved = real ? segmentsToSlug(real) : slug;
+  const resolvedIssue = resolved === slug ? null : unwritableSlugIssue(resolved);
+  if (resolvedIssue) throw new Error(`slug "${slug}" resolves through a link to "${resolved}". ${resolvedIssue}`);
+  return filePath;
 }
 
 /** Still inside the vault after link resolution. A path that does not exist yet is

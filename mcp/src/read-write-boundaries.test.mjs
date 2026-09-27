@@ -177,6 +177,29 @@ describe('write tools never touch agent instruction files or hidden folders', ()
   });
 });
 
+describe('write tools judge where a slug lands, not only how it is spelled', () => {
+  const vault = scratch();
+  write(join(vault, '.claude', 'skills', 'marker-skill', 'SKILL.md'), '---\nname: marker-skill\n---\n\n# MARKER-SKILL\n');
+  write(join(vault, 'domains', 'd.md'), '---\nkind: domain\ntitle: D\nuid: 22222222-2222-4222-8222-222222222222\n---\n\nbody\n');
+  symlinkSync('.claude', join(vault, 'notes'));
+
+  it('refuses a patch and an add through a linked folder and leaves its files byte-identical', async () => {
+    const before = snapshot(join(vault, '.claude'));
+    const calls = [
+      ['patch_concept', { slug: 'notes/skills/marker-skill/SKILL', frontmatter: { marker: 'MARKER' }, body: 'MARKER-PATCHED-BODY\n' }],
+      ['add_concept', { slug: 'notes/commands/marker', kind: 'document', title: 'marker', body: 'MARKER-CREATED' }],
+      ['rename_concept', { oldSlug: 'domains/d', newSlug: 'notes/commands/moved', confirm: true }],
+    ];
+    const results = await callTools(vault, calls);
+    for (const [index, result] of results.entries()) {
+      assert.equal(result.isError, true, `${calls[index][0]} ${calls[index][1].slug ?? calls[index][1].newSlug} was allowed`);
+      assert.match(result.text, /through a link/, `${calls[index][0]} must name the resolved location: ${result.text.slice(0, 200)}`);
+    }
+    assert.deepEqual(snapshot(join(vault, '.claude')), before);
+    assert.match(readFileSync(join(vault, 'domains', 'd.md'), 'utf8'), /title: D/);
+  });
+});
+
 describe('the unwritable slug rule', () => {
   const refused = [
     'AGENTS', 'agents', 'Agents', 'AGENTS.override', 'CLAUDE', 'claude.local', 'GEMINI', 'domains/CLAUDE',

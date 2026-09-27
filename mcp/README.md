@@ -2051,7 +2051,8 @@ cannot boot.
   segment starting with `.` (`.claude`, `.git`, `.github`) or ending like a
   Windows short name (`~1`), a control or invisible formatting character, an
   agent instruction file (`AGENTS`, `AGENTS.override`, `CLAUDE`, `CLAUDE.local`
-  or `GEMINI`, in any letter case and folder), or the root `README`.
+  or `GEMINI`, in any letter case and folder), or the root `README`, judged on
+  the slug as typed and on the location it resolves to through any link.
   The refusal names the rule and a node-shaped slug to use instead; reads are
   unchanged. A rename, merge or reclassify leaves such a file's links as they
   are and names it in `warnings` for a person to update.
