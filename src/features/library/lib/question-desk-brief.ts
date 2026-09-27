@@ -1,6 +1,9 @@
 import type { DeskClaim, DeskSourceHit } from './question-desk';
 import { WIKI_CITATION_ANCHOR_PATTERN, WIKI_CITATION_PATTERN } from '@/shared/lib/wiki-page-schema';
 import { normalizeOriginalPaths, resolveSourceCitation } from '@/shared/lib/source-citation';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
+import { unified } from 'unified';
 
 const SOURCE_LEAD_LIMIT = 400;
 const WIKI_LEAD_LIMIT = 400;
@@ -9,6 +12,13 @@ const SOURCE_SECTION_BUDGET = 4_000;
 /** Includes the folder, question, coverage, bounded leads, and every closing rule. */
 export const QUESTION_DESK_BRIEF_MAX_CHARS = 14_000;
 const CITATION = /\[\[src:[^\]]+\]\]/g;
+const markdownParser = unified().use(remarkParse).use(remarkGfm);
+const UNSAFE_REPORT_NODES = new Set(['link', 'image', 'linkReference', 'imageReference', 'definition', 'html']);
+
+function hasUnsafeMarkdownNode(node: { type: string; children?: readonly { type: string }[] }): boolean {
+  if (UNSAFE_REPORT_NODES.has(node.type)) return true;
+  return node.children?.some((child) => hasUnsafeMarkdownNode(child)) ?? false;
+}
 
 function clipped(text: string, limit: number, marker: string): string {
   if (text.length <= limit) return text;
@@ -97,8 +107,8 @@ function buildBoundedBrief(input: Parameters<typeof buildQuestionDeskBrief>[0], 
 export function buildQuestionDeskReportBrief(input: Parameters<typeof buildQuestionDeskBrief>[0]): string {
   const ko = input.locale === 'ko';
   const format = ko
-    ? '\n\n이 질문에 대한 미검토 Markdown 보고서 초안을 작성해. 다음 네 제목을 사용해: ## 답, ## 원문 근거, ## 불일치하거나 변경된 주장, ## 모르는 점과 검색 한계. 각 사실에는 다시 읽은 원문의 정확한 [[src:sources/<파일>#<앵커>]] 인용을 붙여. 위키 주장과 원문이 다르면 둘 다 밝히고 임의로 결론 내리지 마. 문서가 말하지 않으면 모른다고 써. 어떤 파일도 쓰지 마.'
-    : '\n\nWrite an unreviewed Markdown report draft for this question with these headings: ## Answer, ## Source-backed evidence, ## Disagreements or changed claims, ## Unknowns and search limits. Cite each fact from an original you re-read with an exact [[src:sources/<file>#<anchor>]] citation. If a Wiki claim differs from its original, show both without silently choosing one. Say when the documents do not answer. Write no files.';
+    ? '\n\n이 질문에 대한 미검토 Markdown 보고서 초안을 작성해. 다음 네 제목을 사용해: ## 답, ## 원문 근거, ## 불일치하거나 변경된 주장, ## 모르는 점과 검색 한계. ## 답의 첫 문단은 160자 이하의 짧은 결론 한 문장으로 쓰고, 사실을 말하면 정확한 원문 인용을 그 문장에 붙여. 설명은 다음 문단에 써. 각 사실에는 다시 읽은 원문의 정확한 [[src:sources/<파일>#<앵커>]] 인용을 붙여. 위키 주장과 원문이 다르면 둘 다 밝히고 임의로 결론 내리지 마. 문서가 말하지 않으면 모른다고 써. 어떤 파일도 쓰지 마.'
+    : '\n\nWrite an unreviewed Markdown report draft for this question with these headings: ## Answer, ## Source-backed evidence, ## Disagreements or changed claims, ## Unknowns and search limits. Start ## Answer with one short conclusion sentence in its own paragraph (160 characters or fewer); cite its exact original if it states a fact, then put explanation in later paragraphs. Cite each fact from an original you re-read with an exact [[src:sources/<file>#<anchor>]] citation. If a Wiki claim differs from its original, show both without silently choosing one. Say when the documents do not answer. Write no files.';
   const brief = buildBoundedBrief(input, format.length) + format;
   if (brief.length > QUESTION_DESK_BRIEF_MAX_CHARS) throw new Error('question-desk-report-brief-over-budget');
   return brief;
@@ -220,6 +230,7 @@ export type ReportFilePlan =
 
 /** Only an exact four-section ACP report can enter the existing Wiki filing validator. */
 export function planQuestionDeskReportFile(report: QuestionDeskReportContent, locale: string, knownSources: ReadonlySet<string>): ReportFilePlan {
+  if (hasUnsafeMarkdownNode(markdownParser.parse(report.text))) return { ok: false, reason: 'unsafe' };
   const headings = locale === 'ko'
     ? ['답', '원문 근거', '불일치하거나 변경된 주장', '모르는 점과 검색 한계']
     : ['Answer', 'Source-backed evidence', 'Disagreements or changed claims', 'Unknowns and search limits'];
@@ -235,7 +246,6 @@ export function planQuestionDeskReportFile(report: QuestionDeskReportContent, lo
       continue;
     }
     if (section < 0 || /^#{1,6}\s/.test(line) || /^(```|~~~)/.test(line)) return { ok: false, reason: 'shape' };
-    if (/!?\[[^\]]*\]\s*(?:\([^)]*\)|\[[^\]]*\])/.test(line) || /^\[[^\]]+\]:/.test(line) || /<[^>]+>/.test(line)) return { ok: false, reason: 'unsafe' };
     sections[section]!.push(line);
   }
   if (section !== 3 || sections[0]!.length === 0) return { ok: false, reason: 'shape' };

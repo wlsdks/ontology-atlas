@@ -29,7 +29,7 @@ import { citedPassage, sourceUnits, type SourceUnit } from '@/shared/lib/source-
 import { controlClass } from '@/shared/ui/control-class';
 import { normalizeOriginalPaths, parseWikilinkHref, resolveSourceCitation, rewriteWikilinks } from '@/shared/lib/source-citation';
 import { WIKI_CITATION_ANCHOR_PATTERN } from '@/shared/lib/wiki-page-schema';
-import { Button, Chip, Dialog } from '@/shared/ui';
+import { Button, Chip, Dialog, Disclosure } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
 import { MOTION, OVERLAY_RISE, OVERLAY_RISE_REDUCED, OVERLAY_SETTLED, STAGGER } from '@/shared/motion';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
@@ -103,19 +103,27 @@ async function digestHex(bytes: ArrayBuffer): Promise<string | null> {
 }
 
 /** Untrusted ACP Markdown: local source citations alone become controls. */
-function SafeReportMarkdown({ text, sources, onOpenSource }: {
+function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
   text: string;
   sources: readonly LibrarySourceRow[];
   onOpenSource: (path: string, anchor: string) => void;
+  answer?: boolean;
 }) {
   const t = useTranslations('library.questionDesk');
   const known = useMemo(() => normalizeOriginalPaths(new Set(sources.map((source) => source.path))), [sources]);
-  return <div className="min-w-0 text-reading leading-prose text-[color:var(--color-text-secondary)]" data-testid="question-desk-report-markdown">
+  // The first ACP paragraph earns headline scale only when it is actually a short conclusion.
+  const firstParagraph = text.trim().split(/\n\s*\n/, 1)[0] ?? '';
+  const headlineAnswer = answer && firstParagraph.length <= 160 && !/^(?:[-*+] |\d+\. |#{1,6} |>|```|~~~)/.test(firstParagraph);
+  return <div className={answer
+    ? 'min-w-0 text-reading leading-prose text-[color:var(--color-text-primary)]'
+    : 'min-w-0 text-reading leading-prose text-[color:var(--color-text-secondary)]'} data-testid="question-desk-report-markdown">
     <ReactMarkdown skipHtml remarkPlugins={[remarkGfm]} components={{
       h1: ({ children }) => <h3 className="mb-2 mt-5 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] first:mt-0">{children}</h3>,
       h2: ({ children }) => <h3 className="mb-2 mt-5 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] first:mt-0">{children}</h3>,
       h3: ({ children }) => <h4 className="mb-2 mt-4 text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{children}</h4>,
-      p: ({ children }) => <p className="my-3 break-words">{children}</p>,
+      p: ({ children }) => <p className={headlineAnswer
+        ? 'my-3 break-words first-of-type:mt-0 first-of-type:text-display first-of-type:leading-display lg:first-of-type:text-hero lg:first-of-type:leading-hero'
+        : 'my-3 break-words'}>{children}</p>,
       ul: ({ children }) => <ul className="my-3 list-disc pl-5">{children}</ul>,
       ol: ({ children }) => <ol className="my-3 list-decimal pl-5">{children}</ol>,
       li: ({ children }) => <li className="my-1 break-words">{children}</li>,
@@ -157,18 +165,17 @@ function DraftReport({ text, sources, onOpenSource, actions }: {
     <SafeReportMarkdown text={text} sources={sources} onOpenSource={onOpenSource} />
     {actions}
   </div>;
-  return <div data-testid="question-desk-report-sections" className="space-y-6">
+  return <div data-testid="question-desk-report-sections" className="space-y-7">
     {sections.map((section, index) => <motion.section key={section.title} data-testid={`question-desk-report-section-${index}`}
       initial={reduced ? OVERLAY_RISE_REDUCED : OVERLAY_RISE} animate={OVERLAY_SETTLED}
       transition={{ ...(reduced ? MOTION.fast : MOTION.settle), delay: reduced ? 0 : index * STAGGER }}
-      className={index === 0 ? 'border-b border-[color:var(--color-indigo-line-a20)] pb-5' : 'border-t border-[color:var(--color-border-soft)] pt-4'}>
-      <div className="mb-2 flex items-baseline gap-3">
-        <span aria-hidden className="font-mono text-caption leading-caption text-[color:var(--color-text-tertiary)]">{String(index + 1).padStart(2, '0')}</span>
+      className={index === 0 ? 'border-b border-[color:var(--color-border-soft)] pb-6' : 'border-t border-[color:var(--color-border-soft)] pt-5'}>
+      <div className={index === 0 ? 'mb-4' : 'mb-2'}>
         <h5 className={index === 0
-          ? 'text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]'
+          ? 'text-label font-[var(--font-weight-strong)] leading-label text-[color:var(--color-indigo-text-soft)]'
           : 'text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]'}>{section.title}</h5>
       </div>
-      {section.markdown ? <SafeReportMarkdown text={section.markdown} sources={sources} onOpenSource={onOpenSource} />
+      {section.markdown ? <SafeReportMarkdown text={section.markdown} sources={sources} onOpenSource={onOpenSource} answer={index === 0} />
         : <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.emptySection')}</p>}
       {index === 0 ? actions : null}
     </motion.section>)}
@@ -497,11 +504,12 @@ export function LibraryQuestionDesk({
                   {t('coverageCompact', { readPages: displayResult.readPages, totalPages: displayResult.totalPages,
                     readSources, totalSources: displayResult.totalSources, omitted: omittedLeads })}
                 </p>
-                <details data-testid="question-desk-coverage-details" className="mt-2">
-                  <summary className="w-fit text-label leading-label text-[color:var(--color-indigo-text-soft)] underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]">{t('coverageDetails')}</summary>
-                  <p className="mt-2 text-label leading-label text-[color:var(--color-text-secondary)]">{coverage}</p>
-                  <p className="mt-1 text-label leading-label text-[color:var(--color-text-tertiary)]">{limits}</p>
-                </details>
+                <div data-testid="question-desk-coverage-details" className="mt-2">
+                  <Disclosure animated summary={t('coverageDetails')} summaryTestId="question-desk-coverage-toggle">
+                    <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{coverage}</p>
+                    <p className="mt-1 text-label leading-label text-[color:var(--color-text-tertiary)]">{limits}</p>
+                  </Disclosure>
+                </div>
               </div>
               {!activeReport ? <Button variant="primary" disabled={!agentReady || turnRunning} onClick={() => {
                   if (!vaultRoot) return;
@@ -519,21 +527,23 @@ export function LibraryQuestionDesk({
               initial={reducedMotion ? OVERLAY_RISE_REDUCED : OVERLAY_RISE} animate={OVERLAY_SETTLED}
               transition={reducedMotion ? MOTION.fast : MOTION.settle}
               data-testid="question-desk-report" aria-labelledby="question-desk-report-title"
-              className="rounded-panel border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] p-[var(--card-pad)]">
+              className="pt-2">
               <p role="status" className="sr-only">{t('report.readyNotice')}</p>
               <div data-question-desk-print="true" data-testid="question-desk-print-content">
-                <header className="mb-5 border-b border-[color:var(--color-indigo-line-a20)] pb-4">
-                  <p className="text-caption leading-caption tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">{t('report.masthead')}</p>
-                  <p className="mt-1 text-label leading-label text-[color:var(--color-indigo-text-soft)]">{t('report.unreviewed')}</p>
-                  <h3 id="question-desk-report-title" className="mt-2 text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{activeReport.question}</h3>
-                  <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.caveat')}</p>
-                  <p className="mt-1 text-caption leading-caption text-[color:var(--color-text-tertiary)]">{t('report.generated', { time: activeReport.generatedAt })}</p>
+                <header className="mb-7">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                    <p className="text-caption leading-caption tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">{t('report.masthead')}</p>
+                    <p className="text-label leading-label text-[color:var(--color-indigo-text-soft)]">{t('report.unreviewed')}</p>
+                  </div>
+                  <h3 id="question-desk-report-title" className="mt-3 text-display font-[var(--font-weight-strong)] leading-display tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">{activeReport.question}</h3>
+                  <p className="mt-2 text-caption leading-caption text-[color:var(--color-text-tertiary)]">{t('report.generated', { time: activeReport.generatedAt })}</p>
                 </header>
                 <DraftReport text={activeReport.text} sources={sources} onOpenSource={onOpenSource} actions={reportActions} />
                 <footer className="mt-6 border-t border-[color:var(--color-border-soft)] pt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">
                   <h5 className="font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]">{t('report.searchScope')}</h5>
                   <p className="mt-1">{activeReport.coverage}</p>
                   <p className="mt-1">{activeReport.limits}</p>
+                  <p className="mt-2">{t('report.caveat')}</p>
                   <p className="mt-2">{t('report.citationNote')}</p>
                 </footer>
               </div>
@@ -543,13 +553,11 @@ export function LibraryQuestionDesk({
               <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t('zeroLocalBody')}</p>
               {agentReady ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('zeroLocalAgentNote')}</p> : null}
             </section> : null}
-            {hasLocalMatches ? <details key={`${displayResult.searchId}:${activeReport ? 'report' : agentReady ? 'agent' : 'local'}`}
-              open={!activeReport && !agentReady ? true : undefined}
-              data-testid="question-desk-evidence-leads" className="border-t border-[color:var(--color-border-soft)] pt-4">
-              <summary className="w-fit text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]">
-                {t('leadsSummary', { claims: displayResult.claims.length, sources: displayResult.sourceHits.length })}
-              </summary>
-              <div className="mt-4 space-y-5">
+            {hasLocalMatches ? <div data-testid="question-desk-evidence-leads" className="border-t border-[color:var(--color-border-soft)] pt-4">
+              <Disclosure animated open={!agentReady}
+                summary={t('leadsSummary', { claims: displayResult.claims.length, sources: displayResult.sourceHits.length })}
+                summaryTestId="question-desk-evidence-toggle">
+              <div className="space-y-5">
             {displayResult.claims.length ? <section aria-labelledby="desk-wiki-title">
               <h3 id="desk-wiki-title" className="text-body font-[var(--font-weight-strong)] leading-body">{t('wikiTitle')}</h3>
               <p className="mt-1 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('wikiCaveat')}</p>
@@ -595,7 +603,8 @@ export function LibraryQuestionDesk({
               ))}</ul> : <p className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('noSourceHits')}</p>}
             </section> : null}
               </div>
-            </details> : null}
+              </Disclosure>
+            </div> : null}
             {jevNote ? <p role="status" className="text-label leading-label text-[color:var(--color-text-tertiary)]" data-testid="question-desk-jev-note">{jevNote}</p> : null}
           </motion.section>
         ) : null}

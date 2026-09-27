@@ -165,9 +165,16 @@ describe('question desk evidence', () => {
     expect(report).toContain('## Source-backed evidence');
     expect(report).toContain('## Disagreements or changed claims');
     expect(report).toContain('## Unknowns and search limits');
+    expect(report).toContain('one short conclusion sentence in its own paragraph (160 characters or fewer)');
     expect(report).toContain('[[src:sources/refund.md#l2]]');
     expect(report).toContain('Write no files.');
     expect(report.length).toBeLessThanOrEqual(QUESTION_DESK_BRIEF_MAX_CHARS);
+    const korean = buildQuestionDeskReportBrief({
+      question: '재고는 언제 돌아오나요?', vaultRoot: '/folder', locale: 'ko', claims: [claim],
+      sourceHits: [{ path: 'sources/refund.md', anchor: 'l2', text: '작업은 나중에 실행됩니다.', score: 2 }],
+      coverage: '위키 1/1; 원문 1/1',
+    });
+    expect(korean).toContain('## 답의 첫 문단은 160자 이하의 짧은 결론 한 문장');
   });
 
   it('separates only exact ordered localized report headings and keeps freeform text raw', () => {
@@ -342,6 +349,8 @@ describe('question desk evidence', () => {
     expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('Later.', '[outside](https://example.com)') }, 'en', known)).toMatchObject({ ok: false, reason: 'unsafe' });
     expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('Later.', '![remote](//example.com/x.png)') }, 'en', known)).toMatchObject({ ok: false, reason: 'unsafe' });
     expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('Later.', '[outside]( https://example.com)') }, 'en', known)).toMatchObject({ ok: false, reason: 'unsafe' });
+    expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('Later.', '![a [b]](https://example.com/image.png)') }, 'en', known)).toMatchObject({ ok: false, reason: 'unsafe' });
+    expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('Later.', '[see][remote]\n[remote]: https://example.com') }, 'en', known)).toMatchObject({ ok: false, reason: 'unsafe' });
     const korean = { ...base, text: base.text.replace('## Answer', '## 답').replace('## Source-backed evidence', '## 원문 근거').replace('## Disagreements or changed claims', '## 불일치하거나 변경된 주장').replace('## Unknowns and search limits', '## 모르는 점과 검색 한계') };
     expect(planQuestionDeskReportFile(korean, 'ko', known)).toMatchObject({ ok: true });
   });

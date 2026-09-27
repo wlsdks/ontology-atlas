@@ -58,7 +58,7 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   await page.getByTestId('question-desk-back').click();
   await expect(page.getByTestId('library-question-desk')).toBeVisible();
   await page.setViewportSize({ width: 1512, height: 901 });
-  await page.getByTestId('question-desk-evidence-leads').locator('summary').click();
+  await expect(page.getByTestId('question-desk-evidence-toggle')).toHaveAttribute('aria-expanded', 'true');
   await page.getByRole('button', { name: 'sources/refund-handling.md#l2' }).first().click();
   await expect(page.getByTestId('library-source-passage')).toHaveAttribute('data-state', 'resolved');
   await page.getByTestId('library-reader-back').click();
@@ -105,6 +105,9 @@ test('Jev preview keeps the exact claim and long original passage reachable befo
   await page.getByTestId('question-desk-input').fill('When does refund approval restore stock?');
   await page.getByTestId('question-desk-search').click();
   await expect(page.getByTestId('question-desk-results')).toBeVisible();
+  await expect(page.getByTestId('question-desk-evidence-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await page.getByTestId('question-desk-evidence-toggle').click();
+  await expect(page.getByTestId('question-desk-evidence-toggle')).toHaveAttribute('aria-expanded', 'true');
   await page.getByText('Check claim with Jev').click();
   const panel = page.getByTestId('question-desk-jev-consent');
   await expect(panel).toBeVisible();

@@ -79,26 +79,26 @@ beforeEach(() => {
 });
 
 describe('Library question desk transfer boundary', () => {
-  async function search() {
+  async function search(revealLeads = true) {
     fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Does refund approval restore stock?' } });
     fireEvent.click(screen.getByTestId('question-desk-search'));
     await screen.findByTestId('question-desk-results');
+    const toggle = screen.queryByTestId('question-desk-evidence-toggle');
+    if (revealLeads && toggle?.getAttribute('aria-expanded') === 'false') fireEvent.click(toggle);
   }
 
   it('keeps local search and original anchors usable with no Jev key', async () => {
     render(<Desk />);
-    await search();
+    await search(false);
+    expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
+    const toggle = screen.getByTestId('question-desk-evidence-toggle');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    toggle.focus();
+    expect(document.activeElement).toBe(toggle);
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText(/immediately restores stock/)).toBeInTheDocument();
     expect(screen.getAllByText('sources/refund.md#l2')).toHaveLength(2);
-    expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
-    const leads = screen.getByTestId('question-desk-evidence-leads') as HTMLDetailsElement;
-    expect(leads.open).toBe(false);
-    const summary = within(leads).getByText(/Evidence leads/);
-    expect(summary.tagName).toBe('SUMMARY');
-    summary.focus();
-    expect(document.activeElement).toBe(summary);
-    fireEvent.click(summary);
-    expect(leads.open).toBe(true);
     expect(mocks.status).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText('Check claim with Jev'));
     expect(await screen.findByTestId('question-desk-jev-note')).toHaveTextContent('No Jev key');
@@ -110,7 +110,7 @@ describe('Library question desk transfer boundary', () => {
     const onFileReport = vi.fn();
     const onOpenSource = vi.fn();
     const rendered = render(<Desk onSummarize={onSummarize} onFileReport={onFileReport} onOpenSource={onOpenSource} />);
-    await search();
+    await search(false);
     expect(onSummarize).not.toHaveBeenCalled();
     expect(mocks.status).not.toHaveBeenCalled();
     expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
@@ -119,12 +119,18 @@ describe('Library question desk transfer boundary', () => {
     const request = onSummarize.mock.calls[0]![0];
     expect(request.brief).toContain('## Disagreements or changed claims');
     expect(request.brief).toContain('Write no files.');
+    const evidenceToggle = screen.getByTestId('question-desk-evidence-toggle');
+    fireEvent.click(evidenceToggle);
+    evidenceToggle.focus();
     const report: QuestionDeskReportDraft = {
       question: request.question, searchId: request.searchId, listingVersion: request.listingVersion, vaultScope: request.vaultScope,
       text: '# A freeform heading\n\nThe job runs later. [[src:sources/refund.md#l2]] and [[src:sources/refund.md#l2|refund policy]].\n\nMissing [[src:sources/gone.md#l4]]. Invalid [[src:sources/refund.md#bogus]]. [external](https://example.com) ![remote](https://example.com/image.png)<img src="https://example.com/raw.png" />',
       coverage: request.coverage, limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
     };
     rendered.rerender(<Desk report={report} onSummarize={onSummarize} onFileReport={onFileReport} onOpenSource={onOpenSource} />);
+    expect(screen.getByTestId('question-desk-evidence-toggle')).toBe(evidenceToggle);
+    expect(evidenceToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(document.activeElement).toBe(evidenceToggle);
     const draft = screen.getByTestId('question-desk-report');
     expect(draft).toHaveTextContent('AGENT DRAFT · UNREVIEWED');
     expect(draft).toHaveTextContent('A freeform heading');
@@ -133,10 +139,7 @@ describe('Library question desk transfer boundary', () => {
     fireEvent.click(cited);
     expect(onOpenSource).toHaveBeenCalledWith('sources/refund.md', 'l2');
     expect(draft).toHaveTextContent('refund policy · sources/refund.md#l2');
-    const leads = screen.getByTestId('question-desk-evidence-leads') as HTMLDetailsElement;
-    expect(leads.open).toBe(false);
-    fireEvent.click(within(leads).getByText(/Evidence leads/));
-    expect(leads.open).toBe(true);
+    expect(evidenceToggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getAllByTestId('question-desk-report-citation-unavailable')).toHaveLength(2);
     expect(screen.queryByRole('button', { name: 'sources/refund.md#bogus' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'external' })).not.toBeInTheDocument();
@@ -176,7 +179,7 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.getByTestId('question-desk-report-section-1')).toHaveTextContent('The plan lists no owner.');
     expect(screen.getByTestId('question-desk-report-section-2')).toHaveTextContent('One page suggests an owner.');
     expect(screen.getByTestId('question-desk-report-section-3')).toHaveTextContent('Another-language documents may be missed.');
-    expect(screen.getByTestId('question-desk-coverage-details')).not.toHaveAttribute('open');
+    expect(screen.getByTestId('question-desk-coverage-toggle')).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('offers explicit Markdown and print exports only for the current unreviewed report', async () => {
@@ -263,6 +266,7 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.getByTestId('library-question-desk')).toBeInTheDocument();
     expect(mocks.status).not.toHaveBeenCalled();
     await search();
+    fireEvent.click(screen.getByTestId('question-desk-coverage-toggle'));
     expect(screen.getByTestId('question-desk-results')).toHaveTextContent('Searched 0 of 0 Wiki pages and 1 of 1 original files.');
     expect(screen.getByText('Refund approval queues a stock restoration job.')).toBeInTheDocument();
     expect(mocks.status).not.toHaveBeenCalled();
@@ -273,7 +277,7 @@ describe('Library question desk transfer boundary', () => {
     render(<Desk agentReady={false} onOpenSource={onOpenSource} />);
     await search();
     expect(screen.getByTestId('question-desk-summarize')).toBeDisabled();
-    expect((screen.getByTestId('question-desk-evidence-leads') as HTMLDetailsElement).open).toBe(true);
+    expect(screen.getByTestId('question-desk-evidence-toggle')).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(screen.getAllByRole('button', { name: 'sources/refund.md#l2' })[0]!);
     expect(onOpenSource).toHaveBeenCalledWith('sources/refund.md', 'l2');
     expect(mocks.status).not.toHaveBeenCalled();
@@ -285,6 +289,7 @@ describe('Library question desk transfer boundary', () => {
     fireEvent.click(screen.getByTestId('question-desk-search'));
     expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('Word search can miss documents in another language');
     expect(screen.getByTestId('question-desk-summarize')).toHaveTextContent('Investigate originals');
+    fireEvent.click(screen.getByTestId('question-desk-coverage-toggle'));
     expect(screen.getByTestId('question-desk-results')).toHaveTextContent('Searched 1 of 1 Wiki pages and 1 of 1 original files.');
     expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
     expect(screen.queryByText('No matching Wiki fact or decision in the pages read.')).not.toBeInTheDocument();
