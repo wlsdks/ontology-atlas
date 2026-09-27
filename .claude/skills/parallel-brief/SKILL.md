@@ -1,6 +1,6 @@
 ---
 name: parallel-brief
-description: Write a subagent brief that isolates ports, files, worktrees, scratch output, baselines, and primary evidence before parallel work begins.
+description: Write a subagent brief that isolates ports, files, worktrees, scratch output, baselines, and primary evidence before parallel work begins, including one shared brief for many slices.
 when_to_use: Use before delegating work to two or more parallel subagents or worktrees. Not for a single small delegated read.
 ---
 
@@ -33,9 +33,9 @@ competing baselines.
 ## 3. Worktrees and stash
 
 - Never run `git add -A`; a worktree directory can be staged as an empty gitlink.
-- Subagents do not remove worktrees. The coordinating owner may remove a
-  task-created worktree only after confirming ownership, preserved changes,
-  and no active users. Otherwise report its path for later cleanup.
+- Subagents do not remove worktrees. After a landing, the coordinating owner
+  removes task-created worktrees with `pnpm bundle:prune` (`/review-and-land`);
+  a worktree it keeps is reported by path, never deleted by hand.
 - Never use `git stash`; stash is repository-wide and has erased another agent's
   work in this project.
 
@@ -65,7 +65,7 @@ Before assigning scopes, run `pnpm conflicts:scan` so no scope includes a file a
 ## 6. Eight mandatory lines
 
 Spawn each slice as `implementer` (Opus, low effort) and review what returns with
-`reviewer` (Opus, max); a slice that still needs judgment goes back to the
+`reviewer` (Opus, max) through `/review-and-land`; a slice that still needs judgment goes back to the
 `planner` first, and debugging or a flake goes to `investigator` (max), never
 `general-purpose`. The Agent tool takes no per-call effort, so the agent type is
 the dial; in a Workflow script pass `effort` to `agent()`. Every delegated brief
@@ -79,16 +79,32 @@ states:
 5. which baselines must remain green and the commands that prove them, and that
    the final report quotes each command exactly as it was run;
 6. the primary sources the agent must read instead of trusting a relayed summary;
-7. the landing rule: the agent commits on its own branch in its own worktree and
-   never pushes, opens a pull request, or runs `pnpm pr:land`; the coordinating
-   owner lands every branch together with `/land-bundle` (one draft per slice
-   on the landing train, or one integration branch when slices must be
-   resolved together; either way one CI run per train).
+7. the landing rule: the agent commits on its own branch in its own worktree.
+   On the train path it also pushes and opens a draft pull request
+   (`gh pr create --draft`), and never marks it ready or runs `pnpm pr:land`;
+   for an integration branch it does not push. The lead lands after an
+   independent review with `/review-and-land`.
 8. a time budget, such as "about 20 minutes": Opus 5.5 paces its work to a
    stated budget and usually finishes inside it. It is advisory, so the
    coordinator keeps its own timeout.
 
-## 7. Do not delegate
+## 7. One brief, many slices
+
+When several slices apply one procedure across areas (a sweep, a rename, a
+translation), write the procedure once to a scratch brief file and give each
+agent that file plus its slice id:
+
+- A manifest maps every path in scope to exactly one slice id. A script builds
+  it from `git ls-files`; never a hand-typed list.
+- One pilot slice runs first. Its independent review becomes lettered
+  amendments at the top of the brief, which override the plan; then fan out.
+- Every slice writes a ledger naming each owned path's outcome (changed,
+  nothing to do, or skipped with a reason) and its measures, so coverage is
+  counted rather than trusted.
+- The brief states §6's eight lines once, plus setup, the commit structure,
+  the report shape, and the pull request title and body.
+
+## 8. Do not delegate
 
 Keep work local when it needs only a handful of tool calls, merely rechecks your
 own result, or requires editing the same files. Delegate exhaustive inventories,
