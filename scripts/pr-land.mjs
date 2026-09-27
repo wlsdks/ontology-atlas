@@ -213,7 +213,10 @@ export function refuseLanding(pr) {
     return `is ${String(pr.state).toLowerCase()}, not open. Only an open pull request can land.`;
   }
   if (pr.isCrossRepository) {
-    return 'comes from a fork. A fork pull request is a security boundary: land it by hand after reading CONTRIBUTING.md.';
+    return 'comes from a fork. Checking its branch out runs the fork\'s scripts as you (the tracked .githooks),'
+      + ' so read it with `gh pr diff <number>` or try it in a throwaway clone with no hooks path set'
+      + ' (`git -c core.hooksPath=/dev/null checkout` for a single checkout), then land it by hand:'
+      + ' CONTRIBUTING.md, "Reviewing a fork pull request".';
   }
   if (pr.baseRefName && pr.baseRefName !== 'main') return `targets ${pr.baseRefName}, not main.`;
   if (String(pr.headRefName ?? '').startsWith('train/')) return 'is a landing train; the conductor lands it.';
