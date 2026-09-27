@@ -65,7 +65,6 @@
     --color-amber-source-a07: rgba(244, 183, 49, 0.07);
     --color-amber-source-a30: rgba(244, 183, 49, 0.3);
     --color-overlay-recessed-a12: rgba(0, 0, 0, 0.12);
-    --color-shadow-a22: rgba(0, 0, 0, 0.22);
     --color-shadow-a42: rgba(0, 0, 0, 0.42);
     --color-shadow-a46: rgba(0, 0, 0, 0.46);
     /* Elevation ladder — explicitly emit definitions from the @theme block above (prevent Tailwind v4 regression). Values/basis refer to the @theme block above. coach-mark(1) < popover(2) < dialog(3). */
@@ -380,17 +379,6 @@
     --icon-md: 14px;
     --icon-lg: 16px;
     /*
-     * Height of the **list row** containing controls (2026-07-26). Separated from control height
-     * because owner measurement pointed out that the cause of "key registration buttons being too cramped" was
-     * row height = button height(32px), leaving 0 padding above/below buttons. With three rows
-     * touching with only a 1px divider between them, the three button sets read as one blob.
-     * Express relationships as formulas, not values — as controls grow, rows grow with them.
-     * The resulting 44px matches `--touch-target-min` (not coincidence, but same
-     * basis: both fingers and eyes read boundaries via padding around controls).
-     * Collapsed rows and expanded card headers share this token, maintaining rhythm in other rows even when one expands(size regularity).
-     */
-    --control-row-h: calc(var(--control-h-md) + 12px);
-    /*
      * Dialog width scale — 2-tier is the canonical version (approved by "System" lead on 2026-08-15,
      * docs/DECISIONS.md). Single source of truth for centered modal/composer widths; consumers
      * use `src/shared/ui/dialog.tsx`. At runtime,
@@ -650,7 +638,6 @@
        splitting the same 180ms into two handles means one side will eventually lag.
        Camera (420)/drag settle (720) are canvas physics, independent of DOM ramp. */
     --topology-motion-panel-duration: var(--motion-base);
-    --topology-motion-camera-duration: 420ms;
     --topology-motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
     /* Bolt agent panel — vertical dock making room on the right side of the map.
@@ -810,12 +797,6 @@
        area chart. Capped, one week is about 40px and the stack is legible as a stack
        (2026-09-09, measured at 1512 and 1920). */
     --vault-history-width: 760px;
-    /* The narrowest a layer's column may be squeezed to before its own name stops fitting
-       under it — measured at the widest Korean layer label (41px) plus breathing room. Four
-       layers sharing a row equally gave the layer holding 125 files the same 175px as one
-       holding nothing, so the columns are shared out by what they hold and stop here
-       (design-responsive, 2026-09-09). */
-    --vault-layer-col-min: 72px;
     /* drawer/audit modal shared scrim, single source — same value as existing sourceTreeOpen drawer. Dark-only (no light branch). */
     --docs-scrim: rgba(0, 0, 0, 0.5);
     /*

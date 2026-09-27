@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
+import { blankComments } from '../../scripts/quality/source-language/inventory.mjs';
 
 /**
  * The reverse-direction gate for **tokens that are defined but nobody uses.**
@@ -46,6 +47,21 @@ const INVISIBLE_BY_MECHANISM = new Set<string>([
 /** `--text-<step>--line-height` is the partner `text-<step>` loads at compile time. */
 const COMPANION_SUFFIX = "--line-height";
 
+// Tailwind namespace → the utility prefix that token generates. `--color-panel` is
+// alive even when it is only used as `bg-panel`, with no `var()`.
+const UTILITY_NAMESPACES: Record<string, readonly string[]> = {
+  "--color-": ["bg", "text", "border", "ring", "fill", "stroke", "from", "to", "via", "outline", "decoration", "accent", "caret", "shadow", "divide", "placeholder"],
+  "--text-": ["text"],
+  "--tracking-": ["tracking"],
+  "--leading-": ["leading"],
+  "--radius-": ["rounded"],
+  "--font-weight-": ["font"],
+  "--font-": ["font"],
+  "--shadow-": ["shadow"],
+  "--ease-": ["ease"],
+  "--animate-": ["animate"],
+};
+
 function stripCssComments(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, "");
 }
@@ -54,7 +70,7 @@ function stripCssComments(css: string): string {
  * The docs mirror **contains the repository's own prose**, so token names appear
  * there as explanation. Counting that as consumption keeps a dead token alive
  * forever on the strength of its own documentation — this one distinction was the
- * difference between 106 and 231.
+ * difference between 106 and 231. A comment is the same prose inside a source file.
  */
 const GENERATED_MIRRORS = ["src/entities/docs-vault/data/", "public/docs-vault/"];
 
@@ -76,77 +92,71 @@ function repoFiles(): string[] {
     .filter((f) => existsSync(f));
 }
 
+type Source = { path: string; text: string };
+
+/** Every `--token` a text names, and every whole utility-shaped class such as `bg-panel`. */
+function namesIn(text: string): string[] {
+  return [
+    ...Array.from(text.matchAll(/--[a-zA-Z0-9_-]+/g), (m) => m[0]),
+    ...Array.from(text.matchAll(/(?<![\w-])[a-z]+-[\w-]+/g), (m) => m[0]),
+  ];
+}
+
+function unusedTokens(css: string, sources: readonly Source[]): { declared: number; unused: string[] } {
+  const stripped = stripCssComments(css);
+  const declared = new Map<string, number>();
+  for (const m of stripped.matchAll(/(?:^|[;{}\s])(--[a-zA-Z0-9_-]+)\s*:/gm)) {
+    declared.set(m[1], (declared.get(m[1]) ?? 0) + 1);
+  }
+  const mentionsInCss = new Map<string, number>();
+  for (const m of stripped.matchAll(/--[a-zA-Z0-9_-]+/g)) {
+    mentionsInCss.set(m[0], (mentionsInCss.get(m[0]) ?? 0) + 1);
+  }
+  const utilitiesOf = new Map<string, string[]>();
+  for (const token of declared.keys()) {
+    const namespace = Object.entries(UTILITY_NAMESPACES).find(([prefix]) => token.startsWith(prefix));
+    if (namespace) utilitiesOf.set(token, namespace[1].map((u) => `${u}-${token.slice(namespace[0].length)}`));
+  }
+  const wanted = new Set([...declared.keys(), ...[...utilitiesOf.values()].flat()]);
+
+  // Blanking comments parses the file, so a file whose text names nothing wanted skips it:
+  // blanking only removes text, so its code names nothing either.
+  const read = new Set<string>();
+  for (const { path, text } of sources) {
+    if (!namesIn(text).some((name) => wanted.has(name))) continue;
+    for (const name of namesIn(blankComments(path, text))) read.add(name);
+  }
+
+  const unused: string[] = [];
+  for (const [token, declarationCount] of declared) {
+    if (INVISIBLE_BY_MECHANISM.has(token)) continue;
+    if (token.endsWith(COMPANION_SUFFIX)) continue;
+    if (read.has(token)) continue;
+    // Another token's value citing this one inside globals.css counts as consumption.
+    if ((mentionsInCss.get(token) ?? 0) > declarationCount) continue;
+    if (utilitiesOf.get(token)?.some((utility) => read.has(utility))) continue;
+    unused.push(token);
+  }
+  return { declared: declared.size, unused: unused.sort() };
+}
+
 /**
  * A change that **lowers** this number is welcome; lower this baseline with it.
  * To raise it, state in the PR body why it is needed now.
  */
 const BASELINE_UNUSED = 0;
 
-describe("디자인 토큰 — 아무도 안 쓰는 선언이 늘지 않는다", () => {
+describe("design tokens: declarations no code reads do not grow", () => {
   it("keeps the unused-token count at or below the recorded baseline", () => {
-    const css = readGlobalCss();
-    const stripped = stripCssComments(css);
-
-    const declared = new Map<string, number>();
-    for (const m of stripped.matchAll(/(?:^|[;{}\s])(--[a-zA-Z0-9_-]+)\s*:/gm)) {
-      declared.set(m[1], (declared.get(m[1]) ?? 0) + 1);
-    }
-    const mentionsInCss = new Map<string, number>();
-    for (const m of stripped.matchAll(/--[a-zA-Z0-9_-]+/g)) {
-      mentionsInCss.set(m[0], (mentionsInCss.get(m[0]) ?? 0) + 1);
-    }
-
-    const mentionedOutside = new Set<string>();
-    const bodies: string[] = [];
-    for (const file of repoFiles()) {
-      const text = readFileSync(file, "utf8");
-      bodies.push(text);
-      for (const m of text.matchAll(/--[a-zA-Z0-9_-]+/g)) mentionedOutside.add(m[0]);
-    }
-    const allText = bodies.join("\n");
-
-    // Tailwind namespace → the utility prefix that token generates. `--color-panel` is
-    // alive even when it is only used as `bg-panel`, with no `var()`.
-    const UTILITY_NAMESPACES: Record<string, readonly string[]> = {
-      "--color-": ["bg", "text", "border", "ring", "fill", "stroke", "from", "to", "via", "outline", "decoration", "accent", "caret", "shadow", "divide", "placeholder"],
-      "--text-": ["text"],
-      "--tracking-": ["tracking"],
-      "--leading-": ["leading"],
-      "--radius-": ["rounded"],
-      "--font-weight-": ["font"],
-      "--font-": ["font"],
-      "--shadow-": ["shadow"],
-      "--ease-": ["ease"],
-      "--animate-": ["animate"],
-    };
-    const usedAsUtility = (token: string): boolean => {
-      for (const [prefix, utils] of Object.entries(UTILITY_NAMESPACES)) {
-        if (!token.startsWith(prefix)) continue;
-        const stem = token.slice(prefix.length);
-        return utils.some((u) =>
-          new RegExp(`(?<![\\w-])${u}-${stem.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`).test(allText),
-        );
-      }
-      return false;
-    };
-
-    const unused: string[] = [];
-    for (const [token, declarationCount] of declared) {
-      if (INVISIBLE_BY_MECHANISM.has(token)) continue;
-      if (token.endsWith(COMPANION_SUFFIX)) continue;
-      if (mentionedOutside.has(token)) continue;
-      // Another token's value citing this one inside globals.css counts as consumption.
-      if ((mentionsInCss.get(token) ?? 0) > declarationCount) continue;
-      if (usedAsUtility(token)) continue;
-      unused.push(token);
-    }
-    unused.sort();
-
+    const sources = repoFiles().map((path) => ({ path, text: readFileSync(path, "utf8") }));
+    const { declared, unused } = unusedTokens(readGlobalCss(), sources);
+    expect(sources.length, "the scan read no source files").toBeGreaterThan(1000);
+    expect(declared, "the stylesheet declared no tokens").toBeGreaterThan(100);
     expect(
       unused.length,
-      `아무도 안 쓰는 토큰이 baseline(${BASELINE_UNUSED})보다 늘었다. 정의만 있고\n` +
-        `소비가 없는 토큰은 규격이 아니라 오정보다 — 다음 사람이 그 값을 믿는다.\n` +
-        `쓸 곳과 함께 넣거나, 안 쓸 거면 넣지 마라. 지금 잉여:\n  ${unused.join("\n  ")}`,
+      `Tokens no code reads grew past the baseline (${BASELINE_UNUSED}). A token that is\n` +
+        `declared and never consumed is misinformation, not a spec: the next person trusts its value.\n` +
+        `Add it together with its consumer, or do not add it. Unused now:\n  ${unused.join("\n  ")}`,
     ).toBeLessThanOrEqual(BASELINE_UNUSED);
   });
 
@@ -157,14 +167,31 @@ describe("디자인 토큰 — 아무도 안 쓰는 선언이 늘지 않는다",
    * inserting one fake token get caught" is verified directly here.
    */
   it("actually detects an unused token — the probe", () => {
-    const css = readGlobalCss();
-    const probed = css.replace(":root {", ":root {\n  --probe-nobody-uses-this: 1px;");
-    const stripped = stripCssComments(probed);
-    const declared = [...stripped.matchAll(/(?:^|[;{}\s])(--[a-zA-Z0-9_-]+)\s*:/gm)].map((m) => m[1]);
-    expect(declared).toContain("--probe-nobody-uses-this");
+    const probed = readGlobalCss().replace(":root {", ":root {\n  --probe-nobody-uses-this: 1px;");
+    expect(unusedTokens(probed, []).unused).toContain("--probe-nobody-uses-this");
+  });
 
-    const mentions = [...stripped.matchAll(/--probe-nobody-uses-this/g)].length;
-    // One declaration = one mention. Any consumption makes it 2 or more.
-    expect(mentions).toBe(1);
+  it("does not count a comment as a consumer — the probe", () => {
+    const css = [
+      ":root {",
+      "  --probe-line-comment: 1px;",
+      "  --probe-jsx-comment: 1px;",
+      "  --color-probe-utility-comment: #000;",
+      "  --probe-read-by-code: 1px;",
+      "  --color-probe-utility-code: #000;",
+      "}",
+    ].join("\n");
+    const sources = [
+      { path: "probe.ts", text: "// --probe-line-comment is named here and read nowhere.\nexport const read = 'var(--probe-read-by-code)';\n" },
+      {
+        path: "probe.tsx",
+        text: 'export const Probe = () => <div className="bg-probe-utility-code">{/* --probe-jsx-comment bg-probe-utility-comment */}</div>;\n',
+      },
+    ];
+    expect(unusedTokens(css, sources).unused).toEqual([
+      "--color-probe-utility-comment",
+      "--probe-jsx-comment",
+      "--probe-line-comment",
+    ]);
   });
 });

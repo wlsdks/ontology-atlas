@@ -180,11 +180,11 @@ describe("CLI 자리 표시 — 보여 주는 화면은 채우는 법도 보여 
 
     expect(
       offenders,
-      `이 파일들이 "${ATLAS_CHECKOUT_PLACEHOLDER}" 를 화면에 내면서 채우는 법을 말하지 않는다.\n` +
-        `사람이 읽는 자리면 t("${HINT_KEY}") 를 같은 자리에 그리고,\n` +
-        `에이전트에게 건네는 텍스트면 ${AGENT_HINT} 를 실어라.\n` +
-        `툴팁(title)은 안내로 치지 않는다 — 터치에서 도달할 수 없다.\n` +
-        `위반: ${offenders.join(", ")}`,
+      `These files show "${ATLAS_CHECKOUT_PLACEHOLDER}" without saying how to fill it in.\n` +
+        `Where a person reads it, render t("${HINT_KEY}") in the same place;\n` +
+        `in text handed to an agent, include ${AGENT_HINT}.\n` +
+        `A tooltip (title) does not count as guidance: touch cannot reach it.\n` +
+        `Violations: ${offenders.join(", ")}`,
     ).toEqual([]);
   });
 });

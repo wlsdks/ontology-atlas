@@ -76,9 +76,9 @@ describe("영어 카탈로그 — 번역이 반쯤 되다 만 자리를 잡는�
 
     expect(
       offenders,
-      `영어 화면에 한글이 그려진다 — 거의 항상 번역이 반쯤 되다 만 자리다.\n` +
-        `키 대조로는 안 잡힌다(키는 양쪽에 다 있다).\n` +
-        `언어 이름처럼 자기 언어로 써야 하는 것이면 ALLOWED 에 이유와 함께 등재하라.`,
+      `The English screen renders Hangul, which is almost always a half-finished translation.\n` +
+        `Comparing keys cannot catch it (the key exists on both sides).\n` +
+        `If it must stay in its own language, like a language name, list it in ALLOWED with the reason.`,
     ).toEqual([]);
   });
 });

@@ -525,9 +525,9 @@ test.describe("지도 키보드 걷기", () => {
      */
     expect(
       toFree,
-      `노드가 자유 영역 가운데(${landed!.freeCenterX.toFixed(0)})보다 ` +
-        `화면 가운데(${landed!.canvasCenterX.toFixed(0)})에 가깝다 — 보정이 안 걸렸다 ` +
-        `(자유 ${toFree.toFixed(0)}px · 화면 ${toCanvas.toFixed(0)}px)`,
+      `The node is closer to the screen centre (${landed!.canvasCenterX.toFixed(0)}) than to ` +
+        `the free area's centre (${landed!.freeCenterX.toFixed(0)}), so the offset did not apply ` +
+        `(free ${toFree.toFixed(0)}px · screen ${toCanvas.toFixed(0)}px)`,
     ).toBeLessThan(toCanvas);
   });
 

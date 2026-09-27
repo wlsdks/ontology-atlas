@@ -101,8 +101,8 @@ describe('스타터 볼트 언어 — 생성 경로 전부가 화면 언어를 �
 
     expect(
       violations,
-      `스타터 로케일을 빠뜨렸거나 하드코딩한 곳:\n${violations.join('\n')}\n` +
-        `→ 화면 언어(useLocale())를 넘기세요.`,
+      `Sites that omit or hard-code the starter locale:\n${violations.join('\n')}\n` +
+        `Pass the screen language (useLocale()).`,
     ).toEqual([]);
   });
 });

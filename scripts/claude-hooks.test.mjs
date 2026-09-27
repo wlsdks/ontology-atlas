@@ -103,6 +103,26 @@ describe('agent hooks', () => {
         'echo ok; yarn publish',
         'npm pack',
         { tool_name: 'functions.exec_command', tool_input: { cmd: 'pnpm publish --access public' } },
+        'pnpm --dir mcp publish',
+        'pnpm -C mcp publish',
+        'npm --prefix mcp publish',
+        'bun publish',
+        '(cd mcp; npm publish)',
+        'env NPM_CONFIG_TAG=next npm publish',
+        'NPM_TOKEN=x sudo -u root npm publish',
+        'npx -y npm@10 publish',
+        "bash -lc 'cd mcp && pnpm publish'",
+        'echo "$(npm publish)"',
+        "npm publish 'unbalanced",
+        'npm pu',
+        'npm pub',
+        'npm publ --access public',
+        'npm publi',
+        'npm publis',
+        'npm exec -- npm pub',
+        'pnpm exec npm pub',
+        'npm pa',
+        'npm pac',
       ]) {
         const payload =
           typeof command === 'string'
@@ -123,6 +143,10 @@ describe('agent hooks', () => {
         { tool_name: 'Bash', tool_input: { command: 'npm whoami && npm view ontology-atlas-mcp' } },
         { tool_name: 'Bash', tool_input: { command: 'cat <<EOF\nnpm publish\nEOF' } },
         { tool_name: 'Read', tool_input: { command: 'npm publish' } },
+        { tool_name: 'Bash', tool_input: { command: 'git commit -m "npm publish"' } },
+        { tool_name: 'Bash', tool_input: { command: 'echo npm publish && rg "pnpm publish" docs' } },
+        { tool_name: 'Bash', tool_input: { command: 'pnpm vitest run scripts/publish.test.mjs' } },
+        { tool_name: 'Bash', tool_input: { command: 'npm pa --dry-run && npm view publisher && npm run build' } },
       ]) {
         const result = runPublishHook(config.publishHook, payload);
         assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
@@ -302,7 +326,7 @@ async function writeVault(files) {
 
 function runInjectHook(hookPath, vaultDir) {
   return spawnSync('bash', [hookPath], {
-    env: { ...process.env, OATLAS_VAULT: vaultDir },
+    env: { ...process.env, CLAUDE_PROJECT_DIR: '', OATLAS_VAULT: vaultDir },
     encoding: 'utf8',
   });
 }
@@ -638,6 +662,33 @@ describe('Codex secret read guard', () => {
     assert.equal(blocks("cat <<'EOF'\ncat .env\nEOF"), false);
   });
 
+  const KEY_SAMPLES = {
+    'Read(**/*.pem)': 'cat certs/server.pem',
+    'Read(**/*.p8)': 'cat ~/Downloads/AuthKey_ABC123.p8',
+    'Read(**/*.p12)': 'base64 < build/developer-id.p12',
+    'Read(**/*.key)': 'head -1 tauri-updater.key',
+    'Read(**/id_rsa)': 'cat deploy/id_rsa',
+    'Read(**/id_ed25519)': 'cat id_ed25519',
+    'Read(**/id_ecdsa*)': 'cat keys/id_ecdsa',
+    'Read(~/.ssh/**)': 'cat ~/.ssh/config',
+    'Read(~/.ontology-atlas-signing/**)': 'cat ~/.ontology-atlas-signing/notes.txt',
+    'Read(~/.config/gh/**)': 'cat ~/.config/gh/hosts.yml',
+    'Read(~/.npmrc)': 'cat ~/.npmrc',
+    'Read(~/.netrc)': 'cat $HOME/.netrc',
+    'Read(~/.aws/**)': 'cat /Users/someone/.aws/credentials',
+  };
+
+  it('refuses every key and credential file the Claude deny list names', async () => {
+    const deny = JSON.parse(await readFile('.claude/settings.json', 'utf8')).permissions.deny;
+    const keyRules = deny.filter((rule) => !/^Read\(\.env/.test(rule));
+    assert.ok(keyRules.length >= 10, 'the Claude deny list names no key files');
+    assert.deepEqual(keyRules.filter((rule) => !(rule in KEY_SAMPLES)), [], 'a Claude deny rule has no Codex sample');
+    for (const rule of keyRules) assert.ok(blocks(KEY_SAMPLES[rule]), `${KEY_SAMPLES[rule]} must be refused (${rule})`);
+    for (const command of ['cat src/keyboard.ts', 'ls ~/.ssh', 'cat docs/DESKTOP-MACOS.md']) {
+      assert.equal(blocks(command), false, `${command} must not be refused`);
+    }
+  });
+
   it('names the file, the rule, and the readable alternative when it refuses', () => {
     const parsed = JSON.parse(fire('cat .env'));
     assert.equal(parsed.hookSpecificOutput.permissionDecision, 'deny');
@@ -780,6 +831,55 @@ describe('Codex apply_patch payload parity', () => {
 
 // Execute the printed repair command with no globally installed Atlas CLI.
 // Spaces and shell metacharacters must reach the CLI as one unchanged path.
+describe('inject-ontology-summary CLI resolution', () => {
+  it('runs the checkout CLI before any ontology-atlas found on PATH, from any folder of the checkout', async (t) => {
+    if (!hasPython) {
+      t.skip('python3 unavailable — hook is silent by design');
+      return;
+    }
+    const root = await mkdtemp(join(tmpdir(), 'atlas-hook-cli-order-'));
+    const checkout = join(root, 'checkout');
+    const nested = join(checkout, 'docs', 'notes');
+    const bin = join(root, 'bin');
+    const marker = join(root, 'path-cli-ran');
+    const census = (nodes) => JSON.stringify({ byKind: { capability: nodes }, graph: { nodes, unresolvedEdges: 0 } });
+    const run = (hook, cwd, projectDir) => spawnSync(join(bin, 'bash'), [resolve(hook)], {
+      cwd,
+      encoding: 'utf8',
+      env: { ...process.env, PATH: bin, CLAUDE_PROJECT_DIR: projectDir, OATLAS_VAULT: join(checkout, 'vault') },
+    });
+    try {
+      await mkdir(join(checkout, 'cli', 'src'), { recursive: true });
+      await mkdir(join(checkout, 'vault'));
+      await mkdir(nested, { recursive: true });
+      await mkdir(bin);
+      for (const command of ['bash', 'cat', 'sed', 'grep', 'head', 'mktemp', 'rm', 'python3', 'git']) {
+        const found = spawnSync('which', [command], { encoding: 'utf8' });
+        assert.equal(found.status, 0, `fixture requires ${command}`);
+        await symlink(found.stdout.trim(), join(bin, command));
+      }
+      assert.equal(spawnSync('git', ['init', '-q', checkout]).status, 0, 'fixture requires git init');
+      await symlink(process.execPath, join(bin, 'node'));
+      await writeFile(join(checkout, 'cli', 'src', 'index.mjs'), `console.log(${JSON.stringify(census(2))});\n`);
+      await writeFile(join(bin, 'ontology-atlas'), `#!/bin/sh\n/usr/bin/touch '${marker}'\necho '${census(9)}'\n`, { mode: 0o755 });
+      const [claudeHook] = INJECT_HOOKS;
+      const outsideAnyWorkTree = root;
+      const sessions = [
+        ...INJECT_HOOKS.flatMap((hook) => [[hook, checkout, ''], [hook, nested, '']]),
+        [claudeHook, outsideAnyWorkTree, checkout],
+      ];
+      for (const [hook, cwd, projectDir] of sessions) {
+        const result = run(hook, cwd, projectDir);
+        assert.equal(result.status, 0, result.stderr);
+        assert.match(result.stdout, /Ontology vault: 2 nodes/, `${hook} from ${cwd}: ${result.stdout}`);
+        await assert.rejects(access(marker), `${hook} from ${cwd} ran the ontology-atlas found on PATH`);
+      }
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('inject-ontology-summary executable recovery', () => {
   for (const scenario of ['broken', 'drift', 'missing-current', 'missing-legacy']) {
     it(`runs the suggested recovery for ${scenario} in a source checkout`, async () => {
@@ -817,7 +917,7 @@ describe('inject-ontology-summary executable recovery', () => {
         for (const hook of INJECT_HOOKS) {
           const installLog = join(root, 'install.json');
           await rm(installLog, { force: true });
-          const env = { ...process.env, PATH: bin, OATLAS_VAULT: vault,
+          const env = { ...process.env, PATH: bin, CLAUDE_PROJECT_DIR: '', OATLAS_VAULT: vault,
             SCENARIO: scenario, INSTALL_LOG: installLog };
           const result = spawnSync(join(bin, 'bash'), [resolve(hook)], {
             cwd: checkout, env, encoding: 'utf8',

@@ -97,8 +97,8 @@ describe("화면 글자 용어집 계약", () => {
       }
       expect(
         hits,
-        `화면 글자에 코드 말투가 남아 있다. 「${use}」로 바꾼다 ` +
-          `(정본: docs/GLOSSARY.md).\n${hits.join("\n")}`,
+        `Screen copy still speaks in code terms. Replace it with "${use}" ` +
+          `(canonical: docs/GLOSSARY.md).\n${hits.join("\n")}`,
       ).toEqual([]);
     });
   }

@@ -5,6 +5,8 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  main,
+  releaseArtifactSteps,
   runReleaseArtifactPipeline,
   withNotaryApiKeyFile,
 } from "./build-macos-release-artifact.mjs";
@@ -44,7 +46,7 @@ test("the release pipeline exposes each credential only to the step that needs i
     assert.equal(secretCheck.env[name], value, `${name} must reach only the credential validator first`);
   }
 
-  for (const script of ["build", "desktop:smoke", "desktop:sign", "desktop:sign:dmg", "desktop:verify-release-dmg", "desktop:verify-install"]) {
+  for (const script of ["build", "desktop:smoke", "desktop:build:app", "desktop:sign", "desktop:sign:dmg", "desktop:verify-release-dmg", "desktop:verify-install"]) {
     const call = byScript.get(script);
     assert.equal(call.env.NOTARYTOOL_KEY_PATH, undefined, `${script} inherited the notary key path`);
     for (const name of Object.keys(ALL_SECRETS)) {
@@ -52,16 +54,11 @@ test("the release pipeline exposes each credential only to the step that needs i
     }
   }
 
-  for (const script of ["desktop:build:app", "desktop:repack-updater"]) {
-    const call = byScript.get(script);
-    assert.equal(call.env.TAURI_SIGNING_PRIVATE_KEY, ALL_SECRETS.TAURI_SIGNING_PRIVATE_KEY);
-    assert.equal(
-      call.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD,
-      ALL_SECRETS.TAURI_SIGNING_PRIVATE_KEY_PASSWORD,
-    );
-    for (const name of Object.keys(ALL_SECRETS).filter((key) => !key.startsWith("TAURI_"))) {
-      assert.equal(call.env[name], undefined, `${script} inherited ${name}`);
-    }
+  const repack = byScript.get("desktop:repack-updater");
+  assert.equal(repack.env.TAURI_SIGNING_PRIVATE_KEY, ALL_SECRETS.TAURI_SIGNING_PRIVATE_KEY);
+  assert.equal(repack.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD, ALL_SECRETS.TAURI_SIGNING_PRIVATE_KEY_PASSWORD);
+  for (const name of Object.keys(ALL_SECRETS).filter((key) => !key.startsWith("TAURI_"))) {
+    assert.equal(repack.env[name], undefined, `desktop:repack-updater inherited ${name}`);
   }
 
   const notarize = byScript.get("desktop:notarize");
@@ -71,6 +68,50 @@ test("the release pipeline exposes each credential only to the step that needs i
   assert.equal(notarize.env.APPLE_API_KEY_P8_BASE64, undefined);
   assert.equal(notarize.env.APPLE_CERTIFICATE_PASSWORD, undefined);
   assert.equal(notarize.env.TAURI_SIGNING_PRIVATE_KEY, undefined);
+});
+
+test("the build phase runs before any signing material and receives no credential", () => {
+  const phases = {};
+  for (const phase of ["build", "sign"]) {
+    const calls = [];
+    runReleaseArtifactPipeline({
+      env: { PATH: "/usr/bin:/bin", NOTARYTOOL_KEY_PATH: "/private/tmp/notary/AuthKey.p8", ...ALL_SECRETS },
+      phase,
+      spawn(command, args, options) {
+        calls.push({ script: args[0], env: options.env });
+        return { status: 0 };
+      },
+    });
+    phases[phase] = calls;
+  }
+
+  assert.deepEqual(phases.build.map((call) => call.script), ["build", "desktop:smoke", "desktop:build:app"]);
+  for (const call of phases.build) {
+    for (const name of [...Object.keys(ALL_SECRETS), "NOTARYTOOL_KEY_PATH"]) {
+      assert.equal(call.env[name], undefined, `${call.script} inherited ${name}`);
+    }
+  }
+  assert.deepEqual(phases.sign.map((call) => call.script), [
+    "desktop:sign",
+    "desktop:repack-updater",
+    "scripts/package-macos-dmg.mjs",
+    "desktop:sign:dmg",
+    "desktop:notarize",
+    "desktop:verify-release-dmg",
+    "desktop:verify-install",
+  ]);
+  assert.equal(releaseArtifactSteps().length, phases.build.length + phases.sign.length + 1);
+});
+
+test("an unknown phase runs nothing", () => {
+  assert.throws(() => releaseArtifactSteps("notarize"), /unknown --phase=notarize/);
+  assert.equal(main(["--phase=notarize"], {}), 1);
+});
+
+test("the Tauri build makes no updater archive, so the build needs no updater key", () => {
+  const conf = JSON.parse(fs.readFileSync("src-tauri/tauri.conf.json", "utf8"));
+  assert.equal(conf.bundle.createUpdaterArtifacts, false);
+  assert.ok(conf.plugins.updater.pubkey, "the installed app still verifies updates against this key");
 });
 
 test("the public release-artifact command uses the credential-isolating orchestrator", () => {

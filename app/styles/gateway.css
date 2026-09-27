@@ -82,8 +82,8 @@
 }
 
 /*
- * Entrance grammar — brightness uses confirmation ramp (120ms), translation uses confirmed ramp (240ms). Do not use canvas-specific 420ms(--topology-motion-camera) for translation duration (design.md:
-   referencing DOM surface is a defect).
+ * Entrance grammar — brightness uses confirmation ramp (120ms), translation uses confirmed ramp (240ms). Do not borrow
+   the map camera's 420ms canvas clock for translation (design.md: a DOM surface on a canvas clock is a defect).
  *
  * First 3 seconds timeline (chronicle): 0–150ms background static paint → 150/220ms headline two lines →
    700ms eyebrow·lead → 800ms CTA → 950ms trust line·trigger strip. After that, foreground is permanently static. Delay literals are the score values of this choreography, not ramp tokens.

@@ -2208,8 +2208,7 @@ function StepList({
                 {stepConcepts.length > 0 ? (
                   <>
                     {/* Truncated, never wrapped, so a long name cannot change the row's height
-                        (`forbidden.md`); the full name stays recoverable. Its floor is the
-                        row's `--git-row-h`; the declared `--git-step-h` is unused. */}
+                        (`forbidden.md`); the full name stays recoverable. */}
                     <StepConceptNames
                       concepts={stepConcepts}
                       more={(count) => t("moreSlugs", { count })}
@@ -2955,8 +2954,6 @@ function DesktopBody({
     />
   ) : null;
 
-  // The evidence column is `minmax(0,1fr)` from `xl` and stacks under the list below it; the
-  // declared `--git-evidence-min` (600px) is not applied.
   /*
    * The detail column exists whenever there is anything to commit, a diff or history; new
    * documents alone produce no diff lines but still need the change list.

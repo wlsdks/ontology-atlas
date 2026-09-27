@@ -160,7 +160,7 @@
     "directory": "mcp"
   },
   "license": "MIT",
-  "private": false,
+  "private": true,
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0"
   }

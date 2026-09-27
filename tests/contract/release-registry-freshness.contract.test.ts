@@ -62,8 +62,8 @@ describe('릴리스 전 ACP 레지스트리 신선도', () => {
   it('릴리스 워크플로가 그 검사를 실제로 부른다', () => {
     expect(
       /run:\s*pnpm acp:registry:check/.test(executableLines),
-      '릴리스 경로에서 레지스트리 신선도를 아무도 묻지 않는다 — ' +
-        '이 스크립트는 한때 존재만 하고 아무도 안 불렀고, 그 사이 9개가 낡았다',
+      'Nothing on the release path asks whether the registry is fresh. ' +
+        'This script once existed with no caller, and nine entries went stale meanwhile',
     ).toBe(true);
   });
 

@@ -212,8 +212,8 @@ describe('reduced-motion 동등물 계약', () => {
     );
     expect(
       naked,
-      `감속 동등물도 없고 이유도 없다 — 감속 사용자에게 통째로 하드컷이다:\n${naked.join('\n')}\n` +
-        `덮거나, INTENTIONALLY_STILL 에 이유를 적어라.`,
+      `No reduced-motion equivalent and no reason: for a reduced-motion user this is one whole hard cut:\n${naked.join('\n')}\n` +
+        `Cover it, or give the reason in INTENTIONALLY_STILL.`,
     ).toEqual([]);
   });
 
@@ -260,9 +260,9 @@ describe('reduced-motion 동등물 계약', () => {
       expect(total, `.${cls} 가 CSS 에 없다 — 죽은 면제다`).toBeGreaterThan(0);
       expect(
         inside,
-        `.${cls} 의 선언 ${total}건 중 ${inside}건만 no-preference 안이다 — ` +
-          `밖으로 샌 선언은 감속 사용자에게 그대로 적용된다. ` +
-          `INTENTIONALLY_STILL 의 사유가 거짓이 됐으므로 되돌리거나 사유를 다시 써라.`,
+        `Only ${inside} of the ${total} declarations of .${cls} are inside no-preference; ` +
+          `a declaration that leaked outside applies unchanged for reduced-motion users. ` +
+          `The INTENTIONALLY_STILL reason is now false, so revert it or rewrite the reason.`,
       ).toBe(total);
       expect(selector.test(CSS_CODE), 'selector 정규식이 헛돌고 있다').toBe(true);
     }

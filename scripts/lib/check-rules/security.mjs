@@ -42,6 +42,7 @@ export const rules = [
       /^src\/entities\/vault-session\/model\/TauriVaultWatchBridge\.tsx$/,
       /^src\/features\/(?:acp-session|acp-doctor|mcp-connectors)\/model\/(?!.*\.test\.tsx?$).+\.tsx?$/,
       /^\.github\/(?:workflows|actions)\/.+\.ya?ml$/,
+      /^\.bun-version$/,
       /^(?:mcp\/)?pnpm-lock\.yaml$/,
       /^\.claude\/settings\.json$/,
       /^(?:\.mcp\.json|\.codex\/(?:config\.toml|hooks\.json))$/,

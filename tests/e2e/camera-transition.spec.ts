@@ -343,8 +343,8 @@ test.describe("카메라 전환 규격", () => {
     ).toBeLessThanOrEqual(ONE_EVENT_FRAMES);
     expect(
       Math.abs(cameraFrames! - popoverFrames!),
-      `팝오버(${popoverFrames}프레임)와 카메라(${cameraFrames}프레임)가 ` +
-        `${Math.abs(cameraFrames! - popoverFrames!)}프레임 벌어졌다 — 두 사건으로 읽힌다`,
+      `The popover (${popoverFrames} frames) and the camera (${cameraFrames} frames) are ` +
+        `${Math.abs(cameraFrames! - popoverFrames!)} frames apart, so they read as two events`,
     ).toBeLessThanOrEqual(ONE_EVENT_FRAMES);
   });
 

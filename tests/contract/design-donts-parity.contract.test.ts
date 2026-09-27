@@ -91,8 +91,8 @@ describe('디자인 금지 목록 — 정본 하나 + 부분집합 사본', () =
     const orphans = mine.filter((s) => !canon.has(s));
     expect(
       orphans,
-      `정본(${CANON})에 없는 금지를 사본이 들고 있다. 정본에 먼저 등재하라.\n` +
-        `고아 슬러그: ${orphans.join(', ')}`,
+      `A copy carries a ban the canonical list (${CANON}) does not have. Add it to the canonical list first.\n` +
+        `Orphan slugs: ${orphans.join(', ')}`,
     ).toEqual([]);
     expect(new Set(mine).size, `${rel} 안에 같은 슬러그가 두 번 있다`).toBe(mine.length);
   });
