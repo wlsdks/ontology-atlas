@@ -286,7 +286,9 @@ pub(crate) fn write_entry_atomically(
     contents: &str,
     create_mode: libc::mode_t,
 ) -> Result<(), String> {
-    write_entry_bytes_atomically(parent, file_name, contents.as_bytes(), create_mode)
+    write_entry_atomically_with(parent, file_name, create_mode, |file| {
+        file.write_all(contents.as_bytes())
+    })
 }
 
 #[cfg(unix)]
@@ -417,16 +419,15 @@ pub(crate) fn create_entry_atomically(
     Ok(published)
 }
 
-/// Binary sources take this path, not `fs::write`: the open parent FD, `O_NOFOLLOW`
-/// and atomic rename are the protections. Unix only; Windows uses `resolve_write_target_inside`
-/// in `library.rs`.
+/// Not `fs::write`: the open parent FD, `O_NOFOLLOW` and atomic rename are the protections.
+/// Windows uses `resolve_write_target_inside` in `library.rs`.
 #[cfg(unix)]
-pub(crate) fn write_entry_bytes_atomically(
+pub(crate) fn write_entry_atomically_with<T>(
     parent: &fs::File,
     file_name: &std::ffi::CStr,
-    contents: &[u8],
     create_mode: libc::mode_t,
-) -> Result<(), String> {
+    fill: impl FnOnce(&mut fs::File) -> std::io::Result<T>,
+) -> Result<T, String> {
     use std::os::fd::{AsRawFd, FromRawFd};
 
     static TEMP_SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -477,9 +478,9 @@ pub(crate) fn write_entry_bytes_atomically(
     let (temporary_name, mut temporary) = created.ok_or_else(|| {
         err_str("could not reserve a private temporary name for the native write")
     })?;
-    let result = (|| -> std::io::Result<()> {
+    let result = (|| -> std::io::Result<T> {
         ensure_private_temporary(&temporary, "before writing")?;
-        temporary.write_all(contents)?;
+        let filled = fill(&mut temporary)?;
         temporary.sync_all()?;
         ensure_private_temporary(&temporary, "before commit")?;
         let renamed = unsafe {
@@ -493,7 +494,8 @@ pub(crate) fn write_entry_bytes_atomically(
         if renamed != 0 {
             return Err(std::io::Error::last_os_error());
         }
-        parent.sync_all()
+        parent.sync_all()?;
+        Ok(filled)
     })();
 
     if result.is_err() {
